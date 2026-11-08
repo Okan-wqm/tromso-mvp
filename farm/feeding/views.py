@@ -21,8 +21,9 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _, ngettext
 
-from core import navigation, query
+from core import navigation
 from core.crud import done, render_page
+from core.dates import read_day
 
 from .. import placements
 from ..forms.feeding import FeedingForm, feed_label
@@ -68,7 +69,7 @@ def _with_next(url, request):
 
 
 # ---- the list ------------------------------------------------------------------------------------
-def _filtered(params):
+def _filtered(params, request):
     """The records the filters choose, voided ones only when asked for, newest first; and the filters'
     values that name something (a stale link shows everything, as the other pages do)."""
     records = FeedingRecord.all_objects.select_related(
@@ -88,8 +89,8 @@ def _filtered(params):
         else:
             params[key] = ''
     for key, lookup in (('from', 'date__gte'), ('to', 'date__lte')):
-        day = query.day(params[key])
-        params[key] = day.isoformat() if day else ''
+        day = read_day(params[key], request)
+        params[key] = day or ''          # a date: the input shows it as the language writes it
         if day:
             records = records.filter(**{lookup: day})
     batch = choices['batch'].filter(pk=params['batch']).first() if stock_views._is_uuid(params['batch']) else None
@@ -105,7 +106,7 @@ def feeding_records(request):
     if request.GET.get('view') == DAYS:
         return _by_day(request)
     params = {key: request.GET.get(key, '').strip() for key in FILTERS}
-    records, choices = _filtered(params)
+    records, choices = _filtered(params, request)
     totals = records.aggregate(count=Count('pk'), kilos=Sum('amount_kg', filter=Q(is_deleted=False)))
     page = Paginator(records, PAGE_SIZE).get_page(request.GET.get('page'))
     rows = list(page.object_list)
@@ -146,12 +147,12 @@ def _by_day(request):
     corrections. At most SPAN days a page, the last 7 by default; computed on read in one walk."""
     params = {key: request.GET.get(key, '').strip() for key in DAY_FILTERS}
     today = local_today()
-    last = min(query.day(params['to']) or today, today)
-    first = min(query.day(params['from']) or last - timedelta(days=read.WEEK - 1), last)
+    last = min(read_day(params['to'], request) or today, today)
+    first = min(read_day(params['from'], request) or last - timedelta(days=read.WEEK - 1), last)
     clipped = (last - first).days >= SPAN
     if clipped:
         first = last - timedelta(days=SPAN - 1)
-    params['from'], params['to'] = first.isoformat(), last.isoformat()
+    params['from'], params['to'] = first, last              # dates: an input shows them as the language writes them
     units = list(Tank.objects.select_related('production_department__site').order_by('code'))
     choices = {'site': sorted({unit.production_department.site for unit in units if unit.production_department.site},
                               key=lambda site: site.name),
@@ -368,7 +369,8 @@ def void_feeding(request, pk):
         form = VoidForm(request.POST)
         if form.is_valid():
             try:
-                services.void_feeding(request.user, record, form.cleaned_data['reason'])
+                services.void_feeding(request.user, record, form.cleaned_data['reason'],
+                                      withdrawal_ack=form.cleaned_data['withdrawal_ack'])
             except ValidationError as error:
                 form.add_service_error(error)
             else:

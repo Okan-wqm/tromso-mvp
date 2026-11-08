@@ -1,10 +1,10 @@
-{% load i18n %}{% comment %} An entry's review (knowledge.views.review_entry): its status, who reviewed it and when, and, for
+{% load i18n dates %}{% comment %} An entry's review (knowledge.views.review_entry): its status, who reviewed it and when, and, for
    people who may edit entries, the buttons that mark it reviewed or take it back to draft. Each button is a form of
    its own (a dialog posts a form's fields, not which button was pressed). `version` makes sure the review covers the
    words the reviewer read.{% endcomment %}
 <div class="review-box">
   {% if entry.status == "reviewed" %}
-  <p><span class="badge badge-reviewed">{{ entry.get_status_display }}</span> {% blocktrans trimmed with who=entry.reviewed_by when=entry.reviewed_at|date:"DATETIME_FORMAT" %}by {{ who }}, {{ when }}{% endblocktrans %}</p>
+  <p><span class="badge badge-reviewed">{{ entry.get_status_display }}</span> {% blocktrans trimmed with who=entry.reviewed_by when=entry.reviewed_at|company_clock|date:"DATETIME_FORMAT" %}by {{ who }}, {{ when }}{% endblocktrans %}</p>
   {% else %}
   <p><span class="badge badge-draft">{{ entry.get_status_display }}</span> {% trans "Not reviewed yet. AI agents will act on reviewed entries only." %}</p>
   {% endif %}

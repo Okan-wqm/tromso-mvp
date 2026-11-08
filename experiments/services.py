@@ -655,7 +655,7 @@ def start(user, experiment, seen, version):
         assessment = design_module.assess(locked)
         if assessment.errors:
             raise _refused(*[finding.text for finding in assessment.errors])
-        check.require_acknowledged(assessment, seen, field='start_ack')
+        check.require_acknowledged(assessment, seen, field='start_ack', user=user)
         warned = []
         if assessment.warnings:
             with audit.source_language():                          # the log is English at rest

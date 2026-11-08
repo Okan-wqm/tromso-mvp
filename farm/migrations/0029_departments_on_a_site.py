@@ -14,7 +14,7 @@ CHECK = 'chk_production_departments_live_on_a_site'
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('farm', '0026_production_form_other'),
+        ('farm', '0028_site_timezone_required'),
     ]
 
     operations = [

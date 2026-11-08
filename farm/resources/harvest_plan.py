@@ -12,8 +12,8 @@ from urllib.parse import urlencode
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
-from core import query
 from core.crud import Resource
+from core.dates import read_day
 
 from ..feeding import read as feeding_read
 from ..forms.harvest import FROM_ADDRESS, HandlingPlanItemForm, ProductionPlanForm, planned_kg
@@ -71,8 +71,8 @@ class HandlingPlanItemResource(FromAddress, Resource):
             else:
                 chosen[key] = ''
         for key, lookup in (('from', 'date__gte'), ('to', 'date__lte')):
-            day = query.day(chosen[key])
-            chosen[key] = day.isoformat() if day else ''
+            day = read_day(chosen[key], request)
+            chosen[key] = day or ''          # a date: the input shows it as the language writes it
             if day:
                 objects = objects.filter(**{lookup: day})
         rows = [plan_row(request, item) for item in objects]

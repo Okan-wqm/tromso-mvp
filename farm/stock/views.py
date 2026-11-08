@@ -535,7 +535,8 @@ def void_operation(request, pk):
         form = VoidForm(request.POST)
         if form.is_valid():
             try:
-                services.void(request.user, operation, form.cleaned_data['reason'])
+                services.void(request.user, operation, form.cleaned_data['reason'],
+                              withdrawal_ack=form.cleaned_data['withdrawal_ack'])
             except ValidationError as error:
                 form.add_service_error(error)
             else:

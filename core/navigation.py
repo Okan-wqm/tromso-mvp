@@ -41,8 +41,9 @@ class Entry:
     hidden: bool = False    # no line in the menu (a settings page reached from another page's links); it still
                             # has its place: the role matrix and the page heading read it, and it is current there
     show_when: str = ''     # the dotted path of a function(user) -> bool: the line is shown only when it says so (Company's
-                            # HR lines are left out for a person whose HR is all in Production). A menu courtesy only: the
-                            # page still answers whoever holds its permission
+                            # HR lines are left out for a person whose HR is all in Production). The address agrees with the
+                            # menu: a line left out is refused at its address too (core.middleware.MenuAccessMiddleware)
+    show_note: str = ''     # who is not offered it, in words: the role matrix says it under the area
 
     def url(self):
         return reverse(self.url_name)
@@ -129,6 +130,34 @@ def entries():
     return [entry for workspace in workspaces() for entry in workspace.entries()]
 
 
+def entry_for(path):
+    """The menu line a page belongs to: the one whose address is the longest start of the page's (the rail's current
+    line), or None."""
+    return max((entry for entry in entries() if entry.matches(path)), key=lambda entry: len(entry.url()), default=None)
+
+
+def notes(perm):
+    """["Company · HR · Shift schedule: not for a person whose HR is all in Production"]: the lines read with `perm` that
+    are shown only to some, for the role matrix (a role gives the right; the line still depends on the person)."""
+    found = []
+    for workspace in workspaces():
+        for section in workspace.sections:
+            for group in section.groups:
+                for entry in group.entries:
+                    if entry.perm == perm and entry.show_when and not entry.hidden:
+                        labels = [str(label) for label in (workspace.label, section.label, entry.label) if label]
+                        found.append(f'{" · ".join(labels)}: {entry.show_note}')
+    return found
+
+
+def refused(user, path):
+    """Whether the page is refused to the person because its menu line is left out for them (`show_when`), though they
+    hold its permission: the menu and the address bar agree. A line never in the menu (`hidden`) is not a refusal."""
+    entry = entry_for(path)
+    return (entry is not None and not entry.hidden and bool(entry.show_when) and entry.allowed_for(user)
+            and not entry.shown_to(user))
+
+
 def place(perm):
     """Where the page read with this permission ('farm.view_site') sits in the menu."""
     for workspace in workspaces():
@@ -195,3 +224,13 @@ def rail(request):
     chosen = workspace_of(request.path) or request.session.get(SESSION_KEY)
     current = next((panel for panel in panels if panel['key'] == chosen), panels[0] if panels else None)
     return {'workspaces': panels, 'workspace': current, 'rail_sections': current['sections'] if current else []}
+
+
+def page_base(request):
+    """The frame a page that is not a tab's own (an error page) draws in: the dialog's when the dialog asked for it
+    (X-Modal), the console's for a person signed in, the sign-in page's for a visitor (context processor)."""
+    from .crud import is_modal
+    if is_modal(request):
+        return {'page_base': 'modal_base.html'}
+    user = getattr(request, 'user', None)
+    return {'page_base': 'app_base.html' if user is not None and user.is_authenticated else 'auth_base.html'}

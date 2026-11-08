@@ -1,3 +1,4 @@
+import re
 from datetime import date, datetime, time, timezone as utc
 from decimal import Decimal
 
@@ -72,6 +73,32 @@ class OverviewReadTests(OverviewTestCase):
                 read.overview(self.lead, MONDAY)
             return len(queries)
         self.assertEqual(count(4), count(40))
+
+
+class DayStateTests(OverviewTestCase):
+    """A person's day has one state (read.Cell.state), read by the schedule and the team overview alike: approved leave
+    first (a planned shift or a planned day off under it is for someone else to cover), then a planned shift, then a
+    planned day off, else nothing planned."""
+
+    def test_approved_leave_reads_on_leave_on_the_schedule_and_in_the_overview(self):
+        self.plan(self.in_a, MONDAY, shift=None)                                # planned off, then leave approved
+        self.plan(self.in_a, date(2026, 3, 3))                                  # planned to work, then leave approved
+        self.plan(self.in_a, date(2026, 3, 4), shift=None)                      # planned off, no leave
+        kind = LeaveType.objects.create(name='Annual', code='AN')
+        LeaveRequest.objects.create(employee=self.in_a, leave_type=kind, first_day=MONDAY, last_day=date(2026, 3, 3),
+                                    status='approved', decided_at=datetime(2026, 1, 1, tzinfo=utc.utc))
+        cells = read.week(self.lead, MONDAY).rows[0].cells
+        self.assertEqual([cell.state for cell in cells[:5]], ['leave', 'leave', 'off', 'none', 'none'])
+        row = read.overview(self.lead, MONDAY).rows[0]
+        self.assertEqual((row.working, row.off, row.leave), (0, 1, 2))
+        self.client.force_login(self.lead)
+        page = self.client.get(reverse('hr:production_shiftassignment_list'), {'week': MONDAY.isoformat()}).content.decode()
+        days = re.findall(r'data-day="(2026-03-0[2-4])".*?</td>', page, re.S)
+        cell = {day: text for day, text in re.findall(r'data-day="(2026-03-0[2-4])"(.*?)</td>', page, re.S)}
+        self.assertEqual(len(days), 3)
+        for day, state in (('2026-03-02', 'On leave'), ('2026-03-03', 'On leave'), ('2026-03-04', 'Off')):
+            self.assertIn(f'>{state}</span>', cell[day], day)
+            self.assertNotIn('>Off</span>' if state == 'On leave' else '>On leave</span>', cell[day], day)
 
 
 class OverviewPageTests(OverviewTestCase):

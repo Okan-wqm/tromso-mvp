@@ -3,11 +3,12 @@ from django.utils.translation import gettext_lazy as _
 
 from core import audit, query
 from core.crud import Mount, Resource
+from core.dates import read_day
 from farm.stock.dates import site_today
 
 from .. import read, rules, scope, services, units
 from ..forms.roster import ShiftAssignmentForm
-from ..models import ShiftAssignment
+from ..models import Employee, ShiftAssignment
 
 
 class ShiftAssignmentResource(Resource):
@@ -47,7 +48,7 @@ class ShiftAssignmentResource(Resource):
 
     @classmethod
     def list_queryset(cls, request):
-        start = query.day(request.GET.get('week')) or site_today(None)
+        start = read_day(request.GET.get('week'), request) or site_today(None)
         department = units.find(request.GET.get('department', ''))
         page = query.number(request.GET.get('page', ''), least=1) or 1
         return read.week(request.user, start, department, page, query=request.GET.get('q', '').strip(),
@@ -68,8 +69,11 @@ class ShiftAssignmentResource(Resource):
 
     @classmethod
     def crew(cls, request, week):
-        """The Crew block under the viewer's own week: in Production › Team, for a holder of Crew (hr.read.crew_week)."""
+        """The Crew block under the viewer's own week: in Production › Team, for a holder of Crew who is a worker (has an
+        employee record: a crew is a worker's, so the platform admin gets none) (hr.read.crew_week)."""
         if scope.realm_for(request) != scope.PRODUCTION or not request.user.has_perm(cls.CREW):
+            return None
+        if not Employee.objects.filter(user=request.user).exists():
             return None
         return read.crew_week(request.user, week.start)
 

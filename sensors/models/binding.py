@@ -122,6 +122,12 @@ class Binding(AuditedModel):
     def target(self):
         return self.point or self.system or self.equipment
 
+    @property
+    def clock(self):
+        """The zone its times are typed and shown on (sensors.bindings.clock: the place's site, else the device's)."""
+        from ..bindings import clock
+        return clock(self.channel.device, self.target)
+
     def took(self, moment):
         """Whether a value measured at `moment` is this place's: taken while the binding held (a moved probe's value
         from its previous place, or from while it was out of the water, is not). The one rule the latest values and

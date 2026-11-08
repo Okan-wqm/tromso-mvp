@@ -17,7 +17,7 @@ def copy_keys(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0010_entry_keys'),
+        ('core', '0008_entry_keys'),
         ('farm', '0030_units_on_a_live_site'),
     ]
 

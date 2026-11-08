@@ -12,7 +12,7 @@
   {% if impact %}
   <p>{% blocktrans trimmed count shifts=impact|length %}One planned shift of the person in these days must be covered by someone else:{% plural %}{{ shifts }} planned shifts of the person in these days must be covered by someone else:{% endblocktrans %}</p>
   <ul class="plain-list">
-    {% for day, shift in impact %}<li>{{ day|date:"D j M" }}: <span class="shift-chip tone-{{ shift.tone }}">{{ shift.code }}</span> {{ shift.starts_at|time:"H:i" }}–{{ shift.ends_at|time:"H:i" }}</li>{% endfor %}
+    {% for day, shift in impact %}<li>{{ day|date:"D" }} {{ day|date:"MONTH_DAY_FORMAT" }}: <span class="shift-chip tone-{{ shift.tone }}">{{ shift.code }}</span> {{ shift.starts_at|time:"TIME_FORMAT" }}–{{ shift.ends_at|time:"TIME_FORMAT" }}</li>{% endfor %}
   </ul>
   {% else %}
   <p class="muted">{% trans "The person has no planned shifts in these days." %}</p>

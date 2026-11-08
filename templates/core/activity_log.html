@@ -1,5 +1,5 @@
 {% extends "app_base.html" %}
-{% load i18n static %}
+{% load i18n static dates %}
 {% block title %}{% trans "Activity log" %}{% endblock %}
 {% block eyebrow %}{% trans "Administration" %}{% endblock %}
 {% block heading %}{% trans "Activity log" %}{% endblock %}
@@ -40,11 +40,11 @@
   </div>
   <div class="field">
     <label for="f-from">{% trans "From" %}</label>
-    <input id="f-from" type="date" name="from" value="{{ filters.from }}">
+    {% day_input "from" filters.from id="f-from" %}
   </div>
   <div class="field">
     <label for="f-to">{% trans "To" %}</label>
-    <input id="f-to" type="date" name="to" value="{{ filters.to }}">
+    {% day_input "to" filters.to id="f-to" %}
   </div>
   <div class="filters-actions">
     <button type="submit" class="button button-inline">{% trans "Filter" %}</button>

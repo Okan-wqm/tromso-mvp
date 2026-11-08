@@ -23,6 +23,7 @@
   {% csrf_token %}
   {% if form.version %}{{ form.version }}{% endif %}{% if form.entry_key %}{{ form.entry_key }}{% endif %}
   {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+  {% if withdrawal_change and question_template %}{% include question_template %}{% endif %}
   {% for tab in tabs %}
   <section class="tab-panel" role="tabpanel" data-panel="{{ tab.key }}"{% if tab.has_errors %} data-has-errors{% endif %}>
     <h3 class="panel-title">{{ tab.label }}</h3>

@@ -399,8 +399,9 @@ def _age(reading, now):
 
 def state_of(card):
     """The one roll-up of a card, a ladder whose thresholds are the owners' and none invented here:
-    1. critical: a water reading judged critical;
-    2. warning: a reading judged a warning, the unit over its capacity, an estimate that says weigh now;
+    1. critical: a water reading judged critical, an old one too ("Critical, no recent data": the water page's rule,
+       farm.water.read.PointWater.alerts);
+    2. warning: a reading judged a warning (an old one too), the unit over its capacity, an estimate that says weigh now;
     3. blind: a stocked unit whose temperature or oxygen is missing or older than its freshness (a fresh pH hides a
        three-day-old oxygen in the water's own status: that status ranks OK above stale), or with no middle point;
        never OK, never red; not worked out when the water is hidden (the card says so);
@@ -416,9 +417,11 @@ def state_of(card):
     critical, warning, note = [], [], []
     middle = _middle(card)                  # the unit's own water: a detailed card's other points do not change its state
     for point in ([middle] if middle is not None else []):
-        for reading in point.alerts:
-            text = '{}: {}'.format(reading.parameter.label, Status(reading.status).label)
-            (critical if reading.status == Status.CRITICAL else warning).append(text)
+        for reading, status, old in point.alerts:      # an old critical or warning still counts, said as old
+            label = Status(status).label
+            text = '{}: {}'.format(reading.parameter.label,
+                                   _('%(status)s, no recent data') % {'status': label} if old else label)
+            (critical if status == Status.CRITICAL else warning).append(text)
     if critical:
         return State(CRITICAL, tuple(critical), basis)
     if card.stock.over_capacity:

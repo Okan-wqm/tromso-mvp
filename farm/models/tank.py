@@ -501,10 +501,17 @@ class Tank(CodedMixin, AuditedModel):
             errors['regulatory_unit_id'] = ValidationError(
                 _('Another unit of the site already has this regulatory unit ID.'))
 
+    def withdrawal_blockers(self):
+        """Why the unit is not deleted or restored now: its treatments, feedings and samples are what the withdrawals
+        of the fish ever in it are worked out from, so a withdrawal that holds them waits
+        (farm.health.withdrawal.held_reached; the withdrawal gate's rule, farm/apps.py)."""
+        from ..health.withdrawal import held_reached
+        return held_reached([self.pk])
+
     def delete_blockers(self):
         if self.has_stock():
-            return [gettext('It holds fish: move or harvest them first.')]
-        return []
+            return [gettext('It holds fish: move or harvest them first.'), *self.withdrawal_blockers()]
+        return self.withdrawal_blockers()
 
     # ---- status -----------------------------------------------------------------------------------
     def stored(self):

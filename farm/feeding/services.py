@@ -9,14 +9,16 @@ A failure raises ValidationError (a dict of field to message: 'unit', 'date', 'f
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Sum
 from django.utils.translation import gettext as _, gettext_lazy
 
 from core import audit
 from core.models import EntryKey
-from farm.models import Feed, FeedingRecord, Tank
+from farm.health import withdrawal
+from farm.models import Feed, FeedingRecord
 from farm.models.feeding import FeedTarget
-from farm.stock.dates import check_date, shown_date, sites_of
-from farm.stock.services import AlreadyRecorded, locked, voided
+from farm.stock.dates import check_date, local_today, shown_date, sites_of
+from farm.stock.services import AlreadyRecorded, lock_fish, voided
 from farm.templatetags.feeding import amount
 from farm.templatetags.stock import number
 
@@ -34,13 +36,13 @@ def label(record):
 
 
 def record_feeding(user, *, unit, day, feed, amount_kg, time=None, meals=None, feeder=None, notes='', ack=False,
-                   target=FeedTarget.PRODUCTION, token=None):
+                   target=FeedTarget.PRODUCTION, token=None, withdrawal_ack=None):
     """Feed given to `unit` on `day`, for its production fish or for the cleaner fish beside them (`target`, D-1).
     It needs fish of its target in the unit at the start or the end of that day (the stock ledger), a feed that is
     active, and, above FEEDING_ACK_PERCENT of their book biomass, the person's acknowledgement (stored on the record;
     owner decision Q-F5): a kilo typed for a gram is caught here, a hatchery's fry may well be fed more."""
     with transaction.atomic():
-        unit = locked(Tank, {unit.pk})[unit.pk]
+        unit, batch_ids = _lock_fish(unit, day)
         if token is not None:
             done = EntryKey.record_of(token, FeedingRecord)
             if done is not None:
@@ -61,30 +63,58 @@ def record_feeding(user, *, unit, day, feed, amount_kg, time=None, meals=None, f
         record = FeedingRecord(unit=unit, date=day, time=time, feed=feed, target=target, amount_kg=amount_kg,
                                meals=meals, feeder=feeder, notes=notes, created_by=user, updated_by=user)
         record.full_clean()
-        rate = 100 * amount_kg / book.biomass_kg
+        # Q-F5 asks about more than the limit a day: the day's feedings of the target in the unit, this one included (the
+        # unit is locked, so two feedings of one day take turns; audit F-081).
+        day_kg = amount_kg + (FeedingRecord.objects.filter(unit=unit, date=day, target=target)
+                              .aggregate(total=Sum('amount_kg'))['total'] or 0)
+        rate = 100 * day_kg / book.biomass_kg
         if rate > settings.FEEDING_ACK_PERCENT:
             if not ack:
                 raise ValidationError({'high_rate_ack': _(
-                    '%(kilos)s kg is %(rate)s %% of the %(biomass)s kg %(unit)s holds on %(date)s in the book; more '
-                    'than %(limit)s %% a day is unusual. Tick the box below to record it anyway.') % {
-                    'kilos': amount(amount_kg), 'rate': number(rate, 1),
+                    '%(kilos)s kg fed on %(date)s, this feeding included, is %(rate)s %% of the %(biomass)s kg %(unit)s '
+                    'holds in the book; more than %(limit)s %% a day is unusual. Tick the box below to record it '
+                    'anyway.') % {
+                    'kilos': amount(day_kg), 'rate': number(rate, 1),
                     'biomass': number(book.biomass_kg, 1), 'unit': unit.code, 'date': shown_date(day),
                     'limit': settings.FEEDING_ACK_PERCENT}})
             record.high_rate_ack = True
-        record.save()
-        if token is not None:
-            EntryKey.note(token, record)
-        with audit.source_language():
-            names = [*LOGGED, *(['high_rate_ack'] if record.high_rate_ack else [])]
-            audit.record_create(user, record, audit.snapshot(record, names), label=label(record))
-        return record
+
+        def write():
+            saved = FeedingRecord(unit=unit, date=day, time=time, feed=feed, target=target, amount_kg=amount_kg,
+                                  meals=meals, feeder=feeder, notes=notes, created_by=user, updated_by=user,
+                                  high_rate_ack=record.high_rate_ack)
+            saved.save()
+            if token is not None:
+                EntryKey.note(token, saved)
+            with audit.source_language():
+                names = [*LOGGED, *(['high_rate_ack'] if saved.high_rate_ack else [])]
+                audit.record_create(user, saved, audit.snapshot(saved, names), label=label(saved))
+            return saved
+
+        # A medicated feeding no in-feed treatment covers holds the fish (withdrawal rule 6): through the guard.
+        return withdrawal.guarded(user, batch_ids, local_today(unit), write, seen=withdrawal_ack)
 
 
-def void_feeding(user, record, reason):
+def void_feeding(user, record, reason, withdrawal_ack=None):
     """The undo, as for a stock operation: the record stops counting, with its reason, within the
-    backdating window. It moves no fish, so nothing else is checked."""
+    backdating window. It moves no fish; a medicated feeding's void can free fish its withdrawal holds, so it goes
+    through the withdrawal guard."""
     with transaction.atomic():
-        record = (FeedingRecord.all_objects.select_for_update(of=('self',))
-                  .select_related('unit__production_department__site', 'feed').get(pk=record.pk))
-        voided(user, record, reason, sites_of([record.unit]), label(record))
-        return record
+        found = FeedingRecord.all_objects.select_related('unit').get(pk=record.pk)
+        _unit, batch_ids = _lock_fish(found.unit, found.date)
+
+        def write():
+            current = (FeedingRecord.all_objects.select_for_update(of=('self',))
+                       .select_related('unit__production_department__site', 'feed').get(pk=record.pk))
+            voided(user, current, reason, sites_of([current.unit]), label(current))
+            return current
+
+        return withdrawal.guarded(user, batch_ids, local_today(found.unit), write, seen=withdrawal_ack)
+
+
+def _lock_fish(unit, day):
+    """Locks the batches with fish in the unit on the feeding's day, then the unit, as a stock operation locks them
+    (batches, then units), so a feeding and a harvest of the same fish take turns; returns (the unit, the batch ids):
+    the fish a medicated feeding holds, which the withdrawal guard works the withdrawals of."""
+    units, batch_ids = lock_fish([unit.pk], day)
+    return units[unit.pk], batch_ids

@@ -92,8 +92,8 @@ class SchemaFormTests(SimpleTestCase):
             ({'flowRate': 1, 'phase': 'two'}, 'Select a valid choice'),
             ({'flowRate': 1, 'parameters': ['ph', 'temperature']}, 'not in the form it is saved in'),
             ({'flowRate': 1, 'autoFilling': False}, 'not in the form it is saved in'),
-            ({'flowRate': 1, 'calibrated': '2026-3-1'}, 'not in the form it is saved in'),
-            ({'flowRate': 1, 'calibrated': 'soon'}, 'Enter a valid date'),
+            ({'flowRate': 1, 'calibrated': '2026-3-1'}, 'Give the date as dd.mm.yyyy'),      # not a shape read
+            ({'flowRate': 1, 'calibrated': 'soon'}, 'Give the date as dd.mm.yyyy'),
             ({'flowRate': '1'}, 'not in the form it is saved in'),
         ]:
             with self.subTest(stored=stored), self.assertRaisesMessage(ValidationError, words):

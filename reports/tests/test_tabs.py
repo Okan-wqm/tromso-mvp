@@ -15,6 +15,7 @@ from ..kinds import KINDS, ReportKind
 from ..models import Report
 from .helpers import OCTOBER, day
 from .test_due import TODAY, DueTestCase, filed
+from farm import withdrawal_gate
 
 
 class LinesTestCase(DueTestCase):
@@ -238,6 +239,7 @@ class UpcomingTests(DueTestCase):
 
 
 class EscapeLabelTests(DueTestCase):
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_an_escape_is_named_as_one_wherever_it_is_offered_or_listed(self):
         from core.models import AuditLog
         from ..forms import escape_label

@@ -1,4 +1,4 @@
-{% load i18n water %}
+{% load i18n water dates %}
 {% comment %} The body of a unit's Deffeyes window (farm.water.views.unit_chart): the chart of its water at one sampling
    point and the values it is drawn from, or what is missing. Nothing here is a default: a value that is not
    there is listed, not filled in. The points are links to the same fragment for another point; the window
@@ -6,7 +6,7 @@
 <div class="unit-chart" data-unit-chart>
   {% if result.sensors_failed %}<p class="notice notice-warning" role="status">{% trans "The live sensor values could not be read: the values below come from the water samples only." %}</p>{% endif %}
   <p class="unit-chart-head"><strong>{{ unit.code }}</strong>{% if result.point %} · {{ result.point.name }}{% endif %}{% if species %} · {{ species|join:", " }}{% endif %}</p>
-  {% if at %}<p class="notice" role="status">{% blocktrans trimmed with moment=at|date:"DATETIME_FORMAT" %}The water as it was at {{ moment }}: each value as its source gave it then, its age counted from then.{% endblocktrans %}</p>{% endif %}
+  {% if at %}<p class="notice" role="status">{% blocktrans trimmed with moment=at|site_clock:at.tzinfo|date:"DATETIME_FORMAT" %}The water as it was at {{ moment }}: each value as its source gave it then, its age counted from then.{% endblocktrans %}</p>{% endif %}
   {% if result.no_point %}
   <p class="notice notice-warning" role="status">{% trans "This unit has no active middle sampling point, so its chart cannot be drawn. Choose one of its points:" %}</p>
   {% elif result.missing %}

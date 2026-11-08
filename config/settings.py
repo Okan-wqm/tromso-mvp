@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 import os
+import sys
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -75,6 +76,8 @@ MIDDLEWARE = [
     # A signed-in person's saved language wins over the cookie.
     'core.language.AccountLanguageMiddleware',
     'core.middleware.WorkspaceMiddleware',
+    # A page whose menu line is left out for the person is refused at its address too.
+    'core.middleware.MenuAccessMiddleware',
     # Every page needs a signed-in user unless its view is marked @login_not_required.
     'django.contrib.auth.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -95,6 +98,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'core.navigation.rail',
+                'core.navigation.page_base',
             ],
         },
     },
@@ -161,6 +165,12 @@ LANGUAGE_COOKIE_AGE = 60 * 60 * 24 * 365
 LANGUAGE_COOKIE_SAMESITE = 'Lax'
 
 TIME_ZONE = 'UTC'
+# The company's time zone: a new site's (the form offers it first) and the one migration farm/0028 gives a site that had
+# none. Not the server's clock above. From the environment until the platform owner's settings hold it.
+COMPANY_TIME_ZONE = os.environ.get('COMPANY_TIME_ZONE', 'Europe/Oslo')
+# In the tests a page may not show an aware time without a clock filter (core/clock_guard.py): |date and |time refuse it.
+# Never on in production: the filters stay Django's own there.
+CLOCK_GUARD = os.environ.get('CLOCK_GUARD', '1' if sys.argv[1:2] == ['test'] else '0') == '1'
 
 USE_I18N = True
 # Quantities group their digits where a template asks (floatformat:"g"); plain numbers such as

@@ -7,6 +7,7 @@ server's reasons on their fields (422) and goes back where it was opened (`next`
 Who may do what (config/access.py): reading a page needs view on its records, recording add, voiding delete;
 a treatment's last day is changed with change. The buttons a person cannot use are not shown, and the views
 refuse them too. The withdrawal line is shown to everyone who sees the units: it is food safety."""
+from datetime import timedelta
 from urllib.parse import urlencode
 
 from django.contrib import messages
@@ -18,8 +19,9 @@ from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _, ngettext
 
-from core import navigation, query
+from core import navigation
 from core.crud import done, render_page
+from core.dates import read_day
 
 from ..forms.health import LastDayForm, LiceCountForm, TreatmentForm
 from ..forms.stock import VoidForm
@@ -97,7 +99,7 @@ def treated_batches(treatments, today):
     return found
 
 
-def _filtered_treatments(params, today):
+def _filtered_treatments(params, today, request):
     treatments = Treatment.all_objects.select_related('medicine', 'vet', 'health_event', 'created_by', 'deleted_by')\
         .prefetch_related('units__production_department__site', 'acknowledgements')
     if params['voided'] != '1':
@@ -121,8 +123,8 @@ def _filtered_treatments(params, today):
     else:
         params['method'] = ''
     for key, lookup in (('from', 'end_date__gte'), ('to', 'start_date__lte')):
-        day = query.day(params[key])
-        params[key] = day.isoformat() if day else ''
+        day = read_day(params[key], request)
+        params[key] = day or ''          # a date: the input shows it as the language writes it
         if day:
             treatments = treatments.filter(**{lookup: day})
     if params['show'] == VACCINATIONS:
@@ -148,7 +150,7 @@ def treatments(request):
     it puts on each, filtered in the address."""
     params = {key: request.GET.get(key, '').strip() for key in TREATMENT_FILTERS}
     today = local_today()
-    found, choices = _filtered_treatments(params, today)
+    found, choices = _filtered_treatments(params, today, request)
     page = Paginator(found, PAGE_SIZE).get_page(request.GET.get('page'))
     rows = list(page.object_list)
     batches = treated_batches(rows, today)
@@ -231,7 +233,8 @@ def void_treatment(request, pk):
         form = VoidForm(request.POST)
         if form.is_valid():
             try:
-                services.void_treatment(request.user, treatment, form.cleaned_data['reason'])
+                services.void_treatment(request.user, treatment, form.cleaned_data['reason'],
+                                        withdrawal_ack=form.cleaned_data['withdrawal_ack'])
             except ValidationError as error:
                 form.add_service_error(error)
             else:
@@ -246,7 +249,7 @@ def void_treatment(request, pk):
 COUNT_FILTERS = ('site', 'unit', 'from', 'to', 'voided')
 
 
-def _filtered_counts(params):
+def _filtered_counts(params, request):
     counts = LiceCount.all_objects.select_related('unit__production_department__site', 'created_by', 'deleted_by')
     if params['voided'] != '1':
         params['voided'] = ''
@@ -262,19 +265,39 @@ def _filtered_counts(params):
         else:
             params[key] = ''
     for key, lookup in (('from', 'date__gte'), ('to', 'date__lte')):
-        day = query.day(params[key])
-        params[key] = day.isoformat() if day else ''
+        day = read_day(params[key], request)
+        params[key] = day or ''          # a date: the input shows it as the language writes it
         if day:
             counts = counts.filter(**{lookup: day})
     return counts, choices
+
+
+
+def _site_weeks(params):
+    """The weekly table: each site's average over every cage counted that week (Vedlegg 1 point 6) and its badge. The
+    filters choose which sites and weeks are shown (a unit filter: its site; a date range: the weeks it touches), never
+    which counts make an average: one cage's average is not the site's (audit F-082)."""
+    counts = LiceCount.objects.all()
+    if params['unit']:
+        unit = Tank.all_objects.select_related('production_department').get(pk=params['unit'])
+        site_id = unit.production_department.site_id
+        counts = counts.filter(unit__production_department__site=site_id) if site_id else counts.filter(unit=unit)
+    elif params['site']:
+        counts = counts.filter(unit__production_department__site=params['site'])
+    first, last = params['from'] or None, params['to'] or None     # dates already: _filtered_counts read them (read_day)
+    if first:
+        counts = counts.filter(date__gte=first - timedelta(days=first.weekday()))          # its week's Monday
+    if last:
+        counts = counts.filter(date__lte=last + timedelta(days=6 - last.weekday()))      # its week's Sunday
+    return read.lice_weeks(counts)
 
 
 @permission_required(COUNTS['view'], raise_exception=True)
 def lice_counts(request):
     """Operations › Sea-lice counts: the site's weekly averages against the statutory limit, then every count."""
     params = {key: request.GET.get(key, '').strip() for key in COUNT_FILTERS}
-    counts, choices = _filtered_counts(params)
-    weeks = read.lice_weeks(counts)[:LICE_WEEKS]
+    counts, choices = _filtered_counts(params, request)       # first: it reads the dates (read_day) and the choices
+    weeks = _site_weeks(params)[:LICE_WEEKS]
     stocked = read.stocked_by_site(_units_with_fish(production=True))
     for week in weeks:
         week.stocked = stocked.get(week.site.pk if week.site else None, 0)

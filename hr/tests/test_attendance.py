@@ -366,6 +366,19 @@ class BoardTests(PeopleTestCase):
                  re.findall(r'<span class="tile-count">(\d+)</span><span class="tile-label">([^<]+)</span>', page)}
         self.assertEqual((shown['On site now'], shown['Here, not planned']), ('3', '1'))
 
+    def test_a_person_with_no_posted_site_is_on_the_companys_clock_not_the_servers(self):
+        """23:30 UTC on 2 March is 00:30 on 3 March in Oslo (settings.COMPANY_TIME_ZONE): the early shift of the 3rd is
+        that person's today, upcoming; on the server's UTC day nothing would be planned and nobody listed."""
+        nomad = employee('E-77', 'Nomad')                               # not placed anywhere
+        self.plan(nomad, self.early, day=DAY + timedelta(days=1))
+        board = read.board(self.hr, at(23, 30))
+        row = next(row for row in board.rows if row.employee == nomad)
+        self.assertEqual((row.state, row.day, row.zone.key), ('upcoming', DAY + timedelta(days=1), 'Europe/Oslo'))
+
+    def test_a_time_with_no_site_is_shown_on_the_companys_clock(self):
+        from ..templatetags.hr import on_clock
+        self.assertEqual(on_clock(at(23, 30), ''), datetime(2026, 3, 3, 0, 30))
+
     def test_people_planned_off_or_with_no_plan_are_not_listed_unless_they_are_there(self):
         self.plan(self.in_a, None)                                     # planned off
         states, _ = self.states(at(8))

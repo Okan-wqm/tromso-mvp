@@ -88,3 +88,42 @@ docs/i18n.md part.
 - Page dates (not typed) keep each language's display format (`26 Oct 2026`, `26. oktober 2026`); the owner rule was
   applied to entry boxes. Say if the display should be dd.mm.yyyy too.
 - The test runs on this machine took 1.5-2 h each under the other branches' load.
+
+## Cross-review (audit-verify/REVIEW-CROSS-bugs.md) and the owner's later rules
+
+Each finding was answered test first (`Test:` commits), then fixed, no history rewritten.
+
+- **F1 company zone**: `COMPANY_TIME_ZONE` (environment, Europe/Oslo by default; later the owner settings) is a new site's
+  zone and the one migration `farm/0030` fills; the server's `TIME_ZONE` stays UTC. The migration test runs on the
+  production setting (no override). Fixtures that count on the UTC clock now say `timezone='UTC'`.
+- **F2 headcount**: in `hr.rules.status` a clock-in beats leave; whoever clocked in is on Today (planned or not, on leave
+  or not), never late on a day of leave.
+- **F3/F5 dates**: `core.dates.read_day` is the one day parser: text in ASCII digits, `dd.mm.yyyy` or ISO, inside
+  01.01.1900–31.12.2100 (`FIRST`, `LAST`); every list filter says a text it cannot read back and answers (16 pages ×
+  extreme dates tested, no 500); `core.dates.install` gives every form date/moment field the shape message, the window and
+  a required time; the date box never reinterprets a slash, a dash or a two-digit year. **After fix-monitoring lands, its
+  water-history century clamp must use `read_day`'s window.**
+- **F4 water status**: a point's status is the worst of its values; an old critical/warning keeps it ("Critical, no
+  recent data", `Reading.judged`, `PointWater.old_alert`), never hidden by a fresh OK, never "No limit". fix-monitoring's
+  F-244 (`judged`, `old_alert`) overlaps by design: at its landing keep one `judged` field and this status rule.
+- **F6 one rule**: a hidden menu line means no access (comments, README, the role matrix's note rows); the walk covers
+  every HR route on both mounts.
+- **F7**: 403/404 asked by the dialog draw in the dialog's frame (`core.navigation.page_base`).
+- **F8**: one label registry (`reports/labels.py`) names every content key the computation writes (an AST test), used by
+  the report page, the print page and the differences; numbers in the language's way; notices follow `EVENTS`. The CSV
+  export keeps the authority's field names.
+- **F9**: only masses take the two-decimal rule; items counted in units show as recorded (`exact`).
+- **F12**: the browser layout test lays out what the real templates print (`manage.py layout_pages`, `--check` in the
+  suite); markup no longer written by hand. The notice, detail grid, designer and drawer cases are covered by the
+  stylesheet rules and template scans only now.
+- **Owner: dates shown** dd.mm.yyyy / dd.mm.yyyy HH:MM / dd.mm. in every language from one place,
+  `config/formats/european.py`; expectations changed on purpose (golden titles, harvest notes, activity log).
+
+## Still open after the cross-review
+
+- `monitoring.tests.test_golden` fails between about 00:00 and 06:00 UTC on this branch **and on main 16fa1b3 alike**
+  (a 30-hour-old sample falls two days back; checked at 01:49 UTC on both). Not caused here; the test should fix its now.
+- Moments parsed from addresses (`farm/water/views.py` `?at=`, sensors charts) still use `strptime` on ISO: machine
+  addresses, not days; they are not under `read_day`'s window.
+- Landing: `farm/0030_site_timezone_required` depends on 0026; re-point it at main's latest farm migration when
+  health-reports has landed, and renumber to follow.

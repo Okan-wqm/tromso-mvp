@@ -570,9 +570,12 @@ def frame_analysis(values, limits):
 
 def page_figures(analyses):
     """([figure], [index or None]) of a page's analyses (None: no diagram): the whole diagram of each, in one box that
-    holds every point of the page, worked out once for each different water. The diagram never reads the oxygen (only
+    holds every point of the page (its largest DIC and alkalinity, worked out once), worked out once for each different water. The diagram never reads the oxygen (only
     its saturation, which is not drawn), so waters exactly equal but for it share one figure; nothing else is shared."""
-    extent = [(analysis.dic, analysis.alkalinity_meq) for analysis in analyses if analysis is not None]
+    points = [(analysis.dic, analysis.alkalinity_meq) for analysis in analyses if analysis is not None]
+    # The box reads only the largest DIC and the largest alkalinity of the points it holds (deffeyes.box_of), so the
+    # page's extent is that one point, worked out once (every point on every figure was O(N^2)).
+    extent = [(max(dic for dic, _alkalinity in points), max(alkalinity for _dic, alkalinity in points))] if points else []
     figures, shared, indexes = [], {}, []
     for analysis in analyses:
         index = None

@@ -64,3 +64,19 @@ class AltitudeMigrationTests(TransactionTestCase):
                                       (low, D('-430'), ''), (kept, D('812.50'), '')):
             row = Site.objects.get(pk=site.pk)
             self.assertEqual((row.altitude, row.notes), (altitude, notes))
+
+    def test_going_back_leaves_a_site_corrected_since_alone(self):
+        """Second cross review, finding 7: going back restores only a site that still holds what the migration left (no
+        altitude and the notes it wrote); an altitude or notes entered since stay, never overwritten by the old slip."""
+        kept, sea, low, typo, minus = self.sites(self.old)
+        new = self.migrate(AFTER)
+        Site = new.get_model('farm', 'Site')
+        Site.objects.filter(pk=typo.pk).update(altitude=D('812'))                   # the right altitude entered since
+        notes = Site.objects.get(pk=low.pk).notes
+        Site.objects.filter(pk=low.pk).update(notes=f'{notes}\nChecked by the site manager.')   # notes edited since
+        old = self.migrate(BEFORE)
+        Site = old.get_model('farm', 'Site')
+        self.assertEqual(Site.objects.get(pk=typo.pk).altitude, D('812'))
+        self.assertIsNone(Site.objects.get(pk=low.pk).altitude)
+        self.assertTrue(Site.objects.get(pk=low.pk).notes.endswith('Checked by the site manager.'))
+        self.assertEqual((Site.objects.get(pk=minus.pk).altitude, Site.objects.get(pk=minus.pk).notes), (D('-5000'), ''))

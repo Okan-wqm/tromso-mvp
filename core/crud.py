@@ -187,16 +187,27 @@ class TabbedForm(forms.ModelForm):
         self._check_conditional_constraints(cleaned)
         return cleaned
 
+    def sent_key(self):
+        """The key the form was sent with, read from what was posted (before or without the form's checks); None for a
+        form without one or a key that is not a key."""
+        if ENTRY_KEY not in self.fields or not self.is_bound:
+            return None
+        try:
+            return self.fields[ENTRY_KEY].clean(self[ENTRY_KEY].value())
+        except ValidationError:
+            return None
+
     def sent_before(self):
         """The record a form with this form's key already created (the same form sent twice); None for a
-        first sending or a form without a key."""
-        key = self.cleaned_data.get(ENTRY_KEY) if ENTRY_KEY in self.fields else None
+        first sending or a form without a key. It needs no check of the form: ask it first."""
+        key = self.sent_key()
         return None if key is None else EntryKey.record_of(key, self._meta.model)
 
     def note_sent(self, record):
         """Stores the form's key with the record it created (in the creating transaction)."""
-        if self.cleaned_data.get(ENTRY_KEY):
-            EntryKey.note(self.cleaned_data[ENTRY_KEY], record)
+        key = self.sent_key()
+        if key is not None:
+            EntryKey.note(key, record)
 
     def _check_conditional_constraints(self, cleaned):
         """Conditional unique and exclusion constraints, e.g. "code unique among live records", "scientific
@@ -691,9 +702,11 @@ class CreateView(FormView):
         if DRAFT in request.POST:    # TabbedForm.refresh_on: the form again with what was entered
             return self.draft_page(r.form(request, draft=request.POST))
         form = r.form(request, request.POST, request.FILES)
-        if not form.is_valid():
-            return self.page(form)
+        # Looked up before the form is checked again: a second sending would be refused as a clash with its own first
+        # record (a code taken).
         sent = form.sent_before()
+        if sent is None and not form.is_valid():
+            return self.page(form)
         if sent is None:
             try:
                 with transaction.atomic():

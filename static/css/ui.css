@@ -265,3 +265,11 @@ a.ui-btn { text-decoration: none; }
 /* The origin and age printed inside a value (farm/_water_source.html) read as the value face's small line */
 .ui-value b .wq-source { display: block; margin-top: 1px; color: var(--text-3); font-size: 13px; font-style: normal; font-weight: 400; white-space: nowrap; }
 .ui-table .row-sub { display: block; color: var(--text-3); font-size: 13px; }
+/* A long chip in the sticky unit column (a trial's placement) wraps inside its column instead of running under the next */
+.ui-table .sticky-first .badge { display: inline-block; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+@media (max-width: 639px) {
+  /* On a phone the two sticky columns leave room for the figures: the unit narrows, the row action may take two lines */
+  .ui-table .sticky-first { min-width: 6.5rem; max-width: 7.5rem; padding-inline: var(--space-3); }
+  .ui-table .sticky-end { padding-inline: var(--space-2); }
+  .ui-table .sticky-end .ui-btn { max-width: 5.5rem; padding: 0 var(--space-2); white-space: normal; line-height: 1.2; text-align: center; }
+}

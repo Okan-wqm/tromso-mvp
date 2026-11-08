@@ -1853,6 +1853,16 @@ msgstr[0] "Bir ilacın en fazla %(num)d satırı olabilir."
 msgstr[1] "Bir ilacın en fazla %(num)d satırı olabilir."
 
 #, python-format
+msgid "A medicine withdrawal holds batch %(batches)s, and this moves it: wait until it ends."
+msgid_plural "Medicine withdrawals hold batches %(batches)s, and this moves them: wait until they end."
+msgstr[0] ""
+"Bir ilaç bekleme süresi %(batches)s partisini tutuyor ve bu onu değiştirir: süre bitene kadar "
+"bekleyin."
+msgstr[1] ""
+"İlaç bekleme süreleri %(batches)s partilerini tutuyor ve bu onları değiştirir: süreler bitene "
+"kadar bekleyin."
+
+#, python-format
 msgid ""
 "A membrane (HDPE, PVC, EPDM) is %(low)s to %(high)s mm thick, concrete %(concrete_low)s to "
 "%(concrete_high)s mm."

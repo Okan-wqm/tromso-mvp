@@ -1852,6 +1852,12 @@ msgstr[0] "Et legemiddel har høyst %(num)d rad."
 msgstr[1] "Et legemiddel har høyst %(num)d rader."
 
 #, python-format
+msgid "A medicine withdrawal holds batch %(batches)s, and this moves it: wait until it ends."
+msgid_plural "Medicine withdrawals hold batches %(batches)s, and this moves them: wait until they end."
+msgstr[0] "En tilbakeholdelsestid holder fiskegruppe %(batches)s, og dette flytter den: vent til den er over."
+msgstr[1] "Tilbakeholdelsestider holder fiskegruppene %(batches)s, og dette flytter dem: vent til de er over."
+
+#, python-format
 msgid ""
 "A membrane (HDPE, PVC, EPDM) is %(low)s to %(high)s mm thick, concrete %(concrete_low)s to "
 "%(concrete_high)s mm."

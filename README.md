@@ -1858,15 +1858,24 @@ after the harvest, a longer course, a corrected temperature, a medicine's withdr
 acknowledged it or not: an acknowledgement counts only for the harvest, the batch and the withdrawal it names (when the
 harvest was recorded, or when the write that brought it inside was), never for another withdrawal of the same harvest.
 
-**The withdrawal guard** (audit F-195, F-188, F-196 and the two cross-reviews): every write that can create, grow, shorten
+**The withdrawal guard** (audit F-195, F-188, F-196 and the three cross-reviews): every write that can create, grow, shorten
 or end a medicine withdrawal goes through one function, `farm.health.withdrawal.guarded`: a treatment, its last day and its
 void, a medicated feeding and its void, a medicine's withdrawal rows, a water sample (a round too) and its void, every stock
-operation and its void, and on their Setup pages a feed's type, a species' assumed water temperature and a sampling point's
-active flag, kind and owner. **The data layer holds it** (`farm/withdrawal_gate.py`): those rows and fields refuse a change
-made anywhere but inside the guard, whatever writes it (a model's save or delete, a treatment's units, a queryset's update,
-delete or bulk create), so a new path that skips the guard fails at once; a test fixture, a command or a correction meant
-to write behind it says so with `withdrawal_gate.opened(reason)`. Migrations work on historical models and raw SQL is not
-seen.
+operation and its void, and on their Setup pages a feed's type, a species' assumed water temperature, a unit's loop (its
+system, whose samples count for a unit without its own) and a sampling point's active flag, kind and owner. Those pages
+(`farm/resources/withdrawal_input.py`) lock the fish the record reaches before the record itself, the order a stock
+operation and a water sample lock them in; a record changed between the edit's first read and its lock is refused as a
+crossed edit. A system, a unit, a species or a sampling point is **not deleted or restored** while a withdrawal holds fish
+it reaches (weighed as it stands live: the readers read live records, so a deleted unit's fish would show no withdrawal at
+all), or while water samples are on the point: its delete page says why (`withdrawal_blockers()`), and the gate refuses
+any other way of flipping the flag, the admin's restore included (shown as a message). **The data layer holds it**
+(`farm/withdrawal_gate.py`): those rows and fields refuse a change made anywhere but inside the guard, whatever writes it
+(a model's save or delete, `loaddata`, a treatment's units from either side or through their link table, a queryset's
+update, delete, bulk create or bulk update, a field named by its column alike), so a new path that skips the guard fails
+at once with a ValidationError; a test fixture, a command or a correction meant to write behind it says so with
+`withdrawal_gate.opened(reason)`. Migrations work on historical models and raw SQL is not seen. A test derives the columns
+the withdrawal readers read from the queries they run and fails on one that is neither registered nor said not to be an
+input (`farm/tests/test_withdrawal_gate_coverage.py`).
 
 Inside the write's transaction the guard locks the fish first (`farm.stock.services.lock_fish`: the batches, then the
 units, then the batches read again under the unit locks, so a batch that arrived in between is locked too; a harvest locks

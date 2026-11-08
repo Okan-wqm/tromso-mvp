@@ -630,8 +630,9 @@ that take the fish out of the units (OUR-03; the stock stays the only writer of 
   format (a newer `format_version`) is told apart from a change of records. The list marks a report when its
   `sources_fingerprint` no longer matches, re-read only for reports whose period is inside the backdating window
   or whose sources have no window (health events, treatments, harvest plans; E4). The rows a kind reads have a version
-  (`compute.SCOPE_VERSIONS`; sea lice 2: earlier counts, harvest plans and their harvests, lice medicines given for
-  another reason; planned slaughter 2: the harvests its plans were recorded as), kept with the filing
+  (each kind's module says it, `SCOPE_VERSION`, the default of its `scope()`, gathered in `compute.SCOPE_VERSIONS`; sea
+  lice 2: earlier counts, harvest plans and their harvests, lice medicines given for another reason; planned slaughter 2:
+  the harvests its plans were recorded as), kept with the filing
   (`ReportSnapshot.scope_version`, 1 for every report filed before): a filed report is re-read with the rows of its
   own version, so changing which rows a kind reads flags no report filed under the old ones.
 - **Correction**: "Start a correction" creates a report with `corrects` set; it is filled and submitted like any

@@ -18,7 +18,7 @@ given here yet": fail closed until the approval flow exists). For wip/owner-sett
 and build the approval flow. Test:
 `SecondPersonHookTests.test_the_platform_owners_setting_is_asked_in_one_place_before_a_withdrawal_is_gone_past`.
 
-## The withdrawal guard (F-195, F-188, F-196; cross-reviews 1 and 2)
+## The withdrawal guard (F-195, F-188, F-196; cross-reviews 1, 2 and 3)
 
 ONE function, `farm.health.withdrawal.guarded(user, batch_ids, today, write, *, seen, ...)`, is the gate of every write
 that can create, grow, shorten or end a withdrawal: `record_treatment`, `change_last_day`, `void_treatment`,
@@ -135,6 +135,49 @@ Cross-review 2 (REVIEW-CROSS-2-health.md), the coordinator's decisions:
 9. Scope versions on the snapshot (`scope_version`; lice and slaughter 2): done.
 Cost (30 -> 52 queries per feeding): recorded above for wip/perf.
 
+
+Cross-review 3 (REVIEW-CROSS-3-health.md, "land with follow-ups"); the reviewer's probes are tests now
+(`farm/tests/test_withdrawal_gate_coverage.py`, test commits ee7d434 and 6ee736f before the fix 046709a):
+
+1. A unit's loop: `Tank.system` is registered; the unit's edit page goes through `guarded_units` and asks (422 with the
+   released batch, then saved with the box). Root cause of the wider class: the readers read live records, so a deleted
+   unit's fish show no withdrawal at all (probed: held before, nothing after). A system, a unit, a species and a sampling
+   point carry `withdrawal_blockers()` (`farm.health.withdrawal.held_reached`: batches a withdrawal holds today among the
+   fish ever in the units, or of the species; samples on a point), which their `delete_blockers()` say on the delete page
+   and the gate holds for any write of `is_deleted` (`gate.CONDITIONAL`), weighed as the record stands live
+   (`blockers_while_live`: a restore is worked out in a savepoint rolled back). Deleting a system detaches its units, which
+   the registered `Tank.system` refuses too. Done.
+2. `_counts` and the save check name a field by its name or its column (`_field`): `unit_id` is `unit`. Done.
+3. The link table `Treatment.units.through` is registered; `m2m_changed` checks the link table, the instance's model and
+   the other side's; Django sends no save or delete signal for a link table it made, so its row's `save_base`/`delete`
+   say it to the gate. Done.
+4. `loaddata` is refused like any write (the `raw` skip removed; a fixture row is compared with the stored one). The
+   refusal is a `ValidationError` (`UnguardedWithdrawalWrite`), so the admin's restore shows "was not restored: ..." and
+   every form shows it. A point with samples is refused by the gate, not only by its delete page. Done.
+5. Lock order: `core.crud.UpdateView` reads the record, `Resource.edited` locks what the edit reaches, and `write()` locks
+   the record and checks its version did not move since the read (else "someone else changed it", `Crossed`). The four
+   Setup tabs share `WithdrawalInput` (`farm/resources/withdrawal_input.py`, each says only which units it reaches). The
+   test asserts the first batch lock comes before the point's. `lock_fish`'s late batch path is commented: a batch read
+   after the units are locked arrived by a committed operation; only an operation begun since, holding that batch and
+   waiting for one of the units, can cross it, and the database fails one of the two whole (deadlock detection). Done.
+6. Registry coverage: the test captures the SQL of `snapshot()` and `harvests_inside()`; every column a query filters,
+   joins or orders by, and every column it only loads whose field the readers' code names, is registered, conditional
+   or said not to be an input with why (per column, per table). Done.
+7. `SCOPE_VERSION` in `reports/compute/lice.py` and `slaughter.py`, the default of their `scope()`, gathered into
+   `compute.SCOPE_VERSIONS`. Done.
+
+Weak points of cross-review 3:
+
+- The coverage test's "loaded only" rule is a name scan of the readers' source: a column read through `getattr` with a
+  computed name, or by a reader module not in `READERS`, is not seen. Columns that share a name with something else in
+  the readers (a reading's `status`) are listed with why.
+- A feed's type edit reaches the units it fed as read before the lock; a feeding with that feed recorded on another unit
+  in between is not in the question (the feeding itself went through the guard). Same for a species' new batches.
+- The gate's own message is English and technical ("Tank: is_deleted changed (...) outside the withdrawal guard"); the
+  reason inside it is translated. A person sees it only on a path that skipped the delete page (the admin's restore).
+- `held_reached` works the withdrawals of every batch ever in the units: a delete page of a unit with a long history reads
+  more than before (one reader, as `guarded_units` does).
+
 ## Not fixed, and why
 
 - F-193, F-194: projection model changes; filed reports are frozen.
@@ -155,7 +198,7 @@ Cost (30 -> 52 queries per feeding): recorded above for wip/perf.
 
 - wip/fix-integrity removes `_day` from `farm/health/views.py`: `_site_weeks` uses its own `_iso_day_or_none`.
 - farm 0027 is this branch's; the other branches renumber after it.
-- `config/settings.py` gains one middleware line (`farm.middleware.WithdrawalAcknowledgementMiddleware`).
+- `config/settings.py` is unchanged (cross-review 2 dropped the middleware).
 
 ## Checks run
 

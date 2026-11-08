@@ -197,3 +197,25 @@ class CheckedUnderTheLockTests(EmploymentCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('Ann left on 31 Mar 2026.', response.context['form'].non_field_errors())
         self.assertEqual(self.counts(), before)
+
+
+class LockOrderTests(EmploymentCase):
+    """HR takes its locks person first, then the person's records (plan_shifts, clock-in, leave_company already do): an
+    approval and an edit of a leave lock the person before the leave, so they never wait on each other the other way
+    round. The person is locked FOR NO KEY UPDATE: a record being added for them (which holds a key-share lock on the
+    person) does not deadlock with it."""
+
+    def locks(self, call):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        with CaptureQueriesContext(connection) as seen:
+            call()
+        return [query['sql'].split(' FROM ')[1].split()[0].strip('"') + (' no key' if 'NO KEY' in query['sql'] else '')
+                for query in seen.captured_queries if 'FOR ' in query['sql'] and 'UPDATE' in query['sql']]
+
+    def test_an_approval_locks_the_person_before_the_leave(self):
+        Employee.objects.filter(pk=self.in_a.pk).update(left_on=None)
+        pending = LeaveRequest.objects.create(employee=self.in_a, leave_type=self.annual, first_day=date(2026, 3, 2),
+                                              last_day=date(2026, 3, 3))
+        taken = self.locks(lambda: services.decide_leave(self.everyone, pending, approve=True))
+        self.assertEqual(taken[:2], ['employees no key', 'leave_requests'])

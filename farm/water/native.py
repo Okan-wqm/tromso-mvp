@@ -110,3 +110,5 @@ box_of = chemcore.box_of
 geometry = chemcore.geometry
 safe_zone = chemcore.safe_zone
 safe_zone_gaps = chemcore.safe_zone_gaps
+
+clip_polyline = chemcore.clip_polyline

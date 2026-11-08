@@ -705,6 +705,13 @@ fn geometry<'py>(
     Ok(dict)
 }
 
+/// The parts of a polyline inside a box (DIC end, alkalinity end, steps): Liang-Barsky per segment, joined within
+/// 1e-9 (the small plots' clipping too).
+#[pyfunction]
+fn clip_polyline(points: Vec<Point>, chart: (f64, f64, f64, f64)) -> PyResult<Vec<Vec<Point>>> {
+    Ok(g::clip_polyline(&points, &chart_box(chart)))
+}
+
 #[pymodule]
 fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("NonFiniteError", module.py().get_type::<NonFiniteError>())?;
@@ -760,6 +767,7 @@ fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
         wrap_pyfunction!(safe_zone_gaps, module)?,
         wrap_pyfunction!(safe_zone, module)?,
         wrap_pyfunction!(geometry, module)?,
+        wrap_pyfunction!(clip_polyline, module)?,
     ] {
         module.add_function(function)?;
     }

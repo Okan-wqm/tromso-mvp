@@ -22,8 +22,8 @@ from dataclasses import dataclass, field
 
 from django.utils.translation import gettext, gettext_lazy as _
 
-from . import chemistry
-from .deffeyes import ALERT_PH, OMEGA_SALINITY, PH_RANGE, Box, clip_polyline, shown
+from . import chemistry, native
+from .deffeyes import ALERT_PH, OMEGA_SALINITY, PH_RANGE, Box, shown
 from .evaluate import Status
 
 STEP = 0.05                  # pH between two points of a curve
@@ -235,7 +235,7 @@ def draw(plot):
     series = []
     for key, name, curve in plot.series:
         shifted = [(ph - x_low, value - y_low) for ph, value in curve]
-        for line in clip_polyline(shifted, box):
+        for line in native.clip_polyline(shifted, (box.dic, box.alkalinity, box.dic_step, box.alkalinity_step)):
             series.append({'key': key, 'name': str(name),
                            'points': ' '.join(f'{_fixed(x(a + x_low))},{_fixed(y(b + y_low))}' for a, b in line)})
     return Drawing(

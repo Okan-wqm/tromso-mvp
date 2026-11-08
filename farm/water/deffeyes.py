@@ -41,7 +41,7 @@ from decimal import Decimal
 from django.utils import formats
 from django.utils.translation import gettext_lazy as _
 
-from . import chemistry, native
+from . import chemistry, messages, native
 from .evaluate import Status
 
 PH_RANGE = native.PH_RANGE                                   # the chart's pH domain (the source's), 4 to 12.5
@@ -50,7 +50,6 @@ LABELLED_PHS = {round(5.0 + 0.5 * step, 1) for step in range(15)}
 AXIS = native.AXIS            # the axes' ends at least: 6 mmol/L DIC and 6 meq/L alkalinity
 ALERT_PH = native.ALERT_PH    # a pH border nearer than this (0.2) is a warning
 OMEGA_SALINITY = (5, 44)      # the salinities Mucci (1983) measured
-SAMPLES = 96                  # points along a curve
 
 LAYERS = [
     ('isolines', _('pH isolines')),
@@ -212,69 +211,6 @@ def box_of(analysis, extra=()):
                               [tuple(point) for point in extra]))
 
 
-def _clip(polygon, inside):
-    """Sutherland–Hodgman: the part of a polygon where the linear function `inside` is ≥ 0."""
-    kept = []
-    for index, current in enumerate(polygon):
-        previous = polygon[index - 1]
-        now, before = inside(current), inside(previous)
-        if now >= 0:
-            if before < 0:
-                kept.append(_cross(previous, current, before, now))
-            kept.append(current)
-        elif before >= 0:
-            kept.append(_cross(previous, current, before, now))
-    return kept
-
-
-def _cross(start, end, at_start, at_end):
-    share = at_start / (at_start - at_end)
-    return start[0] + share * (end[0] - start[0]), start[1] + share * (end[1] - start[1])
-
-
-def clip_to_box(polygon, box):
-    for inside in (lambda p: p[0], lambda p: box.dic - p[0], lambda p: p[1], lambda p: box.alkalinity - p[1]):
-        if not polygon:
-            break
-        polygon = _clip(polygon, inside)
-    return polygon if len(polygon) >= 3 else []
-
-
-def clip_segment(start, end, box):
-    """Liang–Barsky: the part of a segment inside the box, or None."""
-    low, high = 0.0, 1.0
-    dx, dy = end[0] - start[0], end[1] - start[1]
-    for p, q in ((-dx, start[0]), (dx, box.dic - start[0]), (-dy, start[1]), (dy, box.alkalinity - start[1])):
-        if p == 0:
-            if q < 0:
-                return None
-            continue
-        ratio = q / p
-        if p < 0:
-            low = max(low, ratio)
-        else:
-            high = min(high, ratio)
-        if low > high:
-            return None
-    if high - low < 1e-12:
-        return None
-    return (start[0] + low * dx, start[1] + low * dy), (start[0] + high * dx, start[1] + high * dy)
-
-
-def clip_polyline(points, box):
-    """The parts of a polyline inside the box: a list of polylines."""
-    lines = []
-    for start, end in zip(points, points[1:]):
-        part = clip_segment(start, end, box)
-        if part is None:
-            continue
-        if lines and math.dist(lines[-1][-1], part[0]) < 1e-9:
-            lines[-1].append(part[1])
-        else:
-            lines.append([part[0], part[1]])
-    return lines
-
-
 @dataclass(frozen=True)
 class Isoline:
     ph: float
@@ -300,62 +236,20 @@ class Geometry:
     notes: list = field(default_factory=list)
 
 
-def _isoline_segment(eq, ph, box):
-    slope, intercept = eq.isoline(ph)
-    return clip_segment((0.0, intercept), (box.dic, slope * box.dic + intercept), box)
-
-
-def _half(eq, ph, box, above):
-    """The part of the box above (higher pH) or below a pH's isoline."""
-    slope, intercept = eq.isoline(ph)
-    sign = 1 if above else -1
-    return clip_to_box(_clip(box.corners(), lambda p: sign * (p[1] - slope * p[0] - intercept)), box)
-
-
-def co2_curve(eq, co2, box):
-    """The curve where CO₂ = `co2` (mmol/L) inside the box, from where it enters at alkalinity 0 to where it
-    leaves at the top or the right, each point on it: [(DIC, alkalinity)], and whether it leaves at the top.
-    Along it the pH and the alkalinity rise with the DIC. ([], False) when it does not cross the box."""
-    def alkalinity_at(dic):
-        return eq.alkalinity(dic, eq.ph_where_co2_at_dic(dic, co2))
-
-    if co2 >= box.dic or alkalinity_at(box.dic) <= 0:
-        return [], False
-    start = chemistry.solve(alkalinity_at, co2 * (1 + 1e-9), box.dic)
-    leaves_top = alkalinity_at(box.dic) > box.alkalinity
-    stop = chemistry.solve(lambda dic: alkalinity_at(dic) - box.alkalinity, start, box.dic) if leaves_top else box.dic
-    points = [(start, 0.0)]
-    for step in range(1, SAMPLES):
-        dic = start + (stop - start) * step / SAMPLES
-        points.append((dic, alkalinity_at(dic)))
-    points.append((stop, box.alkalinity if leaves_top else alkalinity_at(stop)))
-    return points, leaves_top
-
-
-def _co2_region(curve, leaves_top, box):
-    corners = [(box.dic, box.alkalinity)] if leaves_top else []
-    return [*curve, *corners, (box.dic, 0.0)]
+def _inputs(analysis):
+    """What the core needs of an analysis: its water and limits as dicts, its target as (pH, alkalinity), its pressure."""
+    target = analysis.target
+    return (asdict(analysis.water), asdict(analysis.limits),
+            None if target is None else (target.ph, target.alkalinity_mg_l), analysis.pressure_atm)
 
 
 def safe_zone_gaps(analysis):
-    """Why there can be no safe zone, as notes: a missing value is never taken for a safe one. Every limit the
-    zone is bounded by must be judged: the TAN and its NH₃ limit, the CO₂ limit, the alkalinity band, and an
-    H₂S limit when a total sulfide is given. A water without a total sulfide is not a gap: its zone is drawn,
-    named "H₂S not assessed"."""
-    limits, gaps = analysis.limits, []
-    if limits.alkalinity_low_mg_l is None or limits.alkalinity_high_mg_l is None:
-        gaps.append(_('Safe zone: not drawn without the alkalinity band.'))
-    elif limits.alkalinity_low_mg_l >= limits.alkalinity_high_mg_l:
-        gaps.append(_('Safe zone: not drawn, the alkalinity band is empty (its high end is not above its low end).'))
-    if analysis.nh3.status == Status.NOT_MEASURED:
-        gaps.append(_('Safe zone: not drawn without the TAN.'))
-    elif analysis.nh3.status == Status.NO_LIMIT:
-        gaps.append(_('Safe zone: not drawn without the NH₃ limit.'))
-    if analysis.co2.status == Status.NO_LIMIT:
-        gaps.append(_('Safe zone: not drawn without the CO₂ limit.'))
-    if analysis.h2s.status == Status.NO_LIMIT:
-        gaps.append(_('Safe zone: not drawn without the H₂S limit, a total sulfide being given.'))
-    return gaps
+    """Why there can be no safe zone, as notes (the core's codes, said by farm/water/messages.py): a missing value is
+    never taken for a safe one. Every limit the zone is bounded by must be judged: the TAN and its NH₃ limit, the CO₂
+    limit, the alkalinity band, and an H₂S limit when a total sulfide is given. A water without a total sulfide is not
+    a gap: its zone is drawn, named "H₂S not assessed"."""
+    water, limits, target, pressure = _inputs(analysis)
+    return [messages.note(code) for code in native.safe_zone_gaps(water, limits, target, pressure)]
 
 
 def h2s_assessed(analysis):
@@ -364,150 +258,34 @@ def h2s_assessed(analysis):
 
 
 def safe_zone(analysis, box):
-    """The safe region: the alkalinity band, from the NH₃ isoline (the highest pH allowed; the chart's top pH
-    when the TAN cannot reach its limit) to the CO₂ curve or the H₂S isoline, whichever is the higher pH.
+    """The safe region in a box (the core's): the alkalinity band, from the NH₃ isoline (the highest pH allowed; the
+    chart's top pH when the TAN cannot reach its limit) to the CO₂ curve or the H₂S isoline, whichever is the higher pH.
     [] when a value or a limit it needs is missing (safe_zone_gaps), or when the band has no safe pH."""
-    if safe_zone_gaps(analysis):
-        return []
-    limits, eq = analysis.limits, analysis.equilibria
-    low = limits.alkalinity_low_mg_l / chemistry.MG_CACO3_PER_MEQ
-    high = limits.alkalinity_high_mg_l / chemistry.MG_CACO3_PER_MEQ
-    top = analysis.nh3.ph if analysis.nh3.ph is not None else PH_RANGE[1]
-    co2 = limits.co2_mg_l / chemistry.MG_CO2_PER_MMOL
-    h2s = analysis.h2s.ph
-
-    def co2_alkalinity(ph):
-        """The alkalinity whose CO₂ border is this pH: the CO₂ curve's point on the pH's isoline."""
-        return eq.alkalinity(co2 / eq.fractions(ph)[0], ph)
-
-    def floor(alkalinity):
-        floors = [PH_RANGE[0]]
-        border = eq.ph_where_co2(alkalinity, co2)
-        if border is not None:
-            floors.append(border)
-        if h2s is not None:
-            floors.append(h2s)
-        return max(floors)
-
-    rows = {low + (high - low) * step / (SAMPLES // 2) for step in range(SAMPLES // 2 + 1)}
-    closes = co2_alkalinity(top)                   # the CO₂ border meets the NH₃ border here
-    rows |= {alkalinity for alkalinity in (closes, co2_alkalinity(h2s) if h2s is not None else None)
-             if alkalinity is not None and low < alkalinity < high}
-    rows = sorted(row for row in rows if row <= closes and (floor(row) < top or row == closes))
-    if len(rows) < 2:
-        return []
-    left = [(eq.dic(row, top), row) for row in rows]
-    right = [(eq.dic(row, top if row == closes else floor(row)), row) for row in reversed(rows)]
-    return clip_to_box(left + right, box)
-
-
-def omega_line(eq, calcium_mg_l, ksp, box):
-    """The line Ω = 1 (calcium × carbonate = Ksp) inside the box: for each DIC the pH where its carbonate is
-    Ksp ÷ calcium, from just above that carbonate (the source's start) to the box's right edge."""
-    carbonate = ksp / (calcium_mg_l / chemistry.MG_CALCIUM_PER_MOL) * 1000      # mmol/L
-    start = max(carbonate + 0.01, 0.05)
-    if start >= box.dic:
-        return []
-    points = []
-    for step in range(SAMPLES + 1):
-        dic = start + (box.dic - start) * step / SAMPLES
-        ph = eq.ph_where_carbonate(dic, carbonate)
-        if ph is not None:
-            points.append((dic, eq.alkalinity(dic, ph)))
-    return clip_polyline(points, box)
+    water, limits, target, pressure = _inputs(analysis)
+    return native.safe_zone(water, limits, (box.dic, box.alkalinity, box.dic_step, box.alkalinity_step), target, pressure)
 
 
 def geometry(analysis, layers=ALL_LAYERS, dosing=None, simulator=(), extent=()):
-    """The chart of an analysis, the layers asked for, in the chart's units; a note says why a layer asked
-    for is not drawn. `dosing`: the dosing layer (a dosing.Visual); `simulator`: the water after each step of
-    the simulator, (DIC, alkalinity), the water first; `extent`: more points (DIC, alkalinity) the box must hold, drawn
-    as nothing (a replay's frames, A6)."""
-    eq, limits, water = analysis.equilibria, analysis.limits, analysis.water
-    show_target = 'target' in layers and analysis.target is not None
-    path = dosing is not None and 'dosing' in layers and show_target and bool(dosing.path)
-    simulator = list(simulator) if 'simulator' in layers and len(simulator) > 1 else []
-    box = box_of(analysis, [*simulator, *([dosing.waypoint] if path else []), *extent])
-    shape = Geometry(box, point=(analysis.dic, analysis.alkalinity_meq))
-    if 'isolines' in layers:
-        for ph in ISOLINE_PHS:
-            segment = _isoline_segment(eq, ph, box)
-            if segment is not None:
-                shape.isolines.append(Isoline(ph, ph in LABELLED_PHS, segment))
-    if 'nh3' in layers:
-        _toxic_region(shape, eq, 'nh3', analysis.nh3, above=True, note=_nh3_note(analysis))
-    if 'co2' in layers:
-        if limits.co2_mg_l is not None:
-            curve, leaves_top = co2_curve(eq, limits.co2_mg_l / chemistry.MG_CO2_PER_MMOL, box)
-            if curve:
-                shape.regions['co2'] = clip_to_box(_co2_region(curve, leaves_top, box), box)
-                shape.boundaries['co2'] = [curve]
-        else:
-            shape.notes.append(_('CO₂: no limit given.'))
-    if 'h2s' in layers:
-        _toxic_region(shape, eq, 'h2s', analysis.h2s, above=False, note=_h2s_note(analysis))
-    if 'safe' in layers:
-        gaps = safe_zone_gaps(analysis)
-        zone = safe_zone(analysis, box)
-        if gaps:
-            shape.notes.extend(gaps)
-        elif zone:
-            shape.regions['safe'] = zone
-            if not h2s_assessed(analysis):
-                shape.notes.append(_('Safe zone: H₂S not assessed, no total sulfide given.'))
-        else:
-            shape.notes.append(_('Safe zone: no pH in the alkalinity band is inside every limit.'))
-    if 'omega' in layers:
-        if water.calcium_mg_l and OMEGA_SALINITY[0] <= water.salinity_ppt <= OMEGA_SALINITY[1]:
-            shape.omega['calcite'] = omega_line(eq, water.calcium_mg_l, eq.ksp_calcite, box)
-            shape.omega['aragonite'] = omega_line(eq, water.calcium_mg_l, eq.ksp_aragonite, box)
-        else:
-            shape.notes.append(_('Ω: needs the calcium and a salinity of 5 to 44 ‰, the range of Mucci (1983).'))
-    if show_target:
-        shape.target = (analysis.target_dic, analysis.target_alkalinity_meq)
-    if dosing is not None and 'dosing' in layers:
-        for reagent, line in dosing.lines:
-            shape.reagent_lines.append((reagent, clip_polyline(line, box)))
-        shape.wedge = clip_to_box(dosing.wedge, box) if dosing.wedge else []
-        if path:
-            shape.dosing_path = clip_polyline(dosing.path, box)
-            shape.waypoint = dosing.waypoint
-        if dosing.note:
-            shape.notes.append(dosing.note)
-    shape.simulator = simulator
+    """The chart of an analysis, the layers asked for, in the chart's units (the core's,
+    chemcore/core/src/geometry.rs); a note says why a layer asked for is not drawn. `dosing`: the dosing layer (a
+    dosing.Visual); `simulator`: the water after each step of the simulator, (DIC, alkalinity), the water first;
+    `extent`: more points (DIC, alkalinity) the box must hold, drawn as nothing (a replay's frames, A6)."""
+    water, limits, target, pressure = _inputs(analysis)
+    drawn = None if dosing is None else {
+        'lines': [(reagent.key, line) for reagent, line in dosing.lines], 'wedge': list(dosing.wedge or []),
+        'path': list(dosing.path or []), 'waypoint': dosing.waypoint}
+    found = native.geometry(water, limits, target, pressure, sorted(layers), drawn,
+                            [tuple(point) for point in simulator], [tuple(point) for point in extent])
+    reagents = {} if dosing is None else {reagent.key: reagent for reagent, _line in dosing.lines}
+    shape = Geometry(
+        Box(*found['box']), isolines=[Isoline(ph, labelled, segment) for ph, labelled, segment in found['isolines']],
+        regions=found['regions'], boundaries=found['boundaries'], omega=found['omega'], point=found['point'],
+        target=found['target'], reagent_lines=[(reagents[key], lines) for key, lines in found['reagent_lines']],
+        wedge=found['wedge'], dosing_path=found['dosing_path'], waypoint=found['waypoint'],
+        simulator=found['simulator'], notes=[messages.note(code) for code in found['notes']])
+    if dosing is not None and 'dosing' in layers and dosing.note:
+        shape.notes.append(dosing.note)
     return shape
-
-
-def _toxic_region(shape, eq, key, border, above, note):
-    """The region past a limit's border (above its isoline for NH₃, below for H₂S), shaded from the real
-    border wherever it meets the plotted box, whether or not the border is inside the chart's pH range: a
-    large box reaches past pH 12.5 or below 4. The note when there is nothing to shade."""
-    region = _half(eq, border.ph, shape.box, above=above) if border.ph is not None else []
-    if region:
-        shape.regions[key] = region
-        segment = _isoline_segment(eq, border.ph, shape.box)
-        shape.boundaries[key] = [list(segment)] if segment else []
-    else:
-        shape.notes.append(note)
-
-
-def _nh3_note(analysis):
-    if analysis.nh3.status == Status.NOT_MEASURED:
-        return _('NH₃: give the TAN.')
-    if analysis.nh3.status == Status.NO_LIMIT:
-        return _('NH₃: no limit given.')
-    if analysis.nh3.ph is not None:
-        return _('NH₃: the limit is not reached anywhere on this chart.')
-    return _('NH₃: the TAN cannot give the limit at any pH (the limit is not below the TAN).')
-
-
-def _h2s_note(analysis):
-    if analysis.h2s.status == Status.NOT_MEASURED:
-        return _('H₂S: give the total sulfide.')
-    if analysis.h2s.status == Status.NO_LIMIT:
-        return _('H₂S: no limit given.')
-    if analysis.h2s.ph is not None:
-        return _('H₂S: the limit is not reached anywhere on this chart.')
-    return _('H₂S: the total sulfide cannot give the limit at any pH.')
 
 
 # ---- the SVG --------------------------------------------------------------------------------------------

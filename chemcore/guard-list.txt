@@ -32,14 +32,12 @@ name clip_segment
 name clip_to_box
 name co2_curve
 name co2_from_air
-name co2_region
 name core_hash
 name direction_line
 name free_to_sws
 name free_to_total
 name from_code
 name h2s_assessed
-name h2s_note
 name h2s_plot
 name h2s_share
 name ionic_strength
@@ -57,7 +55,6 @@ name ksp_calcite
 name kw_total
 name molar_mass
 name nh3_fraction
-name nh3_note
 name nh3_plot
 name nh3_share
 name nice_step
@@ -83,7 +80,6 @@ name sws_to_nbs
 name total_boron
 name total_fluoride
 name total_sulfate
-name toxic_region
 name vapour_pressure_atm
 name why_impossible
 number 2.25577e-05

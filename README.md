@@ -3434,7 +3434,8 @@ unit's chart), each refusing a user without its permission.
 | S4 the constants, the equilibria, the solver, the gases: `farm/water/chemistry.py` is a door to the core | done |
 | S5 the analysis (judge, analyse, the alkalinity floor, the box): deffeyes.py's analysis is a door to the core | done |
 | A replay page's box worked out once (its largest DIC and alkalinity), not every point for every figure | done |
-| S6 to S10 the chart, the dosing, the scene, the replay batch, the retirement audit | in progress |
+| S6 the chart in its own units (box, isolines, regions, borders, safe zone, Omega, dosing clipped): deffeyes.py's geometry is a door to the core; the notes are codes, farm/water/messages.py says them | done |
+| S7 to S10 the dosing, the small charts, the scene, the replay batch, the retirement audit | in progress |
 | I2 fresh-water ionic strength (golden v3 beside v1, the owner sees it before any switch) | after S10 |
 
 ## Languages

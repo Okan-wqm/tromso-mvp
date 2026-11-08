@@ -87,7 +87,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -189,7 +189,7 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Critical · <day+0>, <time> · <age> ago",
-    "Critical · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude.",
+    "Critical · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 5.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00.",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
@@ -299,7 +299,7 @@
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "Warning · <day+0>, <time> · <age> ago",
-    "Warning · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "Warning · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 6.50 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -406,7 +406,7 @@
     "Not weighed since the fish came in.",
     "Stale · <day-1>, <time> · <age> ago",
     "Stale · <day-1>, <time> · <age> ago",
-    "Stale · <day-1>, <time> · <age> ago · worked out from the sample · Worked out from 9.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "Stale · <day-1>, <time> · <age> ago · worked out from the sample · Worked out from 9.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 8.80 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -596,7 +596,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -701,7 +701,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -806,7 +806,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -911,7 +911,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -955,7 +955,7 @@
     ],
     [
      "O₂ (%)",
-     "95.0"
+     "95.0*"
     ],
     [
      "O₂ (mg/L)",
@@ -1013,8 +1013,8 @@
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · Judged as 9.99 mg/L. Worked out from 13.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Limit: Atlantic salmon: critical below 6.00, warning below 7.00.",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s."
    ],
    "links": {
     "unit": [
@@ -1123,7 +1123,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -1234,7 +1234,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -1340,7 +1340,7 @@
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 16.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 16.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 8.40 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00.",
     "Warning · <day+0>, <time> · <age> ago"
    ],
    "links": {
@@ -1451,7 +1451,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -1559,7 +1559,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -1667,7 +1667,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -1775,7 +1775,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -1881,7 +1881,7 @@
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -2072,7 +2072,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.2 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.2 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 8.10 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -2223,7 +2223,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -2365,7 +2365,7 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Critical · <day+0>, <time> · <age> ago",
-    "Critical · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude.",
+    "Critical · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 5.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00.",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
@@ -2515,7 +2515,7 @@
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "Warning · <day+0>, <time> · <age> ago",
-    "Warning · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "Warning · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 6.50 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -2662,7 +2662,7 @@
     "Not weighed since the fish came in.",
     "Stale · <day-1>, <time> · <age> ago",
     "Stale · <day-1>, <time> · <age> ago",
-    "Stale · <day-1>, <time> · <age> ago · worked out from the sample · Worked out from 9.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "Stale · <day-1>, <time> · <age> ago · worked out from the sample · Worked out from 9.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 8.80 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -2940,7 +2940,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -3089,7 +3089,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -3240,7 +3240,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -3389,7 +3389,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -3469,7 +3469,7 @@
     ],
     [
      "O₂ (%)",
-     "95.0"
+     "95.0*"
     ],
     [
      "O₂ (mg/L)",
@@ -3531,8 +3531,8 @@
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · Judged as 9.99 mg/L. Worked out from 13.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Limit: Atlantic salmon: critical below 6.00, warning below 7.00.",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s."
    ],
    "links": {
     "unit": [
@@ -3687,7 +3687,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -3842,7 +3842,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -3994,7 +3994,7 @@
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 16.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 16.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 8.40 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00.",
     "Warning · <day+0>, <time> · <age> ago"
    ],
    "links": {
@@ -4149,7 +4149,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -4301,7 +4301,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -4453,7 +4453,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -4605,7 +4605,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -4757,7 +4757,7 @@
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -5036,7 +5036,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.2 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.2 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 8.10 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -5143,7 +5143,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -5245,7 +5245,7 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Critical · <day+0>, <time> · <age> ago",
-    "Critical · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude.",
+    "Critical · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 5.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00.",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
@@ -5355,7 +5355,7 @@
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "Warning · <day+0>, <time> · <age> ago",
-    "Warning · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "Warning · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 6.50 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -5462,7 +5462,7 @@
     "Not weighed since the fish came in.",
     "Stale · <day-1>, <time> · <age> ago",
     "Stale · <day-1>, <time> · <age> ago",
-    "Stale · <day-1>, <time> · <age> ago · worked out from the sample · Worked out from 9.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "Stale · <day-1>, <time> · <age> ago · worked out from the sample · Worked out from 9.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 8.80 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -5652,7 +5652,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -5757,7 +5757,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -5862,7 +5862,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -5967,7 +5967,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -6011,7 +6011,7 @@
     ],
     [
      "O₂ (%)",
-     "95.0"
+     "95.0*"
     ],
     [
      "O₂ (mg/L)",
@@ -6069,8 +6069,8 @@
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · Judged as 9.99 mg/L. Worked out from 13.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Limit: Atlantic salmon: critical below 6.00, warning below 7.00.",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s."
    ],
    "links": {
     "unit": [
@@ -6179,7 +6179,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -6290,7 +6290,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -6396,7 +6396,7 @@
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 16.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 16.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 8.40 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00.",
     "Warning · <day+0>, <time> · <age> ago"
    ],
    "links": {
@@ -6507,7 +6507,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -6615,7 +6615,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -6723,7 +6723,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -6831,7 +6831,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -6937,7 +6937,7 @@
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -7128,7 +7128,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.2 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.2 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 8.10 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -7266,7 +7266,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -7368,7 +7368,7 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Critical · <day+0>, <time> · <age> ago",
-    "Critical · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude.",
+    "Critical · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 5.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00.",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
@@ -7478,7 +7478,7 @@
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "Warning · <day+0>, <time> · <age> ago",
-    "Warning · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "Warning · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 6.50 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -7585,7 +7585,7 @@
     "Not weighed since the fish came in.",
     "Stale · <day-1>, <time> · <age> ago",
     "Stale · <day-1>, <time> · <age> ago",
-    "Stale · <day-1>, <time> · <age> ago · worked out from the sample · Worked out from 9.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "Stale · <day-1>, <time> · <age> ago · worked out from the sample · Worked out from 9.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 8.80 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -7775,7 +7775,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -7880,7 +7880,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -8031,7 +8031,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -8136,7 +8136,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -8180,7 +8180,7 @@
     ],
     [
      "O₂ (%)",
-     "95.0"
+     "95.0*"
     ],
     [
      "O₂ (mg/L)",
@@ -8238,8 +8238,8 @@
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · Judged as 9.99 mg/L. Worked out from 13.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Limit: Atlantic salmon: critical below 6.00, warning below 7.00.",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s."
    ],
    "links": {
     "unit": [
@@ -8348,7 +8348,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -8459,7 +8459,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -8565,7 +8565,7 @@
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 16.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 16.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 8.40 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00.",
     "Warning · <day+0>, <time> · <age> ago"
    ],
    "links": {
@@ -8676,7 +8676,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -8784,7 +8784,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -8892,7 +8892,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -9000,7 +9000,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -9106,7 +9106,7 @@
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -9341,7 +9341,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.2 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.2 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 8.10 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -9485,7 +9485,7 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Critical · <day+0>, <time> · <age> ago",
-    "Critical · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude.",
+    "Critical · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 5.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00.",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
@@ -9594,7 +9594,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -9745,7 +9745,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -9900,7 +9900,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -10135,7 +10135,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.2 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.2 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 8.10 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -10286,7 +10286,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -10428,7 +10428,7 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Critical · <day+0>, <time> · <age> ago",
-    "Critical · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude.",
+    "Critical · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 5.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00.",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
@@ -10578,7 +10578,7 @@
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "Warning · <day+0>, <time> · <age> ago",
-    "Warning · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "Warning · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 6.50 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -10725,7 +10725,7 @@
     "Not weighed since the fish came in.",
     "Stale · <day-1>, <time> · <age> ago",
     "Stale · <day-1>, <time> · <age> ago",
-    "Stale · <day-1>, <time> · <age> ago · worked out from the sample · Worked out from 9.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "Stale · <day-1>, <time> · <age> ago · worked out from the sample · Worked out from 9.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 8.80 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -11003,7 +11003,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -11152,7 +11152,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -11303,7 +11303,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -11452,7 +11452,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -11532,7 +11532,7 @@
     ],
     [
      "O₂ (%)",
-     "95.0"
+     "95.0*"
     ],
     [
      "O₂ (mg/L)",
@@ -11594,8 +11594,8 @@
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · Judged as 9.99 mg/L. Worked out from 13.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Limit: Atlantic salmon: critical below 6.00, warning below 7.00.",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s."
    ],
    "links": {
     "unit": [
@@ -11750,7 +11750,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -11905,7 +11905,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -12057,7 +12057,7 @@
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 16.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 16.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 8.40 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00.",
     "Warning · <day+0>, <time> · <age> ago"
    ],
    "links": {
@@ -12212,7 +12212,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -12364,7 +12364,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -12516,7 +12516,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -12668,7 +12668,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -12820,7 +12820,7 @@
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -13099,7 +13099,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.2 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.2 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 8.10 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -14494,7 +14494,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -14571,7 +14571,7 @@
    ],
    "titles": [
     "Critical · <day+0>, <time> · <age> ago",
-    "Critical · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude.",
+    "Critical · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 5.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00.",
     "OK · <day+0>, <time> · <age> ago"
    ],
    "links": {
@@ -14650,7 +14650,7 @@
    "titles": [
     "OK · <day+0>, <time> · <age> ago",
     "Warning · <day+0>, <time> · <age> ago",
-    "Warning · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "Warning · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 6.50 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -14728,7 +14728,7 @@
    "titles": [
     "Stale · <day-1>, <time> · <age> ago",
     "Stale · <day-1>, <time> · <age> ago",
-    "Stale · <day-1>, <time> · <age> ago · worked out from the sample · Worked out from 9.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "Stale · <day-1>, <time> · <age> ago · worked out from the sample · Worked out from 9.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 8.80 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -14860,7 +14860,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -14937,7 +14937,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -15014,7 +15014,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -15091,7 +15091,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -15127,7 +15127,7 @@
     ],
     [
      "O₂ (%)",
-     "95.0"
+     "95.0*"
     ],
     [
      "O₂ (mg/L)",
@@ -15165,8 +15165,8 @@
    ],
    "titles": [
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · Judged as 9.99 mg/L. Worked out from 13.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Limit: Atlantic salmon: critical below 6.00, warning below 7.00.",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s."
    ],
    "links": {
     "unit": [
@@ -15243,7 +15243,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -15324,7 +15324,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -15400,7 +15400,7 @@
    ],
    "titles": [
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 16.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 16.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 8.40 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00.",
     "Warning · <day+0>, <time> · <age> ago"
    ],
    "links": {
@@ -15478,7 +15478,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -15555,7 +15555,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -15632,7 +15632,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -15709,7 +15709,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -15786,7 +15786,7 @@
    "titles": [
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.0 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 9.00 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [
@@ -15915,7 +15915,7 @@
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.2 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude."
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · Worked out from 13.2 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s. Judged as 8.10 mg/L. Limit: Atlantic salmon: critical below 6.00, warning below 7.00."
    ],
    "links": {
     "unit": [

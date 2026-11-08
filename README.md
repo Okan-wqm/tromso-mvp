@@ -3597,7 +3597,9 @@ real mail.
 | `static/css/app.css` | Console shell layout |
 | `frontend/`, `tsconfig.json`, `package.json` | Browser code in TypeScript |
 | `tsconfig.test.json`, `scripts/mark-esm.mjs` | The TypeScript unit tests' build (`npm test`) |
-| `scripts/test.sh`, `scripts/testrunner/` | The whole suite in Docker, in parallel, on a database server of its own (Tests) |
+| `scripts/test.sh`, `scripts/testrunner/` | The whole suite in Docker, in parallel, on a database server of its own (Tests); `in-container.sh` the checks and the run inside the container, deprecations as errors |
+| `config/test_runner.py`, `config/tests.py` | The test runner: the parallel suite, fast password hashing, warnings as errors (Tests) |
+| `.github/workflows/ci.yml`, `.github/dependabot.yml`, `sensors-ingest/rust-toolchain.toml` | CI, dependency updates and the ingest's pinned toolchain (CI and dependency updates) |
 
 ## Tests
 
@@ -3665,3 +3667,74 @@ as ES modules and `node --test` runs it; without Node the test is skipped, under
 (`tsconfig.json`) leaves the tests out, and the no-UI-text rule reads every folder of `frontend/` but the tests. The
 development-only tools and their licences are in [`THIRD_PARTY.md`](THIRD_PARTY.md); none of them is shipped to the browser. Run so, the tests need the database container running (they check the timescaledb extension too); set
 `DB_TEST_NAME` to give a checkout its own test database when two such runs overlap.
+
+**Warnings are errors.** In every test run a `DeprecationWarning`, a `PendingDeprecationWarning` (so every Django
+`RemovedInDjango*Warning`) and Django's "received a naive datetime" `RuntimeWarning` fail the test that raised them, in every
+worker (`config.test_runner.strict_warnings`; its tests are `config/tests.py`). They fail wherever they are raised, so a
+warning a library attributes to its own frame while our call caused it fails too; a library's warning about its own
+internals goes, with its reason, in `THIRD_PARTY_WARNINGS` beside it, where it is reported but does not fail (the list is
+empty: the whole suite raises none). `scripts/test.sh` also runs every command with deprecations as errors from the first
+import (`scripts/testrunner/in-container.sh`), which catches one raised while the models are imported, before the runner
+starts; a plain `manage.py test` has the runner's filters only.
+
+## CI and dependency updates
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push to `main` and every pull request into it: four jobs in
+parallel, `permissions: contents: read`, a newer push to the same branch or pull request cancels the older run, and every
+action is pinned to a full commit with its version beside it. No secret is used: the database passwords are throwaway
+values that live only inside the job.
+
+| Job | What it runs | The same on a developer's machine |
+|---|---|---|
+| `python` | `CHECKS=1 scripts/test.sh` with 4 workers, in the test runner's image (built with its pip layers cached): `manage.py check --fail-level WARNING`; `check --deploy` with production-like settings (DEBUG off, a random key, a host), where any issue but the five still open fails (`DEPLOY_OPEN` in `scripts/testrunner/in-container.sh`: the console mail backend and the four HTTPS settings, until the production settings exist); `makemigrations --check`; `data_map --check`; `update_catalogs`, then `git diff --exit-code -- locale` (the catalogs were up to date); `compile_catalogs`; the whole suite with warnings as errors | `CHECKS=1 scripts/test.sh`, then `git diff -- locale` |
+| `frontend` | `npm ci`, `npm run build` (tsc, `tsconfig.json`), `npm test` (the TypeScript tests, the designer's browser test on the runner's Chrome) | the same three |
+| `rust` | in `sensors-ingest/`, on the toolchain of `rust-toolchain.toml` (1.88.0, the release image's and the crate's `rust-version`): `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked --all-targets` against a TimescaleDB service migrated by Django and a Mosquitto broker (`REQUIRE_DB=1`: the database and broker tests run, never skip), `cargo deny --locked check` (licences, bans, sources, RustSec advisories), `THIRD_PARTY` equal to what `Cargo.lock` says | `sensors-ingest/tests/run.sh` |
+| `security` | `pip-audit --strict` on `requirements.txt` and the test runner's; the Python licence gate (`pip-licenses --allow-only`, the licences [`THIRD_PARTY.md`](THIRD_PARTY.md) allows: AGPL, SSPL, BUSL, non-commercial or any unreviewed licence fails); `npm audit --omit=dev --audit-level=high` | see below |
+
+The security job by hand (Docker, nothing installed on the machine):
+
+```
+docker run --rm -v "$PWD:/w:ro" -w /w python:3.12-slim sh -c '
+  python -m venv /tools && /tools/bin/pip install -q pip-audit==2.10.1 pip-licenses==5.5.5 &&
+  /tools/bin/pip-audit --strict -r requirements.txt -r scripts/testrunner/requirements.txt &&
+  python -m venv /app && /app/bin/pip install -q -r requirements.txt -r scripts/testrunner/requirements.txt &&
+  /tools/bin/pip-licenses --python /app/bin/python --from=mixed --allow-only="Apache-2.0;Apache-2.0 OR BSD-3-Clause;BSD-2-Clause;BSD-3-Clause;BSD License;LGPL-3.0-only;MIT-0;PSF-2.0"'
+npm audit --omit=dev --audit-level=high
+```
+
+The workflow is checked with `actionlint` (the `rhysd/actionlint` image runs it with shellcheck:
+`docker run --rm -v "$PWD:/repo:ro" -w /repo rhysd/actionlint:1.7.12`). The suite takes far longer on GitHub's runners than
+here (4 workers on a small runner; the job allows 150 minutes), so `scripts/test.sh` stays the way to run it while working.
+
+**Dependency updates** come from Dependabot (`.github/dependabot.yml`): every Monday for pip (the requirements and the
+test runner's), npm, cargo (`sensors-ingest`), the GitHub actions and the Dockerfiles' images; minor and patch releases
+grouped into one pull request per ecosystem, each major in a pull request of its own, at most 5 open per ecosystem. Django's
+feature releases (6.1 to 6.2) never come in the group, and a new Python or Rust (minor) is not proposed at all: they are
+planned moves. The TimescaleDB image is pinned by hand in `docker-compose.yml`, `scripts/test.sh`, the workflow and
+`sensors-ingest/tests/run.sh`, and moves in all four together. Dependabot's security updates are a repository setting
+(Settings, Code security), to be switched on by the owner.
+
+**Upgrade policy:**
+
+- **Security patches at once**: a pull request for a security fix (Dependabot's, or a RustSec, pip-audit or npm audit
+  failure) is taken as soon as the whole CI is green on it.
+- **Minor and patch releases monthly**: the grouped pull requests are merged once a month, each only with the whole suite
+  green.
+- **Majors on a planned branch**, after reading the release notes and the upgrade guide, with the deprecations they remove
+  fixed first; Python and Rust toolchain moves likewise (the Rust one changes `rust-toolchain.toml`, the Dockerfile,
+  `tests/run.sh` and the crate's `rust-version` together).
+- **Django**: we are on 6.1, a non-LTS release (security fixes until about December 2027); the move to the 6.2 LTS (due
+  April 2027, security fixes for three years) is planned as such a branch, once 6.2.1 is out, with the 6.1 deprecations
+  already gone (they fail the suite).
+- **Deprecation warnings are errors** (Tests, Warnings are errors), so a removal in the next release never surprises us: a
+  deprecated call fails the suite the day the release that deprecates it lands in a pull request, long before the release
+  that removes it.
+
+**One adapter per library.** A library other than the framework is called from one module, so an upgrade or a replacement
+touches one place and its tests: `pypdf` only in `knowledge/extraction.py` (reading a PDF's text), Babel only in
+`core/catalogs.py` (the translation catalogs), `psycopg` directly (beyond Django's database backend) only in
+`sensors/management/commands/sensors_ingest_role.py` (the ingest role's SQL, quoted by `psycopg.sql`); `cryptography` is
+imported by nothing of ours (pypdf uses it for encrypted PDFs). Tests may import a library to build their inputs (a PDF, a
+`.mo` file, a connection). In the ingest, the MQTT client (`rumqttc`) is only in `src/mqtt.rs` and the HTTP server (`axum`)
+in `src/http.rs` and `src/supervisor.rs`; its database client is its core and is used where it writes (`src/db.rs`,
+`src/config.rs`, `src/env.rs`, `src/service.rs`).

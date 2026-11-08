@@ -3,7 +3,6 @@
 name AIR_CO2
 name ALERT_PH
 name ALL_LAYERS
-name ATOMIC_WEIGHT
 name AT_TARGET
 name BY_KEY
 name DEFAULT_REAGENTS
@@ -24,7 +23,6 @@ name SOLVER_PH
 name activity_coefficient_h
 name alkalinity_floor
 name at_target
-name below_air
 name box_of
 name by_key
 name carbonate_plot
@@ -46,6 +44,7 @@ name ionic_strength
 name isoline_colour
 name isoline_phs
 name isoline_segment
+name judge_step
 name k0_co2
 name k1_sws
 name k2_sws
@@ -55,7 +54,6 @@ name kb_total
 name ksp_aragonite
 name ksp_calcite
 name kw_total
-name molar_mass
 name nh3_fraction
 name nh3_plot
 name nh3_share

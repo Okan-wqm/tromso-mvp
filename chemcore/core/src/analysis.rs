@@ -392,3 +392,74 @@ pub fn box_of(
         alkalinity_step,
     })
 }
+
+/// A simulator step judged as the water is (farm/water/calculation.py `judge_step` at golden v1): its alkalinity
+/// against the band (a warning outside it), its CO₂ border at its own alkalinity, its pH against the water's NH₃ and
+/// H₂S borders (which do not depend on the alkalinity), the NH₃-N and H₂S it holds.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct StepJudgement {
+    pub alkalinity_mg_l: f64,
+    pub alkalinity_status: Status,
+    pub co2: Border,
+    pub nh3_n_mg_l: Option<f64>,
+    pub nh3: Border,
+    pub h2s_ug_l: Option<f64>,
+    pub h2s: Border,
+}
+
+/// The judgement of a step at `ph` with `alkalinity` (meq/L), for the water it started from.
+pub fn judge_step(
+    analysis: &Analysis,
+    water: &Water,
+    limits: &Limits,
+    ph: f64,
+    alkalinity: f64,
+) -> Result<StepJudgement, ChemError> {
+    let eq = &analysis.equilibria;
+    let alkalinity_mg_l = alkalinity * c::MG_CACO3_PER_MEQ;
+    let alkalinity_status = match (limits.alkalinity_low_mg_l, limits.alkalinity_high_mg_l) {
+        (Some(low), Some(high)) => {
+            if low <= alkalinity_mg_l && alkalinity_mg_l <= high {
+                Status::Ok
+            } else {
+                Status::Warning
+            }
+        }
+        _ => Status::NoLimit,
+    };
+    let co2_limit = limits
+        .co2_mg_l
+        .map(|limit| div(limit, c::MG_CO2_PER_MMOL))
+        .transpose()?;
+    let co2 = judge(
+        ph,
+        match co2_limit {
+            None => None,
+            Some(limit) => eq.ph_where_co2(alkalinity, limit)?,
+        },
+        false,
+        if co2_limit.is_none() {
+            Some(Status::NoLimit)
+        } else {
+            None
+        },
+    );
+    let missing = |status: Status| matches!(status, Status::NotMeasured | Status::NoLimit).then_some(status);
+    let nh3 = judge(ph, analysis.nh3.ph, true, missing(analysis.nh3.status));
+    let h2s = judge(ph, analysis.h2s.ph, false, missing(analysis.h2s.status));
+    Ok(StepJudgement {
+        alkalinity_mg_l,
+        alkalinity_status,
+        co2,
+        nh3_n_mg_l: match water.tan_mg_l {
+            Some(tan) => Some(tan * eq.nh3_share(ph)?),
+            None => None,
+        },
+        nh3,
+        h2s_ug_l: match water.total_sulfide_ug_l {
+            Some(sulfide) => Some(sulfide * c::H2S_PER_S * eq.h2s_share(ph)?),
+            None => None,
+        },
+        h2s,
+    })
+}

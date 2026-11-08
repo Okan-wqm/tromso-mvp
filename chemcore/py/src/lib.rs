@@ -720,12 +720,20 @@ fn reagent_of(key: &str) -> PyResult<d::Reagent> {
     d::by_key(key).ok_or_else(|| PyValueError::new_err(format!("no reagent {key}")))
 }
 
-/// The reagents in their order: (key, molar mass g/mol, DIC mmol, alkalinity meq per mmol).
+/// The reagents in their order: (key, molar mass g/mol, DIC mmol, alkalinity meq per mmol, angle).
 #[pyfunction]
-fn reagents() -> Vec<(&'static str, f64, f64, f64)> {
+fn reagents() -> Vec<(&'static str, f64, f64, f64, f64)> {
     d::reagents()
         .iter()
-        .map(|reagent| (reagent.key, reagent.molar_mass, reagent.dic, reagent.alkalinity))
+        .map(|reagent| {
+            (
+                reagent.key,
+                reagent.molar_mass,
+                reagent.dic,
+                reagent.alkalinity,
+                reagent.angle(),
+            )
+        })
         .collect()
 }
 
@@ -788,6 +796,8 @@ fn recipes<'py>(
         dict.set_item("doses", doses)?;
         dict.set_item("waypoint", recipe.waypoint)?;
         dict.set_item("below_air", recipe.below_air)?;
+        dict.set_item("counter_productive", recipe.counter_productive())?;
+        dict.set_item("priority", recipe.priority())?;
         made.push(dict);
     }
     Ok(made)
@@ -877,6 +887,74 @@ fn plots<'py>(
     Ok(dict)
 }
 
+// ---- a simulator step judged, the bands, the saturation index ------------------------------------------------------
+
+/// A simulator step judged as its water: {'alkalinity_mg_l', 'alkalinity_status', 'co2', 'nh3_n_mg_l', 'nh3',
+/// 'h2s_ug_l', 'h2s'} (borders as dicts).
+#[pyfunction]
+#[pyo3(signature = (water, limits, ph, alkalinity, target=None, pressure=1.0))]
+fn judge_step<'py>(
+    py: Python<'py>,
+    water: &Bound<'py, PyDict>,
+    limits: &Bound<'py, PyDict>,
+    ph: f64,
+    alkalinity: f64,
+    target: Option<Point>,
+    pressure: f64,
+) -> PyResult<Bound<'py, PyDict>> {
+    inputs(&[ph, alkalinity])?;
+    let (water, limits) = (water_of(water)?, limits_of(limits)?);
+    let target = target.map(|(ph, alkalinity_mg_l)| a::Target { ph, alkalinity_mg_l });
+    let analysis = a::analyse(&water, &limits, target.as_ref(), pressure).map_err(err)?;
+    let step = a::judge_step(&analysis, &water, &limits, ph, alkalinity).map_err(err)?;
+    let dict = PyDict::new(py);
+    dict.set_item("alkalinity_mg_l", step.alkalinity_mg_l)?;
+    dict.set_item("alkalinity_status", step.alkalinity_status.code())?;
+    dict.set_item("co2", border(py, &step.co2)?)?;
+    dict.set_item("nh3_n_mg_l", step.nh3_n_mg_l)?;
+    dict.set_item("nh3", border(py, &step.nh3)?)?;
+    dict.set_item("h2s_ug_l", step.h2s_ug_l)?;
+    dict.set_item("h2s", border(py, &step.h2s)?)?;
+    Ok(dict)
+}
+
+/// The danger, alert and safe bands of a border (pH, toxic above, status code) on a pH axis from low to high.
+#[pyfunction]
+fn bands(
+    ph: Option<f64>,
+    toxic_above: bool,
+    status: &str,
+    low: f64,
+    high: f64,
+) -> PyResult<Vec<(&'static str, f64, f64)>> {
+    let status = a::Status::from_code(status).ok_or_else(|| PyValueError::new_err(format!("no status {status}")))?;
+    Ok(pl::bands(
+        &a::Border {
+            ph,
+            toxic_above,
+            margin: None,
+            status,
+        },
+        low,
+        high,
+    ))
+}
+
+/// log10 Omega of a water at (temperature, salinity) with this DIC and pH, calcium (mg/L) and Ksp.
+#[pyfunction]
+fn saturation_index(
+    temperature_c: f64,
+    salinity_ppt: f64,
+    dic: f64,
+    ph: f64,
+    calcium_mg_l: f64,
+    ksp: f64,
+) -> PyResult<f64> {
+    inputs(&[temperature_c, salinity_ppt, dic, ph, calcium_mg_l, ksp])?;
+    let eq = c::equilibria(temperature_c, salinity_ppt).map_err(err)?;
+    ok(pl::saturation_index(&eq, dic, ph, calcium_mg_l, ksp))
+}
+
 #[pymodule]
 fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("NonFiniteError", module.py().get_type::<NonFiniteError>())?;
@@ -940,6 +1018,9 @@ fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
         wrap_pyfunction!(visual, module)?,
         wrap_pyfunction!(simulate, module)?,
         wrap_pyfunction!(plots, module)?,
+        wrap_pyfunction!(judge_step, module)?,
+        wrap_pyfunction!(bands, module)?,
+        wrap_pyfunction!(saturation_index, module)?,
     ] {
         module.add_function(function)?;
     }

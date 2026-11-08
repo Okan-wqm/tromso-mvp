@@ -123,3 +123,6 @@ simulate = chemcore.simulate
 
 # ---- the four small charts (chemcore/core/src/plots.rs) ----------------------------------------------------------
 plots = chemcore.plots
+judge_step = chemcore.judge_step
+bands = chemcore.bands
+saturation_index = chemcore.saturation_index

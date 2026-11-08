@@ -3060,7 +3060,10 @@ attendance form and the leave form; clearing a planned day is always allowed). A
 placements, which end on the last day; a holder of Everyone and the person themselves are held by this rule. Every path
 reads it with the person's row locked (`lock_employed`: the forms check it first for the sentence, the save checks it
 again under the lock in the tab's `after_save`, which rolls the save back onto the form; `enter_presence`, the punch and
-approving a pending leave lock first), so a last day committed meanwhile is never passed. It holds the other way too: a
+approving a pending leave lock first), so a last day committed meanwhile is never passed. HR's lock order: the person
+first (`hr.services.lock_person`, FOR NO KEY UPDATE, so a record being added for them does not wait on it), then their
+records; an edit of a plan, a punch or a leave request locks the person before the record (`PersonFirst`, through
+`Resource.edited`), as the batch plan, the punch and `leave_company` do. It holds the other way too: a
 first or last day that would leave plans, held leave or punches outside is refused on the person form and by
 `leave_company`, naming what to correct first (`employment_conflicts`; later plans and later pending leave go with the
 last day as before). The database backs it (`hr/0011_employment_bounds`: constraint triggers deferred to the commit on

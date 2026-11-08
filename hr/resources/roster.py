@@ -11,7 +11,7 @@ from ..forms.roster import ShiftAssignmentForm
 from ..models import Employee, ShiftAssignment
 
 
-class ShiftAssignmentResource(Resource):
+class ShiftAssignmentResource(services.PersonFirst, Resource):
     """The Shift schedule: a week of the team as a table, one cell per person and day. A cell opens the plan of that
     person and day (a dialog; the list's create route takes `?employee=&day=` for an empty one). The rows are the people
     the viewer reaches (`scoped`, and per day for the week read, hr.scope.visible_days); the rules run on every save

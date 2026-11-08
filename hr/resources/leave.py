@@ -26,7 +26,7 @@ class LeaveTypeResource(Resource):
     icon = 'calendar-off'
 
 
-class LeaveRequestResource(Resource):
+class LeaveRequestResource(services.PersonFirst, Resource):
     """Leave requests. Everyone with Read sees their own team's requests (`scoped`); a request's person and dates are the
     team lead's to see, its type only the person's, a decider's (Edit) and Everyone's, its reason only the person's and the
     holders of Everyone's. Edit also approves, rejects and cancels

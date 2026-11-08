@@ -15,7 +15,7 @@ from ..forms.attendance import AttendanceRecordForm
 from ..models import AttendanceRecord, Posting
 
 
-class AttendanceRecordResource(Resource):
+class AttendanceRecordResource(services.PersonFirst, Resource):
     """The Attendance page: the stretches of presence of the viewer's team, newest first, over the last days or the days
     asked for. Typed by a lead (Create, with a reason), corrected (Edit, logged with before and after) or voided (Delete);
     a person's own clock-in and clock-out are on the Today page. The same read permission opens Today and this page, so the

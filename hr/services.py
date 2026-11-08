@@ -43,12 +43,28 @@ def check_employed(employee, first, last=None):
                                                                    'day': date_format(employee.left_on)})
 
 
+# HR's lock order: the person first, then the person's records (a plan, a punch, a leave request). The person is locked
+# FOR NO KEY UPDATE, which a record being added for them (holding a key-share lock on the person) does not wait for.
+def lock_person(employee_id):
+    """Locks the person's row (HR's lock order: before any record of theirs) and returns it as it is now."""
+    return Employee.objects.select_for_update(no_key=True).get(pk=employee_id)
+
+
 def lock_employed(employee, first, last=None):
     """`check_employed` on the person's row locked first: a last day being set at the same moment waits, or this does, so
     a record is never written past a last day committed meanwhile. Returns the locked row."""
-    employee = Employee.objects.select_for_update().get(pk=employee.pk)
+    employee = lock_person(employee.pk)
     check_employed(employee, first, last)
     return employee
+
+
+class PersonFirst:
+    """For a tab of a person's records: an edit locks the person before the record (`Resource.edited`, HR's lock order)."""
+
+    @classmethod
+    def edited(cls, request, record, write, seen):
+        lock_person(record.employee_id)
+        return write()
 
 
 def punch_day(employee, moment):
@@ -406,6 +422,8 @@ def can_cancel(user, leave_request, today=None, listed=False):
 
 
 def _lock(leave_request):
+    """The request locked, after its person (HR's lock order)."""
+    lock_person(leave_request.employee_id)
     return LeaveRequest.objects.select_for_update(of=('self',)).select_related('employee__user', 'leave_type').get(
         pk=leave_request.pk)
 

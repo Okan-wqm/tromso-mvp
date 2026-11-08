@@ -125,3 +125,38 @@ class CompanyClockGuardTests(SimpleTestCase):
 
     def test_no_code_reads_the_servers_clock_as_a_farms(self):
         self.assertEqual(server_clock_reads(), [])
+
+
+def fold_checks_outside_core_dates():
+    """Each place that works out by itself whether a wall time is skipped or repeated on a clock (`.replace(fold=...)`):
+    core.dates.on_clock is the one check."""
+    found = []
+    for app in APPS:
+        for path in Path(settings.BASE_DIR, app).rglob('*.py'):
+            relative = path.relative_to(settings.BASE_DIR).as_posix()
+            if relative == 'core/dates.py' or '/migrations/' in relative or '/tests' in relative or \
+                    path.name.startswith('test'):
+                continue
+            for node in ast.walk(ast.parse(path.read_text(encoding='utf-8'))):
+                if isinstance(node, ast.Call) and any(keyword.arg == 'fold' for keyword in node.keywords):
+                    found.append(f'{relative}:{node.lineno}')
+    return found
+
+
+class OneClockCheckTests(SimpleTestCase):
+    def test_one_function_says_whether_a_wall_time_exists_once_on_a_clock(self):
+        self.assertEqual(fold_checks_outside_core_dates(), [])
+
+    def test_it_refuses_a_skipped_and_a_repeated_time_with_its_reason(self):
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+
+        from django.core.exceptions import ValidationError
+
+        from .dates import on_clock
+        oslo = ZoneInfo('Europe/Oslo')
+        self.assertEqual(on_clock(datetime(2026, 3, 29, 3, 30), oslo).isoformat(), '2026-03-29T03:30:00+02:00')
+        for wall, code in ((datetime(2026, 3, 29, 2, 30), 'skipped'), (datetime(2026, 10, 25, 2, 30), 'repeated')):
+            with self.subTest(wall=wall), self.assertRaises(ValidationError) as caught:
+                on_clock(wall, oslo)
+            self.assertEqual(caught.exception.code, code)

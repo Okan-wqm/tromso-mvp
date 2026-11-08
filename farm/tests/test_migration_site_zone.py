@@ -48,3 +48,13 @@ class SiteZoneMigrationTests(TransactionTestCase):
         with self.assertRaisesMessage(ValueError, "COMPANY_TIME_ZONE 'Europe/Olso' is not a known time zone."):
             self.migrate(AFTER)
         self.assertEqual(self.old.get_model('farm', 'Site').objects.get(code='BG').timezone, '')
+
+    @override_settings(COMPANY_TIME_ZONE='Asia/Kolkata')
+    def test_its_list_of_zones_is_its_own_frozen_not_the_live_models(self):
+        """A zone added to Site.TIMEZONES later does not change what this migration accepts (it never imports live code)."""
+        from unittest import mock
+
+        from farm.models import Site as LiveSite
+        with mock.patch.object(LiveSite, 'TIMEZONES', [*LiveSite.TIMEZONES, ('Asia/Kolkata', 'Asia/Kolkata')]):
+            with self.assertRaisesMessage(ValueError, "COMPANY_TIME_ZONE 'Asia/Kolkata' is not one a site may be given"):
+                self.migrate(AFTER)

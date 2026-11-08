@@ -982,7 +982,7 @@ class ForecastTests(HarvestTestCase):
     def test_it_stops_where_the_ration_stops_and_says_why(self):
         self.assertEqual(self.row()['forecast'].why, 'No protocol is assigned to these fish.')
         ProtocolTestCase.assign(self, self.protocol, unit=self.t1)
-        self.assertEqual(self.row()['forecast'].why, 'No temperature in the last 7 days: record one.')
+        self.assertEqual(self.row()['forecast'].why, 'No temperature recorded here yet: record one.')
 
 
 class ProductionPlanTests(HarvestTestCase):

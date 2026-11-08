@@ -61,3 +61,33 @@ class LockOrderTests(TransactionTestCase):
                          [('delete', 'ok'), ('save', 'ok')])
         self.assertTrue(ProductionDepartment.all_objects.get(pk=self.hall.pk).is_deleted)
         self.assertEqual(Tank.all_objects.get(pk=self.unit.pk).notes, 'edited')
+
+
+class CrossedWritesTests(TransactionTestCase):
+    """The backstop: a write the database aborted for another one at the same moment (a deadlock, a serialization
+    failure) says "try again" and saves nothing, never a server error."""
+
+    def setUp(self):
+        self.user = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
+        self.site = Site.objects.create(name='Bergen', code='BG')
+
+    def test_a_write_the_database_aborted_for_another_says_try_again(self):
+        from unittest import mock
+
+        import psycopg
+        from django.db import OperationalError
+
+        from core.crud import UpdateView
+        from .helpers import site_data
+        client = Client()
+        client.force_login(self.user)
+        url = reverse('farm:site_edit', args=[self.site.pk])
+        for cause in (psycopg.errors.DeadlockDetected('deadlock detected'),
+                      psycopg.errors.SerializationFailure('could not serialize access')):
+            def aborted(*args, **kwargs):
+                raise OperationalError(str(cause)) from cause
+            with self.subTest(cause=type(cause).__name__), mock.patch.object(UpdateView, 'post', aborted):
+                response = client.post(url, site_data(name='Renamed', code='BG', version='1'), follow=True)
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, 'Someone else saved at the same moment: nothing was saved. Send it again.')
+        self.assertEqual(Site.objects.get().name, 'Bergen')

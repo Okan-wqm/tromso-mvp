@@ -26,8 +26,15 @@ ALLOWED = {
                              "impossible pH and alkalinity's floor, one number per request, as the page always did",
     'farm:water_calculator_results': "the calculator's live parts: the same form, the same permission",
     'farm:water_calculator_report': "the calculator's printed report: the same form, the same permission",
-    'farm:water_unit_chart': "a unit's stored measurements; the request names only a stored sampling point",
+    'farm:water_unit_chart': "a unit's stored measurements; the request names only a stored sampling point and a "
+                             "past moment",
+    'farm:water_system_chart': "a system's stored measurements, as a unit's chart (the same helper below)",
+    '(no URL) farm.water.views._owner_chart': 'the helper of the unit and system charts above, reached only through them',
+    'sensors:deffeyes_frames': 'the replay: stored readings and samples of a unit or system the user may read; the '
+                               'request names only the target, the range, the step and the page',
 }
+NO_URL = '(no URL) '
+UUID_ARGUMENT = {'farm:water_unit_chart', 'farm:water_system_chart'}
 
 
 def python_modules():
@@ -149,14 +156,18 @@ class PermissionTests(TestCase):
         stranger.groups.add(role('Tanks only', 'view_tank'))
         self.client.force_login(stranger)
         for name in ALLOWED:
-            args = ['00000000-0000-0000-0000-000000000000'] if name == 'farm:water_unit_chart' else []
+            if name.startswith(NO_URL):
+                continue
+            args = ['00000000-0000-0000-0000-000000000000'] if name in UUID_ARGUMENT else []
             with self.subTest(view=name):
                 self.assertEqual(self.client.get(reverse(name, args=args), {'temperature_c': '12', 'ph': '7'}).status_code,
                                  403)
 
     def test_each_computing_view_sends_a_visitor_to_sign_in(self):
         for name in ALLOWED:
-            args = ['00000000-0000-0000-0000-000000000000'] if name == 'farm:water_unit_chart' else []
+            if name.startswith(NO_URL):
+                continue
+            args = ['00000000-0000-0000-0000-000000000000'] if name in UUID_ARGUMENT else []
             with self.subTest(view=name):
                 response = self.client.get(reverse(name, args=args))
                 self.assertIn(response.status_code, (302, 403))

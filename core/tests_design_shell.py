@@ -1,4 +1,4 @@
-"""The Suderra Platform shell (docs/design/system): the theme a person picks (Day, Night, Fjord) is a cookie that sets
+"""The Suderra Platform shell (docs/design/system): the theme a person picks (Fjord, Polarnatt, Nordlys, Tang, Laks) is a cookie that sets
 data-theme on <html>, never the system's colour scheme; the two typefaces are served from this server; the rail carries
 the logo disc and the wordmark; below 1024 px a bottom bar holds the daily pages and More, which opens the whole menu."""
 import re
@@ -25,53 +25,62 @@ class ThemeCookieTests(TestCase):
         self.admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
         self.client.force_login(self.admin)
 
-    def test_day_is_the_default(self):
-        self.assertIn('data-theme="light"', html_tag(self.client.get(reverse('home'))))
-
-    def test_choosing_a_theme_sets_the_cookie_and_returns_to_the_page(self):
-        response = self.client.post(reverse('core:set_theme'), {'theme': 'dark', 'next': reverse('farm:site_list')})
-        self.assertRedirects(response, reverse('farm:site_list'), fetch_redirect_response=False)
-        cookie = response.cookies[theme.COOKIE]
-        self.assertEqual(cookie.value, 'dark')
-        self.assertEqual(cookie['samesite'], 'Lax')
-        self.assertGreaterEqual(int(cookie['max-age']), 365 * 24 * 3600)
-        self.assertIn('data-theme="dark"', html_tag(self.client.get(reverse('home'))))
-
-    def test_fjord_is_offered_too(self):
-        self.client.post(reverse('core:set_theme'), {'theme': 'fjord', 'next': '/'})
+    def test_fjord_is_the_default(self):
         self.assertIn('data-theme="fjord"', html_tag(self.client.get(reverse('home'))))
 
+    def test_choosing_a_theme_sets_the_cookie_and_returns_to_the_page(self):
+        response = self.client.post(reverse('core:set_theme'), {'theme': 'polarnatt',
+                                                                 'next': reverse('farm:site_list')})
+        self.assertRedirects(response, reverse('farm:site_list'), fetch_redirect_response=False)
+        cookie = response.cookies[theme.COOKIE]
+        self.assertEqual(cookie.value, 'polarnatt')
+        self.assertEqual(cookie['samesite'], 'Lax')
+        self.assertGreaterEqual(int(cookie['max-age']), 365 * 24 * 3600)
+        self.assertIn('data-theme="polarnatt"', html_tag(self.client.get(reverse('home'))))
+
+    def test_every_theme_of_the_design_system_is_offered(self):
+        for value in ('fjord', 'polarnatt', 'nordlys', 'tang', 'laks'):
+            with self.subTest(theme=value):
+                self.client.post(reverse('core:set_theme'), {'theme': value, 'next': '/'})
+                self.assertIn(f'data-theme="{value}"', html_tag(self.client.get(reverse('home'))))
+
+    def test_the_old_day_and_night_are_not_themes(self):
+        for value in ('light', 'dark'):
+            with self.subTest(theme=value):
+                response = self.client.post(reverse('core:set_theme'), {'theme': value, 'next': '/'})
+                self.assertNotIn(theme.COOKIE, response.cookies)
+
     def test_an_unknown_theme_changes_nothing(self):
-        self.client.post(reverse('core:set_theme'), {'theme': 'dark', 'next': '/'})
+        self.client.post(reverse('core:set_theme'), {'theme': 'tang', 'next': '/'})
         response = self.client.post(reverse('core:set_theme'), {'theme': 'pink', 'next': '/'})
         self.assertNotIn(theme.COOKIE, response.cookies)
-        self.assertIn('data-theme="dark"', html_tag(self.client.get(reverse('home'))))
+        self.assertIn('data-theme="tang"', html_tag(self.client.get(reverse('home'))))
 
-    def test_a_forged_cookie_falls_back_to_day(self):
+    def test_a_forged_cookie_falls_back_to_fjord(self):
         self.client.cookies[theme.COOKIE] = '"><script>'
-        self.assertIn('data-theme="light"', html_tag(self.client.get(reverse('home'))))
+        self.assertIn('data-theme="fjord"', html_tag(self.client.get(reverse('home'))))
 
     def test_it_never_sends_the_person_to_another_site(self):
-        response = self.client.post(reverse('core:set_theme'), {'theme': 'dark', 'next': 'https://evil.example/'})
+        response = self.client.post(reverse('core:set_theme'), {'theme': 'laks', 'next': 'https://evil.example/'})
         self.assertRedirects(response, '/', fetch_redirect_response=False)
 
     def test_only_a_post_changes_it(self):
-        self.assertEqual(self.client.get(reverse('core:set_theme'), {'theme': 'dark'}).status_code, 405)
+        self.assertEqual(self.client.get(reverse('core:set_theme'), {'theme': 'laks'}).status_code, 405)
 
     def test_the_sign_in_page_follows_the_cookie(self):
         self.client.logout()
-        self.client.cookies[theme.COOKIE] = 'fjord'
-        self.assertIn('data-theme="fjord"', html_tag(self.client.get(reverse('login'))))
+        self.client.cookies[theme.COOKIE] = 'nordlys'
+        self.assertIn('data-theme="nordlys"', html_tag(self.client.get(reverse('login'))))
 
-    def test_the_user_menu_offers_the_three_themes_beside_the_language(self):
-        self.client.post(reverse('core:set_theme'), {'theme': 'fjord', 'next': '/'})
+    def test_the_user_menu_offers_the_five_themes_beside_the_language(self):
+        self.client.post(reverse('core:set_theme'), {'theme': 'laks', 'next': '/'})
         html = self.client.get(reverse('home')).content.decode()
         menu = html[html.index('id="user-panel"'):]
         menu = menu[:menu.index('</form>', menu.index('name="theme"'))]
         self.assertIn('menu-language', menu)
         buttons = re.findall(r'<button[^>]*name="theme"[^>]*>', menu)
-        self.assertEqual([re.search(r'value="(\w+)"', button).group(1) for button in buttons], ['light', 'dark', 'fjord'])
-        self.assertEqual([('aria-pressed="true"' in button) for button in buttons], [False, False, True])
+        self.assertEqual([re.search(r'value="(\w+)"', button).group(1) for button in buttons], ['fjord', 'polarnatt', 'nordlys', 'tang', 'laks'])
+        self.assertEqual([('aria-pressed="true"' in button) for button in buttons], [False, False, False, False, True])
 
 
 class ThemeIsNeverTheSystemsTests(SimpleTestCase):

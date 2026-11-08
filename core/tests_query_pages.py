@@ -77,3 +77,11 @@ class EveryPageTests(TestCase):
                           (reverse('farm:water'), {'unit': str(self.unit.pk), 'view': 'history'})):
             broken += self.answers(url, **base)
         self.assertEqual(broken, [])
+
+    def test_the_database_viewer_reads_its_page_number_by_the_same_rule(self):
+        # Cross review F9: str.isdecimal() took another script's digits as a page number.
+        url = reverse('core:database_table', args=['sites'])
+        for value in ('٣', '²', '-2', '99999999999999999999'):
+            with self.subTest(value=value):
+                self.assertEqual(self.client.get(url, {'page': value}).context['grid'].page_number, 1)
+        self.assertEqual(self.client.get(url, {'page': '2'}).context['grid'].page_number, 2)

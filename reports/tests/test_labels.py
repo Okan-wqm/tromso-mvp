@@ -22,7 +22,7 @@ from .. import compute, labels
 from ..compute import lice, notices, slaughter
 from ..compute.common import flatten
 from ..models import Report
-from ..periods import WEEK, YEAR, Period
+from ..periods import MONTH, WEEK, YEAR, Period
 from .helpers import OCTOBER, WEEK_47, day
 from .test_notices import NoticeTestCase
 
@@ -154,3 +154,17 @@ class EveryKeyThatReachesAPageTests(NoticeTestCase):
             self.assertContains(self.client.get(reverse(name, args=[escape.pk])), shown)
         csv_text = self.client.get(reverse('reports:report_export', args=[escape.pk, 'csv'])).content.decode()
         self.assertIn('2026-10-25T06:15:00+00:00', csv_text)
+
+
+class PeriodKeyTests(SimpleTestCase):
+    """A period's key in an address (?period=) is read by core.dates.read_period: four ASCII digits of a year inside the
+    window of dates (1900-2100), a month 01-12, a week the year has; anything else is no period (ValueError)."""
+
+    def test_what_it_reads_and_what_it_refuses(self):
+        self.assertEqual(Period.from_key('2026-W45'), Period(WEEK, date(2026, 11, 2)))
+        self.assertEqual(Period.from_key('2026-11'), Period(MONTH, date(2026, 11, 1)))
+        self.assertEqual(Period.from_key('2026'), Period(YEAR, date(2026, 1, 1)))
+        for key in ('1-W01', '9999-12', '0001', '1-01', '2026-13', '2026-00', '2026-W54', '2026-W00', '2026-1', '2026-W5',
+                    ' 2026', '２０２６', '1899', '2101-01', '', '2026-11-01'):
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                Period.from_key(key)

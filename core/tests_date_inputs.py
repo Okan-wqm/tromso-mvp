@@ -227,9 +227,46 @@ class ReadMomentTests(SimpleTestCase):
 
 # The calls that turn text into a date or a time: only core/dates.py may make them (read_day, read_moment, the form
 # fields' rules), so a page never parses what a person typed by another rule, window or error.
-PARSERS = {'parse_date', 'parse_datetime', 'parse_time', 'parse_duration', 'strptime', 'fromisoformat', 'isoparse'}
+PARSERS = {'parse_date', 'parse_datetime', 'parse_time', 'parse_duration', 'strptime', 'fromisoformat', 'isoparse',
+           'fromisocalendar'}
+CONSTRUCTORS = {'date', 'datetime', 'time'}
 APPS = ('config', 'core', 'experiments', 'farm', 'hr', 'inventory', 'knowledge', 'messaging', 'monitoring', 'reports',
         'sensors', 'tasks')
+
+
+def _called(node):
+    func = node.func
+    return func.attr if isinstance(func, ast.Attribute) else getattr(func, 'id', '')
+
+
+def _int_of_text(node):
+    """`int(...)` or `map(int, ...)`: a number read from text (a constructor fed by it parses a date by hand)."""
+    return isinstance(node, ast.Call) and (_called(node) == 'int' or (
+        _called(node) == 'map' and node.args and isinstance(node.args[0], ast.Name) and node.args[0].id == 'int'))
+
+
+def date_parsers_in(tree):
+    """(line, what) of each way the code turns text into a date or a time: a parser by name, one reached through getattr
+    (a name built at run time from text, `getattr(datetime, 'strp' + 'time')`; a name held in a variable is not seen),
+    and a date, datetime or time built from `int(...)`
+    or `*map(int, ...)` (a key split by hand). By name: not every spelling, the usual ones."""
+    found = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        name = _called(node)
+        if name in PARSERS:
+            found.append((node.lineno, name))
+        elif name == 'getattr' and len(node.args) > 1 and not (
+                isinstance(node.args[1], ast.Constant) and node.args[1].value not in PARSERS):
+            texts = [part.value for part in ast.walk(node.args[1]) if isinstance(part, ast.Constant)
+                     and isinstance(part.value, str)]
+            if any(fragment in text for text in texts for fragment in ('strp', 'iso', 'parse')):
+                found.append((node.lineno, 'getattr of a parser'))
+        elif name in CONSTRUCTORS and any(_int_of_text(arg.value if isinstance(arg, ast.Starred) else arg)
+                                          for arg in node.args):
+            found.append((node.lineno, f'{name}(int(...)) by hand'))
+    return found
 
 
 def date_parsers_outside_core_dates():
@@ -240,15 +277,27 @@ def date_parsers_outside_core_dates():
             if relative == 'core/dates.py' or '/migrations/' in relative or '/tests' in relative or \
                     path.name.startswith('test'):
                 continue
-            for node in ast.walk(ast.parse(path.read_text(encoding='utf-8'))):
-                if isinstance(node, ast.Call):
-                    func = node.func
-                    name = func.attr if isinstance(func, ast.Attribute) else getattr(func, 'id', '')
-                    if name in PARSERS:
-                        found.append(f'{relative}:{node.lineno} {name}')
+            found += [f'{relative}:{line} {what}' for line, what in date_parsers_in(
+                ast.parse(path.read_text(encoding='utf-8')))]
     return found
 
 
+# The third cross-review's bypass probe (farm/zz_bypass.py): each line one way to parse a date by hand.
+BYPASS = '''
+import re, time as clock
+from datetime import date, datetime
+getattr(datetime, 'strp' + 'time')(text, '%Y-%m-%d')
+date(*map(int, text.split('-')))
+date(int(m[1]), int(m[2]), int(m[3]))
+clock.strptime(text, '%Y-%m-%d')
+'''
+
+
 class OneDateParserTests(SimpleTestCase):
+    def test_the_guard_sees_the_probes_ways(self):
+        self.assertEqual(sorted(line for line, _what in date_parsers_in(ast.parse(BYPASS))), [4, 5, 6, 7])
+        fine = "getattr(record, 'site')\ndate(day.year, day.month, 1)\n"
+        self.assertEqual(date_parsers_in(ast.parse(fine)), [])
+
     def test_no_code_but_core_dates_parses_a_date_or_a_time_from_text(self):
         self.assertEqual(date_parsers_outside_core_dates(), [])

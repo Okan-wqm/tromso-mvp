@@ -62,16 +62,32 @@ class AttendanceRecordForm(TabbedForm):
             return stored
         return timezone.make_aware(naive, zone)
 
+    def instants(self, cleaned):
+        """The typed times (naive, on the person's site's clock) as the instants they stand for, written into `cleaned`
+        as UTC before anything reads them: the overlap check of core.crud and the model's validation then see what the
+        database will store (and logs), never a site's time read as UTC. Times that cannot be placed (a field not valid)
+        are taken out. Returns (person, zone, clock in, clock out) or None."""
+        adding = self.instance._state.adding
+        employee = cleaned.get('employee') if adding else self.instance.employee
+        naive_in, naive_out = cleaned.get('clock_in'), cleaned.get('clock_out')
+        if self.errors or employee is None or naive_in is None:
+            cleaned.pop('clock_in', None)
+            cleaned.pop('clock_out', None)
+            return None
+        zone = self.zone(employee, naive_in.date())
+        started = self.kept_or_made('clock_in', naive_in, zone)
+        ended = self.kept_or_made('clock_out', naive_out, zone) if naive_out is not None else None
+        cleaned['clock_in'] = started.astimezone(utc.utc)
+        cleaned['clock_out'] = ended.astimezone(utc.utc) if ended is not None else None
+        return employee, zone, started, ended
+
     def clean(self):
+        placed = self.instants(self.cleaned_data)
         cleaned = super().clean()
         if self.errors:
             return cleaned
         adding = self.instance._state.adding
-        employee = cleaned['employee'] if adding else self.instance.employee
-        naive_in, naive_out = cleaned['clock_in'], cleaned.get('clock_out')
-        zone = self.zone(employee, naive_in.date())
-        started = self.kept_or_made('clock_in', naive_in, zone)
-        ended = self.kept_or_made('clock_out', naive_out, zone) if naive_out is not None else None
+        employee, zone, started, ended = placed
         if not scope.can_reach(self.user, employee, started.astimezone(zone).date()):
             raise ValidationError(_('You do not see this person on this day.'))
         if services.self_plan(self.user, employee):
@@ -83,9 +99,6 @@ class AttendanceRecordForm(TabbedForm):
         if entered and not (cleaned.get('note') or '').strip():
             self.add_error('note', _('Say why the time was entered by hand.'))
             return cleaned
-        # stored (and logged) as UTC instants whatever the zone they were typed on
-        cleaned['clock_in'] = started.astimezone(utc.utc)
-        cleaned['clock_out'] = ended.astimezone(utc.utc) if ended is not None else None
         if adding:
             self.instance.via = AttendanceRecord.Via.ENTERED
         return cleaned

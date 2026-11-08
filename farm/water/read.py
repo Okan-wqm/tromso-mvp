@@ -64,7 +64,7 @@ from django.utils.translation import gettext as _, gettext_lazy
 
 from farm.models import Batch, EquipmentSystem, SamplingPoint, Species, System, Tank, WaterLimit, WaterMeasurement
 from farm.models.water import LIVE_POINT
-from farm.models.water_point import PointKind, local_time, owner_type_of, site_of
+from farm.models.water_point import FlowRole, PointKind, kinds_with, local_time, owner_type_of, site_of
 from farm.stock.dates import local_today
 from farm.stock.read import Presence
 
@@ -86,6 +86,9 @@ POINT_RELATED = ('point__unit__production_department__site', 'point__system__sit
                  'point__equipment__production_department__site')
 # Where a unit's water is read from (Source.via).
 UNIT, SYSTEM = 'unit', 'system'
+# The other points of a unit that measure its own water (owner rule A9.1, owner 2026-11-08): within it or leaving it (a
+# depth point, an outlet, a drain); never an inlet, which measures the supply stream, not the unit's water.
+OWN_WATER_KINDS = [kind for kind in kinds_with(FlowRole.WITHIN, FlowRole.OUT) if kind != PointKind.MIDDLE]
 
 
 def assumed_salinity(water_types):
@@ -149,7 +152,7 @@ def system_chain(unit, systems):
 
 def water_sources(units, *, nested, every_point=False):
     """{unit id: [Source]}: the places the water of each unit is read from, in the order they count: the unit's
-    own middle point (with `every_point`, every active point of the unit, the middle first: the unit's own points of
+    own middle point (with `every_point`, every active point of the unit's own water, OWN_WATER_KINDS, the middle first: the unit's own points of
     owner rule A9.1, as `latest` reads a unit), then the loop point of its system and, when `nested`, of the systems
     that system is nested in, nearest first. A point is a source while it is active and its owner live; an owner with no
     middle point gives none. The feeding temperature reads `nested` and `every_point` (a ration may be sized on a parent
@@ -164,7 +167,7 @@ def water_sources(units, *, nested, every_point=False):
     others = defaultdict(list)
     if every_point and units:
         for point in (SamplingPoint.objects.filter(unit__in=[unit.pk for unit in units], is_active=True)
-                      .exclude(kind=PointKind.MIDDLE).with_owners()):
+                      .filter(kind__in=OWN_WATER_KINDS).with_owners()):
             others[point.unit_id].append(point)
     found = {}
     for unit in units:
@@ -785,7 +788,8 @@ def _loops_of(points):
 class Places:
     """Where one point's water is read from (owner rule A9): its own points, then its system's, and the live targets on
     each ([(target, origin, the point a value of it is observed at)]). A unit's middle point stands for the unit: its own
-    points are every active point of the unit (A9.1, "its own sampling points"), the middle first; its system's are the
+    points are every active point measuring its own water (A9.1, OWN_WATER_KINDS: never an inlet), the middle first;
+    its system's are the
     loop point of the unit's system with the sensors on it and on the system. Any other point is its own alone, with no
     system tier (a loop's middle point has the system's sensors as its own)."""
     own: list
@@ -804,7 +808,7 @@ def _places(points):
     units = {point.unit_id for point in points if point.unit_id and point.kind == PointKind.MIDDLE}
     others = defaultdict(list)
     if units:
-        for point in (SamplingPoint.objects.filter(unit__in=units, is_active=True).exclude(kind=PointKind.MIDDLE)
+        for point in (SamplingPoint.objects.filter(unit__in=units, is_active=True, kind__in=OWN_WATER_KINDS)
                       .with_owners()):
             others[point.unit_id].append(point)
     loops = _loops_of(points)

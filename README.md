@@ -1147,10 +1147,11 @@ rows are skipped, a value out of range is shown in its cell and nothing is recor
 
 **A unit's water** is read for its middle point (`read.middle_points`, the one definition; `read.unit_water`): what
 Production units, its drawer, the overview tile, the status dot and the calculator show of it. By owner rule A9 (below,
-"The water's latest value"), every active point of the unit is the unit's own (A9.1, since the second cross review of
-2026-11-08: the newest fresh value of the middle, an inlet or an outlet wins; this replaced "an inlet's sample is the
-stream's and never moves the unit's status", an open owner question: a newer inlet value can stand for the bulk), and its
-system's loop stands in only for a parameter the unit has nothing fresh of. Its **temperature** for the ration
+"The water's latest value"), every active point measuring the unit's own water is the unit's own (A9.1, owner
+2026-11-08: the middle, a depth point, an outlet, a drain; `read.OWN_WATER_KINDS`). An inlet's sample is the supply
+stream's, not the fish's: it is judged for the same fish and shown at its own point, but it never stands for the unit
+and never moves the unit's status. The unit's system's loop stands in only for a parameter the unit has nothing fresh
+of. Its **temperature** for the ration
 (`farm/feeding/temperature.py`) is picked by the same rule (`read.choose`), with the loops of the systems its system is
 nested in as further tiers; the withdrawal's daily mean (`farm/health/withdrawal.py`) reads the unit's middle point, else
 its own system's loop (a day without one counts at the species' assumed temperature, else as 0 °C, and says so: the safe
@@ -2656,8 +2657,9 @@ What works:
 
 Per unit and parameter, each on its own, in one place (`farm/water/read.py` `latest`, the sensors reach it through the
 registry `farm/water/sources.py`, registered by `SensorsConfig.ready()`; the farm never imports the sensors): among the
-unit's OWN fresh values (the sensors on its points and its own manual or lab samples, at every active point of the unit,
-A9.1 "its own sampling points": the middle, an inlet, an outlet; between two channels measured at the same time the
+unit's OWN fresh values (the sensors on its points and its own manual or lab samples, at every active point measuring
+the unit's own water, A9.1 "its own sampling points": the middle, a depth point, an outlet, a drain, never an inlet,
+which measures the supply stream (owner, 2026-11-08); between two channels measured at the same time the
 primary before the backup, a point's before a later-named point's) the
 newest by measurement time wins, whatever its origin; only when it has no fresh value of its own does the system stand in,
 for the middle point: the newest fresh value of a sensor on the unit's system, of a sensor bound to the system's loop

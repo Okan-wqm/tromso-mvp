@@ -96,7 +96,7 @@ class OneResolverTests(SourcesCase):
         inlet = point_of(self.t1, 'inlet')
         self.sample(hours=3, temperature_c='9.0')
         self.sample(point=drain, hours=1, temperature_c='9.4')
-        self.sample(point=inlet, hours=0, temperature_c='14.0')                # the supply stream: never the unit's
+        self.sample(point=inlet, hours=1, temperature_c='14.0')                # the supply stream: never the unit's
         self.on(inlet, self.value('temperature_c', 14.2, seconds=5))
         self.on(self.ras, self.value('temperature_c', 11.0, seconds=30))      # the system's never stands in for it
         water, ration = self.both()

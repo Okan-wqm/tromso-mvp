@@ -38,6 +38,11 @@ class Quantity:
     water: bool = False      # a water parameter: shown through the water read (farm/water/read.py) and judged by its limits
 
     @property
+    def decimals(self):
+        """The decimals a value of it is said with: those of its step (a water parameter's own, farm/water/parameters.py)."""
+        return max(-self.step.normalize().as_tuple().exponent, 0)
+
+    @property
     def parameter(self):
         """The water parameter, for a water quantity; None otherwise."""
         return parameters.get(self.code) if self.water else None

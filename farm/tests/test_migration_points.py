@@ -13,6 +13,7 @@ from django.db.migrations.exceptions import IrreversibleError
 from django.db.migrations.executor import MigrationExecutor
 from django.test import SimpleTestCase, TransactionTestCase
 
+from farm import withdrawal_gate
 from farm.water import points
 
 BEFORE = [('farm', '0018_health')]
@@ -76,6 +77,7 @@ class WaterPointsMigrationTests(TransactionTestCase):
         }
         return farm
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def sample(self, apps, **fields):
         WaterMeasurement = apps.get_model('farm', 'WaterMeasurement')
         return WaterMeasurement.objects.create(source='manual', **fields)

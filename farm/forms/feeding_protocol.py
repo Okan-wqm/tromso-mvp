@@ -12,6 +12,7 @@ from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _, ngettext
 
 from core.crud import DRAFT, CodedFormMixin, TabbedForm, tab_fields
+from core.widgets import DayInput
 
 from ..feeding import assignments
 from ..models import Batch, Feed, FeedingProtocol, ProtocolAssignment, ProtocolBand, Species, StockMovement, Tank
@@ -83,8 +84,10 @@ def parse_temperatures(text):
             raise ValidationError(_('A temperature column is between %(low)s and %(high)s °C.') % {
                 'low': TEMPERATURE.low, 'high': TEMPERATURE.high})
         values.append(value.quantize(Decimal('0.1')))
-    if not values:
-        raise ValidationError(_('Give at least one temperature column.'))
+    if len(values) < 2:
+        # One column gave an SFR at exactly its temperature and none on every other day (no extrapolation, Q1; F-080).
+        raise ValidationError(_('Give at least two temperature columns: the SFR is read between them, never outside '
+                                'them.'))
     if len(set(values)) != len(values):
         raise ValidationError(_('Each temperature is a column once.'))
     if len(values) > MAX_COLUMNS:
@@ -280,8 +283,8 @@ class NewAssignmentForm(TabbedForm):
         model = ProtocolAssignment
         fields = ['protocol', 'batch', 'valid_from', 'valid_until', 'notes']
         field_classes = {'protocol': ProtocolChoice, 'batch': BatchChoice}
-        widgets = {'valid_from': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
-                   'valid_until': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+        widgets = {'valid_from': DayInput(),
+                   'valid_until': DayInput(),
                    'notes': forms.Textarea(attrs={'rows': 2})}
         help_texts = {**HELP, 'batch': _('A batch alone: the protocol follows it into every unit it is moved to.')}
 

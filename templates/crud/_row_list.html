@@ -2,7 +2,8 @@
    heading row: a feeder's calibrations, a feed's suitability. `rows` is the formset (none until the record
    can have them), `tab` the inner tab's key, `panel_title`, `help`, `action` where it is saved, `legend` (one row),
    `empty` (no rows yet), `add` and `save` (the buttons), `kind` (the class giving the rows their columns)
-   and `pending`, said instead of the list while there is none.{% endcomment %}
+   and `pending`, said instead of the list while there is none; `extra`, a template shown above the rows (what the
+   save asked first, e.g. the withdrawal guard's question).{% endcomment %}
 <section class="tab-panel row-list" data-panel="{{ tab }}" aria-labelledby="{{ tab }}-title">
   <h3 class="panel-title" id="{{ tab }}-title">{{ panel_title }}</h3>
   {% if rows %}
@@ -13,6 +14,7 @@
     {# The record's version travels with its list: a save based on an outdated record is refused (RowListView). #}
     <input type="hidden" name="version" value="{{ object.version }}">
     {% if rows.non_form_errors %}<div class="form-error" role="alert">{{ rows.non_form_errors }}</div>{% endif %}
+    {% if extra %}{% include extra %}{% endif %}
     <div class="row-list-head {{ kind }}" aria-hidden="true">{% for field in rows.empty_form.visible_fields %}{% if field.name != "DELETE" %}<span>{{ field.label }}</span>{% endif %}{% endfor %}</div>
     <div class="contact-rows" data-rows>
       {% for row in rows %}{% include "crud/_row.html" %}{% endfor %}

@@ -1,5 +1,5 @@
 {% extends "crud/list.html" %}
-{% load i18n %}
+{% load i18n dates %}
 {% block search_placeholder %}{% trans "Search by name, code or region" %}{% endblock %}
 {% block empty_text %}{% trans "Add the first site; production departments, systems and tanks are set up under a site." %}{% endblock %}
 {% block items %}
@@ -20,7 +20,7 @@
       {% if site.contact_email %}<div><dt>{% trans "Contact" %}</dt><dd>{{ site.contact_email }}</dd></div>{% endif %}
     </dl>
     <div class="card-foot">
-      <span>{% blocktrans trimmed with date=site.created_at|date:"DATE_FORMAT" %}Created {{ date }}{% endblocktrans %}</span>
+      <span>{% blocktrans trimmed with date=site.created_at|site_clock:site|date:"DATE_FORMAT" %}Created {{ date }}{% endblocktrans %}</span>
       <span class="card-actions">
         {% if can_change %}<a class="icon-button" href="{% url 'farm:site_edit' site.pk %}" data-modal title="{% blocktrans with name=site.name %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=site.name %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}
         {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:site_delete' site.pk %}" data-modal title="{% blocktrans with name=site.name %}Delete {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% blocktrans with name=site.name %}Delete {{ name }}{% endblocktrans %}</span></a>{% endif %}

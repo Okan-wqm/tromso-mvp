@@ -157,19 +157,27 @@ def visible_days(user, first, last, realm=None):
     return {employee_id: reached for employee_id, reached in narrowed.items() if reached}
 
 
-def colleagues(user, first, last):
-    """{employee id: days} of the viewer's crew between `first` and `last`: on each day of the viewer's own live placement in
-    a production department, the other live people placed in the same department that day, less the days the viewer
-    already reaches them on (their own team, `visible_days`). Empty for a viewer with no production placement. Only the
-    crew's shift plan is read with it (hr.read.crew_week), never anything else of theirs."""
+def production_days(user, first, last):
+    """{day: production department} of the viewer's own live placements in production between `first` and `last`: the
+    days the viewer has a crew on (empty for a viewer with no production placement then)."""
     own = list(Employee.objects.filter(user=user).values_list('pk', flat=True))
     department_on = {}
     for posting in Posting.objects.filter(IN_PRODUCTION, overlapping(first, last), employee__in=own).values(
             'production_department', 'valid_from', 'valid_until'):
         for day in _days(max(posting['valid_from'], first), min(posting['valid_until'] or last, last)):
             department_on[day] = posting['production_department']
+    return department_on
+
+
+def colleagues(user, first, last):
+    """{employee id: days} of the viewer's crew between `first` and `last`: on each day of the viewer's own live placement in
+    a production department, the other live people placed in the same department that day, less the days the viewer
+    already reaches them on (their own team, `visible_days`). Empty for a viewer with no production placement. Only the
+    crew's shift plan is read with it (hr.read.crew_week), never anything else of theirs."""
+    department_on = production_days(user, first, last)
     if not department_on:
         return {}
+    own = list(Employee.objects.filter(user=user).values_list('pk', flat=True))
     reached = visible_days(user, first, last, PRODUCTION) or {}
     crew = {}
     for posting in Posting.objects.filter(overlapping(first, last), employee__is_deleted=False,

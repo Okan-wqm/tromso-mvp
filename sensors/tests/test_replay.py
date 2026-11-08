@@ -271,6 +271,20 @@ class EndpointTests(ReplayCase):
         self.assertEqual(self.client.get(reverse('sensors:deffeyes_frames'), {'target': f'unit:{self.t1.pk}'})
                          .status_code, 403)
 
+    def test_a_range_outside_the_window_of_dates_is_refused_never_a_server_error(self):
+        """`start` and `end` are typed into an address: the calendar's ends (an overflow on the site's clock) and
+        anything outside 1900-2100 are refused (400) through core.dates.read_moment."""
+        self.reader()
+        for start, end in (('0001-01-01T00:30', '0001-01-02T00:30'), ('9999-12-30T00:00', '9999-12-31T00:00'),
+                           ('1899-12-30T00:00', '1899-12-31T00:00'), ('2026-10-10', '2026-10-11')):
+            with self.subTest(start=start, end=end):
+                self.assertEqual(self.get(start=start, end=end).status_code, 400)
+
+    def test_a_step_longer_than_any_time_is_refused_never_a_server_error(self):
+        self.reader()
+        for step in ('100000000000000000', '9' * 40):            # a short step is snapped up to the ladder, kept
+            with self.subTest(step=step):
+                self.assertEqual(self.get(step=step).status_code, 400)
 
 class OneRuleTests(ReplayCase):
     """The replay picks each input at each frame by the water's one rule, `farm.water.read.choose` (owner rule A9), as

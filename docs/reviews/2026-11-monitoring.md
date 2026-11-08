@@ -223,3 +223,24 @@ Test first throughout: each fix has its `Test:` commit before it.
   branch makes `Temperatures` read the unit's other own-water points too.
 - A "Judged as" note only where a conversion was made; a system without a loop point stands in for the ration through
   its own sensors, as on the water page (`Series(systems=...)`, `read.SYSTEM_KEY`).
+
+## Merge of main (c6ae1f7: health reports and bugs-nov5), 2026-11-08
+
+- REVIEW.md moved here (docs/reviews/2026-11-monitoring.md).
+- Point status: bugs' worst-value rule (`PointWater.status`, `old_alert`, `alerts`, `why_no_limit`) kept as it is; this
+  branch's `worst_fresh`, `unjudged` and the card's `_alerts` read through it (`_alerts` iterates `PointWater.alerts`; the
+  card says "Critical, no recent data" in the water page's words, the age no longer added, bugs' card test kept). The
+  value cell keeps its "was critical" mark (`wq-was-*`, F-244) beside bugs' point status.
+- The history's `_day` is bugs' `core.dates.read_day` (window 1900-2100; this branch's own clamp is gone); `?at=` was
+  already `read_moment`/`on_clock` on main.
+- Migrations renumbered on top of main's 0028_site_timezone_required: `0029_site_altitude_range`,
+  `0030_oxygen_basis` (one farm leaf). Whoever lands second of this branch and wip/fix-integrity renumbers again.
+- The water services keep both: the withdrawal guard (`withdrawal_ack`, `withdrawal.guarded`) around the write, and
+  this branch's oxygen basis inside it.
+- The withdrawal gate: this branch's tests that write water rows straight in the database open the gate
+  (`withdrawal_gate.opened`). The degree-days now read the unit's own-water points (`water_sources(every_point=True)`);
+  the coverage test (farm/tests/test_withdrawal_gate_coverage.py) derives the columns from the queries the readers run,
+  and a sample at any point of a unit is already guarded (`services._fish_of`), so it passes unchanged.
+- With A9.1 and the worst fresh value, a unit's middle point counts its side outlet's critical value too: the water
+  page's and the overview's critical count of bugs' two tests is 2 (the outlet and the unit), not 1.
+- The parallel-run struct.error in gettext was main's e318bd5 (an atomic .mo build), now here with the merge.

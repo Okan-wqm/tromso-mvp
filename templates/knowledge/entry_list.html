@@ -1,5 +1,5 @@
 {% extends "crud/list.html" %}
-{% load i18n %}
+{% load i18n dates %}
 {% comment %} Company › Knowledge › Knowledge entries (knowledge.resources.KnowledgeEntryResource): each statement with
    its source and its review. A search ranks them by their words and those of the document they cite.{% endcomment %}
 {% block search_placeholder %}{% trans "Search the statements, quotes and sources" %}{% endblock %}
@@ -41,7 +41,7 @@
       <tr>
         <td>
           <a class="row-title" href="{% url 'knowledge:knowledgeentry_detail' entry.pk %}">{{ entry }}</a>
-          <span class="row-sub">{% blocktrans trimmed with who=entry.created_by|default:"–" when=entry.created_at|date:"DATE_FORMAT" %}Added by {{ who }}, {{ when }}{% endblocktrans %}</span>
+          <span class="row-sub">{% blocktrans trimmed with who=entry.created_by|default:"–" when=entry.created_at|company_clock|date:"DATE_FORMAT" %}Added by {{ who }}, {{ when }}{% endblocktrans %}</span>
         </td>
         <td>{{ entry.topic_labels|join:", " }}</td>
         <td>{% for species in entry.species.all %}{{ species.common_name }}{% if not forloop.last %}, {% endif %}{% empty %}–{% endfor %}</td>

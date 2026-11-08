@@ -27,6 +27,7 @@
   {% csrf_token %}
   {{ header.token }}
   {% if header.non_field_errors %}<div class="form-error" role="alert">{{ header.non_field_errors }}</div>{% endif %}
+  {% include "farm/_withdrawal_change.html" with withdrawal_change=header.withdrawal_change %}
   <div class="form-grid">
     {% with field=header.measured_at %}{% include "registration/_field.html" %}{% endwith %}
     {% with field=header.source %}{% include "registration/_field.html" %}{% endwith %}

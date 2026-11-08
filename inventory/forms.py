@@ -17,9 +17,9 @@ from farm.forms.stock import DATE, DECIMAL, NOTES, ServiceErrors
 from farm.models import Equipment, EquipmentType, Feed, Site, Supplier
 from farm.models.supplier import SupplyCategory
 from farm.stock.dates import shown_date, site_today
-from farm.templatetags.feeding import amount
 
 from . import services
+from .templatetags.inventory import shown_quantity
 from .models import (
     QUANTITY, InventoryLot, IssueReason, ReorderLevel, StorageLocation, WriteOffReason,
 )
@@ -250,7 +250,7 @@ class BucketChoice(forms.ChoiceField):
 def bucket_label(row):
     """FS-01 · Feed 3 mm (F3) · lot 4711, expires 1 Mar 2027 — 1,200 kg"""
     params = {'location': row.location.code, 'item': row.item, 'lot': services.lot_label(row.lot),
-              'quantity': amount(row.quantity), 'unit': row.item.get_unit_display()}
+              'quantity': shown_quantity(row.quantity, row.item.unit), 'unit': row.item.get_unit_display()}
     if row.lot.number and row.lot.expiry_date:
         return _('%(location)s · %(item)s · lot %(lot)s, expires %(date)s — %(quantity)s %(unit)s') % {
             **params, 'date': shown_date(row.lot.expiry_date)}

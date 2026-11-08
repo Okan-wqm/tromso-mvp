@@ -5,8 +5,8 @@ emptied, so the oxygen is worked out at sea-level pressure and the pages say so 
 Each such change is an entry of the activity log ("system", the old and the new altitude and notes), and going back
 puts the altitude and the notes of each logged site back from it, where the site still holds what this migration left.
 
-Numbered 0028 after the farm migrations of main (0026); another branch's 0027 lands before it, and a merge migration
-joins them if two leaves meet."""
+Numbered 0029 on top of main's 0028_site_timezone_required (renumbered at the merge of main, 2026-11-08); whoever lands
+second renumbers again (one leaf per app)."""
 import django.core.validators
 from django.db import migrations, models
 from django.utils import timezone
@@ -27,7 +27,7 @@ def out_of_range(apps, schema_editor):
     day = timezone.localdate().isoformat()
     for site in Site._base_manager.filter(models.Q(altitude__lt=LOW) | models.Q(altitude__gt=HIGH)):
         before = (str(site.altitude), site.notes)
-        note = f'Altitude before migration 0028 ({day}), outside {LOW} .. {HIGH} m: {site.altitude}'
+        note = f'Altitude before migration 0029 ({day}), outside {LOW} .. {HIGH} m: {site.altitude}'
         site.notes = f'{site.notes}\n{note}' if site.notes else note
         site.altitude = None
         site.save(update_fields=['altitude', 'notes'])
@@ -44,12 +44,12 @@ def back(apps, schema_editor):
     restored = {}
     for entry in entries:
         old, new = entry.changes.get(ALTITUDE, [None, None]), entry.changes.get(NOTES, ['', ''])
-        if old[0] is not None and old[1] is None and 'migration 0028' in (new[1] or ''):
+        if old[0] is not None and old[1] is None and 'migration 0029' in (new[1] or ''):
             restored[entry.entity_id] = (old[0], new[0], new[1])
     for site in Site._base_manager.filter(pk__in=list(restored)):
         altitude, notes, left = restored[str(site.pk)]
         if site.altitude is not None or site.notes != left:
-            print(f'\n  0028 back: {site.name} changed since the migration, kept as it is.')
+            print(f'\n  0029 back: {site.name} changed since the migration, kept as it is.')
             continue
         before = (None, site.notes)
         site.altitude, site.notes = altitude, notes
@@ -60,7 +60,7 @@ def back(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('farm', '0026_production_form_other'),
+        ('farm', '0028_site_timezone_required'),
         ('core', '0007_audit_severity'),
     ]
 

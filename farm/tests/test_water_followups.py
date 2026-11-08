@@ -10,6 +10,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 
+from .. import withdrawal_gate
 from ..feeding.temperature import temperature_for
 from ..models import SamplingPoint
 from ..models.water_point import local_time
@@ -69,6 +70,7 @@ class JudgedAsTests(SourcesCase):
 
 
 class SystemWithoutLoopTests(SourcesCase):
+    @withdrawal_gate.opened('test fixture: water samples and points written straight in the database')
     def test_the_ration_takes_the_system_sensor_as_the_water_page_does(self):
         SamplingPoint.all_objects.filter(pk=self.loop.pk).update(is_active=False)
         self.on(self.ras, self.value('temperature_c', 11.0, seconds=30))

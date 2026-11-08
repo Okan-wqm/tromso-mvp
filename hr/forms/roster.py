@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from core.crud import TabbedForm, tab_fields
+from core.widgets import DayInput
 
 from .. import rules, scope, services
 from ..models import Employee, Shift, ShiftAssignment
@@ -27,7 +28,7 @@ class ShiftAssignmentForm(TabbedForm):
             'note': _('A remark for the lead’s own planning; it is not shown in the log.'),
         }
         widgets = {
-            'day': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'day': DayInput(),
             'note': forms.TextInput(),
         }
 

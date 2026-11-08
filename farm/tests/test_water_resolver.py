@@ -8,6 +8,7 @@ from decimal import Decimal
 
 from django.test import SimpleTestCase
 
+from .. import withdrawal_gate
 from ..water import read
 from ..water.evaluate import Status
 from .helpers import make_species, point_of
@@ -109,6 +110,7 @@ class OneResolverTests(SourcesCase):
         self.assertEqual(read.latest([drain], now=self.now)[drain.pk].get('temperature_c').point, drain)
         self.assertEqual(read.latest([inlet], now=self.now)[inlet.pk].get('temperature_c').value, D('14.2'))
 
+    @withdrawal_gate.opened('test fixture: water samples and points written straight in the database')
     def test_a_tie_at_one_measurement_time_goes_the_same_way_everywhere(self):
         """A sensor value and a sample measured at the same second: the sensor, on the water page and for the ration,
         fresh or stale."""
@@ -139,6 +141,7 @@ class OneResolverTests(SourcesCase):
         self.assertEqual(water, (D('8.0'), self.mid1, True))
         self.assertEqual(ration, water)
 
+    @withdrawal_gate.opened('test fixture: water samples and points written straight in the database')
     def test_a_loop_value_standing_in_is_judged_for_the_units_fish_only(self):
         """The system's value standing in for a unit is judged for that unit's fish, as its own would be, whether it
         is a sensor's or a sample of the loop."""
@@ -242,6 +245,7 @@ class StaleNeverCalculatesTests(SourcesCase):
         self.sample(hours=5 * 24, salinity_ppt='33')
         self.assertIsNotNone(self.latest().get('oxygen_saturation_pct').value)
 
+    @withdrawal_gate.opened('test fixture: water samples and points written straight in the database')
     def test_p8_a_stale_saturation_is_never_judged_with_todays_temperature(self):
         self.stock()
         self.limit('oxygen_mg_l', critical_low=5, warning_low=7)

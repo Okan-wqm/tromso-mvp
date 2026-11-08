@@ -16,7 +16,12 @@ FOR-2023-12-14-2087) states them; read on lovdata.no on 2026-11-03.
 
 The weeks are ISO weeks (Monday to Sunday), as the regulation's "mandag i uke … søndag i uke" reads. Which
 area a site is in is set on the site (Facility › Sites); a site without one is judged by the stricter of the
-two areas, and the page says so."""
+two areas, and the page says so.
+
+Which treatments the weekly lice report lists: those given for sea lice (the reason). A sea-lice medicine given for
+another reason is right sometimes (hydrogen peroxide is also an AGD treatment) and is never refused, but it is left out of
+the report: `left_out_of_lice_report` is that rule, read by the treatment's dialog (a warning) and the report (audit F-083,
+F-239)."""
 from decimal import Decimal
 
 SOUTH, NORTH = 'south', 'north'
@@ -52,3 +57,10 @@ def minimum_fish(area, week):
 def over(average, area, week):
     """Whether a site's average of adult female lice breaks the limit: it must be below it."""
     return average >= limit(area, week)
+
+
+def left_out_of_lice_report(medicine, reason):
+    """Whether a treatment with `medicine` for `reason` is a sea-lice medicine the weekly sea-lice report leaves out: it
+    lists the treatments for sea lice only."""
+    from farm.models.health import MedicineKind, TreatmentReason   # the models read this module's limits (Site)
+    return medicine is not None and medicine.kind == MedicineKind.LICE and reason != TreatmentReason.SEA_LICE

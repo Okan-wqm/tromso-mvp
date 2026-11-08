@@ -1,4 +1,4 @@
-"""Migration farm/0028_site_altitude_range on a database that already has sites (F-089): an altitude within 0 .. 5000 m
+"""Migration farm/0029_site_altitude_range on a database that already has sites (F-089): an altitude within 0 .. 5000 m
 stays; one outside it (a slip: a minus sign, two zeros too many; the owner: no site of ours lies below sea level) is
 moved into the site's notes with the day the migration ran and emptied, each change written to the activity log, so the
 oxygen is worked out at sea-level pressure and the pages say so, never at an impossible pressure; the database then
@@ -10,8 +10,8 @@ from django.db.migrations.executor import MigrationExecutor
 from django.test import TransactionTestCase
 from django.utils import timezone
 
-BEFORE = [('farm', '0026_production_form_other')]
-AFTER = [('farm', '0028_site_altitude_range')]
+BEFORE = [('farm', '0028_site_timezone_required')]
+AFTER = [('farm', '0029_site_altitude_range')]
 D = Decimal
 
 
@@ -46,7 +46,7 @@ class AltitudeMigrationTests(TransactionTestCase):
         for site, typed in ((typo, '50000.00'), (minus, '-5000.00'), (low, '-430.00')):
             row = Site.objects.get(pk=site.pk)
             self.assertIsNone(row.altitude)
-            self.assertIn(f'Altitude before migration 0028 ({today}), outside 0 .. 5000 m: {typed}', row.notes)
+            self.assertIn(f'Altitude before migration 0029 ({today}), outside 0 .. 5000 m: {typed}', row.notes)
             entry = AuditLog.objects.get(entity_type='site', entity_id=str(site.pk))
             self.assertEqual((entry.action, entry.user_name, entry.entity_label), ('update', 'system', site.name))
             self.assertEqual(entry.changes['Altitude (m)'], [typed, None])

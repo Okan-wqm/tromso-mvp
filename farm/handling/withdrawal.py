@@ -51,3 +51,16 @@ def blocks(unit, day):
     """Every provider's blocks for the fish in `unit` on `day`; None when no provider is registered."""
     found = blocks_of([unit], day)
     return None if found is None else found[unit.pk]
+
+
+SOURCE_NAMES = {'treatment': 'treatment', 'feedingrecord': 'feeding'}
+
+
+def source_key(source):
+    """What a withdrawal comes from, as the acknowledgements store it: "treatment:<id>" or "feeding:<id>" (a medicated
+    feeding no in-feed treatment covers); '' for none. check_withdrawal matches an acknowledgement to a harvest's
+    withdrawal by it."""
+    if source is None:
+        return ''
+    name = source._meta.model_name
+    return f'{SOURCE_NAMES.get(name, name)}:{source.pk}'

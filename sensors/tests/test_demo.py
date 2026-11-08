@@ -3,6 +3,7 @@ the payload format, a device per tank and per system with 7-8 water channels, to
 the tank's middle point or to the system, a simulator credential), idempotent, refused unless confirmed, removable with
 `--remove` without touching any other configuration; and every parameter's reading shows on the water page with its
 origin and age and in the tank's and the system's charts."""
+import re
 from datetime import timedelta
 from io import StringIO
 
@@ -119,7 +120,7 @@ class EveryParameterShowsTests(DemoCase):
                 for seconds in (45, 35, 25):          # after the binding began (a minute before the setup ran)
                     cursor.execute('INSERT INTO sensors_reading (channel_no, ts, value) VALUES (%s, %s, %s)',
                                    [channel.channel_no, now - timedelta(seconds=seconds), value])
-        page = self.client.get(reverse('farm:water')).content.decode()
+        page = re.sub(r'<[^>]+>', '', self.client.get(reverse('farm:water')).content.decode())   # the words
         tank_device = Device.objects.get(code=f'{demo.CODE_PREFIX}{self.units[0].code}')
         for channel in tank_device.channels.all():
             self.assertRegex(page, rf'unit sensor #{channel.channel_no} · \d+ s ago', channel.quantity)

@@ -1,5 +1,5 @@
 {% extends "crud/list.html" %}
-{% load i18n %}
+{% load i18n sensors %}
 {% comment %} Sensors › Operations › Alarm rules (sensors.resources.AlarmRuleResource). Shown, never sent. {% endcomment %}
 {% block search_placeholder %}{% trans "Search by channel or quantity" %}{% endblock %}
 {% block notice %}<p class="notice notice-warning" role="status">{% trans "Alarms are shown on the Sensors pages, not sent: nobody is notified yet." %}</p>{% endblock %}
@@ -12,7 +12,7 @@
       {% for rule in objects %}
       <tr>
         <td><span class="row-title">{{ rule }}</span></td>
-        <td class="num">{{ rule.threshold|floatformat:"-3"|default:"—" }}</td>
+        <td class="num">{{ rule.threshold|measured:rule.quantity_code }}</td>
         <td class="num">{{ rule.for_s }}</td>
         <td>{{ rule.get_severity_display }}</td>
         <td>{% if rule.is_active %}{% trans "Active" %}{% else %}<span class="badge badge-closed">{% trans "Inactive" %}</span>{% endif %}</td>

@@ -20,13 +20,14 @@ from django.utils.text import format_lazy
 from django.utils.translation import gettext, gettext_lazy as _
 
 from core.crud import Fieldset, TabbedForm, tab_fields
+from core.widgets import MomentInput
 
 from ..models import (Equipment, ProductionDepartment, SamplingPoint, Site, Species, System, Tank, WaterLimit,
                       WaterMeasurement)
 from ..models.site import ALTITUDE_HIGH, ALTITUDE_LOW, zone_of
 from ..models.water import BOUNDS
 from ..models.water_point import EQUIPMENT, SYSTEM, UNIT, PointKind, owner_type_of, site_of
-from ..templatetags.water import limit_text, source_line
+from ..templatetags.water import limit_text, source
 from ..water import calculation, deffeyes, dosing, parameters, read, services
 from ..water.parameters import GROUPS, MEASURED
 from .stock import DECIMAL, ServiceErrors, VoidForm
@@ -40,7 +41,7 @@ class SiteClockField(forms.DateTimeField):
     """A date and time on the clock of the point's site: read as typed, without a zone. The form puts it in
     the site's zone (farm.models.site.zone_of); the browser's zone is never used (WQ-10)."""
 
-    widget = forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M')
+    widget = MomentInput()
 
     def prepare_value(self, value):
         return value
@@ -182,7 +183,7 @@ class OxygenInputs:
             if reading is not None and reading.value is not None and reading.fresh(timezone.now()):
                 now = _('now %(value)s, %(source)s') % {
                     'value': formats.number_format(reading.value, parameters.get(code).decimals),
-                    'source': source_line(reading)}
+                    'source': '{origin} · {age}'.format(**source(reading))}
             elif code == parameters.SALINITY and assumed is not None:
                 now = _('fresh water, 0')
             else:
@@ -264,7 +265,7 @@ class WaterSampleForm(OxygenInputs, ValuesMixin, ServiceErrors, forms.Form):
         data = self.cleaned_data
         return services.record(user, point=data['point'], measured_at=data['measured_at'], source=data['source'],
                                values=self.entered(), notes=data['notes'], token=data['token'],
-                               require_basis=True)
+                               require_basis=True, withdrawal_ack=data['withdrawal_ack'])
 
 
 # ---- a round --------------------------------------------------------------------------------------------

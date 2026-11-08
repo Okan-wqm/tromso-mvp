@@ -196,7 +196,7 @@ class BindView(CreateView):
         # Now, on the clock of the place's site, else the channel's device's (the company's while no channel is chosen).
         zone = bindings.clock(channel.device, place_of(initial.get('target', ''))) if channel is not None \
             else zone_of(None)
-        initial['valid_from'] = timezone.localtime(timezone=zone).strftime('%Y-%m-%dT%H:%M')
+        initial['valid_from'] = timezone.localtime(timezone=zone).replace(tzinfo=None, second=0, microsecond=0)
         return self.page(BindForm(initial=initial))
 
     def post(self, request):

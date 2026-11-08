@@ -6,6 +6,7 @@ only where the primary has no data, gaps where the spacing is longer than the ch
 points, the chart's SVG, the CSV of what is drawn, the Charts and Live values pages and their right."""
 import csv
 import io
+import re
 from datetime import datetime, timedelta, timezone as tz
 from decimal import Decimal
 from zoneinfo import ZoneInfo
@@ -248,6 +249,19 @@ class PageTests(ReadCase):
         self.assertContains(page, 'TEMPERATURE-C')
         self.assertContains(page, '9.5')
         self.assertContains(page, 'Fresh')
+
+    def test_the_live_values_are_said_at_their_quantitys_precision(self):
+        """One rule for a value: a quantity's own decimals (a water parameter's, farm/water/parameters.py), as the water
+        pages say it: 13.0 and 45.4, never 13 beside 45.400 in one column."""
+        now = timezone.now()
+        nitrate = make_channel(self.device, 'nitrate_n_mg_l')
+        conductivity = make_channel(self.device, 'conductivity_us_cm')
+        for channel, value in ((self.temp, 13.0), (nitrate, 45.4), (conductivity, 1520.0)):
+            ChannelState.objects.create(channel_no=channel.channel_no, last_value=value, last_value_ts=now,
+                                        last_good_at=now)
+        page = self.client.get(reverse('sensors:live')).content.decode()
+        values = re.findall(r'<td class="num">([^<]*)</td>', page)
+        self.assertEqual(sorted(values), sorted(['13.0', '45.4', '1,520']))
 
     def test_reading_needs_its_right(self):
         other = get_user_model().objects.create_user('other', 'other@example.com', 'x')

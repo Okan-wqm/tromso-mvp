@@ -27,6 +27,7 @@ from ..stock.fold import Line, Op
 from .helpers import make_facility, make_species, role
 from .test_feeding import FeedingTestCase, make_unit
 from .test_harvest import HARVEST_KEEPER
+from farm import withdrawal_gate
 
 
 def setUpModule():
@@ -146,6 +147,7 @@ class SpeciesRuleTests(CleanerFishTestCase):
         self.assertEqual(stock.cleaner_stock.count, 800)
         self.assertStockAddsUp()
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_check_stock_finds_cleaner_fish_in_a_land_unit_and_two_production_species_in_a_cage(self):
         for code, unit, species in (('B-2026-901', self.t1, self.lump), ('B-2026-902', self.cage, self.trout)):
             batch = Batch.objects.create(code=code, species=species, input_stage='fry', origin='own_hatchery',
@@ -476,6 +478,7 @@ class HealthRecordsOfTheFishTests(CleanerFishTestCase):
 
 
 class DatabaseRuleTests(CleanerFishTestCase):
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_database_holds_the_feeding_targets_the_provenance_the_year_class_and_the_cull_reasons(self):
         record = self.record(kilos='1')
         with self.assertRaises(IntegrityError), transaction.atomic():

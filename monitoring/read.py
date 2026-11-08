@@ -438,20 +438,20 @@ def _age(reading, now):
 
 def _alerts(middle, now):
     """([critical reasons], [warning reasons], [the reasons that are old values]) of the middle point's values the limits
-    judge critical or a warning, fresh or old: an old one keeps its judgement and says its age (the value is the last
-    word there is about the water; it is never dropped for being old)."""
+    judge critical or a warning, fresh or old: an old one keeps its judgement and says "no recent data" (the value is the
+    last word there is about the water; it is never dropped for being old). The values and the words are the water
+    page's one rule, farm.water.read.PointWater.alerts."""
     critical, warning, old = [], [], []
-    for reading in (middle.readings.values() if middle is not None else ()):
-        if reading.value is None or reading.judged not in ALERTS:
+    for reading, judged, stale in (middle.alerts if middle is not None else ()):
+        if reading.value is None:
             continue
-        status = Status(reading.judged).label
-        if reading.fresh(now):
+        status = Status(judged).label
+        if not stale:
             text = '{}: {}'.format(reading.parameter.label, status)
         else:
-            text = _('%(label)s: %(status)s, no recent data, %(age)s old') % {
-                'label': reading.parameter.label, 'status': status, 'age': _age(reading, now)}
+            text = '{}: {}'.format(reading.parameter.label, _('%(status)s, no recent data') % {'status': status})
             old.append(text)
-        (critical if reading.judged == Status.CRITICAL else warning).append(text)
+        (critical if judged == Status.CRITICAL else warning).append(text)
     return critical, warning, old
 
 

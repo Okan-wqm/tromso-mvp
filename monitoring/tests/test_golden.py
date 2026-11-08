@@ -20,6 +20,7 @@ from . import golden
 from .golden import Normaliser, cards_say, multiset_missing
 from . import TEMPLATE, MonitoringCase
 from ..cards.builtin import DETAILED
+from farm import withdrawal_gate
 
 PAGE, CARDS = reverse('monitoring:monitor'), reverse('monitoring:cards')
 
@@ -28,6 +29,7 @@ class GoldenFarm(MonitoringCase):
     """T-01 (no water: no recent data), T-02 (the worked example's ration) and P-01 (an empty pond in maintenance), and
     eighteen more units G-00 to G-17, each in a state of its own (below). Every value but G-17's nitrite has a limit."""
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def setUp(self):
         # The clock is pinned to 18:00 UTC yesterday, so what the cards say does not depend on the time of day the suite
         # runs (second cross review, finding 10: G-03's sample, 30 h old, fell on the day before yesterday in the early

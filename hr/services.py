@@ -402,8 +402,8 @@ def clock_out(user):
 def enter_presence(user, employee, clock_in_at, clock_out_at, note):
     """A lead records presence for a person of their team: times already on the site's clock as instants, and a reason
     (required: the CHECK on the table says so too). Needs Create on Attendance and the person in the user's team."""
-    if not user.has_perm('hr.add_attendancerecord') or not scope.can_reach(user, employee, timezone.localtime(
-            clock_in_at, zone_of(read.site_on(employee, clock_in_at.date()))).date()) or self_plan(user, employee):
+    if not user.has_perm('hr.add_attendancerecord') or not scope.can_reach(
+            user, employee, read.local_day(employee, clock_in_at)[0]) or self_plan(user, employee):
         raise PermissionDenied
     note = (note or '').strip()
     if not note:

@@ -1,5 +1,5 @@
 {% extends "crud/detail.html" %}
-{% load i18n crud %}
+{% load i18n crud dates %}
 {% comment %} One leave request as the viewer reads it (hr.resources.LeaveRequestResource.detail_extras): the type and the dates
    to the team's lead (the type only to who may decide it), the reason only to the person and the holders of Everyone. {% endcomment %}
 {% block title %}{{ object.employee.full_name }}{% endblock %}
@@ -12,17 +12,17 @@
     <div><dt>{% trans "Last day" %}</dt><dd>{{ object.last_day|date:"DATE_FORMAT" }}</dd></div>
     <div><dt>{% trans "Charged" %}</dt><dd>{{ row.days|floatformat:"-2" }}</dd></div>
     <div><dt>{% trans "Status" %}</dt><dd>{{ object.get_status_display }}</dd></div>
-    {% if object.decided_at %}<div><dt>{% trans "Decided by" %}</dt><dd>{% if object.decided_by %}{{ object.decided_by.get_full_name|default:object.decided_by.get_username }}{% else %}{% trans "Granted at once" %}{% endif %}, {{ object.decided_at|date:"DATETIME_FORMAT" }}</dd></div>{% endif %}
+    {% if object.decided_at %}<div><dt>{% trans "Decided by" %}</dt><dd>{% if object.decided_by %}{{ object.decided_by.get_full_name|default:object.decided_by.get_username }}{% else %}{% trans "Granted at once" %}{% endif %}, {{ object.decided_at|company_clock|date:"DATETIME_FORMAT" }}</dd></div>{% endif %}
     {% if row.show_reason %}<div><dt>{% trans "Reason" %}</dt><dd>{{ object.reason|default:"–" }}</dd></div>{% endif %}
     {% if row.show_reason and object.decision_note %}<div><dt>{% trans "Decision note" %}</dt><dd>{{ object.decision_note }}</dd></div>{% endif %}
   </dl>
   <div class="form-actions">
-    {% if row.can_decide %}
-    <a class="button button-inline" href="{% url 'hr:leaverequest_approve'|mounted:request object.pk %}" data-modal>{% trans "Approve" %}</a>
-    <a class="button button-ghost" href="{% url 'hr:leaverequest_reject'|mounted:request object.pk %}" data-modal>{% trans "Reject" %}</a>
-    {% endif %}
     {% if row.can_cancel %}
     <form method="post" action="{% url 'hr:leaverequest_cancel'|mounted:request object.pk %}" class="inline-form">{% csrf_token %}<button type="submit" class="button button-ghost">{% trans "Cancel the request" %}</button></form>
+    {% endif %}
+    {% if row.can_decide %}
+    <a class="button button-ghost" href="{% url 'hr:leaverequest_reject'|mounted:request object.pk %}" data-modal>{% trans "Reject" %}</a>
+    <a class="button button-inline" href="{% url 'hr:leaverequest_approve'|mounted:request object.pk %}" data-modal>{% trans "Approve" %}</a>
     {% endif %}
   </div>
 </section>

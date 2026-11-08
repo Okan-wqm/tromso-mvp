@@ -48,7 +48,7 @@ class SensorsCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = get_user_model().objects.create_user('tekniker', 'tekniker@example.com', 'x')
-        cls.site = Site.objects.create(name='Bergen', code='BG')
+        cls.site = Site.objects.create(name='Bergen', code='BG', timezone='UTC')     # the clock the tests count on
         cls.hall = ProductionDepartment.objects.create(site=cls.site, name='Hall A', code='HA')
         cls.connection = make_connection()
         cls.format = make_format()

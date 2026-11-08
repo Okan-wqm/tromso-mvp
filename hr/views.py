@@ -2,7 +2,6 @@
 team overview and the organisation chart. Each is served in Company › HR and again under Production › Team (core.crud.Mount):
 the request carries the mount, the reads take its realm, and every link and return stays in it."""
 import uuid
-from datetime import date
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -10,13 +9,13 @@ from django.db import IntegrityError
 from django.http import Http404, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _, ngettext
 from django.views.decorators.http import require_POST
 
 from core import navigation
 from core.crud import done, mount_of, mounted_name, render_page
+from core.dates import read_day
 from farm.models.site import zone_of
 from farm.stock.dates import site_today
 
@@ -45,10 +44,13 @@ def parse_cells(values):
     """[(employee id, day)] from 'employee id:YYYY-MM-DD' strings; None when one is malformed."""
     cells = []
     for value in values:
-        employee, _separator, day = value.partition(':')
+        employee, _separator, text = value.partition(':')
+        day = read_day(text)                         # the one day parser: ISO, inside the window of dates
         try:
-            cells.append((uuid.UUID(employee), date.fromisoformat(day)))
+            cells.append((uuid.UUID(employee), day))
         except ValueError:
+            return None
+        if day is None:
             return None
     return cells
 
@@ -154,7 +156,7 @@ def cancel(request, pk):
 def _today_context(request):
     own = services.own_employee(request.user)
     open_punch = AttendanceRecord.objects.filter(employee=own, clock_out__isnull=True).first() if own else None
-    open_zone = zone_of(read.site_on(own, timezone.localdate())) if open_punch else None
+    open_zone = zone_of(read.site_on(own, site_today(None))) if open_punch else None
     return {'board': read.board(request.user, realm=scope.realm_for(request)), 'own': own, 'open_punch': open_punch,
             'open_zone': open_zone,
             'can_enter': request.user.has_perm('hr.add_attendancerecord'), 'states': rules.STATES}
@@ -196,8 +198,7 @@ def team_overview(request):
     """Team overview: the viewer's people and their week in numbers (`?week=`, `?department=`, `?q=`, `?page=`)."""
     if not request.user.has_perm('hr.view_shiftassignment'):
         raise PermissionDenied
-    from .resources.roster import parse_day
-    start = parse_day(request.GET.get('week')) or site_today(None)
+    start = read_day(request.GET.get('week'), request) or site_today(None)
     department = units.find(request.GET.get('department', ''))
     try:
         page = int(request.GET.get('page', '1'))

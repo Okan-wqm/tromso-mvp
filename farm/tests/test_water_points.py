@@ -27,6 +27,7 @@ from ..water.evaluate import Status
 from .helpers import point_of, role
 from .test_stock import make_unit
 from .test_water import WATER_KEEPER, WaterTestCase
+from farm import withdrawal_gate
 
 D = Decimal
 POINT_MANAGER = ('view_samplingpoint', 'add_samplingpoint', 'change_samplingpoint', 'delete_samplingpoint',
@@ -131,6 +132,7 @@ class ConstraintTests(PointTestCase):
                 SamplingPoint.objects.create(**{field: owner}, name='After the filter', kind='outlet')
         SamplingPoint.objects.create(unit=self.t2, name='After the filter', kind='outlet')       # another owner's
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_an_owner_has_one_active_middle_point_and_inactive_ones_stay(self):
         for field, owner in (('unit', self.pond), ('system', self.bare_system()), ('equipment', self.filter)):
             with self.subTest(owner=field):
@@ -177,6 +179,7 @@ class RuleTests(PointTestCase):
         point.clean()
         self.assertEqual((point.depth_m, point.flow_m3_h, point.flow_share_pct), (None, D(4), None))
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_outlet_shares_of_an_owner_add_up_to_at_most_100(self):
         side, drain = self.named(self.t1, 'side_outlet')['Side outlet'], self.named(self.t1, 'bottom_drain')[
             'Bottom drain']
@@ -614,6 +617,7 @@ class ReadTests(PointTestCase):
                          (None, {}, Status.NOT_MEASURED))
         self.assertEqual(water[self.t1.pk].get('temperature_c').point, outlet)
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_sources_of_a_units_temperature_are_its_middle_point_then_its_loops(self):
         parent = System.objects.create(name='Parent', code='PR', site=self.bergen)
         System.objects.filter(pk=self.ras.pk).update(parent=parent)
@@ -694,9 +698,9 @@ class ReadTests(PointTestCase):
         readers = sorted(path.relative_to(root).as_posix() for path in root.rglob('*.py')
                          if not {'water', 'tests', 'migrations'} & set(path.relative_to(root).parts)
                          and 'WaterMeasurement' in path.read_text(encoding='utf-8'))
-        self.assertEqual(readers, ['admin.py', 'forms/water.py', 'models/__init__.py', 'models/water.py',
-                                   'models/water_point.py', 'screens.py'])    # the sample's form and its data-map
-        # declaration name its model, they read nothing
+        self.assertEqual(readers, ['admin.py', 'apps.py', 'forms/water.py', 'models/__init__.py', 'models/water.py',
+                                   'models/water_point.py', 'screens.py'])    # the sample's form, its data-map
+        # declaration and the withdrawal gate's registry (apps.py) name its model, they read nothing
 
     def test_a_samples_salinity_falls_back_to_its_points_then_its_owners_middle_point(self):
         Tank.objects.filter(pk=self.t1.pk).update(water_type='saltwater')
@@ -766,6 +770,7 @@ class DialogTests(PointTestCase):
         response = self.client.get(reverse('farm:water_record'), {'point': self.named(self.t1, 'inlet')['Inlet'].pk})
         self.assertEqual(response.context['form']['point'].value(), str(self.named(self.t1, 'inlet')['Inlet'].pk))
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_from_nowhere_every_active_point_is_offered_grouped_by_what_owns_it(self):
         point_of(self.filter, 'inlet')
         SamplingPoint.objects.filter(pk=self.mid2.pk).update(is_active=False)
@@ -828,6 +833,7 @@ class RoundTests(PointTestCase):
         response = self.client.get(reverse('farm:water_round'), {'site': self.bergen.pk, **query})
         return [str(row.point) for row in response.context['rows']]
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_a_round_has_a_row_per_middle_point_and_lists_other_points_when_asked(self):
         point_of(self.pond)
         self.assertEqual(self.rows(), ['P-01 › Middle', 'T-01 › Middle', 'T-02 › Middle', 'R1 › Loop'])

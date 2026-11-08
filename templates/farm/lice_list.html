@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load i18n health %}
+{% load i18n health dates %}
 {% comment %} Operations › Sea-lice counts (farm.health.views.lice_counts): each site's weekly averages against the statutory
    limit of lakselusforskriften § 8, worked out from the counts (Vedlegg 1 point 6), then every count. An
    average at or over the limit is a warning; nobody is alerted.{% endcomment %}
@@ -19,8 +19,8 @@
       <option value="">{% trans "All units" %}</option>
       {% for unit in choices.unit %}<option value="{{ unit.pk }}"{% if params.unit == unit.pk|stringformat:"s" %} selected{% endif %}>{{ unit.code }} · {{ unit.name }}</option>{% endfor %}
     </select>
-    <label class="date-filter">{% trans "From" %} <input type="date" name="from" value="{{ params.from }}"></label>
-    <label class="date-filter">{% trans "To" %} <input type="date" name="to" value="{{ params.to }}"></label>
+    <label class="date-filter">{% trans "From" %} {% day_input "from" params.from %}</label>
+    <label class="date-filter">{% trans "To" %} {% day_input "to" params.to %}</label>
     <label class="check"><input type="checkbox" name="voided" value="1"{% if params.voided %} checked{% endif %} data-autosubmit> {% trans "Show voided" %}</label>
     <button type="submit" class="button button-ghost">{% trans "Filter" %}</button>
   </form>
@@ -99,7 +99,7 @@
         <td class="num">{{ count.adult_females }}<span class="row-sub">{% blocktrans trimmed with value=count|per_fish:"adult_females" %}{{ value }} per fish{% endblocktrans %}</span></td>
         <td class="num">{{ count.mobile }}<span class="row-sub">{% blocktrans trimmed with value=count|per_fish:"mobile" %}{{ value }} per fish{% endblocktrans %}</span></td>
         <td class="num">{{ count.attached }}<span class="row-sub">{% blocktrans trimmed with value=count|per_fish:"attached" %}{{ value }} per fish{% endblocktrans %}</span></td>
-        <td>{{ count.created_by.get_username|default:"system" }}<span class="row-sub">{{ count.created_at|date:"DATETIME_FORMAT" }}</span>{% if count.notes %}<span class="row-sub">{{ count.notes }}</span>{% endif %}{% if count.is_deleted %}<span class="row-sub">{% blocktrans trimmed with reason=count.void_reason name=count.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>
+        <td>{{ count.created_by.get_username|default:"system" }}<span class="row-sub">{{ count.created_at|site_clock:count.unit.production_department.site|date:"DATETIME_FORMAT" }}</span>{% if count.notes %}<span class="row-sub">{{ count.notes }}</span>{% endif %}{% if count.is_deleted %}<span class="row-sub">{% blocktrans trimmed with reason=count.void_reason name=count.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>
         <td>{% if count.is_deleted %}<span class="badge badge-voided">{% trans "Voided" %}</span>{% elif row.void_url and count|unit_voidable %}<a class="op-void" href="{{ row.void_url }}" data-modal>{% trans "Void" %}</a>{% endif %}</td>
       </tr>
       {% endwith %}{% endfor %}

@@ -112,6 +112,18 @@ SCREENS = {
         columns={'*': computed('what the person was shown when they acknowledged the warning: the handling check '
                                '(farm/handling/check.py) works it out and the service stores it')},
     ),
+    'WithdrawalAcknowledgement': Screen(
+        create=('farm:treatment_record', 'farm:treatment_last_day', 'farm:treatment_void', 'farm:feeding_record',
+                'farm:feeding_void', 'farm:water_record', 'farm:water_round', 'farm:water_void', 'farm:stock_harvest',
+                'farm:stock_transfer', 'farm:stock_void', 'farm:medicine_withdrawals'),
+        edit=no('append-only (a database trigger): what the person went on past stays as it was'),
+        delete=no('append-only (a database trigger): voiding the write leaves them as history'),
+        read=gap('no page lists them yet: check_withdrawal reads them, and the write\'s critical log entry says what was '
+                 'acknowledged'),
+        note='One row for each warning of the withdrawal guard (farm.health.withdrawal.guarded) the person went on past: '
+             'a harvest already recorded brought inside a withdrawal, or fish held today freed by the write.',
+        columns={'*': computed('what the withdrawal guard found and the person was shown, stored when they went on')},
+    ),
 
     # --- feeding ---
     'FeedingRecord': Screen(

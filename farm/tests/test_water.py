@@ -3,7 +3,7 @@ limits, judging on read, the values worked out from a sample, the pages and dial
 delete plan, the activity log and the database viewer, each checked against the stored rows."""
 import math
 import uuid
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from types import SimpleNamespace
 from unittest import mock
@@ -29,6 +29,7 @@ from ..water import chemistry, parameters, read, services, views as water_views
 from ..water.evaluate import Limits, Status, judge, worst
 from .helpers import make_species, point_of, role, stock_fish
 from .test_stock import make_unit
+from farm import withdrawal_gate
 
 WATER_KEEPER = ('view_watermeasurement', 'add_watermeasurement', 'delete_watermeasurement', 'view_tank',
                 'delete_tank', 'view_system', 'delete_system', 'view_samplingpoint', 'view_species', 'delete_species', 'view_waterlimit',
@@ -136,7 +137,7 @@ class WaterTestCase(TestCase):
         self.user = get_user_model().objects.create_user('ali', 'ali@example.com', 'eski-sifre-123')
         self.user.groups.add(role('Water keeper', *WATER_KEEPER))
         self.client.force_login(self.user)
-        self.bergen = Site.objects.create(name='Bergen', code='BG', altitude=D(0))
+        self.bergen = Site.objects.create(name='Bergen', code='BG', altitude=D(0), timezone='UTC')
         self.hall = ProductionDepartment.objects.create(site=self.bergen, name='Hall A', code='HA')
         self.ras = System.objects.create(name='RAS 1', code='R1', site=self.bergen, production_department=self.hall)
         self.t1 = make_unit('T-01', self.hall, system=self.ras)
@@ -212,6 +213,7 @@ class SchemaTests(WaterTestCase):
         services.void(self.user, old, 'Wrong unit')       # an update by id finds the row in its chunk
         self.assertEqual(WaterMeasurement.all_objects.get(pk=old.pk).void_reason, 'Wrong unit')
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_database_refuses_what_the_service_refuses(self):
         base = {'point': self.mid1, 'measured_at': self.now, 'source': 'manual'}
         cases = [
@@ -380,7 +382,7 @@ class LatestTests(WaterTestCase):
         self.sample(hours=30, ph='7')                     # fresh for 72 h, no limit
         water = self.latest()
         self.assertEqual(water.get('temperature_c').status, Status.STALE)
-        self.assertEqual(water.status, Status.NO_LIMIT)
+        self.assertEqual(water.status, Status.STALE)      # a value with a limit aged: never "No limit" over it
         water = self.latest(now=self.now + timedelta(days=3))
         self.assertEqual(water.status, Status.STALE)
 
@@ -470,6 +472,7 @@ class PointsWaterTests(WaterTestCase):
         self.assertEqual(by_name[self.inlet.name].get('temperature_c').value, D('8.8'))
         self.assertEqual(len(found[self.t2.pk]), 1)                # narrowed to its middle
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_an_inactive_point_is_left_out(self):
         SamplingPoint.objects.filter(pk=self.drain.pk).update(is_active=False)
         found = read.points_water([self.t1], self.now)
@@ -796,7 +799,7 @@ class PageTests(WaterTestCase):
 
     def test_the_first_and_the_last_day_a_calendar_has_are_no_server_error(self):
         """Cross review: 9999-12-31 is a day, and the day after it is none; 0001-01-01 lies before any clock's zone. A
-        day after today is today, a day more than a century back is a century back: one rule for both ends."""
+        day outside core.dates.read_day's window (1900-2100) is the default: never a server error."""
         today = timezone.localdate()
         for query in ({'to': '9999-12-31'}, {'from': '9999-12-31', 'to': '9999-12-31'},
                       {'from': '0001-01-01', 'to': '0001-01-02'}, {'from': '0001-01-01'}):
@@ -805,7 +808,7 @@ class PageTests(WaterTestCase):
                 self.assertEqual(response.status_code, 200)
                 start, end = response.context['start'], response.context['end']
                 self.assertLessEqual(end, today)
-                self.assertGreaterEqual(start, today - timedelta(days=water_views.OLDEST_DAYS))
+                self.assertGreaterEqual(start, date(1900, 1, 1))       # core.dates.read_day's window
                 self.assertLessEqual(start, end)
 
     def test_the_history_spans_at_most_a_year_and_judges_only_the_page_it_shows(self):
@@ -814,7 +817,7 @@ class PageTests(WaterTestCase):
         for hours in range(1, 6):
             self.sample(hours=hours, ph='7.2')
         today = timezone.localdate()
-        response = self.client.get(self.url, {'view': 'history', 'from': '0001-01-01'})
+        response = self.client.get(self.url, {'view': 'history', 'from': '1900-01-02'})     # read_day's window
         self.assertEqual(response.context['start'], today - timedelta(days=366))
         self.assertContains(response, 'A page shows at most 366 days: the first day was moved.')
         with mock.patch('farm.water.views.PAGE_SIZE', 2), \
@@ -1030,6 +1033,21 @@ class ProductionUnitsTests(WaterTestCase):
         person.groups.add(role(f'Role {len(codenames)}', *codenames))
         self.client.force_login(person)
 
+    def test_an_old_critical_value_reads_critical_no_recent_data_on_the_dot_and_the_drawer(self):
+        """The rule of the water page (PointWater.status, old_alert): the units' dot is red and says "Critical, no recent
+        data" (its title and its words for a screen reader), the drawer says it too; never red alone."""
+        self.stock()
+        self.limit('co2_mg_l', critical_high=15)
+        self.limit('ph', critical_low=6)
+        self.sample(hours=80, co2_mg_l='15.6')                                       # older than CO₂'s 72 fresh hours
+        self.sample(hours=1, ph='7.2', temperature_c='9', oxygen_mg_l='9')           # fresh and fine
+        response = self.client.get(self.url)
+        row = next(row for row in response.context['rows'] if row['unit'] == self.t1)
+        self.assertEqual((row['water'].status, row['water'].old_alert), (Status.CRITICAL, True))
+        self.assertContains(response, 'wq-critical" title="Critical, no recent data"')
+        self.assertContains(response, '<span class="sr-only">Critical, no recent data</span>')
+        self.assertContains(self.client.get(self.url, {'unit': self.t1.pk}), 'Critical, no recent data')
+
     def test_the_columns_the_status_dot_and_the_count_of_critical_units(self):
         self.stock()
         self.limit('oxygen_mg_l', critical_low=6, warning_low=7)
@@ -1096,7 +1114,50 @@ class ProductionUnitsTests(WaterTestCase):
         self.sample(temperature_c='18')
         tiles = self.client.get(reverse('production_home')).context['water_tiles']
         self.assertEqual([(str(tile['label']), tile['count'], tile['url']) for tile in tiles],
-                         [('Units with a critical water value', 1, reverse('farm:water'))])
+                         [('Sampling points with a critical water value', 1, reverse('farm:water'))])
+
+    def test_the_overview_counts_what_the_water_page_counts_critical(self):
+        """One count: the overview's figure is the water page's (every point it lists, a side outlet too), not a second
+        reading of the middle points only."""
+        self.stock()
+        self.limit('co2_mg_l', critical_high=15)
+        side = SamplingPoint.objects.create(unit=self.t1, name='East side outlet', kind='side_outlet')
+        self.sample(co2_mg_l='8')                                      # the middle point is fine
+        self.sample(point=side, co2_mg_l='15.6')                       # the side outlet is critical
+        page = self.client.get(reverse('farm:water'))
+        # The side outlet, and the unit's middle point: the outlet measures the unit's own water and the worst fresh
+        # value decides the unit's status (owner decisions 2026-11-08, A9.1 and P2).
+        self.assertEqual(page.context['critical_count'], 2)
+        tiles = self.client.get(reverse('production_home')).context['water_tiles']
+        self.assertEqual([(str(tile['label']), tile['count']) for tile in tiles],
+                         [('Sampling points with a critical water value', 2)])
+
+    def test_an_old_critical_value_keeps_its_point_critical_with_no_recent_data_and_no_limit_says_why(self):
+        """A point's status is the worst of its values. A critical value that grew old still counts: the point is
+        "Critical, no recent data", never hidden by a fresh OK of another parameter, never "No limit" (HA-K02's side outlet,
+        CO₂ 15.6 three days old). A value without a limit says why: no limit for the fish, or no fish that day."""
+        self.stock()
+        self.limit('co2_mg_l', critical_high=15)
+        self.limit('ph', critical_low=6)
+        side = SamplingPoint.objects.create(unit=self.t1, name='East side outlet', kind='side_outlet')
+        self.sample(point=side, hours=80, co2_mg_l='15.6', alkalinity_mg_l='90')   # older than CO₂'s 72 fresh hours
+        self.sample(point=side, hours=1, ph='7.2')                                  # a fresh OK of another parameter
+        page = self.client.get(reverse('farm:water'))
+        row = next(row for row in page.context['rows'] if row['point'] == side)
+        co2 = row['water'].get('co2_mg_l')
+        self.assertEqual((co2.status, co2.judged), (Status.STALE, Status.CRITICAL))
+        self.assertEqual((row['water'].status, row['water'].old_alert), (Status.CRITICAL, True))
+        self.assertContains(page, 'Critical, no recent data')
+        self.assertEqual(page.context['critical_count'], 2)            # and the unit's middle point (A9.1)
+        alkalinity = row['water'].get('alkalinity_mg_l')
+        self.assertEqual(alkalinity.status, Status.NO_LIMIT)
+        self.assertEqual(alkalinity.why_no_limit, 'No water limit is set for the fish in the unit.')
+        self.sample(point=point_of(self.t2), alkalinity_mg_l='90')                # T-02 holds no fish
+        empty = read.unit_water([self.t2])[self.t2.pk]
+        self.assertEqual(empty.status, Status.NO_LIMIT)
+        self.assertEqual(empty.why_no_limit, 'No fish in the unit: nothing to judge the water against.')
+        # The water page says it under the point's status.
+        self.assertContains(self.client.get(reverse('farm:water')), 'No fish in the unit: nothing to judge the water against.')
 
     def test_the_drawer_speaks_each_language(self):
         self.stock()

@@ -26,7 +26,7 @@
 <section class="detail-section">
   <h2 class="section-title">{% trans "Shifts" %}</h2>
   {% if shifts %}
-  <ul class="plain-list">{% for shift in shifts %}<li><span class="shift-chip tone-{{ shift.tone }}">{{ shift.code }}</span> {{ shift.name }} · {{ shift.starts_at|time:"H:i" }}–{{ shift.ends_at|time:"H:i" }}</li>{% endfor %}</ul>
+  <ul class="plain-list">{% for shift in shifts %}<li><span class="shift-chip tone-{{ shift.tone }}">{{ shift.code }}</span> {{ shift.name }} · {{ shift.starts_at|time:"TIME_FORMAT" }}–{{ shift.ends_at|time:"TIME_FORMAT" }}</li>{% endfor %}</ul>
   {% else %}<p class="muted">{% trans "No shifts yet." %}</p>{% endif %}
   {% if perms.hr.view_shift %}<p><a href="{% url 'hr:shift_list' %}">{% trans "Manage shifts" %}</a></p>{% endif %}
 </section>

@@ -14,6 +14,7 @@ from django.db import IntegrityError, transaction
 from django.urls import reverse
 from django.utils import timezone
 
+from .. import withdrawal_gate
 from ..feeding.temperature import temperature_for
 from ..models import Tank, WaterMeasurement
 from ..water import parameters, read, services
@@ -122,6 +123,7 @@ class StoredAsProvenanceTests(OxygenBasisCase):
                           'with.'])
         self.assertFalse(WaterMeasurement.objects.filter(oxygen_saturation_pct__isnull=False).exists())
 
+    @withdrawal_gate.opened('test fixture: water samples and points written straight in the database')
     def test_the_database_holds_a_basis_only_beside_an_oxygen_and_never_beside_its_own_value(self):
         sample = self.sample(hours=1, ph='7')
         for values in ({'oxygen_basis_temperature_c': D('9'), 'oxygen_basis_temperature_source': 'manual'},

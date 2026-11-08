@@ -118,7 +118,7 @@
   margin: 1rem 0;
   font-size: .9375rem;
 }
-.card-facts div { display: grid; grid-template-columns: 5.5rem 1fr; gap: .5rem; }
+.card-facts div { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: .5rem; }
 .card-facts dt { color: var(--muted); }
 .card-facts dd { margin: 0; overflow-wrap: anywhere; }
 
@@ -248,6 +248,8 @@
 
 .field textarea { resize: vertical; }
 
+/* The buttons of a form or a dialog, on one row: the others first, the one primary last
+   (core/tests_templates.py). A button there is as wide as its words, never the full width of base.css. */
 .form-actions {
   display: flex;
   flex-wrap: wrap;
@@ -256,6 +258,9 @@
   max-width: 52rem;
   margin-top: .5rem;
 }
+.form-actions > .button { display: inline-flex; align-items: center; justify-content: center; width: auto; margin-top: 0; padding: .6875rem 1.125rem; }
+/* A tab saved on its own (a row list, the history) shows its own buttons only: the record form's go with its fields. */
+.record-form:has(> .tab-panel):not(:has(> .tab-panel:not([hidden]))) > .form-actions { display: none; }
 
 /* Contacts */
 .contacts { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--line); }
@@ -345,15 +350,10 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
 /* Permission matrix (role form): a row per area, a column per action */
 .form-grid > .field-set { grid-column: 1 / -1; }
 
-.matrix-wrap {
-  overflow-x: auto;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--white);
-}
 .matrix { width: 100%; border-collapse: collapse; font-size: .9375rem; }
 .matrix th,
 .matrix td { padding: .625rem 1rem; border-bottom: 1px solid var(--line); text-align: center; }
+.matrix .matrix-note td { padding-top: 0; text-align: left; }      /* the lines of the area shown only to some */
 .matrix th[scope="row"],
 .matrix thead th:first-child { text-align: left; font-weight: 500; }
 .matrix thead th { color: var(--muted); font-size: .8125rem; font-weight: 600; }
@@ -383,10 +383,10 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
 
 @media (max-width: 767px) {
   .form-grid,
-  .form-grid-location { grid-template-columns: 1fr; }
+  .form-grid-location { grid-template-columns: minmax(0, 1fr); }
   .form-grid > .field,
   .form-grid-location > .field { grid-column: 1 / -1 !important; }
-  .contact-row { grid-template-columns: 1fr 1fr; }
+  .contact-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .row-list-head { display: none; }
   .contact-row .field { grid-column: 1 / -1; }
   .form-actions { justify-content: stretch; }
@@ -436,7 +436,7 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
 .audit-meta strong { color: var(--speck); font-weight: 600; }
 
 .audit-changes { display: grid; gap: .25rem; margin: .625rem 0 0; font-size: .9375rem; }
-.audit-changes div { display: grid; grid-template-columns: minmax(8rem, 14rem) 1fr; gap: .75rem; }
+.audit-changes div { display: grid; grid-template-columns: minmax(8rem, 14rem) minmax(0, 1fr); gap: .75rem; }
 .audit-changes dt { color: var(--muted); }
 .audit-changes dd { margin: 0; overflow-wrap: anywhere; }
 .audit-changes del { color: var(--muted); }
@@ -447,7 +447,7 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
 .pager { display: flex; align-items: center; gap: 1rem; margin-top: 1.5rem; color: var(--muted); }
 
 @media (max-width: 767px) {
-  .audit-changes div { grid-template-columns: 1fr; gap: 0; }
+  .audit-changes div { grid-template-columns: minmax(0, 1fr); gap: 0; }
 }
 
 /* Dialog: forms and confirmations open here (core.crud.render_page, components.js) */
@@ -487,7 +487,9 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
   .modal > div { max-height: 100vh; }
 }
 
-/* Filter next to the search box */
+/* Filter next to the search box: it wraps and its fields never get wider than the page (a long option). */
+.toolbar-filter { max-width: 100%; }
+.toolbar-filter :is(select, input) { max-width: 100%; }
 .toolbar-filter select {
   min-width: 12rem;
   padding: .6875rem 2rem .6875rem .875rem;
@@ -510,20 +512,32 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
   border-radius: 6px;
 }
 .notice .icon { width: 20px; height: 20px; }
+.notice:has(> ul, > ol) { flex-wrap: wrap; }
+.notice > :is(ul, ol) { flex-basis: 100%; }
 .notice-warning { background: #FBF0D9; color: #7A5410; }
 .notice-warning a { color: inherit; font-weight: 600; }
 .text-warning { color: #7A5410; font-style: italic; }
 
-/* Tables: every list (farm tabs, roles, users). The wrapper scrolls a wide table inside itself; it is
-   the containing block of what is positioned in the table (the screen-reader labels of the row
-   buttons), so nothing in a table can widen the page. */
+/* Tables: every table of every page is in a .table-wrap (core/tests_templates.py). The frame scrolls a wide table
+   inside itself, so no table widens the page, and shows that more lies to a side: a shade at the edge the table goes
+   on past, none at an edge it ends at (the white covers move with the table, the shades stay with the frame). It is
+   the containing block of what is positioned in the table. */
 .table-wrap {
   position: relative;
   overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--white);
+  background:
+    linear-gradient(to right, var(--white) 40%, rgba(255, 255, 255, 0)) left / 2.5rem 100% no-repeat local,
+    linear-gradient(to left, var(--white) 40%, rgba(255, 255, 255, 0)) right / 2.5rem 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, rgba(35, 41, 32, .28), rgba(35, 41, 32, 0)) left / 1rem 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, rgba(35, 41, 32, .28), rgba(35, 41, 32, 0)) right / 1rem 100% no-repeat scroll,
+    var(--white);
+  scrollbar-color: var(--sage) transparent;
+  scrollbar-width: thin;
 }
+.table-wrap-bare { border: 0; border-radius: 0; background: none; }   /* a small table in a card: the card is the frame */
+@media print { .table-wrap { overflow: visible; background: none; } }
 .data-table { width: 100%; border-collapse: collapse; font-size: .9375rem; }
 .data-table th {
   padding: .75rem 1rem;
@@ -543,12 +557,20 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
 .data-table tbody tr:hover { background: var(--mist); }
 .data-table .num { text-align: right; font-variant-numeric: tabular-nums; }
 .data-table .nowrap { white-space: nowrap; }
+/* A cell of words (a title over its lines) keeps a readable width: a table wider than its frame gives each column only
+   its narrowest width, which for words is one word a line. */
+.data-table :is(td, th):not(.num):has(> .row-sub) { min-width: 10rem; }
+/* On a phone the first column takes about half of the frame and its lines wrap, so the next columns show beside it. */
+@media (max-width: 640px) {
+  .data-table tbody :is(th, td:first-child) .nowrap { white-space: normal; }
+}
 .row-title { display: block; color: var(--speck); font-weight: 600; text-decoration: none; }
 a.row-title:hover { color: var(--stripe-dark); text-decoration: underline; }
 .row-sub { display: block; color: var(--muted); font-size: .8125rem; }
 .row-line { display: block; }
 .row-actions { width: 1%; text-align: right; white-space: nowrap; }
 .row-actions form { display: inline; }                  /* a POST action beside the links (a template's Copy) */
+td.row-actions > * + * { margin-left: .75rem; }         /* the actions of a row stand apart */
 
 /* Delete confirmation: what else the delete touches (core.softdelete) */
 .notice-error { background: #F7E6E6; color: var(--error); }
@@ -567,6 +589,11 @@ a.row-title:hover { color: var(--stripe-dark); text-decoration: underline; }
   font-weight: 600;
 }
 .affected ul { margin: 0; padding-left: 1.125rem; max-height: 9rem; overflow-y: auto; color: var(--muted); }
+
+/* Where a water value came from and how old it is (farm/_water_source.html), under the value: it breaks between the
+   origin and the age, and inside either only when that alone is wider than the cell. */
+.wq-source { display: block; color: var(--muted); font-size: .75rem; font-style: normal; font-weight: 400; line-height: 1.35; }
+.wq-origin, .wq-age { display: inline-block; }
 
 /* Water chemistry (templates/farm/water*.html, the unit drawer's Water section): a value's status is its
    colour. Only problems get a strong colour: critical is the error red, a warning amber; ok stays quiet;
@@ -1054,6 +1081,7 @@ a.grid-name:hover { color: var(--stripe-dark); text-decoration: underline; }
 .tile:hover { border-color: var(--stripe); }
 .tile-count { font-size: 2rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .tile-label { color: var(--muted); font-size: .9375rem; }
+.tile-sub { color: var(--muted); font-size: .8125rem; }
 
 .overview-block { margin: 0 0 1.5rem; }
 .overview-block h2 { margin: 0 0 .5rem; font-size: 1.125rem; }
@@ -1067,7 +1095,7 @@ a.grid-name:hover { color: var(--stripe-dark); text-decoration: underline; }
    accent tint with an accent bar, over capacity is amber with a rust capacity bar and an "Over" mark. */
 .units-main { min-width: 0; }
 
-.view-tabs { display: flex; gap: 1.5rem; margin: 0 0 1rem; border-bottom: 1px solid var(--line); }
+.view-tabs { display: flex; flex-wrap: wrap; gap: .25rem 1.5rem; margin: 0 0 1rem; border-bottom: 1px solid var(--line); }
 .view-tab {
   display: inline-flex; align-items: center; gap: .5rem;
   padding: .25rem 0 .625rem; margin-bottom: -1px;
@@ -1152,13 +1180,14 @@ a.grid-name:hover { color: var(--stripe-dark); text-decoration: underline; }
 .metrics div { padding: .625rem .75rem; background: var(--white); }
 .metrics dt { color: var(--muted); font-size: .8125rem; }
 .metrics dd { margin: 0; font-size: 1.375rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.metrics dd.row-sub { font-size: .8125rem; font-weight: 400; }   /* a figure's line under it reads as a line, not a figure */
 .drawer-capacity { display: grid; gap: .375rem; }
 .capacity-note { margin: 0; color: var(--muted); font-size: .875rem; }
 .drawer-table th, .drawer-table td { padding: .5rem .625rem; }
 .drawer-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
 .drawer-actions .button { justify-content: center; }
 .facts { display: grid; gap: .25rem; margin: 0; }
-.facts div { display: grid; grid-template-columns: 9rem 1fr; gap: .75rem; }
+.facts div { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: .75rem; }
 .facts dt { color: var(--muted); }
 .facts dd { margin: 0; font-variant-numeric: tabular-nums; }
 .op-history { display: grid; gap: .5rem; margin: 0; padding: 0; list-style: none; }
@@ -1251,7 +1280,7 @@ a.grid-name:hover { color: var(--stripe-dark); text-decoration: underline; }
 
 /* A read page (templates/crud/detail.html) and Company › Knowledge (templates/knowledge/): a document's reference,
    its file and text, a search's passages with the words found, a knowledge entry and its review. */
-.detail { display: grid; gap: 1.5rem; max-width: 60rem; }
+.detail { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; max-width: 60rem; }
 .detail-section { min-width: 0; }
 .detail-actions { justify-content: flex-start; }
 .reference { margin: 0 0 .375rem; font-size: 1.0625rem; line-height: 1.5; overflow-wrap: anywhere; }

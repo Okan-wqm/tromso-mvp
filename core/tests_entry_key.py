@@ -93,3 +93,43 @@ class SentBeforeValidationTests(TestCase):
         self.assertEqual(second.status_code, 302)
         self.assertEqual(second['Location'], first['Location'])
         self.assertEqual(Site.objects.count(), 1)
+
+
+class KeyOfAnotherRecordTests(TestCase):
+    """A key that already stands for a record of another kind (a form's key sent with another form, by tampering or
+    a broken client) is refused with a reason, never a server error (cross review F7c)."""
+
+    def setUp(self):
+        import uuid
+
+        from core.models import EntryKey
+        self.client.force_login(get_user_model().objects.create_superuser('root', 'root@example.com', 'x'))
+        self.site = Site.objects.create(name='Bergen', code='BG')
+        self.key = uuid.uuid4()
+        EntryKey.note(self.key, self.site)
+
+    def test_a_new_record_form_says_so(self):
+        response = self.client.post(reverse('farm:healthevent_create'), {
+            'site': str(self.site.pk), 'units': [], 'date': site_today(self.site).isoformat(), 'kind': 'observation',
+            'signs': [], 'diagnosis': '', 'confirmation': '', 'examined_by': '', 'vet': '', 'lab': '',
+            'lab_reference': '', 'findings': 'Pale gills', 'recommendations': '', 'closed_on': '', 'outcome': '',
+            ENTRY_KEY: str(self.key)})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['form'].non_field_errors(),
+                         ['This form was sent before for another record: open it again and send it anew.'])
+        self.assertFalse(HealthEvent.objects.exists())
+
+    def test_a_write_path_of_its_own_says_so(self):
+        from decimal import Decimal
+
+        from django.core.exceptions import ValidationError
+
+        from farm.models import ProductionDepartment
+        from farm.stock import services
+        from farm.tests.helpers import make_species
+        from farm.tests.test_stock import make_unit
+        unit = make_unit('T-01', ProductionDepartment.objects.create(site=self.site, name='Hall', code='HA'))
+        with self.assertRaisesMessage(ValidationError, 'This form was sent before for another record'):
+            services.record_input(get_user_model().objects.get(), species=make_species(), input_stage='fry',
+                                  origin='own_hatchery', day=services.local_today(unit),
+                                  lines=[(unit, 100, Decimal('5'))], token=self.key)

@@ -444,6 +444,12 @@ msgstr[0] "Değeri olmayan %(count)s zaman aralığı gölgelenir, asla doldurul
 msgstr[1] "Değeri olmayan %(count)s zaman aralığı gölgelenir, asla doldurulmaz."
 
 #, python-format
+msgid "%(count)s unit"
+msgid_plural "%(count)s units"
+msgstr[0] "%(count)s birim"
+msgstr[1] "%(count)s birim"
+
+#, python-format
 msgid "%(count)s warning"
 msgid_plural "%(count)s warnings"
 msgstr[0] "%(count)s uyarı"
@@ -520,6 +526,10 @@ msgid "%(direct)s person"
 msgid_plural "%(direct)s people"
 msgstr[0] "%(direct)s kişi"
 msgstr[1] "%(direct)s kişi"
+
+#, python-format
+msgid "%(done)s of %(planned)s meals done"
+msgstr "%(planned)s öğünün %(done)s tanesi verildi"
 
 #, python-format
 msgid "%(dose)s g/m³"
@@ -690,6 +700,10 @@ msgstr ""
 "%(date)s tarihinde bu yemleme dahil verilen %(kilos)s kg, %(unit)s biriminin kayıttaki "
 "%(biomass)s kg biyokütlesinin %%%(rate)s kadarı; günde %%%(limit)s üzeri olağan dışıdır. Yine de "
 "kaydetmek için aşağıdaki kutuyu işaretleyin."
+
+#, python-format
+msgid "%(kilos)s left"
+msgstr "%(kilos)s kaldı"
 
 #, python-format
 msgid ""
@@ -6847,6 +6861,12 @@ msgstr ""
 "Cihazın ne sıklıkla mesaj gönderdiği. Bunun üç katı süre boyunca mesaj gelmezse çevrimdışı "
 "sayılır."
 
+msgid "How rations are worked out"
+msgstr "Rasyonlar nasıl hesaplanır"
+
+msgid "How values are judged"
+msgstr "Değerler nasıl değerlendirilir"
+
 msgid ""
 "How wide the cards are at the least: compact fits more on a wall, comfortable is easier to read "
 "from a distance."
@@ -7389,6 +7409,9 @@ msgstr "Son değerler"
 msgid "Latest sea-lice count %(date)s, %(fish)s fish examined"
 msgstr "Son deniz biti sayımı %(date)s, %(fish)s balık incelendi"
 
+msgid "Latest water values, scrolls sideways"
+msgstr "Son su değerleri, yana kayar"
+
 msgid "Latitude"
 msgstr "Enlem"
 
@@ -7606,6 +7629,9 @@ msgstr "MQTT"
 msgid "Main navigation"
 msgstr "Ana gezinme"
 
+msgid "Main pages"
+msgstr "Ana sayfalar"
+
 msgid "Maintenance"
 msgstr "Bakım"
 
@@ -7721,6 +7747,9 @@ msgstr "Azami sıcaklık"
 
 msgid "Meal board"
 msgstr "Öğün panosu"
+
+msgid "Meal board, scrolls sideways"
+msgstr "Öğün panosu, yana kayar"
 
 msgid "Meals"
 msgstr "Öğün"
@@ -7923,6 +7952,9 @@ msgstr "Aylık"
 
 msgid "Monthly biomass"
 msgstr "Aylık biyokütle"
+
+msgid "More"
+msgstr "Diğer"
 
 #, python-format
 msgid "More than %(count)d widgets: a card this full is hard to read from a distance."
@@ -8675,6 +8707,9 @@ msgstr ""
 msgid "Nobody else is placed in your department this week."
 msgstr "Bu hafta departmanınızda başka kimse yok."
 
+msgid "Nobody is alerted: critical values are shown here, not sent."
+msgstr "Kimse uyarılmaz: kritik değerler burada gösterilir, gönderilmez."
+
 msgid "Nobody is expected today"
 msgstr "Bugün kimse beklenmiyor"
 
@@ -9214,6 +9249,10 @@ msgstr "Açık"
 msgid "Open %(name)s"
 msgstr "%(name)s panosunu aç"
 
+#, python-format
+msgid "Open %(unit)s"
+msgstr "%(unit)s birimini aç"
+
 msgid "Open alarms"
 msgstr "Açık alarmlar"
 
@@ -9225,9 +9264,6 @@ msgstr "Konuşmayı aç"
 
 msgid "Open health events"
 msgstr "Açık sağlık olayları"
-
-msgid "Open menu"
-msgstr "Menüyü aç"
 
 msgid "Open ones"
 msgstr "Açık olanlar"
@@ -9482,6 +9518,9 @@ msgstr "Kapasite üstü"
 
 msgid "Over the limit"
 msgstr "Sınırın üstünde"
+
+msgid "Over- and underfeeding are not flagged yet."
+msgstr "Fazla ve eksik yemleme henüz işaretlenmiyor."
 
 msgid "Overall length (m)"
 msgstr "Toplam uzunluk (m)"
@@ -9979,6 +10018,9 @@ msgstr "Üretim planları"
 
 msgid "Production units"
 msgstr "Üretim birimleri"
+
+msgid "Production units, scrolls sideways"
+msgstr "Üretim birimleri, yana kayar"
 
 #, python-format
 msgid ""
@@ -11792,6 +11834,9 @@ msgstr "Etken madde"
 
 msgid "Substance in the lice report"
 msgstr "Bit raporundaki etken madde"
+
+msgid "Suderra, home"
+msgstr "Suderra, ana sayfa"
 
 msgid "Suitable for"
 msgstr "Uygunluk"
@@ -13683,6 +13728,9 @@ msgstr "Yayımlandığı yıl."
 msgid "Their weight (kg)"
 msgstr "Toplam ağırlıkları (kg)"
 
+msgid "Theme"
+msgstr "Tema"
+
 msgid "There is already a rule for this handling and species."
 msgstr "Bu elleçleme ve tür için zaten bir kural var."
 
@@ -14608,6 +14656,9 @@ msgstr "%(point)s su numunesi iptal edildi."
 msgid "Water sample recorded at %(point)s."
 msgstr "%(point)s için su numunesi kaydedildi."
 
+msgid "Water samples, scrolls sideways"
+msgstr "Su numuneleri, yana kayar"
+
 msgid "Water source"
 msgstr "Su kaynağı"
 
@@ -15211,6 +15262,9 @@ msgstr "Giriş yaptınız."
 
 msgid "You are clocked out."
 msgstr "Çıkış yaptınız."
+
+msgid "You are here"
+msgstr "Buradasınız"
 
 msgid "You are its owner. People who cannot use Messages are not listed."
 msgstr "Kanalın sahibi sizsiniz. Mesajlar'ı kullanamayan kişiler listede yok."

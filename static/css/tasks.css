@@ -1,33 +1,33 @@
 /* Operations › Tasks and Recurring tasks (templates/tasks/): the page uses the Production units layout (view tabs,
    table, drawer, components.css); this adds the statuses, the overdue mark and the checklist. Only problems get
-   colour: overdue and urgent are rust, high is amber, done is the healthy mist. */
-.badge-open { background: #ECECEA; color: var(--speck); }
-.badge-in_progress { background: var(--active-bg); color: var(--stripe-dark); }
-.badge-done { background: var(--mist); color: var(--olive); border: 1px solid var(--sage); }
-.badge-cancelled { background: #ECECEA; color: var(--muted); }
-.badge-overdue { background: #F7E6E6; color: var(--error); }
-.priority-urgent { color: var(--error); font-weight: 600; }
-.priority-high { color: #7A5410; font-weight: 600; }
-.data-table tbody tr.is-overdue { box-shadow: inset 4px 0 0 var(--error); }
+   colour: overdue and urgent are critical red, high is amber, done stays neutral. */
+.badge-open { background: var(--surface-sunken); color: var(--text-1); }
+.badge-in_progress { background: var(--action-tint); color: var(--action); }
+.badge-done { background: var(--surface-sunken); color: var(--text-1); border: 1px solid var(--line-hair); }
+.badge-cancelled { background: var(--surface-sunken); color: var(--text-3); }
+.badge-overdue { background: var(--crit-tint); color: var(--crit-text); }
+.priority-urgent { color: var(--crit-text); font-weight: 600; }
+.priority-high { color: var(--warn-text); font-weight: 600; }
+.data-table tbody tr.is-overdue { box-shadow: var(--edge-crit); }
 .task-table td { vertical-align: top; }
 .task-filters { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; margin: 0 0 .875rem; }
 .task-filters select { min-width: 9rem; }
 .task-description { margin: 0; white-space: normal; }
 .task-checklist { display: grid; gap: .375rem; margin: 0; padding: 0; list-style: none; }
 .task-checklist li { display: grid; gap: .125rem; }
-.task-checklist li.is-done { color: var(--muted); }
+.task-checklist li.is-done { color: var(--text-3); }
 .task-checklist form { margin: 0; }
 .tick {
   display: inline-flex; align-items: baseline; gap: .5rem; padding: .25rem 0; border: 0; background: none;
   color: inherit; font: inherit; text-align: left; cursor: pointer;
 }
-.tick:hover, .tick:focus-visible { color: var(--stripe-dark); text-decoration: underline; }
+.tick:hover, .tick:focus-visible { color: var(--action); text-decoration: underline; }
 .task-note { margin: .25rem 0 0; }
 .task-note-form { display: grid; gap: .375rem; margin-top: .75rem; }
 .task-note-form textarea {
-  width: 100%; padding: .5rem .625rem; border: 1.5px solid var(--control); border-radius: 6px; font: inherit;
+  width: 100%; padding: .5rem .625rem; border: 1.5px solid var(--line-control); border-radius: 6px; font: inherit;
 }
 .task-note-form .button { justify-self: start; }
 .drawer-actions form { display: contents; }
-.button-danger-text { color: var(--error); }
+.button-danger-text { color: var(--crit-text); }
 .checklist-row { grid-template-columns: minmax(0, 1fr) 5.5rem; }

@@ -141,17 +141,19 @@ class TemplateTests(SimpleTestCase):
 
 
 class FontTests(SimpleTestCase):
-    def test_the_font_is_served_from_the_projects_static_files_with_its_licence(self):
+    def test_every_font_is_served_from_the_projects_static_files_with_its_licence(self):
         static = Path(settings.BASE_DIR) / 'static'
-        css = (static / 'css' / 'base.css').read_text(encoding='utf-8')
-        faces = re.findall(r'@font-face\s*\{(.*?)\}', css, re.S)
-        self.assertTrue(faces)
+        faces = [face for path in sorted((static / 'css').glob('*.css'))
+                 for face in re.findall(r'@font-face\s*\{(.*?)\}', path.read_text(encoding='utf-8'), re.S)]
+        families = {re.search(r'font-family:\s*"([^"]+)"', face).group(1) for face in faces}
+        self.assertEqual(families, {'Atkinson Hyperlegible Next', 'Bricolage Grotesque'})
         for face in faces:
-            self.assertIn('Bricolage Grotesque', face)
-            for url in re.findall(r'url\(["\']?([^)"\']+)', face):
+            for url in re.findall(r'url\(["']?([^)"']+)', face):
                 self.assertFalse(url.startswith(('http:', 'https:', '//')), url)
                 self.assertTrue((static / 'css' / url).resolve().is_file(), url)
-        self.assertTrue((static / 'fonts' / 'OFL.txt').is_file())
         third_party = (Path(settings.BASE_DIR) / 'THIRD_PARTY.md').read_text(encoding='utf-8')
-        self.assertIn('Bricolage Grotesque', third_party)
+        for family in families:
+            licence = static / 'fonts' / f'OFL-{family.lower().replace(" ", "-")}.txt'
+            self.assertTrue(licence.is_file(), licence)
+            self.assertEqual(third_party.count(f'| {family} '), 1, family)     # one entry per font
         self.assertIn('OFL-1.1', third_party)

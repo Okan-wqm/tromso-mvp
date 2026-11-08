@@ -104,6 +104,7 @@ TEMPLATES = [
                 'django.template.context_processors.csp',
                 'core.navigation.rail',
                 'core.navigation.page_base',
+                'core.theme.context',
             ],
         },
     },

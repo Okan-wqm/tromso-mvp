@@ -3,14 +3,19 @@
 Nothing from a package registry is shipped to the browser: the browser runs only this project's own TypeScript, compiled
 into `static/js/`. The Python packages the server runs are in `requirements.txt`.
 
-## Shipped to the browser
+## Fonts served to the browser (`static/fonts/`)
 
-Served from the project's own static files; no page loads anything from another site (the Content-Security-Policy allows
-only the project's address, `config/settings.py` SECURE_CSP).
+The two typefaces of the design system (`docs/design/system/README.md`, Type), self-hosted as WOFF2 so that no page asks
+another server for anything and the console works offline on site (`static/css/fonts.css`). Both are under the SIL Open
+Font License 1.1, which allows commercial use, embedding and redistribution with the licence kept beside the files (it
+is, in `static/fonts/OFL-*.txt`); only the fonts on their own may not be sold. Taken from Google Fonts (the Latin and
+Latin Extended subsets) on 08.11.2026.
 
-| Asset | Licence | Where | What it is |
+| Font | Licence | Copyright | Used for |
 |---|---|---|---|
-| Bricolage Grotesque (variable, weight 400 to 700, optical size 12 to 96; Latin and Latin Extended subsets as Google Fonts serves them, v9) | OFL-1.1 (SIL Open Font License 1.1), the licence text in `static/fonts/OFL.txt`; Copyright 2022 The Bricolage Grotesque Project Authors (https://github.com/ateliertriay/bricolage) | `static/fonts/bricolage-grotesque-latin.woff2`, `static/fonts/bricolage-grotesque-latin-ext.woff2`, declared in `static/css/base.css` | The console's typeface |
+| Atkinson Hyperlegible Next (variable, 400–700) | OFL-1.1 (`static/fonts/OFL-atkinson-hyperlegible-next.txt`) | 2020-2024 The Atkinson Hyperlegible Next Project Authors | Every text read or entered (`--font-text`) |
+| Bricolage Grotesque (600, optical size axis) | OFL-1.1 (`static/fonts/OFL-bricolage-grotesque.txt`) | 2022 The Bricolage Grotesque Project Authors | h1, h2 and the wordmark (`--font-display`) |
+
 
 ## Development-only tools (`package.json` devDependencies)
 

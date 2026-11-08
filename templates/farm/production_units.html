@@ -7,51 +7,54 @@
 {% block title %}{{ title }}{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
+{% block head_status %}
+<div class="ui-head-status">
+  <span class="ui-chip" data-status="neutral">{{ count_line }} · {{ biomass|tonnes }}</span>
+  {% if water_critical %}<span class="ui-chip" data-status="critical">{% include "icons/_icon.html" with name="octagon" %}{% blocktrans trimmed count count=water_critical %}{{ count }} critical{% plural %}{{ count }} critical{% endblocktrans %}</span>{% endif %}
+</div>
+{% endblock %}
+{% block head_actions %}{% if can_record %}<div class="ui-head-actions"><a class="ui-btn" data-variant="primary" href="{{ new_batch_url }}" data-modal>{% include "icons/_icon.html" with name="plus" %}{% trans "New batch" %}</a></div>{% endif %}{% endblock %}
 {% block content %}
 <div>
   <div class="units-main">
-    <nav class="view-tabs" aria-label="{% trans "Fish" %}">
+    <nav class="view-tabs ui-tabs" aria-label="{% trans "Fish" %}">
       <span class="view-tab" aria-current="page">{% trans "Production" %} <span class="view-count">{{ stocked }}</span></span>
     </nav>
 
-    <div class="toolbar units-toolbar">
-      <form method="get" class="search units-search" role="search">
+    <div class="ui-toolbar units-toolbar">
+      <form method="get" class="ui-search units-search" role="search">
         {% for key, value in search_hidden %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}
         {% include "icons/_icon.html" with name="search" %}
         <label class="sr-only" for="units-search">{% trans "Search unit, batch or species" %}</label>
         <input id="units-search" type="search" name="q" value="{{ query }}" placeholder="{% trans "Search unit, batch or species" %}">
       </form>
-      {% if can_record %}
-      <a class="button button-inline" href="{{ new_batch_url }}" data-modal>{% include "icons/_icon.html" with name="plus" %}{% trans "New batch" %}</a>
-      {% endif %}
     </div>
 
-    <div class="filter-bar">
+    <div class="ui-toolbar filter-bar">
       {% if site_buttons %}
-      <div class="filter-group" role="group" aria-label="{% trans "Site" %}">
-        {% for button in site_buttons %}<a class="filter-button" href="{{ button.href }}" aria-pressed="{{ button.pressed|yesno:"true,false" }}">{{ button.label }}</a>{% endfor %}
+      <div class="ui-seg filter-group" role="group" aria-label="{% trans "Site" %}">
+        {% for button in site_buttons %}<a href="{{ button.href }}" aria-pressed="{{ button.pressed|yesno:"true,false" }}">{{ button.label }}</a>{% endfor %}
       </div>
       {% endif %}
       {% if kind_buttons|length > 2 %}
-      <div class="filter-group" role="group" aria-label="{% trans "Kind" %}">
-        {% for button in kind_buttons %}<a class="filter-button" href="{{ button.href }}" aria-pressed="{{ button.pressed|yesno:"true,false" }}">{{ button.label }}</a>{% endfor %}
+      <div class="ui-seg filter-group" role="group" aria-label="{% trans "Kind" %}">
+        {% for button in kind_buttons %}<a href="{{ button.href }}" aria-pressed="{{ button.pressed|yesno:"true,false" }}">{{ button.label }}</a>{% endfor %}
       </div>
       {% endif %}
-      <div class="filter-group" role="group" aria-label="{% trans "Fish" %}">
-        {% for button in occupancy_buttons %}<a class="filter-button" href="{{ button.href }}" aria-pressed="{{ button.pressed|yesno:"true,false" }}">{{ button.label }}</a>{% endfor %}
+      <div class="ui-seg filter-group" role="group" aria-label="{% trans "Fish" %}">
+        {% for button in occupancy_buttons %}<a href="{{ button.href }}" aria-pressed="{{ button.pressed|yesno:"true,false" }}">{{ button.label }}</a>{% endfor %}
       </div>
       <form method="get" class="filter-status">
         {% for key, value in status_hidden %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}
         <label class="sr-only" for="status-filter">{% trans "Status" %}</label>
-        <select id="status-filter" name="status" data-autosubmit>
+        <select class="ui-select" id="status-filter" name="status" data-autosubmit>
           <option value="">{% trans "All statuses" %}</option>
           {% for value, label in statuses %}<option value="{{ value }}"{% if chosen_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
         </select>
-        <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
+        <noscript><button type="submit" class="ui-btn">{% trans "Filter" %}</button></noscript>
       </form>
     </div>
 
-    <p class="units-count">{{ count_line }} · {{ biomass|tonnes }}{% if water_critical %} · <strong class="over-text">{% blocktrans trimmed count count=water_critical %}{{ count }} critical{% plural %}{{ count }} critical{% endblocktrans %}</strong>{% endif %}</p>
 
     {% if not units %}
     <div class="empty">
@@ -66,57 +69,62 @@
       <p><a href="{{ clear_url }}">{% trans "Clear filters" %}</a></p>
     </div>
     {% else %}
-    <div class="table-wrap">
-      <table class="data-table units-table">
+    <div class="table-wrap ui-table-wrap" tabindex="0" role="region" aria-label="{% trans "Production units, scrolls sideways" %}">
+      <table class="ui-table units-table">
         <thead>
           <tr>
-            <th scope="col">{% trans "Unit" %}</th>
+            <th scope="col" class="sticky-first">{% trans "Unit" %}</th>
             <th scope="col">{% trans "Batch" %}</th>
             <th scope="col" class="num">{% trans "Fish" %}</th>
             <th scope="col" class="num">{% trans "Avg. weight" %}</th>
             <th scope="col" class="num">{% trans "Biomass" %}</th>
-            <th scope="col" class="num">{% trans "Density · capacity" %}</th>
+            <th scope="col">{% trans "Density · capacity" %}</th>
             {% if show_feeding %}<th scope="col" class="num"><abbr title="{% trans "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing" %}">{% trans "bFCR" %}</abbr></th>{% endif %}
             <th scope="col" class="num">{% trans "Survival" %}</th>
             {% if show_water %}<th scope="col" class="num">{% trans "Temp. (°C)" %}</th><th scope="col" class="num">{% trans "O₂ (mg/L)" %}</th>{% endif %}
             {% if show_feeding %}<th scope="col">{% trans "Last fed" %}</th>{% endif %}
+            <th scope="col" class="sticky-end"><span class="sr-only">{% trans "Actions" %}</span></th>
           </tr>
         </thead>
         <tbody>
           {% for row in rows %}{% with unit=row.unit stock=row.stock %}
           <tr class="unit-row{% if row.selected %} is-selected{% endif %}{% if stock.over_capacity %} is-over{% endif %}"{% if row.selected %} aria-current="true"{% endif %}>
-            <td>
-              <a class="unit-code row-link" href="{{ row.href }}">{{ unit.code }}</a>{% if row.placements %} {% include "farm/_placements.html" with chips=row.placements %}{% endif %}{% if row.water %} {% include "farm/_water_dot.html" with status=row.water.status old=row.water.old_alert %}{% endif %}{% if row.withdrawal %} <span class="badge badge-critical" title="{% for block in row.withdrawal %}{{ block.batch.code }}{% if block.until %} · {{ block.until|date:'DATE_FORMAT' }}{% endif %} {% endfor %}">{% trans "Withdrawal" %}</span>{% endif %}
-              <span class="row-sub nowrap">{{ unit.production_department.name }}{% if unit.production_department.site %} · {{ unit.production_department.site.name }}{% endif %}</span>
+            <td class="sticky-first"{% if row.water.status == "critical" %} data-status="critical"{% elif row.water.status == "warning" or stock.over_capacity %} data-status="warning"{% endif %}>
+              <a class="ui-code unit-code" href="{{ row.href }}">{{ unit.code }}</a>
+              <span class="ui-sub">{{ unit.production_department.name }}{% if unit.production_department.site %}, {{ unit.production_department.site.name }}{% endif %}</span>
+              {% if row.placements %}<span class="ui-sub">{% include "farm/_placements.html" with chips=row.placements %}</span>{% endif %}
+              {% if row.water %}<span class="ui-mt">{% include "farm/_water_dot.html" with status=row.water.status old=row.water.old_alert %}</span>{% endif %}
+              {% if row.withdrawal %}<span class="ui-mt"><span class="ui-chip" data-status="hold" title="{% for block in row.withdrawal %}{{ block.batch.code }}{% if block.until %} · {{ block.until|date:'DATE_FORMAT' }}{% endif %} {% endfor %}">{% include "icons/_icon.html" with name="hourglass" %}<span>{% trans "Withdrawal" %}</span></span></span>{% for block in row.withdrawal %}<span class="ui-sub">{{ block.batch.code }}{% if block.until %}, {{ block.until|date:'DATE_FORMAT' }}{% endif %}</span>{% endfor %}{% endif %}
             </td>
-            <td>
+            <td><a class="row-link" href="{{ row.href }}" tabindex="-1" aria-hidden="true"></a>
               {% if stock %}
               {% if stock.batches %}
-              <span class="nowrap batch-codes">{% for batch in stock.batches %}{% if not forloop.first %} + {% endif %}{{ batch.code }}{% endfor %}</span>
-              <span class="row-sub">{% with species=stock.batches.0.species %}{{ species.local_name|default:species.common_name }}{% endwith %}</span>
+              <span class="ui-code batch-codes">{% for batch in stock.batches %}{% if not forloop.first %} + {% endif %}{{ batch.code }}{% endfor %}</span>
+              <span class="ui-sub">{% with species=stock.batches.0.species %}{{ species.local_name|default:species.common_name }}{% endwith %}</span>
               {% endif %}
-              {% if stock.cleaner %}<span class="row-sub">{% blocktrans trimmed with fish=stock.cleaner_stock.count|fish batches=stock.cleaner_stock.batches|join_codes %}Cleaner fish: {{ batches }} · {{ fish }} fish{% endblocktrans %}</span>{% endif %}
+              {% if stock.cleaner %}<span class="ui-sub">{% blocktrans trimmed with fish=stock.cleaner_stock.count|fish batches=stock.cleaner_stock.batches|join_codes %}Cleaner fish: {{ batches }} · {{ fish }} fish{% endblocktrans %}</span>{% endif %}
               {% elif row.takes_fish %}
-              <span class="empty-unit">{% trans "Empty — ready to stock" %}</span>
+              <span class="ui-why">{% trans "Empty — ready to stock" %}</span>
               {% else %}
-              <span class="empty-unit">{% blocktrans trimmed with status=unit.get_status_display %}Empty · {{ status }}{% endblocktrans %}</span>
+              <span class="ui-why">{% blocktrans trimmed with status=unit.get_status_display %}Empty · {{ status }}{% endblocktrans %}</span>
               {% endif %}
             </td>
             <td class="num">{{ stock.count|fish }}</td>
             <td class="num">{{ stock.avg_weight_g|grams }}</td>
             <td class="num">{{ stock.biomass_kg|kilos }}</td>
-            <td class="num">
+            <td>
               {% if stock %}
-              <span class="capacity">
-                <span class="capacity-line"><span>{{ stock.density|density }}</span>{% if stock.over_capacity %}<span class="over-badge">{% trans "Over" %}</span>{% endif %}<strong>{{ stock.capacity|percent }}</strong></span>
-                {% include "farm/_capacity_bar.html" %}
+              <span class="ui-gauge"{% if stock.over_capacity %} data-status="critical"{% endif %}>
+                <svg class="ui-gauge-track" viewBox="0 0 100 1" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect class="ui-gauge-fill" width="{{ stock.capacity|bar_width }}" height="1"/></svg>
+                <span class="ui-gauge-text">{{ stock.density|density }}, {{ stock.capacity|percent }}</span>{% if stock.over_capacity %}<span class="over-badge">{% trans "Over" %}</span>{% endif %}
               </span>
               {% else %}—{% endif %}
             </td>
             {% if show_feeding %}{% with conversion=row.feeding.conversion %}<td class="num"{% if row.feeding and not conversion.biological %} title="{{ conversion.why_no_biological }}"{% endif %}>{{ conversion.biological|fcr }}</td>{% endwith %}{% endif %}
             <td class="num">{{ stock.survival|percent:1 }}</td>
-            {% if show_water %}{% with reading=row.water.readings.temperature_c %}{% include "farm/_water_cell.html" with latest=True %}{% endwith %}{% with reading=row.water.readings.oxygen_mg_l %}{% include "farm/_water_cell.html" with latest=True %}{% endwith %}{% endif %}
+            {% if show_water %}{% with reading=row.water.readings.temperature_c %}{% include "farm/_water_face.html" %}{% endwith %}{% with reading=row.water.readings.oxygen_mg_l %}{% include "farm/_water_face.html" %}{% endwith %}{% endif %}
             {% if show_feeding %}<td class="nowrap">{% if row.feeding %}{{ row.feeding.last_fed|fed_on:row.feeding.today }}{% else %}—{% endif %}</td>{% endif %}
+            <td class="sticky-end"><a class="ui-btn" href="{{ row.href }}" aria-label="{% blocktrans trimmed with unit=unit.code %}Open {{ unit }}{% endblocktrans %}">{% include "icons/_icon.html" with name="more" %}</a></td>
           </tr>
           {% endwith %}{% endfor %}
         </tbody>

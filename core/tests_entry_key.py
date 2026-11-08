@@ -80,3 +80,16 @@ class WritePathKeyTests(TestCase):
         self.assertEqual(caught.exception.operation, first)
         self.assertEqual(EntryKey.record_of(token, StockOperation), first)
         self.assertEqual(StockOperation.objects.count(), 1)
+
+
+class SentBeforeValidationTests(TestCase):
+    def test_a_site_sent_twice_opens_the_first_instead_of_saying_its_code_is_taken(self):
+        # The second sending of a record with a unique code met "already uses this code" before its key was looked at.
+        from farm.tests.helpers import site_data
+        self.client.force_login(get_user_model().objects.create_superuser('root', 'root@example.com', 'x'))
+        url = reverse('farm:site_create')
+        data = site_data(**{ENTRY_KEY: str(self.client.get(url).context['form'][ENTRY_KEY].value())})
+        first, second = self.client.post(url, data), self.client.post(url, data)
+        self.assertEqual(second.status_code, 302)
+        self.assertEqual(second['Location'], first['Location'])
+        self.assertEqual(Site.objects.count(), 1)

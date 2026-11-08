@@ -100,3 +100,14 @@ def difference(value, decimals=1):
         return DASH
     shown = number(abs(value), int(decimals))
     return shown if not value else ('+' if value > 0 else '−') + shown
+
+
+@register.filter
+def meal_pips(share):
+    """The day's meals of a batch line as the meal board draws them (docs/design/system, MealBoard): one state per
+    planned meal, 'done' for each meal recorded, 'next' for the first one still to come, '' for the later ones; none
+    when no meals are planned. The counts are the line's own (ShareDay.planned_meals, .meals): nothing is worked out
+    here."""
+    planned = share.planned_meals or 0
+    done = min(share.meals, planned)
+    return ['done'] * done + (['next'] if done < planned else []) + [''] * max(planned - done - 1, 0)

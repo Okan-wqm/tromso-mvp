@@ -574,7 +574,7 @@ class DeleteTests(PointTestCase):
         history = self.client.get(reverse('farm:water'), {'view': 'history'}).context['history']
         self.assertEqual([row.sample.point.owner.code for row in history], ['R1'])
         restore(Tank.all_objects.get(pk=self.t2.pk), self.admin)
-        self.assertEqual(self.unit_water(self.t2).get('ph').value, D('7.10'))
+        self.assertEqual(self.unit_water(self.t2).get('ph').value, D('7.00'))      # its inlet's, the newest (A9.1)
         history = self.client.get(reverse('farm:water'), {'view': 'history'}).context['history']
         self.assertEqual(sorted(row.sample.point.owner.code for row in history), ['R1', 'T-02', 'T-02'])
 
@@ -592,22 +592,26 @@ class DeleteTests(PointTestCase):
 
 # ---- reading "the unit's water" ---------------------------------------------------------------------------
 class ReadTests(PointTestCase):
-    def test_the_water_of_a_unit_is_its_middle_points_and_the_loop_stands_in_for_what_it_has_none_of(self):
-        """Owner rule A9 (2026-11-07): the unit's own fresh values first; its loop's fresh sample stands in for a
-        parameter the unit has no fresh value of; another point of the unit (an inlet) never does."""
+    def test_the_water_of_a_unit_is_its_points_and_the_loop_stands_in_for_what_it_has_none_of(self):
+        """Owner rule A9 (2026-11-07), A9.1 "its own sampling points": every active point of the unit is its own, the
+        newest fresh value among them wins (at one time the middle first, then by name); its loop's fresh sample stands
+        in only for a parameter the unit has no fresh value of at any of its points."""
         self.sample(point=self.named(self.t1, 'inlet')['Inlet'], hours=1, temperature_c='15', ph='6.1')
         self.sample(point=self.named(self.t1, 'side_outlet')['Side outlet'], hours=1, temperature_c='11')
-        self.sample(point=self.t1, hours=3, temperature_c='9.5')
+        self.sample(point=self.t1, hours=3, temperature_c='9.5', co2_mg_l='8')
         self.sample(point=self.loop, hours=1, temperature_c='12', ph='7.3', oxygen_mg_l='9')
         water = read.unit_water([self.t1, self.t2, self.pond])
+        inlet = self.named(self.t1, 'inlet')['Inlet']
         self.assertEqual((water[self.t1.pk].point, water[self.t1.pk].get('temperature_c').value,
                           water[self.t1.pk].get('ph').value, water[self.t1.pk].get('ph').point),
-                         (self.mid1, D('9.5'), D('7.30'), self.loop))           # its own temperature, the loop's pH
+                         (self.mid1, D('15.0'), D('6.10'), inlet))               # its inlet's, newer than its middle's
+        self.assertEqual(water[self.t1.pk].get('co2_mg_l').point, self.mid1)
+        self.assertEqual(water[self.t1.pk].get('oxygen_mg_l').point, self.loop)   # none of its own: the loop's
         self.assertEqual((water[self.t2.pk].point, water[self.t2.pk].get('temperature_c').value),
                          (self.mid2, D('12.0')))                                   # nothing of its own: the loop's
         self.assertEqual((water[self.pond.pk].point, water[self.pond.pk].readings, water[self.pond.pk].status),
                          (None, {}, Status.NOT_MEASURED))
-        self.assertEqual(water[self.t1.pk].get('temperature_c').point, self.mid1)
+        self.assertEqual(water[self.t1.pk].get('temperature_c').point, inlet)
 
     def test_the_sources_of_a_units_temperature_are_its_middle_point_then_its_loops(self):
         parent = System.objects.create(name='Parent', code='PR', site=self.bergen)
@@ -619,6 +623,11 @@ class ReadTests(PointTestCase):
         self.assertEqual(sources(self.t1, True), [('unit', 'T-01', 'Middle'), ('system', 'R1', 'Loop'),
                                                   ('system', 'PR', 'Loop')])
         self.assertEqual(sources(self.t1, False), [('unit', 'T-01', 'Middle'), ('system', 'R1', 'Loop')])
+        every = [(source.via, source.owner.code, source.point.name)
+                 for source in read.water_sources([self.t1], nested=False, every_point=True)[self.t1.pk]]
+        self.assertEqual(every, [('unit', 'T-01', 'Middle'), *[('unit', 'T-01', name) for name in
+                                                               sorted(self.named(self.t1)) if name != 'Middle'],
+                                 ('system', 'R1', 'Loop')])                # A9.1: every point of the unit, middle first
         self.assertEqual(sources(self.pond, True), [])                      # in no system, no point of its own
         SamplingPoint.objects.filter(pk=self.mid1.pk).update(is_active=False)
         self.assertEqual(sources(self.t1, False), [('system', 'R1', 'Loop')])      # an inactive point is not a source
@@ -630,15 +639,17 @@ class ReadTests(PointTestCase):
     def test_the_feeding_temperature_follows_that_order(self):
         self.sample(point=self.loop, hours=2, temperature_c='12')
         self.sample(point=self.t1, hours=40, temperature_c='13')                  # its own, but stale
-        self.sample(point=self.named(self.t1, 'inlet')['Inlet'], hours=1, temperature_c='20')   # a stream, not the unit's
+        inlet = self.named(self.t1, 'inlet')['Inlet']
+        self.sample(point=inlet, hours=30, temperature_c='20')                    # its own too (A9.1), stale
         now = timezone.now()
         found = temperature_for([self.t1, self.t2], now)
         self.assertEqual((found[self.t1.pk].value_c, found[self.t1.pk].via, found[self.t1.pk].point),
                          (D('12.0'), 'system', self.ras))                         # the loop's fresh one wins
         self.assertEqual((found[self.t2.pk].value_c, found[self.t2.pk].via), (D('12.0'), 'system'))
-        self.sample(point=self.t1, hours=3, temperature_c='9')
+        self.sample(point=inlet, hours=1, temperature_c='9')                     # the unit's own point, fresh
         found = temperature_for([self.t1], now)[self.t1.pk]
-        self.assertEqual((found.value_c, found.via, found.point, found.fresh), (D('9.0'), 'unit', self.t1, True))
+        self.assertEqual((found.value_c, found.via, found.point, found.sampling_point, found.fresh),
+                         (D('9.0'), 'unit', self.t1, inlet, True))
 
     def test_the_withdrawals_daily_mean_reads_the_same_places(self):
         from ..water.degree_days import Temperatures
@@ -657,12 +668,12 @@ class ReadTests(PointTestCase):
         from ..water import calculation
         self.stock(self.t1)
         self.limit('co2_mg_l', critical_high=15)
-        self.sample(point=self.named(self.t1, 'inlet')['Inlet'], hours=1, temperature_c='15', ph='6.1')
+        self.sample(point=self.named(self.t1, 'inlet')['Inlet'], hours=3, temperature_c='15', ph='6.1')
         self.sample(point=self.t1, hours=2, temperature_c='9.5', ph='7.2')
         self.sample(point=self.loop, hours=1, alkalinity_mg_l='90', salinity_ppt='0.5')
         offers = calculation.offers(self.t1)
         self.assertEqual((offers['temperature_c'].value, offers['ph'].value, offers['co2_limit_mg_l'].value),
-                         (D('9.5'), D('7.20'), D(15)))
+                         (D('9.5'), D('7.20'), D(15)))                    # the newest of the unit's own points
         self.assertEqual(offers['temperature_c'].reading.point, self.mid1)
         self.assertEqual(offers['alkalinity_mg_l'].reading.point, self.loop)   # A9: the loop stands in for what the unit lacks
         self.assertEqual(offers['altitude_m'].value, D(0))

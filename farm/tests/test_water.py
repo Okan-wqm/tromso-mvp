@@ -849,26 +849,6 @@ class PageTests(WaterTestCase):
         self.assertEqual((sample.point, sample.temperature_c, sample.oxygen_mg_l, sample.notes),
                          (self.mid1, D('8.5'), D('10.20'), 'Morning'))
 
-    def test_an_oxygen_entry_takes_its_temperature_and_salinity_prefilled_from_the_latest_values(self):
-        """Owner rule (2026-11-07): the record form offers the point's latest temperature and salinity (A9's order) with
-        their origin and age; kept or changed, they are stored on the sample with the oxygen, so the other unit is
-        worked out from what is on the row; with no oxygen an untouched offer is not stored as a measurement."""
-        self.sample(hours=2, temperature_c='9.5')
-        url = f'{reverse("farm:water_record")}?unit={self.t1.pk}'
-        form = self.client.get(url, headers={'X-Modal': '1'}).context['form']
-        self.assertEqual((form['temperature_c'].value(), form['salinity_ppt'].value()), (D('9.5'), D('0')))
-        self.assertIn('Latest: manual · 2', str(form.fields['temperature_c'].help_text))
-        offered = {'temperature_offered': '9.5', 'salinity_offered': '0'}
-        self.post(url, self.record_data(oxygen_mg_l='8', temperature_c='9.5', salinity_ppt='0', **offered))
-        kept = WaterMeasurement.objects.latest('created_at')
-        self.assertEqual((kept.oxygen_mg_l, kept.temperature_c, kept.salinity_ppt), (D('8.00'), D('9.5'), D('0.0')))
-        self.post(url, self.record_data(oxygen_mg_l='7', temperature_c='11', salinity_ppt='0', **offered))
-        changed = WaterMeasurement.objects.latest('created_at')
-        self.assertEqual((changed.oxygen_mg_l, changed.temperature_c), (D('7.00'), D('11.0')))
-        self.post(url, self.record_data(ph='7.1', temperature_c='9.5', salinity_ppt='0', **offered))
-        ph_only = WaterMeasurement.objects.latest('created_at')
-        self.assertEqual((ph_only.ph, ph_only.temperature_c, ph_only.salinity_ppt), (D('7.10'), None, None))
-
     def test_an_oxygen_entry_needs_a_temperature_and_a_salinity_where_there_is_none(self):
         Tank.objects.filter(pk=self.t1.pk).update(water_type='saltwater')
         url = f'{reverse("farm:water_record")}?unit={self.t1.pk}'
@@ -876,9 +856,9 @@ class PageTests(WaterTestCase):
         self.assertEqual((form['temperature_c'].value(), form['salinity_ppt'].value()), (None, None))
         response = self.post(url, self.record_data(oxygen_saturation_pct='95'))
         self.assertEqual(response.context['form'].errors['temperature_c'],
-                         ['Needed with the oxygen: the other unit is worked out with it.'])
+                         ['Needed with the oxygen: no fresh temperature here at that time to work the other unit out with.'])
         self.assertEqual(response.context['form'].errors['salinity_ppt'],
-                         ['Needed with the oxygen: the other unit is worked out with it.'])
+                         ['Needed with the oxygen: no fresh salinity here at that time to work the other unit out with.'])
         self.assertFalse(WaterMeasurement.objects.exists())
 
     def test_the_worked_out_oxygen_says_what_it_was_worked_out_from(self):
@@ -947,39 +927,6 @@ class PageTests(WaterTestCase):
                                                          key=str))
         self.assertEqual(self.client.post(url, data).status_code, 302)      # sent twice: recorded once
         self.assertEqual(WaterMeasurement.objects.count(), 2)
-
-    def test_a_round_with_oxygen_offers_and_stores_temperature_and_salinity_as_the_sample_form_does(self):
-        """Owner rule (2026-11-07), one rule for both forms: an oxygen column brings the temperature and the salinity,
-        each row offered its point's latest fresh values; kept or changed they are stored with the oxygen, needed where
-        there is none, and an untouched offer alone is no measurement (the row is empty and skipped)."""
-        self.sample(hours=2, temperature_c='9.5')
-        url = f'{reverse("farm:water_round")}?site={self.bergen.pk}&columns=oxygen_mg_l'
-        page = self.client.get(url)
-        self.assertEqual([parameter.code for parameter in page.context['columns']],
-                         ['temperature_c', 'oxygen_mg_l', 'salinity_ppt'])
-        first = page.context['rows'][0]
-        self.assertEqual((first.point, first['temperature_c'].value(), first['salinity_ppt'].value()),
-                         (self.mid1, D('9.5'), D('0')))
-        self.assertIn('Latest: manual · 2', str(first.fields['temperature_c'].help_text))
-        self.assertContains(page, f'name="point-{self.mid1.pk}-temperature_offered"')
-        local = timezone.localtime(self.ago(hours=1)).strftime('%Y-%m-%dT%H:%M')
-        cells = lambda point, **values: {f'point-{point.pk}-{name}': value for name, value in values.items()}
-        data = {'token': str(uuid.uuid4()), 'measured_at': local, 'source': 'manual',
-                **cells(self.mid1, temperature_c='9.5', temperature_offered='9.5', oxygen_mg_l='8', salinity_ppt='0',
-                        salinity_offered='0'),
-                **cells(self.mid2, temperature_c='', oxygen_mg_l='7', salinity_ppt='0', salinity_offered='0'),
-                **cells(self.loop, temperature_c='', oxygen_mg_l='', salinity_ppt='0', salinity_offered='0')}
-        response = self.client.post(url, data)
-        self.assertEqual(response.status_code, 422)
-        self.assertEqual(response.context['rows'][1].errors['temperature_c'],
-                         ['Needed with the oxygen: the other unit is worked out with it.'])
-        self.assertEqual(WaterMeasurement.objects.count(), 1)               # one bad row refuses the round
-        data.update(cells(self.mid2, temperature_c='10'))
-        self.assertEqual(self.client.post(url, data).status_code, 302)
-        stored = sorted(WaterMeasurement.objects.values_list('point__unit__code', 'temperature_c', 'oxygen_mg_l',
-                                                             'salinity_ppt').filter(oxygen_mg_l__isnull=False))
-        self.assertEqual(stored, [('T-01', D('9.5'), D('8.00'), D('0.0')), ('T-02', D('10.0'), D('7.00'), D('0.0'))])
-        self.assertEqual(WaterMeasurement.objects.count(), 3)            # the loop's untouched offer is no sample
 
     def test_a_round_by_department_or_system_and_without_inactive_units(self):
         Tank.objects.filter(pk=self.t2.pk).update(status=Tank.Status.INACTIVE)

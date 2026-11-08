@@ -81,9 +81,18 @@ def _m2m_changed(sender, instance, action, **kwargs):
         _refuse(type(instance), f'its {sender._meta.model_name} changed')
 
 
+# Who recorded or changed a row and when: not what a withdrawal is worked out from. A person removed from the system has
+# these set to NULL (SET_NULL) by a queryset update, which the gate lets through.
+BOOKKEEPING = {'created_by', 'updated_by', 'deleted_by', 'created_by_id', 'updated_by_id', 'deleted_by_id',
+               'created_at', 'updated_at'}
+
+
 def _counts(queryset, names):
     fields = REGISTRY.get(queryset.model, ())
-    return fields is None or bool(set(fields) & {name.split('__')[0] for name in names})
+    named = {name.split('__')[0] for name in names}
+    if fields is None:
+        return not named <= BOOKKEEPING
+    return bool(set(fields) & named)
 
 
 _original = {}

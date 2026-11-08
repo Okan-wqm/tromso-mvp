@@ -879,8 +879,8 @@ class RowListView(ResourceView):
                 raise Http404
             try:
                 with transaction.atomic():
-                    rows.save(request.user, current, kept, r.entity_type(),
-                               seen=request.POST.get(rows.question_field, '') if rows.question_field else None)
+                    asked = {'seen': request.POST.get(rows.question_field, '')} if rows.question_field else {}
+                    rows.save(request.user, current, kept, r.entity_type(), **asked)
             except ValidationError as error:
                 # A list whose save asks something first (a medicine's withdrawal rows and the withdrawal guard): the
                 # page again with the reason and what was found (`withdrawal_change`), nothing saved.

@@ -371,8 +371,12 @@ def count(request):
             'pairs': _pairs(lines, read.book_at(location, day) if location and day else [])})
     data = request.POST if request.method == 'POST' else {}
     location = _location(data.get('location', request.GET.get('location', '')))
-    day = read_day(data.get('date', '')) or (site_today(location.site) if location else None)
-    form = CountForm(initial={'location': location.pk if location else None, 'date': day,
+    typed = data.get('date', '')
+    if typed.strip():
+        day = read_day(typed, request)                  # a day it cannot read is said back and kept, never today's
+    else:
+        day = site_today(location.site) if location else None
+    form = CountForm(initial={'location': location.pk if location else None, 'date': day or typed,
                               'notes': data.get('notes', '')}, site=location.site if location else None)
     book = read.book_at(location, day) if location and day else []
     lines = CountLineFormSet(prefix='lots', initial=[{'lot': lot.pk} for lot, _quantity in book])

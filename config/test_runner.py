@@ -1,8 +1,35 @@
+import warnings
+
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connections
 from django.test import TestCase, TransactionTestCase
 from django.test.runner import DiscoverRunner, ParallelTestSuite
 from django.test.utils import override_settings
+
+# Third-party code's own warnings that the strict filters below would otherwise turn into errors: reported (once per
+# place) but not failing the run. Each is (category, module regex, message regex, reason). Only a warning raised inside
+# the library for its own use belongs here; one our call causes is fixed in our code (README, CI and dependency
+# updates). Empty: the whole suite runs without one.
+THIRD_PARTY_WARNINGS = []
+
+
+def strict_warnings():
+    """Deprecations become errors: DeprecationWarning and PendingDeprecationWarning, so also every Django
+    RemovedInDjango*Warning (RemovedInNextVersionWarning is a DeprecationWarning, RemovedInDjango2028Warning a
+    PendingDeprecationWarning), wherever they are raised, so a warning a library attributes to its own frame while our
+    call caused it fails too. So does Django's "received a naive datetime" RuntimeWarning: a naive datetime stored with
+    time zone support on is read as the default time zone's, a silent shift. The listed third-party ones stay warnings.
+    """
+    warnings.simplefilter('error', DeprecationWarning)
+    warnings.simplefilter('error', PendingDeprecationWarning)
+    warnings.filterwarnings('error', r'.*received a naive datetime', RuntimeWarning)
+    for category, module, message, _reason in THIRD_PARTY_WARNINGS:
+        warnings.filterwarnings('default', message, category, module)
+
+
+def strict_warnings_in_worker(*args):
+    """A parallel worker started by spawn or forkserver gets the filters too (a forked one inherits them)."""
+    strict_warnings()
 
 
 def runs_the_scheduler(connection):
@@ -22,6 +49,7 @@ class TestByTestParallelSuite(ParallelTestSuite):
     restored) after the one before. So they are handed out one by one, and a class of migration tests of minutes each no
     longer keeps one worker busy long after the others are done. They still come after every TestCase, as Django orders
     them, so no TestCase meets a database one of them has emptied."""
+    process_setup = strict_warnings_in_worker
 
     def __init__(self, subsuites, *args, **kwargs):
         super().__init__(self.split(subsuites), *args, **kwargs)
@@ -44,6 +72,7 @@ class FastPasswordRunner(DiscoverRunner):
 
     def setup_test_environment(self, **kwargs):
         super().setup_test_environment(**kwargs)
+        strict_warnings()
         self._fast_hasher = override_settings(PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'])
         self._fast_hasher.enable()
 

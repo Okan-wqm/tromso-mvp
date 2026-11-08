@@ -301,6 +301,9 @@ class RecordTests(WaterTestCase):
             'Measured at': [None, moment.isoformat()], 'Sampling point': [None, 'T-01 › Middle'],
             'Source': [None, message('Laboratory')],
             'Temperature (°C)': [None, '8.0'], 'Oxygen saturation (% of air saturation)': [None, '95.5'],
+            # what the oxygen is worked out with, the salinity not measured: its provenance, never a measurement
+            'Source of the oxygen’s salinity': [None, message('fresh water')],
+            'Salinity the oxygen is worked out with (‰)': [None, '0.0'],
             'Notes': [None, 'Before feeding']})
 
 
@@ -520,7 +523,7 @@ class DerivedTests(WaterTestCase):
         self.t1.refresh_from_db()
         self.sample(hours=3, tan_mg_l='1', ph='8', temperature_c='10')
         self.assertEqual(self.reading('nh3_n_mg_l').note,
-                         'Needs the salinity: none was recorded here in the 30 days before.')
+                         'Needs the salinity: none was measured here in the 7 days before.')
         self.sample(hours=24 * 5, salinity_ppt='35')
         expected = (D(1) * D(chemistry.nh3_fraction(8, 10, 35))).quantize(D('0.0001'))
         self.assertEqual(self.reading('nh3_n_mg_l').value, expected)
@@ -531,7 +534,7 @@ class DerivedTests(WaterTestCase):
         self.sample(hours=2, oxygen_mg_l='10.63', temperature_c='10')
         saturation = self.reading('oxygen_saturation_pct')
         self.assertEqual((saturation.value, saturation.derived, saturation.note),
-                         (D('100.0'), True, 'Worked out from 10.0 °C, 0.0 ‰ and 0.942 atm.'))
+                         (D('100.0'), True, 'Worked out from 10.0 °C, 0.0 ‰ and 0.942 atm. The salinity is fresh water’s.'))
         self.sample(hours=1, oxygen_saturation_pct='80', temperature_c='20', salinity_ppt='0')
         mg_l = self.reading('oxygen_mg_l')
         self.assertEqual((mg_l.value, mg_l.derived), ((D(80) * D(chemistry.oxygen_solubility(
@@ -539,7 +542,7 @@ class DerivedTests(WaterTestCase):
         Site.objects.filter(pk=self.bergen.pk).update(altitude=None)
         self.t1.refresh_from_db()
         self.assertEqual(self.reading('oxygen_mg_l').note, 'Worked out from 20.0 °C, 0.0 ‰ and 1.000 atm. '
-                                                           'At sea-level pressure: the site has no altitude.')
+                                                           'At sea-level pressure: the site has no altitude.')     # its own salinity: no basis
 
     def test_two_oxygen_values_that_disagree_are_kept_and_flagged(self):
         self.sample(oxygen_mg_l='11.3', oxygen_saturation_pct='70', temperature_c='10')

@@ -16641,7 +16641,9 @@
         "farm/tests/test_stock.py",
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
+        "farm/tests/test_water_oxygen_basis.py",
         "farm/tests/test_water_points.py",
+        "farm/tests/test_water_resolver.py",
         "inventory/tests/test_services.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_deviations.py",
@@ -18058,6 +18060,106 @@
           "why": "one field for each water parameter (farm.forms.water.MEASURED)"
         },
         {
+          "name": "oxygen_basis_temperature_c",
+          "field": "oxygen_basis_temperature_c",
+          "type": "numeric(3, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
+          "name": "oxygen_basis_temperature_source",
+          "field": "oxygen_basis_temperature_source",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [
+            "manual",
+            "lab",
+            "sensor",
+            "system_sensor",
+            "fresh_water"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
+          "name": "oxygen_basis_temperature_channel",
+          "field": "oxygen_basis_temperature_channel",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
+          "name": "oxygen_basis_temperature_at",
+          "field": "oxygen_basis_temperature_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
+          "name": "oxygen_basis_salinity_ppt",
+          "field": "oxygen_basis_salinity_ppt",
+          "type": "numeric(3, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
+          "name": "oxygen_basis_salinity_source",
+          "field": "oxygen_basis_salinity_source",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [
+            "manual",
+            "lab",
+            "sensor",
+            "system_sensor",
+            "fresh_water"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
+          "name": "oxygen_basis_salinity_channel",
+          "field": "oxygen_basis_salinity_channel",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
+          "name": "oxygen_basis_salinity_at",
+          "field": "oxygen_basis_salinity_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
           "name": "notes",
           "field": "notes",
           "type": "varchar(500)",
@@ -18183,6 +18285,18 @@
         },
         {
           "name": "chk_water_measurements_turbidity_ntu",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_water_measurements_oxygen_basis_temperature",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_water_measurements_oxygen_basis_salinity",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -18330,7 +18444,9 @@
         "farm/tests/test_migration_points.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_water.py",
+        "farm/tests/test_water_oxygen_basis.py",
         "farm/tests/test_water_points.py",
+        "farm/tests/test_water_resolver.py",
         "reports/tests/test_compute.py",
         "monitoring/tests/test_pages.py"
       ]

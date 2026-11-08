@@ -58,7 +58,36 @@ def _sample_checks():
             condition=Q(**{f'{column}__isnull': True}) | Q(**{f'{column}__gte': parameter.low,
                                                               f'{column}__lte': parameter.high}),
             name=f'chk_water_measurements_{column}'))
+    oxygen = Q(oxygen_mg_l__isnull=False) | Q(oxygen_saturation_pct__isnull=False)
+    for code, prefix in BASIS.items():
+        parameter = parameters.get(code)
+        value, source = BASIS_VALUE[code], f'{prefix}_source'
+        checks.append(models.CheckConstraint(
+            # a basis only beside an oxygen and never beside the sample's own value; its source with it, and in range
+            condition=(Q(**{f'{value}__isnull': True, source: '', f'{prefix}_channel__isnull': True,
+                            f'{prefix}_at__isnull': True})
+                       | (oxygen & Q(**{f'{code}__isnull': True, f'{value}__gte': parameter.low,
+                                        f'{value}__lte': parameter.high}) & ~Q(**{source: ''}))),
+            name=f'chk_water_measurements_{prefix}'))
     return checks
+
+
+# What an oxygen entered without its own temperature or salinity is worked out with (second cross review, finding 1):
+# the PROVENANCE of the conversion, never a measurement of the sample: read only by the oxygen's conversion
+# (farm/water/read.py), never as the point's temperature or salinity.
+BASIS = {parameters.TEMPERATURE: 'oxygen_basis_temperature', parameters.SALINITY: 'oxygen_basis_salinity'}
+BASIS_VALUE = {parameters.TEMPERATURE: 'oxygen_basis_temperature_c', parameters.SALINITY: 'oxygen_basis_salinity_ppt'}
+BASIS_COLUMNS = [*BASIS_VALUE.values(),
+                 *(f'{prefix}_{part}' for prefix in BASIS.values() for part in ('source', 'channel', 'at'))]
+
+
+class BasisSource(models.TextChoices):
+    """Where a basis came from: the origins of the water's latest values (read.Origin), or fresh water's 0."""
+    MANUAL = 'manual', _('manual')
+    LAB = 'lab', _('lab')
+    SENSOR = 'sensor', _('sensor')
+    SYSTEM_SENSOR = 'system_sensor', _('system sensor')
+    FRESH_WATER = 'fresh_water', _('fresh water')
 
 
 class WaterMeasurement(AuditedModel):
@@ -107,6 +136,23 @@ class WaterMeasurement(AuditedModel):
     tgp_pct = parameters.get('tgp_pct').field()
     salinity_ppt = parameters.get('salinity_ppt').field()
     turbidity_ntu = parameters.get('turbidity_ntu').field()
+    # The provenance of an oxygen entered without its own temperature or salinity (BASIS): the value the server found
+    # fresh at the sample's point and time when it was written (farm/water/read.oxygen_basis), where it came from (the
+    # sensor's channel, or the time of the sample it was), and when it was measured; never a measurement of this sample.
+    oxygen_basis_temperature_c = models.DecimalField(
+        _('Temperature the oxygen is worked out with (°C)'), max_digits=parameters.get('temperature_c').max_digits,
+        decimal_places=parameters.get('temperature_c').decimals, null=True, blank=True)
+    oxygen_basis_temperature_source = models.CharField(_('Source of the oxygen’s temperature'), max_length=20, blank=True,
+                                                       choices=BasisSource.choices)
+    oxygen_basis_temperature_channel = models.PositiveIntegerField(_('Sensor channel of the oxygen’s temperature'), null=True, blank=True)
+    oxygen_basis_temperature_at = models.DateTimeField(_('When the oxygen’s temperature was measured'), null=True, blank=True)
+    oxygen_basis_salinity_ppt = models.DecimalField(
+        _('Salinity the oxygen is worked out with (‰)'), max_digits=parameters.get('salinity_ppt').max_digits,
+        decimal_places=parameters.get('salinity_ppt').decimals, null=True, blank=True)
+    oxygen_basis_salinity_source = models.CharField(_('Source of the oxygen’s salinity'), max_length=20, blank=True,
+                                                    choices=BasisSource.choices)
+    oxygen_basis_salinity_channel = models.PositiveIntegerField(_('Sensor channel of the oxygen’s salinity'), null=True, blank=True)
+    oxygen_basis_salinity_at = models.DateTimeField(_('When the oxygen’s salinity was measured'), null=True, blank=True)
     notes = models.CharField(_('Notes'), max_length=500, blank=True)
     void_reason = models.CharField(_('Reason for voiding'), max_length=500, blank=True)
     # The key of the form it was entered with (not a secret): the same form sent twice records once.

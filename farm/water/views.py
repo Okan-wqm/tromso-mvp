@@ -480,9 +480,13 @@ def record_round(request):
                         % {'rows': services.ROUND_ROWS})
     data = request.POST if request.method == 'POST' else None
     header = RoundForm(data, site=site)
-    # One read of every row's water for the offers an oxygen column brings (forms.water.OxygenInputs).
-    water = read.latest(points) if points and {parameters.OXYGEN_MG_L, parameters.OXYGEN_PCT} & set(columns) else {}
-    rows = [RoundRowForm(data, point=point, columns=columns, water=water.get(point.pk)) for point in points]
+    # One read of every row's water and assumed salinity for what an oxygen column says it would be worked out with
+    # (forms.water.OxygenInputs; what it is worked out with is found by the server when the round is written).
+    oxygen = bool(points) and bool({parameters.OXYGEN_MG_L, parameters.OXYGEN_PCT} & set(columns))
+    water = read.latest(points) if oxygen else {}
+    assumed = read.assumed_salinities(points) if oxygen else {}
+    rows = [RoundRowForm(data, point=point, columns=columns, water=water.get(point.pk), assumed=assumed.get(point.pk))
+            for point in points]
     context = _context(heading=_('Water round'), scope=scope, header=header, rows=rows,
                        columns=[parameters.get(code) for code in columns], site=site,
                        back_url=page_url(site=site.pk if site else ''))
@@ -494,7 +498,8 @@ def record_round(request):
                 samples = services.record_round(
                     request.user, measured_at=header.cleaned_data['measured_at'],
                     source=header.cleaned_data['source'], token=header.cleaned_data['token'],
-                    rows=[(row.point, row.entered(), row.cleaned_data['notes']) for row in entered])
+                    rows=[(row.point, row.entered(), row.cleaned_data['notes']) for row in entered],
+                    require_basis=True)
             except AlreadyRecorded:
                 return done(request, context['back_url'])
             except ValidationError as error:

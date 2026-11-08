@@ -155,52 +155,43 @@ class ValuesMixin:
                 if parameter.code in self.fields and self.cleaned_data.get(parameter.code) is not None}
 
 
+NOT_READ = object()       # an assumed salinity not read by the caller
+
+
 class OxygenInputs:
-    """What an oxygen value is worked out with, one rule for the sample form and the round (owner, 2026-11-07): the
-    point's latest fresh temperature and salinity in the one resolver's order (A9), else the salinity of fresh water, are
-    offered in their fields with where they come from and how old they are; kept or changed they are stored with the
-    oxygen, each is needed where there is none, and an offer left untouched without oxygen is no measurement. The offer
-    travels with the form in hidden fields (OFFERED)."""
+    """What an oxygen value is worked out with, one rule for the sample form and the round (second cross review,
+    finding 1): the temperature and the salinity fields stay EMPTY; a value typed in them is a measurement of the sample
+    and stored as one. Left empty beside an oxygen, the server works the oxygen out with the point's latest values fresh
+    at the sample's point and time (services: read.oxygen_basis) and stores them as the sample's provenance
+    (oxygen_basis_*), never as a measurement. The form only says what that would be now, in the field's help (and in a
+    round's cell): the point's latest fresh value with its origin and age, or fresh water's 0."""
 
-    OFFERED = {parameters.TEMPERATURE: 'temperature_offered', parameters.SALINITY: 'salinity_offered'}
-    INPUTS = tuple(OFFERED)
+    INPUTS = (parameters.TEMPERATURE, parameters.SALINITY)
 
-    def _offer(self, point, water=None):
-        """Puts the offer in the form's temperature and salinity fields for `point` (none for no point); `water` is the
-        point's PointWater when the caller read many points at once."""
-        for code in self.INPUTS:
-            self.fields[self.OFFERED[code]] = forms.DecimalField(required=False, widget=forms.HiddenInput)
+    def _offer(self, point, water=None, assumed=NOT_READ):
+        """Says in the temperature and salinity fields' help what an oxygen at `point` would be worked out with now;
+        `water` is the point's PointWater and `assumed` its assumed salinity when the caller read many points at once."""
         if point is None:
             return
         water = water if water is not None else read.latest([point])[point.pk]
-        assumed = read.assumed_salinity_at(point)
+        assumed = read.assumed_salinity_at(point) if assumed is NOT_READ else assumed
         for code in self.INPUTS:
+            if code not in self.fields:
+                continue
             reading = water.get(code)
             if reading is not None and reading.value is not None and reading.fresh(timezone.now()):
-                value, said = reading.value, _('Latest: %(source)s') % {'source': source_line(reading)}
+                now = _('now %(value)s, %(source)s') % {
+                    'value': formats.number_format(reading.value, parameters.get(code).decimals),
+                    'source': source_line(reading)}
             elif code == parameters.SALINITY and assumed is not None:
-                value, said = assumed, _('Fresh water: 0.')
+                now = _('fresh water, 0')
             else:
-                continue
-            self.fields[code].initial = value
-            self.fields[self.OFFERED[code]].initial = value
-            self.fields[code].offered = said                 # a round says it in the cell (farm/water_round.html)
+                now = _('none fresh now: enter it')
+            said = _('Left empty beside an oxygen: the latest fresh value at %(point)s at the sample’s time '
+                     '(%(now)s).') % {'point': point, 'now': now}
+            self.fields[code].offered = now                  # a round says it in the cell (farm/water_round.html)
             self.fields[code].help_text = format_html_join(' ', '{}', ((part,) for part in (
-                said, self.fields[code].help_text) if part))
-
-    def _with_oxygen(self, cleaned, point):
-        """Applies the rule to the cleaned values of `point`'s row (see the class)."""
-        oxygen = any(cleaned.get(code) is not None for code in (parameters.OXYGEN_MG_L, parameters.OXYGEN_PCT))
-        for code in self.INPUTS:
-            if code not in self.fields or code in self.errors:
-                continue
-            value = cleaned.get(code)
-            if oxygen and value is None and code == parameters.SALINITY and point is not None:
-                value = cleaned[code] = read.assumed_salinity_at(point)
-            if oxygen and value is None:
-                self.add_error(code, _('Needed with the oxygen: the other unit is worked out with it.'))
-            elif not oxygen and value is not None and value == cleaned.get(self.OFFERED[code]):
-                cleaned[code] = None
+                self.fields[code].help_text, said) if part))
 
 
 def with_oxygen_inputs(columns):
@@ -265,7 +256,6 @@ class WaterSampleForm(OxygenInputs, ValuesMixin, ServiceErrors, forms.Form):
         point, moment = cleaned.get('point'), cleaned.get('measured_at')
         if point is not None and moment is not None:
             cleaned['measured_at'] = timezone.make_aware(moment, zone_of(site_of(point)))
-        self._with_oxygen(cleaned, point)
         if not self.entered() and not any(parameter.code in self.errors for parameter in MEASURED):
             self.add_error(None, _('Enter at least one value.'))
         return cleaned
@@ -273,7 +263,8 @@ class WaterSampleForm(OxygenInputs, ValuesMixin, ServiceErrors, forms.Form):
     def save(self, user):
         data = self.cleaned_data
         return services.record(user, point=data['point'], measured_at=data['measured_at'], source=data['source'],
-                               values=self.entered(), notes=data['notes'], token=data['token'])
+                               values=self.entered(), notes=data['notes'], token=data['token'],
+                               require_basis=True)
 
 
 # ---- a round --------------------------------------------------------------------------------------------
@@ -371,24 +362,19 @@ class RoundForm(ServiceErrors, forms.Form):
 class RoundRowForm(OxygenInputs, ValuesMixin, forms.Form):
     """One point of a round: the chosen columns and a note. Its prefix names the point (point-<id>). With an oxygen
     column it offers and takes the temperature and the salinity as the sample form does (OxygenInputs); `water` is the
-    point's PointWater, read once for every row."""
+    point's PointWater and `assumed` its assumed salinity, each read once for every row."""
 
     notes = forms.CharField(label=_('Notes'), max_length=500, required=False)
 
-    def __init__(self, *args, point, columns, water=None, **kwargs):
+    def __init__(self, *args, point, columns, water=None, assumed=NOT_READ, **kwargs):
         super().__init__(*args, prefix=f'point-{point.pk}', **kwargs)
         self.point = point
         for parameter in MEASURED:
             if parameter.code in columns:
                 self.fields[parameter.code] = value_field(parameter)
         if {parameters.OXYGEN_MG_L, parameters.OXYGEN_PCT} & set(columns):
-            self._offer(point, water)
+            self._offer(point, water, assumed)
         self.order_fields([*columns, 'notes'])
-
-    def clean(self):
-        cleaned = super().clean()
-        self._with_oxygen(cleaned, self.point)
-        return cleaned
 
     def add_service_error(self, code, message):
         self.add_error(code if code in self.fields else None, message)

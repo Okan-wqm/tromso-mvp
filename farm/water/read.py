@@ -63,7 +63,7 @@ from django.utils.formats import number_format
 from django.utils.translation import gettext as _, gettext_lazy
 
 from farm.models import Batch, EquipmentSystem, SamplingPoint, Species, System, Tank, WaterLimit, WaterMeasurement
-from farm.models.water import LIVE_POINT
+from farm.models.water import BASIS, BASIS_VALUE, LIVE_POINT, BasisSource
 from farm.models.water_point import FlowRole, PointKind, kinds_with, local_time, owner_type_of, site_of
 from farm.stock.dates import local_today
 from farm.stock.read import Presence
@@ -97,11 +97,16 @@ def assumed_salinity(water_types):
     return Decimal(0) if set(water_types) == {Tank.WaterType.FRESHWATER} else None
 
 
+def assumed_salinities(points):
+    """{point id: the salinity assumed there}: 0 when every unit its water concerns (Context._served: the unit, the
+    units of a loop or of the systems a piece of equipment serves) is in fresh water, else None. One read for all."""
+    served = Context._served(list(points))
+    return {pk: assumed_salinity(unit.water_type for unit in units) if units else None for pk, units in served.items()}
+
+
 def assumed_salinity_at(point):
-    """The salinity assumed at a sampling point: 0 when every unit its water concerns (Context._served: the unit, the
-    units of a loop or of the systems a piece of equipment serves) is in fresh water, else None."""
-    served = Context._served([point])[point.pk]
-    return assumed_salinity(unit.water_type for unit in served) if served else None
+    """The salinity assumed at one sampling point (`assumed_salinities`)."""
+    return assumed_salinities([point])[point.pk]
 
 
 class First(Func):
@@ -222,11 +227,12 @@ class Observation:
     fresh_for: int | None = None
     is_deleted: bool = False
     sample: WaterMeasurement | None = None
+    basis: dict = field(default_factory=dict)     # code -> Basis: what a sample's oxygen is worked out with
 
     @classmethod
     def of_sample(cls, sample):
         return cls(sample.point, sample.measured_at, Origin.LAB if sample.source == 'lab' else Origin.MANUAL,
-                   sample.values(), is_deleted=sample.is_deleted, sample=sample)
+                   sample.values(), is_deleted=sample.is_deleted, sample=sample, basis=Basis.of_sample(sample))
 
     @classmethod
     def of_sensor(cls, point, value, origin):
@@ -267,6 +273,41 @@ class Observation:
 
     def get(self, code):
         return self.measured.get(code)
+
+
+@dataclass(frozen=True)
+class Basis:
+    """What an oxygen entered without its own temperature or salinity is worked out with (second cross review,
+    finding 1): the value found fresh at the sample's point and time when it was written, where it came from (an Origin
+    value, or 'fresh_water' for fresh water's 0), the sensor's channel and when it was measured. Provenance of the
+    conversion, never a measurement: read only by the oxygen's conversion (Context), never as the point's value."""
+    value: Decimal
+    source: str
+    channel_no: int | None = None
+    at: datetime | None = None
+
+    @staticmethod
+    def of_sample(sample):
+        found = {}
+        for code, prefix in BASIS.items():
+            value = getattr(sample, BASIS_VALUE[code], None)
+            if value is not None:
+                found[code] = Basis(value, getattr(sample, f'{prefix}_source'), getattr(sample, f'{prefix}_channel'),
+                                    getattr(sample, f'{prefix}_at'))
+        return found
+
+    def fields(self, code):
+        """{model field: value} of this basis for `code` on a sample."""
+        prefix = BASIS[code]
+        return {BASIS_VALUE[code]: self.value, f'{prefix}_source': self.source, f'{prefix}_channel': self.channel_no,
+                f'{prefix}_at': self.at}
+
+    def said(self, point):
+        """Where it came from, as a note says it: 'system sensor #3, 08.11.2026 10:00', 'manual, 08.11.2026 09:12'."""
+        label = str(BasisSource(self.source).label)
+        if self.channel_no is not None:
+            label = f'{label} #{self.channel_no}'
+        return f'{label}, {local_time(self.at, point):%d.%m.%Y %H:%M}' if self.at is not None else label
 
 
 def observe(value):
@@ -517,6 +558,8 @@ class Context:
         observation = observe(observation)
         if observation.get(parameters.SALINITY) is not None:
             return observation.get(parameters.SALINITY)
+        if parameters.SALINITY in observation.basis:
+            return observation.basis[parameters.SALINITY].value
         point = observation.point
         fresh = timedelta(hours=parameters.get(parameters.SALINITY).fresh_hours)
         for where in (point, self.middles.get(point.owner.pk)):
@@ -534,7 +577,7 @@ class Context:
         if observation.get(TAN) is not None:
             found.update(self._ammonia(observation, salinity))
         if observation.get(OXYGEN_MG_L) is not None or observation.get(OXYGEN_PCT) is not None:
-            found.update(self._oxygen(observation, observation.get(parameters.TEMPERATURE), salinity))
+            found.update(self._oxygen(observation, self._temperature_of(observation), salinity))
         return found
 
     @staticmethod
@@ -579,6 +622,7 @@ class Context:
             'pressure': number_format(pressure, 3)}
         if altitude is None:
             note = f'{note} {_("At sea-level pressure: the site has no altitude.")}'
+        note = ' '.join([note, *self._basis_said(observation)])
         if missing == OXYGEN_PCT:
             value = (100 * mg_l / solubility).quantize(parameters.get(OXYGEN_PCT).step)
             return {OXYGEN_PCT: Reading(parameters.get(OXYGEN_PCT), value, observation, True, note)}
@@ -649,8 +693,24 @@ class Context:
 
     @staticmethod
     def _temperature_of(observation):
-        """The temperature an observation's oxygen is worked out with: its own."""
-        return observation.get(parameters.TEMPERATURE)
+        """The temperature an observation's oxygen is worked out with: its own, else its sample's basis."""
+        if observation.get(parameters.TEMPERATURE) is not None:
+            return observation.get(parameters.TEMPERATURE)
+        basis = observation.basis.get(parameters.TEMPERATURE)
+        return basis.value if basis is not None else None
+
+    @staticmethod
+    def _basis_said(observation):
+        """[sentence] of where a sample's oxygen basis came from: the temperature and the salinity not its own."""
+        said = []
+        temperature = observation.basis.get(parameters.TEMPERATURE)
+        if temperature is not None and observation.get(parameters.TEMPERATURE) is None:
+            said.append(_('The temperature is %(source)s.') % {'source': temperature.said(observation.point)})
+        salinity = observation.basis.get(parameters.SALINITY)
+        if salinity is not None and observation.get(parameters.SALINITY) is None:
+            said.append(_('The salinity is fresh water’s.') if salinity.source == BasisSource.FRESH_WATER else
+                        _('The salinity is %(source)s.') % {'source': salinity.said(observation.point)})
+        return said
 
     @staticmethod
     def _judged_through(converted):
@@ -911,6 +971,36 @@ def latest(points, now=None, at=None):
                                   for each in others.get(code, [])])
             point_water.readings[code] = reading
     return water
+
+
+def oxygen_basis(rows, moment):
+    """What the oxygen of each row ([(point, values)], one moment: a sample, a round) is worked out with where the row
+    has none of its own: ({index: {code: Basis}}, {index: [code missing]}). The one resolver (`latest`, as the water was
+    at `moment`, or within the clock's skew after it: nothing measured later) gives the point's temperature and salinity
+    fresh AT that moment (`fresh_at`);
+    a salinity with none is fresh water's 0 where every unit the point's water concerns is in fresh water. A row without
+    an oxygen needs none. One read for every row."""
+    wanted = {index: [code for code in BASIS if values.get(code) is None]
+              for index, (point, values) in enumerate(rows)
+              if values.get(OXYGEN_MG_L) is not None or values.get(OXYGEN_PCT) is not None}
+    wanted = {index: codes for index, codes in wanted.items() if codes}
+    if not wanted:
+        return {}, {}
+    points = list({rows[index][0].pk: rows[index][0] for index in wanted}.values())
+    water = latest(points, at=min(moment + CLOCK_SKEW, timezone.now()))     # one moment for two clocks (fresh_at)
+    assumed = assumed_salinities(points)
+    found, missing = defaultdict(dict), defaultdict(list)
+    for index, codes in wanted.items():
+        point = rows[index][0]
+        for code in codes:
+            reading = water[point.pk].get(code)
+            if reading is not None and reading.value is not None and not reading.derived and fresh_at(reading, moment):
+                found[index][code] = Basis(reading.value, reading.origin, reading.sample.channel_no, reading.at)
+            elif code == parameters.SALINITY and assumed.get(point.pk) is not None:
+                found[index][code] = Basis(assumed[point.pk], BasisSource.FRESH_WATER)
+            else:
+                missing[index].append(code)
+    return dict(found), dict(missing)
 
 
 def worst_fresh(reading, others):

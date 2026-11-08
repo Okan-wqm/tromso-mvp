@@ -1120,11 +1120,20 @@ published values):
   0 .. 5000 m (owner: no site lies below sea level, a minus sign is a slip), held by the form, the model and the
   database `chk_sites_altitude_range`, F-089, and the calculator's field takes the same range). From
   mg/L the % is worked out, from % the mg/L, the value saying what it was worked out from ("Worked out from 9.5 °C,
-  0.0 ‰ and 1.000 atm", on the water page and the card); the record form offers the point's latest fresh temperature and
-  salinity (A9's order, with their origin and age; fresh water's 0), which are stored on the sample with the oxygen, kept
-  or changed, needed where there is none, and not stored when no oxygen is entered and the offer is untouched (owner,
-  2026-11-07; the water round does the same for its rows, one rule `forms.water.OxygenInputs`, an oxygen column bringing
-  the temperature and salinity columns); when both are entered and differ by more than 10 %, both are
+  0.0 ‰ and 1.000 atm", on the water page and the card). **What an oxygen entry is worked out with is its provenance,
+  never a measurement** (second cross review, finding 1): the record form and the round leave the temperature and the
+  salinity EMPTY and only say in the help (and a round's cell) what an oxygen would be worked out with now ("now 9.5,
+  system sensor #1 · 30 s ago", or fresh water's 0). A value typed there is a measurement of the sample and stored as one
+  (alone too). Left empty beside an oxygen, the server finds, when it writes the sample, the point's temperature and
+  salinity fresh AT the sample's own point and time by the one resolver (`read.oxygen_basis`: nothing measured more than
+  the clock's skew after it, so a backdated entry never takes a later value and another point's value never lands on the
+  point chosen), else fresh water's 0 for the salinity, and stores them as `oxygen_basis_*` (value, source, sensor
+  channel, when measured; held by `chk_water_measurements_oxygen_basis_*`: only beside an oxygen, never beside the
+  sample's own value) and in the activity log; the worked-out value then says it ("The temperature is system sensor #1,
+  08.11.2026 10:00."). The basis is read only by the oxygen's conversion: it never becomes the point's latest temperature
+  or salinity. With nothing fresh to work it out with, the forms ask for the value ("Needed with the oxygen: no fresh
+  temperature here at that time ..."); a sample written otherwise (an import, a test) is kept without a basis and its
+  other unit says what it needs. When both units are entered and differ by more than 10 %, both are
   kept and flagged.
 
 **The page** has three tabs: **Latest** (one row per point: the middle point of every unit (a unit without one

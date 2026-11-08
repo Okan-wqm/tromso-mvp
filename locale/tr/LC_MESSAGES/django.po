@@ -6093,9 +6093,6 @@ msgstr "Güncellik süresi (saniye)"
 msgid "Fresh water"
 msgstr "Tatlı su"
 
-msgid "Fresh water: 0."
-msgstr "Tatlı su: 0."
-
 msgid "Freshwater"
 msgstr "Tatlı su"
 
@@ -7211,10 +7208,6 @@ msgstr "Son değerler"
 msgid "Latest sea-lice count %(date)s, %(fish)s fish examined"
 msgstr "Son deniz biti sayımı %(date)s, %(fish)s balık incelendi"
 
-#, python-format
-msgid "Latest: %(source)s"
-msgstr "Son değer: %(source)s"
-
 msgid "Latitude"
 msgstr "Enlem"
 
@@ -7266,6 +7259,12 @@ msgstr "İzin türleri"
 
 msgid "Left"
 msgstr "Ayrıldı"
+
+#, python-format
+msgid "Left empty beside an oxygen: the latest fresh value at %(point)s at the sample’s time (%(now)s)."
+msgstr ""
+"Oksijenin yanında boş bırakılırsa: numunenin zamanında %(point)s noktasındaki en son güncel değer"
+" (%(now)s)."
 
 msgid "Left on"
 msgstr "Ayrılış tarihi"
@@ -7897,8 +7896,11 @@ msgstr ""
 msgid "Natural gas"
 msgstr "Doğal gaz"
 
-msgid "Needed with the oxygen: the other unit is worked out with it."
-msgstr "Oksijenle birlikte gerekli: diğer birim bununla hesaplanır."
+msgid "Needed with the oxygen: no fresh salinity here at that time to work the other unit out with."
+msgstr "Oksijenle gerekli: diğer birimi hesaplamak için o zamanda burada güncel tuzluluk yok."
+
+msgid "Needed with the oxygen: no fresh temperature here at that time to work the other unit out with."
+msgstr "Oksijenle gerekli: diğer birimi hesaplamak için o zamanda burada güncel sıcaklık yok."
 
 msgid "Needs a fresh pH and temperature from the sensors with the sensor’s TAN."
 msgstr "Sensörün TAN değeriyle birlikte sensörlerden güncel bir pH ve sıcaklık gerekir."
@@ -10456,6 +10458,9 @@ msgstr "Tuzluluk (‰, g/kg)"
 msgid "Salinity sensor"
 msgstr "Tuzluluk sensörü"
 
+msgid "Salinity the oxygen is worked out with (‰)"
+msgstr "Oksijenin hesaplandığı tuzluluk (‰)"
+
 msgid "Saltwater"
 msgstr "Tuzlu su"
 
@@ -10939,6 +10944,12 @@ msgstr "Duyarlı"
 msgid "Sensitivity tests"
 msgstr "Duyarlılık testleri"
 
+msgid "Sensor channel of the oxygen’s salinity"
+msgstr "Oksijenin tuzluluğunun sensör kanalı"
+
+msgid "Sensor channel of the oxygen’s temperature"
+msgstr "Oksijenin sıcaklığının sensör kanalı"
+
 msgid "Sensor credentials"
 msgstr "Sensör kimlik bilgileri"
 
@@ -11259,6 +11270,12 @@ msgstr "Sırala: %(name)s"
 
 msgid "Source"
 msgstr "Kaynak"
+
+msgid "Source of the oxygen’s salinity"
+msgstr "Oksijenin tuzluluğunun kaynağı"
+
+msgid "Source of the oxygen’s temperature"
+msgstr "Oksijenin sıcaklığının kaynağı"
 
 msgid "Source of the value"
 msgstr "Değerin kaynağı"
@@ -11736,6 +11753,9 @@ msgstr "Sıcaklık sütunları (°C)"
 
 msgid "Temperature sensor"
 msgstr "Sıcaklık sensörü"
+
+msgid "Temperature the oxygen is worked out with (°C)"
+msgstr "Oksijenin hesaplandığı sıcaklık (°C)"
 
 msgid "Temperatures"
 msgstr "Sıcaklıklar"
@@ -12893,6 +12913,13 @@ msgid "The safe zone lies in this band."
 msgstr "Güvenli bölge bu aralıktadır."
 
 #, python-format
+msgid "The salinity is %(source)s."
+msgstr "Tuzluluk: %(source)s."
+
+msgid "The salinity is fresh water’s."
+msgstr "Tuzluluk tatlı suyunkidir."
+
+#, python-format
 msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."
 msgstr "%(unit)s birimindeki %(date)s tarihli deniz biti sayımının balığı kalmaz: önce onu iptal edin."
 
@@ -13127,6 +13154,10 @@ msgstr "Ekibin yürütücüsü yok."
 
 msgid "The team needs a lead."
 msgstr "Ekibin bir yürütücüsü olmalı."
+
+#, python-format
+msgid "The temperature is %(source)s."
+msgstr "Sıcaklık: %(source)s."
 
 msgid "The template a card’s flip link shows (Simple flips to Detailed). Empty: no flip link."
 msgstr ""
@@ -14545,6 +14576,12 @@ msgstr "Alınma zamanı"
 msgid "When the channel stopped being here; empty while it still is."
 msgstr "Kanalın burada olmayı bıraktığı zaman; hâlâ buradaysa boş."
 
+msgid "When the oxygen’s salinity was measured"
+msgstr "Oksijenin tuzluluğunun ölçüldüğü zaman"
+
+msgid "When the oxygen’s temperature was measured"
+msgstr "Oksijenin sıcaklığının ölçüldüğü zaman"
+
 msgid "When this is a part of other equipment, e.g. the pump of a filter unit."
 msgstr "Bu, başka bir ekipmanın parçasıysa; örn. bir filtre ünitesinin pompası."
 
@@ -15683,6 +15720,12 @@ msgstr "bu sayfada değiştirildi"
 msgid "found %(time)s"
 msgstr "saat %(time)s’te bulundu"
 
+msgid "fresh water"
+msgstr "tatlı su"
+
+msgid "fresh water, 0"
+msgstr "tatlı su, 0"
+
 #, python-format
 msgid "from %(first)s"
 msgstr "%(first)s tarihinden"
@@ -15985,6 +16028,9 @@ msgstr "böyle bir satır yok"
 msgid "none"
 msgstr "yok"
 
+msgid "none fresh now: enter it"
+msgstr "şu an güncel değer yok: girin"
+
 msgid "not enforced by the database"
 msgstr "veritabanı tarafından zorunlu kılınmıyor"
 
@@ -16008,6 +16054,10 @@ msgstr "çizelgenin aralığında ulaşılmaz (4 ile 12,5)"
 
 msgid "now"
 msgstr "şimdi"
+
+#, python-format
+msgid "now %(value)s, %(source)s"
+msgstr "şu an %(value)s, %(source)s"
 
 msgid "off"
 msgstr "izinli"

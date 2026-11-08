@@ -6083,9 +6083,6 @@ msgstr "Fersk i (sekunder)"
 msgid "Fresh water"
 msgstr "Ferskvann"
 
-msgid "Fresh water: 0."
-msgstr "Ferskvann: 0."
-
 msgid "Freshwater"
 msgstr "Ferskvann"
 
@@ -7199,10 +7196,6 @@ msgstr "Siste"
 msgid "Latest sea-lice count %(date)s, %(fish)s fish examined"
 msgstr "Siste lusetelling %(date)s, %(fish)s fisk undersøkt"
 
-#, python-format
-msgid "Latest: %(source)s"
-msgstr "Siste: %(source)s"
-
 msgid "Latitude"
 msgstr "Breddegrad"
 
@@ -7254,6 +7247,12 @@ msgstr "Permisjonstyper"
 
 msgid "Left"
 msgstr "Sluttet"
+
+#, python-format
+msgid "Left empty beside an oxygen: the latest fresh value at %(point)s at the sample’s time (%(now)s)."
+msgstr ""
+"Tom ved siden av et oksygen: den siste ferske verdien ved %(point)s på prøvens tidspunkt "
+"(%(now)s)."
 
 msgid "Left on"
 msgstr "Sluttet"
@@ -7883,8 +7882,15 @@ msgstr ""
 msgid "Natural gas"
 msgstr "Naturgass"
 
-msgid "Needed with the oxygen: the other unit is worked out with it."
-msgstr "Trengs med oksygenet: den andre enheten regnes ut med den."
+msgid "Needed with the oxygen: no fresh salinity here at that time to work the other unit out with."
+msgstr ""
+"Trengs med oksygenet: ingen fersk salinitet her på det tidspunktet å regne ut den andre enheten "
+"med."
+
+msgid "Needed with the oxygen: no fresh temperature here at that time to work the other unit out with."
+msgstr ""
+"Trengs med oksygenet: ingen fersk temperatur her på det tidspunktet å regne ut den andre enheten "
+"med."
 
 msgid "Needs a fresh pH and temperature from the sensors with the sensor’s TAN."
 msgstr "Trenger fersk pH og temperatur fra sensorene sammen med sensorens TAN."
@@ -10447,6 +10453,9 @@ msgstr "Salinitet (‰, g/kg)"
 msgid "Salinity sensor"
 msgstr "Salinitetssensor"
 
+msgid "Salinity the oxygen is worked out with (‰)"
+msgstr "Saliniteten oksygenet regnes ut med (‰)"
+
 msgid "Saltwater"
 msgstr "Saltvann"
 
@@ -10930,6 +10939,12 @@ msgstr "Følsom"
 msgid "Sensitivity tests"
 msgstr "Følsomhetsundersøkelser"
 
+msgid "Sensor channel of the oxygen’s salinity"
+msgstr "Sensorkanal for oksygenets salinitet"
+
+msgid "Sensor channel of the oxygen’s temperature"
+msgstr "Sensorkanal for oksygenets temperatur"
+
 msgid "Sensor credentials"
 msgstr "Sensorlegitimasjoner"
 
@@ -11250,6 +11265,12 @@ msgstr "Sorter etter %(name)s"
 
 msgid "Source"
 msgstr "Kilde"
+
+msgid "Source of the oxygen’s salinity"
+msgstr "Kilde for oksygenets salinitet"
+
+msgid "Source of the oxygen’s temperature"
+msgstr "Kilde for oksygenets temperatur"
 
 msgid "Source of the value"
 msgstr "Kilde for verdien"
@@ -11725,6 +11746,9 @@ msgstr "Temperaturkolonner (°C)"
 
 msgid "Temperature sensor"
 msgstr "Temperatursensor"
+
+msgid "Temperature the oxygen is worked out with (°C)"
+msgstr "Temperaturen oksygenet regnes ut med (°C)"
 
 msgid "Temperatures"
 msgstr "Temperaturer"
@@ -12882,6 +12906,13 @@ msgid "The safe zone lies in this band."
 msgstr "Den trygge sonen ligger i dette båndet."
 
 #, python-format
+msgid "The salinity is %(source)s."
+msgstr "Saliniteten er fra %(source)s."
+
+msgid "The salinity is fresh water’s."
+msgstr "Saliniteten er ferskvannets."
+
+#, python-format
 msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."
 msgstr "Lusetellingen %(date)s i %(unit)s ville stått uten fisk: annuller den først."
 
@@ -13116,6 +13147,10 @@ msgstr "Teamet har ingen leder."
 
 msgid "The team needs a lead."
 msgstr "Teamet trenger en leder."
+
+#, python-format
+msgid "The temperature is %(source)s."
+msgstr "Temperaturen er fra %(source)s."
 
 msgid "The template a card’s flip link shows (Simple flips to Detailed). Empty: no flip link."
 msgstr "Malen et korts byttelenke viser (Enkel bytter til Detaljert). Tomt: ingen byttelenke."
@@ -14527,6 +14562,12 @@ msgstr "Mottatt"
 msgid "When the channel stopped being here; empty while it still is."
 msgstr "Når kanalen sluttet å være her; tom så lenge den fortsatt er det."
 
+msgid "When the oxygen’s salinity was measured"
+msgstr "Når oksygenets salinitet ble målt"
+
+msgid "When the oxygen’s temperature was measured"
+msgstr "Når oksygenets temperatur ble målt"
+
 msgid "When this is a part of other equipment, e.g. the pump of a filter unit."
 msgstr "Når dette er en del av annet utstyr, f.eks. pumpen i en filterenhet."
 
@@ -15668,6 +15709,12 @@ msgstr "byttet på denne siden"
 msgid "found %(time)s"
 msgstr "funnet %(time)s"
 
+msgid "fresh water"
+msgstr "ferskvann"
+
+msgid "fresh water, 0"
+msgstr "ferskvann, 0"
+
 #, python-format
 msgid "from %(first)s"
 msgstr "fra %(first)s"
@@ -15970,6 +16017,9 @@ msgstr "ingen slik rad"
 msgid "none"
 msgstr "ingen"
 
+msgid "none fresh now: enter it"
+msgstr "ingen fersk nå: skriv den inn"
+
 msgid "not enforced by the database"
 msgstr "ikke håndhevet av databasen"
 
@@ -15993,6 +16043,10 @@ msgstr "nås ikke i diagrammets område (4 til 12,5)"
 
 msgid "now"
 msgstr "nå"
+
+#, python-format
+msgid "now %(value)s, %(source)s"
+msgstr "nå %(value)s, %(source)s"
 
 msgid "off"
 msgstr "fri"

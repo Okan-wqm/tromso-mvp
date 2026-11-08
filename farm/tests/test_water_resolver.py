@@ -88,20 +88,26 @@ class OneResolverTests(SourcesCase):
         reading = self.latest().get('temperature_c')
         self.assertEqual(read.origin_text(reading), 'system sensor #1')
 
-    def test_every_point_of_the_unit_is_its_own_and_the_newest_fresh_wins(self):
-        """A9.1: the unit's OWN sampling points (plural): a fresh value at its inlet, newer than the middle's, wins."""
+    def test_every_point_of_the_units_own_water_is_its_own_and_the_newest_fresh_wins(self):
+        """A9.1 (owner, 2026-11-08): the unit's OWN sampling points (plural) are those measuring its own water (the
+        middle, a depth point, an outlet, a drain): a fresh value at its drain, newer than the middle's, wins. An inlet
+        measures the supply stream, not the unit's water: it never counts for the unit."""
+        drain = point_of(self.t1, 'bottom_drain')
         inlet = point_of(self.t1, 'inlet')
         self.sample(hours=3, temperature_c='9.0')
-        self.sample(point=inlet, hours=1, temperature_c='9.4')
+        self.sample(point=drain, hours=1, temperature_c='9.4')
+        self.sample(point=inlet, hours=0, temperature_c='14.0')                # the supply stream: never the unit's
+        self.on(inlet, self.value('temperature_c', 14.2, seconds=5))
         self.on(self.ras, self.value('temperature_c', 11.0, seconds=30))      # the system's never stands in for it
         water, ration = self.both()
-        self.assertEqual(water, (D('9.4'), inlet, True))
+        self.assertEqual(water, (D('9.4'), drain, True))
         self.assertEqual(ration, water)
-        self.on(inlet, self.value('temperature_c', 9.6, seconds=60))
-        self.assertEqual(self.both()[0], (D('9.6'), inlet, True))
+        self.on(drain, self.value('temperature_c', 9.6, seconds=60))
+        self.assertEqual(self.both()[0], (D('9.6'), drain, True))
         self.assertEqual(self.both()[1], self.both()[0])
-        # the inlet's own water is its own alone: the middle's samples are not its
-        self.assertEqual(read.latest([inlet], now=self.now)[inlet.pk].get('temperature_c').point, inlet)
+        # the drain's and the inlet's own water are their own alone: the middle's samples are not theirs
+        self.assertEqual(read.latest([drain], now=self.now)[drain.pk].get('temperature_c').point, drain)
+        self.assertEqual(read.latest([inlet], now=self.now)[inlet.pk].get('temperature_c').value, D('14.2'))
 
     def test_a_tie_at_one_measurement_time_goes_the_same_way_everywhere(self):
         """A sensor value and a sample measured at the same second: the sensor, on the water page and for the ration,

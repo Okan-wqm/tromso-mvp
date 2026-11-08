@@ -105,8 +105,9 @@ class DateWindowAndShapeTests(SimpleTestCase):
                                   read_day('31.12.2100')),
                                  (date(2026, 11, 6), date(2026, 11, 6), date(1900, 1, 1), date(2100, 12, 31)))
                 for refused in ('11/06/2026', '6/11/2026', '06-11-2026', '06.11.26', '06.11.0026', '31.12.9999',
-                                '01.01.0001', '31.12.1899', '01.01.2101', '31.02.2026'):
-                    self.assertIsNone(read_day(refused), refused)
+                                '01.01.0001', '31.12.1899', '01.01.2101', '31.02.2026',
+                                '٠٦.١١.٢٠٢٦', '０６.１１.２０２６', 20261106, date(2026, 11, 6), ['06.11.2026']):
+                    self.assertIsNone(read_day(refused), refused)          # other digits and anything not text too
 
     def test_a_form_refuses_another_shape_with_the_shape_it_wants_and_a_moment_without_its_time(self):
         for typed, error in (({'day': '11/06/2026', 'moment': '06.11.2026 09:19'},

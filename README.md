@@ -3382,7 +3382,9 @@ stays deleted, and a link the delete cleared (`SET_NULL`) stays cleared: what it
 record is locked, so two restores take turns, and a code taken by a record committed meanwhile is refused with its
 reason, not a server error (F-003). The records a delete takes along were read for the plan, not locked, so it
 writes only their deletion's columns, counting the version up in the database (`AuditedModel.mark_deleted`,
-`detach`): an edit saved meanwhile is kept and its editor's outdated version refused (F-065, F-079, F-190). Deletes
+`detach`): an edit saved meanwhile is kept and its editor's outdated version refused (F-065, F-079, F-190). The delete
+locks the records it takes along and takes each only as it still is: one moved to another parent meanwhile stays
+there with what hangs under it, one deleted on its own meanwhile keeps its own moment (cross review F2). Deletes
 made before this stamped each record with its own moment: restoring one of those brings back the record alone.
 
 ### Shared form parts

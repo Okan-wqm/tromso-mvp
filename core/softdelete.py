@@ -46,6 +46,9 @@ class DeletePlan:
     detach: list = field(default_factory=list)    # (record, link) pairs whose link is cleared
     unlinked: list = field(default_factory=list)  # records linked many-to-many, whose link stops counting
     kept_records: dict = field(default_factory=dict)   # model -> the pks of its records that keep their link
+    # (model, pk) of a record the plan takes along, or (model, pk, link) of one it detaches -> (the link it hangs by,
+    # (model, pk) of what it points at)
+    via: dict = field(default_factory=dict)
 
     @property
     def can_delete(self):
@@ -110,12 +113,13 @@ def plan_delete(obj):
     return plan
 
 
-def _cascade(children, plan, seen):
+def _cascade(children, plan, seen, link, parent):
     for child in children:
         key = (type(child), child.pk)
         if key not in seen:
             seen.add(key)
             plan.cascade.append(child)
+            plan.via[key] = (link, (type(parent), parent.pk))
             _collect(child, plan, seen)
 
 
@@ -133,7 +137,7 @@ def _collect(obj, plan, seen):
         action = relation.on_delete
         if action is models.DO_NOTHING:
             planned = list(model.deleted_with(link, obj))
-            _cascade(planned, plan, seen)
+            _cascade(planned, plan, seen, link, obj)
             pks = set(model.objects.filter(**{link: obj}).exclude(pk__in=[record.pk for record in planned])
                       .values_list('pk', flat=True))
             _keep(model, pks, plan)
@@ -142,9 +146,10 @@ def _collect(obj, plan, seen):
         if not children:
             continue
         if action is models.CASCADE:
-            _cascade(children, plan, seen)
+            _cascade(children, plan, seen, link, obj)
         elif action is models.SET_NULL:
             plan.detach.extend((child, link) for child in children)
+            plan.via.update({(type(child), child.pk, link): (link, (type(obj), obj.pk)) for child in children})
         elif action in (models.PROTECT, models.RESTRICT):
             plan.blockers.append(protected(model, len(children)))
 
@@ -175,19 +180,55 @@ def protected(model, count):
 
 def execute(plan, user):
     """Carries the plan out, inside the caller's transaction, one log row per affected record. Every record it deletes
-    is stamped with one moment, the delete's (AuditedModel.mark_deleted): a restore brings back what it took along."""
+    is stamped with one moment, the delete's (AuditedModel.mark_deleted): a restore brings back what it took along.
+
+    The plan was read before, unlocked (it is the confirmation's too), so the records it takes along or detaches are
+    locked now and taken only as they still are (cross review F2): one moved to another parent meanwhile stays where
+    it went, with what hangs under it, and one deleted on its own meanwhile keeps its own moment."""
     moment = timezone.now()
+    rows = _locked([record for record, _link in plan.detach] + plan.cascade)
+    gone = {(type(plan.obj), plan.obj.pk)}
+    taken = []
+    for record in plan.cascade:                        # parents before their children
+        key = (type(record), record.pk)
+        if _still_under(rows.get(key), *plan.via[key], gone):
+            gone.add(key)
+            taken.append(rows[key])
     with audit.source_language():
         for record, link in plan.detach:
+            key = (type(record), record.pk)
+            row = rows.get(key)
+            if key in gone or not _still_under(row, *plan.via[(*key, link)], gone):
+                continue
             label = capfirst(record._meta.get_field(link).verbose_name)
-            before = str(getattr(record, link))
-            record.detach(link, user)
-            audit.record(user, AuditLog.Action.UPDATE, record, {str(label): [before, None]})
-        for record in reversed(plan.cascade):
+            before = str(getattr(row, link))
+            row.detach(link, user)
+            audit.record(user, AuditLog.Action.UPDATE, row, {str(label): [before, None]})
+        for record in reversed(taken):
             record.mark_deleted(user, moment)
             audit.record_delete(user, record)
         plan.obj.mark_deleted(user, moment)
         audit.record_delete(user, plan.obj)
+
+
+def _locked(records):
+    """{(model, pk): row} of the records as they are now, each locked for the caller's transaction, model by model in
+    primary-key order (a record deleted meanwhile is there too, marked so)."""
+    pks = {}
+    for record in records:
+        pks.setdefault(type(record), set()).add(record.pk)
+    found = {}
+    for model, keys in pks.items():
+        for row in model.all_objects.select_for_update(of=('self',)).filter(pk__in=keys).order_by('pk'):
+            found[(model, row.pk)] = row
+    return found
+
+
+def _still_under(row, link, parent, gone):
+    """Whether `row`, as locked now, is live and still points through `link` at `parent`, a record the delete takes."""
+    if row is None or row.is_deleted or parent not in gone:
+        return False
+    return getattr(row, row._meta.get_field(link).attname) == parent[1]
 
 
 def taken_with(record):

@@ -19,7 +19,7 @@
 <body>
   <a class="skip" href="#content">{% trans "Skip to content" %}</a>
   <div class="shell">
-    <aside class="rail ui-rail" id="rail" aria-label="{% trans "Main navigation" %}">
+    <aside class="rail" id="rail" aria-label="{% trans "Main navigation" %}">
       <div class="rail-head ui-rail-head">
         <a class="rail-brand" href="{% url 'home' %}">
           <img class="ui-logo" src="{% asset 'img/suderra-mark-disc.png' %}" alt=""><span class="ui-wordmark">SU<span>DERRA</span></span>
@@ -45,6 +45,8 @@
           {% endfor %}
         </div>
       </div>
+      {% elif workspace %}
+      <p class="ui-panel-switch workspace-single"><span class="workspace-name">{{ workspace.label }}</span></p>
       {% endif %}
 
       <nav class="rail-nav ui-rail-nav">
@@ -84,7 +86,6 @@
               <strong>{{ user.get_full_name|default:user.get_username }}</strong>
               {% if user.email %}<span>{{ user.email }}</span>{% endif %}
             </p>
-            <div class="menu-language"><span>{% trans "Language" %}</span>{% include "_language_switcher.html" %}</div>
             <div class="menu-language menu-theme"><span>{% trans "Theme" %}</span>
               <form class="theme-switch" method="post" action="{% url 'core:set_theme' %}">
                 {% csrf_token %}

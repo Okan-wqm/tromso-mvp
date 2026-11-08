@@ -57,7 +57,17 @@
 .shell { display: flex; min-height: 100vh; }
 
 /* ---------- Rail ---------- */
+/* The rail is ui-rail (static/css/ui.css) under the class the pages and tests know it by. */
 .rail {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--gradient-rail);
+  background-color: var(--surface-rail);
+  box-shadow: var(--stripe-rail);
+  color: var(--text-on-rail);
   z-index: var(--z-drawer);
   width: var(--rail-w);
   flex: none;
@@ -443,3 +453,8 @@
 @media (prefers-reduced-motion: reduce) {
   .rail { transition: none; }
 }
+
+/* One panel only: its name where the switch would be, not a control */
+.workspace-single { cursor: default; }
+[data-nav="collapsed"] .workspace-single { display: none; }
+@media (max-width: 1023px) { [data-nav="collapsed"] .workspace-single { display: flex; } }

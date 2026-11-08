@@ -11,6 +11,7 @@ pub mod chemistry;
 pub mod dosing;
 pub mod geometry;
 pub mod num;
+pub mod plots;
 
 mod digest {
     include!(concat!(env!("OUT_DIR"), "/core_hash.rs"));

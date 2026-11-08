@@ -120,3 +120,6 @@ split = chemcore.split
 recipes = chemcore.recipes
 visual = chemcore.visual
 simulate = chemcore.simulate
+
+# ---- the four small charts (chemcore/core/src/plots.rs) ----------------------------------------------------------
+plots = chemcore.plots

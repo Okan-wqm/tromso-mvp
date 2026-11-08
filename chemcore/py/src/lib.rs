@@ -6,6 +6,7 @@ use chemcore_core::chemistry as c;
 use chemcore_core::dosing as d;
 use chemcore_core::geometry as g;
 use chemcore_core::num::ChemError;
+use chemcore_core::plots as pl;
 use pyo3::create_exception;
 use pyo3::exceptions::{PyOverflowError, PyValueError, PyZeroDivisionError};
 use pyo3::prelude::*;
@@ -839,6 +840,43 @@ fn simulate(
         .collect())
 }
 
+// ---- the four small charts (chemcore/core/src/plots.rs) ------------------------------------------------------------
+
+/// The four small charts by key ('nh3', 'h2s', 'carbonate', 'saturation'): None where one cannot be drawn, else
+/// {'x', 'y', 'unit', 'series': [(key, points)], 'bands': [(kind, from, to)], 'verticals': [(key, pH)],
+/// 'horizontals': [(key, value)], 'dots': [(key, pH, value)]}.
+#[pyfunction]
+#[pyo3(signature = (water, limits, target=None, pressure=1.0))]
+fn plots<'py>(
+    py: Python<'py>,
+    water: &Bound<'py, PyDict>,
+    limits: &Bound<'py, PyDict>,
+    target: Option<Point>,
+    pressure: f64,
+) -> PyResult<Bound<'py, PyDict>> {
+    let target = target.map(|(ph, alkalinity_mg_l)| a::Target { ph, alkalinity_mg_l });
+    let found = pl::plots(&water_of(water)?, &limits_of(limits)?, target.as_ref(), pressure).map_err(err)?;
+    let dict = PyDict::new(py);
+    for (key, plot) in ["nh3", "h2s", "carbonate", "saturation"].into_iter().zip(found) {
+        match plot {
+            None => dict.set_item(key, py.None())?,
+            Some(plot) => {
+                let one = PyDict::new(py);
+                one.set_item("x", plot.x)?;
+                one.set_item("y", plot.y)?;
+                one.set_item("unit", plot.unit)?;
+                one.set_item("series", plot.series)?;
+                one.set_item("bands", plot.bands)?;
+                one.set_item("verticals", plot.verticals)?;
+                one.set_item("horizontals", plot.horizontals)?;
+                one.set_item("dots", plot.dots)?;
+                dict.set_item(key, one)?;
+            }
+        }
+    }
+    Ok(dict)
+}
+
 #[pymodule]
 fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("NonFiniteError", module.py().get_type::<NonFiniteError>())?;
@@ -901,6 +939,7 @@ fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
         wrap_pyfunction!(recipes, module)?,
         wrap_pyfunction!(visual, module)?,
         wrap_pyfunction!(simulate, module)?,
+        wrap_pyfunction!(plots, module)?,
     ] {
         module.add_function(function)?;
     }

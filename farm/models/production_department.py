@@ -93,8 +93,9 @@ class ProductionDepartment(CodedMixin, AuditedModel):
         """Moved to another site, a department takes its units along: refused when one of them has stock records
         (their past figures would be reported for the other locality, OUR-06, as a unit's own move is) or when one
         of its units' regulatory numbers is taken on the new site (OUR-07). A department a deleted site left without a
-        site (a row from before F-212) is put on a site again whatever its units' records: on no site they are in no
-        locality's reports at all, and the change is logged."""
+        site (a row from before F-212) goes back on a site by the owner's rule (cross review F4): without stock records
+        in its units to any live site, with them only to the site they were recorded on (`former_site`, restored
+        first), and not at all when that site is not known."""
         super().clean()
         if self._state.adding:
             return
@@ -102,9 +103,17 @@ class ProductionDepartment(CodedMixin, AuditedModel):
         if stored == self.site_id:
             return
         units = self.tanks.all()
-        if stored is not None and any(unit.has_history() for unit in units):
-            raise ValidationError({'site': _('Its units have stock records on their site: the department stays on '
-                                             'it.')})
+        if any(unit.has_history() for unit in units):
+            if stored is not None:
+                raise ValidationError({'site': _('Its units have stock records on their site: the department stays on '
+                                                 'it.')})
+            former = self.former_site()
+            if former is None:
+                raise ValidationError({'site': _('Its units have stock records, and the site they were recorded on is '
+                                                 'not known: it cannot be put on another one.')})
+            if former.pk != self.site_id:
+                raise ValidationError({'site': _('Its units have stock records on %(site)s: restore that site and '
+                                                 'choose it.') % {'site': former}})
         numbers = [unit.regulatory_unit_id for unit in units if unit.regulatory_unit_id]
         if numbers and self.site_id:
             taken = (type(units.first()).objects.filter(production_department__site_id=self.site_id,
@@ -114,3 +123,19 @@ class ProductionDepartment(CodedMixin, AuditedModel):
             if taken:
                 raise ValidationError({'site': _('The site has units numbered %(numbers)s already.') % {
                     'numbers': ', '.join(dict.fromkeys(taken))}})
+
+    def former_site(self):
+        """The site this department was on before a deleted site left it without one (the source cleared the link and
+        logged it, {"Site": ["Name (CODE)", None]}): the one site, deleted or not, that log names; None when the log
+        names none, or more than one site answers to it."""
+        from core import audit
+        from core.models import AuditLog
+        entries = (AuditLog.objects.filter(entity_type=audit.entity_type_of(type(self)), entity_id=str(self.pk),
+                                           action=AuditLog.Action.UPDATE, changes__has_key='Site')
+                   .order_by('-created_at').values_list('changes', flat=True))
+        label = next((change['Site'][0] for change in entries if change['Site'][1] is None), None)
+        if label is None:
+            return None
+        found = [site for site in Site.all_objects.filter(code__in=[label.rpartition('(')[2].rstrip(')')])
+                 if str(site) == label]
+        return found[0] if len(found) == 1 else None

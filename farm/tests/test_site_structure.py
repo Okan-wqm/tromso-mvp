@@ -230,7 +230,7 @@ class ResitingTests(SiteStructureTestCase):
         self.leave()
         self.assertEqual(self.errors(self.tromso),
                          ['Its units have stock records on Bergen (BG): restore that site and choose it.'])
-        Site.objects.filter(pk=self.bergen.pk).update(is_deleted=False)
+        Site.all_objects.filter(pk=self.bergen.pk).update(is_deleted=False)
         self.assertIsNone(self.errors(Site.objects.get(pk=self.bergen.pk)))
 
     def test_with_stock_records_and_no_known_site_it_is_refused_with_the_reason(self):

@@ -7011,8 +7011,17 @@ msgstr "Hangi sistemlerin seçilebileceğini bunun sahası belirler."
 msgid "Its tasks are made from this day on, up to two weeks ahead."
 msgstr "Görevleri bu günden itibaren, iki hafta öncesine kadar oluşturulur."
 
+#, python-format
+msgid "Its units have stock records on %(site)s: restore that site and choose it."
+msgstr "Birimlerinin %(site)s sahasında stok kayıtları var: o sahayı geri yükleyip onu seçin."
+
 msgid "Its units have stock records on their site: the department stays on it."
 msgstr "Birimlerinin sahalarında stok kayıtları var: departman o sahada kalır."
+
+msgid ""
+"Its units have stock records, and the site they were recorded on is not known: it cannot be put "
+"on another one."
+msgstr "Birimlerinin stok kayıtları var ve kaydedildikleri saha bilinmiyor: başka bir sahaya konamaz."
 
 msgid "Its units have stock records: set its status to Closed instead."
 msgstr "Birimlerinin stok kayıtları var: bunun yerine durumunu Kapalı yapın."

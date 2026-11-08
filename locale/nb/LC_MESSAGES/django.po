@@ -6999,8 +6999,19 @@ msgstr "Lokaliteten avgjør hvilke systemer som kan velges."
 msgid "Its tasks are made from this day on, up to two weeks ahead."
 msgstr "Oppgavene lages fra denne dagen, opptil to uker fram."
 
+#, python-format
+msgid "Its units have stock records on %(site)s: restore that site and choose it."
+msgstr "Enhetene har lagerposter på %(site)s: gjenopprett den lokaliteten og velg den."
+
 msgid "Its units have stock records on their site: the department stays on it."
 msgstr "Enhetene har lagerposter på lokaliteten: avdelingen blir på den."
+
+msgid ""
+"Its units have stock records, and the site they were recorded on is not known: it cannot be put "
+"on another one."
+msgstr ""
+"Enhetene har lagerposter, og lokaliteten de ble ført på, er ukjent: den kan ikke settes på en "
+"annen."
 
 msgid "Its units have stock records: set its status to Closed instead."
 msgstr "Enhetene har lagerposter: sett statusen til Stengt i stedet."

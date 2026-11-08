@@ -16,7 +16,8 @@ from farm.models import ProductionDepartment, Site
 from farm.stock.dates import site_today
 
 from .. import read, rules, services
-from ..models import AttendanceRecord, Employee, LeaveRequest, LeaveType, SchedulingSettings, Shift, ShiftAssignment
+from ..models import (AttendanceRecord, Employee, LeaveRequest, LeaveType, Posting, SchedulingSettings, Shift,
+                      ShiftAssignment)
 from .helpers import fields_of, user
 from .helpers_people import PeopleTestCase, TOP, employee, place
 
@@ -249,6 +250,19 @@ class EnteredPresenceTests(PeopleTestCase):
                                ).context['objects']
         self.assertEqual(list(rows), [])
         self.assertEqual((AttendanceRecord.objects.count(), AuditLog.objects.count()), (before[0] + 1, before[1]))
+
+    def test_a_stretch_after_midnight_on_the_sites_clock_belongs_to_that_days_department(self):
+        """Ann moves from department A to B on 2 March, on an Oslo site. Her stretch from 00:30 on 2 March (23:30 UTC on
+        the 1st) is on B's lead's list, not A's: the day that decides who sees it is the site's, not the server's UTC."""
+        Site.objects.filter(pk=self.site.pk).update(timezone='Europe/Oslo')
+        Posting.objects.filter(employee=self.in_a).update(valid_until=date(2026, 3, 1))
+        place(self.in_a, self.dept_b, start=date(2026, 3, 2))
+        punch(self.in_a, at(23, 30, day=date(2026, 3, 1)), at(5, day=date(2026, 3, 2)))
+        for actor, seen in ((self.lead, 0), (self.lead_b, 1)):
+            self.client.force_login(actor)
+            rows = self.client.get(reverse('hr:production_attendancerecord_list'),
+                                   {'from': '01.03.2026', 'to': '03.03.2026'}).context['objects']
+            self.assertEqual(len(list(rows)), seen, actor.username)
 
     def test_the_service_checks_the_verb_the_team_and_the_reason(self):
         for actor, person, note, error in ((self.lead, self.in_b, 'x', PermissionDenied),

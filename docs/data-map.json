@@ -205,6 +205,7 @@
         "farm/tests/test_production_departments.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
+        "farm/tests/test_site_structure.py",
         "farm/tests/test_sites.py",
         "farm/tests/test_species.py",
         "farm/tests/test_stock.py",
@@ -2840,17 +2841,6 @@
           ],
           "how": "form",
           "why": ""
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -3004,6 +2994,7 @@
       },
       "tests": [
         "core/test_datamap.py",
+        "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "experiments/tests/__init__.py",
         "experiments/tests/test_amend.py",
@@ -6287,17 +6278,6 @@
           "on_form": [],
           "how": "system",
           "why": "the reason typed in the void dialog"
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -6432,6 +6412,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_feeding.py",
@@ -9278,17 +9259,6 @@
           "on_form": [],
           "how": "system",
           "why": "the reason typed in the void dialog"
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -9415,6 +9385,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_health.py",
         "monitoring/tests/test_golden.py"
@@ -10547,6 +10518,7 @@
       "tests": [
         "core/test_database.py",
         "core/test_languages.py",
+        "core/tests_entry_key.py",
         "core/tests_query_pages.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
@@ -14118,17 +14090,6 @@
           ],
           "how": "form",
           "why": ""
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -14404,6 +14365,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_escape_delivery.py",
@@ -17234,17 +17196,6 @@
           "on_form": [],
           "how": "system",
           "why": "the reason typed in the void dialog"
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -17443,6 +17394,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_health.py",
         "reports/tests/test_lice.py",
@@ -18180,17 +18132,6 @@
           ],
           "how": "form",
           "why": ""
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -18282,15 +18223,6 @@
           "name": "chk_water_measurements_turbidity_ntu",
           "kind": "check",
           "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "uq_water_measurements_entry",
-          "kind": "unique",
-          "fields": [
-            "entry_key",
-            "measured_at"
-          ],
           "conditional": false
         }
       ],
@@ -18419,6 +18351,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_deffeyes.py",
@@ -23620,17 +23553,6 @@
           ],
           "how": "form",
           "why": ""
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -23858,6 +23780,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "inventory/tests/test_pages.py",
         "inventory/tests/test_services.py"

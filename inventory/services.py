@@ -27,7 +27,7 @@ from django.db.models.functions import Upper
 from django.utils.translation import gettext as _
 
 from core import audit
-from core.models import AuditLog
+from core.models import AuditLog, EntryKey
 from farm.models.supplier import SupplyCategory
 from farm.stock.dates import check_site_date, shown_date, site_today
 from farm.stock.services import AlreadyRecorded, locked, needs_notes, voided
@@ -127,7 +127,7 @@ def _lot_name(lot):
 # ---- the one write path --------------------------------------------------------------------------
 def _already(token):
     if token is not None:
-        done = InventoryOperation.all_objects.filter(entry_key=token).first()
+        done = EntryKey.record_of(token, InventoryOperation)
         if done is not None:
             raise AlreadyRecorded(done)
 
@@ -156,8 +156,10 @@ def _commit(user, kind, day, entries, *, location=None, supplier=None, reference
             seen.add(key)
         operation = InventoryOperation.objects.create(
             kind=kind, date=day, location=locations[location.pk] if location is not None else None,
-            supplier=supplier, reference=reference.strip(), reason=reason, notes=notes.strip(), entry_key=token,
+            supplier=supplier, reference=reference.strip(), reason=reason, notes=notes.strip(),
             created_by=user, updated_by=user)
+        if token is not None:
+            EntryKey.note(token, operation)
         InventoryLine.objects.bulk_create([
             InventoryLine(operation=operation, lot=entry.lot, location=locations[entry.location.pk], kind=entry.kind,
                           quantity=entry.quantity, pair=entry.pair, unit_cost=entry.unit_cost,

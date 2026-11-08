@@ -285,8 +285,6 @@ class StockOperation(AuditedModel):
     health_event = models.ForeignKey('HealthEvent', null=True, blank=True, on_delete=models.PROTECT,
                                      related_name='stock_operations', verbose_name=_('Health event'))
     void_reason = models.CharField(_('Reason for voiding'), max_length=500, blank=True)
-    # The key of the form it was entered with (not a secret): the same form sent twice records it once.
-    entry_key = models.UUIDField(null=True, blank=True, unique=True, editable=False)
 
     class Meta:
         db_table = 'stock_operations'

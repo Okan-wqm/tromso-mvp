@@ -34,7 +34,7 @@ Who did what to which record, with old and new values.
 - **how it works**: A record's own rows are also shown on the History tab of its edit page.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log
 - **constraints**: chk_audit_log_severity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 70 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 71 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -303,7 +303,7 @@ A trial of one species on one site: its design, its allocation and its dates; al
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Research › experiments
 - **forms**: `ExperimentForm`
 - **constraints**: uq_experiments_code (unique: code); chk_experiments_code (check); chk_experiments_status (check); chk_experiments_endpoint (check); chk_experiments_duration (check); chk_experiments_template (check); chk_experiments_started (check); chk_experiments_allocation (check)
-- **tests that mention it**: `core/test_datamap.py`, `core/tests_workspaces.py`, `experiments/tests/__init__.py` and 10 more
+- **tests that mention it**: `core/test_datamap.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 11 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -331,7 +331,6 @@ A trial of one species on one site: its design, its allocation and its dates; al
 | allocation_note | varchar(500) |  |  | system: the reason a placement by hand was made, written by the Places tab |
 | copied_from_id | uuid | yes | experiments (DO_NOTHING) | system: the experiment a copy was made from, written by the Copy dialog |
 | notes | varchar(2000) |  |  | ExperimentForm › Details |
-| entry_key | uuid | yes |  | system: not editable: set by the code |
 
 ## farm
 
@@ -648,7 +647,7 @@ Feed given to one unit on one day: the farm's feeding record.
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › feeding_records
 - **forms**: `FeedingForm`
 - **constraints**: chk_feeding_records_amount (check); chk_feeding_records_target (check); chk_feeding_records_meals (check); chk_feeding_records_void_reason (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py`, `farm/tests/test_feeding.py` and 3 more
+- **tests that mention it**: `core/tests_entry_key.py`, `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py` and 4 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -672,7 +671,6 @@ Feed given to one unit on one day: the farm's feeding record.
 | notes | varchar(2000) |  |  | FeedingForm |
 | high_rate_ack | boolean |  |  | FeedingForm |
 | void_reason | varchar(500) |  |  | system: the reason typed in the void dialog |
-| entry_key | uuid | yes |  | system: not editable: set by the code |
 
 <a id="farmfeed"></a>
 ### farm.Feed (`feeds`)
@@ -912,7 +910,7 @@ A sea-lice count in one unit (a cage) on one day, as lakselusforskriften's Vedle
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › lice_counts
 - **forms**: `LiceCountForm`
 - **constraints**: uq_lice_counts_unit_day (unique: unit, date); chk_lice_counts_fish (check); chk_lice_counts_lice (check); chk_lice_counts_void_reason (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_health.py` and 1 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 2 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -933,7 +931,6 @@ A sea-lice count in one unit (a cage) on one day, as lakselusforskriften's Vedle
 | attached | integer |  |  | LiceCountForm |
 | notes | varchar(2000) |  |  | LiceCountForm |
 | void_reason | varchar(500) |  |  | system: the reason typed in the void dialog |
-| entry_key | uuid | yes |  | system: not editable: set by the code |
 
 <a id="farmmedicinewithdrawal"></a>
 ### farm.MedicineWithdrawal (`medicine_withdrawals`)
@@ -1011,7 +1008,7 @@ A production unit within a site: a hatchery hall, a nursery, a grow-out unit.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › production_departments
 - **forms**: `ProductionDepartmentForm`
 - **constraints**: uq_production_departments_code_live (unique: code); uq_production_departments_site_name_live (unique: site, name); chk_production_departments_capacity (check); chk_production_departments_live_on_a_site (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_query_pages.py` and 42 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_entry_key.py` and 43 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1317,7 +1314,7 @@ One thing a person did to the stock (a stocking, a mortality, a weighing), the u
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › stock_operations
 - **forms**: `MortalityForm`, `CullForm`, `WeighingForm`, `TransferForm`, `LegForm`, `GradingForm`, `OutputForm`, `HarvestForm`, `DeliveryForm`, `EscapeForm`, `InputLineForm`, `VoidForm`
 - **constraints**: chk_stock_operations_kind (check); chk_stock_operations_void_reason (check); chk_stock_operations_ack_on_arrival (check); chk_stock_operations_health_event (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py`, `farm/tests/test_escape_delivery.py` and 9 more
+- **tests that mention it**: `core/tests_entry_key.py`, `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py` and 10 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1336,7 +1333,6 @@ One thing a person did to the stock (a stocking, a mortality, a weighing), the u
 | over_capacity_ack | boolean |  |  | TransferForm, GradingForm |
 | health_event_id | uuid | yes | health_events (PROTECT) | MortalityForm, CullForm |
 | void_reason | varchar(500) |  |  | VoidForm.reason |
-| entry_key | uuid | yes |  | system: not editable: set by the code |
 
 <a id="farmsuppliercontact"></a>
 ### farm.SupplierContact (`supplier_contacts`)
@@ -1551,7 +1547,7 @@ One course given to the fish of one or more units of a site: a bath, a medicated
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › treatments
 - **forms**: `TreatmentForm`, `LastDayForm`
 - **constraints**: chk_treatments_method (check); chk_treatments_reason (check); chk_treatments_medicine (check); chk_treatments_dates (check); chk_treatments_dose (check); chk_treatments_amount (check); chk_treatments_dose_unit (check); chk_treatments_amount_unit (check); chk_treatments_bath_minutes (check); chk_treatments_dose_positive (check); chk_treatments_amount_positive (check); chk_treatments_void_reason (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_health.py` and 2 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1580,7 +1576,6 @@ One course given to the fish of one or more units of a site: a bath, a medicated
 | health_event_id | uuid | yes | health_events (PROTECT) | TreatmentForm |
 | notes | varchar(2000) |  |  | TreatmentForm |
 | void_reason | varchar(500) |  |  | system: the reason typed in the void dialog |
-| entry_key | uuid | yes |  | system: not editable: set by the code |
 
 <a id="farmwaterlimit"></a>
 ### farm.WaterLimit (`water_limits`)
@@ -1627,8 +1622,8 @@ A water sample: what a person measured at one sampling point (a place on a unit,
 - **read**: farm.water.views.water_page (`/operations/water/`); farm.stock.views.production_units (`/operations/units/`)
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › water_measurements
 - **forms**: `WaterSampleForm`, `RoundForm`, `RoundRowForm`, `SampleVoidForm`
-- **constraints**: chk_water_measurements_any_value (check); chk_water_measurements_source (check); chk_water_measurements_void_reason (check); chk_water_measurements_temperature_c (check); chk_water_measurements_oxygen_mg_l (check); chk_water_measurements_oxygen_saturation_pct (check); chk_water_measurements_ph (check); chk_water_measurements_alkalinity_mg_l (check); chk_water_measurements_co2_mg_l (check); chk_water_measurements_tan_mg_l (check); chk_water_measurements_nitrite_n_mg_l (check); chk_water_measurements_nitrate_n_mg_l (check); chk_water_measurements_tgp_pct (check); chk_water_measurements_salinity_ppt (check); chk_water_measurements_turbidity_ntu (check); uq_water_measurements_entry (unique: entry_key, measured_at)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_calculator.py` and 9 more
+- **constraints**: chk_water_measurements_any_value (check); chk_water_measurements_source (check); chk_water_measurements_void_reason (check); chk_water_measurements_temperature_c (check); chk_water_measurements_oxygen_mg_l (check); chk_water_measurements_oxygen_saturation_pct (check); chk_water_measurements_ph (check); chk_water_measurements_alkalinity_mg_l (check); chk_water_measurements_co2_mg_l (check); chk_water_measurements_tan_mg_l (check); chk_water_measurements_nitrite_n_mg_l (check); chk_water_measurements_nitrate_n_mg_l (check); chk_water_measurements_tgp_pct (check); chk_water_measurements_salinity_ppt (check); chk_water_measurements_turbidity_ntu (check)
+- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 10 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1658,7 +1653,6 @@ A water sample: what a person measured at one sampling point (a place on a unit,
 | turbidity_ntu | numeric(5, 1) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | notes | varchar(500) |  |  | WaterSampleForm, RoundRowForm |
 | void_reason | varchar(500) |  |  | SampleVoidForm.reason |
-| entry_key | uuid | yes |  | system: not editable: set by the code |
 
 <a id="farmsamplingpoint"></a>
 ### farm.SamplingPoint (`water_sampling_points`)
@@ -2124,7 +2118,7 @@ One thing a person did in the store, the unit of void and of the activity log: a
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Storage › inventory_operations
 - **forms**: `ReceiptForm`, `IssueForm`, `WriteOffForm`, `ReturnForm`, `TransferForm`, `CountForm`, `VoidForm`
 - **constraints**: chk_inventory_operations_kind (check); chk_inventory_operations_void_reason (check); chk_inventory_operations_supplier (check); chk_inventory_operations_reason (check); chk_inventory_operations_count_location (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `inventory/tests/test_pages.py`, `inventory/tests/test_services.py`
+- **tests that mention it**: `core/tests_entry_key.py`, `core/tests_workspaces.py`, `inventory/tests/test_pages.py` and 1 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2145,7 +2139,6 @@ One thing a person did in the store, the unit of void and of the activity log: a
 | reason | varchar(20) |  |  | IssueForm, WriteOffForm, VoidForm |
 | notes | varchar(2000) |  |  | ReceiptForm, IssueForm, WriteOffForm, ReturnForm, TransferForm, CountForm |
 | void_reason | varchar(500) |  |  | VoidForm.reason |
-| entry_key | uuid | yes |  | system: not editable: set by the code |
 
 <a id="inventoryreorderlevel"></a>
 ### inventory.ReorderLevel (`inventory_reorder_levels`)

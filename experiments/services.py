@@ -24,7 +24,7 @@ from django.utils.translation import gettext as _, gettext_lazy
 
 from core import audit, softdelete
 from core.codes import next_code
-from core.models import AuditLog
+from core.models import AuditLog, EntryKey
 from farm.feeding import assignments
 from farm.handling import check
 from farm.models import Batch, FeedingProtocol, ProtocolAssignment, Tank
@@ -689,7 +689,7 @@ def copy(user, source, name, starts_on=None, as_template=False, token=None):
     its design, and the copier's team row as any other."""
     with transaction.atomic():
         if token is not None:
-            sent = Experiment.all_objects.filter(entry_key=token).first()
+            sent = EntryKey.record_of(token, Experiment)
             if sent is not None:
                 return sent
         name = name.strip()
@@ -704,10 +704,12 @@ def copy(user, source, name, starts_on=None, as_template=False, token=None):
             code=next_code(Experiment, f'E-{site_today(source.site).year}-'), name=name, is_template=as_template,
             site=source.site, species=source.species, hypothesis=source.hypothesis,
             primary_endpoint=source.primary_endpoint, starts_on=None if as_template else starts_on,
-            duration_days=source.duration_days, notes=source.notes, copied_from=source, entry_key=token,
+            duration_days=source.duration_days, notes=source.notes, copied_from=source,
             created_by=user, updated_by=user)
-        new.full_clean(exclude=['code', 'entry_key'])
+        new.full_clean(exclude=['code'])
         new.save()
+        if token is not None:
+            EntryKey.note(token, new)
         factors, levels = {}, {}
         for factor in Factor.objects.filter(experiment=source):
             factors[factor.pk] = Factor.objects.create(

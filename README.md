@@ -533,7 +533,7 @@ escape from several units is recorded for each). A harvest shows the handling ch
 delivery the fast alone (a medicine withdrawal is a meat withdrawal: it means nothing for live fish), and each asks for an
 acknowledgement when it warns. A unit holding two batches asks which one.
 Dates default to the farm's today (the site's time zone), never in the future, at most 31 days back
-(`STOCK_BACKDATE_DAYS`). A form sent twice records once (the form's key, stored on the operation).
+(`STOCK_BACKDATE_DAYS`). A form sent twice records once (the form's key, stored with it in `entry_keys`).
 
 **The ledger.** A batch holds its identity and origin, no count. An operation (`StockOperation`) is what
 a person did, with its date; its lines (`StockMovement`) say how many fish of which batch came into (+)
@@ -1995,7 +1995,8 @@ farm migrations does not matter):
   day key), the hypothesis, the primary endpoint (`experiments/variables.py`: biological FCR, economic FCR, survival,
   biomass gain: what the farm's reads give today), the start day (day 0, the baseline weighing) and the duration in days
   (the last day is the final weighing), how the tanks were allocated (not yet, randomised with a seed, or placed by hand
-  with the reason), the experiment it was copied from, notes and the key of the form that made it.
+  with the reason), the experiment it was copied from and notes (the key of the form that made it is in the one key
+  table, `core.models.EntryKey`).
 - A **factor** (a thing the groups differ in: the diet, whose levels name feeding protocols, which is how the farm
   applies it, or another factor with a unit) has **levels**: a diet level names its protocol and has no label; another
   level has a label and optionally a number (a dose, a setting). A **group** has a role (test, control, negative or
@@ -3404,8 +3405,10 @@ What one tab needed and the next ones will too lives in `core/`:
   and on an edit (F-034). An edit or a row list locks its record to save it, and one deleted meanwhile is not found
   (404, F-009). Every new-record form carries a hidden key, stored with the record it created in one table for every
   kind of record (`entry_keys`, `core.models.EntryKey`, F-232): the same form sent twice (a double click, a retried
-  request, two at once) creates one record and the second sending opens it. A write path of its own (a stock
-  operation, a feeding, a treatment) keeps the key on its record, as before.
+  request, two at once) creates one record and the second sending opens it. The write paths of their own (a stock
+  operation, a feeding, a treatment, a sea-lice count, a storage operation, a water sample, an experiment's copy) and
+  the dialogs that write their own way (feeding assignments, a sensor's Move) keep and read their key in the same table
+  (`EntryKey.note` / `record_of`, cross review F7): one mechanism.
 - `Output` (`core/widgets.py`): a value the form shows but nobody types (a unit's volume), on a
   disabled field so a posted value is never read.
 - `core/query.py`: what a page reads from its address (`?from=`, `?to=`, `?week=`, `?page=`, `?before=`, `?year=`), one

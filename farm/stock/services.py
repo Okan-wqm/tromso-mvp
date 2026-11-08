@@ -55,7 +55,7 @@ from django.utils.translation import gettext as _
 
 from core import audit
 from core.codes import next_code
-from core.models import AuditLog
+from core.models import AuditLog, EntryKey
 from farm.feeding import read as feeding_read
 from farm.feeding.fold import walk
 from farm.handling import check
@@ -127,7 +127,7 @@ def locked(model, pks):
 
 def _already(token):
     if token is not None:
-        done = StockOperation.all_objects.filter(entry_key=token).first()
+        done = EntryKey.record_of(token, StockOperation)
         if done is not None:
             raise AlreadyRecorded(done)
 
@@ -159,8 +159,10 @@ def _commit(user, kind, day, entries, *, notes='', ack=False, token=None, new_ba
                 entry.batch = batch
             with audit.source_language():
                 audit.record_create(user, batch, audit.snapshot(batch, BATCH_FIELDS))
-        operation = StockOperation.objects.create(kind=kind, date=day, notes=notes, entry_key=token,
-                                                  health_event=health_event, created_by=user, updated_by=user)
+        operation = StockOperation.objects.create(kind=kind, date=day, notes=notes, health_event=health_event,
+                                                  created_by=user, updated_by=user)
+        if token is not None:
+            EntryKey.note(token, operation)
         StockMovement.objects.bulk_create([
             StockMovement(operation=operation, batch=batches[entry.batch.pk], unit=units[entry.unit.pk],
                           kind=entry.kind, count_delta=entry.count_delta, avg_weight_g=entry.avg_weight_g,

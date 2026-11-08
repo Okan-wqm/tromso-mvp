@@ -25,7 +25,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from core import audit
-from core.models import AuditLog
+from core.models import AuditLog, EntryKey
 from farm.models import Equipment, SamplingPoint, System, Tank, WaterMeasurement
 from farm.models.water_point import EQUIPMENT, SYSTEM, UNIT, local_time, site_of
 from farm.stock import dates
@@ -93,9 +93,9 @@ def _locked_points(points):
     return found
 
 
-def _sample(user, point, measured_at, source, values, notes, key):
-    return WaterMeasurement(point=point, measured_at=measured_at, source=source, notes=notes.strip(), entry_key=key,
-                            created_by=user, updated_by=user, **values)
+def _sample(user, point, measured_at, source, values, notes):
+    return WaterMeasurement(point=point, measured_at=measured_at, source=source, notes=notes.strip(), created_by=user,
+                            updated_by=user, **values)
 
 
 def label(sample):
@@ -113,10 +113,13 @@ def _log_create(user, sample):
         audit.record(user, AuditLog.Action.CREATE, sample, changes, label=label(sample))
 
 
-def _write(user, samples):
+def _write(user, samples, keys):
+    """Writes the samples, each logged, and each one's form key (None: none) in the one table (core.models.EntryKey)."""
     WaterMeasurement.objects.bulk_create(samples)
-    for sample in samples:
+    for sample, key in zip(samples, keys):
         _log_create(user, sample)
+        if key is not None:
+            EntryKey.note(key, sample)
     return samples
 
 
@@ -132,7 +135,7 @@ def record(user, *, point, measured_at, source, values, notes='', token=None):
     with transaction.atomic():
         (point,) = _locked_points([point])
         if token is not None:
-            done = WaterMeasurement.all_objects.filter(entry_key=token, measured_at=measured_at).first()
+            done = EntryKey.record_of(token, WaterMeasurement)
             if done is not None:
                 raise AlreadyRecorded(done)
         _check_time(measured_at, [point])
@@ -141,7 +144,7 @@ def record(user, *, point, measured_at, source, values, notes='', token=None):
         errors = value_errors(values)
         if errors:
             raise ValidationError(errors)
-        (sample,) = _write(user, [_sample(user, point, measured_at, source, values, notes, token)])
+        (sample,) = _write(user, [_sample(user, point, measured_at, source, values, notes)], [token])
         return sample
 
 
@@ -167,7 +170,7 @@ def record_round(user, *, measured_at, source, rows, token=None):
         points = _locked_points([point for point, _values_, _notes in rows])
         keys = [row_key(token, point) if token is not None else None for point in points]
         if token is not None:
-            done = WaterMeasurement.all_objects.filter(entry_key__in=keys, measured_at=measured_at).first()
+            done = next(filter(None, (EntryKey.record_of(key, WaterMeasurement) for key in keys)), None)
             if done is not None:
                 raise AlreadyRecorded(done)
         _check_time(measured_at, points)
@@ -177,8 +180,8 @@ def record_round(user, *, measured_at, source, rows, token=None):
                 errors[f'{index}-{code}'] = message
         if errors:
             raise ValidationError(errors)
-        return _write(user, [_sample(user, point, measured_at, source, values, notes, key)
-                             for point, (_point, values, notes), key in zip(points, rows, keys)])
+        return _write(user, [_sample(user, point, measured_at, source, values, notes)
+                             for point, (_point, values, notes) in zip(points, rows)], keys)
 
 
 def void(user, sample, reason):

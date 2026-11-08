@@ -3,7 +3,7 @@ its own inner tab, saved as a whole (ProtocolTableView, farm/feeding/protocols.p
 into a draft. The assignment dialog writes a row per unit chosen (AssignmentCreateView)."""
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Prefetch, Q, Sum
 from django.urls import path, reverse
 from django.utils.translation import gettext as _, gettext_lazy, ngettext
@@ -143,11 +143,16 @@ class AssignmentCreateView(CreateView):
     def post(self, request):
         r = self.resource
         form = r.form(request, request.POST)
+        if form.sent_before() is not None:                 # the same dialog sent again (core.models.EntryKey)
+            return done(request, reverse(r.url_name('list')))
         if not form.is_valid():
             return self.page(form)
         try:
-            assignments.save(request.user, form.rows)
+            with transaction.atomic():
+                form.note_sent(assignments.save(request.user, form.rows)[0])
         except IntegrityError:
+            if form.sent_before() is not None:             # sent twice at once: the other sending wrote them
+                return done(request, reverse(r.url_name('list')))
             form.add_error(None, _('Another protocol was assigned to these fish meanwhile: look at the list and try '
                                    'again.'))
             return self.page(form)

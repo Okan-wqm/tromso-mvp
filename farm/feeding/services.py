@@ -12,6 +12,7 @@ from django.db import transaction
 from django.utils.translation import gettext as _, gettext_lazy
 
 from core import audit
+from core.models import EntryKey
 from farm.models import Feed, FeedingRecord, Tank
 from farm.models.feeding import FeedTarget
 from farm.stock.dates import check_date, shown_date, sites_of
@@ -41,7 +42,7 @@ def record_feeding(user, *, unit, day, feed, amount_kg, time=None, meals=None, f
     with transaction.atomic():
         unit = locked(Tank, {unit.pk})[unit.pk]
         if token is not None:
-            done = FeedingRecord.all_objects.filter(entry_key=token).first()
+            done = EntryKey.record_of(token, FeedingRecord)
             if done is not None:
                 raise AlreadyRecorded(done)
         if unit.is_deleted:
@@ -58,8 +59,7 @@ def record_feeding(user, *, unit, day, feed, amount_kg, time=None, meals=None, f
             raise ValidationError({'target' if read.book_on(unit, day).has_fish else 'date': text % {
                 'unit': unit.code, 'date': shown_date(day)}})
         record = FeedingRecord(unit=unit, date=day, time=time, feed=feed, target=target, amount_kg=amount_kg,
-                               meals=meals, feeder=feeder, notes=notes, entry_key=token, created_by=user,
-                               updated_by=user)
+                               meals=meals, feeder=feeder, notes=notes, created_by=user, updated_by=user)
         record.full_clean()
         rate = 100 * amount_kg / book.biomass_kg
         if rate > settings.FEEDING_ACK_PERCENT:
@@ -72,6 +72,8 @@ def record_feeding(user, *, unit, day, feed, amount_kg, time=None, meals=None, f
                     'limit': settings.FEEDING_ACK_PERCENT}})
             record.high_rate_ack = True
         record.save()
+        if token is not None:
+            EntryKey.note(token, record)
         with audit.source_language():
             names = [*LOGGED, *(['high_rate_ack'] if record.high_rate_ack else [])]
             audit.record_create(user, record, audit.snapshot(record, names), label=label(record))

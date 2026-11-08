@@ -228,10 +228,6 @@ class SchemaTests(WaterTestCase):
                 WaterMeasurement.objects.create(**{**base, **values})
         with self.assertRaises(IntegrityError), transaction.atomic():
             WaterMeasurement.objects.create(measured_at=self.now, source='manual', ph=D(7))      # no point
-        key = uuid.uuid4()
-        WaterMeasurement.objects.create(**base, ph=D(7), entry_key=key)
-        with self.assertRaisesMessage(IntegrityError, 'uq_water_measurements_entry'), transaction.atomic():
-            WaterMeasurement.objects.create(**base, ph=D(8), entry_key=key)
 
 
 class RecordTests(WaterTestCase):
@@ -988,7 +984,7 @@ class DatabaseViewerTests(TestCase):
         structure = tables['water_measurements'].structure()
         constraints = {constraint.name: constraint for constraint in structure.constraints}
         self.assertEqual(constraints['water_measurements_pkey'].definition, 'PRIMARY KEY (id, measured_at)')
-        self.assertTrue({'chk_water_measurements_ph', 'uq_water_measurements_entry'} <= set(constraints))
+        self.assertTrue('chk_water_measurements_ph' in constraints)
         self.assertNotIn('chk_water_measurements_one_point', constraints)      # a sample has one point: a required key
         admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
         self.client.force_login(admin)

@@ -124,7 +124,7 @@ cleaner fish beside them), so a cleaner fish's feed is never the trial's feed in
 
 Batches, then tanks (in primary-key order, `farm.stock.services.locked`), then the experiment **last**. Every write of a form compares the stored
 `version` under `select_for_update`: a form older than the stored version is refused, and the person is told someone else changed it. A
-form sent twice (a double click) creates one record (`entry_key`).
+form sent twice (a double click) creates one record (its key in `entry_keys`, core.models.EntryKey).
 
 ## Where the code differs from the plan
 

@@ -30,7 +30,7 @@ from django.db import transaction
 from django.utils.translation import gettext as _, gettext_lazy, ngettext
 
 from core import audit
-from core.models import AuditLog
+from core.models import AuditLog, EntryKey
 from farm.feeding import read as feeding_read
 from farm.handling import check
 from farm.health import read as health_read
@@ -67,7 +67,7 @@ def event_label(event):
 
 def _already(model, token):
     if token is not None:
-        done = model.all_objects.filter(entry_key=token).first()
+        done = EntryKey.record_of(token, model)
         if done is not None:
             raise AlreadyRecorded(done)
 
@@ -198,9 +198,11 @@ def record_treatment(user, *, units, method, reason, start_date, end_date, medic
             method=method, medicine=medicine, reason=reason, start_date=start_date, end_date=end_date,
             dose_value=dose_value, dose_unit=dose_unit, amount_value=amount_value, amount_unit=amount_unit,
             bath_minutes=bath_minutes, prescribed_by=prescribed_by.strip(), prescription_ref=prescription_ref.strip(),
-            vet=vet, health_event=health_event, notes=notes.strip(), entry_key=token, created_by=user, updated_by=user)
+            vet=vet, health_event=health_event, notes=notes.strip(), created_by=user, updated_by=user)
         treatment.full_clean()
         treatment.save()
+        if token is not None:
+            EntryKey.note(token, treatment)
         treatment.units.set(locked_units)
         for assessment in checked.assessments:
             if assessment.warnings:
@@ -268,9 +270,11 @@ def record_lice_count(user, *, unit, day, fish_counted, adult_females, mobile, a
             raise ValidationError({'date': _('%(unit)s already has a count on %(date)s: void it first to correct '
                                              'it.') % {'unit': unit.code, 'date': shown_date(day)}})
         count = LiceCount(unit=unit, date=day, fish_counted=fish_counted, adult_females=adult_females, mobile=mobile,
-                          attached=attached, notes=notes.strip(), entry_key=token, created_by=user, updated_by=user)
+                          attached=attached, notes=notes.strip(), created_by=user, updated_by=user)
         count.full_clean()
         count.save()
+        if token is not None:
+            EntryKey.note(token, count)
         with audit.source_language():
             audit.record_create(user, count, audit.snapshot(count, COUNT_FIELDS), label=count_label(count))
         return count

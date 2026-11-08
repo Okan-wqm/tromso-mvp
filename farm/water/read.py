@@ -426,7 +426,15 @@ class PointWater:
 
     @property
     def alerts(self):
-        return [reading for reading in self.readings.values() if reading.status in (Status.CRITICAL, Status.WARNING)]
+        """Each value of the point with a critical or warning judgement as the point counts it (`_counted`: an old one
+        keeps its judgement), as (reading, status, old): one rule for the water page, the unit drawer and the card."""
+        found = []
+        for reading in self.readings.values():
+            if reading.status in ALERTS:
+                found.append((reading, reading.status, False))
+            elif reading.status == Status.STALE and reading.judged in ALERTS and reading.code in LIMITED:
+                found.append((reading, reading.judged, True))
+        return found
 
     def get(self, code):
         return self.readings.get(code)

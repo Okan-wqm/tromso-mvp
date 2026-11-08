@@ -638,7 +638,8 @@ is not read at all** (no query) and the card says so ("Water: not shown to you" 
 section (`monitoring.read.sections_for`, the one place that spells a permission). Detailed never widens access.
 
 **The state** is one ladder (`state_of`, the thresholds are the owners', none invented here): critical (a water reading judged
-critical); warning (a warning reading, over capacity, an estimate that says weigh now); **no recent data** (a stocked unit whose
+critical, an old one too: "CO₂: Critical, no recent data", the water page's rule through `PointWater.alerts`); warning (a
+warning reading, an old one too, over capacity, an estimate that says weigh now); **no recent data** (a stocked unit whose
 temperature or oxygen is missing or older than its 24 hours, or with no middle point: the water's own status ranks OK above
 stale, so a fresh pH would hide a three-day-old oxygen; never OK, never red, the age is printed; not worked out when the water
 is hidden); note (a withdrawal in force, weigh soon, a ration that cannot be worked out with its reason, an open health event);
@@ -1099,7 +1100,9 @@ are in the bug document, not in the database).
   "Critical, no recent data" (`Reading.judged` keeps what the limits said when the value grew old, `PointWater.old_alert`),
   never hidden by a fresh OK of another parameter and never "No limit" (HA-K02's side outlet: a CO₂ of 15.6 three days old
   read "No limit" once it aged, because the sample's other values have no limit row). A point whose judged values all grew
-  old and were not alarming is **Stale**. The overview's critical count counts such a point too.
+  old and were not alarming is **Stale**. The overview's critical count counts such a point too (it holds a critical
+  value, old or not), the monitoring card says it critical the same way, and the Production units dot reads "Critical, no
+  recent data" in its title and for a screen reader (`farm/_water_dot.html`), never red alone.
 - **A past sample is judged against the limits as they are now** (owner decision 2): a changed limit
   re-judges the history at once; the limits of the time are not kept. The page says so.
 - The latest value of each parameter is per parameter, not per sample: a later sample without DO never

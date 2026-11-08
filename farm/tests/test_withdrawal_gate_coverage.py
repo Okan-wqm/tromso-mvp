@@ -11,6 +11,8 @@ safe behaviour:
 5. a sampling point's edit locks the fish before the point, as a water sample does;
 6. the registry covers every column the withdrawal readers read, derived from the queries they run;
 7. a lice report's fingerprint at filing is the fingerprint of the scope version it stores."""
+import importlib
+import inspect
 import json
 import os
 import re
@@ -184,6 +186,24 @@ NOT_INPUTS = {
     'created_by_id': 'bookkeeping', 'updated_by_id': 'bookkeeping', 'deleted_by_id': 'bookkeeping',
     'deleted_at': 'bookkeeping', 'notes': 'free text', 'void_reason': 'free text',
 }
+# Columns of one table that are not inputs, each with why. A name the readers' code uses for something else (a reading's
+# status, a point's kind, a sample's deleted flag) makes a loaded column of that name count as read: said here.
+NOT_INPUT_COLUMNS = {
+    ('feeds', 'is_deleted'): 'a deleted feed keeps its feedings and their type; no reader filters a feed by it',
+    ('feeds', 'status'): 'whether a feed is offered for new feedings, not what a past one was',
+    ('species', 'status'): 'whether a species is offered for new batches',
+    ('systems', 'status'): 'not read: a loop counts while it is live and has an active middle point',
+    ('systems', 'max_biomass_kg'): 'a loop\'s capacity, not its water',
+    ('systems', 'site_id'): 'the loop\'s site: a name, the units\' own site gives the clock',
+    ('systems', 'production_department_id'): 'a name',
+    ('tanks', 'status'): 'not read: the fish in a unit are its stock lines',
+    ('tanks', 'kind'): 'the kind of unit, not its water',
+    ('tanks', 'water_type'): 'the salinity assumed where none was measured, never the temperature',
+    ('tanks', 'volume_m3'): 'a measure', ('tanks', 'water_volume_m3'): 'a measure',
+    ('tanks', 'max_biomass_kg'): 'a capacity',
+    ('tanks', 'production_department_id'): 'gives the site\'s clock; a unit with stock records stays on its site '
+                                           '(Tank.clean)',
+}
 # Whole tables that are not inputs: the batch and the site are identities and clocks (a site's time zone moves "today"
 # for every record alike, never one withdrawal against another); the stock's own rows are registered.
 NOT_INPUT_TABLES = {
@@ -191,10 +211,19 @@ NOT_INPUT_TABLES = {
     'sites': 'the site gives the clock and the name',
     'production_departments': 'the department gives the site',
     'medicines': 'a medicine\'s name and how it is given; its withdrawal is its rows (registered)',
+    'harvest_records': 'where a harvest went: the facility named in the text, never whether the withdrawal holds it',
+    'slaughter_facilities': 'the facility named in the text',
+    'equipment': 'a point\'s equipment, loaded with the point (with_owners): the withdrawal reads the middle points of '
+                 'units and loops only',
     'feeds': None,                           # registered (feed_type); its other columns are names
     'species': None,                         # registered (withdrawal_temperature_c); others are names
-    'tanks': None, 'systems': None, 'water_sampling_points': None, 'equipment': None,
+    'tanks': None, 'systems': None, 'water_sampling_points': None,
 }
+# The code that works a withdrawal out from the rows it reads. A column a query only loads with its row (a unit's
+# measures, a feed's energy) is read when this code names its field; a column a query filters, joins or orders by is read
+# whatever names it.
+READERS = ('farm.health.withdrawal', 'farm.water.degree_days', 'farm.water.read', 'farm.stock.read', 'farm.feeding.read',
+           'farm.handling.withdrawal')
 
 
 class RegistryCoverageTests(LoopTestCase):
@@ -215,12 +244,25 @@ class RegistryCoverageTests(LoopTestCase):
         whole = {model._meta.db_table for model, fields in gate.REGISTRY.items() if fields is None}
         conditional = {(model._meta.db_table, model._meta.get_field(name).column)
                        for model, rules in gate.CONDITIONAL.items() for name in rules}
-        read = {(table, column) for query in queries.captured_queries
-                for table, column in re.findall(r'"(\w+)"\."(\w+)"', query['sql']) if table in tables}
+        source = '\n'.join(inspect.getsource(importlib.import_module(name)) for name in READERS)
+
+        def named(table, column):
+            field = next(field for field in tables[table]._meta.concrete_fields if field.column == column)
+            return re.search(rf'[.\'"]{field.name}\b', source) is not None
+
+        read = set()
+        for query in queries.captured_queries:
+            loaded, _from, rest = query['sql'].partition(' FROM ')
+            decides = set(re.findall(r'"(\w+)"\."(\w+)"', rest))
+            read |= {(table, column) for table, column in decides if table in tables}
+            # A column only loaded with its row counts when the readers' code names its field.
+            read |= {(table, column) for table, column in re.findall(r'"(\w+)"\."(\w+)"', loaded)
+                     if table in tables and (table, column) not in decides and named(table, column)}
         said = {table for table, why in NOT_INPUT_TABLES.items() if why}
         missing = sorted((table, column) for table, column in read
                          if table not in whole | said and (table, column) not in registered | conditional
-                         and column not in NOT_INPUTS)
+                         and column not in NOT_INPUTS and (table, column) not in NOT_INPUT_COLUMNS)
+        self.maxDiff = None
         self.assertEqual(missing, [])
 
 
@@ -230,6 +272,5 @@ class ScopeVersionSourceTests(HarvestInsideTestCase):
         from reports.compute import lice, slaughter
         self.assertEqual(compute.SCOPE_VERSIONS, {'sea_lice': lice.SCOPE_VERSION,
                                                   'slaughter_planned': slaughter.SCOPE_VERSION})
-        import inspect
         for module in (lice, slaughter):
             self.assertEqual(inspect.signature(module.scope).parameters['version'].default, module.SCOPE_VERSION)

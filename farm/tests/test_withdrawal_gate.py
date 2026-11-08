@@ -161,10 +161,13 @@ class DataLayerTests(HarvestInsideTestCase):
 
     def test_the_registry_names_every_withdrawal_input(self):
         self.assertEqual({model.__name__: fields for model, fields in gate.REGISTRY.items()}, {
-            'Treatment': None, 'FeedingRecord': None, 'WaterMeasurement': None, 'MedicineWithdrawal': None,
-            'StockOperation': None, 'StockMovement': None, 'Feed': ('feed_type',),
-            'Species': ('withdrawal_temperature_c',), 'SamplingPoint': ('is_active', 'kind', 'unit', 'system',
-                                                                         'equipment')})
+            'Treatment': None, 'Treatment_units': None, 'FeedingRecord': None, 'WaterMeasurement': None,
+            'MedicineWithdrawal': None, 'StockOperation': None, 'StockMovement': None, 'Feed': ('feed_type',),
+            'Species': ('withdrawal_temperature_c',), 'Tank': ('system',),
+            'SamplingPoint': ('is_active', 'kind', 'unit', 'system', 'equipment')})
+        self.assertEqual({model.__name__: set(rules) for model, rules in gate.CONDITIONAL.items()}, {
+            'System': {'is_deleted'}, 'Tank': {'is_deleted'}, 'Species': {'is_deleted'},
+            'SamplingPoint': {'is_deleted'}})
 
     def test_every_kind_of_write_outside_the_guard_is_refused(self):
         treatment = self.treat(self.medicine(days=7), 9, 9)

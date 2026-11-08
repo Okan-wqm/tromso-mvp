@@ -70,7 +70,7 @@ from farm.models.stock import (
     ARRIVAL_STATUSES, CLEANER_CULL_REASONS, PRODUCTION_CULL_REASONS, PROVENANCE_OF_ORIGIN, REASONS, AdjustmentReason,
     CullReason, MovementKind, OperationKind, TransferReason,
 )
-from farm.models.tank import NEEDS_NO_FISH
+from farm.models.tank import NEEDS_NO_FISH, on_a_site
 from farm.templatetags.stock import number
 
 from . import read
@@ -255,7 +255,7 @@ def _check_static(kind, day, entries, batches, units, new_batch):
                                                                       'date': shown_date(batch.input_date)}})
     for entry in entries:
         unit = units[entry.unit.pk]
-        if entry.count_delta > 0 and unit.production_department.site_id is None:
+        if entry.count_delta > 0 and not on_a_site(unit.production_department):
             raise ValidationError({'unit': _('%(unit)s is not on any site, so it cannot take fish: put its production '
                                              'department on a site first.') % {'unit': unit.code}})
         if entry.count_delta > 0 and unit.status not in ARRIVAL_STATUSES:

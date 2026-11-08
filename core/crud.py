@@ -712,9 +712,10 @@ class CreateView(FormView):
                 sent = form.sent_before()
                 if sent is None:
                     # Two people saving the same record at once both pass the form's checks; the database's constraint
-                    # refuses the second, and it is told why on the form instead of a server error. Any other refusal
-                    # is a fault.
-                    if not constraint_error(form, error):
+                    # refuses the second, and it is told why on the form instead of a server error; so is a rule the
+                    # database holds across tables (a unit in a department being deleted, farm 0030). Any other
+                    # refusal is a fault.
+                    if not (constraint_error(form, error) or trigger_refusal(form, error)):
                         raise
                     form.instance._state.adding = True     # the page is the new-record form again
                     return self.page(form)

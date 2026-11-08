@@ -137,6 +137,9 @@ def problems():
             found.append(f'Unit {unit.code} is deleted but holds {fish} fish.')
         if fish and unit.production_department.site_id is None:
             found.append(f'Unit {unit.code} holds {fish} fish but is not on any site.')
+        if not unit.is_deleted and unit.production_department.is_deleted:
+            found.append(f'Unit {unit.code} is live in the deleted production department '
+                         f'{unit.production_department.code}.')
         if fish and unit.status in NEEDS_NO_FISH:
             found.append(f'Unit {unit.code} is {unit.status} but holds {fish} fish.')
         if not fish and unit.status in NEEDS_FISH and not unit.is_deleted:
@@ -145,6 +148,8 @@ def problems():
             found.append(f'Unit {unit.code} holds {len(species[unit.pk])} species.')
     for department in ProductionDepartment.objects.filter(site__isnull=True):
         found.append(f'Production department {department.code} is not on any site.')
+    for department in ProductionDepartment.objects.filter(site__is_deleted=True).select_related('site'):
+        found.append(f'Production department {department.code} is on the deleted site {department.site.code}.')
     return found
 
 

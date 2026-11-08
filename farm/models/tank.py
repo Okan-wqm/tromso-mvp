@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Case, F, Q, Sum, Value, When
 from django.db.models.functions import Coalesce, Round
 from django.utils import timezone
@@ -10,6 +10,7 @@ from django.utils.translation import gettext, gettext_lazy as _
 from core.models import AuditedModel, CodedMixin
 
 from .production_department import ProductionDepartment
+from .site import Site
 from .system import System
 
 
@@ -192,6 +193,19 @@ NEEDS_FISH = (Status.ACTIVE, Status.HARVESTING)
 NEEDS_NO_FISH = (Status.PREPARING, Status.FALLOW, Status.CLEANING, Status.INACTIVE)
 # A new unit holds no fish, so it does not start as active.
 STARTING_STATUSES = (Status.PREPARING, Status.FALLOW, Status.MAINTENANCE, Status.INACTIVE)
+
+
+# A unit is on a site when its production department is live and on a live site (F-212, cross review F1): a site's
+# fish and feed are counted only through its live units' live departments. One rule for the stocking form's list
+# (ON_A_SITE), a unit's own checks and the stock's write path (on_a_site); the database holds it too (farm 0030).
+ON_A_SITE = Q(production_department__is_deleted=False, production_department__site__isnull=False,
+              production_department__site__is_deleted=False)
+
+
+def on_a_site(department):
+    return (department is not None and not department.is_deleted and department.site_id is not None
+            and not department.site.is_deleted)
+
 
 
 def described_by(kind, shape='', pond_type='', cage_type=''):
@@ -541,10 +555,10 @@ class Tank(CodedMixin, AuditedModel):
 
     # ---- links and measures -----------------------------------------------------------------------
     def _check_department(self, errors):
-        """A unit is in a production department on a site: its fish and feed are counted for a site only through it
-        (F-212). A department a deleted site left without one (a row from before that was refused) is put on a site
-        first."""
-        if self.production_department_id and self.production_department.site_id is None:
+        """A unit is in a live production department on a live site (ON_A_SITE): its fish and feed are counted for a
+        site only through it (F-212). A department a deleted site left without one (a row from before that was refused)
+        is put on a site first."""
+        if self.production_department_id and not on_a_site(self.production_department):
             errors['production_department'] = _('This production department is not on any site; choose one that is.')
 
     def _check_system(self, errors):
@@ -602,4 +616,18 @@ class Tank(CodedMixin, AuditedModel):
             self.status_changed_at = timezone.now()
             if stored is not None and self.status_reason == stored['status_reason']:
                 self.status_reason = ''
+        self._lock_place()
         super().save(*args, **kwargs)
+
+    def _lock_place(self):
+        """Locks the unit's site, then its production department (the order a site's delete takes them), so a unit
+        saved while its site is being deleted waits for that delete and is then refused (farm 0030) instead of staying
+        live under it (cross review F1)."""
+        if not self.production_department_id or not transaction.get_connection().in_atomic_block:
+            return
+        site_id = (ProductionDepartment.all_objects.filter(pk=self.production_department_id)
+                   .values_list('site_id', flat=True).first())
+        if site_id is not None:
+            list(Site.all_objects.select_for_update().filter(pk=site_id).values_list('pk', flat=True))
+        list(ProductionDepartment.all_objects.select_for_update().filter(pk=self.production_department_id)
+             .values_list('pk', flat=True))

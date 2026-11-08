@@ -716,6 +716,7 @@ class TankDeletePlanTests(TankTestCase):
         with self.assertRaisesMessage(ValidationError, 'Another unit already uses this code.'):
             softdelete.restore(Tank.all_objects.get(pk=unit.pk), self.user)
         Tank.objects.filter(code='T1').update(code='T9')
+        Tank.objects.get(code='T9').soft_delete(self.user)     # a department is deleted without live units (farm 0030)
         self.hall.soft_delete(self.user)
         with self.assertRaisesMessage(ValidationError, 'Production department “Hall A (HA)” is deleted.'):
             softdelete.restore(Tank.all_objects.get(pk=unit.pk), self.user)

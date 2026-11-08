@@ -148,9 +148,10 @@ class SystemValidationTests(SystemTestCase):
             System.objects.filter(pk=top.pk).update(parent=top)
 
     def test_only_live_sites_and_departments_can_be_chosen(self):
+        self.cages.soft_delete(self.user)
+        ProductionDepartment.objects.filter(site=self.tromso).update(is_deleted=True)   # a site goes with them (farm 0030)
         self.tromso.soft_delete(self.user)
         self.assertIn('site', self.errors(site=self.tromso))
-        self.cages.soft_delete(self.user)
         self.assertIn('production_department', self.errors(site=self.bergen, production_department=str(self.cages.pk)))
 
 

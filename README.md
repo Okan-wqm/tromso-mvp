@@ -85,7 +85,12 @@ the source:
   (F-212); now a site is deleted only once its units are gone, and its departments go with it. A department left
   without a site before is kept as it was (the check was added `NOT VALID`, migration 0029): its form asks for a site
   the next time it is saved (whatever its units' records: on no site they are in no report), its units take no fish
-  until then, and `manage.py check_stock` names it; once it names none, the check can be validated.
+  until then, and `manage.py check_stock` names it; once it names none, the check can be validated. "On a site" means a
+  live department on a live site (`farm.models.tank.ON_A_SITE` / `on_a_site`, one predicate for the stocking list, a
+  unit's checks and the stock's write path): three constraint triggers (farm 0030) refuse a live unit in a deleted
+  department or on a deleted site, a department deleted with live units and a site deleted with live departments, a
+  unit's save locks its site and department (the order a site's delete takes them), and `check_stock` names live units
+  in deleted departments and live departments on deleted sites (cross review F1).
 - The source's `administration` type is not carried over: an administrative department is an organisational one.
 - Code is unique among live production departments and a name is unique within a site, as database
   constraints; capacity cannot be negative.

@@ -8,6 +8,7 @@ from django.utils.translation import gettext, gettext_lazy as _
 
 from core.dates import company_zone as company_zone_info
 from core.models import AuditedModel, CodedMixin
+from core.softdelete import protected
 
 from ..health import lice
 from .contact import ONE_PRIMARY, Contact
@@ -135,12 +136,15 @@ class Site(CodedMixin, AuditedModel):
     metadata = models.JSONField(_('Metadata'), null=True, blank=True)
 
     def delete_blockers(self):
-        """A site whose units have stock records is closed, not deleted: deleting it would leave its production
-        departments without a site and its past figures without their locality."""
+        """A site whose units have stock records is closed, not deleted: its past figures would lose their locality.
+        Its live units hold it too (F-212): their fish and feed are counted for a site only through it, so it goes
+        only once they are deleted or moved (its production departments, then empty, are deleted with it)."""
         from .stock import StockMovement
+        from .tank import Tank
         if StockMovement.objects.filter(unit__production_department__site=self, operation__is_deleted=False).exists():
             return [gettext('Its units have stock records: set its status to Closed instead.')]
-        return []
+        units = Tank.objects.filter(production_department__site=self).count()
+        return [protected(Tank, units)] if units else []
 
     class Meta:
         db_table = 'sites'

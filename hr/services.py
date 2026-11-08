@@ -200,8 +200,11 @@ def plan_shifts(user, cells, shift):
                 if not scope.can_reach(user, employee, day) or not user.has_perm(
                         _cell_permission(existing.get(day), shift)):
                     raise PermissionDenied
-            if shift is CLEAR and not existing:
-                continue
+            if shift is CLEAR:
+                # Clearing a selection clears its filled cells: an empty one has nothing to clear (F-024).
+                changes = {day: value for day, value in changes.items() if day in existing}
+                if not changes:
+                    continue
             found = evaluate(employee, changes)
             blocking += [(employee, item) for item in found if item.blocks]
             warnings += [(employee, item) for item in found if not item.blocks]

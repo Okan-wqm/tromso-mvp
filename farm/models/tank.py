@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Case, F, Q, Sum, Value, When
 from django.db.models.functions import Coalesce, Round
 from django.utils import timezone
@@ -10,6 +10,7 @@ from django.utils.translation import gettext, gettext_lazy as _
 from core.models import AuditedModel, CodedMixin
 
 from .production_department import ProductionDepartment
+from .site import Site
 from .system import System
 
 
@@ -171,14 +172,16 @@ VOLUME_FIELDS = ('shape', 'diameter', 'length', 'width', 'stated_volume_m3', 'de
 
 # The status machine, as the source has it (tank-status.policy.ts): from each status, the ones a unit
 # can move to. Harvesting, cleaning and quarantine follow from an earlier status, so a new unit starts
-# in one of the others.
+# in one of the others. One move is added (F-166): maintenance -> active, the way back for a unit serviced with its
+# fish in it, which otherwise could leave maintenance only once every fish was moved out (active needs fish, preparing
+# and inactive need none, so the fish in the unit decide which of the three it can take).
 TRANSITIONS = {
     Status.INACTIVE: (Status.PREPARING,),
     Status.PREPARING: (Status.ACTIVE, Status.INACTIVE),
     Status.ACTIVE: (Status.HARVESTING, Status.MAINTENANCE, Status.QUARANTINE, Status.FALLOW),
     Status.HARVESTING: (Status.CLEANING,),
     Status.CLEANING: (Status.PREPARING, Status.MAINTENANCE, Status.FALLOW),
-    Status.MAINTENANCE: (Status.PREPARING, Status.INACTIVE),
+    Status.MAINTENANCE: (Status.ACTIVE, Status.PREPARING, Status.INACTIVE),
     Status.FALLOW: (Status.PREPARING,),
     Status.QUARANTINE: (Status.ACTIVE, Status.CLEANING),
 }
@@ -190,6 +193,19 @@ NEEDS_FISH = (Status.ACTIVE, Status.HARVESTING)
 NEEDS_NO_FISH = (Status.PREPARING, Status.FALLOW, Status.CLEANING, Status.INACTIVE)
 # A new unit holds no fish, so it does not start as active.
 STARTING_STATUSES = (Status.PREPARING, Status.FALLOW, Status.MAINTENANCE, Status.INACTIVE)
+
+
+# A unit is on a site when its production department is live and on a live site (F-212, cross review F1): a site's
+# fish and feed are counted only through its live units' live departments. One rule for the stocking form's list
+# (ON_A_SITE), a unit's own checks and the stock's write path (on_a_site); the database holds it too (farm 0030).
+ON_A_SITE = Q(production_department__is_deleted=False, production_department__site__isnull=False,
+              production_department__site__is_deleted=False)
+
+
+def on_a_site(department):
+    return (department is not None and not department.is_deleted and department.site_id is not None
+            and not department.site.is_deleted)
+
 
 
 def described_by(kind, shape='', pond_type='', cage_type=''):
@@ -545,14 +561,19 @@ class Tank(CodedMixin, AuditedModel):
             errors['status'] = blocker
 
     # ---- links and measures -----------------------------------------------------------------------
+    def _check_department(self, errors):
+        """A unit is in a live production department on a live site (ON_A_SITE): its fish and feed are counted for a
+        site only through it (F-212). A department a deleted site left without one (a row from before that was refused)
+        is put on a site first."""
+        if self.production_department_id and not on_a_site(self.production_department):
+            errors['production_department'] = _('This production department is not on any site; choose one that is.')
+
     def _check_system(self, errors):
-        if not self.system_id or not self.production_department_id:
+        if not self.system_id or not self.production_department_id or 'production_department' in errors:
             return
         system, department = self.system, self.production_department
         if system.is_deleted:
             errors['system'] = _('This system is deleted.')
-        elif department.site_id is None:
-            errors['system'] = _('The production department is not on any site, so its units cannot be in a system.')
         elif system.site_id != department.site_id:
             errors['system'] = _('The system is on another site than the production department.')
         elif system.production_department_id and system.production_department_id != department.pk:
@@ -582,6 +603,7 @@ class Tank(CodedMixin, AuditedModel):
         errors = {}
         stored = self.stored()
         self._check_status(stored, errors)
+        self._check_department(errors)
         self._check_system(errors)
         self._check_measures(errors)
         if stored and self.has_stock() and any(getattr(self, name) != stored[name] for name in VOLUME_FIELDS):
@@ -601,4 +623,19 @@ class Tank(CodedMixin, AuditedModel):
             self.status_changed_at = timezone.now()
             if stored is not None and self.status_reason == stored['status_reason']:
                 self.status_reason = ''
+        self._lock_place()
         super().save(*args, **kwargs)
+
+    def _lock_place(self):
+        """Locks the unit's production department, then its site (the LOCK ORDER of core.softdelete: the unit, locked by
+        its writer, then the place going up), so a unit saved while its site or department is being deleted waits for
+        that delete and is then refused (farm 0030) instead of staying live under it (cross review F1), and the two
+        never deadlock (merge review, finding 1)."""
+        if not self.production_department_id or not transaction.get_connection().in_atomic_block:
+            return
+        site_id = (ProductionDepartment.all_objects.filter(pk=self.production_department_id)
+                   .values_list('site_id', flat=True).first())
+        list(ProductionDepartment.all_objects.select_for_update().filter(pk=self.production_department_id)
+             .values_list('pk', flat=True))
+        if site_id is not None:
+            list(Site.all_objects.select_for_update().filter(pk=site_id).values_list('pk', flat=True))

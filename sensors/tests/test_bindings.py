@@ -7,6 +7,7 @@ open binding and opens the next in one transaction with one log entry. The water
 its origin, skips a channel in maintenance, hides the bindings of a deleted point and shows them again when it is
 restored; a moved sensor's history stays with the unit it was in."""
 import threading
+import uuid
 from datetime import timedelta
 
 import psycopg
@@ -216,6 +217,15 @@ class PageTests(BindingCase):
         self.assertEqual(Binding.objects.count(), 2)
         binding.refresh_from_db()
         self.assertIsNotNone(binding.valid_to)
+
+    def test_the_move_dialog_sent_twice_binds_once(self):
+        # Cross review F7b: the dialog carried the form's key and ignored it.
+        data = {'channel': self.ph.pk, 'target': f'point:{self.mid1.pk}', 'role': 'primary',
+                'valid_from': self.start.strftime('%Y-%m-%dT%H:%M'), 'note': '', 'entry_key': str(uuid.uuid4())}
+        first = self.client.post(reverse('sensors:binding_create'), data)
+        second = self.client.post(reverse('sensors:binding_create'), data)
+        self.assertEqual(Binding.objects.count(), 1)
+        self.assertEqual((second.status_code, second['Location']), (first.status_code, first['Location']))
 
     def test_the_form_offers_only_targets_the_channels_kind_allows(self):
         response = self.client.post(reverse('sensors:binding_create'), {

@@ -13,7 +13,7 @@ from django.utils.http import content_disposition_header
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
-from core import navigation
+from core import navigation, query
 from core.crud import done, render_page
 from core.dates import company_zone
 from farm.models import Site
@@ -153,20 +153,20 @@ def outside_duties(request):
 @permission_required('reports.change_report', raise_exception=True)
 def duty_done(request):
     """Records that an annual duty outside this system was done for a site and a year (a dialog)."""
-    code, year = request.GET.get('duty', ''), request.GET.get('year', '')
+    code, year = request.GET.get('duty', ''), query.year(request.GET.get('year', ''))
     site = Site.objects.filter(pk=request.GET.get('site', '')).first() if _is_uuid(request.GET.get('site', '')) else None
     found = duties.BY_CODE.get(code)
-    if found is None or not found.recordable or site is None or not year.isdigit():
+    if found is None or not found.recordable or site is None or year is None:
         raise Http404
     place = navigation.place(ReportResource.perm('view'))
     back = reverse('reports:outside_duties')
-    context = {'duty': found, 'site': site, 'year': int(year), 'heading': _('Record as done'), 'back_url': back,
+    context = {'duty': found, 'site': site, 'year': year, 'heading': _('Record as done'), 'back_url': back,
                'title': _('Record as done'), 'eyebrow': f'{place.heading} · {place.entry.label}'}
     if request.method == 'POST':
         form = DutyDoneForm(request.POST)
         if form.is_valid():
             try:
-                services.record_duty_done(request.user, duty=code, site=site, year=int(year), **form.cleaned_data)
+                services.record_duty_done(request.user, duty=code, site=site, year=year, **form.cleaned_data)
             except ValidationError as error:
                 for field, texts in error.message_dict.items():
                     for text in texts:

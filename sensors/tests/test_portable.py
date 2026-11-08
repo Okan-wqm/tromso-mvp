@@ -19,7 +19,7 @@ from django.utils import timezone
 from core.models import AuditLog
 from farm.models import Equipment, EquipmentType, ProductionDepartment, Site, System, Tank
 from farm.models.site import zone_of
-from farm.tests.helpers import point_of, role
+from farm.tests.helpers import leave_without_site, point_of, role
 from farm.tests.test_stock import make_unit
 from farm.tests.test_tanks import unit_data
 from farm.water import read as water_read, sources
@@ -295,7 +295,9 @@ class SiteTests(PortableCase):
         self.assertTrue(self.client.get(url).context['form'].fields['site'].disabled)
 
     def test_a_place_without_a_site_holds_no_site_in_the_form_as_in_the_database(self):
-        lone = make_unit('T-07', ProductionDepartment.objects.create(site=None, name='Loose hall', code='LH'))
+        # A department a deleted site left without a site, from before that was refused (farm 0029).
+        loose = leave_without_site(ProductionDepartment.objects.create(site=self.site, name='Loose hall', code='LH'))
+        lone = make_unit('T-07', loose)
         point_of(lone)
         bindings.move_device(self.user, self.device, self.start, lone)
         self.assertFalse(bindings.holds_site(self.device))

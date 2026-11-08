@@ -193,7 +193,7 @@ the right reason (the `Test:` commits), then fixed in its own commit.
 Test first throughout: each fix has its `Test:` commit before it.
 
 - **1 (high) oxygen entry provenance**: what an oxygen is worked out with is stored as `oxygen_basis_*` (value, source,
-  channel, time; migration 0029, checks), found by the server at the sample's own point and time (`read.oxygen_basis`),
+  channel, time; migration 0033, checks), found by the server at the sample's own point and time (`read.oxygen_basis`),
   never as a measurement; the forms leave T and S empty (P3, P4, P5 tests; P6: a typed value alone is stored).
 - **2 (high, owner decision 2026-11-08)**: the worst fresh value decides the status (`read.worst_fresh`), the shown
   value stays A9's choice and the reading says which value decided it.
@@ -233,8 +233,8 @@ Test first throughout: each fix has its `Test:` commit before it.
   value cell keeps its "was critical" mark (`wq-was-*`, F-244) beside bugs' point status.
 - The history's `_day` is bugs' `core.dates.read_day` (window 1900-2100; this branch's own clamp is gone); `?at=` was
   already `read_moment`/`on_clock` on main.
-- Migrations renumbered on top of main's 0028_site_timezone_required: `0029_site_altitude_range`,
-  `0030_oxygen_basis` (one farm leaf). Whoever lands second of this branch and wip/fix-integrity renumbers again.
+- Migrations renumbered on top of main's 0031_entry_keys (after the merges of bugs-nov5 and fix-integrity):
+  `0032_site_altitude_range`, `0033_oxygen_basis` (one farm leaf).
 - The water services keep both: the withdrawal guard (`withdrawal_ack`, `withdrawal.guarded`) around the write, and
   this branch's oxygen basis inside it.
 - The withdrawal gate: this branch's tests that write water rows straight in the database open the gate
@@ -245,3 +245,10 @@ Test first throughout: each fix has its `Test:` commit before it.
   (`PointWater.point_status`, from `PointWater.measured`); the unit's status, card and alarm are computed for the unit
   (`PointWater.status`) and the card names the point that drove it (`Reading.decided_at`). Bugs' two counts are 1 again.
 - The parallel-run struct.error in gettext was main's e318bd5 (an atomic .mo build), now here with the merge.
+
+## Merge of main (d1f5315: fix-integrity), 2026-11-08
+
+- The water services take main's entry keys (`EntryKey`, `_write(user, samples, keys)`): `_sample` no longer sets a
+  key; this branch's oxygen basis is still found after the locks (fish first, then the points, core/softdelete.py's
+  LOCK ORDER: the basis read takes no lock) and written with the sample.
+- Farm migrations renumbered to 0032_site_altitude_range (on main's 0031_entry_keys) and 0033_oxygen_basis.

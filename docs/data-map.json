@@ -189,6 +189,7 @@
         "core/test_languages.py",
         "core/tests.py",
         "core/tests_crud_mount.py",
+        "core/tests_entry_key.py",
         "core/tests_scope.py",
         "core/tests_workspaces.py",
         "farm/tests/test_assignments.py",
@@ -207,6 +208,7 @@
         "farm/tests/test_production_departments.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
+        "farm/tests/test_site_structure.py",
         "farm/tests/test_sites.py",
         "farm/tests/test_species.py",
         "farm/tests/test_stock.py",
@@ -264,6 +266,99 @@
         "sensors/tests/test_operations.py",
         "sensors/tests/test_pages.py",
         "sensors/tests/test_portable.py"
+      ]
+    },
+    {
+      "app": "core",
+      "model": "EntryKey",
+      "table": "entry_keys",
+      "description": "The key a new-record form carries (core.crud.ENTRY_KEY) and the record its first sending created, for every kind of record (F-232): the same form sent twice, by a double click, a retried request or two sendings at once, creates one record, and the second sending opens it.",
+      "columns": [
+        {
+          "name": "key",
+          "field": "key",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "entity_type",
+          "field": "entity_type",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.crud when a form creates a record"
+        },
+        {
+          "name": "entity_id",
+          "field": "entity_id",
+          "type": "varchar(64)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.crud when a form creates a record"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        }
+      ],
+      "constraints": [],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "written by the code: a new record a form creates stores the form's key with it (core.crud, F-232)"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "a key belongs to the sending that created its record"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "kept, so a form sent again later still opens the record it created"
+        },
+        "read": {
+          "status": "none",
+          "paths": [],
+          "why": "read only by the form path, to find the record a key created"
+        }
+      },
+      "note": "The same form sent twice creates one record: the second sending finds the first one's record here.",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Administration",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_entry_key.py",
+        "farm/tests/test_water_points.py",
+        "tasks/tests/test_pages.py"
       ]
     },
     {
@@ -2753,17 +2848,6 @@
           ],
           "how": "form",
           "why": ""
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -2917,6 +3001,7 @@
       },
       "tests": [
         "core/test_datamap.py",
+        "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "experiments/tests/__init__.py",
         "experiments/tests/test_amend.py",
@@ -6203,17 +6288,6 @@
           "on_form": [],
           "how": "system",
           "why": "the reason typed in the void dialog"
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -6348,6 +6422,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_feeding.py",
@@ -8999,6 +9074,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_health.py",
         "reports/tests/test_due.py",
@@ -9232,17 +9308,6 @@
           "on_form": [],
           "how": "system",
           "why": "the reason typed in the void dialog"
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -9369,6 +9434,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_health.py",
         "monitoring/tests/test_golden.py"
@@ -10245,7 +10311,7 @@
           "link": {
             "table": "sites",
             "model": "farm.Site",
-            "on_delete": "SET_NULL"
+            "on_delete": "CASCADE"
           },
           "on_form": [
             "ProductionDepartmentForm › Details"
@@ -10397,6 +10463,12 @@
           "kind": "check",
           "fields": [],
           "conditional": false
+        },
+        {
+          "name": "chk_production_departments_live_on_a_site",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
         }
       ],
       "screens": {
@@ -10496,14 +10568,18 @@
       "tests": [
         "core/test_database.py",
         "core/test_languages.py",
+        "core/tests_entry_key.py",
+        "core/tests_query_pages.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
+        "farm/tests/test_lock_order.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_production_departments.py",
         "farm/tests/test_restore.py",
+        "farm/tests/test_site_structure.py",
         "farm/tests/test_sites.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_suppliers.py",
@@ -12179,6 +12255,8 @@
         "core/test_languages.py",
         "core/tests.py",
         "core/tests_crud_mount.py",
+        "core/tests_entry_key.py",
+        "core/tests_query_pages.py",
         "core/tests_schema.py",
         "core/tests_scope.py",
         "core/tests_template_clocks.py",
@@ -12190,12 +12268,14 @@
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_lock_order.py",
         "farm/tests/test_migration_altitude.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_migration_site_zone.py",
         "farm/tests/test_production_departments.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
+        "farm/tests/test_site_structure.py",
         "farm/tests/test_sites.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_suppliers.py",
@@ -14083,17 +14163,6 @@
           ],
           "how": "form",
           "why": ""
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -14369,6 +14438,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_escape_delivery.py",
@@ -15664,6 +15734,7 @@
         "core/test_languages.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
+        "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_health.py",
         "farm/tests/test_migration_points.py",
@@ -16702,8 +16773,10 @@
         "farm/tests/test_feeding.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_lock_order.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_protocols.py",
+        "farm/tests/test_site_structure.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
@@ -17207,17 +17280,6 @@
           "on_form": [],
           "how": "system",
           "why": "the reason typed in the void dialog"
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -17416,6 +17478,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_harvest_inside_withdrawal.py",
         "farm/tests/test_health.py",
@@ -18258,17 +18321,6 @@
           ],
           "how": "form",
           "why": ""
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -18372,15 +18424,6 @@
           "name": "chk_water_measurements_oxygen_basis_salinity",
           "kind": "check",
           "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "uq_water_measurements_entry",
-          "kind": "unique",
-          "fields": [
-            "entry_key",
-            "measured_at"
-          ],
           "conditional": false
         }
       ],
@@ -18509,6 +18552,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_deffeyes.py",
@@ -19522,17 +19566,6 @@
           ],
           "how": "form",
           "why": ""
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -20592,17 +20625,6 @@
           "on_form": [],
           "how": "system",
           "why": "when it was decided, or when a type that needs no approval was filed"
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -24088,17 +24110,6 @@
           ],
           "how": "form",
           "why": ""
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -24326,6 +24337,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "inventory/tests/test_pages.py",
         "inventory/tests/test_services.py"
@@ -28797,7 +28809,7 @@
           "why": ""
         }
       },
-      "note": "The layout is edited on the Design tab (the designer fills the JSON the validator checks); the layout version is stamped from the layout. The three built-ins come from migration 0002 and a trigger keeps them as they are: Copy makes an editable one. Deleting a template deletes its rules and detaches the boards and templates that point at it; restoring brings back only the template.",
+      "note": "The layout is edited on the Design tab (the designer fills the JSON the validator checks); the layout version is stamped from the layout. The three built-ins come from migration 0002 and a trigger keeps them as they are: Copy makes an editable one. Deleting a template deletes its rules and detaches the boards and templates that point at it; restoring brings back the template with its rules (the boards and templates stay detached).",
       "forms": [
         {
           "form": "CardTemplateForm",
@@ -37232,17 +37244,6 @@
           "on_form": [],
           "how": "system",
           "why": "not editable: set by the code"
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -38175,17 +38176,6 @@
           "field": "cancel_reason",
           "type": "varchar(500)",
           "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
           "choices": [],
           "link": null,
           "on_form": [],

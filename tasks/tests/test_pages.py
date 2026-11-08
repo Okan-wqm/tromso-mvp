@@ -14,7 +14,7 @@ from django.utils import timezone
 
 from core import access, database, navigation, softdelete
 from core.audit import english
-from core.models import AuditLog, Profile
+from core.models import AuditLog, EntryKey, Profile
 from core.widgets import NONE
 from farm.tests.helpers import stock_fish
 
@@ -114,7 +114,7 @@ class CreateReadEditDeleteTests(TasksTestCase):
         task = Task.objects.get()
         self.assertEqual(first['Location'], second['Location'])
         self.assertEqual(second['Location'], edit_url(task))
-        self.assertEqual(task.entry_key, uuid.UUID(str(key)))
+        self.assertEqual(EntryKey.record_of(uuid.UUID(str(key)), Task), task)
         self.assertEqual(AuditLog.objects.filter(entity_id=str(task.pk), action='create').count(), 1)
 
     def test_two_sendings_at_once_create_one_task(self):

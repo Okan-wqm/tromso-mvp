@@ -155,8 +155,6 @@ class WaterMeasurement(AuditedModel):
     oxygen_basis_salinity_at = models.DateTimeField(_('When the oxygen’s salinity was measured'), null=True, blank=True)
     notes = models.CharField(_('Notes'), max_length=500, blank=True)
     void_reason = models.CharField(_('Reason for voiding'), max_length=500, blank=True)
-    # The key of the form it was entered with (not a secret): the same form sent twice records once.
-    entry_key = models.UUIDField(null=True, blank=True, editable=False)
 
     objects = SampleManager()
     all_objects = models.Manager()
@@ -168,8 +166,6 @@ class WaterMeasurement(AuditedModel):
         verbose_name_plural = _('water samples')
         constraints = [
             *_sample_checks(),
-            # A hypertable's unique constraints include its time column; the form posts its time with its key.
-            models.UniqueConstraint(fields=['entry_key', 'measured_at'], name='uq_water_measurements_entry'),
         ]
         indexes = [models.Index(fields=['point', '-measured_at'], name='water_meas_point_time_idx')]
 

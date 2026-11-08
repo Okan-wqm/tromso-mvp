@@ -130,7 +130,7 @@ class PunchModelTests(PeopleTestCase):
         self.assertEqual(AttendanceRecord.objects.filter(employee=self.in_a).count(), 2)
 
     def test_every_column_is_covered(self):
-        self.assertEqual(fields_of(AttendanceRecord), {'employee', 'clock_in', 'clock_out', 'via', 'note', 'entry_key'})
+        self.assertEqual(fields_of(AttendanceRecord), {'employee', 'clock_in', 'clock_out', 'via', 'note'})
 
 
 class SelfPunchTests(PeopleTestCase):
@@ -201,7 +201,7 @@ class EnteredPresenceTests(PeopleTestCase):
         Site.objects.filter(pk=self.site.pk).update(timezone='Europe/Oslo')
         self.post(self.in_a, '2026-03-02T07:00', '2026-03-02T15:30')
         record = AttendanceRecord.objects.get()
-        self.assertEqual({name: getattr(record, name) for name in fields_of(AttendanceRecord) if name != 'entry_key'},
+        self.assertEqual({name: getattr(record, name) for name in fields_of(AttendanceRecord)},
                          {'employee': self.in_a, 'clock_in': at(6), 'clock_out': at(14, 30), 'via': 'entered',
                           'note': 'Phone was dead'})                       # 07:00 in Oslo (winter) is 06:00 UTC
         self.assertEqual(record.created_by, self.lead)

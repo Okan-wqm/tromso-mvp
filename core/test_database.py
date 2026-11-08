@@ -433,7 +433,7 @@ class ValuesTests(DatabaseViewerTestCase):
 
     def test_a_link_to_a_deleted_record_still_shows_it(self):
         site = self.make_site()
-        ProductionDepartment.objects.create(name='Hall', code='H', site=site)
+        ProductionDepartment.objects.create(name='Hall', code='H', site=site).soft_delete(self.admin)   # deleted with it
         site.soft_delete(self.admin)
         self.assertEqual(self.cells('production_departments')['site_id'].label, 'Bergen Hatchery (BH)')
 

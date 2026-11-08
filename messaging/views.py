@@ -19,7 +19,7 @@ from django.utils.http import urlencode
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
-from core import navigation
+from core import navigation, query
 from core.crud import done, render_page
 
 from . import read, services
@@ -68,10 +68,10 @@ def conversation(request, pk, form=None):
     """A conversation the person is a member of, beside their list: its latest messages (or the ones before
     `?before=`), the compose form and, for a channel, its members. Opening it marks what it shows as read."""
     participant = services.member(request.user, pk)
-    before = request.GET.get('before', '')
-    shown, earlier = read.timeline(participant, int(before) if before.isdigit() else None)
+    before = query.number(request.GET.get('before', ''))
+    shown, earlier = read.timeline(participant, before)
     first_new = read.first_unread(participant, shown)
-    reading_latest = not before.isdigit()
+    reading_latest = before is None
     if reading_latest and shown:
         services.mark_read(participant, shown[-1].pk)
     last_id = shown[-1].pk if shown else 0
@@ -109,8 +109,7 @@ def poll(request, pk):
     """The messages after `?after=`, as rows to add to the open conversation, marked read; 204 when there are
     none. X-Poll-Next is the address of the next poll."""
     participant = services.member(request.user, pk)
-    after = request.GET.get('after', '')
-    last_id = int(after) if after.isdigit() else 0
+    last_id = query.number(request.GET.get('after', '')) or 0
     new = read.after(participant, last_id)
     if new:
         services.mark_read(participant, new[-1].pk)

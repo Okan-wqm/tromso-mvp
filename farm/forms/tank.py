@@ -3,7 +3,7 @@ from decimal import Decimal
 from django import forms
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.db.models import F
+from django.db.models import F, Q
 from django.template.defaultfilters import floatformat
 from django.utils import formats, timezone
 from django.utils.translation import gettext, gettext_lazy as _
@@ -158,8 +158,10 @@ class TankForm(CodedFormMixin, TabbedForm):
                 timezone.localtime(unit.status_changed_at, zone_of(site)), 'DATETIME_FORMAT') if unit.status_changed_at else ''
 
     def _location(self, unit):
-        departments = (ProductionDepartment.objects.select_related('site')
-                       .order_by(F('site__name').asc(nulls_last=True), 'name'))
+        # On a site (F-212); the unit's own department stays offered when a deleted site left it without one, named so.
+        departments = (ProductionDepartment.objects.filter(Q(site__isnull=False, site__is_deleted=False)
+                                                          | Q(pk=unit.production_department_id))
+                       .select_related('site').order_by(F('site__name').asc(nulls_last=True), 'name'))
         department_field = self.fields['production_department']
         department_field.queryset = departments
         department_field.empty_label = _('Select a production department')

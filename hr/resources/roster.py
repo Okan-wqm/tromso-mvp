@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
 
-from core import audit
+from core import audit, query
 from core.crud import Mount, Resource
 from core.dates import read_day
 from farm.stock.dates import site_today
@@ -50,10 +50,7 @@ class ShiftAssignmentResource(Resource):
     def list_queryset(cls, request):
         start = read_day(request.GET.get('week'), request) or site_today(None)
         department = units.find(request.GET.get('department', ''))
-        try:
-            page = int(request.GET.get('page', '1'))
-        except ValueError:
-            page = 1
+        page = query.number(request.GET.get('page', ''), least=1) or 1
         return read.week(request.user, start, department, page, query=request.GET.get('q', '').strip(),
                          realm=scope.realm_for(request))
 

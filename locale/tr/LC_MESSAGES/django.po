@@ -1287,6 +1287,14 @@ msgid "%(unit)s is deleted."
 msgstr "%(unit)s silinmiş."
 
 #, python-format
+msgid ""
+"%(unit)s is not on any site, so it cannot take fish: put its production department on a site "
+"first."
+msgstr ""
+"%(unit)s hiçbir sahada değil, bu yüzden balık alamaz: önce üretim departmanını bir sahaya "
+"bağlayın."
+
+#, python-format
 msgid "%(unit)s is on no site."
 msgstr "%(unit)s hiçbir sahada değil."
 
@@ -7192,8 +7200,17 @@ msgstr "Hangi sistemlerin seçilebileceğini bunun sahası belirler."
 msgid "Its tasks are made from this day on, up to two weeks ahead."
 msgstr "Görevleri bu günden itibaren, iki hafta öncesine kadar oluşturulur."
 
+#, python-format
+msgid "Its units have stock records on %(site)s: restore that site and choose it."
+msgstr "Birimlerinin %(site)s sahasında stok kayıtları var: o sahayı geri yükleyip onu seçin."
+
 msgid "Its units have stock records on their site: the department stays on it."
 msgstr "Birimlerinin sahalarında stok kayıtları var: departman o sahada kalır."
+
+msgid ""
+"Its units have stock records, and the site they were recorded on is not known: it cannot be put "
+"on another one."
+msgstr "Birimlerinin stok kayıtları var ve kaydedildikleri saha bilinmiyor: başka bir sahaya konamaz."
 
 msgid "Its units have stock records: set its status to Closed instead."
 msgstr "Birimlerinin stok kayıtları var: bunun yerine durumunu Kapalı yapın."
@@ -11507,6 +11524,9 @@ msgid ""
 "filing."
 msgstr "Siz bakarken bu raporu başka biri değiştirdi: sunumu kaydetmeden önce yeniden bakın."
 
+msgid "Someone else saved at the same moment: nothing was saved. Send it again."
+msgstr "Başka biri aynı anda kaydetti: hiçbir şey kaydedilmedi. Yeniden gönderin."
+
 msgid "Someone planned one of these days at the same time. Look at the week again."
 msgstr "Biri bu günlerden birini aynı anda planladı. Haftaya yeniden bakın."
 
@@ -13062,9 +13082,6 @@ msgstr "Ambalajdaki ürün adı, örn. Salmosan vet."
 msgid "The production department belongs to another site."
 msgstr "Üretim departmanı başka bir sahaya ait."
 
-msgid "The production department is not on any site, so its units cannot be in a system."
-msgstr "Üretim departmanı hiçbir sahada değil, bu yüzden birimleri bir sistemde olamaz."
-
 msgid "The production figures will appear here."
 msgstr "Üretim rakamları burada görünecek."
 
@@ -13841,6 +13858,9 @@ msgstr "Bu deney bu arada silindi."
 
 msgid "This file is not a PDF."
 msgstr "Bu dosya bir PDF değil."
+
+msgid "This form was sent before for another record: open it again and send it anew."
+msgstr "Bu form daha önce başka bir kayıt için gönderildi: yeniden açıp yeniden gönderin."
 
 msgid "This health event has a notice already: open it from the list."
 msgstr "Bu sağlık olayı için zaten bir bildirim var: listeden açın."
@@ -17015,6 +17035,10 @@ msgstr "“%(option)s” için değer yok."
 #, python-format
 msgid "“%(option)s” is not an option of this widget."
 msgstr "“%(option)s” bu bileşenin bir seçeneği değil."
+
+#, python-format
+msgid "“%(record)s” is not deleted."
+msgstr "“%(record)s” silinmiş değil."
 
 #, python-format
 msgid "“%(task)s” is cancelled."

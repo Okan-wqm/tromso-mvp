@@ -25,7 +25,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy
 
 from core import audit
-from core.models import AuditLog
+from core.models import AuditLog, EntryKey
 from farm.health import withdrawal
 from farm.models import Equipment, SamplingPoint, System, Tank, WaterMeasurement
 from farm.models.water import BASIS_COLUMNS
@@ -95,12 +95,12 @@ def _locked_points(points):
     return found
 
 
-def _sample(user, point, measured_at, source, values, notes, key, basis=None):
+def _sample(user, point, measured_at, source, values, notes, basis=None):
     provenance = {}
     for code, found in (basis or {}).items():
         provenance.update(found.fields(code))
-    return WaterMeasurement(point=point, measured_at=measured_at, source=source, notes=notes.strip(), entry_key=key,
-                            created_by=user, updated_by=user, **values, **provenance)
+    return WaterMeasurement(point=point, measured_at=measured_at, source=source, notes=notes.strip(), created_by=user,
+                            updated_by=user, **values, **provenance)
 
 
 BASIS_NEEDED = {
@@ -140,10 +140,13 @@ def _log_create(user, sample):
         audit.record(user, AuditLog.Action.CREATE, sample, changes, label=label(sample))
 
 
-def _write(user, samples):
+def _write(user, samples, keys):
+    """Writes the samples, each logged, and each one's form key (None: none) in the one table (core.models.EntryKey)."""
     WaterMeasurement.objects.bulk_create(samples)
-    for sample in samples:
+    for sample, key in zip(samples, keys):
         _log_create(user, sample)
+        if key is not None:
+            EntryKey.note(key, sample)
     return samples
 
 
@@ -161,7 +164,7 @@ def record(user, *, point, measured_at, source, values, notes='', token=None, re
         fish = _fish_of([point], measured_at)
         (point,) = _locked_points([point])
         if token is not None:
-            done = WaterMeasurement.all_objects.filter(entry_key=token, measured_at=measured_at).first()
+            done = EntryKey.record_of(token, WaterMeasurement)
             if done is not None:
                 raise AlreadyRecorded(done)
         _check_time(measured_at, [point])
@@ -172,7 +175,7 @@ def record(user, *, point, measured_at, source, values, notes='', token=None, re
             raise ValidationError(errors)
         basis = _basis([(point, values)], measured_at, required=require_basis).get(0)
         return withdrawal.guarded(user, *fish, lambda: _write(
-            user, [_sample(user, point, measured_at, source, values, notes, token, basis)])[0], seen=withdrawal_ack)
+            user, [_sample(user, point, measured_at, source, values, notes, basis)], [token])[0], seen=withdrawal_ack)
 
 
 def row_key(token, point):
@@ -198,7 +201,7 @@ def record_round(user, *, measured_at, source, rows, token=None, require_basis=F
         points = _locked_points([point for point, _values_, _notes in rows])
         keys = [row_key(token, point) if token is not None else None for point in points]
         if token is not None:
-            done = WaterMeasurement.all_objects.filter(entry_key__in=keys, measured_at=measured_at).first()
+            done = next(filter(None, (EntryKey.record_of(key, WaterMeasurement) for key in keys)), None)
             if done is not None:
                 raise AlreadyRecorded(done)
         _check_time(measured_at, points)
@@ -211,8 +214,8 @@ def record_round(user, *, measured_at, source, rows, token=None, require_basis=F
         basis = _basis([(point, values) for point, (_point, values, _notes) in zip(points, rows)], measured_at,
                        by_row=True, required=require_basis)
         return withdrawal.guarded(user, *fish, lambda: _write(user, [
-            _sample(user, point, measured_at, source, values, notes, key, basis.get(index))
-            for index, (point, (_point, values, notes), key) in enumerate(zip(points, rows, keys))]),
+            _sample(user, point, measured_at, source, values, notes, basis.get(index))
+            for index, (point, (_point, values, notes)) in enumerate(zip(points, rows))], keys),
             record_of=lambda samples: samples[0], seen=withdrawal_ack)
 
 

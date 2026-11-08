@@ -1279,6 +1279,14 @@ msgid "%(unit)s is deleted."
 msgstr "%(unit)s er slettet."
 
 #, python-format
+msgid ""
+"%(unit)s is not on any site, so it cannot take fish: put its production department on a site "
+"first."
+msgstr ""
+"%(unit)s er ikke på noen lokalitet, så den kan ikke ta imot fisk: legg produksjonsavdelingen på "
+"en lokalitet først."
+
+#, python-format
 msgid "%(unit)s is on no site."
 msgstr "%(unit)s er ikke på noen lokalitet."
 
@@ -7176,8 +7184,19 @@ msgstr "Lokaliteten avgjør hvilke systemer som kan velges."
 msgid "Its tasks are made from this day on, up to two weeks ahead."
 msgstr "Oppgavene lages fra denne dagen, opptil to uker fram."
 
+#, python-format
+msgid "Its units have stock records on %(site)s: restore that site and choose it."
+msgstr "Enhetene har lagerposter på %(site)s: gjenopprett den lokaliteten og velg den."
+
 msgid "Its units have stock records on their site: the department stays on it."
 msgstr "Enhetene har lagerposter på lokaliteten: avdelingen blir på den."
+
+msgid ""
+"Its units have stock records, and the site they were recorded on is not known: it cannot be put "
+"on another one."
+msgstr ""
+"Enhetene har lagerposter, og lokaliteten de ble ført på, er ukjent: den kan ikke settes på en "
+"annen."
 
 msgid "Its units have stock records: set its status to Closed instead."
 msgstr "Enhetene har lagerposter: sett statusen til Stengt i stedet."
@@ -11498,6 +11517,9 @@ msgid ""
 "filing."
 msgstr "Noen andre endret denne rapporten mens du så på den: se på nytt før du registrerer innsendingen."
 
+msgid "Someone else saved at the same moment: nothing was saved. Send it again."
+msgstr "Noen andre lagret i samme øyeblikk: ingenting ble lagret. Send det på nytt."
+
 msgid "Someone planned one of these days at the same time. Look at the week again."
 msgstr "Noen planla en av disse dagene samtidig. Se på uken igjen."
 
@@ -13051,9 +13073,6 @@ msgstr "Produktnavnet slik det står på pakningen, f.eks. Salmosan vet."
 msgid "The production department belongs to another site."
 msgstr "Produksjonsavdelingen hører til en annen lokalitet."
 
-msgid "The production department is not on any site, so its units cannot be in a system."
-msgstr "Produksjonsavdelingen er ikke på noen lokalitet, så enhetene kan ikke være i et system."
-
 msgid "The production figures will appear here."
 msgstr "Produksjonstallene vises her."
 
@@ -13822,6 +13841,9 @@ msgstr "Dette forsøket ble slettet i mellomtiden."
 
 msgid "This file is not a PDF."
 msgstr "Denne filen er ikke en PDF."
+
+msgid "This form was sent before for another record: open it again and send it anew."
+msgstr "Dette skjemaet er sendt før for en annen post: åpne det på nytt og send det på nytt."
 
 msgid "This health event has a notice already: open it from the list."
 msgstr "Denne helsehendelsen har allerede et varsel: åpne det fra listen."
@@ -17000,6 +17022,10 @@ msgstr "«%(option)s» har ingen verdi."
 #, python-format
 msgid "“%(option)s” is not an option of this widget."
 msgstr "«%(option)s» er ikke et valg for dette elementet."
+
+#, python-format
+msgid "“%(record)s” is not deleted."
+msgstr "«%(record)s» er ikke slettet."
 
 #, python-format
 msgid "“%(task)s” is cancelled."

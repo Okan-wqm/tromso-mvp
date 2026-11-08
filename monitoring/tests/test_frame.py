@@ -74,10 +74,18 @@ class FrameTests(MonitoringCase):
 
 
 # ---- the colours --------------------------------------------------------------------------------------------------
-def tokens():
+# The design system's themes (static/css/tokens.css): the default block (:root, Fjord) and each theme's own.
+THEMES = ('fjord', 'polarnatt', 'nordlys', 'tang', 'laks')
+
+
+def tokens(theme='fjord'):
+    """The colour tokens in force in `theme`: the :root ones, then the theme's block over them."""
+    css = re.sub(r'/\*.*?\*/', '', (CSS / 'tokens.css').read_text(encoding='utf-8'), flags=re.S)
     found = {}
-    for name in ('base.css', 'app.css'):
-        found.update(re.findall(r'(--[a-z-]+):\s*(#[0-9A-Fa-f]{6})\s*;', (CSS / name).read_text(encoding='utf-8')))
+    for selectors, body in re.findall(r'([^{}]+)\{([^{}]*)\}', css):
+        names = [each.strip() for each in selectors.split(',')]
+        if ':root' in names or f'[data-theme="{theme}"]' in names:
+            found.update(re.findall(r'(--[a-z0-9-]+):\s*(#[0-9A-Fa-f]{6})\s*;', body))
     return found
 
 
@@ -92,21 +100,22 @@ def contrast(one, two):
     return (light + 0.05) / (dark + 0.05)
 
 
-def declared(css, selector, prop):
-    """The value of `prop` in the rule whose selector list holds `selector` exactly, resolved through the tokens."""
+def declared(css, selector, prop, theme='fjord'):
+    """The value of `prop` in the rule whose selector list holds `selector` exactly, resolved through `theme`'s
+    tokens."""
     css = re.sub(r'/\*.*?\*/', '', css, flags=re.S)                     # (a comment is not a selector)
     for selectors, body in re.findall(r'([^{}]+)\{([^{}]*)\}', css):
         if selector in [each.strip() for each in selectors.split(',')]:
             found = re.search(rf'(?:^|;)\s*{re.escape(prop)}\s*:\s*([^;]+)', body)
             if found:
                 value = found.group(1).strip()
-                token = re.fullmatch(r'var\((--[a-z-]+)\)', value)
-                return tokens()[token.group(1)] if token else value
+                token = re.fullmatch(r'var\((--[a-z0-9-]+)\)', value)
+                return tokens(theme)[token.group(1)] if token else value
     return None
 
 
 class ColourTests(SimpleTestCase):
-    WHITE = '#FFFFFF'
+    """In each of the five themes, against the theme's sheet (the card's ground)."""
 
     def css(self, name):
         return (CSS / name).read_text(encoding='utf-8')
@@ -116,13 +125,13 @@ class ColourTests(SimpleTestCase):
         for css, selector in ((components, '.over-text'), (components, '.warn-text'),
                               (components, 'td.wq-warning'), (components, 'td.wq-critical'),
                               (monitor, '.monitor-critical .monitor-state'), (monitor, '.monitor-warning .monitor-state')):
-            colour = declared(css, selector, 'color')
-            with self.subTest(selector=selector, colour=colour):
-                self.assertGreaterEqual(contrast(colour, self.WHITE), 4.5)
+            for theme in THEMES:
+                colour = declared(css, selector, 'color', theme)
+                with self.subTest(selector=selector, theme=theme, colour=colour):
+                    self.assertGreaterEqual(contrast(colour, tokens(theme)['--surface-sheet']), 4.5)
 
-    def test_a_border_or_dot_that_carries_meaning_is_at_least_3_to_1_and_never_the_pale_sage(self):
+    def test_a_border_or_dot_that_carries_meaning_is_at_least_3_to_1_and_never_the_hair_line(self):
         components, monitor = self.css('components.css'), self.css('monitor.css')
-        sage = tokens()['--sage']
         for css, selector, prop in ((monitor, '.monitor-critical', 'border-left-color'),
                                     (monitor, '.monitor-warning', 'border-left-color'),
                                     (monitor, '.monitor-blind', 'border-left-color'),
@@ -131,10 +140,11 @@ class ColourTests(SimpleTestCase):
                                     (components, '.wq-critical .wq-dot', 'background'),
                                     (components, '.wq-warning .wq-dot', 'background'),
                                     (components, '.wq-ok .wq-dot', 'background')):
-            colour = declared(css, selector, prop)
-            with self.subTest(selector=selector, colour=colour):
-                self.assertNotEqual(colour.upper(), sage.upper())
-                self.assertGreaterEqual(contrast(colour, self.WHITE), 3)
+            for theme in THEMES:
+                colour, theirs = declared(css, selector, prop, theme), tokens(theme)
+                with self.subTest(selector=selector, theme=theme, colour=colour):
+                    self.assertNotEqual(colour.upper(), theirs['--line-hair'].upper())
+                    self.assertGreaterEqual(contrast(colour, theirs['--surface-sheet']), 3)
 
     def test_forced_colours_keep_the_shapes_the_bands_and_the_state_borders(self):
         monitor = self.css('monitor.css')

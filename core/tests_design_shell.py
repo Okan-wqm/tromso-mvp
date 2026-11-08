@@ -216,7 +216,7 @@ class RailOrderTests(TestCase):
         department = ProductionDepartment.objects.create(name='Hatchery hall A', code='HA', site=site)
         with self.settings(COMPANY_NAME='Nordhav Akva'):
             self.assertIn('<div class="rail-foot">Nordhav Akva</div>', self.rail(reverse('home')))
-            place(employee('E-1', user=self.admin), department)
+            place(employee('E-1', last='', first='', user=self.admin), department)      # (the name is the account's)
             self.assertIn('<div class="rail-foot">Nordhav Akva · Bergen Hatchery</div>', self.rail(reverse('home')))
 
     def test_one_site_is_the_sites_and_without_a_company_name_the_site_alone(self):

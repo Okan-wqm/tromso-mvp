@@ -75,6 +75,23 @@ class StatusRuleTests(SimpleTestCase):
         self.assertEqual(self.standing(at(8), [(at(7), at(8))], span=None).state, 'done')
         self.assertIsNone(self.standing(at(8), [], span=None))                  # nothing planned, nobody there: unlisted
 
+    def test_an_open_clock_in_is_present_whatever_the_window_the_plan_or_the_leave(self):
+        """Someone called in long before their shift (outside the punch window) and still on site is present: before the
+        shift, during it and on leave. An open clock-in is who is on site now (the emergency headcount)."""
+        called_in = [(at(1), None)]                                          # 5 hours before a 06:00 start, still in
+        before = self.standing(at(3), called_in)
+        self.assertEqual((before.state, before.first_in, before.late_minutes), ('present', at(1), 0))
+        self.assertEqual(self.standing(at(9), called_in).state, 'present')     # not absent: they never left
+        self.assertEqual(self.standing(at(9), called_in, on_leave=True).state, 'present')
+        late_shift = (at(14), at(22))
+        self.assertEqual(self.standing(at(10), [(at(7), None)], span=late_shift).state, 'present')   # not upcoming
+        self.assertEqual(self.standing(at(15), [(at(7), None)], span=late_shift).state, 'present')   # not absent
+        # a closed stretch outside the window is still not this shift's
+        self.assertEqual(self.standing(at(9), [(at(1), at(3))]).state, 'absent')
+        # a closed stretch before the window, then an open one inside it: on site, on time, from the shift's own clock-in
+        both = self.standing(at(9), [(at(1), at(5)), (at(5), None)])
+        self.assertEqual((both.state, both.first_in, both.late_minutes), ('present', at(5), 0))
+
     def test_a_night_shift_across_midnight_is_judged_at_its_own_instants(self):
         night = (at(22), at(6, day=DAY + timedelta(days=1)))
         self.assertEqual(self.standing(at(23), [(at(22, 4), None)], span=night).state, 'present')
@@ -309,8 +326,9 @@ class BoardTests(PeopleTestCase):
         with mock.patch('django.utils.timezone.now', return_value=at(10)):
             page = self.client.get(reverse('hr:production_today_board')).content.decode()
         shown = re.findall(r'<span class="tile-count">(\d+)</span><span class="tile-label">([^<]+)</span>', page)
-        self.assertEqual(shown, [('6', 'Planned today'), ('1', 'Upcoming'), ('2', 'Here now'), ('0', 'Not in yet'),
-                                 ('1', 'Absent'), ('1', 'On leave'), ('1', 'Done'), ('1', 'Here, not planned')])
+        self.assertEqual(shown, [('3', 'On site now'), ('6', 'Planned today'), ('1', 'Upcoming'), ('2', 'Here now'),
+                                 ('0', 'Not in yet'), ('1', 'Absent'), ('1', 'On leave'), ('1', 'Done'),
+                                 ('1', 'Here, not planned')])
         self.assertIn('1 late', page)
 
     def test_whoever_clocked_in_is_on_the_board_whatever_their_plan_or_leave(self):
@@ -326,6 +344,27 @@ class BoardTests(PeopleTestCase):
         states, board = self.states(at(8))
         self.assertEqual(states, {'Alfa': 'present', 'Bergh': 'present'})   # Cyr, on leave and away, is not listed
         self.assertEqual((board.here, board.unplanned, board.planned), (1, 1, 1))
+
+    def test_on_site_now_counts_every_open_clock_in_and_nobody_who_went_home(self):
+        """The truthful headcount: planned and here (late too), here without a plan, and someone called in before their
+        own shift; never someone who clocked out, planned or not ("Here, not planned" counts only those still in)."""
+        self.plan(self.in_a, self.night)                               # planned tonight 22:00, called in at 07:00
+        punch(self.in_a, at(7))
+        self.plan(self.ben, self.early)
+        punch(self.ben, at(6, 2))                                      # planned, here
+        punch(self.cy, at(7), at(9))                                   # not planned, came and went home
+        gus = employee('E-99', 'Gran')
+        place(gus, self.dept_a)
+        punch(gus, at(8))                                              # not planned, still here
+        states, board = self.states(at(10))
+        self.assertEqual(states, {'Alfa': 'present', 'Bergh': 'present', 'Cyr': 'done', 'Gran': 'present'})
+        self.assertEqual((board.here, board.unplanned, board.unplanned_done, board.on_site), (2, 1, 1, 3))
+        self.client.force_login(self.lead)
+        with mock.patch('django.utils.timezone.now', return_value=at(10)):
+            page = self.client.get(reverse('hr:production_today_board')).content.decode()
+        shown = {label: count for count, label in
+                 re.findall(r'<span class="tile-count">(\d+)</span><span class="tile-label">([^<]+)</span>', page)}
+        self.assertEqual((shown['On site now'], shown['Here, not planned']), ('3', '1'))
 
     def test_people_planned_off_or_with_no_plan_are_not_listed_unless_they_are_there(self):
         self.plan(self.in_a, None)                                     # planned off

@@ -3877,6 +3877,10 @@ msgid "Category"
 msgstr "Kategori"
 
 msgid "Cause"
+msgstr "Neden"
+
+msgctxt "mortality"
+msgid "Cause"
 msgstr "Ölüm nedeni"
 
 msgid "Centrifugal pump"
@@ -8882,6 +8886,9 @@ msgstr ""
 
 msgid "On leave"
 msgstr "İzinde"
+
+msgid "On site now"
+msgstr "Şu an sahada"
 
 msgid "On the clock of the place’s site. Every channel’s binding until now ends then."
 msgstr "Yerin sahasının saatine göre. Her kanalın şu ana kadarki ataması o zaman sona erer."

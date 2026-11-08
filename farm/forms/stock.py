@@ -9,7 +9,7 @@ from decimal import Decimal
 
 from django import forms
 from django.core.exceptions import NON_FIELD_ERRORS
-from django.utils.translation import gettext_lazy as _, ngettext
+from django.utils.translation import gettext_lazy as _, ngettext, pgettext_lazy
 
 from core.crud import DRAFT
 from core.widgets import DayInput
@@ -195,7 +195,8 @@ def event_field():
 
 class MortalityForm(OperationForm):
     count = forms.IntegerField(label=_('Dead fish'), min_value=1)
-    cause = forms.ChoiceField(label=_('Cause'), choices=MortalityCause.choices, initial=MortalityCause.UNKNOWN)
+    cause = forms.ChoiceField(label=pgettext_lazy('mortality', 'Cause'), choices=MortalityCause.choices,
+                              initial=MortalityCause.UNKNOWN)
     measured_weight_kg = forms.DecimalField(
         label=_('Weight of the dead fish (kg)'), max_digits=14, decimal_places=3, min_value=Decimal('0.001'),
         required=False, localize=True, widget=forms.TextInput(attrs=DECIMAL),

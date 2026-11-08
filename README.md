@@ -2199,7 +2199,10 @@ Fish at the month’s end: 500 → 1000", `reports/labels.py`), never a key of t
 A report's page shows its figures in the kind's own table (smolt, biomass, the slaughter plan, land stock, a site taken
 into use or emptied), an event notice's narrative for a notice (`reports.kinds.EVENTS`), and any other kind (sea lice,
 cleaner fish) as the print page does: every figure named by **one label registry** (`reports/labels.py`, the words the pages
-use, translated, numbers as the language writes them; a test reads the computation's code so every key it writes has its
+use, translated, numbers as the language writes them; a test computes a report of every kind with every optional part filled
+(the contact person, a health event and its units, an escape, a planned slaughter by weekday), renders its print page and
+describes every path of its content, and fails on any row or difference that is a raw key or "(unnamed figure)"; a second
+test reads the computation's code (dict keys and assigned keys) so every key it writes has its
 label), never a content or API key and never another kind's fields. The CSV export keeps the authority's field names.
 
 **The reports** (`reports/kinds.py`: authority, basis, period, deadline, where it is filed):

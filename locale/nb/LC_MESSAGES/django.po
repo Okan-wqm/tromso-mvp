@@ -3873,6 +3873,10 @@ msgid "Category"
 msgstr "Kategori"
 
 msgid "Cause"
+msgstr "Årsak"
+
+msgctxt "mortality"
+msgid "Cause"
 msgstr "Dødsårsak"
 
 msgid "Centrifugal pump"
@@ -8872,6 +8876,9 @@ msgstr ""
 
 msgid "On leave"
 msgstr "På permisjon"
+
+msgid "On site now"
+msgstr "På lokaliteten nå"
 
 msgid "On the clock of the place’s site. Every channel’s binding until now ends then."
 msgstr "Etter klokken på stedets lokalitet. Hver kanals tilknytning til nå slutter da."

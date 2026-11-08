@@ -130,5 +130,5 @@ class EveryKeyThatReachesAPageTests(NoticeTestCase):
                          f'Site Fjord · Species · {code} · Monday')
         disease = next(report for report in self.reports if report.kind == Report.Kind.DISEASE)
         content = compute.compute(disease).content
-        self.assertEqual(labels.describe('/health_event/units/0', content), 'Health event · Unit M-01')
-        self.assertIn(('Health event · Units', 'M-01'), labels.outline(content))
+        self.assertEqual(labels.describe('/health_event/units/0', content), 'Health event · Unit 1')   # M-01's number
+        self.assertIn(('Health event · Units', '1'), labels.outline(content))

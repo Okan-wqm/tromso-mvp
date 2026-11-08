@@ -30,6 +30,7 @@ FIELDS = {
     'combination': _('Combination'),
     'condition': _('Condition'),
     'confirmation': _('Confirmation'),
+    'contact': _('Contact person'),
     'count': _('Count'),
     'counts': _('Lice counts'),
     'culled': _('Culled'),
@@ -42,6 +43,7 @@ FIELDS = {
     'down': _('Down'),
     'dry_kg': _('Dry feed (kg)'),
     'email': _('Email'),
+    'escape': _('Escape'),
     'end': _('End'),
     'facility': _('Slaughter facility'),
     'fallow_since': _('Fallow since'),
@@ -59,6 +61,7 @@ FIELDS = {
     'from_lokalitetsnummer': _('From lokalitetsnummer'),
     'grams': _('Grams'),
     'harvested': _('Harvested'),
+    'health_event': _('Health event'),
     'health_status': _('Health status'),
     'id': _('Reference'),
     'items': _('Items'),
@@ -129,6 +132,11 @@ FIELDS = {
 }
 # A key whose children are records named by their own number or name.
 RECORDS = {'units': _('Unit %(name)s'), 'localities': _('Site %(name)s')}
+# The same keys when they hold a plain list (a health event's units by number): the list's own words.
+GROUPS = {'units': _('Units'), 'localities': _('Sites')}
+# The days of a week the planned slaughter gives its kilos by (reports/compute/slaughter.py WEEKDAYS).
+FIELDS.update({'monday': _('Monday'), 'tuesday': _('Tuesday'), 'wednesday': _('Wednesday'), 'thursday': _('Thursday'),
+               'friday': _('Friday'), 'saturday': _('Saturday'), 'sunday': _('Sunday')})
 # A key that only groups (the identity is said apart on the page, as "Identity").
 SILENT = {'identity'}
 # Keys the computation writes that are not content (a wrapper of its own reading).
@@ -152,6 +160,8 @@ def _name(record, key):
         for field in ('number', 'name', 'site', 'code'):
             if record.get(field):
                 return str(record[field])
+    elif isinstance(record, (str, int)) and not isinstance(record, bool) and str(record):
+        return str(record)                              # a plain list of numbers names each by itself
     return key
 
 
@@ -165,6 +175,8 @@ def _words(parts, content):
             words.append(f'#{int(part) + 1}' if part.isdigit() else part)
         elif part in FIELDS:
             words.append(str(FIELDS[part]))
+        elif part in RECORDS and last:
+            words.append(str(GROUPS[part]))                       # the list itself, shown as one row
         elif part not in SILENT and part not in RECORDS:
             words.append(str(UNNAMED) if last else part)          # a key of data (a code, a day) names itself
         node, parent = child, part

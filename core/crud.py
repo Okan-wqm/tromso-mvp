@@ -31,7 +31,7 @@ from functools import wraps
 from django import forms
 from django.contrib import messages
 from django.contrib.postgres.constraints import ExclusionConstraint
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import NON_FIELD_ERRORS, PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import IntegrityError, models, transaction
 from django.db.models import F, Q
@@ -732,6 +732,10 @@ class CreateView(FormView):
                         raise
                     form.instance._state.adding = True     # the page is the new-record form again
                     return self.page(form)
+            except ValidationError as error:     # its key stands for a record of another kind (EntryKey.note)
+                form.add_error(None, error.message_dict.get(NON_FIELD_ERRORS, error.messages))
+                form.instance._state.adding = True
+                return self.page(form)
             else:
                 # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
                 flash(request, _('%(name)s “%(object)s” created.'), r, obj)

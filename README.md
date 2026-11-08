@@ -3408,7 +3408,8 @@ What one tab needed and the next ones will too lives in `core/`:
   request, two at once) creates one record and the second sending opens it. The write paths of their own (a stock
   operation, a feeding, a treatment, a sea-lice count, a storage operation, a water sample, an experiment's copy) and
   the dialogs that write their own way (feeding assignments, a sensor's Move) keep and read their key in the same table
-  (`EntryKey.note` / `record_of`, cross review F7): one mechanism.
+  (`EntryKey.note` / `record_of`, cross review F7): one mechanism. A key that already stands for a record of another
+  kind (tampering, a broken client) is refused with a reason on the form, never a server error (F7c).
 - `Output` (`core/widgets.py`): a value the form shows but nobody types (a unit's volume), on a
   disabled field so a posted value is never read.
 - `core/query.py`: what a page reads from its address (`?from=`, `?to=`, `?week=`, `?page=`, `?before=`, `?year=`), one

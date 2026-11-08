@@ -150,6 +150,9 @@ class AssignmentCreateView(CreateView):
         try:
             with transaction.atomic():
                 form.note_sent(assignments.save(request.user, form.rows)[0])
+        except ValidationError as error:                   # its key stands for another record (EntryKey.note)
+            form.add_error(None, error.messages)
+            return self.page(form)
         except IntegrityError:
             if form.sent_before() is not None:             # sent twice at once: the other sending wrote them
                 return done(request, reverse(r.url_name('list')))

@@ -13460,6 +13460,9 @@ msgstr "Dette forsøket ble slettet i mellomtiden."
 msgid "This file is not a PDF."
 msgstr "Denne filen er ikke en PDF."
 
+msgid "This form was sent before for another record: open it again and send it anew."
+msgstr "Dette skjemaet er sendt før for en annen post: åpne det på nytt og send det på nytt."
+
 msgid "This health event has a notice already: open it from the list."
 msgstr "Denne helsehendelsen har allerede et varsel: åpne det fra listen."
 

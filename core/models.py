@@ -1,6 +1,7 @@
 import uuid
 
 from django.conf import settings
+from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _
@@ -274,7 +275,15 @@ class EntryKey(models.Model):
 
     @classmethod
     def note(cls, key, record):
-        cls.objects.create(key=key, entity_type=record._meta.label_lower, entity_id=str(record.pk))
+        """Stores `key` with `record`. A key that already stands for a record of another kind (a form's key sent with
+        another form: tampering or a broken client) is refused with a reason (cross review F7c); one of the same kind
+        is the same form sent twice at once, and its insert waits for the other and is refused by the primary key,
+        which the caller answers by opening the other's record."""
+        label = record._meta.label_lower
+        if cls.objects.filter(key=key).exclude(entity_type=label).exists():
+            raise ValidationError({NON_FIELD_ERRORS: gettext(
+                'This form was sent before for another record: open it again and send it anew.')})
+        cls.objects.create(key=key, entity_type=label, entity_id=str(record.pk))
 
     @classmethod
     def record_of(cls, key, model):

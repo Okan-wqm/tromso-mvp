@@ -401,7 +401,7 @@ def deffeyes_frames(request):
             start = end - dict(RANGES).get(request.GET.get('range', ''), timedelta(days=7))
         step = timedelta(seconds=int(request.GET.get('step') or 3600))
         found = read.deffeyes_frames(target, start, end, step, cursor=int(request.GET.get('cursor') or 0))
-    except (ValueError, ValidationError):
+    except (ValueError, OverflowError, ValidationError):     # OverflowError: a step longer than a timedelta holds
         return JsonResponse({'error': _('Give a start before the end on the site’s clock, a step in seconds and a '
                                         'cursor inside the range.')}, status=400)
     frames = found.frames

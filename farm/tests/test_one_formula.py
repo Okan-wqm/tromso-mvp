@@ -13,11 +13,18 @@ ROOT = Path(settings.BASE_DIR)
 SWITCHED = ['farm/water/chemistry.py']
 # Functions of a module still partly in Python, switched one by one: no arithmetic, no number, no math of their own.
 SWITCHED_FUNCTIONS = {'farm/water/deffeyes.py': ['judge', 'analyse', 'alkalinity_floor', 'why_impossible', 'possible',
-                                                 'box_of', 'geometry', 'safe_zone', 'safe_zone_gaps']}
+                                                 'box_of', 'geometry', 'safe_zone', 'safe_zone_gaps'],
+                      'farm/water/dosing.py': ['split', 'recipes', 'at_target', 'visual', 'simulate'],
+                      'farm/water/charts.py': ['bands', 'nh3_plot', 'h2s_plot', 'carbonate_plot', 'saturation_index',
+                                               'saturation_plot', 'plots'],
+                      'farm/water/calculation.py': ['judge_step']}
 # What a switch deleted: the module must not hold it any more (one formula, in the core).
 DELETED = {'farm/water/deffeyes.py': ['_axis', '_clip', '_cross', 'clip_to_box', 'clip_segment', 'clip_polyline',
                                      '_isoline_segment', '_half', 'co2_curve', '_co2_region', 'omega_line',
-                                     '_toxic_region', '_nh3_note', '_h2s_note']}
+                                     '_toxic_region', '_nh3_note', '_h2s_note'],
+           'farm/water/dosing.py': ['molar_mass', '_dose', 'recipe', '_below_air', 'direction_line', 'angle', 'unit_move'],
+           'farm/water/charts.py': ['widen', 'grid', '_verticals'],
+           'farm/water/calculation.py': ['below_air']}
 
 
 def arithmetic(node):

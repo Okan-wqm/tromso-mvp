@@ -198,7 +198,7 @@ class TreeStylesheetTests(OverviewTestCase):
         self.assertRegex(css, r'\.org-tree li::before')
         self.assertRegex(css, r'\.org-tree li::after')
         self.assertRegex(css, r'\.org-tree ul::before')
-        self.assertRegex(rules('', '.org-tree li::before'), r'border-top: 1px solid var\(--(muted|line)\)')
+        self.assertRegex(rules('', '.org-tree li::before'), r'border-top: 1px solid var\(--(muted|line|line-hair|line-control)\)')
 
     def test_a_wide_tree_scrolls_in_its_frame_and_never_the_page(self):
         frame = rules('', '.org-frame')

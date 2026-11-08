@@ -927,7 +927,7 @@ class ProductionUnitsTests(WaterTestCase):
         self.assertEqual(response.context['water_critical'], 1)
         html = response.content.decode()
         for text in ('<th scope="col" class="num">Temp. (°C)</th>', '<th scope="col" class="num">O₂ (mg/L)</th>',
-                     '>9.5</b>', '>5.20</b>', '>12.0</b>', 'wq-stale', '<span class="sr-only">Critical</span>',
+                     '>9.5<span class="wq-source">', '>5.20<span class="wq-source">', '>12.0<span class="wq-source">', 'wq-stale', '<span class="sr-only">Critical</span>',
                      '<span class="ui-chip" data-status="critical">'):
             self.assertIn(text, html)
         self.assertIn('1 critical</span>', html)

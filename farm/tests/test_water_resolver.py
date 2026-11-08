@@ -221,3 +221,71 @@ class WorstFreshDecidesTests(SourcesCase):
         water = read.latest([self.mid1, self.mid2], now=self.now)
         self.assertEqual(water[self.mid1.pk].get('oxygen_mg_l').status, Status.WARNING)
         self.assertEqual(water[self.mid2.pk].get('oxygen_mg_l').status, Status.NO_LIMIT)
+
+
+class StaleNeverCalculatesTests(SourcesCase):
+    """PLAN A9.3: a stale value never enters a calculation. A conversion uses the temperature and the salinity fresh AT
+    the value's own time (at or before it, no older than their freshness, or measured within evaluate.CLOCK_SKEW after
+    it); else the result is not worked out and says why (second cross review, finding 3 and P8)."""
+
+    def saltwater(self):
+        from ..models import Tank
+        Tank.objects.filter(pk=self.t1.pk).update(water_type='saltwater')
+
+    def test_a_salinity_older_than_its_freshness_is_not_used(self):
+        self.saltwater()
+        self.sample(hours=10 * 24, salinity_ppt='33')                       # 10 days: salinity is fresh for 7
+        self.sample(hours=1, oxygen_mg_l='8', temperature_c='9')
+        percent = self.latest().get('oxygen_saturation_pct')
+        self.assertIsNone(percent.value)
+        self.assertEqual(percent.note, 'Needs the salinity: none was measured here in the 7 days before.')
+        self.sample(hours=5 * 24, salinity_ppt='33')
+        self.assertIsNotNone(self.latest().get('oxygen_saturation_pct').value)
+
+    def test_p8_a_stale_saturation_is_never_judged_with_todays_temperature(self):
+        self.stock()
+        self.limit('oxygen_mg_l', critical_low=5, warning_low=7)
+        self.on(self.mid1, self.value('oxygen_saturation_pct', 60.0, seconds=3 * 86400, fresh_for=180))
+        judged = []
+        for today in ('4.0', '20.0'):
+            from ..models import WaterMeasurement
+            WaterMeasurement.objects.all().delete()
+            self.sample(hours=1, temperature_c=today, salinity_ppt='0')
+            judged.append(self.latest().get('oxygen_saturation_pct').judged)
+        self.assertEqual(judged, [Status.NO_LIMIT, Status.NO_LIMIT])
+
+    def test_a_fresh_saturation_is_judged_with_a_temperature_from_its_own_moment(self):
+        self.stock()
+        self.limit('oxygen_mg_l', critical_low=5, warning_low=7)
+        self.sample(hours=2, temperature_c='9', salinity_ppt='0')           # before the value, fresh at its time
+        self.on(self.mid1, self.value('oxygen_saturation_pct', 35.0, seconds=10))
+        self.assertEqual(self.latest().get('oxygen_saturation_pct').judged, Status.CRITICAL)
+
+    def test_a_stale_sensor_tan_gives_no_nh3_and_says_it_is_old(self):
+        self.on(self.mid1, self.value('tan_mg_l', 1.0, seconds=3600, fresh_for=180),
+                self.value('ph', 7.5, seconds=10, channel_no=2), self.value('temperature_c', 10.0, seconds=10,
+                                                                             channel_no=3))
+        nh3 = self.latest().get('nh3_n_mg_l')
+        self.assertIsNone(nh3.value)
+        self.assertEqual(nh3.note, 'Not worked out: the TAN is no longer fresh.')
+
+
+class JudgedThroughTheOtherUnitTests(SourcesCase):
+    """A % judged against an mg/L limit (or the reverse) through the solubility says so: the value it was judged as,
+    what that was worked out from and the limit used (second cross review, finding 5)."""
+
+    def test_the_saturation_judged_against_the_mg_l_row_says_how(self):
+        self.stock()
+        self.limit('oxygen_mg_l', critical_low=6)
+        self.sample(hours=1, temperature_c='9', salinity_ppt='0')
+        self.on(self.mid1, self.value('oxygen_saturation_pct', 35))
+        reading = self.latest().get('oxygen_saturation_pct')
+        self.assertEqual(reading.judged, Status.CRITICAL)
+        self.assertIsNotNone(getattr(reading, 'through', None), 'the converted reading is kept')
+        self.assertEqual((reading.through.code, [row.parameter for row in reading.through.limits]),
+                         ('oxygen_mg_l', ['oxygen_mg_l']))
+        self.assertRegex(reading.note, r'Judged as \d+\.\d\d mg/L, worked out from 9\.0 °C, 0\.0 ‰ and 1\.000 atm')
+        self.assertIn('Atlantic salmon: critical below 6.00', reading.note)
+        from django.urls import reverse
+        card = self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all'}).content.decode()
+        self.assertTrue('Judged as ' in card, 'the card says how the % was judged')

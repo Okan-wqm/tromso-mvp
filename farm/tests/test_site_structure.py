@@ -130,11 +130,20 @@ class LiveSiteTests(SiteStructureTestCase):
 
     def strand(self, department=True, site=True):
         """A live unit under a deleted department and/or site, as a race between a site's delete and a unit's create
-        could leave it (written past the rules, then the database's own checks deferred)."""
-        if department:
-            ProductionDepartment.objects.filter(pk=self.hall.pk).update(is_deleted=True)
-        if site:
-            Site.objects.filter(pk=self.bergen.pk).update(is_deleted=True)
+        could leave it before the database refused it (farm 0030): written with the database's own triggers off."""
+        from django.db import connection
+        triggers = (('production_departments', 'trg_departments_on_a_live_site'),
+                    ('sites', 'trg_sites_without_live_departments'))
+        with connection.cursor() as cursor:
+            cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')    # a table with pending deferred checks cannot be altered
+            for table, trigger in triggers:
+                cursor.execute(f'ALTER TABLE {table} DISABLE TRIGGER {trigger}')
+            if department:
+                ProductionDepartment.objects.filter(pk=self.hall.pk).update(is_deleted=True)
+            if site:
+                Site.objects.filter(pk=self.bergen.pk).update(is_deleted=True)
+            for table, trigger in triggers:
+                cursor.execute(f'ALTER TABLE {table} ENABLE TRIGGER {trigger}')
         self.unit = Tank.all_objects.get(pk=self.unit.pk)
 
     def test_a_live_unit_under_a_deleted_department_or_site_takes_no_fish(self):
@@ -156,8 +165,9 @@ class LiveSiteTests(SiteStructureTestCase):
         self.assertIn('Unit T-01 is live in the deleted production department HA.', integrity.problems())
 
     def test_a_new_unit_goes_only_into_a_live_department_on_a_live_site(self):
-        Site.objects.filter(pk=self.bergen.pk).update(is_deleted=True)
-        unit = Tank(name='Unit T-03', code='T-03', kind='tank', production_department=self.hall, water_type='freshwater',
+        self.strand(department=False, site=True)
+        unit = Tank(name='Unit T-03', code='T-03', kind='tank', production_department_id=self.hall.pk,
+                    water_type='freshwater',
                     shape='rectangular', material='fiberglass', length=10, width=5, depth=2, max_density_kg_m3=50)
         with self.assertRaises(ValidationError) as caught:
             unit.full_clean()
@@ -181,3 +191,51 @@ class LiveSiteTests(SiteStructureTestCase):
         locks = [query['sql'] for query in queries.captured_queries if 'FOR' in query['sql'] and 'UPDATE' in query['sql']]
         self.assertTrue(any('"production_departments"' in sql for sql in locks), locks)
         self.assertTrue(any('"sites"' in sql for sql in locks), locks)
+
+
+class ResitingTests(SiteStructureTestCase):
+    """A department a deleted site left without a site goes back on a site by a clear rule (owner, cross review F4): its
+    units' past figures belong to the site they were recorded on, so with stock records it goes back only to that site
+    (restored first); without any it may go to any live site."""
+
+    def setUp(self):
+        super().setUp()
+        self.tromso = Site.objects.create(name='Tromso', code='TR')
+        self.unit = make_unit('T-01', self.hall)
+
+    def leave(self):
+        """As the source's site delete left it: the department detached (logged so) and the site deleted."""
+        from core import audit
+        from core.models import AuditLog
+        with audit.source_language():
+            audit.record(self.user, AuditLog.Action.UPDATE, self.hall, {'Site': [str(self.bergen), None]})
+        leave_without_site(self.hall)
+        Site.objects.filter(pk=self.bergen.pk).update(is_deleted=True)
+
+    def errors(self, site):
+        self.hall.refresh_from_db()
+        self.hall.site = site
+        try:
+            self.hall.full_clean()
+        except ValidationError as error:
+            return error.message_dict.get('site')
+        return None
+
+    def test_without_stock_records_it_may_go_to_any_live_site(self):
+        self.leave()
+        self.assertIsNone(self.errors(self.tromso))
+
+    def test_with_stock_records_it_goes_back_only_to_the_site_they_were_recorded_on(self):
+        stock_fish(self.user, self.unit, species=self.salmon, days_ago=3)
+        self.leave()
+        self.assertEqual(self.errors(self.tromso),
+                         ['Its units have stock records on Bergen (BG): restore that site and choose it.'])
+        Site.objects.filter(pk=self.bergen.pk).update(is_deleted=False)
+        self.assertIsNone(self.errors(Site.objects.get(pk=self.bergen.pk)))
+
+    def test_with_stock_records_and_no_known_site_it_is_refused_with_the_reason(self):
+        stock_fish(self.user, self.unit, species=self.salmon, days_ago=3)
+        leave_without_site(self.hall)
+        self.assertEqual(self.errors(self.tromso),
+                         ['Its units have stock records, and the site they were recorded on is not known: it cannot be '
+                          'put on another one.'])

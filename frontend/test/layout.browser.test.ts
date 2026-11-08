@@ -23,7 +23,7 @@ const BROWSERS = [
 const CSS = resolve('static/css');
 const PAGES = resolve('frontend/test/pages');
 const WIDTHS = [390, 1024, 1440];
-const PARTS = ['tabs', 'stock', 'water', 'matrix', 'card-en', 'card-nb', 'approve'];
+const PARTS = ['meal', 'tabs', 'stock', 'water', 'matrix', 'card-en', 'card-nb', 'approve'];
 
 const part = (name: string): string => `<section id="part-${name}">${readFileSync(join(PAGES, `${name}.html`), 'utf8')}</section>`;
 

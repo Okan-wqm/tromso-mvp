@@ -637,6 +637,14 @@ class AssignmentPageTests(ProtocolTestCase):
                 'notes': '', 'batch': '', **fields}
         return self.client.post(reverse('farm:protocolassignment_create'), data, headers={'X-Modal': '1'})
 
+    def test_the_dialog_sent_twice_assigns_once_and_the_second_sending_lands_where_the_first_did(self):
+        # Cross review F7b: the dialog carried the form's key and ignored it.
+        key = str(uuid.uuid4())
+        first = self.post(units=[str(self.t1.pk), str(self.t2.pk)], entry_key=key)
+        second = self.post(units=[str(self.t1.pk), str(self.t2.pk)], entry_key=key)
+        self.assertEqual(ProtocolAssignment.objects.count(), 2)
+        self.assertEqual(second['X-Modal-Redirect'], first['X-Modal-Redirect'])
+
     def test_units_a_whole_batch_and_a_batch_in_units(self):
         response = self.post(units=[str(self.t1.pk), str(self.t2.pk)])
         self.assertEqual(response['X-Modal-Redirect'], reverse('farm:protocolassignment_list'))

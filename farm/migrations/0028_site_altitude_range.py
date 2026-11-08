@@ -3,7 +3,7 @@ below sea level; a minus sign is a slip). An altitude outside it on an existing 
 the wrong pressure for the oxygen's saturation: it is moved into the site's notes with the day this migration runs and
 emptied, so the oxygen is worked out at sea-level pressure and the pages say so until someone enters the right one.
 Each such change is an entry of the activity log ("system", the old and the new altitude and notes), and going back
-puts the altitude and the notes of each logged site back from it.
+puts the altitude and the notes of each logged site back from it, where the site still holds what this migration left.
 
 Numbered 0028 after the farm migrations of main (0026); another branch's 0027 lands before it, and a merge migration
 joins them if two leaves meet."""
@@ -35,7 +35,9 @@ def out_of_range(apps, schema_editor):
 
 
 def back(apps, schema_editor):
-    """Puts back what `out_of_range` moved, from its log entries (the newest per site), and logs that too."""
+    """Puts back what `out_of_range` moved, from its log entries (the newest per site), and logs that too: only on a site
+    that still holds what the migration left (no altitude and the very notes it wrote); a site whose altitude or notes
+    were changed since keeps them (a corrected altitude is never replaced by the old slip) and is named in the output."""
     Site, AuditLog = apps.get_model('farm', 'Site'), apps.get_model('core', 'AuditLog')
     entries = (AuditLog.objects.filter(entity_type='site', user_name='system', changes__has_key=ALTITUDE)
                .order_by('created_at'))
@@ -43,9 +45,12 @@ def back(apps, schema_editor):
     for entry in entries:
         old, new = entry.changes.get(ALTITUDE, [None, None]), entry.changes.get(NOTES, ['', ''])
         if old[0] is not None and old[1] is None and 'migration 0028' in (new[1] or ''):
-            restored[entry.entity_id] = (old[0], new[0])
+            restored[entry.entity_id] = (old[0], new[0], new[1])
     for site in Site._base_manager.filter(pk__in=list(restored)):
-        altitude, notes = restored[str(site.pk)]
+        altitude, notes, left = restored[str(site.pk)]
+        if site.altitude is not None or site.notes != left:
+            print(f'\n  0028 back: {site.name} changed since the migration, kept as it is.')
+            continue
         before = (None, site.notes)
         site.altitude, site.notes = altitude, notes
         site.save(update_fields=['altitude', 'notes'])

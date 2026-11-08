@@ -305,3 +305,139 @@ class EndpointTests(ReplayCase):
         for step in ('100000000000000000', '9' * 40):            # a short step is snapped up to the ladder, kept
             with self.subTest(step=step):
                 self.assertEqual(self.get(step=step).status_code, 400)
+
+
+def insert_many(channel_no, rows):
+    """[(ts, value, quality)] of one channel in one statement."""
+    with connection.cursor() as cursor:
+        cursor.execute('INSERT INTO sensors_reading (channel_no, ts, value, quality) '
+                       'SELECT %s, * FROM unnest(%s::timestamptz[], %s::float8[], %s::smallint[])',
+                       [channel_no, [at for at, *_rest in rows], [value for _at, value, _q in rows],
+                        [quality for *_rest, quality in rows]])
+
+
+def scanned(sql):
+    """How many rows of the readings' chunks a query reads (returned and filtered out), from its EXPLAIN ANALYZE."""
+    with connection.cursor() as cursor:
+        cursor.execute('EXPLAIN (ANALYZE, FORMAT JSON) ' + sql)
+        plan = cursor.fetchone()[0]
+    plan = json.loads(plan) if isinstance(plan, str) else plan
+    total, nodes = 0, [plan[0]['Plan']]
+    while nodes:
+        node = nodes.pop()
+        nodes.extend(node.get('Plans', []))
+        if node.get('Relation Name', '').startswith('_hyper_'):
+            total += (node['Actual Rows'] + node.get('Rows Removed by Filter', 0)) * node['Actual Loops']
+    return total
+
+
+class ValueAtTests(ReplayCase):
+    """Each frame's sensor value is what the live view's rule gives at the frame's moment (`sensors.provider` value_at:
+    the channel's newest clean reading at or before the moment, taken while it was bound there), within the channel's
+    freshness: on irregular readings with bad ones among them, readings exactly on a frame's moment, gaps longer than the
+    freshness, a backup channel and a sensor moved away and back, at every step of the raw tier, page by page."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        from random import Random
+        rng = Random(20261108)
+        cls.backup = make_channel(cls.device, 'ph', code='PH-B')                  # fresh 900 s
+        bindings.move(cls.user, cls.backup, point=cls.mid1, role='backup', at=START - timedelta(days=1))
+        # The pH probe goes to T-02 for 40 minutes and comes back.
+        bindings.move(cls.user, cls.ph, point=cls.mid2, at=START + timedelta(minutes=100, seconds=7))
+        bindings.move(cls.user, cls.ph, point=cls.mid1, at=START + timedelta(minutes=140, seconds=3))
+        gaps = {cls.channel.channel_no: (0.2, 0.7, 1, 1, 1, 2, 3, 5, 30, 200, 400),
+                cls.ph.channel_no: (5, 20, 60, 120, 600, 1200),
+                cls.backup.channel_no: (60, 300, 900, 1500)}
+        cls.rows = {}
+        for number, choices in gaps.items():
+            at, made = START - timedelta(minutes=20), []
+            while at < START + timedelta(hours=3, minutes=10):
+                if rng.random() < 0.1:                                     # exactly on a frame's moment (pages())
+                    at = at.replace(second=7, microsecond=250000) + timedelta(minutes=1)
+                else:
+                    at += timedelta(microseconds=int(rng.choice(choices) * rng.uniform(0.5, 1.5) * 1e6))
+                quality = rng.choice((0,) * 16 + (1, 8, 32, 64, 16, 128))    # good, heartbeat, late, and bad ones
+                made.append((at, round(rng.uniform(6.5, 12.5), 4), quality))
+            insert_many(number, made)
+            cls.rows[number] = made
+
+    def pages(self):
+        """Every page of the raw tier's steps over the readings, from a moment on no whole second."""
+        start = START + timedelta(seconds=7, microseconds=250000)
+        for step, frames, size in ((timedelta(seconds=1), 360, 150), (timedelta(seconds=5), 300, 120),
+                                   (timedelta(seconds=15), 300, 120), (timedelta(minutes=1), 190, 70),
+                                   (timedelta(minutes=5), 38, 2000), (timedelta(minutes=30), 6, 2000)):
+            cursor = 0
+            while cursor is not None:
+                page = read.deffeyes_frames(self.t1, start, start + frames * step, step, cursor=cursor, size=size)
+                self.assertEqual(page.tier, read.RAW)
+                yield step, page
+                cursor = page.next
+
+    def test_each_frames_sensor_value_is_value_at_of_its_channel_at_its_moment(self):
+        from farm.water import sources
+        from sensors.provider import PROVIDER
+        targets = {'sensor': (sources.POINT, self.mid1.pk), 'system_sensor': (sources.SYSTEM, self.ras.pk)}
+        seen = {}
+        for step, page in self.pages():
+            for frame in page.frames:
+                for code in ('ph', 'temperature_c'):
+                    item = frame.inputs.get(code)
+                    if item is None or item.channel_no is None:
+                        continue
+                    with self.subTest(step=step, at=frame.at, code=code):
+                        target = targets[item.origin]
+                        found = {value.channel_no: value
+                                 for value in PROVIDER.value_at([target], code, frame.at).get(target, [])}
+                        expected = found[item.channel_no]
+                        self.assertLessEqual(frame.at - expected.at, timedelta(seconds=expected.fresh_for))
+                        self.assertEqual(item.value, float(water_read.as_parameter(code, expected.value)))
+                        self.assertEqual(item.age_s, (frame.at - expected.at).total_seconds())
+                    seen[(step, code)] = seen.get((step, code), 0) + 1
+        self.assertEqual(len(seen), 12)                                   # both inputs from a sensor at every step
+
+    def test_the_rows_are_each_segments_newest_clean_reading_at_each_moment_within_its_freshness(self):
+        """`replay_rows` gives, for every segment and moment, the segment's newest clean reading at or before the moment
+        and inside its binding when it is no older than the channel's freshness; nothing else (a staler value is never
+        used)."""
+        from sensors.quality import BAD_MASK
+        given = on_the_moment = 0
+        for step, page in self.pages():
+            first, count = page.frames[0].at, len(page.frames)
+            found = [segment for code in read.REPLAY_INPUTS
+                     for segment in read.segments(self.t1, code, first - read.CARRY, first + count * step)]
+            rows = read.replay_rows(found, first, step, count, read.RAW)
+            expected = {}
+            for index, segment in enumerate(found):
+                clean = [(at, value) for at, value, quality in self.rows.get(segment.channel_no, [])
+                         if not quality & BAD_MASK and segment.start <= at < segment.end]
+                for slot in range(count):
+                    moment = first + slot * step
+                    before = [row for row in clean if row[0] <= moment]
+                    if before and moment - before[-1][0] <= timedelta(seconds=segment.fresh_s):
+                        expected[(index, slot)] = before[-1]
+                        on_the_moment += before[-1][0] == moment
+            given += len(expected)
+            with self.subTest(step=step, cursor=page.cursor):
+                self.assertEqual(rows, expected)
+        self.assertGreater(given, 1000)
+        self.assertGreater(on_the_moment, 10)                            # a reading exactly at a frame counts for it
+
+    def test_a_page_reads_about_one_reading_per_frame_and_channel_never_every_reading_of_its_span(self):
+        """The readings query of a raw page reads about the readings it gives (one per frame and segment), not every
+        reading of the page's span: at a minute's step over 1 Hz readings it read sixty times more."""
+        dense = make_channel(self.device, 'temperature_c', code='T-DENSE', heartbeat_s=60)
+        bindings.move(self.user, dense, point=self.mid1, at=START - timedelta(days=1))
+        insert_many(dense.channel_no, [(START + timedelta(seconds=second), 10.0 + second / 1e4, 0)
+                                       for second in range(4 * 3600)])
+        first, count, step = START + timedelta(minutes=20), 200, timedelta(minutes=1)
+        with CaptureQueriesContext(connection) as queries:
+            read.deffeyes_frames(self.t1, first, first + count * step, step)
+        (query,) = readings_queries(queries)
+        # The dense probe and the system's temperature, the pH probe before and after its stay in T-02, the backup.
+        segments = [segment for code in read.REPLAY_INPUTS
+                    for segment in read.segments(self.t1, code, first - read.CARRY, first + count * step)]
+        self.assertEqual(len(segments), 5)
+        self.assertLessEqual(scanned(query['sql']), 2 * count * len(segments))

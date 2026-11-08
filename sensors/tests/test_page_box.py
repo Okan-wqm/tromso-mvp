@@ -24,8 +24,8 @@ class PageBoxTests(SimpleTestCase):
         analyses = waters(40)
         extent = [(analysis.dic, analysis.alkalinity_meq) for analysis in analyses if analysis is not None]
         figures, indexes = read.page_figures(analyses)
-        expected = [deffeyes.figure(analysis, deffeyes.geometry(analysis, extent=extent))
-                    for analysis in analyses if analysis is not None]
+        expected = [{**deffeyes.figure(analysis, deffeyes.geometry(analysis, extent=extent)), 'point': None}
+                    for analysis in analyses if analysis is not None]       # a page's figure leaves its point out
         self.assertEqual(figures, expected)
         self.assertEqual(indexes, list(range(40)) + [None])
 

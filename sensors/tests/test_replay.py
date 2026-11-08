@@ -252,9 +252,11 @@ class EndpointTests(ReplayCase):
         self.assertEqual(columns['inputs']['ph']['value'], [frame.inputs['ph'].value for frame in frames.frames])
         self.assertEqual(columns['inputs']['ph']['origin'], ['sensor'] * 10)
         self.assertEqual(set(columns['inputs']), {'ph', 'temperature_c', 'alkalinity_mg_l', 'salinity_ppt'})
-        # The server's SVG of a frame is drawn from the figure the player gets.
-        figure = found['figures'][columns['figure'][3]]
-        self.assertEqual(deffeyes.render(figure), deffeyes.render(frames.figures[frames.frames[3].figure]))
+        # The server's SVG of a frame is drawn from the figure the player gets and the frame's own point.
+        figure = {**found['figures'][columns['figure'][3]], 'point': [columns['dic'][3], columns['alkalinity_meq'][3]]}
+        point = frames.frames[3].point
+        self.assertEqual(deffeyes.render(figure), deffeyes.render({**frames.figures[frames.frames[3].figure],
+                                                                   'point': [point.dic, point.alkalinity_meq]}))
         self.assertNotIn('diagram', found)
 
     def test_the_next_page_is_asked_by_its_cursor(self):

@@ -9,8 +9,8 @@ from django.db import IntegrityError, transaction
 from sensors import quantities
 
 from ..forms.water import CalculatorForm
-from ..models import WaterMeasurement
-from ..water import calculation, parameters, read
+from ..models import WaterFreshness, WaterMeasurement
+from ..water import calculation, freshness, parameters, read
 from .test_water import WaterTestCase
 from farm import withdrawal_gate
 
@@ -22,10 +22,17 @@ class ParameterTests(WaterTestCase):
         conductivity, hardness = parameters.get(CONDUCTIVITY), parameters.get(HARDNESS)
         self.assertIn('25 °C', str(conductivity.label))
         self.assertIn('compensated', str(conductivity.label))
-        self.assertEqual((conductivity.decimals, conductivity.low, conductivity.high, conductivity.fresh_hours),
-                         (0, D(0), D(100000), 168))
+        self.assertEqual((conductivity.decimals, conductivity.low, conductivity.high), (0, D(0), D(100000)))
         self.assertIn('as CaCO₃', str(hardness.label))
-        self.assertEqual((hardness.decimals, hardness.low, hardness.high, hardness.fresh_hours), (0, D(0), D(10000), 336))
+        self.assertEqual((hardness.decimals, hardness.low, hardness.high), (0, D(0), D(10000)))
+        # How long each is fresh is the user's reference data (farm.WaterFreshness; farm 0040 seeds them): 7 days for the
+        # conductivity, 14 for the hardness, as the chemistry has read them since formula 3.
+        self.assertEqual((freshness.SEEDS[CONDUCTIVITY], freshness.SEEDS[HARDNESS]), (168, 336))
+        self.assertEqual(dict(WaterFreshness.objects.filter(parameter__in=[CONDUCTIVITY, HARDNESS])
+                              .values_list('parameter', 'fresh_hours')), {CONDUCTIVITY: 168, HARDNESS: 336})
+        self.assertEqual((freshness.hours(CONDUCTIVITY), freshness.hours(HARDNESS)), (168, 336))
+        choices = {code for code, _label in WaterFreshness._meta.get_field('parameter').choices}
+        self.assertTrue({CONDUCTIVITY, HARDNESS} <= choices)
         self.assertTrue({CONDUCTIVITY, HARDNESS} <= set(parameters.COLUMNS))
 
     def test_a_sensor_measures_them_and_the_uncompensated_conductivity_stays_a_process_quantity(self):
@@ -61,3 +68,20 @@ class ParameterTests(WaterTestCase):
         self.sample(hours=2, conductivity_25_us_cm='310', hardness_mg_l='120')
         offered = calculation.offers(self.t1)
         self.assertEqual((offered[CONDUCTIVITY].value, offered[HARDNESS].value), (D(310), D(120)))
+
+
+class FreshnessMigrationTests(WaterTestCase):
+    def test_farm_0040_seeds_the_two_rows_and_takes_them_back(self):
+        """farm 0040 adds the two rows (the conductivity 168 h, the hardness 336 h) with the parameter's choices; back,
+        it removes only them."""
+        import importlib
+        from django.apps import apps as global_apps
+        migration = importlib.import_module('farm.migrations.0040_water_freshness_ionic_inputs')
+        WaterFreshness.objects.filter(parameter__in=[CONDUCTIVITY, HARDNESS]).delete()
+        migration.seed(global_apps, None)
+        self.assertEqual(dict(WaterFreshness.objects.filter(parameter__in=[CONDUCTIVITY, HARDNESS])
+                              .values_list('parameter', 'fresh_hours')), {CONDUCTIVITY: 168, HARDNESS: 336})
+        others = WaterFreshness.objects.exclude(parameter__in=[CONDUCTIVITY, HARDNESS]).count()
+        migration.unseed(global_apps, None)
+        self.assertFalse(WaterFreshness.objects.filter(parameter__in=[CONDUCTIVITY, HARDNESS]).exists())
+        self.assertEqual(WaterFreshness.objects.count(), others)

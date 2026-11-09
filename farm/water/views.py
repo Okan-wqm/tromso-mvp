@@ -580,10 +580,22 @@ def drawer(request, unit):
     }
 
 
-def overview_tiles(user):
-    """The production overview's water figure: the sampling points with a critical water value now, the water page's own
-    count (`_latest`, every point it lists, an outlet too), so the two cannot disagree."""
+OVERVIEW_ALERTS = 6     # the alerting points the overview lists; the rest are a link to this page
+
+
+def overview(user):
+    """The production overview's water, read once as this page reads it (`_latest`: every point it lists, an outlet too), so
+    the two cannot disagree: its counts of points, critical and warning points, the rows of the points with a critical or
+    warning value measured at them (`point_status`, what the counts count), the critical first and each group in the page's
+    order, at most OVERVIEW_ALERTS of them; and the tile of the points with a critical value. None for a person who may not
+    read the water."""
     if not user.has_perm(VIEW):
-        return []
-    return [{'label': _('Sampling points with a critical water value'), 'count': _latest(None)['critical_count'],
-             'url': page_url()}]
+        return None
+    latest = _latest(None)
+    alerting = [row for row in latest['rows'] if row['point'] is not None and row['water'].point_status in ALERTS]
+    alerting.sort(key=lambda row: row['water'].point_status != Status.CRITICAL)
+    return {'points': latest['point_count'], 'critical': latest['critical_count'], 'warning': latest['warning_count'],
+            'alerts': alerting[:OVERVIEW_ALERTS], 'more': max(len(alerting) - OVERVIEW_ALERTS, 0),
+            'sensors_failed': latest['sensors_failed'], 'url': page_url(),
+            'tiles': [{'label': _('Sampling points with a critical water value'), 'count': latest['critical_count'],
+                       'url': page_url()}]}

@@ -29,6 +29,14 @@ msgid "%(age)s ago"
 msgstr "%(age)s önce"
 
 #, python-format
+msgid "%(amount)s over the last 7 days"
+msgstr "son 7 günde %(amount)s"
+
+#, python-format
+msgid "%(amount)s today"
+msgstr "bugün %(amount)s"
+
+#, python-format
 msgid "%(batch)s has no fish at %(place)s now."
 msgstr "%(batch)s partisinin şu anda %(place)s yerinde balığı yok."
 
@@ -380,6 +388,10 @@ msgstr[0] "%(count)s tane zamanı geldi"
 msgstr[1] "%(count)s tane zamanı geldi"
 
 #, python-format
+msgid "%(count)s due today"
+msgstr "bugün %(count)s görev"
+
+#, python-format
 msgid "%(count)s fish stay in %(unit)s: weigh them too."
 msgstr "%(unit)s içinde %(count)s balık kalıyor: onları da tartın."
 
@@ -390,10 +402,22 @@ msgstr[0] "%(count)s üye"
 msgstr[1] "%(count)s üye"
 
 #, python-format
+msgid "%(count)s more sampling point on Water chemistry"
+msgid_plural "%(count)s more sampling points on Water chemistry"
+msgstr[0] "Su kimyasında %(count)s numune noktası daha"
+msgstr[1] "Su kimyasında %(count)s numune noktası daha"
+
+#, python-format
 msgid "%(count)s overdue"
 msgid_plural "%(count)s overdue"
 msgstr[0] "%(count)s tane gecikmiş"
 msgstr[1] "%(count)s tane gecikmiş"
+
+#, python-format
+msgid "%(count)s overdue report"
+msgid_plural "%(count)s overdue reports"
+msgstr[0] "%(count)s gecikmiş rapor"
+msgstr[1] "%(count)s gecikmiş rapor"
 
 #, python-format
 msgid "%(count)s overdue task"
@@ -436,6 +460,12 @@ msgid "%(count)s system is not in any production department."
 msgid_plural "%(count)s systems are not in any production department."
 msgstr[0] "%(count)s sistem hiçbir üretim departmanında değil."
 msgstr[1] "%(count)s sistem hiçbir üretim departmanında değil."
+
+#, python-format
+msgid "%(count)s task is overdue"
+msgid_plural "%(count)s tasks are overdue"
+msgstr[0] "%(count)s görev gecikti"
+msgstr[1] "%(count)s görev gecikti"
 
 #, python-format
 msgid "%(count)s time without a value is shaded, never filled."
@@ -728,6 +758,10 @@ msgstr "%(kilos)s tartıldı"
 #, python-format
 msgid "%(kind)s form sections"
 msgstr "%(kind)s formu bölümleri"
+
+#, python-format
+msgid "%(label)s %(count)s"
+msgstr "%(label)s %(count)s"
 
 #, python-format
 msgid "%(label)s %(value)s, %(status)s; limits: %(limits)s"
@@ -4097,6 +4131,10 @@ msgstr "Kontrol"
 msgid "Check your email"
 msgstr "E-postanızı kontrol edin"
 
+#, python-format
+msgid "Checked at %(clock)s."
+msgstr "Saat %(clock)s itibarıyla denetlendi."
+
 msgid "Checklist"
 msgstr "Kontrol listesi"
 
@@ -4671,6 +4709,10 @@ msgstr "Sayılan"
 #, python-format
 msgid "Counted by %(name)s, recorded %(when)s"
 msgstr "Sayan %(name)s, kayıt %(when)s"
+
+#, python-format
+msgid "Counted from Setup at %(clock)s"
+msgstr "Saat %(clock)s itibarıyla Kurulum kayıtlarından sayıldı"
 
 msgid "Counted location"
 msgstr "Sayılan yer"
@@ -5251,6 +5293,13 @@ msgstr "Kuru veya yaş"
 
 msgid "Due"
 msgstr "Son tarih"
+
+#, python-format
+msgid "Due %(date)s"
+msgstr "Son tarih %(date)s"
+
+msgid "Due at once"
+msgstr "Hemen verilmeli"
 
 msgid "Due date"
 msgstr "Son tarih"
@@ -6368,12 +6417,28 @@ msgstr "Çıkış lokalitetsnummer"
 msgid "From the backup or the system’s channel"
 msgstr "Yedekten veya sistemin kanalından"
 
+#, python-format
+msgid "From the feeding records at %(clock)s"
+msgstr "Saat %(clock)s itibarıyla yemleme kayıtlarından"
+
 msgid "From the floor to the rim."
 msgstr "Tabandan kenara kadar."
 
 #, python-format
+msgid "From the latest samples and sensors at %(clock)s"
+msgstr "Saat %(clock)s itibarıyla son numunelerden ve sensörlerden"
+
+#, python-format
 msgid "From the plan of %(date)s: it is linked to the plan when it is recorded."
 msgstr "%(date)s planından: kaydedildiğinde plana bağlanır."
+
+#, python-format
+msgid "From the stock records at %(clock)s"
+msgstr "Saat %(clock)s itibarıyla stok kayıtlarından"
+
+#, python-format
+msgid "From the tasks at %(clock)s"
+msgstr "Saat %(clock)s itibarıyla görevlerden"
 
 msgid "From the water surface to the bottom of the net."
 msgstr "Su yüzeyinden ağın dibine kadar."
@@ -8265,6 +8330,9 @@ msgstr "Göz atılmalı"
 msgid "Needs approval"
 msgstr "Onay gerekir"
 
+msgid "Needs attention"
+msgstr "Dikkat gerektirenler"
+
 msgid "Needs the calcium and a salinity of 5 to 44 ‰, the range of Mucci (1983)."
 msgstr "Kalsiyum ve 5 ile 44 ‰ arasında bir tuzluluk gerekir, Mucci’nin (1983) aralığı."
 
@@ -8430,6 +8498,9 @@ msgstr "Bu filtrelere uyan sayım yok."
 
 msgid "No count recorded yet"
 msgstr "Henüz sayım kaydedilmedi"
+
+msgid "No critical value or warning"
+msgstr "Kritik değer veya uyarı yok"
 
 msgid "No dead letters."
 msgstr "Kaydedilemeyen mesaj yok."
@@ -9076,6 +9147,9 @@ msgstr "Stokta hiçbir şey yok: önce bir teslimat alın."
 
 msgid "Nothing is owed there: it was filed, closed already or is not due."
 msgstr "Orada bir şey gerekmiyor: bildirildi, zaten kapatıldı veya zamanı gelmedi."
+
+msgid "Nothing needs attention"
+msgstr "Dikkat gerektiren bir şey yok"
 
 msgid "Nothing of the sensors is open to you yet: ask for a right on the Roles page."
 msgstr "Sensörlerle ilgili henüz hiçbir şeye erişiminiz yok: Roller sayfasından bir yetki isteyin."
@@ -10653,6 +10727,9 @@ msgstr "Raporlar"
 msgid "Reports and notices due"
 msgstr "Zamanı gelen raporlar ve bildirimler"
 
+msgid "Reports due"
+msgstr "Verilecek raporlar"
+
 msgid "Reports for this species cannot be filed without it."
 msgstr "Bu balık türünün resmî bildirimleri bu kod olmadan gönderilemez."
 
@@ -12107,9 +12184,6 @@ msgstr "Sistemler"
 msgid "Systems (loop)"
 msgstr "Sistemler (döngü)"
 
-msgid "Systems by status"
-msgstr "Duruma göre sistemler"
-
 msgid "TAN (mg/L N)"
 msgstr "TAN (mg/L N)"
 
@@ -12672,6 +12746,9 @@ msgstr ""
 msgid "The factor name %(name)s is too long."
 msgstr "%(name)s faktör adı çok uzun."
 
+msgid "The farm"
+msgstr "Çiftlik"
+
 msgid ""
 "The fast before each kind of handling, per species or for every species. Without a rule the fast "
 "is not checked."
@@ -13137,6 +13214,9 @@ msgstr "Sayfa gösterilemedi. Yeniden deneyin; tekrar olursa bir yöneticiye bil
 msgid "The pages in the journal or book, e.g. 45–67."
 msgstr "Dergideki ya da kitaptaki sayfalar, örn. 45–67."
 
+msgid "The pages your role opens are in the menu."
+msgstr "Rolünüzün açtığı sayfalar menüdedir."
+
 msgid "The parent equipment is on another site."
 msgstr "Üst ekipman başka bir sahada."
 
@@ -13272,9 +13352,6 @@ msgstr "Ambalajdaki ürün adı, örn. Salmosan vet."
 
 msgid "The production department belongs to another site."
 msgstr "Üretim departmanı başka bir sahaya ait."
-
-msgid "The production figures will appear here."
-msgstr "Üretim rakamları burada görünecek."
 
 msgid ""
 "The production fish or the cleaner fish beside them: each feed goes to its own fish. Left as the "
@@ -14355,6 +14432,9 @@ msgstr "En erken bugün; eski tankın son günü bir önceki gündür."
 msgid "Today lists the overdue tasks, those due today and those done today."
 msgstr "Bugün; gecikmiş görevleri, bugün süresi dolanları ve bugün tamamlananları listeler."
 
+msgid "Today on the farm"
+msgstr "Bugün çiftlikte"
+
 msgid "Today’s ration"
 msgstr "Bugünkü rasyon"
 
@@ -14578,9 +14658,6 @@ msgstr "Birim, sistem veya ekipman"
 
 msgid "Units"
 msgstr "Birimler"
-
-msgid "Units by kind"
-msgstr "Türe göre birimler"
 
 msgid "Units counted"
 msgstr "Sayılan birimler"
@@ -15550,6 +15627,9 @@ msgstr "Kendi kısa kodunuz: büyük harf, rakam, kısa çizgi ve alt çizgi."
 msgid "Your role does not give you this page. Ask an administrator if you need it."
 msgstr "Rolünüz bu sayfayı kapsamıyor. Gerekirse bir yöneticiye sorun."
 
+msgid "Your role opens none of the production figures yet."
+msgstr "Rolünüz henüz üretim rakamlarından hiçbirini açmıyor."
+
 msgid "a correction"
 msgstr "bir düzeltme"
 
@@ -16383,6 +16463,12 @@ msgstr "%(location)s içinde: %(held)s, süresi %(date)s tarihinde doluyor."
 #, python-format
 msgid "in %(name)s"
 msgstr "%(name)s içinde"
+
+#, python-format
+msgid "in %(stocked)s of %(total)s unit"
+msgid_plural "in %(stocked)s of %(total)s units"
+msgstr[0] "%(total)s birimin %(stocked)s tanesinde"
+msgstr[1] "%(total)s birimin %(stocked)s tanesinde"
 
 msgid "ingest contract"
 msgstr "veri alım sözleşmesi"

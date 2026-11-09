@@ -121,8 +121,11 @@ class ColourLiteralTests(SimpleTestCase):
             if path.name == 'tokens.css':
                 continue
             with self.subTest(stylesheet=path.name):
+                # an @supports condition only asks the browser what it can parse (tw.css's `color:rgb(from red r g b)`
+                # finds the browsers without @property): it paints nothing
                 hits = [line for line in path.read_text(encoding='utf-8').splitlines()
-                        if literal.search(re.sub(r'url\([^)]*\)', '', line))]
+                        if not line.lstrip().startswith('@supports')
+                        and literal.search(re.sub(r'url\([^)]*\)', '', line))]
                 self.assertEqual(hits, [])
 
 

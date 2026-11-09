@@ -144,8 +144,50 @@ def _meal():
     return render_to_string('farm/_meal_board_table.html', {'rows': rows})
 
 
+def _overview():
+    """Production › Overview's body (templates/_production_overview.html) with every part a full right shows: two critical
+    water points and a warning (real readings with their origin and age), overdue tasks and an overdue report with a long
+    name, the day's four lines, the reports due and the farm's structure, in Norwegian (its labels are the longest)."""
+    from farm.water.evaluate import Status
+
+    with translation.override('nb'):
+        point, readings = _readings('nb')
+        outlet = N(name='Østre sideutløp ved bunnen')
+        alerts = []
+        for status, where, codes in ((Status.CRITICAL, outlet, ('co2_mg_l', 'ph')),
+                                     (Status.CRITICAL, point, ('temperature_c',)),
+                                     (Status.WARNING, point, ('oxygen_saturation_pct',))):
+            found = [(readings[code], status, False) for code in codes]
+            alerts.append({'point': where, 'owner': point.unit, 'loop': False, 'history_url': '#',
+                           'water': N(point_status=status, old_alert=False, alerts=found)})
+        kind = N(label='Planlagt slakting')
+        upcoming = {'late': [N(kind=kind, place='Fjord Seafood Processing (N1234)', period=N(label='Uke 45 av 2026'),
+                               deadline=date(2026, 10, 29), overdue=True)],
+                    'due': [N(kind=N(label='Sykdom'), place='Tromsø Grow-out (TG-02)', period=None, deadline=None,
+                              overdue=False)],
+                    'late_duties': [], 'due_duties': [], 'more': 2, 'url': '#', 'duties_url': '#'}
+        return render_to_string('_production_overview.html', {
+            'now': NOW, 'meal_board_url': '#', 'late_tasks': 18, 'systems_url': '/systems/', 'units_url': '/units/',
+            'stock': {'stocked': {'count': 19, 'of': 23, 'url': '#'}, 'fish': {'count': '311 665', 'url': '#'},
+                      'biomass': {'count': '137,9 t', 'url': '#'}},
+            'feeding': {'today': {'count': '848 kg', 'url': '#'}, 'week': {'count': '7,4 t', 'url': '#'}},
+            'tasks': {'due_today': {'count': 3, 'url': '#'}, 'overdue': {'count': 18, 'url': '#'}},
+            'water': {'points': 40, 'critical': 2, 'warning': 6, 'alerts': alerts, 'more': 4, 'url': '#',
+                      'sensors_failed': False},
+            'upcoming': upcoming,
+            'tiles': [{'label': 'Produksjonsavdelinger', 'count': 6, 'url': '#'},
+                      {'label': 'Systemer', 'count': 6, 'url': '/systems/'},
+                      {'label': 'Utstyr', 'count': 29, 'url': '#'},
+                      {'label': 'Kar, dammer og merder', 'count': 23, 'url': '/units/'}],
+            'systems_by_status': [{'value': 'operational', 'label': 'I drift', 'count': 5},
+                                  {'value': 'maintenance', 'label': 'Vedlikehold', 'count': 1}],
+            'units_by_kind': [{'value': 'tank', 'label': 'Kar', 'count': 19, 'url': '#'},
+                              {'value': 'cage', 'label': 'Merd', 'count': 4, 'url': '#'}],
+        })
+
+
 PAGES = {'meal': _meal, 'stock': _stock, 'water': _water, 'card-en': lambda: _card('en'), 'card-nb': lambda: _card('nb'),
-         'matrix': _matrix, 'approve': _approve, 'tabs': _tabs}
+         'matrix': _matrix, 'approve': _approve, 'tabs': _tabs, 'overview': _overview}
 
 
 def rendered():

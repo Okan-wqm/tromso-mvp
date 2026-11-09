@@ -19152,6 +19152,7 @@
         "farm/tests/test_calculator.py",
         "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_migration_points.py",
+        "farm/tests/test_production_overview.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_followups.py",
         "farm/tests/test_water_points.py",

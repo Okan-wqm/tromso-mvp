@@ -350,7 +350,9 @@
 .ui-bottombar { display: none; }
 
 @media (max-width: 1023px) {
-  body { padding-bottom: calc(var(--bottombar-h) + env(safe-area-inset-bottom, 0px)); }
+  /* The room the fixed bottom bar covers, at the end of the console: on body it was lost, as body is the window's
+     height (base.css) and a long page runs past it, so a page's last line lay under the bar. */
+  .console { padding-bottom: calc(var(--bottombar-h) + env(safe-area-inset-bottom, 0px)); }
 
   .rail,
   [data-nav="collapsed"] .rail {

@@ -122,3 +122,17 @@ knowledge PDF, admin).
 - F-059 / F-061 / F-179 / F-050 personal data in the append-only activity log (contact e-mail and phone, task notes).
   Default: log these fields as private (the existing keyed digest), keep the log's audience to `core.view_auditlog`, and
   write an erasure procedure that the log no longer needs.
+
+## Design system merged (main 2f796ed, then bd6416d)
+
+Main's design wins on look, this branch's CSP on mechanism. The fonts are main's (`static/fonts`, `fonts.css`, one
+THIRD_PARTY entry each); this branch's duplicate `OFL.txt` and `@font-face` in base.css are gone. The units table keeps
+main's `ui-gauge` markup with its track drawn as an SVG (`svg.ui-gauge-track`, the fill a rectangle's width, `fill:` rules
+in ui.css); the capacity bar's rectangle is `--primary`, `--crit` when over; the card keeps the grid classes. No served
+template holds a style attribute or a `<style>` block (docs/ previews and frontend/test fixtures are not served and are
+left out of the scans). The contrast test reads every theme's `--line-control` in tokens.css (3.7:1 or more against page
+and sheet). The route sweep names main's theme switch (a cookie) among the public pages.
+
+Full suite on the merge with bd6416d (`scripts/test.sh`, archive copy): 3152 tests, 6 failures, all
+`monitoring.tests.test_golden` "titles that are gone" (stale values' titles); main bd6416d alone fails the same 6 at the
+same time, so they come from main, not this branch.

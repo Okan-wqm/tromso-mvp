@@ -62,6 +62,13 @@ def provenance(equilibria):
         'source': STRENGTH_SOURCES[equilibria.strength_source]}
     if 0 < equilibria.sea_weight < 1:
         said = _('%(said)s; %(share)d %% seawater constants') % {'said': said, 'share': round(100 * equilibria.sea_weight)}
+        if equilibria.water_origin == '':
+            # Cross review F3: the band takes sea water's ions; a fresh water salted with NaCl would read low CO2.
+            said = _('%(said)s (assumes sea water’s ion composition; salt-added fresh water may read low CO₂: say the '
+                     'unit’s water origin)') % {'said': said}
+    if equilibria.water_origin == 'salt_added':
+        said = (_('%(said)s; salt-added fresh water, its ions taken as NaCl') if equilibria.sea_weight == 0
+                else _('%(said)s; salt-added fresh water past the Davies range, worked out as sea water')) % {'said': said}
     return f'{said}.'
 
 

@@ -258,6 +258,10 @@ Differences from the source:
   are in it; deleting a system takes its units out of it, logged.
 - Water type is required and has no default (the source defaulted to saltwater in one place and
   freshwater in another).
+- The water origin is optional (cross review F3, farm 0037, `chk_tanks_water_origin`): sea water or diluted sea water,
+  or fresh water with salt added (NaCl, for smolt or against disease). The water chemistry reads it (Water-chemistry
+  core): salt-added water is worked out without sea water's ions; not said, a salinity of 1 to 5 ‰ is taken as diluted
+  sea water and the value says so. A loop or a sampling point takes its units' origin when they all say the same.
 - The code is unique among live units. The regulatory unit ID is the locality's own number (merd 1 on two sites
   is two units): unique among the live units of a site, held by the database per production department and by the
   form across the site. A unit with stock records stays on its site, and so does a production department whose
@@ -3656,7 +3660,14 @@ temperature (a synthetic page: 54 different temperatures, 99 to 164 ms, 128 KB c
   Kell 1975; Hamer's 1968 table within 0.03 %). From 5 ‰ (`SEA_FROM`) they are formula 1's seawater constants, the NBS
   conversion with the same A. Between, each constant is the geometric blend, the sea's weight linear in the salinity
   (Millero et al. 2006 measured K1, K2 from S 1; Dickson's 1990 KSO₄ and KB hold from S 5): the old 5 ‰ boundary jumped
-  up to 25 % in CO₂, the band not at all. The fresh path refuses an ionic strength above 0.5, the Davies limit
+  up to 25 % in CO₂, the band not at all. The band assumes sea water's ions (sulfate, fluoride, the Mg and Ca ion pairs in Millero's K1
+  and K2, borate): a unit may say its **water origin** (cross review F3, F4). Salt-added fresh water takes the fresh path up
+  to the Davies limit (to about 28 ‰; then the sea path), its ionic strength NaCl's (the salinity as NaCl's molality,
+  58.443 g/mol; the conductivity by NaCl's 8.4e-6 per µS/cm, from its molar conductivity of about 118.5 S cm²/mol at
+  0.01 mol/L, 25 °C, instead of Russell's 1.6e-5, which fits bicarbonate waters and overstates a NaCl water's ionic
+  strength about 1.9 times, its corrected NH₃ and CO₂ about 4 % low at 3000 µS/cm), no seawater boron: at 3 ‰ its CO₂ is 4.6 to
+  9.2 % above what the band gives. Not said, the band is kept and the provenance says "assumes sea water's ion
+  composition; salt-added fresh water may read low CO₂". the band not at all. The fresh path refuses an ionic strength above 0.5, the Davies limit
   (`DAVIES_MAX`; a sample's NH₃ then says why and shows nothing). The conductivity and the hardness are water parameters
   (cross review F8: only the compensated conductivity is read; the sensors' `conductivity_us_cm`, at the water's own
   temperature, never). Formula 1 is still worked out exactly, by name only (`formula=1`: golden v1, `FORMULAS` = 1, 3),

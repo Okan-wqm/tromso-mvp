@@ -95,7 +95,7 @@ def inputs_from(values):
         alkalinity_mg_l=values['alkalinity_mg_l'], tan_mg_l=values.get('tan_mg_l'),
         total_sulfide_ug_l=values.get('total_sulfide_ug_l'), calcium_mg_l=values.get('calcium_mg_l'),
         oxygen_mg_l=values.get('oxygen_mg_l'), conductivity_25_us_cm=values.get('conductivity_25_us_cm'),
-        hardness_mg_l=values.get('hardness_mg_l'))
+        hardness_mg_l=values.get('hardness_mg_l'), water_origin=values.get('water_origin') or '')
     limits = deffeyes.Limits(
         nh3_n_mg_l=values.get('nh3_n_limit_mg_l'), co2_mg_l=values.get('co2_limit_mg_l'),
         h2s_ug_l=values.get('h2s_limit_ug_l'), alkalinity_low_mg_l=values.get('alkalinity_low_mg_l'),
@@ -319,6 +319,7 @@ def chart_of(unit, point=None, now=None, at=None):
     missing = [parameters.get(name).label for name in REQUIRED if name not in values]
     if missing:
         return Refusal(unit, point, missing, points, sensors_failed=failed)
+    values['water_origin'] = origin_of(unit)
     why = deffeyes.why_impossible(values['temperature_c'], values['salinity_ppt'], values['ph'],
                                   values['alkalinity_mg_l'], **ions_of(values))
     if why:
@@ -336,9 +337,10 @@ def chart_of(unit, point=None, now=None, at=None):
 
 
 def ions_of(values):
-    """The conductivity at 25 °C and the hardness of field values (None when absent): the ions a water's equilibria
-    read besides its alkalinity and salinity (formula 3)."""
-    return {name: values.get(name) for name in ('conductivity_25_us_cm', 'hardness_mg_l')}
+    """The conductivity at 25 °C and the hardness of field values (None when absent), and the water's origin ('' not
+    said): what a water's equilibria read besides its alkalinity and salinity (formula 3)."""
+    return {**{name: values.get(name) for name in ('conductivity_25_us_cm', 'hardness_mg_l')},
+            'water_origin': values.get('water_origin') or ''}
 
 
 def chart_limits(offered):
@@ -352,6 +354,11 @@ def points_for(owner):
         found = SamplingPoint.objects.filter(system=owner, is_active=True).with_owners()
         return tuple(sorted(found, key=lambda point: (point.kind != read.MIDDLE, point.name)))
     return tuple(read.points_of([owner])[owner.pk])
+
+
+def origin_of(owner):
+    """Where the salt of a unit's or a system's water comes from (read.common_origin of its units; '' not said)."""
+    return read.common_origin(owner.tanks.all() if isinstance(owner, System) else [owner])
 
 
 def _water_types(owner):

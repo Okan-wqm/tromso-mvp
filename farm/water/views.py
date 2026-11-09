@@ -296,6 +296,7 @@ def _calculator_data(query):
     owner = find_owner(chosen)
     if owner is not None:
         CalculatorForm.fill(data, calculation.offers(owner))
+        data['water_origin'] = calculation.origin_of(owner)       # the unit's (cross review F3)
     data['loaded'] = chosen
     return data, True
 

@@ -108,6 +108,13 @@ def assumed_salinity(water_types):
     return Decimal(0) if set(water_types) == {Tank.WaterType.FRESHWATER} else None
 
 
+def common_origin(units):
+    """The water origin of units (Tank.water_origin; cross review F3): theirs when they all say the same, else '' (not
+    said: a salinity of 1 to 5 permil is taken as diluted sea water)."""
+    origins = {unit.water_origin for unit in units}
+    return origins.pop() if len(origins) == 1 else ''
+
+
 def assumed_salinities(points):
     """{point id: the salinity assumed there}: 0 when every unit its water concerns (Context._served: the unit, the
     units of a loop or of the systems a piece of equipment serves) is in fresh water, else None. One read for all."""
@@ -646,6 +653,11 @@ class Context:
     def water_types(self, point):
         return {unit.water_type for unit in self.served[point.pk]}
 
+    def water_origin(self, point):
+        """Where the salt of the water at a point comes from (Tank.water_origin; cross review F3): its units' origin when
+        they all say the same, else '' (not said: a salinity of 1 to 5 permil is taken as diluted sea water)."""
+        return common_origin(self.served[point.pk])
+
     @staticmethod
     def _why_no_limit(exposures):
         """Why a value has no limit: no fish where it was taken that day, or no limit row for the fish there. The species
@@ -667,7 +679,8 @@ class Context:
     def ionic_inputs_for(self, observation):
         """{code: float or None} of the alkalinity, the conductivity at 25 °C and the hardness a TAN sample's ammonia is
         worked out with (formula 3's ionic strength): each the observation's own, else its point's latest sample fresh
-        at its time (a stale value never enters, PLAN A9.3), else its owner's middle point's; None when there is none."""
+        at its time (a stale value never enters, PLAN A9.3), else its owner's middle point's; None when there is none;
+        and 'water_origin', its units' (`water_origin`)."""
         observation = observe(observation)
         found = {}
         for code in IONIC_INPUTS:
@@ -680,6 +693,7 @@ class Context:
                         value = hit.value
                         break
             found[code] = None if value is None else float(value)
+        found['water_origin'] = self.water_origin(observation.point)
         return found
 
     def salinity_for(self, observation):

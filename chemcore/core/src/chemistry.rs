@@ -326,6 +326,39 @@ pub struct Equilibria {
     /// which a judgement takes the larger value (`nh3_share`, `ph_where_nh3`, `co2_judged`, `ph_where_co2`); None for
     /// formula 1, which is that basis itself.
     pub limits_basis: Option<LimitsBasis>,
+    /// Where its salt came from, as said (formula 1: `Origin::Unknown`).
+    pub origin: Origin,
+}
+
+/// Where a water's salt came from (cross review F3, F4), as a unit says it: the band from 1 to 5 ‰ blends in the seawater
+/// constants, which carry sea water's ions (sulfate and fluoride on the pH scales, Mg²⁺ and Ca²⁺ ion pairs in Millero's
+/// K1 and K2, borate); fresh water salted with NaCl has none of them (`crate::fresh`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Origin {
+    /// Not said: the band, its provenance saying it assumes sea water's ion composition.
+    #[default]
+    Unknown,
+    /// Sea water or sea water diluted: the band.
+    Seawater,
+    /// Fresh water with salt (NaCl) added: the fresh path up to the Davies limit.
+    SaltAdded,
+}
+
+impl Origin {
+    /// A stable code (the unit's `water_origin`; '' not said).
+    pub fn code(self) -> &'static str {
+        match self {
+            Origin::Unknown => "",
+            Origin::Seawater => "seawater",
+            Origin::SaltAdded => "salt_added",
+        }
+    }
+
+    pub fn from_code(code: &str) -> Option<Origin> {
+        [Origin::Unknown, Origin::Seawater, Origin::SaltAdded]
+            .into_iter()
+            .find(|origin| origin.code() == code)
+    }
 }
 
 /// Which value judged a water's NH₃ or CO₂ against its limits: the larger of the limits' basis and the
@@ -429,6 +462,7 @@ pub fn equilibria_with(temp_c: f64, salinity: f64, a_of: &dyn Fn(f64) -> R) -> R
         source: Source::Seawater,
         sea_weight: 1.0,
         limits_basis: None,
+        origin: Origin::Unknown,
     };
     for value in [
         eq.ph_offset,

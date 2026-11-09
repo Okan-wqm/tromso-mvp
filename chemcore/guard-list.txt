@@ -12,6 +12,7 @@ name FORMULA_VERSION
 name FRESH_UP_TO
 name H2S_PER_S
 name IONIC_PER_MICROSIEMENS
+name IONIC_PER_MICROSIEMENS_NACL
 name LABEL_AT
 name LEFT_OUT_G
 name LINE_LENGTH
@@ -20,6 +21,7 @@ name MG_CACO3_PER_MEQ
 name MG_CACO3_PER_MMOL
 name MG_CALCIUM_PER_MOL
 name MG_CO2_PER_MMOL
+name NACL_G_PER_MOL
 name OMEGA_SALINITY
 name PH_RANGE
 name SEA_FROM
@@ -159,6 +161,7 @@ number 20.051
 number 21.0894
 number 22.294
 number 22.98976928
+number 22.98977
 number 23.093
 number 23.6521
 number 24.4344
@@ -175,6 +178,7 @@ number 44.0096
 number 47.986
 number 50.04345
 number 58.0931
+number 58.443
 number 71.595
 number 77.942
 number 78.304

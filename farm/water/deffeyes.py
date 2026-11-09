@@ -79,6 +79,7 @@ class Water:
     oxygen_mg_l: float | None = None
     conductivity_25_us_cm: float | None = None
     hardness_mg_l: float | None = None
+    water_origin: str = ''        # '' not said, 'seawater', 'salt_added' (a unit's Tank.water_origin; cross review F3)
     formula: int = chemistry.FORMULA_VERSION
 
 

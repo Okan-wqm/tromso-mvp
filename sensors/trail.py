@@ -71,7 +71,9 @@ def trail(owner, start, end):
               for conditions, _points in tiered]
     points = list({point.pk: point for _conditions, found in tiered for point in found}.values())
     series = {code: water_read.Series(points, code, start - water_read.WINDOW, end) for code in (*INPUTS, *IONS)}
-    water_types = {owner.water_type} if hasattr(owner, 'water_type') else {unit.water_type for unit in owner.tanks.all()}
+    units = [owner] if hasattr(owner, 'water_type') else list(owner.tanks.all())
+    water_types = {unit.water_type for unit in units}
+    origin = water_read.common_origin(units)
     found = Trail(owner, start, end)
     for index in range(hours):
         at = start + index * HOUR
@@ -98,7 +100,8 @@ def trail(owner, start, end):
             found.missing.append(at)
             continue
         equilibria = chemistry.water_equilibria(values[parameters.TEMPERATURE], values[parameters.SALINITY],
-                                                values['alkalinity_mg_l'], *(values.get(code) for code in IONS))
+                                                values['alkalinity_mg_l'], *(values.get(code) for code in IONS),
+                                                water_origin=origin)
         alkalinity = values['alkalinity_mg_l'] / chemistry.MG_CACO3_PER_MEQ
         found.points.append(TrailPoint(at, values[parameters.TEMPERATURE], values[parameters.PH],
                                        values['alkalinity_mg_l'], values[parameters.SALINITY],

@@ -16099,6 +16099,22 @@
           "why": ""
         },
         {
+          "name": "water_origin",
+          "field": "water_origin",
+          "type": "varchar(12)",
+          "null": false,
+          "choices": [
+            "seawater",
+            "salt_added"
+          ],
+          "link": null,
+          "on_form": [
+            "TankForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
           "name": "regulatory_unit_id",
           "field": "regulatory_unit_id",
           "type": "varchar(50)",
@@ -16528,6 +16544,12 @@
           "conditional": false
         },
         {
+          "name": "chk_tanks_water_origin",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
           "name": "chk_tanks_shape_by_kind",
           "kind": "check",
           "fields": [],
@@ -16798,6 +16820,7 @@
             "status": "General",
             "status_reason": "General",
             "water_type": "General",
+            "water_origin": "General",
             "regulatory_unit_id": "General",
             "production_department": "Location",
             "system": "Location",
@@ -16863,6 +16886,7 @@
         "farm/tests/test_stock.py",
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
+        "farm/tests/test_water_origin.py",
         "farm/tests/test_water_oxygen_basis.py",
         "farm/tests/test_water_points.py",
         "farm/tests/test_water_resolver.py",

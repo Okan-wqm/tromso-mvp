@@ -1039,8 +1039,24 @@ msgid "%(rule)s at %(time)s"
 msgstr "%(rule)s kl. %(time)s"
 
 #, python-format
+msgid ""
+"%(said)s (assumes sea water’s ion composition; salt-added fresh water may read low CO₂: say the "
+"unit’s water origin)"
+msgstr ""
+"%(said)s (forutsetter sjøvannets ionesammensetning; ferskvann tilsatt salt kan vise for lav CO₂: "
+"oppgi enhetens vannopprinnelse)"
+
+#, python-format
 msgid "%(said)s; %(share)d %% seawater constants"
 msgstr "%(said)s; %(share)d %% sjøvannskonstanter"
+
+#, python-format
+msgid "%(said)s; salt-added fresh water past the Davies range, worked out as sea water"
+msgstr "%(said)s; ferskvann tilsatt salt utenfor Davies-området, beregnet som sjøvann"
+
+#, python-format
+msgid "%(said)s; salt-added fresh water, its ions taken as NaCl"
+msgstr "%(said)s; ferskvann tilsatt salt, ionene regnet som NaCl"
 
 #, python-format
 msgid "%(seconds)d s ago"
@@ -6364,6 +6380,16 @@ msgstr "Fersk i (sekunder)"
 msgid "Fresh water"
 msgstr "Ferskvann"
 
+msgid "Fresh water with salt added"
+msgstr "Ferskvann tilsatt salt"
+
+msgid ""
+"Fresh water with salt added (NaCl) is worked out without sea water’s ions, its ionic strength as "
+"NaCl’s; not said, a salinity of 1 to 5 ‰ is taken as diluted sea water."
+msgstr ""
+"Ferskvann tilsatt salt (NaCl) beregnes uten sjøvannets ioner, med ionestyrken til NaCl; ikke "
+"oppgitt regnes en salinitet på 1 til 5 ‰ som fortynnet sjøvann."
+
 msgid "Freshwater"
 msgstr "Ferskvann"
 
@@ -9099,6 +9125,9 @@ msgstr "Ikke registrert"
 msgid "Not reviewed yet. AI agents will act on reviewed entries only."
 msgstr "Ikke gjennomgått ennå. KI-agentene vil bare handle på gjennomgåtte oppføringer."
 
+msgid "Not said"
+msgstr "Ikke oppgitt"
+
 msgid "Not saved; unverified"
 msgstr "Ikke lagret; ikke bekreftet"
 
@@ -11176,6 +11205,9 @@ msgstr "Sjøtemperatur (°C)"
 
 msgid "Sea water"
 msgstr "Sjøvann"
+
+msgid "Sea water or diluted sea water"
+msgstr "Sjøvann eller fortynnet sjøvann"
 
 msgid "Sea-lice count"
 msgstr "Lusetelling"
@@ -14950,6 +14982,9 @@ msgstr ""
 msgid "Water limits"
 msgstr "Vanngrenser"
 
+msgid "Water origin"
+msgstr "Vannopprinnelse"
+
 msgid "Water quality"
 msgstr "Vannkvalitet"
 
@@ -15273,6 +15308,15 @@ msgstr "Hvor jobben gjøres: en hel lokalitet, en produksjonsavdeling, et system
 
 msgid "Where the knowledge comes from: every entry has exactly one source."
 msgstr "Hvor kunnskapen kommer fra: hver oppføring har nøyaktig én kilde."
+
+msgid ""
+"Where the salt in its water comes from. Fresh water with salt added (NaCl, for smolt or against "
+"disease) is worked out without sea water’s ions; not said, a salinity of 1 to 5 ‰ is taken as "
+"diluted sea water."
+msgstr ""
+"Hvor saltet i vannet kommer fra. Ferskvann tilsatt salt (NaCl, for smolt eller mot sykdom) "
+"beregnes uten sjøvannets ioner; ikke oppgitt regnes en salinitet på 1 til 5 ‰ som fortynnet "
+"sjøvann."
 
 msgid "Where the value comes from, e.g. “the vet, November 2026”."
 msgstr "Hvor verdien kommer fra, f.eks. «veterinæren, november 2026»."

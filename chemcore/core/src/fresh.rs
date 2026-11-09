@@ -35,8 +35,8 @@
 //! KB = KB° / γ₁²; KH2S = KH2S° / γ₁²; KNH4 = KNH4° (H⁺ and NH₄⁺ both monovalent); Ksp as v1 (Ω is drawn only from 5 ‰).
 pub use crate::chemistry::Source;
 use crate::chemistry::{
-    self as c, Equilibria, KELVIN, LimitsBasis, MG_CACO3_PER_MEQ, k_h2s_total, k_nh4_sws, k1_sws, k2_sws, kb_total,
-    kw_total, total_boron,
+    self as c, Equilibria, KELVIN, LimitsBasis, MG_CACO3_PER_MEQ, Origin, k_h2s_total, k_nh4_sws, k1_sws, k2_sws,
+    kb_total, kw_total, total_boron,
 };
 use crate::num::{ChemError, R, div, exp, finite, ln, pow, sqrt};
 
@@ -44,8 +44,20 @@ use crate::num::{ChemError, R, div, exp, finite, ln, pow, sqrt};
 pub const FRESH_UP_TO: f64 = 1.0;
 /// From this salinity (‰) formula 3 takes the seawater path alone: Dickson's (1990) KSO₄ and KB hold from S 5.
 pub const SEA_FROM: f64 = 5.0;
-/// Ionic strength per µS/cm of conductivity (Russell 1976).
+/// Ionic strength per µS/cm of conductivity (Russell 1976, J. Am. Water Works Assoc. 68: 2, as Snoeyink & Jenkins 1980
+/// give it; Russell's paper itself was not read): fitted to natural, bicarbonate-type waters (1 mM Ca(HCO₃)₂: I 3 mM at
+/// about 200 µS/cm, 1.5e-5), with a scatter of about ±20 to 30 % (Griffin & Jurinak 1973 give 1.3e-5). It overstates a
+/// NaCl water's ionic strength about 1.9 times (cross review F4), so a salt-added water takes
+/// `IONIC_PER_MICROSIEMENS_NACL`.
 pub const IONIC_PER_MICROSIEMENS: f64 = 1.6e-5;
+/// Ionic strength per µS/cm of a NaCl solution at 25 °C: 0.01 mol/L NaCl has a molar conductivity of about 118.5 S cm²/mol
+/// (CRC Handbook of Chemistry and Physics, molar conductivity of aqueous electrolytes; Robinson & Stokes 1959, Electrolyte
+/// Solutions, appendix 6.2; neither printed table was opened here: the value agrees with Kohlrausch's law from NaCl's
+/// limiting 126.4 and with the 0.01 mol/L KCl standard's 1413 µS/cm), so κ ≈ 1185 µS/cm and I / κ = 8.4e-6. It rises
+/// with the concentration (about 8.1e-6 at 0.001 mol/L, 9.4e-6 at 0.1): within ±12 % from 120 to 11 000 µS/cm.
+pub const IONIC_PER_MICROSIEMENS_NACL: f64 = 8.4e-6;
+/// NaCl, g/mol (IUPAC 2007: Na 22.98977, Cl 35.453): a salt-added water's salinity as NaCl's molality.
+pub const NACL_G_PER_MOL: f64 = 58.443;
 /// Hardness: mg/L as CaCO₃ per mmol/L of Ca²⁺ and Mg²⁺ (CaCO₃ 100.0869, IUPAC 2007).
 pub const MG_CACO3_PER_MMOL: f64 = 100.0869;
 /// The Davies equation's linear term (Davies 1962).
@@ -61,6 +73,9 @@ pub struct Ions {
     /// µS/cm, compensated to 25 °C (specific conductance; a reading at the water's own temperature is not this value).
     pub conductivity_25_us_cm: Option<f64>,
     pub hardness_mg_l: Option<f64>,
+    /// Where its salt came from (a unit's water origin, cross review F3): salt-added water takes the fresh path to the
+    /// Davies limit with NaCl's ionic strength.
+    pub origin: Origin,
 }
 
 fn present(value: Option<f64>) -> Result<Option<f64>, ChemError> {
@@ -85,6 +100,12 @@ pub fn sea_weight(salinity: f64) -> f64 {
 /// path's (`fresh_ionic_strength`). Refuses a non-finite input, a negative salinity, conductivity, hardness or
 /// alkalinity, and on the fresh path an ionic strength above `DAVIES_MAX`.
 pub fn ionic_strength(salinity: f64, alkalinity_mg_l: Option<f64>, ions: Ions) -> Result<(f64, Source), ChemError> {
+    if ions.origin == Origin::SaltAdded {
+        return match fresh_ionic_strength(salinity, alkalinity_mg_l, ions) {
+            Err(ChemError::OutOfRange) if salinity >= SEA_FROM => Ok((c::ionic_strength(salinity)?, Source::Seawater)),
+            found => found,
+        };
+    }
     if finite(salinity)? >= SEA_FROM {
         return Ok((c::ionic_strength(salinity)?, Source::Seawater));
     }
@@ -119,7 +140,15 @@ pub fn fresh_ionic_strength(
         (None, None) => None,
     };
     let estimate = match conductivity {
+        Some(kappa) if ions.origin == Origin::SaltAdded => {
+            Some((IONIC_PER_MICROSIEMENS_NACL * kappa, Source::Conductivity))
+        }
         Some(kappa) => Some((IONIC_PER_MICROSIEMENS * kappa, Source::Conductivity)),
+        // NaCl's molality: S g per kg of solution, (S / 58.443) / (1 − S / 1000) mol per kg of water.
+        None if salinity > 0.0 && ions.origin == Origin::SaltAdded => Some((
+            div(salinity / NACL_G_PER_MOL, 1.0 - salinity / 1000.0)?,
+            Source::Salinity,
+        )),
         None if salinity > 0.0 => Some((c::ionic_strength(salinity)?, Source::Salinity)),
         None => None,
     };
@@ -190,15 +219,28 @@ pub fn fresh_equilibria(
     ions: Ions,
 ) -> Result<Equilibria, ChemError> {
     let (strength, source) = fresh_ionic_strength(salinity, alkalinity_mg_l, ions)?;
-    let eq = fresh_at(temp_c, salinity, strength, source)?;
+    let eq = fresh_at(temp_c, salinity, strength, source, ions.origin)?;
     Ok(Equilibria {
-        limits_basis: Some(LimitsBasis::of(&fresh_at(temp_c, salinity, 0.0, Source::Nothing)?)),
+        limits_basis: Some(LimitsBasis::of(&fresh_at(
+            temp_c,
+            salinity,
+            0.0,
+            Source::Nothing,
+            ions.origin,
+        )?)),
         ..eq
     })
 }
 
-/// The fresh path's equilibria at an ionic strength (mol/L; 0: every activity 1, the ideal water).
-fn fresh_at(temp_c: f64, salinity: f64, strength: f64, source: Source) -> Result<Equilibria, ChemError> {
+/// The fresh path's equilibria at an ionic strength (mol/L; 0: every activity 1, the ideal water). A salt-added water
+/// holds no seawater boron (NaCl carries none).
+fn fresh_at(
+    temp_c: f64,
+    salinity: f64,
+    strength: f64,
+    source: Source,
+    origin: Origin,
+) -> Result<Equilibria, ChemError> {
     let temp_c = finite(temp_c)?;
     let one = davies_log_gamma(temp_c, strength, 1.0)?;
     let gamma_one_squared = pow(10.0, 2.0 * one)?;
@@ -211,7 +253,11 @@ fn fresh_at(temp_c: f64, salinity: f64, strength: f64, source: Source) -> Result
         k2: div(k2_sws(temp_c, 0.0)?, gamma_two)?,
         kw: div(kw_total(temp_c, 0.0)?, gamma_one_squared)?,
         kb: div(kb_total(temp_c, 0.0)?, gamma_one_squared)?,
-        boron: total_boron(salinity),
+        boron: if origin == Origin::SaltAdded {
+            0.0
+        } else {
+            total_boron(salinity)
+        },
         k_nh4: k_nh4_sws(temp_c, 0.0)?,
         k_h2s: div(k_h2s_total(temp_c, 0.0)?, gamma_one_squared)?,
         ksp_calcite: c::ksp_calcite(temp_c, salinity)?,
@@ -221,6 +267,7 @@ fn fresh_at(temp_c: f64, salinity: f64, strength: f64, source: Source) -> Result
         source,
         sea_weight: 0.0,
         limits_basis: None,
+        origin,
     };
     checked(eq)
 }
@@ -233,11 +280,11 @@ fn fresh_at(temp_c: f64, salinity: f64, strength: f64, source: Source) -> Result
 /// module's rules) with the same weight. Up to 1 ‰ this is the ideal water even where formula 1 took seawater constants
 /// (0 < S ≤ 1): at the calculator's example (12 °C, 1 ‰, pH 7, 80 mg/L) the NH₃ border is 7.986, against formula 3's
 /// corrected 8.045 and formula 1's 8.040; the CO₂ 19.62 mg/L, against 17.12 and 16.94. Judgements take the larger of this and the activity-corrected value.
-pub fn limits_basis(temp_c: f64, salinity: f64, weight: f64) -> Result<LimitsBasis, ChemError> {
+pub fn limits_basis(temp_c: f64, salinity: f64, weight: f64, origin: Origin) -> Result<LimitsBasis, ChemError> {
     if weight >= 1.0 {
         return Ok(LimitsBasis::of(&c::equilibria(temp_c, salinity)?));
     }
-    let ideal = fresh_at(temp_c, salinity, 0.0, Source::Nothing)?;
+    let ideal = fresh_at(temp_c, salinity, 0.0, Source::Nothing, origin)?;
     if weight <= 0.0 {
         return Ok(LimitsBasis::of(&ideal));
     }
@@ -285,7 +332,15 @@ pub fn equilibria_v3(
     alkalinity_mg_l: Option<f64>,
     ions: Ions,
 ) -> Result<Equilibria, ChemError> {
-    let weight = sea_weight(finite(salinity)?);
+    let weight = if ions.origin == Origin::SaltAdded {
+        // Salt-added fresh water (cross review F3): the fresh path up to the Davies limit, then the sea path.
+        match fresh_equilibria(temp_c, salinity, alkalinity_mg_l, ions) {
+            Err(ChemError::OutOfRange) if salinity >= SEA_FROM => 1.0,
+            found => return found,
+        }
+    } else {
+        sea_weight(finite(salinity)?)
+    };
     if weight >= 1.0 {
         let (strength, source) = ionic_strength(salinity, alkalinity_mg_l, ions)?;
         let sea = c::equilibria_with(temp_c, salinity, &debye_huckel_a)?;
@@ -293,7 +348,8 @@ pub fn equilibria_v3(
             formula: 3,
             ionic_strength: strength,
             source,
-            limits_basis: Some(limits_basis(temp_c, salinity, 1.0)?),
+            limits_basis: Some(limits_basis(temp_c, salinity, 1.0, ions.origin)?),
+            origin: ions.origin,
             ..sea
         });
     }
@@ -314,7 +370,8 @@ pub fn equilibria_v3(
         ionic_strength: fresh.ionic_strength,
         source: fresh.source,
         sea_weight: weight,
-        limits_basis: Some(limits_basis(temp_c, salinity, weight)?),
+        limits_basis: Some(limits_basis(temp_c, salinity, weight, ions.origin)?),
+        origin: ions.origin,
         ..sea
     };
     checked(eq)

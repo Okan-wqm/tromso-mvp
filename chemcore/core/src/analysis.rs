@@ -2,7 +2,7 @@
 //! floor, the chart's box), ported literally from golden v1's Python: DIC and CO₂ from the alkalinity and the pH, NH₃-N
 //! from the TAN, H₂S from the total sulfide, each limit as a pH border with its margin and status (the source's rule:
 //! past the border critical, within 0.2 pH a warning), the oxygen saturation at a pressure.
-use crate::chemistry::{self as c, Basis, Equilibria};
+use crate::chemistry::{self as c, Basis, Equilibria, Origin};
 use crate::fresh::{Ions, water_equilibria};
 use crate::num::{ChemError, R, div, finite};
 
@@ -134,6 +134,8 @@ pub struct Water {
     pub conductivity_25_us_cm: Option<f64>,
     /// mg/L as CaCO₃.
     pub hardness_mg_l: Option<f64>,
+    /// Where its salt came from (a unit's water origin; cross review F3).
+    pub origin: Origin,
     /// The formula version the water is worked out by (crate::FORMULAS).
     pub formula: u32,
 }
@@ -144,6 +146,7 @@ impl Water {
         Ions {
             conductivity_25_us_cm: self.conductivity_25_us_cm,
             hardness_mg_l: self.hardness_mg_l,
+            origin: self.origin,
         }
     }
 }

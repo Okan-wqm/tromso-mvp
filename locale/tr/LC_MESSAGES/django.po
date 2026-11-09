@@ -1044,8 +1044,24 @@ msgid "%(rule)s at %(time)s"
 msgstr "%(rule)s, saat %(time)s"
 
 #, python-format
+msgid ""
+"%(said)s (assumes sea water’s ion composition; salt-added fresh water may read low CO₂: say the "
+"unit’s water origin)"
+msgstr ""
+"%(said)s (deniz suyunun iyon bileşimini varsayar; tuz eklenmiş tatlı suda CO₂ düşük çıkabilir: "
+"ünitenin su kökenini belirtin)"
+
+#, python-format
 msgid "%(said)s; %(share)d %% seawater constants"
 msgstr "%(said)s; %%%(share)d deniz suyu sabitleri"
+
+#, python-format
+msgid "%(said)s; salt-added fresh water past the Davies range, worked out as sea water"
+msgstr "%(said)s; Davies aralığının ötesinde tuz eklenmiş tatlı su, deniz suyu gibi hesaplandı"
+
+#, python-format
+msgid "%(said)s; salt-added fresh water, its ions taken as NaCl"
+msgstr "%(said)s; tuz eklenmiş tatlı su, iyonları NaCl olarak alındı"
 
 #, python-format
 msgid "%(seconds)d s ago"
@@ -6379,6 +6395,16 @@ msgstr "Güncellik süresi (saniye)"
 msgid "Fresh water"
 msgstr "Tatlı su"
 
+msgid "Fresh water with salt added"
+msgstr "Tuz eklenmiş tatlı su"
+
+msgid ""
+"Fresh water with salt added (NaCl) is worked out without sea water’s ions, its ionic strength as "
+"NaCl’s; not said, a salinity of 1 to 5 ‰ is taken as diluted sea water."
+msgstr ""
+"Tuz (NaCl) eklenmiş tatlı su, deniz suyunun iyonları olmadan, iyonik şiddeti NaCl'ninki olarak "
+"hesaplanır; belirtilmezse 1–5 ‰ tuzluluk seyreltilmiş deniz suyu sayılır."
+
 msgid "Freshwater"
 msgstr "Tatlı su"
 
@@ -9108,6 +9134,9 @@ msgstr "Kaydedilmedi"
 msgid "Not reviewed yet. AI agents will act on reviewed entries only."
 msgstr "Henüz incelenmedi. Yapay zekâ ajanları yalnızca incelenmiş kayıtlara göre hareket edecek."
 
+msgid "Not said"
+msgstr "Belirtilmedi"
+
 msgid "Not saved; unverified"
 msgstr "Kaydedilmedi; doğrulanmadı"
 
@@ -11184,6 +11213,9 @@ msgstr "Deniz sıcaklığı (°C)"
 
 msgid "Sea water"
 msgstr "Deniz suyu"
+
+msgid "Sea water or diluted sea water"
+msgstr "Deniz suyu veya seyreltilmiş deniz suyu"
 
 msgid "Sea-lice count"
 msgstr "Deniz biti sayımı"
@@ -14966,6 +14998,9 @@ msgstr ""
 msgid "Water limits"
 msgstr "Su sınırları"
 
+msgid "Water origin"
+msgstr "Su kökeni"
+
 msgid "Water quality"
 msgstr "Su kalitesi"
 
@@ -15289,6 +15324,15 @@ msgstr "İşin yapıldığı yer: bütün bir saha, bir üretim departmanı, bir
 
 msgid "Where the knowledge comes from: every entry has exactly one source."
 msgstr "Bilginin geldiği yer: her kaydın tam olarak bir kaynağı vardır."
+
+msgid ""
+"Where the salt in its water comes from. Fresh water with salt added (NaCl, for smolt or against "
+"disease) is worked out without sea water’s ions; not said, a salinity of 1 to 5 ‰ is taken as "
+"diluted sea water."
+msgstr ""
+"Sudaki tuzun nereden geldiği. Tuz (NaCl) eklenmiş tatlı su (smolt için veya hastalığa karşı) "
+"deniz suyunun iyonları olmadan hesaplanır; belirtilmezse 1–5 ‰ tuzluluk seyreltilmiş deniz suyu "
+"sayılır."
 
 msgid "Where the value comes from, e.g. “the vet, November 2026”."
 msgstr "Değerin kaynağı, örn. “veteriner, Kasım 2026”."

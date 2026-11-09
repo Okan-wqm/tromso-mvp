@@ -1081,6 +1081,8 @@ msgstr "%(said)s; Davies aralığının ötesinde tuz eklenmiş tatlı su, deniz
 #, python-format
 msgid "%(said)s; salt-added fresh water, its ions taken as NaCl"
 msgstr "%(said)s; tuz eklenmiş tatlı su, iyonları NaCl olarak alındı"
+
+#, python-format
 msgid "%(seconds)d s"
 msgstr "%(seconds)d sn"
 
@@ -6720,6 +6722,7 @@ msgid ""
 msgstr ""
 "Tuz (NaCl) eklenmiş tatlı su, deniz suyunun iyonları olmadan, iyonik şiddeti NaCl'ninki olarak "
 "hesaplanır; belirtilmezse 1–5 ‰ tuzluluk seyreltilmiş deniz suyu sayılır."
+
 msgid "Freshness"
 msgstr "Tazelik"
 
@@ -15609,6 +15612,7 @@ msgstr "Su sınırları"
 
 msgid "Water origin"
 msgstr "Su kökeni"
+
 msgid "Water points with a warning"
 msgstr "Uyarı veren numune noktaları"
 
@@ -17511,8 +17515,6 @@ msgstr "şimdi"
 msgid "now %(value)s, %(source)s"
 msgstr "şu an %(value)s, %(source)s"
 
-msgid "of sea water of this salinity"
-msgstr "bu tuzluluktaki deniz suyununki"
 #, python-format
 msgid "of %(total)s sampling point"
 msgid_plural "of %(total)s sampling points"
@@ -17524,6 +17526,9 @@ msgid "of %(total)s unit"
 msgid_plural "of %(total)s units"
 msgstr[0] "%(total)s birimden"
 msgstr[1] "%(total)s birimden"
+
+msgid "of sea water of this salinity"
+msgstr "bu tuzluluktaki deniz suyununki"
 
 msgid "off"
 msgstr "izinli"

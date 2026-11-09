@@ -1077,6 +1077,8 @@ msgstr "%(said)s; ferskvann tilsatt salt utenfor Davies-området, beregnet som s
 #, python-format
 msgid "%(said)s; salt-added fresh water, its ions taken as NaCl"
 msgstr "%(said)s; ferskvann tilsatt salt, ionene regnet som NaCl"
+
+#, python-format
 msgid "%(seconds)d s"
 msgstr "%(seconds)d s"
 
@@ -6701,6 +6703,7 @@ msgid ""
 msgstr ""
 "Ferskvann tilsatt salt (NaCl) beregnes uten sjøvannets ioner, med ionestyrken til NaCl; ikke "
 "oppgitt regnes en salinitet på 1 til 5 ‰ som fortynnet sjøvann."
+
 msgid "Freshness"
 msgstr "Ferskhet"
 
@@ -15581,6 +15584,7 @@ msgstr "Vanngrenser"
 
 msgid "Water origin"
 msgstr "Vannopprinnelse"
+
 msgid "Water points with a warning"
 msgstr "Prøvepunkter med advarsel"
 
@@ -17486,8 +17490,6 @@ msgstr "nå"
 msgid "now %(value)s, %(source)s"
 msgstr "nå %(value)s, %(source)s"
 
-msgid "of sea water of this salinity"
-msgstr "sjøvannets ved denne saliniteten"
 #, python-format
 msgid "of %(total)s sampling point"
 msgid_plural "of %(total)s sampling points"
@@ -17499,6 +17501,9 @@ msgid "of %(total)s unit"
 msgid_plural "of %(total)s units"
 msgstr[0] "av %(total)s enhet"
 msgstr[1] "av %(total)s enheter"
+
+msgid "of sea water of this salinity"
+msgstr "sjøvannets ved denne saliniteten"
 
 msgid "off"
 msgstr "fri"

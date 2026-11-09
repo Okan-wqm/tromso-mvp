@@ -22,10 +22,12 @@ logger = logging.getLogger(__name__)
 
 # How long a freshness may be, in hours: at least an hour, at most a year. The refusal of nonsense, never a value in force.
 FRESH_HOURS_BOUNDS = (1, 8760)
-# The defaults a missing row is made again with (farm 0037 seeded the same): the owner's, as they stood in the code.
+# The defaults a missing row is made again with (farm 0037 and 0040 seeded the same): the owner's, as they stood in the code.
 SEEDS = {'temperature_c': 24, 'oxygen_mg_l': 24, 'oxygen_saturation_pct': 24, 'ph': 72, 'alkalinity_mg_l': 336,
          'co2_mg_l': 72, 'tan_mg_l': 168, 'nitrite_n_mg_l': 168, 'nitrate_n_mg_l': 336, 'tgp_pct': 168,
-         'salinity_ppt': 168, 'turbidity_ntu': 168, 'nh3_n_mg_l': 168, 'nh4_n_mg_l': 168}
+         'salinity_ppt': 168, 'turbidity_ntu': 168, 'nh3_n_mg_l': 168, 'nh4_n_mg_l': 168,
+         # formula 3's ionic-strength inputs (farm 0040): the conductivity at 25 °C 7 days, the hardness 14
+         'conductivity_25_us_cm': 168, 'hardness_mg_l': 336}
 
 _held = {}
 _lock = threading.Lock()

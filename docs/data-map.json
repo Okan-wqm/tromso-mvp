@@ -450,12 +450,14 @@
             "oxygen_saturation_pct",
             "ph",
             "alkalinity_mg_l",
+            "hardness_mg_l",
             "co2_mg_l",
             "tan_mg_l",
             "nitrite_n_mg_l",
             "nitrate_n_mg_l",
             "tgp_pct",
             "salinity_ppt",
+            "conductivity_25_us_cm",
             "turbidity_ntu",
             "nh3_n_mg_l"
           ],
@@ -18746,6 +18748,22 @@
           "why": ""
         },
         {
+          "name": "water_origin",
+          "field": "water_origin",
+          "type": "varchar(12)",
+          "null": false,
+          "choices": [
+            "seawater",
+            "salt_added"
+          ],
+          "link": null,
+          "on_form": [
+            "TankForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
           "name": "regulatory_unit_id",
           "field": "regulatory_unit_id",
           "type": "varchar(50)",
@@ -19175,6 +19193,12 @@
           "conditional": false
         },
         {
+          "name": "chk_tanks_water_origin",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
           "name": "chk_tanks_shape_by_kind",
           "kind": "check",
           "fields": [],
@@ -19445,6 +19469,7 @@
             "status": "General",
             "status_reason": "General",
             "water_type": "General",
+            "water_origin": "General",
             "regulatory_unit_id": "General",
             "production_department": "Location",
             "system": "Location",
@@ -19510,6 +19535,7 @@
         "farm/tests/test_stock.py",
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
+        "farm/tests/test_water_origin.py",
         "farm/tests/test_water_oxygen_basis.py",
         "farm/tests/test_water_points.py",
         "farm/tests/test_water_resolver.py",
@@ -19527,6 +19553,7 @@
         "monitoring/tests/test_token.py",
         "sensors/tests/test_pages.py",
         "sensors/tests/test_portable.py",
+        "sensors/tests/test_replay.py",
         "alarms/tests/test_cross_review.py"
       ]
     },
@@ -20347,12 +20374,14 @@
             "oxygen_saturation_pct",
             "ph",
             "alkalinity_mg_l",
+            "hardness_mg_l",
             "co2_mg_l",
             "tan_mg_l",
             "nitrite_n_mg_l",
             "nitrate_n_mg_l",
             "tgp_pct",
             "salinity_ppt",
+            "conductivity_25_us_cm",
             "turbidity_ntu",
             "nh3_n_mg_l",
             "nh4_n_mg_l"
@@ -20466,6 +20495,7 @@
       },
       "tests": [
         "core/tests_workspaces.py",
+        "farm/tests/test_water_ionic_inputs.py",
         "alarms/tests/test_freshness.py"
       ]
     },
@@ -20614,12 +20644,14 @@
             "oxygen_saturation_pct",
             "ph",
             "alkalinity_mg_l",
+            "hardness_mg_l",
             "co2_mg_l",
             "tan_mg_l",
             "nitrite_n_mg_l",
             "nitrate_n_mg_l",
             "tgp_pct",
             "salinity_ppt",
+            "conductivity_25_us_cm",
             "turbidity_ntu",
             "nh3_n_mg_l"
           ],
@@ -20651,7 +20683,7 @@
         {
           "name": "critical_low",
           "field": "critical_low",
-          "type": "numeric(8, 4)",
+          "type": "numeric(10, 4)",
           "null": true,
           "choices": [],
           "link": null,
@@ -20664,7 +20696,7 @@
         {
           "name": "warning_low",
           "field": "warning_low",
-          "type": "numeric(8, 4)",
+          "type": "numeric(10, 4)",
           "null": true,
           "choices": [],
           "link": null,
@@ -20677,7 +20709,7 @@
         {
           "name": "warning_high",
           "field": "warning_high",
-          "type": "numeric(8, 4)",
+          "type": "numeric(10, 4)",
           "null": true,
           "choices": [],
           "link": null,
@@ -20690,7 +20722,7 @@
         {
           "name": "critical_high",
           "field": "critical_high",
-          "type": "numeric(8, 4)",
+          "type": "numeric(10, 4)",
           "null": true,
           "choices": [],
           "link": null,
@@ -21102,6 +21134,17 @@
           "why": "one field for each water parameter (farm.forms.water.MEASURED)"
         },
         {
+          "name": "hardness_mg_l",
+          "field": "hardness_mg_l",
+          "type": "numeric(5, 0)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "dynamic",
+          "why": "one field for each water parameter (farm.forms.water.MEASURED)"
+        },
+        {
           "name": "co2_mg_l",
           "field": "co2_mg_l",
           "type": "numeric(4, 1)",
@@ -21160,6 +21203,17 @@
           "name": "salinity_ppt",
           "field": "salinity_ppt",
           "type": "numeric(3, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "dynamic",
+          "why": "one field for each water parameter (farm.forms.water.MEASURED)"
+        },
+        {
+          "name": "conductivity_25_us_cm",
+          "field": "conductivity_25_us_cm",
+          "type": "numeric(6, 0)",
           "null": true,
           "choices": [],
           "link": null,
@@ -21356,6 +21410,12 @@
           "conditional": false
         },
         {
+          "name": "chk_water_measurements_hardness_mg_l",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
           "name": "chk_water_measurements_co2_mg_l",
           "kind": "check",
           "fields": [],
@@ -21387,6 +21447,12 @@
         },
         {
           "name": "chk_water_measurements_salinity_ppt",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_water_measurements_conductivity_25_us_cm",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -21544,6 +21610,7 @@
         "farm/tests/test_migration_points.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_water.py",
+        "farm/tests/test_water_ionic_inputs.py",
         "farm/tests/test_water_oxygen_basis.py",
         "farm/tests/test_water_points.py",
         "farm/tests/test_water_resolver.py",
@@ -34981,12 +35048,14 @@
             "oxygen_saturation_pct",
             "ph",
             "alkalinity_mg_l",
+            "hardness_mg_l",
             "co2_mg_l",
             "tan_mg_l",
             "nitrite_n_mg_l",
             "nitrate_n_mg_l",
             "tgp_pct",
             "salinity_ppt",
+            "conductivity_25_us_cm",
             "turbidity_ntu",
             "conductivity_us_cm",
             "orp_mv",
@@ -36091,12 +36160,14 @@
             "oxygen_saturation_pct",
             "ph",
             "alkalinity_mg_l",
+            "hardness_mg_l",
             "co2_mg_l",
             "tan_mg_l",
             "nitrite_n_mg_l",
             "nitrate_n_mg_l",
             "tgp_pct",
             "salinity_ppt",
+            "conductivity_25_us_cm",
             "turbidity_ntu",
             "conductivity_us_cm",
             "orp_mv",

@@ -30,6 +30,14 @@ on Company › Alarms, logged, read once per pass.
   the size-mix acknowledgement as a stocking does (`record_opening_balance` goes through the size check).
 - The data map and the catalogs were rebuilt (both sides kept).
 
+## Merge of main 6187240 (Tailwind, the production overview)
+- No migration of main's; the catalogs keep both sides. The water freshness rows are in the data map.
+- Two of main's checks met the opening balances: the withdrawal gate's coverage now says why `opening_balances` is no
+  withdrawal input (written once with its stocking operation inside the guard, never changed), and `fix_seed_size_mix`'s
+  dry run on a database not migrated yet reads the stock without them (`farm.stock.read.OPENING_BALANCES`: without farm
+  0036 there can be none). A channel's fresh heartbeats left empty stay as they are, so a client that does not send the
+  new field changes nothing.
+
 ## The cross review (8b1f576) and its fixes
 
 The cross review checked the branch with its own probes, each asserting the safe behaviour. Every probe is now a test.
@@ -152,6 +160,16 @@ The cross review checked the branch with its own probes, each asserting the safe
 - sensors 0008, 0009 (acknowledgements moved), 0010_channel_fresh_heartbeats.
 - alarms 0001-0005 (round 2), 0006_severity_rules_kept, 0007_subjects_by_unit (data, reversible), 0008_severity_bounds,
   0009_clearance_causes (data), 0010_device_clock (seed).
+
+## Test results (WORKERS=1, DB_TMPFS=1g, targeted; the full suite is not run here)
+- alarms, sensors, core.tests_platform, core.tests_routes, core.tests_layout_pages: 412 tests; the three channel-page
+  failures it found (the new field) were fixed and `sensors.tests.test_pages` passes.
+- farm stock, opening balance, size mix, withdrawal, harvest inside withdrawal, handling, water; monitoring;
+  reports.tests.test_opening_balance; hr.tests.test_on_shift: 662 tests; the two failures it found (main's checks above)
+  were fixed and pass.
+- After the last fixes: alarms with the opening balance tests 138 OK; farm stock, monitoring budget, withdrawal 121 OK.
+- `makemigrations --check`, `data_map --check`, `update_catalogs` (no change), `compile_catalogs`, `layout_pages --check`,
+  `card_grid_css --check`, `check --deploy` (CHECKS=1): pass. `npm run build`, `npm run check:css`, `npm test` (73): pass.
 
 ## Weak points (known, not fixed here)
 - F11: the outbox is read whole every pass, and a connected transport would send the whole backlog, including alarms

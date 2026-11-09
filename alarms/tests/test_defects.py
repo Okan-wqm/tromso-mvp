@@ -4,6 +4,7 @@ from io import StringIO
 from unittest import mock
 
 from django.core.management import call_command
+from django.db import IntegrityError, transaction
 
 from farm.models import SamplingPoint
 from farm.tests.helpers import point_of
@@ -12,8 +13,9 @@ from sensors import alarms as sensor_alarms, bindings
 from sensors.models import AlarmEvent, AlarmRule
 from sensors.tests import make_channel, make_connection, make_device, make_format
 
-from .. import engine, read, sources
-from ..models import Alarm, AlarmClearance, Escalation, Notification, ParameterDeadband, SeverityPolicy
+from .. import engine, read, services, sources
+from ..models import (Alarm, AlarmClearance, AlarmSubjectState, Escalation, Notification, ParameterDeadband,
+                      SeverityPolicy)
 from . import AlarmsCase
 
 
@@ -188,3 +190,28 @@ class FailureIsolationTests(AlarmsCase):
                 call_command('run_alarms', loop=1, stdout=out, stderr=err)
         self.assertEqual(passes.call_count, 2)
         self.assertIn('the pass failed', err.getvalue())
+
+
+class OneOpenAlarmTests(AlarmsCase):
+    """Defect 6: one open alarm per subject is the database's to hold, not only the code's: an alarm is the open alarm of
+    one subject at most (a unique column), and a raise is a compare-and-set on the subject's row, so a second raise for a
+    subject whose alarm is open (a second worker, a bug) writes nothing."""
+
+    def setUp(self):
+        super().setUp()
+        self.sample(5.5)
+        self.loop()
+        self.alarm = self.critical()
+        self.key = AlarmSubjectState.objects.get(open_alarm=self.alarm).key
+
+    def test_an_alarm_is_open_for_one_subject_at_most(self):
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            AlarmSubjectState.objects.create(key='water:another', open_alarm=self.alarm)
+
+    def test_a_second_raise_for_an_open_subject_writes_nothing(self):
+        with self.assertRaises(services.AlreadyOpen):
+            services.raise_for(self.key, lambda: services.open_alarm(
+                at=self.now, severity='critical', summary='twice', source='water_limit', point=self.mid1,
+                parameter='ph', site=self.bergen, production_department=self.hall))
+        self.assertEqual(Alarm.objects.filter(severity='critical', source='water_limit').count(), 1)
+        self.assertEqual(AlarmSubjectState.objects.get(key=self.key).open_alarm, self.alarm)

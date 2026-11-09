@@ -50,11 +50,13 @@ class SetupTests(DemoCase):
         self.assertEqual(devices.count(), 4)                                     # three tanks and the system
         for device in devices:
             count = device.channels.count()
-            self.assertIn(count, (7, 8, len(parameters.COLUMNS)), device.code)
+            half = len(demo.REST) // 2
+            self.assertIn(count, (len(demo.BASE) + half, len(demo.BASE) + len(demo.REST) - half,
+                                  len(demo.BASE) + len(demo.REST)), device.code)
             self.assertEqual(device.credential.username, demo.USERNAME)
             self.assertEqual(device.topic, f'{demo.TOPIC_ROOT}/{device.code.lower()}')
         codes = set(Channel.objects.filter(device__in=devices).values_list('quantity', flat=True))
-        self.assertEqual(codes, set(parameters.COLUMNS))
+        self.assertEqual(codes, set(parameters.COLUMNS) - set(demo.IONIC))         # the simulator sends no ionic inputs
         for unit, middle in zip(self.units, self.middles):
             bound = Binding.objects.filter(point=middle)
             self.assertTrue(bound.exists(), unit.code)

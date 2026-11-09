@@ -139,7 +139,7 @@ class TrailTests(HistoryCase):
             expected_ph = 7.0 + hour * 0.1 + (0.010 + 0.040) / 2
             self.assertEqual(point.at, start + timedelta(hours=hour))
             self.assertAlmostEqual(point.ph, expected_ph, places=9)
-            eq = chemistry.equilibria(10.0, 0.0)
+            eq = chemistry.water_equilibria(10.0, 0.0, 100.0)                    # formula 3: the alkalinity's ions
             self.assertAlmostEqual(point.dic, eq.dic(100 / chemistry.MG_CACO3_PER_MEQ, expected_ph), places=9)
         self.assertEqual(found.missing, [])
 

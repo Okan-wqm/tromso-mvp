@@ -109,11 +109,14 @@ class ConstantTests(SimpleTestCase):
 class DerivedTests(SimpleTestCase):
     def test_free_co2_follows_standard_methods(self):
         # Standard Methods 4500-CO₂ D (APHA): in fresh water at 25 °C, free CO₂ (mg/L) = 2.0 B 10^(6.0 − pH), with
-        # B the bicarbonate alkalinity in mg/L as CaCO₃ (all of it below pH 8.3); the 2.0 is rounded: within 3 %.
+        # B the bicarbonate alkalinity in mg/L as CaCO₃ (all of it below pH 8.3); the 2.0 is rounded: within 3 %. The
+        # equation takes every activity as 1 (no ionic strength): formula 1's convention. Formula 3 gives the water its
+        # own ionic strength (here the alkalinity's, I 0.002) and less CO₂ by the activities (test_formula_v3).
         for ph in (6.5, 7.0, 7.5, 8.0):
             with self.subTest(ph=ph):
-                result = analyse(Water(25, 0, ph, 100))
+                result = analyse(Water(25, 0, ph, 100, formula=1))
                 self.assertAlmostEqual(result.co2_mg_l / (2.0 * 100 * 10 ** (6.0 - ph)), 1, delta=0.03)
+                self.assertLess(analyse(Water(25, 0, ph, 100)).co2_mg_l, result.co2_mg_l)
 
     def test_co2_rises_as_the_ph_falls_at_a_fixed_alkalinity(self):
         for temp_c in (0, 12, 30):
@@ -192,7 +195,7 @@ class SourceReferenceTests(SimpleTestCase):
     @staticmethod
     def run_row(row):
         water = Water(row['temperature_c'], row['salinity_ppt'], row['ph'], row['alkalinity_mg_l'], row['tan_mg_l'],
-                      row['total_sulfide_ug_l'])
+                      row['total_sulfide_ug_l'], formula=1)       # the source's engine is formula 1's convention
         limits = Limits(row['nh3_n_limit'], row['co2_limit'], row['h2s_limit'], row['alkalinity_low'],
                         row['alkalinity_high'])
         return analyse(water, limits, Target(row['target_ph'], row['target_alkalinity_mg_l']))
@@ -255,7 +258,7 @@ class SourceReferenceTests(SimpleTestCase):
     def test_the_chart_draws_what_the_source_draws(self):
         for case in REFERENCE['geometry']:
             water = Water(case['temperature_c'], case['salinity_ppt'], case['ph'], case['alkalinity_mg_l'],
-                          case['tan_mg_l'], case['total_sulfide_ug_l'], case['calcium_mg_l'])
+                          case['tan_mg_l'], case['total_sulfide_ug_l'], case['calcium_mg_l'], formula=1)
             limits = Limits(case['nh3_n_limit'], case['co2_limit'], case['h2s_limit'], case['alkalinity_low'],
                             case['alkalinity_high'])
             result = analyse(water, limits, Target(case['target_ph'], case['target_alkalinity_mg_l']))
@@ -558,7 +561,7 @@ class GeometryTests(SimpleTestCase):
         self.assertIn({'key': 'nh3', 'name': 'NH₃ toxic (at every pH of the chart)'}, deffeyes.draw(result).legend)
         # Inside the range the border is a number with its margin.
         html = table(default_analysis().nh3)
-        self.assertIn('8.040', html)
+        self.assertIn('8.045', html)                       # formula 3 (8.040 by formula 1)
         self.assertIn('+1.04', html)
 
     def assert_shaded_where_passed(self, result, key, toxic):
@@ -582,7 +585,8 @@ class GeometryTests(SimpleTestCase):
     def test_a_border_off_the_charts_range_is_shaded_where_it_meets_a_large_box(self):
         # The reviewer's case, which the form accepts: in a 35 × 22 box the top-left corner reaches pH 13.3,
         # past an NH₃ border of 13.08; the table says it in words, the chart shades the sliver.
-        result = analyse(Water(0, 0, 7.0, 1000, 0.100, 2), Limits(0.0999, 15, 2, 50, 1000))
+        # (formula 1, as the reviewer drew it: formula 3's ionic strength moves the border to 13.14 and the box to 30)
+        result = analyse(Water(0, 0, 7.0, 1000, 0.100, 2, formula=1), Limits(0.0999, 15, 2, 50, 1000))
         self.assertTrue(result.nh3.off_chart)
         self.assertAlmostEqual(result.nh3.ph, 13.084, places=3)
         self.assertEqual((deffeyes.box_of(result).dic, deffeyes.box_of(result).alkalinity), (35, 22))
@@ -657,8 +661,8 @@ class CalculatorPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         html = response.content.decode()
         for text in ('Water Quality Management Chart', '<svg class="deffeyes-chart"', 'Carbon dioxide (CO₂)',
-                     'NH₃ toxic (pH &gt; 8.04)', 'CO₂ toxic (&gt; 15 mg/L)', 'H₂S toxic (pH &lt; 5.91)',
-                     '1.982 mmol/L', '16.94 mg/L', 'wq-critical'):
+                     'NH₃ toxic (pH &gt; 8.04)', 'CO₂ toxic (&gt; 15 mg/L)', 'H₂S toxic (pH &lt; 5.93)',
+                     '1.987 mmol/L', '17.12 mg/L', 'wq-critical', 'data-formula="3"'):     # formula 3
             self.assertIn(text, html)
         self.assertContains(response, f'href="{self.url}" aria-current="page"')
         self.assertContains(response, f'href="{reverse("farm:water")}" title="Water chemistry" aria-current="page"')
@@ -706,8 +710,8 @@ class CalculatorPageTests(TestCase):
 
     def test_it_speaks_each_language(self):
         for language, words in {
-            'tr': ('Su Kalitesi Yönetim Çizelgesi', 'Hesaplayıcı', '1,982 mmol/L', 'pH 7,0'),
-            'nb': ('Diagram for styring av vannkvalitet', 'Kalkulator', '1,982 mmol/L', 'pH 7,0'),
+            'tr': ('Su Kalitesi Yönetim Çizelgesi', 'Hesaplayıcı', '1,987 mmol/L', 'pH 7,0'),
+            'nb': ('Diagram for styring av vannkvalitet', 'Kalkulator', '1,987 mmol/L', 'pH 7,0'),
         }.items():
             Profile.objects.update_or_create(user=self.user, defaults={'language': language})
             response = self.client.get(self.url)

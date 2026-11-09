@@ -1,12 +1,13 @@
-"""I2, fresh water's ionic strength (chemcore/findings/B1.md, I2; owner amendment B5): golden v3 beside v1, not used by
-the application until the owner decides (chemcore/findings/I2-comparison.md).
+"""Formula 3 (golden v3), the application's since the switch (owner, 2026-11-09): I1 and I2 (chemcore/findings/B1.md;
+chemcore/findings/I2-comparison.md), beside formula 1 (golden v1).
 
-Below a salinity of 5 the v3 water takes its ionic strength from what is measured: the conductivity (I = 1.6e-5 κ,
-κ in µS/cm, Russell 1976), else the hardness with the alkalinity (the least ionic strength their ions give), else the
-salinity (DOE 1994, as sea water), else the alkalinity alone (as sodium bicarbonate, the least it can be). The
-constants there are the fresh-water (thermodynamic) ones, each made a concentration constant with Davies activity
-coefficients (Davies 1962, log γ = −A z² (√I / (1 + √I) − 0.3 I)): the NBS pH becomes the free [H⁺] through γH, and
-K1, K2, Kw, KB, KH2S follow the ions they hold. From a salinity of 5 the seawater path of v1 is kept bit for bit."""
+Up to a salinity of 1 the water takes its ionic strength from what is measured: an estimate, the conductivity at 25 °C
+(I = 1.6e-5 κ, κ in µS/cm, Russell 1976) else the salinity (DOE 1994, as sea water), never below the measured ions'
+lower bound, the hardness with the alkalinity else the alkalinity alone (as sodium bicarbonate); nothing measured, 0.
+The constants there are the fresh-water (thermodynamic) ones, each made a concentration constant with Davies activity
+coefficients (Davies 1962, log γ = −A z² (√I / (1 + √I) − 0.3 I), A of the temperature): the NBS pH becomes the free
+[H⁺] through γH, and K1, K2, Kw, KB, KH2S follow the ions they hold. From 5 the seawater constants of v1 (the NBS
+conversion with the temperature's A); between 1 and 5 each constant blended."""
 import gzip
 import hashlib
 import importlib.util
@@ -54,13 +55,13 @@ def recorder():
 class IonicStrengthTests(SimpleTestCase):
     def test_from_the_conductivity_first(self):
         self.assertEqual((native.FRESH_UP_TO, native.SEA_FROM), (1.0, 5.0))
-        self.assertEqual(native.fresh_ionic_strength(0.0, 80.0, conductivity_us_cm=1000.0, hardness_mg_l=300.0),
+        self.assertEqual(native.fresh_ionic_strength(0.0, 80.0, conductivity_25_us_cm=1000.0, hardness_mg_l=300.0),
                          (1.6e-5 * 1000.0, 'conductivity'))
 
     def test_never_below_the_measured_ions(self):
         """An estimate below the measured ions' lower bound is taken as the bound: 500 µS/cm (I 0.008) beside 300 mg/L of
         hardness and 80 of alkalinity (at least 0.0089); a salinity of 0.01 ‰ (0.0002) beside 80 mg/L (0.0016)."""
-        found, source = native.fresh_ionic_strength(0.0, 80.0, conductivity_us_cm=500.0, hardness_mg_l=300.0)
+        found, source = native.fresh_ionic_strength(0.0, 80.0, conductivity_25_us_cm=500.0, hardness_mg_l=300.0)
         self.assertEqual(source, 'hardness')
         self.assertGreater(found, 1.6e-5 * 500.0)
         self.assertEqual(native.fresh_ionic_strength(0.01, 80.0)[1], 'alkalinity')
@@ -86,16 +87,16 @@ class IonicStrengthTests(SimpleTestCase):
     def test_sea_water_keeps_its_own(self):
         for salinity in (5.0, 10.0, 35.0):
             with self.subTest(salinity=salinity):
-                self.assertEqual(native.fresh_ionic_strength(salinity, 80.0, conductivity_us_cm=500.0),
+                self.assertEqual(native.fresh_ionic_strength(salinity, 80.0, conductivity_25_us_cm=500.0),
                                  (native.ionic_strength(salinity), 'seawater'))
 
     def test_above_davies_range_it_is_refused(self):
         """Cross review F3: Davies holds to an ionic strength of about 0.5; beyond it (a sea water's conductivity with no
         salinity, mS/cm typed as µS/cm) the fresh path refuses, never a positive log γ."""
         self.assertEqual(native.DAVIES_MAX, 0.5)
-        self.assertEqual(native.fresh_ionic_strength(0.0, 80.0, conductivity_us_cm=31250.0), (0.5, 'conductivity'))
-        for call in (lambda: native.fresh_ionic_strength(0.0, 80.0, conductivity_us_cm=40000.0),
-                     lambda: native.equilibria_v3(12.0, 0.0, 80.0, conductivity_us_cm=1e6),
+        self.assertEqual(native.fresh_ionic_strength(0.0, 80.0, conductivity_25_us_cm=31250.0), (0.5, 'conductivity'))
+        for call in (lambda: native.fresh_ionic_strength(0.0, 80.0, conductivity_25_us_cm=40000.0),
+                     lambda: native.equilibria_v3(12.0, 0.0, 80.0, conductivity_25_us_cm=1e6),
                      lambda: native.davies_log_gamma(12.0, 0.6, 1)):
             with self.assertRaisesRegex(ValueError, 'ionic strength above 0.5'):
                 call()
@@ -142,7 +143,7 @@ class BoundaryTests(SimpleTestCase):
 
     def test_no_jump_at_either_end_of_the_band(self):
         for temp_c in (0.0, 2.0, 5.0, 8.0, 12.0, 25.0):
-            for ions in ({}, {'conductivity_us_cm': 3700.0}, {'hardness_mg_l': 300.0}):
+            for ions in ({}, {'conductivity_25_us_cm': 3700.0}, {'hardness_mg_l': 300.0}):
                 for edge in (native.FRESH_UP_TO, native.SEA_FROM):
                     below = native.equilibria_v3(temp_c, edge - 1e-9, 120.0, **ions).values()[2:9]
                     above = native.equilibria_v3(temp_c, edge + 1e-9, 120.0, **ions).values()[2:9]
@@ -157,7 +158,7 @@ class EquilibriaV3Tests(SimpleTestCase):
         for temp_c in (2.0, 12.0, 25.0):
             for salinity in (5.0, 10.0, 35.0):
                 with self.subTest(temp_c=temp_c, salinity=salinity):
-                    found = native.equilibria_v3(temp_c, salinity, 100.0, conductivity_us_cm=500.0)
+                    found = native.equilibria_v3(temp_c, salinity, 100.0, conductivity_25_us_cm=500.0)
                     v1 = native.equilibria(temp_c, salinity)
                     self.assertEqual(found.values()[3:], v1.values()[3:])
                     strength = native.ionic_strength(salinity)
@@ -166,7 +167,7 @@ class EquilibriaV3Tests(SimpleTestCase):
                     self.assertAlmostEqual(found.ph_offset, v1.ph_offset + shift, delta=1e-12)
 
     def test_fresh_water_constants_are_the_thermodynamic_ones_with_davies_activities(self):
-        for temp_c, salinity, alkalinity, ions in ((12.0, 0.0, 80.0, {'conductivity_us_cm': 300.0}),
+        for temp_c, salinity, alkalinity, ions in ((12.0, 0.0, 80.0, {'conductivity_25_us_cm': 300.0}),
                                                    (8.0, 0.0, 200.0, {'hardness_mg_l': 300.0}),
                                                    (18.0, 0.8, 120.0, {}), (25.0, 0.0, 20.0, {})):
             with self.subTest(temp_c=temp_c, salinity=salinity, ions=ions):
@@ -189,7 +190,7 @@ class EquilibriaV3Tests(SimpleTestCase):
     def test_with_no_ions_it_is_v1(self):
         # Nothing measured (S 0, no alkalinity): an ionic strength of 0, v1's ideal fresh water exactly; with a tiny
         # conductivity and no alkalinity, log γ goes as √I (at 1e-20 µS/cm, I = 1.6e-25, log γ about −2e-13).
-        for found in (native.equilibria_v3(12.0, 0.0), native.equilibria_v3(12.0, 0.0, conductivity_us_cm=1e-20)):
+        for found in (native.equilibria_v3(12.0, 0.0), native.equilibria_v3(12.0, 0.0, conductivity_25_us_cm=1e-20)):
             for name, value, ideal in zip(FIELDS, found.values()[2:], native.equilibria(12.0, 0.0).values()[2:]):
                 with self.subTest(name=name):
                     self.assertTrue(math.isclose(value, ideal, rel_tol=1e-9, abs_tol=1e-12), (value, ideal))
@@ -198,7 +199,7 @@ class EquilibriaV3Tests(SimpleTestCase):
         # CO₂ = aH [HCO₃⁻] γHCO₃ / K1°: an ion-rich water holds less CO₂ at the pH its meter reads; NH₃'s share is
         # K / (K + [H⁺]) with [H⁺] = aH / γH, larger.
         for conductivity in (100.0, 500.0, 2000.0):
-            v1, v3 = native.equilibria(12.0, 0.0), native.equilibria_v3(12.0, 0.0, 80.0, conductivity_us_cm=conductivity)
+            v1, v3 = native.equilibria(12.0, 0.0), native.equilibria_v3(12.0, 0.0, 80.0, conductivity_25_us_cm=conductivity)
             meq = 80.0 / chemistry.MG_CACO3_PER_MEQ
             with self.subTest(conductivity=conductivity):
                 self.assertLess(v3.co2(v3.dic(meq, 7.0), 7.0), v1.co2(v1.dic(meq, 7.0), 7.0))
@@ -231,6 +232,17 @@ class GoldenV3Tests(SimpleTestCase):
                             if row['salinity'] >= 5))
         self.assertTrue(any(row['v3'] != row['v1'] for row in rows if row['salinity'] < 5))
 
-    def test_the_application_still_reads_v1(self):
-        self.assertIs(chemistry.equilibria, native.equilibria)
+    def test_the_application_reads_formula_3_and_formula_1_is_still_golden_v1s(self):
+        self.assertIs(chemistry.water_equilibria, native.water_equilibria)
+        self.assertEqual(chemistry.water_equilibria(12.0, 0.0, 80.0), native.equilibria_v3(12.0, 0.0, 80.0))
+        self.assertEqual(chemistry.water_equilibria(12.0, 0.0, 80.0, formula=1), native.equilibria(12.0, 0.0))
         self.assertEqual(chemistry.equilibria(12.0, 0.0).ph_offset, 0.0)
+
+    def test_the_analyses_of_formula_3_differ_from_formula_1_below_5_permil_only_by_the_waters_ions(self):
+        rows = self.records['analyses']
+        self.assertEqual(len(rows), len(self.records['waters']))
+        for row in rows:
+            if row['salinity'] == 0 and not row['ions']:
+                # alkalinity alone: formula 3 never shows more CO2 or NH3 than formula 1's ideal water
+                self.assertLessEqual(row['v3']['co2_mg_l'], row['v1']['co2_mg_l'])
+                self.assertLessEqual(row['v3']['nh3_n_mg_l'], row['v1']['nh3_n_mg_l'])

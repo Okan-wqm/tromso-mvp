@@ -25,7 +25,7 @@ class PlotsParityTests(SimpleTestCase):
             records = [json.loads(line) for line in stream]
         found, drawn = [], 0
         for record in records:
-            ours = native.plots(record['water'], record['limits'])
+            ours = native.plots({**record['water'], 'formula': 1}, record['limits'])             # golden v1: formula 1
             self.assertEqual(set(ours), {'nh3', 'h2s', 'carbonate', 'saturation'})
             found += parity.compare(record['plots'], json.loads(json.dumps(ours)))
             drawn += sum(plot is not None for plot in ours.values())

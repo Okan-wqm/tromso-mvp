@@ -108,7 +108,7 @@ class B1Tests(SimpleTestCase):
         for quantity in ('chart.nh3_boundary', 'chart.safe_zone_nh3_side', 'analysis.nh3_share_at_border_pct',
                          'chart.h2s_boundary', 'chart.h2s_zone_drawn'):
             for case, _ours, _theirs, _extra in self.disagreements(quantity):
-                analysis = deffeyes.analyse(deffeyes.Water(**case['water']), deffeyes.Limits(**case['limits']))
+                analysis = deffeyes.analyse(deffeyes.Water(**case['water'], formula=1), deffeyes.Limits(**case['limits']))
                 with self.subTest(quantity=quantity):
                     if 'nh3' in quantity:
                         self.assertGreater(analysis.nh3.ph, 12.0)
@@ -143,7 +143,7 @@ class B1Tests(SimpleTestCase):
                 self.assertLessEqual(water['tan_mg_l'], limits['nh3_n_mg_l'], case)
                 continue
             self.assertTrue(theirs)
-            analysis = deffeyes.analyse(deffeyes.Water(**{**water, 'total_sulfide_ug_l': None}),
+            analysis = deffeyes.analyse(deffeyes.Water(**{**water, 'total_sulfide_ug_l': None}, formula=1),
                                         deffeyes.Limits(**{**limits, 'h2s_ug_l': None}))
             without_h2s = bool(deffeyes.safe_zone(analysis, deffeyes.box_of(analysis)))
             top_left, top_right, bottom_right, bottom_left = corners

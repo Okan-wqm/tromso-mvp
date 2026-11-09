@@ -44,7 +44,7 @@ def shape_of(found):
 
 def chart(record, layers=deffeyes.ALL_LAYERS):
     target = record['target']
-    return native.geometry(record['water'], record['limits'],
+    return native.geometry({**record['water'], 'formula': 1}, record['limits'],             # golden v1: formula 1
                            None if target is None else (target['ph'], target['alkalinity_mg_l']), record['pressure'],
                            sorted(layers))
 

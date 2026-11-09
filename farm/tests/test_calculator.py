@@ -165,7 +165,7 @@ class ReagentTests(SimpleTestCase):
         def co2(point):
             return eq.co2(point[0], eq.ph_at(*point)) * chemistry.MG_CO2_PER_MMOL
 
-        below_air = (12, 1, air)            # the water's temperature and salinity, the air's CO₂: the core judges
+        below_air = (eq, air)               # the water's equilibria, the air's CO₂: the core judges
 
         # Stripping and acid to DIC 1.55, alkalinity 1.40: stripping first ends at 0.34 mg/L, acid first and
         # stripping last at the target's 6.7: it can be done.
@@ -331,7 +331,7 @@ class SimulatorTests(SimpleTestCase):
         self.assertEqual(result.change['ph'], acid.step.ph - water.step.ph)
 
     def test_a_dose_that_only_moves_the_ph_is_judged(self):
-        # 120 g NaOH in 1 m³ reaches pH 11.25 with no TAN, no sulfide and CO₂ well inside its limit: nothing but
+        # 120 g NaOH in 1 m³ reaches pH 11.30 (formula 3; 11.25 by formula 1) with no TAN, no sulfide and CO₂ well inside its limit: nothing but
         # its pH says so (the verifier's case; the source marked a pH outside 6.5 to 8.5 red, OnDemandPanel.tsx).
         bounds = calculation.PhBounds(6.5, 7.0, 8.0, 8.5)
         for grams, expected in ((12, Status.OK), (15, Status.WARNING), (17, Status.CRITICAL), (120, Status.CRITICAL)):
@@ -341,7 +341,7 @@ class SimulatorTests(SimpleTestCase):
             judged = result.steps[-1]
             with self.subTest(grams=grams):
                 self.assertEqual(judged.ph_status, expected)
-        self.assertAlmostEqual(judged.step.ph, 11.25, delta=0.01)
+        self.assertAlmostEqual(judged.step.ph, 11.30, delta=0.01)
         self.assertEqual(judged.co2.status, Status.OK)
         self.assertEqual((judged.nh3.status, judged.h2s.status), (Status.NOT_MEASURED, Status.NOT_MEASURED))
         # Without bounds a step is not judged, never taken for ok.
@@ -606,15 +606,15 @@ class CalculatorPageTests(TestCase):
 
     def test_the_simulator_marks_a_ph_no_fish_lives_in(self):
         html = self.client.get(self.results_url, self.query(dose_naoh='120')).content.decode()
-        self.assertRegex(html, r'<td class="num wq-value wq-critical">11\.25<span class="sr-only"> \(Critical\)')
+        self.assertRegex(html, r'<td class="num wq-value wq-critical">11\.30<span class="sr-only"> \(Critical\)')
         self.assertRegex(html, r'<td class="num wq-value wq-ok">7\.00<span')                  # the water itself
         warning = self.client.get(self.results_url, self.query(dose_naoh='15')).content.decode()
-        self.assertRegex(warning, r'<td class="num wq-value wq-warning">8\.17<span')
+        self.assertRegex(warning, r'<td class="num wq-value wq-warning">8\.19<span')        # formula 3 (8.17 by 1)
         # The bounds are the form's: with no bound given the step is not judged.
         cleared = self.query(dose_naoh='120', ph_critical_low='', ph_warning_low='', ph_warning_high='',
                              ph_critical_high='')
         self.assertRegex(self.client.get(self.results_url, cleared).content.decode(),
-                         r'<td class="num wq-value wq-no_limit">11\.25<span')
+                         r'<td class="num wq-value wq-no_limit">11\.30<span')
 
     def test_the_ph_bounds_go_up(self):
         response = self.client.get(self.results_url, self.query(ph_critical_low='7', ph_warning_low='6'))
@@ -664,8 +664,8 @@ class CalculatorPageTests(TestCase):
 
     def test_it_speaks_each_language(self):
         for language, words in {
-            'tr': ('%100', '1,982 mmol/L', 'pH 7,0'),
-            'nb': ('100 %', '1,982 mmol/L', 'pH 7,0'),
+            'tr': ('%100', '1,987 mmol/L', 'pH 7,0'),
+            'nb': ('100 %', '1,987 mmol/L', 'pH 7,0'),
         }.items():
             Profile.objects.update_or_create(user=self.user, defaults={'language': language})
             for url in (self.url, self.results_url, self.report_url):

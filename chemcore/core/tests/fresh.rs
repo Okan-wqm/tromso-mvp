@@ -18,11 +18,11 @@ fn the_sources_in_order() {
     // The estimate (the conductivity, else a salinity above 0) is taken unless the measured ions' lower bound (the
     // hardness with the alkalinity, else the alkalinity alone) is above it; with nothing measured, 0.
     let both = Ions {
-        conductivity_us_cm: Some(500.0),
+        conductivity_25_us_cm: Some(500.0),
         hardness_mg_l: Some(300.0),
     };
     let hardness = Ions {
-        conductivity_us_cm: None,
+        conductivity_25_us_cm: None,
         hardness_mg_l: Some(300.0),
     };
     let source = |salinity, alkalinity, ions| f::ionic_strength(salinity, alkalinity, ions).map(|(_i, source)| source);
@@ -32,7 +32,7 @@ fn the_sources_in_order() {
             0.0,
             Some(80.0),
             Ions {
-                conductivity_us_cm: Some(1000.0),
+                conductivity_25_us_cm: Some(1000.0),
                 ..both
             }
         ),
@@ -60,7 +60,7 @@ fn constants(eq: &c::Equilibria) -> [f64; 7] {
 
 fn v3(temp_c: f64, salinity: f64, alkalinity: f64, ions: Ions) -> [f64; 7] {
     f::equilibria_v3(temp_c, salinity, Some(alkalinity), ions)
-        .map(|(eq, _i, _source)| constants(&eq))
+        .map(|eq| constants(&eq))
         .unwrap_or([f64::NAN; 7])
 }
 
@@ -68,28 +68,28 @@ const WATERS: [(f64, Ions); 4] = [
     (
         120.0,
         Ions {
-            conductivity_us_cm: None,
+            conductivity_25_us_cm: None,
             hardness_mg_l: None,
         },
     ),
     (
         120.0,
         Ions {
-            conductivity_us_cm: Some(3700.0),
+            conductivity_25_us_cm: Some(3700.0),
             hardness_mg_l: None,
         },
     ),
     (
         120.0,
         Ions {
-            conductivity_us_cm: None,
+            conductivity_25_us_cm: None,
             hardness_mg_l: Some(300.0),
         },
     ),
     (
         20.0,
         Ions {
-            conductivity_us_cm: None,
+            conductivity_25_us_cm: None,
             hardness_mg_l: None,
         },
     ),
@@ -140,7 +140,7 @@ fn in_the_band_each_constant_is_the_geometric_blend_of_the_two_paths() {
     for salinity in [2.0, 3.5] {
         let weight = f::sea_weight(salinity);
         let blended = v3(12.0, salinity, 120.0, ions);
-        let fresh = f::fresh_equilibria(12.0, salinity, Some(120.0), ions).map(|(eq, _i, _s)| constants(&eq));
+        let fresh = f::fresh_equilibria(12.0, salinity, Some(120.0), ions).map(|eq| constants(&eq));
         let sea = c::equilibria_with(12.0, salinity, &f::debye_huckel_a).map(|eq| constants(&eq));
         assert!(
             matches!((fresh, sea), (Ok(fresh), Ok(sea)) if blended.iter().zip(fresh.iter().zip(sea.iter()))
@@ -170,7 +170,7 @@ fn a_salinity_near_0_does_not_drop_the_alkalinitys_ions() {
 #[test]
 fn above_davies_range_it_is_refused() {
     let sea = Ions {
-        conductivity_us_cm: Some(40000.0),
+        conductivity_25_us_cm: Some(40000.0),
         hardness_mg_l: None,
     };
     assert_eq!(f::ionic_strength(0.0, Some(80.0), sea), Err(ChemError::OutOfRange));
@@ -284,12 +284,12 @@ fn davies_at_2_5_and_12_degrees_meets_the_tabulated_a() {
 #[test]
 fn sea_water_keeps_v1s_constants_and_converts_the_nbs_ph_with_the_temperatures_a() {
     let ions = Ions {
-        conductivity_us_cm: Some(500.0),
+        conductivity_25_us_cm: Some(500.0),
         hardness_mg_l: None,
     };
     for temp_c in [2.0, 12.0, 25.0] {
         for salinity in [5.0, 10.0, 35.0] {
-            let v3 = f::equilibria_v3(temp_c, salinity, Some(100.0), ions).map(|(eq, _i, _source)| eq);
+            let v3 = f::equilibria_v3(temp_c, salinity, Some(100.0), ions);
             let v1 = c::equilibria(temp_c, salinity);
             assert!(
                 matches!((v3, v1), (Ok(v3), Ok(v1)) if v3.k1 == v1.k1 && v3.k2 == v1.k2 && v3.kw == v1.kw
@@ -303,4 +303,34 @@ fn sea_water_keeps_v1s_constants_and_converts_the_nbs_ph_with_the_temperatures_a
                 if (v3.ph_offset - v1.ph_offset - shift).abs() < 1e-12));
         }
     }
+}
+
+// ---- the switch: formula 3 is the application's, formula 1 is still worked out exactly -------------------------------
+
+#[test]
+fn every_equilibria_says_its_formula_its_ionic_strength_and_where_it_came_from() {
+    let ions = Ions {
+        conductivity_25_us_cm: Some(300.0),
+        hardness_mg_l: None,
+    };
+    let fresh = f::water_equilibria(3, 12.0, 0.0, Some(80.0), ions);
+    assert!(fresh.is_ok_and(|eq| eq.formula == 3
+        && eq.ionic_strength == 1.6e-5 * 300.0
+        && eq.source == Source::Conductivity
+        && eq.sea_weight == 0.0));
+    let band = f::water_equilibria(3, 12.0, 3.0, Some(80.0), Ions::default());
+    assert!(band.is_ok_and(|eq| eq.formula == 3 && eq.source == Source::Salinity && eq.sea_weight == 0.5));
+    let sea = f::water_equilibria(3, 12.0, 35.0, Some(80.0), ions);
+    assert!(sea.is_ok_and(|eq| eq.formula == 3 && eq.source == Source::Seawater && eq.sea_weight == 1.0));
+    // formula 1 is golden v1's equilibria exactly, whatever is measured
+    assert_eq!(
+        f::water_equilibria(1, 12.0, 0.0, Some(80.0), ions),
+        c::equilibria(12.0, 0.0)
+    );
+    assert!(c::equilibria(12.0, 0.0).is_ok_and(|eq| eq.formula == 1 && eq.ionic_strength == 0.0));
+    assert_eq!(
+        f::water_equilibria(2, 12.0, 0.0, None, Ions::default()),
+        Err(ChemError::UnknownFormula)
+    );
+    assert_eq!(chemcore_core::FORMULA_VERSION, 3);
 }

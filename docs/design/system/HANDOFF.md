@@ -12,7 +12,7 @@ This folder is the design system for the Suderra app. Apply it to the Django tem
 | `components.css` | The `ui-*` component classes (rail, top bar, page head, buttons, chips, tabs, toolbar, segmented toggle, table, value face, gauge, meal pips). Reads only tokens. |
 | `components/*.md` | Guidelines per component: when to use, what the template provides, states. |
 | `previews/*.html` | Open in a browser: the target look for the sidebar, top bar, buttons, chips and three Production screens (Meal board, Production units, Water chemistry). A theme switch sits bottom right. |
-| `tailwind.md` | Optional Tailwind v4 `@theme` and v3 preset over the same variables. The app itself stays plain CSS. |
+| `tailwind.md` | Tailwind v4 `@theme` and v3 preset over the same variables, and how the app uses it ("In this app": utilities only, `tw:` prefix, built into `static/css/tw.css`). |
 | `assets/logos/` | `suderra-mark-disc.png` (rail mark), `suderra-mark.png`, `suderra-logo.png`. |
 | `../claude-design-brief.md` | The full product brief: screens, data, states, responsive rules, acceptance tests. |
 

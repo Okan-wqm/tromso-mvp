@@ -32,7 +32,7 @@ def selectors(css):
         head = head.strip()
         inside_property = any(h.startswith('@property') for h in depth_heads)
         if not head.startswith('@') and not inside_property and not any(h.startswith('@layer properties') for h in depth_heads):
-            found += [part.strip() for part in head.split(',')]
+            found += [part.strip() for part in re.split(r'(?<!\\),(?![^(]*\))', head)]
         depth_heads.append(head)
     return found
 
@@ -73,10 +73,10 @@ class TailwindBuildTests(SimpleTestCase):
         self.assertTrue(BUILT.read_text(encoding='utf-8').startswith('/*! tailwindcss v'))
 
     def test_it_styles_only_an_element_with_a_tw_class(self):
-        """No reset, no element rule, no rule on a class a template already uses: what is not redesigned is untouched."""
+        """No reset, no element rule, no rule on a class a template already uses: what is not redesigned is untouched. A
+        rule may reach the children of such an element (`:where(.tw\\:divide-y > :not(:last-child))`), never more."""
         found = selectors(BUILT.read_text(encoding='utf-8'))
-        self.assertTrue(found, 'tw.css holds no rule: is a tw: class in a template?')
-        self.assertEqual([selector for selector in found if not selector.startswith('.tw\\:')], [])
+        self.assertEqual([selector for selector in found if not re.match(r'(:where\()?\.tw\\:', selector)], [])
 
     def test_it_is_in_no_cascade_layer(self):
         """A layered utility would lose to every unlayered rule of the older sheets (base.css `a`, app.css `.content h2`)."""

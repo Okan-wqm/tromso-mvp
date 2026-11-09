@@ -102,3 +102,27 @@ module.exports = {
 <button class="min-h-control px-4 rounded-control bg-primary hover:bg-primary-hover text-primary-on font-semibold">Record meal</button>
 <span class="inline-flex items-center gap-1 h-6 px-2 rounded-chip bg-crit text-crit-on text-[13px] font-semibold">Critical</span>
 ```
+
+## In this app
+
+The console uses Tailwind v4 (`tailwindcss` and `@tailwindcss/cli`, pinned exactly in `package.json`) for its redesigned
+pages, beside the `ui-*` parts of `components.css` (`static/css/ui.css`), and not as above in four ways:
+
+- **Utilities only.** `frontend/tailwind.css` imports `tailwindcss/utilities.css` alone: no preflight (`base.css` and
+  `ui.css` are the reset of every page) and no default theme (no palette, no sizes nobody chose). Its `@theme inline`
+  maps the role tokens above, the type scale (`text-caption` 12 … `text-h1` 28), `--spacing: var(--space-1)` and the
+  shell's breakpoints (`sm` 640, `lg` 1024, `xl` 1280 px). Two variants: `coarse` (`@media (pointer: coarse)`, for the
+  48 px tank-side targets: `tw:coarse:min-h-12`, 56 px for the primary) and `night`.
+- **A prefix.** Every class is `tw:`-prefixed (`tw:grid tw:gap-6 tw:xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]`), so a
+  template's own class names (`hidden`, `table`, `collapse`) never meet a utility.
+- **No cascade layer.** The build is unlayered and loaded last (`templates/app_base.html`): a layered utility would lose
+  to every unlayered rule of the older sheets (`a` in `base.css`), whatever its specificity. Only Tailwind's
+  `@layer properties` fallback (initial values of its own `--tw-*` variables) is layered.
+- **Built and committed.** `npm run build` (and `npm run build:css` alone) writes `static/css/tw.css` from the source,
+  reading the class names of `templates/**/*.html` and the apps' Python; `npm run check:css` fails when the committed
+  file is stale (CI runs it before the build, and `npm test` too). No CDN, no Play CDN, nothing in the browser: the
+  Content-Security-Policy stays `style-src 'self'`.
+
+`core/tests_tailwind.py` holds it: the theme names only tokens of `tokens.css` (no colour literal), the source imports
+the utilities alone, every app is read, the build styles only an element with a `tw:` class (so a page not redesigned is
+unchanged), it is in no layer, it loads last, the tool is pinned and listed in `THIRD_PARTY.md`, and CI checks it.

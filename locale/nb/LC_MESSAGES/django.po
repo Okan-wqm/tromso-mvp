@@ -522,6 +522,10 @@ msgid "%(device)s taken out of the water."
 msgstr "%(device)s er tatt opp av vannet."
 
 #, python-format
+msgid "%(device)s: %(skew)s of the platform’s (its values still count; their alarms are never delayed)."
+msgstr "%(device)s: %(skew)s i forhold til plattformens (verdiene teller fortsatt; alarmene deres forsinkes aldri)."
+
+#, python-format
 msgid "%(direct)s person"
 msgid_plural "%(direct)s people"
 msgstr[0] "%(direct)s person"
@@ -872,6 +876,10 @@ msgid "%(medicine)s, %(method)s from %(start)s to %(end)s: withdrawal %(rule)s."
 msgstr "%(medicine)s, %(method)s fra %(start)s til %(end)s: tilbakeholdelsestid %(rule)s."
 
 #, python-format
+msgid "%(minutes)d min"
+msgstr "%(minutes)d min"
+
+#, python-format
 msgid "%(minutes)d min ago"
 msgstr "%(minutes)d min siden"
 
@@ -941,6 +949,12 @@ msgstr "%(owner)s kan ikke ha et punkt av denne typen: %(kinds)s."
 #, python-format
 msgid "%(parameter)s: bounds from %(low)s to %(high)s, at most %(decimals)d decimals."
 msgstr "%(parameter)s: grenser fra %(low)s til %(high)s, høyst %(decimals)d desimaler."
+
+#, python-format
+msgid ""
+"%(parameter)s: the deadband %(deadband)s is more than half the narrowest band of its water limits"
+" (%(band)s): an alarm on it may never clear."
+msgstr "%(parameter)s: dødbåndet %(deadband)s er mer enn halvparten av det smaleste båndet i vanngrensene (%(band)s): en alarm på den oppheves kanskje aldri."
 
 #, python-format
 msgid "%(people)s notification"
@@ -1023,12 +1037,26 @@ msgid "%(rule)s at %(time)s"
 msgstr "%(rule)s kl. %(time)s"
 
 #, python-format
+msgid "%(seconds)d s"
+msgstr "%(seconds)d s"
+
+#, python-format
 msgid "%(seconds)d s ago"
 msgstr "%(seconds)d s siden"
 
 #, python-format
 msgid "%(section)s: not shown to you"
 msgstr "%(section)s: vises ikke for deg"
+
+#, python-format
+msgid ""
+"%(severity)s: escalated after %(minutes)d min without an acknowledgement; usually at most "
+"%(usual)d min."
+msgstr "%(severity)s: eskaleres etter %(minutes)d min uten kvittering; vanligvis høyst %(usual)d min."
+
+#, python-format
+msgid "%(severity)s: raised %(seconds)d s after the value; usually at most %(usual)d s."
+msgstr "%(severity)s: utløses %(seconds)d s etter verdien; vanligvis høyst %(usual)d s."
 
 #, python-format
 msgid "%(sfr)s at %(temperature)s: %(ration)s a day, %(meals)s × %(meal)s"
@@ -1307,6 +1335,12 @@ msgstr ""
 "lokalitetens gjennomsnitt alle merder."
 
 #, python-format
+msgid ""
+"%(unit)s holds fish and has no active sampling point for its own water: its water raises no alarm"
+" until it has one."
+msgstr "%(unit)s har fisk og ikke noe aktivt prøvepunkt for sitt eget vann: vannet utløser ingen alarm før den får et."
+
+#, python-format
 msgid "%(unit)s holds no cleaner fish on %(date)s."
 msgstr "%(unit)s har ingen rensefisk %(date)s."
 
@@ -1391,6 +1425,12 @@ msgstr ""
 #, python-format
 msgid "%(unit)s: %(fish)d fish counted on %(date)s, where the regulation asks for %(least)d in this week."
 msgstr "%(unit)s: %(fish)d fisk telt %(date)s, der forskriften krever %(least)d denne uken."
+
+#, python-format
+msgid ""
+"%(unit)s: the water could not be evaluated; its alarms are neither raised nor cleared until it "
+"can."
+msgstr "%(unit)s: vannet kunne ikke vurderes; alarmene verken utløses eller oppheves før det kan."
 
 #. Translators: a percentage; write the sign where your language puts it (Turkish: %%%(value)s).
 #, python-format
@@ -1508,10 +1548,8 @@ msgstr "0 rader samsvarer"
 
 msgid ""
 "0: notified when the alarm opens. 1: when nobody acknowledged level 0 in the escalation time of "
-"the Platform settings; and so on, up to 9."
-msgstr ""
-"0: varsles når alarmen åpnes. 1: når ingen har kvittert nivå 0 innen eskaleringstiden i "
-"Plattforminnstillinger; og så videre, opptil 9."
+"its severity (Alarm severity rules); and so on, up to 9."
+msgstr "0: varsles når alarmen utløses. 1: når ingen har kvittert nivå 0 innen eskaleringstiden for alvorlighetsgraden (Alarmregler per alvorlighetsgrad); og så videre, opptil 9."
 
 msgid ""
 "1 October each year, for the two next calendar years (the saved page: \"Fristen for å sende inn "
@@ -1794,6 +1832,12 @@ msgid ""
 msgstr ""
 "Et apparat publiserer på ett emne i en tilkobling: en probe, en PLC, en gateway. Kanalene er "
 "verdiene det sender."
+
+msgid ""
+"A device whose clock is further ahead of or behind the platform’s than this, measured from its "
+"newest value against when it was received, raises this alarm. 1 to 3600; the warning’s below the "
+"critical’s."
+msgstr "En enhet hvis klokke går mer enn dette foran eller etter plattformens, målt fra den nyeste verdien mot når den ble mottatt, utløser denne alarmen. 1 til 3600; advarselens under den kritiskes."
 
 msgid "A device’s topic has no “#”."
 msgstr "Emnet til et apparat har ingen «#»."
@@ -2249,6 +2293,9 @@ msgstr ""
 "En person til må godkjenne å gå videre forbi en tilbakeholdelsestid (plattformeierens "
 "innstilling), og den godkjenningen kan ikke gis her ennå."
 
+msgid "A severity’s alarm rule is changed, never deleted: the alarms of that severity need it."
+msgstr "En alarmregel for en alvorlighetsgrad endres, slettes aldri: alarmene med den alvorlighetsgraden trenger den."
+
 msgid "A share of the outflow, from 0 to 100 %, can be stated for an outlet only."
 msgstr "En andel av utstrømmen, fra 0 til 100 %, kan bare oppgis for et utløp."
 
@@ -2454,11 +2501,9 @@ msgstr ""
 "Tom: parameterens standard."
 
 msgid ""
-"A value is stored at least this often even when it does not move. Fresh for three heartbeats. "
-"Empty: the quantity’s default."
-msgstr ""
-"En verdi lagres minst så ofte, selv når den ikke endrer seg. Fersk i tre hjerteslag. Tom: "
-"parameterens standard."
+"A value is stored at least this often even when it does not move. Fresh for the heartbeats below."
+" Empty: the quantity’s default."
+msgstr "En verdi lagres minst så ofte selv når den ikke endrer seg. Fersk i antall hjerteslag nedenfor. Tom: størrelsens standard."
 
 msgid ""
 "A value outside the range is stored, marked, and used nowhere. Empty on a new channel: what the "
@@ -2473,6 +2518,9 @@ msgid ""
 msgstr ""
 "En advarsel eller en kritisk verdi utløser en alarm (Selskap › Alarmer); ingenting sendes før "
 "push-transporten er koblet til."
+
+msgid "A warning’s device clock limit is below the critical one."
+msgstr "Advarselens grense for enhetsklokke er under den kritiske."
 
 msgid ""
 "A water on the Water Quality Management Chart and against the pH, the pH where each limit is "
@@ -3137,6 +3185,11 @@ msgstr "En inaktiv tilkobling lyttes ikke til: apparatene sender til ingen."
 msgid "An inactive location takes no new stock; what it holds still shows and can leave."
 msgstr "En inaktiv lagerplass tar ikke imot ny beholdning; det den har vises fortsatt og kan tas ut."
 
+msgid ""
+"An older value is shown stale with its age, never OK, and never clears an alarm. 1 to 8760 hours "
+"(a year)."
+msgstr "En eldre verdi vises som utdatert med alderen sin, aldri OK, og opphever aldri en alarm. 1 til 8760 timer (et år)."
+
 msgid "An open alarm closes only once the value is back past the threshold by this much."
 msgstr "En åpen alarm lukkes først når verdien er tilbake forbi terskelen med så mye."
 
@@ -3734,6 +3787,9 @@ msgstr "Før håndtering"
 msgid "Below"
 msgstr "Under"
 
+msgid "Below the limit it belongs to."
+msgstr "Under grensen den hører til."
+
 msgid ""
 "Below the reorder level of a feed in this location, the Storage overview says the stock is low. "
 "One row per feed. They are saved separately from the location details."
@@ -4138,8 +4194,8 @@ msgid "Channel number"
 msgstr "Kanalnummer"
 
 #, python-format
-msgid "Channel number %(number)s. A value is fresh for three heartbeats: %(seconds)s seconds."
-msgstr "Kanalnummer %(number)s. En verdi er fersk i tre hjerteslag: %(seconds)s sekunder."
+msgid "Channel number %(number)s. A value is fresh for %(heartbeats)s heartbeats: %(seconds)s seconds."
+msgstr "Kanalnummer %(number)s. En verdi er fersk i %(heartbeats)s hjerteslag: %(seconds)s sekunder."
 
 msgid "Channels"
 msgstr "Kanaler"
@@ -4409,12 +4465,18 @@ msgstr "Stemple inn"
 msgid "Clock out"
 msgstr "Stemple ut"
 
+msgid "Clock tolerance (seconds)"
+msgstr "Klokketoleranse (sekunder)"
+
 msgid "Clocked in by the person"
 msgstr "Stemplet inn av personen"
 
 #, python-format
 msgid "Clocked in since %(since)s."
 msgstr "Stemplet inn siden %(since)s."
+
+msgid "Clocks"
+msgstr "Klokker"
 
 msgid "Close"
 msgstr "Lukk"
@@ -5156,6 +5218,27 @@ msgstr "Avvik fra opplegget"
 
 msgid "Device"
 msgstr "Apparat"
+
+msgid "Device clock"
+msgstr "Enhetsklokke"
+
+msgid "Device clock deadband (seconds)"
+msgstr "Dødbånd for enhetsklokke (sekunder)"
+
+#, python-format
+msgid "Device clock is %(amount)s ahead"
+msgstr "Enhetsklokken går %(amount)s foran"
+
+#, python-format
+msgid "Device clock is %(amount)s behind"
+msgstr "Enhetsklokken går %(amount)s etter"
+
+#, python-format
+msgid "Device clock is more than %(amount)s ahead"
+msgstr "Enhetsklokken går mer enn %(amount)s foran"
+
+msgid "Device clock off by more than (seconds)"
+msgstr "Enhetsklokke avviker med mer enn (sekunder)"
 
 msgid "Device offline"
 msgstr "Apparat frakoblet"
@@ -6340,6 +6423,10 @@ msgstr "For"
 msgid "For (seconds)"
 msgstr "Varighet (sekunder)"
 
+#, python-format
+msgid "For a %(severity)s alarm, from %(low)d to %(high)d %(unit)s."
+msgstr "For en %(severity)s alarm, fra %(low)d til %(high)d %(unit)s."
+
 msgid ""
 "For a sea site with salmonids: the lower sea-lice limit of spring runs in weeks 16–21 from Nord-"
 "Trøndelag southwards and in weeks 21–26 in Nordland, Troms and Finnmark (lakselusforskriften § "
@@ -6434,11 +6521,20 @@ msgstr "Fransk"
 msgid "Fresh"
 msgstr "Fersk"
 
+msgid "Fresh for (heartbeats)"
+msgstr "Fersk i (hjerteslag)"
+
+msgid "Fresh for (hours)"
+msgstr "Fersk i (timer)"
+
 msgid "Fresh for (seconds)"
 msgstr "Fersk i (sekunder)"
 
 msgid "Fresh water"
 msgstr "Ferskvann"
+
+msgid "Freshness"
+msgstr "Ferskhet"
 
 msgid "Freshwater"
 msgstr "Ferskvann"
@@ -6472,6 +6568,9 @@ msgstr "Fra (g)"
 
 msgid "From 0 to 100. The shares of the owner’s outlets add up to at most 100."
 msgstr "Fra 0 til 100. Andelene til eierens utløp summerer seg til høyst 100."
+
+msgid "From 1 hour to a year (8760 hours)."
+msgstr "Fra 1 time til et år (8760 timer)."
 
 msgid "From 1 second to 1 day (86400 seconds)."
 msgstr "Fra 1 sekund til 1 døgn (86400 sekunder)."
@@ -7057,6 +7156,16 @@ msgstr "Hvordan"
 msgid "How deep the top of the cage can be lowered."
 msgstr "Hvor dypt toppen av merden kan senkes."
 
+msgid ""
+"How far ahead of the server’s clock a water value may be stamped and still count as fresh (a "
+"device or tablet clock a little fast). A value further ahead, up to an hour, still decides its "
+"unit’s status and its alarm, but is not shown as the newest. 0 to 3600; 300 until you set "
+"another."
+msgstr "Hvor langt foran serverens klokke en vannverdi kan være tidsstemplet og fortsatt regnes som fersk (en enhets- eller nettbrettklokke som går litt fort). En verdi lenger foran, opptil en time, avgjør fortsatt enhetens status og alarm, men vises ikke som den nyeste. 0 til 3600; 300 til dere setter noe annet."
+
+msgid "How far back inside the limit the clock must come before the alarm clears. Below the limit."
+msgstr "Hvor langt innenfor grensen klokken må komme tilbake før alarmen oppheves. Under grensen."
+
 msgid "How it is given; a treatment with it uses the same method."
 msgstr "Hvordan det gis; en behandling med det bruker samme metode."
 
@@ -7102,6 +7211,9 @@ msgstr ""
 "vannprøve, en lagerbevegelse, en plan, en behandling) kan dateres, og hvor gammel en registrering"
 " kan være når den annulleres. Eldre registreringer blir stående som de er. 1 til 3650; 31 til "
 "dere setter noe annet."
+
+msgid "How many heartbeats a value stays fresh without a new one; then the place shows no recent data."
+msgstr "Hvor mange hjerteslag en verdi forblir fersk uten en ny; deretter viser stedet ingen nye data."
 
 msgid "How many times a failing transport is tried with one notification."
 msgstr "Hvor mange ganger en transport som feiler prøves med ett varsel."
@@ -7782,6 +7894,9 @@ msgstr "Livsstadium"
 msgid "Limit"
 msgstr "Grense"
 
+msgid "Limit removed"
+msgstr "Grense fjernet"
+
 #, python-format
 msgid "Limit: %(limits)s."
 msgstr "Grense: %(limits)s."
@@ -8132,6 +8247,9 @@ msgstr "Medlemmer"
 #, python-format
 msgid "Members of %(channel)s"
 msgstr "Medlemmer i %(channel)s"
+
+msgid "Merged into the unit’s one alarm of that level"
+msgstr "Slått sammen med enhetens ene alarm på det nivået"
 
 msgid "Mesh size (mm)"
 msgstr "Maskevidde (mm)"
@@ -8664,6 +8782,9 @@ msgstr "Ingen fisk ved slutten av dagen"
 msgid "No fish found in these units on these days"
 msgstr "Ingen fisk i disse enhetene på disse dagene"
 
+msgid "No fish in the unit any more"
+msgstr "Ikke lenger fisk i enheten"
+
 msgid "No fish in the unit: nothing to judge the water against."
 msgstr "Ingen fisk i enheten: ingenting å vurdere vannet mot."
 
@@ -8744,9 +8865,6 @@ msgstr "Ingen linjer ennå. Bruk «Legg til linje» for å legge til en."
 msgid "No longer in stock"
 msgstr "Ikke lenger i beholdningen"
 
-msgid "No longer judged (no fish or no limit)"
-msgstr "Vurderes ikke lenger (ingen fisk eller ingen grense)"
-
 msgid "No lot number"
 msgstr "Uten partinummer"
 
@@ -8809,6 +8927,9 @@ msgstr "Ingen spørsmål til myndighetene er registrert."
 
 msgid "No recent data"
 msgstr "Ingen ferske data"
+
+msgid "No removed limit row found: the fish have no limit row for it."
+msgstr "Ingen fjernet grenserad funnet: fisken har ingen grenserad for den."
 
 msgid "No reorder levels yet. Use “Add feed” to add a row."
 msgstr "Ingen bestillingspunkter ennå. Bruk «Legg til fôr» for å legge til en rad."
@@ -9451,6 +9572,9 @@ msgstr "Ett bestillingspunkt per fôr."
 
 msgid "One reorder level per item."
 msgstr "Ett bestillingspunkt per vare."
+
+msgid "One row per water parameter is made by the platform; it is changed, never added or deleted."
+msgstr "Plattformen lager én rad per vannparameter; den endres, legges aldri til eller slettes."
 
 #, python-format
 msgid ""
@@ -12578,6 +12702,18 @@ msgstr "Adressen er feil, eller det den viste er slettet."
 msgid "The address lacks a key its protocol needs."
 msgstr "Adressen mangler en nøkkel protokollen trenger."
 
+#, python-format
+msgid ""
+"The alarm rules are incomplete (no rule row for: %(severities)s): the safest values are used "
+"until the rows are restored."
+msgstr "Alarmreglene er ufullstendige (ingen regelrad for: %(severities)s): de sikreste verdiene brukes til radene er gjenopprettet."
+
+#, python-format
+msgid ""
+"The alarm step \"%(step)s\" failed: what it does (raising, clearing, notifying or sending alarms)"
+" is not done until it passes again."
+msgstr "Alarmtrinnet «%(step)s» feilet: det trinnet gjør (utløse, oppheve, varsle eller sende alarmer) blir ikke gjort før det lykkes igjen."
+
 msgid "The alarm system itself"
 msgstr "Selve alarmsystemet"
 
@@ -12875,6 +13011,9 @@ msgstr "Apparatet merket verdien som dårlig."
 
 msgid "The device time was in the future: the time is when it was received."
 msgstr "Apparatets tid lå i fremtiden: tiden er når meldingen ble mottatt."
+
+msgid "The device was removed or deactivated"
+msgstr "Enheten ble fjernet eller deaktivert"
 
 msgid "The diet has no unit: its levels are protocols."
 msgstr "Fôrregimet har ingen enhet: nivåene er protokoller."
@@ -14011,6 +14150,9 @@ msgstr "Enhetsfaktoren er et tall forskjellig fra 0."
 msgid "The unit the instrument sends, when it differs from the quantity’s."
 msgstr "Enheten instrumentet sender, når den avviker fra parameterens."
 
+msgid "The unit was removed"
+msgstr "Enheten ble fjernet"
+
 msgid ""
 "The unit will hold batches of one species further apart in weight than the species allows: the "
 "bigger fish outcompete the smaller at feeding. Tick it only when that is meant, e.g. for the days"
@@ -14120,6 +14262,9 @@ msgstr ""
 
 msgid "The water is at its target."
 msgstr "Vannet er ved målet sitt."
+
+msgid "The water limit was removed"
+msgstr "Vanngrensen ble fjernet"
 
 msgid ""
 "The water limits judge a water value above or below: set them on the Water limits page, for the "
@@ -15144,6 +15289,9 @@ msgstr "Vanndybde (m)"
 msgid "Water environment"
 msgstr "Vannmiljø"
 
+msgid "Water freshness"
+msgstr "Vannets ferskhet"
+
 msgid ""
 "Water is sampled at the sampling points of the tanks, ponds and cages of Setup, of the loops of "
 "its systems and of its equipment."
@@ -15428,11 +15576,10 @@ msgid "When this is a part of other equipment, e.g. the pump of a filter unit."
 msgstr "Når dette er en del av annet utstyr, f.eks. pumpen i en filterenhet."
 
 msgid ""
-"When ticked, a harvest during a medicine withdrawal goes on only after a second person who may "
-"approve it has approved the acknowledgement."
-msgstr ""
-"Når avkrysset, går en slakting i tilbakeholdelsestiden videre først når en annen person som kan "
-"godkjenne det, har godkjent kvitteringen."
+"When ticked, going on past a medicine withdrawal (a harvest during one, a treatment reaching back"
+" over a harvest) needs a second person’s approval. That approval is not built yet: while this is "
+"ticked, every such step is refused, so nobody goes on alone."
+msgstr "Når dette er krysset av, krever det å gå videre forbi en tilbakeholdelsestid (et slakt i en, en behandling som når tilbake over et slakt) godkjenning fra en annen person. Den godkjenningen er ikke bygget ennå: så lenge dette er krysset av, avvises hvert slikt steg, så ingen går videre alene."
 
 msgid "Where"
 msgstr "Hvor"
@@ -16056,6 +16203,9 @@ msgstr "beholdning %(book)s · %(difference)s (%(percent)s)"
 #, python-format
 msgid "border pH %(ph)s, margin %(margin)s"
 msgstr "grense pH %(ph)s, margin %(margin)s"
+
+msgid "by"
+msgstr ""
 
 #, python-format
 msgid "by %(name)s"
@@ -16892,6 +17042,9 @@ msgstr "mg/kg biomasse per dag"
 msgid "mg/mL"
 msgstr "mg/mL"
 
+msgid "minutes"
+msgstr "minutter"
+
 msgid "monitoring board"
 msgstr "overvåkingspanel"
 
@@ -17262,6 +17415,9 @@ msgstr "lusetelling"
 msgid "sea-lice counts"
 msgstr "lusetellinger"
 
+msgid "seconds"
+msgstr "sekunder"
+
 msgid "sensitivity test"
 msgstr "følsomhetsundersøkelse"
 
@@ -17545,6 +17701,9 @@ msgstr "varsel under"
 #, python-format
 msgid "warning below %(value)s"
 msgstr "advarsel under %(value)s"
+
+msgid "water freshness"
+msgstr "vannets ferskhet"
 
 msgid "water limit"
 msgstr "vanngrense"

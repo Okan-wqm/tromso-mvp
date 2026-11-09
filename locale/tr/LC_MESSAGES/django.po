@@ -522,6 +522,10 @@ msgid "%(device)s taken out of the water."
 msgstr "%(device)s sudan çıkarıldı."
 
 #, python-format
+msgid "%(device)s: %(skew)s of the platform’s (its values still count; their alarms are never delayed)."
+msgstr "%(device)s: %(skew)s, platformunkine göre (değerleri yine sayılır; alarmları asla gecikmez)."
+
+#, python-format
 msgid "%(direct)s person"
 msgid_plural "%(direct)s people"
 msgstr[0] "%(direct)s kişi"
@@ -878,6 +882,10 @@ msgid "%(medicine)s, %(method)s from %(start)s to %(end)s: withdrawal %(rule)s."
 msgstr "%(medicine)s, %(method)s, %(start)s – %(end)s: bekleme süresi %(rule)s."
 
 #, python-format
+msgid "%(minutes)d min"
+msgstr "%(minutes)d dk"
+
+#, python-format
 msgid "%(minutes)d min ago"
 msgstr "%(minutes)d dk önce"
 
@@ -947,6 +955,12 @@ msgstr "%(owner)s bu türde bir noktaya sahip olamaz: %(kinds)s."
 #, python-format
 msgid "%(parameter)s: bounds from %(low)s to %(high)s, at most %(decimals)d decimals."
 msgstr "%(parameter)s: sınırlar %(low)s ile %(high)s arasında, en çok %(decimals)d ondalık."
+
+#, python-format
+msgid ""
+"%(parameter)s: the deadband %(deadband)s is more than half the narrowest band of its water limits"
+" (%(band)s): an alarm on it may never clear."
+msgstr "%(parameter)s: ölü bant %(deadband)s, su sınırlarının en dar bandının (%(band)s) yarısından fazla: bu parametredeki bir alarm hiç kapanmayabilir."
 
 #, python-format
 msgid "%(people)s notification"
@@ -1029,12 +1043,26 @@ msgid "%(rule)s at %(time)s"
 msgstr "%(rule)s, saat %(time)s"
 
 #, python-format
+msgid "%(seconds)d s"
+msgstr "%(seconds)d sn"
+
+#, python-format
 msgid "%(seconds)d s ago"
 msgstr "%(seconds)d sn önce"
 
 #, python-format
 msgid "%(section)s: not shown to you"
 msgstr "%(section)s: size gösterilmiyor"
+
+#, python-format
+msgid ""
+"%(severity)s: escalated after %(minutes)d min without an acknowledgement; usually at most "
+"%(usual)d min."
+msgstr "%(severity)s: onaylanmazsa %(minutes)d dk sonra üst seviyeye çıkar; genelde en fazla %(usual)d dk."
+
+#, python-format
+msgid "%(severity)s: raised %(seconds)d s after the value; usually at most %(usual)d s."
+msgstr "%(severity)s: değerden %(seconds)d sn sonra açılır; genelde en fazla %(usual)d sn."
 
 #, python-format
 msgid "%(sfr)s at %(temperature)s: %(ration)s a day, %(meals)s × %(meal)s"
@@ -1316,6 +1344,12 @@ msgstr ""
 " ortalaması her kafesi kapsamaz."
 
 #, python-format
+msgid ""
+"%(unit)s holds fish and has no active sampling point for its own water: its water raises no alarm"
+" until it has one."
+msgstr "%(unit)s içinde balık var ve kendi suyu için etkin bir numune noktası yok: bir nokta eklenene kadar suyu alarm açmaz."
+
+#, python-format
 msgid "%(unit)s holds no cleaner fish on %(date)s."
 msgstr "%(unit)s biriminde %(date)s tarihinde temizleyici balık yok."
 
@@ -1401,6 +1435,12 @@ msgstr ""
 #, python-format
 msgid "%(unit)s: %(fish)d fish counted on %(date)s, where the regulation asks for %(least)d in this week."
 msgstr "%(unit)s: %(date)s tarihinde %(fish)d balık sayıldı; yönetmelik bu hafta için %(least)d ister."
+
+#, python-format
+msgid ""
+"%(unit)s: the water could not be evaluated; its alarms are neither raised nor cleared until it "
+"can."
+msgstr "%(unit)s: su değerlendirilemedi; değerlendirilene kadar alarmları ne açılır ne kapanır."
 
 #. Translators: a percentage; write the sign where your language puts it (Turkish: %%%(value)s).
 #, python-format
@@ -1518,10 +1558,8 @@ msgstr "0 satır eşleşiyor"
 
 msgid ""
 "0: notified when the alarm opens. 1: when nobody acknowledged level 0 in the escalation time of "
-"the Platform settings; and so on, up to 9."
-msgstr ""
-"0: alarm açıldığında bildirilir. 1: Platform ayarlarındaki yükseltme süresi içinde kimse 0. "
-"seviyeyi onaylamadığında; ve böyle devam eder, en fazla 9."
+"its severity (Alarm severity rules); and so on, up to 9."
+msgstr "0: alarm açıldığında bildirilir. 1: önem derecesinin üst seviyeye çıkma süresi içinde (Alarm önem kuralları) kimse 0. seviyeyi onaylamazsa; ve böyle 9'a kadar."
 
 msgid ""
 "1 October each year, for the two next calendar years (the saved page: \"Fristen for å sende inn "
@@ -1803,6 +1841,12 @@ msgid ""
 msgstr ""
 "Cihaz, bir bağlantının tek bir konusunda yayın yapar: bir prob, bir PLC, bir ağ geçidi. "
 "Kanalları, gönderdiği değerlerdir."
+
+msgid ""
+"A device whose clock is further ahead of or behind the platform’s than this, measured from its "
+"newest value against when it was received, raises this alarm. 1 to 3600; the warning’s below the "
+"critical’s."
+msgstr "Saati platformunkinden bundan fazla ileri ya da geri olan bir cihaz (en yeni değeri ile alındığı an karşılaştırılarak ölçülür) bu alarmı açar. 1 ile 3600 arası; uyarınınki kritiğinkinden küçük."
 
 msgid "A device’s topic has no “#”."
 msgstr "Bir cihazın konusunda “#” bulunmaz."
@@ -2257,6 +2301,9 @@ msgstr ""
 "İlaç arınma süresine rağmen devam etmeyi ikinci bir kişinin onaylaması gerekiyor (platform "
 "sahibinin ayarı) ve bu onay henüz burada verilemiyor."
 
+msgid "A severity’s alarm rule is changed, never deleted: the alarms of that severity need it."
+msgstr "Bir önem derecesinin alarm kuralı değiştirilir, asla silinmez: o önem derecesindeki alarmlar ona ihtiyaç duyar."
+
 msgid "A share of the outflow, from 0 to 100 %, can be stated for an outlet only."
 msgstr "Çıkış payı, 0 ile 100 % arasında, yalnızca bir çıkış için belirtilebilir."
 
@@ -2464,11 +2511,9 @@ msgstr ""
 "parametrenin varsayılanı."
 
 msgid ""
-"A value is stored at least this often even when it does not move. Fresh for three heartbeats. "
-"Empty: the quantity’s default."
-msgstr ""
-"Bir değer değişmese bile en az bu sıklıkla saklanır. Üç nabız boyunca günceldir. Boş: "
-"parametrenin varsayılanı."
+"A value is stored at least this often even when it does not move. Fresh for the heartbeats below."
+" Empty: the quantity’s default."
+msgstr "Bir değer değişmese de en az bu sıklıkla saklanır. Aşağıdaki kalp atışı sayısı boyunca taze. Boş: büyüklüğün varsayılanı."
 
 msgid ""
 "A value outside the range is stored, marked, and used nowhere. Empty on a new channel: what the "
@@ -2483,6 +2528,9 @@ msgid ""
 msgstr ""
 "Uyarı ya da kritik bir değer bir alarm başlatır (Şirket › Alarmlar); anlık bildirim aktarımı "
 "bağlanana kadar hiçbir şey gönderilmez."
+
+msgid "A warning’s device clock limit is below the critical one."
+msgstr "Uyarının cihaz saati sınırı kritik olanınkinden küçüktür."
 
 msgid ""
 "A water on the Water Quality Management Chart and against the pH, the pH where each limit is "
@@ -3146,6 +3194,11 @@ msgstr "Pasif bir bağlantı dinlenmez: cihazlarının gönderdikleri kimseye ul
 msgid "An inactive location takes no new stock; what it holds still shows and can leave."
 msgstr "Pasif bir yer yeni stok almaz; tuttuğu görünmeye devam eder ve çıkabilir."
 
+msgid ""
+"An older value is shown stale with its age, never OK, and never clears an alarm. 1 to 8760 hours "
+"(a year)."
+msgstr "Daha eski bir değer yaşıyla birlikte eski gösterilir, asla Normal değil, ve hiçbir alarmı kapatmaz. 1 ile 8760 saat (bir yıl)."
+
 msgid "An open alarm closes only once the value is back past the threshold by this much."
 msgstr "Açık bir alarm, ancak değer eşiğin bu kadar ötesine geri döndüğünde kapanır."
 
@@ -3739,6 +3792,9 @@ msgstr "Elleçlemeden önce"
 msgid "Below"
 msgstr "Altında"
 
+msgid "Below the limit it belongs to."
+msgstr "Ait olduğu sınırın altında."
+
 msgid ""
 "Below the reorder level of a feed in this location, the Storage overview says the stock is low. "
 "One row per feed. They are saved separately from the location details."
@@ -4148,8 +4204,8 @@ msgid "Channel number"
 msgstr "Kanal numarası"
 
 #, python-format
-msgid "Channel number %(number)s. A value is fresh for three heartbeats: %(seconds)s seconds."
-msgstr "Kanal numarası %(number)s. Bir değer üç nabız boyunca günceldir: %(seconds)s saniye."
+msgid "Channel number %(number)s. A value is fresh for %(heartbeats)s heartbeats: %(seconds)s seconds."
+msgstr "Kanal numarası %(number)s. Bir değer %(heartbeats)s kalp atışı boyunca tazedir: %(seconds)s saniye."
 
 msgid "Channels"
 msgstr "Kanallar"
@@ -4423,12 +4479,18 @@ msgstr "Giriş"
 msgid "Clock out"
 msgstr "Çıkış"
 
+msgid "Clock tolerance (seconds)"
+msgstr "Saat toleransı (saniye)"
+
 msgid "Clocked in by the person"
 msgstr "Kişinin kendisi giriş yaptı"
 
 #, python-format
 msgid "Clocked in since %(since)s."
 msgstr "%(since)s’den beri içeride."
+
+msgid "Clocks"
+msgstr "Saatler"
 
 msgid "Close"
 msgstr "Kapat"
@@ -5168,6 +5230,27 @@ msgstr "Tasarımdan sapmalar"
 
 msgid "Device"
 msgstr "Cihaz"
+
+msgid "Device clock"
+msgstr "Cihaz saati"
+
+msgid "Device clock deadband (seconds)"
+msgstr "Cihaz saati ölü bandı (saniye)"
+
+#, python-format
+msgid "Device clock is %(amount)s ahead"
+msgstr "Cihaz saati %(amount)s ileri"
+
+#, python-format
+msgid "Device clock is %(amount)s behind"
+msgstr "Cihaz saati %(amount)s geri"
+
+#, python-format
+msgid "Device clock is more than %(amount)s ahead"
+msgstr "Cihaz saati %(amount)s'dan fazla ileri"
+
+msgid "Device clock off by more than (seconds)"
+msgstr "Cihaz saati şundan fazla saparsa (saniye)"
 
 msgid "Device offline"
 msgstr "Cihaz çevrimdışı"
@@ -6358,6 +6441,10 @@ msgstr "İçin"
 msgid "For (seconds)"
 msgstr "Süre (saniye)"
 
+#, python-format
+msgid "For a %(severity)s alarm, from %(low)d to %(high)d %(unit)s."
+msgstr "%(severity)s bir alarm için %(low)d ile %(high)d %(unit)s arası."
+
 msgid ""
 "For a sea site with salmonids: the lower sea-lice limit of spring runs in weeks 16–21 from Nord-"
 "Trøndelag southwards and in weeks 21–26 in Nordland, Troms and Finnmark (lakselusforskriften § "
@@ -6452,11 +6539,20 @@ msgstr "Fransızca"
 msgid "Fresh"
 msgstr "Güncel"
 
+msgid "Fresh for (heartbeats)"
+msgstr "Taze kalma (kalp atışı)"
+
+msgid "Fresh for (hours)"
+msgstr "Taze kalma (saat)"
+
 msgid "Fresh for (seconds)"
 msgstr "Güncellik süresi (saniye)"
 
 msgid "Fresh water"
 msgstr "Tatlı su"
+
+msgid "Freshness"
+msgstr "Tazelik"
 
 msgid "Freshwater"
 msgstr "Tatlı su"
@@ -6490,6 +6586,9 @@ msgstr "Alt sınır (g)"
 
 msgid "From 0 to 100. The shares of the owner’s outlets add up to at most 100."
 msgstr "0 ile 100 arası. Sahibinin çıkışlarının payları en çok 100 eder."
+
+msgid "From 1 hour to a year (8760 hours)."
+msgstr "1 saatten bir yıla (8760 saat)."
 
 msgid "From 1 second to 1 day (86400 seconds)."
 msgstr "1 saniye ile 1 gün (86400 saniye) arası."
@@ -7077,6 +7176,16 @@ msgstr "Nasıl"
 msgid "How deep the top of the cage can be lowered."
 msgstr "Kafesin üst kısmının ne kadar derine indirilebileceği."
 
+msgid ""
+"How far ahead of the server’s clock a water value may be stamped and still count as fresh (a "
+"device or tablet clock a little fast). A value further ahead, up to an hour, still decides its "
+"unit’s status and its alarm, but is not shown as the newest. 0 to 3600; 300 until you set "
+"another."
+msgstr "Bir su değerinin sunucu saatinden ne kadar ileri zaman damgalı olup yine taze sayılabileceği (biraz ileri giden bir cihaz ya da tablet saati). Daha ileri bir değer, bir saate kadar, ünitesinin durumunu ve alarmını yine belirler ama en yeni olarak gösterilmez. 0 ile 3600 arası; siz başka bir değer verene kadar 300."
+
+msgid "How far back inside the limit the clock must come before the alarm clears. Below the limit."
+msgstr "Alarm kapanmadan önce saatin sınırın ne kadar içine dönmesi gerektiği. Sınırın altında."
+
 msgid "How it is given; a treatment with it uses the same method."
 msgstr "Nasıl uygulandığı; onunla yapılan tedavi aynı yöntemi kullanır."
 
@@ -7123,6 +7232,9 @@ msgstr ""
 "Günlük bir kaydın (bir stok işlemi, bir yemleme, bir su numunesi, bir depo hareketi, bir plan, "
 "bir tedavi) kaç gün geriye tarihlenebileceği ve bir kaydın ne kadar eskiyken iptal edilebileceği."
 " Daha eski kayıtlar olduğu gibi kalır. 1 ile 3650 arası; siz başka bir değer verene kadar 31."
+
+msgid "How many heartbeats a value stays fresh without a new one; then the place shows no recent data."
+msgstr "Yeni bir değer gelmeden bir değerin kaç kalp atışı taze kaldığı; sonra yer güncel veri yok gösterir."
 
 msgid "How many times a failing transport is tried with one notification."
 msgstr "Başarısız bir aktarımın bir bildirimle kaç kez deneneceği."
@@ -7801,6 +7913,9 @@ msgstr "Yaşam evresi"
 msgid "Limit"
 msgstr "Sınır"
 
+msgid "Limit removed"
+msgstr "Sınır kaldırıldı"
+
 #, python-format
 msgid "Limit: %(limits)s."
 msgstr "Sınır: %(limits)s."
@@ -8151,6 +8266,9 @@ msgstr "Üyeler"
 #, python-format
 msgid "Members of %(channel)s"
 msgstr "%(channel)s üyeleri"
+
+msgid "Merged into the unit’s one alarm of that level"
+msgstr "Ünitenin o seviyedeki tek alarmıyla birleştirildi"
 
 msgid "Mesh size (mm)"
 msgstr "Göz açıklığı (mm)"
@@ -8679,6 +8797,9 @@ msgstr "Gün sonunda balık yok"
 msgid "No fish found in these units on these days"
 msgstr "Bu günlerde bu birimlerde balık bulunamadı"
 
+msgid "No fish in the unit any more"
+msgstr "Ünitede artık balık yok"
+
 msgid "No fish in the unit: nothing to judge the water against."
 msgstr "Ünitede balık yok: suyu karşılaştıracak bir sınır yok."
 
@@ -8759,9 +8880,6 @@ msgstr "Henüz satır yok. Eklemek için “Satır ekle”yi kullanın."
 msgid "No longer in stock"
 msgstr "Artık stokta değil"
 
-msgid "No longer judged (no fish or no limit)"
-msgstr "Artık değerlendirilmiyor (balık ya da limit yok)"
-
 msgid "No lot number"
 msgstr "Lot numarası yok"
 
@@ -8824,6 +8942,9 @@ msgstr "Kuruma sorulan bir soru kaydedilmemiş."
 
 msgid "No recent data"
 msgstr "Güncel veri yok"
+
+msgid "No removed limit row found: the fish have no limit row for it."
+msgstr "Kaldırılmış sınır satırı bulunamadı: balıkların bunun için sınır satırı yok."
 
 msgid "No reorder levels yet. Use “Add feed” to add a row."
 msgstr "Henüz yeniden sipariş seviyesi yok. Satır eklemek için “Yem ekle”yi kullanın."
@@ -9467,6 +9588,9 @@ msgstr "Yem başına bir yeniden sipariş seviyesi."
 
 msgid "One reorder level per item."
 msgstr "Kalem başına bir yeniden sipariş seviyesi."
+
+msgid "One row per water parameter is made by the platform; it is changed, never added or deleted."
+msgstr "Platform her su parametresi için bir satır oluşturur; değiştirilir, asla eklenmez ya da silinmez."
 
 #, python-format
 msgid ""
@@ -12598,6 +12722,18 @@ msgstr "Adres yanlış ya da gösterdiği kayıt silinmiş."
 msgid "The address lacks a key its protocol needs."
 msgstr "Adreste, protokolünün gerektirdiği bir anahtar eksik."
 
+#, python-format
+msgid ""
+"The alarm rules are incomplete (no rule row for: %(severities)s): the safest values are used "
+"until the rows are restored."
+msgstr "Alarm kuralları eksik (şunlar için kural satırı yok: %(severities)s): satırlar geri gelene kadar en güvenli değerler kullanılır."
+
+#, python-format
+msgid ""
+"The alarm step \"%(step)s\" failed: what it does (raising, clearing, notifying or sending alarms)"
+" is not done until it passes again."
+msgstr "\"%(step)s\" alarm adımı başarısız oldu: yaptığı iş (alarm açma, kapatma, bildirme ya da gönderme) yeniden başarılı olana kadar yapılmaz."
+
 msgid "The alarm system itself"
 msgstr "Alarm sisteminin kendisi"
 
@@ -12896,6 +13032,9 @@ msgstr "Cihaz değeri kötü olarak işaretledi."
 
 msgid "The device time was in the future: the time is when it was received."
 msgstr "Cihaz zamanı gelecekteydi: zaman, mesajın alındığı andır."
+
+msgid "The device was removed or deactivated"
+msgstr "Cihaz kaldırıldı ya da devre dışı bırakıldı"
 
 msgid "The diet has no unit: its levels are protocols."
 msgstr "Yem rejiminin birimi yoktur: düzeyleri protokollerdir."
@@ -14030,6 +14169,9 @@ msgstr "Birim çarpanı, 0 dışında bir sayıdır."
 msgid "The unit the instrument sends, when it differs from the quantity’s."
 msgstr "Parametreninkinden farklıysa cihazın gönderdiği birim."
 
+msgid "The unit was removed"
+msgstr "Ünite kaldırıldı"
+
 msgid ""
 "The unit will hold batches of one species further apart in weight than the species allows: the "
 "bigger fish outcompete the smaller at feeding. Tick it only when that is meant, e.g. for the days"
@@ -14141,6 +14283,9 @@ msgstr ""
 
 msgid "The water is at its target."
 msgstr "Su hedefinde."
+
+msgid "The water limit was removed"
+msgstr "Su sınırı kaldırıldı"
 
 msgid ""
 "The water limits judge a water value above or below: set them on the Water limits page, for the "
@@ -15167,6 +15312,9 @@ msgstr "Su derinliği (m)"
 msgid "Water environment"
 msgstr "Su ortamı"
 
+msgid "Water freshness"
+msgstr "Su tazeliği"
+
 msgid ""
 "Water is sampled at the sampling points of the tanks, ponds and cages of Setup, of the loops of "
 "its systems and of its equipment."
@@ -15452,11 +15600,10 @@ msgid "When this is a part of other equipment, e.g. the pump of a filter unit."
 msgstr "Bu, başka bir ekipmanın parçasıysa; örn. bir filtre ünitesinin pompası."
 
 msgid ""
-"When ticked, a harvest during a medicine withdrawal goes on only after a second person who may "
-"approve it has approved the acknowledgement."
-msgstr ""
-"İşaretlendiğinde, ilaç arınma süresi içindeki bir hasat, onaylama yetkisi olan ikinci bir kişi "
-"onayı onayladıktan sonra devam eder."
+"When ticked, going on past a medicine withdrawal (a harvest during one, a treatment reaching back"
+" over a harvest) needs a second person’s approval. That approval is not built yet: while this is "
+"ticked, every such step is refused, so nobody goes on alone."
+msgstr "İşaretliyken, bir ilaç arınma süresini geçerek devam etmek (arınma süresinde bir hasat, bir hasadın üzerine geriye uzanan bir tedavi) ikinci bir kişinin onayını gerektirir. Bu onay henüz yapılmadı: bu işaretli kaldıkça her böyle adım reddedilir, kimse tek başına devam etmez."
 
 msgid "Where"
 msgstr "Nerede"
@@ -16075,6 +16222,9 @@ msgstr "kayıtta %(book)s · %(difference)s (%(percent)s)"
 #, python-format
 msgid "border pH %(ph)s, margin %(margin)s"
 msgstr "sınır pH %(ph)s, pay %(margin)s"
+
+msgid "by"
+msgstr ""
 
 #, python-format
 msgid "by %(name)s"
@@ -16913,6 +17063,9 @@ msgstr "günde biyokütlenin kg’ı başına mg"
 msgid "mg/mL"
 msgstr "mg/mL"
 
+msgid "minutes"
+msgstr "dakika"
+
 msgid "monitoring board"
 msgstr "izleme panosu"
 
@@ -17283,6 +17436,9 @@ msgstr "deniz biti sayımı"
 msgid "sea-lice counts"
 msgstr "deniz biti sayımları"
 
+msgid "seconds"
+msgstr "saniye"
+
 msgid "sensitivity test"
 msgstr "duyarlılık testi"
 
@@ -17566,6 +17722,9 @@ msgstr "uyarı alt"
 #, python-format
 msgid "warning below %(value)s"
 msgstr "%(value)s altı uyarı"
+
+msgid "water freshness"
+msgstr "su tazeliği"
 
 msgid "water limit"
 msgstr "su sınırı"

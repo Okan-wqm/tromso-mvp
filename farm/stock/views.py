@@ -558,8 +558,10 @@ def overview_tiles(user):
     stock = read.stock_of(units)
     url = reverse('farm:production_units')
     return [
-        {'label': _('Stocked units'), 'count': len(stock), 'url': f'{url}?occupancy={STOCKED}'},
-        {'label': _('Fish'), 'count': fish(sum(item.count for item in stock.values())), 'url': url},
-        {'label': _('Biomass'), 'count': tonnes(sum((item.biomass_kg for item in stock.values()), start=0)),
+        {'key': 'stocked', 'label': _('Stocked units'), 'count': len(stock), 'of': len(units),
+         'url': f'{url}?occupancy={STOCKED}'},
+        {'key': 'fish', 'label': _('Fish'), 'count': fish(sum(item.count for item in stock.values())), 'url': url},
+        {'key': 'biomass', 'label': _('Biomass'),
+         'count': tonnes(sum((item.biomass_kg for item in stock.values()), start=0)),
          'url': url},
     ]

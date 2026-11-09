@@ -3650,7 +3650,8 @@ views in `screens.py`.
 ## Local setup
 
 ```
-npm install && npm run build                 # compiles frontend/*.ts into static/js (use `npm run watch` while editing)
+npm install && npm run build                 # compiles frontend/*.ts into static/js (use `npm run watch` while editing),
+                                             # then builds static/css/tw.css (Tailwind; commit it when it changed)
 docker compose up -d                         # TimescaleDB on localhost:5433 (5432 is often a local PostgreSQL)
 C:\Python312\python.exe -m venv .venv
 .venv\Scripts\pip install -r requirements.txt
@@ -3861,9 +3862,9 @@ translations that need a native speaker's review are in [`docs/i18n.md`](docs/i1
 ## Look and themes
 
 The console follows the Suderra Platform design system in [`docs/design/system/`](docs/design/system/README.md) (the
-brand book) and its hand-off ([`HANDOFF.md`](docs/design/system/HANDOFF.md)). So far the shell and three Production
-pages are drawn in it: Meal board, Production units and Water chemistry; the other pages run on its tokens without a
-redesign yet.
+brand book) and its hand-off ([`HANDOFF.md`](docs/design/system/HANDOFF.md)). So far the shell and four Production
+pages are drawn in it: the Overview, Meal board, Production units and Water chemistry; the other pages run on its tokens
+without a redesign yet, and are redesigned one page at a time.
 
 - **Tokens.** `static/css/tokens.css` is the design system's `tokens.css` plus a short block of the app's own (the
   rail's overlays), loaded first. No stylesheet writes a colour of its own: `core/tests_design_shell.py` fails on a
@@ -3872,6 +3873,23 @@ redesign yet.
   `--ok`, `--warn`, `--crit` with their `-text` and `-tint`).
 - **Parts.** `static/css/ui.css` is the design system's `components.css` (the `ui-*` classes) with the app's additions
   at its end; the shell's layout is `app.css`.
+- **Tailwind.** A redesigned page may be drawn with Tailwind v4 utilities beside the `ui-*` parts
+  ([`tailwind.md`](docs/design/system/tailwind.md), "In this app"): every class carries the `tw:` prefix
+  (`tw:grid tw:xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]`, `tw:coarse:min-h-12` for the 48 px tank-side targets), and
+  the theme of `frontend/tailwind.css` names only the role tokens, so a utility follows the person's theme. The build is
+  utilities only (no preflight, no default theme, no cascade layer) into `static/css/tw.css`, committed and loaded last by
+  `app_base.html`; it styles nothing but an element that carries a `tw:` class, so the pages not redesigned are exactly as
+  they were (`core/tests_tailwind.py`). `npm run build` writes it (`npm run build:css` alone); `npm run check:css` (CI,
+  before the build, and `npm test`) fails when it is not what the source and the templates build now. Nothing is loaded
+  from a CDN and nothing runs in the browser.
+- **Overview** (`/production/`, `templates/production_home.html`). The panel's landing page at the start of a shift, with
+  no KPI tiles: the day in four lines (stock from the ledger, feed today and over 7 days, the water's critical and warning
+  points, tasks due and overdue), each with its source and the time it was worked out; then Needs attention (the water
+  points with a critical or warning value measured at them, the critical first, at most six, each value with its origin
+  and age and a History button; overdue tasks; overdue reports and duties), then the reports due and the farm's
+  structure. Read once by the areas' own functions (`farm.water.views.overview` reads the water page's rows, so the two
+  never disagree); each part only for a person whose role reads its area. The one primary action is Record water
+  sample, for a person who may record one.
 - **Themes.** Fjord (the default), Polarnatt, Nordlys (for the monitoring wall), Tang and Laks, picked in the user menu
   beside the language. The choice is a cookie (`theme`, kept a year, `core/theme.py`) that the server writes on
   `<html data-theme>`, so the first paint has it; never the system's colour scheme.
@@ -3882,7 +3900,8 @@ redesign yet.
   and the SU/DERRA wordmark and the panel switch under them; the top bar with the breadcrumb, the EN / TR / NB switch
   and the user menu; the page head (h1, a line of status chips, the page's primary action). Below 1024 px the rail is a
   sheet and a bottom bar holds Meals, Water, Units and Storage (those the person's role opens; the Company panel shows
-  its first pages) and More, which opens the sheet.
+  its first pages) and More, which opens the sheet; the console keeps the bar's height free at its end, so a page's last
+  line is never under the bar (the browser layout test checks it at 390 and 1023 px).
 - **Rail order.** Daily work first: the overview, Operations (with Feeding, Harvest, Health), Research, Reports,
   Communication, Team; Setup last and folded (`Section(collapsed=True)` in `config/navigation.py`), open on its own
   pages and elsewhere as the person left it (`frontend/collapse.ts`, kept in the browser). In the collapsed rail a
@@ -4470,7 +4489,7 @@ so run `scripts/test.sh` on the branch before asking for a merge.
 | Job | What it runs | The same on a developer's machine |
 |---|---|---|
 | `python` | the browser build first (`npm ci`, `npm run build`: `check` fails on core.W001 without `static/js`), then `CHECKS=1 scripts/test.sh` (`SUITE=0` on a pull request) with 4 workers, in the test runner's image (`scripts/testrunner/image.sh`, built with its layers cached): `compile_catalogs` (a fresh checkout has no `.mo`, and core.W002 would fail the check); `manage.py check --fail-level WARNING`; `check --deploy` with production-like settings (DEBUG off, a random key, a host), where any issue but the five still open fails (`DEPLOY_OPEN` in `scripts/testrunner/in-container.sh`: the console mail backend and the four HTTPS settings, until the production settings exist); `makemigrations --check`; `data_map --check`; `update_catalogs`, then `git diff --exit-code -- locale` (the catalogs were up to date); `compile_catalogs`; then, except on a pull request, the whole suite with warnings as errors | `CHECKS=1 SUITE=0 scripts/test.sh` (the checks only) or `CHECKS=1 scripts/test.sh`, then `git diff -- locale` |
-| `frontend` | `npm ci`, `npm run build` (tsc, `tsconfig.json`), `npm test` (the TypeScript tests, the designer's browser test on the runner's Chrome) | the same three |
+| `frontend` | `npm ci`, `npm run check:css` (the committed `static/css/tw.css` is what `frontend/tailwind.css` and the templates build now), `npm run build` (tsc, `tsconfig.json`, then the Tailwind build), `npm test` (the TypeScript tests, the designer's and the layout's browser tests on the runner's Chrome) | the same four |
 | `rust` | in `sensors-ingest/`, on the toolchain of `rust-toolchain.toml` (1.88.0, the release image's and the crate's `rust-version`): `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked --all-targets` against a TimescaleDB service migrated by Django (`manage.py migrate` in the test runner's image, the server's own packages) and a Mosquitto broker (`REQUIRE_DB=1`: the database and broker tests run, never skip), `cargo deny --locked check` (licences, bans, sources, RustSec advisories), `THIRD_PARTY` equal to what `Cargo.lock` says | `sensors-ingest/tests/run.sh` |
 | `chemcore` | `chemcore/scripts/test.sh` in the `chemcore-tools` stage of `docker/testrunner.Dockerfile` (its layers cached): rustfmt, clippy, `cargo test`, libm the chemistry's only dependency, no WebAssembly, `cargo deny` with advisories, `chemcore/THIRD_PARTY`, `docker/requirements.lock` naming the pins of `requirements.txt`; the built module's handshake with `chemcore/EXPECTED` (core.E001) is the python job's `check`. | the same `docker run` as the script's header |
 | `security` | `pip-audit --strict` on `requirements.txt` and the test runner's, and with `--require-hashes` on what the runner image installs (`docker/requirements.lock`) and the chemcore wheel's build tool (`docker/chemcore-build.lock`, maturin); the Python licence gate (`pip-licenses --allow-only`, the licences [`THIRD_PARTY.md`](THIRD_PARTY.md) allows: AGPL, SSPL, BUSL, non-commercial or any unreviewed licence fails); the banned components, MinIO and rodbus, whatever licence a client library carries (a Python or npm package, or an image a compose file or Dockerfile names; the crates are denied in `deny.toml`); `npm audit --omit=dev --audit-level=high` | see below |

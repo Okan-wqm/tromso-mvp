@@ -29,7 +29,7 @@ PUBLIC = {
 # Open to every signed-in person. Each shows only what the person's roles allow, or is the person's own account.
 SIGNED_IN = {
     'home': 'the company overview: a tile for each area the roles allow (config/views.py)',
-    'production_home': 'the production overview: a tile for each area the roles allow (config/views.py)',
+    'production_home': 'the production overview: each part only as far as the roles reach (config/views.py)',
     'sensors:home': 'the Sensors overview: a tile for each part the roles allow (sensors/views.py home, state_tiles)',
     'password_change': "the person's own password",
     'password_change_done': "the person's own password",

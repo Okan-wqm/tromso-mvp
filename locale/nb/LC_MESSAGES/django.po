@@ -27,6 +27,14 @@ msgid "%(age)s ago"
 msgstr "%(age)s siden"
 
 #, python-format
+msgid "%(amount)s over the last 7 days"
+msgstr "%(amount)s de siste 7 dagene"
+
+#, python-format
+msgid "%(amount)s today"
+msgstr "%(amount)s i dag"
+
+#, python-format
 msgid "%(batch)s has no fish at %(place)s now."
 msgstr "%(batch)s har ingen fisk i %(place)s nå."
 
@@ -380,6 +388,10 @@ msgstr[0] "%(count)s skal sendes"
 msgstr[1] "%(count)s skal sendes"
 
 #, python-format
+msgid "%(count)s due today"
+msgstr "%(count)s med frist i dag"
+
+#, python-format
 msgid "%(count)s fish stay in %(unit)s: weigh them too."
 msgstr "%(count)s fisk blir igjen i %(unit)s: vei dem også."
 
@@ -390,10 +402,22 @@ msgstr[0] "%(count)s medlem"
 msgstr[1] "%(count)s medlemmer"
 
 #, python-format
+msgid "%(count)s more sampling point on Water chemistry"
+msgid_plural "%(count)s more sampling points on Water chemistry"
+msgstr[0] "%(count)s prøvepunkt til under Vannkjemi"
+msgstr[1] "%(count)s prøvepunkter til under Vannkjemi"
+
+#, python-format
 msgid "%(count)s overdue"
 msgid_plural "%(count)s overdue"
 msgstr[0] "%(count)s forsinket"
 msgstr[1] "%(count)s forsinket"
+
+#, python-format
+msgid "%(count)s overdue report"
+msgid_plural "%(count)s overdue reports"
+msgstr[0] "%(count)s forsinket rapport"
+msgstr[1] "%(count)s forsinkede rapporter"
 
 #, python-format
 msgid "%(count)s overdue task"
@@ -436,6 +460,12 @@ msgid "%(count)s system is not in any production department."
 msgid_plural "%(count)s systems are not in any production department."
 msgstr[0] "%(count)s system tilhører ingen produksjonsavdeling."
 msgstr[1] "%(count)s systemer tilhører ingen produksjonsavdeling."
+
+#, python-format
+msgid "%(count)s task is overdue"
+msgid_plural "%(count)s tasks are overdue"
+msgstr[0] "%(count)s oppgave er forsinket"
+msgstr[1] "%(count)s oppgaver er forsinket"
 
 #, python-format
 msgid "%(count)s time without a value is shaded, never filled."
@@ -523,7 +553,9 @@ msgstr "%(device)s er tatt opp av vannet."
 
 #, python-format
 msgid "%(device)s: %(skew)s of the platform’s (its values still count; their alarms are never delayed)."
-msgstr "%(device)s: %(skew)s i forhold til plattformens (verdiene teller fortsatt; alarmene deres forsinkes aldri)."
+msgstr ""
+"%(device)s: %(skew)s i forhold til plattformens (verdiene teller fortsatt; alarmene deres "
+"forsinkes aldri)."
 
 #, python-format
 msgid "%(direct)s person"
@@ -736,6 +768,10 @@ msgstr "%(kilos)s veid"
 #, python-format
 msgid "%(kind)s form sections"
 msgstr "Seksjoner i skjemaet: %(kind)s"
+
+#, python-format
+msgid "%(label)s %(count)s"
+msgstr "%(label)s %(count)s"
 
 #, python-format
 msgid "%(label)s %(value)s, %(status)s; limits: %(limits)s"
@@ -954,7 +990,9 @@ msgstr "%(parameter)s: grenser fra %(low)s til %(high)s, høyst %(decimals)d des
 msgid ""
 "%(parameter)s: the deadband %(deadband)s is more than half the narrowest band of its water limits"
 " (%(band)s): an alarm on it may never clear."
-msgstr "%(parameter)s: dødbåndet %(deadband)s er mer enn halvparten av det smaleste båndet i vanngrensene (%(band)s): en alarm på den oppheves kanskje aldri."
+msgstr ""
+"%(parameter)s: dødbåndet %(deadband)s er mer enn halvparten av det smaleste båndet i vanngrensene"
+" (%(band)s): en alarm på den oppheves kanskje aldri."
 
 #, python-format
 msgid "%(people)s notification"
@@ -1338,7 +1376,9 @@ msgstr ""
 msgid ""
 "%(unit)s holds fish and has no active sampling point for its own water: its water raises no alarm"
 " until it has one."
-msgstr "%(unit)s har fisk og ikke noe aktivt prøvepunkt for sitt eget vann: vannet utløser ingen alarm før den får et."
+msgstr ""
+"%(unit)s har fisk og ikke noe aktivt prøvepunkt for sitt eget vann: vannet utløser ingen alarm "
+"før den får et."
 
 #, python-format
 msgid "%(unit)s holds no cleaner fish on %(date)s."
@@ -1549,7 +1589,9 @@ msgstr "0 rader samsvarer"
 msgid ""
 "0: notified when the alarm opens. 1: when nobody acknowledged level 0 in the escalation time of "
 "its severity (Alarm severity rules); and so on, up to 9."
-msgstr "0: varsles når alarmen utløses. 1: når ingen har kvittert nivå 0 innen eskaleringstiden for alvorlighetsgraden (Alarmregler per alvorlighetsgrad); og så videre, opptil 9."
+msgstr ""
+"0: varsles når alarmen utløses. 1: når ingen har kvittert nivå 0 innen eskaleringstiden for "
+"alvorlighetsgraden (Alarmregler per alvorlighetsgrad); og så videre, opptil 9."
 
 msgid ""
 "1 October each year, for the two next calendar years (the saved page: \"Fristen for å sende inn "
@@ -1837,7 +1879,10 @@ msgid ""
 "A device whose clock is further ahead of or behind the platform’s than this, measured from its "
 "newest value against when it was received, raises this alarm. 1 to 3600; the warning’s below the "
 "critical’s."
-msgstr "En enhet hvis klokke går mer enn dette foran eller etter plattformens, målt fra den nyeste verdien mot når den ble mottatt, utløser denne alarmen. 1 til 3600; advarselens under den kritiskes."
+msgstr ""
+"En enhet hvis klokke går mer enn dette foran eller etter plattformens, målt fra den nyeste "
+"verdien mot når den ble mottatt, utløser denne alarmen. 1 til 3600; advarselens under den "
+"kritiskes."
 
 msgid "A device’s topic has no “#”."
 msgstr "Emnet til et apparat har ingen «#»."
@@ -2294,7 +2339,9 @@ msgstr ""
 "innstilling), og den godkjenningen kan ikke gis her ennå."
 
 msgid "A severity’s alarm rule is changed, never deleted: the alarms of that severity need it."
-msgstr "En alarmregel for en alvorlighetsgrad endres, slettes aldri: alarmene med den alvorlighetsgraden trenger den."
+msgstr ""
+"En alarmregel for en alvorlighetsgrad endres, slettes aldri: alarmene med den alvorlighetsgraden "
+"trenger den."
 
 msgid "A share of the outflow, from 0 to 100 %, can be stated for an outlet only."
 msgstr "En andel av utstrømmen, fra 0 til 100 %, kan bare oppgis for et utløp."
@@ -2503,7 +2550,9 @@ msgstr ""
 msgid ""
 "A value is stored at least this often even when it does not move. Fresh for the heartbeats below."
 " Empty: the quantity’s default."
-msgstr "En verdi lagres minst så ofte selv når den ikke endrer seg. Fersk i antall hjerteslag nedenfor. Tom: størrelsens standard."
+msgstr ""
+"En verdi lagres minst så ofte selv når den ikke endrer seg. Fersk i antall hjerteslag nedenfor. "
+"Tom: størrelsens standard."
 
 msgid ""
 "A value outside the range is stored, marked, and used nowhere. Empty on a new channel: what the "
@@ -3188,7 +3237,9 @@ msgstr "En inaktiv lagerplass tar ikke imot ny beholdning; det den har vises for
 msgid ""
 "An older value is shown stale with its age, never OK, and never clears an alarm. 1 to 8760 hours "
 "(a year)."
-msgstr "En eldre verdi vises som utdatert med alderen sin, aldri OK, og opphever aldri en alarm. 1 til 8760 timer (et år)."
+msgstr ""
+"En eldre verdi vises som utdatert med alderen sin, aldri OK, og opphever aldri en alarm. 1 til "
+"8760 timer (et år)."
 
 msgid "An open alarm closes only once the value is back past the threshold by this much."
 msgstr "En åpen alarm lukkes først når verdien er tilbake forbi terskelen med så mye."
@@ -4215,6 +4266,10 @@ msgstr "Sjekk"
 msgid "Check your email"
 msgstr "Sjekk e-posten din"
 
+#, python-format
+msgid "Checked at %(clock)s."
+msgstr "Sjekket kl. %(clock)s."
+
 msgid "Checklist"
 msgstr "Sjekkliste"
 
@@ -4803,6 +4858,10 @@ msgstr "Telt"
 #, python-format
 msgid "Counted by %(name)s, recorded %(when)s"
 msgstr "Telt av %(name)s, registrert %(when)s"
+
+#, python-format
+msgid "Counted from Setup at %(clock)s"
+msgstr "Telt fra Oppsett kl. %(clock)s"
 
 msgid "Counted location"
 msgstr "Telt lagerplass"
@@ -5414,6 +5473,13 @@ msgstr "Tørr eller våt"
 
 msgid "Due"
 msgstr "Frist"
+
+#, python-format
+msgid "Due %(date)s"
+msgstr "Frist %(date)s"
+
+msgid "Due at once"
+msgstr "Frist straks"
 
 msgid "Due date"
 msgstr "Fristdato"
@@ -6593,12 +6659,28 @@ msgstr "Fra lokalitetsnummer"
 msgid "From the backup or the system’s channel"
 msgstr "Fra reserven eller systemets kanal"
 
+#, python-format
+msgid "From the feeding records at %(clock)s"
+msgstr "Fra fôringene kl. %(clock)s"
+
 msgid "From the floor to the rim."
 msgstr "Fra bunnen til kanten."
 
 #, python-format
+msgid "From the latest samples and sensors at %(clock)s"
+msgstr "Fra de siste prøvene og sensorene kl. %(clock)s"
+
+#, python-format
 msgid "From the plan of %(date)s: it is linked to the plan when it is recorded."
 msgstr "Fra planen for %(date)s: den knyttes til planen når den registreres."
+
+#, python-format
+msgid "From the stock records at %(clock)s"
+msgstr "Fra beholdningsføringene kl. %(clock)s"
+
+#, python-format
+msgid "From the tasks at %(clock)s"
+msgstr "Fra oppgavene kl. %(clock)s"
 
 msgid "From the water surface to the bottom of the net."
 msgstr "Fra vannflaten til bunnen av nota."
@@ -7161,7 +7243,11 @@ msgid ""
 "device or tablet clock a little fast). A value further ahead, up to an hour, still decides its "
 "unit’s status and its alarm, but is not shown as the newest. 0 to 3600; 300 until you set "
 "another."
-msgstr "Hvor langt foran serverens klokke en vannverdi kan være tidsstemplet og fortsatt regnes som fersk (en enhets- eller nettbrettklokke som går litt fort). En verdi lenger foran, opptil en time, avgjør fortsatt enhetens status og alarm, men vises ikke som den nyeste. 0 til 3600; 300 til dere setter noe annet."
+msgstr ""
+"Hvor langt foran serverens klokke en vannverdi kan være tidsstemplet og fortsatt regnes som fersk"
+" (en enhets- eller nettbrettklokke som går litt fort). En verdi lenger foran, opptil en time, "
+"avgjør fortsatt enhetens status og alarm, men vises ikke som den nyeste. 0 til 3600; 300 til dere"
+" setter noe annet."
 
 msgid "How far back inside the limit the clock must come before the alarm clears. Below the limit."
 msgstr "Hvor langt innenfor grensen klokken må komme tilbake før alarmen oppheves. Under grensen."
@@ -8537,6 +8623,9 @@ msgstr "Trenger oppmerksomhet"
 msgid "Needs approval"
 msgstr "Må godkjennes"
 
+msgid "Needs attention"
+msgstr "Trenger oppfølging"
+
 msgid "Needs the calcium and a salinity of 5 to 44 ‰, the range of Mucci (1983)."
 msgstr "Trenger kalsium og en salinitet på 5 til 44 ‰, området til Mucci (1983)."
 
@@ -8708,6 +8797,9 @@ msgstr "Ingen telling samsvarer med disse filtrene."
 
 msgid "No count recorded yet"
 msgstr "Ingen telling registrert ennå"
+
+msgid "No critical value or warning"
+msgstr "Ingen kritisk verdi eller advarsel"
 
 msgid "No dead letters."
 msgstr "Ingen ulagrede meldinger."
@@ -9137,6 +9229,9 @@ msgstr ""
 msgid "Nobody else is placed in your department this week."
 msgstr "Ingen andre er plassert i avdelingen din denne uken."
 
+msgid "Nobody is alerted: critical values are shown here, not sent."
+msgstr "Ingen blir varslet: kritiske verdier vises her, de sendes ikke."
+
 msgid "Nobody is expected today"
 msgstr "Ingen forventes i dag"
 
@@ -9377,6 +9472,9 @@ msgid ""
 msgstr ""
 "Ingenting sendes ennå: push-transporten er ikke koblet til (mobilappen kommer senere). Hvert "
 "varsel venter i utboksen nedenfor, med mottaker og nivå, og sendes når den er det."
+
+msgid "Nothing needs attention"
+msgstr "Ingenting trenger oppfølging"
 
 msgid "Nothing of the sensors is open to you yet: ask for a right on the Roles page."
 msgstr "Du har ikke tilgang til noe av sensorene ennå: be om en rettighet på Roller-siden."
@@ -11027,6 +11125,9 @@ msgstr "Rapporter"
 msgid "Reports and notices due"
 msgstr "Rapporter og varsler som skal sendes"
 
+msgid "Reports due"
+msgstr "Rapporter som skal sendes"
+
 msgid "Reports for this species cannot be filed without it."
 msgstr "Rapporter for denne arten kan ikke sendes inn uten den."
 
@@ -12490,9 +12591,6 @@ msgstr "Systemer"
 msgid "Systems (loop)"
 msgstr "Systemer (kretsløp)"
 
-msgid "Systems by status"
-msgstr "Systemer etter status"
-
 msgid "TAN (mg/L N)"
 msgstr "TAN (mg/L N)"
 
@@ -12706,13 +12804,17 @@ msgstr "Adressen mangler en nøkkel protokollen trenger."
 msgid ""
 "The alarm rules are incomplete (no rule row for: %(severities)s): the safest values are used "
 "until the rows are restored."
-msgstr "Alarmreglene er ufullstendige (ingen regelrad for: %(severities)s): de sikreste verdiene brukes til radene er gjenopprettet."
+msgstr ""
+"Alarmreglene er ufullstendige (ingen regelrad for: %(severities)s): de sikreste verdiene brukes "
+"til radene er gjenopprettet."
 
 #, python-format
 msgid ""
 "The alarm step \"%(step)s\" failed: what it does (raising, clearing, notifying or sending alarms)"
 " is not done until it passes again."
-msgstr "Alarmtrinnet «%(step)s» feilet: det trinnet gjør (utløse, oppheve, varsle eller sende alarmer) blir ikke gjort før det lykkes igjen."
+msgstr ""
+"Alarmtrinnet «%(step)s» feilet: det trinnet gjør (utløse, oppheve, varsle eller sende alarmer) "
+"blir ikke gjort før det lykkes igjen."
 
 msgid "The alarm system itself"
 msgstr "Selve alarmsystemet"
@@ -13081,6 +13183,9 @@ msgstr "Forsøket pågår ikke: bare et pågående forsøk har kar å frigi elle
 #, python-format
 msgid "The factor name %(name)s is too long."
 msgstr "Faktornavnet %(name)s er for langt."
+
+msgid "The farm"
+msgstr "Anlegget"
 
 msgid ""
 "The fast before each kind of handling, per species or for every species. Without a rule the fast "
@@ -13557,6 +13662,9 @@ msgstr "Siden kunne ikke vises. Prøv igjen, og si fra til en administrator hvis
 msgid "The pages in the journal or book, e.g. 45–67."
 msgstr "Sidene i tidsskriftet eller boka, f.eks. 45–67."
 
+msgid "The pages your role opens are in the menu."
+msgstr "Sidene rollen din gir tilgang til, står i menyen."
+
 msgid "The parent equipment is on another site."
 msgstr "Det overordnede utstyret er på en annen lokalitet."
 
@@ -13692,9 +13800,6 @@ msgstr "Produktnavnet slik det står på pakningen, f.eks. Salmosan vet."
 
 msgid "The production department belongs to another site."
 msgstr "Produksjonsavdelingen hører til en annen lokalitet."
-
-msgid "The production figures will appear here."
-msgstr "Produksjonstallene vises her."
 
 msgid ""
 "The production fish or the cleaner fish beside them: each feed goes to its own fish. Left as the "
@@ -14797,6 +14902,9 @@ msgstr "I dag på det tidligste; det gamle karets siste dag er dagen før."
 msgid "Today lists the overdue tasks, those due today and those done today."
 msgstr "I dag viser de forfalte oppgavene, dem med frist i dag og dem som er utført i dag."
 
+msgid "Today on the farm"
+msgstr "I dag på anlegget"
+
 msgid "Today’s ration"
 msgstr "Dagens rasjon"
 
@@ -15017,9 +15125,6 @@ msgstr "Enhet, system eller utstyr"
 
 msgid "Units"
 msgstr "Enheter"
-
-msgid "Units by kind"
-msgstr "Enheter etter type"
 
 msgid "Units counted"
 msgstr "Telte enheter"
@@ -15579,7 +15684,11 @@ msgid ""
 "When ticked, going on past a medicine withdrawal (a harvest during one, a treatment reaching back"
 " over a harvest) needs a second person’s approval. That approval is not built yet: while this is "
 "ticked, every such step is refused, so nobody goes on alone."
-msgstr "Når dette er krysset av, krever det å gå videre forbi en tilbakeholdelsestid (et slakt i en, en behandling som når tilbake over et slakt) godkjenning fra en annen person. Den godkjenningen er ikke bygget ennå: så lenge dette er krysset av, avvises hvert slikt steg, så ingen går videre alene."
+msgstr ""
+"Når dette er krysset av, krever det å gå videre forbi en tilbakeholdelsestid (et slakt i en, en "
+"behandling som når tilbake over et slakt) godkjenning fra en annen person. Den godkjenningen er "
+"ikke bygget ennå: så lenge dette er krysset av, avvises hvert slikt steg, så ingen går videre "
+"alene."
 
 msgid "Where"
 msgstr "Hvor"
@@ -16023,6 +16132,9 @@ msgstr "Deres egen korte kode: store bokstaver, sifre, bindestrek og understrek.
 msgid "Your role does not give you this page. Ask an administrator if you need it."
 msgstr "Rollen din gir deg ikke denne siden. Spør en administrator hvis du trenger den."
 
+msgid "Your role opens none of the production figures yet."
+msgstr "Rollen din gir ennå ikke tilgang til noen av produksjonstallene."
+
 msgid "a correction"
 msgstr "en korrigering"
 
@@ -16203,9 +16315,6 @@ msgstr "beholdning %(book)s · %(difference)s (%(percent)s)"
 #, python-format
 msgid "border pH %(ph)s, margin %(margin)s"
 msgstr "grense pH %(ph)s, margin %(margin)s"
-
-msgid "by"
-msgstr ""
 
 #, python-format
 msgid "by %(name)s"
@@ -16908,6 +17017,12 @@ msgstr "på %(location)s: %(held)s, utløper %(date)s."
 #, python-format
 msgid "in %(name)s"
 msgstr "i %(name)s"
+
+#, python-format
+msgid "in %(stocked)s of %(total)s unit"
+msgid_plural "in %(stocked)s of %(total)s units"
+msgstr[0] "i %(stocked)s av %(total)s enhet"
+msgstr[1] "i %(stocked)s av %(total)s enheter"
 
 msgid "ingest contract"
 msgstr "innhentingskontrakt"

@@ -1,12 +1,15 @@
 from django.shortcuts import render
 from django.urls import reverse
+from django.utils import timezone
+from django.utils.http import urlencode
 from django.utils.translation import gettext_lazy as _
 
 from farm.models import Equipment, ProductionDepartment, Site, System, Tank
 from farm.feeding.views import overview_tiles as feeding_tiles
 from farm.stock.views import overview_tiles
+from farm.water.views import RECORD as WATER_RECORD, overview as water_overview
+from reports import duties
 from reports.views import overview_upcoming
-from farm.water.views import overview_tiles as water_tiles
 from tasks.views import overview_tiles as task_tiles
 
 
@@ -27,15 +30,48 @@ def home(request):
     })
 
 
+def _named(tiles):
+    """{key: tile} of an area's overview tiles, or None when the person may not read the area (no tiles)."""
+    return {tile['key']: tile for tile in tiles} or None
+
+
+def _upcoming(user):
+    """The reports due (reports.views.overview_upcoming), split for the page: the overdue ones (and the overdue duties
+    outside this system) need attention, the others are due; None for a person who may not read the reports."""
+    upcoming = overview_upcoming(user)
+    if upcoming is None:
+        return None
+    return {**upcoming, 'late': [row for row in upcoming['rows'] if row.overdue],
+            'due': [row for row in upcoming['rows'] if not row.overdue],
+            'late_duties': [line for line in upcoming['duties'] if line.status == duties.OVERDUE],
+            'due_duties': [line for line in upcoming['duties'] if line.status != duties.OVERDUE]}
+
+
 def production_home(request):
-    """The production overview: the stock now (units with fish, fish, biomass, from the ledger), the feed
-    given (today, the last 7 days), the units with a critical water value and the tasks due today and overdue,
-    then the farm's structure."""
+    """The production overview, the panel's landing page at the start of a shift (templates/production_home.html): the
+    day in four lines (the stock now from the ledger, the feed given today and over 7 days, the water's counts, the tasks
+    due today and overdue), each with its source and the moment it was worked out; what needs attention (the water points
+    with a critical or warning value, the critical first; overdue tasks and reports); then the reports due and the farm's
+    structure. Each part only for a person who may read it, read by the areas' own functions; the one primary action,
+    Record water sample, only for a person who may record one."""
+    user = request.user
+    stock, feeding, tasks = overview_tiles(user), feeding_tiles(user), task_tiles(user)
+    water = water_overview(user)
+    upcoming = _upcoming(user)
+    tasks_named = _named(tasks)
     return render(request, 'production_home.html', {
-        'stock_tiles': overview_tiles(request.user),
-        'feeding_tiles': feeding_tiles(request.user),
-        'water_tiles': water_tiles(request.user),
-        'task_tiles': task_tiles(request.user),
+        'stock_tiles': stock,
+        'feeding_tiles': feeding,
+        'water_tiles': water['tiles'] if water else [],
+        'task_tiles': tasks,
+        'stock': _named(stock), 'feeding': _named(feeding), 'tasks': tasks_named, 'water': water,
+        'upcoming': upcoming, 'now': timezone.now(),
+        'systems_url': reverse('farm:system_list'), 'units_url': reverse('farm:tank_list'),
+        'meal_board_url': reverse('farm:meal_board') if user.has_perm('farm.view_feedingrecord') else '',
+        'record_url': f"{reverse('farm:water_record')}?{urlencode({'next': request.get_full_path()})}"
+        if user.has_perm(WATER_RECORD) else '',
+        'late_tasks': tasks_named['overdue']['count'] if tasks_named else 0,
+        'late_reports': len(upcoming['late']) + len(upcoming['late_duties']) if upcoming else 0,
         'tiles': _counts(request.user,
                          (_('Production departments'), ProductionDepartment, 'farm:productiondepartment_list'),
                          (_('Systems'), System, 'farm:system_list'),

@@ -233,13 +233,17 @@
         {
           "name": "cause",
           "field": "cause",
-          "type": "varchar(12)",
+          "type": "varchar(20)",
           "null": false,
           "choices": [
             "returned",
             "event_closed",
             "structural",
-            "restored"
+            "limit_removed",
+            "restored",
+            "unit_removed",
+            "merged",
+            "device_removed"
           ],
           "link": null,
           "on_form": [],
@@ -313,6 +317,8 @@
       },
       "tests": [
         "alarms/tests/test_alarms.py",
+        "alarms/tests/test_clock.py",
+        "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py"
       ]
     },
@@ -494,6 +500,12 @@
           "kind": "check",
           "fields": [],
           "conditional": false
+        },
+        {
+          "name": "chk_alarm_deadbands_ceiling",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
         }
       ],
       "screens": {
@@ -588,6 +600,7 @@
       "tests": [
         "core/tests_platform.py",
         "core/tests_workspaces.py",
+        "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_reference.py"
       ]
@@ -1031,6 +1044,8 @@
       },
       "tests": [
         "alarms/tests/test_alarms.py",
+        "alarms/tests/test_clock.py",
+        "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py"
       ]
     },
@@ -1601,6 +1616,32 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "clock_skew_seconds",
+          "field": "clock_skew_seconds",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SeverityPolicyForm › Device clock"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "clock_skew_deadband_seconds",
+          "field": "clock_skew_deadband_seconds",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SeverityPolicyForm › Device clock"
+          ],
+          "how": "form",
+          "why": ""
         }
       ],
       "constraints": [
@@ -1625,6 +1666,12 @@
           "conditional": false
         },
         {
+          "name": "chk_alarm_severity_policies_on_delay",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
           "name": "chk_alarm_severity_policies_escalation",
           "kind": "check",
           "fields": [],
@@ -1632,6 +1679,18 @@
         },
         {
           "name": "chk_alarm_severity_policies_attempts",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_severity_policies_clock",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_severity_policies_kept",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -1691,6 +1750,8 @@
             "off_delay_seconds": "Rule",
             "escalation_minutes": "Rule",
             "delivery_attempts": "Rule",
+            "clock_skew_seconds": "Device clock",
+            "clock_skew_deadband_seconds": "Device clock",
             "version": ""
           }
         }
@@ -1710,6 +1771,8 @@
         "core/tests_platform.py",
         "core/tests_workspaces.py",
         "alarms/tests/test_alarms.py",
+        "alarms/tests/test_clock.py",
+        "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_reference.py"
       ]
@@ -1718,7 +1781,7 @@
       "app": "alarms",
       "model": "AlarmSubjectState",
       "table": "alarm_subject_state",
-      "description": "The one mutable row of an alarm subject (a unit's parameter at a level: `water:<point>:<slot>:<severity>`): the timers of its lifecycle, kept in the database so a restart loses none: since when the condition holds without an alarm yet (the on-delay, counted from the first offending value's time), since when it is over while the alarm is open (the off-delay), the time of the last value that held it, and the alarm open now.",
+      "description": "The one mutable row of an alarm subject (a unit's parameter at a level: `water:unit:<unit>:<slot>:<severity>`, never the point that stands for the unit, so a point replaced keeps the subject: cross review F7; or one of the alarm system's own, `system:<name>`): the timers of its lifecycle, kept in the database so a restart loses none: since when the condition holds without an alarm yet (the on-delay, counted from the first offending value's time), since when it is over while the alarm is open (the off-delay), the time of the last value that held it, and the alarm open now.",
       "columns": [
         {
           "name": "key",
@@ -1828,6 +1891,7 @@
         "left_out": false
       },
       "tests": [
+        "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py"
       ]
     },
@@ -1900,6 +1964,21 @@
           "null": false,
           "choices": [],
           "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        },
+        {
+          "name": "device_id",
+          "field": "device",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "sensors_device",
+            "model": "sensors.Device",
+            "on_delete": "PROTECT"
+          },
           "on_form": [],
           "how": "system",
           "why": "written by manage.py run_alarms (alarms/engine.py)"
@@ -2052,6 +2131,8 @@
         "sensors/tests/test_alarms.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_alarms.py",
+        "alarms/tests/test_clock.py",
+        "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_pages.py",
         "alarms/tests/test_reference.py"
@@ -2333,6 +2414,7 @@
         "sensors/tests/test_pages.py",
         "sensors/tests/test_portable.py",
         "alarms/tests/test_alarms.py",
+        "alarms/tests/test_cross_review.py",
         "alarms/tests/test_pages.py",
         "alarms/tests/test_reference.py"
       ]
@@ -2583,6 +2665,19 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "clock_tolerance_seconds",
+          "field": "clock_tolerance_seconds",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "PlatformSettingsForm › Clocks"
+          ],
+          "how": "form",
+          "why": ""
         }
       ],
       "constraints": [
@@ -2602,6 +2697,12 @@
         },
         {
           "name": "chk_platform_settings_window",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_platform_settings_clock_tolerance",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -2659,6 +2760,7 @@
           "fields": {
             "correction_window_days": "Records",
             "second_approval_withdrawal": "Records",
+            "clock_tolerance_seconds": "Clocks",
             "version": ""
           }
         }
@@ -2678,6 +2780,8 @@
         "core/tests_platform.py",
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
+        "farm/tests/test_harvest_inside_withdrawal.py",
+        "alarms/tests/test_freshness.py",
         "alarms/tests/test_reference.py"
       ]
     },
@@ -13148,7 +13252,8 @@
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_portable.py",
-        "alarms/tests/__init__.py"
+        "alarms/tests/__init__.py",
+        "alarms/tests/test_migration_subjects.py"
       ]
     },
     {
@@ -14854,7 +14959,9 @@
         "sensors/tests/test_portable.py",
         "sensors/tests/test_read.py",
         "alarms/tests/__init__.py",
-        "alarms/tests/test_migration.py"
+        "alarms/tests/test_migration.py",
+        "alarms/tests/test_migration_reverse.py",
+        "alarms/tests/test_migration_subjects.py"
       ]
     },
     {
@@ -17048,7 +17155,8 @@
         "reports/tests/test_cleaner.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_tabs.py",
-        "monitoring/tests/test_pages.py"
+        "monitoring/tests/test_pages.py",
+        "alarms/tests/test_cross_review.py"
       ]
     },
     {
@@ -19397,7 +19505,8 @@
         "monitoring/tests/test_templates_db.py",
         "monitoring/tests/test_token.py",
         "sensors/tests/test_pages.py",
-        "sensors/tests/test_portable.py"
+        "sensors/tests/test_portable.py",
+        "alarms/tests/test_cross_review.py"
       ]
     },
     {
@@ -20091,6 +20200,255 @@
     },
     {
       "app": "farm",
+      "model": "WaterFreshness",
+      "table": "water_freshness",
+      "description": "How long a value of a water parameter says something about the water now (hours), one row per parameter: an older value is shown stale, never OK, and never clears an alarm.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "parameter",
+          "field": "parameter",
+          "type": "varchar(30)",
+          "null": false,
+          "choices": [
+            "temperature_c",
+            "oxygen_mg_l",
+            "oxygen_saturation_pct",
+            "ph",
+            "alkalinity_mg_l",
+            "co2_mg_l",
+            "tan_mg_l",
+            "nitrite_n_mg_l",
+            "nitrate_n_mg_l",
+            "tgp_pct",
+            "salinity_ppt",
+            "turbidity_ntu",
+            "nh3_n_mg_l",
+            "nh4_n_mg_l"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
+        },
+        {
+          "name": "fresh_hours",
+          "field": "fresh_hours",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "WaterFreshnessForm › Freshness"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_water_freshness_parameter",
+          "kind": "unique",
+          "fields": [
+            "parameter"
+          ],
+          "conditional": false
+        },
+        {
+          "name": "chk_water_freshness_hours",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_water_freshness_kept",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "migration 0037 makes one row per water parameter"
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "water freshness tab",
+              "url_names": [
+                "farm:waterfreshness_edit"
+              ],
+              "routes": [
+                "/water-freshness/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "there is always one row per water parameter (a lost one is made again)"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "water freshness tab",
+              "url_names": [
+                "farm:waterfreshness_list"
+              ],
+              "routes": [
+                "/water-freshness/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [
+        {
+          "form": "WaterFreshnessForm",
+          "module": "farm.forms.water",
+          "fields": {
+            "fresh_hours": "Freshness",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "Facility",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "alarms/tests/test_freshness.py"
+      ]
+    },
+    {
+      "app": "farm",
       "model": "WaterLimit",
       "table": "water_limits",
       "description": "The water a species is kept in: for one parameter, the bounds outside which a value is a warning and outside which it is critical, per water type or for any water, with where the values come from.",
@@ -20497,7 +20855,8 @@
         "farm/tests/test_water.py",
         "monitoring/tests/__init__.py",
         "monitoring/tests/test_extras.py",
-        "alarms/tests/__init__.py"
+        "alarms/tests/__init__.py",
+        "alarms/tests/test_cross_review.py"
       ]
     },
     {
@@ -21634,6 +21993,7 @@
         "farm/tests/test_calculator.py",
         "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_migration_points.py",
+        "farm/tests/test_production_overview.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_followups.py",
         "farm/tests/test_water_points.py",
@@ -21642,7 +22002,9 @@
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
         "reports/tests/test_lice.py",
-        "alarms/tests/test_defects.py"
+        "alarms/tests/test_cross_review.py",
+        "alarms/tests/test_defects.py",
+        "alarms/tests/test_migration_subjects.py"
       ]
     },
     {
@@ -34846,6 +35208,7 @@
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_migration.py",
+        "alarms/tests/test_migration_reverse.py",
         "alarms/tests/test_pages.py"
       ]
     },
@@ -35880,6 +36243,19 @@
           "why": ""
         },
         {
+          "name": "fresh_heartbeats",
+          "field": "fresh_heartbeats",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ChannelForm › Storing"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
           "name": "fresh_s",
           "field": "fresh_s",
           "type": "integer",
@@ -35983,6 +36359,12 @@
         },
         {
           "name": "chk_sensors_channel_unit_offset",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_channel_fresh_heartbeats",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -36129,6 +36511,7 @@
             "reduction": "Storing",
             "deadband": "Storing",
             "heartbeat_s": "Storing",
+            "fresh_heartbeats": "Storing",
             "range_min": "Storing",
             "range_max": "Storing",
             "state": "Storing",
@@ -36371,7 +36754,8 @@
         "sensors/tests/test_history.py",
         "sensors/tests/test_operations.py",
         "sensors/tests/test_portable.py",
-        "sensors/tests/test_read.py"
+        "sensors/tests/test_read.py",
+        "alarms/tests/test_clock.py"
       ]
     },
     {
@@ -38003,7 +38387,8 @@
         "sensors/tests/test_pages.py",
         "sensors/tests/test_portable.py",
         "sensors/tests/test_read.py",
-        "sensors/tests/test_schema.py"
+        "sensors/tests/test_schema.py",
+        "alarms/tests/test_clock.py"
       ]
     },
     {

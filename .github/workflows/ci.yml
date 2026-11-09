@@ -3,7 +3,8 @@
 #             checks, in the test runner's image (scripts/testrunner/image.sh) on a TimescaleDB server of its own, then
 #             the catalogs must be unchanged. On a pull request that is all (SUITE=0, minutes); the whole suite (an
 #             hour or more on a hosted runner) runs on a push to main, nightly and by hand
-#   frontend  npm ci, the browser build (tsc) and the TypeScript tests (npm test)
+#   frontend  npm ci, the Tailwind build checked against the committed static/css/tw.css, the browser build (tsc, Tailwind)
+#             and the TypeScript tests (npm test)
 #   rust      sensors-ingest: rustfmt, clippy, the tests against the real schema and a broker, cargo deny, THIRD_PARTY
 #   chemcore  chemcore/scripts/test.sh in the chemcore-tools stage of docker/testrunner.Dockerfile
 #   security  pip-audit, the Python licence gate, npm audit
@@ -128,7 +129,11 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci
-      - name: Build (tsc -p tsconfig.json)
+      # static/css/tw.css is committed: it must be what frontend/tailwind.css and the templates build now (checked before
+      # the build below writes it again).
+      - name: Tailwind build is up to date (npm run check:css)
+        run: npm run check:css
+      - name: Build (tsc -p tsconfig.json, then the Tailwind build)
         run: npm run build
       # The designer's browser test drives the runner's own Chrome (/usr/bin/google-chrome). Ubuntu 24.04 limits
       # unprivileged user namespaces, which Chrome's sandbox needs.

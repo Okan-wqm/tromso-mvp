@@ -1,31 +1,24 @@
 {% extends "app_base.html" %}
 {% load i18n %}
+{% comment %} Production › Overview (config.views.production_home): the panel's landing page at the start of a shift. The head
+   says in chips only what is abnormal (critical and warning water points, overdue tasks and reports), else that nothing
+   needs attention; its one primary action is Record water sample, for a person who may record one. The body is
+   _production_overview.html, which the browser layout test lays out too (core/layout_pages.py). {% endcomment %}
 {% block title %}{% trans "Production overview" %}{% endblock %}
 {% block eyebrow %}{% trans "Production" %}{% endblock %}
 {% block heading %}{% trans "Overview" %}{% endblock %}
-{% block content %}
-{% if stock_tiles %}{% include "_overview_tiles.html" with tiles=stock_tiles %}{% endif %}
-{% if feeding_tiles %}{% include "_overview_tiles.html" with tiles=feeding_tiles %}{% endif %}
-{% if water_tiles %}{% include "_overview_tiles.html" with tiles=water_tiles %}{% endif %}
-{% if task_tiles %}{% include "_overview_tiles.html" with tiles=task_tiles %}{% endif %}
-{% include "_overview_tiles.html" %}
-{% if units_by_kind %}
-<section class="overview-block">
-  <h2>{% trans "Units by kind" %}</h2>
-  <ul class="status-list" role="list">
-    {% for item in units_by_kind %}<li><a href="{{ item.url }}">{{ item.label }}</a> <strong>{{ item.count }}</strong></li>{% endfor %}
-  </ul>
-</section>
-{% endif %}
-{% if systems_by_status %}
-<section class="overview-block">
-  <h2>{% trans "Systems by status" %}</h2>
-  <ul class="status-list" role="list">
-    {% for item in systems_by_status %}<li><span class="badge badge-{{ item.value }}">{{ item.label }}</span> <strong>{{ item.count }}</strong></li>{% endfor %}
-  </ul>
-</section>
-{% endif %}
-<section class="placeholder">
-  <p>{% trans "The production figures will appear here." %}</p>
-</section>
-{% endblock %}
+{% block head_status %}{% if water or tasks or upcoming %}
+<div class="ui-head-status">
+  {% if water.critical %}<span class="ui-chip" data-status="critical">{% include "icons/_icon.html" with name="octagon" %}{% blocktrans trimmed count count=water.critical %}{{ count }} critical{% plural %}{{ count }} critical{% endblocktrans %}</span>{% endif %}
+  {% if water.warning %}<span class="ui-chip" data-status="warning">{% include "icons/_icon.html" with name="alert" %}{% blocktrans trimmed count count=water.warning %}{{ count }} warning{% plural %}{{ count }} warnings{% endblocktrans %}</span>{% endif %}
+  {% if late_tasks %}<span class="ui-chip" data-status="warning">{% include "icons/_icon.html" with name="clock" %}{% blocktrans trimmed count count=late_tasks %}{{ count }} overdue task{% plural %}{{ count }} overdue tasks{% endblocktrans %}</span>{% endif %}
+  {% if late_reports %}<span class="ui-chip" data-status="warning">{% include "icons/_icon.html" with name="clock" %}{% blocktrans trimmed count count=late_reports %}{{ count }} overdue report{% plural %}{{ count }} overdue reports{% endblocktrans %}</span>{% endif %}
+  {% if not water.critical and not water.warning and not late_tasks and not late_reports %}<span class="ui-chip" data-status="ok">{% include "icons/_icon.html" with name="check-circle" %}<span>{% trans "Nothing needs attention" %}</span></span>{% endif %}
+</div>
+{% endif %}{% endblock %}
+{% block head_actions %}{% if record_url %}
+<div class="ui-head-actions">
+  <a class="ui-btn tw:coarse:min-h-14" data-variant="primary" href="{{ record_url }}" data-modal>{% include "icons/_icon.html" with name="plus" %}{% trans "Record water sample" %}</a>
+</div>
+{% endif %}{% endblock %}
+{% block content %}{% include "_production_overview.html" %}{% endblock %}

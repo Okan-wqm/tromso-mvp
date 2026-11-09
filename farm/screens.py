@@ -78,6 +78,8 @@ SCREENS = {
                       'day': "an opening balance's takeover day: the date of its stocking operation",
                       'document': "an opening balance's source document: stored on its OpeningBalance"},
     ),
+    'WaterFreshness': Screen(create=no('migration 0037 makes one row per water parameter'),
+                             delete=no('there is always one row per water parameter (a lost one is made again)')),
     'StockOperation': Screen(
         create=STOCK_WRITE,
         edit=no(LEDGER),

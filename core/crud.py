@@ -529,7 +529,9 @@ class Resource:
 
     @classmethod
     def after_save(cls, request, obj, created):
-        """Runs inside the save transaction, after the audit row; e.g. invite a new user."""
+        """Runs inside the save transaction, after the audit row; e.g. invite a new user. A ValidationError raised here
+        rolls the save back and is shown on the form (a rule checked under a lock the form could not hold: HR's
+        employment bound)."""
 
     # When a save may ask something first (`edited`, below): the template the edit page shows the question with, and the
     # name of the box that answers it.
@@ -754,8 +756,11 @@ class CreateView(FormView):
                         raise
                     form.instance._state.adding = True     # the page is the new-record form again
                     return self.page(form)
-            except ValidationError as error:     # its key stands for a record of another kind (EntryKey.note)
-                form.add_error(None, error.message_dict.get(NON_FIELD_ERRORS, error.messages))
+            except ValidationError as error:
+                # Its key stands for a record of another kind (EntryKey.note), or a rule `after_save` checks under its lock
+                # refused it (HR's employment bound): nothing was written.
+                form.add_error(None, error.message_dict.get(NON_FIELD_ERRORS, error.messages)
+                               if hasattr(error, 'error_dict') else error.messages)
                 form.instance._state.adding = True
                 return self.page(form)
             else:

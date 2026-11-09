@@ -76,7 +76,7 @@ def storage(request):
     if can_record:
         actions = [{'label': label, 'url': _with_next(reverse(f'inventory:{name}'), request), 'primary': index == 0}
                    for index, (name, label) in enumerate([
-                       ('receive', _('Receive delivery')), ('transfer', _('Transfer')), ('issue', _('Issue')),
+                       ('receive', _('Receive delivery')), ('transfer', _('Transfer')), ('issue', OperationKind.ISSUE.label),
                        ('write_off', _('Write off')), ('return', _('Return to supplier')),
                        ('count', _('Count a location'))])]
     context = _context(tab=tab, tabs=[{'key': key, 'label': label, 'url': f'{reverse("inventory:storage")}?tab={key}',
@@ -117,7 +117,7 @@ def _stock(request, context):
         'params': params, 'sites': sites, 'locations': locations, 'items': items,
         'rows': [{'bucket': row, 'expired': row.lot.expiry_date is not None and row.lot.expiry_date < site_today(row.site),
                   'actions': [(act(name, row), label) for name, label in (
-                      ('transfer', _('Transfer')), ('issue', _('Issue')), ('write_off', _('Write off')),
+                      ('transfer', _('Transfer')), ('issue', OperationKind.ISSUE.label), ('write_off', _('Write off')),
                       ('return', _('Return'))) if can_record and row.quantity > 0],
                   'item_url': f'{reverse("inventory:item", args=[row.item.pk])}?site={row.site.pk}',
                   'lot_url': reverse('inventory:lot', args=[row.lot.pk])} for row in shown],
@@ -293,7 +293,7 @@ def receive(request):
 
 
 DEPARTURES = {
-    'issue': (IssueForm, gettext_lazy('Issue')),
+    'issue': (IssueForm, OperationKind.ISSUE.label),
     'write_off': (WriteOffForm, gettext_lazy('Write off')),
     'return': (ReturnForm, gettext_lazy('Return to supplier')),
     'transfer': (TransferForm, gettext_lazy('Transfer')),

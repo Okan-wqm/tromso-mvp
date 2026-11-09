@@ -33,7 +33,6 @@ from .evaluate import Status, judge as judge_bounds
 
 # The calculator's fields a unit or a loop measures, by the parameter they are.
 MEASURED_FIELDS = ['temperature_c', 'ph', 'salinity_ppt', 'alkalinity_mg_l', 'tan_mg_l', 'oxygen_mg_l']
-ALTITUDE_HIGH = 5000            # the calculator's altitude field goes from sea level to this (m)
 # The pH bounds, the field each fills and how the strictest of several species' is picked.
 PH_BOUNDS = [('ph_critical_low', 'critical_low', max), ('ph_warning_low', 'warning_low', max),
              ('ph_warning_high', 'warning_high', min), ('ph_critical_high', 'critical_high', min)]
@@ -210,7 +209,7 @@ def offers(owner, now=None, point=None, water=None):
         if reading is not None and reading.value is not None:
             found[name] = Offer(name, reading.value, reading=reading)
     site = site_of(owner)
-    if site is not None and site.altitude is not None and 0 <= site.altitude <= ALTITUDE_HIGH:
+    if site is not None and site.altitude is not None:        # the database holds its range (models.site)
         found['altitude_m'] = Offer('altitude_m', Decimal(round(site.altitude)))
     found.update(fish_limits(owner))
     return found

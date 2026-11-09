@@ -11,7 +11,7 @@ from ..forms.roster import ShiftAssignmentForm
 from ..models import Employee, ShiftAssignment
 
 
-class ShiftAssignmentResource(Resource):
+class ShiftAssignmentResource(services.PersonFirst, Resource):
     """The Shift schedule: a week of the team as a table, one cell per person and day. A cell opens the plan of that
     person and day (a dialog; the list's create route takes `?employee=&day=` for an empty one). The rows are the people
     the viewer reaches (`scoped`, and per day for the week read, hr.scope.visible_days); the rules run on every save
@@ -36,7 +36,7 @@ class ShiftAssignmentResource(Resource):
 
     @classmethod
     def allowed(cls, request, obj, action):
-        return not services.self_plan(request.user, obj.employee)
+        return not services.own_record(request.user, obj.employee)
 
     @classmethod
     def form(cls, request, *args, **kwargs):
@@ -94,5 +94,6 @@ class ShiftAssignmentResource(Resource):
 
     @classmethod
     def after_save(cls, request, assignment, created):
+        services.lock_employed(assignment.employee, assignment.day)       # the employment rule under the person's lock
         for finding in getattr(assignment, 'warnings', []):
             messages.warning(request, rules.text(finding))

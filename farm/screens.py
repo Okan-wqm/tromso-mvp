@@ -9,6 +9,7 @@ from .forms import stock as stock_forms
 from .forms.feeding_protocol import BandRowForm, ProtocolTableForm
 from .forms.health import LastDayForm
 from .forms.water import MEASURED, RoundForm, RoundRowForm, SampleVoidForm, WaterSampleForm
+from .models.water import BASIS_COLUMNS
 from .harvest import views as harvest
 from .health import views as health
 from .resources.feeding_protocol import FeedingProtocolResource
@@ -159,8 +160,11 @@ SCREENS = {
         read=(water.water_page, stock.production_units),
         forms=(WaterSampleForm, RoundForm, RoundRowForm, SampleVoidForm),
         fills={'SampleVoidForm.reason': 'void_reason'},
-        columns={parameter.code: dynamic('one field for each water parameter (farm.forms.water.MEASURED)')
-                 for parameter in MEASURED},
+        columns={**{parameter.code: dynamic('one field for each water parameter (farm.forms.water.MEASURED)')
+                    for parameter in MEASURED},
+                 **{column: computed('what an oxygen without its own temperature or salinity is worked out with, found '
+                                     'by the server at the sample’s point and time (farm/water/read.oxygen_basis)')
+                    for column in BASIS_COLUMNS}},
     ),
 
     # --- health ---

@@ -204,6 +204,7 @@
         "farm/tests/test_harvest_inside_withdrawal.py",
         "farm/tests/test_health.py",
         "farm/tests/test_lice_reason.py",
+        "farm/tests/test_migration_altitude.py",
         "farm/tests/test_production_departments.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
@@ -240,7 +241,10 @@
         "hr/tests/test_attendance.py",
         "hr/tests/test_departments.py",
         "hr/tests/test_employees.py",
+        "hr/tests/test_employment_bounds.py",
         "hr/tests/test_leave.py",
+        "hr/tests/test_leave_correction.py",
+        "hr/tests/test_own_record.py",
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm.py",
         "hr/tests/test_review.py",
@@ -10580,6 +10584,7 @@
         "farm/tests/test_production_departments.py",
         "farm/tests/test_restore.py",
         "farm/tests/test_site_structure.py",
+        "farm/tests/test_sites.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_suppliers.py",
         "farm/tests/test_systems.py",
@@ -10598,6 +10603,7 @@
         "hr/tests/test_leave_type_privacy.py",
         "hr/tests/test_org_tree.py",
         "hr/tests/test_overview_chart.py",
+        "hr/tests/test_own_record.py",
         "hr/tests/test_production_permissions.py",
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm.py",
@@ -12105,6 +12111,12 @@
           "conditional": false
         },
         {
+          "name": "chk_sites_altitude_range",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
           "name": "chk_sites_coordinates_paired",
           "kind": "check",
           "fields": [],
@@ -12263,6 +12275,7 @@
         "farm/tests/test_equipment.py",
         "farm/tests/test_health.py",
         "farm/tests/test_lock_order.py",
+        "farm/tests/test_migration_altitude.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_migration_site_zone.py",
         "farm/tests/test_production_departments.py",
@@ -16773,7 +16786,9 @@
         "farm/tests/test_stock.py",
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
+        "farm/tests/test_water_oxygen_basis.py",
         "farm/tests/test_water_points.py",
+        "farm/tests/test_water_resolver.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
         "inventory/tests/test_services.py",
@@ -17883,8 +17898,10 @@
         "core/test_languages.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
+        "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_water.py",
-        "monitoring/tests/__init__.py"
+        "monitoring/tests/__init__.py",
+        "monitoring/tests/test_extras.py"
       ]
     },
     {
@@ -18185,6 +18202,106 @@
           "why": "one field for each water parameter (farm.forms.water.MEASURED)"
         },
         {
+          "name": "oxygen_basis_temperature_c",
+          "field": "oxygen_basis_temperature_c",
+          "type": "numeric(3, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
+          "name": "oxygen_basis_temperature_source",
+          "field": "oxygen_basis_temperature_source",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [
+            "manual",
+            "lab",
+            "sensor",
+            "system_sensor",
+            "fresh_water"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
+          "name": "oxygen_basis_temperature_channel",
+          "field": "oxygen_basis_temperature_channel",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
+          "name": "oxygen_basis_temperature_at",
+          "field": "oxygen_basis_temperature_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
+          "name": "oxygen_basis_salinity_ppt",
+          "field": "oxygen_basis_salinity_ppt",
+          "type": "numeric(3, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
+          "name": "oxygen_basis_salinity_source",
+          "field": "oxygen_basis_salinity_source",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [
+            "manual",
+            "lab",
+            "sensor",
+            "system_sensor",
+            "fresh_water"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
+          "name": "oxygen_basis_salinity_channel",
+          "field": "oxygen_basis_salinity_channel",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
+          "name": "oxygen_basis_salinity_at",
+          "field": "oxygen_basis_salinity_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
           "name": "notes",
           "field": "notes",
           "type": "varchar(500)",
@@ -18299,6 +18416,18 @@
         },
         {
           "name": "chk_water_measurements_turbidity_ntu",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_water_measurements_oxygen_basis_temperature",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_water_measurements_oxygen_basis_salinity",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -18438,7 +18567,10 @@
         "farm/tests/test_migration_points.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_water.py",
+        "farm/tests/test_water_oxygen_basis.py",
         "farm/tests/test_water_points.py",
+        "farm/tests/test_water_resolver.py",
+        "farm/tests/test_water_review3.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
         "farm/tests/test_withdrawal_guard.py",
@@ -18906,7 +19038,9 @@
         "farm/tests/test_calculator.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_water.py",
+        "farm/tests/test_water_followups.py",
         "farm/tests/test_water_points.py",
+        "farm/tests/test_water_review3.py",
         "farm/tests/test_water_sources.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
@@ -19606,6 +19740,7 @@
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_crew.py",
+        "hr/tests/test_employment_bounds.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_menu_access.py",
         "hr/tests/test_production_team.py",
@@ -19971,11 +20106,14 @@
         "hr/tests/test_boundary.py",
         "hr/tests/test_crew.py",
         "hr/tests/test_employees.py",
+        "hr/tests/test_employment_bounds.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
+        "hr/tests/test_leave_correction.py",
         "hr/tests/test_leave_impact.py",
         "hr/tests/test_leave_type_privacy.py",
         "hr/tests/test_menu_access.py",
+        "hr/tests/test_own_record.py",
         "hr/tests/test_production_permissions.py",
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm.py",
@@ -20664,8 +20802,10 @@
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_crew.py",
+        "hr/tests/test_employment_bounds.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
+        "hr/tests/test_leave_correction.py",
         "hr/tests/test_leave_impact.py",
         "hr/tests/test_leave_type_privacy.py",
         "hr/tests/test_menu_access.py",
@@ -20988,6 +21128,7 @@
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_crew.py",
+        "hr/tests/test_employment_bounds.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_impact.py",
@@ -21666,6 +21807,7 @@
         "hr/tests/test_employees.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
+        "hr/tests/test_own_record.py",
         "hr/tests/test_realm.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scope.py",
@@ -22358,6 +22500,7 @@
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_crew.py",
+        "hr/tests/test_employment_bounds.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_impact.py",
@@ -22741,6 +22884,7 @@
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_crew.py",
+        "hr/tests/test_employment_bounds.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_impact.py",
@@ -25679,11 +25823,13 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_escaping.py",
         "core/tests_workspaces.py",
         "knowledge/tests/test_documents.py",
         "knowledge/tests/test_entries.py",
         "knowledge/tests/test_languages.py",
-        "knowledge/tests/test_search.py"
+        "knowledge/tests/test_search.py",
+        "inventory/tests/test_words.py"
       ]
     },
     {
@@ -36212,6 +36358,7 @@
       },
       "tests": [
         "core/test_datamap.py",
+        "core/test_text.py",
         "core/tests_workspaces.py",
         "knowledge/tests/test_extraction.py",
         "experiments/tests/test_overview.py",

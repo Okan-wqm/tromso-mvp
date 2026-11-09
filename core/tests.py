@@ -304,7 +304,7 @@ class RoleTests(AdminTestCase):
                 continue
             read_id = re.search(r'value="%s" id="(\w+)"' % perms(area.perm(access.READ))[0], html).group(1)
             for action in area.actions:
-                if action != access.READ:
+                if action in access.INCLUDES_READ:     # Crew, All production and Everyone widen rows only
                     tied += 1
                     self.assertRegex(
                         html, r'value="%s" id="\w+" data-requires="%s"' % (perms(area.perm(action))[0], read_id))

@@ -1,11 +1,11 @@
 """The water's other sources (farm/water/sources.py): live values from a provider (the sensors app registers one; these
 tests a fake), resolved per parameter, each on its own, in ONE place (farm/water/read.py `latest`), in the owner's order
-(owner amendment A1):
+(A9, 2026-11-07, which replaced A1):
 
-1. a fresh value bound to the point itself, the primary channel before the backup;
-2. else, for the middle point of a unit or of a system, a fresh value bound to the system (the unit's `system`);
-3. else the latest manual or lab value, when it is fresh;
-4. else the newest of what there is, shown stale.
+1. the newest of the point's OWN fresh values, its sensor channels' and its samples', whatever the origin (between two
+   channels measured at the same time, the primary before the backup);
+2. else, for the middle point of a unit, the newest fresh value of its system (the system's sensor, a sample of its loop);
+3. else the newest of what there is, shown stale and used in no calculation.
 
 Every value says where it comes from and how old it is, on the water page, the monitoring card and the Deffeyes window.
 Derived values (NH3, the other oxygen unit) need all their inputs from one kind of source: a sensor TAN with sensor pH and
@@ -24,7 +24,7 @@ from ..models import SamplingPoint
 from ..water import calculation, read, sources
 from ..water.evaluate import Status, is_fresh
 from ..water.parameters import get
-from .helpers import point_of
+from .helpers import make_species, point_of
 from .test_water import WaterTestCase
 
 D = Decimal
@@ -100,12 +100,15 @@ class OrderTests(SourcesCase):
         self.assertEqual(reading.sample.channel_no, 1)
         self.assertEqual(reading.at, self.now - timedelta(seconds=10))
 
-    def test_the_backup_when_the_primary_is_stale_and_the_primary_when_both_are_fresh(self):
+    def test_the_newest_fresh_channel_wins_and_the_primary_only_at_the_same_time(self):
+        """A9 (2026-11-07): always the newest; primary before backup only as the tie-breaker at one measurement time."""
         self.on(self.mid1, self.value('ph', 7.0, seconds=600, channel_no=1),
                 self.value('ph', 7.2, seconds=5, role=BACKUP, channel_no=2))
-        self.assertEqual(self.latest().get('ph').sample.channel_no, 2)
+        self.assertEqual(self.latest().get('ph').sample.channel_no, 2)       # the primary is stale
         self.on(self.mid1, self.value('ph', 7.3, seconds=20, channel_no=3))
-        self.assertEqual(self.latest().get('ph').sample.channel_no, 3)
+        self.assertEqual(self.latest().get('ph').sample.channel_no, 2)       # both fresh: the backup is newer
+        self.on(self.mid1, self.value('ph', 7.4, seconds=5, channel_no=4))
+        self.assertEqual(self.latest().get('ph').sample.channel_no, 4)       # the same time: the primary
 
     def test_the_system_sensor_when_the_unit_has_no_fresh_sensor_of_its_own(self):
         self.on(self.ras, self.value('temperature_c', 9.54))
@@ -150,8 +153,12 @@ class OrderTests(SourcesCase):
         water = self.latest()
         origins = {code: water.get(code).sample.origin for code in ('ph', 'temperature_c', 'alkalinity_mg_l',
                                                                     'salinity_ppt')}
-        self.assertEqual(origins, {'ph': read.Origin.SENSOR, 'temperature_c': read.Origin.SYSTEM_SENSOR,
+        # A9: the unit's own fresh temperature (the sample, 3 h) wins over the system's sensor; the pH sensor is newer
+        self.assertEqual(origins, {'ph': read.Origin.SENSOR, 'temperature_c': read.Origin.MANUAL,
                                    'alkalinity_mg_l': read.Origin.MANUAL, 'salinity_ppt': read.Origin.MANUAL})
+        self.sample(hours=30, point=self.mid2, temperature_c='8')          # T-02: its own value is stale
+        self.on(self.ras, self.value('temperature_c', 9.5))
+        self.assertEqual(self.latest(self.mid2).get('temperature_c').sample.origin, read.Origin.SYSTEM_SENSOR)
 
     def test_a_lab_value_says_so(self):
         self.sample(hours=1, source='lab', alkalinity_mg_l='80')
@@ -310,3 +317,79 @@ class SeriesCostTests(SourcesCase):
         series = read.Series([self.mid1, self.mid2], 'temperature_c', self.now - timedelta(days=7), self.now, live=True)
         self.assertIsNotNone(series.latest(self.mid2.pk, self.now, timedelta(days=7)))
         self.assertIn(('value_at', 'temperature_c'), self.provider.asked)
+
+
+class NoLimitTests(SourcesCase):
+    """What no limit judges, per species and per observation (cross review 2026-11-07): a unit with salmon and lumpfish
+    is not judged while the lumpfish have no row, whatever the salmon's row says; the oxygen in mg/L and in % is one
+    quantity only within one observation."""
+
+    def test_oxygen_in_two_observations_is_judged_each_by_its_own_unit(self):
+        """The reviewer's case: a row on mg/L only; a manual 8.5 mg/L two hours ago without a temperature (no % worked
+        out), and a live probe saying 35 % now (no live temperature, so no mg/L worked out): the % is not judged."""
+        self.stock()
+        self.limit('oxygen_mg_l', critical_low=6)
+        self.sample(hours=2, oxygen_mg_l='8.5')
+        self.on(self.mid1, self.value('oxygen_saturation_pct', 35))
+        water = self.latest()
+        self.assertEqual((water.get('oxygen_mg_l').judged, water.get('oxygen_saturation_pct').judged),
+                         (Status.OK, Status.NO_LIMIT))
+        self.assertEqual([each.code for each in water.unjudged], ['oxygen_saturation_pct'])
+
+    def test_oxygen_in_one_observation_is_judged_by_either_unit(self):
+        self.stock()
+        self.limit('oxygen_mg_l', critical_low=6)
+        self.sample(hours=2, oxygen_mg_l='8.5', temperature_c='9')     # the % is worked out from this sample
+        self.assertNotIn('oxygen_saturation_pct', [each.code for each in self.latest().unjudged])
+
+    def test_a_probes_saturation_is_judged_against_the_mg_l_limit_through_the_solubility(self):
+        """The owner's rule (2026-11-07): dissolved oxygen is one quantity for judging. A % with no row of its own is
+        worked out to mg/L with the point's fresh temperature (water chemistry's solubility, at the site's pressure)
+        and judged by the mg/L row: 35 % at 9 °C is about 4 mg/L, critical below 6, whatever a manual 8.5 mg/L says."""
+        self.stock()
+        self.limit('oxygen_mg_l', critical_low=6)
+        self.sample(hours=2, oxygen_mg_l='8.5')
+        self.sample(hours=1, temperature_c='9')
+        self.on(self.mid1, self.value('oxygen_saturation_pct', 35))
+        water = self.latest()
+        percent = water.get('oxygen_saturation_pct')
+        self.assertEqual((percent.judged, percent.status, percent.uncovered), (Status.CRITICAL, Status.CRITICAL, ()))
+        self.assertEqual(water.get('oxygen_mg_l').judged, Status.OK)               # both values are kept and shown
+        self.assertNotIn('oxygen_saturation_pct', [each.code for each in water.unjudged])
+
+
+class NewestOwnValueTests(SourcesCase):
+    """Owner decision A9 (2026-11-07, replaces A1's order): among a unit's OWN fresh values (its point's sensor channels
+    and its own samples) the newest by measurement time wins, whatever the origin; only when it has no fresh value of its
+    own does the system's newest fresh value stand in (the system's sensor or a sample of its loop); a stale value is
+    shown stale and never stands in for a fresh one. One resolver: the latest values and a value at a moment alike."""
+
+    def test_a_manual_value_newer_than_a_fresh_sensor_wins(self):
+        self.on(self.mid1, self.value('ph', 7.4, seconds=600, fresh_for=3600))
+        self.sample(hours=0, ph='7.10')
+        reading = self.latest().get('ph')
+        self.assertEqual((reading.value, reading.sample.origin), (D('7.10'), read.Origin.MANUAL))
+
+    def test_a_fresher_sensor_beats_an_older_manual_value(self):
+        self.sample(hours=1, ph='7.10')
+        self.on(self.mid1, self.value('ph', 7.4, seconds=60, fresh_for=3600))
+        self.assertEqual(self.latest().get('ph').sample.origin, read.Origin.SENSOR)
+
+    def test_the_system_stands_in_only_when_the_unit_has_nothing_fresh(self):
+        self.on(self.ras, self.value('temperature_c', 9.5, seconds=30))
+        self.sample(hours=1, temperature_c='8.0')                         # the unit's own, fresh, older than the system's
+        reading = self.latest().get('temperature_c')
+        self.assertEqual((reading.value, reading.sample.origin), (D('8.0'), read.Origin.MANUAL))
+
+    def test_a_loop_sample_stands_in_for_a_unit_with_nothing_fresh_and_a_stale_value_never_does(self):
+        self.sample(hours=30, temperature_c='7.0')                        # the unit's own, stale after 24 h
+        self.sample(point=self.loop, hours=2, temperature_c='10.0')       # the loop's, fresh
+        reading = self.latest().get('temperature_c')
+        self.assertEqual((reading.value, reading.sample.point), (D('10.0'), self.loop))
+        self.assertTrue(reading.fresh(self.now))
+
+    def test_a_value_at_a_moment_follows_the_same_rule(self):
+        from ..feeding.temperature import temperature_for
+        self.on(self.mid1, self.value('temperature_c', 9.7, seconds=600, fresh_for=3600))
+        self.sample(hours=0, temperature_c='8.0')                          # newer than the sensor's
+        self.assertEqual(temperature_for([self.t1], self.now)[self.t1.pk].value_c, D('8.0'))

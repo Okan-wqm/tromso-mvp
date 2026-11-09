@@ -69,6 +69,7 @@
 </details>
 
 {% if showing_history %}
+{% if clipped %}<p class="notice notice-warning">{% blocktrans trimmed count days=span %}A page shows at most {{ days }} day: the first day was moved.{% plural %}A page shows at most {{ days }} days: the first day was moved.{% endblocktrans %}</p>{% endif %}
 {% if point %}<h2 class="water-point">{% blocktrans trimmed with point=point %}History of {{ point }}{% endblocktrans %}</h2>{% elif owner %}<h2 class="water-point">{% blocktrans trimmed with owner=owner.code %}History of {{ owner }}{% endblocktrans %}</h2>{% endif %}
 {% if history %}
 <div class="table-wrap ui-table-wrap" tabindex="0" role="region" aria-label="{% trans "Water samples, scrolls sideways" %}">

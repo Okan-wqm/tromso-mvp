@@ -35,7 +35,7 @@ from farm.models.site import zone_of
 from farm.models.water_point import PointKind, site_of
 from farm.water import calculation, deffeyes, parameters
 from farm.water.evaluate import is_fresh
-from farm.water.read import WINDOW, Series as WaterSeries, as_parameter, assumed_salinity
+from farm.water.read import OWN_WATER_KINDS, WINDOW, Series as WaterSeries, as_parameter, assumed_salinity, choose
 
 from . import quantities
 from .models import Binding, Calibration, Channel, ChannelState, DeviceState, Reduction
@@ -136,10 +136,38 @@ def places(target):
     raise TypeError(f'No sensor values for {type(target).__name__}')
 
 
+def tiers(target):
+    """[([(Q over bindings, origin)], [SamplingPoint])]: the tiers of owner rule A9 (`farm.water.read.choose`) for a
+    target's water, in the order they count, each with the bindings and the points whose samples are in it, exactly
+    the places the live view reads (farm/water/read.py `_places`): a unit's own-water points (middle first; never the
+    inlet), then its system's (the system's sensors, those on its loop point, the loop's samples); a system's loop and
+    its sensors; any other point or a piece of equipment its own alone."""
+    if isinstance(target, SamplingPoint) and target.unit_id and target.kind == PointKind.MIDDLE:
+        target = target.unit
+    if isinstance(target, Tank):
+        own = list(SamplingPoint.objects.filter(unit=target, is_active=True,
+                                                kind__in=[PointKind.MIDDLE, *OWN_WATER_KINDS]).with_owners())
+        own.sort(key=lambda point: (point.kind != PointKind.MIDDLE, point.name))
+        found = [([(Q(point__in=own), SENSOR)] if own else [], own)]
+        if target.system_id:
+            loop = SamplingPoint.objects.filter(system_id=target.system_id, kind=PointKind.MIDDLE,
+                                                is_active=True).with_owners().first()
+            found.append(([(Q(system_id=target.system_id), SYSTEM_SENSOR),
+                           *([(Q(point=loop), SYSTEM_SENSOR)] if loop else [])], [loop] if loop else []))
+        return found
+    return [places(target)]
+
+
 def segments(target, quantity, start, end):
     """[Segment] of the channels of `quantity` bound to the target between start and end, in the order they count."""
+    return segments_for(places(target)[0], quantity, start, end)
+
+
+def segments_for(conditions, quantity, start, end):
+    """[Segment] of the channels of `quantity` bound by `conditions` ([(Q over bindings, origin)]) between start and
+    end, in the order they count."""
     found = []
-    for rank, (condition, origin) in enumerate(places(target)[0]):
+    for rank, (condition, origin) in enumerate(conditions):
         bindings = (Binding.objects.visible().filter(condition, channel__quantity=quantity, valid_from__lt=end)
                     .filter(Q(valid_to__isnull=True) | Q(valid_to__gt=start)).select_related('channel'))
         for binding in bindings:
@@ -377,6 +405,13 @@ class FrameInput:
 
 
 @dataclass(frozen=True)
+class Candidate:
+    """A value one source gave for a frame (`read.choose` reads its `at`)."""
+    at: datetime
+    input: FrameInput
+
+
+@dataclass(frozen=True)
 class FramePoint:
     dic: float                    # mmol/L
     alkalinity_meq: float
@@ -531,9 +566,10 @@ def _water_types(target):
 
 def deffeyes_frames(target, start, end, step, cursor=0, size=PAGE):
     """A page of the Frames of a unit's or a system's water from start to end (end not included) every `step` (snapped
-    up to the ladder): frames `cursor` on, at most `size`. Per frame and input, in the A1 order, the first segment's
-    clean value at or before the frame and no older than its channel's freshness, else a fresh manual or lab sample,
-    else (salinity only) the fresh-water assumption, else missing; never a value from after the frame, never one carried
+    up to the ladder): frames `cursor` on, at most `size`. Per frame and input, by owner rule A9 through the live
+    view's one function (`farm.water.read.choose`, over the `tiers` of the target): the newest of the fresh values of the
+    unit's own places (each channel's clean value at or before the frame and no older than its freshness, each point's
+    fresh manual or lab sample), else of its system's, else (salinity only) the fresh-water assumption, else missing; never a value from after the frame, never one carried
     past its freshness, never one in between. A frame with every required input has the whole diagram of that water
     (A8: farm/water/deffeyes.py's figure with the fish's limits, as the unit's chart draws it), in one box for the page
     (it holds every point of the page); frames whose diagram reads exactly the same values share one figure."""
@@ -547,10 +583,11 @@ def deffeyes_frames(target, start, end, step, cursor=0, size=PAGE):
     first = start + cursor * step
     tier = RAW if step < HOUR else ROLLUP_1H
     page_end = first + count * step
-    by_code = {code: segments(target, code, first - CARRY, page_end) for code in REPLAY_INPUTS}
-    flat = [(code, segment) for code in REPLAY_INPUTS for segment in by_code[code]]
-    rows = replay_rows([segment for _code, segment in flat], first, step, count, tier)
-    points = [point for point in places(target)[1] if point is not None]
+    tiered = tiers(target)
+    flat = [(code, rank, segment) for code in REPLAY_INPUTS for rank, (conditions, _points) in enumerate(tiered)
+            for segment in segments_for(conditions, code, first - CARRY, page_end)]
+    rows = replay_rows([segment for _code, _rank, segment in flat], first, step, count, tier)
+    points = list({point.pk: point for _conditions, found in tiered for point in found}.values())
     manual = {code: WaterSeries(points, code, first - WINDOW, page_end) for code in REPLAY_INPUTS}
     assumed = assumed_salinity(_water_types(target))
     limits = {name: float(offer.value) for name, offer in calculation.chart_limits(calculation.fish_limits(target)).items()}
@@ -560,26 +597,27 @@ def deffeyes_frames(target, start, end, step, cursor=0, size=PAGE):
         at = first + slot * step
         inputs, missing = {}, []
         for code in REPLAY_INPUTS:
-            # The first place and role (A1) with a fresh value; among its segments (one channel's stays there, a probe
-            # moved away and back) the newest reading, as value_at takes it (sensors/provider.py).
-            chosen, newest, place = None, None, None
-            for index, (each, segment) in enumerate(flat):
+            # Owner rule A9 at the frame, by the live view's one function (farm.water.read.choose): the newest FRESH
+            # value of the first tier that has one, a sensor's before a sample's at one time; a frame is drawn from fresh
+            # values only (A9.3), so a stale one is missing, never shown.
+            candidates = [[] for _tier in tiered]
+            for index, (each, rank, segment) in enumerate(flat):
                 if each != code or (index, slot) not in rows:
                     continue
-                if place is not None and (segment.origin, segment.role) != place:
-                    break
                 ts, value = rows[(index, slot)]
-                if at - ts <= timedelta(seconds=segment.fresh_s) and (newest is None or ts > newest):
-                    place, newest = (segment.origin, segment.role), ts
-                    chosen = FrameInput(float(as_parameter(code, value)), segment.origin, (at - ts).total_seconds(),
-                                        segment.channel_no)
-            if chosen is None:
-                sample = next((each for each in (manual[code].latest(point.pk, at, WINDOW) for point in points)
-                               if each is not None and is_fresh(parameters.get(code), each.at, at)), None)
-                if sample is not None:
-                    chosen = FrameInput(float(sample.value), MANUAL, (at - sample.at).total_seconds())
-                elif code == parameters.SALINITY and assumed is not None:
-                    chosen = FrameInput(float(assumed), ASSUMED, 0.0)
+                if at - ts <= timedelta(seconds=segment.fresh_s):
+                    candidates[rank].append(Candidate(ts, FrameInput(
+                        float(as_parameter(code, value)), segment.origin, (at - ts).total_seconds(), segment.channel_no)))
+            for rank, (_conditions, tier_points) in enumerate(tiered):
+                for point in tier_points:
+                    sample = manual[code].latest(point.pk, at, WINDOW)
+                    if sample is not None and is_fresh(parameters.get(code), sample.at, at):
+                        candidates[rank].append(Candidate(sample.at, FrameInput(
+                            float(sample.value), MANUAL, (at - sample.at).total_seconds())))
+            picked = choose(candidates, at, lambda candidate: True)
+            chosen = picked.input if picked is not None else None
+            if chosen is None and code == parameters.SALINITY and assumed is not None:
+                chosen = FrameInput(float(assumed), ASSUMED, 0.0)
             if chosen is not None:
                 inputs[code] = chosen
             elif code in calculation.REQUIRED:

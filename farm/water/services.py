@@ -22,22 +22,23 @@ from django.conf import settings
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import transaction
 from django.utils import timezone
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext as _, gettext_lazy
 
 from core import audit
 from core.models import AuditLog, EntryKey
 from farm.health import withdrawal
 from farm.models import Equipment, SamplingPoint, System, Tank, WaterMeasurement
+from farm.models.water import BASIS_COLUMNS
 from farm.models.water_point import EQUIPMENT, SYSTEM, UNIT, local_time, site_of
 from farm.stock import dates
 from farm.stock.services import AlreadyRecorded, lock_fish
 
 from . import parameters
-from .read import POINT_RELATED
+from .read import POINT_RELATED, oxygen_basis
 
 # What the activity log shows of a sample: where it was taken, its source, its values and its notes (and its
 # time, which the entry carries).
-LOGGED = ['point', 'source', *parameters.COLUMNS, 'notes']
+LOGGED = ['point', 'source', *parameters.COLUMNS, *BASIS_COLUMNS, 'notes']
 # The most rows a round takes (a hall's points; the form shows them all on one page).
 ROUND_ROWS = 200
 OWNERS = ((UNIT, Tank), (SYSTEM, System), (EQUIPMENT, Equipment))
@@ -94,9 +95,34 @@ def _locked_points(points):
     return found
 
 
-def _sample(user, point, measured_at, source, values, notes):
+def _sample(user, point, measured_at, source, values, notes, basis=None):
+    provenance = {}
+    for code, found in (basis or {}).items():
+        provenance.update(found.fields(code))
     return WaterMeasurement(point=point, measured_at=measured_at, source=source, notes=notes.strip(), created_by=user,
-                            updated_by=user, **values)
+                            updated_by=user, **values, **provenance)
+
+
+BASIS_NEEDED = {
+    parameters.TEMPERATURE: gettext_lazy(
+        'Needed with the oxygen: no fresh temperature here at that time to work the other unit out with.'),
+    parameters.SALINITY: gettext_lazy(
+        'Needed with the oxygen: no fresh salinity here at that time to work the other unit out with.'),
+}
+
+
+def _basis(rows, measured_at, by_row=False, required=False):
+    """{index: {code: Basis}} of the rows' oxygen (read.oxygen_basis: found by the server at each row's point and the
+    sample's time, never taken from the form); a row with an oxygen and nothing fresh to work it out with is refused,
+    its reason on the parameter ('{index}-{code}' for a round, the code alone for one sample), when `required` (the
+    forms: a person entering an oxygen is asked for what it needs); else such a row is written without a basis and its
+    other unit is not worked out, said so on the pages."""
+    found, missing = oxygen_basis(rows, measured_at)
+    if missing and required:
+        keys = (lambda index, code: f'{index}-{code}') if by_row else (lambda index, code: code)
+        raise ValidationError({keys(index, code): str(BASIS_NEEDED[code]) for index, codes in missing.items()
+                               for code in codes})
+    return found
 
 
 def label(sample):
@@ -129,7 +155,8 @@ def _values(values):
     return {code: value for code, value in values.items() if value is not None}
 
 
-def record(user, *, point, measured_at, source, values, notes='', token=None, withdrawal_ack=None):
+def record(user, *, point, measured_at, source, values, notes='', token=None, require_basis=False,
+           withdrawal_ack=None):
     """One sample at one sampling point (a place on a unit, a system's loop or a piece of equipment). Returns the
     sample."""
     values = _values(values)
@@ -146,8 +173,9 @@ def record(user, *, point, measured_at, source, values, notes='', token=None, wi
         errors = value_errors(values)
         if errors:
             raise ValidationError(errors)
+        basis = _basis([(point, values)], measured_at, required=require_basis).get(0)
         return withdrawal.guarded(user, *fish, lambda: _write(
-            user, [_sample(user, point, measured_at, source, values, notes)], [token])[0], seen=withdrawal_ack)
+            user, [_sample(user, point, measured_at, source, values, notes, basis)], [token])[0], seen=withdrawal_ack)
 
 
 def row_key(token, point):
@@ -156,7 +184,7 @@ def row_key(token, point):
     return uuid.uuid5(token, f'point:{point.pk}')
 
 
-def record_round(user, *, measured_at, source, rows, token=None, withdrawal_ack=None):
+def record_round(user, *, measured_at, source, rows, token=None, require_basis=False, withdrawal_ack=None):
     """The samples of a round, at one time and from one source: `rows` = [(point, values, notes)]. A row
     with no value is skipped; the rest are written together or not at all. Returns the samples."""
     rows = [(point, _values(values), notes) for point, values, notes in rows]
@@ -183,10 +211,12 @@ def record_round(user, *, measured_at, source, rows, token=None, withdrawal_ack=
                 errors[f'{index}-{code}'] = message
         if errors:
             raise ValidationError(errors)
+        basis = _basis([(point, values) for point, (_point, values, _notes) in zip(points, rows)], measured_at,
+                       by_row=True, required=require_basis)
         return withdrawal.guarded(user, *fish, lambda: _write(user, [
-            _sample(user, point, measured_at, source, values, notes)
-            for point, (_point, values, notes) in zip(points, rows)], keys), record_of=lambda samples: samples[0],
-            seen=withdrawal_ack)
+            _sample(user, point, measured_at, source, values, notes, basis.get(index))
+            for index, (point, (_point, values, notes)) in enumerate(zip(points, rows))], keys),
+            record_of=lambda samples: samples[0], seen=withdrawal_ack)
 
 
 def void(user, sample, reason, withdrawal_ack=None):

@@ -653,12 +653,30 @@ is not read at all** (no query) and the card says so ("Water: not shown to you" 
 section (`monitoring.read.sections_for`, the one place that spells a permission). Detailed never widens access.
 
 **The state** is one ladder (`state_of`, the thresholds are the owners', none invented here): critical (a water reading judged
-critical, an old one too: "CO₂: Critical, no recent data", the water page's rule through `PointWater.alerts`); warning (a
-warning reading, an old one too, over capacity, an estimate that says weigh now); **no recent data** (a stocked unit whose
-temperature or oxygen is missing or older than its 24 hours, or with no middle point: the water's own status ranks OK above
-stale, so a fresh pH would hide a three-day-old oxygen; never OK, never red, the age is printed; not worked out when the water
-is hidden); note (a withdrawal in force, weigh soon, a ration that cannot be worked out with its reason, an open health event);
-ok; empty. Word, shape and reasons, never colour alone.
+critical, an old one too: "CO₂: Critical, no recent data", the water page's rule through
+`PointWater.alerts`); warning (a warning reading, an old one too, over capacity, an estimate that says weigh now); **no recent data** (a stocked unit whose
+temperature or oxygen is missing or older than its 24 hours, or with no middle point, or whose live sensors could not be read:
+the water's own status ranks OK above stale, so a fresh pH would hide a three-day-old oxygen; never OK, never red, the age is
+printed; not worked out when the water is hidden); **no limit** (a value of the stocked unit that no water limit row judges for
+every species of its fish, "pH (NBS scale): no limit for these fish": a row for the salmon does not judge it for the lumpfish
+beside them (`Limits.uncovered`); what it means for the fish is not known, so it is never OK. The dissolved oxygen is one
+quantity (owner, 2026-11-07): a % with no row of its own is worked out to mg/L with the solubility (its own observation's
+temperature, else the point's fresh one, the salinity and the site's pressure) and judged by the mg/L row, and the reverse;
+one that cannot be worked out is "no limit". Both values are shown with their origin and age); note (a withdrawal in force,
+weigh soon, a ration that cannot be
+worked out with its reason, an open health event); ok; empty. Word, shape and reasons, never colour alone; the words are
+`read.STATES`, the one list the card, the strip, the announcer and the designer read.
+
+**Danger is never shown as OK** (audit F-090, F-244, F-088, F-025, F-134). A value keeps what its limit said when it grows old
+(`Reading.judged` beside `status`, farm/water/read.py): an old critical nitrite keeps the card critical ("Nitrite: Critical, no
+recent data, 8 days old") and marks the article `data-stale`, so the announcer says it ("T-01 is now Critical, no recent data"; it takes the order of the states from the page, `data-states`,
+never from a list of its own);
+a card that falls to no recent data from any state is said too, and the grid's own notices (not updated, signed out, updated
+again) are said in the assertive region. Reference data › Water limits lists **Fish with no limit**: per species and water type
+kept today, the parameters no row judges (`water.read.missing_limits`). The value-against-limits bar draws each stretch as
+`evaluate.judge` says of it, so limits with upper bounds only are ok below them. A source that fails is logged with its name and
+trace (at most once a minute per source): a required one gives the 503 (the screen keeps its last picture and says it is not
+updated), an optional one says "Could not be read: Tasks" on the frame, where no template can hide it.
 
 **Polling.** The grid is `data-poll` with `data-poll-merge="data-key"` (every 15 s, `settings.MONITOR_POLL_SECONDS`). The
 fragment `cards/?...&after=<token>` computes the **change token** first (`core.audit.revision()`: the newest audit entry and
@@ -670,7 +688,8 @@ without a request, so the shell's context (the menu, the unread count) is never 
 
 **The wall.** `?wall=1` puts `data-wall` on `<html>` (no rail, no top bar, no width limit, larger figures), and the page and its
 polls keep the session alive once a day (the default session is two weeks and a wall must not sign itself out); the grid prints a
-large notice from `data-poll-state` when the server cannot be reached or the person is signed out.
+large notice from `data-poll-state` when the server cannot be reached or cannot read the cards, or the person is signed out,
+and the announcer says it aloud (and says when the grid is updated again).
 
 **Boards** (Setup › Facility structure › Monitoring boards, `/monitoring-boards/`). A board is a
 named, shared wall screen: a name (unique among the live boards in any case), a description, the template its cards are drawn
@@ -694,7 +713,8 @@ changes).
 Production units, which keeps the page title and eyebrow); the fragment has the same gate; the chart needs the water right.
 
 Decisions of the owner (2026-11-04): a wall page extends its session once a day; Production units stops printing bFCR and last fed
-to roles without feeding rights; the chart's temperature is the unit's own point's, never the loop's, and the chart refuses and
+to roles without feeding rights; the chart's temperature is the unit's own point's (superseded by A9 on 2026-11-07: the loop's fresh value stands in
+when the unit has none of its own); the chart refused and
 says so; "No recent data" when the temperature or the oxygen is older than 24 hours or missing, whatever the unit's kind.
 
 Not built, on purpose: any figure recomputed in `monitoring`, a feed-due alarm (the protocols have meals per day, no clock), trend
@@ -719,7 +739,8 @@ value and value-against-limits (one parameter), water (the middle point's key va
 (the key figures or every figure), feeding (the week too or not), health, tasks, experiments, the Deffeyes chart button,
 and a trend that is catalogued but refused until a bulk series read exists. `validate.py` is the one validator (pure, no
 query; the model, the form, the preview and the tests call it): errors block (the shape, an unknown version, more than 40
-widgets or 32 KB, keys, ids, kinds, whole numbers, a widget outside the 12 columns or outside its sizes, each overlapping
+widgets or 32 KB, keys, ids, kinds, whole numbers, a widget outside the 12 columns or below the grid's last row (`catalogue.ROWS`, the
+tallest widgets stacked 40 high: a designer's layout, compacted upwards, always fits) or outside its sizes, each overlapping
 pair named once, a binding the widget cannot have, an option its schema refuses), warnings never do (no oxygen anywhere,
 more than two large widgets, more than 16 widgets). An older layout version is upgraded one pure step at a time and checked
 as upgraded, never changed in place; a fixture per version passes. The geometry is shared with the designer's TypeScript
@@ -767,7 +788,9 @@ savepoint of its own: 4 savepoint statements simple, 10 detailed (`RecordedCount
 **How a card is drawn** (`monitoring/cards/render.py`, `templates/monitoring/_card.html`, `templates/monitoring/widgets/`). The
 frame (the unit and its link, the state word, shape and reasons, the withdrawal, the flip link named after the template it
 shows, "Empty", what the state is from) is not data and no template can remove it. Below it `div.card-grid`: one
-`div.w.w-<type>` per widget with `--x --y --w --h`, placed by plain CSS grid on 12 columns (`static/css/monitor.css`; a row at
+`div.w.w-<type>` per widget with the classes of its cell (`gx-<x> gy-<y> gw-<w> gh-<h>`, never a style attribute, which the
+Content-Security-Policy blocks; `static/css/card-grid.css`, made from the catalogue by `manage.py card_grid_css`, whose `--check`
+and a test fail when it is stale, turns them into `--x --y --w --h`), placed by plain CSS grid on 12 columns (`static/css/monitor.css`; a row at
 least `--row` 1.75 rem high, growing with its content) and, below 30 rem of card, one column in the same order; the wall runs no
 layout script. `build(card)` (no query) gives the widgets in reading order (y, then x), so what is read, what Tab visits and
 what is seen agree; a unit with no fish shows only the experiments and the Deffeyes button; a widget whose sources the person
@@ -872,9 +895,14 @@ ended, and counts the fish each row feeds today after the more specific rows.
 **The ration** of a batch in a unit on a day (`farm/feeding/ration.py`): the protocol by the rule above; the band
 by the fish's **estimated** average (owner decision Q7); the **temperature** of the unit, else of its system's loop,
 then of the systems that system is nested in (`farm/feeding/temperature.py`, the water samples' series of
-`farm/water/read.py`): the unit's own fresh value wins, else the nearest loop's fresh value, else the newest stale
-one, marked stale; fresh is the temperature parameter's 24 h, and nothing within `TEMPERATURE_USABLE_DAYS` (7,
-owner decision Q5) gives no ration; the moment is now for today and the end of the day for a past day. The SFR is
+`farm/water/read.py`, picked by A9's `read.choose`): the unit's own fresh value wins (its own-water points), else
+the nearest system's fresh value (its loop, or its own sensors when it has no loop point), else the newest stale one;
+fresh is the temperature parameter's 24 h. **However old, the newest temperature gives the ration** (owner amendment
+A11, 2026-11-08, the one explicit exception to A9.3; it replaced decision Q5's 7-day cut-off; with nothing fresh, the
+MOST RECENTLY entered temperature across every tier, so a 2-day-old loop value beats an 8-day-old own one): a stale one
+says so on
+the meal board, "Based on the temperature from 03.11.2026 07:40 (5 days old)"; only a unit where no temperature was ever
+recorded has no ration ("No temperature recorded here yet: record one."); the moment is now for today and the end of the day for a past day. The SFR is
 the band's cell at that temperature, **interpolated linearly between two columns and never extrapolated** (owner
 decision Q1): outside the first and last column, or a fish outside the bands, there is no ration and the page says
 why; never a default temperature or rate. The day's ration R = estimated biomass × SFR / 100, a meal R ÷ the band's
@@ -1131,11 +1159,27 @@ published values):
 - **NH₃-N** = TAN × K / (K + [H⁺]), with K the ammonium constant of Millero (1995) on the seawater scale,
   converted to the free scale, and the pH (NBS) converted too, ported from the source's engine; in fresh
   water it equals Emerson et al. (1975) within 0.002 pK up to 30 °C and 0.003 up to 40 °C. It needs the pH and the temperature of the same
-  sample; the salinity is the sample's, else its point's latest within 30 days before it, else its owner's middle
+  sample; the salinity is the sample's, else its point's latest fresh at the sample's time (measured at or before it, within the salinity's 7 days: a stale salinity never enters a calculation), else its owner's middle
   point's, else 0 where every unit it concerns is in fresh water; otherwise the page says what is missing. NH₄-N = TAN − NH₃-N is shown.
 - **Oxygen saturation**: Benson & Krause (1984) as in Standard Methods 4500-O, corrected for the
-  barometric pressure of the site's altitude (sea-level pressure, said so, when the site has none). From
-  mg/L the % is worked out, from % the mg/L; when both are entered and differ by more than 10 %, both are
+  barometric pressure of the site's altitude (sea-level pressure, said so, when the site has none; the altitude is
+  0 .. 5000 m (owner: no site lies below sea level, a minus sign is a slip), held by the form, the model and the
+  database `chk_sites_altitude_range`, F-089, and the calculator's field takes the same range). From
+  mg/L the % is worked out, from % the mg/L, the value saying what it was worked out from ("Worked out from 9.5 °C,
+  0.0 ‰ and 1.000 atm", on the water page and the card). **What an oxygen entry is worked out with is its provenance,
+  never a measurement** (second cross review, finding 1): the record form and the round leave the temperature and the
+  salinity EMPTY and only say in the help (and a round's cell) what an oxygen would be worked out with now ("now 9.5,
+  system sensor #1 · 30 s ago", or fresh water's 0). A value typed there is a measurement of the sample and stored as one
+  (alone too). Left empty beside an oxygen, the server finds, when it writes the sample, the point's temperature and
+  salinity fresh AT the sample's own point and time by the one resolver (`read.oxygen_basis`: nothing measured more than
+  the clock's skew after it, so a backdated entry never takes a later value and another point's value never lands on the
+  point chosen), else fresh water's 0 for the salinity, and stores them as `oxygen_basis_*` (value, source, sensor
+  channel, when measured; held by `chk_water_measurements_oxygen_basis_*`: only beside an oxygen, never beside the
+  sample's own value) and in the activity log; the worked-out value then says it ("The temperature is system sensor #1,
+  08.11.2026 10:00."). The basis is read only by the oxygen's conversion: it never becomes the point's latest temperature
+  or salinity. With nothing fresh to work it out with, the forms ask for the value ("Needed with the oxygen: no fresh
+  temperature here at that time ..."); a sample written otherwise (an import, a test) is kept without a basis and its
+  other unit says what it needs. When both units are entered and differ by more than 10 %, both are
   kept and flagged.
 
 **The page** has three tabs: **Latest** (one row per point: the middle point of every unit (a unit without one
@@ -1156,15 +1200,17 @@ bottom drains, depth points, the points of equipment), the other points of them,
 rows are skipped, a value out of range is shown in its cell and nothing is recorded until every cell is right
 (at most 200 rows).
 
-**A unit's water** is the latest samples at its middle point, and only there (`read.middle_points`, the one
-definition; `read.unit_water`): what Production units, its drawer, the overview tile, the status dot and the
-calculator show of it. An inlet's or an outlet's sample is the stream's, not the fish's: it is judged for the same
-fish and shown, but it never moves the unit's status. Nothing of a unit's DO, pH or nitrogen is taken from its
-loop (the source passes on only what is the same all round a loop, and so does this). Its **temperature** is the
-one value that may come from a loop: the ration (`farm/feeding/temperature.py`) reads the unit's middle point, else
-the loop point of its system and of the systems that system is nested in, and the withdrawal's daily mean
-(`farm/health/withdrawal.py`) the unit's, else its own system's loop (a day without one counts at the species'
-assumed temperature, else as 0 °C, and says so: the safe side). Both ask `read.water_sources`, the one place that says where a unit's temperature is read from,
+**A unit's water** is read for its middle point (`read.middle_points`, the one definition; `read.unit_water`): what
+Production units, its drawer, the overview tile, the status dot and the calculator show of it. By owner rule A9 (below,
+"The water's latest value"), every active point measuring the unit's own water is the unit's own (A9.1, owner
+2026-11-08: the middle, a depth point, an outlet, a drain; `read.OWN_WATER_KINDS`). An inlet's sample is the supply
+stream's, not the fish's: it is judged for the same fish and shown at its own point, but it never stands for the unit
+and never moves the unit's status. The unit's system's loop stands in only for a parameter the unit has nothing fresh
+of. Its **temperature** for the ration
+(`farm/feeding/temperature.py`) is picked by the same rule (`read.choose`), with the loops of the systems its system is
+nested in as further tiers; the withdrawal's daily mean (`farm/health/withdrawal.py`) takes the lowest daily mean of the unit's own-water points (never the inlet; owner 2026-11-08: the conservative side), else
+its own system's loop (a day without one counts at the species' assumed temperature, else as 0 °C, and says so: the safe
+side). Both ask `read.water_sources`, the one place that says where a unit's temperature is read from,
 and a test fails when another module reads the samples.
 
 **The calculator** (the third tab, `/operations/water/calculator/`) is laid out as the source's: where the
@@ -1292,7 +1338,7 @@ and calculation, from the latest readings of one of the unit's sampling points (
 (temperature, pH, alkalinity, salinity), or says that the unit has no middle point and lists its points, or that
 the pH and the alkalinity cannot go together (`deffeyes.why_impossible`, the calculator's own check). The one
 assumption is a fresh-water unit's salinity of 0 (`read.assumed_salinity`, also the ammonia's rule), shown as
-"assumed". The temperature is the point's own, never the loop's. TAN, oxygen and the site's altitude are drawn
+"assumed". The temperature is the point's own, else (A9) its loop's fresh one when it has none. TAN, oxygen and the site's altitude are drawn
 when there; no total sulfide or calcium is measured, so there is no H₂S or Ω layer, and a limit the fish do not
 have is said, not drawn. Each reading shows its age, status and point; the chart's SVG ids carry the point
 (`uid`), so several windows on one page never clash. The endpoint needs only the right to read water samples.
@@ -2741,13 +2787,54 @@ What works:
 - **Overview**: the ingest alive or down (a heartbeat within 90 s), devices online, channels without a fresh value, dead
   letters of the last day, open alarms, devices not placed; each tile for the right that may read it.
 
-### The water's latest value (owner rule A1)
+### The water's latest value (owner rule A9, 2026-11-07; it replaced A1)
 
 Per unit and parameter, each on its own, in one place (`farm/water/read.py` `latest`, the sensors reach it through the
-registry `farm/water/sources.py`, registered by `SensorsConfig.ready()`; the farm never imports the sensors): a fresh
-value of a sensor on the unit's own point (primary, then backup); else, for the middle point, a fresh value of a sensor
-on the unit's system; else a fresh manual or lab sample; else the newest of all, shown stale. A channel in maintenance
-or retired is skipped. Sensor values enter as the parameter's Decimal at its decimals and are judged by the same water
+registry `farm/water/sources.py`, registered by `SensorsConfig.ready()`; the farm never imports the sensors): among the
+unit's OWN fresh values (the sensors on its points and its own manual or lab samples, at every active point measuring
+the unit's own water, A9.1 "its own sampling points": the middle, a depth point, an outlet, a drain, never an inlet,
+which measures the supply stream (owner, 2026-11-08); between two channels measured at the same time the
+primary before the backup, a point's before a later-named point's) the
+newest by measurement time wins, whatever its origin; only when it has no fresh value of its own does the system stand in,
+for the middle point: the newest fresh value of a sensor on the unit's system, of a sensor bound to the system's loop
+point, or of a sample of the system's loop; else the newest of its own values, shown stale, else the system's. A value
+standing in from the system is judged for the unit's fish, as the unit's own would be. The rule is ONE function,
+`read.choose(tiers, now, fresh)`: the latest values (`read.latest`), a value at a moment (`Series.latest`) and the
+ration's temperature (`feeding.temperature.TemperatureBook.at`, which adds the loops of parent systems as further tiers)
+all pick through it, from the same places, with one tie-breaker at one measurement time: a sensor before a sample, the
+primary channel before the backup.
+
+**The worst fresh value decides the status** (owner decision 2026-11-08, on the second cross review's P2, where a
+20-hour-old manual 9.0 mg/L hid a system probe reading 3.0 mg/L now): the value SHOWN stays A9's choice, but the status,
+and so the card's state and alarm, is the worst judgement among every fresh value of the place (its own points' and its
+system's, each judged for the unit's fish; never an inlet's, never a stale one) (`read.worst_fresh`). When another value
+decides it, the reading says so beside the value on the water page and the card: "system sensor #1 reads 3.00
+(08.11.2026 12:40): the worst fresh value decides the status" (a sample is named with its point). Each place's
+readings are judged on their own copy, so a loop value standing in for two units carries each unit's own judgement. **Computed for the unit,
+measured at the point** (owner, 2026-11-08): a unit's middle point shows the unit's status (`PointWater.status`), and
+the card names the point that drove it ("Carbon dioxide (mg/L free CO₂) (T-01 › East side outlet): Critical"); a count
+of critical sampling points (the water page, the overview tile) counts what was measured at each point
+(`PointWater.point_status`, which keeps the point's own old critical too), so one physical problem is counted once.
+**Every limited quantity** goes through the worst fresh value (`read.WORST_FRESH_CODES`), the derived NH₃-N and NH₄-N
+too: every sample's own NH₃ (its TAN with its own pH and temperature) and the sensors' worked-out one are its candidates,
+so a newer OK TAN elsewhere never hides a fresh critical NH₃ (third cross review). **A unit without an active middle
+point** is read through its first active own-water point (`read.anchors`: depth, outlets, drain; never an inlet), which
+then stands for the unit (`PointWater.for_unit`) with its other points and its system: never "Not measured" while an
+outlet or the system has a fresh value. A derived oxygen is no second card reason beside the measurement it comes
+from.
+
+A stale value never enters a calculation (PLAN A9.3): a value is worked out (the other oxygen unit, NH₃, the oxygen
+judged through the mg/L row) only from values fresh AT its own time (`read.fresh_at`: measured at or before it, or within
+the clock's skew after it, and still fresh then), so a 3-day-old saturation is never judged with today's temperature and
+a salinity older than its 7 days is not used (the value is then not worked out and says why: "Needs the salinity: none
+was measured here in the 7 days before.", "Not worked out: the TAN is no longer fresh."). A % judged against an mg/L
+limit (or the reverse) says so beside it: "Judged as 3.98 mg/L. Worked out from 9.0 °C, 0.0 ‰ and 1.000 atm. Limit:
+Atlantic salmon: critical below 6.00." (`Reading.through` keeps the converted reading and its limit rows). A channel in maintenance
+or retired is skipped. A value stamped more than five minutes ahead of the server's clock (`evaluate.CLOCK_SKEW`: a
+device whose clock runs fast) is never fresh and never shown as the newest, but up to the ingest contract's hour
+(`evaluate.MAX_AHEAD`) it takes part in the worst fresh value and says so ("The device clock is ahead by 10 min.");
+beyond the hour it is a data error the card says ("Dissolved oxygen (mg/L O₂): timestamp in the future"), never
+silently OK. A probe bound to the loop point is a system sensor in a unit's system tier. Sensor values enter as the parameter's Decimal at its decimals and are judged by the same water
 limits. Derived values follow their base value's source (a sensor TAN gives NH₃ only with fresh sensor pH and
 temperature, at the oldest input's time; a manual TAN only with its own sample's). Every latest value on the water page,
 the monitoring cards and the Deffeyes window says where it comes from and how old it is ("unit sensor #12 · 12 s ago",
@@ -2774,18 +2861,22 @@ controls are the UI's, not built here):
   days at one minute are 7 200 frames, served in pages of at most 2 000 (`cursor` the page's first frame, `next` the
   following page's, None after the last).
 - Each frame reads what a unit's chart reads (temperature, pH, alkalinity, salinity required; TAN and oxygen when
-  there), each in the A1 order at that moment: a sensor value at or before it, no older than its channel's freshness
-  (three heartbeats), at the parameter's decimals as the chart takes it; else a fresh manual or lab sample; else for the
-  salinity of fresh water the assumption; else missing. Nothing is interpolated or carried past its freshness. A moved
-  sensor counts for the place it was in.
-- One query of the readings per tier and page. Below an hour each frame gets, per channel, what the live view's rule
-  (`value_at`) gives at its moment: the newest clean reading at or before it, taken while the channel was bound there
-  (among one place's stays of a channel moved away and back, the newest),
-  when it is no older than the channel's freshness (`sensors/tests/test_replay.py` ValueAtTests holds the two equal on
-  irregular readings at every raw step). At a step of 5 s or less the page's span is read, the last reading of each step
-  kept; at a longer step one indexed look-up per frame and channel (the primary key read backwards), so a page reads
-  about one reading per frame however dense the readings are (a test holds it to two). From an hour the page's hours of
-  the hour rollup are read once, each frame given the last value of the newest hour ended by it.
+  there), each by owner rule A9 at that moment through the live view's one function (`farm.water.read.choose`, over
+  `sensors.read.tiers`: the unit's own-water points, never the inlet, then its system's sensors, those on its loop
+  point and the loop's samples): the newest of the fresh values (a sensor value at or before it, no older than its
+  channel's freshness (three heartbeats), at the parameter's decimals as the chart takes it; a fresh manual or lab
+  sample), a sensor's before a sample's at one time; else for the salinity of fresh water the assumption; else missing.
+  Nothing is interpolated or carried past its freshness. A moved sensor counts for the place it was in. The hourly
+  trail (`sensors/trail.py`) picks each hour's inputs the same way at the hour's end.
+- One query of the readings per tier and page. Below an hour each channel's value at a frame is what the live view's
+  rule (`value_at`) gives at its moment: the newest clean reading at or before it, taken while the channel was bound
+  there, when it is no older than the channel's freshness; `read.choose` then takes the newest of a tier's fresh
+  values, so a probe moved away and back gives its newest reading (`sensors/tests/test_replay.py` ValueAtTests holds
+  every frame equal to value_at on irregular readings at every raw step). At a step of 5 s or less the page's span is
+  read, the last reading of each step kept; at a longer step one indexed look-up per frame and channel (the primary
+  key read backwards), so a page reads about one reading per frame however dense the readings are (a test holds it to
+  two). From an hour the page's hours of the hour rollup are read once, each frame given the last value of the newest
+  hour ended by it.
 - Every frame with its required inputs carries the whole diagram of its water (A8): isolines, regions, borders, Ω
   lines, names and notes, with the fish's limits, computed only by `farm/water/deffeyes.py` as `deffeyes.figure`, a
   JSON shape of flat number arrays. The server's SVG is drawn from the same shape (`deffeyes.draw` is
@@ -2966,6 +3057,11 @@ any below it, and, for a holder of Everyone (`hr.all_employee`, a column on the 
 employee. `EmployeeResource.scoped` is that function, so the list, a person's read page, the edit and the placement given
 are all of the team, whatever the address or the query. A lead with a role that gives Read on Employees reads their
 team's read pages; the form needs Edit, and only a holder of Everyone can create someone (a new person has no team yet).
+A move is a placement in a department, so the department moved to must be one the lead manages too
+(`hr.scope.can_manage`, from the same `managed_departments` as the team): a lead does not hand a person to another
+manager or into the office, and a holder of All production moves people between production departments only. A lead does
+not write their own record either (placement, title, last day: `hr.services.own_record`, the rule of one's own attendance
+and plan); the list offers them their own read page, not the form. A holder of Everyone does both.
 A person who moved belongs to the old manager up to the move and to the new one from it (`scope.visible_days`, for the
 reads that run over several days). A manager without a role, or a role without a department, reaches nothing beyond
 themselves. The Departments page counts, per department, the people placed there today that the viewer may reach.
@@ -3042,9 +3138,30 @@ interface for the places that may only learn that someone is away, never why.
 and **Edit also approves, rejects and cancels** (the matrix has no extra column, as for a knowledge entry's review). The decider
 is someone with Edit whose team holds the person and who is not the person; a lead's own request therefore reaches whoever has
 them in their team, or a holder of Everyone. A type that needs no approval is granted the moment it is filed, with no decider. A
-pending request is cancelled by the person or a decider at any time, an approved one only while its first day has not started on
-the site's clock; the decisions are `hr.services.decide_leave` and `cancel_leave` (POST routes, a dialog for the rejection
+pending request is cancelled by the person or a decider at any time, an approved one by the person only while its first day
+has not started on the site's clock. Once it has begun, a decider (never the person, never on their own leave:
+`hr.services.can_correct`) still puts it right: **ends it earlier** (`shorten_leave`, a new last day from its first day to the
+day before its last: the person came back early; the request's page has the field) or cancels it (it was never taken). Only
+within the correction window after the leave's last day (`hr.services.correction_window_days`, the platform owner's
+correction-window setting, 31 days by default): an older leave is history and is refused with the reason. The
+decisions are `hr.services.decide_leave`, `cancel_leave` and `shorten_leave` (POST routes, a dialog for the rejection
 note), each in one transaction with its audit row, and every refusal leaves rows and log unchanged.
+
+**Within the employment.** No shift is planned, no presence entered or punched and no leave asked for a day before the person
+joined or after their last day (`hr.services.check_employed`, the one rule for the plan, the punch, the entered presence, the
+attendance form and the leave form; clearing a planned day is always allowed). A lead was already held to it by the
+placements, which end on the last day; a holder of Everyone and the person themselves are held by this rule. Every path
+reads it with the person's row locked (`lock_employed`: the forms check it first for the sentence, the save checks it
+again under the lock in the tab's `after_save`, which rolls the save back onto the form; `enter_presence`, the punch and
+approving a pending leave lock first), so a last day committed meanwhile is never passed. HR's lock order: the person
+first (`hr.services.lock_person`, FOR NO KEY UPDATE, so a record being added for them does not wait on it), then their
+records; an edit of a plan, a punch or a leave request locks the person before the record (`PersonFirst`, through
+`Resource.edited`), as the batch plan, the punch and `leave_company` do. It holds the other way too: a
+first or last day that would leave plans, held leave or punches outside is refused on the person form and by
+`leave_company`, naming what to correct first (`employment_conflicts`; later plans and later pending leave go with the
+last day as before). The database backs it (`hr/0011_employment_bounds`: constraint triggers deferred to the commit on
+plans, leave, punches and the person's dates; a punch is checked on the UTC day with a day of slack, its exact day is
+the site's).
 
 **Privacy.** A lead sees the person and the days; the **type** (sick, annual) only the person, who may decide the request (Edit) and the
 holders of Everyone see: in the list, on the read page and in the search (the scope marks each request `type_shown` and a search for a
@@ -3222,7 +3339,7 @@ only one who manages roles and users; everyone else gets exactly what their role
   users are not areas, so no role can grant them.
 - **Roles** (`/roles/`, Django `Group`): a table with each role's users and what it allows; the
   dialog has the name and a permission matrix (areas by group, columns Read / Create / Edit /
-  Delete, and Crew, All production and Everyone where an area offers them: see Row scope). Create, Edit, Delete, Crew, All production and Everyone include Read: the form adds it and the browser ticks it. Saving
+  Delete, and Crew, All production and Everyone where an area offers them: see Row scope). Create, Edit and Delete include Read: the form adds it and the browser ticks it. Crew, All production and Everyone include nothing: they widen whose rows the role's other rights reach, so a role saved in the matrix keeps exactly what it had (the Production manager preset has All production without the Team list, `hr/roles.py`). **Deploying this rule:** a role saved before it kept the Read the old rule added; migration `hr/0010_restore_preset_rights` puts the two presets back to exactly their rights, and `manage.py check --database default` lists any other role whose Read on an area may come only from it (core.W003: Read and a widening column, no Create, Edit or Delete there) for the administrator to review in Roles. Saving
   sets exactly the ticked boxes (the model's standard view/add/change/delete permissions). The
   activity log shows permission changes as "Sites: read, create; Activity log: read". Deleting a
   role removes it from its people.
@@ -3231,6 +3348,35 @@ only one who manages roles and users; everyone else gets exactly what their role
   email, whose link sets their first password (and "Forgot password" sends a new link if it
   expired). People are deactivated, not deleted, and nobody can deactivate their own account.
   Platform admin status is not edited here (only with `createsuperuser`).
+
+## Security in the pages
+
+- **Text is escaped everywhere.** No template prints a value with `|safe` or `autoescape off` (the one exception is
+  the password reset e-mail, which is plain text). A form's help text is text too: several forms write a name into it
+  (a task whose place was deleted, equipment whose systems were deleted), so `templates/registration/_field.html`
+  escapes it, and Django's own layouts (`{{ form }}`, `as_p`, `as_table`, `as_ul`, `as_field_group`) draw their fields
+  with the same template (`templates/django/forms/`). Markup reaches a page only from the few places that build it with
+  every piece of text escaped (a reference, a found passage, a sensor chart, the import map);
+  `core/tests_escaping.py` names them and fails when a new one appears.
+- **Every page asks for a right.** `core/tests_routes.py` walks every route of the project: someone not signed in is
+  sent to sign in everywhere but the sign-in and password-reset pages and the language switch, and a signed-in person
+  with no role is refused (403, a record page too: it asks for the right before it looks the record up) everywhere but a
+  short named list (the overviews, which show only
+  the tiles a person's roles allow, and the person's own password; the clock-in/out route, whose argument is a word, not a record). A new page without a check fails it. A page that
+  writes asks for its right before it reads the request (the shift plan answered such a person 400 for a malformed
+  request before; now 403).
+- **A Content-Security-Policy on every response** (`config/settings.py` SECURE_CSP, Django's own middleware): a page loads
+  only from its own address; scripts are the project's files plus what carries the response's nonce (the import map,
+  `core/templatetags/assets.py`); no inline script, no inline style (a monitoring widget's cell is a class,
+  `static/css/card-grid.css`; a capacity bar's or gauge's fill an SVG rectangle's width, `templates/farm/_capacity_bar.html`
+  and the units table's `ui-gauge-track`), no
+  event-handler attribute, no plug-in, no frame around a page, no form sent elsewhere. So even text that slipped past the
+  escaping could not run. `core/tests_csp.py` opens every page that takes no record as the platform admin, as a page and
+  as a dialog, and fails on anything the policy would block; it also reads every template for the parts that appear only
+  with data. A script that changes a style through the DOM (`element.style`) is allowed by the policy.
+- **The fonts are the project's own** (`static/fonts`, declared in `static/css/fonts.css`: Atkinson Hyperlegible Next and
+  Bricolage Grotesque under the SIL Open Font License 1.1, one entry each in `THIRD_PARTY.md`): no page asks Google or any
+  other site for anything, so no reader's address leaves the farm with a page, and the farm's own network shows them.
 
 ## Database viewer
 
@@ -3257,7 +3403,8 @@ is not in the access matrix, so no role can be given it.
   sorted and filtered as the number it holds. A link the database does not check (`db_constraint=False`, like `audit_log.user_id`) says so.
 
 Tables are not listed one by one: they come from the models of the apps in `config/database.py`
-(`farm`, `inventory`, `knowledge`, `messaging`, `reports`, `tasks`, `core`, `auth`), so a tab that is ported later appears with no new code, in the section its
+(`farm`, `knowledge`, `inventory`, `messaging`, `reports`, `tasks`, `hr`, `experiments`, `monitoring`, `sensors`, `core`, `auth`; the
+sensor readings, billions of rows, stay out), so a tab that is ported later appears with no new code, in the section its
 app belongs to. The tables of other apps (sessions, the Django admin's log) are not shown at all.
 Everything the query string names is checked against the table's real columns and the rows come
 through the ORM.
@@ -3692,7 +3839,7 @@ whatever the address or the query, and nothing is written or logged. Nothing els
 record, so a rule is never written a second time.
 
 The matrix has one more column for the same purpose, **Everyone** (`all`): offered by the one area whose rows
-are scoped (HR's Employees), it implies Read like Create, Edit and Delete, and the scope function reads it as
+are scoped (HR's Employees), it includes no other right (it widens rows; Read is ticked on its own), and the scope function reads it as
 "no limit". A tab's `private_fields` name form fields that hold a person's own words (a leave reason, a
 punch's note): the activity log says "Private text" for a filled one and never stores the words, so it shows
 that the field was set, replaced or cleared, not what it says (a short keyed digest of the text is kept so that
@@ -3903,6 +4050,7 @@ real mail.
 | `/feeds/` | Reference data › Feeds; `<id>/suitability/` saves the species and fish weights a feed suits |
 | `/suppliers/` | Purchasing › Suppliers; `<id>/contacts/` saves a supplier's contact persons |
 | `/operations/units/` | Operations › Production units; `?unit=<id>` opens a unit's drawer |
+| `/monitoring-boards/` | Setup › Facility structure › Monitoring boards: the named wall screens, each with its Units tab |
 | `/card-templates/`, `/card-templates/<id>/copy/` (POST), `/card-templates/preview/` (POST JSON) | Setup › Reference data › Card templates: the designer, Copy, the designer's preview |
 | `/card-template-rules/` | Setup › Reference data › Card template rules |
 | `/operations/monitoring/` | Operations › Monitoring: a live card per unit, drawn with its card template (`?mode=simple|detailed` picks a built-in for a page without a board); `?wall=1`, `?site=`, `?department=`, `?system=`, `?kind=`, `?occupancy=stocked\|empty\|all`, `?mode=detailed`, `?flip=<id,id>`, `?units=<id,id>`, `?q=` |
@@ -3919,7 +4067,7 @@ real mail.
 | `/operations/feeding/assignments/` | Operations › Feeding › Assignments |
 | `/operations/feeding/void/<id>/` | Voids a feeding |
 | `/sampling-points/` | Setup › Facility structure › Sampling points: the points of the units, loops and equipment; `?unit=<id>`, `?system=<id>` or `?equipment=<id>` one owner's, filters by site, owner and kind |
-| `/operations/water/` | Operations › Water chemistry: the latest water per point; `?view=history` the samples, `?unit=<id>`, `?system=<id>` or `?equipment=<id>` an owner's history (every point of it), `?point=<id>` one point's |
+| `/operations/water/` | Operations › Water chemistry: the latest water per point; `?view=history` the samples, `?unit=<id>`, `?system=<id>` or `?equipment=<id>` an owner's history (every point of it), `?point=<id>` one point's; `from`/`to` choose the days (a day that is no day is the default 30 days, a day is held to the last century up to today so 9999-12-31 is today; a span longer than 366 days starts later and says so; the samples are paged in the database and only the shown page is judged, F-019, F-176) |
 | `/operations/water/calculator/` | Water chemistry › Calculator: the Water Quality Management Chart, the small charts, the results and the dosing of the water in the address (a GET form); `?point=tank:<id>` or `system:<id>` puts that unit's or loop's values in |
 | `/operations/water/calculator/results/` | The calculator's live parts for the values in the address (what the page's script asks for) |
 | `/operations/water/calculator/report/` | The calculator's printed report for the values in the address |
@@ -4008,6 +4156,11 @@ real mail.
 | `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |
 | `tasks/` | Tasks and recurring tasks: models (`models.py`), the place as a choice (`places.py`), the one write path and the planned tasks (`services.py`), overdue and the views on read (`read.py`), the tabs (`resources.py`, `forms.py`), the drawer's actions and the overview tiles (`views.py`), `manage.py generate_tasks`, `templates/tasks/`, `static/css/tasks.css` |
 | `experiments/` | Experiments (its own app, reading the farm): the design, the placements and the team (`models.py`), the endpoints (`variables.py`), the tab, its design view and its team list (`resources.py`, `forms.py`), what is wrong with a design (`design.py`), the seeded deal (`allocation.py`), the reads that every figure goes through and the deviations (`read.py`), the check of every started experiment (`integrity.py`, `manage.py check_experiments`), the write path of the design and the places (`services.py`), the constraints and composite keys (`migrations/0001_initial.py`), the triggers that freeze a started design (`migrations/0002_design_frozen.py`), `templates/experiments/`, tests, `docs/experiments.md` |
+| `hr/` | Human resources (Company › HR, its own app): people, departments, placements, shifts, leave and attendance (`models/`), the rules and the scope (`rules.py`, `scope.py`, `roles.py`), the write path (`services.py`), the reads (`read.py`), what the database cannot hold (`checks.py`, `manage.py check_hr`), the tabs (`resources/`, `forms/`), `templates/hr/`, tests (README, Human resources) |
+| `monitoring/` | Operations › Monitoring: the one card read and its state ladder with its words (`read.py`), the card templates' catalogue, validator, resolution and drawing (`cards/`), boards and templates (`models.py`, `resources.py`, `forms.py`), the page, the fragment and the designer's preview (`views.py`), `templates/monitoring/`, `static/css/monitor.css`, `frontend/poll.ts`, `frontend/announce.ts`, `frontend/designer.ts`, `frontend/windows.ts`, tests (README, Monitoring) |
+| `sensors/` | The Sensors panel: devices, channels and their bindings (`models/`, `bindings.py`), the live water source the farm reads through `farm/water/sources.py` (`provider.py`, `read.py`), alarms and quality (`alarms.py`, `quality.py`), the charts and the trail (`chart.py`, `trail.py`), `sensors/CONTRACT.md`, tests (README, Sensors) |
+| `sensors-ingest/` | The ingest service (Rust): reads the broker's sensor messages and writes the readings (`CONTRACT-REQUESTS.md`, `BENCH.md`) |
+| `core/checks.py`, `core/ranges.py`, `core/text.py` | The system checks run at start (the built catalogs and assets); periods as PostgreSQL compares them, for exclusion constraints; lower case in the person's language |
 | `knowledge/` | Knowledge: the library's documents and their pages, the knowledge entries (`models/`), reading a PDF's text (`extraction.py`), the full-text search (`search.py`), the reference in APA form (`citation.py`), the file, text and review views (`views.py`), the tabs (`forms/`, `resources/`, `templates/knowledge/`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
 | `core/datamap.py`, `<app>/screens.py`, `core/test_datamap.py`, `docs/data-map.md`, `docs/data-map.json` | The data map: every table's screens, read from the code and the declarations; `manage.py data_map [--check]` |

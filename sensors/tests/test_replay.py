@@ -461,3 +461,36 @@ class ValueAtTests(ReplayCase):
             read.deffeyes_frames(self.t1, START, START + timedelta(hours=2), timedelta(minutes=1))
             self.assertEqual(setting(), before)
         self.assertEqual(before, 'on')
+
+
+class OneRuleTests(ReplayCase):
+    """The replay picks each input at each frame by the water's one rule, `farm.water.read.choose` (owner rule A9), as
+    the live view does: the newest fresh value of the unit's own places (its own-water points' sensors and samples), else
+    its system's (the system's sensors, those on its loop point, the loop's samples); never sensor-before-sample (A1)."""
+
+    def test_a_newer_fresh_manual_value_beats_an_older_fresh_sensor_value(self):
+        self.steady()
+        water_services.record(self.user, point=self.mid1, measured_at=START + timedelta(minutes=22), source='manual',
+                              values={'ph': Decimal('6.50')})
+        frames = read.deffeyes_frames(self.t1, START + timedelta(minutes=24), START + timedelta(minutes=25),
+                                      timedelta(minutes=1))
+        ph = frames.frames[0].inputs['ph']
+        self.assertEqual((ph.origin, ph.value), (read.MANUAL, 6.5))
+
+    def test_the_units_own_fresh_value_comes_before_the_systems_sensor(self):
+        self.steady()
+        water_services.record(self.user, point=self.mid1, measured_at=START + timedelta(minutes=30), source='manual',
+                              values={'temperature_c': Decimal('9.0')})
+        frames = read.deffeyes_frames(self.t1, START + timedelta(minutes=31), START + timedelta(minutes=32),
+                                      timedelta(minutes=1))
+        temperature = frames.frames[0].inputs['temperature_c']
+        self.assertEqual((temperature.origin, temperature.value), (read.MANUAL, 9.0))
+
+    def test_a_probe_on_the_loop_point_stands_in_for_the_unit(self):
+        oxygen = make_channel(self.device, 'oxygen_mg_l')
+        bindings.move(self.user, oxygen, point=self.loop, at=START - timedelta(days=1))
+        insert(oxygen.channel_no, [(START + timedelta(minutes=m), 8.0) for m in range(60)])
+        self.steady()
+        frames = read.deffeyes_frames(self.t1, START + timedelta(minutes=10), START + timedelta(minutes=11),
+                                      timedelta(minutes=1))
+        self.assertEqual(getattr(frames.frames[0].inputs.get('oxygen_mg_l'), 'value', None), 8.0)

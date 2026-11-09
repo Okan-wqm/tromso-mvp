@@ -33,3 +33,11 @@ def key_water():
     """[(code, short label)] of the key water values (the catalogue's), for the key-values table."""
     from ..cards.catalogue import KEY_WATER
     return [(code, parameters.get(code).short) for code in KEY_WATER]
+
+
+@register.simple_tag
+def card_states():
+    """[(key, word)] of the states a card can be in, worst first (monitoring/read.py STATES): the one place the words are
+    spelled, for the announcer's words and the designer's "show as"."""
+    from .. import read
+    return read.STATES

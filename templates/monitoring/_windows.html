@@ -4,7 +4,7 @@
    full screen. `windows_key`: where this device remembers the windows' places (the board's id, or "adhoc"). The two
    notices are printed by CSS from data-poll-state (static/css/monitor.css); the script has no text of its own.
    {% endcomment %}
-<div id="monitor-windows" data-every="60" data-storage-key="monitoring:{{ windows_key|default:'adhoc' }}" data-stale-text="{% trans "No connection: this may be out of date" %}" data-gone-text="{% trans "Signed out, or no longer available" %}"></div>
+<div id="monitor-windows" data-every="60" data-storage-key="monitoring:{{ windows_key|default:'adhoc' }}" data-stale-text="{% trans "Not updated: the server cannot be reached or cannot answer. This may be out of date." %}" data-gone-text="{% trans "Signed out, or no longer available" %}"></div>
 <template id="monitor-window-template">
   <section class="monitor-window" role="dialog" tabindex="-1">
     <header class="monitor-window-bar" data-window-handle>

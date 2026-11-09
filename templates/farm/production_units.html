@@ -115,7 +115,7 @@
             <td>
               {% if stock %}
               <span class="ui-gauge"{% if stock.over_capacity %} data-status="critical"{% endif %}>
-                <span class="ui-gauge-track" aria-hidden="true"><span class="ui-gauge-fill" style="width: {{ stock.capacity|bar_width }}%"></span></span>
+                <svg class="ui-gauge-track" viewBox="0 0 100 1" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect class="ui-gauge-fill" width="{{ stock.capacity|bar_width }}" height="1"/></svg>
                 <span class="ui-gauge-text">{{ stock.density|density }}, {{ stock.capacity|percent }}</span>{% if stock.over_capacity %}<span class="over-badge">{% trans "Over" %}</span>{% endif %}
               </span>
               {% else %}—{% endif %}

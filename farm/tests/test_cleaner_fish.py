@@ -496,3 +496,28 @@ class DatabaseRuleTests(CleanerFishTestCase):
         with self.assertRaises(IntegrityError), transaction.atomic():
             StockMovement.objects.create(**{**good, 'kind': 'mortality'}, reason='emaciated')   # a cull's cause only
         StockMovement.objects.create(**good, reason='emaciated')                                  # one of the six: fine
+
+
+class WaterLimitsOfEveryFishTests(CleanerFishTestCase):
+    """Cross review: the water of a cage is judged for every species in it; a row for the salmon does not judge it for
+    the lumpfish beside them (Limits.uncovered), and the page that lists the missing limits names them too."""
+
+    def test_a_species_without_a_limit_is_not_hidden_by_one_with_a_limit(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from ..models import WaterLimit
+        from ..water import read as water_read, services as water_services
+        from ..water.evaluate import Status
+        from .helpers import point_of
+        WaterLimit.objects.create(species=self.salmon, parameter='temperature_c', water_type='any',
+                                  warning_high=Decimal(18))
+        water_services.record(self.user, point=point_of(self.cage), measured_at=timezone.now() - timedelta(hours=1),
+                              source='manual', values={'temperature_c': Decimal('16')})
+        water = water_read.unit_water([self.cage])[self.cage.pk]
+        reading = water.get('temperature_c')
+        self.assertEqual((reading.judged, reading.uncovered), (Status.OK, (self.lump.pk,)))
+        self.assertEqual([each.code for each in water.unjudged], ['temperature_c'])
+        self.assertIn(self.lump, [entry.species for entry in water_read.missing_limits()])
+        WaterLimit.objects.create(species=self.lump, parameter='temperature_c', water_type='any',
+                                  warning_high=Decimal(17))
+        self.assertEqual(water_read.unit_water([self.cage])[self.cage.pk].unjudged, [])

@@ -1,4 +1,4 @@
-{% load i18n %}{# One form field. A group of boxes (roles, the permission matrix) is a fieldset named by its legend. #}
+{% load i18n %}{# One form field, also for Django's own layouts (templates/django/forms). A group of boxes (roles, the permission matrix) is a fieldset named by its legend. The help text is text: markup only from code that built it with format_html. #}
 {% with tag=field.use_fieldset|yesno:"fieldset,div" %}
 <{{ tag }} class="field{% if field.use_fieldset %} field-set{% endif %}{% if field.errors %} has-error{% endif %}">
   {% if field.use_fieldset %}
@@ -17,7 +17,7 @@
   <label for="{{ field.id_for_label }}">{{ field.label }}</label>
   {{ field }}
   {% endif %}
-  {% if field.help_text %}<div class="help" id="{{ field.auto_id }}_helptext">{{ field.help_text|safe }}</div>{% endif %}
+  {% if field.help_text %}<div class="help" id="{{ field.auto_id }}_helptext">{{ field.help_text }}</div>{% endif %}
   {{ field.errors }}
 </{{ tag }}>
 {% endwith %}

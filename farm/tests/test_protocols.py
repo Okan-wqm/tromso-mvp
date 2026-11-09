@@ -423,10 +423,25 @@ class BoardTests(WorkedExampleTestCase):
         WaterMeasurement.all_objects.filter(point__system=ras).delete()
         temperature = self.board_line()[1]['temperature']
         self.assertEqual((temperature.value_c, temperature.via, temperature.fresh), (D('13.0'), 'unit', False))
-        self.assertContains(self.client.get(reverse('farm:meal_board')), 'stale')
+        self.assertContains(self.client.get(reverse('farm:meal_board')), 'Based on the temperature from')
         WaterMeasurement.all_objects.all().delete()
-        self.water('13.0', unit=self.t2, hours=24 * 8)                     # older than 7 days: no ration
-        self.assertEqual(self.board_line()[2]['why'], 'No temperature in the last 7 days: record one.')
+        self.water('13.0', unit=self.t2, hours=24 * 8)                     # A11: however old, it gives the ration
+        temperature = self.board_line()[1]['temperature']
+        self.assertEqual((temperature.value_c, temperature.fresh), (D('13.0'), False))
+        self.assertIn('(8 days old)', temperature.warning)
+        WaterMeasurement.all_objects.all().delete()                        # none ever recorded: no ration
+        self.assertEqual(self.board_line()[2]['why'], 'No temperature recorded here yet: record one.')
+
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
+    def test_the_board_prints_a_stale_temperatures_age_warning_under_its_chip(self):
+        """A11 on the page: the stale chip (clock and word) and under it the sentence the ration is based on, with its age."""
+        WaterMeasurement.all_objects.all().delete()
+        self.water('13.0', unit=self.t2, hours=24 * 5)
+        response, row, _line = self.board_line()
+        warning = row['temperature'].warning
+        self.assertIn('(5 days old)', warning)
+        self.assertTrue(warning.startswith('Based on the temperature from '))
+        self.assertContains(response, f'stale</span><span class="ui-why ui-mt">{warning}</span>', count=1)
 
 
 class PrecedenceTests(ProtocolTestCase):

@@ -24,11 +24,11 @@ from core.widgets import MomentInput
 
 from ..models import (Equipment, ProductionDepartment, SamplingPoint, Site, Species, System, Tank, WaterLimit,
                       WaterMeasurement)
-from ..models.site import zone_of
+from ..models.site import ALTITUDE_HIGH, ALTITUDE_LOW, zone_of
 from ..models.water import BOUNDS
 from ..models.water_point import EQUIPMENT, SYSTEM, UNIT, PointKind, owner_type_of, site_of
-from ..templatetags.water import limit_text
-from ..water import calculation, deffeyes, dosing, parameters, services
+from ..templatetags.water import limit_text, source
+from ..water import calculation, deffeyes, dosing, parameters, read, services
 from ..water.parameters import GROUPS, MEASURED
 from .stock import DECIMAL, ServiceErrors, VoidForm
 
@@ -156,7 +156,55 @@ class ValuesMixin:
                 if parameter.code in self.fields and self.cleaned_data.get(parameter.code) is not None}
 
 
-class WaterSampleForm(ValuesMixin, ServiceErrors, forms.Form):
+NOT_READ = object()       # an assumed salinity not read by the caller
+
+
+class OxygenInputs:
+    """What an oxygen value is worked out with, one rule for the sample form and the round (second cross review,
+    finding 1): the temperature and the salinity fields stay EMPTY; a value typed in them is a measurement of the sample
+    and stored as one. Left empty beside an oxygen, the server works the oxygen out with the point's latest values fresh
+    at the sample's point and time (services: read.oxygen_basis) and stores them as the sample's provenance
+    (oxygen_basis_*), never as a measurement. The form only says what that would be now, in the field's help (and in a
+    round's cell): the point's latest fresh value with its origin and age, or fresh water's 0."""
+
+    INPUTS = (parameters.TEMPERATURE, parameters.SALINITY)
+
+    def _offer(self, point, water=None, assumed=NOT_READ):
+        """Says in the temperature and salinity fields' help what an oxygen at `point` would be worked out with now;
+        `water` is the point's PointWater and `assumed` its assumed salinity when the caller read many points at once."""
+        if point is None:
+            return
+        water = water if water is not None else read.latest([point])[point.pk]
+        assumed = read.assumed_salinity_at(point) if assumed is NOT_READ else assumed
+        for code in self.INPUTS:
+            if code not in self.fields:
+                continue
+            reading = water.get(code)
+            if reading is not None and reading.value is not None and reading.fresh(timezone.now()):
+                now = _('now %(value)s, %(source)s') % {
+                    'value': formats.number_format(reading.value, parameters.get(code).decimals),
+                    'source': '{origin} · {age}'.format(**source(reading))}
+            elif code == parameters.SALINITY and assumed is not None:
+                now = _('fresh water, 0')
+            else:
+                now = _('none fresh now: enter it')
+            said = _('Left empty beside an oxygen: the latest fresh value at %(point)s at the sample’s time '
+                     '(%(now)s).') % {'point': point, 'now': now}
+            self.fields[code].offered = now                  # a round says it in the cell (farm/water_round.html)
+            self.fields[code].help_text = format_html_join(' ', '{}', ((part,) for part in (
+                self.fields[code].help_text, said) if part))
+
+
+def with_oxygen_inputs(columns):
+    """A round's columns with the temperature and the salinity an oxygen column needs (OxygenInputs), in the record
+    form's order."""
+    if not {parameters.OXYGEN_MG_L, parameters.OXYGEN_PCT} & set(columns):
+        return list(columns)
+    wanted = set(columns) | set(OxygenInputs.INPUTS)
+    return [parameter.code for parameter in MEASURED if parameter.code in wanted]
+
+
+class WaterSampleForm(OxygenInputs, ValuesMixin, ServiceErrors, forms.Form):
     """One sample at one point. Opened from a unit, a loop or a piece of equipment (`owner`) it offers that owner's
     active points, with `point` (its middle one by default) chosen, so routine entry is not slower; one point is
     fixed. Opened from nothing it offers every active point, grouped by owner. The time defaults to now on the
@@ -195,6 +243,7 @@ class WaterSampleForm(ValuesMixin, ServiceErrors, forms.Form):
             field.widget = forms.HiddenInput()
         self.fields['token'].initial = uuid.uuid4()
         self.fields['measured_at'].initial = now_on(clock(point or (points[0] if self.fixed else None)))
+        self._offer(point or (points[0] if self.fixed else None))
         self.order_fields(['point', 'measured_at', 'source', *(parameter.code for parameter in MEASURED), 'notes'])
 
     def clean_point(self):
@@ -216,7 +265,7 @@ class WaterSampleForm(ValuesMixin, ServiceErrors, forms.Form):
         data = self.cleaned_data
         return services.record(user, point=data['point'], measured_at=data['measured_at'], source=data['source'],
                                values=self.entered(), notes=data['notes'], token=data['token'],
-                               withdrawal_ack=data['withdrawal_ack'])
+                               require_basis=True, withdrawal_ack=data['withdrawal_ack'])
 
 
 # ---- a round --------------------------------------------------------------------------------------------
@@ -260,9 +309,10 @@ class RoundScopeForm(forms.Form):
     def scope(self):
         """(site, department, system, columns, include) chosen; columns default to the morning round's."""
         if not self.is_valid():
-            return None, None, None, ROUND_COLUMNS, []
+            return None, None, None, with_oxygen_inputs(ROUND_COLUMNS), []
         data = self.cleaned_data
-        return (data['site'], data['production_department'], data['system'], data['columns'] or ROUND_COLUMNS,
+        return (data['site'], data['production_department'], data['system'],
+                with_oxygen_inputs(data['columns'] or ROUND_COLUMNS),
                 data['include'])
 
     @staticmethod
@@ -310,17 +360,21 @@ class RoundForm(ServiceErrors, forms.Form):
         return timezone.make_aware(self.cleaned_data['measured_at'], zone_of(self.site))
 
 
-class RoundRowForm(ValuesMixin, forms.Form):
-    """One point of a round: the chosen columns and a note. Its prefix names the point (point-<id>)."""
+class RoundRowForm(OxygenInputs, ValuesMixin, forms.Form):
+    """One point of a round: the chosen columns and a note. Its prefix names the point (point-<id>). With an oxygen
+    column it offers and takes the temperature and the salinity as the sample form does (OxygenInputs); `water` is the
+    point's PointWater and `assumed` its assumed salinity, each read once for every row."""
 
     notes = forms.CharField(label=_('Notes'), max_length=500, required=False)
 
-    def __init__(self, *args, point, columns, **kwargs):
+    def __init__(self, *args, point, columns, water=None, assumed=NOT_READ, **kwargs):
         super().__init__(*args, prefix=f'point-{point.pk}', **kwargs)
         self.point = point
         for parameter in MEASURED:
             if parameter.code in columns:
                 self.fields[parameter.code] = value_field(parameter)
+        if {parameters.OXYGEN_MG_L, parameters.OXYGEN_PCT} & set(columns):
+            self._offer(point, water, assumed)
         self.order_fields([*columns, 'notes'])
 
     def add_service_error(self, code, message):
@@ -426,7 +480,7 @@ class CalculatorForm(forms.Form):
                              _('The water the amounts are for: a tank or a loop. Empty: the doses per m³ only.'))
     calcium_mg_l = number_field(_('Calcium (mg/L Ca²⁺)'), 0, 2000, 1,
                                 _('For the calcite and aragonite saturation, in water of 5 to 44 ‰.'))
-    altitude_m = number_field(_('Altitude (m)'), 0, 5000, 0,
+    altitude_m = number_field(_('Altitude (m)'), ALTITUDE_LOW, ALTITUDE_HIGH, 0,
                               _('For the oxygen saturation and the CO₂ the air leaves in the water: the pressure of '
                                 'the standard atmosphere there. Empty is sea level.'))
     target_ph = number_field(_('Target pH (NBS scale)'), 4, 12, 2)

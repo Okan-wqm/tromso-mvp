@@ -59,7 +59,10 @@ def parse_cells(values):
 def plan(request):
     """Sets one shift, planned off or nothing on every cell sent (`cells`, repeated; `shift`: a shift's id, `off` or
     `clear`), all or none. A person the user does not reach (a forged id) is a 404 and writes nothing; a blocking finding
-    refuses the batch with its first conflicts; warnings are told after the save."""
+    refuses the batch with its first conflicts; warnings are told after the save. Someone with no right to plan is
+    refused before the request is read."""
+    if not services.can_plan(request.user):
+        raise PermissionDenied
     cells = parse_cells(request.POST.getlist('cells'))
     if not cells:
         return HttpResponseBadRequest()
@@ -144,6 +147,17 @@ def reject(request, pk):
         raise PermissionDenied
     return render_page(request, 'hr/leave_reject.html', {'object': item, 'title': _('Reject the request'),
                                                          'group': _('Leave requests')})
+
+
+@require_POST
+def shorten(request, pk):
+    """A decider ends an approved leave earlier (hr.services.shorten_leave): `last_day`, the new last day, typed in the
+    shared day box (core.dates.read_day says a text that is no day back to the person; nothing changes)."""
+    item = leave_request(request, pk)
+    last_day = read_day(request.POST.get('last_day', ''), request)
+    if last_day is None:
+        return _back(request)
+    return _run(request, lambda: services.shorten_leave(request.user, item, last_day), _('The leave was shortened.'))
 
 
 @require_POST

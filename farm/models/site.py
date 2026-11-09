@@ -13,6 +13,15 @@ from core.softdelete import protected
 from ..health import lice
 from .contact import ONE_PRIMARY, Contact
 
+# The altitude a site may have (m above sea level): sea level to the highest farms (Lake Titicaca's trout cages, about
+# 3,800 m), with room. Owner decision 2026-11-06: no site of ours lies below sea level; a minus sign is far more likely a
+# slip, and the few places below it (polders, the Dead Sea) change the pressure by about 0.1 % per 10 m. It sets the
+# barometric pressure the oxygen's saturation is worked out with (farm/water/read.py, the calculator): a slip outside it
+# would inflate a sensor's mg/L or stop the pages (F-089). The form, the model and the database hold it
+# (chk_sites_altitude_range), and the calculator's field takes the same range.
+ALTITUDE_LOW, ALTITUDE_HIGH = 0, 5000
+ALTITUDE_MESSAGE = _('Between 0 and 5000 m: sea level to the highest farms.')
+
 
 def company_zone():
     """The company's time zone (settings.COMPANY_TIME_ZONE, Europe/Oslo unless the environment names another): a new
@@ -92,7 +101,11 @@ class Site(CodedMixin, AuditedModel):
         _('Longitude'), max_digits=9, decimal_places=6, null=True, blank=True,
         validators=[MinValueValidator(-180), MaxValueValidator(180)],
     )
-    altitude = models.DecimalField(_('Altitude (m)'), max_digits=8, decimal_places=2, null=True, blank=True)
+    altitude = models.DecimalField(
+        _('Altitude (m)'), max_digits=8, decimal_places=2, null=True, blank=True,
+        validators=[MinValueValidator(ALTITUDE_LOW, ALTITUDE_MESSAGE),
+                    MaxValueValidator(ALTITUDE_HIGH, ALTITUDE_MESSAGE)],
+    )
     street = models.CharField(_('Street address'), max_length=255, blank=True)
     city = models.CharField(_('City'), max_length=100, blank=True)
     state = models.CharField(_('State'), max_length=100, blank=True)
@@ -173,6 +186,11 @@ class Site(CodedMixin, AuditedModel):
             models.CheckConstraint(
                 condition=Q(longitude__isnull=True) | Q(longitude__gte=-180, longitude__lte=180),
                 name='chk_sites_longitude_range',
+            ),
+            models.CheckConstraint(
+                condition=Q(altitude__isnull=True) | Q(altitude__gte=ALTITUDE_LOW, altitude__lte=ALTITUDE_HIGH),
+                name='chk_sites_altitude_range',
+                violation_error_message=ALTITUDE_MESSAGE,
             ),
             models.CheckConstraint(
                 condition=Q(latitude__isnull=True, longitude__isnull=True)

@@ -122,9 +122,10 @@ def _meal():
     def line(batch, part, why='', drift=''):
         return {'share': part, 'batch': N(code=batch), 'why': why, 'drift': drift, 'estimate_days': 16}
 
-    temperature = N(value_c=Decimal('11.6'), via='loop', point=N(code='RAS-1'), age=NOW - datetime(2026, 11, 5, 20, 0,
-                                                                                                    tzinfo=tz.utc),
-                    fresh=False)
+    from farm.feeding.temperature import Temperature    # the board's own: its stale chip says A11's age warning
+    measured = datetime(2026, 11, 5, 20, 0, tzinfo=tz.utc)
+    temperature = Temperature(value_c=Decimal('11.6'), measured_at=measured, point=N(code='RAS-1', site=None),
+                              via='loop', age=NOW - measured, fresh=False)
     day = N(fed_kg=Decimal('0'), feedings=[], meals_done=0)
     rows = [
         {'unit': N(code='HA-K02', production_department=department), 'day': day, 'temperature': temperature,

@@ -608,6 +608,14 @@ td.wq-critical, .wq-value.wq-critical { color: var(--crit-text); font-weight: 70
 td.wq-warning, .wq-value.wq-warning { color: var(--warn-text); font-weight: 600; }
 td.wq-stale, .wq-value.wq-stale, td.wq-no_limit, .wq-value.wq-no_limit { color: var(--text-3); }
 td.wq-stale, .wq-value.wq-stale { font-style: italic; }
+/* An old value that was critical or a warning keeps its colour (and its italics): old, never read as fine (F-244). */
+td.wq-was-critical, .wq-value.wq-was-critical { color: var(--crit-text); font-weight: 700; }
+td.wq-was-warning, .wq-value.wq-was-warning { color: var(--warn-text); font-weight: 600; }
+/* The same on the design system's value face (farm/_water_face.html): stale italics, the colour and glyph of what it was. */
+.ui-value[data-was="critical"] b { color: var(--crit-text); font-weight: 700; }
+.ui-value[data-was="warning"] b { color: var(--warn-text); font-weight: 600; }
+.ui-value[data-was="critical"] .icon { color: var(--crit); }
+.ui-value[data-was="warning"] .icon { color: var(--warn); }
 .wq-derived { font-style: italic; }
 .wq-note { margin-left: .125rem; color: var(--text-3); }
 .wq-missing { color: var(--text-3); }
@@ -1143,10 +1151,10 @@ a.grid-name:hover { color: var(--action); text-decoration: underline; }
 
 .capacity { display: inline-grid; gap: .3125rem; width: 10.625rem; text-align: left; }
 .capacity-line { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; margin: 0; }
-.capacity-bar { display: block; height: 8px; overflow: hidden; border: 1px solid var(--line-control); background: var(--surface-sheet); }
-.capacity-bar > span { display: block; height: 100%; background: var(--primary); }
+.capacity-bar { display: block; width: 100%; height: 8px; overflow: hidden; border: 1px solid var(--line-control); background: var(--surface-sheet); }
+.capacity-bar rect { fill: var(--primary); }          /* an SVG rectangle's width, templates/farm/_capacity_bar.html (CSP) */
 .capacity-bar-large { height: 14px; }
-.is-over .capacity-bar > span { background: var(--crit); }
+.is-over .capacity-bar rect { fill: var(--crit); }
 .over-badge {
   padding: 0 .375rem; border-radius: 4px; background: var(--crit-tint); color: var(--crit-text);
   font-size: .75rem; font-weight: 700;

@@ -810,6 +810,9 @@ class PageTests(StockTestCase):
         self.assertContains(response, '<tr class="unit-row is-selected" aria-current="true">')
         self.assertContains(response, '<tr class="unit-row is-over">')
         self.assertContains(response, '<span class="over-badge">Over</span>', count=1)
+        # The gauge's fill is an SVG rectangle's width, never a style attribute (the Content-Security-Policy).
+        self.assertContains(response, '<rect class="ui-gauge-fill" width="100.0" height="1"/>', count=1)
+        self.assertNotContains(response, 'class="ui-gauge-fill" style=')
         response = self.page(unit=self.t2.pk)
         self.assertContains(response, '<tr class="unit-row is-selected is-over" aria-current="true">')
 

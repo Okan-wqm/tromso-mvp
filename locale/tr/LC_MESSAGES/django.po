@@ -754,6 +754,10 @@ msgid "%(label)s that lose their %(link)s"
 msgstr "%(label)s: “%(link)s” bağlantısı kalkar"
 
 #, python-format
+msgid "%(label)s: no limit for these fish"
+msgstr "%(label)s: bu balıklar için sınır yok"
+
+#, python-format
 msgid "%(label)s: no recent data"
 msgstr "%(label)s: güncel veri yok"
 
@@ -764,6 +768,10 @@ msgstr "%(label)s: güncel veri yok, %(age)s önceki"
 #, python-format
 msgid "%(label)s: the stored value %(value)s is not in the form it is saved in."
 msgstr "%(label)s: kayıtlı %(value)s değeri, kaydedildiği biçimde değil."
+
+#, python-format
+msgid "%(label)s: timestamp in the future"
+msgstr "%(label)s: zaman damgası gelecekte"
 
 #, python-format
 msgid "%(late)s late"
@@ -920,6 +928,10 @@ msgid "%(operation)s recorded: %(quantity)s %(unit)s of %(item)s from %(location
 msgstr "%(operation)s kaydedildi: %(location)s yerinden %(quantity)s %(unit)s %(item)s."
 
 #, python-format
+msgid "%(origin)s at %(point)s"
+msgstr "%(point)s noktasında %(origin)s"
+
+#, python-format
 msgid "%(owner)s cannot have a point of this kind: %(kinds)s."
 msgstr "%(owner)s bu türde bir noktaya sahip olamaz: %(kinds)s."
 
@@ -930,6 +942,18 @@ msgstr "%(parameter)s: sınırlar %(low)s ile %(high)s arasında, en çok %(deci
 #, python-format
 msgid "%(person)s (can no longer be chosen)"
 msgstr "%(person)s (artık seçilemez)"
+
+#, python-format
+msgid "%(person)s has %(records)s: correct them first."
+msgstr "%(person)s için %(records)s var: önce bunları düzeltin."
+
+#, python-format
+msgid "%(person)s joined on %(day)s."
+msgstr "%(person)s %(day)s tarihinde işe başladı."
+
+#, python-format
+msgid "%(person)s left on %(day)s."
+msgstr "%(person)s %(day)s tarihinde ayrıldı."
 
 #, python-format
 msgid "%(person)s, %(day)s: %(what)s"
@@ -1074,6 +1098,10 @@ msgstr "%(size)s mm"
 #, python-format
 msgid "%(size)s: %(grams)s g per shot, silo %(silo)s kg"
 msgstr "%(size)s: atış başına %(grams)s g, silo %(silo)s kg"
+
+#, python-format
+msgid "%(source)s reads %(value)s (%(time)s): the worst fresh value decides the status."
+msgstr "%(source)s %(value)s gösteriyor (%(time)s): durumu en kötü güncel değer belirler."
 
 #, python-format
 msgid "%(species)s has no official code (Setup › Reference data › Species)."
@@ -3503,6 +3531,12 @@ msgstr "Kötü"
 msgid "Band"
 msgstr "Ağırlık aralığı"
 
+#, python-format
+msgid "Based on the temperature from %(when)s (%(days)d day old)"
+msgid_plural "Based on the temperature from %(when)s (%(days)d days old)"
+msgstr[0] "%(when)s tarihli sıcaklığa göre (%(days)d günlük)"
+msgstr[1] "%(when)s tarihli sıcaklığa göre (%(days)d günlük)"
+
 msgid "Basic info"
 msgstr "Temel bilgiler"
 
@@ -3602,6 +3636,9 @@ msgstr "Bu parametre için %(low)s ile %(high)s arasında."
 #, python-format
 msgid "Between %(low)s and %(high)s: check the value."
 msgstr "%(low)s ile %(high)s arasında: değeri kontrol edin."
+
+msgid "Between 0 and 5000 m: sea level to the highest farms."
+msgstr "0 ile 5000 m arasında: deniz seviyesinden en yüksek çiftliklere kadar."
 
 msgid "Between 10 and 600. Empty uses the system’s 15 seconds."
 msgstr "10 ile 600 arasında. Boş bırakılırsa sistemin 15 saniyesi kullanılır."
@@ -5369,6 +5406,9 @@ msgstr "Kodlama"
 msgid "End"
 msgstr "Bitiş"
 
+msgid "End the leave earlier"
+msgstr "İzni erken bitir"
+
 msgid "End unknown"
 msgstr "Bitişi bilinmiyor"
 
@@ -6038,6 +6078,9 @@ msgstr ""
 
 msgid "Fish weighed"
 msgstr "Tartılan balık"
+
+msgid "Fish with no limit"
+msgstr "Sınırı olmayan balıklar"
 
 msgid "Fiskeridirektoratet; confirm the form with Fiskeridirektoratet"
 msgstr "Fiskeridirektoratet; formu Fiskeridirektoratet ile teyit edin"
@@ -7033,6 +7076,10 @@ msgstr "Tanı şüpheli mi, doğrulanmış mı?"
 msgid "Issue"
 msgstr "Sayı"
 
+msgctxt "stock operation"
+msgid "Issue"
+msgstr "Çıkış"
+
 #, python-format
 msgid "It carried %(count)d harvest: keep “%(category)s” ticked."
 msgid_plural "It carried %(count)d harvests: keep “%(category)s” ticked."
@@ -7225,6 +7272,10 @@ msgstr "İşe giriş"
 
 msgid "Joined on"
 msgstr "İşe giriş tarihi"
+
+#, python-format
+msgid "Judged as %(value)s %(unit)s."
+msgstr "%(value)s %(unit)s olarak değerlendirildi."
 
 msgid "Juveniles"
 msgstr "Juvenil"
@@ -7448,6 +7499,12 @@ msgstr "İzin türleri"
 msgid "Left"
 msgstr "Ayrıldı"
 
+#, python-format
+msgid "Left empty beside an oxygen: the latest fresh value at %(point)s at the sample’s time (%(now)s)."
+msgstr ""
+"Oksijenin yanında boş bırakılırsa: numunenin zamanında %(point)s noktasındaki en son güncel değer"
+" (%(now)s)."
+
 msgid "Left on"
 msgstr "Ayrılış tarihi"
 
@@ -7488,6 +7545,10 @@ msgstr "Yaşam evresi"
 
 msgid "Limit"
 msgstr "Sınır"
+
+#, python-format
+msgid "Limit: %(limits)s."
+msgstr "Sınır: %(limits)s."
 
 msgid "Limits"
 msgstr "Sınırlar"
@@ -8095,6 +8156,12 @@ msgstr ""
 msgid "Natural gas"
 msgstr "Doğal gaz"
 
+msgid "Needed with the oxygen: no fresh salinity here at that time to work the other unit out with."
+msgstr "Oksijenle gerekli: diğer birimi hesaplamak için o zamanda burada güncel tuzluluk yok."
+
+msgid "Needed with the oxygen: no fresh temperature here at that time to work the other unit out with."
+msgstr "Oksijenle gerekli: diğer birimi hesaplamak için o zamanda burada güncel sıcaklık yok."
+
 msgid "Needs a fresh pH and temperature from the sensors with the sensor’s TAN."
 msgstr "Sensörün TAN değeriyle birlikte sensörlerden güncel bir pH ve sıcaklık gerekir."
 
@@ -8113,8 +8180,9 @@ msgstr "Kalsiyum ve 5 ile 44 ‰ arasında bir tuzluluk gerekir, Mucci’nin (19
 msgid "Needs the pH and the temperature of the same sample."
 msgstr "Aynı numunenin pH'ı ve sıcaklığı gerekir."
 
-msgid "Needs the salinity: none was recorded here in the 30 days before."
-msgstr "Tuzluluk gerekir: burada önceki 30 günde kaydedilmemiş."
+#, python-format
+msgid "Needs the salinity: none was measured here in the %(days)d days before."
+msgstr "Tuzluluk gerekli: burada önceki %(days)d günde ölçülmedi."
 
 msgid "Needs the temperature of the same sample."
 msgstr "Aynı numunenin sıcaklığı gerekir."
@@ -8155,6 +8223,9 @@ msgstr "Yeni parti"
 
 msgid "New channel"
 msgstr "Yeni kanal"
+
+msgid "New last day"
+msgstr "Yeni son gün"
 
 msgid "New message"
 msgstr "Yeni mesaj"
@@ -8250,9 +8321,6 @@ msgstr "Henüz kanal yok: Kanallar sayfasından ekleyin."
 
 msgid "No checklist."
 msgstr "Kontrol listesi yok."
-
-msgid "No connection: this may be out of date"
-msgstr "Bağlantı yok: bu bilgi eski olabilir"
 
 msgid "No contacts yet. Use “Add contact” to add a row."
 msgstr "Henüz kişi yok. Satır eklemek için “Kişi ekle” düğmesini kullanın."
@@ -8564,9 +8632,8 @@ msgstr "Henüz tamamlanan veya iptal edilen görev yok"
 msgid "No task matches these filters."
 msgstr "Bu filtrelere uyan görev yok."
 
-#, python-format
-msgid "No temperature in the last %(days)d days: record one."
-msgstr "Son %(days)d günde sıcaklık kaydı yok: bir tane kaydedin."
+msgid "No temperature recorded here yet: record one."
+msgstr "Burada henüz sıcaklık kaydedilmedi: bir tane kaydedin."
 
 msgid "No test. Use “Add test” to add a row."
 msgstr "Test yok. Satır eklemek için “Test ekle”yi kullanın."
@@ -8871,11 +8938,20 @@ msgstr "Hasada uygun değil — %(batch)s için ilaç bekleme süresi yaklaşık
 msgid "Not suitable for harvest — medicine withdrawal of %(batch)s, its end unknown."
 msgstr "Hasada uygun değil — %(batch)s için ilaç bekleme süresi, bitişi bilinmiyor."
 
+msgid "Not updated: the server cannot be reached or cannot answer. This may be out of date."
+msgstr "Güncellenmedi: sunucuya ulaşılamıyor ya da yanıt veremiyor. Bu bilgi eski olabilir."
+
+msgid "Not updated: the server cannot be reached or cannot read the cards. This may be out of date."
+msgstr "Güncellenmedi: sunucuya ulaşılamıyor ya da kartlar okunamıyor. Bu bilgi eski olabilir."
+
 msgid "Not verified"
 msgstr "Doğrulanmadı"
 
 msgid "Not weighed since the fish came in."
 msgstr "Balıklar geldiğinden beri tartılmadı."
+
+msgid "Not worked out: the TAN is no longer fresh."
+msgstr "Hesaplanmadı: TAN değeri artık güncel değil."
 
 msgid "Note"
 msgstr "Not"
@@ -10704,6 +10780,9 @@ msgstr "Tuzluluk (‰, g/kg)"
 msgid "Salinity sensor"
 msgstr "Tuzluluk sensörü"
 
+msgid "Salinity the oxygen is worked out with (‰)"
+msgstr "Oksijenin hesaplandığı tuzluluk (‰)"
+
 msgid "Saltwater"
 msgstr "Tuzlu su"
 
@@ -11189,6 +11268,12 @@ msgstr "Duyarlı"
 msgid "Sensitivity tests"
 msgstr "Duyarlılık testleri"
 
+msgid "Sensor channel of the oxygen’s salinity"
+msgstr "Oksijenin tuzluluğunun sensör kanalı"
+
+msgid "Sensor channel of the oxygen’s temperature"
+msgstr "Oksijenin sıcaklığının sensör kanalı"
+
 msgid "Sensor credentials"
 msgstr "Sensör kimlik bilgileri"
 
@@ -11522,6 +11607,12 @@ msgstr "Sırala: %(name)s"
 
 msgid "Source"
 msgstr "Kaynak"
+
+msgid "Source of the oxygen’s salinity"
+msgstr "Oksijenin tuzluluğunun kaynağı"
+
+msgid "Source of the oxygen’s temperature"
+msgstr "Oksijenin sıcaklığının kaynağı"
 
 msgid "Source of the value"
 msgstr "Değerin kaynağı"
@@ -12006,6 +12097,9 @@ msgstr "Sıcaklık sütunları (°C)"
 msgid "Temperature sensor"
 msgstr "Sıcaklık sensörü"
 
+msgid "Temperature the oxygen is worked out with (°C)"
+msgstr "Oksijenin hesaplandığı sıcaklık (°C)"
+
 msgid "Temperatures"
 msgstr "Sıcaklıklar"
 
@@ -12384,6 +12478,10 @@ msgstr "Tasarımda tank yerleştirilecek tekrar yok."
 msgid "The design has one group: there is nothing to compare it with."
 msgstr "Tasarımda tek grup var: onu karşılaştıracak bir şey yok."
 
+#, python-format
+msgid "The device clock is ahead by %(minutes)d min."
+msgstr "Cihaz saati %(minutes)d dk ileride."
+
 msgid "The device has no channel to place."
 msgstr "Cihazın yerleştirilecek kanalı yok."
 
@@ -12742,6 +12840,9 @@ msgstr[1] "Saha başına son %(weeks)s haftanın sayımları."
 msgid "The layout as text"
 msgstr "Metin olarak yerleşim"
 
+msgid "The leave was shortened."
+msgstr "İzin kısaltıldı."
+
 #, python-format
 msgid "The level %(label)s of %(factor)s has two different values."
 msgstr "%(factor)s faktörünün %(label)s düzeyinin iki farklı değeri var."
@@ -12825,6 +12926,10 @@ msgid ""
 msgstr ""
 "İzlemenin adlandırılmış duvar ekranları: bir ad, kartlarının varsayılan olarak çizildiği şablon, "
 "kartlarının genişliği ve ekranlarının ne sıklıkla sorduğu."
+
+#, python-format
+msgid "The new last day must lie between %(first)s and the day before %(last)s."
+msgstr "Yeni son gün %(first)s ile %(last)s tarihinden önceki gün arasında olmalı."
 
 #, python-format
 msgid "The new placement must start after the last one ended (%(day)s)."
@@ -13041,6 +13146,9 @@ msgstr "Havuzda %(slots)d tekrar için %(items)d öğe var: tekrar sayısı kada
 msgid "The prescription’s number, for a prescription-only medicine."
 msgstr "Reçeteyle verilen bir ilaç için reçetenin numarası."
 
+msgid "The preview could not be drawn just now. The layout is kept; the next change asks again."
+msgstr "Önizleme şu anda çizilemedi. Yerleşim korunuyor; bir sonraki değişiklikte yeniden istenir."
+
 msgid "The preview shows only what you may read yourself."
 msgstr "Önizleme yalnızca sizin okuyabildiklerinizi gösterir."
 
@@ -13176,6 +13284,13 @@ msgstr "Satır zaten %(day)s tarihinde bitiyor: yalnızca kısaltılabilir."
 
 msgid "The safe zone lies in this band."
 msgstr "Güvenli bölge bu aralıktadır."
+
+#, python-format
+msgid "The salinity is %(source)s."
+msgstr "Tuzluluk: %(source)s."
+
+msgid "The salinity is fresh water’s."
+msgstr "Tuzluluk tatlı suyunkidir."
 
 #, python-format
 msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."
@@ -13419,6 +13534,10 @@ msgstr "Ekibin yürütücüsü yok."
 
 msgid "The team needs a lead."
 msgstr "Ekibin bir yürütücüsü olmalı."
+
+#, python-format
+msgid "The temperature is %(source)s."
+msgstr "Sıcaklık: %(source)s."
 
 msgid "The template a card’s flip link shows (Simple flips to Detailed). Empty: no flip link."
 msgstr ""
@@ -13732,6 +13851,14 @@ msgstr ""
 msgid "These days are all weekends or holidays: nothing would be charged."
 msgstr "Bu günlerin hepsi hafta sonu ya da tatil: hiçbir şey sayılmaz."
 
+msgid ""
+"These fish are kept today, and no limit judges these values for them: their monitoring cards say "
+"“No limit” whatever the value is. Add the limits your vet or guideline gives."
+msgstr ""
+"Bu balıklar bugün tutuluyor ve bu değerleri onlar için hiçbir sınır değerlendirmiyor: izleme "
+"kartları, değer ne olursa olsun “Sınır yok” der. Veterinerinizin ya da kılavuzunuzun verdiği "
+"sınırları ekleyin."
+
 #, python-format
 msgid ""
 "These fish of %(batch)s weigh as much as the book holds for %(unit)s on %(date)s, or more: weigh "
@@ -13836,6 +13963,10 @@ msgstr "Bu yerleşimin sürümü bilinmiyor (%(version)s)."
 
 msgid "This layout is too large to store."
 msgstr "Bu yerleşim kaydedilemeyecek kadar büyük."
+
+#, python-format
+msgid "This leave ended on %(day)s, more than %(days)s days ago: it can no longer be corrected."
+msgstr "Bu izin %(day)s tarihinde, %(days)s günden daha önce bitti: artık düzeltilemez."
 
 #, python-format
 msgid "This liner is %(low)s to %(high)s mm thick."
@@ -14377,6 +14508,9 @@ msgstr "Yaklaşan"
 msgid "Upcoming reports"
 msgstr "Yaklaşan raporlar"
 
+msgid "Updated again."
+msgstr "Yeniden güncellendi."
+
 msgid "Updated at"
 msgstr "Güncellenme zamanı"
 
@@ -14861,6 +14995,12 @@ msgstr "Alınma zamanı"
 msgid "When the channel stopped being here; empty while it still is."
 msgstr "Kanalın burada olmayı bıraktığı zaman; hâlâ buradaysa boş."
 
+msgid "When the oxygen’s salinity was measured"
+msgstr "Oksijenin tuzluluğunun ölçüldüğü zaman"
+
+msgid "When the oxygen’s temperature was measured"
+msgstr "Oksijenin sıcaklığının ölçüldüğü zaman"
+
 msgid "When this is a part of other equipment, e.g. the pump of a filter unit."
 msgstr "Bu, başka bir ekipmanın parçasıysa; örn. bir filtre ünitesinin pompası."
 
@@ -15135,6 +15275,10 @@ msgstr "Üretim departmanı olmayanlar"
 msgid "Without a site"
 msgstr "Sahasız"
 
+#, python-format
+msgid "Worked out from %(temperature)s °C, %(salinity)s ‰ and %(pressure)s atm."
+msgstr "%(temperature)s °C, %(salinity)s ‰ ve %(pressure)s atm ile hesaplandı."
+
 msgid ""
 "Worked out from the dimensions and the max density each time the unit is saved; shown as last "
 "saved. The max biomass uses the water volume when there is one, else the volume."
@@ -15361,6 +15505,9 @@ msgstr "en az %(seconds)s sn’de bir"
 msgid "at once"
 msgstr "derhal"
 
+msgid "attendance outside these days"
+msgstr "bu günlerin dışında devam kaydı"
+
 msgid "attendance record"
 msgstr "yoklama kaydı"
 
@@ -15547,6 +15694,9 @@ msgstr "kaydedilemeyen mesajlar"
 
 msgid "deleted"
 msgstr "silindi"
+
+msgid "deleted species"
+msgstr "silinmiş tür"
 
 msgid "delivery record"
 msgstr "teslimat kaydı"
@@ -16013,6 +16163,12 @@ msgstr "bu sayfada değiştirildi"
 msgid "found %(time)s"
 msgstr "saat %(time)s’te bulundu"
 
+msgid "fresh water"
+msgstr "tatlı su"
+
+msgid "fresh water, 0"
+msgstr "tatlı su, 0"
+
 #, python-format
 msgid "from %(first)s"
 msgstr "%(first)s tarihinden"
@@ -16136,6 +16292,9 @@ msgstr "bilgi kaydı"
 
 msgid "lab"
 msgstr "laboratuvar"
+
+msgid "leave outside these days"
+msgstr "bu günlerin dışında izin"
 
 msgid "leave request"
 msgstr "izin talebi"
@@ -16286,6 +16445,9 @@ msgstr "%(date)s tarihinden beri %(site)s lokasyonunda üretim balığı yok"
 msgid "no production form"
 msgstr "üretim biçimi yok"
 
+msgid "no recent data"
+msgstr "güncel veri yok"
+
 msgid "no reports-from date"
 msgstr "rapor başlangıç tarihi yok"
 
@@ -16311,6 +16473,9 @@ msgstr "böyle bir satır yok"
 
 msgid "none"
 msgstr "yok"
+
+msgid "none fresh now: enter it"
+msgstr "şu an güncel değer yok: girin"
 
 msgid "not enforced by the database"
 msgstr "veritabanı tarafından zorunlu kılınmıyor"
@@ -16338,6 +16503,10 @@ msgstr "çizelgenin aralığında ulaşılmaz (4 ile 12,5)"
 
 msgid "now"
 msgstr "şimdi"
+
+#, python-format
+msgid "now %(value)s, %(source)s"
+msgstr "şu an %(value)s, %(source)s"
 
 msgid "off"
 msgstr "izinli"
@@ -16455,6 +16624,10 @@ msgstr "planlanmış hasat veya taşıma"
 
 msgid "planned harvests and transports"
 msgstr "planlanmış hasatlar ve taşımalar"
+
+#, python-format
+msgid "planned shifts before %(day)s"
+msgstr "%(day)s tarihinden önce planlanmış vardiyalar"
 
 msgid "plans"
 msgstr "planlar"

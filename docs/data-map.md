@@ -34,7 +34,7 @@ Who did what to which record, with old and new values.
 - **how it works**: A record's own rows are also shown on the History tab of its edit page.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log
 - **constraints**: chk_audit_log_severity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 77 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 81 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1010,7 +1010,7 @@ A production unit within a site: a hatchery hall, a nursery, a grow-out unit.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › production_departments
 - **forms**: `ProductionDepartmentForm`
 - **constraints**: uq_production_departments_code_live (unique: code); uq_production_departments_site_name_live (unique: site, name); chk_production_departments_capacity (check); chk_production_departments_live_on_a_site (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_design_shell.py` and 45 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_design_shell.py` and 47 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1132,8 +1132,8 @@ A physical facility (locality).
 - **read**: sites tab (`/sites/`)
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › sites
 - **forms**: `SiteForm`
-- **constraints**: uq_sites_code_live (unique: code); uq_sites_name_live (unique: name); uq_sites_lokalitetsnummer_live (unique: lokalitetsnummer); chk_sites_lokalitetsnummer_range (check); chk_sites_organisation_number (check); chk_sites_production_form (check); chk_sites_latitude_range (check); chk_sites_longitude_range (check); chk_sites_coordinates_paired (check); chk_sites_sea_cage_location (check); chk_sites_timezone_given (check); chk_sites_lice_area (check)
-- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 63 more
+- **constraints**: uq_sites_code_live (unique: code); uq_sites_name_live (unique: name); uq_sites_lokalitetsnummer_live (unique: lokalitetsnummer); chk_sites_lokalitetsnummer_range (check); chk_sites_organisation_number (check); chk_sites_production_form (check); chk_sites_latitude_range (check); chk_sites_longitude_range (check); chk_sites_altitude_range (check); chk_sites_coordinates_paired (check); chk_sites_sea_cage_location (check); chk_sites_timezone_given (check); chk_sites_lice_area (check)
+- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 64 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1468,7 +1468,7 @@ A unit fish are held in: a tank, a pond or a cage.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › tanks
 - **forms**: `TankForm`
 - **constraints**: uq_tanks_code_live (unique: code); uq_tanks_regulatory_unit_id_live (unique: production_department, regulatory_unit_id); chk_tanks_kind (check); chk_tanks_status (check); chk_tanks_water_type (check); chk_tanks_shape_by_kind (check); chk_tanks_material_by_kind (check); chk_tanks_pond_type_by_kind (check); chk_tanks_liner_type_by_kind (check); chk_tanks_water_source_by_kind (check); chk_tanks_cage_type_by_kind (check); chk_tanks_frame_type_by_kind (check); chk_tanks_net_material_by_kind (check); chk_tanks_tank_required (check); chk_tanks_pond_required (check); chk_tanks_cage_required (check); chk_tanks_diameter_by_shape (check); chk_tanks_length_by_shape (check); chk_tanks_stated_volume_m3_by_shape (check); chk_tanks_width_by_shape (check); chk_tanks_square_sides (check); chk_tanks_long_side_first (check); chk_tanks_water_depth (check); chk_tanks_max_depth (check); chk_tanks_liner_by_pond_type (check); chk_tanks_liner_thickness (check); chk_tanks_submersion (check); chk_tanks_diameter_range (check); chk_tanks_length_range (check); chk_tanks_width_range (check); chk_tanks_stated_volume_m3_range (check); chk_tanks_depth_range (check); chk_tanks_surface_area_m2_range (check); chk_tanks_max_depth_range (check); chk_tanks_mesh_size_mm_range (check); chk_tanks_max_submersion_depth_range (check); chk_tanks_max_density_kg_m3_range (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_workspaces.py` and 27 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_workspaces.py` and 29 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1592,7 +1592,7 @@ The water a species is kept in: for one parameter, the bounds outside which a va
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › water_limits
 - **forms**: `WaterLimitForm`
 - **constraints**: uq_water_limits_live (unique: species, parameter, water_type); chk_water_limits_parameter (check); chk_water_limits_water_type (check); chk_water_limits_any_bound (check); chk_water_limits_critical_low (check); chk_water_limits_warning_low (check); chk_water_limits_warning_high (check); chk_water_limits_critical_high (check); chk_water_limits_order (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_calculator.py` and 2 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_calculator.py` and 4 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1625,8 +1625,8 @@ A water sample: what a person measured at one sampling point (a place on a unit,
 - **read**: farm.water.views.water_page (`/operations/water/`); farm.stock.views.production_units (`/operations/units/`)
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › water_measurements
 - **forms**: `WaterSampleForm`, `RoundForm`, `RoundRowForm`, `SampleVoidForm`
-- **constraints**: chk_water_measurements_any_value (check); chk_water_measurements_source (check); chk_water_measurements_void_reason (check); chk_water_measurements_temperature_c (check); chk_water_measurements_oxygen_mg_l (check); chk_water_measurements_oxygen_saturation_pct (check); chk_water_measurements_ph (check); chk_water_measurements_alkalinity_mg_l (check); chk_water_measurements_co2_mg_l (check); chk_water_measurements_tan_mg_l (check); chk_water_measurements_nitrite_n_mg_l (check); chk_water_measurements_nitrate_n_mg_l (check); chk_water_measurements_tgp_pct (check); chk_water_measurements_salinity_ppt (check); chk_water_measurements_turbidity_ntu (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 13 more
+- **constraints**: chk_water_measurements_any_value (check); chk_water_measurements_source (check); chk_water_measurements_void_reason (check); chk_water_measurements_temperature_c (check); chk_water_measurements_oxygen_mg_l (check); chk_water_measurements_oxygen_saturation_pct (check); chk_water_measurements_ph (check); chk_water_measurements_alkalinity_mg_l (check); chk_water_measurements_co2_mg_l (check); chk_water_measurements_tan_mg_l (check); chk_water_measurements_nitrite_n_mg_l (check); chk_water_measurements_nitrate_n_mg_l (check); chk_water_measurements_tgp_pct (check); chk_water_measurements_salinity_ppt (check); chk_water_measurements_turbidity_ntu (check); chk_water_measurements_oxygen_basis_temperature (check); chk_water_measurements_oxygen_basis_salinity (check)
+- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 16 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1654,6 +1654,14 @@ A water sample: what a person measured at one sampling point (a place on a unit,
 | tgp_pct | numeric(4, 1) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | salinity_ppt | numeric(3, 1) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | turbidity_ntu | numeric(5, 1) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
+| oxygen_basis_temperature_c | numeric(3, 1) | yes |  | computed: what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis) |
+| oxygen_basis_temperature_source | varchar(20) |  |  | computed: what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis) |
+| oxygen_basis_temperature_channel | integer | yes |  | computed: what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis) |
+| oxygen_basis_temperature_at | timestamp with time zone | yes |  | computed: what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis) |
+| oxygen_basis_salinity_ppt | numeric(3, 1) | yes |  | computed: what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis) |
+| oxygen_basis_salinity_source | varchar(20) |  |  | computed: what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis) |
+| oxygen_basis_salinity_channel | integer | yes |  | computed: what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis) |
+| oxygen_basis_salinity_at | timestamp with time zone | yes |  | computed: what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis) |
 | notes | varchar(500) |  |  | WaterSampleForm, RoundRowForm |
 | void_reason | varchar(500) |  |  | SampleVoidForm.reason |
 
@@ -1669,7 +1677,7 @@ Where a water sample is taken: a named place on one unit, one system’s loop or
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › water_sampling_points
 - **forms**: `SamplingPointForm`
 - **constraints**: chk_water_sampling_points_one_owner (check); chk_water_sampling_points_kind (check); chk_water_sampling_points_name (check); chk_water_sampling_points_depth (check); chk_water_sampling_points_flow (check); chk_water_sampling_points_share (check); uq_water_sampling_points_unit_name (unique: unit, name); uq_water_sampling_points_unit_middle (unique: unit); uq_water_sampling_points_system_name (unique: system, name); uq_water_sampling_points_system_middle (unique: system); uq_water_sampling_points_equipment_name (unique: equipment, name); uq_water_sampling_points_equipment_middle (unique: equipment)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/helpers.py`, `farm/tests/test_calculator.py` and 7 more
+- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/helpers.py`, `farm/tests/test_calculator.py` and 9 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1738,7 +1746,7 @@ One stretch of a person’s presence: from a clock-in to a clock-out, by the per
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › attendance_records (never shown: note)
 - **forms**: `AttendanceRecordForm`
 - **constraints**: chk_attendance_records_order (check); chk_attendance_records_via (check); chk_attendance_records_note (check); excl_attendance_employee_span (exclusion: employee, clock_in, clock_out)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 6 more
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 7 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1770,7 +1778,7 @@ The people of the company for HR: number, name (or the account that names them),
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › employees
 - **forms**: `EmployeeForm`
 - **constraints**: uq_employees_number_live (unique: employee_number); uq_employees_user_live (unique: user); chk_employees_identity (check); chk_employees_period (check); chk_employees_type (check); chk_employees_number (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/helpers_people.py`, `hr/tests/test_attendance.py` and 17 more
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/helpers_people.py`, `hr/tests/test_attendance.py` and 20 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1833,7 +1841,7 @@ A person’s request to be away from a first to a last day, and how it was decid
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › leave_requests (never shown: decision_note, reason)
 - **forms**: `LeaveRequestForm`
 - **constraints**: chk_leave_requests_days (check); chk_leave_requests_status (check); chk_leave_requests_decided (check); chk_leave_requests_pending_undecided (check); excl_leave_requests_employee_days (exclusion: employee, first_day, last_day)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 12 more
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 14 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1868,7 +1876,7 @@ The kinds of leave the company grants (annual, sick, parental), with the days a 
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › leave_types
 - **forms**: `LeaveTypeForm`
 - **constraints**: uq_leave_types_code_live (unique: code); chk_leave_types_code (check); chk_leave_types_days (check); chk_leave_types_status (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 12 more
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 13 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1932,7 +1940,7 @@ Where each person works from a day: one department, production or office, and th
 - **how it works**: One placement covers any day (exclusion constraint); a move closes the open one the day before.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › postings
 - **constraints**: chk_postings_one_department (check); chk_postings_period (check); excl_postings_employee_period (exclusion: employee, valid_from, valid_until)
-- **tests that mention it**: `farm/tests/test_systems.py`, `hr/tests/helpers_people.py`, `hr/tests/test_attendance.py` and 8 more
+- **tests that mention it**: `farm/tests/test_systems.py`, `hr/tests/helpers_people.py`, `hr/tests/test_attendance.py` and 9 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1999,7 +2007,7 @@ One person’s plan for one day: the shift they start that day, or none for plan
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › shift_assignments (never shown: note)
 - **forms**: `ShiftAssignmentForm`
 - **constraints**: uq_shift_assignments_employee_day (unique: employee, day)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 11 more
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 12 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2029,7 +2037,7 @@ The shift patterns of the roster: a start and an end on the wall clock of the si
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › shifts
 - **forms**: `ShiftForm`
 - **constraints**: uq_shifts_code_live (unique: code); chk_shifts_code (check); chk_shifts_span (check); chk_shifts_break (check); chk_shifts_grace (check); chk_shifts_tone (check); chk_shifts_status (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 12 more
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 13 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2286,7 +2294,7 @@ An article, report, book, guideline or regulation in the library: its reference 
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Knowledge › documents
 - **forms**: `DocumentForm`
 - **constraints**: uq_documents_doi_live (unique: doi); chk_documents_title (check); chk_documents_authors (check); chk_documents_year (check); chk_documents_doi (check); chk_documents_url (check); chk_documents_language (check); chk_documents_topics (check); chk_documents_text_status (check); chk_documents_file (check); chk_documents_text_error (check); chk_documents_page_count (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `knowledge/tests/test_documents.py`, `knowledge/tests/test_entries.py` and 2 more
+- **tests that mention it**: `core/tests_escaping.py`, `core/tests_workspaces.py`, `knowledge/tests/test_documents.py` and 4 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3356,7 +3364,7 @@ One stored value of a channel at the device's time: the hypertable `sensors_read
 - **how it works**: A TimescaleDB hypertable; left out of the database viewer (billions of rows).
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: left out on purpose (config/database.py)
 - **constraints**: chk_sensors_reading_value (check); chk_sensors_reading_quality (check); chk_sensors_reading_run (check)
-- **tests that mention it**: `core/test_datamap.py`, `core/tests_workspaces.py`, `knowledge/tests/test_extraction.py` and 4 more
+- **tests that mention it**: `core/test_datamap.py`, `core/test_text.py`, `core/tests_workspaces.py` and 5 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

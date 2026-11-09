@@ -123,8 +123,8 @@ class PrivateFieldTests(TestCase):
 
 @override_settings(ACCESS_AREAS='core.tests_scope.SCOPED_AREAS')
 class EveryoneColumnTests(TestCase):
-    def test_everyone_implies_read(self):
-        self.assertEqual(access.implied({'farm.all_site'}), {'farm.all_site', 'farm.view_site'})
+    def test_everyone_widens_rows_and_includes_no_other_right_while_create_includes_read(self):
+        self.assertEqual(access.implied({'farm.all_site'}), {'farm.all_site'})
         self.assertEqual(access.implied({'farm.add_species'}), {'farm.add_species', 'farm.view_species'})
 
     def test_the_summary_names_it(self):

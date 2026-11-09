@@ -154,6 +154,11 @@ body {
 .ui-gauge-fill { position: absolute; inset: 0 auto 0 0; background: var(--text-3); }
 .ui-gauge[data-status="warning"] .ui-gauge-fill { background: var(--warn); }
 .ui-gauge[data-status="critical"] .ui-gauge-fill { background: var(--crit); }
+/* The track drawn as an SVG (no style attribute under the Content-Security-Policy): the fill is a rectangle's width. */
+svg.ui-gauge-track { display: block; background: var(--surface-sheet); }
+svg.ui-gauge-track .ui-gauge-fill { position: static; fill: var(--text-3); }
+.ui-gauge[data-status="warning"] svg.ui-gauge-track .ui-gauge-fill { fill: var(--warn); }
+.ui-gauge[data-status="critical"] svg.ui-gauge-track .ui-gauge-fill { fill: var(--crit); }
 .ui-pips { display: inline-flex; gap: 6px; vertical-align: middle; }
 .ui-pip { width: 14px; height: 14px; border: 2px dashed var(--line-control); border-radius: var(--radius-pill); }
 .ui-pip[data-state="done"] { border: 0; background: var(--text-1); }

@@ -1,7 +1,8 @@
 """The trail of a unit's (or a system's) water on the Deffeyes diagram (owner amendment A4): where its point was hour by
-hour over a range. Each hour takes, per input, the hour's mean of the sensors bound there (the hour rollup, in the A1
-order of sensors/read.py: the point's own, then the system's), else the newest manual or lab sample at or before the
-hour's end, else (salinity only) the assumption for fresh water. An hour without one of the four inputs is listed as
+hour over a range. Each hour takes, per input, by owner rule A9 (`farm.water.read.choose`, as the live view): the newest
+fresh value of the owner's own places (the hour's mean of the sensors bound there, from the hour rollup, or a manual or
+lab sample fresh at the hour's end), else of its system's, else (salinity only) the assumption for fresh water. An hour
+without one of the four inputs is listed as
 missing, never filled. The point is the diagram's: the dissolved inorganic carbon and the alkalinity
 (farm/water/chemistry.py, the chart's own equilibria)."""
 from dataclasses import dataclass, field
@@ -35,35 +36,58 @@ class Trail:
     missing: list = field(default_factory=list)        # the hours without every input
 
 
-def _hourly(owner, code, start, end, hours):
-    """{hour start: mean} of the sensors' hour buckets of one quantity (the series is exactly one bucket an hour)."""
-    found = read.series(owner, code, start, end, max_points=hours)
-    if found.width != HOUR:
-        raise ValueError('A trail is drawn from whole hours.')
-    return {bucket.start: bucket.avg for bucket in found.buckets}
+def _hourly(owner, conditions, code, start, end):
+    """{hour start: (mean, the hour's last reading's time)} of the sensors bound by `conditions` (one tier's) for one
+    quantity, from the hour tier: the first segment, in the order they count, with readings in that hour."""
+    zone, chosen = read.zone_for(owner), {}
+    for segment in read.segments_for(conditions, code, start, end):
+        for begin, n, total, _low, _high, _first, last in read.chart_rows(segment, HOUR, read.tier_of(HOUR), zone):
+            if begin not in chosen and n:
+                chosen[begin] = (total / n, last)
+    return chosen
+
+
+@dataclass(frozen=True)
+class Candidate:
+    """A value of an hour for `water_read.choose`: when it was measured and the value."""
+    at: object
+    value: float
 
 
 def trail(owner, start, end):
-    """The Trail of the owner's water from `start` (a whole hour) to `end`."""
+    """The Trail of the owner's water from `start` (a whole hour) to `end`. Each input of an hour is picked by owner rule
+    A9 through the live view's one function (`farm.water.read.choose`) at the hour's end, over the owner's tiers
+    (`sensors.read.tiers`): the newest fresh value of its own places (an hour's sensor mean, at its last reading; a
+    sample fresh then), else of its system's; else (salinity only) the fresh-water assumption; else the hour is missing.
+    A stale sample never enters (PLAN A9.3)."""
     start = start.replace(minute=0, second=0, microsecond=0)
     hours = max(int((end - start) / HOUR), 1)
     end = start + hours * HOUR
-    points = [point for point in read.places(owner)[1] if point is not None]
-    sensed = {code: _hourly(owner, code, start, end, hours) for code in INPUTS}
+    tiered = read.tiers(owner)
+    sensed = [{code: _hourly(owner, conditions, code, start, end) for code in INPUTS} for conditions, _points in tiered]
+    points = list({point.pk: point for _conditions, found in tiered for point in found}.values())
     series = {code: water_read.Series(points, code, start - water_read.WINDOW, end) for code in INPUTS}
     water_types = {owner.water_type} if hasattr(owner, 'water_type') else {unit.water_type for unit in owner.tanks.all()}
     found = Trail(owner, start, end)
     for index in range(hours):
         at = start + index * HOUR
+        moment = at + HOUR
         values = {}
         for code in INPUTS:
-            if at in sensed[code]:
-                values[code] = sensed[code][at]
-                continue
-            sample = next((each for each in (series[code].latest(point.pk, at + HOUR, water_read.WINDOW)
-                                             for point in points) if each is not None), None)
-            if sample is not None:
-                values[code] = float(sample.value)
+            candidates = []
+            for rank, (_conditions, tier_points) in enumerate(tiered):
+                tier = []
+                if at in sensed[rank][code]:
+                    mean, last = sensed[rank][code][at]
+                    tier.append(Candidate(last, float(mean)))
+                for point in tier_points:
+                    sample = series[code].latest(point.pk, moment, water_read.WINDOW)
+                    if sample is not None and series[code].fresh(sample, moment):
+                        tier.append(Candidate(sample.at, float(sample.value)))
+                candidates.append(tier)
+            picked = water_read.choose(candidates, moment, lambda candidate: True)
+            if picked is not None:
+                values[code] = picked.value
             elif code == parameters.SALINITY and water_read.assumed_salinity(water_types) is not None:
                 values[code] = float(water_read.assumed_salinity(water_types))
         if len(values) < len(INPUTS):

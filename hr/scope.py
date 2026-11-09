@@ -74,17 +74,39 @@ def office_departments_below(managed):
     return found
 
 
+def managed_departments(user):
+    """The departments whose placements `user` manages, as (production departments, office department ids): the live
+    production departments they are the Manager of, and the office departments they manage with every one below them. A
+    holder of All production manages every live production department: a department without a manager (a new one, or one
+    whose manager's account is gone) is never left out of their roster. It gives no office department."""
+    from farm.models import ProductionDepartment
+    production = ProductionDepartment.objects.all()
+    if not user.has_perm(ALL_PRODUCTION):
+        production = production.filter(manager=user)
+    return production, office_departments_below(list(OfficeDepartment.objects.filter(manager=user)))
+
+
 def managed(user):
-    """The placements `user` manages: in a production department they are the Manager of, or in an office department they
-    manage or any below it (a deleted department gives none). A holder of All production manages every placement in a live
-    production department: a department without a manager (a new one, or one whose manager's account is gone) is never
-    left out of their roster. It gives no office person and, being no Everyone, no leave reason."""
-    if user.has_perm(ALL_PRODUCTION):
-        placed = IN_PRODUCTION
-    else:
-        placed = Q(production_department__manager=user, production_department__is_deleted=False)
-    below = office_departments_below(list(OfficeDepartment.objects.filter(manager=user)))
+    """The placements `user` manages: those in a department of `managed_departments` (a deleted department gives none).
+    Being no Everyone, it gives no leave reason."""
+    production, below = managed_departments(user)
+    placed = Q(production_department__in=production)
     return placed | Q(office_department__in=below) if below else placed
+
+
+def placeable(user):
+    """A test of a department (production or office): whether `user` may place people in it. A holder of Everyone in any,
+    anyone else in one of `managed_departments`, the departments whose people they reach. Read once, asked per department
+    (the person form's chooser)."""
+    if user.has_perm(ALL):
+        return lambda department: True
+    production, below = managed_departments(user)
+    production = set(production.values_list('pk', flat=True))
+    return lambda department: department.pk in (below if isinstance(department, OfficeDepartment) else production)
+
+
+def can_manage(user, department):
+    return placeable(user)(department)
 
 
 def by_day(user, objects, employee='employee', day='day', realm=None):

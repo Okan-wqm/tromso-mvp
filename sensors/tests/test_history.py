@@ -183,3 +183,16 @@ class BindFromMonitoringTests(HistoryCase):
         local = timezone.localtime(self.now - timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M')
         self.client.post(reverse('sensors:binding_create'), {**query, 'role': 'primary', 'valid_from': local})
         self.assertEqual(Binding.objects.get(channel=spare).point, self.mid2)
+
+
+class TrailOneRuleTests(HistoryCase):
+    def test_each_hour_picks_by_the_one_rule_the_units_own_fresh_sample_before_the_systems_sensor(self):
+        """The trail reads each input of an hour by `farm.water.read.choose` (owner rule A9) at the hour's end: the
+        unit's own fresh temperature sample comes before the system's sensor, never sensor-before-sample (A1)."""
+        start = self.now - timedelta(hours=3)
+        insert(self.ph.channel_no, [(start + timedelta(hours=hour, minutes=10), 7.2) for hour in range(3)])
+        insert(self.channel.channel_no, [(start + timedelta(hours=hour, minutes=5), 10.0) for hour in range(3)])
+        self.sample(self.mid1, start - timedelta(days=1), alkalinity_mg_l='100', salinity_ppt='0')
+        self.sample(self.mid1, start + timedelta(minutes=30), temperature_c='9.0')
+        found = trail.trail(self.t1, start, self.now)
+        self.assertEqual([point.temperature_c for point in found.points], [9.0, 9.0, 9.0])

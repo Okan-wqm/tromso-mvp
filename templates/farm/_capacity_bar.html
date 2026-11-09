@@ -1,0 +1,2 @@
+{% load stock %}{# A unit's capacity bar: the filled part is an SVG rectangle's width (no style attribute, which the Content-Security-Policy blocks). `large` for the unit drawer. #}
+<svg class="capacity-bar{% if large %} capacity-bar-large{% endif %}" viewBox="0 0 100 1" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect width="{{ stock.capacity|bar_width }}" height="1"/></svg>

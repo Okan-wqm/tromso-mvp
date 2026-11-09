@@ -750,6 +750,10 @@ msgid "%(label)s that lose their %(link)s"
 msgstr "%(label)s som mister koblingen «%(link)s»"
 
 #, python-format
+msgid "%(label)s: no limit for these fish"
+msgstr "%(label)s: ingen grense for denne fisken"
+
+#, python-format
 msgid "%(label)s: no recent data"
 msgstr "%(label)s: ingen ferske data"
 
@@ -760,6 +764,10 @@ msgstr "%(label)s: ingen ferske data, %(age)s gammel"
 #, python-format
 msgid "%(label)s: the stored value %(value)s is not in the form it is saved in."
 msgstr "%(label)s: den lagrede verdien %(value)s er ikke i formen den lagres i."
+
+#, python-format
+msgid "%(label)s: timestamp in the future"
+msgstr "%(label)s: tidsstempel i fremtiden"
 
 #, python-format
 msgid "%(late)s late"
@@ -915,6 +923,10 @@ msgid "%(operation)s recorded: %(quantity)s %(unit)s of %(item)s from %(location
 msgstr "%(operation)s registrert: %(quantity)s %(unit)s %(item)s fra %(location)s."
 
 #, python-format
+msgid "%(origin)s at %(point)s"
+msgstr "%(origin)s ved %(point)s"
+
+#, python-format
 msgid "%(owner)s cannot have a point of this kind: %(kinds)s."
 msgstr "%(owner)s kan ikke ha et punkt av denne typen: %(kinds)s."
 
@@ -925,6 +937,18 @@ msgstr "%(parameter)s: grenser fra %(low)s til %(high)s, høyst %(decimals)d des
 #, python-format
 msgid "%(person)s (can no longer be chosen)"
 msgstr "%(person)s (kan ikke velges lenger)"
+
+#, python-format
+msgid "%(person)s has %(records)s: correct them first."
+msgstr "%(person)s har %(records)s: rett dem først."
+
+#, python-format
+msgid "%(person)s joined on %(day)s."
+msgstr "%(person)s begynte %(day)s."
+
+#, python-format
+msgid "%(person)s left on %(day)s."
+msgstr "%(person)s sluttet %(day)s."
 
 #, python-format
 msgid "%(person)s, %(day)s: %(what)s"
@@ -1069,6 +1093,10 @@ msgstr "%(size)s mm"
 #, python-format
 msgid "%(size)s: %(grams)s g per shot, silo %(silo)s kg"
 msgstr "%(size)s: %(grams)s g per skudd, silo %(silo)s kg"
+
+#, python-format
+msgid "%(source)s reads %(value)s (%(time)s): the worst fresh value decides the status."
+msgstr "%(source)s viser %(value)s (%(time)s): den verste ferske verdien avgjør statusen."
 
 #, python-format
 msgid "%(species)s has no official code (Setup › Reference data › Species)."
@@ -3500,6 +3528,12 @@ msgstr "Dårlig"
 msgid "Band"
 msgstr "Vektklasse"
 
+#, python-format
+msgid "Based on the temperature from %(when)s (%(days)d day old)"
+msgid_plural "Based on the temperature from %(when)s (%(days)d days old)"
+msgstr[0] "Basert på temperaturen fra %(when)s (%(days)d dag gammel)"
+msgstr[1] "Basert på temperaturen fra %(when)s (%(days)d dager gammel)"
+
 msgid "Basic info"
 msgstr "Grunnleggende info"
 
@@ -3599,6 +3633,9 @@ msgstr "Mellom %(low)s og %(high)s for denne parameteren."
 #, python-format
 msgid "Between %(low)s and %(high)s: check the value."
 msgstr "Mellom %(low)s og %(high)s: kontroller verdien."
+
+msgid "Between 0 and 5000 m: sea level to the highest farms."
+msgstr "Mellom 0 og 5000 m: fra havnivå til de høyeste anleggene."
 
 msgid "Between 10 and 600. Empty uses the system’s 15 seconds."
 msgstr "Mellom 10 og 600. Tomt bruker systemets 15 sekunder."
@@ -5363,6 +5400,9 @@ msgstr "Koding"
 msgid "End"
 msgstr "Slutt"
 
+msgid "End the leave earlier"
+msgstr "Avslutt permisjonen tidligere"
+
 msgid "End unknown"
 msgstr "Slutt ukjent"
 
@@ -6026,6 +6066,9 @@ msgstr ""
 
 msgid "Fish weighed"
 msgstr "Fisk veid"
+
+msgid "Fish with no limit"
+msgstr "Fisk uten grense"
 
 msgid "Fiskeridirektoratet; confirm the form with Fiskeridirektoratet"
 msgstr "Fiskeridirektoratet; bekreft skjemaet med Fiskeridirektoratet"
@@ -7017,6 +7060,10 @@ msgstr "Er diagnosen mistenkt eller bekreftet?"
 msgid "Issue"
 msgstr "Hefte"
 
+msgctxt "stock operation"
+msgid "Issue"
+msgstr "Uttak"
+
 #, python-format
 msgid "It carried %(count)d harvest: keep “%(category)s” ticked."
 msgid_plural "It carried %(count)d harvests: keep “%(category)s” ticked."
@@ -7211,6 +7258,10 @@ msgstr "Begynte"
 
 msgid "Joined on"
 msgstr "Begynte"
+
+#, python-format
+msgid "Judged as %(value)s %(unit)s."
+msgstr "Vurdert som %(value)s %(unit)s."
 
 msgid "Juveniles"
 msgstr "Ungfisk"
@@ -7434,6 +7485,12 @@ msgstr "Permisjonstyper"
 msgid "Left"
 msgstr "Sluttet"
 
+#, python-format
+msgid "Left empty beside an oxygen: the latest fresh value at %(point)s at the sample’s time (%(now)s)."
+msgstr ""
+"Tom ved siden av et oksygen: den siste ferske verdien ved %(point)s på prøvens tidspunkt "
+"(%(now)s)."
+
 msgid "Left on"
 msgstr "Sluttet"
 
@@ -7474,6 +7531,10 @@ msgstr "Livsstadium"
 
 msgid "Limit"
 msgstr "Grense"
+
+#, python-format
+msgid "Limit: %(limits)s."
+msgstr "Grense: %(limits)s."
 
 msgid "Limits"
 msgstr "Grenser"
@@ -8079,6 +8140,16 @@ msgstr ""
 msgid "Natural gas"
 msgstr "Naturgass"
 
+msgid "Needed with the oxygen: no fresh salinity here at that time to work the other unit out with."
+msgstr ""
+"Trengs med oksygenet: ingen fersk salinitet her på det tidspunktet å regne ut den andre enheten "
+"med."
+
+msgid "Needed with the oxygen: no fresh temperature here at that time to work the other unit out with."
+msgstr ""
+"Trengs med oksygenet: ingen fersk temperatur her på det tidspunktet å regne ut den andre enheten "
+"med."
+
 msgid "Needs a fresh pH and temperature from the sensors with the sensor’s TAN."
 msgstr "Trenger fersk pH og temperatur fra sensorene sammen med sensorens TAN."
 
@@ -8097,8 +8168,9 @@ msgstr "Trenger kalsium og en salinitet på 5 til 44 ‰, området til Mucci (19
 msgid "Needs the pH and the temperature of the same sample."
 msgstr "Trenger pH og temperatur fra samme prøve."
 
-msgid "Needs the salinity: none was recorded here in the 30 days before."
-msgstr "Trenger saliniteten: ingen ble registrert her de 30 dagene før."
+#, python-format
+msgid "Needs the salinity: none was measured here in the %(days)d days before."
+msgstr "Trenger saliniteten: ingen ble målt her de %(days)d dagene før."
 
 msgid "Needs the temperature of the same sample."
 msgstr "Trenger temperaturen fra samme prøve."
@@ -8139,6 +8211,9 @@ msgstr "Ny fiskegruppe"
 
 msgid "New channel"
 msgstr "Ny kanal"
+
+msgid "New last day"
+msgstr "Ny siste dag"
 
 msgid "New message"
 msgstr "Ny melding"
@@ -8234,9 +8309,6 @@ msgstr "Ingen kanaler ennå: legg dem til på Kanaler-siden."
 
 msgid "No checklist."
 msgstr "Ingen sjekkliste."
-
-msgid "No connection: this may be out of date"
-msgstr "Ingen forbindelse: dette kan være utdatert"
 
 msgid "No contacts yet. Use “Add contact” to add a row."
 msgstr "Ingen kontaktpersoner ennå. Bruk «Legg til kontaktperson» for å legge til en rad."
@@ -8552,9 +8624,8 @@ msgstr "Ingen oppgaver fullført eller avlyst ennå"
 msgid "No task matches these filters."
 msgstr "Ingen oppgaver samsvarer med filtrene."
 
-#, python-format
-msgid "No temperature in the last %(days)d days: record one."
-msgstr "Ingen temperatur de siste %(days)d dagene: registrer én."
+msgid "No temperature recorded here yet: record one."
+msgstr "Ingen temperatur er registrert her ennå: registrer en."
 
 msgid "No test. Use “Add test” to add a row."
 msgstr "Ingen test. Bruk «Legg til test» for å legge til en rad."
@@ -8859,11 +8930,20 @@ msgstr "Ikke egnet for høsting — tilbakeholdelsestid for %(batch)s til omtren
 msgid "Not suitable for harvest — medicine withdrawal of %(batch)s, its end unknown."
 msgstr "Ikke egnet for høsting — tilbakeholdelsestid for %(batch)s, slutten ukjent."
 
+msgid "Not updated: the server cannot be reached or cannot answer. This may be out of date."
+msgstr "Ikke oppdatert: serveren kan ikke nås eller kan ikke svare. Dette kan være utdatert."
+
+msgid "Not updated: the server cannot be reached or cannot read the cards. This may be out of date."
+msgstr "Ikke oppdatert: serveren kan ikke nås eller kan ikke lese kortene. Dette kan være utdatert."
+
 msgid "Not verified"
 msgstr "Ikke bekreftet"
 
 msgid "Not weighed since the fish came in."
 msgstr "Ikke veid siden fisken kom inn."
+
+msgid "Not worked out: the TAN is no longer fresh."
+msgstr "Ikke regnet ut: TAN-verdien er ikke lenger fersk."
 
 msgid "Note"
 msgstr "Notat"
@@ -10693,6 +10773,9 @@ msgstr "Salinitet (‰, g/kg)"
 msgid "Salinity sensor"
 msgstr "Salinitetssensor"
 
+msgid "Salinity the oxygen is worked out with (‰)"
+msgstr "Saliniteten oksygenet regnes ut med (‰)"
+
 msgid "Saltwater"
 msgstr "Saltvann"
 
@@ -11178,6 +11261,12 @@ msgstr "Følsom"
 msgid "Sensitivity tests"
 msgstr "Følsomhetsundersøkelser"
 
+msgid "Sensor channel of the oxygen’s salinity"
+msgstr "Sensorkanal for oksygenets salinitet"
+
+msgid "Sensor channel of the oxygen’s temperature"
+msgstr "Sensorkanal for oksygenets temperatur"
+
 msgid "Sensor credentials"
 msgstr "Sensorlegitimasjoner"
 
@@ -11511,6 +11600,12 @@ msgstr "Sorter etter %(name)s"
 
 msgid "Source"
 msgstr "Kilde"
+
+msgid "Source of the oxygen’s salinity"
+msgstr "Kilde for oksygenets salinitet"
+
+msgid "Source of the oxygen’s temperature"
+msgstr "Kilde for oksygenets temperatur"
 
 msgid "Source of the value"
 msgstr "Kilde for verdien"
@@ -11993,6 +12088,9 @@ msgstr "Temperaturkolonner (°C)"
 msgid "Temperature sensor"
 msgstr "Temperatursensor"
 
+msgid "Temperature the oxygen is worked out with (°C)"
+msgstr "Temperaturen oksygenet regnes ut med (°C)"
+
 msgid "Temperatures"
 msgstr "Temperaturer"
 
@@ -12369,6 +12467,10 @@ msgstr "Designet har ingen replikater å plassere kar i."
 msgid "The design has one group: there is nothing to compare it with."
 msgstr "Designet har én gruppe: det er ingenting å sammenligne den med."
 
+#, python-format
+msgid "The device clock is ahead by %(minutes)d min."
+msgstr "Enhetens klokke går %(minutes)d min for fort."
+
 msgid "The device has no channel to place."
 msgstr "Apparatet har ingen kanal å plassere."
 
@@ -12731,6 +12833,9 @@ msgstr[1] "De siste %(weeks)s ukene med tellinger, per lokalitet."
 msgid "The layout as text"
 msgstr "Oppsettet som tekst"
 
+msgid "The leave was shortened."
+msgstr "Permisjonen ble forkortet."
+
 #, python-format
 msgid "The level %(label)s of %(factor)s has two different values."
 msgstr "Nivået %(label)s av %(factor)s har to ulike verdier."
@@ -12814,6 +12919,10 @@ msgid ""
 msgstr ""
 "Overvåkingens navngitte veggskjermer: et navn, malen kortene tegnes med som standard, hvor brede "
 "kortene er og hvor ofte skjermene spør."
+
+#, python-format
+msgid "The new last day must lie between %(first)s and the day before %(last)s."
+msgstr "Den nye siste dagen må ligge mellom %(first)s og dagen før %(last)s."
 
 #, python-format
 msgid "The new placement must start after the last one ended (%(day)s)."
@@ -13028,6 +13137,9 @@ msgstr ""
 msgid "The prescription’s number, for a prescription-only medicine."
 msgstr "Reseptens nummer, for et reseptpliktig legemiddel."
 
+msgid "The preview could not be drawn just now. The layout is kept; the next change asks again."
+msgstr "Forhåndsvisningen kunne ikke tegnes nå. Oppsettet beholdes; neste endring spør igjen."
+
 msgid "The preview shows only what you may read yourself."
 msgstr "Forhåndsvisningen viser bare det du selv har lov til å lese."
 
@@ -13163,6 +13275,13 @@ msgstr "Raden slutter allerede %(day)s: den kan bare forkortes."
 
 msgid "The safe zone lies in this band."
 msgstr "Den trygge sonen ligger i dette båndet."
+
+#, python-format
+msgid "The salinity is %(source)s."
+msgstr "Saliniteten er fra %(source)s."
+
+msgid "The salinity is fresh water’s."
+msgstr "Saliniteten er ferskvannets."
 
 #, python-format
 msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."
@@ -13406,6 +13525,10 @@ msgstr "Teamet har ingen leder."
 
 msgid "The team needs a lead."
 msgstr "Teamet trenger en leder."
+
+#, python-format
+msgid "The temperature is %(source)s."
+msgstr "Temperaturen er fra %(source)s."
 
 msgid "The template a card’s flip link shows (Simple flips to Detailed). Empty: no flip link."
 msgstr "Malen et korts byttelenke viser (Enkel bytter til Detaljert). Tomt: ingen byttelenke."
@@ -13712,6 +13835,13 @@ msgstr ""
 msgid "These days are all weekends or holidays: nothing would be charged."
 msgstr "Disse dagene er alle helger eller helligdager: ingenting ville blitt belastet."
 
+msgid ""
+"These fish are kept today, and no limit judges these values for them: their monitoring cards say "
+"“No limit” whatever the value is. Add the limits your vet or guideline gives."
+msgstr ""
+"Denne fisken holdes i dag, og ingen grense vurderer disse verdiene for den: overvåkingskortene "
+"sier «Ingen grense» uansett verdi. Legg inn grensene veterinæren eller veilederen din gir."
+
 #, python-format
 msgid ""
 "These fish of %(batch)s weigh as much as the book holds for %(unit)s on %(date)s, or more: weigh "
@@ -13816,6 +13946,10 @@ msgstr "Dette oppsettet har en ukjent versjon (%(version)s)."
 
 msgid "This layout is too large to store."
 msgstr "Dette oppsettet er for stort til å lagres."
+
+#, python-format
+msgid "This leave ended on %(day)s, more than %(days)s days ago: it can no longer be corrected."
+msgstr "Denne permisjonen sluttet %(day)s, for mer enn %(days)s dager siden: den kan ikke rettes lenger."
 
 #, python-format
 msgid "This liner is %(low)s to %(high)s mm thick."
@@ -14359,6 +14493,9 @@ msgstr "Kommende"
 msgid "Upcoming reports"
 msgstr "Kommende rapporter"
 
+msgid "Updated again."
+msgstr "Oppdatert igjen."
+
 msgid "Updated at"
 msgstr "Oppdatert"
 
@@ -14842,6 +14979,12 @@ msgstr "Mottatt"
 msgid "When the channel stopped being here; empty while it still is."
 msgstr "Når kanalen sluttet å være her; tom så lenge den fortsatt er det."
 
+msgid "When the oxygen’s salinity was measured"
+msgstr "Når oksygenets salinitet ble målt"
+
+msgid "When the oxygen’s temperature was measured"
+msgstr "Når oksygenets temperatur ble målt"
+
 msgid "When this is a part of other equipment, e.g. the pump of a filter unit."
 msgstr "Når dette er en del av annet utstyr, f.eks. pumpen i en filterenhet."
 
@@ -15119,6 +15262,10 @@ msgstr "Uten produksjonsavdeling"
 msgid "Without a site"
 msgstr "Uten lokalitet"
 
+#, python-format
+msgid "Worked out from %(temperature)s °C, %(salinity)s ‰ and %(pressure)s atm."
+msgstr "Regnet ut fra %(temperature)s °C, %(salinity)s ‰ og %(pressure)s atm."
+
 msgid ""
 "Worked out from the dimensions and the max density each time the unit is saved; shown as last "
 "saved. The max biomass uses the water volume when there is one, else the volume."
@@ -15347,6 +15494,9 @@ msgstr "minst hvert %(seconds)s s"
 msgid "at once"
 msgstr "straks"
 
+msgid "attendance outside these days"
+msgstr "oppmøte utenfor disse dagene"
+
 msgid "attendance record"
 msgstr "oppmøteregistrering"
 
@@ -15533,6 +15683,9 @@ msgstr "ulagrede meldinger"
 
 msgid "deleted"
 msgstr "slettet"
+
+msgid "deleted species"
+msgstr "slettet art"
 
 msgid "delivery record"
 msgstr "leveringsregistrering"
@@ -15997,6 +16150,12 @@ msgstr "byttet på denne siden"
 msgid "found %(time)s"
 msgstr "funnet %(time)s"
 
+msgid "fresh water"
+msgstr "ferskvann"
+
+msgid "fresh water, 0"
+msgstr "ferskvann, 0"
+
 #, python-format
 msgid "from %(first)s"
 msgstr "fra %(first)s"
@@ -16120,6 +16279,9 @@ msgstr "kunnskapsoppføring"
 
 msgid "lab"
 msgstr "laboratorium"
+
+msgid "leave outside these days"
+msgstr "permisjon utenfor disse dagene"
 
 msgid "leave request"
 msgstr "permisjonssøknad"
@@ -16270,6 +16432,9 @@ msgstr "ingen produksjonsfisk på %(site)s siden %(date)s"
 msgid "no production form"
 msgstr "ingen produksjonsform"
 
+msgid "no recent data"
+msgstr "ingen ferske data"
+
 msgid "no reports-from date"
 msgstr "ingen rapporter-fra-dato"
 
@@ -16295,6 +16460,9 @@ msgstr "ingen slik rad"
 
 msgid "none"
 msgstr "ingen"
+
+msgid "none fresh now: enter it"
+msgstr "ingen fersk nå: skriv den inn"
 
 msgid "not enforced by the database"
 msgstr "ikke håndhevet av databasen"
@@ -16322,6 +16490,10 @@ msgstr "nås ikke i diagrammets område (4 til 12,5)"
 
 msgid "now"
 msgstr "nå"
+
+#, python-format
+msgid "now %(value)s, %(source)s"
+msgstr "nå %(value)s, %(source)s"
 
 msgid "off"
 msgstr "fri"
@@ -16439,6 +16611,10 @@ msgstr "planlagt høsting eller transport"
 
 msgid "planned harvests and transports"
 msgstr "planlagte høstinger og transporter"
+
+#, python-format
+msgid "planned shifts before %(day)s"
+msgstr "planlagte vakter før %(day)s"
 
 msgid "plans"
 msgstr "planer"

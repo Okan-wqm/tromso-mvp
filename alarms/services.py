@@ -87,14 +87,18 @@ def raise_for(key, make):
 
 
 def clear_many(clearances):
-    """[(alarm, at, cause)]: each alarm stopped holding at `at` for `cause` (ClearCause), logged as a change of the alarm;
-    two statements for all of them."""
+    """[(alarm, at, cause)] or [(alarm, at, cause, detail)]: each alarm stopped holding at `at` for `cause` (ClearCause),
+    logged as a change of the alarm with the `detail` ({label: text}: what changed, e.g. the limit row removed and by
+    whom) where there is one; two statements for all of them."""
+    clearances = [(alarm, at, cause, next(iter(detail), None)) for alarm, at, cause, *detail in clearances]
     rows = AlarmClearance.objects.bulk_create([AlarmClearance(alarm=alarm, cleared_at=max(at, alarm.opened_at), cause=cause)
-                                               for alarm, at, cause in clearances])
+                                               for alarm, at, cause, _detail in clearances])
     with audit.source_language():
         _log([audit.entry(None, AuditLog.Action.UPDATE, row.alarm, {
             str(_('Cleared at')): [None, row.cleared_at.isoformat()],
-            str(_('Why')): [None, audit.message(row.get_cause_display())]}, label=row.alarm.summary) for row in rows])
+            str(_('Why')): [None, audit.message(row.get_cause_display())],
+            **{str(label): [None, text] for label, text in (detail or {}).items()}}, label=row.alarm.summary)
+            for row, (_alarm, _at, _cause, detail) in zip(rows, clearances)])
     return rows
 
 

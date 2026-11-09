@@ -46,7 +46,8 @@ class Channel(models.TextChoices):
 class ClearCause(models.TextChoices):
     RETURNED = 'returned', _('Back inside the limit')
     EVENT_CLOSED = 'event_closed', _('The sensor rule no longer holds')
-    STRUCTURAL = 'structural', _('No longer judged (no fish or no limit)')
+    STRUCTURAL = 'structural', _('No fish in the unit any more')
+    LIMIT_REMOVED = 'limit_removed', _('The water limit was removed')
     RESTORED = 'restored', _('Restored')
     UNIT_REMOVED = 'unit_removed', _('The unit was removed')
     MERGED = 'merged', _('Merged into the unit’s one alarm of that level')
@@ -103,7 +104,7 @@ class AlarmClearance(models.Model):
     alarm = models.OneToOneField(Alarm, primary_key=True, on_delete=models.PROTECT, related_name='clearance',
                                  verbose_name=_('Alarm'))
     cleared_at = models.DateTimeField(_('Cleared at'))
-    cause = models.CharField(_('Why'), max_length=12, choices=ClearCause.choices, default=ClearCause.RETURNED)
+    cause = models.CharField(_('Why'), max_length=20, choices=ClearCause.choices, default=ClearCause.RETURNED)
 
     class Meta:
         db_table = 'alarm_clearances'

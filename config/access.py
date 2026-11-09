@@ -130,7 +130,8 @@ AREAS = [
     Area(_('Alarm severity rules'), 'alarms.SeverityPolicy', actions=('view', 'change')),
     Area(_('Alarm deadbands'), 'alarms.ParameterDeadband'),
     # The platform owner's settings (one row: Read, Edit). "Platform owner" is the role that holds Edit here: the correction
-    # window, whether a second person approves a withdrawal acknowledgement, and the alarms' escalation time.
+    # window and whether a second person approves a withdrawal acknowledgement (when an alarm escalates is its severity's
+    # rule, above).
     Area(_('Platform settings'), 'core.PlatformSettings', actions=('view', 'change')),
     # Opening balances: Read is their list. Registering one is the platform owner's right (Platform settings: Edit), never
     # a right of its own: it is the one record dated beyond the correction window.

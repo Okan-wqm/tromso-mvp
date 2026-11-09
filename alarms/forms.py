@@ -26,7 +26,7 @@ class RecipientRuleForm(TabbedForm):
             'production_department': _('Empty: every department of the site. A department must be on the site.'),
             'min_severity': _('Warning reaches warnings and criticals; Critical reaches criticals only.'),
             'level': _('0: notified when the alarm opens. 1: when nobody acknowledged level 0 in the escalation time of '
-                       'the Platform settings; and so on, up to 9.'),
+                       'its severity (Alarm severity rules); and so on, up to 9.'),
             'role': _('Everyone active with this role; or choose one person below instead.'),
             'on_shift_only': _('Only the people on shift by the roster when the alarm reaches this level.'),
             'channel': _('Push: the mobile app. Nothing is sent until the push transport is connected.'),

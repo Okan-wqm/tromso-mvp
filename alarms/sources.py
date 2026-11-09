@@ -20,7 +20,8 @@ from django.db.models import Q
 from django.utils.translation import gettext as _
 
 from core import audit
-from farm.models import Tank
+from farm.models import Tank, WaterLimit
+from farm.stock import read as stock_read
 from farm.models.water_point import site_of
 from farm.water import parameters, read as water_read
 from farm.water.read import LIMITED, OXYGEN
@@ -205,6 +206,7 @@ class Subject:
     spec: object
     cause: str = ClearCause.RETURNED
     structural: str = ''
+    detail: object = None          # () -> {label: text} the clearance's log entry adds (what changed), or None
 
 
 def settle(subjects, now, rules):
@@ -221,9 +223,9 @@ def settle(subjects, now, rules):
         if done.raise_alarm:
             raises.append((subject.key, subject.spec()))
         elif done.clear_cause is not None:
-            clears.append((state, subject.structural or subject.cause))
-    services.clear_many([(state.open_alarm, now, cause) for state, cause in clears])
-    for state, _cause in clears:
+            clears.append((state, subject.structural or subject.cause, subject.detail))
+    services.clear_many([(state.open_alarm, now, cause, detail() if detail else None) for state, cause, detail in clears])
+    for state, _cause, _detail in clears:
         state.open_alarm, state.clear_since = None, None
     for key, alarm in services.raise_many(raises).items():
         states[key].open_alarm, states[key].pending_since = alarm, None
@@ -254,6 +256,7 @@ SENSORS_FAILED = 'sensors_failed'
 ALARM_RULES = 'alarm_rules'
 UNIT_UNEVALUATED = 'unit_unevaluated'
 STEP_FAILED = 'step_failed'
+NO_WATER_POINT = 'no_water_point'
 
 
 def _unit_where(unit):
@@ -315,8 +318,32 @@ def _water_subjects(found, failed, rules, now):
                 lambda point=found.point, severity=severity, reading=reading: {
                     'at': now, 'severity': severity, 'summary': _summary(point, reading), 'source': Source.WATER_LIMIT,
                     'point': point, 'parameter': reading.code, **_where(point)},
-                structural=ClearCause.STRUCTURAL if reading.judged in UNJUDGED else ''))
+                **_unjudged(reading)))
     return subjects
+
+
+def _unjudged(reading):
+    """Why a reading's levels are no longer judged, when they are not: the fish have no limit row for it any more (a limit
+    removed: the clearance names the row and who removed it, cross review F12), or there are no fish."""
+    if reading.judged not in UNJUDGED:
+        return {}
+    if reading.uncovered:
+        return {'structural': ClearCause.LIMIT_REMOVED, 'detail': lambda: _removed_limit(reading)}
+    return {'structural': ClearCause.STRUCTURAL}
+
+
+def _removed_limit(reading):
+    """{label: the water limit row of the reading's parameter last removed for the fish it no longer judges, who removed
+    it and when}, in English at rest."""
+    row = (WaterLimit.all_objects.filter(parameter=reading.code, species_id__in=reading.uncovered, is_deleted=True)
+           .select_related('species', 'deleted_by').order_by('-deleted_at').first())
+    with audit.source_language():
+        label = str(_('Limit removed'))
+        if row is None:
+            return {label: str(_('No removed limit row found: the fish have no limit row for it.'))}
+        who = row.deleted_by.get_username() if row.deleted_by else '-'
+        return {label: f'#{row.pk} ({row.species}, {row.get_parameter_display()}, {row.get_water_type_display()}) '
+                       f'{_("by")} {who} {row.deleted_at.isoformat() if row.deleted_at else ""}'.strip()}
 
 
 def water(now, rules):
@@ -333,6 +360,9 @@ def water(now, rules):
     found_water, unreadable = _read(units, now)
     failed = any(found.sensors_failed for found in found_water.values())
     subjects, unevaluated = [], {unit.pk for unit in unreadable}
+    unwatched = [unit.pk for unit in units if unit.pk not in unevaluated and (
+        found_water.get(unit.pk) is None or found_water[unit.pk].point is None)]
+    stocked = {pk for pk, fish in stock_read.unit_counts(unwatched).items() if fish > 0} if unwatched else set()
     for unit in units:
         found = found_water.get(unit.pk)
         if found is None or found.point is None or unit.pk in unevaluated:
@@ -347,6 +377,11 @@ def water(now, rules):
     subjects += [system_subject(f'unit:{unit.pk}:{UNIT_UNEVALUATED}', unit.pk in unevaluated, Severity.CRITICAL, _text(_(
         '%(unit)s: the water could not be evaluated; its alarms are neither raised nor cleared until it can.'),
         unit=unit.code), now, parameter=UNIT_UNEVALUATED, where=_unit_where(unit)) for unit in units]
+    # A unit with fish and no point to read its own water at has no water alarm at all: a configuration warning of its
+    # own until it has one (cross review F16).
+    subjects += [system_subject(f'unit:{unit.pk}:{NO_WATER_POINT}', unit.pk in stocked, Severity.WARNING, _text(_(
+        '%(unit)s holds fish and has no active sampling point for its own water: its water raises no alarm until it '
+        'has one.'), unit=unit.code), now, parameter=NO_WATER_POINT, where=_unit_where(unit)) for unit in units]
     # A unit whose water is read no more (no point to read it at, the parameter gone) keeps its alarm open: nothing says it
     # is over. A unit removed has nothing left to judge: its alarms end (cause "unit removed").
     return settle(subjects + _removed(units, now), now, rules)

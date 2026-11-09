@@ -455,8 +455,8 @@ class UnwatchedUnitTests(CrossReviewCase):
         from farm.health.withdrawal import guarded_units
         from farm.models import SamplingPoint
         from .. import read
-        guarded_units(self.keeper, [self.t1.pk], None,
-                      lambda: SamplingPoint.objects.filter(pk=self.mid1.pk).update(is_active=False))
+        guarded_units(self.keeper, [self.t1.pk], None,             # every point of the unit (the outlet too)
+                      lambda: SamplingPoint.objects.filter(unit=self.t1).update(is_active=False))
         self.loop()
         self.loop(seconds=31)
         alarm = Alarm.objects.get(source='system', parameter='no_water_point')

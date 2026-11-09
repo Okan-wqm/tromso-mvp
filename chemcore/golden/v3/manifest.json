@@ -2,18 +2,18 @@
   "beside": "v1",
   "blocks": {
     "waters": {
-      "bytes": 86537,
-      "records": 882,
-      "sha256": "050c56dd33ae405924b44af7fbff7e2f84c8be497a889de5fc2781fe5960bcbc"
+      "bytes": 109619,
+      "records": 1134,
+      "sha256": "212e247dc0e1191af46bd1b0734775770389ef3fc4510ce9c23cf1422373c165"
     }
   },
   "core": {
-    "core_hash": "92306f5e22eed5bc",
+    "core_hash": "adbab704c5ed5534",
     "formula_version": 1,
     "version": "0.1.0"
   },
   "format": 1,
   "golden_version": "v3",
-  "recorder_sha256": "c01215fc1017c0a837e3bc95b974fdf78d4ac11bd309b423198e2f44f13648f6",
+  "recorder_sha256": "50a798dac834f1555a3c2d5c6cefda91d9fe70de7b7530cd1711202d1d0942bd",
   "what": "I2: fresh water ionic strength (conductivity, hardness and alkalinity, salinity, alkalinity) with Davies activities below a salinity of 5; v1 from 5 on. Not used by the application."
 }

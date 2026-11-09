@@ -90,6 +90,71 @@ Bunlar yerine gelmeden v3 uygulamaya bağlanmamalı:
    soğuk suda iyonik şiddeti olduğundan düşük gösterir.
 4. **Okuma tarafı.** İletkenlik ve sertlik suyun girdisi olarak bağlanmalı (yukarıda, zayıf noktalar).
 
+## Sınır kararı: 1 ile 5 ‰ arasında sürekli geçiş (2026-11-09, sahibin devrettiği karar)
+
+Sahibin kararıyla v3 açılıyor ve tatlı su ile deniz suyu yolu arasındaki sınırı seçmek bana bırakıldı. Önce eski 5 ‰
+sınırındaki sıçramayı ölçtüm, sonra sıçramasız bir geçiş seçtim.
+
+**Ölçülen sıçrama, eski 5 ‰ sınırında** (sıcaklığa bağlı A ile, I1 kapandıktan sonraki çekirdek; pH 7,5; aynı su
+4,99 ‰ ve 5,00 ‰'de; `chemcore/scripts` dışında, çekirdeğin kendisiyle ölçüldü):
+
+| Su (ne ölçülmüş) | °C | CO₂ 4,99 ‰ | CO₂ 5,00 ‰ | Sıçrama | NH₃ payı 4,99 ‰ | NH₃ payı 5,00 ‰ | Sıçrama |
+|---|---|---|---|---|---|---|---|
+| Yalnız tuzluluk, alk. 120 | 2 | 9,350 | 8,632 | −%7,7 | 0,2419 | 0,2387 | −%1,3 |
+| Yalnız tuzluluk, alk. 120 | 12 | 7,272 | 6,591 | −%9,4 | 0,5363 | 0,5470 | +%2,0 |
+| İletkenlik 3700 µS/cm | 2 | 9,703 | 8,632 | −%11,0 | 0,2509 | 0,2387 | −%4,9 |
+| İletkenlik 3700 µS/cm | 12 | 7,551 | 6,591 | −%12,7 | 0,5565 | 0,5470 | −%1,7 |
+| İletkenlik 8700 µS/cm (≈ 5 ‰) | 2 | 9,141 | 8,632 | −%5,6 | 0,2365 | 0,2387 | +%0,9 |
+| İletkenlik 8700 µS/cm (≈ 5 ‰) | 12 | 7,106 | 6,591 | −%7,2 | 0,5243 | 0,5470 | +%4,3 |
+| Sertlik 300 + alk. 120 | 2 | 10,805 | 8,632 | −%20,1 | 0,2791 | 0,2387 | −%14,5 |
+| Sertlik 300 + alk. 120 | 12 | 8,425 | 6,591 | −%21,8 | 0,6198 | 0,5470 | −%11,8 |
+| Sertlik 1000 + alk. 120 | 2 | 10,150 | 8,632 | −%15,0 | 0,2623 | 0,2387 | −%9,0 |
+| Sertlik 1000 + alk. 120 | 12 | 7,906 | 6,591 | −%16,6 | 0,5822 | 0,5470 | −%6,0 |
+| Yalnız alkalinite 20 | 2 | 1,556 | 1,436 | −%7,7 | 0,2419 | 0,2387 | −%1,3 |
+| Yalnız alkalinite 20 | 12 | 1,209 | 1,095 | −%9,4 | 0,5363 | 0,5470 | +%2,0 |
+
+2 ile 25 °C arasında en kötüsü: yalnız tuzluluk CO₂ %12,9 / NH₃ %6,0; iletkenlik 3700 %16,2 / %4,9; iletkenlik 8700
+%10,9 / %8,5; sertlik 300 %25,1 / %14,5; sertlik 1000 %20,1 / %9,0; yalnız alkalinite %13,0 / %6,0. Bu sıçramalar
+girdilerin ölçüm hatasından çok büyük: pH ölçümündeki ±0,02 (iyi bir pH metre) CO₂'yi %4,5, NH₃ payını %4,7 oynatır;
+tuzluluktaki 0,1 ‰ ise %1'in altında. Yani 5 ‰'de keskin sınır kabul edilemezdi; 1 ‰'ye çekmek de (önceki önerim)
+sıçramayı yalnız küçültürdü, kaldırmazdı.
+
+**Seçim: iki yol arasında sürekli, tekdüze bir karışım.** 1 ‰'ye kadar yalnız tatlı su yolu, 5 ‰'den itibaren yalnız
+deniz suyu yolu; arada deniz yolunun ağırlığı doğrusal olarak 0'dan 1'e çıkıyor (`fresh.rs` `sea_weight`), her sabit iki
+yolun geometrik ortalaması (logaritmada doğrusal), pH farkı doğrusal. Neden bu iki uç:
+
+- **1 ‰**: Millero vd. (2006, *Mar. Chem.* 100: 80) K1 ve K2'yi tuzluluk 1 ile 50 arasında **ölçtü** (denklemlerini 0'a
+  kadar geçerli saysalar da 1'in altı ölçülmedi). 1 ‰'nin altında tatlı suyun iyonları deniz suyunun oranında değildir
+  (kalsiyum-bikarbonat ağırlıklı), deniz suyu sabitleri oraya taşınmamalı.
+- **5 ‰**: deniz yolunun pH ölçeklerine ve boratına giren Dickson (1990) KSO₄ ve KB yalnız 5–45 ‰ arasında geçerli.
+  Davies ise iyonik şiddet 0,5'e kadar kullanılabilir (5 ‰ = I 0,10, sınırın çok içinde), yani tatlı su yolu bandın
+  her yerinde kendi geçerlilik alanında.
+
+**Sonuç, aynı ölçümle** (0–30 °C, pH 6,5 / 7,5 / 8,5, tuzluluk 0–6 ‰ 0,01 adımla):
+
+| Su | 1 ve 5 ‰'de sıçrama | 0,1 ‰ başına en dik değişim, CO₂ | NH₃ | En büyük geri dönüş, CO₂ | NH₃ |
+|---|---|---|---|---|---|
+| Yalnız tuzluluk | 2·10⁻⁸ % (yok) | %1,27 | %0,52 | %0 | %0,44 |
+| İletkenlik 3700 µS/cm | 2·10⁻⁸ % | %1,40 | %0,34 | %0,32 | %2,16 |
+| İletkenlik 8700 µS/cm | 2·10⁻⁸ % | %1,18 | %0,44 | %1,48 | %3,08 |
+| Sertlik 300 + alk. 120 | 2·10⁻⁸ % | %1,27 | %0,52 | %0 | %0,44 |
+| Sertlik 1000 + alk. 120 | 2·10⁻⁸ % | %1,27 | %0,40 | %0,02 | %0,68 |
+| Yalnız alkalinite 20 | 2·10⁻⁸ % | %1,38 | %0,52 | %0 | %0,44 |
+
+Sıçrama yok; bant içinde 0,1 ‰ tuzluluk farkı en çok %1,4 değiştiriyor, pH'taki ±0,02'nin üçte biri. Karışımın ağırlığı
+tekdüze; çıktılar ise bir yerde hafifçe geri dönebiliyor, çünkü iki yol 5 ‰'de birbirinden farklı (deniz suyu sabitleri
+iyon çiftlerini içeriyor): yalnız tuzlulukta NH₃ payı en çok %0,44 geri dönüyor (30 °C, alk. 20, pH 6,5). İletkenliği
+sabit tutup tuzluluğu 0'dan 6'ya sürmek (tutarsız bir çift: 8700 µS/cm yaklaşık 5 ‰ demektir) %3,1'e kadar geri dönüş
+veriyor; bu da pH hatasının etkisinin altında. Doğrusal ağırlık "yumuşak basamak"tan (3x² − 2x³) daha küçük geri dönüş
+verdi (%0,44'e karşı %0,71), o yüzden doğrusal seçildi.
+
+**İyonik şiddet kuralında bir düzeltme de geldi.** Eski sırada küçük bir tuzluluk (örneğin 0,01 ‰, I 0,0002) suyun
+alkalinitesinin kendi iyonlarını (80 mg/L'de en az 0,0016) yok sayıyordu: 0 ile 0,01 ‰ arasında %7,7'lik basamak. Şimdi
+kural: önce bir **tahmin** (iletkenlik, yoksa 0'dan büyük tuzluluk), ama ölçülen iyonların **alt sınırı** (sertlik ve
+alkalinite, yoksa yalnız alkalinite) daha büyükse alt sınır. Hiçbir şey ölçülmemişse (tuzluluk 0, alkalinite yok)
+iyonik şiddet 0: v1'in ideal suyu, ihtiyatlı taraf. Birkaç girdi birden varsa kullanılan: iletkenlik (yoksa tuzluluk),
+ama sertlik+alkalinite ya da yalnız alkalinitenin verdiği alt sınırın altına hiçbir zaman inmeden.
+
 ## Karar için seçenekler
 
 1. v3'ü olduğu gibi (5 ‰ sınırıyla) açmak.

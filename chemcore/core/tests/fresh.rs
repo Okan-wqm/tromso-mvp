@@ -114,7 +114,7 @@ fn the_band_is_from_1_to_5_permil() {
 
 #[test]
 fn no_jump_at_either_end_of_the_band() {
-    // The current 5 ‰ boundary jumped up to 22 % in CO₂ (hardness) and 9 % in the NH₃ share; across the band every
+    // The old 5 ‰ boundary jumped up to 25 % in CO₂ (hardness) and 14.5 % in the NH₃ share; across the band every
     // constant is continuous: a step of 1e-9 ‰ moves none by more than 1e-7 of itself.
     for temp_c in [0.0, 2.0, 5.0, 12.0, 25.0] {
         for (alkalinity, ions) in WATERS {

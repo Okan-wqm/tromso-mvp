@@ -129,7 +129,9 @@ saturation_index = chemcore.saturation_index
 
 # ---- I2, fresh water's ionic strength (chemcore/core/src/fresh.rs): golden v3 beside v1, NOT used by the application
 # until the owner decides (chemcore/findings/I2-comparison.md); the application reads `equilibria` (v1).
-FRESH_BELOW = chemcore.FRESH_BELOW
+FRESH_UP_TO = chemcore.FRESH_UP_TO
+SEA_FROM = chemcore.SEA_FROM
+sea_weight = chemcore.sea_weight
 DAVIES_MAX = chemcore.DAVIES_MAX
 fresh_ionic_strength = chemcore.fresh_ionic_strength
 davies_log_gamma = chemcore.davies_log_gamma

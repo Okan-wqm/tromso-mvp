@@ -20,7 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent.parent
 FORMAT = 1
 TEMPERATURES = (2.0, 8.0, 12.0, 18.0, 25.0, 30.0)
-SALINITIES = (0.0, 0.5, 2.0, 4.99, 5.0, 10.0, 35.0)
+SALINITIES = (0.0, 0.5, 1.0, 2.0, 3.0, 4.99, 5.0, 10.0, 35.0)
 PHS = (6.5, 7.0, 7.5, 8.0, 8.5)
 ALKALINITIES = (20.0, 80.0, 200.0)                    # mg/L as CaCO3
 IONS = ({}, {'conductivity_us_cm': 50.0}, {'conductivity_us_cm': 300.0}, {'conductivity_us_cm': 1000.0},

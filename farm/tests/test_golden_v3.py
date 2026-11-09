@@ -187,11 +187,12 @@ class EquilibriaV3Tests(SimpleTestCase):
                 self.assertEqual(found.ksp_calcite, native.equilibria(temp_c, salinity).ksp_calcite)
 
     def test_with_no_ions_it_is_v1(self):
-        # log γ goes as √I: at 1e-20 µS/cm, I = 1.6e-25 and log γ about −2e-13.
-        found = native.equilibria_v3(12.0, 0.0, 80.0, conductivity_us_cm=1e-20)
-        for name, value, ideal in zip(FIELDS, found.values()[2:], native.equilibria(12.0, 0.0).values()[2:]):
-            with self.subTest(name=name):
-                self.assertTrue(math.isclose(value, ideal, rel_tol=1e-9, abs_tol=1e-12), (value, ideal))
+        # Nothing measured (S 0, no alkalinity): an ionic strength of 0, v1's ideal fresh water exactly; with a tiny
+        # conductivity and no alkalinity, log γ goes as √I (at 1e-20 µS/cm, I = 1.6e-25, log γ about −2e-13).
+        for found in (native.equilibria_v3(12.0, 0.0), native.equilibria_v3(12.0, 0.0, conductivity_us_cm=1e-20)):
+            for name, value, ideal in zip(FIELDS, found.values()[2:], native.equilibria(12.0, 0.0).values()[2:]):
+                with self.subTest(name=name):
+                    self.assertTrue(math.isclose(value, ideal, rel_tol=1e-9, abs_tol=1e-12), (value, ideal))
 
     def test_ions_lower_the_co2_and_the_nh3_share_at_a_measured_ph_and_alkalinity(self):
         # CO₂ = aH [HCO₃⁻] γHCO₃ / K1°: an ion-rich water holds less CO₂ at the pH its meter reads; NH₃'s share is

@@ -1,21 +1,26 @@
-//! I2, fresh water's ionic strength (chemcore/findings/B1.md, I2; owner amendment B5): golden v3, beside v1 and not
-//! used by the application until the owner decides (chemcore/findings/I2-comparison.md).
+//! I2, fresh water's ionic strength (chemcore/findings/B1.md, I2; owner amendment B5), and I1, the Debye–Hückel A of the
+//! water's temperature: formula 3 (golden v3; chemcore/findings/I2-comparison.md).
 //!
 //! v1 (crate::chemistry) takes the ionic strength from the salinity alone, so a fresh water (S 0) is ideal: every
 //! activity coefficient 1, the NBS pH taken as the free pH. A fresh water is not ideal: a hard one has an ionic
-//! strength near 0.01, where a monovalent ion's activity coefficient is about 0.9. Below a salinity of `FRESH_BELOW`
+//! strength near 0.01, where a monovalent ion's activity coefficient is about 0.9. Up to a salinity of `FRESH_UP_TO`
 //! the v3 water takes its ionic strength from what is measured, and its constants are the fresh-water (thermodynamic,
-//! infinite dilution) ones made concentration constants with Davies activity coefficients; from `FRESH_BELOW` on it is
-//! v1's seawater path but for the NBS pH's conversion, whose Debye–Hückel A is the temperature's (I1, below).
+//! infinite dilution) ones made concentration constants with Davies activity coefficients (`fresh_equilibria`); from
+//! `SEA_FROM` on they are v1's seawater constants, the NBS pH converted with the temperature's A (I1, below); between
+//! the two, each constant is the geometric blend of the two paths, the sea path's weight going linearly from 0 at
+//! `FRESH_UP_TO` to 1 at `SEA_FROM` (`sea_weight`), so nothing jumps at either end. Why 1 and 5 ‰: Millero et al.
+//! (2006) measured their K1 and K2 from S 1 to 50 (below 1 ‰ a fresh water's ions are not sea water's in proportion);
+//! Dickson's (1990) KSO₄ and KB, which the sea path's scales and borate need, hold from S 5; Davies holds to I ≈ 0.5
+//! (S 5 is I 0.10). The measured jump of the old 5 ‰ boundary and the choice are in the comparison.
 //!
-//! The ionic strength, the first source there is:
-//! 1. the conductivity κ (µS/cm, at 25 °C): I = 1.6e-5 κ (Russell 1976, J. Am. Water Works Assoc. 68: 2; as in
-//!    Snoeyink & Jenkins 1980, Water Chemistry, eq. 2-40);
-//! 2. the hardness (mg/L as CaCO₃, Ca²⁺ and Mg²⁺) with the alkalinity (meq/L, as HCO₃⁻): their ions and the
-//!    monovalent ions their charges need to balance, I = ½ (4 c₂ + A + |2 c₂ − A|), mmol/L to mol/L: the least ionic
-//!    strength these measurements allow (an unmeasured ion only adds to it);
-//! 3. the salinity, as sea water's (DOE 1994, chemistry::ionic_strength), when one above 0 is given;
-//! 4. the alkalinity alone, as sodium bicarbonate, I = A: again the least it can be.
+//! The ionic strength of the fresh path: an estimate, the conductivity κ (µS/cm, at 25 °C: specific conductance),
+//! I = 1.6e-5 κ (Russell 1976, J. Am. Water Works Assoc. 68: 2; as in Snoeyink & Jenkins 1980, Water Chemistry), else
+//! the salinity's when one above 0 is given (as sea water's, DOE 1994, chemistry::ionic_strength); unless the measured
+//! ions' lower bound is larger: the hardness (mg/L as CaCO₃, Ca²⁺ and Mg²⁺) with the alkalinity (meq/L, as HCO₃⁻),
+//! their ions and the monovalent ions their charges need to balance, I = ½ (4 c₂ + A + |2 c₂ − A|), mmol/L to mol/L;
+//! else the alkalinity alone, as sodium bicarbonate, I = A. A bound is the least ionic strength the measured ions allow
+//! (an unmeasured ion only adds to it), so an estimate below it is taken as the bound: a salinity of 0.01 ‰ never drops
+//! a water's bicarbonate. With nothing measured (S 0, no alkalinity) the ionic strength is 0, v1's ideal water.
 //!
 //! Concentrations per litre are taken as per kg (a fresh water's density is 1 within 0.3 %).
 //!
@@ -32,10 +37,12 @@ use crate::chemistry::{
     self as c, Equilibria, KELVIN, MG_CACO3_PER_MEQ, k_h2s_total, k_nh4_sws, k1_sws, k2_sws, kb_total, kw_total,
     total_boron,
 };
-use crate::num::{ChemError, R, div, finite, pow, sqrt};
+use crate::num::{ChemError, R, div, exp, finite, ln, pow, sqrt};
 
-/// Below this salinity (‰) v3 takes the fresh-water path; from it on, v1's seawater path.
-pub const FRESH_BELOW: f64 = 5.0;
+/// Up to this salinity (‰) formula 3 takes the fresh-water path alone: Millero et al. (2006) measured K1, K2 from S 1.
+pub const FRESH_UP_TO: f64 = 1.0;
+/// From this salinity (‰) formula 3 takes the seawater path alone: Dickson's (1990) KSO₄ and KB hold from S 5.
+pub const SEA_FROM: f64 = 5.0;
 /// Ionic strength per µS/cm of conductivity (Russell 1976).
 pub const IONIC_PER_MICROSIEMENS: f64 = 1.6e-5;
 /// Hardness: mg/L as CaCO₃ per mmol/L of Ca²⁺ and Mg²⁺ (CaCO₃ 100.0869, IUPAC 2007).
@@ -55,6 +62,8 @@ pub enum Source {
     Salinity,
     Alkalinity,
     Seawater,
+    /// Nothing measured: an ionic strength of 0 (v1's ideal fresh water).
+    Nothing,
 }
 
 impl Source {
@@ -66,6 +75,7 @@ impl Source {
             Source::Salinity => "salinity",
             Source::Alkalinity => "alkalinity",
             Source::Seawater => "seawater",
+            Source::Nothing => "none",
         }
     }
 }
@@ -84,40 +94,69 @@ fn present(value: Option<f64>) -> Result<Option<f64>, ChemError> {
     }
 }
 
-/// The ionic strength (mol/L) of a water and where it came from (the module's list). Refuses a non-finite input, a
-/// negative conductivity, hardness or alkalinity, and on the fresh-water path an ionic strength above `DAVIES_MAX`.
-pub fn ionic_strength(salinity: f64, alkalinity_mg_l: f64, ions: Ions) -> Result<(f64, Source), ChemError> {
-    let (strength, source) = any_ionic_strength(salinity, alkalinity_mg_l, ions)?;
-    if source != Source::Seawater && strength > DAVIES_MAX {
+/// The share of the seawater path in a water's constants: 0 up to `FRESH_UP_TO`, 1 from `SEA_FROM`, linear between.
+pub fn sea_weight(salinity: f64) -> f64 {
+    if salinity <= FRESH_UP_TO {
+        0.0
+    } else if salinity >= SEA_FROM {
+        1.0
+    } else {
+        (salinity - FRESH_UP_TO) / (SEA_FROM - FRESH_UP_TO)
+    }
+}
+
+/// The ionic strength (mol/L) of a water and where it came from: the sea's from `SEA_FROM` (DOE 1994), else the fresh
+/// path's (`fresh_ionic_strength`). Refuses a non-finite input, a negative salinity, conductivity, hardness or
+/// alkalinity, and on the fresh path an ionic strength above `DAVIES_MAX`.
+pub fn ionic_strength(salinity: f64, alkalinity_mg_l: Option<f64>, ions: Ions) -> Result<(f64, Source), ChemError> {
+    if finite(salinity)? >= SEA_FROM {
+        return Ok((c::ionic_strength(salinity)?, Source::Seawater));
+    }
+    fresh_ionic_strength(salinity, alkalinity_mg_l, ions)
+}
+
+/// The fresh path's ionic strength (the module's rule: the estimate unless the measured ions' bound is larger).
+pub fn fresh_ionic_strength(
+    salinity: f64,
+    alkalinity_mg_l: Option<f64>,
+    ions: Ions,
+) -> Result<(f64, Source), ChemError> {
+    let salinity = finite(salinity)?;
+    let alkalinity = present(alkalinity_mg_l)?;
+    let conductivity = present(ions.conductivity_us_cm)?;
+    let hardness = present(ions.hardness_mg_l)?;
+    if salinity < 0.0
+        || [alkalinity, conductivity, hardness]
+            .iter()
+            .any(|value| value.is_some_and(|v| v < 0.0))
+    {
+        return Err(ChemError::Domain);
+    }
+    let bicarbonate = div(alkalinity.unwrap_or(0.0), MG_CACO3_PER_MEQ)?;
+    let bound = match (hardness, alkalinity) {
+        (Some(hardness), _) => {
+            let divalent = div(hardness, MG_CACO3_PER_MMOL)?;
+            let balance = libm::fabs(2.0 * divalent - bicarbonate);
+            Some((0.5e-3 * (4.0 * divalent + bicarbonate + balance), Source::Hardness))
+        }
+        (None, Some(_)) => Some((bicarbonate / 1000.0, Source::Alkalinity)),
+        (None, None) => None,
+    };
+    let estimate = match conductivity {
+        Some(kappa) => Some((IONIC_PER_MICROSIEMENS * kappa, Source::Conductivity)),
+        None if salinity > 0.0 => Some((c::ionic_strength(salinity)?, Source::Salinity)),
+        None => None,
+    };
+    let (strength, source) = match (estimate, bound) {
+        (Some(estimate), Some(bound)) if bound.0 > estimate.0 => bound,
+        (Some(estimate), _) => estimate,
+        (None, Some(bound)) => bound,
+        (None, None) => (0.0, Source::Nothing),
+    };
+    if strength > DAVIES_MAX {
         return Err(ChemError::OutOfRange);
     }
     Ok((strength, source))
-}
-
-fn any_ionic_strength(salinity: f64, alkalinity_mg_l: f64, ions: Ions) -> Result<(f64, Source), ChemError> {
-    let salinity = finite(salinity)?;
-    let alkalinity_mg_l = finite(alkalinity_mg_l)?;
-    let conductivity = present(ions.conductivity_us_cm)?;
-    let hardness = present(ions.hardness_mg_l)?;
-    if salinity >= FRESH_BELOW {
-        return Ok((c::ionic_strength(salinity)?, Source::Seawater));
-    }
-    if alkalinity_mg_l < 0.0 || conductivity.is_some_and(|k| k < 0.0) || hardness.is_some_and(|h| h < 0.0) {
-        return Err(ChemError::Domain);
-    }
-    let bicarbonate = div(alkalinity_mg_l, MG_CACO3_PER_MEQ)?;
-    if let Some(kappa) = conductivity {
-        return Ok((IONIC_PER_MICROSIEMENS * kappa, Source::Conductivity));
-    }
-    if let Some(hardness) = hardness {
-        let divalent = div(hardness, MG_CACO3_PER_MMOL)?;
-        let balance = libm::fabs(2.0 * divalent - bicarbonate);
-        return Ok((0.5e-3 * (4.0 * divalent + bicarbonate + balance), Source::Hardness));
-    }
-    if salinity > 0.0 {
-        return Ok((c::ionic_strength(salinity)?, Source::Salinity));
-    }
-    Ok((bicarbonate / 1000.0, Source::Alkalinity))
 }
 
 /// The dielectric constant (relative permittivity) of water at a temperature (°C): Malmberg & Maryott (1956), J. Res.
@@ -165,18 +204,16 @@ pub fn davies_log_gamma(temp_c: f64, ionic_strength: f64, charge: f64) -> R {
     Ok(-a * charge * charge * (div(root, 1.0 + root)? - DAVIES * i))
 }
 
-/// The v3 equilibria of a water (the module's rules) with its ionic strength and where it came from; from a salinity of
-/// `FRESH_BELOW` on, `chemistry::equilibria` itself.
-pub fn equilibria_v3(
+/// The fresh path's equilibria of a water with its ionic strength and where it came from: the thermodynamic constants
+/// made concentration constants with Davies activity coefficients (the module's rules), at any salinity below
+/// `SEA_FROM` (`equilibria_v3` blends them with the sea's from `FRESH_UP_TO`).
+pub fn fresh_equilibria(
     temp_c: f64,
     salinity: f64,
-    alkalinity_mg_l: f64,
+    alkalinity_mg_l: Option<f64>,
     ions: Ions,
 ) -> Result<(Equilibria, f64, Source), ChemError> {
-    let (strength, source) = ionic_strength(salinity, alkalinity_mg_l, ions)?;
-    if source == Source::Seawater {
-        return Ok((c::equilibria_with(temp_c, salinity, &debye_huckel_a)?, strength, source));
-    }
+    let (strength, source) = fresh_ionic_strength(salinity, alkalinity_mg_l, ions)?;
     let temp_c = finite(temp_c)?;
     let one = davies_log_gamma(temp_c, strength, 1.0)?;
     let gamma_one_squared = pow(10.0, 2.0 * one)?;
@@ -195,6 +232,10 @@ pub fn equilibria_v3(
         ksp_calcite: c::ksp_calcite(temp_c, salinity)?,
         ksp_aragonite: c::ksp_aragonite(temp_c, salinity)?,
     };
+    checked(eq).map(|eq| (eq, strength, source))
+}
+
+fn checked(eq: Equilibria) -> Result<Equilibria, ChemError> {
     for value in [
         eq.ph_offset,
         eq.k1,
@@ -208,5 +249,43 @@ pub fn equilibria_v3(
     ] {
         finite(value)?;
     }
-    Ok((eq, strength, source))
+    Ok(eq)
+}
+
+/// A constant of the band: the geometric blend of the fresh and the sea path's, `weight` the sea's.
+fn blend(fresh: f64, sea: f64, weight: f64) -> R {
+    exp((1.0 - weight) * ln(fresh)? + weight * ln(sea)?)
+}
+
+/// The formula 3 equilibria of a water (the module's rules) with its ionic strength and where it came from: the fresh
+/// path up to `FRESH_UP_TO`, the sea path from `SEA_FROM` (v1's constants, the NBS conversion with the temperature's
+/// A), each constant blended between (the pH offset, a logarithm, linearly; the rest geometrically). In the band the
+/// ionic strength and its source are the fresh path's.
+pub fn equilibria_v3(
+    temp_c: f64,
+    salinity: f64,
+    alkalinity_mg_l: Option<f64>,
+    ions: Ions,
+) -> Result<(Equilibria, f64, Source), ChemError> {
+    let weight = sea_weight(finite(salinity)?);
+    if weight >= 1.0 {
+        let (strength, source) = ionic_strength(salinity, alkalinity_mg_l, ions)?;
+        return Ok((c::equilibria_with(temp_c, salinity, &debye_huckel_a)?, strength, source));
+    }
+    let (fresh, strength, source) = fresh_equilibria(temp_c, salinity, alkalinity_mg_l, ions)?;
+    if weight <= 0.0 {
+        return Ok((fresh, strength, source));
+    }
+    let sea = c::equilibria_with(temp_c, salinity, &debye_huckel_a)?;
+    let eq = Equilibria {
+        ph_offset: (1.0 - weight) * fresh.ph_offset + weight * sea.ph_offset,
+        k1: blend(fresh.k1, sea.k1, weight)?,
+        k2: blend(fresh.k2, sea.k2, weight)?,
+        kw: blend(fresh.kw, sea.kw, weight)?,
+        kb: blend(fresh.kb, sea.kb, weight)?,
+        k_nh4: blend(fresh.k_nh4, sea.k_nh4, weight)?,
+        k_h2s: blend(fresh.k_h2s, sea.k_h2s, weight)?,
+        ..sea
+    };
+    checked(eq).map(|eq| (eq, strength, source))
 }

@@ -376,16 +376,23 @@ fn ions(conductivity_us_cm: Option<f64>, hardness_mg_l: Option<f64>) -> f::Ions 
 
 /// (ionic strength mol/L, its source's code) of a water by v3's rules.
 #[pyfunction]
-#[pyo3(signature = (salinity, alkalinity_mg_l, conductivity_us_cm=None, hardness_mg_l=None))]
+#[pyo3(signature = (salinity, alkalinity_mg_l=None, conductivity_us_cm=None, hardness_mg_l=None))]
 fn fresh_ionic_strength(
     salinity: f64,
-    alkalinity_mg_l: f64,
+    alkalinity_mg_l: Option<f64>,
     conductivity_us_cm: Option<f64>,
     hardness_mg_l: Option<f64>,
 ) -> PyResult<(f64, &'static str)> {
     let (strength, source) =
         f::ionic_strength(salinity, alkalinity_mg_l, ions(conductivity_us_cm, hardness_mg_l)).map_err(err)?;
     Ok((ok(Ok(strength))?, source.code()))
+}
+
+/// The seawater path's share in a water's constants at a salinity (formula 3's band).
+#[pyfunction]
+fn sea_weight(salinity: f64) -> PyResult<f64> {
+    inputs(&[salinity])?;
+    Ok(f::sea_weight(salinity))
 }
 
 /// The dielectric constant of water at a temperature (Malmberg & Maryott 1956).
@@ -415,11 +422,11 @@ fn davies_log_gamma(temp_c: f64, ionic_strength: f64, charge: f64) -> PyResult<f
 
 /// The v3 equilibria of a water (the application reads `equilibria`, v1).
 #[pyfunction]
-#[pyo3(signature = (temp_c, salinity, alkalinity_mg_l, conductivity_us_cm=None, hardness_mg_l=None))]
+#[pyo3(signature = (temp_c, salinity, alkalinity_mg_l=None, conductivity_us_cm=None, hardness_mg_l=None))]
 fn equilibria_v3(
     temp_c: f64,
     salinity: f64,
-    alkalinity_mg_l: f64,
+    alkalinity_mg_l: Option<f64>,
     conductivity_us_cm: Option<f64>,
     hardness_mg_l: Option<f64>,
 ) -> PyResult<Equilibria> {
@@ -1042,7 +1049,8 @@ fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("H2S_PER_S", c::H2S_PER_S)?;
     module.add("SOLVER_PH", c::SOLVER_PH)?;
     module.add("AIR_CO2", c::AIR_CO2)?;
-    module.add("FRESH_BELOW", f::FRESH_BELOW)?;
+    module.add("FRESH_UP_TO", f::FRESH_UP_TO)?;
+    module.add("SEA_FROM", f::SEA_FROM)?;
     module.add("DAVIES_MAX", f::DAVIES_MAX)?;
     module.add_class::<Equilibria>()?;
     module.add_function(wrap_pyfunction!(version, module)?)?;
@@ -1098,6 +1106,7 @@ fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
         wrap_pyfunction!(saturation_index, module)?,
         wrap_pyfunction!(fresh_ionic_strength, module)?,
         wrap_pyfunction!(davies_log_gamma, module)?,
+        wrap_pyfunction!(sea_weight, module)?,
         wrap_pyfunction!(dielectric_constant, module)?,
         wrap_pyfunction!(water_density, module)?,
         wrap_pyfunction!(debye_huckel_a, module)?,

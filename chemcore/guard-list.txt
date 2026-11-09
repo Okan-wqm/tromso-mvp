@@ -9,7 +9,7 @@ name DAVIES_MAX
 name DEBYE_HUCKEL
 name DEFAULT_REAGENTS
 name FORMULA_VERSION
-name FRESH_BELOW
+name FRESH_UP_TO
 name H2S_PER_S
 name IONIC_PER_MICROSIEMENS
 name LABEL_AT
@@ -22,6 +22,7 @@ name MG_CALCIUM_PER_MOL
 name MG_CO2_PER_MMOL
 name OMEGA_SALINITY
 name PH_RANGE
+name SEA_FROM
 name SOLVER_PH
 name activity_coefficient_h
 name activity_coefficient_h_with
@@ -46,6 +47,8 @@ name equilibria_v3
 name equilibria_with
 name free_to_sws
 name free_to_total
+name fresh_equilibria
+name fresh_ionic_strength
 name from_code
 name h2s_assessed
 name h2s_plot
@@ -86,6 +89,7 @@ name safe_zone
 name safe_zone_gaps
 name saturation_index
 name saturation_plot
+name sea_weight
 name sws_to_nbs
 name total_boron
 name total_fluoride

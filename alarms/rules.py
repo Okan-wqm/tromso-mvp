@@ -18,7 +18,8 @@ from decimal import Decimal
 
 from sensors.models.alarm import Severity
 
-from .models import ATTEMPTS_BOUNDS, DELAY_BOUNDS, ESCALATION_BOUNDS, ParameterDeadband, SeverityPolicy
+from .models import (ATTEMPTS_BOUNDS, DELAY_BOUNDS, ESCALATION_BOUNDS, ON_DELAY_BOUNDS, ParameterDeadband,
+                     SeverityPolicy)
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ class Rules:
     def on_delay(self, severity):
         """How long a condition must hold before the alarm is raised (missing row: at once)."""
         policy = self.policies.get(severity)
-        return timedelta(seconds=policy.on_delay_seconds if policy is not None else DELAY_BOUNDS[0])
+        return timedelta(seconds=policy.on_delay_seconds if policy is not None else ON_DELAY_BOUNDS[severity][0])
 
     def off_delay(self, severity):
         """How long a condition must be over before the alarm clears."""
@@ -51,7 +52,7 @@ class Rules:
 
     def escalation_after(self, severity):
         """How long a level waits for an acknowledgement before the next level is notified."""
-        return timedelta(minutes=self._value(severity, 'escalation_minutes', min, ESCALATION_BOUNDS[0]))
+        return timedelta(minutes=self._value(severity, 'escalation_minutes', min, ESCALATION_BOUNDS[severity][0]))
 
     def delivery_attempts(self, severity):
         """How many times a failing transport is tried with one notification."""

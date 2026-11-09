@@ -304,11 +304,40 @@ class Acknowledgement(models.Model):
 
 
 # ---- the rules: the user's reference data (owner, alarm plan §7c) ---------------------------------------------------
-# What a row may hold, the database's refusal of nonsense; the values themselves are the user's (seeded by migration 0002
-# with the owner's defaults, alarm plan §7a).
-DELAY_BOUNDS = (0, 3600)            # seconds
-ESCALATION_BOUNDS = (1, 1440)       # minutes
+# What a row may hold, the model's and the database's refusal of unsafe values (cross review F9); the values themselves
+# are the user's (seeded by migration 0002 with the owner's defaults, alarm plan §7a).
+# Clear after (seconds), both severities: a longer clear delay only keeps an alarm open longer, the safe side.
+DELAY_BOUNDS = (0, 3600)
+# Raise after (seconds), per severity. A critical alarm is raised within the owner's 10 s target (alarm plan §2.4; §7a Q3
+# set it to 0 s: "the 10 s rule wins over spike filtering"): a longer on-delay would hide a low oxygen past the target.
+# A warning held back more than 15 min is a report, not an alarm (EEMUA 191: an alarm asks for a timely response).
+ON_DELAY_BOUNDS = {Severity.CRITICAL: (0, 10), Severity.WARNING: (0, 900)}
+# Escalate after (minutes), per severity: a critical alarm nobody acknowledged goes to the next level within 30 min (six
+# times the owner's 5 min, §7a Q7); a warning within a day.
+ESCALATION_BOUNDS = {Severity.CRITICAL: (1, 30), Severity.WARNING: (1, 1440)}
 ATTEMPTS_BOUNDS = (1, 20)
+# Past these, inside the bounds, a value is shown with a warning on the rules' page, never refused: the alarm protects less
+# than the owner's decisions (§7a: critical at once and escalated after 5 min, warning after 30 s and 30 min) intended.
+USUAL_BOUNDS = {Severity.CRITICAL: {'on_delay_seconds': 0, 'escalation_minutes': 15},
+                Severity.WARNING: {'on_delay_seconds': 300, 'escalation_minutes': 120}}
+
+
+def _per_severity(field, bounds):
+    """The database's check of a field whose bounds are per severity."""
+    condition = Q(pk__in=[])
+    for severity, (low, high) in bounds.items():
+        condition |= Q(severity=severity, **{f'{field}__gte': low, f'{field}__lte': high})
+    return condition
+
+
+def _deadband_ceiling():
+    """The database's check of a deadband: at most its parameter's whole plausible range (farm/water/parameters.py)."""
+    from farm.water import parameters
+    condition = Q(pk__in=[])
+    for code, _label in LIMIT_CHOICES:
+        measure = parameters.get(code)
+        condition |= Q(parameter=code, deadband__lte=measure.high - measure.low)
+    return condition
 
 
 class SeverityPolicy(AuditedModel):
@@ -318,13 +347,10 @@ class SeverityPolicy(AuditedModel):
     and how many times a failing transport is tried with one notification."""
 
     severity = models.CharField(_('Severity'), max_length=10, choices=Severity.choices, editable=False)
-    on_delay_seconds = models.PositiveIntegerField(
-        _('Raise after (seconds)'), validators=[MinValueValidator(DELAY_BOUNDS[0]), MaxValueValidator(DELAY_BOUNDS[1])])
+    on_delay_seconds = models.PositiveIntegerField(_('Raise after (seconds)'))
     off_delay_seconds = models.PositiveIntegerField(
         _('Clear after (seconds)'), validators=[MinValueValidator(DELAY_BOUNDS[0]), MaxValueValidator(DELAY_BOUNDS[1])])
-    escalation_minutes = models.PositiveIntegerField(
-        _('Escalate after (minutes)'),
-        validators=[MinValueValidator(ESCALATION_BOUNDS[0]), MaxValueValidator(ESCALATION_BOUNDS[1])])
+    escalation_minutes = models.PositiveIntegerField(_('Escalate after (minutes)'))
     delivery_attempts = models.PositiveIntegerField(
         _('Delivery attempts'), validators=[MinValueValidator(ATTEMPTS_BOUNDS[0]), MaxValueValidator(ATTEMPTS_BOUNDS[1])])
 
@@ -336,12 +362,12 @@ class SeverityPolicy(AuditedModel):
         constraints = [
             models.UniqueConstraint(fields=['severity'], name='uq_alarm_severity_policies_severity'),
             models.CheckConstraint(condition=Q(severity__in=Severity.values), name='chk_alarm_severity_policies_severity'),
-            models.CheckConstraint(condition=Q(on_delay_seconds__gte=DELAY_BOUNDS[0], on_delay_seconds__lte=DELAY_BOUNDS[1],
-                                               off_delay_seconds__gte=DELAY_BOUNDS[0],
+            models.CheckConstraint(condition=Q(off_delay_seconds__gte=DELAY_BOUNDS[0],
                                                off_delay_seconds__lte=DELAY_BOUNDS[1]),
                                    name='chk_alarm_severity_policies_delays'),
-            models.CheckConstraint(condition=Q(escalation_minutes__gte=ESCALATION_BOUNDS[0],
-                                               escalation_minutes__lte=ESCALATION_BOUNDS[1]),
+            models.CheckConstraint(condition=_per_severity('on_delay_seconds', ON_DELAY_BOUNDS),
+                                   name='chk_alarm_severity_policies_on_delay'),
+            models.CheckConstraint(condition=_per_severity('escalation_minutes', ESCALATION_BOUNDS),
                                    name='chk_alarm_severity_policies_escalation'),
             models.CheckConstraint(condition=Q(delivery_attempts__gte=ATTEMPTS_BOUNDS[0],
                                                delivery_attempts__lte=ATTEMPTS_BOUNDS[1]),
@@ -353,6 +379,32 @@ class SeverityPolicy(AuditedModel):
 
     def __str__(self):
         return str(self.get_severity_display())
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        for field, bounds, unit in (('on_delay_seconds', ON_DELAY_BOUNDS, _('seconds')),
+                                    ('escalation_minutes', ESCALATION_BOUNDS, _('minutes'))):
+            value, (low, high) = getattr(self, field), bounds.get(self.severity, (None, None))
+            if value is not None and low is not None and not low <= value <= high:
+                errors[field] = _('For a %(severity)s alarm, from %(low)d to %(high)d %(unit)s.') % {
+                    'severity': self.get_severity_display().lower(), 'low': low, 'high': high, 'unit': unit}
+        if errors:
+            raise ValidationError(errors)
+
+    def advice(self):
+        """What is unusual about the row (USUAL_BOUNDS), said on the rules' page; never a refusal."""
+        usual = USUAL_BOUNDS.get(self.severity, {})
+        found = []
+        name = self.get_severity_display()
+        if self.on_delay_seconds > usual.get('on_delay_seconds', self.on_delay_seconds):
+            found.append(_('%(severity)s: raised %(seconds)d s after the value; usually at most %(usual)d s.') % {
+                'severity': name, 'seconds': self.on_delay_seconds, 'usual': usual['on_delay_seconds']})
+        if self.escalation_minutes > usual.get('escalation_minutes', self.escalation_minutes):
+            found.append(_('%(severity)s: escalated after %(minutes)d min without an acknowledgement; usually at most '
+                           '%(usual)d min.') % {'severity': name, 'minutes': self.escalation_minutes,
+                                                'usual': usual['escalation_minutes']})
+        return found
 
     def soft_delete(self, user):
         raise ValidationError(_('A severity’s alarm rule is changed, never deleted: the alarms of that severity need it.'))
@@ -385,6 +437,8 @@ class ParameterDeadband(AuditedModel):
                                    name='chk_alarm_deadbands_parameter'),
             models.CheckConstraint(condition=Q(deadband__gte=0), name='chk_alarm_deadbands_not_negative',
                                    violation_error_message=_('A deadband is not negative.')),
+            models.CheckConstraint(condition=_deadband_ceiling(), name='chk_alarm_deadbands_ceiling',
+                                   violation_error_message=_('Wider than the parameter’s whole range.')),
         ]
 
     def __str__(self):
@@ -397,6 +451,23 @@ class ParameterDeadband(AuditedModel):
             measure = parameters.get(self.parameter)
             if self.deadband > measure.high - measure.low:
                 raise ValidationError({'deadband': _('Wider than the parameter’s whole range.')})
+
+    def advice(self, limits):
+        """What is unusual about the row, said on the deadbands' page, never a refusal: a deadband more than half the
+        narrowest band of its parameter's live water limits (`limits`) may keep an alarm from ever clearing."""
+        bands = []
+        for row in limits:
+            for inner, outer in ((row.warning_low, row.critical_low), (row.critical_high, row.warning_high),
+                                 (row.warning_high, row.warning_low)):
+                if inner is not None and outer is not None and inner > outer:
+                    bands.append(inner - outer)
+        narrowest = min(bands, default=None)
+        if narrowest is None or self.deadband * 2 <= narrowest:
+            return []
+        return [_('%(parameter)s: the deadband %(deadband)s is more than half the narrowest band of its water limits '
+                  '(%(band)s): an alarm on it may never clear.') % {
+            'parameter': self.get_parameter_display(), 'deadband': self.deadband.normalize(),
+            'band': narrowest.normalize()}]
 
 
 # The tables a database trigger keeps append-only (migration 0001).

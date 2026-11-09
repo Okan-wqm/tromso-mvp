@@ -5,6 +5,7 @@
 {% block search_placeholder %}{% trans "Search" %}{% endblock %}
 {% block empty_text %}{% trans "A parameter without a deadband clears its alarm as soon as a fresh value is back inside the limit." %}{% endblock %}
 {% block items %}
+{% for line in advice %}<p class="notice notice-warning">{{ line }}</p>{% endfor %}
 <div class="table-wrap">
   <table class="data-table">
     <thead><tr><th scope="col">{% trans "Parameter" %}</th><th scope="col" class="num">{% trans "Deadband" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>

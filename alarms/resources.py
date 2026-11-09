@@ -39,6 +39,11 @@ class SeverityPolicyResource(Resource):
     list_template = 'alarms/severitypolicy_list.html'
     icon = 'timer'
 
+    @classmethod
+    def filter_list(cls, request, objects):
+        """The unusual values of the rows (SeverityPolicy.advice), shown above them."""
+        return objects, {'advice': [line for policy in objects for line in policy.advice()]}
+
 
 class ParameterDeadbandResource(Resource):
     """The deadband of each water parameter (Company › Alarms › Alarm deadbands)."""
@@ -49,3 +54,12 @@ class ParameterDeadbandResource(Resource):
     url_prefix = 'alarms/deadbands'
     list_template = 'alarms/parameterdeadband_list.html'
     icon = 'gauge'
+
+    @classmethod
+    def filter_list(cls, request, objects):
+        """The unusual deadbands (ParameterDeadband.advice against the live water limits), shown above them."""
+        from farm.models import WaterLimit
+        limits = {}
+        for row in WaterLimit.objects.all():
+            limits.setdefault(row.parameter, []).append(row)
+        return objects, {'advice': [line for row in objects for line in row.advice(limits.get(row.parameter, []))]}

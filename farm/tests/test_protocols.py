@@ -432,6 +432,17 @@ class BoardTests(WorkedExampleTestCase):
         WaterMeasurement.all_objects.all().delete()                        # none ever recorded: no ration
         self.assertEqual(self.board_line()[2]['why'], 'No temperature recorded here yet: record one.')
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
+    def test_the_board_prints_a_stale_temperatures_age_warning_under_its_chip(self):
+        """A11 on the page: the stale chip (clock and word) and under it the sentence the ration is based on, with its age."""
+        WaterMeasurement.all_objects.all().delete()
+        self.water('13.0', unit=self.t2, hours=24 * 5)
+        response, row, _line = self.board_line()
+        warning = row['temperature'].warning
+        self.assertIn('(5 days old)', warning)
+        self.assertTrue(warning.startswith('Based on the temperature from '))
+        self.assertContains(response, f'stale</span><span class="ui-why ui-mt">{warning}</span>', count=1)
+
 
 class PrecedenceTests(ProtocolTestCase):
     def test_a_units_row_wins_over_the_batchs_and_a_whole_batch_row_follows_a_transfer(self):

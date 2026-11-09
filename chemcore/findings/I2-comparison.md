@@ -68,8 +68,27 @@ pH farkı: serbest pH − ölçülen (NBS) pH; v1'de tatlı suda hep 0.
 - **Uygulamada iletkenlik ve sertlik henüz suyun girdisi değil**: iletkenlik bir sensör büyüklüğü olarak var
   (`conductivity_us_cm`), sertlik hiç yok. v3'e geçmek, okuma tarafında bu değerleri suya bağlamayı da gerektirir.
 - **Sıcaklığa bağlı dielektrik sabiti (I1)** hâlâ sabit 79; v3 yalnız iyonik şiddeti değiştirsin diye ona
-  dokunulmadı.
+  dokunulmadı. Bunun 12 °C'deki etkisi küçük değil: aşağıdaki koşul 1.
 - Ω (kalsit/aragonit) çizgileri 5 ‰'nin altında zaten çizilmiyor; v3 Ksp'ye dokunmuyor.
+
+## v3'ü açmadan önce koşullar (çapraz inceleme, 2026-11-09)
+
+Bunlar yerine gelmeden v3 uygulamaya bağlanmamalı:
+
+1. **Sıcaklığa bağlı dielektrik sabiti (I1, inceleme F2).** Davies'in A katsayısı sabit ε = 79 ile hesaplanıyor; bu
+   yalnız 25 °C civarında doğru (A ≈ 0,503; literatür 0,509). Çiftlik sıcaklıklarında A fazla çıkıyor: 12 °C'de
+   yaklaşık %7,5, 2 °C'de %15 (Malmberg & Maryott 1956'nın ε(t)'siyle gerçek A 12 °C'de ≈ 0,500, 2 °C'de ≈ 0,493;
+   sabit 79 ile 0,538 ve 0,568). log γ, A ile orantılı olduğundan yukarıdaki tablodaki 12 °C kaymaları kendi
+   büyüklüklerinin **%7–8'i kadar abartılı**: örneğin tipik tatlı suda CO₂ −%7,6 yerine yaklaşık −%7,0. Koşul: ε(t)'yi
+   çekirdeğe almak (I1'i kapatmak) ve Davies/A için 5 °C ve 12 °C'de tablo değerlerine karşı testler eklemek; bugünkü
+   testler yalnız 25 °C'de olduğu için soğuk sudaki hatayı göstermiyor.
+2. **İyonik şiddet sınırı (F3, yapıldı).** Davies yaklaşık I ≤ 0,5'e kadar geçerli. Tatlı su yolu artık 0,5'in üstünü
+   açık bir hatayla reddediyor ("ionic strength above 0.5"): örneğin tuzluluğu girilmemiş bir deniz suyunun
+   iletkenliği ya da µS/cm yerine mS/cm okunması. Önceden 1 000 000 µS/cm sessizce +2,15'lik bir pH farkı veriyordu.
+3. **İletkenlik 25 °C'ye göre düzeltilmiş olmalı (F8).** 1,6 × 10⁻⁵ katsayısı 25 °C'deki özgül iletkenlik içindir.
+   v3 bağlandığında yalnız sıcaklık telafili (25 °C) iletkenlik okunmalı ya da önce telafi edilmeli; ham iletkenlik
+   soğuk suda iyonik şiddeti olduğundan düşük gösterir.
+4. **Okuma tarafı.** İletkenlik ve sertlik suyun girdisi olarak bağlanmalı (yukarıda, zayıf noktalar).
 
 ## Karar için seçenekler
 

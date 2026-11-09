@@ -2779,7 +2779,8 @@ controls are the UI's, not built here):
   salinity of fresh water the assumption; else missing. Nothing is interpolated or carried past its freshness. A moved
   sensor counts for the place it was in.
 - One query of the readings per tier and page. Below an hour each frame gets, per channel, what the live view's rule
-  (`value_at`) gives at its moment: the newest clean reading at or before it, taken while the channel was bound there,
+  (`value_at`) gives at its moment: the newest clean reading at or before it, taken while the channel was bound there
+  (among one place's stays of a channel moved away and back, the newest),
   when it is no older than the channel's freshness (`sensors/tests/test_replay.py` ValueAtTests holds the two equal on
   irregular readings at every raw step). At a step of 5 s or less the page's span is read, the last reading of each step
   kept; at a longer step one indexed look-up per frame and channel (the primary key read backwards), so a page reads
@@ -3423,7 +3424,12 @@ temperature (a synthetic page: 54 different temperatures, 99 to 164 ms, 128 KB c
   `farm/tests/test_golden_v3.py` holds the core to it bit for bit, Davies to the literature's values, and the
   application to v1. The comparison for the owner, in Turkish, is `chemcore/findings/I2-comparison.md`: in fresh
   water v3 shows 3 to 13 % less CO₂ and NH₃ share, and at the 5 ‰ boundary a salinity-only brackish water jumps by
-  6 % (the comparison recommends a boundary of 1 ‰).
+  6 % (the comparison recommends a boundary of 1 ‰). The fresh path refuses an ionic strength above 0.5, the Davies
+  limit (`DAVIES_MAX`, a ValueError that says so). Conditions before v3 is switched on (cross review 2026-11-09, in
+  the comparison): a temperature-dependent dielectric constant (I1) with Davies checked at 5 and 12 °C, since the
+  fixed 79 makes A 7.5 % too large at 12 °C and 15 % at 2 °C, so the 12 °C shifts in the comparison are about 7 to
+  8 % of themselves too large; only temperature-compensated (25 °C) conductivity read; conductivity and hardness
+  wired as inputs of the water.
 - *Anchors* (`chemcore/golden/anchors.json`): the constants and a carbonate chain at three waters, worked out at 50
   digits with mpmath (`chemcore/scripts/anchors_mpmath.py`, mpmath pinned by hash in `anchors.lock`, run once, never
   by the server) from the formulas typed from the papers, each paper's check value asserted first. Today's Python
@@ -3507,7 +3513,9 @@ spread is wide):
 | 5 s | 2.1 to 3.1 s | 2.4 to 3.1 s | 0.58 to 0.91 s | 0.59 to 0.83 s |
 | 60 s | 8.7 to 12.5 s | 2.4 to 3.8 s | 6.7 to 9.6 s | 0.55 to 1.06 s |
 
-(On 2026-11-08, on a busier machine, the old 60 s page had taken 44 to 62 s.) What is left of a 60 s page is, besides
+These are warm figures (the database's pages in memory): a cross review read cold windows at 2.5 to 5.7 s for
+1 600 to 1 800 look-ups, about 40 µs a look-up once warm. (On 2026-11-08, on a busier machine, the old 60 s page had
+taken 44 to 62 s.) What is left of a 60 s page is, besides
 the readings, the figures (0.6 to 1.3 s), the bindings read per input (0.4 to 0.5 s) and the 2000 analyses (0.2 to
 0.5 s): the next levers are the one batch call of S9 and fewer binding queries. On a synthetic page (2000 frames, 54
 temperatures) the figures take 131 ms and the page is 746 KB of JSON, 169 KB gzipped. Real pages as the endpoint sends

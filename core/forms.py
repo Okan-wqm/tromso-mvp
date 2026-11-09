@@ -168,6 +168,8 @@ class PlatformSettingsForm(TabbedForm):
                                         'a movement of the store, a plan, a treatment) may be dated, and how old a record '
                                         'may be voided. Older records stay as they are. 1 to 3650; 31 until you set '
                                         'another.'),
-            'second_approval_withdrawal': _('When ticked, a harvest during a medicine withdrawal goes on only after a second '
-                                            'person who may approve it has approved the acknowledgement.'),
+            'second_approval_withdrawal': _('When ticked, going on past a medicine withdrawal (a harvest during one, a '
+                                            'treatment reaching back over a harvest) needs a second person’s approval. '
+                                            'That approval is not built yet: while this is ticked, every such step is '
+                                            'refused, so nobody goes on alone.'),
         }

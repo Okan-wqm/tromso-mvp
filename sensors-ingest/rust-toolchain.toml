@@ -1,0 +1,7 @@
+# The toolchain every build and check of the ingest uses: the release image (Dockerfile, rust:1.88.0), tests/run.sh
+# (sensors-ingest-dev:1.88) and CI (.github/workflows/ci.yml) all build with it, and it is the crate's rust-version.
+# Move them together (README, CI and dependency updates).
+[toolchain]
+channel = "1.88.0"
+components = ["clippy", "rustfmt"]
+profile = "minimal"

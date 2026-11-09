@@ -33,6 +33,8 @@ allow-wildcard-paths = true
 deny = [
     # non-commercial licence (owner rule A3, as in sensors-ingest)
     { crate = "rodbus" },
+    # MinIO (the server is AGPL-3.0; owner rule, as in sensors-ingest), whatever the SDK's own licence
+    { crate = "minio" },
     # owner amendment B2: no WebAssembly build of the chemistry, ever
     { crate = "wasm-bindgen" },
     { crate = "js-sys" },

@@ -16,7 +16,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import models
-from django.db.models import F, Q
+from django.db.models import FETCH_PEERS, F, Q
 from django.db.models.functions import Cast
 from django.db.models.lookups import IContains
 from django.urls import reverse
@@ -191,8 +191,10 @@ class Grid:
     def labels(column, values):
         """{stored value: the record's name} for the records a link column points at."""
         target = column.field.target_field
+        # A record's name may read its own links (any model's __str__): fetched once for the whole page (FETCH_PEERS),
+        # where select_related() without fields, deprecated in Django 6.1, joined every non-null link up front.
         records = column.field.related_model._base_manager.filter(
-            **{f'{target.attname}__in': {value for value in values if value is not None}}).select_related()
+            **{f'{target.attname}__in': {value for value in values if value is not None}}).fetch_mode(FETCH_PEERS)
         return {getattr(record, target.attname): str(record) for record in records}
 
     @staticmethod

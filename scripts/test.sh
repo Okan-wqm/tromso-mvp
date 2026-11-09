@@ -5,7 +5,10 @@
 #   scripts/test.sh farm.tests.test_stock core        only these labels (any `manage.py test` argument passes through)
 #   WORKERS=1 scripts/test.sh                         one process, as `manage.py test` without --parallel
 #   KEEP_DB=1 scripts/test.sh ...                     leave the database server running afterwards (for a look inside)
+#   CHECKS=1 scripts/test.sh                          the project checks first, as CI runs them (in-container.sh)
+#   CHECKS=1 SUITE=0 scripts/test.sh                  the project checks only, no tests (CI on a pull request)
 #
+# Deprecation warnings and naive datetimes are errors (scripts/testrunner/in-container.sh, config/test_runner.py).
 # Each run starts its own database server (the development database's image, timescale/timescaledb:2.17.2-pg17) in a
 # container named balik-test-db-<run>, on a network of its own, with its data in memory, and removes both at the end.
 # So a run never touches the development database `balik`, its server or its volume, never meets another run's test
@@ -17,28 +20,27 @@
 #       so no job runs behind a test's back either.
 #   fsync, synchronous_commit, full_page_writes off  the data lives only as long as the run (crash safety buys nothing).
 #   max_connections=200  one connection per worker and the few a test opens itself, far below it.
-# The tests run in the image built from docker/testrunner.Dockerfile, its `tests` stage: the project's requirements
-# (hashed), the water-chemistry core built from this checkout (chemcore/: no server starts without it, README,
-# Water-chemistry core) and tblib. It is tagged by a hash of everything it is built from, so a change to the core or
-# to a requirement builds a new one; built when missing.
+# Its password is TEST_DB_PASSWORD (default balik; CI passes a random one): the server has no host port either way.
+# The tests run in the test runner's image, built when missing: the `tests` stage of docker/testrunner.Dockerfile, with
+# the project's requirements (hashed), the water-chemistry core built from this checkout (chemcore/: no server starts
+# without it, README, Water-chemistry core) and tblib. What it is built from and its tag (a hash of all of that, so a
+# change to the core or to a requirement builds a new one) are scripts/testrunner/image.sh's, which CI builds it by too.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 export MSYS_NO_PATHCONV=1
 win() { cygpath -w "$1" 2>/dev/null || echo "$1"; }
 REPO=$(win "$PWD")
 WORKERS=${WORKERS:-6}
+CHECKS=${CHECKS:-0}
+SUITE=${SUITE:-1}
+DB_PASSWORD=${TEST_DB_PASSWORD:-balik}
 PG_IMAGE=timescale/timescaledb:2.17.2-pg17
 RUN=${RUN_ID:-$(date +%Y%m%d%H%M%S)-$$}
 DB=balik-test-db-$RUN
 NET=balik-test-$RUN
 TESTS=balik-test-run-$RUN
 
-HASH=$( { cat requirements.txt docker/* scripts/testrunner/requirements.txt;
-          find chemcore -type f ! -path 'chemcore/target/*' | sort | xargs cat; } | sha256sum | cut -c1-12)
-IMAGE=balik-testrunner-chemcore:req-$HASH
-if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
-  docker build -q -f docker/testrunner.Dockerfile --target tests -t "$IMAGE" "$REPO" >/dev/null
-fi
+IMAGE=$(sh scripts/testrunner/image.sh build)
 
 cleanup() {
   docker rm -f "$TESTS" >/dev/null 2>&1 || true
@@ -54,7 +56,7 @@ trap 'exit 130' INT TERM
 
 docker network create "$NET" >/dev/null
 docker run -d --name "$DB" --network "$NET" --tmpfs /var/lib/postgresql/data:rw,size=${DB_TMPFS:-8g} \
-  -e POSTGRES_USER=balik -e POSTGRES_PASSWORD=balik -e POSTGRES_DB=postgres "$PG_IMAGE" \
+  -e POSTGRES_USER=balik -e POSTGRES_PASSWORD="$DB_PASSWORD" -e POSTGRES_DB=postgres "$PG_IMAGE" \
   postgres -c timescaledb.telemetry_level=off -c timescaledb.max_background_workers=0 \
   -c fsync=off -c synchronous_commit=off -c full_page_writes=off -c max_connections=200 >/dev/null
 # The image's first start runs its init scripts on a server that listens on no TCP port, then starts the real one.
@@ -69,8 +71,8 @@ parallel=()
 start=$(date +%s)
 status=0
 docker run --rm --name "$TESTS" --network "$NET" -v "$REPO:/app" -w /app \
-  -e DB_HOST="$DB" -e DB_PORT=5432 -e DB_NAME=balik -e DB_USER=balik -e DB_PASSWORD=balik -e DB_TEST_NAME=test_balik \
-  "$IMAGE" sh -c 'python manage.py compile_catalogs >/dev/null && exec python manage.py test --noinput "$@"' sh \
-  "${parallel[@]}" "$@" || status=$?
-echo "scripts/test.sh: workers $WORKERS, $(( $(date +%s) - start )) s, exit $status"
+  -e DB_HOST="$DB" -e DB_PORT=5432 -e DB_NAME=balik -e DB_USER=balik -e DB_PASSWORD="$DB_PASSWORD" \
+  -e DB_TEST_NAME=test_balik -e CHECKS="$CHECKS" -e SUITE="$SUITE" \
+  "$IMAGE" sh scripts/testrunner/in-container.sh "${parallel[@]}" "$@" || status=$?
+echo "scripts/test.sh: workers $WORKERS, checks $CHECKS, suite $SUITE, $(( $(date +%s) - start )) s, exit $status"
 exit $status

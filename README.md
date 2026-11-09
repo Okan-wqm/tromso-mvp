@@ -4215,7 +4215,9 @@ real mail.
 | `static/css/app.css` | Console shell layout |
 | `frontend/`, `tsconfig.json`, `package.json` | Browser code in TypeScript |
 | `tsconfig.test.json`, `scripts/mark-esm.mjs` | The TypeScript unit tests' build (`npm test`) |
-| `scripts/test.sh`, `scripts/testrunner/` | The whole suite in Docker, in parallel, on a database server of its own (Tests) |
+| `scripts/test.sh`, `scripts/testrunner/` | The whole suite in Docker, in parallel, on a database server of its own (Tests); `in-container.sh` the checks and the run inside the container, deprecations as errors |
+| `config/test_runner.py`, `config/tests.py` | The test runner: the parallel suite, fast password hashing, warnings as errors (Tests) |
+| `.github/workflows/ci.yml`, `.github/dependabot.yml`, `sensors-ingest/rust-toolchain.toml`, `scripts/testrunner/image.sh` | CI, dependency updates and the ingest's pinned toolchain (CI and dependency updates) |
 
 ## Tests
 
@@ -4229,9 +4231,10 @@ WORKERS=1 scripts/test.sh                # one process, without --parallel
 
 `scripts/test.sh` starts a PostgreSQL server for the run alone (the development database's image,
 `timescale/timescaledb:2.17.2-pg17`, in a container `balik-test-db-<run>` on a network of its own, no host port, its data in
-memory), runs `manage.py compile_catalogs` and `manage.py test --noinput --parallel $WORKERS` in the image built from
-`docker/testrunner.Dockerfile`, stage `tests` (the hashed requirements, the water-chemistry core built from the checkout and
-`tblib`, tagged by a hash of all it is built from, built when missing), and removes the
+memory), runs `manage.py compile_catalogs` and `manage.py test --noinput --parallel $WORKERS` in the test runner's
+image, stage `tests` of `docker/testrunner.Dockerfile` (the hashed requirements, the water-chemistry core built from the
+checkout and `tblib`; `scripts/testrunner/image.sh` defines it, its Dockerfile, stage, context and a tag hashed from
+everything it is built from, and builds it when missing; CI builds it by the same script), and removes the
 server and the network at the end (`KEEP_DB=1` keeps them). So a run never touches the development database `balik`, its
 server or its volume, never shares test databases, roles or the shared server's 100 connections with another run, and needs
 no `DB_TEST_NAME`. There is no serial-only group: every test runs in the parallel run. Why the run is shaped so:
@@ -4284,3 +4287,87 @@ as ES modules and `node --test` runs it; without Node the test is skipped, under
 (`tsconfig.json`) leaves the tests out, and the no-UI-text rule reads every folder of `frontend/` but the tests. The
 development-only tools and their licences are in [`THIRD_PARTY.md`](THIRD_PARTY.md); none of them is shipped to the browser. Run so, the tests need the database container running (they check the timescaledb extension too); set
 `DB_TEST_NAME` to give a checkout its own test database when two such runs overlap.
+
+**Warnings are errors.** In every test run a `DeprecationWarning`, a `PendingDeprecationWarning` (so every Django
+`RemovedInDjango*Warning`) and Django's "received a naive datetime" `RuntimeWarning` fail the test that raised them, in every
+worker (`config.test_runner.strict_warnings`; its tests are `config/tests.py`). They fail wherever they are raised, so a
+warning a library attributes to its own frame while our call caused it fails too; a library's warning about its own
+internals goes, with its reason, in `THIRD_PARTY_WARNINGS` beside it, where it is reported but does not fail (the list is
+empty: the whole suite raises none). `scripts/test.sh` also runs every command with deprecations as errors from the first
+import (`scripts/testrunner/in-container.sh`), which catches one raised while the models are imported, before the runner
+starts; a plain `manage.py test` has the runner's filters only.
+
+## CI and dependency updates
+
+GitHub Actions (`.github/workflows/ci.yml`) runs five jobs in parallel, `permissions: contents: read`, every action pinned
+to a full commit with its version beside it. No secret is used: the database passwords are throwaway values that live only
+inside the job. When it runs (the owner's decision, 2026-11-08):
+
+- **A pull request into `main`**: the fast jobs only, minutes each: `frontend`, `rust`, `chemcore`, `security` and `python` as the
+  checks without the suite (`SUITE=0`). A newer push to the pull request cancels the older run.
+- **The whole Python suite** (an hour or more on a hosted runner): on every push to `main`, nightly at 06:30 UTC (after
+  06:00: until the golden-card fix G-03 lands, six subtests of `monitoring.tests.test_golden` fail before 06:00 UTC) and
+  by hand (Actions, CI, Run workflow). These runs carry the other four jobs too and are never cancelled.
+
+The python job is the same job on every event, only `SUITE` differs; its logic is in one place, `scripts/test.sh` and
+`scripts/testrunner/in-container.sh`, which a developer runs the same way. The suite itself is not run on a pull request,
+so run `scripts/test.sh` on the branch before asking for a merge.
+
+| Job | What it runs | The same on a developer's machine |
+|---|---|---|
+| `python` | the browser build first (`npm ci`, `npm run build`: `check` fails on core.W001 without `static/js`), then `CHECKS=1 scripts/test.sh` (`SUITE=0` on a pull request) with 4 workers, in the test runner's image (`scripts/testrunner/image.sh`, built with its layers cached): `compile_catalogs` (a fresh checkout has no `.mo`, and core.W002 would fail the check); `manage.py check --fail-level WARNING`; `check --deploy` with production-like settings (DEBUG off, a random key, a host), where any issue but the five still open fails (`DEPLOY_OPEN` in `scripts/testrunner/in-container.sh`: the console mail backend and the four HTTPS settings, until the production settings exist); `makemigrations --check`; `data_map --check`; `update_catalogs`, then `git diff --exit-code -- locale` (the catalogs were up to date); `compile_catalogs`; then, except on a pull request, the whole suite with warnings as errors | `CHECKS=1 SUITE=0 scripts/test.sh` (the checks only) or `CHECKS=1 scripts/test.sh`, then `git diff -- locale` |
+| `frontend` | `npm ci`, `npm run build` (tsc, `tsconfig.json`), `npm test` (the TypeScript tests, the designer's browser test on the runner's Chrome) | the same three |
+| `rust` | in `sensors-ingest/`, on the toolchain of `rust-toolchain.toml` (1.88.0, the release image's and the crate's `rust-version`): `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked --all-targets` against a TimescaleDB service migrated by Django (`manage.py migrate` in the test runner's image, the server's own packages) and a Mosquitto broker (`REQUIRE_DB=1`: the database and broker tests run, never skip), `cargo deny --locked check` (licences, bans, sources, RustSec advisories), `THIRD_PARTY` equal to what `Cargo.lock` says | `sensors-ingest/tests/run.sh` |
+| `chemcore` | `chemcore/scripts/test.sh` in the `chemcore-tools` stage of `docker/testrunner.Dockerfile` (its layers cached): rustfmt, clippy, `cargo test`, libm the chemistry's only dependency, no WebAssembly, `cargo deny` with advisories, `chemcore/THIRD_PARTY`, `docker/requirements.lock` naming the pins of `requirements.txt`; the built module's handshake with `chemcore/EXPECTED` (core.E001) is the python job's `check`. | the same `docker run` as the script's header |
+| `security` | `pip-audit --strict` on `requirements.txt` and the test runner's, and with `--require-hashes` on what the runner image installs (`docker/requirements.lock`) and the chemcore wheel's build tool (`docker/chemcore-build.lock`, maturin); the Python licence gate (`pip-licenses --allow-only`, the licences [`THIRD_PARTY.md`](THIRD_PARTY.md) allows: AGPL, SSPL, BUSL, non-commercial or any unreviewed licence fails); the banned components, MinIO and rodbus, whatever licence a client library carries (a Python or npm package, or an image a compose file or Dockerfile names; the crates are denied in `deny.toml`); `npm audit --omit=dev --audit-level=high` | see below |
+
+The security job by hand (Docker, nothing installed on the machine):
+
+```
+docker run --rm -v "$PWD:/w:ro" -w /w python:3.12-slim sh -c '
+  python -m venv /tools && /tools/bin/pip install -q pip-audit==2.10.1 pip-licenses==5.5.5 &&
+  /tools/bin/pip-audit --strict -r requirements.txt -r scripts/testrunner/requirements.txt &&
+  python -m venv /app && /app/bin/pip install -q -r requirements.txt -r scripts/testrunner/requirements.txt &&
+  /tools/bin/pip-licenses --python /app/bin/python --from=mixed --allow-only="Apache-2.0;Apache-2.0 OR BSD-3-Clause;BSD-2-Clause;BSD-3-Clause;BSD License;LGPL-3.0-only;MIT-0;PSF-2.0"'
+npm audit --omit=dev --audit-level=high
+```
+
+The workflow is checked with `actionlint` (the `rhysd/actionlint` image runs it with shellcheck:
+`docker run --rm -v "$PWD:/repo:ro" -w /repo rhysd/actionlint:1.7.12`). The suite takes far longer on GitHub's runners than
+here (4 workers on a small runner; the job allows 150 minutes, the checks alone 30), so `scripts/test.sh` stays the way to
+run it while working.
+
+**Dependency updates** come from Dependabot (`.github/dependabot.yml`): every Monday for pip (the requirements and the
+test runner's), npm, cargo (`sensors-ingest` grouped, `chemcore` one pull request per crate, its pins exact: a libm move is a re-recorded golden), the GitHub actions and the Dockerfiles' images (`docker/`, `sensors-ingest/`); minor and patch releases
+grouped into one pull request per ecosystem, each major in a pull request of its own, at most 5 open per ecosystem. Django's
+feature releases (6.1 to 6.2) never come in the group, and a new Python or Rust (minor) is not proposed at all: they are
+planned moves. The TimescaleDB image is pinned by hand in `docker-compose.yml`, `scripts/test.sh`, the workflow and
+`sensors-ingest/tests/run.sh`, and moves in all four together. Dependabot's security updates are a repository setting
+(Settings, Code security), to be switched on by the owner. Dependabot does not regenerate `docker/requirements.lock`: a
+pull request that moves a pin of `requirements.txt` fails the chemcore job (the lock must name the same pins) until the lock
+is regenerated on its branch (README, chemcore, Upgrading).
+
+**Upgrade policy:**
+
+- **Security patches at once**: a pull request for a security fix (Dependabot's, or a RustSec, pip-audit or npm audit
+  failure) is taken as soon as the whole CI is green on it.
+- **Minor and patch releases monthly**: the grouped pull requests are merged once a month, each only with the whole suite
+  green.
+- **Majors on a planned branch**, after reading the release notes and the upgrade guide, with the deprecations they remove
+  fixed first; Python and Rust toolchain moves likewise (the Rust one changes `rust-toolchain.toml`, the Dockerfile,
+  `tests/run.sh` and the crate's `rust-version` together).
+- **Django**: we are on 6.1, a non-LTS release (security fixes until about December 2027); the move to the 6.2 LTS (due
+  April 2027, security fixes for three years) is planned as such a branch, once 6.2.1 is out, with the 6.1 deprecations
+  already gone (they fail the suite).
+- **Deprecation warnings are errors** (Tests, Warnings are errors), so a removal in the next release never surprises us: a
+  deprecated call fails the suite the day the release that deprecates it lands in a pull request, long before the release
+  that removes it.
+
+**One adapter per library.** A library other than the framework is called from one module, so an upgrade or a replacement
+touches one place and its tests: `pypdf` only in `knowledge/extraction.py` (reading a PDF's text), Babel only in
+`core/catalogs.py` (the translation catalogs), `psycopg` directly (beyond Django's database backend) only in
+`sensors/management/commands/sensors_ingest_role.py` (the ingest role's SQL, quoted by `psycopg.sql`); `cryptography` is
+imported by nothing of ours (pypdf uses it for encrypted PDFs). Tests may import a library to build their inputs (a PDF, a
+`.mo` file, a connection). In the ingest, the MQTT client (`rumqttc`) is only in `src/mqtt.rs` and the HTTP server (`axum`)
+in `src/http.rs` and `src/supervisor.rs`; its database client is its core and is used where it writes (`src/db.rs`,
+`src/config.rs`, `src/env.rs`, `src/service.rs`).

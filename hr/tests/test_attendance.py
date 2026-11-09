@@ -238,6 +238,18 @@ class EnteredPresenceTests(PeopleTestCase):
         errors = self.post(self.in_a, '2026-03-02T12:00', '2026-03-02T13:00').context['form'].errors
         self.assertTrue(errors)
 
+    def test_the_overlap_is_checked_on_the_sites_clock_never_read_as_utc(self):
+        # The form's overlap check (the exclusion constraint) must see the instants the typed times stand for, as the
+        # database does: a time typed on the Oslo clock read as UTC is an hour off in winter.
+        Site.objects.filter(pk=self.site.pk).update(timezone='Europe/Oslo')
+        punch(self.in_a, at(6), at(7))                                     # 07:00 to 08:00 on the Oslo clock
+        response = self.post(self.in_a, '2026-03-02T06:00', '2026-03-02T07:00')     # just before it: 05:00 to 06:00 UTC
+        self.assertEqual(response.status_code, 302, response.context and response.context['form'].errors)
+        self.assertEqual(sorted(AttendanceRecord.objects.values_list('clock_in', flat=True)), [at(5), at(6)])
+        errors = self.post(self.in_a, '2026-03-02T07:30', '2026-03-02T08:30').context['form'].errors  # inside it
+        self.assertIn('clock_out', errors)
+        self.assertEqual(AttendanceRecord.objects.count(), 2)
+
     def test_a_person_outside_the_team_is_not_a_choice_and_other_teams_stretches_are_404(self):
         before = (AttendanceRecord.objects.count(), AuditLog.objects.count())
         response = self.post(self.in_b, '2026-03-02T06:00', '2026-03-02T10:00')

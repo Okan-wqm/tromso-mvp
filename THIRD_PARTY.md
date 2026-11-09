@@ -1,8 +1,30 @@
 # Third-party software
 
 Nothing from a package registry is shipped to the browser: the browser runs only this project's own TypeScript, compiled
-into `static/js/`. The Python packages the server runs are in `requirements.txt` (pinned with hashes in `docker/requirements.lock`). The
-water-chemistry core's Rust crates (the server only) are listed with their licences in `chemcore/THIRD_PARTY`.
+into `static/js/`. The Python packages the server runs are in `requirements.txt` (pinned with hashes in
+`docker/requirements.lock`); the MQTT ingest's crates are in `sensors-ingest/THIRD_PARTY` (checked against `Cargo.lock`,
+licences gated by `sensors-ingest/deny.toml`) and the water-chemistry core's (the server only) in `chemcore/THIRD_PARTY`
+(gated by `chemcore/deny.toml`).
+
+## Python packages the server runs (`requirements.txt`, with what they pull in)
+
+CI's licence gate (`.github/workflows/ci.yml`, job security) installs these and fails on any licence not allowed here, as
+`pip-licenses` reads it: AGPL, SSPL, BUSL, a non-commercial licence or any new one fails until it is reviewed and added.
+Allowed: `Apache-2.0`, `Apache-2.0 OR BSD-3-Clause`, `BSD-2-Clause`, `BSD-3-Clause`, `BSD License`, `LGPL-3.0-only`,
+`MIT-0`, `PSF-2.0`.
+
+| Package | Licence (as pip-licenses reads it) | What it is used for |
+|---|---|---|
+| `Django` | BSD-3-Clause | The web framework |
+| `asgiref` | BSD-3-Clause | Django's sync/async bridge |
+| `babel` | BSD License (BSD-3-Clause) | The translation catalogs without GNU gettext (`core/catalogs.py`) |
+| `cryptography` | Apache-2.0 OR BSD-3-Clause | AES-encrypted PDFs, for pypdf |
+| `cffi`, `pycparser` | MIT-0, BSD-3-Clause | Pulled in by cryptography |
+| `psycopg`, `psycopg-binary` | LGPL-3.0-only | The PostgreSQL driver, used unmodified as a library (dynamic linking): allowed for commercial use |
+| `pypdf` | BSD-3-Clause | Reads an uploaded PDF's text (`knowledge/extraction.py`) |
+| `sqlparse` | BSD License (BSD-3-Clause) | Django's SQL formatting |
+| `typing_extensions` | PSF-2.0 | Typing back-ports |
+| `tzdata` | Apache-2.0 | Time zone data |
 
 ## Fonts served to the browser (`static/fonts/`)
 
@@ -36,3 +58,14 @@ Installed only in the image the tests run in (`scripts/test.sh`); never on a ser
 | Package | Licence | What it is used for |
 |---|---|---|
 | `tblib` | BSD-2-Clause | Lets the parallel test runner send a failing test's traceback from its worker to the main process |
+
+## CI-only tools (`.github/workflows/ci.yml`)
+
+Run only on GitHub's runners (and by hand, README, CI and dependency updates); never installed on a server.
+
+| Tool | Licence | What it is used for |
+|---|---|---|
+| `pip-audit` 2.10.1 | Apache-2.0 | Known vulnerabilities in the Python requirements |
+| `pip-licenses` 5.5.5 | MIT | The Python licence gate above |
+| `cargo-deny` 0.20.2 | MIT OR Apache-2.0 | The ingest's licence, source and advisory gate (also in `sensors-ingest/tests/run.sh`) |
+| GitHub Actions: `actions/checkout`, `actions/setup-python`, `actions/setup-node`, `docker/setup-buildx-action`, `docker/build-push-action`, `Swatinem/rust-cache` | MIT, MIT, MIT, Apache-2.0, Apache-2.0, LGPL-3.0 | Run the jobs; each pinned to a commit |

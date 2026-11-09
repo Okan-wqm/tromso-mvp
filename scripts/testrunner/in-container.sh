@@ -9,7 +9,8 @@
 #   makemigrations --check no model change without its migration
 #   data_map --check       docs/data-map.* match the code
 #   update_catalogs        brings locale/*/django.po up to date; CI then fails when that changed a file (git diff)
-# then compile_catalogs, then the suite unless SUITE=0.
+# The catalogs are compiled before the checks (core.W002) and again after update_catalogs, then the suite runs unless
+# SUITE=0.
 set -eu
 py() { python -W error::DeprecationWarning -W error::PendingDeprecationWarning "$@"; }
 
@@ -27,6 +28,8 @@ if [ "${CHECKS:-0}" = 1 ]; then (
   # The run's server holds no project database: the checks only ask the server for its version (and makemigrations
   # for the migrations applied: none), through its maintenance database.
   export DB_NAME=postgres
+  # The .mo files are built, never committed: a fresh checkout (CI) has none, and core.W002 would fail the check.
+  py manage.py compile_catalogs >/dev/null
   py manage.py check --fail-level WARNING
   found=$(DJANGO_DEBUG=0 DJANGO_ALLOWED_HOSTS=farm.invalid \
     DJANGO_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(50))')" \

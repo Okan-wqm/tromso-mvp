@@ -155,6 +155,21 @@ impl Equilibria {
     fn water_origin(&self) -> &'static str {
         self.0.origin.code()
     }
+    /// The plausibility warnings of its ionic inputs, as codes (cross review F5): 'conductivity_salinity',
+    /// 'conductivity_above_ions', 'conductivity_below_ions', 'seawater_conductivity'.
+    #[getter]
+    fn warnings(&self) -> Vec<&'static str> {
+        [
+            (f::CONDUCTIVITY_SALINITY, "conductivity_salinity"),
+            (f::CONDUCTIVITY_ABOVE_IONS, "conductivity_above_ions"),
+            (f::CONDUCTIVITY_BELOW_IONS, "conductivity_below_ions"),
+            (f::SEAWATER_CONDUCTIVITY, "seawater_conductivity"),
+        ]
+        .into_iter()
+        .filter(|(bit, _code)| self.0.warnings & bit != 0)
+        .map(|(_bit, code)| code)
+        .collect()
+    }
 
     /// The field names, in order (the dataclass's).
     #[classattr]
@@ -453,6 +468,12 @@ fn fresh_ionic_strength(
     )
     .map_err(err)?;
     Ok((ok(Ok(strength))?, source.code()))
+}
+
+/// The practical salinity PSS-78 (with Hill et al. 1986) reads from a conductivity at 25 °C (µS/cm).
+#[pyfunction]
+fn practical_salinity(conductivity_25_us_cm: f64) -> PyResult<f64> {
+    ok(f::practical_salinity(conductivity_25_us_cm))
 }
 
 /// The seawater path's share in a water's constants at a salinity (formula 3's band).
@@ -1256,6 +1277,7 @@ fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
         wrap_pyfunction!(fresh_ionic_strength, module)?,
         wrap_pyfunction!(davies_log_gamma, module)?,
         wrap_pyfunction!(sea_weight, module)?,
+        wrap_pyfunction!(practical_salinity, module)?,
         wrap_pyfunction!(dielectric_constant, module)?,
         wrap_pyfunction!(water_density, module)?,
         wrap_pyfunction!(debye_huckel_a, module)?,

@@ -328,6 +328,9 @@ pub struct Equilibria {
     pub limits_basis: Option<LimitsBasis>,
     /// Where its salt came from, as said (formula 1: `Origin::Unknown`).
     pub origin: Origin,
+    /// The plausibility warnings of its ionic inputs (`crate::fresh::plausibility`, bits; 0 for formula 1): said beside
+    /// every value worked out from it, never a refusal (cross review F5).
+    pub warnings: u8,
 }
 
 /// Where a water's salt came from (cross review F3, F4), as a unit says it: the band from 1 to 5 ‰ blends in the seawater
@@ -463,6 +466,7 @@ pub fn equilibria_with(temp_c: f64, salinity: f64, a_of: &dyn Fn(f64) -> R) -> R
         sea_weight: 1.0,
         limits_basis: None,
         origin: Origin::Unknown,
+        warnings: 0,
     };
     for value in [
         eq.ph_offset,

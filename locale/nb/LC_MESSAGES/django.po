@@ -4154,6 +4154,32 @@ msgstr "Sjekk"
 msgid "Check your email"
 msgstr "Sjekk e-posten din"
 
+msgid ""
+"Check: the conductivity at 25 °C and the salinity disagree, beyond what any water from NaCl brine"
+" to a hard fresh water allows."
+msgstr ""
+"Kontroller: ledningsevnen ved 25 °C og saliniteten stemmer ikke overens, utover det noe vann fra "
+"NaCl-lake til hardt ferskvann tillater."
+
+msgid ""
+"Check: the conductivity gives fewer ions than the hardness and the alkalinity need (not "
+"compensated to 25 °C, or in the wrong unit?); theirs is used."
+msgstr ""
+"Kontroller: ledningsevnen gir færre ioner enn hardheten og alkaliniteten krever (ikke kompensert "
+"til 25 °C, eller feil enhet?); deres brukes."
+
+msgid ""
+"Check: the conductivity gives over ten times the ions the hardness and the alkalinity account for"
+" (salt added, or mS/cm typed as µS/cm?)."
+msgstr ""
+"Kontroller: ledningsevnen gir over ti ganger de ionene hardheten og alkaliniteten står for "
+"(tilsatt salt, eller mS/cm skrevet som µS/cm?)."
+
+msgid ""
+"Check: the conductivity is that of sea water of 1 ‰ or more (PSS-78) on a fresh water: give the "
+"salinity."
+msgstr "Kontroller: ledningsevnen er som sjøvann på 1 ‰ eller mer (PSS-78) i ferskvann: oppgi saliniteten."
+
 #, python-format
 msgid "Checked at %(clock)s."
 msgstr "Sjekket kl. %(clock)s."

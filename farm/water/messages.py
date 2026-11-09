@@ -53,6 +53,19 @@ STRENGTH_SOURCES = {
 }
 
 
+# The plausibility warnings of a water's ionic inputs (cross review F5; chemcore/core/src/fresh.rs plausibility): said
+# beside the value, never a refusal.
+WARNINGS = {
+    'conductivity_salinity': _('Check: the conductivity at 25 °C and the salinity disagree, beyond what any water from '
+                               'NaCl brine to a hard fresh water allows.'),
+    'conductivity_above_ions': _('Check: the conductivity gives over ten times the ions the hardness and the alkalinity '
+                                 'account for (salt added, or mS/cm typed as µS/cm?).'),
+    'conductivity_below_ions': _('Check: the conductivity gives fewer ions than the hardness and the alkalinity need '
+                                 '(not compensated to 25 °C, or in the wrong unit?); theirs is used.'),
+    'seawater_conductivity': _('Check: the conductivity is that of sea water of 1 ‰ or more (PSS-78) on a fresh '
+                               'water: give the salinity.'),
+}
+
 def provenance(equilibria):
     """What a value worked out from a water's equilibria was worked out by, in words: the formula version, the ionic
     strength and where it came from, and the share of the seawater constants (1 to 5 ‰). Every worked-out value shown
@@ -69,7 +82,7 @@ def provenance(equilibria):
     if equilibria.water_origin == 'salt_added':
         said = (_('%(said)s; salt-added fresh water, its ions taken as NaCl') if equilibria.sea_weight == 0
                 else _('%(said)s; salt-added fresh water past the Davies range, worked out as sea water')) % {'said': said}
-    return f'{said}.'
+    return ' '.join([f'{said}.', *(str(WARNINGS[code]) for code in equilibria.warnings)])
 
 
 # What judged a water's NH3 or CO2 against its limits (cross review F1; chemcore/core/src/chemistry.rs Basis): the

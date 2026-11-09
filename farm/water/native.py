@@ -142,6 +142,7 @@ DAVIES_MAX = chemcore.DAVIES_MAX
 IONIC_PER_MICROSIEMENS = chemcore.IONIC_PER_MICROSIEMENS              # Russell 1976: natural (bicarbonate) waters
 IONIC_PER_MICROSIEMENS_NACL = chemcore.IONIC_PER_MICROSIEMENS_NACL    # NaCl: a salt-added water (cross review F4)
 fresh_ionic_strength = chemcore.fresh_ionic_strength
+practical_salinity = chemcore.practical_salinity          # PSS-78 at 25 °C (cross review F5)
 davies_log_gamma = chemcore.davies_log_gamma
 dielectric_constant = chemcore.dielectric_constant
 water_density = chemcore.water_density

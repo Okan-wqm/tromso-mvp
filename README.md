@@ -3667,7 +3667,14 @@ temperature (a synthetic page: 54 different temperatures, 99 to 164 ms, 128 KB c
   0.01 mol/L, 25 °C, instead of Russell's 1.6e-5, which fits bicarbonate waters and overstates a NaCl water's ionic
   strength about 1.9 times, its corrected NH₃ and CO₂ about 4 % low at 3000 µS/cm), no seawater boron: at 3 ‰ its CO₂ is 4.6 to
   9.2 % above what the band gives. Not said, the band is kept and the provenance says "assumes sea water's ion
-  composition; salt-added fresh water may read low CO₂". the band not at all. The fresh path refuses an ionic strength above 0.5, the Davies limit
+  composition; salt-added fresh water may read low CO₂". **Plausibility warnings** (cross review F5; `fresh::plausibility`, on every
+  `Equilibria` as `warnings`), said after the provenance with the value, never a refusal: the conductivity against the
+  salinity (the salinity's ionic strength outside 5.9e-6 to 2.1e-5 per µS/cm, NaCl's 8.4e-6 to Russell's 1.6e-5 each
+  widened by Russell's ±30 % scatter); a conductivity with no salinity giving over 10 times the ionic strength of the
+  measured hardness and alkalinity (in-house; world-average river water, Livingstone 1963, has about 1.3), or giving less
+  than their bound by over 1.5 times (Russell's scatter; the bound is used); a sea water's conductivity on a fresh water
+  (a salinity under 1 ‰ with a conductivity PSS-78, UNESCO 1983 with Hill et al. 1986, reads as 1 ‰ or more, about
+  1 900 µS/cm). The thresholds are documented constants: no reference table holds per-water constants. the band not at all. The fresh path refuses an ionic strength above 0.5, the Davies limit
   (`DAVIES_MAX`; a sample's NH₃ then says why and shows nothing). The conductivity and the hardness are water parameters
   (cross review F8: only the compensated conductivity is read; the sensors' `conductivity_us_cm`, at the water's own
   temperature, never). Formula 1 is still worked out exactly, by name only (`formula=1`: golden v1, `FORMULAS` = 1, 3),

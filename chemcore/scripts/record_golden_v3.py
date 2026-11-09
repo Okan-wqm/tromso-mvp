@@ -48,7 +48,7 @@ def outputs(eq, alkalinity_mg_l, native_):
     meq = alkalinity_mg_l / native_.MG_CACO3_PER_MEQ
     return {'constants': dict(zip(native_.Equilibria.fields, eq.values())),
             'provenance': {'formula': eq.formula, 'ionic_strength': eq.ionic_strength, 'source': eq.strength_source,
-                           'sea_weight': eq.sea_weight},
+                           'sea_weight': eq.sea_weight, 'warnings': eq.warnings},
             'at_ph': [{'ph': ph, 'co2_mg_l': eq.co2(eq.dic(meq, ph), ph) * native_.MG_CO2_PER_MMOL,
                        'co2_judged_mg_l': eq.co2_judged(meq, ph)[0] * native_.MG_CO2_PER_MMOL,
                        'nh3_share': eq.nh3_share(ph), 'nh3_share_corrected': eq.nh3_share_corrected(ph)}

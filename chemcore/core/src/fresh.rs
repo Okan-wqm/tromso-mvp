@@ -129,16 +129,7 @@ pub fn fresh_ionic_strength(
     {
         return Err(ChemError::Domain);
     }
-    let bicarbonate = div(alkalinity.unwrap_or(0.0), MG_CACO3_PER_MEQ)?;
-    let bound = match (hardness, alkalinity) {
-        (Some(hardness), _) => {
-            let divalent = div(hardness, MG_CACO3_PER_MMOL)?;
-            let balance = libm::fabs(2.0 * divalent - bicarbonate);
-            Some((0.5e-3 * (4.0 * divalent + bicarbonate + balance), Source::Hardness))
-        }
-        (None, Some(_)) => Some((bicarbonate / 1000.0, Source::Alkalinity)),
-        (None, None) => None,
-    };
+    let bound = measured_bound(alkalinity, hardness)?;
     let estimate = match conductivity {
         Some(kappa) if ions.origin == Origin::SaltAdded => {
             Some((IONIC_PER_MICROSIEMENS_NACL * kappa, Source::Conductivity))
@@ -162,6 +153,114 @@ pub fn fresh_ionic_strength(
         return Err(ChemError::OutOfRange);
     }
     Ok((strength, source))
+}
+
+// ---- plausibility of the ionic inputs (cross review F5): warnings said with the value, never a refusal ----------------
+
+/// The salinity's ionic strength outside what the conductivity allows (`PLAUSIBLE_PER_MICROSIEMENS`).
+pub const CONDUCTIVITY_SALINITY: u8 = 1;
+/// A conductivity (no salinity) giving more than `ESTIMATE_OVER_BOUND` times the measured ions' ionic strength.
+pub const CONDUCTIVITY_ABOVE_IONS: u8 = 2;
+/// A conductivity below the measured ions' ionic strength by more than `BOUND_OVER_ESTIMATE`: the bound is used.
+pub const CONDUCTIVITY_BELOW_IONS: u8 = 4;
+/// A salinity under `FRESH_UP_TO` with a conductivity PSS-78 reads as `FRESH_UP_TO` or more (`practical_salinity`).
+pub const SEAWATER_CONDUCTIVITY: u8 = 8;
+/// The ionic strength per µS/cm a water may have: NaCl's `IONIC_PER_MICROSIEMENS_NACL` to Russell's
+/// `IONIC_PER_MICROSIEMENS`, each widened by Russell's scatter of about ±30 % (as the cross review quotes it; the paper
+/// itself was not read): 0.7 × 8.4e-6 and 1.3 × 1.6e-5.
+pub const PLAUSIBLE_PER_MICROSIEMENS: (f64, f64) = (5.88e-6, 2.08e-5);
+/// The conductivity's ionic strength over the measured ions' bound beyond which a fresh water's conductivity is
+/// suspect (salted, or mS/cm read as µS/cm): 10, an in-house threshold (cross review F5); world-average river water
+/// (Livingstone 1963, USGS PP 440-G: Ca 15, Mg 4.1, Na 6.3, K 2.3, HCO₃ 58.4, SO₄ 11.2, Cl 7.8 mg/L) has about 1.3.
+pub const ESTIMATE_OVER_BOUND: f64 = 10.0;
+/// The measured ions' bound over the conductivity's ionic strength beyond which the conductivity is suspect (not
+/// compensated to 25 °C, about 45 % low at 2 °C; or in the wrong unit): 1.5, about 1 / (1 − 0.3), Russell's scatter.
+pub const BOUND_OVER_ESTIMATE: f64 = 1.5;
+
+/// The practical salinity of a sea water of this conductivity at 25 °C (µS/cm): PSS-78 (UNESCO 1983, Tech. Pap. Mar.
+/// Sci. 44; at 1 atm, t 25 °C, C(35, 15, 0) = 42.914 mS/cm, the r_t polynomial), extended below S 2 by Hill, Dauphinee &
+/// Woods (1986), IEEE J. Oceanic Eng. OE-11: 109. Valid for sea water's ion composition: a fresh water's reads only
+/// as "the sea water it would be".
+pub fn practical_salinity(conductivity_25_us_cm: f64) -> R {
+    let kappa = finite(conductivity_25_us_cm)?;
+    if kappa < 0.0 {
+        return Err(ChemError::Domain);
+    }
+    let t: f64 = 25.0;
+    let r_t = 0.6766097 + 2.00564e-2 * t + 1.104259e-4 * t * t - 6.9698e-7 * pow(t, 3.0)? + 1.0031e-9 * pow(t, 4.0)?;
+    let ratio = div(kappa / 1000.0, 42.914 * r_t)?;
+    let root = sqrt(ratio)?;
+    let a = [0.0080, -0.1692, 25.3851, 14.0941, -7.0261, 2.7081];
+    let b = [0.0005, -0.0056, -0.0066, -0.0375, 0.0636, -0.0144];
+    let (mut s, mut delta, mut power) = (0.0, 0.0, 1.0);
+    for (a_i, b_i) in a.iter().zip(b.iter()) {
+        s += a_i * power;
+        delta += b_i * power;
+        power *= root;
+    }
+    let f_t = div(t - 15.0, 1.0 + 0.0162 * (t - 15.0))?;
+    let x = 400.0 * ratio;
+    let y = 100.0 * ratio;
+    let hill = div(0.0080, 1.0 + 1.5 * x + x * x)? + div(0.0005 * f_t, 1.0 + sqrt(y)? + y + pow(y, 1.5)?)?;
+    Ok(s + f_t * delta - hill)
+}
+
+/// The warnings of a water's ionic inputs (the constants above, or-ed): never a refusal, said beside every value worked
+/// out from it (`Equilibria::warnings`). Only a conductivity can disagree; without one, none.
+pub fn plausibility(salinity: f64, alkalinity_mg_l: Option<f64>, ions: Ions) -> Result<u8, ChemError> {
+    let salinity = finite(salinity)?;
+    let Some(kappa) = present(ions.conductivity_25_us_cm)? else {
+        return Ok(0);
+    };
+    let mut warnings = 0;
+    if salinity > 0.0 {
+        let from_salinity = if ions.origin == Origin::SaltAdded {
+            div(salinity / NACL_G_PER_MOL, 1.0 - salinity / 1000.0)?
+        } else {
+            c::ionic_strength(salinity)?
+        };
+        if from_salinity < PLAUSIBLE_PER_MICROSIEMENS.0 * kappa || from_salinity > PLAUSIBLE_PER_MICROSIEMENS.1 * kappa
+        {
+            warnings |= CONDUCTIVITY_SALINITY;
+        }
+    }
+    if salinity < FRESH_UP_TO && practical_salinity(kappa)? >= FRESH_UP_TO {
+        warnings |= SEAWATER_CONDUCTIVITY;
+    }
+    let per = if ions.origin == Origin::SaltAdded {
+        IONIC_PER_MICROSIEMENS_NACL
+    } else {
+        IONIC_PER_MICROSIEMENS
+    };
+    let estimate = per * kappa;
+    if let Some(bound) = measured_bound(alkalinity_mg_l, ions.hardness_mg_l)? {
+        if salinity == 0.0 && estimate > ESTIMATE_OVER_BOUND * bound.0 {
+            warnings |= CONDUCTIVITY_ABOVE_IONS;
+        }
+        if bound.0 > BOUND_OVER_ESTIMATE * estimate {
+            warnings |= CONDUCTIVITY_BELOW_IONS;
+        }
+    }
+    Ok(warnings)
+}
+
+/// The least ionic strength the measured ions allow and its source (the module's rule): the hardness with the
+/// alkalinity, else the alkalinity alone; None with neither.
+fn measured_bound(
+    alkalinity_mg_l: Option<f64>,
+    hardness_mg_l: Option<f64>,
+) -> Result<Option<(f64, Source)>, ChemError> {
+    let alkalinity = present(alkalinity_mg_l)?;
+    let bicarbonate = div(alkalinity.unwrap_or(0.0), MG_CACO3_PER_MEQ)?;
+    Ok(match (present(hardness_mg_l)?, alkalinity) {
+        (Some(hardness), _) => {
+            let divalent = div(hardness, MG_CACO3_PER_MMOL)?;
+            let balance = libm::fabs(2.0 * divalent - bicarbonate);
+            Some((0.5e-3 * (4.0 * divalent + bicarbonate + balance), Source::Hardness))
+        }
+        (None, Some(_)) => Some((bicarbonate / 1000.0, Source::Alkalinity)),
+        (None, None) => None,
+    })
 }
 
 /// The dielectric constant (relative permittivity) of water at a temperature (°C): Malmberg & Maryott (1956), J. Res.
@@ -268,6 +367,7 @@ fn fresh_at(
         sea_weight: 0.0,
         limits_basis: None,
         origin,
+        warnings: 0,
     };
     checked(eq)
 }
@@ -332,6 +432,14 @@ pub fn equilibria_v3(
     alkalinity_mg_l: Option<f64>,
     ions: Ions,
 ) -> Result<Equilibria, ChemError> {
+    let eq = constants_v3(temp_c, salinity, alkalinity_mg_l, ions)?;
+    Ok(Equilibria {
+        warnings: plausibility(salinity, alkalinity_mg_l, ions)?,
+        ..eq
+    })
+}
+
+fn constants_v3(temp_c: f64, salinity: f64, alkalinity_mg_l: Option<f64>, ions: Ions) -> Result<Equilibria, ChemError> {
     let weight = if ions.origin == Origin::SaltAdded {
         // Salt-added fresh water (cross review F3): the fresh path up to the Davies limit, then the sea path.
         match fresh_equilibria(temp_c, salinity, alkalinity_mg_l, ions) {

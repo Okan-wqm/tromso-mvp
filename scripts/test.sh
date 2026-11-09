@@ -21,8 +21,8 @@
 #   fsync, synchronous_commit, full_page_writes off  the data lives only as long as the run (crash safety buys nothing).
 #   max_connections=200  one connection per worker and the few a test opens itself, far below it.
 # Its password is TEST_DB_PASSWORD (default balik; CI passes a random one): the server has no host port either way.
-# The tests run in the image built from scripts/testrunner/Dockerfile (the project's requirements and tblib), tagged
-# by the hash of the requirements, built when missing.
+# The tests run in the test runner's image (the project's requirements and tblib), built when missing; what it is built
+# from and its tag (a hash of all of that) are scripts/testrunner/image.sh's, which CI builds the image by too.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 export MSYS_NO_PATHCONV=1
@@ -38,16 +38,7 @@ DB=balik-test-db-$RUN
 NET=balik-test-$RUN
 TESTS=balik-test-run-$RUN
 
-HASH=$(cat requirements.txt scripts/testrunner/requirements.txt scripts/testrunner/Dockerfile | sha256sum | cut -c1-12)
-IMAGE=balik-testrunner:req-$HASH
-if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
-  context=$(mktemp -d)
-  cp requirements.txt "$context/requirements.txt"
-  cp scripts/testrunner/requirements.txt "$context/test-requirements.txt"
-  cp scripts/testrunner/Dockerfile "$context/Dockerfile"
-  docker build -q -t "$IMAGE" "$(win "$context")" >/dev/null
-  rm -rf "$context"
-fi
+IMAGE=$(sh scripts/testrunner/image.sh build)
 
 cleanup() {
   docker rm -f "$TESTS" >/dev/null 2>&1 || true

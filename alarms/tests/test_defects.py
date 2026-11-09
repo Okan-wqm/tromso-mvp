@@ -1,6 +1,6 @@
 """The seven defects the alarm plan (scratchpad plan/alarms/PLAN.md §2.3) found in this app, each pinned by its tests."""
 from farm.models import SamplingPoint
-from farm.water import sources as water_sources
+from farm.water import services as water, sources as water_sources
 from farm.tests.helpers import point_of
 
 from ..models import Alarm, AlarmClearance, Escalation, Notification, ParameterDeadband, SeverityPolicy
@@ -128,3 +128,21 @@ class FailedSourceTests(AlarmsCase):
         self.loop(minutes=7)
         self.assertFalse(read.is_open(self.critical()))
         self.assertEqual(AlarmClearance.objects.get(alarm=system).cause, 'restored')
+
+
+class OlderEvidenceTests(AlarmsCase):
+    """Defect 4: only a value taken after the last bad one clears an alarm: when the bad value goes (a sample voided, a
+    probe taken out), an older value that is still fresh must not end it."""
+
+    def test_a_value_older_than_the_last_bad_one_never_clears(self):
+        self.sample(7.0, hours=6)
+        bad = self.sample(5.5, hours=1)
+        self.loop()
+        water.void(self.keeper, bad, 'Taken in the wrong tank')        # the six-hour-old value is the newest again
+        self.loop(minutes=1)
+        self.loop(minutes=5)
+        self.assertTrue(read.is_open(self.critical()))
+        self.sample(7.0, hours=0)
+        self.loop(minutes=6)
+        self.loop(minutes=7)
+        self.assertFalse(read.is_open(self.critical()))

@@ -208,16 +208,13 @@ pub struct Analysis {
 }
 
 impl Analysis {
-    /// The CO₂ limit (mg/L) the chart's CO₂ curve is drawn at in the water's own constants (the chart is drawn in them): the
-    /// limit times the water's corrected-to-judged CO₂ ratio, so the curve meets the water exactly where its judged CO₂
-    /// meets the limit; elsewhere it takes the water's ratio, which in fresh water is 1 / γ₁ wherever the bicarbonate
-    /// holds the alkalinity (README, Water-chemistry core). Formula 1, or a water judged on its corrected CO₂: the limit.
-    pub fn co2_chart_limit(&self, limit: f64) -> f64 {
-        if self.co2_mg_l > self.co2_corrected_mg_l && self.co2_corrected_mg_l > 0.0 {
-            limit * (self.co2_corrected_mg_l / self.co2_mg_l)
-        } else {
-            limit
-        }
+    /// The CO₂ limit (mg/L) the chart's CO₂ curve is drawn at in the water's own constants (the chart is drawn in them):
+    /// the limit over `Equilibria::co2_chart_ratio`, a ratio of the equilibria alone, so a replay page shares one diagram
+    /// among frames equal but for pH and alkalinity; along the curve the judged CO₂ is within about 1.5 % of the limit
+    /// (README, Water-chemistry core; the statuses and borders are exact). Formula 1: the limit.
+    pub fn co2_chart_limit(&self, limit: f64) -> R {
+        let ratio = self.equilibria.co2_chart_ratio()?;
+        Ok(if ratio > 1.0 { limit / ratio } else { limit })
     }
 }
 

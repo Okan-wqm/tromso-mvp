@@ -485,7 +485,7 @@ pub fn geometry<'a>(
         match limits.co2_mg_l {
             Some(limit) => {
                 let (curve, leaves_top) =
-                    co2_curve(&eq, div(analysis.co2_chart_limit(limit), c::MG_CO2_PER_MMOL)?, &chart)?;
+                    co2_curve(&eq, div(analysis.co2_chart_limit(limit)?, c::MG_CO2_PER_MMOL)?, &chart)?;
                 if !curve.is_empty() {
                     shape
                         .regions

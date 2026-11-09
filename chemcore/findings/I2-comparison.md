@@ -302,8 +302,9 @@ sabitleri) ve "düzeltmelerle birleştirilebilir" dedi. Yapılanlar:
 
 - **Büyük olanla değerlendirme ihtiyatlı ama kaba**: 0–1 ‰ arasındaki sularda temel ideal su, formül 1 ise orada deniz suyu
   sabitlerini kullanıyordu; örnek suda CO₂ formül 1'e göre %16 daha yüksek değerlendiriliyor (19,62 / 16,94 mg/L). Daha
-  çok "uyarı" çıkabilir; bu, sahibin güvenlik kararının bilinçli sonucu. Diyagramdaki CO₂ eğrisi suyun kendi noktasında
-  tam, eğri boyunca sınırdan −%1,4 ile +%0,3 sapabiliyor (durumlar ve sınır pH'ları tam).
+  çok "uyarı" çıkabilir; bu, sahibin güvenlik kararının bilinçli sonucu. Diyagramdaki CO₂ eğrisi suyun pH'ına bakmayan bir oranla
+  çiziliyor (tekrar oynatma sayfası diyagramı paylaşabilsin diye); eğri boyunca sınırdan −%0,6 ile +%0,3 sapabiliyor
+  (durumlar ve sınır pH'ları tam).
 - **Deniz suyunda temel formül 1'in deniz suyu sabitleri**: "ideal" (I = 0) burada %30–42 fazla NH₃ verirdi; tuzlu su
   sınırları (US EPA 1989) tuzluluğa göre düzeltilmiş pKa ile konduğundan (birincil kaynak açılmadı) ideal kullanılmadı.
   Sahip denizde de ideali isterse bu tek satırlık bir değişiklik.

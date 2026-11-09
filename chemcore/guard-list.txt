@@ -45,6 +45,7 @@ name clip_polyline
 name clip_segment
 name clip_to_box
 name co2_chart_limit
+name co2_chart_ratio
 name co2_corrected
 name co2_curve
 name co2_from_air

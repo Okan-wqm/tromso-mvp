@@ -665,6 +665,23 @@ impl Equilibria {
         }
     }
 
+    /// The ratio of the limits' basis CO₂ to these constants' own where the bicarbonate holds the alkalinity, CO₂ ≈
+    /// alkalinity · [H⁺] / K1 with [H⁺] = 10^−(pH + offset): K1 10^offset over the basis's, the same at every pH and
+    /// alkalinity (in fresh water 1 / γ₁); 1 for formula 1 or when the own CO₂ is the larger. The chart draws its CO₂
+    /// curve with it (`analysis::Analysis::co2_chart_limit`), so the diagram reads nothing of the water's pH or alkalinity.
+    pub fn co2_chart_ratio(&self) -> R {
+        match self.limits_basis {
+            Some(basis) => {
+                let ratio = div(
+                    self.k1 * pow(10.0, self.ph_offset)?,
+                    basis.k1 * pow(10.0, basis.ph_offset)?,
+                )?;
+                Ok(if ratio > 1.0 { ratio } else { 1.0 })
+            }
+            None => Ok(1.0),
+        }
+    }
+
     /// The alkalinity (meq/L) at which the judged CO₂ is `co2` (mmol/L) at a pH: the lower of the two (CO₂ rises with
     /// the alkalinity at a fixed pH).
     pub fn alkalinity_where_co2(&self, co2: f64, ph: f64) -> R {

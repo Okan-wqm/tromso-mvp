@@ -1388,8 +1388,9 @@ without values it shows its defaults.
   live fish the larger is taken. At 12 °C, 80 mg/L, pH 7.5 the corrected CO₂ is 8.8 % below the judged at 500 µS/cm,
   11.7 % at 1000 and 17.5 % at 3000. At the calculator's example (12 °C, 1 ‰) the NH₃ border is 7.986 (formula 3's
   corrected share alone 8.045) and the CO₂ 19.62 mg/L (corrected 17.12). The chart's CO₂ curve is drawn in the water's own
-  constants at the limit times its corrected-to-judged ratio: through the water exactly, and within −1.4 to +0.3 % of the
-  limit along the curve (a grid of 0 to 25 °C, 0 to 35 ‰, 6.5 to 8 pH); the statuses and borders are exact. The stripping
+  constants at the limit over the bicarbonate-range ratio of the basis's CO₂ to its own (K1 10^offset over the basis's, a
+  ratio of the equilibria alone, so a replay page still shares one diagram among frames equal but for pH and alkalinity):
+  the judged CO₂ along it within −0.6 to +0.3 % of the limit (a grid of 0 to 25 °C, 0 to 35 ‰, 6.5 to 8 pH); the statuses and borders are exact. The stripping
   floor (the air's CO₂, a true concentration, Weiss 1974) is held against the water's own CO₂.
 - **The safe zone needs every limit it is bounded by**: without the TAN, the NH₃ limit, the CO₂ limit or
   the alkalinity band, or with a total sulfide but no H₂S limit, it is not drawn and a note says what is

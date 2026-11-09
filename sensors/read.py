@@ -556,15 +556,19 @@ def deffeyes_frames(target, start, end, step, cursor=0, size=PAGE):
         at = first + slot * step
         inputs, missing = {}, []
         for code in REPLAY_INPUTS:
-            chosen = None
+            # The first place and role (A1) with a fresh value; among its segments (one channel's stays there, a probe
+            # moved away and back) the newest reading, as value_at takes it (sensors/provider.py).
+            chosen, newest, place = None, None, None
             for index, (each, segment) in enumerate(flat):
                 if each != code or (index, slot) not in rows:
                     continue
+                if place is not None and (segment.origin, segment.role) != place:
+                    break
                 ts, value = rows[(index, slot)]
-                if at - ts <= timedelta(seconds=segment.fresh_s):
+                if at - ts <= timedelta(seconds=segment.fresh_s) and (newest is None or ts > newest):
+                    place, newest = (segment.origin, segment.role), ts
                     chosen = FrameInput(float(as_parameter(code, value)), segment.origin, (at - ts).total_seconds(),
                                         segment.channel_no)
-                    break
             if chosen is None:
                 sample = next((each for each in (manual[code].latest(point.pk, at, WINDOW) for point in points)
                                if each is not None and is_fresh(parameters.get(code), each.at, at)), None)

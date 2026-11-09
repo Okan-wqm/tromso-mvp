@@ -72,7 +72,7 @@ class ClockSkewAlarmTests(ClockCase):
         self.skew(280, received=1)                                   # under 300 s, inside its deadband (30 s)
         self.loop(seconds=1)
         self.loop(seconds=40)
-        self.assertEqual(self.levels(), ['critical'])
+        self.assertEqual(self.levels(), ['critical', 'warning'])     # the warning's on-delay ran out meanwhile
         self.skew(30, received=41)
         self.loop(seconds=41)
         self.skew(30, received=80)
@@ -154,7 +154,7 @@ class ClockNoteTests(ClockCase):
         from monitoring.tests import ALL_RIGHTS, chosen
         reader = get_user_model().objects.create_user('reader', 'reader@example.com', 'x')
         reader.groups.add(role('Reader', *ALL_RIGHTS))
-        self.skew(-240, received=-1)
+        self.skew(-120, received=-1)                                 # its value fresh: on the card
         self.sample(7.0, hours=0.5)
         card, = monitoring_read.cards([self.t1], reader, chosen({self.t1.pk: 'simple'}), now=self.now)
-        self.assertIn('Device clock is 4 min behind (PROBE-1)', monitoring_read.state_of(card).reasons)
+        self.assertIn('Device clock is 2 min behind (PROBE-1)', monitoring_read.state_of(card).reasons)

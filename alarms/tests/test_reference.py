@@ -96,7 +96,7 @@ class PageTests(AlarmsCase):
         policy = SeverityPolicy.objects.get(severity='warning')
         self.client.post(reverse('alarms:severitypolicy_edit', args=[policy.pk]), {
             'on_delay_seconds': '60', 'off_delay_seconds': '45', 'escalation_minutes': '20', 'delivery_attempts': '3',
-            'version': policy.version})
+            'clock_skew_seconds': '90', 'clock_skew_deadband_seconds': '15', 'version': policy.version})
         policy.refresh_from_db()
         self.assertEqual((policy.on_delay_seconds, policy.off_delay_seconds, policy.escalation_minutes,
                           policy.delivery_attempts), (60, 45, 20, 3))

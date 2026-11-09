@@ -22,7 +22,7 @@ from django.utils.translation import gettext, gettext_lazy as _
 from core.models import AuditedModel
 from farm.models import ProductionDepartment, SamplingPoint, Site
 from farm.water.parameters import LIMIT_CHOICES
-from sensors.models import AlarmEvent
+from sensors.models import AlarmEvent, Device
 from sensors.models.alarm import Severity
 
 # How serious a severity is, for "at least" (a rule's least severity).
@@ -51,6 +51,7 @@ class ClearCause(models.TextChoices):
     RESTORED = 'restored', _('Restored')
     UNIT_REMOVED = 'unit_removed', _('The unit was removed')
     MERGED = 'merged', _('Merged into the unit’s one alarm of that level')
+    DEVICE_REMOVED = 'device_removed', _('The device was removed or deactivated')
 
 
 class Outcome(models.TextChoices):
@@ -70,6 +71,9 @@ class Alarm(models.Model):
     point = models.ForeignKey(SamplingPoint, null=True, blank=True, on_delete=models.PROTECT, related_name='alarms',
                               verbose_name=_('Sampling point'))
     parameter = models.CharField(_('Parameter'), max_length=30, blank=True)
+    # The device an alarm of the alarm system is about (its clock: alarms/clock.py), else empty.
+    device = models.ForeignKey(Device, null=True, blank=True, on_delete=models.PROTECT, related_name='alarms',
+                               verbose_name=_('Device'))
     severity = models.CharField(_('Severity'), max_length=10, choices=Severity.choices)
     site = models.ForeignKey(Site, null=True, blank=True, on_delete=models.PROTECT, related_name='alarms',
                              verbose_name=_('Site'))
@@ -87,8 +91,10 @@ class Alarm(models.Model):
             models.CheckConstraint(condition=Q(source__in=Source.values), name='chk_alarms_source'),
             models.CheckConstraint(condition=Q(severity__in=Severity.values), name='chk_alarms_severity'),
             models.CheckConstraint(
-                condition=Q(source=Source.SENSOR_RULE, sensor_event__isnull=False, point__isnull=True, parameter='')
-                | (Q(source=Source.WATER_LIMIT, sensor_event__isnull=True, point__isnull=False) & ~Q(parameter=''))
+                condition=Q(source=Source.SENSOR_RULE, sensor_event__isnull=False, point__isnull=True, parameter='',
+                            device__isnull=True)
+                | (Q(source=Source.WATER_LIMIT, sensor_event__isnull=True, point__isnull=False, device__isnull=True)
+                   & ~Q(parameter=''))
                 | (Q(source=Source.SYSTEM, sensor_event__isnull=True, point__isnull=True) & ~Q(parameter='')),
                 name='chk_alarms_shape'),
         ]
@@ -317,6 +323,10 @@ ON_DELAY_BOUNDS = {Severity.CRITICAL: (0, 10), Severity.WARNING: (0, 900)}
 # times the owner's 5 min, §7a Q7); a warning within a day.
 ESCALATION_BOUNDS = {Severity.CRITICAL: (1, 30), Severity.WARNING: (1, 1440)}
 ATTEMPTS_BOUNDS = (1, 20)
+# A device clock's limit (seconds), either way: at least a second (a limit of 0 would alarm on the network's own delay),
+# at most the ingest contract's hour (sensors_contract.future_skew_s is at most 3600: past it the ingest replaces a
+# device's time, and the read layer refuses a value further ahead, evaluate.MAX_AHEAD). Its deadband is below the limit.
+CLOCK_SKEW_BOUNDS = (1, 3600)
 # Past these, inside the bounds, a value is shown with a warning on the rules' page, never refused: the alarm protects less
 # than the owner's decisions (§7a: critical at once and escalated after 5 min, warning after 30 s and 30 min) intended.
 USUAL_BOUNDS = {Severity.CRITICAL: {'on_delay_seconds': 0, 'escalation_minutes': 15},
@@ -354,6 +364,10 @@ class SeverityPolicy(AuditedModel):
     escalation_minutes = models.PositiveIntegerField(_('Escalate after (minutes)'))
     delivery_attempts = models.PositiveIntegerField(
         _('Delivery attempts'), validators=[MinValueValidator(ATTEMPTS_BOUNDS[0]), MaxValueValidator(ATTEMPTS_BOUNDS[1])])
+    clock_skew_seconds = models.PositiveIntegerField(
+        _('Device clock off by more than (seconds)'),
+        validators=[MinValueValidator(CLOCK_SKEW_BOUNDS[0]), MaxValueValidator(CLOCK_SKEW_BOUNDS[1])])
+    clock_skew_deadband_seconds = models.PositiveIntegerField(_('Device clock deadband (seconds)'))
 
     class Meta:
         db_table = 'alarm_severity_policies'
@@ -373,6 +387,11 @@ class SeverityPolicy(AuditedModel):
             models.CheckConstraint(condition=Q(delivery_attempts__gte=ATTEMPTS_BOUNDS[0],
                                                delivery_attempts__lte=ATTEMPTS_BOUNDS[1]),
                                    name='chk_alarm_severity_policies_attempts'),
+            models.CheckConstraint(condition=Q(clock_skew_seconds__gte=CLOCK_SKEW_BOUNDS[0],
+                                               clock_skew_seconds__lte=CLOCK_SKEW_BOUNDS[1],
+                                               clock_skew_deadband_seconds__gte=0,
+                                               clock_skew_deadband_seconds__lt=models.F('clock_skew_seconds')),
+                                   name='chk_alarm_severity_policies_clock'),
             # A severity's rule is never deleted (cross review F6): it is changed. A database trigger refuses DELETE too
             # (migration 0006); a row lost all the same is the evaluation's to survive (alarms/rules.py).
             models.CheckConstraint(condition=Q(is_deleted=False), name='chk_alarm_severity_policies_kept'),
@@ -390,6 +409,16 @@ class SeverityPolicy(AuditedModel):
             if value is not None and low is not None and not low <= value <= high:
                 errors[field] = _('For a %(severity)s alarm, from %(low)d to %(high)d %(unit)s.') % {
                     'severity': self.get_severity_display().lower(), 'low': low, 'high': high, 'unit': unit}
+        if (self.clock_skew_seconds is not None and self.clock_skew_deadband_seconds is not None
+                and self.clock_skew_deadband_seconds >= self.clock_skew_seconds):
+            errors['clock_skew_deadband_seconds'] = _('Below the limit it belongs to.')
+        others = {row.severity: row.clock_skew_seconds for row in SeverityPolicy.objects.exclude(pk=self.pk)}
+        if self.clock_skew_seconds is not None and 'clock_skew_seconds' not in errors:
+            mine = RANK.get(self.severity)
+            for severity, limit in others.items():
+                if (RANK.get(severity, mine) < mine and limit >= self.clock_skew_seconds) or (
+                        RANK.get(severity, mine) > mine and limit <= self.clock_skew_seconds):
+                    errors['clock_skew_seconds'] = _('A warning’s device clock limit is below the critical one.')
         if errors:
             raise ValidationError(errors)
 

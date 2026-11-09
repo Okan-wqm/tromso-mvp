@@ -10,7 +10,8 @@ the row is back (alarms/sources.py supervise):
 - clear after: the longest of the rows there are (an alarm is never ended sooner than a person asked), else the lowest
   bound;
 - escalate after: the shortest of the rows there are, else the lowest bound;
-- delivery attempts: the most of the rows there are, else the highest bound."""
+- delivery attempts: the most of the rows there are, else the highest bound;
+- device clock limit: the smallest of the rows there are, else the lowest bound; its deadband none."""
 import logging
 from dataclasses import dataclass, field
 from datetime import timedelta
@@ -18,8 +19,8 @@ from decimal import Decimal
 
 from sensors.models.alarm import Severity
 
-from .models import (ATTEMPTS_BOUNDS, DELAY_BOUNDS, ESCALATION_BOUNDS, ON_DELAY_BOUNDS, ParameterDeadband,
-                     SeverityPolicy)
+from .models import (ATTEMPTS_BOUNDS, CLOCK_SKEW_BOUNDS, DELAY_BOUNDS, ESCALATION_BOUNDS, ON_DELAY_BOUNDS,
+                     ParameterDeadband, SeverityPolicy)
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,16 @@ class Rules:
     def delivery_attempts(self, severity):
         """How many times a failing transport is tried with one notification."""
         return self._value(severity, 'delivery_attempts', max, ATTEMPTS_BOUNDS[1])
+
+    def clock_skew(self, severity):
+        """How far a device's clock may be off, either way, before the level holds (missing row: the smallest of the rows
+        there are, else the lowest bound)."""
+        return timedelta(seconds=self._value(severity, 'clock_skew_seconds', min, CLOCK_SKEW_BOUNDS[0]))
+
+    def clock_deadband(self, severity):
+        """How far back inside its limit a device's clock must come before the level clears (missing row: none)."""
+        policy = self.policies.get(severity)
+        return timedelta(seconds=policy.clock_skew_deadband_seconds if policy is not None else DELAY_BOUNDS[0])
 
     def deadband(self, code):
         """The parameter's deadband, in its unit; none without a row."""

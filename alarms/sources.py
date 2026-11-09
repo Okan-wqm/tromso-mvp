@@ -26,9 +26,10 @@ from farm.models.water_point import site_of
 from farm.water import parameters, read as water_read
 from farm.water.read import LIMITED, OXYGEN
 from farm.water.evaluate import ALERTS, RANK, Status, judge, worst
-from sensors.models import AlarmEvent, Binding, Channel
+from sensors import clock as sensor_clock
+from sensors.models import AlarmEvent, Binding, Channel, Device
 
-from . import services
+from . import clock, services
 from .models import Alarm, AlarmSubjectState, ClearCause, Severity, Source
 
 logger = logging.getLogger(__name__)
@@ -257,6 +258,7 @@ ALARM_RULES = 'alarm_rules'
 UNIT_UNEVALUATED = 'unit_unevaluated'
 STEP_FAILED = 'step_failed'
 NO_WATER_POINT = 'no_water_point'
+DEVICE_CLOCK = 'device_clock'
 
 
 def _unit_where(unit):
@@ -385,6 +387,37 @@ def water(now, rules):
     # A unit whose water is read no more (no point to read it at, the parameter gone) keeps its alarm open: nothing says it
     # is over. A unit removed has nothing left to judge: its alarms end (cause "unit removed").
     return settle(subjects + _removed(units, now), now, rules)
+
+
+def device_clocks(now, rules):
+    """Raises and clears each active device's clock levels at `now` (alarms/clock.py: a warning and a critical level per
+    device, subject `clock:<device>:<severity>`, on the device's site): (opened, cleared). A device removed or deactivated
+    ends its alarms (cause "device removed"). Set-based: one read of the devices, three of their skews, one of the rows."""
+    devices = list(Device.objects.filter(is_active=True).select_related('site'))
+    measured = sensor_clock.skews(now, [device.pk for device in devices])
+    subjects = []
+    for device in devices:
+        skew = measured.get(device.pk)
+        for severity in HOLDS:
+            subjects.append(Subject(
+                f'clock:{device.pk}:{severity}', skew is not None and clock.holds(skew, severity, rules),
+                skew is not None and clock.clear(skew, severity, rules), now, severity,
+                lambda device=device, skew=skew, severity=severity: {
+                    'at': now, 'severity': severity, 'source': Source.SYSTEM, 'parameter': DEVICE_CLOCK,
+                    'device': device, 'site': device.site,
+                    'summary': _text(_('%(device)s: %(skew)s of the platform’s (its values still count; their alarms '
+                                       'are never delayed).'), device=device.code, skew=_clock_text(skew))}))
+    there = {str(device.pk) for device in devices}
+    for key, severity in AlarmSubjectState.objects.filter(key__startswith='clock:', open_alarm__isnull=False).values_list(
+            'key', 'open_alarm__severity'):
+        if key.split(':')[1] not in there:
+            subjects.append(Subject(key, False, False, now, severity, None, structural=ClearCause.DEVICE_REMOVED))
+    return settle(subjects, now, rules)
+
+
+def _clock_text(skew):
+    with audit.source_language():
+        return str(clock.describe(skew))
 
 
 def supervise(now, rules, steps, failed_steps):

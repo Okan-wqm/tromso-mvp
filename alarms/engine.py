@@ -2,12 +2,13 @@
 
 1. the sensor rules are checked (sensors/alarms.py `evaluate`) and their events mirrored (alarms/sources.py);
 2. the water limits open and clear their alarms (alarms/sources.py);
-3. every open alarm nobody has acknowledged gets the notifications of its level (rules added since reach it too), and
+3. each device's clock is judged against the platform's (alarms/clock.py);
+4. every open alarm nobody has acknowledged gets the notifications of its level (rules added since reach it too), and
    goes on to the next level with a rule that reaches it when its level was notified at least the platform owner's
    escalation time ago, or at once when nobody could be notified at its level;
-4. every queued notification whose channel has a transport is handed to it (alarms/transports.py). None is connected
+5. every queued notification whose channel has a transport is handed to it (alarms/transports.py). None is connected
    today: nothing is sent, and the outbox waits;
-5. the alarm system supervises itself (alarms/sources.py supervise): a step that failed and its own configuration (a
+6. the alarm system supervises itself (alarms/sources.py supervise): a step that failed and its own configuration (a
    missing rule row) are critical alarms of their own.
 Each step runs in its own transaction under a transaction-level advisory lock, so two loops never queue, escalate or send
 twice, and a step that fails rolls back alone, is logged and counted, and the others still run (alarm plan, defect 5)."""
@@ -95,15 +96,20 @@ def _route(alarms, now, summary, rules):
 
 
 def _unsuppressed(alarms):
-    """The alarms whose people are notified: all but a water warning while the same parameter's critical alarm is open
+    """The alarms whose people are notified: all but a warning level while the same subject's critical level is open (a
+    unit's quantity, a device's clock)
     (ISA-18.2: the low level under the low-low one); it is still raised and recorded, and notified once the critical
     clears with the warning still open."""
-    def subject(alarm):         # the unit's quantity (cross review F7: the unit, never the point that stood for it)
-        return alarm.point.unit_id, sources.slot_of(alarm.parameter)
-    critical = {subject(alarm) for alarm in alarms
-                if alarm.source == Source.WATER_LIMIT and alarm.severity == Severity.CRITICAL}
-    return [alarm for alarm in alarms if not (alarm.source == Source.WATER_LIMIT and alarm.severity == Severity.WARNING
-                                              and subject(alarm) in critical)]
+    def subject(alarm):
+        """The subject of a level, or None for an alarm that has no levels: a unit's quantity (cross review F7: the
+        unit, never the point that stood for it), or a device's clock."""
+        if alarm.source == Source.WATER_LIMIT:
+            return 'water', alarm.point.unit_id, sources.slot_of(alarm.parameter)
+        if alarm.parameter == sources.DEVICE_CLOCK:
+            return 'clock', alarm.device_id
+        return None
+    critical = {subject(alarm) for alarm in alarms if alarm.severity == Severity.CRITICAL} - {None}
+    return [alarm for alarm in alarms if not (alarm.severity == Severity.WARNING and subject(alarm) in critical)]
 
 
 def _step(name, summary, work):
@@ -149,6 +155,7 @@ def run_once(now=None):
     steps = [('sensor rules', lambda: sensor_alarms.evaluate(now)),
              ('sensor events', lambda: count(sources.sensor_events())),
              ('water', lambda: count(sources.water(now, rules))),
+             ('device clocks', lambda: count(sources.device_clocks(now, rules))),
              ('notify', notify),
              ('send', send)]
     for name, work in steps:

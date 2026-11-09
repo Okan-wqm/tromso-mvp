@@ -5,7 +5,9 @@
 // desktop's width; a wide table scrolls in its own frame and shows that more of it lies to a side; row actions stand apart;
 // a water value's origin and age stand on their own line under the value and break only between the two; nothing of a
 // monitoring card spills out of it, in Norwegian too; a form's one primary button comes last, on the row of the others.
-// Test code only.
+// The page loads the product's own typefaces (static/css/fonts.css, static/fonts), as app_base.html does: without them the
+// browser falls back to the machine's system-ui font (Segoe UI on Windows, DejaVu Sans on Linux, a much wider face), and
+// a width measured on one machine says nothing about another. Test code only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
@@ -21,6 +23,7 @@ const BROWSERS = [
   '/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser',
 ].filter((path) => path && existsSync(path));
 const CSS = resolve('static/css');
+const FONTS = resolve('static/fonts');
 const PAGES = resolve('frontend/test/pages');
 const WIDTHS = [390, 1024, 1440];
 const PARTS = ['meal', 'tabs', 'stock', 'water', 'matrix', 'card-en', 'card-nb', 'approve'];
@@ -29,18 +32,25 @@ const part = (name: string): string => `<section id="part-${name}">${readFileSyn
 
 function page(): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>layout</title>
-<link rel="stylesheet" href="/css/tokens.css"><link rel="stylesheet" href="/css/base.css"><link rel="stylesheet" href="/css/ui.css"><link rel="stylesheet" href="/css/app.css"><link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/fonts.css"><link rel="stylesheet" href="/css/tokens.css"><link rel="stylesheet" href="/css/base.css"><link rel="stylesheet" href="/css/ui.css"><link rel="stylesheet" href="/css/app.css"><link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/monitor.css"></head><body><div class="shell"><aside class="rail" id="rail"><nav class="rail-nav"><a class="rail-link" id="rail-units" href="#"><svg class="icon"></svg><span class="rail-label">Production units</span></a></nav></aside><div class="console">
 <header class="topbar"><div class="title-block"><h1>Layout</h1></div></header><main class="content">${PARTS.map(part).join('\n')}</main></div></div></body></html>`;
 }
 
+// The page, static/css and static/fonts (fonts.css asks for ../fonts/*.woff2).
+const SERVED: [string, string, string][] = [['/css/', CSS, 'text/css'], ['/fonts/', FONTS, 'font/woff2']];
+
 function serve(): Promise<Server> {
   const server = createServer((request, response) => {
-    const file = join(CSS, (request.url ?? '').replace(/^\/css\//, ''));
-    if (request.url === '/') response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }).end(page());
-    else if (request.url?.startsWith('/css/') && file.startsWith(CSS) && existsSync(file)) {
-      response.writeHead(200, { 'Content-Type': 'text/css' }).end(readFileSync(file));
-    } else response.writeHead(404).end();
+    const url = request.url ?? '';
+    if (url === '/') return void response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }).end(page());
+    for (const [prefix, root, type] of SERVED) {
+      const file = join(root, url.slice(prefix.length));
+      if (url.startsWith(prefix) && file.startsWith(root) && existsSync(file)) {
+        return void response.writeHead(200, { 'Content-Type': type }).end(readFileSync(file));
+      }
+    }
+    response.writeHead(404).end();
   });
   return new Promise((done) => server.listen(0, '127.0.0.1', () => done(server)));
 }
@@ -75,6 +85,14 @@ test('the page layout of the real templates', { skip: BROWSERS.length ? false : 
     // window size, longer than the 50 ms the steps wait, and a measure taken mid-move failed one run in three.
     const tab = await browser.newPage({ reducedMotion: 'reduce' });
     await tab.goto(`http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}/`);
+    // The typefaces are loaded before anything is measured (font-display: swap paints the fallback first).
+    const loaded = await tab.evaluate(async () => {
+      await Promise.all(['400 15px "Atkinson Hyperlegible Next"', '600 24px "Bricolage Grotesque"'].map((face) => document.fonts.load(face)));
+      await document.fonts.ready;
+      const families = [...document.fonts].filter((font) => font.status === 'loaded').map((font) => font.family.replace(/"/g, ''));
+      return [...new Set(families)].sort();
+    });
+    assert.deepEqual(loaded, ['Atkinson Hyperlegible Next', 'Bricolage Grotesque'], 'the product\'s typefaces are loaded (static/css/fonts.css)');
 
     for (const width of WIDTHS) {
       await tab.setViewportSize({ width, height: 900 });
@@ -105,7 +123,21 @@ test('the page layout of the real templates', { skip: BROWSERS.length ? false : 
         await tab.setViewportSize({ width, height: 900 });
         await tab.waitForTimeout(50);
         const meal = await frame(tab, '#part-meal .table-wrap');
-        if (width === 1440) assert.ok(!meal.wide, 'the meal board fits its frame at 1440 px (README: five numbers never clip)');
+        if (width === 1440) {
+          assert.ok(!meal.wide, 'the meal board fits its frame at 1440 px (README: five numbers never clip)');
+          // With room to spare: the least width the table takes (every column at its longest unbreakable line, measured
+          // with the table squeezed to nothing) stays 24 px inside the frame, headroom for another operating system's
+          // glyph rasterising (Windows and Linux Chrome differ by a few px) and for a record a little longer than these.
+          const fit = await tab.locator('#part-meal .table-wrap').evaluate((wrap) => {
+            const table = wrap.querySelector('table')!;
+            table.style.width = '0px';
+            const least = table.getBoundingClientRect().width;
+            table.style.width = '';
+            return { frame: wrap.clientWidth, least };
+          });
+          assert.ok(fit.frame - fit.least >= 24,
+            `the meal board needs ${fit.least} px of its ${fit.frame} px frame at 1440 px: ${fit.frame - fit.least} px to spare, 24 at least`);
+        }
         const hidden = await tab.locator('#part-meal .table-wrap').evaluate((wrap) => {
           wrap.scrollLeft = wrap.scrollWidth;
           const first = wrap.querySelector('thead .sticky-first')!.getBoundingClientRect();

@@ -34,6 +34,10 @@ concurrency:
 env:
   PYTHON_VERSION: "3.12"
   NODE_VERSION: "22"
+  # docker/build-push-action uploads every build's record as an artifact, on every run of three jobs: that filled the
+  # account's artifact storage ("Artifact storage quota has been hit"). A job keeps its image build's record only when
+  # that build failed, for 3 days (the step "Build record of the failed image build"); the job summary stays.
+  DOCKER_BUILD_RECORD_UPLOAD: "false"
 
 jobs:
   # One job on every event, only SUITE differs: 0 on a pull request (the checks), 1 otherwise (the checks and the suite).
@@ -66,6 +70,7 @@ jobs:
         run: sh scripts/testrunner/image.sh >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        id: build
         with:
           context: ${{ steps.image.outputs.context }}
           file: ${{ steps.image.outputs.file }}
@@ -75,6 +80,20 @@ jobs:
           push: false
           cache-from: type=gha,scope=testrunner
           cache-to: type=gha,mode=max,scope=testrunner
+      # Only when the build failed (the workflow's DOCKER_BUILD_RECORD_UPLOAD): its record (BuildKit's logs and trace, for
+      # Docker Desktop's Builds view), kept 3 days. Neither step can fail the job or hide the build's own failure.
+      - name: Build record of the failed image build
+        if: failure() && steps.build.outcome == 'failure'
+        continue-on-error: true
+        run: docker buildx history export --finalize --output "$RUNNER_TEMP/build-record.dockerbuild"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure() && steps.build.outcome == 'failure'
+        continue-on-error: true
+        with:
+          name: build-record-${{ github.job }}
+          path: ${{ runner.temp }}/build-record.dockerbuild
+          retention-days: 3
+          if-no-files-found: ignore
 
       # The database server is the one scripts/test.sh starts (timescale/timescaledb:2.17.2-pg17, data in memory, the
       # job scheduler off, fsync off): a GitHub service container cannot be given those server options, and the
@@ -162,6 +181,7 @@ jobs:
         run: sh scripts/testrunner/image.sh >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        id: build
         with:
           context: ${{ steps.image.outputs.context }}
           file: ${{ steps.image.outputs.file }}
@@ -171,6 +191,19 @@ jobs:
           push: false
           # the python job writes this cache; reading it only, two jobs never race to write it
           cache-from: type=gha,scope=testrunner
+      # as in the python job: the record of a failed build only, 3 days, never failing the job
+      - name: Build record of the failed image build
+        if: failure() && steps.build.outcome == 'failure'
+        continue-on-error: true
+        run: docker buildx history export --finalize --output "$RUNNER_TEMP/build-record.dockerbuild"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure() && steps.build.outcome == 'failure'
+        continue-on-error: true
+        with:
+          name: build-record-${{ github.job }}
+          path: ${{ runner.temp }}/build-record.dockerbuild
+          retention-days: 3
+          if-no-files-found: ignore
       - name: Schema (manage.py migrate on the test database)
         working-directory: .
         env:
@@ -227,6 +260,7 @@ jobs:
           persist-credentials: false
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        id: build
         with:
           context: .
           file: docker/testrunner.Dockerfile
@@ -238,6 +272,19 @@ jobs:
             type=gha,scope=chemcore-tools
             type=gha,scope=testrunner
           cache-to: type=gha,mode=max,scope=chemcore-tools
+      # as in the python job: the record of a failed build only, 3 days, never failing the job
+      - name: Build record of the failed image build
+        if: failure() && steps.build.outcome == 'failure'
+        continue-on-error: true
+        run: docker buildx history export --finalize --output "$RUNNER_TEMP/build-record.dockerbuild"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure() && steps.build.outcome == 'failure'
+        continue-on-error: true
+        with:
+          name: build-record-${{ github.job }}
+          path: ${{ runner.temp }}/build-record.dockerbuild
+          retention-days: 3
+          if-no-files-found: ignore
       - name: The gates (chemcore/scripts/test.sh)
         run: docker run --rm -v "$PWD:/repo" -w /repo chemcore-tools:ci sh chemcore/scripts/test.sh
 

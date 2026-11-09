@@ -3762,9 +3762,11 @@ redesign yet.
   `RAIL_FOOT`); "Fish farm" when neither is known.
 - **Tables** on the three pages are real tables in a `ui-table-wrap` that scrolls inside itself, with the first column
   and the row actions sticky; each value is a value face (figure, origin and age), a missing figure says why or "no
-  data", a status is a chip with glyph and word. Words wrap inside their columns and the meal board fits a 1440 px window
-  (the browser layout test checks it on `frontend/test/pages/meal.html`); a wider table scrolls in its frame, its sticky
-  columns shaded so a column passing under them reads as going on. Dates stay dd.mm.yyyy in every language.
+  data", a status is a chip with glyph and word. Words wrap inside their columns, column heads too (a figure column's
+  head as well; its figures stay on one line), and the meal board fits a 1440 px window with at least 24 px to spare (the
+  browser layout test checks it on `frontend/test/pages/meal.html` in the product's own typefaces, so Windows and Linux
+  Chrome measure alike); a wider table scrolls in its frame, its sticky columns shaded so a column passing under them
+  reads as going on. Dates stay dd.mm.yyyy in every language.
 
 ## Browser code
 
@@ -4012,7 +4014,7 @@ What one tab needed and the next ones will too lives in `core/`:
 
 The layout rules every page relies on are in the style sheets, once, and checked by tests (`core/tests_templates.py`
 reads the templates and the style sheets; `frontend/test/layout.browser.test.ts` lays the parts out in a real browser at
-390, 1024 and 1440 px):
+390, 1024 and 1440 px, in the typefaces of `static/css/fonts.css`, not the machine's fallback font):
 
 - **No page scrolls sideways.** A word longer than the line (a content hash) breaks (`.content`); a grid track is never a
   bare `1fr` (that is at least as wide as its widest content) but `minmax(0, …fr)`; a filter's fields, view tabs and a
@@ -4319,6 +4321,11 @@ inside the job. When it runs (the owner's decision, 2026-11-08):
 - **The whole Python suite** (an hour or more on a hosted runner): on every push to `main`, nightly at 06:30 UTC (after
   06:00: until the golden-card fix G-03 lands, six subtests of `monitoring.tests.test_golden` fail before 06:00 UTC) and
   by hand (Actions, CI, Run workflow). These runs carry the other four jobs too and are never cancelled.
+
+Artifacts: none on a passing run. The three jobs that build an image (`python`, `rust`, `chemcore`) keep the build's
+record (`docker buildx history export`, for Docker Desktop's Builds view) only when that build failed, for 3 days, as
+`build-record-<job>`; `docker/build-push-action`'s own upload of every build's record is off (`DOCKER_BUILD_RECORD_UPLOAD`),
+as it filled the account's artifact storage. Neither step can fail a job or hide its failure (`continue-on-error`).
 
 The python job is the same job on every event, only `SUITE` differs; its logic is in one place, `scripts/test.sh` and
 `scripts/testrunner/in-container.sh`, which a developer runs the same way. The suite itself is not run on a pull request,

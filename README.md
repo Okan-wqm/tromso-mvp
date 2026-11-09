@@ -294,6 +294,13 @@ code, filters by category, water environment, cleaner fish (any, lumpfish, wrass
   measurement and a withdrawal projected when none was measured at all do not silently count as nothing (see
   Operations › Health). It is the farm's own assumption, never filled in from the catalogue; a low value is the
   conservative choice, and empty keeps such a day at 0 °C.
+- **Stocking**: under **Batches of different sizes**, the **max weight ratio of batches in one unit** (1 to 1000, a
+  database check, empty allowed): how many times heavier, on average, one batch of the species may be than another
+  sharing a unit with it (the owner: fish of very different weights of the same species must not be in the same tank;
+  the bigger ones outcompete the smaller at feeding). A stocking, transfer or grading beyond it asks for an
+  acknowledgement first, and a unit holding such a mix says so (see Production units). Empty means no check, and the
+  list says "No check"; the list's **Size limit** column shows it (2×). Migration 0034 gave every species there the
+  owner's default 2; a new species is offered 2 on its form. It is not a withdrawal input: it is edited freely.
 - **Status and notes**: active, experimental, inactive or discontinued; notes. Active and
   experimental species are the ones a new batch can take (Production units).
 
@@ -505,7 +512,11 @@ production department · site), batch ("B-2026-001 + B-2026-004" and the species
 stock"), fish, average weight, biomass, density · capacity with its bar, biological FCR (bFCR), survival and last
 fed, both from the feeding records (see Feeding records; the source showed 0 and nothing). A row
 picked (accent tint and bar) and a row over its max biomass (amber, an "Over" mark, a rust bar) look
-different. The filters and the open unit are in the address, so a view can be linked and the back
+different. A unit holding lots of one species further apart in weight than the species' size limit (stocked with the
+acknowledgement, or weighed apart since) has a warning chip by its code, on this page and on the Meal board, at the
+weights each page shows: here the measured ones with their day ("Mixed sizes: 4,217 g as stocked 10 Oct 2026 and 78.0 g
+weighed 3 Nov 2026 (limit 2×)", `UnitStock.size_mixes`), on the board its estimates ("4,602 g est."), so the chip and
+the line beside it never disagree; cleaner fish against their own species only. The filters and the open unit are in the address, so a view can be linked and the back
 button works; a row is one link. Two empty states: no units at all (with a link to Setup) and no match
 (with "Clear filters"). The column chooser and sorting come next.
 For people who may read the water (see Water chemistry), the table also has **Temp. (°C)** and **O₂ (mg/L)**
@@ -561,7 +572,23 @@ several batches of it; on a sea site cleaner fish may join the production specie
 writes and folds every batch involved from its first line, so a backdated
 operation is accepted only if every later day stays right (no share ever below 0 fish, and every feeding
 recorded in the unit still finds fish there on its day: "The feeding of 2 Nov in T-01 would have no fish:
-void it first."); above a unit's max biomass it asks for an acknowledgement, stored on the operation. The unit's status follows its fish:
+void it first."); above a unit's max biomass it asks for an acknowledgement, stored on the operation. The same way, a
+stocking, a transfer or split and a grading that would leave a unit holding lots of one species further apart in
+weight than the species' size limit (Setup › Species; none set: no check) ask for an acknowledgement of their own ("T-01
+would hold Atlantic salmon (SAL) of very different sizes on 4 Nov 2026: B-2026-004 at 4,217 g as stocked 10 Oct 2026
+and B-2026-007 at 78.0 g as stocked 20 Oct 2026, 54.07 times as heavy, above the limit of 2×"), stored on the
+operation (`size_mix_ack`, a database check keeps it to operations that bring fish in) and in its log entry; both
+questions are asked together and each box answers its own. **Lots** (`farm/stock/sizes.py`): a unit's fish by size,
+kept along the fold, so the size classes of one batch put back together after a grading are compared like two batches
+(the cross review's F1); a weighing keeps the lots' spread, a grading's weighing of the fish that stay makes them one.
+The weights compared are the feeding walk's estimates where feed was credited since the measured point, else the
+measured weights, said with their day; the ratio is rounded up to 0.01 so it never reads as the limit; cleaner fish are
+weighed against their own species only, never the salmon they clean. **Every later day too** (F2): the timeline with
+the operation is folded against the one without it, and a unit over its capacity, or a mix, that appears on any day
+from the operation's date on because of it is asked about (a backdated stocking before a later one), at that day. **A
+void** (F3) asks the same of the fish it brings back, with the same boxes on its dialog, the answer kept in its log
+entry. A weighing, a mortality or any operation that brings no fish in is never asked (a weighing that shows a mix is
+warned about on the pages instead). The unit's status follows its fish:
 the first fish make a preparing or fallow unit active, the last fish out make an active one fallow and
 a harvesting or quarantined one due for cleaning; a void that brings fish back makes the unit active.
 Every operation, every void and every status change is in the activity log ("Voided", with the reason).
@@ -580,6 +607,17 @@ medicine withdrawal and the water judging still see every fish. Which of the two
 record (see Feeding records). `check_stock` holds the species rule with the same function as the service. Whether a
 species is a cleaner fish is fixed once fish of it have been stocked (every read takes the flag live; lumpfish to
 wrasse may change).
+
+**The development seed's mixed cages.** `manage.py fix_seed_size_mix --user <name> [--dry-run]
+[--accept-handling-warnings]` separates what the seed history (seed-history-2026-11) stocked together in Tromsø's TG-M01
+and TG-M02: the post-smolt B-2026-005 and the smolt B-2026-007 go by the app's own transfers (reason "growth stage",
+dated the farm's today) into cages of their own, TG-M03 and TG-M04, made like TG-M02 through the units form; the
+grow-out salmon B-2026-004 and its lumpfish stay in TG-M01, and TG-M02's lumpfish follow the post-smolt into TG-M03
+after them (reason "other", the notes say why: a cage of cleaner fish alone is not realistic), leaving TG-M02 empty. Not dated back to the stocking: every later record of those fish
+(mortalities, weighings, the escape, the cages' feedings) was booked in the old cages, and the stock refuses a transfer
+that would leave them without their fish. One transaction, locks in the lock order, checked before it commits (the
+cages, `check_stock` finding nothing new); run again it does nothing; `--dry-run` only reads, in a read-only
+transaction. The run needs the database migrated.
 
 **Batch details.** A batch's year class (årsklasse) and whether its fish are farmed or wild-caught are what the reports
 ask of a batch and what fish stocked before they were asked for do not have; stock is never edited, so the drawer's batch
@@ -939,7 +977,14 @@ system), a line per batch: fish and estimated biomass, the estimated and the mea
 mark), the temperature with its age and whether it is the unit's or a loop's (Record water sample), the protocol and
 which row applied ("via unit T-01", "via batch B-2026-001", "via B-2026-001 in T-01"), the band, feed and pellet,
 the expected FCR, the SFR (the two cells read, in its title), the ration and meals × kg, fed today, remaining and the
-next meal; a unit without a ration says why in the row. **Record meal** opens the existing feeding dialog with today,
+next meal; a unit without a ration says why in the row. Cleaner fish beside production fish without a feeding table
+of their own (no protocol row applies to them: they eat what the salmon leave, their own feed block and the lice) are
+no fault (cleaner fish alone in a unit, a hatchery's tank of lumpfish, are its production fish: no table is a gap, said
+as for any fish): their
+line is marked **Cleaner fish**, with their fish and weight, and has no ration, no "No protocol is assigned" and no
+"Estimate incomplete" for their feedings (their estimate stays the measured weight); the drawer, Records' days view and
+the monitoring card say the same. A protocol of their own (their batch's row, or a unit's row of their species) gives
+them a ration on their own line, never in the production fish's figures or the next meal (D-1). **Record meal** opens the existing feeding dialog with today,
 now on the site's clock, the band's feed, the next meal's kilos and one meal, posts the existing feeding record path
 unchanged (`farm.feeding.services.record_feeding`) and comes back to the board. No new column on `feeding_records`.
 The unit's drawer on Production units has the same per batch under Feeding (Today's ration).

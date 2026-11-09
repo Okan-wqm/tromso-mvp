@@ -84,6 +84,17 @@ def density(value):
 
 
 @register.filter
+def times(value):
+    """A ratio, as a species' size limit reads: 2×, 2.5× (no decimals a limit was not given with)."""
+    if value in (None, ''):
+        return DASH
+    value = Decimal(value)
+    decimals = 0 if value == value.to_integral_value() else 2 if value * 10 % 1 else 1
+    # Translators: a ratio, how many times as much, e.g. 2× (a size limit).
+    return _('%(value)s×') % {'value': _number(value, decimals)}
+
+
+@register.filter
 def percent(value, decimals=0):
     """97.4 % in English and Norwegian, %97,4 in Turkish."""
     if value in (None, ''):

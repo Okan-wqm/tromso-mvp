@@ -1346,6 +1346,16 @@ msgstr ""
 
 #, python-format
 msgid ""
+"%(unit)s would hold %(species)s of very different sizes on %(date)s: %(heavy_batch)s at %(heavy)s"
+" and %(light_batch)s at %(light)s, %(ratio)s times as heavy, above the limit of %(limit)s (Setup "
+"› Species). Tick the box below to put them together anyway."
+msgstr ""
+"%(unit)s ville holdt %(species)s av svært ulik størrelse %(date)s: %(heavy_batch)s på %(heavy)s "
+"og %(light_batch)s på %(light)s, %(ratio)s ganger så tung, over grensen på %(limit)s (Oppsett › "
+"Arter). Kryss av i boksen under for å sette dem sammen likevel."
+
+#, python-format
+msgid ""
 "%(unit)s would hold %(species)s on %(date)s: a unit holds one species at a time (cleaner fish "
 "join the production fish only on a sea site)."
 msgstr ""
@@ -1408,6 +1418,11 @@ msgstr "%(value)s t"
 msgid "%(value)s °C"
 msgstr "%(value)s °C"
 
+#. Translators: a ratio, how many times as much, e.g. 2× (a size limit).
+#, python-format
+msgid "%(value)s×"
+msgstr "%(value)s×"
+
 #, python-format
 msgid "%(volume)s m³"
 msgstr "%(volume)s m³"
@@ -1419,6 +1434,14 @@ msgstr "%(weighed)s rund vekt, %(book)s i beholdningen"
 #, python-format
 msgid "%(weight)s as stocked"
 msgstr "%(weight)s ved utsett"
+
+#, python-format
+msgid "%(weight)s as stocked %(date)s"
+msgstr "%(weight)s ved utsett %(date)s"
+
+#, python-format
+msgid "%(weight)s est."
+msgstr "%(weight)s ansl."
 
 #, python-format
 msgid "%(weight)s is outside %(protocol)s (%(range)s)."
@@ -3595,6 +3618,12 @@ msgstr "Fiskegrupper og tilbakeholdelsestid"
 msgid "Batches fed"
 msgstr "Fôrede fiskegrupper"
 
+msgid "Batches of different sizes"
+msgstr "Grupper av ulik størrelse"
+
+msgid "Batches of different sizes, accepted"
+msgstr "Grupper av ulik størrelse, godtatt"
+
 msgid "Bath"
 msgstr "Bad"
 
@@ -4253,6 +4282,9 @@ msgstr "Rensefisk: %(fish)s fisk, %(biomass)s: ikke med i tallene under, som gje
 #, python-format
 msgid "Cleaner fish: %(fish)s · %(weight)s · %(biomass)s"
 msgstr "Rensefisk: %(fish)s · %(weight)s · %(biomass)s"
+
+msgid "Cleaner fish: no feeding table of their own."
+msgstr "Rensefisk: ingen egen fôringstabell."
 
 msgid "Cleaning"
 msgstr "Rengjøring"
@@ -6051,6 +6083,13 @@ msgstr "Fisk nå"
 msgid "Fish of the own hatchery are farmed, fish caught in the wild wild-caught."
 msgstr "Fisk fra eget klekkeri er oppdrett, fisk fanget i naturen er villfanget."
 
+msgid ""
+"Fish of very different weights of the same species are not kept in one unit: the bigger ones "
+"outcompete the smaller at feeding."
+msgstr ""
+"Fisk av samme art med svært ulik vekt holdes ikke i samme enhet: de store utkonkurrerer de små "
+"ved fôringen."
+
 msgid "Fish recaptured"
 msgstr "Gjenfanget fisk"
 
@@ -6867,6 +6906,15 @@ msgstr ""
 "den lengste av sin regel og transportregelen. For kort sulting er en advarsel, aldri en sperre: å"
 " fortsette registreres og logges som kritisk. Dette er driftens egne regler: startverdiene må "
 "kontrolleres med veterinæren din."
+
+msgid ""
+"How many times heavier, on average, one batch of this species may be than another in the same "
+"unit, e.g. 2: fish of 100 g and of 200 g may share a unit. A stocking, transfer or grading beyond"
+" it asks for an acknowledgement first. Empty: no check."
+msgstr ""
+"Hvor mange ganger tyngre, i snitt, én gruppe av denne arten kan være enn en annen i samme enhet, "
+"f.eks. 2: fisk på 100 g og på 200 g kan dele en enhet. Et utsett, en flytting eller en sortering "
+"utover dette ber først om en bekreftelse. Tom: ingen kontroll."
 
 msgid "How often the device sends a message. Offline after three times this without one."
 msgstr "Hvor ofte apparatet sender en melding. Frakoblet etter tre ganger dette uten en melding."
@@ -7767,6 +7815,9 @@ msgstr "Maks. dybde (m)"
 msgid "Max submersion depth (m)"
 msgstr "Maks. nedsenkingsdybde (m)"
 
+msgid "Max weight ratio of batches in one unit"
+msgstr "Største vektforhold mellom grupper i én enhet"
+
 msgid "Maximum flow rate"
 msgstr "Maksimal vannmengde"
 
@@ -7936,6 +7987,10 @@ msgstr "Mangler"
 
 msgid "Mixed"
 msgstr "Blandet"
+
+#, python-format
+msgid "Mixed sizes: %(heavy)s and %(light)s (limit %(limit)s)"
+msgstr "Blandede størrelser: %(heavy)s og %(light)s (grense %(limit)s)"
 
 msgid "Mobile"
 msgstr "Bevegelige"
@@ -8306,6 +8361,9 @@ msgstr "Ingen kanal på apparatet samsvarer"
 
 msgid "No channels yet: add them on the Channels page."
 msgstr "Ingen kanaler ennå: legg dem til på Kanaler-siden."
+
+msgid "No check"
+msgstr "Ingen kontroll"
 
 msgid "No checklist."
 msgstr "Ingen sjekkliste."
@@ -10149,6 +10207,9 @@ msgstr ""
 "Bare for fisk som høstes og sendes til slakteriet. Oppgis den sammen med timer eller dager, må "
 "begge nås."
 
+msgid "Put batches of different sizes together"
+msgstr "Sett sammen grupper av ulik størrelse"
+
 msgid "QoS 0 messages dropped on a full queue"
 msgstr "QoS 0-meldinger forkastet fordi køen var full"
 
@@ -11514,6 +11575,9 @@ msgstr "Størrelsesklasse"
 
 msgid "Size classes"
 msgstr "Størrelsesklasser"
+
+msgid "Size limit"
+msgstr "Størrelsesgrense"
 
 msgid "Skip to content"
 msgstr "Hopp til innholdet"
@@ -13601,6 +13665,15 @@ msgstr "Enhetsfaktoren er et tall forskjellig fra 0."
 
 msgid "The unit the instrument sends, when it differs from the quantity’s."
 msgstr "Enheten instrumentet sender, når den avviker fra parameterens."
+
+msgid ""
+"The unit will hold batches of one species further apart in weight than the species allows: the "
+"bigger fish outcompete the smaller at feeding. Tick it only when that is meant, e.g. for the days"
+" before a grading."
+msgstr ""
+"Enheten vil holde grupper av én art med større vektforskjell enn arten tillater: de store fiskene"
+" utkonkurrerer de små ved fôringen. Kryss av bare når det er meningen, f.eks. de dagene før en "
+"sortering."
 
 msgid ""
 "The unit will hold more fish than its max density allows. Tick it only when that is meant, e.g. "
@@ -15762,6 +15835,9 @@ msgstr "f.eks. 150"
 
 msgid "e.g. 1–10 kg/h"
 msgstr "f.eks. 1–10 kg/h"
+
+msgid "e.g. 2"
+msgstr "f.eks. 2"
 
 msgid "e.g. 20"
 msgstr "f.eks. 20"

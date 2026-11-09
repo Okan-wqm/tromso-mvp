@@ -200,6 +200,7 @@ NOT_INPUT_COLUMNS = {
     ('feeds', 'is_deleted'): 'a deleted feed keeps its feedings and their type; no reader filters a feed by it',
     ('feeds', 'status'): 'whether a feed is offered for new feedings, not what a past one was',
     ('species', 'status'): 'whether a species is offered for new batches',
+    ('species', 'max_weight_ratio'): 'the size limit: a question when fish arrive and a warning chip, never a withdrawal',
     ('systems', 'status'): 'not read: a loop counts while it is live and has an active middle point',
     ('systems', 'max_biomass_kg'): 'a loop\'s capacity, not its water',
     ('systems', 'site_id'): 'the loop\'s site: a name, the units\' own site gives the clock',

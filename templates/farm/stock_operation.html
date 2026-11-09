@@ -28,7 +28,7 @@
   {% endif %}
   {% block intro %}{% endblock %}
   <div class="form-grid">
-    {% for field in form.visible_fields %}{% if field.name != form.ack_field and field.name != "handling_ack" %}{% include "registration/_field.html" %}{% endif %}{% endfor %}
+    {% for field in form.visible_fields %}{% if field.name in form.ack_fields %}{% elif field.name != "handling_ack" %}{% include "registration/_field.html" %}{% endif %}{% endfor %}
   </div>
   {% if rows %}
   <fieldset class="form-fieldset" data-formset>
@@ -43,9 +43,9 @@
   </fieldset>
   {% endif %}
   {% if form.handling_kind %}{% include "farm/_handling_panel.html" %}{% endif %}
-  {% if form.needs_ack %}
-  <div class="notice notice-warning">{% with field=form.ack %}{% include "registration/_field.html" %}{% endwith %}</div>
-  {% endif %}
+  {% for field in form.shown_acks %}
+  <div class="notice notice-warning">{% include "registration/_field.html" %}</div>
+  {% endfor %}
   <div class="form-actions">
     <a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Cancel" %}</a>
     <button type="submit" class="button button-inline">{{ heading }}</button>

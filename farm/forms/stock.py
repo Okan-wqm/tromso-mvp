@@ -77,20 +77,41 @@ def acknowledgement():
                     'e.g. for a few days before a split.'))
 
 
+def size_mix_acknowledgement():
+    """The box that puts batches of very different sizes of one species together (the species' size limit, Setup ›
+    Species; farm/stock/services.py, step 5)."""
+    return forms.BooleanField(
+        label=_('Put batches of different sizes together'), required=False,
+        help_text=_('The unit will hold batches of one species further apart in weight than the species allows: the '
+                    'bigger fish outcompete the smaller at feeding. Tick it only when that is meant, e.g. for the days '
+                    'before a grading.'))
+
+
 class Acknowledged:
     """A form whose service may ask the person to confirm something unusual (fish above a unit's max
-    biomass, a feeding above the usual rate): the box `ack_field` is offered once the service asked, or
-    when it is ticked already, and the dialog shows it apart from the other fields."""
+    biomass, batches of very different sizes together, a feeding above the usual rate): each box of `ack_fields` is
+    offered once the service asked for it, or when it is ticked already, and the dialog shows them apart from the
+    other fields (`shown_acks`), each answering its own question."""
 
-    ack_field = 'over_capacity_ack'
+    ack_fields = ('over_capacity_ack',)
+
+    @property
+    def ack_field(self):
+        return self.ack_fields[0]
 
     @property
     def ack(self):
         return self[self.ack_field]
 
     @property
+    def shown_acks(self):
+        """The boxes to show: those the service asked for, or ticked already."""
+        return [self[name] for name in self.ack_fields
+                if name in self.fields and (name in self.errors or bool(self[name].value()))]
+
+    @property
     def needs_ack(self):
-        return self.ack_field in self.errors or bool(self.ack.value())
+        return bool(self.shown_acks)
 
 
 class AcknowledgeInput(forms.CheckboxInput):
@@ -332,7 +353,9 @@ class BatchInputForm(Acknowledged, ServiceErrors, forms.ModelForm):
         label=_('Average weight (g)'), max_digits=12, decimal_places=4, min_value=Decimal('0.0001'), localize=True,
         widget=forms.TextInput(attrs=DECIMAL), help_text=_('As weighed on arrival; to 0.0001 g for eggs and larvae.'))
     over_capacity_ack = acknowledgement()
+    size_mix_ack = size_mix_acknowledgement()
 
+    ack_fields = ('over_capacity_ack', 'size_mix_ack')
     service_fields = {'date': 'input_date', 'unit': NON_FIELD_ERRORS, 'batch': NON_FIELD_ERRORS,
                       'count': NON_FIELD_ERRORS}
 
@@ -356,7 +379,7 @@ class BatchInputForm(Acknowledged, ServiceErrors, forms.ModelForm):
 
     field_order = ['species', 'input_stage', 'input_date', 'count', 'avg_weight_g', 'origin', 'provenance',
                    'supplier', 'supplier_batch_ref', 'strain', 'year_class', 'name', 'expected_harvest_date', 'notes',
-                   'over_capacity_ack']
+                   'over_capacity_ack', 'size_mix_ack']
 
     def __init__(self, *args, unit=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -402,7 +425,7 @@ class BatchInputForm(Acknowledged, ServiceErrors, forms.ModelForm):
             strain=data['strain'].strip(), name=data['name'].strip(),
             expected_harvest_date=data['expected_harvest_date'], notes=data['notes'],
             provenance=data['provenance'], year_class=data['year_class'], ack=data['over_capacity_ack'],
-            token=data['token'],
+            size_mix_ack=data['size_mix_ack'], token=data['token'],
             withdrawal_ack=data['withdrawal_ack'])
 
 
@@ -505,20 +528,23 @@ class TransferForm(PlannedForm, HandlingChecked, Acknowledged, OperationForm):
 
     reason = forms.ChoiceField(label=_('Reason'), choices=TransferReason.choices, initial=TransferReason.DENSITY)
     over_capacity_ack = acknowledgement()
+    size_mix_ack = size_mix_acknowledgement()
 
     handling_kind = HandlingKind.TRANSPORT
     plan_kind = HandlingPlanItem.Kind.TRANSPORT
     service_fields = {**OperationForm.service_fields, 'plan_item': NON_FIELD_ERRORS}
     rows = LegFormSet
     rows_label = _('To units')
-    field_order = ['batch', 'date', 'reason', 'notes', 'over_capacity_ack']
+    ack_fields = ('over_capacity_ack', 'size_mix_ack')
+    field_order = ['batch', 'date', 'reason', 'notes', 'over_capacity_ack', 'size_mix_ack']
 
     def save(self, user, rows):
         data = self.cleaned_data
         return services.record_transfer(
             user, source=self.unit, batch=data['batch'], day=data['date'],
             legs=[(row['unit'], row['count']) for row in rows], reason=data['reason'], notes=data['notes'],
-            ack=data['over_capacity_ack'], handling_ack=data['handling_ack'], plan_item=data['plan_item'],
+            ack=data['over_capacity_ack'], size_mix_ack=data['size_mix_ack'], handling_ack=data['handling_ack'],
+            plan_item=data['plan_item'],
             token=data['token'],
             withdrawal_ack=data['withdrawal_ack'])
 
@@ -533,12 +559,14 @@ class GradingForm(HandlingChecked, Acknowledged, OperationForm):
         min_value=Decimal('0.0001'), required=False, localize=True, widget=forms.TextInput(attrs=DECIMAL),
         help_text=_('Required when fish stay in this unit: the grading weighs them too.'))
     over_capacity_ack = acknowledgement()
+    size_mix_ack = size_mix_acknowledgement()
 
     handling_kind = HandlingKind.GRADING
     service_fields = {**OperationForm.service_fields, 'avg_weight_g': 'remainder_avg_weight_g'}
     rows = OutputFormSet
     rows_label = _('Size classes')
-    field_order = ['batch', 'date', 'remainder_avg_weight_g', 'notes', 'over_capacity_ack']
+    ack_fields = ('over_capacity_ack', 'size_mix_ack')
+    field_order = ['batch', 'date', 'remainder_avg_weight_g', 'notes', 'over_capacity_ack', 'size_mix_ack']
 
     def save(self, user, rows):
         data = self.cleaned_data
@@ -546,7 +574,8 @@ class GradingForm(HandlingChecked, Acknowledged, OperationForm):
             user, source=self.unit, batch=data['batch'], day=data['date'],
             outputs=[(row['unit'], row['count'], row['avg_weight_g'], row['size_class'].strip()) for row in rows],
             remainder_avg_weight_g=data['remainder_avg_weight_g'], notes=data['notes'],
-            ack=data['over_capacity_ack'], handling_ack=data['handling_ack'], token=data['token'],
+            ack=data['over_capacity_ack'], size_mix_ack=data['size_mix_ack'], handling_ack=data['handling_ack'],
+            token=data['token'],
             withdrawal_ack=data['withdrawal_ack'])
 
 
@@ -696,3 +725,13 @@ class VoidForm(ServiceErrors, forms.Form):
                                          'struck through, with this reason.'))
 
     service_fields = {}
+
+
+class StockVoidForm(Acknowledged, VoidForm):
+    """The void of a stock operation: fish it brings back that leave a unit over its capacity or holding a mix are asked
+    about with the same boxes as an arrival (farm/stock/services.py `void`)."""
+
+    over_capacity_ack = acknowledgement()
+    size_mix_ack = size_mix_acknowledgement()
+
+    ack_fields = ('over_capacity_ack', 'size_mix_ack')

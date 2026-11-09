@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django import forms
 from django.utils.translation import gettext, gettext_lazy as _
 
@@ -19,8 +21,16 @@ SPECIES_FORM_TABS = [
         'official_code', 'cleaner_fish_type',
         Fieldset(_('Medicine withdrawal'), ['withdrawal_temperature_c']),
     ]),
+    ('stocking', _('Stocking'), [
+        Fieldset(_('Batches of different sizes'), ['max_weight_ratio'],
+                 _('Fish of very different weights of the same species are not kept in one unit: the bigger ones '
+                   'outcompete the smaller at feeding.')),
+    ]),
     ('status', _('Status and notes'), ['status', 'notes']),
 ]
+# What a new species is offered as its size limit (Species.max_weight_ratio): the owner's default, as migration 0034
+# gave the species already there. An offer on the form, never a value the code stores by itself.
+OFFERED_WEIGHT_RATIO = Decimal(2)
 
 
 class SpeciesForm(CodedFormMixin, TabbedForm):
@@ -34,7 +44,7 @@ class SpeciesForm(CodedFormMixin, TabbedForm):
     class Meta:
         model = Species
         fields = tab_fields(SPECIES_FORM_TABS)
-        localized_fields = ['withdrawal_temperature_c']
+        localized_fields = ['withdrawal_temperature_c', 'max_weight_ratio']
         help_texts = {
             'common_name': _('The English name, e.g. Atlantic salmon.'),
             'local_name': _('The name in the farm’s own language, e.g. Laks.'),
@@ -49,6 +59,9 @@ class SpeciesForm(CodedFormMixin, TabbedForm):
                                           'measured: a past day without one, and a withdrawal projected when none '
                                           'was measured at all. It is the farm’s own assumption: a low value is the '
                                           'conservative choice. Empty: such a day counts as 0 °C. 0 to 40 °C.'),
+            'max_weight_ratio': _('How many times heavier, on average, one batch of this species may be than another '
+                                  'in the same unit, e.g. 2: fish of 100 g and of 200 g may share a unit. A stocking, '
+                                  'transfer or grading beyond it asks for an acknowledgement first. Empty: no check.'),
             'status': _('Active: farmed now. Experimental: on trial. Inactive: not farmed at the moment. '
                         'Discontinued: no longer farmed.'),
         }
@@ -60,13 +73,16 @@ class SpeciesForm(CodedFormMixin, TabbedForm):
             'official_code': forms.TextInput(attrs={'placeholder': _('e.g. SAL'), 'data-uppercase': ''}),
             'family': forms.TextInput(attrs={'placeholder': _('e.g. Salmonidae')}),
             'withdrawal_temperature_c': forms.TextInput(attrs={'inputmode': 'decimal', 'placeholder': _('e.g. 8')}),
+            'max_weight_ratio': forms.TextInput(attrs={'inputmode': 'decimal', 'placeholder': _('e.g. 2')}),
             'description': forms.Textarea(attrs={'rows': 3}),
             'notes': forms.Textarea(attrs={'rows': 3}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if not self.instance._state.adding:
+        if self.instance._state.adding:
+            self.fields['max_weight_ratio'].initial = OFFERED_WEIGHT_RATIO
+        else:
             # The genus is not a field of its own: it is the first word of the scientific name.
             self.tab_help['classification'] = gettext('Genus: %(genus)s (the first word of the scientific name).') % {
                 'genus': self.instance.genus}

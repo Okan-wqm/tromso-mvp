@@ -72,15 +72,17 @@ SCREENS = {
         extra_fields={'token': TOKEN, 'count': 'the fish stocked: a line of the stocking operation',
                       'avg_weight_g': 'the average weight stocked: a line of the stocking operation',
                       'over_capacity_ack': "the person's acknowledgement of a unit over capacity: stored on the "
-                                           'stocking operation'},
+                                           'stocking operation',
+                      'size_mix_ack': "the person's acknowledgement of batches of very different sizes in a unit: "
+                                      'stored on the stocking operation'},
     ),
     'StockOperation': Screen(
         create=STOCK_WRITE,
         edit=no(LEDGER),
         delete=(stock.void_operation,),
         read=(stock.production_units, harvest.harvests),
-        forms=STOCK_DIALOGS + (stock_forms.VoidForm,),
-        fills={'VoidForm.reason': 'void_reason'},
+        forms=STOCK_DIALOGS + (stock_forms.StockVoidForm,),
+        fills={'StockVoidForm.reason': 'void_reason'},
         columns={'kind': computed('which dialog was used: stocking, mortality, cull, weighing, transfer, grading, '
                                   'harvest, delivery or escape')},
     ),

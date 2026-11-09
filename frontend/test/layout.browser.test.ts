@@ -252,6 +252,32 @@ test('the page layout of the real templates', { skip: BROWSERS.length ? false : 
       }
     });
 
+    await t.test('the production overview is a dashboard: metric cards several to a row, compact attention rows', async () => {
+      for (const [width, least, most] of [[1440, 5, 6], [1024, 4, 6], [390, 2, 2]] as const) {
+        await tab.setViewportSize({ width, height: 900 });
+        await tab.waitForTimeout(50);
+        const board = await tab.locator('#part-overview').evaluate((part) => {
+          const cards = [...part.querySelectorAll('#today-title ~ * [data-metric]')].map((card) => card.getBoundingClientRect());
+          const top = Math.min(...cards.map((box) => box.top));
+          const rows = part.querySelectorAll('[data-attention="water"]');
+          return {
+            cards: cards.length,
+            first: cards.filter((box) => Math.abs(box.top - top) < 2).length,
+            widest: Math.max(...cards.map((box) => box.width)),
+            tallest: Math.max(...cards.map((box) => box.height)),
+            row: Math.max(...[...rows].map((row) => row.getBoundingClientRect().height)),
+            rows: rows.length,
+          };
+        });
+        assert.ok(board.cards >= 10, `${board.cards} cards`);
+        assert.ok(board.first >= least && board.first <= most, `${board.first} cards in the first row at ${width} px`);
+        assert.ok(board.widest <= 320, `a card is ${board.widest} px wide at ${width} px: a bar across the page, not a card`);
+        assert.ok(board.tallest <= 150, `a card is ${board.tallest} px tall at ${width} px`);
+        assert.ok(board.rows >= 3);
+        if (width === 1440) assert.ok(board.row <= 84, `a water row needing attention is ${board.row} px tall at 1440 px`);
+      }
+    });
+
     await t.test('the production overview\'s links and buttons are 48 px targets on a coarse pointer', async () => {
       const touch = await browser.newContext({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 900 }, reducedMotion: 'reduce' });
       try {

@@ -69,7 +69,10 @@ class SeverityPolicyForm(TabbedForm):
             'delivery_attempts': _('How many times a failing transport is tried with one notification.'),
             'clock_skew_seconds': _('A device whose clock is further ahead of or behind the platform’s than this, '
                                     'measured from its newest value against when it was received, raises this alarm. '
-                                    '1 to 3600; the warning’s below the critical’s.'),
+                                    '1 to 3600; the warning’s below the critical’s. Ahead: the ingest replaces a '
+                                    'device time further ahead than its contract’s future skew (60 s by default) by '
+                                    'the time it received the value, so the values stay right and ahead is measured '
+                                    'as “more than” that: a limit above the future skew is reached only behind.'),
             'clock_skew_deadband_seconds': _('How far back inside the limit the clock must come before the alarm clears. '
                                              'Below the limit.'),
             'clock_behind_window_seconds': _('A device behind is raised only when it is behind on every pass for this '

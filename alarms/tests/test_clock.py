@@ -180,8 +180,9 @@ class AheadCeilingTests(ClockCase):
         return self.client.get(reverse('alarms:severitypolicy_list'))
 
     def test_the_rules_page_says_ahead_tops_out_at_the_warning_under_the_contract(self):
-        self.assertContains(self.page(), 'ahead tops out at the warning')
-        self.assertContains(self.page(), '60 s')
+        page = self.page()
+        self.assertContains(page, 'ahead tops out at the warning')
+        self.assertContains(page, '60 s')
 
     def test_it_says_nothing_when_the_contract_lets_the_critical_be_reached(self):
         from sensors.models import Contract

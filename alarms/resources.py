@@ -41,8 +41,20 @@ class SeverityPolicyResource(Resource):
 
     @classmethod
     def filter_list(cls, request, objects):
-        """The unusual values of the rows (SeverityPolicy.advice), shown above them."""
-        return objects, {'advice': [line for policy in objects for line in policy.advice()]}
+        """The unusual values of the rows (SeverityPolicy.advice), and what the ingest contract's future skew leaves of
+        a device clock ahead (round-2 review N3), shown above them."""
+        from sensors.models import Contract
+        advice, notes = [line for policy in objects for line in policy.advice()], []
+        contract = Contract.objects.first()
+        topped = [policy for policy in objects if contract is not None
+                  and policy.clock_skew_seconds > contract.future_skew_s]
+        if topped:
+            notes.append(_('The ingest replaces a device time further ahead than %(seconds)d s (its contract’s future '
+                            'skew) by the time it received the value: the values stay right, and a device clock ahead '
+                            'tops out at the warning “more than %(seconds)d s ahead”. %(levels)s is reached only by a '
+                            'clock behind.') % {'seconds': contract.future_skew_s,
+                                                'levels': ', '.join(str(policy) for policy in topped)})
+        return objects, {'advice': advice, 'notes': notes}
 
 
 class ParameterDeadbandResource(Resource):

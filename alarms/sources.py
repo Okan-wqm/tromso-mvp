@@ -114,12 +114,15 @@ def _moved(reading, rules):
 
 
 def judged_clear(reading, rules):
-    """The judgement of the value that decided `reading`, moved by its parameter's deadband both ways, through the same
-    rows and the same judgement (evaluate.judge), and through its other oxygen unit where it was judged so: a level clears
-    only when it is clear even so. Never a second rule."""
-    decider = reading.worse or reading
-    found = _moved(decider, rules) + (_moved(decider.through, rules) if decider.through is not None else [])
-    return worst(found) if found else decider.judged
+    """The worst judgement of every value that takes part in `reading`'s status (the value A9 chose and the place's other
+    fresh values, `Reading.deciding`, the worse one among them: alarm plan §2.1, cross review F2), each moved by its
+    parameter's deadband both ways, through the same rows and the same judgement (evaluate.judge), and through its other
+    oxygen unit where it was judged so: a level clears only when every one of them is clear even so. Never a second
+    rule."""
+    found = []
+    for each in (reading, *(other for other in reading.deciding if other.value is not None)):
+        found += _moved(each, rules) + (_moved(each.through, rules) if each.through is not None else [])
+    return worst(found) if found else reading.judged
 
 
 def seen_at(reading, now):

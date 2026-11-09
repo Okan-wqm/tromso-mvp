@@ -449,6 +449,9 @@ class Reading:
     judged: str = Status.NOT_MEASURED
     uncovered: tuple = ()          # the species it concerns that no limit row judges it for
     worse: object = None           # the worse fresh value that decided its status (worst_fresh), else None
+    # The place's other values that take part in its status (latest: fresh, or ahead of the clock within the ingest
+    # contract's hour), each judged for its fish: what an alarm on the reading clears only past (alarms/sources.py).
+    deciding: tuple = ()
     through: object = None         # the Reading in the other oxygen unit it was judged as (Context.judge), else None
     why_no_limit: str = ''      # with status No limit: no fish in the unit that day, or no limit for their species
 
@@ -1126,6 +1129,7 @@ def latest(points, now=None, at=None):
                 if shown_here is not None:
                     point_water.measured += [(each.status, each.judged) for each in map(judged, [
                         shown_here, *(each for each in here if each is not shown_here and each.fresh(moment))])]
+                reading.deciding = tuple(deciding)
                 worst_fresh(reading, deciding, moment)    # COMPUTED FOR THE PLACE the point stands for
             point_water.readings[code] = reading
     return water

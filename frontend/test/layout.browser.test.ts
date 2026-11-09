@@ -29,7 +29,7 @@ const part = (name: string): string => `<section id="part-${name}">${readFileSyn
 
 function page(): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>layout</title>
-<link rel="stylesheet" href="/css/base.css"><link rel="stylesheet" href="/css/app.css"><link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/tokens.css"><link rel="stylesheet" href="/css/base.css"><link rel="stylesheet" href="/css/ui.css"><link rel="stylesheet" href="/css/app.css"><link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/monitor.css"></head><body><div class="shell"><aside class="rail"></aside><div class="console">
 <header class="topbar"><div class="title-block"><h1>Layout</h1></div></header><main class="content">${PARTS.map(part).join('\n')}</main></div></div></body></html>`;
 }

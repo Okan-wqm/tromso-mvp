@@ -214,7 +214,7 @@ class FragmentTests(MonitoringCase):
 class WallTests(MonitoringCase):
     def test_a_wall_page_marks_the_document_and_keeps_its_session_once_a_day(self):
         html = self.client.get(PAGE, {'wall': '1'}).content.decode()
-        self.assertIn('<html lang="en" data-wall>', html)
+        self.assertRegex(html, r'<html lang="en" data-theme="[a-z]+" data-wall>')         # (core/theme.py)
         self.assertIn('data-fullscreen', html)                           # the wall keeps its Full screen button ...
         self.assertIn('Leave the wall', html)                            # ... and a way out
         self.assertIn('wall=1', re.search(r'data-poll="([^"]+)"', html).group(1))

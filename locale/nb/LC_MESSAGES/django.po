@@ -444,6 +444,12 @@ msgstr[0] "%(count)s tidsrom uten verdi skraveres og fylles aldri."
 msgstr[1] "%(count)s tidsrom uten verdi skraveres og fylles aldri."
 
 #, python-format
+msgid "%(count)s unit"
+msgid_plural "%(count)s units"
+msgstr[0] "%(count)s enhet"
+msgstr[1] "%(count)s enheter"
+
+#, python-format
 msgid "%(count)s warning"
 msgid_plural "%(count)s warnings"
 msgstr[0] "%(count)s advarsel"
@@ -520,6 +526,10 @@ msgid "%(direct)s person"
 msgid_plural "%(direct)s people"
 msgstr[0] "%(direct)s person"
 msgstr[1] "%(direct)s personer"
+
+#, python-format
+msgid "%(done)s of %(planned)s meals done"
+msgstr "%(done)s av %(planned)s måltider gitt"
 
 #, python-format
 msgid "%(dose)s g/m³"
@@ -686,6 +696,10 @@ msgstr ""
 "%(kilos)s kg fôret %(date)s, denne fôringen medregnet, er %(rate)s %% av de %(biomass)s kg "
 "%(unit)s har i beholdningen; mer enn %(limit)s %% per dag er uvanlig. Kryss av i boksen under for"
 " å registrere det likevel."
+
+#, python-format
+msgid "%(kilos)s left"
+msgstr "%(kilos)s igjen"
 
 #, python-format
 msgid ""
@@ -6842,6 +6856,12 @@ msgstr ""
 msgid "How often the device sends a message. Offline after three times this without one."
 msgstr "Hvor ofte apparatet sender en melding. Frakoblet etter tre ganger dette uten en melding."
 
+msgid "How rations are worked out"
+msgstr "Slik regnes rasjonene ut"
+
+msgid "How values are judged"
+msgstr "Slik vurderes verdiene"
+
 msgid ""
 "How wide the cards are at the least: compact fits more on a wall, comfortable is easier to read "
 "from a distance."
@@ -7388,6 +7408,9 @@ msgstr "Siste"
 msgid "Latest sea-lice count %(date)s, %(fish)s fish examined"
 msgstr "Siste lusetelling %(date)s, %(fish)s fisk undersøkt"
 
+msgid "Latest water values, scrolls sideways"
+msgstr "Siste vannverdier, rulles sidelengs"
+
 msgid "Latitude"
 msgstr "Breddegrad"
 
@@ -7615,6 +7638,9 @@ msgstr "MQTT"
 msgid "Main navigation"
 msgstr "Hovednavigasjon"
 
+msgid "Main pages"
+msgstr "Hovedsider"
+
 msgid "Maintenance"
 msgstr "Vedlikehold"
 
@@ -7730,6 +7756,9 @@ msgstr "Maksimal temperatur"
 
 msgid "Meal board"
 msgstr "Måltidstavle"
+
+msgid "Meal board, scrolls sideways"
+msgstr "Måltidstavle, rulles sidelengs"
 
 msgid "Meals"
 msgstr "Måltider"
@@ -7930,6 +7959,9 @@ msgstr "Månedlig"
 
 msgid "Monthly biomass"
 msgstr "Månedlig biomasse"
+
+msgid "More"
+msgstr "Mer"
 
 #, python-format
 msgid "More than %(count)d widgets: a card this full is hard to read from a distance."
@@ -8690,6 +8722,9 @@ msgstr ""
 msgid "Nobody else is placed in your department this week."
 msgstr "Ingen andre er plassert i avdelingen din denne uken."
 
+msgid "Nobody is alerted: critical values are shown here, not sent."
+msgstr "Ingen blir varslet: kritiske verdier vises her, de sendes ikke."
+
 msgid "Nobody is expected today"
 msgstr "Ingen forventes i dag"
 
@@ -9238,6 +9273,10 @@ msgstr "Åpen"
 msgid "Open %(name)s"
 msgstr "Åpne %(name)s"
 
+#, python-format
+msgid "Open %(unit)s"
+msgstr "Åpne %(unit)s"
+
 msgid "Open alarms"
 msgstr "Åpne alarmer"
 
@@ -9249,9 +9288,6 @@ msgstr "Åpne samtale"
 
 msgid "Open health events"
 msgstr "Åpne helsehendelser"
-
-msgid "Open menu"
-msgstr "Åpne menyen"
 
 msgid "Open ones"
 msgstr "Åpne"
@@ -9506,6 +9542,9 @@ msgstr "Over kapasitet"
 
 msgid "Over the limit"
 msgstr "Over grensen"
+
+msgid "Over- and underfeeding are not flagged yet."
+msgstr "Over- og underfôring blir ikke markert ennå."
 
 msgid "Overall length (m)"
 msgstr "Total lengde (m)"
@@ -10005,6 +10044,9 @@ msgstr "Produksjonsplaner"
 
 msgid "Production units"
 msgstr "Produksjonsenheter"
+
+msgid "Production units, scrolls sideways"
+msgstr "Produksjonsenheter, rulles sidelengs"
 
 #, python-format
 msgid ""
@@ -11830,6 +11872,9 @@ msgstr "Virkestoff"
 
 msgid "Substance in the lice report"
 msgstr "Virkestoff i luserapporten"
+
+msgid "Suderra, home"
+msgstr "Suderra, startside"
 
 msgid "Suitable for"
 msgstr "Egnet for"
@@ -13728,6 +13773,9 @@ msgstr "Året det ble publisert."
 msgid "Their weight (kg)"
 msgstr "Samlet vekt (kg)"
 
+msgid "Theme"
+msgstr "Tema"
+
 msgid "There is already a rule for this handling and species."
 msgstr "Det finnes allerede en regel for denne håndteringen og arten."
 
@@ -14661,6 +14709,9 @@ msgstr "Vannprøven fra %(point)s er annullert."
 msgid "Water sample recorded at %(point)s."
 msgstr "Vannprøve registrert i %(point)s."
 
+msgid "Water samples, scrolls sideways"
+msgstr "Vannprøver, rulles sidelengs"
+
 msgid "Water source"
 msgstr "Vannkilde"
 
@@ -15276,6 +15327,9 @@ msgstr "Du er stemplet inn."
 
 msgid "You are clocked out."
 msgstr "Du er stemplet ut."
+
+msgid "You are here"
+msgstr "Du er her"
 
 msgid "You are its owner. People who cannot use Messages are not listed."
 msgstr "Du er eieren. Personer som ikke kan bruke Meldinger, står ikke på listen."

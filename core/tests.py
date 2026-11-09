@@ -87,7 +87,8 @@ class ShellTests(TestCase):
         response = self.client.get(reverse('home'))
         self.assertContains(response, 'id="rail"')
         self.assertContains(response, 'data-nav-toggle')
-        self.assertContains(response, 'aria-current="page"', count=1)
+        rail = response.content.decode().split('id="rail"')[1].split('</aside>')[0]
+        self.assertEqual(rail.count('aria-current="page"'), 1)          # (the bottom bar marks its own: core/tests_design_shell.py)
         self.assertContains(response, 'action="%s"' % reverse('logout'))
 
     def test_password_change_uses_shell(self):

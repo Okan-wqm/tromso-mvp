@@ -3443,13 +3443,42 @@ database (the other commands' checks ask the database for its version, which a g
 `makemigrations` without a database needs `--skip-checks`). How to add a string or a language, the glossary and the
 translations that need a native speaker's review are in [`docs/i18n.md`](docs/i18n.md).
 
+## Look and themes
+
+The console follows the Suderra Platform design system in [`docs/design/system/`](docs/design/system/README.md) (the
+brand book) and its hand-off ([`HANDOFF.md`](docs/design/system/HANDOFF.md)). So far the shell and three Production
+pages are drawn in it: Meal board, Production units and Water chemistry; the other pages run on its tokens without a
+redesign yet.
+
+- **Tokens.** `static/css/tokens.css` is the design system's `tokens.css` plus a short block of the app's own (the
+  rail's overlays), loaded first. No stylesheet writes a colour of its own: `core/tests_design_shell.py` fails on a
+  hex, `rgb()` or `rgba()` outside `tokens.css`. The old variables (`--mist`, `--olive`, `--stripe` and the rest) are
+  gone; every sheet reads the role tokens (`--surface-*`, `--text-1` to `-3`, `--line-*`, `--primary`, `--action`,
+  `--ok`, `--warn`, `--crit` with their `-text` and `-tint`).
+- **Parts.** `static/css/ui.css` is the design system's `components.css` (the `ui-*` classes) with the app's additions
+  at its end; the shell's layout is `app.css`.
+- **Themes.** Fjord (the default), Polarnatt, Nordlys (for the monitoring wall), Tang and Laks, picked in the user menu
+  beside the language. The choice is a cookie (`theme`, kept a year, `core/theme.py`) that the server writes on
+  `<html data-theme>`, so the first paint has it; never the system's colour scheme.
+- **Fonts.** Atkinson Hyperlegible Next (text) and Bricolage Grotesque (h1, h2, the wordmark) are served from
+  `static/fonts/` (SIL OFL 1.1, THIRD_PARTY.md): no page asks another server for anything, and the console reads the
+  same offline on site.
+- **Shell.** The dark rail (240 px; 72 px of icons when collapsed, the toggle and its rule unchanged) with the logo disc
+  and the SU/DERRA wordmark and the panel switch under them; the top bar with the breadcrumb, the EN / TR / NB switch
+  and the user menu; the page head (h1, a line of status chips, the page's primary action). Below 1024 px the rail is a
+  sheet and a bottom bar holds Meals, Water, Units and Storage (those the person's role opens; the Company panel shows
+  its first pages) and More, which opens the sheet.
+- **Tables** on the three pages are real tables in a `ui-table-wrap` that scrolls inside itself, with the first column
+  and the row actions sticky; each value is a value face (figure, origin and age), a missing figure says why or "no
+  data", a status is a chip with glyph and word. Dates stay dd.mm.yyyy in every language.
+
 ## Browser code
 
 There is no hand-written JavaScript. The browser code is TypeScript in `frontend/` (strict mode),
 compiled by `npm run build` into `static/js/`, which is not committed:
 
 - `nav-boot.ts` sets the rail state before the first paint and owns the open/collapsed rule;
-- `shell.ts` the rail toggle, the phone menu and the user menu;
+- `shell.ts` the rail toggle, the rail as a sheet below 1024 px (opened from the bottom bar's More) and the popup menus;
 - `components.ts` the shared parts every tab uses through data attributes: the dialog
   (`data-modal`), inner tabs, upper-case inputs, row lists and check boxes that need another one
   (`data-requires`, the role matrix), GET forms that leave empty fields out of the address
@@ -3892,10 +3921,12 @@ real mail.
 | `core/navigation.py`, `config/navigation.py`, `core/middleware.py` | The menu as data: panels (workspaces) with main headings, groups and entries, filtered by permission; the panel in use is remembered; where a page sits (`place`) for the role matrix and page headings |
 | `farm/resources/`, `templates/farm/` | Farm tabs declared on top of `core.crud`; their URLs come from the registry |
 | `core/admin.py` | The admin for farm records: shows deleted ones, restores them (checked like a new one), edits nothing; reference data (equipment types) is shown read-only |
-| `static/css/components.css` | Shared page components (buttons, cards, tabs, form grids, audit trail) |
+| `static/css/components.css` | Shared page components (buttons, cards, tabs, form grids, audit trail), on the tokens |
+| `static/css/tokens.css`, `static/css/ui.css`, `static/css/fonts.css`, `static/fonts/` | The design system (Look and themes): every colour, size and font as a token, the `ui-*` parts, the two self-hosted typefaces |
+| `core/theme.py` | The theme cookie and the context processor that writes it on `<html data-theme>` |
 | `templates/auth_base.html`, `templates/registration/` | Sign-in and password pages |
-| `templates/app_base.html`, `templates/icons/` | Console shell (rail, top bar, user menu), Lucide icons |
-| `static/css/base.css` | Colour tokens, reset, form controls shared by every page |
+| `templates/app_base.html`, `templates/icons/` | Console shell (rail, top bar, user menu, page head, bottom bar), Lucide icons |
+| `static/css/base.css` | Reset and form controls shared by every page, on the tokens |
 | `static/css/auth.css` | Sign-in layout |
 | `static/css/app.css` | Console shell layout |
 | `frontend/`, `tsconfig.json`, `package.json` | Browser code in TypeScript |

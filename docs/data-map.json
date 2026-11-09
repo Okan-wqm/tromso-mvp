@@ -1642,6 +1642,19 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "clock_behind_window_seconds",
+          "field": "clock_behind_window_seconds",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SeverityPolicyForm › Device clock"
+          ],
+          "how": "form",
+          "why": ""
         }
       ],
       "constraints": [
@@ -1685,6 +1698,12 @@
         },
         {
           "name": "chk_alarm_severity_policies_clock",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_severity_policies_clock_window",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -1752,6 +1771,7 @@
             "delivery_attempts": "Rule",
             "clock_skew_seconds": "Device clock",
             "clock_skew_deadband_seconds": "Device clock",
+            "clock_behind_window_seconds": "Device clock",
             "version": ""
           }
         }
@@ -13253,6 +13273,7 @@
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_portable.py",
         "alarms/tests/__init__.py",
+        "alarms/tests/test_migration_reverse.py",
         "alarms/tests/test_migration_subjects.py"
       ]
     },
@@ -37296,7 +37317,8 @@
       },
       "tests": [
         "sensors/tests/test_contract.py",
-        "sensors/tests/test_timescale.py"
+        "sensors/tests/test_timescale.py",
+        "alarms/tests/test_clock.py"
       ]
     },
     {
@@ -38670,7 +38692,8 @@
       },
       "tests": [
         "sensors/tests/test_contract.py",
-        "sensors/tests/test_operations.py"
+        "sensors/tests/test_operations.py",
+        "alarms/tests/test_clock.py"
       ]
     },
     {

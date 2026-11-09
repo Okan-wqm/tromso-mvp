@@ -204,7 +204,7 @@ How an alarm of a severity behaves, one row per severity (a person with the righ
 - **read**: alarm severity rules tab (`/alarms/severity-rules/`)
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Alarms › alarm_severity_policies
 - **forms**: `SeverityPolicyForm`
-- **constraints**: uq_alarm_severity_policies_severity (unique: severity); chk_alarm_severity_policies_severity (check); chk_alarm_severity_policies_delays (check); chk_alarm_severity_policies_on_delay (check); chk_alarm_severity_policies_escalation (check); chk_alarm_severity_policies_attempts (check); chk_alarm_severity_policies_clock (check); chk_alarm_severity_policies_kept (check)
+- **constraints**: uq_alarm_severity_policies_severity (unique: severity); chk_alarm_severity_policies_severity (check); chk_alarm_severity_policies_delays (check); chk_alarm_severity_policies_on_delay (check); chk_alarm_severity_policies_escalation (check); chk_alarm_severity_policies_attempts (check); chk_alarm_severity_policies_clock (check); chk_alarm_severity_policies_clock_window (check); chk_alarm_severity_policies_kept (check)
 - **tests that mention it**: `core/tests_platform.py`, `core/tests_workspaces.py`, `alarms/tests/test_alarms.py` and 4 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
@@ -225,6 +225,7 @@ How an alarm of a severity behaves, one row per severity (a person with the righ
 | delivery_attempts | integer |  |  | SeverityPolicyForm › Rule |
 | clock_skew_seconds | integer |  |  | SeverityPolicyForm › Device clock |
 | clock_skew_deadband_seconds | integer |  |  | SeverityPolicyForm › Device clock |
+| clock_behind_window_seconds | integer |  |  | SeverityPolicyForm › Device clock |
 
 <a id="alarmsalarmsubjectstate"></a>
 ### alarms.AlarmSubjectState (`alarm_subject_state`)
@@ -1314,7 +1315,7 @@ A production unit within a site: a hatchery hall, a nursery, a grow-out unit.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › production_departments
 - **forms**: `ProductionDepartmentForm`
 - **constraints**: uq_production_departments_code_live (unique: code); uq_production_departments_site_name_live (unique: site, name); chk_production_departments_capacity (check); chk_production_departments_live_on_a_site (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_design_shell.py` and 51 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_design_shell.py` and 52 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3472,7 +3473,7 @@ The one row both Django and the ingest service read: the contract’s version, t
 - **read**: none, by design: read by the ingest service; shown in the database viewer
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Sensors › sensors_contract
 - **constraints**: chk_sensors_contract_singleton (check); chk_sensors_contract_skew (check); chk_sensors_contract_retention (check); chk_sensors_contract_late_limit (check)
-- **tests that mention it**: `sensors/tests/test_contract.py`, `sensors/tests/test_timescale.py`
+- **tests that mention it**: `sensors/tests/test_contract.py`, `sensors/tests/test_timescale.py`, `alarms/tests/test_clock.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3618,7 +3619,7 @@ The ingest service’s heartbeat per broker connection: connected or not, messag
 - **read**: sensors.views.home (`/sensors/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Sensors › sensors_ingest_status
 - **constraints**: chk_sensors_ingest_status_queue (check)
-- **tests that mention it**: `sensors/tests/test_contract.py`, `sensors/tests/test_operations.py`
+- **tests that mention it**: `sensors/tests/test_contract.py`, `sensors/tests/test_operations.py`, `alarms/tests/test_clock.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

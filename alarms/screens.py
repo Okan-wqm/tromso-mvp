@@ -7,6 +7,8 @@ LOOP = 'written by manage.py run_alarms (alarms/engine.py)'
 APPEND_ONLY = 'append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin'
 
 SCREENS = {
+    'SeverityPolicy': Screen(create=no('migration 0002 makes one row per severity'),
+                             delete=no('there is always one row per severity')),
     'Alarm': Screen(create=no(LOOP), edit=no(APPEND_ONLY), delete=no(APPEND_ONLY), read=(alarm_list, alarm_detail),
                     columns={'*': system(LOOP)}),
     'AlarmClearance': Screen(create=no(LOOP), edit=no(APPEND_ONLY), delete=no(APPEND_ONLY),

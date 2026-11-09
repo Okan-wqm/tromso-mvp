@@ -125,6 +125,10 @@ AREAS = [
     # rules: read, create, edit, delete.
     Area(_('Alarms'), 'alarms.Alarm', actions=('view', 'change')),
     Area(_('Alarm recipients'), 'alarms.RecipientRule'),
+    # The alarm rules: per severity the delays, the escalation time and the delivery attempts (one seeded row each: Read,
+    # Edit), per water parameter the deadband (read, create, edit, delete). The alarm admin's rights.
+    Area(_('Alarm severity rules'), 'alarms.SeverityPolicy', actions=('view', 'change')),
+    Area(_('Alarm deadbands'), 'alarms.ParameterDeadband'),
     # The platform owner's settings (one row: Read, Edit). "Platform owner" is the role that holds Edit here: the correction
     # window, whether a second person approves a withdrawal acknowledgement, and the alarms' escalation time.
     Area(_('Platform settings'), 'core.PlatformSettings', actions=('view', 'change')),

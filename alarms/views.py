@@ -12,6 +12,7 @@ from django.views.decorators.http import require_POST
 
 from core import navigation
 from core.crud import render_page
+from core.dbgrid import PAGE_SIZE
 
 from . import read, services
 from .models import Alarm
@@ -30,7 +31,7 @@ def _context(**extra):
 def alarm_list(request):
     state = request.GET.get('state', 'open')
     state = state if state in STATES else 'open'
-    page = Paginator(read.listing(state), 50).get_page(request.GET.get('page'))
+    page = Paginator(read.listing(state), PAGE_SIZE).get_page(request.GET.get('page'))
     return render_page(request, 'alarms/alarm_list.html', _context(page=page, alarms=page.object_list, state=state,
                                                                    pager_query=f'state={state}'))
 

@@ -14,13 +14,18 @@ from .models import (Acknowledgement, Alarm, AlarmClearance, DeliveryAttempt, Es
 
 
 
+def _fit(model, field, text):
+    """`text` cut to the column's size."""
+    return text[:model._meta.get_field(field).max_length]
+
+
 def _severity(alarm):
     return AuditLog.Severity.CRITICAL if alarm.severity == Severity.CRITICAL else AuditLog.Severity.NORMAL
 
 
 def open_alarm(*, at, severity, summary, site=None, production_department=None, **source):
     """A new alarm (`source`: source and sensor_event, or source, point and parameter), logged; a critical one critical."""
-    alarm = Alarm.objects.create(opened_at=at, severity=severity, summary=audit.bounded(summary)[:300], site=site,
+    alarm = Alarm.objects.create(opened_at=at, severity=severity, summary=_fit(Alarm, 'summary', summary), site=site,
                                  production_department=production_department, **source)
     with audit.source_language():
         audit.record_create(None, alarm, {str(_('Severity')): audit.message(alarm.get_severity_display()),
@@ -72,7 +77,7 @@ def attempt(notification, result, now):
     from .transports import Sent
     outcome = Outcome.SENT if isinstance(result, Sent) else Outcome.FAILED
     row = DeliveryAttempt.objects.create(notification=notification, attempted_at=now, outcome=outcome,
-                                         detail=(result.detail or '')[:300])
+                                         detail=_fit(DeliveryAttempt, 'detail', result.detail or ''))
     with audit.source_language():
         audit.record(None, AuditLog.Action.UPDATE, notification,
                      {str(_('Delivery')): [None, f'{outcome}: {row.detail}' if row.detail else outcome]},
@@ -90,8 +95,8 @@ def acknowledge(alarm, user, *, at=None, device='', app='console', notification=
             raise ValidationError(_('This notification is not yours.'))
         if Acknowledgement.objects.filter(alarm=alarm, user=user).exists():
             raise ValidationError(_('You have already acknowledged this alarm.'))
-        ack = Acknowledgement.objects.create(alarm=alarm, user=user, acknowledged_at=at, device=device[:100],
-                                             app=app[:100], notification=notification)
+        ack = Acknowledgement.objects.create(alarm=alarm, user=user, acknowledged_at=at, device=_fit(Acknowledgement, 'device', device),
+                                             app=_fit(Acknowledgement, 'app', app), notification=notification)
         with audit.source_language():
             audit.record_create(user, ack, {str(_('Device')): device or None, str(_('App')): app,
                                             str(_('Delay')): str(ack.delay)}, label=alarm.summary)

@@ -16,12 +16,6 @@
   </dl>
   <p class="panel-help">{% blocktrans trimmed count days=row.correction_window_days %}A record can be dated at most {{ days }} day back, and voided while it is no older. Older records stay as they are.{% plural %}A record can be dated at most {{ days }} days back, and voided while it is no older. Older records stay as they are.{% endblocktrans %}</p>
 </section>
-<section class="detail-section">
-  <h2 class="section-title">{% trans "Alarms" %}</h2>
-  <dl class="facts">
-    <div><dt>{% trans "Escalate an unacknowledged alarm after (minutes)" %}</dt><dd>{{ row.alarm_escalation_minutes }}</dd></div>
-  </dl>
-</section>
 {% if can_change %}<p><a class="button button-inline" href="{% url 'core:platformsettings_edit' row.pk %}" data-modal>{% include "icons/_icon.html" with name="pencil" %}{% trans "Edit the settings" %}</a></p>{% endif %}
 {% endfor %}
 {% endblock %}

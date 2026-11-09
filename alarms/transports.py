@@ -7,9 +7,6 @@ from dataclasses import dataclass
 from django.conf import settings
 from django.utils.module_loading import import_string
 
-# How many times a failing transport is tried with one notification before it is left failed (the page shows it).
-MAX_ATTEMPTS = 5
-
 
 @dataclass(frozen=True)
 class Sent:

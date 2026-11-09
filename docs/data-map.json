@@ -294,6 +294,281 @@
     },
     {
       "app": "alarms",
+      "model": "ParameterDeadband",
+      "table": "alarm_deadbands",
+      "description": "How far past its limit a water value must come back before an alarm on it clears (in the parameter's unit), so a value at the limit does not raise and clear over and over: the limit is judged on the value moved by the deadband toward danger, by the same judgement (farm/water/evaluate.py).",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "parameter",
+          "field": "parameter",
+          "type": "varchar(30)",
+          "null": false,
+          "choices": [
+            "temperature_c",
+            "oxygen_mg_l",
+            "oxygen_saturation_pct",
+            "ph",
+            "alkalinity_mg_l",
+            "co2_mg_l",
+            "tan_mg_l",
+            "nitrite_n_mg_l",
+            "nitrate_n_mg_l",
+            "tgp_pct",
+            "salinity_ppt",
+            "turbidity_ntu",
+            "nh3_n_mg_l"
+          ],
+          "link": null,
+          "on_form": [
+            "ParameterDeadbandForm › Deadband"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "deadband",
+          "field": "deadband",
+          "type": "numeric(8, 4)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ParameterDeadbandForm › Deadband"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_alarm_deadbands_parameter_live",
+          "kind": "unique",
+          "fields": [
+            "parameter"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "chk_alarm_deadbands_parameter",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_deadbands_not_negative",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "alarm deadbands tab",
+              "url_names": [
+                "alarms:parameterdeadband_create"
+              ],
+              "routes": [
+                "/alarms/deadbands/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "alarm deadbands tab",
+              "url_names": [
+                "alarms:parameterdeadband_edit"
+              ],
+              "routes": [
+                "/alarms/deadbands/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "alarm deadbands tab",
+              "url_names": [
+                "alarms:parameterdeadband_delete"
+              ],
+              "routes": [
+                "/alarms/deadbands/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "alarm deadbands tab",
+              "url_names": [
+                "alarms:parameterdeadband_list"
+              ],
+              "routes": [
+                "/alarms/deadbands/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [
+        {
+          "form": "ParameterDeadbandForm",
+          "module": "alarms.forms",
+          "fields": {
+            "parameter": "Deadband",
+            "deadband": "Deadband",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_platform.py",
+        "core/tests_workspaces.py",
+        "alarms/tests/test_reference.py"
+      ]
+    },
+    {
+      "app": "alarms",
       "model": "DeliveryAttempt",
       "table": "alarm_delivery_attempts",
       "description": "A transport took a notification (sent) or failed to (failed, with what it said).",
@@ -1119,6 +1394,300 @@
     },
     {
       "app": "alarms",
+      "model": "SeverityPolicy",
+      "table": "alarm_severity_policies",
+      "description": "How an alarm of a severity behaves, one row per severity (a person with the right edits them, every change logged): how long a condition must hold before the alarm is raised and how long it must be over before it clears (in data time, so a restart loses nothing), how long a level waits for an acknowledgement before the next level is notified, and how many times a failing transport is tried with one notification.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "severity",
+          "field": "severity",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "warning",
+            "critical"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
+        },
+        {
+          "name": "on_delay_seconds",
+          "field": "on_delay_seconds",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SeverityPolicyForm › Rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "off_delay_seconds",
+          "field": "off_delay_seconds",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SeverityPolicyForm › Rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "escalation_minutes",
+          "field": "escalation_minutes",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SeverityPolicyForm › Rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "delivery_attempts",
+          "field": "delivery_attempts",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SeverityPolicyForm › Rule"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_alarm_severity_policies_severity",
+          "kind": "unique",
+          "fields": [
+            "severity"
+          ],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_severity_policies_severity",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_severity_policies_delays",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_severity_policies_escalation",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_severity_policies_attempts",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "migration 0002 makes one row per severity"
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "alarm severity rules tab",
+              "url_names": [
+                "alarms:severitypolicy_edit"
+              ],
+              "routes": [
+                "/alarms/severity-rules/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "there is always one row per severity"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "alarm severity rules tab",
+              "url_names": [
+                "alarms:severitypolicy_list"
+              ],
+              "routes": [
+                "/alarms/severity-rules/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [
+        {
+          "form": "SeverityPolicyForm",
+          "module": "alarms.forms",
+          "fields": {
+            "on_delay_seconds": "Rule",
+            "off_delay_seconds": "Rule",
+            "escalation_minutes": "Rule",
+            "delivery_attempts": "Rule",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_platform.py",
+        "core/tests_workspaces.py",
+        "alarms/tests/test_alarms.py",
+        "alarms/tests/test_reference.py"
+      ]
+    },
+    {
+      "app": "alarms",
       "model": "Alarm",
       "table": "alarms",
       "description": "One time a condition held: a sensor rule's event (mirrored from sensors.AlarmEvent, which the sensors' check keeps), or a water value past a species' limit at a sampling point.",
@@ -1336,7 +1905,9 @@
         "core/tests_workspaces.py",
         "sensors/tests/test_alarms.py",
         "alarms/tests/test_alarms.py",
-        "alarms/tests/test_pages.py"
+        "alarms/tests/test_defects.py",
+        "alarms/tests/test_pages.py",
+        "alarms/tests/test_reference.py"
       ]
     },
     {
@@ -1611,7 +2182,8 @@
         "sensors/tests/test_pages.py",
         "sensors/tests/test_portable.py",
         "alarms/tests/test_alarms.py",
-        "alarms/tests/test_pages.py"
+        "alarms/tests/test_pages.py",
+        "alarms/tests/test_reference.py"
       ]
     },
     {
@@ -1860,19 +2432,6 @@
           ],
           "how": "form",
           "why": ""
-        },
-        {
-          "name": "alarm_escalation_minutes",
-          "field": "alarm_escalation_minutes",
-          "type": "smallint",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [
-            "PlatformSettingsForm › Alarms"
-          ],
-          "how": "form",
-          "why": ""
         }
       ],
       "constraints": [
@@ -1892,12 +2451,6 @@
         },
         {
           "name": "chk_platform_settings_window",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_platform_settings_escalation",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -1955,7 +2508,6 @@
           "fields": {
             "correction_window_days": "Records",
             "second_approval_withdrawal": "Records",
-            "alarm_escalation_minutes": "Alarms",
             "version": ""
           }
         }
@@ -1975,7 +2527,7 @@
         "core/tests_platform.py",
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
-        "alarms/tests/test_alarms.py"
+        "alarms/tests/test_reference.py"
       ]
     },
     {
@@ -20862,7 +21414,8 @@
         "farm/tests/test_water_sources.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
-        "reports/tests/test_lice.py"
+        "reports/tests/test_lice.py",
+        "alarms/tests/test_defects.py"
       ]
     },
     {

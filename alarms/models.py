@@ -14,19 +14,21 @@ tab: edited, soft-deleted, logged)."""
 from django.conf import settings
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
-from django.core.validators import MaxValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext, gettext_lazy as _
 
 from core.models import AuditedModel
 from farm.models import ProductionDepartment, SamplingPoint, Site
+from farm.water.parameters import LIMIT_CHOICES
 from sensors.models import AlarmEvent
 from sensors.models.alarm import Severity
 
 # How serious a severity is, for "at least" (a rule's least severity).
 RANK = {Severity.WARNING: 1, Severity.CRITICAL: 2}
-MAX_LEVEL = 9
+LEVEL_BOUNDS = (0, 9)                       # level 0 is notified first; nine escalations at most
+MAX_LEVEL = LEVEL_BOUNDS[1]
 
 
 class Source(models.TextChoices):
@@ -258,6 +260,90 @@ class Acknowledgement(models.Model):
     def delay(self):
         """How long after the alarm opened it was acknowledged."""
         return self.acknowledged_at - self.alarm.opened_at
+
+
+# ---- the rules: the user's reference data (owner, alarm plan §7c) ---------------------------------------------------
+# What a row may hold, the database's refusal of nonsense; the values themselves are the user's (seeded by migration 0002
+# with the owner's defaults, alarm plan §7a).
+DELAY_BOUNDS = (0, 3600)            # seconds
+ESCALATION_BOUNDS = (1, 1440)       # minutes
+ATTEMPTS_BOUNDS = (1, 20)
+
+
+class SeverityPolicy(AuditedModel):
+    """How an alarm of a severity behaves, one row per severity (a person with the right edits them, every change logged):
+    how long a condition must hold before the alarm is raised and how long it must be over before it clears (in data
+    time, so a restart loses nothing), how long a level waits for an acknowledgement before the next level is notified,
+    and how many times a failing transport is tried with one notification."""
+
+    severity = models.CharField(_('Severity'), max_length=10, choices=Severity.choices, editable=False)
+    on_delay_seconds = models.PositiveIntegerField(
+        _('Raise after (seconds)'), validators=[MinValueValidator(DELAY_BOUNDS[0]), MaxValueValidator(DELAY_BOUNDS[1])])
+    off_delay_seconds = models.PositiveIntegerField(
+        _('Clear after (seconds)'), validators=[MinValueValidator(DELAY_BOUNDS[0]), MaxValueValidator(DELAY_BOUNDS[1])])
+    escalation_minutes = models.PositiveIntegerField(
+        _('Escalate after (minutes)'),
+        validators=[MinValueValidator(ESCALATION_BOUNDS[0]), MaxValueValidator(ESCALATION_BOUNDS[1])])
+    delivery_attempts = models.PositiveIntegerField(
+        _('Delivery attempts'), validators=[MinValueValidator(ATTEMPTS_BOUNDS[0]), MaxValueValidator(ATTEMPTS_BOUNDS[1])])
+
+    class Meta:
+        db_table = 'alarm_severity_policies'
+        ordering = ['severity']
+        verbose_name = _('alarm severity rule')
+        verbose_name_plural = _('alarm severity rules')
+        constraints = [
+            models.UniqueConstraint(fields=['severity'], name='uq_alarm_severity_policies_severity'),
+            models.CheckConstraint(condition=Q(severity__in=Severity.values), name='chk_alarm_severity_policies_severity'),
+            models.CheckConstraint(condition=Q(on_delay_seconds__gte=DELAY_BOUNDS[0], on_delay_seconds__lte=DELAY_BOUNDS[1],
+                                               off_delay_seconds__gte=DELAY_BOUNDS[0],
+                                               off_delay_seconds__lte=DELAY_BOUNDS[1]),
+                                   name='chk_alarm_severity_policies_delays'),
+            models.CheckConstraint(condition=Q(escalation_minutes__gte=ESCALATION_BOUNDS[0],
+                                               escalation_minutes__lte=ESCALATION_BOUNDS[1]),
+                                   name='chk_alarm_severity_policies_escalation'),
+            models.CheckConstraint(condition=Q(delivery_attempts__gte=ATTEMPTS_BOUNDS[0],
+                                               delivery_attempts__lte=ATTEMPTS_BOUNDS[1]),
+                                   name='chk_alarm_severity_policies_attempts'),
+        ]
+
+    def __str__(self):
+        return str(self.get_severity_display())
+
+
+class ParameterDeadband(AuditedModel):
+    """How far past its limit a water value must come back before an alarm on it clears (in the parameter's unit), so a
+    value at the limit does not raise and clear over and over: the limit is judged on the value moved by the deadband
+    toward danger, by the same judgement (farm/water/evaluate.py). A parameter without a row has none."""
+
+    parameter = models.CharField(_('Parameter'), max_length=30, choices=LIMIT_CHOICES)
+    deadband = models.DecimalField(_('Deadband'), max_digits=8, decimal_places=4)
+
+    class Meta:
+        db_table = 'alarm_deadbands'
+        ordering = ['parameter']
+        verbose_name = _('alarm deadband')
+        verbose_name_plural = _('alarm deadbands')
+        constraints = [
+            models.UniqueConstraint(fields=['parameter'], condition=Q(is_deleted=False),
+                                    name='uq_alarm_deadbands_parameter_live',
+                                    violation_error_message=_('This parameter has a deadband already.')),
+            models.CheckConstraint(condition=Q(parameter__in=[code for code, _label in LIMIT_CHOICES]),
+                                   name='chk_alarm_deadbands_parameter'),
+            models.CheckConstraint(condition=Q(deadband__gte=0), name='chk_alarm_deadbands_not_negative',
+                                   violation_error_message=_('A deadband is not negative.')),
+        ]
+
+    def __str__(self):
+        return str(self.get_parameter_display())
+
+    def clean(self):
+        super().clean()
+        from farm.water import parameters
+        if self.parameter in parameters.BY_CODE and self.deadband is not None:
+            measure = parameters.get(self.parameter)
+            if self.deadband > measure.high - measure.low:
+                raise ValidationError({'deadband': _('Wider than the parameter’s whole range.')})
 
 
 # The tables a database trigger keeps append-only (migration 0001).

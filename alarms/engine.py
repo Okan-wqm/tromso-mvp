@@ -15,10 +15,9 @@ from django.db import connection, transaction
 from django.db.models import Min
 from django.utils import timezone
 
-from core.platform import escalation_after
 from sensors import alarms as sensor_alarms
 
-from . import read, routing, services, sources
+from . import read, routing, rules as alarm_rules, services, sources
 from .models import Acknowledgement, Alarm, AlarmClearance, Notification
 from .transports import transport_for
 
@@ -48,13 +47,13 @@ def _lock():
         cursor.execute('SELECT pg_advisory_xact_lock(%s)', [LOCK])
 
 
-def _advance(alarm, now, summary):
+def _advance(alarm, now, summary, rules):
     """Step 3 for one alarm."""
     level = read.level(alarm)
     while True:
         summary.queued += len(services.enqueue(alarm, level, routing.recipients(alarm, level, now), now))
         started = Notification.objects.filter(alarm=alarm, level=level).aggregate(first=Min('queued_at'))['first']
-        if started is not None and now - started < escalation_after():
+        if started is not None and now - started < rules.escalation_after(alarm.severity):
             return
         following = routing.next_level(alarm, level)
         if following is None:
@@ -68,6 +67,7 @@ def run_once(now=None):
     """One pass of the loop at `now`; returns its Summary."""
     now = now or timezone.now()
     summary = Summary()
+    rules = alarm_rules.current()
     with transaction.atomic():
         _lock()
         sensor_alarms.evaluate(now)
@@ -77,10 +77,10 @@ def run_once(now=None):
         waiting = (Alarm.objects.exclude(pk__in=AlarmClearance.objects.values('alarm'))
                    .exclude(pk__in=Acknowledgement.objects.values('alarm')).order_by('opened_at', 'id'))
         for alarm in waiting:
-            _advance(alarm, now, summary)
+            _advance(alarm, now, summary, rules)
     with transaction.atomic():
         _lock()
-        for notification in read.pending():
+        for notification in read.pending(rules):
             transport = transport_for(notification.channel)
             if transport is None:
                 summary.waiting += 1

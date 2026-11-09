@@ -261,7 +261,6 @@ class Profile(models.Model):
 
 # The bounds of the platform owner's settings: the database holds them (PlatformSettings' checks) and the form says them.
 WINDOW_DAYS = (1, 3650)           # a day back at least; ten years at most, which keeps every date's arithmetic sane
-ESCALATION_MINUTES = (1, 1440)    # a minute to a day
 
 
 class PlatformSettings(AuditedModel):
@@ -274,7 +273,8 @@ class PlatformSettings(AuditedModel):
       31 days until the owner sets another). A record older than that stays as it is.
     - Whether a second person must approve the acknowledgement of a medicine-withdrawal warning before what it was given
       for counts (F-164); other critical acknowledgements may join it.
-    - How long an alarm waits for an acknowledgement before the next people are notified (the alarms app)."""
+    The alarms' rules (delays, escalation, deadbands) are the alarms app's own reference data, per severity and per
+    parameter (alarms.SeverityPolicy, alarms.ParameterDeadband)."""
 
     singleton = models.BooleanField(default=True, editable=False)
     correction_window_days = models.PositiveSmallIntegerField(
@@ -282,9 +282,6 @@ class PlatformSettings(AuditedModel):
         validators=[MinValueValidator(WINDOW_DAYS[0]), MaxValueValidator(WINDOW_DAYS[1])])
     second_approval_withdrawal = models.BooleanField(
         _('A second person approves a withdrawal warning acknowledgement'), default=False)
-    alarm_escalation_minutes = models.PositiveSmallIntegerField(
-        _('Escalate an unacknowledged alarm after (minutes)'), default=15,
-        validators=[MinValueValidator(ESCALATION_MINUTES[0]), MaxValueValidator(ESCALATION_MINUTES[1])])
 
     class Meta:
         db_table = 'platform_settings'
@@ -296,10 +293,6 @@ class PlatformSettings(AuditedModel):
             models.CheckConstraint(
                 condition=models.Q(correction_window_days__gte=WINDOW_DAYS[0], correction_window_days__lte=WINDOW_DAYS[1]),
                 name='chk_platform_settings_window'),
-            models.CheckConstraint(
-                condition=models.Q(alarm_escalation_minutes__gte=ESCALATION_MINUTES[0],
-                                   alarm_escalation_minutes__lte=ESCALATION_MINUTES[1]),
-                name='chk_platform_settings_escalation'),
         ]
 
     def __str__(self):

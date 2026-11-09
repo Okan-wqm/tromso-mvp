@@ -1747,6 +1747,9 @@ msgstr "Dönemdeki bir gün"
 msgid "A deadband above 0, unless every value is stored."
 msgstr "Her değer saklanmıyorsa ölü bant 0’dan büyük olmalıdır."
 
+msgid "A deadband is not negative."
+msgstr "Ölü bant negatif olamaz."
+
 #, python-format
 msgid ""
 "A deadband of %(value)s is finer than the precision of %(quantity)s, %(step)s: a smaller change "
@@ -2006,6 +2009,9 @@ msgid "A page shows at most %(days)s day: the first day was moved."
 msgid_plural "A page shows at most %(days)s days: the first day was moved."
 msgstr[0] "Bir sayfa en fazla %(days)s gün gösterir: ilk gün kaydırıldı."
 msgstr[1] "Bir sayfa en fazla %(days)s gün gösterir: ilk gün kaydırıldı."
+
+msgid "A parameter without a deadband clears its alarm as soon as a fresh value is back inside the limit."
+msgstr "Ölü bandı olmayan bir parametre, taze bir değer limitin içine döner dönmez alarmını kapatır."
 
 msgid ""
 "A payload format says how a kind of device writes its messages: where the time is, and where each"
@@ -2793,6 +2799,9 @@ msgstr "Alarm"
 msgid "Alarm acknowledged."
 msgstr "Alarm onaylandı."
 
+msgid "Alarm deadbands"
+msgstr "Alarm ölü bantları"
+
 msgid "Alarm event acknowledged."
 msgstr "Alarm olayı onaylandı."
 
@@ -2807,6 +2816,9 @@ msgstr "Alarm kuralı"
 
 msgid "Alarm rules"
 msgstr "Alarm kuralları"
+
+msgid "Alarm severity rules"
+msgstr "Alarm önem kuralları"
 
 msgid "Alarms"
 msgstr "Alarmlar"
@@ -3055,13 +3067,6 @@ msgstr ""
 
 msgid "An active protocol has a table."
 msgstr "Aktif bir protokolün tablosu olmalı."
-
-msgid ""
-"An alarm nobody has acknowledged this long after its people were notified is sent to the next "
-"people in the alarm recipients. 1 to 1440."
-msgstr ""
-"Kişilerine bildirildikten bu kadar süre sonra kimsenin onaylamadığı bir alarm, alarm "
-"alıcılarındaki sonraki kişilere gönderilir. 1 ile 1440 arası."
 
 msgid "An amount needs its unit, and a unit its amount."
 msgstr "Miktar birimiyle, birim de miktarıyla girilir."
@@ -4358,6 +4363,9 @@ msgstr "Temizlik"
 msgid "Clear"
 msgstr "Temizle"
 
+msgid "Clear after (seconds)"
+msgstr "Şu süreden sonra kapat (saniye)"
+
 msgid "Clear filters"
 msgstr "Filtreleri temizle"
 
@@ -5049,6 +5057,9 @@ msgstr "Teslim edilen yer"
 msgid "Delivery"
 msgstr "Teslimat"
 
+msgid "Delivery attempts"
+msgstr "İletim denemeleri"
+
 #, python-format
 msgid "Delivery from %(supplier)s recorded: %(count)d line."
 msgid_plural "Delivery from %(supplier)s recorded: %(count)d lines."
@@ -5579,8 +5590,8 @@ msgstr "Diğer türlerin hiçbirine uymayan ekipman."
 msgid "Error"
 msgstr "Hata"
 
-msgid "Escalate an unacknowledged alarm after (minutes)"
-msgstr "Onaylanmamış bir alarmı şu süreden sonra yükselt (dakika)"
+msgid "Escalate after (minutes)"
+msgstr "Şu süreden sonra yükselt (dakika)"
 
 msgid "Escalated at"
 msgstr "Yükseltme zamanı"
@@ -7047,6 +7058,21 @@ msgstr ""
 "Bunlar çiftliğin kendi kurallarıdır: başlangıç değerleri veterinerinizle kontrol edilmelidir."
 
 msgid ""
+"How long the condition must hold, counted from the first value past the limit, before the alarm "
+"is raised. 0: at once."
+msgstr ""
+"Alarm başlatılmadan önce, limiti aşan ilk değerden itibaren durumun ne kadar sürmesi gerektiği. "
+"0: hemen."
+
+msgid "How long the people notified at one level have to acknowledge before the next level is notified."
+msgstr ""
+"Bir seviyede bildirilen kişilerin, bir sonraki seviye bildirilmeden önce onaylamak için ne kadar "
+"süresi olduğu."
+
+msgid "How long the value must be back inside the limit, by the deadband, before the alarm clears."
+msgstr "Alarm kapanmadan önce değerin, ölü bant kadar, limitin içinde ne kadar kalması gerektiği."
+
+msgid ""
 "How many days back a daily record (a stock operation, a feeding, a water sample, a movement of "
 "the store, a plan, a treatment) may be dated, and how old a record may be voided. Older records "
 "stay as they are. 1 to 3650; 31 until you set another."
@@ -7054,6 +7080,9 @@ msgstr ""
 "Günlük bir kaydın (bir stok işlemi, bir yemleme, bir su numunesi, bir depo hareketi, bir plan, "
 "bir tedavi) kaç gün geriye tarihlenebileceği ve bir kaydın ne kadar eskiyken iptal edilebileceği."
 " Daha eski kayıtlar olduğu gibi kalır. 1 ile 3650 arası; siz başka bir değer verene kadar 31."
+
+msgid "How many times a failing transport is tried with one notification."
+msgstr "Başarısız bir aktarımın bir bildirimle kaç kez deneneceği."
 
 msgid "How often the device sends a message. Offline after three times this without one."
 msgstr ""
@@ -7176,6 +7205,9 @@ msgstr "Devam ediyor"
 
 msgid "In the library"
 msgstr "Kütüphanede"
+
+msgid "In the parameter’s unit. 0: no deadband."
+msgstr "Parametrenin biriminde. 0: ölü bant yok."
 
 msgid "In the quantity’s unit; for a rate, the change over the time below."
 msgstr "Parametrenin biriminde; hız için aşağıdaki süre içindeki değişim."
@@ -9385,6 +9417,11 @@ msgstr ""
 "almaz. Her hücrede SFR, yani günde verilen yemin vücut ağırlığına oranı (%%); 0, o sıcaklıkta "
 "yemleme yok demektir. Boş bırakılan FCR, protokolün FCR’sidir. Tablo bir bütün olarak kaydedilir."
 
+msgid "One rule per severity is made by the platform; it is changed, never added or deleted."
+msgstr ""
+"Her önem derecesi için bir kural platform tarafından oluşturulur; değiştirilir, asla eklenmez ya "
+"da silinmez."
+
 msgid "One site per experiment: its clock gives the days."
 msgstr "Deney başına tek saha: günleri onun saati verir."
 
@@ -10433,6 +10470,9 @@ msgstr "Raceway (akış kanalı)"
 
 msgid "Rain and run-off"
 msgstr "Yağmur ve yüzey akışı"
+
+msgid "Raise after (seconds)"
+msgstr "Şu süreden sonra başlat (saniye)"
 
 msgid "Randomise"
 msgstr "Rastgele dağıt"
@@ -14290,6 +14330,9 @@ msgstr "Bu sahibin zaten aktif bir orta noktası var: suyunu o temsil eder."
 msgid "This page does not exist"
 msgstr "Bu sayfa yok"
 
+msgid "This parameter has a deadband already."
+msgstr "Bu parametrenin zaten bir ölü bandı var."
+
 msgid "This person already has a leave request for some of these days."
 msgstr "Bu kişinin bu günlerin bir kısmı için zaten bir izin talebi var."
 
@@ -15515,6 +15558,9 @@ msgstr ""
 "Birimin neden bu durumda olduğu, örn. “ağ değişimi”. Durum değiştiğinde, olduğu gibi bırakılan "
 "neden silinir."
 
+msgid "Wider than the parameter’s whole range."
+msgstr "Parametrenin tüm aralığından daha geniş."
+
 #, python-format
 msgid "Widget %(widget)s has a field it may not have, or lacks one it needs."
 msgstr "%(widget)s bileşeninde olmaması gereken bir alan var ya da gereken bir alan eksik."
@@ -15796,6 +15842,12 @@ msgstr "alarm kapanışı"
 msgid "alarm clearances"
 msgstr "alarm kapanışları"
 
+msgid "alarm deadband"
+msgstr "alarm ölü bandı"
+
+msgid "alarm deadbands"
+msgstr "alarm ölü bantları"
+
 msgid "alarm delivery attempt"
 msgstr "alarm iletim denemesi"
 
@@ -15831,6 +15883,12 @@ msgstr "alarm kuralı"
 
 msgid "alarm rules"
 msgstr "alarm kuralları"
+
+msgid "alarm severity rule"
+msgstr "alarm önem kuralı"
+
+msgid "alarm severity rules"
+msgstr "alarm önem kuralları"
 
 msgid "alarms"
 msgstr "alarmlar"

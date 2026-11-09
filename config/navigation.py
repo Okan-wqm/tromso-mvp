@@ -44,6 +44,9 @@ WORKSPACES = [
             Group(_('Alarms'), [
                 Entry(_('Alarms'), 'alarms:alarm_list', 'bell', 'alarms.view_alarm'),
                 Entry(_('Alarm recipients'), 'alarms:recipientrule_list', 'send', 'alarms.view_recipientrule'),
+                # The alarm rules are the user's reference data (owner, alarm plan §7c): per severity and per parameter.
+                Entry(_('Alarm severity rules'), 'alarms:severitypolicy_list', 'timer', 'alarms.view_severitypolicy'),
+                Entry(_('Alarm deadbands'), 'alarms:parameterdeadband_list', 'gauge', 'alarms.view_parameterdeadband'),
             ]),
             Group(_('Administration'), [
                 Entry(_('Activity log'), 'core:activity_log', 'history', 'core.view_auditlog'),

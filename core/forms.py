@@ -152,7 +152,6 @@ class PasswordResetForm(auth_forms.PasswordResetForm):
 
 PLATFORM_TABS = [
     ('records', _('Records'), ['correction_window_days', 'second_approval_withdrawal']),
-    ('alarms', _('Alarms'), ['alarm_escalation_minutes']),
 ]
 
 
@@ -171,6 +170,4 @@ class PlatformSettingsForm(TabbedForm):
                                         'another.'),
             'second_approval_withdrawal': _('When ticked, a harvest during a medicine withdrawal goes on only after a second '
                                             'person who may approve it has approved the acknowledgement.'),
-            'alarm_escalation_minutes': _('An alarm nobody has acknowledged this long after its people were notified is '
-                                          'sent to the next people in the alarm recipients. 1 to 1440.'),
         }

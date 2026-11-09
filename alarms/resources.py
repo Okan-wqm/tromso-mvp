@@ -1,10 +1,11 @@
 from django.utils.translation import gettext_lazy as _
 
 from core.crud import Resource
+from core.dbgrid import PAGE_SIZE
 
 from . import read
-from .forms import RecipientRuleForm
-from .models import RecipientRule
+from .forms import ParameterDeadbandForm, RecipientRuleForm, SeverityPolicyForm
+from .models import ParameterDeadband, RecipientRule, SeverityPolicy
 
 
 class RecipientRuleResource(Resource):
@@ -16,7 +17,7 @@ class RecipientRuleResource(Resource):
     url_prefix = 'alarms/recipients'
     list_template = 'alarms/recipientrule_list.html'
     icon = 'send'
-    page_size = 100
+    page_size = PAGE_SIZE
 
     @classmethod
     def queryset(cls):
@@ -25,3 +26,26 @@ class RecipientRuleResource(Resource):
     @classmethod
     def filter_list(cls, request, objects):
         return objects, {'connected': read.connected()}
+
+
+class SeverityPolicyResource(Resource):
+    """The rules of each severity (Company › Alarms › Alarm severity rules): one row per severity, seeded, changed only."""
+
+    model = SeverityPolicy
+    form_class = SeverityPolicyForm
+    name, plural = _('alarm severity rule'), _('alarm severity rules')
+    url_prefix = 'alarms/severity-rules'
+    actions = ('change',)
+    list_template = 'alarms/severitypolicy_list.html'
+    icon = 'timer'
+
+
+class ParameterDeadbandResource(Resource):
+    """The deadband of each water parameter (Company › Alarms › Alarm deadbands)."""
+
+    model = ParameterDeadband
+    form_class = ParameterDeadbandForm
+    name, plural = _('alarm deadband'), _('alarm deadbands')
+    url_prefix = 'alarms/deadbands'
+    list_template = 'alarms/parameterdeadband_list.html'
+    icon = 'gauge'

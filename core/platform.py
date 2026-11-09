@@ -5,13 +5,11 @@ read, so a rule that depends on one cannot read it its own way.
   dates.py applies it; every message that names the days reads it here);
 - `second_approval_required(kind)`: whether an acknowledgement of that kind waits for a second person (the kinds are
   APPROVALS); the hook of the withdrawal acknowledgement calls it with 'withdrawal';
-- `escalation_after()`: how long an alarm waits for an acknowledgement before the next people are notified.
 
 Inside a request the row is read once (PlatformSettingsMiddleware opens the memo, saving the row drops it): a page asks
 for the window once per row it lists, and its queries must not grow with its rows. Outside a request (a command, the
 alarm loop) every call reads the row."""
 from contextvars import ContextVar
-from datetime import timedelta
 
 # The acknowledgements a second person may be asked to approve: {kind: the setting's column}.
 APPROVALS = {'withdrawal': 'second_approval_withdrawal'}
@@ -58,7 +56,3 @@ def second_approval_required(kind):
         raise ValueError(f'No second-approval setting for {kind!r}: one of {sorted(APPROVALS)}.')
     return getattr(current(), APPROVALS[kind])
 
-
-def escalation_after():
-    """How long an alarm waits for an acknowledgement before the next people are notified."""
-    return timedelta(minutes=current().alarm_escalation_minutes)

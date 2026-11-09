@@ -7,7 +7,8 @@ from django.db.models import Count, Exists, Max, OuterRef, Q
 
 from .models import (Acknowledgement, Alarm, AlarmClearance, Channel, DeliveryAttempt, Escalation, Notification,
                      Outcome)
-from .transports import MAX_ATTEMPTS, transport_for
+from .rules import current as current_rules
+from .transports import transport_for
 
 ACKNOWLEDGE = 'alarms.change_alarm'
 QUEUED, SENT, FAILED = 'queued', 'sent', 'failed'
@@ -32,19 +33,22 @@ def nobody_notified(alarm):
 
 
 def status(notification):
-    """'sent' once a transport took it, 'failed' after MAX_ATTEMPTS failures, else 'queued'."""
+    """'sent' once a transport took it, 'failed' after its severity's delivery attempts failed, else 'queued'."""
     attempts = DeliveryAttempt.objects.filter(notification=notification)
     if attempts.filter(outcome=Outcome.SENT).exists():
         return SENT
-    return FAILED if attempts.filter(outcome=Outcome.FAILED).count() >= MAX_ATTEMPTS else QUEUED
+    failed = attempts.filter(outcome=Outcome.FAILED).count()
+    return FAILED if failed >= current_rules().delivery_attempts(notification.alarm.severity) else QUEUED
 
 
-def pending():
-    """The notifications still to be sent: none sent, fewer than MAX_ATTEMPTS failures."""
-    return (Notification.objects.annotate(sent=Exists(DeliveryAttempt.objects.filter(
+def pending(rules):
+    """The notifications still to be sent: none sent, fewer failures than their severity's delivery attempts."""
+    waiting = (Notification.objects.annotate(sent=Exists(DeliveryAttempt.objects.filter(
         notification=OuterRef('pk'), outcome=Outcome.SENT)), failures=Count('attempts', filter=Q(
-            attempts__outcome=Outcome.FAILED))).filter(sent=False, failures__lt=MAX_ATTEMPTS)
+            attempts__outcome=Outcome.FAILED))).filter(sent=False)
         .select_related('alarm', 'recipient').order_by('queued_at', 'id'))
+    return [notification for notification in waiting
+            if notification.failures < rules.delivery_attempts(notification.alarm.severity)]
 
 
 def transport_connected(channel):

@@ -5,7 +5,7 @@ from django.utils.translation import gettext_lazy as _
 from core.crud import TabbedForm, tab_fields
 from farm.models import ProductionDepartment, Site
 
-from .models import RecipientRule
+from .models import ParameterDeadband, RecipientRule, SeverityPolicy
 
 RULE_TABS = [
     ('where', _('Which alarms'), ['site', 'production_department', 'min_severity', 'level']),
@@ -43,3 +43,38 @@ class RecipientRuleForm(TabbedForm):
         for name, empty in (('site', _('Every site')), ('production_department', _('Every department')),
                             ('role', _('None')), ('user', _('None'))):
             self.fields[name].empty_label = empty
+
+
+POLICY_TABS = [('rule', _('Rule'), ['on_delay_seconds', 'off_delay_seconds', 'escalation_minutes', 'delivery_attempts'])]
+DEADBAND_TABS = [('deadband', _('Deadband'), ['parameter', 'deadband'])]
+
+
+class SeverityPolicyForm(TabbedForm):
+    """How alarms of one severity behave (alarms.models.SeverityPolicy); the bounds are the database's."""
+
+    tabs = POLICY_TABS
+
+    class Meta:
+        model = SeverityPolicy
+        fields = tab_fields(POLICY_TABS)
+        help_texts = {
+            'on_delay_seconds': _('How long the condition must hold, counted from the first value past the limit, before '
+                                  'the alarm is raised. 0: at once.'),
+            'off_delay_seconds': _('How long the value must be back inside the limit, by the deadband, before the alarm '
+                                   'clears.'),
+            'escalation_minutes': _('How long the people notified at one level have to acknowledge before the next level '
+                                    'is notified.'),
+            'delivery_attempts': _('How many times a failing transport is tried with one notification.'),
+        }
+
+
+class ParameterDeadbandForm(TabbedForm):
+    """How far past its limit a value must come back before an alarm on it clears (alarms.models.ParameterDeadband)."""
+
+    tabs = DEADBAND_TABS
+
+    class Meta:
+        model = ParameterDeadband
+        fields = tab_fields(DEADBAND_TABS)
+        localized_fields = ['deadband']
+        help_texts = {'deadband': _('In the parameter’s unit. 0: no deadband.')}

@@ -7,8 +7,7 @@ from django.db import migrations, models
 
 
 def make_the_row(apps, schema_editor):
-    """The one row, with the rules the farm had before the owner could set them: 31 days, no second approval, 15
-    minutes."""
+    """The one row, with the rules the farm had before the owner could set them: 31 days, no second approval."""
     apps.get_model('core', 'PlatformSettings').objects.get_or_create(singleton=True)
 
 
@@ -32,7 +31,6 @@ class Migration(migrations.Migration):
                 ('singleton', models.BooleanField(default=True, editable=False)),
                 ('correction_window_days', models.PositiveSmallIntegerField(default=31, validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(3650)], verbose_name='Correction window (days)')),
                 ('second_approval_withdrawal', models.BooleanField(default=False, verbose_name='A second person approves a withdrawal warning acknowledgement')),
-                ('alarm_escalation_minutes', models.PositiveSmallIntegerField(default=15, validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(1440)], verbose_name='Escalate an unacknowledged alarm after (minutes)')),
                 ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to=settings.AUTH_USER_MODEL, verbose_name='Created by')),
                 ('deleted_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to=settings.AUTH_USER_MODEL, verbose_name='Deleted by')),
                 ('updated_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to=settings.AUTH_USER_MODEL, verbose_name='Updated by')),
@@ -41,7 +39,7 @@ class Migration(migrations.Migration):
                 'verbose_name': 'platform settings',
                 'verbose_name_plural': 'platform settings',
                 'db_table': 'platform_settings',
-                'constraints': [models.UniqueConstraint(fields=('singleton',), name='uq_platform_settings_singleton'), models.CheckConstraint(condition=models.Q(('singleton', True)), name='chk_platform_settings_singleton'), models.CheckConstraint(condition=models.Q(('correction_window_days__gte', 1), ('correction_window_days__lte', 3650)), name='chk_platform_settings_window'), models.CheckConstraint(condition=models.Q(('alarm_escalation_minutes__gte', 1), ('alarm_escalation_minutes__lte', 1440)), name='chk_platform_settings_escalation')],
+                'constraints': [models.UniqueConstraint(fields=('singleton',), name='uq_platform_settings_singleton'), models.CheckConstraint(condition=models.Q(('singleton', True)), name='chk_platform_settings_singleton'), models.CheckConstraint(condition=models.Q(('correction_window_days__gte', 1), ('correction_window_days__lte', 3650)), name='chk_platform_settings_window')],
             },
         ),
         migrations.RunPython(make_the_row, migrations.RunPython.noop),

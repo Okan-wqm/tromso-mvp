@@ -1739,6 +1739,9 @@ msgstr "En dag i perioden"
 msgid "A deadband above 0, unless every value is stored."
 msgstr "Et dødbånd over 0, med mindre hver verdi lagres."
 
+msgid "A deadband is not negative."
+msgstr "Et dødbånd er ikke negativt."
+
 #, python-format
 msgid ""
 "A deadband of %(value)s is finer than the precision of %(quantity)s, %(step)s: a smaller change "
@@ -2000,6 +2003,9 @@ msgid "A page shows at most %(days)s day: the first day was moved."
 msgid_plural "A page shows at most %(days)s days: the first day was moved."
 msgstr[0] "En side viser høyst %(days)s dag: første dag ble flyttet."
 msgstr[1] "En side viser høyst %(days)s dager: første dag ble flyttet."
+
+msgid "A parameter without a deadband clears its alarm as soon as a fresh value is back inside the limit."
+msgstr "En parameter uten dødbånd opphever alarmen så snart en fersk verdi er tilbake innenfor grensen."
 
 msgid ""
 "A payload format says how a kind of device writes its messages: where the time is, and where each"
@@ -2785,6 +2791,9 @@ msgstr "Alarm"
 msgid "Alarm acknowledged."
 msgstr "Alarmen er kvittert."
 
+msgid "Alarm deadbands"
+msgstr "Alarmdødbånd"
+
 msgid "Alarm event acknowledged."
 msgstr "Alarmhendelsen er kvittert."
 
@@ -2799,6 +2808,9 @@ msgstr "Alarmregel"
 
 msgid "Alarm rules"
 msgstr "Alarmregler"
+
+msgid "Alarm severity rules"
+msgstr "Alarmregler per alvorlighet"
 
 msgid "Alarms"
 msgstr "Alarmer"
@@ -3047,13 +3059,6 @@ msgstr ""
 
 msgid "An active protocol has a table."
 msgstr "En aktiv protokoll har en tabell."
-
-msgid ""
-"An alarm nobody has acknowledged this long after its people were notified is sent to the next "
-"people in the alarm recipients. 1 to 1440."
-msgstr ""
-"En alarm ingen har kvittert så lenge etter at personene ble varslet, sendes til de neste i "
-"alarmmottakerne. 1 til 1440."
 
 msgid "An amount needs its unit, and a unit its amount."
 msgstr "En mengde trenger sin enhet, og en enhet sin mengde."
@@ -4345,6 +4350,9 @@ msgstr "Rengjøring"
 msgid "Clear"
 msgstr "Nullstill"
 
+msgid "Clear after (seconds)"
+msgstr "Opphev etter (sekunder)"
+
 msgid "Clear filters"
 msgstr "Fjern filtrene"
 
@@ -5038,6 +5046,9 @@ msgstr "Levert til"
 msgid "Delivery"
 msgstr "Varemottak"
 
+msgid "Delivery attempts"
+msgstr "Leveringsforsøk"
+
 #, python-format
 msgid "Delivery from %(supplier)s recorded: %(count)d line."
 msgid_plural "Delivery from %(supplier)s recorded: %(count)d lines."
@@ -5569,8 +5580,8 @@ msgstr "Utstyr som ikke passer i noen av de andre typene."
 msgid "Error"
 msgstr "Feil"
 
-msgid "Escalate an unacknowledged alarm after (minutes)"
-msgstr "Eskaler en ukvittert alarm etter (minutter)"
+msgid "Escalate after (minutes)"
+msgstr "Eskaler etter (minutter)"
 
 msgid "Escalated at"
 msgstr "Eskalert"
@@ -7028,6 +7039,19 @@ msgstr ""
 "kontrolleres med veterinæren din."
 
 msgid ""
+"How long the condition must hold, counted from the first value past the limit, before the alarm "
+"is raised. 0: at once."
+msgstr ""
+"Hvor lenge tilstanden må vare, regnet fra den første verdien over grensen, før alarmen utløses. "
+"0: med en gang."
+
+msgid "How long the people notified at one level have to acknowledge before the next level is notified."
+msgstr "Hvor lenge de som er varslet på ett nivå har på å kvittere før neste nivå varsles."
+
+msgid "How long the value must be back inside the limit, by the deadband, before the alarm clears."
+msgstr "Hvor lenge verdien må være tilbake innenfor grensen, med dødbåndet, før alarmen oppheves."
+
+msgid ""
 "How many days back a daily record (a stock operation, a feeding, a water sample, a movement of "
 "the store, a plan, a treatment) may be dated, and how old a record may be voided. Older records "
 "stay as they are. 1 to 3650; 31 until you set another."
@@ -7036,6 +7060,9 @@ msgstr ""
 "vannprøve, en lagerbevegelse, en plan, en behandling) kan dateres, og hvor gammel en registrering"
 " kan være når den annulleres. Eldre registreringer blir stående som de er. 1 til 3650; 31 til "
 "dere setter noe annet."
+
+msgid "How many times a failing transport is tried with one notification."
+msgstr "Hvor mange ganger en transport som feiler prøves med ett varsel."
 
 msgid "How often the device sends a message. Offline after three times this without one."
 msgstr "Hvor ofte apparatet sender en melding. Frakoblet etter tre ganger dette uten en melding."
@@ -7158,6 +7185,9 @@ msgstr "Pågår"
 
 msgid "In the library"
 msgstr "I biblioteket"
+
+msgid "In the parameter’s unit. 0: no deadband."
+msgstr "I parameterens enhet. 0: ikke noe dødbånd."
 
 msgid "In the quantity’s unit; for a rate, the change over the time below."
 msgstr "I parameterens enhet; for en endringsrate, endringen over tidsrommet nedenfor."
@@ -9372,6 +9402,9 @@ msgstr ""
 " som fôres per dag; 0 betyr ingen fôring ved den temperaturen. Tom FCR betyr protokollens. "
 "Tabellen lagres samlet."
 
+msgid "One rule per severity is made by the platform; it is changed, never added or deleted."
+msgstr "Plattformen lager én regel per alvorlighetsgrad; den endres, legges aldri til eller slettes."
+
 msgid "One site per experiment: its clock gives the days."
 msgstr "Én lokalitet per forsøk: dens klokke gir dagene."
 
@@ -10422,6 +10455,9 @@ msgstr "Raceway (strømkanal)"
 
 msgid "Rain and run-off"
 msgstr "Regn og overvann"
+
+msgid "Raise after (seconds)"
+msgstr "Utløs etter (sekunder)"
 
 msgid "Randomise"
 msgstr "Randomiser"
@@ -14270,6 +14306,9 @@ msgstr "Denne eieren har allerede et aktivt midtpunkt: det står for vannet dens
 msgid "This page does not exist"
 msgstr "Denne siden finnes ikke"
 
+msgid "This parameter has a deadband already."
+msgstr "Denne parameteren har allerede et dødbånd."
+
 msgid "This person already has a leave request for some of these days."
 msgstr "Denne personen har allerede en permisjonssøknad for noen av disse dagene."
 
@@ -15499,6 +15538,9 @@ msgstr ""
 "Hvorfor enheten har nåværende status, f.eks. «notskifte». Når statusen endres, slettes en årsak "
 "som står uendret."
 
+msgid "Wider than the parameter’s whole range."
+msgstr "Bredere enn hele parameterens område."
+
 #, python-format
 msgid "Widget %(widget)s has a field it may not have, or lacks one it needs."
 msgstr "Elementet %(widget)s har et felt det ikke kan ha, eller mangler et det trenger."
@@ -15782,6 +15824,12 @@ msgstr "alarmopphør"
 msgid "alarm clearances"
 msgstr "alarmopphør"
 
+msgid "alarm deadband"
+msgstr "alarmdødbånd"
+
+msgid "alarm deadbands"
+msgstr "alarmdødbånd"
+
 msgid "alarm delivery attempt"
 msgstr "alarmleveringsforsøk"
 
@@ -15816,6 +15864,12 @@ msgid "alarm rule"
 msgstr "alarmregel"
 
 msgid "alarm rules"
+msgstr "alarmregler"
+
+msgid "alarm severity rule"
+msgstr "alarmregel"
+
+msgid "alarm severity rules"
 msgstr "alarmregler"
 
 msgid "alarms"

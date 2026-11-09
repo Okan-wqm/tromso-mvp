@@ -9,22 +9,24 @@ from decimal import Decimal
 
 from django import forms
 from django.core.exceptions import NON_FIELD_ERRORS
-from django.utils.translation import gettext_lazy as _, ngettext
+from django.utils import formats
+from django.utils.translation import gettext_lazy as _, ngettext, pgettext_lazy
 
 from core.crud import DRAFT
+from core.widgets import DayInput
 
 from ..handling import check
 from ..models import Batch, HandlingPlanItem, HealthEvent, SlaughterFacility, Species, Supplier, Tank
 from ..models.handling import HandlingKind
 from ..models.harvest import offered_facilities
 from ..models.stock import (
-    ARRIVAL_STATUSES, PROVENANCE_OF_ORIGIN, CullReason, InputStage, MortalityCause, Origin, TransferReason,
+    PROVENANCE_OF_ORIGIN, TAKES_FISH, CullReason, InputStage, MortalityCause, Origin, TransferReason,
 )
 from ..models.supplier import SupplyCategory
 from ..stock import services
 from ..templatetags.stock import number
 
-DATE = forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d')
+DATE = DayInput()
 DECIMAL = {'inputmode': 'decimal'}
 NOTES = forms.Textarea(attrs={'rows': 3})
 
@@ -35,19 +37,37 @@ def share_label(share):
         'batch': share.batch.code, 'count': number(share.count), 'weight': number(share.avg_weight_g, 1)}
 
 
+class Unshown(forms.HiddenInput):
+    """A field the form carries but does not draw: the withdrawal guard's box is drawn with its question
+    (farm/_withdrawal_change.html), only when there is one."""
+
+    def render(self, name, value, attrs=None, renderer=None):
+        return ''
+
+
 class ServiceErrors:
     """Puts a ValidationError of the stock service on the form: on the field it names when the form has
     it (or on the field the form calls it), otherwise above the form."""
 
     service_fields = {}
+    # The withdrawal guard's refusal (farm.health.withdrawal.WithdrawalChanged): what the write does to the withdrawals,
+    # shown with its box by farm/_withdrawal_change.html; None until it asks. The box's value travels in the form's own
+    # `withdrawal_ack`, which its save hands to its service: it acknowledges that write only (cross-review 2, 6).
+    withdrawal_change = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['withdrawal_ack'] = forms.CharField(required=False, widget=Unshown)
 
     def add_service_error(self, error):
+        self.withdrawal_change = getattr(error, 'change', None) or self.withdrawal_change
         if not hasattr(error, 'error_dict'):
             self.add_error(None, error.messages)
             return
         for key, messages in error.message_dict.items():
             name = self.service_fields.get(key, key)
-            self.add_error(name if name in self.fields and name != NON_FIELD_ERRORS else None, messages)
+            shown_apart = name in (NON_FIELD_ERRORS, 'withdrawal_ack')          # the box is the question's own
+            self.add_error(name if name in self.fields and not shown_apart else None, messages)
 
 
 def acknowledgement():
@@ -194,7 +214,8 @@ def event_field():
 
 class MortalityForm(OperationForm):
     count = forms.IntegerField(label=_('Dead fish'), min_value=1)
-    cause = forms.ChoiceField(label=_('Cause'), choices=MortalityCause.choices, initial=MortalityCause.UNKNOWN)
+    cause = forms.ChoiceField(label=pgettext_lazy('mortality', 'Cause'), choices=MortalityCause.choices,
+                              initial=MortalityCause.UNKNOWN)
     measured_weight_kg = forms.DecimalField(
         label=_('Weight of the dead fish (kg)'), max_digits=14, decimal_places=3, min_value=Decimal('0.001'),
         required=False, localize=True, widget=forms.TextInput(attrs=DECIMAL),
@@ -209,7 +230,8 @@ class MortalityForm(OperationForm):
         return services.record_mortality(
             user, unit=self.unit, batch=data['batch'], day=data['date'], count=data['count'], cause=data['cause'],
             measured_weight_kg=data['measured_weight_kg'], notes=data['notes'],
-            health_event=data.get('health_event'), token=data['token'])
+            health_event=data.get('health_event'), token=data['token'],
+            withdrawal_ack=data['withdrawal_ack'])
 
 
 class CullForm(OperationForm):
@@ -242,7 +264,8 @@ class CullForm(OperationForm):
         data = self.cleaned_data
         return services.record_cull(
             user, unit=self.unit, batch=data['batch'], day=data['date'], count=data['count'], reason=data['reason'],
-            notes=data['notes'], health_event=data.get('health_event'), token=data['token'])
+            notes=data['notes'], health_event=data.get('health_event'), token=data['token'],
+            withdrawal_ack=data['withdrawal_ack'])
 
 
 class WeighingForm(OperationForm):
@@ -279,7 +302,8 @@ class WeighingForm(OperationForm):
         return services.record_weighing(
             user, unit=self.unit, batch=data['batch'], day=data['date'], avg_weight_g=data['avg_weight_g'],
             sample_count=data['sample_count'], sample_weight_kg=data['sample_weight_kg'], notes=data['notes'],
-            token=data['token'])
+            token=data['token'],
+            withdrawal_ack=data['withdrawal_ack'])
 
 
 class SpeciesChoice(forms.ModelChoiceField):
@@ -378,7 +402,8 @@ class BatchInputForm(Acknowledged, ServiceErrors, forms.ModelForm):
             strain=data['strain'].strip(), name=data['name'].strip(),
             expected_harvest_date=data['expected_harvest_date'], notes=data['notes'],
             provenance=data['provenance'], year_class=data['year_class'], ack=data['over_capacity_ack'],
-            token=data['token'])
+            token=data['token'],
+            withdrawal_ack=data['withdrawal_ack'])
 
 
 class OpeningBalanceForm(BatchInputForm):
@@ -469,8 +494,8 @@ InputLineFormSet = forms.formset_factory(InputLineForm, extra=0, min_num=1, vali
 
 
 def stockable_units():
-    """The units fish can go into: those whose status takes fish."""
-    return (Tank.objects.filter(status__in=ARRIVAL_STATUSES)
+    """The units fish can go into: on a site, with a status that takes fish."""
+    return (Tank.objects.filter(TAKES_FISH)
             .select_related('production_department__site').order_by('code'))
 
 
@@ -536,7 +561,8 @@ class TransferForm(PlannedForm, HandlingChecked, Acknowledged, OperationForm):
             user, source=self.unit, batch=data['batch'], day=data['date'],
             legs=[(row['unit'], row['count']) for row in rows], reason=data['reason'], notes=data['notes'],
             ack=data['over_capacity_ack'], handling_ack=data['handling_ack'], plan_item=data['plan_item'],
-            token=data['token'])
+            token=data['token'],
+            withdrawal_ack=data['withdrawal_ack'])
 
 
 class GradingForm(HandlingChecked, Acknowledged, OperationForm):
@@ -562,7 +588,8 @@ class GradingForm(HandlingChecked, Acknowledged, OperationForm):
             user, source=self.unit, batch=data['batch'], day=data['date'],
             outputs=[(row['unit'], row['count'], row['avg_weight_g'], row['size_class'].strip()) for row in rows],
             remainder_avg_weight_g=data['remainder_avg_weight_g'], notes=data['notes'],
-            ack=data['over_capacity_ack'], handling_ack=data['handling_ack'], token=data['token'])
+            ack=data['over_capacity_ack'], handling_ack=data['handling_ack'], token=data['token'],
+            withdrawal_ack=data['withdrawal_ack'])
 
 
 class TransportChoice(forms.ModelChoiceField):
@@ -617,13 +644,34 @@ class HarvestForm(PlannedForm, HandlingChecked, OperationForm):
             self.initial.update({'count': self.plan.planned_count, 'facility': self.plan.facility_id,
                                  'transport': self.plan.transport_id, 'vessel': self.plan.vessel})
 
+    @property
+    def handling(self):
+        """The handling check, and a note when the harvest is recorded from a plan in another ISO week or at another
+        facility than planned: it stays the plan's in the planned-slaughter report (reports.compute.slaughter.plans_of,
+        audit F-227). Said, never refused."""
+        found = HandlingChecked.handling.fget(self)
+        if self.plan is not None and not getattr(self, '_plan_noted', False):
+            self._plan_noted = True
+            data = getattr(self, 'cleaned_data', {})
+            day = data.get('date') or self.initial.get('date') or self.fields['date'].initial
+            facility = data.get('facility')
+            facility_id = facility.pk if facility is not None else self.initial.get('facility')
+            if day is not None and (day.isocalendar()[:2] != self.plan.date.isocalendar()[:2]
+                                    or facility_id != self.plan.facility_id):
+                found.notes.append(_('Planned for %(date)s to %(facility)s: recorded on another week or at another '
+                                     'facility, this harvest is still reported in the planned-slaughter notice of the '
+                                     'plan’s week and facility; correct that notice if it was filed.') % {
+                    'date': formats.date_format(self.plan.date, 'DATE_FORMAT'), 'facility': self.plan.facility})
+        return found
+
     def save(self, user, rows=None):
         data = self.cleaned_data
         return services.record_harvest(
             user, unit=self.unit, batch=data['batch'], day=data['date'], count=data['count'],
             measured_weight_kg=data['measured_weight_kg'], facility=data['facility'], transport=data['transport'],
             vessel=data['vessel'], everything=data['everything'], notes=data['notes'],
-            handling_ack=data['handling_ack'], plan_item=data['plan_item'], token=data['token'])
+            handling_ack=data['handling_ack'], plan_item=data['plan_item'], token=data['token'],
+            withdrawal_ack=data['withdrawal_ack'])
 
 
 class EscapeForm(OperationForm):
@@ -651,7 +699,8 @@ class EscapeForm(OperationForm):
         return services.record_escape(
             user, unit=self.unit, batch=data['batch'], day=data['date'], count=data['count'], cause=data['cause'],
             suspected=data['suspected'], found_time=data['found_time'], health_status=data['health_status'],
-            recaptured=data['recaptured'], notes=data['notes'], token=data['token'])
+            recaptured=data['recaptured'], notes=data['notes'], token=data['token'],
+            withdrawal_ack=data['withdrawal_ack'])
 
 
 class DeliveryForm(HandlingChecked, OperationForm):
@@ -679,7 +728,8 @@ class DeliveryForm(HandlingChecked, OperationForm):
             user, unit=self.unit, batch=data['batch'], day=data['date'], count=data['count'],
             destination=data['destination'], destination_site_number=data['destination_site_number'],
             measured_weight_kg=data['measured_weight_kg'], handling_ack=data['handling_ack'], notes=data['notes'],
-            token=data['token'])
+            token=data['token'],
+            withdrawal_ack=data['withdrawal_ack'])
 
 
 class VoidForm(ServiceErrors, forms.Form):

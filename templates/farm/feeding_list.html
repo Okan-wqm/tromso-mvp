@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load i18n stock feeding %}
+{% load i18n stock feeding dates %}
 {% comment %} Operations › Feeding › Records (farm.feeding.views.feeding_records), two views. Feeding records: every
    feeding, newest first, filtered by site, unit, the batch it fed, feed and dates in the address; the batches a
    record fed are worked out from the stock ledger (the record names only the unit); voided records, struck through
@@ -35,8 +35,8 @@
       <option value="">{% trans "All feeds" %}</option>
       {% for feed in choices.feed %}<option value="{{ feed.pk }}"{% if params.feed == feed.pk|stringformat:"s" %} selected{% endif %}>{{ feed }}</option>{% endfor %}
     </select>
-    <label class="date-filter">{% trans "From" %} <input type="date" name="from" value="{{ params.from }}"></label>
-    <label class="date-filter">{% trans "To" %} <input type="date" name="to" value="{{ params.to }}"></label>
+    <label class="date-filter">{% trans "From" %} {% day_input "from" params.from %}</label>
+    <label class="date-filter">{% trans "To" %} {% day_input "to" params.to %}</label>
     <label class="check"><input type="checkbox" name="voided" value="1"{% if params.voided %} checked{% endif %} data-autosubmit> {% trans "Show voided" %}</label>
     <button type="submit" class="button button-ghost">{% trans "Filter" %}</button>
   </form>
@@ -76,14 +76,14 @@
     <tbody>
       {% for row in rows %}{% with record=row.record %}
       <tr{% if record.is_deleted %} class="is-voided"{% endif %}>
-        <td class="nowrap"><time datetime="{{ record.date|date:'Y-m-d' }}">{{ record.date|date:"DATE_FORMAT" }}</time>{% if record.time %}<span class="row-sub">{{ record.time|time:"H:i" }}</span>{% endif %}</td>
+        <td class="nowrap"><time datetime="{{ record.date|date:'Y-m-d' }}">{{ record.date|date:"DATE_FORMAT" }}</time>{% if record.time %}<span class="row-sub">{{ record.time|time:"TIME_FORMAT" }}</span>{% endif %}</td>
         <td><span class="row-title">{{ record.unit.code }}</span><span class="row-sub nowrap">{{ record.unit.production_department.name }}{% if record.unit.production_department.site %} · {{ record.unit.production_department.site.name }}{% endif %}</span></td>
         <td class="nowrap">{% for batch in row.batches %}{% if not forloop.first %} + {% endif %}{{ batch.code }}{% empty %}—{% endfor %}{% if record.target == "cleaner_fish" %}<span class="row-sub">{% trans "Cleaner fish" %}</span>{% endif %}</td>
         <td>{{ record.feed.name }}<span class="row-sub">{{ record.feed.code }}{% if record.feed.pellet_size_mm %} · {% blocktrans trimmed with size=record.feed.pellet_size_mm|floatformat:"-2" %}{{ size }} mm{% endblocktrans %}{% endif %}</span></td>
         <td class="num">{{ record.amount_kg|feed_kg }}</td>
         <td class="num">{{ record.meals|default:"—" }}</td>
         <td>{{ record.feeder.name|default:"—" }}</td>
-        <td>{{ record.created_by.get_username|default:"system" }}<span class="row-sub">{{ record.created_at|date:"DATETIME_FORMAT" }}</span></td>
+        <td>{{ record.created_by.get_username|default:"system" }}<span class="row-sub">{{ record.created_at|site_clock:record.unit.production_department.site|date:"DATETIME_FORMAT" }}</span></td>
         <td>{{ record.notes }}{% if record.high_rate_ack %}<span class="row-sub">{% trans "Above the usual feed rate, accepted" %}</span>{% endif %}{% if record.is_deleted %}<span class="row-sub">{% blocktrans trimmed with reason=record.void_reason name=record.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>
         <td>{% if row.void_url %}<a class="op-void" href="{{ row.void_url }}" data-modal>{% trans "Void" %}</a>{% elif record.is_deleted %}<span class="badge badge-voided">{% trans "Voided" %}</span>{% endif %}</td>
       </tr>

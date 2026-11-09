@@ -17,7 +17,8 @@ SCREENS = {
         note='The layout is edited on the Design tab (the designer fills the JSON the validator checks); the layout version '
              'is stamped from the layout. The three built-ins come from migration 0002 and a trigger keeps them as they '
              'are: Copy makes an editable one. Deleting a template deletes its rules and detaches the boards and '
-             'templates that point at it; restoring brings back only the template.'),
+             'templates that point at it; restoring brings back the template with its rules (the boards and '
+             'templates stay detached).'),
     'CardTemplateAssignment': Screen(
         note='One scope per rule (a CHECK) and one live rule per scope, the global rule included (a unique index whose '
              'empty values count as equal). The global rule is never deleted and stays global. A rule of a deleted unit, '

@@ -9,7 +9,8 @@ from django.urls import reverse
 from core.models import AuditLog
 
 from .. import exports, services
-from ..models import Report
+from ..compute import biomass
+from ..models import HarvestCondition, Report
 from .helpers import OCTOBER, previewed
 from .test_cleaner import CleanerFishTestCase
 from .test_pages import ReportPagesTestCase
@@ -61,27 +62,27 @@ class FiledLateTests(ReportPagesTestCase):
 
 
 class ConditionAndFeedFieldsTests(CleanerFishTestCase):
-    def test_the_two_answers_belong_to_their_own_kind_of_report_and_the_database_holds_it(self):
-        biomass = self.report(Report.Kind.BIOMASS, OCTOBER, site=self.sea, harvest_condition='gutted')
+    def test_the_cleaner_answer_belongs_to_its_own_kind_of_report_and_the_database_holds_it(self):
         cleaner = self.report(Report.Kind.CLEANER_FISH, OCTOBER, site=self.sea, no_cleaner_feed=True)
-        self.assertEqual((biomass.harvest_condition, cleaner.no_cleaner_feed), ('gutted', True))
-        for fields in ({'kind': 'smolt', 'harvest_condition': 'round'},
-                       {'kind': 'cleaner_fish', 'harvest_condition': 'round'},
-                       {'kind': 'biomass', 'no_cleaner_feed': True}, {'kind': 'biomass', 'harvest_condition': 'half'}):
-            with self.subTest(fields), self.assertRaises(IntegrityError), transaction.atomic():
-                Report.objects.create(site=self.sea, period_start=date(2026, 9, 1), **fields)
+        self.assertTrue(cleaner.no_cleaner_feed)
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            Report.objects.create(site=self.sea, period_start=date(2026, 9, 1), kind='biomass', no_cleaner_feed=True)
 
-    def test_the_page_offers_each_answer_to_its_own_report_only_and_stores_it(self):
+    def test_the_harvest_condition_is_the_weights_never_an_answer(self):
+        """The farm holds only round kilos (weighed at harvest): a person's "gutted" labelled them gutted in a filing to
+        Fiskeridirektoratet (F-086). No report asks it or keeps it; every harvested row says round."""
+        self.assertNotIn('harvest_condition', {field.name for field in Report._meta.get_fields()})
+        form = self.client.get(reverse('reports:report_create'), {'kind': 'biomass'}).context['form']
+        self.assertNotIn('harvest_condition', form.fields)
+        self.assertEqual(biomass.HARVEST_CONDITION, HarvestCondition.ROUND)
+
+    def test_the_page_offers_the_cleaner_answer_to_its_own_report_only_and_stores_it(self):
         data = {'site': str(self.sea.pk), 'period_start': '2026-10-17', 'contact_name': 'Kari Nord',
                 'contact_email': 'kari@example.com', 'contact_phone': '+47 98989898', 'notes': ''}
         form = self.client.get(reverse('reports:report_create'), {'kind': 'biomass'}).context['form']
-        self.assertIn('harvest_condition', form.fields)
         self.assertNotIn('no_cleaner_feed', form.fields)
-        self.client.post(reverse('reports:report_create'), {**data, 'kind': 'biomass', 'harvest_condition': 'gutted'})
-        self.assertEqual(Report.objects.get(kind='biomass').harvest_condition, 'gutted')
         form = self.client.get(reverse('reports:report_create'), {'kind': 'cleaner_fish'}).context['form']
         self.assertIn('no_cleaner_feed', form.fields)
-        self.assertNotIn('harvest_condition', form.fields)
         self.client.post(reverse('reports:report_create'), {**data, 'kind': 'cleaner_fish', 'no_cleaner_feed': 'on'})
         self.assertTrue(Report.objects.get(kind='cleaner_fish').no_cleaner_feed)
 

@@ -31,6 +31,8 @@ wildcards = "deny"
 deny = [
     # non-commercial licence (owner rule A3)
     { crate = "rodbus" },
+    # MinIO (the server is AGPL-3.0; owner rule): neither its crate nor its server image, whatever the SDK's own licence
+    { crate = "minio" },
 ]
 
 [sources]

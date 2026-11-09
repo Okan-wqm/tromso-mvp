@@ -1,5 +1,5 @@
 /* Monitoring: the wall of cards, its notices and the movable windows. One file for the whole module; it uses the
-   shared tokens (base.css, app.css) and no colour of its own, so a new visual design replaces it in one place. */
+   tokens of tokens.css and no colour of its own, so a new visual design replaces it in one place. */
 
 /* ---- notices printed from the polled element's state (frontend/poll.ts sets data-poll-state) ---------------- */
 .monitor-grid[data-poll-state="stale"]::before,
@@ -14,9 +14,9 @@
   font-weight: 700;
 }
 .monitor-grid[data-poll-state="stale"]::before,
-.monitor-window-body[data-poll-state="stale"]::before { content: attr(data-stale-text); background: var(--sage); color: var(--speck); }
+.monitor-window-body[data-poll-state="stale"]::before { content: attr(data-stale-text); background: var(--surface-sunken); color: var(--text-1); }
 .monitor-grid[data-poll-state="gone"]::before,
-.monitor-window-body[data-poll-state="gone"]::before { content: attr(data-gone-text); background: var(--error); color: var(--white); }
+.monitor-window-body[data-poll-state="gone"]::before { content: attr(data-gone-text); background: var(--crit); color: var(--on-crit); }
 .monitor-grid[data-poll-state="stale"]::before,
 .monitor-grid[data-poll-state="gone"]::before {
   padding: .75rem 1.25rem;
@@ -28,7 +28,9 @@
 html[data-wall] .rail,
 html[data-wall] .topbar,
 html[data-wall] .scrim,
-html[data-wall] .menu-button { display: none; }
+html[data-wall] .page-head,
+html[data-wall] .ui-bottombar { display: none; }
+html[data-wall] body { padding-bottom: 0; }
 html[data-wall] .content { max-width: none; padding: clamp(8px, 1vw, 20px); }
 html[data-wall] .monitor-filters,
 html[data-wall] .monitor-units { display: none; }      /* the wall keeps its Full screen and Leave buttons */
@@ -45,19 +47,19 @@ html[data-wall] .monitor-units { display: none; }      /* the wall keeps its Ful
   max-height: 100vh;
   overflow: hidden;
   resize: both;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-hair);
   border-radius: 8px;
-  background: var(--white);
-  box-shadow: 0 12px 32px rgba(35, 41, 32, .28);
+  background: var(--surface-sheet);
+  box-shadow: var(--shadow-overlay);
 }
-.monitor-window:focus-visible { outline: 2px solid var(--stripe); outline-offset: 1px; }
+.monitor-window:focus-visible { outline: none; box-shadow: var(--ring-focus); }
 .monitor-window-bar {
   display: flex;
   align-items: center;
   gap: .5rem;
   padding: .25rem .375rem .25rem .875rem;
-  background: var(--olive);
-  color: var(--white);
+  background: var(--primary);
+  color: var(--on-primary);
   cursor: grab;
   touch-action: none;
   user-select: none;
@@ -96,7 +98,7 @@ html[data-wall] .monitor-units { display: none; }      /* the wall keeps its Ful
 /* ---- the toolbar -------------------------------------------------------------------------------------------- */
 .monitor-toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .75rem 1.25rem; margin-bottom: 1rem; }
 .monitor-filters { display: flex; flex-wrap: wrap; gap: .5rem 1rem; }
-.monitor-filters label { display: grid; gap: .125rem; font-size: .8125rem; color: var(--muted); }
+.monitor-filters label { display: grid; gap: .125rem; font-size: .8125rem; color: var(--text-2); }
 .monitor-units summary { cursor: pointer; }
 .monitor-unit-list { display: flex; flex-wrap: wrap; gap: .25rem 1rem; max-width: 40rem; padding: .5rem 0; }
 .monitor-actions { display: flex; gap: .5rem; margin-left: auto; }
@@ -113,10 +115,10 @@ html[data-wall] .monitor-units { display: none; }      /* the wall keeps its Ful
 .monitor-card {
   container-type: inline-size;
   padding: .875rem 1rem;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-hair);
   border-left-width: 6px;
   border-radius: 8px;
-  background: var(--white);
+  background: var(--surface-sheet);
   font-variant-numeric: tabular-nums;
 }
 .monitor-card-head { display: flex; justify-content: space-between; gap: .75rem; }
@@ -132,18 +134,23 @@ html[data-wall] .monitor-units { display: none; }      /* the wall keeps its Ful
 .monitor-shape-critical { clip-path: polygon(50% 0, 100% 100%, 0 100%); }                      /* triangle */
 .monitor-shape-warning { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }               /* diamond */
 .monitor-shape-blind { background: none; border: 2px dashed currentColor; border-radius: 50%; } /* open ring */
+.monitor-shape-unjudged { background: none; border: 2px dashed currentColor; border-radius: 2px; }  /* open dashed square */
 .monitor-shape-note { border-radius: 2px; }                                                     /* square */
 .monitor-shape-ok { border-radius: 50%; }                                                       /* disc */
 .monitor-shape-empty { background: none; border: 2px solid currentColor; border-radius: 2px; }
-.monitor-critical { border-left-color: var(--error); }
-.monitor-warning { border-left-color: var(--stripe); }
-.monitor-blind { border-left-color: var(--muted); border-left-style: dashed; }
-.monitor-note { border-left-color: var(--muted); }                       /* the pale sage never carries meaning */
-.monitor-ok { border-left-color: var(--olive); }
-.monitor-empty { border-left-color: var(--muted); border-left-style: dotted; opacity: .85; }
-.monitor-critical .monitor-state { color: var(--error); }
-.monitor-warning .monitor-state { color: var(--stripe-dark); }
-@container (max-width: 18rem) { .monitor-card .metrics { grid-template-columns: repeat(2, 1fr); } }
+.monitor-critical { border-left-color: var(--crit); }
+.monitor-warning { border-left-color: var(--warn); }
+.monitor-unjudged { border-left-color: var(--warn-text); border-left-style: dashed; }  /* not known: never ok */
+.monitor-blind { border-left-color: var(--line-control); border-left-style: dashed; }
+.monitor-note { border-left-color: var(--line-control); }                       /* the pale grey never carries meaning */
+.monitor-ok { border-left-color: var(--ok); }
+.monitor-empty { border-left-color: var(--line-control); border-left-style: dotted; opacity: .85; }
+.monitor-critical .monitor-state { color: var(--crit-text); }
+.monitor-warning .monitor-state { color: var(--warn-text); }
+@container (max-width: 18rem) { .monitor-card .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* A water value carries its origin and age under it ("Meter or test kit · 2 d ago", "unit sensor #12 · just now"): its
+   cell is wide enough for either on one line, so the line breaks between the two, not word by word. */
+.monitor-card .monitor-point .metrics { grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr)); }
 
 /* ---- a card's template: its widgets on a 12-column grid, placed by the server (monitoring/cards/render.py) -------
    --x, --y, --w, --h on each widget are its cell and size; a row is at least --row high (rem, so 200 % zoom grows it)
@@ -156,17 +163,16 @@ html[data-wall] .monitor-units { display: none; }      /* the wall keeps its Ful
   .card-grid { grid-template-columns: minmax(0, 1fr); }
   .card-grid > .w { grid-column: 1; grid-row: auto / span var(--h); }
 }
-.wq-said { font-size: .8125em; }
 .monitor-value.is-large dd:first-of-type { font-size: 2em; font-weight: 700; line-height: 1.1; }
 .monitor-bar-head { display: flex; justify-content: space-between; gap: .5rem; margin: 0; }
 .monitor-bar.is-large .monitor-bar-head strong { font-size: 1.75em; }
 .monitor-bar-svg { display: block; width: 100%; height: 1rem; margin: .25rem 0; }
 /* A band is told by its dash pattern as well as its tone (never colour alone); the marker is solid ink. */
-.monitor-bar-svg .band { stroke: var(--speck); stroke-width: .4; vector-effect: non-scaling-stroke; }
-.monitor-bar-svg .band-ok { fill: var(--mist); }
-.monitor-bar-svg .band-warning { fill: var(--sage); stroke-dasharray: 4 2; }
-.monitor-bar-svg .band-critical { fill: var(--white); stroke: var(--error); stroke-dasharray: 1 1.5; }
-.monitor-bar-svg .marker { fill: var(--speck); }
+.monitor-bar-svg .band { stroke: var(--text-1); stroke-width: .4; vector-effect: non-scaling-stroke; }
+.monitor-bar-svg .band-ok { fill: var(--surface-canvas); }
+.monitor-bar-svg .band-warning { fill: var(--line-hair); stroke-dasharray: 4 2; }
+.monitor-bar-svg .band-critical { fill: var(--surface-sheet); stroke: var(--crit); stroke-dasharray: 1 1.5; }
+.monitor-bar-svg .marker { fill: var(--text-1); }
 
 /* A wall is read at a distance: larger figures, fixed rhythm, nothing that moves. */
 html[data-wall] .monitor-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, calc(var(--card-min, 21rem) * 1.15)), 1fr)); gap: clamp(.5rem, 1vw, 1.25rem); }
@@ -175,14 +181,16 @@ html[data-wall] .monitor-card-head h3 { font-size: 1.5em; }
 html[data-wall] .monitor-card .metrics dd { font-size: 1.25em; font-weight: 700; }
 
 .monitor-status { font-weight: 700; }
-.monitor-template-error { margin: .375rem 0 0; padding: .25rem .5rem; border: 1px dashed var(--error); border-radius: 4px; color: var(--error); font-weight: 700; }
+.monitor-template-error { margin: .375rem 0 0; padding: .25rem .5rem; border: 1px dashed var(--crit); border-radius: 4px; color: var(--crit-text); font-weight: 700; }
+/* A source that could not be read, on the frame (monitoring/read.py): said in words, never only as "no data". */
+.monitor-failed { margin: .375rem 0 0; font-weight: 700; color: var(--warn-text); }
 
 /* ---- forced colours (Windows high contrast): the state's shape, border and the bars keep their meaning ---------- */
 @media (forced-colors: active) {
   .monitor-card { border-left-color: CanvasText; }
   .monitor-critical, .monitor-warning { border-left-width: 10px; }
   .monitor-shape { forced-color-adjust: none; background: CanvasText; }
-  .monitor-shape-blind, .monitor-shape-empty { background: none; border-color: CanvasText; }
+  .monitor-shape-blind, .monitor-shape-unjudged, .monitor-shape-empty { background: none; border-color: CanvasText; }
   .monitor-bar-svg .band { forced-color-adjust: none; fill: Canvas; stroke: CanvasText; }
   .monitor-bar-svg .marker { forced-color-adjust: none; fill: CanvasText; }
 }
@@ -202,16 +210,16 @@ html[data-wall] .monitor-card .metrics dd { font-size: 1.25em; font-weight: 700;
   grid-auto-rows: 28px;
   min-height: calc(28px * 8);
   padding-top: 2.25rem;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-hair);
   border-radius: 8px;
-  background-color: var(--white);
-  background-image: linear-gradient(to right, var(--line) 1px, transparent 1px), linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+  background-color: var(--surface-sheet);
+  background-image: linear-gradient(to right, var(--line-hair) 1px, transparent 1px), linear-gradient(to bottom, var(--line-hair) 1px, transparent 1px);
   background-size: calc(100% / 12) 28px;
   background-position: 0 2.25rem;
   touch-action: none;
 }
 .designer-canvas.no-lines { background-image: none; }
-.designer-frame { position: absolute; inset: 0 0 auto 0; height: 2rem; padding: .375rem .75rem; border-bottom: 2px solid var(--muted); background: var(--mist); color: var(--muted); font-size: .8125rem; pointer-events: none; }
+.designer-frame { position: absolute; inset: 0 0 auto 0; height: 2rem; padding: .375rem .75rem; border-bottom: 2px solid var(--line-control); background: var(--surface-sunken); color: var(--text-3); font-size: .8125rem; pointer-events: none; }
 .designer-item {
   position: relative;
   grid-column: calc(var(--x) + 1) / span var(--w);
@@ -219,23 +227,24 @@ html[data-wall] .monitor-card .metrics dd { font-size: 1.25em; font-weight: 700;
   margin: 2px;
   padding: .25rem .5rem;
   overflow: hidden;
-  border: 1px solid var(--muted);
+  border: 1px solid var(--line-control);
   border-radius: 4px;
-  background: var(--mist);
-  color: var(--speck);
+  background: var(--surface-sunken);
+  color: var(--text-1);
   font: inherit;
   text-align: left;
   cursor: grab;
 }
-.designer-item[aria-pressed="true"] { border: 2px solid var(--olive-deep); background: var(--white); }
-.designer-item[aria-invalid] { border: 2px dashed var(--error); }
-.designer-item:focus-visible { outline: 3px solid var(--stripe); outline-offset: 1px; }
-.designer-handle { position: absolute; right: 0; bottom: 0; width: 14px; height: 14px; border-left: 2px solid var(--muted); border-top: 2px solid var(--muted); cursor: nwse-resize; }
-.designer-inspector { display: grid; gap: .5rem; padding: .75rem; border: 1px solid var(--line); border-radius: 8px; }
+.designer-item[aria-pressed="true"] { border: 2px solid var(--action); background: var(--surface-sheet); }
+.designer-item[aria-invalid] { border: 2px dashed var(--crit); }
+.designer-item:focus-visible { outline: none; box-shadow: var(--ring-focus); }
+.designer-handle { position: absolute; right: 0; bottom: 0; width: 14px; height: 14px; border-left: 2px solid var(--line-control); border-top: 2px solid var(--line-control); cursor: nwse-resize; }
+.designer-inspector { display: grid; gap: .5rem; padding: .75rem; border: 1px solid var(--line-hair); border-radius: 8px; }
 .designer-inspector label { display: grid; gap: .125rem; }
 .designer-inspector .designer-check, .designer-check { display: flex; align-items: center; gap: .375rem; }
 .designer-order ol { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin: 0; padding-left: 1.25rem; }
 .designer-problems ul { margin: .25rem 0; padding-left: 1.25rem; }
 .designer-preview { --card-min: 26rem; max-width: calc(var(--card-min) * 1.05); }
-.designer-json textarea { width: 100%; font-family: var(--font-mono); }
+.designer-preview-failed { margin: 0; padding: .375rem .75rem; border: 1px dashed var(--crit); border-radius: 4px; color: var(--crit-text); font-weight: 700; }
+.designer-json textarea { width: 100%; font-family: inherit; }
 @media (forced-colors: active) { .designer-item[aria-pressed="true"] { border-color: Highlight; } }

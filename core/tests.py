@@ -1,7 +1,7 @@
 import io
 import re
 import warnings
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone as utc
 from unittest import mock
 from importlib import import_module
 
@@ -87,7 +87,8 @@ class ShellTests(TestCase):
         response = self.client.get(reverse('home'))
         self.assertContains(response, 'id="rail"')
         self.assertContains(response, 'data-nav-toggle')
-        self.assertContains(response, 'aria-current="page"', count=1)
+        rail = response.content.decode().split('id="rail"')[1].split('</aside>')[0]
+        self.assertEqual(rail.count('aria-current="page"'), 1)          # (the bottom bar marks its own: core/tests_design_shell.py)
         self.assertContains(response, 'action="%s"' % reverse('logout'))
 
     def test_password_change_uses_shell(self):
@@ -154,7 +155,20 @@ class AuditLogTests(TestCase):
         self.assertEqual(labels(q='bh'), ['Bergen (BH)'])
         self.assertEqual(labels(user='kari'), ['Tromsø (TS)'])
         self.assertEqual(labels(action='create'), ['Bergen (BH)'])
-        self.assertEqual(labels(**{'from': '2999-01-01'}), [])
+        self.assertEqual(labels(**{'from': '01.01.2099'}), [])          # the window of dates ends with 2100
+
+    def test_activity_log_days_and_times_are_the_companys_clock(self):
+        """23:30 UTC on 1 March is 00:30 on 2 March in Oslo (settings.COMPANY_TIME_ZONE): the entry is the 2nd's, by
+        the filter and on the page, not the server's UTC day."""
+        self.user.user_permissions.add(Permission.objects.get(codename='view_auditlog'))
+        self.client.force_login(self.user)
+        with mock.patch('django.utils.timezone.now', return_value=datetime(2026, 3, 1, 23, 30, tzinfo=utc.utc)):
+            self.make_entry(entity_label='Night (NT)')
+        url = reverse('core:activity_log')
+        labels = lambda **query: [e.entity_label for e in self.client.get(url, query).context['page'].object_list]
+        self.assertEqual(labels(**{'from': '02.03.2026', 'to': '02.03.2026'}), ['Night (NT)'])
+        self.assertEqual(labels(**{'from': '01.03.2026', 'to': '01.03.2026'}), [])
+        self.assertContains(self.client.get(url), '02.03.2026 00:30')
 
 
 def perms(*names):
@@ -290,7 +304,7 @@ class RoleTests(AdminTestCase):
                 continue
             read_id = re.search(r'value="%s" id="(\w+)"' % perms(area.perm(access.READ))[0], html).group(1)
             for action in area.actions:
-                if action != access.READ:
+                if action in access.INCLUDES_READ:     # Crew, All production and Everyone widen rows only
                     tied += 1
                     self.assertRegex(
                         html, r'value="%s" id="\w+" data-requires="%s"' % (perms(area.perm(action))[0], read_id))

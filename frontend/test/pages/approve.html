@@ -1,0 +1,32 @@
+<div class="modal-head">
+  <div>
+    <p class="eyebrow">Production · Team</p>
+    <h2 class="modal-title" id="modal-title">Approve leave</h2>
+  </div>
+  <button type="button" class="icon-button" data-modal-close title="Close">
+    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+</svg>
+<span class="sr-only">Close</span>
+  </button>
+</div>
+<div class="modal-body">
+  
+  
+<form method="post" action="/hr/leave/00247833-d3b1-4ae0-b20b-56345ecb0083/approve/" class="form">
+  
+  <p>Approve the request of Jonas Eide, 09.11.2026 to 13.11.2026?</p>
+  
+  <p class="muted">The person has no planned shifts in these days.</p>
+  
+  <div class="field">
+    <label for="note">Note</label>
+    <textarea id="note" name="note" rows="3" maxlength="500"></textarea>
+    <p class="help">Seen by the person; it is not written to the log.</p>
+  </div>
+  <div class="form-actions">
+    <a class="button button-ghost" href="/hr/leave/" data-modal-close>Cancel</a>
+    <button type="submit" class="button">Approve</button>
+  </div>
+</form>
+
+</div>

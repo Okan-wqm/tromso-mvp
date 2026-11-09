@@ -1,4 +1,4 @@
-{% load i18n %}
+{% load i18n dates %}
 <ol class="audit" role="list">
   {% for entry in entries %}
   <li class="audit-entry audit-{{ entry.action }}{% if entry.severity == "critical" %} is-critical{% endif %}">
@@ -6,7 +6,7 @@
       <span class="audit-action">{{ entry.get_action_display }}</span>
       {% if entry.severity == "critical" %}<span class="badge badge-critical">{% trans "Critical" %}</span>{% endif %}
       {% if show_record %}<span class="audit-record">{{ entry.shown_type|capfirst }} · {{ entry.entity_label }}</span>{% endif %}
-      <span class="audit-meta">{% blocktrans trimmed with name=entry.user_name %}by <strong>{{ name }}</strong>{% endblocktrans %} · <time datetime="{{ entry.created_at|date:'c' }}">{{ entry.created_at|date:"DATETIME_FORMAT" }}</time></span>
+      <span class="audit-meta">{% blocktrans trimmed with name=entry.user_name %}by <strong>{{ name }}</strong>{% endblocktrans %} · <time datetime="{{ entry.created_at|date:'c' }}">{{ entry.created_at|company_clock|date:"DATETIME_FORMAT" }}</time></span>
     </div>
     {% if entry.changes %}
     <dl class="audit-changes">

@@ -18,13 +18,15 @@
 - `device_status(devices, now)`: online while a message came within three times the device's interval.
 
 A unit's chart reads its middle point's channels, then its system's; a system's, the system's and its loop's; a point's,
-its own (and the system's when it is a system's middle point); a piece of equipment's, its own. Bucket boundaries are on
-the tier's grid: a sensor moved in the middle of an hour is counted in the hour rollup at the place its hour began."""
+its own (and the system's when it is a system's middle point); a piece of equipment's, its own. A place has exactly the
+readings taken while a channel was bound there, at every tier: on the hour tiers the whole hours of a binding come from
+the rollup and the parts of an hour it only partly holds (a move, a device taken out, a window's edge) from the readings
+(`hours_of`), so an hour that holds a move is shared by the two places."""
 from bisect import bisect_right
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta, timezone as dt_timezone
 
-from django.db import connection
+from django.db import connection, transaction
 from django.db.models import Q
 from django.utils import timezone
 
@@ -33,7 +35,7 @@ from farm.models.site import zone_of
 from farm.models.water_point import PointKind, site_of
 from farm.water import calculation, deffeyes, parameters
 from farm.water.evaluate import is_fresh
-from farm.water.read import WINDOW, Series as WaterSeries, as_parameter, assumed_salinity
+from farm.water.read import OWN_WATER_KINDS, WINDOW, Series as WaterSeries, as_parameter, assumed_salinity, choose
 
 from . import quantities
 from .models import Binding, Calibration, Channel, ChannelState, DeviceState, Reduction
@@ -134,10 +136,38 @@ def places(target):
     raise TypeError(f'No sensor values for {type(target).__name__}')
 
 
+def tiers(target):
+    """[([(Q over bindings, origin)], [SamplingPoint])]: the tiers of owner rule A9 (`farm.water.read.choose`) for a
+    target's water, in the order they count, each with the bindings and the points whose samples are in it, exactly
+    the places the live view reads (farm/water/read.py `_places`): a unit's own-water points (middle first; never the
+    inlet), then its system's (the system's sensors, those on its loop point, the loop's samples); a system's loop and
+    its sensors; any other point or a piece of equipment its own alone."""
+    if isinstance(target, SamplingPoint) and target.unit_id and target.kind == PointKind.MIDDLE:
+        target = target.unit
+    if isinstance(target, Tank):
+        own = list(SamplingPoint.objects.filter(unit=target, is_active=True,
+                                                kind__in=[PointKind.MIDDLE, *OWN_WATER_KINDS]).with_owners())
+        own.sort(key=lambda point: (point.kind != PointKind.MIDDLE, point.name))
+        found = [([(Q(point__in=own), SENSOR)] if own else [], own)]
+        if target.system_id:
+            loop = SamplingPoint.objects.filter(system_id=target.system_id, kind=PointKind.MIDDLE,
+                                                is_active=True).with_owners().first()
+            found.append(([(Q(system_id=target.system_id), SYSTEM_SENSOR),
+                           *([(Q(point=loop), SYSTEM_SENSOR)] if loop else [])], [loop] if loop else []))
+        return found
+    return [places(target)]
+
+
 def segments(target, quantity, start, end):
     """[Segment] of the channels of `quantity` bound to the target between start and end, in the order they count."""
+    return segments_for(places(target)[0], quantity, start, end)
+
+
+def segments_for(conditions, quantity, start, end):
+    """[Segment] of the channels of `quantity` bound by `conditions` ([(Q over bindings, origin)]) between start and
+    end, in the order they count."""
     found = []
-    for rank, (condition, origin) in enumerate(places(target)[0]):
+    for rank, (condition, origin) in enumerate(conditions):
         bindings = (Binding.objects.visible().filter(condition, channel__quantity=quantity, valid_from__lt=end)
                     .filter(Q(valid_to__isnull=True) | Q(valid_to__gt=start)).select_related('channel'))
         for binding in bindings:
@@ -204,19 +234,49 @@ def tier_of(width):
     return RAW if width < HOUR else ROLLUP_1H if width < DAY else LOCAL_DAY
 
 
+def _hour(moment):
+    """The start of the UTC hour `moment` is in (the hour rollup's bucket)."""
+    return moment.astimezone(dt_timezone.utc).replace(minute=0, second=0, microsecond=0)
+
+
+def hours_of(segment):
+    """((first, last), [(from, to)]): the whole hours inside the segment, which the hour rollup gives exactly, and the
+    parts of the hours it only partly holds (where a binding began or ended inside an hour: a move, a window's edge),
+    read from the raw readings, so an hour that holds a move is shared by the two places, never given whole to one.
+    Each part lies inside one hour (the replay keys it by that hour, which ends after every reading in it)."""
+    first = _hour(segment.start)
+    if first < segment.start:
+        first += HOUR
+    last = _hour(segment.end)
+    if last <= first:
+        # No whole hour: the stay is inside one hour, or crosses one boundary (01:30-02:20): one part per hour.
+        cut = min(first, segment.end)
+        return (first, first), [(start, end) for start, end in ((segment.start, cut), (cut, segment.end)) if start < end]
+    return (first, last), [(start, end) for start, end in ((segment.start, first), (last, segment.end)) if start < end]
+
+
 def chart_rows(segment, width, tier, zone):
-    """The segment's buckets: (start, n, sum, min, max, first, last), clean values only."""
+    """The segment's buckets: (start, n, sum, min, max, first, last), clean values only. On the hour tiers the whole
+    hours come from the rollup and the parts of hours from the readings (`hours_of`)."""
+    clean = f'(quality & {BAD_MASK}) = 0'
     if tier == RAW:
         sql = (f'SELECT time_bucket(%s, ts) AS b, sum(n)::bigint, sum(coalesce(run_sum, value)), '
                f'min(coalesce(run_min, value)), max(coalesce(run_max, value)), min(ts), max(ts) FROM sensors_reading '
-               f'WHERE channel_no = %s AND ts >= %s AND ts < %s AND (quality & {BAD_MASK}) = 0 GROUP BY b ORDER BY b')
+               f'WHERE channel_no = %s AND ts >= %s AND ts < %s AND {clean} GROUP BY b ORDER BY b')
         params = [width, segment.channel_no, segment.start, segment.end]
     else:
-        bucket = 'time_bucket(%s, bucket, %s)' if tier == LOCAL_DAY else 'time_bucket(%s, bucket)'
-        sql = (f'SELECT {bucket} AS b, sum(n)::bigint, sum(sum_v), min(vmin), max(vmax), min(first_ts), max(last_ts) '
-               f'FROM sensors_rollup_1h '
-               f'WHERE channel_no = %s AND bucket >= %s AND bucket < %s GROUP BY b ORDER BY b')
-        params = [width, *([zone.key] if tier == LOCAL_DAY else []), segment.channel_no, segment.start, segment.end]
+        local = [zone.key] if tier == LOCAL_DAY else []
+        on = ', %s' if tier == LOCAL_DAY else ''
+        (first, last), parts = hours_of(segment)
+        parts = (parts + [(segment.start, segment.start)] * 2)[:2]
+        sql = (f'SELECT b, sum(n)::bigint, sum(s), min(lo), max(hi), min(f), max(l) FROM ('
+               f'SELECT time_bucket(%s, bucket{on}) AS b, n, sum_v AS s, vmin AS lo, vmax AS hi, first_ts AS f, '
+               f'last_ts AS l FROM sensors_rollup_1h WHERE channel_no = %s AND bucket >= %s AND bucket < %s '
+               f'UNION ALL SELECT time_bucket(%s, ts{on}), n, coalesce(run_sum, value), coalesce(run_min, value), '
+               f'coalesce(run_max, value), ts, ts FROM sensors_reading WHERE channel_no = %s AND {clean} '
+               f'AND ((ts >= %s AND ts < %s) OR (ts >= %s AND ts < %s))) parts GROUP BY b ORDER BY b')
+        params = [width, *local, segment.channel_no, first, last, width, *local, segment.channel_no,
+                  *parts[0], *parts[1]]
     with connection.cursor() as cursor:
         cursor.execute(sql, params)
         return cursor.fetchall()
@@ -345,6 +405,13 @@ class FrameInput:
 
 
 @dataclass(frozen=True)
+class Candidate:
+    """A value one source gave for a frame (`read.choose` reads its `at`)."""
+    at: datetime
+    input: FrameInput
+
+
+@dataclass(frozen=True)
 class FramePoint:
     dic: float                    # mmol/L
     alkalinity_meq: float
@@ -383,11 +450,12 @@ def replay_step(step):
 
 
 def replay_rows(found, first, step, count, tier):
-    """{(segment index, frame index): (ts, value)}: each segment's newest clean value at or before each of `count`
-    moments from `first` every `step`, taken while it was bound there. ONE query for every segment and moment. Below an
-    hour the readings of the page's span, the newest of each step (the one at or before the moment that ends it) and the
-    newest before the first moment within the channel's freshness; above, the hours of the span read once and each moment
-    given the last value of the newest hour ENDED by it (never an hour still running at the moment)."""
+    """{(segment index, frame index): (ts, value)}: each segment's value at each of `count` moments from `first` every
+    `step`, taken while it was bound there. ONE query for every segment and moment. Below an hour the live view's rule
+    (`value_at`, sensors/provider.py): the newest clean reading at or before the moment, given only when it is no older
+    than the channel's freshness (a staler one is never used); above, the hours of the span read once and each moment
+    given the last value of the newest hour ENDED by it (never an hour still running at the moment), an hour a segment
+    only partly holds giving the last reading of its part (`hours_of`)."""
     if not found or count < 1:
         return {}
     numbers = [segment.channel_no for segment in found]
@@ -395,47 +463,96 @@ def replay_rows(found, first, step, count, tier):
     ends = [segment.end for segment in found]
     fresh = [segment.fresh_s for segment in found]
     last = first + (count - 1) * step
-    rows = {}
     if tier == RAW:
-        sql = (f'WITH s AS (SELECT * FROM unnest(%s::int[], %s::timestamptz[], %s::timestamptz[], %s::int[]) '
-               f'WITH ORDINALITY AS s(channel_no, valid_from, valid_to, fresh_s, ord)) '
-               f'SELECT s.ord, 0, r.ts, r.value FROM s CROSS JOIN LATERAL ('
-               f'SELECT ts, value FROM sensors_reading WHERE channel_no = s.channel_no AND ts <= %s '
-               f'AND ts >= greatest(s.valid_from, %s - make_interval(secs => s.fresh_s)) AND ts < s.valid_to '
-               f'AND (quality & {BAD_MASK}) = 0 ORDER BY ts DESC LIMIT 1) r '
-               f'UNION ALL (SELECT DISTINCT ON (s.ord, slot) s.ord, '
-               f'ceil(extract(epoch FROM r.ts - %s) / %s::numeric)::int AS slot, r.ts, r.value '
-               f'FROM s JOIN sensors_reading r ON r.channel_no = s.channel_no AND r.ts > %s AND r.ts <= %s '
-               f'AND r.ts >= s.valid_from AND r.ts < s.valid_to AND (r.quality & {BAD_MASK}) = 0 '
-               f'ORDER BY s.ord, slot, r.ts DESC)')
-        with connection.cursor() as cursor:
-            cursor.execute(sql, [numbers, starts, ends, fresh, first, first, first, step.total_seconds(), first, last])
-            for ordinal, slot, ts, value in cursor.fetchall():
-                rows.setdefault(int(ordinal) - 1, {})[slot] = (ts, value)
-        found_rows = {}
-        for index, slots in rows.items():
-            carried = None
-            for slot in range(count):
-                carried = slots.get(slot, carried)
-                if carried is not None:
-                    found_rows[(index, slot)] = carried
-        return found_rows
+        return _raw_rows(numbers, starts, ends, fresh, first, last, step, count)
+    rows = {}
     reach = timedelta(seconds=max(fresh)) + HOUR
+    # The parts of hours a segment only partly holds (`hours_of`): each its last clean reading, in the same query.
+    spans = [hours_of(segment) for segment in found]
+    parts = [(index, _hour(start), start, end) for index, (_whole, edges) in enumerate(spans) for start, end in edges]
     with connection.cursor() as cursor:
-        cursor.execute('SELECT channel_no, bucket, last_ts, vlast FROM sensors_rollup_1h WHERE channel_no = ANY(%s) '
-                       'AND bucket >= %s AND bucket < %s ORDER BY channel_no, bucket',
-                       [list(set(numbers)), max(min(starts), first - reach), last])
-        for number, bucket, last_ts, value in cursor.fetchall():
-            rows.setdefault(number, []).append((bucket, last_ts, value))
+        cursor.execute(
+            f'SELECT 0, channel_no, bucket, last_ts, vlast FROM sensors_rollup_1h WHERE channel_no = ANY(%s) '
+            f'AND bucket >= %s AND bucket < %s '
+            f'UNION ALL SELECT e.ord, e.channel_no, e.hour, r.ts, r.value FROM unnest(%s::int[], %s::timestamptz[], '
+            f'%s::timestamptz[], %s::timestamptz[]) WITH ORDINALITY AS e(channel_no, hour, lo, hi, ord) '
+            f'CROSS JOIN LATERAL (SELECT ts, value FROM sensors_reading WHERE channel_no = e.channel_no '
+            f'AND ts >= e.lo AND ts < e.hi AND (quality & {BAD_MASK}) = 0 ORDER BY ts DESC LIMIT 1) r',
+            [list(set(numbers)), max(min(starts), first - reach), last,
+             [numbers[index] for index, *_rest in parts], [hour for _index, hour, *_rest in parts],
+             [start for *_rest, start, _end in parts], [end for *_rest, end in parts]])
+        for ordinal, number, bucket, last_ts, value in cursor.fetchall():
+            key = ('part', parts[int(ordinal) - 1][0]) if ordinal else number
+            rows.setdefault(key, []).append((bucket, last_ts, value))
     found_rows = {}
     for index, segment in enumerate(found):
-        hours = [row for row in rows.get(segment.channel_no, []) if segment.start <= row[0] < segment.end]
+        (whole_from, whole_to), _edges = spans[index]
+        hours = sorted([row for row in rows.get(segment.channel_no, []) if whole_from <= row[0] < whole_to]
+                       + rows.get(('part', index), []))
         ended = [row[0] + HOUR for row in hours]
         for slot in range(count):
             position = bisect_right(ended, first + slot * step) - 1
             if position >= 0:
                 found_rows[(index, slot)] = (hours[position][1], hours[position][2])
     return found_rows
+
+
+# A raw page reads its readings in one of two ways, the same values either way (sensors/tests/test_replay.py
+# ValueAtTests): at a step this short or shorter every reading of the span, the last of each step kept (about as many
+# readings as frames at 1 Hz); at a longer one a look-up per frame and segment, which reads about one reading per frame
+# however dense the readings are. Measured read only on the development data (about 1 Hz, nine segments, 2000 frames):
+# at 1 s the span's readings 0.3 s, the look-ups 0.6 to 1.2 s; at 60 s the span's readings (sorted) 7 to 9 s, the
+# look-ups 0.65 to 0.95 s.
+SPAN_STEP = timedelta(seconds=5)
+RUNTIME_EXCLUSION = 'timescaledb.enable_runtime_exclusion'
+
+
+def _raw_rows(numbers, starts, ends, fresh, first, last, step, count):
+    """`replay_rows` below an hour (the live view's rule at each moment, `SPAN_STEP` says which way it is read). The
+    page's own bounds are constants, so TimescaleDB leaves out the chunks outside them when it plans."""
+    since = first - timedelta(seconds=max(fresh))
+    segments = (f'WITH s AS (SELECT * FROM unnest(%s::int[], %s::timestamptz[], %s::timestamptz[], %s::int[]) '
+                f'WITH ORDINALITY AS s(channel_no, valid_from, valid_to, fresh_s, ord))')
+    # The newest clean reading of a segment at or before a moment `at`, no older than the channel's freshness.
+    newest = ('SELECT ts, value FROM sensors_reading WHERE channel_no = s.channel_no AND ts <= {at} '
+              'AND ts >= greatest(s.valid_from, {at} - make_interval(secs => s.fresh_s)) AND ts < s.valid_to '
+              f'AND ts >= %s AND ts <= %s AND (quality & {BAD_MASK}) = 0 ORDER BY ts DESC LIMIT 1')
+    if step <= SPAN_STEP:
+        # The newest before the first moment, then per segment and step the last clean reading of the step (the one at
+        # or before the moment that ends it), carried to the next moments while it is fresh.
+        before = newest.format(at="%s::timestamptz")
+        sql = (f'{segments} SELECT s.ord, 0, r.ts, r.value FROM s CROSS JOIN LATERAL ({before}) r '
+               f'UNION ALL SELECT s.ord, ceil(extract(epoch FROM r.ts - %s) / %s::numeric)::int AS slot, max(r.ts), '
+               f'last(r.value, r.ts) FROM s JOIN sensors_reading r ON r.channel_no = s.channel_no AND r.ts > %s '
+               f'AND r.ts <= %s AND r.ts >= s.valid_from AND r.ts < s.valid_to AND (r.quality & {BAD_MASK}) = 0 '
+               f'GROUP BY s.ord, slot')
+        with connection.cursor() as cursor:
+            cursor.execute(sql, [numbers, starts, ends, fresh, first, first, since, first, first,
+                                 step.total_seconds(), first, last])
+            stepped = {}
+            for ordinal, slot, ts, value in cursor.fetchall():
+                stepped.setdefault(int(ordinal) - 1, {})[slot] = (ts, value)
+        rows = {}
+        for index, slots in stepped.items():
+            carried, fresh_for = None, timedelta(seconds=fresh[index])
+            for slot in range(count):
+                carried = slots.get(slot, carried)
+                if carried is not None and first + slot * step - carried[0] <= fresh_for:
+                    rows[(index, slot)] = carried
+        return rows
+    # One indexed look-up per segment and moment (the primary key (channel_no, ts) read backwards, one row). The
+    # runtime exclusion of TimescaleDB, which would only find again the chunks left out when planning, is switched off
+    # for this one query and then set back to what it was (a caller's enclosing transaction keeps its own setting): it
+    # cost about 60 µs on every look-up (0.8 s instead of 0.2 s for 10 000 of them on the development data).
+    sql = (f'{segments}, m AS (SELECT * FROM unnest(%s::timestamptz[]) WITH ORDINALITY AS m(at, slot)) '
+           f'SELECT s.ord, m.slot, r.ts, r.value FROM s CROSS JOIN m CROSS JOIN LATERAL ({newest.format(at="m.at")}) r')
+    with transaction.atomic(), connection.cursor() as cursor:
+        cursor.execute(f"SELECT current_setting('{RUNTIME_EXCLUSION}'), set_config('{RUNTIME_EXCLUSION}', 'off', true)")
+        previous = cursor.fetchone()[0]
+        cursor.execute(sql, [numbers, starts, ends, fresh, [first + slot * step for slot in range(count)], since, last])
+        found = {(int(ordinal) - 1, int(slot) - 1): (ts, value) for ordinal, slot, ts, value in cursor.fetchall()}
+        cursor.execute(f"SELECT set_config('{RUNTIME_EXCLUSION}', %s, true)", [previous])
+        return found
 
 
 def _water_types(target):
@@ -449,9 +566,10 @@ def _water_types(target):
 
 def deffeyes_frames(target, start, end, step, cursor=0, size=PAGE):
     """A page of the Frames of a unit's or a system's water from start to end (end not included) every `step` (snapped
-    up to the ladder): frames `cursor` on, at most `size`. Per frame and input, in the A1 order, the first segment's
-    clean value at or before the frame and no older than its channel's freshness, else a fresh manual or lab sample,
-    else (salinity only) the fresh-water assumption, else missing; never a value from after the frame, never one carried
+    up to the ladder): frames `cursor` on, at most `size`. Per frame and input, by owner rule A9 through the live
+    view's one function (`farm.water.read.choose`, over the `tiers` of the target): the newest of the fresh values of the
+    unit's own places (each channel's clean value at or before the frame and no older than its freshness, each point's
+    fresh manual or lab sample), else of its system's, else (salinity only) the fresh-water assumption, else missing; never a value from after the frame, never one carried
     past its freshness, never one in between. A frame with every required input has the whole diagram of that water
     (A8: farm/water/deffeyes.py's figure with the fish's limits, as the unit's chart draws it), in one box for the page
     (it holds every point of the page); frames whose diagram reads exactly the same values share one figure."""
@@ -465,10 +583,11 @@ def deffeyes_frames(target, start, end, step, cursor=0, size=PAGE):
     first = start + cursor * step
     tier = RAW if step < HOUR else ROLLUP_1H
     page_end = first + count * step
-    by_code = {code: segments(target, code, first - CARRY, page_end) for code in REPLAY_INPUTS}
-    flat = [(code, segment) for code in REPLAY_INPUTS for segment in by_code[code]]
-    rows = replay_rows([segment for _code, segment in flat], first, step, count, tier)
-    points = [point for point in places(target)[1] if point is not None]
+    tiered = tiers(target)
+    flat = [(code, rank, segment) for code in REPLAY_INPUTS for rank, (conditions, _points) in enumerate(tiered)
+            for segment in segments_for(conditions, code, first - CARRY, page_end)]
+    rows = replay_rows([segment for _code, _rank, segment in flat], first, step, count, tier)
+    points = list({point.pk: point for _conditions, found in tiered for point in found}.values())
     manual = {code: WaterSeries(points, code, first - WINDOW, page_end) for code in REPLAY_INPUTS}
     assumed = assumed_salinity(_water_types(target))
     limits = {name: float(offer.value) for name, offer in calculation.chart_limits(calculation.fish_limits(target)).items()}
@@ -478,22 +597,27 @@ def deffeyes_frames(target, start, end, step, cursor=0, size=PAGE):
         at = first + slot * step
         inputs, missing = {}, []
         for code in REPLAY_INPUTS:
-            chosen = None
-            for index, (each, segment) in enumerate(flat):
+            # Owner rule A9 at the frame, by the live view's one function (farm.water.read.choose): the newest FRESH
+            # value of the first tier that has one, a sensor's before a sample's at one time; a frame is drawn from fresh
+            # values only (A9.3), so a stale one is missing, never shown.
+            candidates = [[] for _tier in tiered]
+            for index, (each, rank, segment) in enumerate(flat):
                 if each != code or (index, slot) not in rows:
                     continue
                 ts, value = rows[(index, slot)]
                 if at - ts <= timedelta(seconds=segment.fresh_s):
-                    chosen = FrameInput(float(as_parameter(code, value)), segment.origin, (at - ts).total_seconds(),
-                                        segment.channel_no)
-                    break
-            if chosen is None:
-                sample = next((each for each in (manual[code].latest(point.pk, at, WINDOW) for point in points)
-                               if each is not None and is_fresh(parameters.get(code), each.at, at)), None)
-                if sample is not None:
-                    chosen = FrameInput(float(sample.value), MANUAL, (at - sample.at).total_seconds())
-                elif code == parameters.SALINITY and assumed is not None:
-                    chosen = FrameInput(float(assumed), ASSUMED, 0.0)
+                    candidates[rank].append(Candidate(ts, FrameInput(
+                        float(as_parameter(code, value)), segment.origin, (at - ts).total_seconds(), segment.channel_no)))
+            for rank, (_conditions, tier_points) in enumerate(tiered):
+                for point in tier_points:
+                    sample = manual[code].latest(point.pk, at, WINDOW)
+                    if sample is not None and is_fresh(parameters.get(code), sample.at, at):
+                        candidates[rank].append(Candidate(sample.at, FrameInput(
+                            float(sample.value), MANUAL, (at - sample.at).total_seconds())))
+            picked = choose(candidates, at, lambda candidate: True)
+            chosen = picked.input if picked is not None else None
+            if chosen is None and code == parameters.SALINITY and assumed is not None:
+                chosen = FrameInput(float(assumed), ASSUMED, 0.0)
             if chosen is not None:
                 inputs[code] = chosen
             elif code in calculation.REQUIRED:
@@ -524,17 +648,23 @@ def frame_analysis(values, limits):
 
 def page_figures(analyses):
     """([figure], [index or None]) of a page's analyses (None: no diagram): the whole diagram of each, in one box that
-    holds every point of the page, worked out once for each different water. The diagram never reads the oxygen (only
-    its saturation, which is not drawn), so waters exactly equal but for it share one figure; nothing else is shared."""
-    extent = [(analysis.dic, analysis.alkalinity_meq) for analysis in analyses if analysis is not None]
+    holds every point of the page (its largest DIC and alkalinity, worked out once), worked out once for each different
+    diagram. The diagram never reads the water's pH, its alkalinity or its oxygen, only where its point sits
+    (sensors/tests/test_page_share.py proves it on random waters), so frames equal but for those share one figure,
+    its point left out (None): every frame carries its own point in its columns."""
+    points = [(analysis.dic, analysis.alkalinity_meq) for analysis in analyses if analysis is not None]
+    # The box reads only the largest DIC and the largest alkalinity of the points it holds (deffeyes.box_of), so the
+    # page's extent is that one point, worked out once (every point on every figure was O(N^2)).
+    extent = [(max(dic for dic, _alkalinity in points), max(alkalinity for _dic, alkalinity in points))] if points else []
     figures, shared, indexes = [], {}, []
     for analysis in analyses:
         index = None
         if analysis is not None:
-            key = (replace(analysis.water, oxygen_mg_l=None), analysis.limits, analysis.target)
+            key = (replace(analysis.water, ph=0.0, alkalinity_mg_l=0.0, oxygen_mg_l=None), analysis.limits,
+                   analysis.target)
             index = shared.get(key)
             if index is None:
                 index = shared[key] = len(figures)
-                figures.append(deffeyes.figure(analysis, deffeyes.geometry(analysis, extent=extent)))
+                figures.append({**deffeyes.figure(analysis, deffeyes.geometry(analysis, extent=extent)), 'point': None})
         indexes.append(index)
     return figures, indexes

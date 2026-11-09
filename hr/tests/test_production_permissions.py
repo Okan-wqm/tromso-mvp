@@ -41,11 +41,22 @@ class MatrixTests(PeopleTestCase):
         holders = {area.model for area in access.areas() for action in area.actions if action in ('crew', 'all_production')}
         self.assertEqual(holders, {'hr.Employee', 'hr.ShiftAssignment'})
 
-    def test_each_new_column_implies_read(self):
-        self.assertEqual(access.implied({'hr.crew_shiftassignment'}),
-                         {'hr.crew_shiftassignment', 'hr.view_shiftassignment'})
-        self.assertEqual(access.implied({'hr.all_production_employee'}),
-                         {'hr.all_production_employee', 'hr.view_employee'})
+    def test_each_new_column_only_widens_rows_and_includes_no_other_right(self):
+        # All production without Read is the Production manager preset: every production person's attendance, plan
+        # and leave, and no Team list (hr.roles).
+        self.assertEqual(access.implied({'hr.crew_shiftassignment'}), {'hr.crew_shiftassignment'})
+        self.assertEqual(access.implied({'hr.all_production_employee'}), {'hr.all_production_employee'})
+
+    def test_the_matrix_ticks_read_with_create_edit_and_delete_only(self):
+        from core.forms import RoleForm
+        html = str(RoleForm()['permissions'])
+        requires = {re.search(r'value="(\d+)"', box).group(1): 'data-requires' in box
+                    for box in re.findall(r'<input type="checkbox"[^>]*>', html)}
+        ids = {access.perm_name(permission): str(permission.pk) for permission in access.permissions()}
+        for name in ('hr.all_production_employee', 'hr.all_employee', 'hr.crew_shiftassignment', 'hr.view_employee'):
+            self.assertFalse(requires[ids[name]], name)
+        for name in ('hr.add_employee', 'hr.change_shiftassignment', 'hr.delete_shiftassignment'):
+            self.assertTrue(requires[ids[name]], name)
 
     def test_the_role_form_shows_seven_columns_and_the_boxes_where_offered(self):
         admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')

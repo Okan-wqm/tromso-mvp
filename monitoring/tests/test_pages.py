@@ -75,8 +75,10 @@ class PageTests(MonitoringCase):
         for text in ('12,000', '13.2', '8.10', '7.20', 'Deffeyes chart', 'State from'):
             self.assertIn(text, card)
         self.assertIn(f'data-window="{reverse("farm:water_unit_chart", args=[self.t2.pk])}"', card)
-        self.assertEqual(card.count('<svg'), 0)                      # the chart lives in the window, never in a card
-        self.assertEqual(html.count('<svg'), html.count('class="icon"'))     # (the icons are the only svg)
+        # the chart lives in the window, never in a card: the only svg are the icons and the capacity bar (an SVG rectangle,
+        # templates/farm/_capacity_bar.html, since the Content-Security-Policy allows no style attribute)
+        self.assertEqual(card.count('<svg') - card.count('<svg class="capacity-bar'), 0)
+        self.assertEqual(html.count('<svg'), html.count('class="icon"') + html.count('<svg class="capacity-bar'))
 
     def test_a_card_that_may_not_see_a_section_says_so_and_prints_no_value_of_it(self):
         self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='8.1')
@@ -141,7 +143,7 @@ class FragmentTests(MonitoringCase):
         html = response.content.decode()
         for shell in ('<html', 'rail', 'Skip to content', 'id="monitor-windows"'):
             self.assertNotIn(shell, html)                           # no request: the shell's context never ran
-        self.assertNotIn('<svg', html.replace('<svg class="icon"', ''))
+        self.assertNotIn('<svg', html.replace('<svg class="icon"', '').replace('<svg class="capacity-bar', ''))
 
     def test_the_fragment_is_the_pages_grid(self):
         page = self.client.get(PAGE)
@@ -170,6 +172,24 @@ class FragmentTests(MonitoringCase):
                 self.assertEqual((response.status_code, response['Cache-Control']), (503, 'no-store'), url)
                 self.assertNotIn(b'data-key="card:', response.content)
 
+    def test_a_source_the_state_needs_that_fails_is_logged_with_its_name_and_cause_once_a_minute(self):
+        """F-025: the 503 is never silent: the source and the error with its trace are logged, at most once a minute per
+        source, so a wall that polls every 15 s does not flood the log."""
+        read.FAILED_AT.clear()
+        for name, target in (('stock', 'stock_read.stock_of'), ('water', 'water_read.points_water'),
+                             ('events', 'health_read.open_events')):
+            owner, attribute = target.split('.')
+            with self.subTest(source=name), \
+                    mock.patch.object(getattr(read, owner), attribute, side_effect=RuntimeError(f'{name} is down')):
+                with self.assertLogs('monitoring.read', 'ERROR') as logged:
+                    self.assertEqual(self.client.get(CARDS).status_code, 503)
+                self.assertEqual(len(logged.records), 1)
+                record = logged.records[0]
+                self.assertIn(f'The {name} source', record.getMessage())
+                self.assertIn(f'RuntimeError: {name} is down', logged.output[0])     # the trace and the cause
+                with self.assertNoLogs('monitoring.read', 'ERROR'):
+                    self.assertEqual(self.client.get(CARDS).status_code, 503)        # within the minute: once
+
     def test_the_204_path_costs_a_session_the_rights_and_two_revision_queries(self):
         after = self.ask()['X-Poll-Next']
         self.client.get(after)
@@ -196,7 +216,7 @@ class FragmentTests(MonitoringCase):
 class WallTests(MonitoringCase):
     def test_a_wall_page_marks_the_document_and_keeps_its_session_once_a_day(self):
         html = self.client.get(PAGE, {'wall': '1'}).content.decode()
-        self.assertIn('<html lang="en" data-wall>', html)
+        self.assertRegex(html, r'<html lang="en" data-theme="[a-z]+" data-wall>')         # (core/theme.py)
         self.assertIn('data-fullscreen', html)                           # the wall keeps its Full screen button ...
         self.assertIn('Leave the wall', html)                            # ... and a way out
         self.assertIn('wall=1', re.search(r'data-poll="([^"]+)"', html).group(1))

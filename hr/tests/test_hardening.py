@@ -32,6 +32,9 @@ class CheckHrTests(PeopleTestCase):
         self.assertIn('agree', out.getvalue())
 
     def test_every_disagreement_is_found_and_the_command_fails(self):
+        # Rows written before the database refused them (hr/0011_employment_bounds): made here past its floor, and put
+        # right before the test ends, when Django reads every deferred constraint.
+        self.addCleanup(lambda: LeaveRequest.objects.filter(employee__employee_number='E-50').delete())
         # a last day with a placement that runs past it, and leave after it
         gone = employee('E-50', 'Gone')
         place(gone, self.dept_a, TOP)

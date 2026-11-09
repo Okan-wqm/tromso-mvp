@@ -2,6 +2,7 @@ import uuid
 
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _
@@ -51,6 +52,7 @@ class AuditedModel(models.Model):
         abstract = True
 
     def soft_delete(self, user):
+        """Deletes the record its caller has locked (and maybe changed: a void's reason), writing it whole."""
         self.is_deleted = True
         self.deleted_at = timezone.now()
         self.deleted_by = user
@@ -58,12 +60,24 @@ class AuditedModel(models.Model):
         self.version += 1
         self.save()
 
+    def mark_deleted(self, user, at):
+        """Deletes a record a delete takes along (core.softdelete), stamped with the delete's moment `at`, which is
+        how a restore finds what that delete took with it. Only the deletion's columns are written, the version
+        counted up in the database: the record was read for the plan, not locked, and an edit saved meanwhile is
+        neither overwritten nor taken for current (its editor's stale version is refused)."""
+        self._write(user, is_deleted=True, deleted_at=at, deleted_by=user)
+
     def detach(self, link, user):
-        """Clears the link to a deleted record; the change counts as an edit by `user`."""
-        setattr(self, link, None)
-        self.updated_by = user
-        self.version += 1
-        self.save(update_fields=[link, 'updated_by', 'version', 'updated_at'])
+        """Clears the link to a deleted record; the change counts as an edit by `user` (written like
+        mark_deleted, only the link's columns)."""
+        self._write(user, **{link: None})
+
+    def _write(self, user, **values):
+        values.update(updated_by=user, updated_at=timezone.now())
+        type(self).all_objects.filter(pk=self.pk).update(version=models.F('version') + 1, **values)
+        for name, value in values.items():
+            setattr(self, name, value)
+        self.version = type(self).all_objects.values_list('version', flat=True).get(pk=self.pk)
 
     def delete_blockers(self):
         """Reasons this record cannot be deleted now (e.g. fish still in a tank); none by default."""
@@ -75,6 +89,13 @@ class AuditedModel(models.Model):
         with it all the same because they are only a plan, not history (a recurring task's planned tasks
         nobody has touched). None by default: what points at a record through DO_NOTHING is kept."""
         return cls.objects.none()
+
+
+def violated_constraint(model, error):
+    """The constraint of `model` a database refusal (`error`, an IntegrityError) names; None when it names none of its
+    constraints (a fault, not a clash). A form shows its message on the field (core.crud), a restore as its reason."""
+    name = getattr(getattr(error.__cause__, 'diag', None), 'constraint_name', None)
+    return next((item for item in model._meta.constraints if item.name == name), None)
 
 
 # A code as lists and reports show it: capital letters, digits, hyphens and underscores. A model that checks
@@ -293,3 +314,36 @@ class PlatformSettings(AuditedModel):
     def get(cls):
         """The one row (made by the migration; made again here if a restore left none)."""
         return cls.objects.first() or cls.objects.create()
+class EntryKey(models.Model):
+    """The key a new-record form carries (core.crud.ENTRY_KEY) and the record its first sending created, for every
+    kind of record (F-232): the same form sent twice, by a double click, a retried request or two sendings at once,
+    creates one record, and the second sending opens it. The key is the primary key, so of two sendings at once the
+    second one's insert waits for the first one's transaction and is then refused. Written in the transaction that
+    creates the record; not a secret, and nothing else reads it."""
+
+    key = models.UUIDField(primary_key=True)
+    entity_type = models.CharField(max_length=100)    # the record's model, as app_label.model_name
+    entity_id = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'entry_keys'
+
+    @classmethod
+    def note(cls, key, record):
+        """Stores `key` with `record`. A key that already stands for a record of another kind (a form's key sent with
+        another form: tampering or a broken client) is refused with a reason (cross review F7c); one of the same kind
+        is the same form sent twice at once, and its insert waits for the other and is refused by the primary key,
+        which the caller answers by opening the other's record."""
+        label = record._meta.label_lower
+        if cls.objects.filter(key=key).exclude(entity_type=label).exists():
+            raise ValidationError({NON_FIELD_ERRORS: gettext(
+                'This form was sent before for another record: open it again and send it anew.')})
+        cls.objects.create(key=key, entity_type=label, entity_id=str(record.pk))
+
+    @classmethod
+    def record_of(cls, key, model):
+        """The record of `model` the form with `key` created; None when none did."""
+        entity_id = (cls.objects.filter(key=key, entity_type=model._meta.label_lower)
+                     .values_list('entity_id', flat=True).first())
+        return None if entity_id is None else model._base_manager.filter(pk=entity_id).first()

@@ -34,7 +34,7 @@
       {% for employee in objects %}
       <tr>
         <td>
-          {% if can_change %}<a class="row-title" href="{% url 'hr:employee_edit'|mounted:request employee.pk %}" data-modal>{{ employee.full_name }}</a>{% else %}<a class="row-title" href="{% url 'hr:employee_detail'|mounted:request employee.pk %}" data-modal>{{ employee.full_name }}</a>{% endif %}
+          {% if can_change and employee.pk != own %}<a class="row-title" href="{% url 'hr:employee_edit'|mounted:request employee.pk %}" data-modal>{{ employee.full_name }}</a>{% else %}<a class="row-title" href="{% url 'hr:employee_detail'|mounted:request employee.pk %}" data-modal>{{ employee.full_name }}</a>{% endif %}
           <span class="row-sub">{{ employee.employee_number }}</span>
         </td>
         <td>{{ employee.get_employment_type_display }}</td>
@@ -44,7 +44,7 @@
         <td>{% if employee.left_on and employee.left_on < today %}<span class="badge badge-inactive">{% trans "Left" %} {{ employee.left_on|date:"DATE_FORMAT" }}</span>{% else %}<span class="badge badge-active">{% trans "Working here" %}</span>{% endif %}</td>
         <td class="row-actions">
           <a class="icon-button" href="{% url 'hr:employee_detail'|mounted:request employee.pk %}" data-modal title="{% blocktrans with name=employee.full_name %}Show {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="search" %}<span class="sr-only">{% blocktrans with name=employee.full_name %}Show {{ name }}{% endblocktrans %}</span></a>
-          {% if can_change %}<a class="icon-button" href="{% url 'hr:employee_edit'|mounted:request employee.pk %}" data-modal title="{% blocktrans with name=employee.full_name %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=employee.full_name %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}
+          {% if can_change and employee.pk != own %}<a class="icon-button" href="{% url 'hr:employee_edit'|mounted:request employee.pk %}" data-modal title="{% blocktrans with name=employee.full_name %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=employee.full_name %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}
         </td>
       </tr>
       {% endfor %}

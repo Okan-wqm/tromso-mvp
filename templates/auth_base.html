@@ -1,14 +1,13 @@
 {% load assets i18n %}<!doctype html>
-<html lang="{{ LANGUAGE_CODE }}">
+<html lang="{{ LANGUAGE_CODE }}" data-theme="{{ THEME|default:"fjord" }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{% trans "Sign in" %}{% endblock %} · Suderra</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&display=swap">
   <link rel="icon" href="{% asset 'favicon.svg' %}" type="image/svg+xml">
   {% module_map %}
+  <link rel="stylesheet" href="{% asset 'css/fonts.css' %}">
+  <link rel="stylesheet" href="{% asset 'css/tokens.css' %}">
   <link rel="stylesheet" href="{% asset 'css/base.css' %}">
   <link rel="stylesheet" href="{% asset 'css/auth.css' %}">
 </head>

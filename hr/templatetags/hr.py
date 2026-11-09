@@ -2,8 +2,9 @@
 from zoneinfo import ZoneInfo
 
 from django import template
-from django.conf import settings
 from django.utils import timezone
+
+from core.dates import company_zone
 
 register = template.Library()
 
@@ -16,7 +17,7 @@ def on_clock(value, zone):
     if value is None:
         return value
     if not zone:
-        zone = settings.TIME_ZONE
+        zone = company_zone()
     if isinstance(zone, str):
         zone = ZoneInfo(zone)
     return timezone.make_naive(value, zone)

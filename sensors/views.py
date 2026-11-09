@@ -1,8 +1,7 @@
 """The Sensors panel's pages beyond its tabs: the overview, and a credential's secret, shown once when it is made or
 replaced and never again."""
 import csv
-import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
 from urllib.parse import urlencode
 
 from django import forms
@@ -10,11 +9,12 @@ from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import F
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.views.decorators.gzip import gzip_page
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _, gettext_lazy
@@ -22,19 +22,22 @@ from django.views.decorators.http import require_POST
 
 from alarms import read as alarms_read, services as alarm_services, sources as alarm_sources
 from core import audit, navigation
-from core.crud import done, render_page
+from core.crud import DRAFT, done, refusal_text, render_page
+from core.dates import read_moment
 from core.models import AuditLog
-from farm.models import Equipment, SamplingPoint, System, Tank
+from farm.models import System, Tank
+from farm.models.site import zone_of
 from farm.water import deffeyes
+from core.widgets import MomentInput
 
-from . import chart, credentials, quantities, read, trail
-from .forms import on_site_clock
+from . import bindings, chart, credentials, quantities, read, trail
+from .forms import DeviceMoveForm, on_site_clock, place_choices, place_of
 from .models import (AlarmEvent, Binding, Channel, ChannelStatus, Connection, Credential, DeadLetter, DeadReason,
                      Device, IngestStatus)
-from .resources import (ChannelResource, ConnectionResource, CredentialResource, DeviceResource, PayloadFormatResource,
-                        secret_page)
+from .resources import (BindingResource, ChannelResource, ConnectionResource, CredentialResource, DeviceResource,
+                        PayloadFormatResource, secret_page)
 
-DATETIME = forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M')
+DATETIME = MomentInput()
 # How the activity log says a secret changed: never its value or its hash.
 SECRET_LABEL, REPLACED = 'Secret', '(replaced)'
 
@@ -80,32 +83,6 @@ def credential_rotate(request, pk):
 READ = 'sensors.view_reading'
 RANGES = [('6h', timedelta(hours=6)), ('24h', timedelta(hours=24)), ('7d', timedelta(days=7)), ('30d', timedelta(days=30)),
           ('90d', timedelta(days=90)), ('1y', timedelta(days=365)), ('2y', timedelta(days=730))]
-TARGET_MODELS = {'unit': Tank, 'system': System, 'point': SamplingPoint, 'equipment': Equipment}
-
-
-def parse_target(value):
-    """The unit, system, sampling point or piece of equipment a "kind:pk" names; None for anything else."""
-    kind, _sep, pk = (value or '').partition(':')
-    model = TARGET_MODELS.get(kind)
-    if model is None:
-        return None
-    try:
-        return model.objects.filter(pk=uuid.UUID(pk)).first()
-    except ValueError:
-        return None
-
-
-def target_choices():
-    """The places a chart can be drawn for: units, systems, sampling points, equipment ("kind:pk")."""
-    points = SamplingPoint.objects.filter(is_active=True).with_owners()
-    return [
-        (_('Units'), [(f'unit:{unit.pk}', str(unit)) for unit in Tank.objects.order_by('code')]),
-        (_('Systems'), [(f'system:{system.pk}', str(system)) for system in System.objects.order_by('code')]),
-        (_('Sampling points'), sorted(((f'point:{point.pk}', str(point)) for point in points), key=lambda item: item[1])),
-        (_('Equipment'), [(f'equipment:{item.pk}', str(item)) for item in Equipment.objects.order_by('code')]),
-    ]
-
-
 class ChartForm(forms.Form):
     """What a chart shows: a place, a quantity and a time (a preset ending now, or from and to on the site's clock)."""
     target = forms.ChoiceField(label=gettext_lazy('Place'))
@@ -117,11 +94,11 @@ class ChartForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['target'].choices = [('', '---------'), *target_choices()]
+        self.fields['target'].choices = [('', '---------'), *place_choices()]
 
     def clean(self):
         cleaned = super().clean()
-        target = parse_target(cleaned.get('target'))
+        target = place_of(cleaned.get('target'))
         if target is None:
             self.add_error('target', _('Choose a place from the list.'))
             return cleaned
@@ -135,10 +112,10 @@ class ChartForm(forms.Form):
             self.add_error(None, _('Choose a time: a preset, or from and to.'))
             return cleaned
         zone = read.zone_for(target)
-        current = timezone.get_current_timezone()
         try:
-            cleaned['from'] = on_site_clock(timezone.make_naive(cleaned['start'], current), zone)
-            cleaned['to'] = on_site_clock(timezone.make_naive(cleaned['end'], current), zone)
+            # the wall time typed (the form made it aware in the current zone), read on the place's clock
+            cleaned['from'] = on_site_clock(timezone.make_naive(cleaned['start'], timezone.get_current_timezone()), zone)
+            cleaned['to'] = on_site_clock(timezone.make_naive(cleaned['end'], timezone.get_current_timezone()), zone)
         except ValidationError as error:
             self.add_error(None, error)
             return cleaned
@@ -184,7 +161,7 @@ def chart_csv(request):
 def target_charts(request):
     """A window's charts (a monitoring card, a Deffeyes window): every quantity bound to a place over a preset time, the
     manual samples as points; the presets reload the window."""
-    target = parse_target(request.GET.get('target'))
+    target = place_of(request.GET.get('target'))
     if target is None:
         raise Http404
     key = request.GET.get('range') if request.GET.get('range') in dict(RANGES) else '24h'
@@ -220,7 +197,7 @@ def trail_points(request):
     """The trail of a unit's or a system's water on the Deffeyes diagram over a preset time (A4), hour by hour, as JSON
     for the card designer's chart: the hours drawn and the hours without every input. It joins the sensors and the water
     samples, so it needs the right to read both."""
-    target = parse_target(request.GET.get('target'))
+    target = place_of(request.GET.get('target'))
     if not isinstance(target, (Tank, System)):
         raise Http404
     key = request.GET.get('range') if request.GET.get('range') in dict(RANGES) else '24h'
@@ -231,6 +208,55 @@ def trail_points(request):
                     'alkalinity_mg_l': point.alkalinity_mg_l, 'salinity_ppt': point.salinity_ppt, 'dic': point.dic,
                     'alkalinity_meq': point.alkalinity_meq} for point in found.points],
         'missing': [moment.isoformat() for moment in found.missing]})
+
+
+# ---- moving a whole device (a portable probe) ------------------------------------------------------------------
+@permission_required(BindingResource.perm('add'), raise_exception=True)
+def device_move(request):
+    """The Move device dialog: a device to a place or out of the water from a moment (sensors/bindings.py
+    `move_device`), with where each channel will land shown before it moves. A link may name the device and the place
+    (`?device=…&target=unit:…`, from the device's page, the list or a monitoring card). A change of the device, the place
+    or the role renders the dialog again with the landing (a draft, nothing moved)."""
+    if request.method == 'POST':
+        form = DeviceMoveForm(request.POST)
+    else:
+        initial = {name: request.GET[name] for name in ('device', 'target', 'role') if request.GET.get(name)}
+        form = DeviceMoveForm(initial=initial)
+        device, place, _out = form.chosen()
+        zone = bindings.clock(device, place) if device is not None else zone_of(None)
+        form.initial['valid_from'] = timezone.localtime(timezone=zone).replace(tzinfo=None, second=0, microsecond=0)
+    if request.method == 'POST' and DRAFT not in request.POST and form.is_valid():
+        data = form.cleaned_data
+        try:
+            bindings.move_device(request.user, data['device'], data['valid_from'], data['place'], role=data['role'],
+                                 note=data['note'])
+        except ValidationError as error:
+            form.add_error(None, error.messages)
+        except IntegrityError as error:
+            form.add_error(None, refusal_text(error))
+        else:
+            if data['place'] is None:
+                messages.success(request, _('%(device)s taken out of the water.') % {'device': data['device']})
+            else:
+                messages.success(request, _('%(device)s moved to %(place)s.') % {'device': data['device'],
+                                                                                  'place': data['place']})
+            return done(request, reverse(DeviceResource.url_name('list')))
+    return render_page(request, 'sensors/device_move.html', {
+        **_context('sensors:device_list'), 'form': form, 'plan': _landing(form),
+        'list_url': reverse(DeviceResource.url_name('list'))})
+
+
+def _landing(form):
+    """The steps of the move the dialog names (sensors/bindings.py `plan_device`), at its moment (now while it has
+    none); empty until a device and a place are chosen."""
+    device, place, out = form.chosen()
+    if device is None or (place is None and not out):
+        return []
+    at = form.cleaned_data.get('valid_from') if form.is_bound and hasattr(form, 'cleaned_data') else None
+    role = (form.data if form.is_bound else form.initial).get('role') or Binding.Role.PRIMARY
+    if role not in Binding.Role.values:
+        role = Binding.Role.PRIMARY
+    return bindings.plan_device(device, place, at or timezone.now(), role)
 
 
 # ---- dead letters ----------------------------------------------------------------------------------------------
@@ -281,7 +307,7 @@ INGEST_DEAD_AFTER = timedelta(seconds=90)
 
 def state_tiles(user, now):
     """What the overview says of the sensors now, each for the right that may read it: whether the ingest is alive (its
-    heartbeat within 90 s), how many devices are online, how many active channels of active devices have no fresh value, and how many
+    heartbeat within 90 s), how many devices are online, how many are not placed (out of the water), how many active channels of active devices have no fresh value, and how many
     dead letters came in the last day."""
     tiles = []
     if user.has_perm('sensors.view_connection'):
@@ -306,6 +332,9 @@ def state_tiles(user, now):
         online = sum(1 for status in read.device_status(devices, now).values() if status.online)
         tiles.append({'label': _('Devices online'), 'count': f'{online} / {len(devices)}',
                       'url': reverse('sensors:device_list')})
+        # Out of the water (storage, calibration): its readings are stored and belong to no place.
+        tiles.append({'label': _('Devices not placed'), 'url': f'{reverse("sensors:device_list")}?placed=no',
+                      'count': Device.objects.filter(is_active=True).exclude(bindings.placed()).count()})
     if user.has_perm('sensors.view_channel'):
         listened = Channel.objects.filter(state=ChannelStatus.ACTIVE, device__is_active=True, device__is_deleted=False)
         stale = sum(1 for state in read.latest(listened.values_list('channel_no', flat=True), now).values()
@@ -326,7 +355,9 @@ def state_tiles(user, now):
 def alarm_events(request):
     """Sensors › Operations › Alarm events: the times a rule held, the open ones first, with who acknowledged each (the
     alarms app keeps it)."""
-    events = AlarmEvent.objects.select_related('rule__channel__device', 'alarm').prefetch_related(
+    events = AlarmEvent.objects.select_related(
+        'rule__channel__device', 'alarm', 'binding__point__unit', 'binding__point__system', 'binding__point__equipment',
+        'binding__system', 'binding__equipment').prefetch_related(
         'alarm__acknowledgements__user').order_by(F('closed_at').desc(nulls_first=True), '-opened_at')
     page = Paginator(events, DEAD_PAGE).get_page(request.GET.get('page'))
     return render_page(request, 'sensors/alarm_events.html', _context(
@@ -348,6 +379,7 @@ def alarm_event_acknowledge(request, pk):
     return redirect(reverse('sensors:alarm_events'))
 
 
+@gzip_page                 # owner amendment B4: the page compressed (geometry, no secret)
 @permission_required((READ, 'farm.view_watermeasurement'), raise_exception=True)
 def deffeyes_frames(request):
     """A page of the Deffeyes replay of a unit's or a system's water (A6, A7, A8) as JSON for the player: `figures`, the
@@ -357,20 +389,22 @@ def deffeyes_frames(request):
     `start`/`end` on the site's clock (else `range` ending now, 7 days by default), `step` in seconds (snapped up to the
     ladder), `cursor` the first frame of the page (0 by default; `next` gives the following page's, None after the last).
     It joins the sensors and the water samples, so it needs the right to read both."""
-    target = parse_target(request.GET.get('target'))
+    target = place_of(request.GET.get('target'))
     if not isinstance(target, (Tank, System)):
         raise Http404
     zone = read.zone_for(target)
     try:
         if request.GET.get('start') and request.GET.get('end'):
-            start, end = (on_site_clock(datetime.strptime(request.GET[name], '%Y-%m-%dT%H:%M'), zone)
-                          for name in ('start', 'end'))
+            walls = [read_moment(request.GET[name]) for name in ('start', 'end')]   # core.dates: inside 1900-2100
+            if None in walls:
+                raise ValueError('Not a moment this page reads.')
+            start, end = (on_site_clock(wall, zone) for wall in walls)
         else:
             end = timezone.now().replace(minute=0, second=0, microsecond=0)
             start = end - dict(RANGES).get(request.GET.get('range', ''), timedelta(days=7))
         step = timedelta(seconds=int(request.GET.get('step') or 3600))
         found = read.deffeyes_frames(target, start, end, step, cursor=int(request.GET.get('cursor') or 0))
-    except (ValueError, ValidationError):
+    except (ValueError, OverflowError, ValidationError):     # OverflowError: a step longer than a timedelta holds
         return JsonResponse({'error': _('Give a start before the end on the site’s clock, a step in seconds and a '
                                         'cursor inside the range.')}, status=400)
     frames = found.frames

@@ -1,20 +1,4 @@
-/* Shared tokens, reset and form controls for every page. */
-
-:root {
-  --mist: #EEF1EC;
-  --olive: #3E4A35;
-  --olive-deep: #2E3828;
-  --speck: #232920;
-  --stripe: #B8455F;
-  --stripe-dark: #9A3650;
-  --sage: #C3CBB2;
-  --muted: #5B6552;
-  --white: #FFFFFF;
-  --error: #A3272F;
-
-  --font: "Bricolage Grotesque", system-ui, sans-serif;
-  --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, "Liberation Mono", monospace;
-}
+/* Reset and form controls for every page; every colour, font and ring is a token of tokens.css. */
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -22,13 +6,16 @@ html, body { height: 100%; }
 
 body {
   margin: 0;
-  background: var(--mist);
-  color: var(--speck);
-  font-family: var(--font);
-  font-size: 1rem;
-  line-height: 1.5;
+  background: var(--surface-canvas);
+  color: var(--text-1);
+  font-family: var(--font-text);
+  font-size: 15px;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
 }
+
+h1, h2 { font-family: var(--font-display); font-weight: 600; }
 
 .field { margin-bottom: 1.25rem; }
 
@@ -44,29 +31,29 @@ body {
 .field textarea {
   width: 100%;
   padding: .75rem .875rem;
-  border: 1.5px solid var(--sage);
+  border: 1.5px solid var(--line-control);
   border-radius: 6px;
-  background: var(--white);
-  color: var(--speck);
+  background: var(--surface-sheet);
+  color: var(--text-1);
   font: inherit;
   transition: border-color .15s;
 }
 
 .field input:hover,
 .field select:hover,
-.field textarea:hover { border-color: var(--muted); }
+.field textarea:hover { border-color: var(--text-3); }
 
 .field input:focus,
 .field select:focus,
 .field textarea:focus {
   outline: none;
-  border-color: var(--stripe);
-  box-shadow: 0 0 0 3px rgba(184, 69, 95, .2);
+  border-color: var(--action);
+  box-shadow: var(--ring-focus);
 }
 
 .field.has-error input,
 .field.has-error select,
-.field.has-error textarea { border-color: var(--error); }
+.field.has-error textarea { border-color: var(--crit); }
 
 .password-wrap { position: relative; }
 .password-wrap input { padding-right: 4.75rem; }
@@ -80,18 +67,18 @@ body {
   border: 0;
   border-radius: 4px;
   background: transparent;
-  color: var(--muted);
+  color: var(--text-2);
   font: inherit;
   font-size: .875rem;
   font-weight: 600;
   cursor: pointer;
 }
 
-.reveal:hover { color: var(--speck); background: var(--mist); }
+.reveal:hover { color: var(--text-1); background: var(--surface-canvas); }
 
 .help {
   margin: .375rem 0 0;
-  color: var(--muted);
+  color: var(--text-3);
   font-size: .8125rem;
 }
 
@@ -101,16 +88,16 @@ body {
   margin: .375rem 0 0;
   padding: 0;
   list-style: none;
-  color: var(--error);
+  color: var(--crit-text);
   font-size: .875rem;
 }
 
 .form-error {
   margin: 0 0 1.5rem;
   padding: .75rem 1rem;
-  border-left: 3px solid var(--error);
-  background: #F7E6E6;
-  color: var(--error);
+  border-left: 3px solid var(--crit);
+  background: var(--crit-tint);
+  color: var(--crit-text);
   font-size: .9375rem;
 }
 
@@ -123,8 +110,8 @@ body {
   padding: .8125rem 1rem;
   border: 0;
   border-radius: 6px;
-  background: var(--stripe);
-  color: var(--white);
+  background: var(--primary);
+  color: var(--on-primary);
   font: inherit;
   font-weight: 600;
   text-align: center;
@@ -133,19 +120,19 @@ body {
   transition: background .15s;
 }
 
-.button:hover { background: var(--stripe-dark); }
+.button:hover { background: var(--primary-hover); }
 
 .links {
   margin: 1.5rem 0 0;
   font-size: .9375rem;
 }
 
-a { color: var(--stripe-dark); text-underline-offset: 3px; }
-a:hover { color: var(--speck); }
+a { color: var(--action); text-underline-offset: 3px; }
+a:hover { color: var(--text-1); }
 
 :focus-visible {
-  outline: 3px solid var(--stripe);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: var(--ring-focus);
 }
 
 .field input:focus-visible,
@@ -162,9 +149,9 @@ a:hover { color: var(--speck); }
 .language-switch [role="group"] {
   display: inline-flex;
   padding: 2px;
-  border: 1px solid var(--sage);
+  border: 1px solid var(--line-control);
   border-radius: 6px;
-  background: var(--white);
+  background: var(--surface-sheet);
 }
 
 .language-switch button {
@@ -174,13 +161,12 @@ a:hover { color: var(--speck); }
   border: 0;
   border-radius: 4px;
   background: transparent;
-  color: var(--muted);
+  color: var(--text-2);
   font: inherit;
   font-size: .8125rem;
   font-weight: 700;
-  letter-spacing: .04em;
   cursor: pointer;
 }
 
-.language-switch button:hover { background: rgba(62, 74, 53, .08); color: var(--speck); }
-.language-switch button[aria-current="true"] { background: var(--stripe); color: var(--white); cursor: default; }
+.language-switch button:hover { background: var(--surface-sunken); color: var(--text-1); }
+.language-switch button[aria-current="true"] { background: var(--action-tint); color: var(--action); cursor: default; }

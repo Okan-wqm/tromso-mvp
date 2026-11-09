@@ -1,7 +1,8 @@
 """Every rule of the stock, checked from scratch over the whole ledger (stock-db §6.5), the one rule
 the feeding and health records share with it: every live feeding finds fish in its unit at the start or the
 end of its day, as every live treatment on its first day and every sea-lice count on its day, and the rows a
-harvest adds (its record, the plan it fulfils, the warnings acknowledged). The stock, feeding and health
+harvest adds (its record, the plan it fulfils, the warnings acknowledged); and that fish and production departments
+are on a site (a department a deleted site left without one before that was refused, F-212). The stock, feeding and health
 services hold these on every write; this finds a row that got past them (a hand edit in
 the database, a bug). `manage.py check_stock` prints what it finds; the test suite runs
 it after its stock tests. Its messages are for the developer, in English."""
@@ -14,6 +15,7 @@ from farm.feeding.fold import walk
 from farm.health import read as health_read
 from farm.models import (
     Batch, DeliveryRecord, EscapeRecord, HandlingAcknowledgement, HandlingPlanItem, HarvestRecord, OpeningBalance,
+    ProductionDepartment,
     Species, StockMovement, StockOperation, Tank,
 )
 from farm.models.handling import KIND_OF_OPERATION
@@ -140,16 +142,25 @@ def problems():
             species[unit_id].add(batches[batch_id].species_id)
     cleaner = set(Species.all_objects.exclude(cleaner_fish_type='').values_list('pk', flat=True))
     sea = read.sea_units(list(species))
-    for unit in Tank.all_objects.all():
+    for unit in Tank.all_objects.select_related('production_department'):
         fish = counts.get(unit.pk, 0)
         if fish and unit.is_deleted:
             found.append(f'Unit {unit.code} is deleted but holds {fish} fish.')
+        if fish and unit.production_department.site_id is None:
+            found.append(f'Unit {unit.code} holds {fish} fish but is not on any site.')
+        if not unit.is_deleted and unit.production_department.is_deleted:
+            found.append(f'Unit {unit.code} is live in the deleted production department '
+                         f'{unit.production_department.code}.')
         if fish and unit.status in NEEDS_NO_FISH:
             found.append(f'Unit {unit.code} is {unit.status} but holds {fish} fish.')
         if not fish and unit.status in NEEDS_FISH and not unit.is_deleted:
             found.append(f'Unit {unit.code} is {unit.status} but holds no fish.')
         if read.mixed(species[unit.pk], cleaner, unit.pk in sea):
             found.append(f'Unit {unit.code} holds {len(species[unit.pk])} species.')
+    for department in ProductionDepartment.objects.filter(site__isnull=True):
+        found.append(f'Production department {department.code} is not on any site.')
+    for department in ProductionDepartment.objects.filter(site__is_deleted=True).select_related('site'):
+        found.append(f'Production department {department.code} is on the deleted site {department.site.code}.')
     return found
 
 

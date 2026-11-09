@@ -25,6 +25,7 @@ from ..models import (
 from ..stock import integrity, read, services
 from ..stock.fold import Line, Op, StockError, fold
 from .helpers import correction_window, make_facility, make_species, role, stock_fish
+from farm import withdrawal_gate
 
 Status = Tank.Status
 
@@ -136,8 +137,8 @@ class StockTestCase(TestCase):
         self.user = get_user_model().objects.create_user('ali', 'ali@example.com', 'eski-sifre-123')
         self.user.groups.add(role('Stock keeper', *STOCK_KEEPER))
         self.client.force_login(self.user)
-        self.bergen = Site.objects.create(name='Bergen', code='BG')
-        self.tromso = Site.objects.create(name='Tromso', code='TR')
+        self.bergen = Site.objects.create(name='Bergen', code='BG', timezone='UTC')     # the clock the tests count on
+        self.tromso = Site.objects.create(name='Tromso', code='TR', timezone='UTC')
         self.hall = ProductionDepartment.objects.create(site=self.bergen, name='Hall A', code='HA')
         self.sea = ProductionDepartment.objects.create(site=self.tromso, name='Sea', code='SE')
         self.t1 = make_unit('T-01', self.hall)            # 100 m³ at 50 kg/m³: 5,000 kg
@@ -391,6 +392,7 @@ class VoidTests(StockTestCase):
         self.assertEqual(self.fish(self.t1), 0)
         self.assertStockAddsUp()
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_only_within_the_backdating_window(self):
         batch = self.stock(days_ago=31)
         died = self.mortality(batch, 1, days_ago=31)
@@ -399,6 +401,7 @@ class VoidTests(StockTestCase):
                          {'__all__': ['Operations older than 31 days cannot be voided.']})
 
     @correction_window(60)
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_void_window_is_the_platform_owners_setting(self):
         batch = self.stock(days_ago=50)
         died = self.mortality(batch, 1, days_ago=45)
@@ -453,6 +456,7 @@ class StatusTests(StockTestCase):
 
 
 class IntegrityTests(StockTestCase):
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_check_stock_reports_rows_that_got_past_the_service(self):
         batch = self.stock()
         call_command('check_stock', stdout=io.StringIO())
@@ -502,6 +506,7 @@ class IntegrityTests(StockTestCase):
 class ConstraintTests(StockTestCase):
     """The database holds the line rules whatever writes the rows."""
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_checks(self):
         batch = self.stock()
         operation = StockOperation.objects.get()
@@ -728,6 +733,7 @@ class HarvestTests(StockTestCase):
         services.void(self.user, operation, 'Harvest was postponed')
         self.assertEqual((self.fish(self.t1), Tank.objects.get(pk=self.t1.pk).status), (2000, 'active'))
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_a_harvest_is_always_weighed(self):
         operation = StockOperation.objects.get()
         with self.assertRaises(IntegrityError), transaction.atomic():
@@ -824,9 +830,13 @@ class PageTests(StockTestCase):
         self.assertContains(response, '<tr class="unit-row is-selected" aria-current="true">')
         self.assertContains(response, '<tr class="unit-row is-over">')
         self.assertContains(response, '<span class="over-badge">Over</span>', count=1)
+        # The gauge's fill is an SVG rectangle's width, never a style attribute (the Content-Security-Policy).
+        self.assertContains(response, '<rect class="ui-gauge-fill" width="100.0" height="1"/>', count=1)
+        self.assertNotContains(response, 'class="ui-gauge-fill" style=')
         response = self.page(unit=self.t2.pk)
         self.assertContains(response, '<tr class="unit-row is-selected is-over" aria-current="true">')
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_two_empty_states(self):
         self.assertContains(self.page(q='nothing like it'), 'No units match these filters.')
         self.assertContains(self.page(q='nothing like it'), f'href="{self.url}">Clear filters')
@@ -1137,13 +1147,14 @@ class SiteHistoryTests(StockTestCase):
 
     def test_a_site_with_stock_records_is_closed_not_deleted(self):
         from core.softdelete import plan_delete
-        self.assertEqual(plan_delete(self.bergen).blockers, [])
+        self.assertEqual(plan_delete(self.bergen).blockers, ['2 units still belong to it.'])     # live units (F-212)
         operation = services.record_input(self.user, species=self.salmon, input_stage='fry', origin='own_hatchery',
                                           day=self.day(3), lines=[(self.t1, 10, Decimal(5))])
         self.assertEqual(plan_delete(Site.objects.get(pk=self.bergen.pk)).blockers,
-                         ['Its units have stock records: set its status to Closed instead.'])
+                         ['Its units have stock records: set its status to Closed instead.',
+                          'It holds fish: move or harvest them first.'])
         services.void(self.user, operation, 'Entered by mistake')    # a voided stocking is no record
-        self.assertEqual(plan_delete(Site.objects.get(pk=self.bergen.pk)).blockers, [])
+        self.assertEqual(plan_delete(Site.objects.get(pk=self.bergen.pk)).blockers, ['2 units still belong to it.'])
 
 
 class ReadsOfAPeriodTests(StockTestCase):

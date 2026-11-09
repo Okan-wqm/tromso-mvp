@@ -19,6 +19,15 @@ SCREENS = {
         note="A record's own rows are also shown on the History tab of its edit page.",
         columns={'*': system('written by core.audit when the change is saved')},
     ),
+    'EntryKey': Screen(
+        create=no('written by the code: a new record a form creates stores the form\'s key with it (core.crud, '
+                  'F-232)'),
+        edit=no('a key belongs to the sending that created its record'),
+        delete=no('kept, so a form sent again later still opens the record it created'),
+        read=no('read only by the form path, to find the record a key created'),
+        note='The same form sent twice creates one record: the second sending finds the first one\'s record here.',
+        columns={'*': system('written by core.crud when a form creates a record')},
+    ),
     'Profile': Screen(
         create=(set_language, UserResource),
         edit=(set_language, UserResource),

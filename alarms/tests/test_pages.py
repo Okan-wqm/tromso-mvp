@@ -2,12 +2,15 @@
 cleared), the page saying plainly that nothing is sent while no transport is connected, the acknowledgement from the
 console, and the recipient rules as a tab."""
 
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 
 from core import access, navigation
 from core.models import AuditLog
 from farm.tests.helpers import role
+from sensors import bindings
 from sensors.models import AlarmEvent, AlarmRule
 from sensors.tests import make_channel, make_connection, make_device, make_format
 
@@ -99,7 +102,8 @@ class SensorsPageTests(AlarmsCase):
         device = make_device(make_connection(), make_format(), self.bergen)
         flow = make_channel(device, 'flow_m3_h')
         rule = AlarmRule.objects.create(kind='low', severity='warning', channel=flow, threshold=10)
-        event = AlarmEvent.objects.create(rule=rule, channel_no=flow.channel_no, opened_at=self.now, peak=4)
+        bound = bindings.move(self.keeper, flow, self.now - timedelta(days=1), system=self.ras)
+        event = AlarmEvent.objects.create(rule=rule, channel_no=flow.channel_no, opened_at=self.now, peak=4, binding=bound)
         keeper = get_user_model().objects.create_user('tech', 'tech@example.com', 'x')
         keeper.groups.add(role('Sensor keeper', 'view_alarmevent', 'change_alarmevent'))
         self.client.force_login(keeper)

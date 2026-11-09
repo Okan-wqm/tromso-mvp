@@ -38,6 +38,7 @@ from ..water import services as water_services
 from .helpers import correction_window, make_facility, point_of, role
 from .test_feeding import FeedingTestCase
 from .test_stock import make_unit
+from farm import withdrawal_gate
 
 D = Decimal
 
@@ -376,7 +377,7 @@ class BoardTests(WorkedExampleTestCase):
         self.assertEqual((share.end_g, share.ration_kg, share.next_meal_kg), (D('97.5'), D('14.274'), D('3.5685')))
         self.assertEqual((share.end.protocol, share.end.scope, line['why']), (self.protocol, 'unit', ''))
         self.assertEqual(row['temperature'].value_c, D('13.2'))
-        for text in ('97.5 g', '85.0 g weighed', '14.274 kg', '4 × 3.569 kg', '1.22 %', 'via unit T-02', '13.2 °C',
+        for text in ('97.5 g', '85.0 g weighed', '14.27 kg', '4 × 3.57 kg', '1.22 %', 'via unit T-02', '13.2 °C',
                      'Record meal', '50–100 g · GR-4 · 4 mm · FCR 1.00'):
             self.assertContains(response, text)
         self.assertContains(response, '1.10 % at 12.0 °C, 1.30 % at 14.0 °C')
@@ -410,6 +411,7 @@ class BoardTests(WorkedExampleTestCase):
         self.assertEqual(self.board_line()[2]['why'], 'Trout, assigned to T-02, is for Rainbow trout (RBT); these fish '
                                                       'are Atlantic salmon (SAL).')
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_temperature_ages_and_falls_back_to_the_system(self):
         WaterMeasurement.all_objects.all().delete()
         ras = System.objects.create(site=self.bergen, name='RAS 1', code='RAS1', type='ras')
@@ -421,10 +423,25 @@ class BoardTests(WorkedExampleTestCase):
         WaterMeasurement.all_objects.filter(point__system=ras).delete()
         temperature = self.board_line()[1]['temperature']
         self.assertEqual((temperature.value_c, temperature.via, temperature.fresh), (D('13.0'), 'unit', False))
-        self.assertContains(self.client.get(reverse('farm:meal_board')), 'stale')
+        self.assertContains(self.client.get(reverse('farm:meal_board')), 'Based on the temperature from')
         WaterMeasurement.all_objects.all().delete()
-        self.water('13.0', unit=self.t2, hours=24 * 8)                     # older than 7 days: no ration
-        self.assertEqual(self.board_line()[2]['why'], 'No temperature in the last 7 days: record one.')
+        self.water('13.0', unit=self.t2, hours=24 * 8)                     # A11: however old, it gives the ration
+        temperature = self.board_line()[1]['temperature']
+        self.assertEqual((temperature.value_c, temperature.fresh), (D('13.0'), False))
+        self.assertIn('(8 days old)', temperature.warning)
+        WaterMeasurement.all_objects.all().delete()                        # none ever recorded: no ration
+        self.assertEqual(self.board_line()[2]['why'], 'No temperature recorded here yet: record one.')
+
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
+    def test_the_board_prints_a_stale_temperatures_age_warning_under_its_chip(self):
+        """A11 on the page: the stale chip (clock and word) and under it the sentence the ration is based on, with its age."""
+        WaterMeasurement.all_objects.all().delete()
+        self.water('13.0', unit=self.t2, hours=24 * 5)
+        response, row, _line = self.board_line()
+        warning = row['temperature'].warning
+        self.assertIn('(5 days old)', warning)
+        self.assertTrue(warning.startswith('Based on the temperature from '))
+        self.assertContains(response, f'stale</span><span class="ui-why ui-mt">{warning}</span>', count=1)
 
 
 class PrecedenceTests(ProtocolTestCase):
@@ -497,7 +514,7 @@ class WeighingDialogTests(WorkedExampleTestCase):
         stock_services.record_weighing(self.user, unit=self.t2, batch=self.fish, day=self.today, avg_weight_g=D(94))
         response = self.client.get(reverse('farm:production_units'), {'unit': self.t2.pk})
         self.assertContains(response, 'Today’s ration')
-        self.assertContains(response, '1.22 % at 13.2 °C: 13.762 kg a day, 4 × 3.440 kg')
+        self.assertContains(response, '1.22 % at 13.2 °C: 13.76 kg a day, 4 × 3.44 kg')
         self.assertContains(response, f'{self.fish.code} weighed at 94.0 g, estimated 97.5 g')
 
 
@@ -550,7 +567,7 @@ class ProtocolPageTests(ProtocolTestCase):
         self.create()
         protocol = FeedingProtocol.objects.get()
         url = reverse('farm:feedingprotocol_table', args=[protocol.pk])
-        band = {'feed': str(self.feed.pk), 'meals_per_day': '4', 'expected_fcr': '', 'sfr_120': '1'}
+        band = {'feed': str(self.feed.pk), 'meals_per_day': '4', 'expected_fcr': '', 'sfr_120': '1', 'sfr_140': '1'}
         cases = [
             ([{**band, 'min_weight_g': '0', 'max_weight_g': '50'}, {**band, 'min_weight_g': '60', 'max_weight_g': ''}],
              'The bands must meet: one starts at 60 g, the band before it ends at 50 g.'),
@@ -559,7 +576,7 @@ class ProtocolPageTests(ProtocolTestCase):
             ([], 'A feeding table has at least one band.'),
         ]
         for rows, message in cases:
-            response = self.client.post(url, table_data(protocol.version, '12', rows))
+            response = self.client.post(url, table_data(protocol.version, '12 14', rows))
             self.assertEqual(response.status_code, 422)
             self.assertEqual(response.context['bands'].non_form_errors(), [message])
         whole = {**band, 'min_weight_g': '0', 'max_weight_g': ''}
@@ -567,11 +584,11 @@ class ProtocolPageTests(ProtocolTestCase):
         self.assertEqual(response.context['table_form'].errors['temperatures'],
                          ['A temperature column is between -3 and 40 °C.'])
         stopped = Feed.objects.create(name='Old', code='OLD', feed_type='grower', status='discontinued')
-        response = self.client.post(url, table_data(protocol.version, '12', [{**whole, 'feed': str(stopped.pk)}]))
+        response = self.client.post(url, table_data(protocol.version, '12 14', [{**whole, 'feed': str(stopped.pk)}]))
         self.assertEqual(response.context['bands'].forms[0].errors['feed'], ['Choose an active feed.'])
-        response = self.client.post(url, table_data(protocol.version, '12', [{**whole, 'sfr_120': '16'}]))
+        response = self.client.post(url, table_data(protocol.version, '12 14', [{**whole, 'sfr_120': '16'}]))
         self.assertIn('sfr_120', response.context['bands'].forms[0].errors)
-        stale = self.client.post(url, table_data(protocol.version - 1, '12', [whole]))
+        stale = self.client.post(url, table_data(protocol.version - 1, '12 14', [whole]))
         self.assertIn('Someone else changed this feeding protocol', stale.context['table_form'].non_field_errors()[0])
         self.assertFalse(protocol.bands.exists())
 
@@ -598,10 +615,10 @@ class ProtocolPageTests(ProtocolTestCase):
         self.assertTrue(edit.context['form'].fields['species'].disabled)
         self.assertContains(edit, 'The protocol is assigned, so its table is fixed')
         refused = self.client.post(reverse('farm:feedingprotocol_table', args=[protocol.pk]),
-                                   table_data(protocol.version, '12', [{'min_weight_g': '0', 'max_weight_g': '',
+                                   table_data(protocol.version, '12 14', [{'min_weight_g': '0', 'max_weight_g': '',
                                                                         'feed': str(self.feed.pk),
                                                                         'meals_per_day': '4', 'expected_fcr': '',
-                                                                        'sfr_120': '1'}]))
+                                                                        'sfr_120': '1', 'sfr_140': '1'}]))
         self.assertIn('its table is fixed', refused.context['table_form'].non_field_errors()[0])
         self.assertEqual(protocol.bands.count(), 2)
         retired = self.client.post(reverse('farm:feedingprotocol_edit', args=[protocol.pk]),
@@ -636,6 +653,14 @@ class AssignmentPageTests(ProtocolTestCase):
         data = {'protocol': str(self.protocol.pk), 'valid_from': self.today.isoformat(), 'valid_until': '',
                 'notes': '', 'batch': '', **fields}
         return self.client.post(reverse('farm:protocolassignment_create'), data, headers={'X-Modal': '1'})
+
+    def test_the_dialog_sent_twice_assigns_once_and_the_second_sending_lands_where_the_first_did(self):
+        # Cross review F7b: the dialog carried the form's key and ignored it.
+        key = str(uuid.uuid4())
+        first = self.post(units=[str(self.t1.pk), str(self.t2.pk)], entry_key=key)
+        second = self.post(units=[str(self.t1.pk), str(self.t2.pk)], entry_key=key)
+        self.assertEqual(ProtocolAssignment.objects.count(), 2)
+        self.assertEqual(second['X-Modal-Redirect'], first['X-Modal-Redirect'])
 
     def test_units_a_whole_batch_and_a_batch_in_units(self):
         response = self.post(units=[str(self.t1.pk), str(self.t2.pk)])

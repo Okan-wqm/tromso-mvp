@@ -6,7 +6,6 @@ A read page, as Feeding records is: filters in the address, 50 rows a page, void
 Recording a harvest stays the stock's dialog (a unit's drawer, or a plan's "Record harvest"); voiding one is
 the stock's void. Who may do what: reading needs view on the harvest records (config/access.py, area
 Harvested); the void link needs the stock's void permission."""
-from datetime import date
 from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import permission_required
@@ -16,6 +15,7 @@ from django.utils.translation import gettext as _, ngettext
 
 from core import navigation
 from core.crud import render_page
+from core.dates import read_day
 
 from ..handling import check, fasting
 from ..models import (
@@ -46,14 +46,7 @@ def _context(**extra):
     return {'title': place.entry.label, 'eyebrow': f'{place.section.label} · {place.group.label}', **extra}
 
 
-def _day(value):
-    try:
-        return date.fromisoformat(value)
-    except ValueError:
-        return None
-
-
-def _filtered(params):
+def _filtered(params, request):
     """The harvest lines the filters choose, newest first, voided ones only when asked for; and the filters'
     choices. A value that names nothing there is dropped (a stale link shows everything)."""
     lines = StockMovement.objects.filter(kind=MovementKind.HARVEST).order_by('-operation__date',
@@ -81,8 +74,8 @@ def _filtered(params):
         else:
             params[key] = ''
     for key, lookup in (('from', 'operation__date__gte'), ('to', 'operation__date__lte')):
-        day = _day(params[key])
-        params[key] = day.isoformat() if day else ''
+        day = read_day(params[key], request)
+        params[key] = day or ''          # a date: the input shows it as the language writes it
         if day:
             lines = lines.filter(**{lookup: day})
     return lines, choices
@@ -93,7 +86,7 @@ def harvests(request):
     """Operations › Harvest › Harvested: one row per harvest, the book against the scale, totals per batch
     and per site of the rows the filters choose."""
     params = {key: request.GET.get(key, '').strip() for key in FILTERS}
-    lines, choices = _filtered(params)
+    lines, choices = _filtered(params, request)
     rows = read.harvests(lines)
     live = [row for row in rows if not row.operation.is_deleted]
     page = Paginator(rows, PAGE_SIZE).get_page(request.GET.get('page'))

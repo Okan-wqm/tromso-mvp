@@ -1,0 +1,42 @@
+# B1 noise floors, DECLARED BEFORE ANY OUTPUT OF THE SOURCE WAS COMPARED (plan 6.4): two values agree when
+# |a - b| <= abs + rel * max(|a|, |b|). Above it is a disagreement and becomes a finding (chemcore/findings/B1.md).
+# The floors are what the two implementations' arithmetic alone can explain, nothing more:
+# - V8's Math.exp/log/pow and glibc differ in the last bits (S0 measured 1 to 11 % last-bit differences between two
+#   libms; propagated through a pK and pow(10, -pK) that is about 1e-14 relative), so closed forms get 1e-12.
+# - The source bisects pH to a bracket of 1e-8 (water-quality.ts, ammonia-calc.ts, co2-calc.ts: `hi - lo < 1e-8`),
+#   ours to 1e-10, so a solved pH gets 1e-8.
+# - meq/L quantities that are a difference of near-equal terms (the isoline's intercept [OH-] - [H+] + [B(OH)4-],
+#   the alkalinity floor) get an absolute 1e-12 meq/L besides the relative floor.
+# - The NH3 share at the border is limit / TAN in ours and fraction(border pH) in the source: the source's 1e-8 pH
+#   bracket moves it by about 2.3 x 1e-8 relative (d ln f / d pH = ln 10 (1 - f)).
+
+[floors.closed_form]
+rel = 1e-12
+abs = 0.0
+
+[floors.meq]
+rel = 1e-12
+abs = 1e-12
+
+[floors.source_bisection_ph]
+rel = 0.0
+abs = 1e-8
+
+[floors.border_share]
+rel = 5e-8
+abs = 0.0
+
+# Added after the first run over constants, carbonate, analysis and dosing, BEFORE the chart's points were compared
+# (the chart was then compared only on its current point and whether the safe zone is drawn):
+# - the source rounds every chart point to 4 decimals (toFixed(4), deffeyes-data.ts) and bisects the CO2 and Omega
+#   lines' pH to 1e-7: a chart point gets 1e-4 absolute (mmol/L or meq/L);
+# - the safe zone's corners are DICs at a pH the source bisects to 1e-8: dDIC/dpH reaches about 14 mmol/L per pH, so
+#   2e-7 absolute.
+
+[floors.chart_point]
+rel = 0.0
+abs = 1e-4
+
+[floors.chart_bisected]
+rel = 1e-12
+abs = 2e-7

@@ -28,12 +28,11 @@ from django.utils.translation import gettext_lazy as _
 
 from ..models import SamplingPoint, System
 from ..models.water_point import site_of
-from . import charts, chemistry, deffeyes, dosing, parameters, read
+from . import charts, chemistry, deffeyes, dosing, native, parameters, read
 from .evaluate import Status, judge as judge_bounds
 
 # The calculator's fields a unit or a loop measures, by the parameter they are.
 MEASURED_FIELDS = ['temperature_c', 'ph', 'salinity_ppt', 'alkalinity_mg_l', 'tan_mg_l', 'oxygen_mg_l']
-ALTITUDE_HIGH = 5000            # the calculator's altitude field goes from sea level to this (m)
 # The pH bounds, the field each fills and how the strictest of several species' is picked.
 PH_BOUNDS = [('ph_critical_low', 'critical_low', max), ('ph_warning_low', 'warning_low', max),
              ('ph_warning_high', 'warning_high', min), ('ph_critical_high', 'critical_high', min)]
@@ -66,35 +65,23 @@ class JudgedStep:
     nh3: deffeyes.Border
     h2s_ug_l: float | None
     h2s: deffeyes.Border
-
-    @property
-    def alkalinity_mg_l(self):
-        return self.step.alkalinity * chemistry.MG_CACO3_PER_MEQ
+    alkalinity_mg_l: float | None = None
 
 
 def judge_step(analysis, step, ph_bounds=PhBounds()):
-    """A simulator step judged as the water is: its pH against the pH bounds, its alkalinity against the band
-    (a warning outside it), its CO₂ border at its own alkalinity, its pH against the NH₃ and H₂S borders (which
-    do not depend on the alkalinity). A dose can take a water to a pH no fish lives in, with nothing else wrong."""
-    eq, limits, ph = analysis.equilibria, analysis.limits, step.ph
-    if ph is None:
+    """A simulator step judged as the water is (the core's, chemcore/core/src/analysis.rs `judge_step`): its pH against
+    the pH bounds, its alkalinity against the band (a warning outside it), its CO₂ border at its own alkalinity, its pH
+    against the NH₃ and H₂S borders (which do not depend on the alkalinity). A dose can take a water to a pH no fish
+    lives in, with nothing else wrong."""
+    if step.ph is None:
         none = deffeyes.Border(None, False, None, Status.NOT_MEASURED)
         return JudgedStep(step, Status.NOT_MEASURED, Status.NOT_MEASURED, none, None, none, None, none)
-    ph_status = judge_bounds(ph, ph_bounds) if ph_bounds.given else Status.NO_LIMIT
-    low, high = limits.alkalinity_low_mg_l, limits.alkalinity_high_mg_l
-    alkalinity = step.alkalinity * chemistry.MG_CACO3_PER_MEQ
-    alkalinity_status = (Status.NO_LIMIT if low is None or high is None
-                         else Status.OK if low <= alkalinity <= high else Status.WARNING)
-    co2_limit = None if limits.co2_mg_l is None else limits.co2_mg_l / chemistry.MG_CO2_PER_MMOL
-    co2 = deffeyes.judge(ph, None if co2_limit is None else eq.ph_where_co2(step.alkalinity, co2_limit), False,
-                         Status.NO_LIMIT if co2_limit is None else None)
-    missing = {Status.NOT_MEASURED, Status.NO_LIMIT}
-    nh3 = deffeyes.judge(ph, analysis.nh3.ph, True, analysis.nh3.status if analysis.nh3.status in missing else None)
-    h2s = deffeyes.judge(ph, analysis.h2s.ph, False, analysis.h2s.status if analysis.h2s.status in missing else None)
-    tan, sulfide = analysis.water.tan_mg_l, analysis.water.total_sulfide_ug_l
+    ph_status = judge_bounds(step.ph, ph_bounds) if ph_bounds.given else Status.NO_LIMIT
+    water, limits, target, pressure = deffeyes._inputs(analysis)
+    found = native.judge_step(water, limits, step.ph, step.alkalinity, target, pressure)
     return JudgedStep(
-        step, ph_status, alkalinity_status, co2, None if tan is None else tan * eq.nh3_share(ph), nh3,
-        None if sulfide is None else sulfide * chemistry.H2S_PER_S * eq.h2s_share(ph), h2s)
+        step, ph_status, Status(found['alkalinity_status']), deffeyes._border(found['co2']), found['nh3_n_mg_l'],
+        deffeyes._border(found['nh3']), found['h2s_ug_l'], deffeyes._border(found['h2s']), found['alkalinity_mg_l'])
 
 
 # ---- the calculator's values as the analysis takes them ---------------------------------------------------
@@ -166,11 +153,6 @@ def calculate(water, limits, target, pressure, layers, chosen=(), volume=None, a
     start = (analysis.dic, analysis.alkalinity_meq)
     end = None if target is None else (analysis.target_dic, analysis.target_alkalinity_meq)
     air = chemistry.co2_from_air(water.temperature_c, water.salinity_ppt, pressure)
-
-    def below_air(dic, alkalinity):
-        ph = eq.ph_at(dic, alkalinity)
-        return ph is None or eq.co2(dic, ph) * chemistry.MG_CO2_PER_MMOL < air
-
     reagents = [reagent for reagent in dosing.REAGENTS if reagent.key in chosen]
     calculation = Calculation(analysis, None, {}, reagents, volume, air_co2_mg_l=air)
     if end is None:
@@ -180,7 +162,8 @@ def calculate(water, limits, target, pressure, layers, chosen=(), volume=None, a
     elif len(reagents) < 2:
         calculation.recipes_note = _('A recipe takes two reagents: choose at least two (the Reagents tab).')
     else:
-        calculation.recipes = dosing.recipes(start, end, chosen, volume, below_air)
+        calculation.recipes = dosing.recipes(start, end, chosen, volume,
+                                             (water.temperature_c, water.salinity_ppt, air))
         if not calculation.recipes:
             calculation.recipes_note = _('No two of the chosen reagents reach the target: choose others.')
     if amounts:
@@ -226,7 +209,7 @@ def offers(owner, now=None, point=None, water=None):
         if reading is not None and reading.value is not None:
             found[name] = Offer(name, reading.value, reading=reading)
     site = site_of(owner)
-    if site is not None and site.altitude is not None and 0 <= site.altitude <= ALTITUDE_HIGH:
+    if site is not None and site.altitude is not None:        # the database holds its range (models.site)
         found['altitude_m'] = Offer('altitude_m', Decimal(round(site.altitude)))
     found.update(fish_limits(owner))
     return found

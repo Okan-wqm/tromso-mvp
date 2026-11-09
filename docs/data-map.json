@@ -1528,6 +1528,7 @@
         "core/test_languages.py",
         "core/tests.py",
         "core/tests_crud_mount.py",
+        "core/tests_entry_key.py",
         "core/tests_platform.py",
         "core/tests_scope.py",
         "core/tests_workspaces.py",
@@ -1540,11 +1541,15 @@
         "farm/tests/test_feeding.py",
         "farm/tests/test_feeds.py",
         "farm/tests/test_harvest.py",
+        "farm/tests/test_harvest_inside_withdrawal.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_lice_reason.py",
+        "farm/tests/test_migration_altitude.py",
         "farm/tests/test_opening_balance.py",
         "farm/tests/test_production_departments.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
+        "farm/tests/test_site_structure.py",
         "farm/tests/test_sites.py",
         "farm/tests/test_species.py",
         "farm/tests/test_stock.py",
@@ -1553,6 +1558,9 @@
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
+        "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_guard.py",
+        "farm/tests/test_withdrawal_rule_change.py",
         "knowledge/tests/test_documents.py",
         "knowledge/tests/test_entries.py",
         "knowledge/tests/test_languages.py",
@@ -1568,12 +1576,16 @@
         "reports/tests/test_questions.py",
         "reports/tests/test_slaughter_duty.py",
         "reports/tests/test_tabs.py",
+        "reports/tests/test_take_away_once.py",
         "tasks/tests/test_pages.py",
         "tasks/tests/test_series.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_departments.py",
         "hr/tests/test_employees.py",
+        "hr/tests/test_employment_bounds.py",
         "hr/tests/test_leave.py",
+        "hr/tests/test_leave_correction.py",
+        "hr/tests/test_own_record.py",
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm.py",
         "hr/tests/test_review.py",
@@ -1597,8 +1609,102 @@
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_operations.py",
         "sensors/tests/test_pages.py",
+        "sensors/tests/test_portable.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_pages.py"
+      ]
+    },
+    {
+      "app": "core",
+      "model": "EntryKey",
+      "table": "entry_keys",
+      "description": "The key a new-record form carries (core.crud.ENTRY_KEY) and the record its first sending created, for every kind of record (F-232): the same form sent twice, by a double click, a retried request or two sendings at once, creates one record, and the second sending opens it.",
+      "columns": [
+        {
+          "name": "key",
+          "field": "key",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "entity_type",
+          "field": "entity_type",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.crud when a form creates a record"
+        },
+        {
+          "name": "entity_id",
+          "field": "entity_id",
+          "type": "varchar(64)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.crud when a form creates a record"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        }
+      ],
+      "constraints": [],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "written by the code: a new record a form creates stores the form's key with it (core.crud, F-232)"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "a key belongs to the sending that created its record"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "kept, so a form sent again later still opens the record it created"
+        },
+        "read": {
+          "status": "none",
+          "paths": [],
+          "why": "read only by the form path, to find the record a key created"
+        }
+      },
+      "note": "The same form sent twice creates one record: the second sending finds the first one's record here.",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Administration",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_entry_key.py",
+        "farm/tests/test_water_points.py",
+        "tasks/tests/test_pages.py"
       ]
     },
     {
@@ -4359,17 +4465,6 @@
           ],
           "how": "form",
           "why": ""
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -4523,6 +4618,7 @@
       },
       "tests": [
         "core/test_datamap.py",
+        "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "experiments/tests/__init__.py",
         "experiments/tests/test_amend.py",
@@ -5083,7 +5179,9 @@
         "farm/tests/test_stock.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_compute.py",
+        "reports/tests/test_cross_review.py",
         "reports/tests/test_lice.py",
+        "reports/tests/test_probe_review.py",
         "tasks/tests/test_pages.py",
         "experiments/tests/test_deviations.py",
         "monitoring/tests/test_golden.py"
@@ -5730,7 +5828,8 @@
         "tasks/tests/__init__.py",
         "tasks/tests/test_pages.py",
         "sensors/tests/test_bindings.py",
-        "sensors/tests/test_pages.py"
+        "sensors/tests/test_pages.py",
+        "sensors/tests/test_portable.py"
       ]
     },
     {
@@ -6109,7 +6208,8 @@
         "inventory/tests/test_pages.py",
         "tasks/tests/__init__.py",
         "sensors/tests/test_bindings.py",
-        "sensors/tests/test_pages.py"
+        "sensors/tests/test_pages.py",
+        "sensors/tests/test_portable.py"
       ]
     },
     {
@@ -7572,6 +7672,7 @@
       },
       "tests": [
         "core/tests_workspaces.py",
+        "farm/tests/test_one_column_table.py",
         "farm/tests/test_protocols.py",
         "reports/tests/test_compute.py",
         "experiments/tests/__init__.py",
@@ -7851,17 +7952,6 @@
           "on_form": [],
           "how": "system",
           "why": "the reason typed in the void dialog"
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -7996,10 +8086,12 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_feeding.py",
         "farm/tests/test_protocols.py",
+        "farm/tests/test_withdrawal_gate.py",
         "reports/tests/test_compute.py",
         "monitoring/tests/test_pages.py"
       ]
@@ -8657,9 +8749,13 @@
         "farm/tests/test_feeding.py",
         "farm/tests/test_feeds.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_probe_review.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_suppliers.py",
+        "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_gate_coverage.py",
+        "farm/tests/test_withdrawal_guard.py",
         "knowledge/tests/test_entries.py",
         "knowledge/tests/test_search.py",
         "messaging/tests/test_pages.py",
@@ -8736,6 +8832,32 @@
             "withdrawal",
             "fasting"
           ],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the person was shown when they acknowledged the warning: the handling check (farm/handling/check.py) works it out and the service stores it"
+        },
+        {
+          "name": "batch_id",
+          "field": "batch",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "batches",
+            "model": "farm.Batch",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "computed",
+          "why": "what the person was shown when they acknowledged the warning: the handling check (farm/handling/check.py) works it out and the service stores it"
+        },
+        {
+          "name": "withdrawal_source",
+          "field": "withdrawal_source",
+          "type": "varchar(80)",
+          "null": false,
+          "choices": [],
           "link": null,
           "on_form": [],
           "how": "computed",
@@ -8995,6 +9117,7 @@
       "tests": [
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_lice_reason.py",
         "farm/tests/test_migration_purging.py"
       ]
     },
@@ -9453,11 +9576,16 @@
         "core/tests_workspaces.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_harvest.py",
+        "farm/tests/test_plan_moved.py",
         "farm/tests/test_protocols.py",
         "reports/tests/test_compute.py",
+        "reports/tests/test_cross_review.py",
+        "reports/tests/test_deadline.py",
         "reports/tests/test_due.py",
+        "reports/tests/test_labels.py",
         "reports/tests/test_lice.py",
         "reports/tests/test_pages.py",
+        "reports/tests/test_probe_review.py",
         "reports/tests/test_slaughter_duty.py",
         "reports/tests/test_tabs.py",
         "monitoring/tests/test_read.py"
@@ -9796,7 +9924,8 @@
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
         "farm/tests/test_migration_purging.py",
-        "reports/tests/test_compute.py"
+        "reports/tests/test_compute.py",
+        "reports/tests/test_deadline.py"
       ]
     },
     {
@@ -10609,9 +10738,11 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_health.py",
         "reports/tests/test_due.py",
+        "reports/tests/test_labels.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_tabs.py",
         "reports/tests/test_unexplained.py",
@@ -10841,17 +10972,6 @@
           "on_form": [],
           "how": "system",
           "why": "the reason typed in the void dialog"
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -10978,6 +11098,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_health.py",
         "monitoring/tests/test_golden.py"
@@ -11251,7 +11372,8 @@
       "tests": [
         "core/test_languages.py",
         "farm/tests/test_health.py",
-        "farm/tests/test_migration_withdrawals.py"
+        "farm/tests/test_migration_withdrawals.py",
+        "farm/tests/test_withdrawal_gate.py"
       ]
     },
     {
@@ -12004,7 +12126,7 @@
           "link": {
             "table": "sites",
             "model": "farm.Site",
-            "on_delete": "SET_NULL"
+            "on_delete": "CASCADE"
           },
           "on_form": [
             "ProductionDepartmentForm › Details"
@@ -12156,6 +12278,12 @@
           "kind": "check",
           "fields": [],
           "conditional": false
+        },
+        {
+          "name": "chk_production_departments_live_on_a_site",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
         }
       ],
       "screens": {
@@ -12255,14 +12383,20 @@
       "tests": [
         "core/test_database.py",
         "core/test_languages.py",
+        "core/tests_design_shell.py",
+        "core/tests_entry_key.py",
+        "core/tests_query_pages.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
+        "farm/tests/test_lock_order.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_production_departments.py",
         "farm/tests/test_restore.py",
+        "farm/tests/test_site_structure.py",
+        "farm/tests/test_sites.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_suppliers.py",
         "farm/tests/test_systems.py",
@@ -12281,6 +12415,7 @@
         "hr/tests/test_leave_type_privacy.py",
         "hr/tests/test_org_tree.py",
         "hr/tests/test_overview_chart.py",
+        "hr/tests/test_own_record.py",
         "hr/tests/test_production_permissions.py",
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm.py",
@@ -12293,7 +12428,9 @@
         "experiments/tests/test_start.py",
         "monitoring/tests/test_templates_db.py",
         "sensors/tests/__init__.py",
+        "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
+        "sensors/tests/test_portable.py",
         "alarms/tests/__init__.py"
       ]
     },
@@ -13787,6 +13924,12 @@
           "conditional": false
         },
         {
+          "name": "chk_sites_altitude_range",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
           "name": "chk_sites_coordinates_paired",
           "kind": "check",
           "fields": [],
@@ -13794,6 +13937,12 @@
         },
         {
           "name": "chk_sites_sea_cage_location",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sites_timezone_given",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -13924,8 +14073,12 @@
         "core/test_languages.py",
         "core/tests.py",
         "core/tests_crud_mount.py",
+        "core/tests_design_shell.py",
+        "core/tests_entry_key.py",
+        "core/tests_query_pages.py",
         "core/tests_schema.py",
         "core/tests_scope.py",
+        "core/tests_template_clocks.py",
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
         "farm/tests/test_calculator.py",
@@ -13934,10 +14087,14 @@
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_lock_order.py",
+        "farm/tests/test_migration_altitude.py",
         "farm/tests/test_migration_points.py",
+        "farm/tests/test_migration_site_zone.py",
         "farm/tests/test_production_departments.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
+        "farm/tests/test_site_structure.py",
         "farm/tests/test_sites.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_suppliers.py",
@@ -13949,6 +14106,7 @@
         "reports/tests/helpers.py",
         "reports/tests/test_due.py",
         "reports/tests/test_duties.py",
+        "reports/tests/test_labels.py",
         "reports/tests/test_lice.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_research.py",
@@ -13971,7 +14129,9 @@
         "experiments/tests/test_start.py",
         "monitoring/tests/test_templates_db.py",
         "sensors/tests/__init__.py",
+        "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
+        "sensors/tests/test_portable.py",
         "sensors/tests/test_read.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_migration.py"
@@ -15044,10 +15204,13 @@
         "farm/tests/test_restore.py",
         "farm/tests/test_species.py",
         "farm/tests/test_stock.py",
+        "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_gate_coverage.py",
         "knowledge/tests/test_documents.py",
         "knowledge/tests/test_entries.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_compute.py",
+        "reports/tests/test_labels.py",
         "hr/tests/test_production_permissions.py",
         "experiments/tests/test_overview.py",
         "experiments/tests/test_pages.py",
@@ -15594,6 +15757,7 @@
         "farm/tests/test_escape_delivery.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_stock.py",
+        "farm/tests/test_withdrawal_gate.py",
         "reports/tests/test_cleaner.py",
         "experiments/tests/test_overview.py"
       ]
@@ -15820,17 +15984,6 @@
           ],
           "how": "form",
           "why": ""
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -16106,6 +16259,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_escape_delivery.py",
@@ -16115,6 +16269,7 @@
         "farm/tests/test_opening_balance.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_stock.py",
+        "farm/tests/test_withdrawal_gate.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_tabs.py",
@@ -16991,6 +17146,7 @@
         "inventory/tests/test_pages.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_compute.py",
+        "reports/tests/test_deadline.py",
         "reports/tests/test_pages.py"
       ]
     },
@@ -17400,6 +17556,7 @@
         "core/test_languages.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
+        "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_health.py",
         "farm/tests/test_migration_points.py",
@@ -17410,14 +17567,18 @@
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
+        "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_gate_coverage.py",
         "tasks/tests/__init__.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_places.py",
         "monitoring/tests/test_resolve.py",
         "monitoring/tests/test_templates_db.py",
+        "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_history.py",
+        "sensors/tests/test_portable.py",
         "sensors/tests/test_read.py",
         "sensors/tests/test_replay.py",
         "alarms/tests/__init__.py"
@@ -18435,12 +18596,18 @@
         "farm/tests/test_feeding.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_lock_order.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_protocols.py",
+        "farm/tests/test_site_structure.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
+        "farm/tests/test_water_oxygen_basis.py",
         "farm/tests/test_water_points.py",
+        "farm/tests/test_water_resolver.py",
+        "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_gate_coverage.py",
         "inventory/tests/test_services.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_deviations.py",
@@ -18451,7 +18618,8 @@
         "monitoring/tests/test_golden.py",
         "monitoring/tests/test_templates_db.py",
         "monitoring/tests/test_token.py",
-        "sensors/tests/test_pages.py"
+        "sensors/tests/test_pages.py",
+        "sensors/tests/test_portable.py"
       ]
     },
     {
@@ -18570,7 +18738,9 @@
         "masked": [],
         "left_out": false
       },
-      "tests": []
+      "tests": [
+        "farm/tests/test_withdrawal_gate.py"
+      ]
     },
     {
       "app": "farm",
@@ -18933,17 +19103,6 @@
           "on_form": [],
           "how": "system",
           "why": "the reason typed in the void dialog"
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -19142,8 +19301,12 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_entry_key.py",
         "core/tests_workspaces.py",
+        "farm/tests/test_harvest_inside_withdrawal.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_gate_coverage.py",
         "reports/tests/test_lice.py",
         "monitoring/tests/test_golden.py"
       ]
@@ -19552,8 +19715,10 @@
         "core/test_languages.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
+        "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_water.py",
         "monitoring/tests/__init__.py",
+        "monitoring/tests/test_extras.py",
         "alarms/tests/__init__.py"
       ]
     },
@@ -19855,6 +20020,106 @@
           "why": "one field for each water parameter (farm.forms.water.MEASURED)"
         },
         {
+          "name": "oxygen_basis_temperature_c",
+          "field": "oxygen_basis_temperature_c",
+          "type": "numeric(3, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
+          "name": "oxygen_basis_temperature_source",
+          "field": "oxygen_basis_temperature_source",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [
+            "manual",
+            "lab",
+            "sensor",
+            "system_sensor",
+            "fresh_water"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
+          "name": "oxygen_basis_temperature_channel",
+          "field": "oxygen_basis_temperature_channel",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
+          "name": "oxygen_basis_temperature_at",
+          "field": "oxygen_basis_temperature_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
+          "name": "oxygen_basis_salinity_ppt",
+          "field": "oxygen_basis_salinity_ppt",
+          "type": "numeric(3, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
+          "name": "oxygen_basis_salinity_source",
+          "field": "oxygen_basis_salinity_source",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [
+            "manual",
+            "lab",
+            "sensor",
+            "system_sensor",
+            "fresh_water"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
+          "name": "oxygen_basis_salinity_channel",
+          "field": "oxygen_basis_salinity_channel",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
+          "name": "oxygen_basis_salinity_at",
+          "field": "oxygen_basis_salinity_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
+        },
+        {
           "name": "notes",
           "field": "notes",
           "type": "varchar(500)",
@@ -19880,17 +20145,6 @@
           ],
           "how": "form",
           "why": ""
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -19985,12 +20239,15 @@
           "conditional": false
         },
         {
-          "name": "uq_water_measurements_entry",
-          "kind": "unique",
-          "fields": [
-            "entry_key",
-            "measured_at"
-          ],
+          "name": "chk_water_measurements_oxygen_basis_temperature",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_water_measurements_oxygen_basis_salinity",
+          "kind": "check",
+          "fields": [],
           "conditional": false
         }
       ],
@@ -20119,6 +20376,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_deffeyes.py",
@@ -20127,7 +20385,13 @@
         "farm/tests/test_migration_points.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_water.py",
+        "farm/tests/test_water_oxygen_basis.py",
         "farm/tests/test_water_points.py",
+        "farm/tests/test_water_resolver.py",
+        "farm/tests/test_water_review3.py",
+        "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_gate_coverage.py",
+        "farm/tests/test_withdrawal_guard.py",
         "reports/tests/test_compute.py",
         "monitoring/tests/test_pages.py"
       ]
@@ -20592,9 +20856,354 @@
         "farm/tests/test_calculator.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_water.py",
+        "farm/tests/test_water_followups.py",
         "farm/tests/test_water_points.py",
+        "farm/tests/test_water_review3.py",
         "farm/tests/test_water_sources.py",
+        "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_gate_coverage.py",
         "reports/tests/test_lice.py"
+      ]
+    },
+    {
+      "app": "farm",
+      "model": "WithdrawalAcknowledgement",
+      "table": "withdrawal_acknowledgements",
+      "description": "One warning a person went on past when a write changed a medicine withdrawal (the withdrawal guard, farm.health.withdrawal.guarded, which every such write goes through: a treatment, its last day or void, a medicated feeding or its void, a medicine's withdrawal rows, a water sample, a stock operation): a harvest already recorded now lies inside a withdrawal (`harvested`, naming the harvest), or fish held today are freed by it (`released`).",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "record_type",
+          "field": "record_type",
+          "type": "varchar(60)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the withdrawal guard found and the person was shown, stored when they went on"
+        },
+        {
+          "name": "record_id",
+          "field": "record_id",
+          "type": "varchar(64)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the withdrawal guard found and the person was shown, stored when they went on"
+        },
+        {
+          "name": "record_label",
+          "field": "record_label",
+          "type": "varchar(255)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the withdrawal guard found and the person was shown, stored when they went on"
+        },
+        {
+          "name": "warning",
+          "field": "warning",
+          "type": "varchar(12)",
+          "null": false,
+          "choices": [
+            "harvested",
+            "released"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the withdrawal guard found and the person was shown, stored when they went on"
+        },
+        {
+          "name": "batch_id",
+          "field": "batch",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "batches",
+            "model": "farm.Batch",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "computed",
+          "why": "what the withdrawal guard found and the person was shown, stored when they went on"
+        },
+        {
+          "name": "harvest_id",
+          "field": "harvest",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "stock_operations",
+            "model": "farm.StockOperation",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "computed",
+          "why": "what the withdrawal guard found and the person was shown, stored when they went on"
+        },
+        {
+          "name": "source",
+          "field": "source",
+          "type": "varchar(80)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the withdrawal guard found and the person was shown, stored when they went on"
+        },
+        {
+          "name": "until",
+          "field": "until",
+          "type": "date",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the withdrawal guard found and the person was shown, stored when they went on"
+        },
+        {
+          "name": "approximate",
+          "field": "approximate",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the withdrawal guard found and the person was shown, stored when they went on"
+        },
+        {
+          "name": "reason",
+          "field": "reason",
+          "type": "varchar(500)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the withdrawal guard found and the person was shown, stored when they went on"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_withdrawal_acknowledgements_warning",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_withdrawal_acknowledgements_harvest",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "farm:treatment_record",
+              "url_names": [
+                "farm:treatment_record"
+              ],
+              "routes": [
+                "/operations/health/treatments/new/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:treatment_last_day",
+              "url_names": [
+                "farm:treatment_last_day"
+              ],
+              "routes": [
+                "/operations/health/treatments/<uuid:pk>/last-day/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:treatment_void",
+              "url_names": [
+                "farm:treatment_void"
+              ],
+              "routes": [
+                "/operations/health/treatments/<uuid:pk>/void/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:feeding_record",
+              "url_names": [
+                "farm:feeding_record"
+              ],
+              "routes": [
+                "/operations/units/<uuid:pk>/feeding/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:feeding_void",
+              "url_names": [
+                "farm:feeding_void"
+              ],
+              "routes": [
+                "/operations/feeding/void/<uuid:pk>/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:water_record",
+              "url_names": [
+                "farm:water_record"
+              ],
+              "routes": [
+                "/operations/water/record/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:water_round",
+              "url_names": [
+                "farm:water_round"
+              ],
+              "routes": [
+                "/operations/water/round/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:water_void",
+              "url_names": [
+                "farm:water_void"
+              ],
+              "routes": [
+                "/operations/water/void/<uuid:pk>/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:stock_harvest",
+              "url_names": [
+                "farm:stock_harvest"
+              ],
+              "routes": [
+                "/operations/units/<uuid:pk>/harvest/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:stock_transfer",
+              "url_names": [
+                "farm:stock_transfer"
+              ],
+              "routes": [
+                "/operations/units/<uuid:pk>/transfer/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:stock_void",
+              "url_names": [
+                "farm:stock_void"
+              ],
+              "routes": [
+                "/operations/units/void/<uuid:pk>/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:medicine_withdrawals",
+              "url_names": [
+                "farm:medicine_withdrawals"
+              ],
+              "routes": [
+                "/medicines/<uuid:pk>/withdrawals/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only (a database trigger): what the person went on past stays as it was"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only (a database trigger): voiding the write leaves them as history"
+        },
+        "read": {
+          "status": "gap",
+          "paths": [],
+          "why": "no page lists them yet: check_withdrawal reads them, and the write's critical log entry says what was acknowledged"
+        }
+      },
+      "note": "One row for each warning of the withdrawal guard (farm.health.withdrawal.guarded) the person went on past: a harvest already recorded brought inside a withdrawal, or fish held today freed by the write.",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Facility",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "farm/tests/test_harvest_inside_withdrawal.py",
+        "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_guard.py"
       ]
     },
     {
@@ -20783,17 +21392,6 @@
           ],
           "how": "form",
           "why": ""
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -20960,7 +21558,9 @@
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_crew.py",
+        "hr/tests/test_employment_bounds.py",
         "hr/tests/test_hardening.py",
+        "hr/tests/test_menu_access.py",
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm.py",
         "hr/tests/test_review.py"
@@ -21324,10 +21924,14 @@
         "hr/tests/test_boundary.py",
         "hr/tests/test_crew.py",
         "hr/tests/test_employees.py",
+        "hr/tests/test_employment_bounds.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
+        "hr/tests/test_leave_correction.py",
         "hr/tests/test_leave_impact.py",
         "hr/tests/test_leave_type_privacy.py",
+        "hr/tests/test_menu_access.py",
+        "hr/tests/test_own_record.py",
         "hr/tests/test_production_permissions.py",
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm.py",
@@ -21851,17 +22455,6 @@
           "on_form": [],
           "how": "system",
           "why": "when it was decided, or when a type that needs no approval was filed"
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -22027,10 +22620,13 @@
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_crew.py",
+        "hr/tests/test_employment_bounds.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
+        "hr/tests/test_leave_correction.py",
         "hr/tests/test_leave_impact.py",
         "hr/tests/test_leave_type_privacy.py",
+        "hr/tests/test_menu_access.py",
         "hr/tests/test_on_shift.py",
         "hr/tests/test_overview_chart.py",
         "hr/tests/test_production_permissions.py",
@@ -22351,10 +22947,12 @@
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_crew.py",
+        "hr/tests/test_employment_bounds.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_impact.py",
         "hr/tests/test_leave_type_privacy.py",
+        "hr/tests/test_menu_access.py",
         "hr/tests/test_on_shift.py",
         "hr/tests/test_overview_chart.py",
         "hr/tests/test_production_permissions.py",
@@ -23024,10 +23622,12 @@
       "tests": [
         "farm/tests/test_systems.py",
         "hr/tests/helpers_people.py",
+        "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_employees.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
+        "hr/tests/test_own_record.py",
         "hr/tests/test_realm.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scope.py",
@@ -23721,9 +24321,11 @@
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_crew.py",
+        "hr/tests/test_employment_bounds.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_impact.py",
+        "hr/tests/test_menu_access.py",
         "hr/tests/test_on_shift.py",
         "hr/tests/test_overview_chart.py",
         "hr/tests/test_production_permissions.py",
@@ -24104,9 +24706,11 @@
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_crew.py",
+        "hr/tests/test_employment_bounds.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_impact.py",
+        "hr/tests/test_menu_access.py",
         "hr/tests/test_on_shift.py",
         "hr/tests/test_overview_chart.py",
         "hr/tests/test_production_permissions.py",
@@ -25347,17 +25951,6 @@
           ],
           "how": "form",
           "why": ""
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -25585,6 +26178,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "inventory/tests/test_pages.py",
         "inventory/tests/test_services.py"
@@ -27052,11 +27646,13 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_escaping.py",
         "core/tests_workspaces.py",
         "knowledge/tests/test_documents.py",
         "knowledge/tests/test_entries.py",
         "knowledge/tests/test_languages.py",
-        "knowledge/tests/test_search.py"
+        "knowledge/tests/test_search.py",
+        "inventory/tests/test_words.py"
       ]
     },
     {
@@ -30056,7 +30652,7 @@
           "why": ""
         }
       },
-      "note": "The layout is edited on the Design tab (the designer fills the JSON the validator checks); the layout version is stamped from the layout. The three built-ins come from migration 0002 and a trigger keeps them as they are: Copy makes an editable one. Deleting a template deletes its rules and detaches the boards and templates that point at it; restoring brings back only the template.",
+      "note": "The layout is edited on the Design tab (the designer fills the JSON the validator checks); the layout version is stamped from the layout. The three built-ins come from migration 0002 and a trigger keeps them as they are: Copy makes an editable one. Deleting a template deletes its rules and detaches the boards and templates that point at it; restoring brings back the template with its rules (the boards and templates stay detached).",
       "forms": [
         {
           "form": "CardTemplateForm",
@@ -30325,7 +30921,8 @@
         "left_out": false
       },
       "tests": [
-        "reports/tests/test_slaughter_duty.py"
+        "reports/tests/test_slaughter_duty.py",
+        "reports/tests/test_take_away_once.py"
       ]
     },
     {
@@ -30540,7 +31137,8 @@
         "left_out": false
       },
       "tests": [
-        "reports/tests/test_duties.py"
+        "reports/tests/test_duties.py",
+        "reports/tests/test_take_away_once.py"
       ]
     },
     {
@@ -31500,6 +32098,17 @@
           "why": "frozen by reports/services.py when the filing is recorded"
         },
         {
+          "name": "scope_version",
+          "field": "scope_version",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "frozen by reports/services.py when the filing is recorded"
+        },
+        {
           "name": "created_at",
           "field": "created_at",
           "type": "timestamp with time zone",
@@ -31610,7 +32219,8 @@
         "reports/tests/test_due.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_pages.py",
-        "reports/tests/test_preview.py"
+        "reports/tests/test_preview.py",
+        "reports/tests/test_scope_version.py"
       ]
     },
     {
@@ -32516,22 +33126,6 @@
           "why": ""
         },
         {
-          "name": "harvest_condition",
-          "field": "harvest_condition",
-          "type": "varchar(10)",
-          "null": false,
-          "choices": [
-            "round",
-            "gutted"
-          ],
-          "link": null,
-          "on_form": [
-            "ReportForm › Report"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
           "name": "no_cleaner_feed",
           "field": "no_cleaner_feed",
           "type": "boolean",
@@ -32612,12 +33206,6 @@
         },
         {
           "name": "chk_regulatory_reports_escape",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_regulatory_reports_harvest_condition",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -32845,7 +33433,6 @@
             "health_event": "Report",
             "escape": "Report",
             "occurred_on": "Report",
-            "harvest_condition": "Report",
             "no_cleaner_feed": "Report",
             "contact_name": "Contact person",
             "contact_email": "Contact person",
@@ -32895,14 +33482,18 @@
         "reports/tests/test_api_call.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_compute.py",
+        "reports/tests/test_cross_review.py",
+        "reports/tests/test_deadline.py",
         "reports/tests/test_delivery.py",
         "reports/tests/test_due.py",
         "reports/tests/test_gaps789.py",
+        "reports/tests/test_labels.py",
         "reports/tests/test_lice.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_opening_balance.py",
         "reports/tests/test_pages.py",
         "reports/tests/test_preview.py",
+        "reports/tests/test_scope_version.py",
         "reports/tests/test_slaughter_duty.py",
         "reports/tests/test_tabs.py",
         "tasks/tests/test_pages.py"
@@ -32950,6 +33541,21 @@
           "on_form": [],
           "how": "computed",
           "why": "written by manage.py check_sensors from the channels’ state"
+        },
+        {
+          "name": "binding_id",
+          "field": "binding",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "sensors_binding",
+            "model": "sensors.Binding",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "computed",
+          "why": "the binding its channel held when it opened: its place; written by manage.py check_sensors"
         },
         {
           "name": "opened_at",
@@ -33590,7 +34196,8 @@
             "on_delete": "CASCADE"
           },
           "on_form": [
-            "BindForm › Binding"
+            "BindForm › Binding",
+            "DeviceMoveForm.device"
           ],
           "how": "form",
           "why": ""
@@ -33607,7 +34214,8 @@
             "on_delete": "DO_NOTHING"
           },
           "on_form": [
-            "BindForm.target"
+            "BindForm.target",
+            "DeviceMoveForm.target"
           ],
           "how": "form",
           "why": ""
@@ -33624,7 +34232,8 @@
             "on_delete": "DO_NOTHING"
           },
           "on_form": [
-            "BindForm.target"
+            "BindForm.target",
+            "DeviceMoveForm.target"
           ],
           "how": "form",
           "why": ""
@@ -33641,7 +34250,8 @@
             "on_delete": "DO_NOTHING"
           },
           "on_form": [
-            "BindForm.target"
+            "BindForm.target",
+            "DeviceMoveForm.target"
           ],
           "how": "form",
           "why": ""
@@ -33657,7 +34267,8 @@
           ],
           "link": null,
           "on_form": [
-            "BindForm › Binding"
+            "BindForm › Binding",
+            "DeviceMoveForm"
           ],
           "how": "form",
           "why": ""
@@ -33670,7 +34281,8 @@
           "choices": [],
           "link": null,
           "on_form": [
-            "BindForm › Binding"
+            "BindForm › Binding",
+            "DeviceMoveForm"
           ],
           "how": "form",
           "why": ""
@@ -33697,7 +34309,8 @@
           "link": null,
           "on_form": [
             "BindForm › Binding",
-            "BindingForm › Binding"
+            "BindingForm › Binding",
+            "DeviceMoveForm"
           ],
           "how": "form",
           "why": ""
@@ -33746,6 +34359,16 @@
               "routes": [
                 "/sensors/bindings/new/"
               ]
+            },
+            {
+              "how": "view",
+              "label": "sensors.views.device_move",
+              "url_names": [
+                "sensors:device_move"
+              ],
+              "routes": [
+                "/sensors/devices/move/"
+              ]
             }
           ],
           "why": ""
@@ -33761,6 +34384,16 @@
               ],
               "routes": [
                 "/sensors/bindings/<uuid:pk>/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "sensors.views.device_move",
+              "url_names": [
+                "sensors:device_move"
+              ],
+              "routes": [
+                "/sensors/devices/move/"
               ]
             }
           ],
@@ -33799,7 +34432,7 @@
           "why": ""
         }
       },
-      "note": "Made by the Move dialog (sensors/bindings.py move), which ends the channel’s open binding at the same moment; an edit changes only the end and the note.",
+      "note": "Made by the Move dialog (sensors/bindings.py move), which ends the channel’s open binding at the same moment, or for every channel of a device by the Move device dialog (move_device, which also takes a device out of the water); an edit changes only the end and the note.",
       "forms": [
         {
           "form": "BindForm",
@@ -33821,6 +34454,17 @@
             "note": "Binding",
             "version": ""
           }
+        },
+        {
+          "form": "DeviceMoveForm",
+          "module": "sensors.forms",
+          "fields": {
+            "device": "",
+            "target": "",
+            "role": "",
+            "valid_from": "",
+            "note": ""
+          }
         }
       ],
       "delete_kind": "soft delete through the delete plan",
@@ -33836,9 +34480,11 @@
       },
       "tests": [
         "core/tests_workspaces.py",
+        "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_demo.py",
-        "sensors/tests/test_history.py"
+        "sensors/tests/test_history.py",
+        "sensors/tests/test_portable.py"
       ]
     },
     {
@@ -34726,6 +35372,7 @@
         "sensors/tests/test_contract.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_pages.py",
+        "sensors/tests/test_portable.py",
         "sensors/tests/test_replay.py",
         "sensors/tests/test_schema.py"
       ]
@@ -34941,6 +35588,7 @@
         "sensors/tests/test_demo.py",
         "sensors/tests/test_history.py",
         "sensors/tests/test_operations.py",
+        "sensors/tests/test_portable.py",
         "sensors/tests/test_read.py"
       ]
     },
@@ -36482,6 +37130,16 @@
               "routes": [
                 "/sensors/devices/<uuid:pk>/"
               ]
+            },
+            {
+              "how": "view",
+              "label": "sensors.views.device_move",
+              "url_names": [
+                "sensors:device_move"
+              ],
+              "routes": [
+                "/sensors/devices/move/"
+              ]
             }
           ],
           "why": ""
@@ -36519,7 +37177,7 @@
           "why": ""
         }
       },
-      "note": "",
+      "note": "Its site is where it is placed: a move to a place of another site changes it (Move device), the form only while it is out of the water.",
       "forms": [
         {
           "form": "DeviceForm",
@@ -36561,6 +37219,7 @@
         "sensors/tests/test_demo.py",
         "sensors/tests/test_operations.py",
         "sensors/tests/test_pages.py",
+        "sensors/tests/test_portable.py",
         "sensors/tests/test_read.py",
         "sensors/tests/test_schema.py"
       ]
@@ -37491,6 +38150,7 @@
       },
       "tests": [
         "core/test_datamap.py",
+        "core/test_text.py",
         "core/tests_workspaces.py",
         "knowledge/tests/test_extraction.py",
         "experiments/tests/test_overview.py",
@@ -38390,17 +39050,6 @@
           "name": "generated_until",
           "field": "generated_until",
           "type": "date",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
           "null": true,
           "choices": [],
           "link": null,
@@ -39344,17 +39993,6 @@
           "on_form": [],
           "how": "system",
           "why": "not editable: set by the code"
-        },
-        {
-          "name": "entry_key",
-          "field": "entry_key",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -39594,6 +40232,12 @@
       "table": "farm.EquipmentType",
       "what": "read",
       "why": "no page lists the equipment catalogue: a type only shows as the choice on the Equipment form",
+      "weight": 3
+    },
+    {
+      "table": "farm.WithdrawalAcknowledgement",
+      "what": "read",
+      "why": "no page lists them yet: check_withdrawal reads them, and the write's critical log entry says what was acknowledged",
       "weight": 3
     },
     {

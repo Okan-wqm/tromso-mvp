@@ -1,4 +1,7 @@
+from datetime import datetime
+
 from django import forms
+from django.utils import formats
 
 # The value of a choice that means "without one": a production department without a site, in a list's
 # filter (core.crud.filter_by) and as the value a DependentSelect's source can take, so the choices that
@@ -62,3 +65,35 @@ class Output(forms.Widget):
 
     def value_omitted_from_data(self, data, files, name):
         return True
+
+
+# ---- a date and a moment, the European way in every language (owner rule) -------------------------------------------
+# A browser's own date box says a date in the browser's language, not the page's (11/06/2026 09:19 AM), so a date is a
+# text box typed and shown dd.mm.yyyy and a moment dd.mm.yyyy HH:MM (config/formats/<language>/formats.py, ISO read too),
+# an example as its placeholder; frontend/date-input.ts puts what is typed that way. Every form takes these
+# (core/tests_date_inputs.py).
+EXAMPLE = datetime(2026, 10, 26, 7, 30)
+
+
+class DayInput(forms.DateInput):
+    input_type = 'text'
+    kind = 'day'
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        context['widget']['attrs'].setdefault('placeholder', formats.localize_input(EXAMPLE.date()))
+        context['widget']['attrs'].setdefault('autocomplete', 'off')
+        context['widget']['attrs'].setdefault('data-date-input', self.kind)
+        return context
+
+
+class MomentInput(forms.DateTimeInput):
+    input_type = 'text'
+    kind = 'moment'
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        context['widget']['attrs'].setdefault('placeholder', formats.localize_input(EXAMPLE))
+        context['widget']['attrs'].setdefault('autocomplete', 'off')
+        context['widget']['attrs'].setdefault('data-date-input', self.kind)
+        return context

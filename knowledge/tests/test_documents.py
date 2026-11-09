@@ -7,6 +7,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
 from django.db import IntegrityError, transaction
+from django.db.models import FETCH_ONE, FETCH_PEERS
 from django.test import override_settings
 from django.urls import reverse
 
@@ -282,6 +283,20 @@ class FileServingTests(DocumentTestCase):
         self.assertContains(page, 'Third page text')
         self.assertContains(page, '(printed as 235)')
         self.assertContains(page, 'No text on this page.')
+
+
+class LoadingTests(DocumentTestCase):
+    def test_a_loaded_document_keeps_its_querysets_fetch_mode_and_remembers_its_stored_file(self):
+        # Document.from_db keeps the file as stored; it must still hand Django the fetch mode the queryset asked for
+        # (Django 6.1: a from_db() without fetch_mode is deprecated and loses it).
+        made = self.make(content=make_pdf('x'))
+        for mode in (FETCH_PEERS, FETCH_ONE):
+            with self.subTest(mode=mode):
+                document = Document.objects.fetch_mode(mode).get(pk=made.pk)
+                self.assertIs(document._state.fetch_mode, mode)
+                self.assertEqual(document._stored_file, made.file.name)
+        deferred = Document.objects.defer('file').get(pk=made.pk)
+        self.assertIsNone(deferred._stored_file)
 
 
 class DocumentRuleTests(DocumentTestCase):

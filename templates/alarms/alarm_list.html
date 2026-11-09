@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load i18n %}
+{% load dates i18n %}
 {% comment %} Company › Alarms › Alarms (alarms.views.alarm_list): every alarm of the water limits and the sensor rules, open
    ones first, with whether anyone could be notified, its level and whether it was acknowledged. {% endcomment %}
 {% block title %}{{ title }}{% endblock %}
@@ -27,8 +27,8 @@
         <td>{% if alarm.severity == "critical" %}<span class="badge badge-critical">{{ alarm.get_severity_display }}</span>{% else %}<span class="badge badge-maintenance">{{ alarm.get_severity_display }}</span>{% endif %}</td>
         <td><a href="{% url 'alarms:alarm_detail' alarm.pk %}">{{ alarm.summary }}</a><span class="row-sub">{{ alarm.get_source_display }}</span></td>
         <td>{{ alarm.production_department|default:alarm.site|default:"—" }}</td>
-        <td>{{ alarm.opened_at|date:"DATETIME_FORMAT" }}</td>
-        <td>{% if alarm.is_cleared %}{{ alarm.clearance.cleared_at|date:"DATETIME_FORMAT" }}{% else %}<span class="badge badge-open">{% trans "Open" %}</span>{% endif %}</td>
+        <td>{{ alarm.opened_at|site_clock:alarm.site|date:"DATETIME_FORMAT" }}</td>
+        <td>{% if alarm.is_cleared %}{{ alarm.clearance.cleared_at|site_clock:alarm.site|date:"DATETIME_FORMAT" }}{% else %}<span class="badge badge-open">{% trans "Open" %}</span>{% endif %}</td>
         <td>{% if alarm.notifications_count %}{% blocktrans trimmed count people=alarm.notifications_count %}{{ people }} notification{% plural %}{{ people }} notifications{% endblocktrans %}{% if alarm.top_level %} · {% blocktrans trimmed with level=alarm.top_level %}level {{ level }}{% endblocktrans %}{% endif %}{% else %}<span class="badge badge-overdue">{% trans "Nobody to notify" %}</span>{% endif %}</td>
         <td>{% if alarm.acknowledgements_count %}{% trans "Yes" %}{% else %}—{% endif %}</td>
       </tr>

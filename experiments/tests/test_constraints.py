@@ -1,7 +1,6 @@
 """The database holds the rules of the design, one test per named constraint, each by a write that checks nothing (the
 ORM's create, or raw SQL where the ORM would not say it): what a form or a service would refuse, the database refuses
 too, so no writer can leave a wrong row (README, Experiments)."""
-import uuid
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
@@ -75,13 +74,6 @@ class ExperimentConstraintTests(ExperimentTestCase):
             with self.subTest(fields=fields):
                 self.refuses(self.experiment, **fields)
         self.assertEqual(Experiment.objects.count(), 3)
-
-    def test_the_key_of_a_form_creates_one_experiment(self):
-        key = uuid.uuid4()
-        self.experiment(entry_key=key)
-        self.refuses(self.experiment, entry_key=key)
-        self.experiment(entry_key=None)
-        self.experiment(entry_key=None)
 
     def test_the_site_and_the_species_are_protected(self):
         trial = self.experiment()

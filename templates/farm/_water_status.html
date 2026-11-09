@@ -1,1 +1,1 @@
-{% load water %}<span class="wq-status wq-{{ status }}"><span class="wq-dot" aria-hidden="true"></span>{{ status|status_label }}</span>
+{% load i18n water %}{% comment %} A point's water status; `old`: its critical or warning comes only from old values (PointWater.old_alert). {% endcomment %}<span class="wq-status wq-{{ status }}"><span class="wq-dot" aria-hidden="true"></span>{% if old %}{% blocktrans trimmed with status=status|status_label %}{{ status }}, no recent data{% endblocktrans %}{% else %}{{ status|status_label }}{% endif %}</span>

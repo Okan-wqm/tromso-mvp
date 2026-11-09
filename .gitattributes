@@ -1,1 +1,4 @@
 * text=auto eol=lf
+
+# chemcore: the recorded references are data, compared by tests, never diffed as text
+chemcore/golden/**/*.gz binary

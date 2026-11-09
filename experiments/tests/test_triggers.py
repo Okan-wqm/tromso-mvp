@@ -86,7 +86,6 @@ class ExperimentTriggerTests(TriggerTestCase):
             ("allocation_method = 'sha256_v1', allocation_seed = 5, allocation_note = ''", []),
             ("allocation_note = 'Another reason'", []), ("code = 'E-2026-999'", []),
             ('copied_from_id = %s', [self.experiment('Source').pk]),
-            ("entry_key = '8b0e0a6e-6c8f-4f6c-a4a5-8f3c2d6c3a11'", []),
             ('is_deleted = true, deleted_at = now()', []), ("created_at = '2026-01-01'", []))]
         # The same statements are valid on a draft that has the same values (day 0, hypothesis, allocation).
         probe = self.experiment('Probe', starts_on=self.today, **STARTED)
@@ -289,8 +288,8 @@ class BornDraftAndTemplateTests(TriggerTestCase):
     def insert(self, status, code):
         return sql("INSERT INTO experiments (id, code, name, status, is_template, species_id, site_id, duration_days, version, "
                    "created_at, updated_at, is_deleted, hypothesis, primary_endpoint, allocation_method, allocation_note, "
-                   "notes, starts_on, entry_key) SELECT gen_random_uuid(), %s, 'Raw', %s, false, species_id, site_id, 56, 1, now(), "
-                   "now(), false, 'h', 'bfcr', 'manual', 'x', '', current_date, gen_random_uuid() FROM experiments WHERE id = %s",
+                   "notes, starts_on) SELECT gen_random_uuid(), %s, 'Raw', %s, false, species_id, site_id, 56, 1, now(), "
+                   "now(), false, 'h', 'bfcr', 'manual', 'x', '', current_date FROM experiments WHERE id = %s",
                    [code, status, self.trial.pk])
 
     def test_an_experiment_is_only_ever_made_a_draft(self):

@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 import os
+import sys
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -69,6 +70,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Every response says where its page may load from (SECURE_CSP below).
+    'django.middleware.csp.ContentSecurityPolicyMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     # The language comes from the cookie, then the browser's Accept-Language, then LANGUAGE_CODE.
     'django.middleware.locale.LocaleMiddleware',
@@ -78,11 +81,15 @@ MIDDLEWARE = [
     # A signed-in person's saved language wins over the cookie.
     'core.language.AccountLanguageMiddleware',
     'core.middleware.WorkspaceMiddleware',
+    # A page whose menu line is left out for the person is refused at its address too.
+    'core.middleware.MenuAccessMiddleware',
     # The platform owner's settings are read once per request (core.platform).
     'core.middleware.PlatformSettingsMiddleware',
     # Every page needs a signed-in user unless its view is marked @login_not_required.
     'django.contrib.auth.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    # A write the database aborted for another at the same moment says "send it again" (core.softdelete, LOCK ORDER).
+    'core.middleware.CrossedWritesMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -99,11 +106,33 @@ TEMPLATES = [
                 'django.template.context_processors.i18n',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.csp',
                 'core.navigation.rail',
+                'core.navigation.page_base',
+                'core.theme.context',
             ],
         },
     },
 ]
+
+# Where a page may load from: its own address only. Scripts are the project's own files, plus what carries the response's
+# nonce (the import map, core/templatetags/assets.py); no inline style (a widget's cell is a class, static/css/card-grid.css);
+# the font is the project's (static/fonts); no plug-in, no frame around a page, no form sent elsewhere. So even a name that
+# slipped past the escaping could not run as a script. core/tests_csp.py opens every page against it.
+from django.utils.csp import CSP  # noqa: E402
+
+SECURE_CSP = {
+    'default-src': [CSP.SELF],
+    'script-src': [CSP.SELF, CSP.NONCE],
+    'style-src': [CSP.SELF],
+    'img-src': [CSP.SELF, 'data:'],
+    'font-src': [CSP.SELF],
+    'connect-src': [CSP.SELF],
+    'object-src': [CSP.NONE],
+    'base-uri': [CSP.NONE],
+    'form-action': [CSP.SELF],
+    'frame-ancestors': [CSP.NONE],
+}
 
 # Widgets render with the project's templates too (e.g. the role form's permission matrix).
 FORM_RENDERER = 'django.forms.renderers.TemplatesSetting'
@@ -166,6 +195,12 @@ LANGUAGE_COOKIE_AGE = 60 * 60 * 24 * 365
 LANGUAGE_COOKIE_SAMESITE = 'Lax'
 
 TIME_ZONE = 'UTC'
+# The company's time zone: a new site's (the form offers it first) and the one migration farm/0028 gives a site that had
+# none. Not the server's clock above. From the environment until the platform owner's settings hold it.
+COMPANY_TIME_ZONE = os.environ.get('COMPANY_TIME_ZONE', 'Europe/Oslo')
+# In the tests a page may not show an aware time without a clock filter (core/clock_guard.py): |date and |time refuse it.
+# Never on in production: the filters stay Django's own there.
+CLOCK_GUARD = os.environ.get('CLOCK_GUARD', '1' if sys.argv[1:2] == ['test'] else '0') == '1'
 
 USE_I18N = True
 # Quantities group their digits where a template asks (floatformat:"g"); plain numbers such as
@@ -210,6 +245,10 @@ LOGOUT_REDIRECT_URL = 'login'
 
 # The rail menu (core.navigation).
 RAIL_MENU = 'config.navigation.WORKSPACES'
+# What the rail's foot says for a person (the company and their site), and the company's name: from the environment until
+# the platform owner's settings hold it.
+RAIL_FOOT = 'hr.read.rail_foot'
+COMPANY_NAME = os.environ.get('COMPANY_NAME', '')
 
 # What a role can be given (core.access).
 ACCESS_AREAS = 'config.access.AREAS'
@@ -229,9 +268,6 @@ FEEDING_ACK_PERCENT = 10
 # measured biomass marked stale (docs/regulatory-reports.md, D-7).
 REPORT_RECENT_WEIGHING_DAYS = 30
 
-# A ration reads the latest temperature of the unit or its loop measured at most this many days before (owner
-# decision Q5): stale after the temperature's 24 hours, no ration after this (farm/feeding/temperature.py).
-TEMPERATURE_USABLE_DAYS = 7
 
 # The estimated weight between weighings (farm/feeding/projection.py) is marked "weigh soon" after this many days
 # since the last measured point, and "weigh now: the estimate is unreliable" after the second (owner decision Q6).

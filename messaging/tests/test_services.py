@@ -4,6 +4,7 @@ from unittest import mock
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import Http404
 
+from core import softdelete
 from core.models import AuditLog
 
 from .. import events, read, services
@@ -241,6 +242,24 @@ class ChannelTests(MessagingTestCase):
         self.assertEqual([(str(p), p.role) for p in read.members(channel)], [('Egon Berg', 'owner')])
         services.leave(self.egon, channel.pk)                           # the last one may go
         self.assertFalse(channel.participants.exists())
+
+    def test_a_channel_its_last_member_leaves_is_deleted_and_frees_its_name(self):
+        # F-110: left without members it stayed live, its name taken for good and its history out of everyone's reach.
+        channel = self.channel()
+        services.post_as(self.ali, channel.pk, 'Before I go')
+        services.leave(self.ali, channel.pk)
+        stored = Conversation.all_objects.get(pk=channel.pk)
+        self.assertTrue(stored.is_deleted)
+        self.assertEqual(stored.messages.count(), 1)                    # the history stays, for a restore
+        self.assertTrue(AuditLog.objects.filter(entity_id=str(channel.pk), action='delete').exists())
+        self.assertNotEqual(self.channel().pk, channel.pk)              # the name is free again
+
+    def test_a_channel_its_last_member_left_comes_back_with_that_member(self):
+        # Cross review F5: the channel and its last membership are deleted at one moment, so a restore brings both.
+        channel = self.channel()
+        services.leave(self.ali, channel.pk)
+        softdelete.restore(Conversation.all_objects.get(pk=channel.pk), self.ali)
+        self.assertEqual([p.user for p in Conversation.objects.get(pk=channel.pk).participants.all()], [self.ali])
 
     def test_a_member_added_again_gets_their_row_back_and_unread_starts_from_now(self):
         channel = self.channel(self.egon)

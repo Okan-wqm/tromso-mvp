@@ -1,4 +1,4 @@
-{% load i18n stock feeding harvest %}
+{% load i18n stock feeding harvest dates %}
 {% comment %} The drawer of the unit picked on Production units (?unit=): its fish, its feeding, its water, the
    handling check of a harvest today and its planned harvests and transports, its health, the operations that
    make sense for it (Record feeding first), and its recent operations and feedings; a harvest shows the book
@@ -10,7 +10,7 @@
       <h2 class="drawer-title" id="drawer-title">{{ unit.code }}</h2>
       {% if drawer_placements %}<p class="drawer-sub">{% include "farm/_placements.html" with chips=drawer_placements %}</p>{% endif %}
       <p class="drawer-sub">{{ unit.name }} · {{ unit.production_department.name }}{% if unit.production_department.site %} · {{ unit.production_department.site.name }}{% endif %}</p>
-      <p class="drawer-sub"><span class="badge badge-{{ unit.status }}">{{ unit.get_status_display }}</span>{% if unit.status_changed_at %} {% blocktrans trimmed with date=unit.status_changed_at|date:"DATE_FORMAT" %}since {{ date }}{% endblocktrans %}{% endif %}</p>
+      <p class="drawer-sub"><span class="badge badge-{{ unit.status }}">{{ unit.get_status_display }}</span>{% if unit.status_changed_at %} {% blocktrans trimmed with date=unit.status_changed_at|site_clock:unit.production_department.site|date:"DATE_FORMAT" %}since {{ date }}{% endblocktrans %}{% endif %}</p>
       {% if stock %}
       {% if stock.batches %}
       <p class="drawer-line"><strong>{% for batch in stock.batches %}{% if not forloop.first %} + {% endif %}{{ batch.code }}{% endfor %}</strong> · {% with species=stock.batches.0.species %}{{ species.local_name|default:species.common_name }}{% endwith %} · {% blocktrans trimmed count days=drawer_days %}Stocked · {{ days }} day{% plural %}Stocked · {{ days }} days{% endblocktrans %}</p>
@@ -119,7 +119,7 @@
         {% for item in feedings %}{% with record=item.record %}
         <li class="op-entry{% if record.is_deleted %} is-voided{% endif %}">
           <div class="op-head">
-            <time datetime="{{ record.date|date:'Y-m-d' }}">{{ record.date|date:"DATE_FORMAT" }}{% if record.time %} {{ record.time|time:"H:i" }}{% endif %}</time>
+            <time datetime="{{ record.date|date:'Y-m-d' }}">{{ record.date|date:"DATE_FORMAT" }}{% if record.time %} {{ record.time|time:"TIME_FORMAT" }}{% endif %}</time>
             <strong>{{ record.amount_kg|feed_kg }}</strong>
             {% if record.is_deleted %}<span class="badge badge-voided">{% trans "Voided" %}</span>{% endif %}
             {% if item.void_url %}<a class="op-void" href="{{ item.void_url }}" data-modal>{% trans "Void" %}</a>{% endif %}
@@ -153,7 +153,7 @@
             <li>{% if line.unit_id != unit.pk %}{{ line.unit.code }} · {% endif %}{{ line.batch.code }}: {% if line.kind == "weighing" %}{% blocktrans trimmed with weight=line.avg_weight_g|grams %}average {{ weight }}{% endblocktrans %}{% else %}{% blocktrans trimmed with fish=line.count_delta|signed %}{{ fish }} fish{% endblocktrans %}{% if line.avg_weight_g %} · {{ line.avg_weight_g|grams }}{% endif %}{% if line.size_class %} · {{ line.size_class }}{% endif %}{% if line.reason %} · {{ line.reason_label }}{% endif %}{% if line.measured_weight_kg %} · {% blocktrans trimmed with kilos=line.measured_weight_kg|kilos %}{{ kilos }} weighed{% endblocktrans %}{% endif %}{% if line.kind == "harvest" and line.book %} · {% blocktrans trimmed with book=line.book.kg|kilos difference=line.book.difference_kg|signed_kilos percent=line.book.difference_pct|signed_percent %}book {{ book }} · {{ difference }} ({{ percent }}){% endblocktrans %}{% endif %}{% endif %}</li>
             {% endfor %}
           </ul>
-          {% if item.escape %}<p class="op-meta">{% if item.escape.suspected %}{% trans "Suspected escape" %} · {% endif %}{{ item.escape.cause }}{% if item.escape.found_time %} · {% blocktrans trimmed with time=item.escape.found_time|time:"H:i" %}found {{ time }}{% endblocktrans %}{% endif %}{% if item.escape.health_status %} · {{ item.escape.health_status }}{% endif %}{% if item.escape.recaptured is not None %} · {% blocktrans trimmed with fish=item.escape.recaptured|fish %}{{ fish }} recaptured{% endblocktrans %}{% endif %}</p>{% endif %}
+          {% if item.escape %}<p class="op-meta">{% if item.escape.suspected %}{% trans "Suspected escape" %} · {% endif %}{{ item.escape.cause }}{% if item.escape.found_time %} · {% blocktrans trimmed with time=item.escape.found_time|time:"TIME_FORMAT" %}found {{ time }}{% endblocktrans %}{% endif %}{% if item.escape.health_status %} · {{ item.escape.health_status }}{% endif %}{% if item.escape.recaptured is not None %} · {% blocktrans trimmed with fish=item.escape.recaptured|fish %}{{ fish }} recaptured{% endblocktrans %}{% endif %}</p>{% endif %}
           {% if item.opening %}<p class="op-meta">{% blocktrans trimmed with date=item.lines.0.batch.input_date|date:"DATE_FORMAT" %}Taken over: stocked on {{ date }}{% endblocktrans %} · {{ item.opening.document }}</p>{% endif %}
           {% if item.delivery %}<p class="op-meta">{% blocktrans trimmed with destination=item.delivery.destination %}To {{ destination }}{% endblocktrans %}{% if item.delivery.destination_site_number %} · {{ item.delivery.destination_site_number }}{% endif %}</p>{% endif %}
           {% if item.record %}<p class="op-meta">{% blocktrans trimmed with facility=item.record.facility %}To {{ facility }}{% endblocktrans %}{% if item.record.transport %} · {{ item.record.transport.name }}{% endif %}{% if item.record.vessel %} · {{ item.record.vessel }}{% endif %}</p>{% endif %}

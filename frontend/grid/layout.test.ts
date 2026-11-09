@@ -286,3 +286,13 @@ test('property: garbage never throws and never loops', () => {
     }
   });
 });
+
+test('a widget below the last row the server draws is out of bounds, as the server says', () => {
+  const short = catalogueOf({ columns: 12, rows: 4, widgets: [{ type: 'tasks', min_w: 3, min_h: 2, max_w: 12, max_h: 3,
+                                                              default_w: 6, default_h: 2 }] }) as Catalogue;
+  assert.equal(short.rows, 4);
+  assert.deepEqual(check([{ id: 'w1', type: 'tasks', x: 0, y: 2, w: 6, h: 2 }], short), []);
+  assert.deepEqual(check([{ id: 'w1', type: 'tasks', x: 0, y: 3, w: 6, h: 2 }], short),
+                   [{ code: 'bounds', widget: 'w1' }]);
+  assert.equal((catalogueOf({ columns: 12, widgets: [] }) as Catalogue).rows, Infinity);   // an older catalogue: no bound
+});

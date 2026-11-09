@@ -19,7 +19,6 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from decimal import Decimal
 
-from django.conf import settings
 from django.utils.translation import gettext as _
 
 from farm.templatetags.stock import grams, number
@@ -83,7 +82,8 @@ def sfr_at(cells, temperature_c):
                 return Sfr(high.sfr_pct, temperature_c, high, high)
             share = (temperature_c - low.temperature_c) / (high.temperature_c - low.temperature_c)
             return Sfr(low.sfr_pct + (high.sfr_pct - low.sfr_pct) * share, temperature_c, low, high)
-    return Sfr(cells[0].sfr_pct, temperature_c, cells[0], cells[0])      # a table of one column
+    # Only a table of one column (stored before a table needed two, F-080) gets here: its temperature exactly.
+    return Sfr(cells[0].sfr_pct, temperature_c, cells[0], cells[0])
 
 
 # Why a share has no ration (Basis.missing); Basis.why() says it in the person's language.
@@ -156,8 +156,7 @@ class Basis:
                 'weight': grams(self.weight_g), 'protocol': self.table.protocol,
                 'range': band_range(bands[0].min_weight_g, upper)}
         if self.missing == NO_TEMPERATURE:
-            return _('No temperature in the last %(days)d days: record one.') % {
-                'days': settings.TEMPERATURE_USABLE_DAYS}
+            return _('No temperature recorded here yet: record one.')
         if self.missing == OUTSIDE_TABLE:
             cells = self.band.cells
             return _('%(temperature)s °C is outside this table (%(low)s–%(high)s °C).') % {

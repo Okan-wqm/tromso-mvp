@@ -1,10 +1,11 @@
 """The water a batch lived in, day by day, and what it adds up to in degree-days: one definition for every reader, the
 medicine withdrawal (farm/health/withdrawal.py) and the purging fast before a harvest (farm/handling/fasting.py).
 
-- **A day's temperature** is the daily mean of the live samples of that farm-local day at the unit's middle point, else
-  at its system's loop point (the places are farm/water/read.py's `water_sources`, the one definition of where a unit's
-  water is read; a sample's day is on the clock of its point's site). A batch in several units that day takes the
-  lowest.
+- **A day's temperature** is, per farm-local day, the lowest daily mean of the live samples at the unit's own-water
+  points (middle, depth, outlets, drain; never the inlet: owner, 2026-11-08, the conservative side, a longer
+  withdrawal), else at its system's loop point (the places are farm/water/read.py's `water_sources`, the one definition
+  of where a unit's water is read; a sample's day is on the clock of its point's site). A batch in several units that
+  day takes the lowest.
 - **A past day without a measured temperature counts at the batch species' assumed water temperature**
   (`Species.withdrawal_temperature_c`, Setup › Reference data › Species: the farm's own assumption, a low value the
   conservative one), **and as 0 °C when the species has none**: never as unknown. A day that is not over, or still to
@@ -28,7 +29,7 @@ from farm.stock.dates import end_of, start_of
 from farm.stock.read import Presence
 
 from . import parameters
-from .read import Series, water_sources
+from .read import UNIT, Series, water_sources
 
 DAY = timedelta(days=1)
 TEMPERATURE = parameters.TEMPERATURE
@@ -46,7 +47,7 @@ class Temperatures:
 
     def __init__(self, units, first, last):
         self.first, self.last = first, last
-        self.sources = water_sources(units, nested=False)
+        self.sources = water_sources(units, nested=False, every_point=True)
         points = {source.point.pk: source.point for sources in self.sources.values() for source in sources}
         values = defaultdict(list)
         if points and first <= last:
@@ -61,7 +62,12 @@ class Temperatures:
         self.means = {key: sum(found, ZERO) / len(found) for key, found in values.items()}
 
     def of(self, unit_id, day):
-        """The unit's daily mean on `day`, else its system's; None when neither was measured."""
+        """The unit's daily mean on `day`: the lowest of its own-water points' that were measured (owner, 2026-11-08: the
+        conservative side, a longer withdrawal; never the inlet), else its system's loop's; None when neither was."""
+        own = [mean for mean in (self.means.get((source.point.pk, day)) for source in self.sources.get(unit_id, [])
+                                 if source.via == UNIT) if mean is not None]
+        if own:
+            return min(own)
         for source in self.sources.get(unit_id, []):
             mean = self.means.get((source.point.pk, day))
             if mean is not None:

@@ -5,6 +5,8 @@ from django.utils import timezone
 from django.utils.timesince import timesince
 from django.utils.translation import gettext as _
 
+from core import text
+
 from ..models.site import zone_of
 from ..models.water_point import site_of
 from ..water import parameters, read as water_read
@@ -45,7 +47,7 @@ def limit_text(row):
         parts.append(_('critical above %(value)s') % {'value': show(row.critical_high)})
     who = row.species.common_name
     if row.water_type != ANY_WATER:
-        who = f'{who} ({row.get_water_type_display().lower()})'
+        who = f'{who} ({text.lower(row.get_water_type_display())})'
     return f'{who}: {", ".join(parts)}'
 
 
@@ -61,7 +63,7 @@ def age(moment):
 
 
 @register.filter
-def site_clock(sample):
+def sample_clock(sample):
     """When a sample was taken, on the clock of its site, as a naive time the date filter shows as it is."""
     return timezone.make_naive(sample.measured_at, zone_of(site_of(sample.point)))
 
@@ -105,12 +107,11 @@ def short_age(moment, now=None):
 
 
 @register.filter
-def source_line(reading, now=None):
-    """Where a value comes from and how old it is, as every page with a latest value shows it (owner rule A1):
-    "unit sensor #12 · 12 s ago", "system sensor #3 · 40 s ago", "manual · 2 days ago"; `now`: the moment the age is
-    counted to (a past moment's Deffeyes), else now."""
+def source(reading, now=None):
+    """Where a value comes from and how old it is, as every page with a latest value shows it (owner rule A1), for
+    farm/_water_source.html: {'origin': 'unit sensor #12', 'age': '12 s ago'}, 'system sensor #3' and '40 s ago',
+    'manual' and '2 days ago'; `now`: the moment the age is counted to (a past moment's Deffeyes), else now."""
     if not reading:
-        return ''
-    origin = water_read.origin_text(reading)
-    # Translators: %(origin)s is where a value comes from (manual, lab, unit sensor #12, system sensor); %(age)s how old.
-    return _('%(origin)s · %(age)s ago') % {'origin': origin, 'age': short_age(reading.at, now or None)}
+        return None
+    # Translators: how old a value is, e.g. "12 s ago", "2 days ago".
+    return {'origin': water_read.origin_text(reading), 'age': _('%(age)s ago') % {'age': short_age(reading.at, now or None)}}

@@ -9,6 +9,7 @@ from farm.forms.water import SiteClockField
 from farm.models import EscapeRecord, HealthEvent, SlaughterFacility, Site, StockMovement, Tank
 from farm.models.harvest import FacilityStatus
 from farm.models.site import zone_of
+from core.widgets import DayInput
 
 from . import periods
 from .compute import COMPUTE, lice
@@ -20,7 +21,7 @@ from .models import (
 
 REPORT_FORM_TABS = [
     ('report', _('Report'), ['kind', 'site', 'facility', 'period_start', 'health_event', 'escape', 'occurred_on',
-                             'harvest_condition', 'no_cleaner_feed']),
+                             'no_cleaner_feed']),
     ('contact', _('Contact person'), ['contact_name', 'contact_email', 'contact_phone']),
     ('event', _('What happened'), list(NARRATIVE)),
     ('notes', _('Notes'), ['notes']),
@@ -55,8 +56,8 @@ class ReportForm(TabbedForm):
             'contact_name': _('The person the authority can ask about the report. Needed before it is filed.'),
         }
         widgets = {
-            'period_start': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
-            'occurred_on': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'period_start': DayInput(),
+            'occurred_on': DayInput(),
             'what_happened': forms.Textarea(attrs={'rows': 4}),
             'situation': forms.Textarea(attrs={'rows': 3}),
             'measures': forms.Textarea(attrs={'rows': 3}),
@@ -98,8 +99,6 @@ class ReportForm(TabbedForm):
             keep.add('health_event')
         if kind == Report.Kind.ESCAPE:
             keep.add('escape')
-        if kind == Report.Kind.BIOMASS:
-            keep.add('harvest_condition')
         if kind == Report.Kind.CLEANER_FISH:
             keep.add('no_cleaner_feed')
         for name in list(self.fields):
@@ -160,8 +159,8 @@ class OpenQuestionForm(TabbedForm):
         model = OpenQuestion
         fields = tab_fields(OPEN_QUESTION_TABS)
         widgets = {'question': forms.Textarea(attrs={'rows': 3}), 'answer': forms.Textarea(attrs={'rows': 3}),
-                   'asked_on': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
-                   'answered_on': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d')}
+                   'asked_on': DayInput(),
+                   'answered_on': DayInput()}
         help_texts = {'affects': _('Which rule of which report rests on the answer, e.g. “the sea-lice report, the amount '
                                    'of an active substance”.'),
                       'answer': _('What the authority said, and where (the mail, the page). Needed to mark it answered.')}
@@ -170,7 +169,7 @@ class OpenQuestionForm(TabbedForm):
 class DutyDoneForm(forms.Form):
     """Recording that a duty outside this system was done: the day and the reference the authority gave."""
 
-    done_on = forms.DateField(label=_('Done on'), widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'))
+    done_on = forms.DateField(label=_('Done on'), widget=DayInput())
     reference = forms.CharField(label=_('Receipt or reference'), max_length=200, required=False,
                                 help_text=_('The receipt or case number the authority gave, if any.'))
 
@@ -214,7 +213,7 @@ class SensitivityTestForm(forms.ModelForm):
     class Meta:
         model = SensitivityTest
         fields = ['tested_on', 'laboratory', 'substance', 'other_substance', 'result']
-        widgets = {'tested_on': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d')}
+        widgets = {'tested_on': DayInput()}
 
     def clean_tested_on(self):
         day = self.cleaned_data['tested_on']

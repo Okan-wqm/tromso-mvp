@@ -1,25 +1,17 @@
-from datetime import date
-
 from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
 
-from core import audit
+from core import audit, query
 from core.crud import Mount, Resource
+from core.dates import read_day
 from farm.stock.dates import site_today
 
 from .. import read, rules, scope, services, units
 from ..forms.roster import ShiftAssignmentForm
-from ..models import ShiftAssignment
+from ..models import Employee, ShiftAssignment
 
 
-def parse_day(value):
-    try:
-        return date.fromisoformat(value)
-    except (TypeError, ValueError):
-        return None
-
-
-class ShiftAssignmentResource(Resource):
+class ShiftAssignmentResource(services.PersonFirst, Resource):
     """The Shift schedule: a week of the team as a table, one cell per person and day. A cell opens the plan of that
     person and day (a dialog; the list's create route takes `?employee=&day=` for an empty one). The rows are the people
     the viewer reaches (`scoped`, and per day for the week read, hr.scope.visible_days); the rules run on every save
@@ -44,7 +36,7 @@ class ShiftAssignmentResource(Resource):
 
     @classmethod
     def allowed(cls, request, obj, action):
-        return not services.self_plan(request.user, obj.employee)
+        return not services.own_record(request.user, obj.employee)
 
     @classmethod
     def form(cls, request, *args, **kwargs):
@@ -56,12 +48,9 @@ class ShiftAssignmentResource(Resource):
 
     @classmethod
     def list_queryset(cls, request):
-        start = parse_day(request.GET.get('week')) or site_today(None)
+        start = read_day(request.GET.get('week'), request) or site_today(None)
         department = units.find(request.GET.get('department', ''))
-        try:
-            page = int(request.GET.get('page', '1'))
-        except ValueError:
-            page = 1
+        page = query.number(request.GET.get('page', ''), least=1) or 1
         return read.week(request.user, start, department, page, query=request.GET.get('q', '').strip(),
                          realm=scope.realm_for(request))
 
@@ -80,8 +69,11 @@ class ShiftAssignmentResource(Resource):
 
     @classmethod
     def crew(cls, request, week):
-        """The Crew block under the viewer's own week: in Production › Team, for a holder of Crew (hr.read.crew_week)."""
+        """The Crew block under the viewer's own week: in Production › Team, for a holder of Crew who is a worker (has an
+        employee record: a crew is a worker's, so the platform admin gets none) (hr.read.crew_week)."""
         if scope.realm_for(request) != scope.PRODUCTION or not request.user.has_perm(cls.CREW):
+            return None
+        if not Employee.objects.filter(user=request.user).exists():
             return None
         return read.crew_week(request.user, week.start)
 
@@ -102,5 +94,6 @@ class ShiftAssignmentResource(Resource):
 
     @classmethod
     def after_save(cls, request, assignment, created):
+        services.lock_employed(assignment.employee, assignment.day)       # the employment rule under the person's lock
         for finding in getattr(assignment, 'warnings', []):
             messages.warning(request, rules.text(finding))

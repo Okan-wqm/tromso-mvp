@@ -1,5 +1,5 @@
 from django.contrib.staticfiles import finders
-from django.core.checks import Warning, register
+from django.core.checks import Error, Tags, Warning, register
 
 from . import catalogs
 
@@ -30,3 +30,47 @@ def catalogs_are_built(app_configs, **kwargs):
                 hint='Run `manage.py compile_catalogs`.', id='core.W002')
         for language in catalogs.languages() if not catalogs.is_built(language)
     ]
+
+
+@register()
+def chemcore_matches(app_configs, **kwargs):
+    """The water-chemistry core must be the build chemcore/EXPECTED names: a stale or foreign core would give
+    the fish's safety numbers of another formula, so it stops the server (an Error, not a warning)."""
+    from farm.water import native
+    return [
+        Error(f'The water-chemistry core is not the expected build ({problem}).',
+              hint='Rebuild the image (docker/testrunner.Dockerfile); after a change to chemcore, run '
+                   'chemcore/scripts/gen_expected.sh and commit chemcore/EXPECTED.',
+              id='core.E001')
+        for problem in native.handshake_problems()
+    ]
+
+
+@register(Tags.database)
+def implied_reads(app_configs, **kwargs):
+    """Roles whose Read on an area may come only from the matrix's old rule (Crew, All production or Everyone once added
+    Read on save): Read and a widening column, but no Create, Edit or Delete there. Listed for the administrator to
+    review in the role matrix; nothing is changed. Run with `manage.py check --database default`."""
+    from django.contrib.auth.models import Group
+    from django.db import DatabaseError
+
+    from . import access
+    widening = [action for action, _label in access.ACTIONS if action not in (access.READ, *access.INCLUDES_READ)]
+    found = []
+    try:
+        for group in Group.objects.prefetch_related('permissions__content_type').order_by('name'):
+            names = {access.perm_name(permission) for permission in group.permissions.all()}
+            areas = [str(area.label) for area in access.areas()
+                     if area.perm(access.READ) in names
+                     and any(area.perm(action) in names for action in area.actions if action in widening)
+                     and not any(area.perm(action) in names for action in area.actions if action in access.INCLUDES_READ)]
+            if areas:
+                found.append(f'{group.name} ({", ".join(areas)})')
+    except DatabaseError:
+        return []
+    if not found:
+        return []
+    return [Warning(
+        f'These roles hold Read where it may come only from the old matrix rule: {"; ".join(found)}.',
+        hint='Open each in Roles and untick Read where the role should only widen rows (Crew, All production, Everyone '
+             'include no right of their own).', id='core.W003')]

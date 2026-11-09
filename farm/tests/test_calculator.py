@@ -28,6 +28,7 @@ from ..water.evaluate import Status
 from .helpers import make_species, point_of, role, stock_fish
 from .test_deffeyes import plummer_busenberg
 from .test_stock import make_unit
+from farm import withdrawal_gate
 
 REFERENCE = json.loads((Path(__file__).parent / 'deffeyes_reference' / 'reference.json').read_text(encoding='utf-8'))
 # The source's reagent names (reagents.ts REAGENTS) and ours.
@@ -164,8 +165,7 @@ class ReagentTests(SimpleTestCase):
         def co2(point):
             return eq.co2(point[0], eq.ph_at(*point)) * chemistry.MG_CO2_PER_MMOL
 
-        def below_air(dic, alkalinity):
-            return co2((dic, alkalinity)) < air
+        below_air = (12, 1, air)            # the water's temperature and salinity, the air's CO₂: the core judges
 
         # Stripping and acid to DIC 1.55, alkalinity 1.40: stripping first ends at 0.34 mg/L, acid first and
         # stripping last at the target's 6.7: it can be done.
@@ -463,23 +463,23 @@ class SmallChartTests(SimpleTestCase):
         # WQ-42: the source's NH₃ chart runs from pH 6 to 9.5 and up to 2.5 times the limit, and its points are
         # dropped outside: a water at pH 9.8, or with more NH₃ than that, had no point.
         result = analyse(Water(12, 1, 9.8, 200, tan_mg_l=2), Limits(0.0103, 15))
-        plot = charts.nh3_plot(result)
+        plot = charts.plots(result)['nh3']
         self.assertEqual(plot.x, (6.0, 10.5))
         self.assertGreaterEqual(plot.y[1], result.nh3_n_mg_l)
         drawing = charts.draw(plot)
         self.assertIn('water', [dot['key'] for dot in drawing.dots])
         self.assertIn('water', [line['key'] for line in drawing.verticals])
-        self.assertIsNone(charts.nh3_plot(analyse(Water(12, 1, 7.0, 80))))         # without the TAN
+        self.assertIsNone(charts.plots(analyse(Water(12, 1, 7.0, 80)))['nh3'])         # without the TAN
 
     def test_saturation_only_where_its_constants_hold(self):
-        self.assertIsNone(charts.saturation_plot(analyse(Water(12, 1, 7.0, 80, calcium_mg_l=400))))   # WQ-32
-        self.assertIsNone(charts.saturation_plot(analyse(Water(25, 35, 8.1, 115))))
-        plot = charts.saturation_plot(analyse(Water(25, 35, 8.1, 115, calcium_mg_l=412)))
+        self.assertIsNone(charts.plots(analyse(Water(12, 1, 7.0, 80, calcium_mg_l=400)))['saturation'])   # WQ-32
+        self.assertIsNone(charts.plots(analyse(Water(25, 35, 8.1, 115)))['saturation'])
+        plot = charts.plots(analyse(Water(25, 35, 8.1, 115, calcium_mg_l=412)))['saturation']
         self.assertEqual([key for key, _name, _curve in plot.series], ['calcite', 'aragonite'])
         self.assertLessEqual(plot.y[0], 0)
         self.assertGreaterEqual(plot.y[1], 0)
         # Its ticks are whole steps (the curves run from −2.27 to 1.40 here), never a half rounded to −0.
-        drawing = charts.draw(charts.saturation_plot(analyse(Water(12, 35, 7.0, 80, calcium_mg_l=400))))
+        drawing = charts.draw(charts.plots(analyse(Water(12, 35, 7.0, 80, calcium_mg_l=400)))['saturation'])
         self.assertEqual([tick['label'] for tick in drawing.y_ticks], ['-3', '-2', '-1', '0', '1', '2'])
 
     def test_the_svg_has_plain_coordinates_and_the_languages_labels(self):
@@ -884,6 +884,7 @@ class UnitChartTests(UnitWaterCase):
         self.assertIn('Nothing is filled in', body)
         self.assertNotIn('<svg', body)
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_a_unit_without_a_middle_point_lists_its_points_and_draws_nothing(self):
         other = self.make('T-03')
         self.sample(point_of(other, 'inlet'), temperature_c=9, ph='7.2', alkalinity_mg_l=90, salinity_ppt='0.2')
@@ -912,13 +913,15 @@ class UnitChartTests(UnitWaterCase):
         self.assertFalse(deffeyes.possible(10, 0.2, 11, 3))
         self.assertTrue(deffeyes.possible(10, 0.2, 7.2, 90))
 
-    def test_the_temperature_is_the_points_own_never_the_loops(self):
+    def test_the_loops_temperature_stands_in_when_the_unit_has_none_of_its_own(self):
+        """Owner rule A9 (2026-11-07) replaces the decision of 2026-11-04 (the chart refused a loop's temperature)."""
         loop_only = self.make('T-05')
         Tank.objects.filter(pk=loop_only.pk).update(system=self.loop)
         self.sample(point_of(self.loop), temperature_c=13)
         self.sample(self.middle(loop_only), ph='7.2', alkalinity_mg_l=90, salinity_ppt='0.2')
-        refused = calculation.chart_of(Tank.objects.get(pk=loop_only.pk))
-        self.assertEqual([str(label) for label in refused.missing], [str(parameters.get('temperature_c').label)])
+        chart = calculation.chart_of(Tank.objects.get(pk=loop_only.pk))
+        temperature = next(each for each in chart.inputs if each.field == 'temperature_c')
+        self.assertEqual((temperature.value, temperature.reading.point), (13, point_of(self.loop)))
 
     def test_offers_of_a_point_are_that_points_and_the_default_is_unchanged(self):
         middle = self.middle()
@@ -955,6 +958,16 @@ class UnitChartTests(UnitWaterCase):
         blind.groups.add(role('Stock only', 'view_stockoperation', 'view_tank'))
         self.client.force_login(blind)
         self.assertEqual(self.client.get(url).status_code, 403)
+
+    def test_a_moment_outside_the_window_of_dates_is_refused_never_a_server_error(self):
+        """`?at=` is an address a person can edit: the calendar's ends (an overflow on the site's clock) and anything
+        outside 1900-2100 are refused (400) through core.dates.read_moment, like any other date typed."""
+        url = reverse('farm:water_unit_chart', args=[self.unit.pk])
+        for typed in ('0001-01-01T00:30', '9999-12-31T23:59', '1899-12-31T12:00', '2026-13-01T00:00', '2026-01-05',
+                      'x'):
+            with self.subTest(at=typed):
+                self.assertEqual(self.client.get(url, {'at': typed}).status_code, 400)
+        self.assertEqual(self.client.get(url, {'at': '2026-01-05T09:00'}).status_code, 200)
 
     def test_two_windows_never_share_an_svg_id_and_the_calculators_ids_are_unchanged(self):
         inlet = point_of(self.unit, 'inlet')

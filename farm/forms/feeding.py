@@ -131,4 +131,5 @@ class FeedingForm(Acknowledged, ServiceErrors, forms.ModelForm):
         return services.record_feeding(
             user, unit=self.unit, day=data['date'], feed=data['feed'], amount_kg=data['amount_kg'],
             time=data['time'], meals=data['meals'], feeder=data['feeder'], notes=data['notes'],
-            ack=data['high_rate_ack'], target=data['target'], token=data['token'])
+            ack=data['high_rate_ack'], target=data['target'], token=data['token'],
+            withdrawal_ack=data['withdrawal_ack'])

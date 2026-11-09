@@ -12,7 +12,7 @@ from farm.models import Site
 from sensors.models import AlarmRule
 from sensors.tests import make_channel, make_connection, make_device, make_format
 
-BEFORE = [('sensors', '0006_ingest_requests')]
+BEFORE = [('sensors', '0007_device_site')]
 AT = datetime(2026, 11, 1, 8, 0, tzinfo=utc.utc)
 
 

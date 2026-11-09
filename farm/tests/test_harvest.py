@@ -29,6 +29,7 @@ from .helpers import correction_window, make_facility, point_of, role
 from .test_feeding import FeedingTestCase
 from .test_protocols import ProtocolTestCase
 from .test_stock import make_unit
+from farm import withdrawal_gate
 
 HARVEST_KEEPER = ('view_harvestrecord', 'view_handlingplanitem', 'add_handlingplanitem', 'change_handlingplanitem',
                   'delete_handlingplanitem', 'view_productionplan', 'add_productionplan', 'change_productionplan',
@@ -91,7 +92,7 @@ class FastingTests(HarvestTestCase):
         [warning] = result.warnings
         self.assertEqual((warning.warning, warning.fasted_hours, warning.required_hours, warning.rule.kind),
                          ('fasting', Decimal('6.0'), 72, 'harvest'))
-        self.assertIn(f'Last fed {services.shown_date(self.day(1))}, 18:00: 6.0 h before', result.notes[1])
+        self.assertIn(f'Last fed {services.shown_date(self.day(1))} 18:00: 6.0 h before', result.notes[1])
         self.assertIn('the harvest rule asks for 72 h', warning.message())
 
     def test_a_feeding_without_a_time_counts_from_the_end_of_its_day(self):
@@ -568,7 +569,7 @@ class FastsTests(HarvestTestCase):
         self.assertEqual(fasting.fasting_on(self.t1, on - timedelta(days=4)), None)
         self.assertEqual(fasting.fasting_on(self.t1, on - timedelta(days=3)),
                          f'Fasting before the harvest of {services.shown_date(on)}: from '
-                         f'{services.shown_date(on - timedelta(days=3))}, 00:00 (72 h).')
+                         f'{services.shown_date(on - timedelta(days=3))} 00:00 (72 h).')
         self.assertIsNone(fasting.fasting_on(self.t2, on))
         transport = HandlingPlanItem.objects.create(kind='transport', date=on - timedelta(days=1), unit=self.t1,
                                                     batch=self.batch)
@@ -603,6 +604,7 @@ class PurgingBase(HarvestTestCase):
         return HandlingRule.objects.create(kind='harvest', species=species, min_fasting_hours=hours,
                                            min_fasting_degree_days=degrees)
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def temperature(self, days_ago, value, unit=None):
         site = (unit or self.t1).production_department.site
         moment = datetime.combine(self.day(days_ago), clock(12), tzinfo=zone_of(site))
@@ -626,9 +628,9 @@ class PurgingTests(PurgingBase):
                          ('fasting', Decimal('30.0'), Decimal('60.0'), None, 'harvest'))
         self.assertEqual(warning.fasted_hours, Decimal('78.0'))              # 18:00 four days ago to today's start
         self.assertEqual(warning.message(),
-                         f'Last fed {services.shown_date(self.day(4))}, 18:00, 30 degree-days before '
+                         f'Last fed {services.shown_date(self.day(4))} 18:00, 30 degree-days before '
                          f'{services.shown_date(self.today)}: the harvest rule asks for 60 degree-days.')
-        self.assertIn(f'Last fed {services.shown_date(self.day(4))}, 18:00: 30 degree-days before '
+        self.assertIn(f'Last fed {services.shown_date(self.day(4))} 18:00: 30 degree-days before '
                       f'{services.shown_date(self.today)}.', result.notes)
         self.assertIn('The harvest rule for Atlantic salmon asks for 60 degree-days.', result.notes)
         # Reached exactly: no warning; one degree-day short: a warning.
@@ -663,6 +665,7 @@ class PurgingTests(PurgingBase):
         self.assertIn('52.0 h before', warning.message())
         self.assertTrue(warning.message().endswith('the harvest rule asks for 72 h.'))
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_a_day_without_a_measured_temperature_counts_at_the_assumed_one_or_as_zero_and_says_so(self):
         self.fed(4, at=clock(18, 0))
         self.warm(3, 1)                                          # the middle day, 2 days ago, was not measured
@@ -697,9 +700,10 @@ class PurgingTests(PurgingBase):
         [warning] = self.assess('transport').warnings
         self.assertEqual((warning.required_hours, warning.required_degree_days, warning.fasted_degree_days),
                          (100, None, None))
-        self.assertEqual(warning.message(), f'Last fed {services.shown_date(self.day(4))}, 18:00, 78.0 h before '
+        self.assertEqual(warning.message(), f'Last fed {services.shown_date(self.day(4))} 18:00, 78.0 h before '
                                             f'{services.shown_date(self.today)}: the transport rule asks for 100 h.')
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_going_on_stores_the_degree_days_and_a_new_temperature_asks_again(self):
         self.fed(4, at=clock(18, 0))
         self.warm(3, 2, 1)
@@ -764,7 +768,7 @@ class PurgingFastsTests(PurgingBase):
         self.assertEqual(fast.first_day, self.day(1))
         self.assertTrue(fast.start.projected)
         self.assertEqual(fast.why(), f'Fasting before the harvest of {services.shown_date(item.date)}: from '
-                                     f'{services.shown_date(self.day(1))}, 00:00 (60 degree-days). Projected at the '
+                                     f'{services.shown_date(self.day(1))} 00:00 (60 degree-days). Projected at the '
                                      'mean water temperature of the last days measured.')
         days = fasting.fasts([self.t1], self.day(3), item.date)
         self.assertEqual(sorted(day for _unit, day in days),
@@ -775,6 +779,7 @@ class PurgingFastsTests(PurgingBase):
         near = self.plan(2)
         self.assertEqual(self.fast(near).first_day, self.day(4))
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_a_past_day_without_a_measurement_counts_at_the_assumed_temperature_or_zero(self):
         self.purge(degrees=45)
         self.warm(1, 3, 4, 5, 6, 7)                              # 2 days ago was not measured
@@ -794,6 +799,7 @@ class PurgingFastsTests(PurgingBase):
         measured = self.fast(item)
         self.assertEqual((measured.first_day, measured.start.missing), (self.day(5), 0))
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_no_temperature_at_all_leaves_the_hours_alone_and_says_degree_days_are_unknown(self):
         item = self.plan(3)
         fast = self.fast(item)                                   # degree-days only: nothing can be counted ahead
@@ -985,7 +991,7 @@ class ForecastTests(HarvestTestCase):
     def test_it_stops_where_the_ration_stops_and_says_why(self):
         self.assertEqual(self.row()['forecast'].why, 'No protocol is assigned to these fish.')
         ProtocolTestCase.assign(self, self.protocol, unit=self.t1)
-        self.assertEqual(self.row()['forecast'].why, 'No temperature in the last 7 days: record one.')
+        self.assertEqual(self.row()['forecast'].why, 'No temperature recorded here yet: record one.')
 
 
 class ProductionPlanTests(HarvestTestCase):

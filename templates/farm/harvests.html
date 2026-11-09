@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load i18n stock harvest %}
+{% load i18n stock harvest dates %}
 {% comment %} Operations › Harvest › Harvested (farm.harvest.views.harvests): one row per harvest, newest first, with
    the round kilos weighed against the kilos the book took out, where the fish went and the plan it fulfilled;
    filters in the address; totals per batch and per site of the harvests the filters choose. Voided harvests,
@@ -41,8 +41,8 @@
       <option value="">{% trans "All slaughter facilities" %}</option>
       {% for facility in choices.facility %}<option value="{{ facility.pk }}"{% if params.facility == facility.pk|stringformat:"s" %} selected{% endif %}>{{ facility.name }}</option>{% endfor %}
     </select>
-    <label class="date-filter">{% trans "From" %} <input type="date" name="from" value="{{ params.from }}"></label>
-    <label class="date-filter">{% trans "To" %} <input type="date" name="to" value="{{ params.to }}"></label>
+    <label class="date-filter">{% trans "From" %} {% day_input "from" params.from %}</label>
+    <label class="date-filter">{% trans "To" %} {% day_input "to" params.to %}</label>
     <label class="check"><input type="checkbox" name="voided" value="1"{% if params.voided %} checked{% endif %} data-autosubmit> {% trans "Show voided" %}</label>
     <button type="submit" class="button button-ghost">{% trans "Filter" %}</button>
   </form>
@@ -96,7 +96,7 @@
         <td class="num">{% if harvest.loss %}{% blocktrans trimmed with fish=harvest.loss.count_delta|signed %}{{ fish }} fish{% endblocktrans %}<span class="row-sub">{{ harvest.loss_book.kg|kilos }}</span>{% else %}—{% endif %}</td>
         <td>{% if harvest.record %}{{ harvest.record.facility.name }}<span class="row-sub">{{ harvest.record.facility.approval_number }}</span>{% else %}—{% endif %}</td>
         <td>{% if harvest.record.transport %}{{ harvest.record.transport.name }}{% else %}—{% endif %}{% if harvest.record.vessel %}<span class="row-sub">{{ harvest.record.vessel }}</span>{% endif %}</td>
-        <td>{{ operation.created_by.get_username|default:"system" }}<span class="row-sub">{{ operation.created_at|date:"DATETIME_FORMAT" }}</span></td>
+        <td>{{ operation.created_by.get_username|default:"system" }}<span class="row-sub">{{ operation.created_at|company_clock|date:"DATETIME_FORMAT" }}</span></td>
         <td>{{ operation.notes }}{% if harvest.plan %}<span class="row-sub">{% blocktrans trimmed with date=harvest.plan.date|date:"DATE_FORMAT" %}Planned for {{ date }}{% endblocktrans %}</span>{% endif %}{% if harvest.acknowledged %}<span class="row-sub"><span class="badge badge-critical" title="{% for ack in harvest.acknowledged %}{{ ack.get_warning_display }} {% endfor %}">{% trans "Handling warning acknowledged" %}</span></span>{% endif %}{% if operation.is_deleted %}<span class="row-sub">{% blocktrans trimmed with reason=operation.void_reason name=operation.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>
         <td>{% if row.void_url %}<a class="op-void" href="{{ row.void_url }}" data-modal>{% trans "Void" %}</a>{% elif operation.is_deleted %}<span class="badge badge-voided">{% trans "Voided" %}</span>{% endif %}</td>
       </tr>

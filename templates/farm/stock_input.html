@@ -11,6 +11,7 @@
   {% csrf_token %}
   {{ form.token }}
   {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+  {% include "farm/_withdrawal_change.html" with withdrawal_change=form.withdrawal_change %}
   <p class="panel-help">{% if intro %}{{ intro }}{% else %}{% trans "The batch number is given on saving." %}{% endif %}</p>
   <div class="form-grid">
     {% for field in form.visible_fields %}{% if field.name != form.ack_field %}{% include "registration/_field.html" %}{% endif %}{% endfor %}

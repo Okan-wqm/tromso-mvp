@@ -81,10 +81,14 @@ class AlarmRule(AuditedModel):
 class AlarmEvent(models.Model):
     """A time a rule held for a channel: when it opened and closed and the furthest value it reached. At most one open
     event per rule and channel. Written by the sensors' check (sensors/alarms.py); each event is an alarm of the alarms app
-    (alarms.Alarm.sensor_event), which keeps who was notified and who acknowledged it."""
+    (alarms.Alarm.sensor_event), which keeps who was notified and who acknowledged it.
+    It belongs to the place the channel was bound to when it opened (`binding`): a move or taking the device out of the
+    water closes it then (sensors/bindings.py), and a site's events are its places' (sensors/alarms.py `open_events`)."""
 
     rule = models.ForeignKey(AlarmRule, on_delete=models.CASCADE, related_name='events', verbose_name=_('Rule'))
     channel_no = models.IntegerField(_('Channel number'))
+    binding = models.ForeignKey('sensors.Binding', null=True, blank=True, on_delete=models.SET_NULL,
+                                related_name='alarm_events', verbose_name=_('Place (binding)'))
     opened_at = models.DateTimeField(_('Opened at'))
     closed_at = models.DateTimeField(_('Closed at'), null=True, blank=True)
     peak = models.FloatField(_('Furthest value'), null=True, blank=True)

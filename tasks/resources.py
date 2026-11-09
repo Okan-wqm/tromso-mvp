@@ -2,13 +2,14 @@
 create, edit, delete) and the recurring tasks. Their list pages make the recurring tasks' planned tasks first
 (tasks.services.materialise_due), then read."""
 import uuid
-from datetime import date, timedelta
+from datetime import timedelta
 from urllib.parse import urlencode
 
 from django.urls import reverse
 from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
 
 from core.crud import Resource, RowList
+from core.dates import read_day
 from core.widgets import NONE
 from farm.clocks import clocks
 from farm.stock.dates import site_today
@@ -48,13 +49,6 @@ class SeriesChecklist(RowList):
     def save(cls, user, obj, rows, entity_type):
         super().save(user, obj, rows, entity_type)
         services.replan(user, obj)
-
-
-def _date(value):
-    try:
-        return date.fromisoformat(value)
-    except ValueError:
-        return None
 
 
 class TaskResource(Resource):
@@ -123,7 +117,7 @@ class TaskResource(Resource):
             else:
                 params[key] = ''
         for key, lookup in (('from', 'due_date__gte'), ('to', 'due_date__lte')):
-            day = _date(params[key])
+            day = read_day(params[key], request)
             if day is not None:
                 objects = objects.filter(**{lookup: day})
             else:

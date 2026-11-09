@@ -25,7 +25,7 @@ from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 from django.db.models import Case, F, Q, Value, When
 from django.db.models.functions import Lower, Upper
-from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
+from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy, pgettext_lazy
 
 from core.models import CODE, CODE_MESSAGE, AuditedModel, CodedMixin
 from farm.models import Equipment, EquipmentType, Feed, Site, Supplier
@@ -228,7 +228,7 @@ class InventoryLot(AuditedModel):
 
 class OperationKind(models.TextChoices):
     RECEIPT = 'receipt', _('Delivery')
-    ISSUE = 'issue', _('Issue')
+    ISSUE = 'issue', pgettext_lazy('stock operation', 'Issue')     # taken out for use; not a journal's issue
     WRITE_OFF = 'write_off', _('Write-off')
     RETURN = 'return', _('Return to supplier')
     TRANSFER = 'transfer', _('Transfer')
@@ -297,8 +297,6 @@ class InventoryOperation(AuditedModel):
     reason = models.CharField(_('Reason'), max_length=20, blank=True)
     notes = models.CharField(_('Notes'), max_length=2000, blank=True)
     void_reason = models.CharField(_('Reason for voiding'), max_length=500, blank=True)
-    # The key of the form it was entered with (not a secret): the same form sent twice records it once.
-    entry_key = models.UUIDField(null=True, blank=True, unique=True, editable=False)
 
     class Meta:
         db_table = 'inventory_operations'

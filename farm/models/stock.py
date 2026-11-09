@@ -21,7 +21,7 @@ from core.models import AuditedModel
 
 from .species import Species
 from .supplier import Supplier, SupplierLink, SupplyCategory
-from .tank import Tank
+from .tank import ON_A_SITE, Tank, on_a_site
 
 
 # ---- the choices ---------------------------------------------------------------------------------
@@ -150,6 +150,16 @@ class AdjustmentReason(models.TextChoices):
 # The statuses a unit may be stocked in. A preparing or fallow unit becomes active when fish arrive;
 # an active one takes a second batch of its species (owner decisions Q1 and Q5).
 ARRIVAL_STATUSES = (Tank.Status.ACTIVE, Tank.Status.PREPARING, Tank.Status.FALLOW)
+# The units that take fish: of such a status and on a live site (Tank ON_A_SITE), since a site's fish are counted
+# only through its units (F-212). The form's list and the page's buttons ask this; the one write path asks both parts
+# to say which one is missing.
+TAKES_FISH = Q(status__in=ARRIVAL_STATUSES) & ON_A_SITE
+
+
+def takes_fish(unit):
+    return unit.status in ARRIVAL_STATUSES and on_a_site(unit.production_department)
+
+
 # Operations that bring fish into a unit: the ones the capacity acknowledgement can belong to.
 ARRIVING_OPERATIONS = (OperationKind.INPUT, OperationKind.TRANSFER, OperationKind.GRADING,
                        OperationKind.ADJUSTMENT)
@@ -275,8 +285,6 @@ class StockOperation(AuditedModel):
     health_event = models.ForeignKey('HealthEvent', null=True, blank=True, on_delete=models.PROTECT,
                                      related_name='stock_operations', verbose_name=_('Health event'))
     void_reason = models.CharField(_('Reason for voiding'), max_length=500, blank=True)
-    # The key of the form it was entered with (not a secret): the same form sent twice records it once.
-    entry_key = models.UUIDField(null=True, blank=True, unique=True, editable=False)
 
     class Meta:
         db_table = 'stock_operations'

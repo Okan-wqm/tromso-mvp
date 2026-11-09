@@ -2,10 +2,12 @@
 board's mixed mode, flipped, for a person who may read everything and for two who may not, compared with the recording in
 golden_cards.json (monitoring/tests/golden.py says what is compared and how). Recorded before card templates; the
 built-in templates must keep it green, value for value."""
-from datetime import timedelta
+from datetime import date, datetime, time, timedelta, timezone as dt_timezone
 from unittest import mock
 
+from django.test import SimpleTestCase
 from django.urls import reverse
+from django.utils.timezone import now as real_now
 
 from farm.handling.withdrawal import WithdrawalBlock
 from farm.models import Batch, HealthEvent, LiceCount, Tank, Treatment
@@ -18,21 +20,32 @@ from . import golden
 from .golden import Normaliser, cards_say, multiset_missing
 from . import TEMPLATE, MonitoringCase
 from ..cards.builtin import DETAILED
+from farm import withdrawal_gate
 
 PAGE, CARDS = reverse('monitoring:monitor'), reverse('monitoring:cards')
 
 
 class GoldenFarm(MonitoringCase):
     """T-01 (no water: no recent data), T-02 (the worked example's ration) and P-01 (an empty pond in maintenance), and
-    seventeen more units G-00 to G-16, each in a state of its own (below)."""
+    eighteen more units G-00 to G-17, each in a state of its own (below). Every value but G-17's nitrite has a limit."""
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def setUp(self):
+        # The clock is pinned to 18:00 UTC yesterday, so what the cards say does not depend on the time of day the suite
+        # runs (second cross review, finding 10: G-03's sample, 30 h old, fell on the day before yesterday in the early
+        # hours); yesterday, so no value is ever in the database server's future.
+        pinned = datetime.combine(real_now().date() - timedelta(days=1), time(18), tzinfo=dt_timezone.utc)
+        clock = mock.patch('django.utils.timezone.now', return_value=pinned)
+        clock.start()
+        self.addCleanup(clock.stop)
         super().setUp()
         self.limit('oxygen_mg_l', critical_low=6, warning_low=7)
+        self.limit('ph', warning_low='6.5', warning_high='8.5')
+        self.limit('co2_mg_l', warning_high=15, critical_high=20)
         self.limit('temperature_c', warning_high=15, critical_high=18)
         self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='8.1', ph='7.2')
         self.g = []
-        for number in range(17):
+        for number in range(18):
             unit = make_unit(f'G-{number:02d}', self.hall)
             count = 120000 if number == 5 else 500 + 100 * number           # G-05 is over its capacity
             stock_fish(self.user, unit, count, str(60 + number), 5 + number, species=self.salmon, ack=number == 5)
@@ -46,6 +59,7 @@ class GoldenFarm(MonitoringCase):
                  4: None,                                                           # never sampled
                  9: dict(temperature_c='13.1', oxygen_saturation_pct='95'),         # the saturation, not mg/L
                  12: dict(temperature_c='16', oxygen_mg_l='8.4', co2_mg_l='12'),    # a warm warning
+                 17: dict(temperature_c='13', oxygen_mg_l='9', nitrite_n_mg_l='0.05'),   # no limit for the nitrite
                  }
         for number, unit in enumerate(self.g):
             values = water.get(number, fresh)
@@ -123,4 +137,14 @@ class GoldenTests(GoldenFarm):
 
     def test_the_farm_has_every_state_a_card_can_be_in(self):
         states = {card['state'] for card in self.scenarios()['all-simple'].values()}
-        self.assertEqual(states, {'Critical', 'Warning', 'No recent data', 'Note', 'OK', 'Empty'})
+        self.assertEqual(states, {'Critical', 'Warning', 'No recent data', 'No limit', 'Note', 'OK', 'Empty'})
+
+
+class NormaliserTests(SimpleTestCase):
+    def test_an_age_in_seconds_or_minutes_is_one_mark_so_a_slow_run_says_the_same(self):
+        """Cross review: the recording held "just now" and "10 s ago", which a slow host turns into "40 s ago"."""
+        norm = Normaliser([], [], date(2026, 11, 7))
+        said = {norm(f'Meter or test kit · {age}') for age in ('just now', '10 s ago', '50 s ago', '3 min ago',
+                                                                 '59 min ago')}
+        self.assertEqual(said, {'Meter or test kit · <recent>'})
+        self.assertEqual(norm('Meter or test kit · 1 h ago'), 'Meter or test kit · 1 h ago')   # the sample's hour stays

@@ -519,7 +519,7 @@ for reports" with what is missing, rather than hidden (E4).
 | Smolt | site, month | a settefisk site (cleaner-fish hatcheries included, § 3 i ✔) held fish of start-feeding stage or older at any time in the month (D-8) | the 7th of the next month |
 | Cleaner fish | site, month | **every sea site**, whatever its production form or permit (Altinn: "gjelder alle typer akvakulturtillatelser ... for fisk med produksjon i sjøvann"), that held cleaner fish (a species with `cleaner_fish_type`) at any time in the month; a land hatchery of cleaner-fish juveniles reports them in the yearly stock instead (§ 44a, § 3 i) | the 7th of the next month |
 | Monthly biomass | site, month | a matfisk or stamfisk sea site held production fish (not cleaner fish: they may stay through fallowing, § 40 fifth paragraph ✔) at any time in the month | the 7th of the next month |
-| Planned slaughter | slaughter facility, ISO week | **the harvest, planned or done** (§ 9a is the farmer's duty and arises from the harvest, not from the plan): a plan item (kind harvest, not cancelled, open or recorded) or a live `HarvestRecord` of the facility in the week, from the site's reports-from date; the week stays owed after it has passed until filed or closed with a reason (`DueClosure`, coverage review R13) (D-3) | the earlier of Thursday 24:00 of the week before and the day the fish start fasting for it (restkontrollforskriften § 9a ✔; the fast's start is `fast_of(item)`, `farm/handling/fasting.py:12-14`, `:119-122` ✔); a slaughter agreed later: at once; corrections until Tuesday 09:00 of the slaughter week (E1) |
+| Planned slaughter | slaughter facility, ISO week | **the harvest, planned or done** (§ 9a is the farmer's duty and arises from the harvest, not from the plan): a plan item (kind harvest, not cancelled, open or recorded) (a plan whose harvest was voided is open again and still owed); a harvest recorded from a plan is the plan's, owed and counted once in the plan's week and facility whatever its own day and facility, and both reports say where it went (`slaughter.plans_of`, audit F-085, F-227, F-238); a harvest without a plan is its own week's or a live `HarvestRecord` of the facility in the week, from the site's reports-from date; the week stays owed after it has passed until filed or closed with a reason (`DueClosure`, coverage review R13) (D-3) | the earlier of Thursday 24:00 of the week before and the day the fish start fasting for it (restkontrollforskriften § 9a ✔; the fast's start is `fast_of(item, done_too=True)`: the fast the plan asked for, which does not move once the harvest is done); a slaughter agreed later: at once. One function, `reports.compute.slaughter.deadline` (through `compute.deadline_of`), for the due list, the report list, the report's page and the filing; a filed report keeps the deadline recorded when it was filed (audit F-101); corrections until Tuesday 09:00 of the slaughter week (E1) |
 | Escape | an escape record | every escape record dated on or after its site's reports-from date (D-6) with no filed notice (a draft stays owed) | at once ("straks") |
 | Disease | a health event | a health event with a listed diagnosis, suspected or confirmed, dated on or after its site's reports-from date, that the health records' registry (`farm/health/notices.py`) does not know to be told of (dyrehelseforskriften § 7 first paragraph) | at once ("umiddelbart") |
 | Welfare (unexplained mortality) | a health event | **built** (coverage review R27, `due._unexplained`): a health event of the kind increased mortality, live, with no diagnosis and not closed, dated 14 or more days ago and on or after the site's reports-from date, that no notice has told Mattilsynet of: a **welfare** notice about the event (§ 7 second paragraph: when the cause is still unclear after the reassessment within 14 days). The records have no field for the reassessment: giving the event a diagnosis or closing it with its outcome says the cause is clear and ends the duty. Other signs of disease and a reduced production rate, which the paragraph also names, are not events the records hold | "så snart som praktisk mulig" |
@@ -629,7 +629,12 @@ that take the fish out of the units (OUR-03; the stock stays the only writer of 
   "identity changed since filing"; whether that needs a correction is the person's call (E4). A difference of
   format (a newer `format_version`) is told apart from a change of records. The list marks a report when its
   `sources_fingerprint` no longer matches, re-read only for reports whose period is inside the backdating window
-  or whose sources have no window (health events, treatments, harvest plans; E4).
+  or whose sources have no window (health events, treatments, harvest plans; E4). The rows a kind reads have a version
+  (each kind's module says it, `SCOPE_VERSION`, the default of its `scope()`, gathered in `compute.SCOPE_VERSIONS`; sea
+  lice 2: earlier counts, harvest plans and their harvests, lice medicines given for another reason; planned slaughter 2:
+  the harvests its plans were recorded as), kept with the filing
+  (`ReportSnapshot.scope_version`, 1 for every report filed before): a filed report is re-read with the rows of its
+  own version, so changing which rows a kind reads flags no report filed under the old ones.
 - **Correction**: "Start a correction" creates a report with `corrects` set; it is filled and submitted like any
   other; the original shows "superseded by". Mattilsynet's guidance for lice is to send the whole week again (E1),
   which is exactly a correction's content.
@@ -822,8 +827,11 @@ What was built follows 5.1 to 5.12. Where it does not, or where a choice the des
   (`Report.deadline_on`) and whether the day of the filing in Oslo came after it (`filed_late`; empty for a filing recorded before this
   was kept, `False` for a notice, which is filed at once), shown on the report ("Filed 2 days after its deadline") and the
   list, and in the log entry; the database holds that only a filed report has them. The biomass report's `slaktetilstand`
-  is no longer a constant: the person says round or gutted weight (`Report.harvest_condition`, only on the biomass report,
-  checked by the database) and a month with a harvest is not ready until they have. A cleaner-fish month with no feed
+  is the condition of the kilos the farm holds: round, the kilos weighed at harvest (`compute.biomass.HARVEST_CONDITION`).
+  It was once asked of the person (`Report.harvest_condition`), and "gutted" put round kilos under a gutted label in a
+  filing (audit F-086): the question and its column are gone (reports migration 0013); a report filed with it keeps
+  what it filed in its frozen content, and its page shows the difference. Gutted kilos come with the slaughter result
+  (OUR-18). A cleaner-fish month with no feed
   recorded is a **problem**, not a silent 0 kg, unless the person says none was given (`Report.no_cleaner_feed`, only on the
   cleaner-fish report), and feed recorded beside "none given" is a problem too. The cleaner-fish **API** rows are one per
   species (`ArtDto` is per species): the figures of the farmed and the wild-caught fish of a species are added and the

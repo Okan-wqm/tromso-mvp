@@ -7,7 +7,8 @@
    escalation time ago, or at once when nobody could be notified at its level;
 4. every queued notification whose channel has a transport is handed to it (alarms/transports.py). None is connected
    today: nothing is sent, and the outbox waits;
-5. the alarm system supervises itself (alarms/sources.py supervise): its own configuration (a missing rule row).
+5. the alarm system supervises itself (alarms/sources.py supervise): a step that failed and its own configuration (a
+   missing rule row) are critical alarms of their own.
 Each step runs in its own transaction under a transaction-level advisory lock, so two loops never queue, escalate or send
 twice, and a step that fails rolls back alone, is logged and counted, and the others still run (alarm plan, defect 5)."""
 import logging
@@ -142,10 +143,15 @@ def run_once(now=None):
             else:
                 summary.failed += 1
 
-    _step('sensor rules', summary, lambda: sensor_alarms.evaluate(now))
-    _step('sensor events', summary, lambda: count(sources.sensor_events()))
-    _step('water', summary, lambda: count(sources.water(now, rules)))
-    _step('notify', summary, notify)
-    _step('send', summary, send)
-    _step('supervision', summary, lambda: count(sources.supervise(now, rules)))
+    steps = [('sensor rules', lambda: sensor_alarms.evaluate(now)),
+             ('sensor events', lambda: count(sources.sensor_events())),
+             ('water', lambda: count(sources.water(now, rules))),
+             ('notify', notify),
+             ('send', send)]
+    for name, work in steps:
+        _step(name, summary, work)
+    # Last, after the steps whose failure it alarms: a failed step's alarm is on the page at once, and notified on the
+    # next pass (this pass's notify step has run).
+    _step('supervision', summary, lambda: count(sources.supervise(now, rules, [name for name, _work in steps],
+                                                                  list(summary.failed_steps))))
     return summary

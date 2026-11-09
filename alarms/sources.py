@@ -12,8 +12,10 @@
   that only goes stale never clears it (an alarm does not end by going blind); a unit with no fish or no limit any more
   clears it at once (structural). The timers are the subjects' rows (AlarmSubjectState), so a restart loses none.
 Where an alarm is (its site, its production department) is set when it opens, for the recipient rules."""
+import logging
 from dataclasses import dataclass
 
+from django.db import transaction
 from django.db.models import Q
 from django.utils.translation import gettext as _
 
@@ -27,6 +29,8 @@ from sensors.models import AlarmEvent, Binding, Channel
 
 from . import services
 from .models import Alarm, AlarmSubjectState, ClearCause, Severity, Source
+
+logger = logging.getLogger(__name__)
 
 
 # ---- the sensor rules ------------------------------------------------------------------------------------------------
@@ -229,11 +233,12 @@ def settle(subjects, now, rules):
     return len(raises), len(clears)
 
 
-def system_subject(name, holds, severity, summary, now, *, where=None):
-    """A subject of the alarm system itself (source 'system', subject `system:<name>`): raised while `holds`, restored
-    once it no longer does, for the severity's off-delay. `where` ({site, production_department}) is set where one
-    applies, so a site's recipient rules reach it (alarms/routing.py); without it the alarm is the whole farm's."""
-    parameter = name.split(':')[-1]
+def system_subject(name, holds, severity, summary, now, *, parameter=None, where=None):
+    """A subject of the alarm system itself (source 'system', subject `system:<name>`, the alarm's `parameter` what it is
+    about, the name by default): raised while `holds`, restored once it no longer does, for the severity's off-delay.
+    `where` ({site, production_department}) is set where one applies, so a site's recipient rules reach it
+    (alarms/routing.py); without it the alarm is the whole farm's."""
+    parameter = parameter or name
     return Subject(f'system:{name}', holds, not holds, now, severity, lambda: {
         'at': now, 'severity': severity, 'summary': summary, 'source': Source.SYSTEM, 'parameter': parameter,
         **(where or {})}, cause=ClearCause.RESTORED)
@@ -247,46 +252,95 @@ def _text(message, **values):
 
 SENSORS_FAILED = 'sensors_failed'
 ALARM_RULES = 'alarm_rules'
+UNIT_UNEVALUATED = 'unit_unevaluated'
+STEP_FAILED = 'step_failed'
+
+
+def _unit_where(unit):
+    return {'site': unit.production_department.site, 'production_department': unit.production_department}
+
+
+def _read(units, now):
+    """({unit id: PointWater}, [the units that could not be read]): one read for all of them; when it fails, each unit on
+    its own (a savepoint each), so one unit that cannot be read never hides the others (cross review F3)."""
+    try:
+        with transaction.atomic():
+            return water_read.unit_water(units, now), []
+    except Exception:
+        logger.exception('The water of the units could not be read at once; each unit is read on its own.')
+    found, failed = {}, []
+    for unit in units:
+        try:
+            with transaction.atomic():
+                found.update(water_read.unit_water([unit], now))
+        except Exception:
+            logger.exception('The water of unit %s could not be read.', unit)
+            failed.append(unit)
+    return found, failed
+
+
+def _water_subjects(found, failed, rules, now):
+    """The water subjects of one unit's PointWater: per quantity, a warning and a critical level."""
+    subjects = []
+    for slot, reading in _slots(found).items():
+        for severity in HOLDS:
+            subjects.append(Subject(
+                f'water:{found.point.pk}:{slot}:{severity}', reading.judged in HOLDS[severity],
+                lambda state, severity=severity, reading=reading: not failed and clear_evidence(
+                    reading, severity, rules, state.last_bad_at, now),
+                seen_at(reading.worse or reading, now), severity,
+                lambda point=found.point, severity=severity, reading=reading: {
+                    'at': now, 'severity': severity, 'summary': _summary(point, reading), 'source': Source.WATER_LIMIT,
+                    'point': point, 'parameter': reading.code, **_where(point)},
+                structural=ClearCause.STRUCTURAL if reading.judged in UNJUDGED else ''))
+    return subjects
 
 
 def water(now, rules):
-    """Raises and clears the water limits' levels at `now` (alarms.rules `rules`), and the system alarm of live sources that
-    cannot be read: (opened, cleared). While they cannot be read nothing clears: a sample alone must never end an alarm a
-    sensor raised (alarm plan, defect 3). Set-based: one read of the water, one of the subjects' rows, and the alarms,
-    clearances, log entries and rows written in one statement each, however many units alarm at once (defect 7)."""
+    """Raises and clears the water limits' levels at `now` (alarms.rules `rules`), and the system alarms of live sources
+    that cannot be read and of units that cannot be evaluated: (opened, cleared). While the live sources cannot be read
+    nothing clears: a sample alone must never end an alarm a sensor raised (alarm plan, defect 3). A unit that cannot be
+    read or evaluated is its own critical system alarm, on its site, and every other unit goes on (cross review F3); its
+    water alarms stay as they are (nothing clears them blind). Set-based: one read of the water, one of the subjects'
+    rows, and the alarms, clearances, log entries and rows written in one statement each, however many units alarm at
+    once (defect 7)."""
     # The subjects are the live units, each through the point that stands for it (its middle point: A9.1, never an inlet);
     # a depth point's or the loop's value reaches it as the unit's own worst fresh value, judged for its fish. One read.
-    found_water = water_read.unit_water(list(Tank.objects.all()), now)
+    units = list(Tank.objects.select_related('production_department__site'))
+    found_water, unreadable = _read(units, now)
     failed = any(found.sensors_failed for found in found_water.values())
-    subjects = []
-    for found in found_water.values():
-        if found.point is None:
+    subjects, unevaluated = [], {unit.pk for unit in unreadable}
+    for unit in units:
+        found = found_water.get(unit.pk)
+        if found is None or found.point is None or unit.pk in unevaluated:
             continue
-        for slot, reading in _slots(found).items():
-            for severity in HOLDS:
-                key = f'water:{found.point.pk}:{slot}:{severity}'
-                subjects.append((key, found.point, severity, reading))
-    found = [Subject(
-        key, reading.judged in HOLDS[severity],
-        lambda state, severity=severity, reading=reading: not failed and clear_evidence(
-            reading, severity, rules, state.last_bad_at, now),
-        seen_at(reading.worse or reading, now), severity,
-        lambda point=point, severity=severity, reading=reading: {
-            'at': now, 'severity': severity, 'summary': _summary(point, reading), 'source': Source.WATER_LIMIT,
-            'point': point, 'parameter': reading.code, **_where(point)},
-        structural=ClearCause.STRUCTURAL if reading.judged in UNJUDGED else '')
-        for key, point, severity, reading in subjects]
-    found.append(system_subject(SENSORS_FAILED, failed, Severity.CRITICAL, _text(_(
+        try:
+            subjects += _water_subjects(found, failed, rules, now)
+        except Exception:
+            logger.exception('The water of unit %s could not be evaluated.', unit)
+            unevaluated.add(unit.pk)
+    subjects.append(system_subject(SENSORS_FAILED, failed, Severity.CRITICAL, _text(_(
         'The live water values (the sensors) cannot be read: alarms are not cleared until they can.')), now))
+    subjects += [system_subject(f'unit:{unit.pk}:{UNIT_UNEVALUATED}', unit.pk in unevaluated, Severity.CRITICAL, _text(_(
+        '%(unit)s: the water could not be evaluated; its alarms are neither raised nor cleared until it can.'),
+        unit=unit.code), now, parameter=UNIT_UNEVALUATED, where=_unit_where(unit)) for unit in units]
     # A subject read no more (its point made inactive, its owner deleted, the parameter gone) keeps its alarm open: nothing
     # says it is over, so it stays on the page until a person sees it.
-    return settle(found, now, rules)
+    return settle(subjects, now, rules)
 
 
-def supervise(now, rules):
-    """The alarm system's own subjects at the end of a pass: a severity whose rule row is missing (alarms.rules: the
-    safest values stand in, cross review F6) is a critical configuration alarm until the row is back. (opened, cleared)"""
+def supervise(now, rules, steps, failed_steps):
+    """The alarm system's own subjects at the end of a pass (EEMUA 191: the alarm system supervises itself):
+    - a step of the pass that failed (`steps`, their names; `failed_steps`, those that failed) is a critical system alarm
+      from the pass it fails in until it passes again (cross review F3);
+    - a severity whose rule row is missing (alarms.rules: the safest values stand in, cross review F6) is a critical
+      configuration alarm until the row is back.
+    (opened, cleared)"""
     missing = ', '.join(sorted(rules.missing))
-    return settle([system_subject(ALARM_RULES, bool(rules.missing), Severity.CRITICAL, _text(_(
+    subjects = [system_subject(ALARM_RULES, bool(rules.missing), Severity.CRITICAL, _text(_(
         'The alarm rules are incomplete (no rule row for: %(severities)s): the safest values are used until the rows '
-        'are restored.'), severities=missing or '-'), now)], now, rules)
+        'are restored.'), severities=missing or '-'), now)]
+    subjects += [system_subject(f'step:{name.replace(" ", "_")}', name in failed_steps, Severity.CRITICAL, _text(_(
+        'The alarm step "%(step)s" failed: what it does (raising, clearing, notifying or sending alarms) is not done '
+        'until it passes again.'), step=name), now, parameter=STEP_FAILED) for name in steps]
+    return settle(subjects, now, rules)

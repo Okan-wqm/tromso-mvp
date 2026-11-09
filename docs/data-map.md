@@ -1898,7 +1898,7 @@ How long a value of a water parameter says something about the water now (hours)
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › water_freshness
 - **forms**: `WaterFreshnessForm`
 - **constraints**: uq_water_freshness_parameter (unique: parameter); chk_water_freshness_hours (check); chk_water_freshness_kept (check)
-- **tests that mention it**: `alarms/tests/test_freshness.py`
+- **tests that mention it**: `core/tests_workspaces.py`, `alarms/tests/test_freshness.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

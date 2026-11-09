@@ -28,12 +28,12 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.dateparse import parse_date
 from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 from django.utils.translation import gettext as _, ngettext
 
 from core import navigation
 from core.crud import done, render_page
+from core.dates import on_clock, read_day, read_moment
 
 from ..forms.water import (CalculatorForm, RoundForm, RoundRowForm, RoundScopeForm, SampleVoidForm, WaterSampleForm,
                            find_owner, find_point, point_order)
@@ -49,6 +49,7 @@ VIEW, RECORD, VOID = 'farm.view_watermeasurement', 'farm.add_watermeasurement', 
 HISTORY = 'history'
 PAGE_SIZE = 50
 HISTORY_DAYS = 30      # the history's default span, back from today
+HISTORY_MAX_DAYS = 366  # the longest span a history page judges: a longer one starts later, and the page says so
 OWNER_MODELS = {UNIT: Tank, SYSTEM: System, EQUIPMENT: Equipment}
 OWNER_RELATED = {UNIT: ('production_department__site',), SYSTEM: ('site',), EQUIPMENT: ('production_department__site',)}
 
@@ -205,31 +206,41 @@ def _latest(site):
     columns = _columns([row['water'].readings for row in rows])
     for row in rows:
         row['cells'] = [row['water'].get(parameter.code) for parameter in columns]
-    counts = {status: sum(1 for row in rows if row['water'].status == status) for status in ALERTS}
+    # A count of POINTS counts what was measured at each point (PointWater.point_status): one physical problem once,
+    # though the unit's middle point shows the unit's status computed from its other points too (A9.1).
+    counts = {status: sum(1 for row in rows if row['water'].point_status == status) for status in ALERTS}
     return {'rows': rows, 'columns': columns, 'point_count': sum(1 for row in rows if row['point'] is not None),
             'critical_count': counts[Status.CRITICAL], 'warning_count': counts[Status.WARNING],
             'sensors_failed': any(point_water.sensors_failed for point_water in water.values()), 'now': timezone.now()}
 
 
 def _day(request, name, default):
-    return parse_date(request.GET.get(name, '')) or default
+    return read_day(request.GET.get(name, ''), request) or default
 
 
 def _history(request, site, place):
+    """The history's context: the samples of the span (at most HISTORY_MAX_DAYS, the first day moved and said), paged
+    in the database and only the page's judged; with "alerts only" every sample of the span is judged first, as the
+    alert is worked out on read."""
     zone = zone_of(site if place.owner is None else site_of(place.owner))
     today = timezone.localdate(timezone=zone)
     start, end = _day(request, 'from', today - timedelta(days=HISTORY_DAYS)), _day(request, 'to', today)
+    clipped = (end - start).days > HISTORY_MAX_DAYS
+    if clipped:
+        start = end - timedelta(days=HISTORY_MAX_DAYS)
     samples = read.samples_of(
         points=[place.point] if place.point is not None else None,
         owner=None if place.point is not None else place.owner,
         site=site if place.owner is None else None,
         since=timezone.make_aware(datetime.combine(start, time.min), zone),
         before=timezone.make_aware(datetime.combine(end + timedelta(days=1), time.min), zone))
-    rows = read.history(list(samples))
     alerts_only = request.GET.get('alerts') == '1'
     if alerts_only:
-        rows = [row for row in rows if not row.sample.is_deleted and row.status in ALERTS]
-    page = Paginator(rows, PAGE_SIZE).get_page(request.GET.get('page'))
+        rows = [row for row in read.history(list(samples)) if not row.sample.is_deleted and row.status in ALERTS]
+        page = Paginator(rows, PAGE_SIZE).get_page(request.GET.get('page'))
+    else:
+        page = Paginator(samples, PAGE_SIZE).get_page(request.GET.get('page'))
+        page.object_list = read.history(list(page.object_list))
     columns = _columns([row.readings for row in page.object_list])
     earliest = {}
     for row in page.object_list:
@@ -237,13 +248,15 @@ def _history(request, site, place):
         row.cells = [row.readings.get(parameter.code) for parameter in columns]
         row.history_url = history_url(sample.point)
         if request.user.has_perm(VOID) and not sample.is_deleted:
-            first = earliest.setdefault(sample.point_id, services.earliest(sample.point))
-            if local_time(sample.measured_at, sample.point).date() >= first:
+            if sample.point_id not in earliest:
+                earliest[sample.point_id] = services.earliest(sample.point)
+            if local_time(sample.measured_at, sample.point).date() >= earliest[sample.point_id]:
                 row.void_url = _dialog_url('farm:water_void', request, args=[sample.pk])
     kept = request.GET.copy()
     kept.pop('page', None)
     return {'history': page.object_list, 'page': page, 'pager_query': kept.urlencode(), 'columns': columns,
-            'start': start, 'end': end, 'alerts_only': alerts_only, 'zone': zone,
+            'start': start, 'end': end, 'clipped': clipped, 'span': HISTORY_MAX_DAYS, 'alerts_only': alerts_only,
+            'zone': zone,
             'owner_groups': _owner_groups(site, place.owner),
             'point_choices': _owner_points(place.owner)}
 
@@ -361,13 +374,13 @@ def _moment(request, owner):
     value = request.GET.get('at', '')
     if not value:
         return None
-    try:
-        wall = datetime.strptime(value, '%Y-%m-%dT%H:%M')
-    except ValueError:
+    wall = read_moment(value)                   # core.dates: the one reader, inside 1900-2100 (never an overflow)
+    if wall is None:
         raise BadRequest('at')
     zone = zone_of(site_of(owner))
-    first, second = wall.replace(fold=0, tzinfo=zone), wall.replace(fold=1, tzinfo=zone)
-    if first.utcoffset() != second.utcoffset() or timezone.make_naive(first.astimezone(zone), zone) != wall:
+    try:
+        first = on_clock(wall, zone)            # core.dates: the one check of a skipped or repeated time
+    except ValidationError:
         raise BadRequest('at')
     if first > timezone.now():
         raise BadRequest('at')
@@ -460,7 +473,13 @@ def record_round(request):
                         % {'rows': services.ROUND_ROWS})
     data = request.POST if request.method == 'POST' else None
     header = RoundForm(data, site=site)
-    rows = [RoundRowForm(data, point=point, columns=columns) for point in points]
+    # One read of every row's water and assumed salinity for what an oxygen column says it would be worked out with
+    # (forms.water.OxygenInputs; what it is worked out with is found by the server when the round is written).
+    oxygen = bool(points) and bool({parameters.OXYGEN_MG_L, parameters.OXYGEN_PCT} & set(columns))
+    water = read.latest(points) if oxygen else {}
+    assumed = read.assumed_salinities(points) if oxygen else {}
+    rows = [RoundRowForm(data, point=point, columns=columns, water=water.get(point.pk), assumed=assumed.get(point.pk))
+            for point in points]
     context = _context(heading=_('Water round'), scope=scope, header=header, rows=rows,
                        columns=[parameters.get(code) for code in columns], site=site,
                        back_url=page_url(site=site.pk if site else ''))
@@ -472,7 +491,9 @@ def record_round(request):
                 samples = services.record_round(
                     request.user, measured_at=header.cleaned_data['measured_at'],
                     source=header.cleaned_data['source'], token=header.cleaned_data['token'],
-                    rows=[(row.point, row.entered(), row.cleaned_data['notes']) for row in entered])
+                    withdrawal_ack=header.cleaned_data['withdrawal_ack'],
+                    rows=[(row.point, row.entered(), row.cleaned_data['notes']) for row in entered],
+                    require_basis=True)
             except AlreadyRecorded:
                 return done(request, context['back_url'])
             except ValidationError as error:
@@ -487,7 +508,9 @@ def record_round(request):
 
 
 def _round_errors(error, header, entered):
-    """The service's reasons on the round: a cell's on its row and parameter, the time on the header."""
+    """The service's reasons on the round: a cell's on its row and parameter, the time on the header. The withdrawal
+    guard's question goes on the header, with its box."""
+    header.withdrawal_change = getattr(error, 'change', None) or header.withdrawal_change
     for key, messages_ in error.message_dict.items():
         index, _sep, code = key.partition('-')
         if code and index.isdigit():
@@ -507,7 +530,8 @@ def void_sample(request, pk):
         form = SampleVoidForm(request.POST)
         if form.is_valid():
             try:
-                services.void(request.user, sample, form.cleaned_data['reason'])
+                services.void(request.user, sample, form.cleaned_data['reason'],
+                              withdrawal_ack=form.cleaned_data['withdrawal_ack'])
             except ValidationError as error:
                 form.add_service_error(error)
             else:
@@ -557,9 +581,9 @@ def drawer(request, unit):
 
 
 def overview_tiles(user):
-    """The production overview's water figure: the units with a critical water value now."""
+    """The production overview's water figure: the sampling points with a critical water value now, the water page's own
+    count (`_latest`, every point it lists, an outlet too), so the two cannot disagree."""
     if not user.has_perm(VIEW):
         return []
-    units = list(Tank.objects.select_related('production_department__site'))
-    return [{'label': _('Units with a critical water value'), 'count': critical_count(unit_water(user, units)),
+    return [{'label': _('Sampling points with a critical water value'), 'count': _latest(None)['critical_count'],
              'url': page_url()}]

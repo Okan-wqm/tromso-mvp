@@ -1,7 +1,10 @@
+from decimal import Decimal
+
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.db import IntegrityError, transaction
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from core.audit import message
@@ -133,7 +136,8 @@ class SiteAuditTests(SiteTestCase):
         self.assertEqual(deleted, ('delete', 'ali', {}))
 
     def test_saving_without_changes_logs_nothing(self):
-        site = self.make_site(name='Same', code='SM', area_m2='100.00', latitude='60.391300', longitude='5.322100')
+        site = self.make_site(name='Same', code='SM', area_m2='100.00', latitude='60.391300', longitude='5.322100',
+                              timezone='Europe/Oslo')
         # Same values typed differently (100 vs 100.00) are not a change.
         self.client.post(reverse('farm:site_edit', args=[site.pk]), site_data(
             name='Same', code='SM', country='', region='', area_m2='100', latitude='60.3913', longitude='5.3221',
@@ -221,7 +225,7 @@ class SiteCreateTests(SiteTestCase):
         self.assertEqual(site.code, 'MPS-001')
         self.assertEqual(site.created_by, self.user)
         self.assertEqual(site.version, 1)
-        self.assertEqual(site.timezone, '')
+        self.assertEqual(site.timezone, 'Europe/Oslo')
 
     def test_name_and_code_are_required_and_code_needs_two_characters(self):
         response = self.client.post(reverse('farm:site_create'), site_data(name=' ', code='x'))
@@ -280,10 +284,51 @@ class SiteCreateTests(SiteTestCase):
         response = self.client.post(reverse('farm:site_create'), site_data(latitude='91', longitude='5'))
         self.assertIn('latitude', response.context['form'].errors)
 
+    def test_the_altitude_is_a_place_where_fish_are_kept(self):
+        """F-089: the altitude sets the pressure the oxygen's saturation is worked out with; a slip (a minus sign, two
+        zeros too many) would inflate a sensor's mg/L or stop the pages, so it is held to sea level .. 5000 m (owner: no
+        site lies below sea level that matters; a minus sign is a slip, and 10 m change the pressure by about 0.1 %)."""
+        for typed in ('-1', '-0.5', '-430', '5001', '50000', '-5000'):
+            with self.subTest(altitude=typed):
+                response = self.client.post(reverse('farm:site_create'), site_data(altitude=typed))
+                self.assertEqual(response.context['form'].errors['altitude'],
+                                 ['Between 0 and 5000 m: sea level to the highest farms.'])
+        self.assertFalse(Site.objects.exists())
+        for number, typed in enumerate(('0', '5000', '12.5')):
+            self.client.post(reverse('farm:site_create'), site_data(altitude=typed, code=f'S{number}X',
+                                                                     name=f'Site {number}'))
+        self.assertEqual(sorted(Site.objects.values_list('altitude', flat=True)), [0, Decimal('12.5'), 5000])
+
     def test_errors_mark_their_tab(self):
         response = self.client.post(reverse('farm:site_create'), site_data(type='sea_cage'))
         tabs = {tab['key']: tab['has_errors'] for tab in response.context['form'].tab_list()}
         self.assertEqual(tabs, {'basic': False, 'location': True, 'contact': False, 'reports': False})
+
+
+class SiteTimeZoneTests(SiteTestCase):
+    """A site's day and clock are read in its time zone (farm.models.zone_of): every site has one, stored and shown, so
+    none runs on UTC unseen. A site made without one is given the company's (settings.COMPANY_TIME_ZONE, from the
+    environment, Europe/Oslo by default), never the server's UTC."""
+
+    def test_a_site_made_without_a_time_zone_is_given_the_companys_never_the_servers_utc(self):
+        self.assertEqual(settings.TIME_ZONE, 'UTC')                        # the server's clock is not the company's
+        self.assertEqual(self.make_site().timezone, 'Europe/Oslo')
+        with override_settings(COMPANY_TIME_ZONE='Europe/Istanbul'):
+            self.assertEqual(self.make_site(name='Site B', code='SB').timezone, 'Europe/Istanbul')
+
+    def test_the_database_refuses_a_site_without_a_time_zone(self):
+        site = self.make_site(timezone='Europe/Oslo')
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            Site.objects.filter(pk=site.pk).update(timezone='')
+
+    def test_the_form_asks_for_a_time_zone_and_offers_the_companys_first(self):
+        response = self.client.post(reverse('farm:site_create'), site_data(timezone=''))
+        self.assertEqual(response.context['form'].errors['timezone'], ['This field is required.'])
+        self.assertFalse(Site.objects.exists())
+        with override_settings(COMPANY_TIME_ZONE='Europe/Istanbul'):
+            form = self.client.get(reverse('farm:site_create')).context['form']
+        self.assertNotIn('', [value for value, _ in form.fields['timezone'].choices])
+        self.assertEqual(form['timezone'].value(), 'Europe/Istanbul')
 
 
 class SiteDatabaseConstraintTests(SiteTestCase):
@@ -338,6 +383,48 @@ class SiteEditTests(SiteTestCase):
         site.soft_delete(self.user)
         self.assertEqual(self.client.get(reverse('farm:site_edit', args=[site.pk])).status_code, 404)
 
+    def deleted_while_saving(self, site, url, data):
+        """Posts `data` to `url` with `site` deleted between the form's check and the save's lock (F-009)."""
+        from unittest import mock
+
+        from django.forms import BaseFormSet
+
+        from core.crud import TabbedForm
+
+        def deleted_after(check):
+            def checked(form):
+                valid = check(form)
+                Site.objects.filter(pk=site.pk).update(is_deleted=True)
+                return valid
+            return checked
+        with (mock.patch.object(TabbedForm, 'is_valid', deleted_after(TabbedForm.is_valid)),
+              mock.patch.object(BaseFormSet, 'is_valid', deleted_after(BaseFormSet.is_valid))):
+            return self.client.post(url, data)
+
+    def test_a_site_deleted_while_it_was_saved_is_not_found(self):
+        site = self.make_site()
+        response = self.deleted_while_saving(site, reverse('farm:site_edit', args=[site.pk]),
+                                             site_data(name='Renamed', code='SA', version='1'))
+        self.assertEqual(response.status_code, 404)
+        site = self.make_site(name='Site B', code='SB')
+        response = self.deleted_while_saving(site, reverse('farm:site_contacts', args=[site.pk]),
+                                             contacts_data([{'name': 'Kari', 'is_primary': True}], record=site))
+        self.assertEqual(response.status_code, 404)
+
+    def test_a_clash_only_the_database_catches_is_told_on_the_edit_form(self):
+        # F-034: two people giving two sites the same code at once both pass the form's checks.
+        from unittest import mock
+
+        from core.crud import TabbedForm
+        self.make_site(name='Other', code='MPS-001')
+        site = self.make_site()
+        with mock.patch.object(TabbedForm, '_check_conditional_constraints'):
+            response = self.client.post(reverse('farm:site_edit', args=[site.pk]), site_data(version='1'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['form'].errors['code'], ['Another site already uses this code.'])
+        site.refresh_from_db()
+        self.assertEqual(site.code, 'SA')
+
 
 class SiteContactTests(SiteTestCase):
     def setUp(self):
@@ -389,3 +476,32 @@ class SiteDeleteTests(SiteTestCase):
         self.assertTrue(site.is_deleted)
         self.assertEqual(site.deleted_by, self.user)
         self.assertIsNotNone(site.deleted_at)
+
+
+class SiteAltitudeTests(SiteTestCase):
+    """F-089: the database holds the altitude's range as the form does, and a calculator takes any site altitude."""
+
+    def test_the_database_refuses_an_altitude_off_the_range(self):
+        for number, altitude in enumerate((-1, Decimal('-0.01'), 5001, 50000)):
+            with self.subTest(altitude=altitude), self.assertRaisesMessage(IntegrityError, 'chk_sites_altitude_range'), \
+                    transaction.atomic():
+                self.make_site(altitude=altitude, code=f'A{number}X', name=f'Site {number}')
+        self.assertEqual(self.make_site(altitude=0).altitude, 0)
+
+    def test_a_site_at_sea_level_gives_the_calculator_its_altitude(self):
+        from ..water import calculation
+        from .test_stock import make_unit
+        from ..models import ProductionDepartment
+        site = self.make_site(altitude=0)
+        hall = ProductionDepartment.objects.create(site=site, name='Hall A', code='HA')
+        offers = calculation.offers(make_unit('T-01', hall))
+        self.assertEqual(offers['altitude_m'].value, 0)
+
+    def test_the_calculators_altitude_has_the_same_range(self):
+        from django.core.exceptions import ValidationError
+        from ..forms.water import CalculatorForm
+        field = CalculatorForm.base_fields['altitude_m']
+        for typed in ('-1', '5001'):
+            with self.subTest(altitude=typed), self.assertRaises(ValidationError):
+                field.clean(typed)
+        self.assertEqual(field.clean('0'), 0)

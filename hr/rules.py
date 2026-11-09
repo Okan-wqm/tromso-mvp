@@ -133,22 +133,26 @@ def status(span, punches, on_leave, now, grace_minutes, absent_after_minutes, wi
     punch window before the start up to the end (all of them when nothing is planned: an unplanned presence is still a
     presence). A record is a fact and the plan an intent: a person who clocked in is present or late (or done once they clocked
     out) whatever the plan says; one who did not is upcoming until the start plus the grace, not in until the start plus the
-    later of the grace and the absent-after minutes, and absent after that. On approved leave a person is on leave."""
-    if on_leave:
-        return Standing(ON_LEAVE)
-    counted = list(punches)
+    later of the grace and the absent-after minutes, and absent after that. On approved leave a person who did not clock in is
+    on leave; one who did is present (or done) all the same: the board is the headcount on site, in an emergency too.
+    An open clock-in (no clock-out yet) counts whatever the window: the person is on site now, called in hours before the
+    shift or still there after it; only the shift's own clock-ins (inside the window) say whether they were late."""
+    counted = inside = list(punches)
     if span is not None:
         start, end = span
         earliest = start - timedelta(minutes=window_minutes)
-        counted = [punch for punch in punches if earliest <= punch[0] < end]
-    if counted:
-        first_in = min(punch[0] for punch in counted)
+        inside = [punch for punch in punches if earliest <= punch[0] < end]
+        counted = inside + [punch for punch in punches if punch[1] is None and punch not in inside]
+    if counted:                         # a clock-in is a fact: it beats the plan and the leave
+        first_in = min(punch[0] for punch in (inside or counted))
         late = 0
-        if span is not None:
+        if span is not None and inside and not on_leave:  # called in on a day of leave is never late
             late = max(0, int((first_in - span[0]).total_seconds() // 60) - grace_minutes)
         if any(punch[1] is None for punch in counted):
             return Standing(LATE if late else PRESENT, first_in, None, late)
         return Standing(DONE, first_in, max(punch[1] for punch in counted), late)
+    if on_leave:
+        return Standing(ON_LEAVE)
     if span is None:
         return None
     start = span[0]

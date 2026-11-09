@@ -28,6 +28,7 @@ from ..water.evaluate import Status
 from .helpers import make_species, point_of, role, stock_fish
 from .test_deffeyes import plummer_busenberg
 from .test_stock import make_unit
+from farm import withdrawal_gate
 
 REFERENCE = json.loads((Path(__file__).parent / 'deffeyes_reference' / 'reference.json').read_text(encoding='utf-8'))
 # The source's reagent names (reagents.ts REAGENTS) and ours.
@@ -884,6 +885,7 @@ class UnitChartTests(UnitWaterCase):
         self.assertIn('Nothing is filled in', body)
         self.assertNotIn('<svg', body)
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_a_unit_without_a_middle_point_lists_its_points_and_draws_nothing(self):
         other = self.make('T-03')
         self.sample(point_of(other, 'inlet'), temperature_c=9, ph='7.2', alkalinity_mg_l=90, salinity_ppt='0.2')
@@ -912,13 +914,15 @@ class UnitChartTests(UnitWaterCase):
         self.assertFalse(deffeyes.possible(10, 0.2, 11, 3))
         self.assertTrue(deffeyes.possible(10, 0.2, 7.2, 90))
 
-    def test_the_temperature_is_the_points_own_never_the_loops(self):
+    def test_the_loops_temperature_stands_in_when_the_unit_has_none_of_its_own(self):
+        """Owner rule A9 (2026-11-07) replaces the decision of 2026-11-04 (the chart refused a loop's temperature)."""
         loop_only = self.make('T-05')
         Tank.objects.filter(pk=loop_only.pk).update(system=self.loop)
         self.sample(point_of(self.loop), temperature_c=13)
         self.sample(self.middle(loop_only), ph='7.2', alkalinity_mg_l=90, salinity_ppt='0.2')
-        refused = calculation.chart_of(Tank.objects.get(pk=loop_only.pk))
-        self.assertEqual([str(label) for label in refused.missing], [str(parameters.get('temperature_c').label)])
+        chart = calculation.chart_of(Tank.objects.get(pk=loop_only.pk))
+        temperature = next(each for each in chart.inputs if each.field == 'temperature_c')
+        self.assertEqual((temperature.value, temperature.reading.point), (13, point_of(self.loop)))
 
     def test_offers_of_a_point_are_that_points_and_the_default_is_unchanged(self):
         middle = self.middle()
@@ -955,6 +959,16 @@ class UnitChartTests(UnitWaterCase):
         blind.groups.add(role('Stock only', 'view_stockoperation', 'view_tank'))
         self.client.force_login(blind)
         self.assertEqual(self.client.get(url).status_code, 403)
+
+    def test_a_moment_outside_the_window_of_dates_is_refused_never_a_server_error(self):
+        """`?at=` is an address a person can edit: the calendar's ends (an overflow on the site's clock) and anything
+        outside 1900-2100 are refused (400) through core.dates.read_moment, like any other date typed."""
+        url = reverse('farm:water_unit_chart', args=[self.unit.pk])
+        for typed in ('0001-01-01T00:30', '9999-12-31T23:59', '1899-12-31T12:00', '2026-13-01T00:00', '2026-01-05',
+                      'x'):
+            with self.subTest(at=typed):
+                self.assertEqual(self.client.get(url, {'at': typed}).status_code, 400)
+        self.assertEqual(self.client.get(url, {'at': '2026-01-05T09:00'}).status_code, 200)
 
     def test_two_windows_never_share_an_svg_id_and_the_calculators_ids_are_unchanged(self):
         inlet = point_of(self.unit, 'inlet')

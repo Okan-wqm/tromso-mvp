@@ -1,7 +1,7 @@
 """The Sensors panel's pages beyond its tabs: the overview, and a credential's secret, shown once when it is made or
 replaced and never again."""
 import csv
-from datetime import datetime, timedelta
+from datetime import timedelta
 from urllib.parse import urlencode
 
 from django import forms
@@ -21,10 +21,12 @@ from django.views.decorators.http import require_POST
 
 from core import audit, navigation
 from core.crud import DRAFT, done, refusal_text, render_page
+from core.dates import read_moment
 from core.models import AuditLog
 from farm.models import System, Tank
 from farm.models.site import zone_of
 from farm.water import deffeyes
+from core.widgets import MomentInput
 
 from . import bindings, chart, credentials, quantities, read, trail
 from .forms import DeviceMoveForm, on_site_clock, place_choices, place_of
@@ -33,7 +35,7 @@ from .models import (AlarmEvent, Binding, Channel, ChannelStatus, Connection, Cr
 from .resources import (BindingResource, ChannelResource, ConnectionResource, CredentialResource, DeviceResource,
                         PayloadFormatResource, secret_page)
 
-DATETIME = forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M')
+DATETIME = MomentInput()
 # How the activity log says a secret changed: never its value or its hash.
 SECRET_LABEL, REPLACED = 'Secret', '(replaced)'
 
@@ -108,10 +110,10 @@ class ChartForm(forms.Form):
             self.add_error(None, _('Choose a time: a preset, or from and to.'))
             return cleaned
         zone = read.zone_for(target)
-        current = timezone.get_current_timezone()
         try:
-            cleaned['from'] = on_site_clock(timezone.make_naive(cleaned['start'], current), zone)
-            cleaned['to'] = on_site_clock(timezone.make_naive(cleaned['end'], current), zone)
+            # the wall time typed (the form made it aware in the current zone), read on the place's clock
+            cleaned['from'] = on_site_clock(timezone.make_naive(cleaned['start'], timezone.get_current_timezone()), zone)
+            cleaned['to'] = on_site_clock(timezone.make_naive(cleaned['end'], timezone.get_current_timezone()), zone)
         except ValidationError as error:
             self.add_error(None, error)
             return cleaned
@@ -220,7 +222,7 @@ def device_move(request):
         form = DeviceMoveForm(initial=initial)
         device, place, _out = form.chosen()
         zone = bindings.clock(device, place) if device is not None else zone_of(None)
-        form.initial['valid_from'] = timezone.localtime(timezone=zone).strftime('%Y-%m-%dT%H:%M')
+        form.initial['valid_from'] = timezone.localtime(timezone=zone).replace(tzinfo=None, second=0, microsecond=0)
     if request.method == 'POST' and DRAFT not in request.POST and form.is_valid():
         data = form.cleaned_data
         try:
@@ -390,14 +392,16 @@ def deffeyes_frames(request):
     zone = read.zone_for(target)
     try:
         if request.GET.get('start') and request.GET.get('end'):
-            start, end = (on_site_clock(datetime.strptime(request.GET[name], '%Y-%m-%dT%H:%M'), zone)
-                          for name in ('start', 'end'))
+            walls = [read_moment(request.GET[name]) for name in ('start', 'end')]   # core.dates: inside 1900-2100
+            if None in walls:
+                raise ValueError('Not a moment this page reads.')
+            start, end = (on_site_clock(wall, zone) for wall in walls)
         else:
             end = timezone.now().replace(minute=0, second=0, microsecond=0)
             start = end - dict(RANGES).get(request.GET.get('range', ''), timedelta(days=7))
         step = timedelta(seconds=int(request.GET.get('step') or 3600))
         found = read.deffeyes_frames(target, start, end, step, cursor=int(request.GET.get('cursor') or 0))
-    except (ValueError, ValidationError):
+    except (ValueError, OverflowError, ValidationError):     # OverflowError: a step longer than a timedelta holds
         return JsonResponse({'error': _('Give a start before the end on the site’s clock, a step in seconds and a '
                                         'cursor inside the range.')}, status=400)
     frames = found.frames

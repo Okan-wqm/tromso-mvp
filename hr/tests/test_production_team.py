@@ -193,13 +193,13 @@ class ManagerTests(PeopleTestCase):
         self.assertEqual(list(form.fields['employee'].queryset), [])
 
 
-class MenuCourtesyTests(PeopleTestCase):
+class MenuLineTests(PeopleTestCase):
     def setUp(self):
         super().setUp()
         self.worker = user('ann', *WORKER, group='Worker role')
         Employee.objects.filter(pk=self.in_a.pk).update(user=self.worker, first_name='', last_name='')
 
-    def test_a_production_only_worker_has_no_company_hr_lines_but_may_still_open_the_pages(self):
+    def test_a_production_only_worker_has_no_company_hr_lines_and_their_pages_refuse_them(self):
         self.client.force_login(self.worker)
         company = labels(self.client.get(reverse('home')))
         self.assertNotIn('Leave requests', company)
@@ -207,7 +207,7 @@ class MenuCourtesyTests(PeopleTestCase):
         production = labels(self.client.get(reverse('hr:production_today')))
         self.assertIn('Leave requests', production)
         self.assertNotIn('Team overview', production)            # not a lead
-        self.assertEqual(self.client.get(reverse('hr:leaverequest_list')).status_code, 200)
+        self.assertEqual(self.client.get(reverse('hr:leaverequest_list')).status_code, 403)   # as its menu line says
 
     def test_an_office_person_keeps_the_company_lines(self):
         office = user('cy', *WORKER, group='Office worker role')

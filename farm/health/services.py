@@ -30,15 +30,15 @@ from django.db import transaction
 from django.utils.translation import gettext as _, gettext_lazy, ngettext
 
 from core import audit
-from core.models import AuditLog
+from core.models import AuditLog, EntryKey
 from farm.feeding import read as feeding_read
 from farm.handling import check
-from farm.health import read as health_read
+from farm.health import lice, read as health_read, withdrawal
 from farm.models import HealthEvent, LiceCount, Medicine, StockOperation, Tank, Treatment
 from farm.models.handling import HandlingKind
 from farm.models.health import MEDICINAL, PLANNED_DAYS, TreatmentMethod, TreatmentReason
 from farm.stock.dates import check_date, earliest, local_today, shown_date, sites_of
-from farm.stock.services import AlreadyRecorded, locked, voided
+from farm.stock.services import AlreadyRecorded, lock_fish, locked, voided
 
 # The fields the activity log shows for a new treatment and a new lice count.
 TREATMENT_FIELDS = ['units', 'method', 'medicine', 'reason', 'start_date', 'end_date', 'dose_value', 'dose_unit',
@@ -67,7 +67,7 @@ def event_label(event):
 
 def _already(model, token):
     if token is not None:
-        done = model.all_objects.filter(entry_key=token).first()
+        done = EntryKey.record_of(token, model)
         if done is not None:
             raise AlreadyRecorded(done)
 
@@ -129,13 +129,22 @@ def _check_event(event, units, day):
 # ---- treatments ---------------------------------------------------------------------------------------
 @dataclass
 class TreatmentHandling:
-    """The handling check of a treatment over its units (farm.handling.check.assess for each), as one: the
-    warnings, the notes (named by unit when there are several) and one fingerprint for the form's box."""
+    """What a treatment's dialog asks before it is saved, as one: the handling check over its units
+    (farm.handling.check.assess for each: the fast) and what the treatment leaves out of a report (`reported`,
+    LeftOutOfLiceReport); the warnings, the notes (named by unit when there are several) and one fingerprint for the
+    form's box. The fast protects fish: going on past it is stored and logged as critical; a report's warning is logged
+    with the entry. What the treatment does to the withdrawals (harvests already recorded inside the one it creates) is
+    the withdrawal guard's, asked through its own box (farm.health.withdrawal.guarded)."""
     assessments: list = field(default_factory=list)
+    reported: list = field(default_factory=list)
+
+    @property
+    def handling_warnings(self):
+        return [warning for assessment in self.assessments for warning in assessment.warnings]
 
     @property
     def warnings(self):
-        return [warning for assessment in self.assessments for warning in assessment.warnings]
+        return self.handling_warnings + self.reported
 
     @property
     def notes(self):
@@ -146,33 +155,70 @@ class TreatmentHandling:
     @property
     def fingerprint(self):
         keys = [f'{assessment.unit.pk}:{assessment.fingerprint}' for assessment in self.assessments
-                if assessment.warnings]
+                if assessment.warnings] + [found.key() for found in self.reported]
         return hashlib.sha256('|'.join(keys).encode()).hexdigest()[:20] if keys else ''
 
     def messages(self):
         return [warning.message() for warning in self.warnings]
 
 
-def handling(units, day, method):
-    """The fast before a treatment of `units` starting on `day` (TreatmentHandling); nothing to check for
-    medicated feed or before a day is chosen."""
-    if method == TreatmentMethod.IN_FEED or day is None:
-        return TreatmentHandling()
-    return TreatmentHandling([check.assess(HandlingKind.TREATMENT, unit, day)
-                              for unit in sorted(units, key=lambda unit: unit.code)])
+@dataclass(frozen=True)
+class LeftOutOfLiceReport:
+    """A sea-lice medicine given for another reason (farm.health.lice.left_out_of_lice_report): the weekly sea-lice report
+    will not list the treatment. A warning of the treatment's dialog, never a refusal (hydrogen peroxide is also an AGD
+    treatment)."""
+    medicine: Medicine
+    reason: str
+
+    warning = ''                             # not a handling warning: nothing is stored but the log entry
+
+    def key(self):
+        return f'lice_report:{self.medicine.pk}:{self.reason}'
+
+    def message(self):
+        return _('%(medicine)s is a sea-lice medicine, given here for “%(reason)s”: the weekly sea-lice report to '
+                 'Mattilsynet lists only the treatments for sea lice, so this one will not be in it.') % {
+            'medicine': self.medicine, 'reason': TreatmentReason(self.reason).label}
+
+
+def handling(units, day, method, medicine=None, reason=None):
+    """What a treatment of `units` from `day` with `medicine` for `reason` asks before it is saved (TreatmentHandling):
+    the fast before it (nothing for medicated feed, which is the feeding itself) and whether the weekly sea-lice report
+    leaves it out; no fast before a day is chosen."""
+    units = sorted(units, key=lambda unit: unit.code)
+    reported = []
+    if reason and lice.left_out_of_lice_report(medicine, reason):
+        reported.append(LeftOutOfLiceReport(medicine, reason))
+    if day is None or not units or method == TreatmentMethod.IN_FEED:
+        return TreatmentHandling(reported=reported)
+    return TreatmentHandling([check.assess(HandlingKind.TREATMENT, unit, day) for unit in units], reported)
+
+
+def _lock_fish(unit_ids, first):
+    """The fish of the units from `first` on, locked as a harvest locks them (farm.stock.services.lock_fish: batches,
+    then units, then the batches read again under the unit locks), so a treatment and a harvest of the same fish take
+    turns and the withdrawal guard sees every harvest committed before it. Returns (the units, the batch ids)."""
+    units, batch_ids = lock_fish(unit_ids, first)
+    return list(units.values()), batch_ids
+
+
+def _today(units):
+    return min(local_today(unit) for unit in units)
 
 
 def record_treatment(user, *, units, method, reason, start_date, end_date, medicine=None, dose_value=None,
                      dose_unit='', amount_value=None, amount_unit='', bath_minutes=None, prescribed_by='',
-                     prescription_ref='', vet=None, health_event=None, notes='', handling_ack=None, token=None):
+                     prescription_ref='', vet=None, health_event=None, notes='', handling_ack=None, token=None,
+                     withdrawal_ack=None):
     """A course given to the fish of `units` from `start_date` to `end_date` (see the module's rules);
-    `handling_ack` is the fingerprint of the handling warnings the person went on past."""
+    `handling_ack` is the fingerprint of the handling warnings the person went on past. The withdrawal it creates goes
+    through the withdrawal guard (harvests already recorded inside it are asked about)."""
     if not units:
         raise ValidationError({'units': _('Choose the units that were treated.')})
     if len({unit.pk for unit in units}) != len(units):
         raise ValidationError({'units': _('Each unit can be listed once.')})
     with transaction.atomic():
-        locked_units = list(locked(Tank, {unit.pk for unit in units}).values())
+        locked_units, batch_ids = _lock_fish([unit.pk for unit in units], start_date)
         _already(Treatment, token)
         for unit in locked_units:
             if unit.is_deleted:
@@ -192,34 +238,59 @@ def record_treatment(user, *, units, method, reason, start_date, end_date, medic
         for unit in sorted(locked_units, key=lambda item: item.code):
             if not _has_fish(unit, start_date, 'treatment'):
                 raise ValidationError({'units': _no_fish(unit, start_date)})
-        checked = handling(locked_units, start_date, method)
-        check.require_acknowledged(checked, handling_ack)
-        treatment = Treatment(
-            method=method, medicine=medicine, reason=reason, start_date=start_date, end_date=end_date,
-            dose_value=dose_value, dose_unit=dose_unit, amount_value=amount_value, amount_unit=amount_unit,
-            bath_minutes=bath_minutes, prescribed_by=prescribed_by.strip(), prescription_ref=prescription_ref.strip(),
-            vet=vet, health_event=health_event, notes=notes.strip(), entry_key=token, created_by=user, updated_by=user)
-        treatment.full_clean()
-        treatment.save()
-        treatment.units.set(locked_units)
-        for assessment in checked.assessments:
-            if assessment.warnings:
-                check.acknowledge(treatment, assessment)
-        with audit.source_language():
-            values = audit.snapshot(treatment, TREATMENT_FIELDS)
-            critical = bool(checked.warnings)
-            if critical:
-                values[str(gettext_lazy('Handling warnings acknowledged'))] = ' '.join(checked.messages())
-            audit.record_create(user, treatment, values, label=treatment_label(treatment, locked_units),
-                                severity=AuditLog.Severity.CRITICAL if critical else AuditLog.Severity.NORMAL)
-        return treatment
+        checked = handling(locked_units, start_date, method, medicine, reason)
+        check.require_acknowledged(checked, handling_ack, user=user)
+
+        def write():
+            treatment = Treatment(
+                method=method, medicine=medicine, reason=reason, start_date=start_date, end_date=end_date,
+                dose_value=dose_value, dose_unit=dose_unit, amount_value=amount_value, amount_unit=amount_unit,
+                bath_minutes=bath_minutes, prescribed_by=prescribed_by.strip(), prescription_ref=prescription_ref.strip(),
+                vet=vet, health_event=health_event, notes=notes.strip(), created_by=user, updated_by=user)
+            treatment.full_clean()
+            treatment.save()
+            if token is not None:
+                EntryKey.note(token, treatment)
+            treatment.units.set(locked_units)
+            for assessment in checked.assessments:
+                if assessment.warnings:
+                    check.acknowledge(treatment, assessment)
+            with audit.source_language():
+                values = audit.snapshot(treatment, TREATMENT_FIELDS)
+                critical = _acknowledged(values, checked)
+                audit.record_create(user, treatment, values, label=treatment_label(treatment, locked_units),
+                                    severity=AuditLog.Severity.CRITICAL if critical else AuditLog.Severity.NORMAL)
+            return treatment
+
+        return withdrawal.guarded(user, batch_ids, _today(locked_units), write, seen=withdrawal_ack)
 
 
-def change_last_day(user, treatment, end_date):
+def _acknowledged(values, checked):
+    """Adds the warnings gone past to the log entry's values, in English; whether there were handling warnings among
+    them (the entry is then critical)."""
+    handling_warnings = [warning.message() for warning in checked.handling_warnings]
+    if handling_warnings:
+        values[str(gettext_lazy('Handling warnings acknowledged'))] = ' '.join(handling_warnings)
+    if checked.reported:
+        values[str(gettext_lazy('Warnings acknowledged'))] = ' '.join(warning.message() for warning in checked.reported)
+    return bool(handling_warnings)
+
+
+def _treatment_fish(treatment_id, first):
+    """Locks the fish of a stored treatment's units (_lock_fish) before the treatment itself."""
+    unit_ids = list(Treatment.units.through.objects.filter(treatment_id=treatment_id).values_list('tank_id', flat=True))
+    return _lock_fish(unit_ids, first)
+
+
+def change_last_day(user, treatment, end_date, withdrawal_ack=None):
     """The course ended on another day than planned, or goes on longer: the withdrawal counts from the new
     last day. Logged with the old and new day; refused for a voided treatment, and outside the backdating
-    window (neither the old nor the new last day may be older than it)."""
+    window (neither the old nor the new last day may be older than it). Through the withdrawal guard: a longer
+    withdrawal that reaches over a harvest already recorded, or a shorter one that frees fish held today, is asked
+    about. The units and their batches are locked first, as a harvest locks them."""
     with transaction.atomic():
+        start = Treatment.all_objects.filter(pk=treatment.pk).values_list('start_date', flat=True).first()
+        _units, batch_ids = _treatment_fish(treatment.pk, start or end_date)
         treatment = Treatment.all_objects.select_for_update(of=('self',)).get(pk=treatment.pk)
         units = list(treatment.units.select_related('production_department__site'))
         if treatment.is_deleted:
@@ -231,25 +302,36 @@ def change_last_day(user, treatment, end_date):
                 'date': shown_date(first)}})
         if end_date == treatment.end_date:
             return treatment
-        with audit.source_language():
-            before = audit.snapshot(treatment, ['end_date'])
-            treatment.end_date = end_date
-            treatment.updated_by = user
-            treatment.version += 1
-            treatment.save(update_fields=['end_date', 'updated_by', 'version', 'updated_at'])
-            audit.record_update(user, treatment, before, audit.snapshot(treatment, ['end_date']),
-                                label=treatment_label(treatment, units))
-        return treatment
+
+        def write():
+            with audit.source_language():
+                before = audit.snapshot(treatment, ['end_date'])
+                treatment.end_date = end_date
+                treatment.updated_by = user
+                treatment.version += 1
+                treatment.save(update_fields=['end_date', 'updated_by', 'version', 'updated_at'])
+                audit.record_update(user, treatment, before, audit.snapshot(treatment, ['end_date']),
+                                    label=treatment_label(treatment, units))
+            return treatment
+
+        return withdrawal.guarded(user, batch_ids, _today(units), write, seen=withdrawal_ack)
 
 
-def void_treatment(user, treatment, reason):
-    """The undo: the treatment stops counting, with its reason, and its withdrawal with it."""
+def void_treatment(user, treatment, reason, withdrawal_ack=None):
+    """The undo: the treatment stops counting, with its reason, and its withdrawal with it: through the withdrawal guard
+    (fish held today that it frees, and the medicated feedings it covered, now of unknown end, are asked about)."""
     with transaction.atomic():
+        start = Treatment.all_objects.filter(pk=treatment.pk).values_list('start_date', flat=True).first()
+        _units, batch_ids = _treatment_fish(treatment.pk, start)
         treatment = (Treatment.all_objects.select_for_update(of=('self',)).select_related('medicine')
                      .get(pk=treatment.pk))
         units = list(treatment.units.select_related('production_department__site'))
-        voided(user, treatment, reason, sites_of(units), treatment_label(treatment, units))
-        return treatment
+
+        def write():
+            voided(user, treatment, reason, sites_of(units), treatment_label(treatment, units))
+            return treatment
+
+        return withdrawal.guarded(user, batch_ids, _today(units), write, seen=withdrawal_ack)
 
 
 # ---- sea-lice counts ----------------------------------------------------------------------------------
@@ -268,9 +350,11 @@ def record_lice_count(user, *, unit, day, fish_counted, adult_females, mobile, a
             raise ValidationError({'date': _('%(unit)s already has a count on %(date)s: void it first to correct '
                                              'it.') % {'unit': unit.code, 'date': shown_date(day)}})
         count = LiceCount(unit=unit, date=day, fish_counted=fish_counted, adult_females=adult_females, mobile=mobile,
-                          attached=attached, notes=notes.strip(), entry_key=token, created_by=user, updated_by=user)
+                          attached=attached, notes=notes.strip(), created_by=user, updated_by=user)
         count.full_clean()
         count.save()
+        if token is not None:
+            EntryKey.note(token, count)
         with audit.source_language():
             audit.record_create(user, count, audit.snapshot(count, COUNT_FIELDS), label=count_label(count))
         return count

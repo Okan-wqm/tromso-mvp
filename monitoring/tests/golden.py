@@ -95,6 +95,8 @@ class Normaliser:
         for old, new in self.dates:
             if old in text:
                 text = text.replace(old, new)
+        # A card's age band under an hour (render.age_text) depends on how long the test takes: one mark for all.
+        text = re.sub(r'\b(just now|\d+ s ago|\d+ min ago)', '<recent>', text)
         return re.sub(r'\d+ (minute|hour|day|week|month|year)s?(, \d+ (minute|hour|day|week|month)s?)?', '<age>', text)
 
 

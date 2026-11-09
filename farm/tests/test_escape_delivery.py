@@ -13,6 +13,7 @@ from core.models import AuditLog
 from ..models import DeliveryRecord, EscapeRecord, StockMovement, StockOperation, Tank
 from ..stock import integrity, read, services
 from .test_stock import StockTestCase
+from farm import withdrawal_gate
 
 
 def setUpModule():
@@ -55,6 +56,7 @@ class EscapeTests(StockTestCase):
         self.assertIn('count', self.refused(self.escape, count=5000))
         self.assertFalse(StockOperation.objects.filter(kind='adjustment').exists())
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_count_is_at_least_one_and_an_escape_never_puts_fish_in(self):
         for count in (0, -50):
             with self.subTest(count=count):
@@ -97,6 +99,7 @@ class EscapeTests(StockTestCase):
         self.assertEqual(wrong.status_code, 422)
         self.assertEqual(set(wrong.context['form'].errors), {'cause'})
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_check_stock_finds_an_escape_without_its_record_and_a_record_on_another_operation(self):
         bare = StockOperation.objects.create(kind='adjustment', date=self.day(3))
         StockMovement.objects.create(operation=bare, batch=self.batch, unit=self.t1, kind='adjustment', count_delta=-5,
@@ -108,6 +111,7 @@ class EscapeTests(StockTestCase):
                       'is an escape).', found)
         self.assertIn(f'Mortality {mortality.pk} has an escape record.', found)
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_check_stock_finds_an_escape_with_a_line_that_is_not_fish_leaving_by_escape(self):
         operation = StockOperation.objects.create(kind='adjustment', date=self.day(3))
         EscapeRecord.all_objects.create(operation=operation, cause='x')
@@ -116,6 +120,7 @@ class EscapeTests(StockTestCase):
         self.assertIn(f'Count adjustment {operation.pk} of {operation.date} has an escape record and a line that is '
                       'not fish leaving by escape.', integrity.problems())
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_database_wants_a_cause(self):
         operation = StockOperation.objects.create(kind='adjustment', date=self.day(3))
         with self.assertRaises(IntegrityError), transaction.atomic():
@@ -182,18 +187,21 @@ class DeliveryTests(StockTestCase):
         wrong = self.client.post(url, {**data, 'token': str(uuid.uuid4()), 'destination_site_number': '123'})
         self.assertIn('destination_site_number', wrong.context['form'].errors)
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_database_wants_a_destination_and_a_five_digit_site(self):
         operation = StockOperation.objects.create(kind='delivery', date=self.day(3))
         for fields in ({'destination': ''}, {'destination': 'x', 'destination_site_number': 999}):
             with self.subTest(fields), self.assertRaises(IntegrityError), transaction.atomic():
                 DeliveryRecord.all_objects.create(operation=operation, **{'destination': 'x', **fields})
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_check_stock_finds_a_delivery_without_its_destination(self):
         bare = StockOperation.objects.create(kind='delivery', date=self.day(3))
         StockMovement.objects.create(operation=bare, batch=self.batch, unit=self.t1, kind='delivery', count_delta=-5)
         self.assertIn(f'Fish delivery {bare.pk} of {bare.date} has no delivery record (who received the fish).',
                       integrity.problems())
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_new_line_kinds_are_in_the_checks_of_the_database(self):
         operation = StockOperation.objects.create(kind='delivery', date=self.day(3))
         good = {'operation': operation, 'batch': self.batch, 'unit': self.t1}

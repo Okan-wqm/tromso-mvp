@@ -1,5 +1,5 @@
 {% load i18n %}{# The tabs of Operations › Water chemistry; `current` is latest, history or calculator. #}
-<nav class="view-tabs" aria-label="{% trans "Water chemistry" %}">
+<nav class="view-tabs ui-tabs" aria-label="{% trans "Water chemistry" %}">
   <a class="view-tab" href="{{ latest_url }}"{% if current == "latest" %} aria-current="page"{% endif %}>{% trans "Latest" %}</a>
   <a class="view-tab" href="{{ history_tab_url }}"{% if current == "history" %} aria-current="page"{% endif %}>{% trans "History" %}</a>
   <a class="view-tab" href="{{ calculator_url }}"{% if current == "calculator" %} aria-current="page"{% endif %}>{% trans "Calculator" %}</a>

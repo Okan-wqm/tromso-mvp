@@ -1,5 +1,5 @@
 {% load i18n %}{# The role's permissions (core.forms.PermissionMatrix): a row per access area, a column per action. #}
-<div class="matrix-wrap"><table class="matrix"{% if widget.attrs.id %} id="{{ widget.attrs.id }}"{% endif %}>
+<div class="table-wrap"><table class="matrix"{% if widget.attrs.id %} id="{{ widget.attrs.id }}"{% endif %}>
   <thead>
     <tr><th scope="col">{% trans "Area" context "access area" %}</th>{% for column in widget.columns %}<th scope="col">{{ column }}</th>{% endfor %}</tr>
   </thead>
@@ -13,6 +13,7 @@
       <td>{% if cell %}<label class="matrix-check">{% include "django/forms/widgets/input.html" with widget=cell %}<span class="sr-only">{{ row.label }}: {{ column }}</span></label>{% endif %}</td>
       {% endfor %}
     </tr>
+    {% if row.notes %}<tr class="matrix-note"><td colspan="{{ widget.columns|length|add:1 }}">{% for note in row.notes %}<span class="row-sub">{{ note }}</span>{% endfor %}</td></tr>{% endif %}
     {% endfor %}
   </tbody>
   {% endfor %}

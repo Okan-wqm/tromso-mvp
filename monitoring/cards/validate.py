@@ -160,7 +160,7 @@ def _widget(widget, seen):
 def geometry(name, spec, x, y, w, h):
     """The bounds and size problems of one placed widget (what frontend/grid mirrors)."""
     problems = []
-    if x < 0 or y < 0 or x + w > catalogue.COLUMNS:
+    if x < 0 or y < 0 or x + w > catalogue.COLUMNS or y + h > catalogue.ROWS:
         problems.append(_error(name, 'bounds'))
     if not (spec.min_w <= w <= spec.max_w and spec.min_h <= h <= spec.max_h):
         problems.append(_error(name, 'size', min_w=spec.min_w, min_h=spec.min_h, max_w=spec.max_w, max_h=spec.max_h))

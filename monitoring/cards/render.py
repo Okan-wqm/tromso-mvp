@@ -1,7 +1,9 @@
 """How a card's widgets are drawn: `build(card)` turns the card's template into the widgets to render, pure (no query:
 every figure is already on the card), in reading order (y, then x), so the order a screen reader reads, the order Tab
 moves in and the order the eye follows agree. The server places them with plain CSS grid (templates/monitoring/_card.html,
-static/css/monitor.css); the wall runs no layout script.
+static/css/monitor.css); the wall runs no layout script. A widget's cell is said by classes (`WidgetView.place`), never a
+style attribute, which the Content-Security-Policy blocks: static/css/card-grid.css (`grid_css`) turns each into the
+grid's --x, --y, --w, --h.
 
 `face(reading, now)` is THE one way a single water value is said on a card (the value and bar widgets): the figure at
 the parameter's precision, its status, where it came from and how old it is, in words, and "no data" rather than a dash.
@@ -10,9 +12,10 @@ from dataclasses import dataclass
 
 from django.utils.translation import gettext
 
+from core import text
 from farm.templatetags.water import water_value
 from farm.water import read as water_read
-from farm.water.evaluate import Status
+from farm.water.evaluate import Status, judge
 
 from . import catalogue
 
@@ -38,8 +41,9 @@ class WidgetView:
     dom_id: str          # w-<unit>-<widget id>: what a focusable element in it is called (poll.ts restores focus by id)
 
     @property
-    def style(self):
-        return f'--x:{self.x};--y:{self.y};--w:{self.w};--h:{self.h}'
+    def place(self):
+        """The classes of its cell and size: 'gx-0 gy-3 gw-6 gh-2' (static/css/card-grid.css)."""
+        return f'gx-{self.x} gy-{self.y} gw-{self.w} gh-{self.h}'
 
     @property
     def large(self):
@@ -84,6 +88,7 @@ class Face:
     stale: bool          # older than the parameter's freshness
     missing: bool
     reading: object = None
+    note: str = ''           # what a worked-out value was worked out from, or why it could not be
 
 
 def age_text(seconds):
@@ -110,10 +115,10 @@ def face(reading, now, parameter=None):
     origin = str(sample.get_source_display()) if sample is not None else water_read.origin_text(reading)
     age = age_text((now - reading.at).total_seconds())
     missing = reading.value is None
-    status = '' if missing else str(reading.status)
+    status = '' if missing else str(reading.old_alert or reading.status)
     return Face(label, gettext('no data') if missing else water_value(reading.value, reading.code), status,
-                str(Status(reading.status).label) if status else '', origin, age,
-                not reading.fresh(now), missing, reading)
+                str(Status(status).label) if status else '', origin, age,
+                not reading.fresh(now), missing, reading, str(reading.note or ''))
 
 
 def reading_at(card, code, point_kind):
@@ -161,18 +166,37 @@ def bar(face):
     def at(value):
         return round(float((value - low) / span * 100), 2)
 
-    order = [('critical', bounds['critical_low']), ('warning', bounds['warning_low']), ('ok', bounds['warning_high']),
-             ('warning', bounds['critical_high']), ('critical', None)]
-    bands, start = [], 0.0
-    for kind, edge in order:
-        end = 100.0 if edge is None else at(edge)
-        if end > start:
-            bands.append(Band(kind, start, round(end - start, 2)))
-            start = end
+    # Each stretch between two bounds is what the one rule (evaluate.judge) says of a value inside it, so an open bound
+    # draws no band of its own: limits with upper bounds only are ok below them, never critical.
+    edges = [low, *sorted(set(known)), high]
+    bands = []
+    for start, end in zip(edges, edges[1:]):
+        if end <= start:
+            continue
+        kind = str(judge((start + end) / 2, limit))
+        if bands and bands[-1].kind == kind:
+            last = bands.pop()
+            bands.append(Band(kind, last.start, round(at(end) - last.start, 2)))
+        else:
+            bands.append(Band(kind, at(start), round(at(end) - at(start), 2)))
     shown = ', '.join(f'{label} {water_value(bounds[name], reading.code)}'
                       for name, label in zip(BOUNDS, (gettext('critical below'), gettext('warning below'),
                                                       gettext('warning above'), gettext('critical above')))
                       if bounds[name] is not None)
     sentence = gettext('%(label)s %(value)s, %(status)s; limits: %(limits)s') % {
-        'label': face.label, 'value': face.value, 'status': face.status_label.lower(), 'limits': shown}
+        'label': face.label, 'value': face.value, 'status': text.lower(face.status_label), 'limits': shown}
     return Bar(tuple(bands), at(reading.value), sentence)
+
+
+def grid_css():
+    """static/css/card-grid.css: a class for every column, row, width and height a valid layout can use (catalogue),
+    each setting the custom property monitor.css places a widget by. Written by `manage.py card_grid_css`."""
+    tallest = max(spec.max_h for spec in catalogue.WIDGETS.values())
+    lines = ['/* Made by `manage.py card_grid_css` from monitoring/cards/catalogue.py: do not edit. A widget\'s cell on its',
+             '   card is said by classes (monitoring.cards.render.WidgetView.place), since the Content-Security-Policy',
+             '   allows no style attribute; monitor.css places .card-grid > .w by --x, --y, --w and --h. */']
+    lines += [f'.gx-{x}{{--x:{x}}}' for x in range(catalogue.COLUMNS)]
+    lines += [f'.gw-{w}{{--w:{w}}}' for w in range(1, catalogue.COLUMNS + 1)]
+    lines += [f'.gh-{h}{{--h:{h}}}' for h in range(1, tallest + 1)]
+    lines += [f'.gy-{y}{{--y:{y}}}' for y in range(catalogue.ROWS)]
+    return '\n'.join(lines) + '\n'

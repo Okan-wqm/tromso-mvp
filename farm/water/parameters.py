@@ -108,6 +108,9 @@ LIMIT_CHOICES = [(parameter.code, parameter.label) for parameter in LIMITED]
 
 TEMPERATURE, SALINITY, PH, TAN = 'temperature_c', 'salinity_ppt', 'ph', 'tan_mg_l'
 OXYGEN_MG_L, OXYGEN_PCT = 'oxygen_mg_l', 'oxygen_saturation_pct'
+# One quantity in two units: a limit row on either judges it (the oxygen: mg/L and % of air saturation are one reading,
+# farm/water/read.py), so a value of one with no row of its own is not "unjudged" while the other has one.
+SAME_QUANTITY = {OXYGEN_MG_L: OXYGEN_PCT, OXYGEN_PCT: OXYGEN_MG_L}
 
 
 def get(code):

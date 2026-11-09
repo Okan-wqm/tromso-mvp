@@ -8,14 +8,10 @@ import { existsSync, readFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import { extname, join, resolve } from 'node:path';
 
-import { chromium, type Browser, type Page } from 'playwright-core';
+import type { Browser, Page } from 'playwright-core';
 
-const BROWSERS = [
-  process.env.CHROME_PATH ?? '',
-  'C:/Program Files/Google/Chrome/Application/chrome.exe',
-  'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
-  '/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser',
-].filter((path) => path && existsSync(path));
+import { BROWSERS, browser as launch, skipWithout } from './browsers.js';
+
 const BUILD = resolve('.build/test');
 const SIZES = JSON.parse(readFileSync('monitoring/tests/layout_vectors.json', 'utf8')).sizes as
   Record<string, [number, number, number, number]>;
@@ -35,7 +31,7 @@ const LAYOUT = { schema: 1, widgets: [
   { id: 'w2', type: 'value', x: 3, y: 0, w: 3, h: 2, bind: { parameter: 'oxygen_mg_l' } },
 ] };
 const LABELS = ['undo', 'redo', 'revert', 'remove', 'x', 'y', 'w', 'h', 'binding', 'point', 'middle', 'palette', 'canvas',
-                'order', 'none', 'errors', 'warnings', 'frame'];
+                'order', 'none', 'errors', 'warnings', 'frame', 'preview-failed'];
 
 function page(): string {
   const labels = LABELS.map((name) => `data-label-${name}="l-${name}"`).join(' ');
@@ -65,6 +61,8 @@ min-height:224px;padding-top:36px;width:600px}.designer-frame{position:absolute;
 }
 
 let previews = 0;
+// How the stub preview answers: '' as asked, 'status' a server error, 'network' no answer at all.
+let failing: '' | 'status' | 'network' = '';
 
 function serve(): Promise<Server> {
   const server = createServer((request, response) => {
@@ -73,6 +71,14 @@ function serve(): Promise<Server> {
       return;
     }
     if (request.url === '/preview') {
+      if (failing === 'network') {
+        request.socket.destroy();
+        return;
+      }
+      if (failing === 'status') {
+        response.writeHead(500).end('boom');
+        return;
+      }
       previews += 1;
       const answer = { html: `<article data-key="card:u1"><h3>T-01</h3><button type="button" id="pv-${previews}">x</button></article>`,
                        problems: [{ severity: 'warning', widget: '', code: 'no_oxygen', message: 'msg-warning' }] };
@@ -102,11 +108,11 @@ async function settled(tab: Page): Promise<void> {
   }
 }
 
-test('the designer in a browser', { skip: BROWSERS.length ? false : 'no Chrome or Edge on this machine' }, async (t) => {
+test('the designer in a browser', { skip: skipWithout(BROWSERS) }, async (t) => {
   const server = await serve();
   const address = server.address();
   const origin = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`;
-  const browser: Browser = await chromium.launch({ executablePath: BROWSERS[0], headless: true });
+  const browser: Browser = await launch();
   try {
     const tab = await browser.newPage();
     const errors: string[] = [];
@@ -168,6 +174,33 @@ test('the designer in a browser', { skip: BROWSERS.length ? false : 'no Chrome o
       assert.equal(await tab.evaluate(() => document.activeElement?.id), 'designer-w1');
       assert.ok(await tab.locator('[data-designer-preview] article').count());
       assert.match(await tab.textContent('[data-designer-problems]') ?? '', /msg-warning/);
+    });
+
+    await t.test('a removed widget is said by its name, by Delete and by undoing its add', async () => {
+      await tab.click('[data-designer-palette] [data-type="health"]');
+      const added = (await layoutOf(tab)).widgets.at(-1);
+      assert.ok(added);
+      await tab.focus(`#designer-${added.id}`);
+      await tab.keyboard.press('Delete');
+      assert.equal(await tab.textContent('[data-designer-status]'), 'w-health removed');
+      await tab.click('[data-designer-undo]');                              // back: added again
+      await tab.click('[data-designer-undo]');                              // the add undone: removed
+      assert.equal(await tab.textContent('[data-designer-status]'), 'w-health removed');
+    });
+
+    await t.test('a preview the server refuses or cannot answer says so, and nothing is thrown (F-122)', async () => {
+      for (const way of ['status', 'network'] as const) {
+        failing = way;
+        await tab.focus('#designer-w1');
+        await tab.keyboard.press(way === 'status' ? 'ArrowDown' : 'ArrowUp');
+        await settled(tab);
+        assert.equal(await tab.textContent('[data-designer-preview] [role="alert"]'), 'l-preview-failed', way);
+      }
+      failing = '';
+      await tab.keyboard.press('ArrowRight');
+      await settled(tab);
+      assert.equal(await tab.locator('[data-designer-preview] [role="alert"]').count(), 0);
+      assert.ok(await tab.locator('[data-designer-preview] article').count());
     });
 
     await t.test('no serious accessibility violation', async () => {

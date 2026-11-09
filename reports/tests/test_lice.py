@@ -6,12 +6,13 @@ from decimal import Decimal
 from unittest import mock
 
 from django.urls import reverse
+from django.utils import translation
 
 from farm.health import services as health
 from farm.models import Batch, HandlingPlanItem, Medicine, SamplingPoint, Site, Treatment
 from farm.models.site import zone_of
 from farm.stock import services as stock_services
-from farm.tests.helpers import make_species, rows_data
+from farm.tests.helpers import going_on, make_species, rows_data
 from farm.tests.test_stock import make_unit
 from farm.water import services as water_services
 
@@ -21,6 +22,7 @@ from ..models import Report, ResistanceSuspicion, SensitivityTest, TreatmentAnsw
 from ..periods import WEEK, Period
 from .helpers import ReportTestCase, day
 from .schema import errors
+from farm import withdrawal_gate
 
 WEEK_44 = Period(WEEK, date(2026, 10, 26))         # Monday 26 October to Sunday 1 November
 WARM, COLD = (Decimal('8.5'), []), (Decimal('3.0'), [])
@@ -337,6 +339,7 @@ class TreatmentTests(LiceTestCase):
         self.treat([self.m1, self.m2], day(10, 26), day(10, 26))
         self.assertEqual(self.result().warnings.count(AMOUNT_WARNING), 1)
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_other_is_described_and_a_treatment_of_no_cage_with_salmonids_is_a_problem(self):
         # The treatment dialog refuses an undescribed "other"; a record written another way is told here.
         other = self.treat([self.m1, self.m2], day(10, 26), day(10, 26), method='other', notes='Brushing')
@@ -421,6 +424,26 @@ class AnswersAndExportTests(LiceTestCase):
         self.assertEqual(body['resistensMistanker'], [{'resistens': 'ANNEN_RESISTENS', 'annenResistens': 'Ivermectin',
                                                       'årsak': 'BIOESSAY', 'annenÅrsak': None}])
         self.assertEqual(body['følsomhetsundersøkelser'][0]['utførtDato'], '2026-10-20T00:00:00Z')
+
+    def test_the_report_page_shows_the_weeks_figures_named_and_in_the_persons_language(self):
+        """A kind without a table of its own on the report's page lists its figures named by the one label registry
+        (reports/labels.py), as the page names them, translated, the numbers as the language writes them: never an API
+        key (voksneHunnlus) nor a notice's fields."""
+        with temperature(WARM):
+            page = self.client.get(reverse('reports:report_detail', args=[self.report_.pk])).content.decode()
+            with translation.override('nb'):
+                norsk = self.client.get(reverse('reports:report_detail', args=[self.report_.pk]),
+                                        HTTP_ACCEPT_LANGUAGE='nb').content.decode()
+        self.assertIn('<th scope="row">Lice counts · Adult females per fish</th><td>0.200</td>', page)
+        self.assertIn('<th scope="row">Sea temperature (°C)</th><td>8.5</td>', page)
+        for raw in ('voksneHunnlus', 'lusetelling', 'adult_females', 'temperature_c', 'Happened on', 'What happened'):
+            self.assertNotIn(raw, page)
+        self.assertIn('<td>0,200</td>', norsk)
+        with temperature(WARM):
+            printed = self.client.get(reverse('reports:report_print', args=[self.report_.pk])).content.decode()
+        self.assertIn('<th scope="row">Lice counts · Adult females per fish</th><td>0.200</td>', printed)  # the print page too
+        for raw in ('voksneHunnlus', 'lusetelling', 'adult_females'):
+            self.assertNotIn(raw, printed)
 
     def test_the_row_lists_are_stored_read_edited_and_removed_through_the_pages(self):
         treatment = self.treat([self.m1, self.m2], day(10, 26), day(10, 26))
@@ -530,3 +553,75 @@ class AnswersAndExportTests(LiceTestCase):
         self.assertContains(response, 'rapporteringsuke,,44')
         self.assertContains(response, 'lusetelling,voksneHunnlus,0.2')
         self.assertContains(response, 'medikamentelleBehandlinger,[0].virkestoff.type,AZAMETHIPHOS')
+
+
+class LiceMedicineForAnotherReasonTests(LiceTestCase):
+    """A sea-lice medicine recorded for another reason (hydrogen peroxide is also given against AGD) is not in the weekly
+    lice report, which lists the treatments for sea lice: the report says so and reads it for its fingerprint (F-083,
+    F-239); the treatment's dialog warned when it was recorded (farm/tests/test_lice_reason.py)."""
+
+    def setUp(self):
+        super().setUp()
+        self.count(self.m1, 10, 27)
+        self.count(self.m2, 10, 28)
+
+    def agd_bath(self):
+        values = {'units': [self.m1], 'method': 'bath', 'reason': 'parasites', 'start_date': day(10, 26),
+                  'end_date': day(10, 26), 'medicine': self.medicine, 'amount_value': Decimal('12.5'),
+                  'amount_unit': 'KILO'}
+        checked = health.handling(values['units'], values['start_date'], 'bath', self.medicine, reason='parasites')
+        return health.record_treatment(self.user, handling_ack=checked.fingerprint, **values)
+
+    def test_it_is_not_in_the_report_and_the_report_says_so(self):
+        self.agd_bath()
+        result = self.result()
+        self.assertEqual(result.content['treatments'], [])
+        self.assertIn('The treatment with Salmosan in M-01 from 2026-10-26 to 2026-10-26 was recorded for “Other '
+                      'parasites (e.g. AGD)”, not for sea lice, so it is not in this report: if it was given against '
+                      'sea lice, void it and record it again with the reason “Sea lice”.', result.warnings)
+        self.assertEqual(result.problems, [])
+
+    def test_it_is_in_the_reports_fingerprint(self):
+        treatment = self.agd_bath()
+        before = compute.fingerprint(compute.scope(self.draft))
+        going_on(health.void_treatment, self.user, treatment, 'Recorded for the wrong reason')   # held today: asked
+        self.assertNotEqual(before, compute.fingerprint(compute.scope(self.draft)))
+
+
+class CoverageRowsTests(LiceTestCase):
+    """The rows that decide whether a cage was due a count (its earlier counts, the harvest plans of § 6) are the
+    report's too: a plan whose harvest was voided is planned again, as the plan says, and a change in those rows shows
+    in the fingerprint (audit F-206, F-227)."""
+
+    def plans(self):
+        items = []
+        for unit, fish in ((self.m1, 5000), (self.m2, 3000)):
+            batch = Batch.objects.get(movements__unit=unit)
+            items.append(HandlingPlanItem.objects.create(kind='harvest', date=day(10, 31), unit=unit, batch=batch,
+                                                         planned_count=fish, facility=self.facility,
+                                                         created_by=self.user))
+        return items
+
+    def test_a_plan_whose_harvest_was_voided_still_keeps_the_exception(self):
+        self.count(self.m1, 10, 22)
+        self.count(self.m2, 10, 22)
+        first, _second = self.plans()
+        batch = Batch.objects.get(movements__unit=self.m1)
+        operation = stock_services.record_harvest(self.user, unit=self.m1, batch=batch, day=day(10, 31), count=5000,
+                                                  measured_weight_kg=Decimal(800), facility=self.facility,
+                                                  plan_item=first)
+        stock_services.void(self.user, operation, 'Wrong cage')            # the plan is open again
+        self.assertEqual(self.result().problems, [])
+
+    def test_an_earlier_count_and_a_plan_are_in_the_fingerprint(self):
+        earlier = self.count(self.m1, 10, 22)
+        [item, _other] = self.plans()
+        scope = lambda: compute.fingerprint(compute.scope(self.draft))
+        before = scope()
+        health.void_lice_count(self.user, earlier, 'Wrong cage')
+        voided = scope()
+        self.assertNotEqual(before, voided)
+        item.cancelled_reason = 'Weather'               # as the plan's form cancels it: a new version
+        item.version += 1
+        item.save()
+        self.assertNotEqual(voided, scope())

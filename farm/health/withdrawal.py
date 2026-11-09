@@ -36,18 +36,28 @@ The rules, for a batch b and a treatment T with a medicine:
 `until` is the first day b may be harvested; a withdrawal holds from the treatment's first day (or the
 medicated feeding's day) to the day before `until`: a day before the treatment is not held. The health module
 gives the harvest side these blocks through the registry of farm/handling/withdrawal.py (`provider`)."""
+import hashlib
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import ROUND_CEILING, Decimal
 
+from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.utils import formats
 from django.utils.translation import gettext as _, ngettext
 
+from core import audit
+from core.models import AuditLog
+from farm import withdrawal_gate as gate
 from farm.feeding import read as feeding_read
-from farm.handling.withdrawal import WithdrawalBlock
-from farm.models import Batch, FeedingRecord, MedicineWithdrawal, Treatment
+from farm.handling import check
+from farm.handling.withdrawal import WithdrawalBlock, source_key
+from farm.models import (Batch, FeedingRecord, MedicineWithdrawal, StockMovement, Tank, Treatment,
+                         WithdrawalAcknowledgement)
 from farm.models.feed import FeedType
+from farm.models.handling import WithdrawalWarning
 from farm.models.health import TreatmentMethod
+from farm.models.stock import MovementKind
 from farm.stock.dates import local_today, shown_date
 from farm.stock.read import Presence
 from farm.water.degree_days import (DAY, LOOKBACK_DAYS, PENDING, ZERO, BatchWater, degree_days_text,
@@ -181,11 +191,12 @@ class Reader:
             self.rows[row.medicine_id].append(row)
 
     # ---- which fish a treatment reached ---------------------------------------------------------
-    def treated(self, treatment):
+    def treated(self, treatment, unit_ids=None):
         """The batches of this reader that had fish in one of the treatment's units on one of its days (up
-        to today: what happens later is not recorded yet)."""
+        to today: what happens later is not recorded yet). `unit_ids`: the units of a treatment not saved yet."""
         last = min(treatment.end_date, self.today)
-        unit_ids = [unit.pk for unit in treatment.units.all()]
+        if unit_ids is None:
+            unit_ids = [unit.pk for unit in treatment.units.all()]
         return {batch_id for batch_id in self.batch_ids
                 if any(self.presence.present_between(unit_id, batch_id, treatment.start_date, last)
                        for unit_id in unit_ids)}
@@ -285,6 +296,67 @@ def holding(batch_ids, today, day=None):
     return found
 
 
+def _reached(unit_ids=(), species=None):
+    """(the batches ever in `unit_ids` or of `species`, the farm's earliest today among the units they were in: the
+    longest held)."""
+    batch_ids = set()
+    if unit_ids:
+        batch_ids.update(batch_id for batches in Presence.of_units(set(unit_ids)).batches.values()
+                         for batch_id in batches)
+    if species is not None:
+        batch_ids.update(Batch.all_objects.filter(species=species).values_list('pk', flat=True))
+    if not batch_ids:
+        return batch_ids, None
+    units = Tank.all_objects.filter(pk__in={unit_id for units in Presence.of_batches(batch_ids).units.values()
+                                            for unit_id in units}).select_related('production_department__site')
+    return batch_ids, min((local_today(unit) for unit in units), default=local_today())
+
+
+def held_reached(unit_ids=(), species=None):
+    """Why a unit, a loop (the units in it) or a species is not deleted or restored now: the batches a withdrawal holds
+    today among the fish ever in `unit_ids` and the batches of `species`. Deleting or restoring one moves their
+    withdrawals (the treatments' units, the loop's samples that count for a unit, the species' assumed temperature), so
+    it waits until they end (cross-review 3). [] when none is held."""
+    batch_ids, today = _reached(unit_ids, species)
+    if not batch_ids:
+        return []
+    codes = sorted(Batch.all_objects.filter(pk__in=holding(batch_ids, today)).values_list('code', flat=True))
+    if not codes:
+        return []
+    return [ngettext('A medicine withdrawal holds batch %(batches)s, and this moves it: wait until it ends.',
+                     'Medicine withdrawals hold batches %(batches)s, and this moves them: wait until they end.',
+                     len(codes)) % {'batches': ', '.join(codes)}]
+
+
+def weighed(record, values, unit_ids):
+    """What writing `values` ({attname: value}) to the stored `record` would do to the withdrawals of every fish ever in
+    `unit_ids`, worked out as the guard works it (before, the write, after) in a savepoint rolled back: the messages
+    of the change, [] when it changes none (the withdrawal gate's rule for a unit's loop, written outside the guard)."""
+    batch_ids, today = _reached(unit_ids)
+    if not batch_ids:
+        return []
+    before = snapshot(batch_ids, today)
+    with transaction.atomic(), gate.opened('weighing a write, rolled back'):
+        type(record)._base_manager.filter(pk=record.pk).update(**values)
+        after = snapshot(batch_ids, today)
+        transaction.set_rollback(True)
+    return change(before, after).messages()
+
+
+def blockers_while_live(record):
+    """A unit's, a loop's, a species' or a sampling point's withdrawal_blockers() as they stand with it live (the
+    withdrawal gate's rule for its deleted flag): the readers read live records, so the fish of a deleted unit show no
+    withdrawal at all, and a restore is weighed as the record would stand restored, in a savepoint rolled back."""
+    if not record.is_deleted:
+        return record.withdrawal_blockers()
+    with transaction.atomic(), gate.opened('weighing a restore, rolled back'):
+        type(record)._base_manager.filter(pk=record.pk).update(is_deleted=False)
+        record.is_deleted = False
+        reasons = record.withdrawal_blockers()
+        transaction.set_rollback(True)
+    return reasons
+
+
 def of_units(units, day=None):
     """{unit id: [Withdrawal]} of the batches in each unit on `day` (default each unit's today) that a
     withdrawal holds then; one reader per farm-local today (sites in different time zones)."""
@@ -302,6 +374,301 @@ def of_units(units, day=None):
             if withdrawals:
                 found[unit.pk] = withdrawals
     return found
+
+
+# ---- harvests already recorded inside a withdrawal (audit F-195) -----------------------------------------
+@dataclass(frozen=True)
+class HarvestInside:
+    """A harvest recorded on a day a withdrawal holds its batch: fish that may have gone to food medicated. It arises
+    when the withdrawal is entered or grows after the harvest (a backdated treatment, a longer course, a corrected
+    temperature, a medicine's withdrawal changed); a harvest made while the withdrawal was known is warned of then
+    (farm/handling/check.py). As a warning of a treatment's dialog it is acknowledged like the handling warnings
+    (`warning`, `key`, `message`, and what the acknowledgement keeps: `operation_id`, `until`, `approximate`,
+    `reason`)."""
+    line: object                          # the harvest's StockMovement: its operation, unit, batch, fish
+    withdrawal: Withdrawal
+
+    warning = WithdrawalWarning.HARVESTED
+
+    @property
+    def operation_id(self):
+        return self.line.operation_id
+
+    @property
+    def until(self):
+        return self.withdrawal.until
+
+    @property
+    def approximate(self):
+        return self.withdrawal.estimated
+
+    @property
+    def reason(self):
+        return describe(self.withdrawal)
+
+    @property
+    def fish(self):
+        return -self.line.count_delta
+
+    @property
+    def facility(self):
+        record = getattr(self.line.operation, 'harvest_record', None)
+        return record.facility if record is not None else None
+
+    @property
+    def batch(self):
+        return self.line.batch
+
+    def key(self):
+        """What the person saw, as text: a change in it asks them again. The withdrawal is named by what it says, not by
+        its record's id: a write asked about and sent again makes a new record."""
+        return f'harvested:{self.line.operation_id}:{self.line.batch_id}:{self.until}:{self.approximate}:{self.reason}'
+
+    def identity(self):
+        """Which harvest of which batch inside which withdrawal: what a guard compares before and after a write."""
+        return self.line.operation_id, self.line.batch_id, source_key(self.withdrawal.source)
+
+    def message(self):
+        """The warning in the person's language (the activity log builds it in English)."""
+        params = {'date': shown_date(self.line.operation.date), 'unit': self.line.unit.code,
+                  'batch': self.line.batch.code, 'fish': formats.number_format(self.fish, force_grouping=True),
+                  'facility': self.facility.name if self.facility is not None else _('an unknown facility'),
+                  'until': shown_date(self.until) if self.until else ''}
+        if self.until is None:
+            text = _('Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this '
+                     'withdrawal, whose end is unknown: medicated fish may have gone to food.')
+        elif self.approximate:
+            text = _('Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this '
+                     'withdrawal, which holds the fish until about %(until)s: medicated fish may have gone to food.')
+        else:
+            text = _('Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this '
+                     'withdrawal, which holds the fish until %(until)s: medicated fish may have gone to food.')
+        return text % params
+
+    def same_harvest(self):
+        """Which harvest of which batch it is, whatever the withdrawal's end."""
+        return self.line.operation_id, self.line.batch_id
+
+
+def _harvest_lines(batch_ids=None, since=None):
+    """The live harvest lines (of `batch_ids`, from `since`), with what a finding names."""
+    lines = StockMovement.objects.filter(kind=MovementKind.HARVEST, operation__is_deleted=False).select_related(
+        'operation__harvest_record__facility', 'unit__production_department__site', 'batch')
+    if batch_ids is not None:
+        lines = lines.filter(batch_id__in=batch_ids)
+    if since is not None:
+        lines = lines.filter(operation__date__gte=since)
+    return list(lines.order_by('operation__date', 'unit__code', 'pk'))
+
+
+def _inside(withdrawals, lines):
+    """THE rule: a harvest lies inside a withdrawal of its batch that holds on the harvest's day (Withdrawal.holds_on:
+    from the treatment's first day, or the medicated feeding's, to the day before the batch may be harvested)."""
+    by_batch = defaultdict(list)
+    for line in lines:
+        by_batch[line.batch_id].append(line)
+    found = [HarvestInside(line, held) for held in withdrawals for line in by_batch.get(held.batch_id, ())
+             if held.holds_on(line.operation.date)]
+    return sorted(found, key=lambda each: (each.line.operation.date, each.line.unit.code, each.line.pk,
+                                           each.withdrawal.start))
+
+
+def harvests_inside():
+    """Every live harvest that lies inside a withdrawal of its batch, however it came to (check_withdrawal): one reader
+    per farm-local today of the harvested units (sites in different time zones)."""
+    by_today = defaultdict(list)
+    for line in _harvest_lines():
+        by_today[local_today(line.unit)].append(line)
+    found = []
+    for today, lines in sorted(by_today.items()):
+        found += _inside(Reader({line.batch_id for line in lines}, today).withdrawals(), lines)
+    return found
+
+
+# ---- the withdrawal guard: every write that changes a withdrawal (cross-reviews 1 and 2 of F-195, F-196) ----
+def _end(withdrawals):
+    """The latest end of some withdrawals, None (unknown) being the latest of all; with none, there is no end."""
+    dated = [each.until for each in withdrawals]
+    return None if any(until is None for until in dated) else max(dated)
+
+
+def _later(first, second):
+    """Whether withdrawal end `first` is after `second` (None: unknown, later than any day)."""
+    if first is None:
+        return second is not None
+    return second is not None and first > second
+
+
+@dataclass(frozen=True)
+class Released:
+    """Fish held today by a withdrawal whose end a write moves earlier (`until_after`), or ends today (no withdrawal
+    holds them after it: `freed`): a course voided or shortened, a medicine's withdrawal shortened, a medicated feeding
+    voided, a temperature corrected. Asked whether or not the new end is still ahead (cross-review 2, 4)."""
+    batch: object
+    withdrawal: Withdrawal                # the one that held the batch longest before the write
+    until_after: object = None            # the end after the write
+    freed: bool = False                   # no withdrawal holds the batch today after the write
+
+    warning = WithdrawalWarning.RELEASED
+    harvest = None
+
+    @property
+    def until(self):
+        return self.withdrawal.until
+
+    @property
+    def approximate(self):
+        return self.withdrawal.estimated
+
+    @property
+    def reason(self):
+        return describe(self.withdrawal)
+
+    def key(self):
+        after = 'free' if self.freed else self.until_after
+        return f'released:{self.batch.pk}:{self.until}:{after}:{self.approximate}:{self.reason}'
+
+    def message(self):
+        params = {'batch': self.batch.code, 'withdrawal': self.reason,
+                  'until': shown_date(self.until) if self.until else _('an unknown end'),
+                  'after': shown_date(self.until_after) if self.until_after else _('an unknown end')}
+        if self.freed:
+            return _('%(batch)s is held today (%(withdrawal)s) and would no longer be held by a medicine withdrawal after '
+                     'this change: the fish could go to food.') % params
+        return _('%(batch)s is held (%(withdrawal)s): after this change its withdrawal would end earlier, the fish may go '
+                 'to food from %(after)s instead of %(until)s.') % params
+
+
+@dataclass(frozen=True)
+class Snapshot:
+    """The withdrawals of some batches as the stored facts give them now: the harvests inside one (by identity) and the
+    withdrawals that hold each batch today."""
+    inside: dict
+    held: dict
+
+
+def snapshot(batch_ids, today):
+    if not batch_ids:
+        return Snapshot({}, {})
+    reader = Reader(batch_ids, today)
+    found = reader.withdrawals()
+    held = defaultdict(list)
+    for each in found:
+        if each.holds_on(today):
+            held[each.batch_id].append(each)
+    return Snapshot({each.identity(): each for each in _inside(found, _harvest_lines(batch_ids))}, dict(held))
+
+
+def _longest(withdrawals):
+    return max(withdrawals, key=lambda each: (each.until is None, each.until or each.start))
+
+
+@dataclass
+class Change:
+    """What a write did to the withdrawals of the fish it touched: the harvests it brought inside one, or whose
+    withdrawal it made end later than before (`harvested`; an acknowledgement covers the end it was given for), and the
+    held batches whose withdrawal it made end earlier or ended (`released`). Acknowledged through one box."""
+    harvested: list = field(default_factory=list)
+    released: list = field(default_factory=list)
+
+    @property
+    def warnings(self):
+        return self.harvested + self.released
+
+    @property
+    def fingerprint(self):
+        keys = sorted(warning.key() for warning in self.warnings)
+        return hashlib.sha256('|'.join(keys).encode()).hexdigest()[:20] if keys else ''
+
+    def messages(self):
+        return [warning.message() for warning in self.warnings]
+
+
+def change(before, after, exclude_operation=None):
+    """The Change between two snapshots of the same batches. A harvest the write itself records is left out: the
+    harvest's own handling check asks about the withdrawal in force on its day."""
+    harvested = [found for key, found in after.inside.items() if found.operation_id != exclude_operation
+                 and (key not in before.inside or _later(found.until, before.inside[key].until))]
+    released = []
+    batches = Batch.all_objects.in_bulk(list(before.held))
+    for batch_id in sorted(before.held, key=str):
+        old = _longest(before.held[batch_id])
+        if batch_id not in after.held:
+            released.append(Released(batches[batch_id], old, freed=True))
+        else:
+            new_end = _end(after.held[batch_id])
+            if _later(_end(before.held[batch_id]), new_end):
+                released.append(Released(batches[batch_id], old, until_after=new_end))
+    return Change(harvested, released)
+
+
+class WithdrawalChanged(ValidationError):
+    """The guard's refusal (on the field `withdrawal_ack`), with the Change it found for the dialog to show."""
+
+    def __init__(self, found, errors):
+        super().__init__(errors)
+        self.change = found
+
+    def __reduce__(self):
+        # Pickled (the parallel test runner, a worker) as what it was made of: ValidationError's own args are not its
+        # constructor's.
+        return type(self), (self.change, self.message_dict)
+
+
+FIELD = 'withdrawal_ack'
+
+
+def guarded(user, batch_ids, today, write, *, seen=None, record_of=None, exclude_operation=None):
+    """THE one function every write that can create, grow, shorten or end a medicine withdrawal goes through (a
+    treatment, its last day and its void, a medicated feeding and its void, a medicine's withdrawal rows, a water
+    sample and its void, a stock operation and its void, a feed's type, a species' assumed temperature, a sampling
+    point's active flag, kind and owner); the data layer refuses those writes anywhere else (farm/withdrawal_gate.py).
+
+    Inside the caller's transaction, after its locks, it works out the withdrawals of `batch_ids` (the fish the write can
+    touch, on the farm's `today`) before the write, makes the write ONCE in a savepoint and works them out again from
+    what it left. When the write brings a recorded harvest inside a withdrawal (or makes one it is inside end later), or
+    makes the withdrawal of fish held today end earlier, the person must have gone on past exactly this impact: `seen`
+    is the fingerprint the write's own form carried (its box `withdrawal_ack`). Otherwise the savepoint is rolled back
+    and the write refused (WithdrawalChanged, which carries what was found for the dialog). A `seen` that is not this
+    impact's fingerprint (the impact changed since it was shown) is refused the same way. Going on stores a
+    WithdrawalAcknowledgement per warning, naming the record `record_of(result)` (default: the result), and a critical
+    log entry on it with what was acknowledged; the second-person hook is asked as for every withdrawal warning.
+    `exclude_operation(result)`: a harvest the write itself records (its own handling check asks). Returns what
+    `write()` returned."""
+    batch_ids = set(batch_ids)
+    seen = seen or ''
+    before = snapshot(batch_ids, today)
+    with gate.opened('withdrawal guard'), transaction.atomic():
+        result = write()
+        excluded = exclude_operation(result) if exclude_operation else None
+        found = change(before, snapshot(batch_ids, today), excluded)
+        if found.warnings or seen:
+            if seen != found.fingerprint and not found.warnings:
+                raise WithdrawalChanged(found, {FIELD: _('The warnings changed since the form was shown: read them '
+                                                         'again, and tick the box to go on.')})
+            check.require_acknowledged(found, seen, field=FIELD, user=user,
+                                       refused=lambda errors: WithdrawalChanged(found, errors))
+        if found.warnings:
+            _acknowledge(user, record_of(result) if record_of else result, found)
+    return result
+
+
+def _acknowledge(user, record, found):
+    """One WithdrawalAcknowledgement per warning gone past, naming the record, the batch, the withdrawal and the
+    harvest, with what was shown; and a critical log entry on the record with the warnings, in English."""
+    with audit.source_language():
+        record_type = audit.english(audit.entity_type_of(type(record)))
+        label = audit.bounded(audit.english(record))
+        messages = ' '.join(found.messages())
+    WithdrawalAcknowledgement.objects.bulk_create([
+        WithdrawalAcknowledgement(
+            created_by=user, record_type=record_type, record_id=str(record.pk), record_label=label,
+            warning=warning.warning, batch=warning.batch,
+            harvest_id=warning.line.operation_id if warning.warning == WithdrawalWarning.HARVESTED else None,
+            source=source_key(warning.withdrawal.source), until=warning.until, approximate=warning.approximate, reason=warning.reason[:500])
+        for warning in found.warnings])
+    audit.record(user, AuditLog.Action.UPDATE, record, {'Withdrawal warnings acknowledged': [None, messages]},
+                 label=label, severity=AuditLog.Severity.CRITICAL)
 
 
 def _rows(medicine):
@@ -365,3 +732,13 @@ def provider(units, day):
     return {unit_id: [WithdrawalBlock(batches[withdrawal.batch_id], withdrawal.until, withdrawal.estimated,
                                       describe(withdrawal), withdrawal.source) for withdrawal in held]
             for unit_id, held in withdrawals.items()}
+
+
+def guarded_units(user, unit_ids, first, write, seen=None):
+    """A write about reference data the withdrawals of the fish in `unit_ids` (from the day `first` on; None: every fish they ever held) are worked out
+    from (a feed's type, a species' assumed temperature, a sampling point): those fish are locked as a stock operation
+    locks them, and the write goes through the guard."""
+    from farm.stock.services import lock_fish
+    units, batch_ids = lock_fish(set(unit_ids), first) if unit_ids else ({}, set())
+    today = min((local_today(unit) for unit in units.values()), default=local_today())
+    return guarded(user, batch_ids, today, write, seen=seen)

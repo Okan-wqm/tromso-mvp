@@ -5,9 +5,27 @@ class FarmConfig(AppConfig):
     name = 'farm'
 
     def ready(self):
-        from . import resources  # noqa: F401  declares the tabs on Resource.registry
+        from . import checks, resources  # noqa: F401  registers the system checks, declares the tabs
+        from . import withdrawal_gate
         from .handling import withdrawal
-        from .health.withdrawal import provider
+        from .health.withdrawal import blockers_while_live, provider, weighed
+        from .models import (
+            Feed, FeedingRecord, MedicineWithdrawal, SamplingPoint, Species, StockMovement, StockOperation, System, Tank,
+            Treatment, WaterMeasurement,
+        )
 
         # The medicine withdrawal the handling check reads (farm/handling/withdrawal.py) is the health records'.
         withdrawal.register(provider)
+        # What a withdrawal is worked out from: changed only inside the withdrawal guard (farm/withdrawal_gate.py), a
+        # treatment's units through their link table too. Conditional, each weighed as the row stands: a unit's loop
+        # (whose samples count for a unit without its own) counts when moving it changes a withdrawal of the fish ever
+        # in the unit (worked out as the guard works it, rolled back); a system, a unit, a species or a sampling point
+        # deleted or restored counts while its withdrawal_blockers(), as they stand with it live, say why (fish it
+        # reaches held by a withdrawal; samples on the point).
+        deleted = {'is_deleted': lambda stored, new: ' '.join(blockers_while_live(stored))}
+        loop = {'system': lambda stored, new: ' '.join(weighed(stored, {'system_id': new.system_id}, [stored.pk]))}
+        withdrawal_gate.install({
+            Treatment: None, Treatment.units.through: None, FeedingRecord: None, WaterMeasurement: None,
+            MedicineWithdrawal: None, StockOperation: None, StockMovement: None, Feed: ('feed_type',),
+            Species: ('withdrawal_temperature_c',), SamplingPoint: ('is_active', 'kind', 'unit', 'system', 'equipment'),
+        }, conditional={System: deleted, Tank: {**deleted, **loop}, Species: deleted, SamplingPoint: deleted})

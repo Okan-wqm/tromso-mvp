@@ -1,9 +1,9 @@
-/* Sign-in and password pages (layout only; tokens and form controls are in base.css).
-   The left panel is an abstract trout skin: speckled olive back, pink lateral line, silver belly. */
+/* Sign-in and password pages (layout only; tokens are in tokens.css, form controls in base.css).
+   The left panel is an abstract trout skin in the brand colours: speckled navy back, teal lateral line, pale belly. */
 
 .auth {
   display: grid;
-  grid-template-columns: minmax(18rem, 5fr) 7fr;
+  grid-template-columns: minmax(18rem, 5fr) minmax(0, 7fr);
   min-height: 100vh;
 }
 
@@ -15,24 +15,22 @@
   flex-direction: column;
   justify-content: space-between;
   padding: 2.5rem;
-  color: var(--mist);
+  color: var(--text-on-rail);
   background:
-    /* lateral line: the iridescent pink band */
+    /* lateral line: the iridescent band in the brand accent */
     linear-gradient(180deg,
       transparent 56%,
-      rgba(184, 69, 95, 0) 56%,
-      rgba(184, 69, 95, .55) 60%,
-      rgba(214, 120, 135, .75) 63%,
-      rgba(184, 69, 95, .55) 66%,
-      rgba(184, 69, 95, 0) 70%,
+      color-mix(in srgb, var(--brand) 55%, transparent) 60%,
+      color-mix(in srgb, var(--teal-300) 75%, transparent) 63%,
+      color-mix(in srgb, var(--brand) 55%, transparent) 66%,
       transparent 70%),
     /* back to belly */
     linear-gradient(180deg,
-      var(--olive-deep) 0%,
-      var(--olive) 38%,
-      #7D8A6C 58%,
-      #C9CFC0 78%,
-      #E4E8E0 100%);
+      var(--surface-rail) 0%,
+      var(--navy-700) 38%,
+      var(--teal-800) 58%,
+      var(--teal-200) 78%,
+      var(--teal-50) 100%);
 }
 
 /* Spots: dense on the back, thinning out toward the lateral line */
@@ -42,15 +40,15 @@
   inset: 0 0 38% 0;
   /* Tile sizes are coprime so the layers never line up into a visible grid */
   background-image:
-    radial-gradient(ellipse 3.5px 3px at 30% 40%, var(--speck) 98%, transparent),
-    radial-gradient(circle 2px at 70% 20%, var(--speck) 98%, transparent),
-    radial-gradient(ellipse 5px 4px at 20% 80%, rgba(35, 41, 32, .85) 98%, transparent),
-    radial-gradient(circle 2.5px at 60% 65%, var(--speck) 98%, transparent),
-    radial-gradient(ellipse 4px 3px at 85% 75%, rgba(35, 41, 32, .7) 98%, transparent),
-    radial-gradient(circle 1.5px at 45% 10%, var(--speck) 98%, transparent);
+    radial-gradient(ellipse 3.5px 3px at 30% 40%, var(--navy-950) 98%, transparent),
+    radial-gradient(circle 2px at 70% 20%, var(--navy-950) 98%, transparent),
+    radial-gradient(ellipse 5px 4px at 20% 80%, color-mix(in srgb, var(--navy-950) 85%, transparent) 98%, transparent),
+    radial-gradient(circle 2.5px at 60% 65%, var(--navy-950) 98%, transparent),
+    radial-gradient(ellipse 4px 3px at 85% 75%, color-mix(in srgb, var(--navy-950) 70%, transparent) 98%, transparent),
+    radial-gradient(circle 1.5px at 45% 10%, var(--navy-950) 98%, transparent);
   background-size: 53px 41px, 37px 47px, 89px 67px, 61px 23px, 71px 59px, 29px 31px;
-  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
-          mask-image: linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, currentColor 0%, currentColor 45%, transparent 100%);
+          mask-image: linear-gradient(180deg, currentColor 0%, currentColor 45%, transparent 100%);
   opacity: .55;
 }
 
@@ -58,15 +56,16 @@
 
 .brand {
   margin: 0;
+  font-family: var(--font-display);
   font-size: 1.5rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -.01em;
 }
 
 .skin-note {
   max-width: 22rem;
   margin: 0;
-  color: var(--olive-deep);
+  color: var(--navy-900);
   font-size: 1.125rem;
   font-weight: 500;
   line-height: 1.4;
@@ -95,19 +94,19 @@
 .panel h1 {
   margin: 0 0 .5rem;
   font-size: 2.25rem;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.1;
   letter-spacing: -.02em;
 }
 
 .lead {
   margin: 0 0 2rem;
-  color: var(--muted);
+  color: var(--text-3);
 }
 
 /* Phone: the skin becomes a band across the top */
 @media (max-width: 48rem) {
-  .auth { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .auth { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
   .skin { min-height: 9rem; padding: 1.25rem 1rem; }
   .skin-note { display: none; }
   .panel { align-items: flex-start; padding: 4.5rem 1rem 3rem; }

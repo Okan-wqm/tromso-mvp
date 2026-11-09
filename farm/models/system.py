@@ -111,6 +111,16 @@ class System(CodedMixin, TreeMixin, AuditedModel):
         if errors:
             raise ValidationError(errors)
 
+    def withdrawal_blockers(self):
+        """Why the system is not deleted or restored now: its loop's samples count for the units in it without their own,
+        so a withdrawal that holds fish ever in them waits (farm.health.withdrawal.held_reached; the withdrawal gate's
+        rule, farm/apps.py)."""
+        from ..health.withdrawal import held_reached
+        return held_reached(self.tanks(manager='all_objects').values_list('pk', flat=True))
+
+    def delete_blockers(self):
+        return self.withdrawal_blockers()
+
     @classmethod
     def in_tree_order(cls, wanted=None):
         """The live systems, site by site, each followed by the systems nested under it, with the number

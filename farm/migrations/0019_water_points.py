@@ -4,7 +4,7 @@
 
 Forward, in one transaction so that a failure leaves the database as it was:
 1. the point table is made and `water_measurements.point_id` is added, empty;
-2. every unit and system gets the points a new one starts with (farm/water/points.py, one template), the
+2. every unit and system gets the points a new one starts with (farm/water/points.py's template as it was, copied below), the
    unit's "Middle" and the system's "Loop" among them, and every sample is put on the middle point of the unit or
    system it was in (a deleted unit's samples too: they stay out of sight with it, as before);
 3. the point is required, and the `unit` and `system` columns, their indexes and the check that one of them is set
@@ -24,7 +24,20 @@ from django.db import migrations, models
 from django.db.migrations.exceptions import IrreversibleError
 from django.db.models import OuterRef, Subquery
 
-from farm.water.points import template_for
+# The points a unit or a system started with when this migration was written (farm/water/points.py DEFAULTS of its day),
+# copied here: a migration runs the same on a fresh database whatever the app code becomes later (F-074).
+TEMPLATE = {
+    'tank': [('inlet', 'Inlet'), ('middle', 'Middle'), ('side_outlet', 'Side outlet'), ('bottom_drain', 'Bottom drain')],
+    'pond': [('inlet', 'Inlet'), ('middle', 'Middle'), ('outlet', 'Outlet')],
+    'cage': [('middle', 'Middle')],
+    'system': [('middle', 'Loop')],
+}
+
+
+def template_for(owner_type, unit_kind=''):
+    """[(kind, name)] an owner of that type (for a unit, of that kind) started with."""
+    return TEMPLATE[unit_kind if owner_type == 'unit' else 'system']
+
 
 OWNERS = (('unit', 'Tank'), ('system', 'System'))
 

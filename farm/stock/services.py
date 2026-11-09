@@ -46,6 +46,7 @@ transfer whose fish are weighed per size class, the fish that stay weighed too),
 fish out of the company (with who received them, DeliveryRecord) and an escape (a count adjustment with its cause,
 EscapeRecord); each is voidable."""
 from dataclasses import dataclass, field
+from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.conf import settings
@@ -55,11 +56,11 @@ from django.utils.translation import gettext as _
 
 from core import audit
 from core.codes import next_code
-from core.models import AuditLog
+from core.models import AuditLog, EntryKey
 from farm.feeding import read as feeding_read
 from farm.feeding.fold import walk
 from farm.handling import check
-from farm.health import read as health_read
+from farm.health import read as health_read, withdrawal
 from farm.models import (
     Batch, DeliveryRecord, EscapeRecord, HandlingPlanItem, HarvestRecord, HealthEvent, Species, StockMovement,
     StockOperation, Tank,
@@ -70,7 +71,7 @@ from farm.models.stock import (
     ARRIVAL_STATUSES, CLEANER_CULL_REASONS, PRODUCTION_CULL_REASONS, PROVENANCE_OF_ORIGIN, REASONS, AdjustmentReason,
     CullReason, MovementKind, OperationKind, TransferReason,
 )
-from farm.models.tank import NEEDS_NO_FISH
+from farm.models.tank import NEEDS_NO_FISH, on_a_site
 from farm.templatetags.stock import number
 
 from . import read
@@ -125,15 +126,37 @@ def locked(model, pks):
     return model.all_objects.select_for_update(of=('self',)).filter(pk__in=pks).order_by('pk').in_bulk()
 
 
+def lock_fish(unit_ids, first=None):
+    """Locks the fish of `unit_ids` from the day `first` on (None: every batch they ever held), in the order a stock operation locks them (batches, then
+    units), and returns ({unit id: unit}, the batch ids): the fish a write about these units can reach, which the
+    withdrawal guard works the withdrawals of. Which batches were there is read before the units are locked and read
+    again after: a batch that arrived in between is locked too (cross-review 2, 7). That late lock is the one taken
+    after a unit's: the operation that brought the batch has committed (it is read), so only an operation begun since,
+    holding the batch and waiting for one of these units, can cross it; the database sees that deadlock and fails one of
+    the two whole, nothing written, and the person sends it again (cross-review 3, 5)."""
+    def present():
+        presence = read.Presence.of_units(unit_ids)
+        return {batch_id for unit_id in unit_ids for batch_id in presence.batches.get(unit_id, ())
+                if first is None or presence.present_between(unit_id, batch_id, first, date.max)}
+
+    batch_ids = present()
+    locked(Batch, batch_ids)
+    units = locked(Tank, set(unit_ids))
+    arrived = present() - batch_ids
+    if arrived:
+        locked(Batch, arrived)
+    return units, batch_ids | arrived
+
+
 def _already(token):
     if token is not None:
-        done = StockOperation.all_objects.filter(entry_key=token).first()
+        done = EntryKey.record_of(token, StockOperation)
         if done is not None:
             raise AlreadyRecorded(done)
 
 
 def _commit(user, kind, day, entries, *, notes='', ack=False, token=None, new_batch=None, handling_ack=None,
-            harvest=None, plan_item=None, health_event=None, escape=None, delivery=None):
+            harvest=None, plan_item=None, health_event=None, escape=None, delivery=None, withdrawal_ack=None):
     """Writes an operation and its lines (see the module's docstring); returns the operation. A harvest is
     checked for a medicine withdrawal, and a harvest, transfer or grading for the fast, first (`handling_ack` is the
     fingerprint of the warnings the person went on past); a harvest writes its record (`harvest`: its
@@ -147,57 +170,67 @@ def _commit(user, kind, day, entries, *, notes='', ack=False, token=None, new_ba
         _check_static(kind, day, entries, batches, units, new_batch)
         if health_event is not None:
             _check_event(health_event, day, units.values())
-        assessment = _handling(kind, day, entries, batches, units, handling_ack)
-        before = read.unit_counts(list(units))
-        if new_batch is not None:
-            batch = Batch(**new_batch.fields, code=next_code(Batch, f'B-{day.year}-'), input_date=day, created_by=user,
-                          updated_by=user)
-            batch.full_clean(exclude=['code'])
-            batch.save()
-            batches[batch.pk] = batch
-            for entry in entries:
-                entry.batch = batch
-            with audit.source_language():
-                audit.record_create(user, batch, audit.snapshot(batch, BATCH_FIELDS))
-        operation = StockOperation.objects.create(kind=kind, date=day, notes=notes, entry_key=token,
-                                                  health_event=health_event, created_by=user, updated_by=user)
-        StockMovement.objects.bulk_create([
-            StockMovement(operation=operation, batch=batches[entry.batch.pk], unit=units[entry.unit.pk],
-                          kind=entry.kind, count_delta=entry.count_delta, avg_weight_g=entry.avg_weight_g,
-                          measured_weight_kg=entry.measured_weight_kg, pair=entry.pair, reason=entry.reason,
-                          size_class=entry.size_class, sample_count=entry.sample_count,
-                          sample_weight_kg=entry.sample_weight_kg)
-            for entry in entries])
-        over = _check_timeline(operation, batches, units)
-        if over:
-            if not ack:
-                raise ValidationError({'over_capacity_ack': over})
-            operation.over_capacity_ack = True
-            operation.save(update_fields=['over_capacity_ack'])
-        if (harvest is not None) != (kind == OperationKind.HARVEST):
-            raise ValueError('A harvest, and only a harvest, writes a harvest record.')
-        if harvest is not None:
-            record = HarvestRecord(operation=operation, **harvest)
-            record.full_clean()
-            record.save()
-        for given, model, wanted in ((escape, EscapeRecord, OperationKind.ADJUSTMENT),
-                                     (delivery, DeliveryRecord, OperationKind.DELIVERY)):
-            if (given is not None) != (kind == wanted):
-                raise ValueError(f'An operation of kind {kind} and its {model.__name__} go together.')
-            if given is not None:
-                record = model(operation=operation, **given)
+        assessment = _handling(user, kind, day, entries, batches, units, handling_ack)
+
+        def write(batches):
+            before = read.unit_counts(list(units))
+            if new_batch is not None:
+                batch = Batch(**new_batch.fields, code=next_code(Batch, f'B-{day.year}-'), input_date=day, created_by=user,
+                              updated_by=user)
+                batch.full_clean(exclude=['code'])
+                batch.save()
+                batches[batch.pk] = batch
+                for entry in entries:
+                    entry.batch = batch
+                with audit.source_language():
+                    audit.record_create(user, batch, audit.snapshot(batch, BATCH_FIELDS))
+            operation = StockOperation.objects.create(kind=kind, date=day, notes=notes, health_event=health_event,
+                                                      created_by=user, updated_by=user)
+            if token is not None:
+                EntryKey.note(token, operation)
+            StockMovement.objects.bulk_create([
+                StockMovement(operation=operation, batch=batches[entry.batch.pk], unit=units[entry.unit.pk],
+                              kind=entry.kind, count_delta=entry.count_delta, avg_weight_g=entry.avg_weight_g,
+                              measured_weight_kg=entry.measured_weight_kg, pair=entry.pair, reason=entry.reason,
+                              size_class=entry.size_class, sample_count=entry.sample_count,
+                              sample_weight_kg=entry.sample_weight_kg)
+                for entry in entries])
+            over = _check_timeline(operation, batches, units)
+            if over:
+                if not ack:
+                    raise ValidationError({'over_capacity_ack': over})
+                operation.over_capacity_ack = True
+                operation.save(update_fields=['over_capacity_ack'])
+            if (harvest is not None) != (kind == OperationKind.HARVEST):
+                raise ValueError('A harvest, and only a harvest, writes a harvest record.')
+            if harvest is not None:
+                record = HarvestRecord(operation=operation, **harvest)
                 record.full_clean()
                 record.save()
-        if assessment is not None and assessment.warnings:
-            check.acknowledge(operation, assessment)
-        _log(user, AuditLog.Action.CREATE, operation, assessment)
-        if plan_item is not None:
-            _fulfil(user, plan_item, operation, entries)
-        _follow_status(user, units, before)
-        return operation
+            for given, model, wanted in ((escape, EscapeRecord, OperationKind.ADJUSTMENT),
+                                         (delivery, DeliveryRecord, OperationKind.DELIVERY)):
+                if (given is not None) != (kind == wanted):
+                    raise ValueError(f'An operation of kind {kind} and its {model.__name__} go together.')
+                if given is not None:
+                    record = model(operation=operation, **given)
+                    record.full_clean()
+                    record.save()
+            if assessment is not None and assessment.warnings:
+                check.acknowledge(operation, assessment)
+            _log(user, AuditLog.Action.CREATE, operation, assessment)
+            if plan_item is not None:
+                _fulfil(user, plan_item, operation, entries)
+            _follow_status(user, units, before)
+            return operation
+
+        # A stock operation moves fish into or out of a course's units and days, or voids them: through the withdrawal
+        # guard (a harvest it records itself is asked about by its own handling check).
+        return withdrawal.guarded(user, set(batches), min(local_today(unit) for unit in units.values()),
+                                  lambda: write(batches), seen=withdrawal_ack,
+                                  exclude_operation=lambda operation: operation.pk)
 
 
-def _handling(kind, day, entries, batches, units, seen):
+def _handling(user, kind, day, entries, batches, units, seen):
     """The handling check of a harvest, transfer or grading (farm/handling/check.py), on the source unit and
     batch, after the locks: with warnings, the person must have seen exactly these (`seen`, their
     fingerprint) and gone on; otherwise they are asked (again). None for other operations."""
@@ -206,7 +239,7 @@ def _handling(kind, day, entries, batches, units, seen):
         return None
     source = next(entry for entry in entries if entry.count_delta < 0)
     assessment = check.assess(handling, units[source.unit.pk], day, batches[source.batch.pk], with_earliest=False)
-    check.require_acknowledged(assessment, seen)
+    check.require_acknowledged(assessment, seen, user=user)
     return assessment
 
 
@@ -254,8 +287,11 @@ def _check_static(kind, day, entries, batches, units, new_batch):
                                                   'dated before.') % {'batch': batch.code,
                                                                       'date': shown_date(batch.input_date)}})
     for entry in entries:
-        if entry.count_delta > 0 and units[entry.unit.pk].status not in ARRIVAL_STATUSES:
-            unit = units[entry.unit.pk]
+        unit = units[entry.unit.pk]
+        if entry.count_delta > 0 and not on_a_site(unit.production_department):
+            raise ValidationError({'unit': _('%(unit)s is not on any site, so it cannot take fish: put its production '
+                                             'department on a site first.') % {'unit': unit.code}})
+        if entry.count_delta > 0 and unit.status not in ARRIVAL_STATUSES:
             raise ValidationError({'unit': _('%(unit)s has the status %(status)s, so it cannot take fish: it can '
                                              'when it is active, preparing or fallow.')
                                    % {'unit': unit.code, 'status': str(unit.get_status_display()).lower()}})
@@ -525,7 +561,7 @@ def _quantize(grams):
 
 def record_input(user, *, species, input_stage, origin, day, lines, supplier=None, supplier_batch_ref='',
                  strain='', name='', expected_harvest_date=None, notes='', provenance='', year_class=None, ack=False,
-                 token=None):
+                 token=None, withdrawal_ack=None):
     """A new batch stocked into one or several units: `lines` = [(unit, fish, average weight in g)].
     The batch has no count of its own: its input lines are the count (STK-05). Its provenance is the origin's when
     the origin says it (the own hatchery, the farm's catch), else as given: required for a cleaner fish, whose
@@ -539,7 +575,7 @@ def record_input(user, *, species, input_stage, origin, day, lines, supplier=Non
                       'provenance': provenance or PROVENANCE_OF_ORIGIN.get(origin, ''), 'year_class': year_class,
                       'supplier': supplier, 'supplier_batch_ref': supplier_batch_ref, 'strain': strain,
                       'name': name, 'expected_harvest_date': expected_harvest_date, 'notes': notes})
-    return _commit(user, OperationKind.INPUT, day, entries, ack=ack, token=token, new_batch=batch)
+    return _commit(user, OperationKind.INPUT, day, entries, withdrawal_ack=withdrawal_ack, ack=ack, token=token, new_batch=batch)
 
 
 def correct_batch(user, *, batch, year_class=None, provenance=''):
@@ -579,12 +615,12 @@ def needs_notes(reason, notes):
 
 
 def record_mortality(user, *, unit, batch, day, count, cause, measured_weight_kg=None, notes='', health_event=None,
-                     token=None):
+                     token=None, withdrawal_ack=None):
     """Fish found dead. They leave the book at the share's average; their weighed weight, when given,
     is kept as a separate fact. `health_event`: the event they died under, if any."""
     needs_notes(cause, notes)
     entry = Entry(unit, batch, MovementKind.MORTALITY, -count, reason=cause, measured_weight_kg=measured_weight_kg)
-    return _commit(user, OperationKind.MORTALITY, day, [entry], notes=notes, token=token, health_event=health_event)
+    return _commit(user, OperationKind.MORTALITY, day, [entry], withdrawal_ack=withdrawal_ack, notes=notes, token=token, health_event=health_event)
 
 
 def cull_reasons(batch):
@@ -593,7 +629,7 @@ def cull_reasons(batch):
     return CLEANER_CULL_REASONS if batch.species.is_cleaner_fish else PRODUCTION_CULL_REASONS
 
 
-def record_cull(user, *, unit, batch, day, count, reason, notes='', health_event=None, token=None):
+def record_cull(user, *, unit, batch, day, count, reason, notes='', health_event=None, token=None, withdrawal_ack=None):
     """Fish taken out and killed (too small, deformed, sick), at the share's average. `health_event`: the
     event they were culled under, if any."""
     if reason not in cull_reasons(batch):
@@ -601,11 +637,11 @@ def record_cull(user, *, unit, batch, day, count, reason, notes='', health_event
             'reason': CullReason(reason).label, 'batch': batch.code}})
     needs_notes(reason, notes)
     entry = Entry(unit, batch, MovementKind.CULL, -count, reason=reason)
-    return _commit(user, OperationKind.CULL, day, [entry], notes=notes, token=token, health_event=health_event)
+    return _commit(user, OperationKind.CULL, day, [entry], withdrawal_ack=withdrawal_ack, notes=notes, token=token, health_event=health_event)
 
 
 def record_weighing(user, *, unit, batch, day, avg_weight_g=None, sample_count=None, sample_weight_kg=None,
-                    notes='', token=None):
+                    notes='', token=None, withdrawal_ack=None):
     """A sample weighed: the average of the fish of the batch in the unit, given directly or as a number
     of fish and their weight together (the usual bulk weighing, STK-42). From that day the share's
     biomass is its count times this average."""
@@ -618,7 +654,7 @@ def record_weighing(user, *, unit, batch, day, avg_weight_g=None, sample_count=N
                                                  'weight together.')})
     entry = Entry(unit, batch, MovementKind.WEIGHING, 0, avg_weight_g=_quantize(avg_weight_g),
                   sample_count=sample_count, sample_weight_kg=sample_weight_kg)
-    return _commit(user, OperationKind.WEIGHING, day, [entry], notes=notes, token=token)
+    return _commit(user, OperationKind.WEIGHING, day, [entry], withdrawal_ack=withdrawal_ack, notes=notes, token=token)
 
 
 def _destinations(source, units):
@@ -632,7 +668,7 @@ def _destinations(source, units):
 
 
 def record_transfer(user, *, source, batch, day, legs, reason, notes='', ack=False, handling_ack=None,
-                    plan_item=None, token=None):
+                    plan_item=None, token=None, withdrawal_ack=None):
     """Fish of one batch moved out of `source` into one or several units: `legs` = [(unit, fish)]. A
     split is a transfer into several. Each leg is a pair of lines, out of the source and into its unit,
     whose fish add up to 0; the fish leave at the batch's average in the source and arrive with exactly
@@ -643,12 +679,12 @@ def record_transfer(user, *, source, batch, day, legs, reason, notes='', ack=Fal
     for pair, (unit, count) in enumerate(legs, start=1):
         entries.append(Entry(source, batch, MovementKind.TRANSFER_OUT, -count, pair=pair, reason=reason))
         entries.append(Entry(unit, batch, MovementKind.TRANSFER_IN, count, pair=pair))
-    return _commit(user, OperationKind.TRANSFER, day, entries, notes=notes, ack=ack, token=token,
+    return _commit(user, OperationKind.TRANSFER, day, entries, withdrawal_ack=withdrawal_ack, notes=notes, ack=ack, token=token,
                    handling_ack=handling_ack, plan_item=plan_item)
 
 
 def record_grading(user, *, source, batch, day, outputs, remainder_avg_weight_g=None, notes='', ack=False,
-                   handling_ack=None, token=None):
+                   handling_ack=None, token=None, withdrawal_ack=None):
     """The fish of one batch in `source` graded by size: `outputs` = [(unit, fish, measured average in g,
     size class)], each moved with its measured weight. A grading weighs the whole lot: the fish that stay
     in the source get their own measured average (required when any stay), so the outputs never take
@@ -670,12 +706,12 @@ def record_grading(user, *, source, batch, day, outputs, remainder_avg_weight_g=
         if staying > 0:
             entries.append(Entry(source, batch, MovementKind.WEIGHING, 0,
                                  avg_weight_g=_quantize(remainder_avg_weight_g)))
-        return _commit(user, OperationKind.GRADING, day, entries, notes=notes, ack=ack, token=token,
+        return _commit(user, OperationKind.GRADING, day, entries, withdrawal_ack=withdrawal_ack, notes=notes, ack=ack, token=token,
                        handling_ack=handling_ack)
 
 
 def record_harvest(user, *, unit, batch, day, count, measured_weight_kg, facility, transport=None, vessel='',
-                   everything=False, notes='', handling_ack=None, plan_item=None, token=None):
+                   everything=False, notes='', handling_ack=None, plan_item=None, token=None, withdrawal_ack=None):
     """Fish harvested: their count and their round (live) kilos as weighed, a fact of their own beside the
     book. The book loses the fish at the batch's average in the unit, and the last fish take whatever it
     holds, so a harvest is never refused for weighing more than the book says (the source's STK-29); the
@@ -699,7 +735,7 @@ def record_harvest(user, *, unit, batch, day, count, measured_weight_kg, facilit
             entries.append(Entry(unit, batch, MovementKind.ADJUSTMENT, count - book,
                                  reason=AdjustmentReason.UNACCOUNTED_LOSS))
         entries.append(Entry(unit, batch, MovementKind.HARVEST, -count, measured_weight_kg=measured_weight_kg))
-        return _commit(user, OperationKind.HARVEST, day, entries, notes=notes, token=token,
+        return _commit(user, OperationKind.HARVEST, day, entries, withdrawal_ack=withdrawal_ack, notes=notes, token=token,
                        handling_ack=handling_ack, plan_item=plan_item,
                        harvest={'facility': facility, 'transport': transport, 'vessel': vessel.strip()})
 
@@ -711,7 +747,7 @@ def _positive(count):
 
 
 def record_escape(user, *, unit, batch, day, count, cause, suspected=False, found_time=None, health_status='',
-                  recaptured=None, notes='', token=None):
+                  recaptured=None, notes='', token=None, withdrawal_ack=None):
     """Fish of `batch` escaped from `unit` (or are suspected to have: the count is then an estimate): `count` fish leave
     the book at the share's average, as a count adjustment of the reason escape, with its record: the cause (required),
     the time found, the health status of the fish and the fish recaptured as known now. Fiskeridirektoratet's notice is a
@@ -720,13 +756,13 @@ def record_escape(user, *, unit, batch, day, count, cause, suspected=False, foun
         raise ValidationError({'cause': _('Say what caused it, or what is thought to have.')})
     _positive(count)
     entry = Entry(unit, batch, MovementKind.ADJUSTMENT, -count, reason=AdjustmentReason.ESCAPE)
-    return _commit(user, OperationKind.ADJUSTMENT, day, [entry], notes=notes, token=token, escape={
+    return _commit(user, OperationKind.ADJUSTMENT, day, [entry], withdrawal_ack=withdrawal_ack, notes=notes, token=token, escape={
         'found_time': found_time, 'suspected': suspected, 'cause': cause.strip(),
         'health_status': health_status.strip(), 'recaptured': recaptured})
 
 
 def record_delivery(user, *, unit, batch, day, count, destination, destination_site_number=None,
-                    measured_weight_kg=None, handling_ack=None, notes='', token=None):
+                    measured_weight_kg=None, handling_ack=None, notes='', token=None, withdrawal_ack=None):
     """Live fish delivered out of the company, to `destination` (a customer, with the receiving site's lokalitetsnummer
     when it has one): they leave at the batch's average in the unit, their weighed kilos kept beside the book as a harvest's
     are. Moving fish alive is a transport, so the handling check runs its fast (too short a fast); a medicine withdrawal is
@@ -735,11 +771,11 @@ def record_delivery(user, *, unit, batch, day, count, destination, destination_s
         raise ValidationError({'destination': _('Say who received the fish.')})
     _positive(count)
     entry = Entry(unit, batch, MovementKind.DELIVERY, -count, measured_weight_kg=measured_weight_kg)
-    return _commit(user, OperationKind.DELIVERY, day, [entry], notes=notes, token=token, handling_ack=handling_ack,
+    return _commit(user, OperationKind.DELIVERY, day, [entry], withdrawal_ack=withdrawal_ack, notes=notes, token=token, handling_ack=handling_ack,
                    delivery={'destination': destination.strip(), 'destination_site_number': destination_site_number})
 
 
-def void(user, operation, reason):
+def void(user, operation, reason, withdrawal_ack=None):
     """The undo: the operation stops counting, with its reason. Refused when later operations need its
     fish (the message names them), and for operations older than the backdating window. Voiding a
     stocking voids its batch too: the batch exists only through it."""
@@ -748,13 +784,19 @@ def void(user, operation, reason):
         lines = list(operation.movements.select_related('unit', 'batch'))
         batches = locked(Batch, {line.batch_id for line in lines})
         units = locked(Tank, {line.unit_id for line in lines})
-        before = read.unit_counts(list(units))
-        voided(user, operation, reason, sites_of(units.values()), label(operation, lines),
-               check=lambda: _validate(set(batches), set(units), operation.date))
-        _follow_status(user, units, before)
-        if operation.kind == OperationKind.INPUT:
-            for batch in batches.values():
-                batch.soft_delete(user)
-                with audit.source_language():
-                    audit.record_delete(user, batch)
-        return operation
+
+        def write():
+            before = read.unit_counts(list(units))
+            voided(user, operation, reason, sites_of(units.values()), label(operation, lines),
+                   check=lambda: _validate(set(batches), set(units), operation.date))
+            _follow_status(user, units, before)
+            if operation.kind == OperationKind.INPUT:
+                for batch in batches.values():
+                    batch.soft_delete(user)
+                    with audit.source_language():
+                        audit.record_delete(user, batch)
+            return operation
+
+        # The fish leave or come back to the units and days of a course: through the withdrawal guard.
+        return withdrawal.guarded(user, set(batches), min(local_today(unit) for unit in units.values()), write,
+                                  seen=withdrawal_ack)

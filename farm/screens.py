@@ -9,6 +9,7 @@ from .forms import stock as stock_forms
 from .forms.feeding_protocol import BandRowForm, ProtocolTableForm
 from .forms.health import LastDayForm
 from .forms.water import MEASURED, RoundForm, RoundRowForm, SampleVoidForm, WaterSampleForm
+from .models.water import BASIS_COLUMNS
 from .harvest import views as harvest
 from .health import views as health
 from .resources.feeding_protocol import FeedingProtocolResource
@@ -111,6 +112,18 @@ SCREENS = {
         columns={'*': computed('what the person was shown when they acknowledged the warning: the handling check '
                                '(farm/handling/check.py) works it out and the service stores it')},
     ),
+    'WithdrawalAcknowledgement': Screen(
+        create=('farm:treatment_record', 'farm:treatment_last_day', 'farm:treatment_void', 'farm:feeding_record',
+                'farm:feeding_void', 'farm:water_record', 'farm:water_round', 'farm:water_void', 'farm:stock_harvest',
+                'farm:stock_transfer', 'farm:stock_void', 'farm:medicine_withdrawals'),
+        edit=no('append-only (a database trigger): what the person went on past stays as it was'),
+        delete=no('append-only (a database trigger): voiding the write leaves them as history'),
+        read=gap('no page lists them yet: check_withdrawal reads them, and the write\'s critical log entry says what was '
+                 'acknowledged'),
+        note='One row for each warning of the withdrawal guard (farm.health.withdrawal.guarded) the person went on past: '
+             'a harvest already recorded brought inside a withdrawal, or fish held today freed by the write.',
+        columns={'*': computed('what the withdrawal guard found and the person was shown, stored when they went on')},
+    ),
 
     # --- feeding ---
     'FeedingRecord': Screen(
@@ -147,8 +160,11 @@ SCREENS = {
         read=(water.water_page, stock.production_units),
         forms=(WaterSampleForm, RoundForm, RoundRowForm, SampleVoidForm),
         fills={'SampleVoidForm.reason': 'void_reason'},
-        columns={parameter.code: dynamic('one field for each water parameter (farm.forms.water.MEASURED)')
-                 for parameter in MEASURED},
+        columns={**{parameter.code: dynamic('one field for each water parameter (farm.forms.water.MEASURED)')
+                    for parameter in MEASURED},
+                 **{column: computed('what an oxygen without its own temperature or salinity is worked out with, found '
+                                     'by the server at the sample’s point and time (farm/water/read.oxygen_basis)')
+                    for column in BASIS_COLUMNS}},
     ),
 
     # --- health ---

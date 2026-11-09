@@ -41,6 +41,27 @@ class CleanerFishTests(CleanerFishTestCase):
         simple = self.client.get(reverse('monitoring:monitor'), {'units': str(self.cage.pk)}).content.decode()
         self.assertNotIn('Cleaner fish', simple)                      # a simple card is the key figures
 
+    def test_a_cage_with_salmon_and_lumpfish_is_not_ok_while_the_lumpfish_have_no_limit(self):
+        """Cross review: the salmon's rows judge the water fine, the lumpfish beside them have none: never green."""
+        from datetime import timedelta
+        from decimal import Decimal
+        from django.utils import timezone
+        from farm.models import WaterLimit
+        from farm.tests.helpers import point_of
+        from farm.water import services as water_services
+        for parameter, bounds in (('oxygen_mg_l', {'critical_low': Decimal(6)}),
+                                  ('temperature_c', {'critical_high': Decimal(18)})):
+            WaterLimit.objects.create(species=self.salmon, parameter=parameter, water_type='any', **bounds)
+        water_services.record(self.user, point=point_of(self.cage), measured_at=timezone.now() - timedelta(hours=1),
+                              source='manual', values={'temperature_c': Decimal('9'), 'oxygen_mg_l': Decimal('9')})
+        state = self.cards('simple')[0].state
+        self.assertEqual(state.key, 'unjudged')
+        self.assertIn('Temperature (°C): no limit for these fish', state.reasons)
+        for parameter, bounds in (('oxygen_mg_l', {'critical_low': Decimal(5)}),
+                                  ('temperature_c', {'critical_high': Decimal(17)})):
+            WaterLimit.objects.create(species=self.lump, parameter=parameter, water_type='any', **bounds)
+        self.assertNotEqual(self.cards('simple')[0].state.key, 'unjudged')
+
     def test_a_unit_without_cleaner_fish_has_no_such_line(self):
         html = self.client.get(reverse('monitoring:monitor'), {'units': str(self.t1.pk), 'mode': 'detailed'}).content.decode()
         self.assertNotIn('Cleaner fish', html)

@@ -15,7 +15,7 @@
       {% for row in group.list %}
       <tr>
         <th scope="row">R{{ row.replicate.number }}</th>
-        <td>{% for cell in row.cells %}<span class="row-line nowrap">{{ cell.unit.code }} <span class="muted">{{ cell.first|date:"SHORT_DATE_FORMAT" }} – {{ cell.last|date:"SHORT_DATE_FORMAT" }}</span></span>{% empty %}<span class="muted">{% trans "No tank" %}</span>{% endfor %}{% if row.gap %}<span class="row-sub notice-cell">{% blocktrans trimmed with tanks=row.gap|join:", " %}Its feed conversion leaves out {{ tanks }}: no weighing at the move.{% endblocktrans %}</span>{% endif %}</td>
+        <td>{% for cell in row.cells %}<span class="row-line nowrap">{{ cell.unit.code }} <span class="muted">{{ cell.first|date:"DATE_FORMAT" }} – {{ cell.last|date:"DATE_FORMAT" }}</span></span>{% empty %}<span class="muted">{% trans "No tank" %}</span>{% endfor %}{% if row.gap %}<span class="row-sub notice-cell">{% blocktrans trimmed with tanks=row.gap|join:", " %}Its feed conversion leaves out {{ tanks }}: no weighing at the move.{% endblocktrans %}</span>{% endif %}</td>
         <td>{% for batch in row.batches %}{{ batch.code }}{% if not forloop.last %}, {% endif %}{% empty %}<span class="muted">—</span>{% endfor %}</td>
         <td class="num">{{ row.fish|fish }}</td>
         <td class="num">{{ row.biomass_kg|kilos }}</td>
@@ -37,7 +37,7 @@
   <strong>{% trans "Deviations from the design" %}</strong>
   {% if deviations %}
   <p class="muted">{% trans "What the farm’s records show on the days of the tanks that the design did not say. Nothing is refused for a design: these are facts to read." %}</p>
-  <ul>{% for item in deviations %}<li><strong>{{ item.cell.group.name }} R{{ item.cell.replicate.number }}</strong> · {{ item.cell.unit.code }} <span class="muted">{{ item.first|date:"SHORT_DATE_FORMAT" }}{% if item.last != item.first %} – {{ item.last|date:"SHORT_DATE_FORMAT" }}{% endif %}</span><br>{{ item.text }}</li>{% endfor %}</ul>
+  <ul>{% for item in deviations %}<li><strong>{{ item.cell.group.name }} R{{ item.cell.replicate.number }}</strong> · {{ item.cell.unit.code }} <span class="muted">{{ item.first|date:"DATE_FORMAT" }}{% if item.last != item.first %} – {{ item.last|date:"DATE_FORMAT" }}{% endif %}</span><br>{{ item.text }}</li>{% endfor %}</ul>
   {% else %}
   <p class="muted">{% trans "No deviation from the design is found in the farm’s records." %}</p>
   {% endif %}

@@ -6,8 +6,9 @@ from django.utils.translation import gettext_lazy as _
 
 from core.crud import TabbedForm, tab_fields
 from farm.stock.dates import site_today
+from core.widgets import DayInput
 
-from .. import read, scope, units
+from .. import read, scope, services, units
 from ..models import Employee
 
 PLACEMENT_FIELDS = ('department', 'title', 'from_day')
@@ -44,7 +45,7 @@ class EmployeeForm(TabbedForm):
     department = DepartmentField(label=_('Department'), required=False)
     title = forms.CharField(label=_('Title'), max_length=100, required=False)
     from_day = forms.DateField(label=_('From'), required=False,
-                               widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'))
+                               widget=DayInput())
 
     class Meta:
         model = Employee
@@ -60,8 +61,8 @@ class EmployeeForm(TabbedForm):
         }
         widgets = {
             'employee_number': forms.TextInput(attrs={'placeholder': _('e.g. E-1042')}),
-            'joined_on': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
-            'left_on': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'joined_on': DayInput(),
+            'left_on': DayInput(),
         }
 
     def __init__(self, *args, editor=None, realm=None, **kwargs):
@@ -79,7 +80,8 @@ class EmployeeForm(TabbedForm):
             self.fields['user'].disabled = True
             self.fields['user'].queryset = accounts.filter(pk=self.instance.user_id or 0)
         self.fields['department'].choices = [('', _('Select a department'))] + units.choices(
-            include=[self.current.department] if self.current else [], kinds=[realm] if realm and adding else None)
+            include=[self.current.department] if self.current else [], kinds=[realm] if realm and adding else None,
+            allowed=None if editor is None else scope.placeable(editor))
         self.fields['department'].required = adding
         self.fields['from_day'].help_text = _('The day the new placement starts; the old one ends the day before. '
                                               'For a new person: their first day.')
@@ -102,6 +104,10 @@ class EmployeeForm(TabbedForm):
         joined, left = cleaned.get('joined_on'), cleaned.get('left_on')
         if joined and left and left < joined:
             self.add_error('left_on', _('A person cannot leave before they joined.'))
+        elif joined and not adding:
+            conflict = services.employment_conflicts(self.instance, joined, left)
+            if conflict is not None:
+                self.add_error('joined_on' if joined != self.instance.joined_on else 'left_on', conflict)
         self.instance.placement = None
         if all(self.fields[name].disabled for name in PLACEMENT_FIELDS):
             return cleaned

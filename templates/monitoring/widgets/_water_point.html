@@ -2,9 +2,9 @@
   {% if named %}<p class="row-sub">{{ water.point.name }}</p>{% endif %}
   <dl class="metrics">
     {% if view.opts.parameters == "all" %}{% for reading in water.readings.values %}
-    <div><dt>{{ reading.parameter.short }}</dt><dd>{% include "farm/_water_value.html" with latest=True tag="span" %}</dd>{% with said=reading|face:card.now %}{% if not said.missing %}<dd class="row-sub wq-said">{{ said.origin }} · {{ said.age }}</dd>{% endif %}{% endwith %}</div>
+    <div><dt>{{ reading.parameter.short }}</dt><dd>{% include "farm/_water_value.html" with latest=True tag="span" %}</dd>{% with said=reading|face:card.now %}{% if not said.missing %}<dd class="row-sub wq-said">{% include "farm/_water_source.html" with origin=said.origin age=said.age %}</dd>{% endif %}{% endwith %}</div>
     {% endfor %}{% else %}{% for code, label in water_labels %}
-    <div><dt>{{ label }}</dt>{% with reading=water.readings|lookup:code %}<dd>{% include "farm/_water_value.html" with latest=True tag="span" %}</dd>{% if reading %}{% with said=reading|face:card.now %}{% if not said.missing %}<dd class="row-sub wq-said">{{ said.origin }} · {{ said.age }}</dd>{% endif %}{% endwith %}{% endif %}{% endwith %}</div>
+    <div><dt>{{ label }}</dt>{% with reading=water.readings|lookup:code %}<dd>{% include "farm/_water_value.html" with latest=True tag="span" %}</dd>{% if reading %}{% with said=reading|face:card.now %}{% if not said.missing %}<dd class="row-sub wq-said">{% include "farm/_water_source.html" with origin=said.origin age=said.age %}</dd>{% endif %}{% endwith %}{% endif %}{% endwith %}</div>
     {% endfor %}{% endif %}
   </dl>
 </div>

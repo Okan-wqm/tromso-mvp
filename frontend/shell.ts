@@ -1,9 +1,11 @@
-// Console shell: collapsible rail (remembered), phone off-canvas menu, user menu.
+// Console shell: collapsible rail (remembered); below 1024px the rail is a sheet opened from the bottom bar's More
+// (static/css/app.css); the popup menus.
+import { bindCollapses } from './collapse.js';
 import { label, required } from './dom.js';
 
 const root = document.documentElement;
 const nav = window.suderraNav;
-const phone = window.matchMedia('(max-width: 767px)');
+const phone = window.matchMedia('(max-width: 1023px)');
 
 // Desktop: collapse / expand
 const toggle = required<HTMLButtonElement>(document, '[data-nav-toggle]');
@@ -31,7 +33,7 @@ window.addEventListener('resize', () => {
   syncToggle();
 });
 
-// Phone: off-canvas rail
+// Below 1024px: the rail as a sheet over a scrim
 const openButton = required<HTMLButtonElement>(document, '[data-nav-open]');
 const scrim = required<HTMLElement>(document, '[data-nav-close]');
 const rail = required<HTMLElement>(document, '#rail');
@@ -96,3 +98,6 @@ document.addEventListener('keydown', (event) => {
     openButton.focus();
   }
 });
+
+// The rail's folded parts (Setup): as the person left them.
+bindCollapses(document);

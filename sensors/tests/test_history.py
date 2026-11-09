@@ -4,6 +4,7 @@ value from after it, a moved sensor counting for the tank it was in then), a sys
 point on the diagram from the hour tier, the channel that feeds each input, and binding a channel from a card's place
 through the Move dialog."""
 import json
+import re
 from datetime import datetime, timedelta, timezone as tz
 from decimal import Decimal
 
@@ -97,7 +98,7 @@ class PastMomentTests(HistoryCase):
         page = self.client.get(reverse('farm:water_unit_chart', args=[self.t1.pk]), {'at': local})
         self.assertEqual(page.status_code, 200)
         self.assertContains(page, '7.31')
-        self.assertRegex(page.content.decode(), r'unit sensor #\d+ · 2\s?minutes ago')
+        self.assertRegex(re.sub(r'<[^>]+>', '', page.content.decode()), r'unit sensor #\d+ · 2\s?minutes ago')
         self.assertEqual(self.client.get(reverse('farm:water_unit_chart', args=[self.t1.pk]),
                                          {'at': 'yesterday'}).status_code, 400)
 
@@ -182,3 +183,16 @@ class BindFromMonitoringTests(HistoryCase):
         local = timezone.localtime(self.now - timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M')
         self.client.post(reverse('sensors:binding_create'), {**query, 'role': 'primary', 'valid_from': local})
         self.assertEqual(Binding.objects.get(channel=spare).point, self.mid2)
+
+
+class TrailOneRuleTests(HistoryCase):
+    def test_each_hour_picks_by_the_one_rule_the_units_own_fresh_sample_before_the_systems_sensor(self):
+        """The trail reads each input of an hour by `farm.water.read.choose` (owner rule A9) at the hour's end: the
+        unit's own fresh temperature sample comes before the system's sensor, never sensor-before-sample (A1)."""
+        start = self.now - timedelta(hours=3)
+        insert(self.ph.channel_no, [(start + timedelta(hours=hour, minutes=10), 7.2) for hour in range(3)])
+        insert(self.channel.channel_no, [(start + timedelta(hours=hour, minutes=5), 10.0) for hour in range(3)])
+        self.sample(self.mid1, start - timedelta(days=1), alkalinity_mg_l='100', salinity_ppt='0')
+        self.sample(self.mid1, start + timedelta(minutes=30), temperature_c='9.0')
+        found = trail.trail(self.t1, start, self.now)
+        self.assertEqual([point.temperature_c for point in found.points], [9.0, 9.0, 9.0])

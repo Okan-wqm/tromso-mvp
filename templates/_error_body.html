@@ -1,0 +1,4 @@
+{% load i18n %}{% comment %} The body of an error page (403.html, 404.html): why, and the way back. {% endcomment %}<div class="empty" role="alert">
+  <p>{{ why }}</p>
+  <a class="button button-inline" href="{% url 'home' %}">{% trans "Go to the overview" %}</a>
+</div>

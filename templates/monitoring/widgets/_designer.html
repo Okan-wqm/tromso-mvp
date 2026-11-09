@@ -1,4 +1,4 @@
-{% load i18n %}{% comment %} The card designer (monitoring.forms.CardDesignerWidget; frontend/designer.ts). The layout is the form's own field, a
+{% load i18n cards %}{% comment %} The card designer (monitoring.forms.CardDesignerWidget; frontend/designer.ts). The layout is the form's own field, a
    JSON textarea: without script it is edited as text and the validator answers on save; with script the canvas fills it.
    Every word the script shows comes from here or from the catalogue, in the person's language (the script has none). {% endcomment %}
 <div class="designer" data-designer data-preview-url="{{ widget.preview_url }}"
@@ -14,7 +14,8 @@
      data-label-palette="{% trans "Add a widget" %}" data-label-canvas="{% trans "Card layout: select a widget, move it with the arrow keys, resize it with Shift and the arrow keys, remove it with Delete." %}"
      data-label-order="{% trans "Reading order" %}" data-label-none="{% trans "Select a widget to change it." %}"
      data-label-errors="{% trans "To fix before saving" %}" data-label-warnings="{% trans "Worth a look" %}"
-     data-label-frame="{% trans "The card’s frame: the unit, its state and why, the withdrawal. Always shown." %}">
+     data-label-frame="{% trans "The card’s frame: the unit, its state and why, the withdrawal. Always shown." %}"
+     data-label-preview-failed="{% trans "The preview could not be drawn just now. The layout is kept; the next change asks again." %}">
   <div class="designer-bar">
     <div class="designer-palette" data-designer-palette role="group"></div>
     <div class="designer-tools">
@@ -32,7 +33,7 @@
   <div class="designer-problems" data-designer-problems role="status"></div>
   <div class="designer-preview-bar">
     <label>{% trans "Preview on" %} <select data-designer-unit>{% for unit in widget.units %}<option value="{{ unit.value }}">{{ unit.label }}</option>{% endfor %}</select></label>
-    <label>{% trans "Show as" %} <select data-designer-state><option value="">{% trans "Its own state" %}</option><option value="critical">{% trans "Critical" %}</option><option value="warning">{% trans "Warning" %}</option><option value="blind">{% trans "No recent data" %}</option><option value="note">{% trans "Note" %}</option><option value="ok">{% trans "OK" %}</option></select></label>
+    <label>{% trans "Show as" %} {% card_states as states %}<select data-designer-state><option value="">{% trans "Its own state" %}</option>{% for key, word in states %}{% if key != "empty" %}<option value="{{ key }}">{{ word }}</option>{% endif %}{% endfor %}</select></label>
     <label>{% trans "Width" %} <select data-designer-width><option value="26rem">{% trans "Card" %}</option><option value="20rem">{% trans "Narrow" %}</option><option value="34rem">{% trans "Wall" %}</option></select></label>
   </div>
   <p class="panel-help">{% trans "The preview shows only what you may read yourself." %}</p>

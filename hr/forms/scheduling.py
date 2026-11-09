@@ -3,6 +3,7 @@ from django.utils.translation import gettext_lazy as _
 
 from core.crud import CodedFormMixin, TabbedForm, tab_fields
 from farm.models import Site
+from core.widgets import DayInput
 
 from ..models import Holiday, SchedulingSettings, Shift
 
@@ -44,7 +45,7 @@ class HolidayForm(TabbedForm):
         fields = tab_fields(HOLIDAY_TABS)
         help_texts = {'site': _('Leave it empty for a day that is a holiday on every site.')}
         widgets = {
-            'day': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'day': DayInput(),
             'name': forms.TextInput(attrs={'placeholder': _('e.g. Christmas Day')}),
         }
 

@@ -13,8 +13,10 @@ from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy, ngettext_lazy
 
 from core.crud import DRAFT, CodedFormMixin, RowFormSet, TabbedForm, tab_fields
+from core.dates import on_clock
 from farm.models import Equipment, SamplingPoint, Site, System, Tank
 from farm.models.site import zone_of
+from core.widgets import MomentInput
 
 from . import bindings, quantities
 from .models import (AlarmRule, Binding, Calibration, Channel, Connection, Credential, Device, PayloadFormat, Shape,
@@ -279,7 +281,7 @@ class SiteClockDateTimeField(forms.DateTimeField):
     """A moment typed on the clock of the channel's site (farm.models.site.zone_of), never the browser's. A time a
     change of clocks skips or repeats is refused, so a calibration never starts an hour off."""
 
-    widget = forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M')
+    widget = MomentInput()
 
     def __init__(self, *args, zone=None, **kwargs):
         self.zone = zone
@@ -297,15 +299,9 @@ class SiteClockDateTimeField(forms.DateTimeField):
         return on_site_clock(timezone.make_naive(moment, timezone.get_current_timezone()), self.zone)
 
 
-def on_site_clock(wall, zone):
-    """The moment a wall-clock time (naive) is on a site's clock; refused when the clocks skip it or show it twice."""
-    first, second = wall.replace(fold=0, tzinfo=zone), wall.replace(fold=1, tzinfo=zone)
-    if first.utcoffset() != second.utcoffset():
-        raise ValidationError(_('This time happens twice on the site’s clock (the clocks go back): choose another.'))
-    if timezone.make_naive(first.astimezone(zone), zone) != wall:
-        raise ValidationError(_('This time does not exist on the site’s clock (the clocks go forward): choose '
-                                'another.'))
-    return first
+# The moment a wall-clock time (naive) is on a site's clock, refused when the clocks skip it or show it twice: the one
+# check, core.dates.on_clock, under the name the sensors' forms and views use.
+on_site_clock = on_clock
 
 
 class CalibrationForm(forms.ModelForm):
@@ -372,7 +368,6 @@ BIND_TABS = [('general', gettext_lazy('Binding'), ['channel', 'target', 'role', 
 # The places a dialog or a chart names as "kind:pk": a unit (tank, pond, cage), a sampling point, a system, a piece of
 # equipment. A channel is bound to the last three; a unit stands for its middle point (sensors/bindings.py `landing`).
 PLACE_KINDS = {'unit': Tank, 'point': SamplingPoint, 'system': System, 'equipment': Equipment}
-DATETIME_LOCAL = forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M')
 
 
 def place_of(value):
@@ -405,7 +400,7 @@ class BindForm(TabbedForm):
     tabs = BIND_TABS
     target = forms.ChoiceField(label=gettext_lazy('Bound to'))
     valid_from = forms.DateTimeField(label=gettext_lazy('From'),
-                                     widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'))
+                                     widget=MomentInput())
 
     class Meta:
         model = Binding
@@ -490,7 +485,7 @@ class DeviceMoveForm(forms.Form):
     device = forms.ModelChoiceField(label=gettext_lazy('Device'), queryset=Device.objects.none())
     target = forms.ChoiceField(label=gettext_lazy('Move to'))
     role = forms.ChoiceField(label=gettext_lazy('Role'), choices=Binding.Role.choices, initial=Binding.Role.PRIMARY)
-    valid_from = forms.DateTimeField(label=gettext_lazy('From'), widget=DATETIME_LOCAL)
+    valid_from = forms.DateTimeField(label=gettext_lazy('From'), widget=MomentInput())
     note = forms.CharField(label=gettext_lazy('Note'), max_length=300, required=False,
                            help_text=gettext_lazy('e.g. moved to the new tank after the grading'))
 

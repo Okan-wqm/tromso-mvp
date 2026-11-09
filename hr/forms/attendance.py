@@ -42,7 +42,7 @@ class AttendanceRecordForm(TabbedForm):
         self.fields['employee'].queryset = employees.select_related('user')
         self.fields['employee'].label_from_instance = lambda employee: employee.full_name
         if not self.instance._state.adding and not self.is_bound:
-            zone = self.zone(self.instance.employee, self.instance.clock_in.date())
+            _day, zone = read.local_day(self.instance.employee, self.instance.clock_in)   # the site's day, never UTC's
             for name in ('clock_in', 'clock_out'):
                 moment = getattr(self.instance, name)
                 if moment is not None:
@@ -90,11 +90,13 @@ class AttendanceRecordForm(TabbedForm):
         employee, zone, started, ended = placed
         if not scope.can_reach(self.user, employee, started.astimezone(zone).date()):
             raise ValidationError(_('You do not see this person on this day.'))
-        if services.self_plan(self.user, employee):
+        if services.own_record(self.user, employee):
             raise ValidationError(_('You do not enter or correct your own attendance.'))
         if ended is not None and ended <= started:
             self.add_error('clock_out', _('The person cannot clock out before they clocked in.'))
             return cleaned
+        services.check_employed(employee, started.astimezone(zone).date(),
+                                ended.astimezone(zone).date() if ended is not None else None)
         entered = adding or self.instance.via == AttendanceRecord.Via.ENTERED
         if entered and not (cleaned.get('note') or '').strip():
             self.add_error('note', _('Say why the time was entered by hand.'))

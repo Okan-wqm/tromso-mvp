@@ -33,6 +33,12 @@ class Status(models.TextChoices):
 
 
 RANK = {status: rank for rank, status in enumerate(Status)}
+# How far ahead of the server's clock a value may be stamped and still count (a device's clock a little fast).
+CLOCK_SKEW = timedelta(minutes=5)
+# The furthest ahead the sensors' ingest contract lets a device's time be (sensors_contract.future_skew_s, at most 3600 s):
+# a value between CLOCK_SKEW and this decides a status (read.worst_fresh, said as a clock ahead) but is never shown as
+# the newest; beyond it, it is a data error the card says ("timestamp in the future").
+MAX_AHEAD = timedelta(seconds=3600)
 ALERTS = (Status.CRITICAL, Status.WARNING)
 
 
@@ -75,9 +81,24 @@ class Limits:
             return Status.NO_LIMIT, []
         return worst(judge(value, row) for row in found), found
 
+    def uncovered(self, parameter, exposures):
+        """The species of `exposures` that no row judges `parameter` for, in their order: a unit with salmon judged and
+        lumpfish beside them with no row is not judged for the lumpfish, whatever the salmon's row says."""
+        return tuple(dict.fromkeys(species_id for species_id, water_type in exposures
+                                   if self.applying(species_id, parameter, water_type) is None))
+
+
+def ahead(measured_at, now):
+    """Whether a value is stamped further ahead of `now` than CLOCK_SKEW: a device whose clock runs ahead (the sensors'
+    contract lets a device be up to an hour ahead). Such a value is never fresh and never the newest (read.newest)."""
+    return measured_at - now > CLOCK_SKEW
+
 
 def is_fresh(parameter, measured_at, now, fresh_for=None):
     """The one freshness rule: a value says something about the water now for its parameter's `fresh_hours`, or, for a
-    live value, for `fresh_for` seconds (a sensor channel's three heartbeats)."""
+    live value, for `fresh_for` seconds (a sensor channel's three heartbeats); a value from further ahead than
+    CLOCK_SKEW says nothing (`ahead`)."""
+    if ahead(measured_at, now):
+        return False
     limit = timedelta(seconds=fresh_for) if fresh_for is not None else timedelta(hours=parameter.fresh_hours)
     return now - measured_at <= limit

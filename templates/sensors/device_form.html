@@ -1,5 +1,5 @@
 {% extends "crud/form.html" %}
-{% load i18n %}
+{% load i18n dates %}
 {% comment %} A device's form adds its channels on a tab of their own, read-only: each channel is edited on its own form;
    and where it is placed now and was before (sensors/bindings.py `placement_history`), with the Move device dialog for
    a person who may bind. {% endcomment %}
@@ -31,7 +31,7 @@
       <thead><tr><th scope="col">{% trans "Where" %}</th><th scope="col">{% trans "From" %}</th><th scope="col">{% trans "Until" %}</th></tr></thead>
       <tbody>
         {% for stay in placement_history %}
-        <tr><td>{% for place in stay.places %}{{ place }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td><td>{{ stay.start|date:"DATETIME_FORMAT" }}</td><td>{% if stay.end %}{{ stay.end|date:"DATETIME_FORMAT" }}{% else %}<span class="badge">{% trans "now" %}</span>{% endif %}</td></tr>
+        <tr><td>{% for place in stay.places %}{{ place }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td><td>{{ stay.start|site_clock:object.site|date:"DATETIME_FORMAT" }}</td><td>{% if stay.end %}{{ stay.end|site_clock:object.site|date:"DATETIME_FORMAT" }}{% else %}<span class="badge">{% trans "now" %}</span>{% endif %}</td></tr>
         {% endfor %}
       </tbody>
     </table>

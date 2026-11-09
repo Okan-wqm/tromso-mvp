@@ -1,5 +1,5 @@
 {% extends "crud/list.html" %}
-{% load i18n %}
+{% load i18n dates %}
 {% comment %} Sensors › Setup › Bindings (sensors.resources.BindingResource): where each channel's values belong and since when,
    newest first; a channel's history when the address names it. A binding is never moved: a move ends it and starts the next
    (Add opens the Move dialog). `?place=unit:…` (or point, system, equipment) lists the sensors at a place: those
@@ -17,8 +17,8 @@
         <td><a class="row-title" href="{% url 'sensors:binding_list' %}?channel={{ binding.channel_id }}">{{ binding.channel.code }}</a><span class="row-sub">{{ binding.channel.device.code }} · #{{ binding.channel.channel_no }}</span></td>
         <td>{{ binding.target }}{% if binding.note %}<span class="row-sub">{{ binding.note }}</span>{% endif %}</td>
         <td>{{ binding.get_role_display }}</td>
-        <td>{{ binding.valid_from|date:"DATETIME_FORMAT" }}</td>
-        <td>{% if binding.valid_to %}{{ binding.valid_to|date:"DATETIME_FORMAT" }}{% else %}<span class="badge">{% trans "now" %}</span>{% endif %}</td>
+        <td>{{ binding.valid_from|site_clock:binding.clock|date:"DATETIME_FORMAT" }}</td>
+        <td>{% if binding.valid_to %}{{ binding.valid_to|site_clock:binding.clock|date:"DATETIME_FORMAT" }}{% else %}<span class="badge">{% trans "now" %}</span>{% endif %}</td>
         <td class="row-actions">{% include "sensors/_row_actions.html" with model="binding" obj=binding label=binding.channel.code %}</td>
       </tr>
       {% endfor %}

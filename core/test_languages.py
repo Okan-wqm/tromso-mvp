@@ -23,6 +23,7 @@ from .audit import message
 from .language import save_account_language
 from .models import AuditLog, Profile
 from .tests import perms, user_data
+from farm import withdrawal_gate
 
 COOKIE = settings.LANGUAGE_COOKIE_NAME
 LANGUAGES = [code for code, _ in settings.LANGUAGES]
@@ -138,6 +139,7 @@ class PagesInEveryLanguageTests(TestCase):
     """Every page and dialog renders in each language, with no placeholder left over."""
 
     @classmethod
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def setUpTestData(cls):
         cls.admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
         cls.site = Site.objects.create(name='Bergen', code='BG', area_m2=Decimal('50000.5'))
@@ -358,8 +360,9 @@ class FormsAndMessagesTests(TestCase):
         with mock.patch('django.utils.timezone.now', return_value=entry_time):
             AuditLog.objects.create(user=self.user, user_name='ali', action='create', entity_type='site',
                                     entity_id='1', entity_label='Bergen (BG)')
-        for language, shown in [('en', '2 Nov 2026, 13:05'), ('tr', '02 Kasım 2026 13:05'),
-                                ('nb', '2. november 2026 13:05')]:
+        # 13:05 UTC is 14:05 on the company's clock (Oslo, winter time), as the activity log shows it
+        for language, shown in [('en', '02.11.2026 14:05'), ('tr', '02.11.2026 14:05'),       # the European way in every
+                                ('nb', '02.11.2026 14:05')]:                                # language (owner rule)
             self.in_language(language)
             self.assertContains(self.client.get(reverse('core:activity_log')), shown, msg_prefix=language)
 
@@ -444,7 +447,7 @@ class ActivityLogLanguageTests(TestCase):
         self.client.post(reverse('farm:site_delete', args=[site.pk]))
         rows = {row.entity_type: row for row in AuditLog.objects.all()}
         self.assertEqual(set(rows), {'site', 'production department'})
-        self.assertEqual(rows['production department'].changes, {'Site': ['Bergen (BG)', None]})
+        self.assertEqual(rows['production department'].action, 'delete')     # deleted with its site (F-212)
 
     def test_role_permissions_are_logged_in_english_too(self):
         admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')

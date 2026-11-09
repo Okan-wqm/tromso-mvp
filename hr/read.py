@@ -106,6 +106,13 @@ def site_on(employee, day):
     return site_of_posting(posting) if posting is not None else None
 
 
+def local_day(employee, moment):
+    """(the day, the zone) of `moment` on the clock of the site the person is placed on then: the placement is read on the
+    company's day, never the server's UTC day (a stretch from 00:30 is that day's, at a department move too)."""
+    zone = zone_of(site_on(employee, timezone.localdate(moment, zone_of(None))))
+    return timezone.localdate(moment, zone), zone
+
+
 def sites_of(pairs):
     """{(employee id, day): the site of the department they are placed in that day, or None}, for several pairs in one
     query."""
@@ -143,6 +150,16 @@ class Cell:
     @property
     def is_off(self):
         return self.assignment is not None and self.assignment.shift_id is None
+
+    @property
+    def state(self):
+        """The one state of the day, which the schedule and the team overview both read: 'leave' on approved leave (a
+        planned shift or day off under it is for someone else to cover), else 'shift', 'off' (planned off) or 'none'."""
+        if self.on_leave:
+            return 'leave'
+        if self.shift is not None:
+            return 'shift'
+        return 'off' if self.is_off else 'none'
 
     @property
     def blocks(self):
@@ -282,6 +299,7 @@ class CrewRow:
 class CrewWeek:
     days: list
     rows: list
+    placed: bool = True     # the viewer is placed in a production department on a day of the week (else no crew to show)
 
 
 def crew_week(user, week_start):
@@ -290,6 +308,8 @@ def crew_week(user, week_start):
     hours, whatever a page does with it; and nothing in it opens a record. In a fixed number of queries."""
     start = monday(week_start)
     days = [start + timedelta(days=n) for n in range(7)]
+    if not scope.production_days(user, days[0], days[-1]):
+        return CrewWeek(days, [], placed=False)
     crew = scope.colleagues(user, days[0], days[-1])
     if not crew:
         return CrewWeek(days, [])
@@ -331,6 +351,7 @@ class BoardRow:
     standing: object
     day: date
     zone: object
+    open_since: object = None    # the clock-in of a stretch open more than OPEN_CHECK_HOURS: still counted, to be checked
 
     @property
     def state(self):
@@ -341,26 +362,57 @@ class BoardRow:
         return self.shift is None and self.span is None
 
 
+@dataclass(frozen=True)
+class Tile:
+    key: str            # upcoming, here, not_in, absent, on_leave, done
+    count: int
+
+
+# The tiles of the people planned today, each such person in exactly one, so they add up to Planned today; Here now is the
+# present and the late (the late are said in it).
+# A clock-in open longer than this is still on site, and flagged: a forgotten clock-out, or a long night to check.
+OPEN_CHECK_HOURS = 12
+OPEN_CHECK = timedelta(hours=OPEN_CHECK_HOURS)
+TILES = (('upcoming', (rules.UPCOMING,)), ('here', (rules.PRESENT, rules.LATE)), ('not_in', (rules.NOT_IN,)),
+         ('absent', (rules.ABSENT,)), ('on_leave', (rules.ON_LEAVE,)), ('done', (rules.DONE,)))
+
+
 @dataclass
 class Board:
     rows: list
-    counts: dict
+    counts: dict           # {state: people planned today in it}
     planned: int
     moment: object
+    unplanned: int = 0     # people here now without a plan: listed, counted apart ("Here, not planned")
+    unplanned_done: int = 0  # people who came without a plan and clocked out again: listed, not on site
+    on_site: int = 0       # every open clock-in on the farm, whoever looks (the muster count: a number, no names)
+    muster_sites: tuple = ()  # (site name, open clock-ins) when they are on more than one site
+    open_long: int = 0     # of them, the clock-ins open more than OPEN_CHECK_HOURS (forgot to clock out? check)
 
     def count(self, state):
         return self.counts.get(state, 0)
 
     @property
+    def tiles(self):
+        return [Tile(key, sum(self.count(state) for state in states)) for key, states in TILES]
+
+    @property
     def here(self):
         return self.count(rules.PRESENT) + self.count(rules.LATE)
+
+    @property
+    def late(self):
+        return self.count(rules.LATE)
 
 
 def board(user, moment=None, realm=None):
     """Who is where now, for the people `user` may reach: each person's planned shift today (or the night shift that began
     yesterday and is still running), their punches, their leave, and the state worked out from them (rules.status) on their
     site's clock. People planned off, on a holiday or with nothing planned are not listed, unless they are there all the
-    same. In a fixed number of queries whatever the number of people. With a realm, only the people in it today."""
+    same. In a fixed number of queries whatever the number of people. With a realm, only the people in it today.
+    Closed stretches are read from two days back; an open clock-in whatever its age: one open more than OPEN_CHECK_HOURS
+    (someone who forgot to clock out?) stays on site and is flagged, a lead checks it and closes it on the attendance page.
+    `on_site` is the muster count: every open clock-in on the farm whoever looks, a number only (no names past the team)."""
     moment = moment or timezone.now()
     clocks_now = clocks(moment)
     by_site = {site: clock for clock in clocks_now if clock.sites is not None for site in clock.sites}
@@ -377,13 +429,13 @@ def board(user, moment=None, realm=None):
     plan = {(row.employee_id, row.day): row for row in ShiftAssignment.objects.filter(
         employee__in=ids, day__range=(low - timedelta(days=1), high)).select_related('shift')}
     punches = defaultdict(list)
-    for record in AttendanceRecord.objects.filter(employee__in=ids, clock_in__gte=moment - timedelta(days=2),
-                                               clock_in__lte=moment):
+    for record in AttendanceRecord.objects.filter(Q(clock_in__gte=moment - timedelta(days=2)) | Q(clock_out__isnull=True),
+                                                  employee__in=ids, clock_in__lte=moment):
         punches[record.employee_id].append(record)
     away = leave.approved_days(ids, low, high)
     rows = []
     counts = defaultdict(int)
-    planned = 0
+    planned = unplanned = unplanned_done = 0
     for employee in people:
         placed = postings.get(employee.pk, [])
         head = next((p for p in placed if p.valid_from <= high and (p.valid_until is None or p.valid_until >= low)), None)
@@ -403,12 +455,38 @@ def board(user, moment=None, realm=None):
         shift, span, day = chosen if chosen is not None else (None, None, today)
         standing = rules.status(span, mine, on_leave, moment, shift.grace_minutes if shift else 0,
                                 settings.absent_after_minutes, settings.punch_window_minutes)
-        if standing is None:
-            continue
-        rows.append(BoardRow(employee, head.department if head is not None else None, shift, span, standing, day, zone))
-        counts[standing.state] += 1
-        planned += 1 if span is not None else 0
-    return Board(rows, dict(counts), planned, moment)
+        if standing is None or (span is None and standing.state == rules.ON_LEAVE):
+            continue                       # nothing planned and not there: on leave or not, nobody is expected (a person
+                                           # who clocked in is present, rules.status: the headcount lists them)
+        open_since = next((start for start, end in mine if end is None and moment - start > OPEN_CHECK), None)
+        rows.append(BoardRow(employee, head.department if head is not None else None, shift, span, standing, day, zone,
+                             open_since))
+        if span is None:
+            if standing.state == rules.DONE:
+                unplanned_done += 1
+            else:
+                unplanned += 1
+        else:
+            counts[standing.state] += 1
+            planned += 1
+    on_site, muster_sites, open_long = muster(moment)
+    return Board(rows, dict(counts), planned, moment, unplanned, unplanned_done, on_site, muster_sites, open_long)
+
+
+def muster(moment):
+    """(every open clock-in on the farm at `moment`, [(site name, count)] when they are on more than one site, how many are
+    open more than OPEN_CHECK_HOURS): the emergency headcount, whoever looks, so never names. A person's site is the one
+    they are placed on the company's day (none: "Not placed")."""
+    open_now = list(AttendanceRecord.objects.filter(clock_out__isnull=True, clock_in__lte=moment).values_list(
+        'employee_id', 'clock_in'))
+    day = timezone.localdate(moment, zone_of(None))
+    sites = sites_of({(employee_id, day) for employee_id, _start in open_now})
+    by_site = defaultdict(int)
+    for employee_id, _start in open_now:
+        site = sites.get((employee_id, day))
+        by_site[site.name if site is not None else _('Not placed')] += 1
+    places = tuple(sorted(by_site.items())) if len(by_site) > 1 else ()
+    return len(open_now), places, sum(1 for _id, start in open_now if moment - start > OPEN_CHECK)
 
 
 # ---- the team overview and the organisation chart -------------------------------------------------------------------
@@ -458,13 +536,13 @@ def overview(user, week_start, department=None, page=1, per_page=50, query='', r
         for index, cell in enumerate(row.cells):
             if not cell.visible:
                 continue
-            if cell.on_leave:
+            if cell.state == 'leave':
                 away += 1
                 footer[index]['leave'] += 1
-            elif cell.shift is not None:
+            elif cell.state == 'shift':
                 working += 1
                 footer[index]['working'] += 1
-            elif cell.is_off:
+            elif cell.state == 'off':
                 off += 1
                 footer[index]['off'] += 1
         rows.append(OverviewRow(row.employee, row.department, working, off, away, row.planned_minutes,
@@ -610,3 +688,21 @@ def pending_leave_badge(user):
     waiting = scope.by_day(user, LeaveRequest.objects.filter(status=LeaveStatus.PENDING), 'employee', 'first_day',
                            PRODUCTION).exclude(employee__user=user)
     return Badge(waiting.count(), '')
+
+
+# ---- the rail's foot -----------------------------------------------------------------------------------------------
+def rail_foot(user):
+    """What the rail's foot says (settings.RAIL_FOOT, core.navigation.rail): the company (settings.COMPANY_NAME) and the
+    site of the department the person is placed in today, or the farm's site when it has only one; each left out when
+    it is not known, 'Fish farm' when neither is."""
+    from django.conf import settings
+    from core.dates import company_today
+    from farm.models import Site
+
+    person = Employee.objects.filter(user=user).first() if user.is_authenticated else None
+    site = site_on(person, company_today()) if person is not None else None
+    if site is None:
+        sites = list(Site.objects.filter(is_active=True)[:2])
+        site = sites[0] if len(sites) == 1 else None
+    parts = [part for part in (settings.COMPANY_NAME, site.name if site is not None else '') if part]
+    return ' · '.join(parts) if parts else _('Fish farm')

@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.utils import translation
 from django.utils.translation import gettext_lazy as _
 
-from . import access
+from . import access, navigation
 from .crud import TabbedForm, tab_fields
 from .language import account_language, save_account_language
 
@@ -16,7 +16,7 @@ User = get_user_model()
 class PermissionMatrix(forms.CheckboxSelectMultiple):
     """A role's permissions as the access matrix (core.access): a row per area under its group, a
     column per action, a box only where the area offers the action. Create, Edit and Delete point at
-    their row's Read box (data-requires, see frontend/components.ts)."""
+    their row's Read box (data-requires, see frontend/components.ts), as access.implied adds it on save."""
 
     template_name = 'core/widgets/permission_matrix.html'
 
@@ -29,10 +29,11 @@ class PermissionMatrix(forms.CheckboxSelectMultiple):
             cells = {action: options.get(area.perm(action)) for action in area.actions}
             read = cells.get(access.READ)
             for action, cell in cells.items():
-                if cell and read and action != access.READ:
+                if cell and read and action in access.INCLUDES_READ:
                     cell['attrs']['data-requires'] = read['attrs']['id']
             sections.setdefault(area.group, []).append(
-                {'label': area.label, 'cells': [(label, cells.get(action)) for action, label in access.ACTIONS]})
+                {'label': area.label, 'cells': [(label, cells.get(action)) for action, label in access.ACTIONS],
+                 'notes': navigation.notes(area.perm(access.READ))})
         context['widget']['columns'] = [label for _, label in access.ACTIONS]
         context['widget']['sections'] = sections.items()
         return context

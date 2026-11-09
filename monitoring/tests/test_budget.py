@@ -81,6 +81,10 @@ TEMPLATE_QUERIES = 2
 SENSOR_QUERIES = 2          # the live values (owner rule A1): the bindings of the cards' points and systems, and their channels'
                             # values, whatever the number of units (sensors/provider.py)
 SENSOR_SAVEPOINTS = 4       # the water sources' savepoint and its release around each of its two asks (farm/water/sources.py)
+OWN_POINT_QUERIES = 2       # owner rule A9.1: the other points of the units, once for their water (farm/water/read._places)
+                            # and once for the ration's temperature (read.water_sources every_point), whatever the number
+OWNER_2026_11_08_QUERIES = 2  # the newest temperature before the ration's range (A11, Series carry) and the unit's other
+                              # own-water points for the withdrawal's degree-days, whatever the number of units
 
 
 class RecordedCountsTests(Counting, MonitoringCase):
@@ -97,7 +101,8 @@ class RecordedCountsTests(Counting, MonitoringCase):
         # source now has its own (a savepoint and its release: transaction control, no read), so the reads are compared
         # without them. Card templates add their
         # two queries (the live templates, the live rules), whatever the number of units.
-        self.assertEqual(found, {mode: [count - RECORDED_SAVEPOINTS + TEMPLATE_QUERIES + SENSOR_QUERIES] * 3
+        added = TEMPLATE_QUERIES + SENSOR_QUERIES + OWN_POINT_QUERIES + OWNER_2026_11_08_QUERIES
+        self.assertEqual(found, {mode: [count - RECORDED_SAVEPOINTS + added] * 3
                                  for mode, count in RECORDED.items()})
         self.assertEqual(savepoints, {mode: count + SENSOR_SAVEPOINTS for mode, count in
                                       {'simple': 4, 'detailed': 10, 'mixed': 10}.items()})   # chips; + treatments, lice, tasks

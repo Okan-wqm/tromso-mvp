@@ -45,7 +45,8 @@ export function catalogueOf(data: unknown): Catalogue | null {
       enabled: entry.enabled !== false,
     };
   }
-  return { columns: data.columns, schema: isWhole(data.schema) ? data.schema : 1, specs };
+  const rows = isWhole(data.rows) && data.rows > 0 ? data.rows : Infinity;
+  return { columns: data.columns, rows, schema: isWhole(data.schema) ? data.schema : 1, specs };
 }
 
 // ---- reading and writing a stored layout ----------------------------------------------------------------------------
@@ -116,7 +117,7 @@ export function check(items: Layout, cat: Catalogue): Problem[] {
   const placed = Array.isArray(items) ? items.filter(isItem) : [];
   const problems: Problem[] = [];
   for (const item of placed) {
-    if (item.x < 0 || item.y < 0 || item.x + item.w > cat.columns) {
+    if (item.x < 0 || item.y < 0 || item.x + item.w > cat.columns || item.y + item.h > cat.rows) {
       problems.push({ code: 'bounds', widget: item.id });
     }
     const spec = cat.specs[item.type];

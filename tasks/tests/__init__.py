@@ -7,7 +7,7 @@ from django.test import TestCase
 
 from farm.models import Equipment, EquipmentType, ProductionDepartment, Site, System
 from farm.stock.dates import site_today
-from farm.tests.helpers import role
+from farm.tests.helpers import leave_without_site, role
 from farm.tests.test_stock import make_unit
 
 from ..models import Task
@@ -37,7 +37,8 @@ class TasksTestCase(TestCase):
         cls.tromso = Site.objects.create(name='Tromso', code='TR', timezone='Europe/Oslo')
         cls.hall = ProductionDepartment.objects.create(site=cls.bergen, name='Hall A', code='HA')
         cls.sea = ProductionDepartment.objects.create(site=cls.tromso, name='Sea', code='SE')
-        cls.loose = ProductionDepartment.objects.create(site=None, name='Old hall', code='OH')
+        # A department a deleted site left without one, from before that was refused (F-212).
+        cls.loose = leave_without_site(ProductionDepartment.objects.create(site=cls.bergen, name='Old hall', code='OH'))
         cls.ras = System.objects.create(site=cls.bergen, production_department=cls.hall, name='RAS 1', code='R1')
         cls.t1 = make_unit('T-01', cls.hall)
         cls.t2 = make_unit('T-02', cls.sea)

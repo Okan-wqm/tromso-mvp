@@ -174,8 +174,9 @@ class CrewTests(PeopleTestCase):
         self.assertEqual(AuditLog.objects.count(), logs)
 
 
-class MenuCourtesyTests(PeopleTestCase):
-    """`leads` and `production_only` choose menu lines only; they never decide a permission."""
+class MenuLineTests(PeopleTestCase):
+    """`leads` and `production_only` choose menu lines, and a line the menu leaves out is refused at its address too
+    (test_menu_access)."""
 
     def test_leads_is_a_production_manager_or_a_holder_of_everyone(self):
         self.assertTrue(scope.leads(self.lead_a))

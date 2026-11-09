@@ -80,6 +80,17 @@ class FaceTests(SimpleTestCase):
         self.assertTrue(render.face(reading('oxygen_mg_l', '8.1', hours=30), NOW).stale)
         self.assertFalse(render.face(reading('oxygen_mg_l', '8.1', hours=23), NOW).stale)
 
+    def test_an_old_critical_value_still_says_critical_and_old_and_an_old_fine_one_only_old(self):
+        """F-244 on the value widgets: the value's own words keep what its limit said; an old fine value is never ok."""
+        old = reading('oxygen_mg_l', '4', hours=30, status=Status.STALE)
+        old.judged = Status.CRITICAL
+        face = render.face(old, NOW)
+        self.assertEqual((face.status, face.status_label, face.stale), ('critical', 'Critical', True))
+        fine = reading('oxygen_mg_l', '9', hours=30, status=Status.STALE)
+        fine.judged = Status.OK
+        face = render.face(fine, NOW)
+        self.assertEqual((face.status, face.status_label, face.stale), ('stale', 'Stale', True))
+
     def test_a_sensor_value_says_which_sensor_as_every_latest_value_does(self):
         # Owner rule A1: a live value says the sensor and its channel, as the water page and the Deffeyes window do.
         face = render.face(live('oxygen_mg_l', '8.4', seconds=40, channel_no=12), NOW)
@@ -90,6 +101,39 @@ class FaceTests(SimpleTestCase):
     def test_a_sensor_value_is_stale_by_its_channels_freshness_not_the_parameters_hours(self):
         self.assertTrue(render.face(live('oxygen_mg_l', '8.4', seconds=200, channel_no=12, fresh_for=180), NOW).stale)
         self.assertFalse(render.face(live('oxygen_mg_l', '8.4', seconds=170, channel_no=12, fresh_for=180), NOW).stale)
+
+
+class BarTests(SimpleTestCase):
+    """The bands of a bar are what evaluate.judge says of the values in them (F-088): an open bound is no band."""
+
+    def bands(self, value, **bounds):
+        limit = SimpleNamespace(**{name: None if bounds.get(name) is None else D(str(bounds[name]))
+                                   for name in render.BOUNDS})
+        found = reading('co2_mg_l', value)
+        found.limits = [limit]
+        drawn = render.bar(render.face(found, NOW))
+        return [band.kind for band in drawn.bands], drawn
+
+    def test_upper_bounds_only_leave_the_low_end_ok(self):
+        kinds, drawn = self.bands(3, warning_high=5, critical_high=10)
+        self.assertEqual(kinds, ['ok', 'warning', 'critical'])
+        self.assertLess(drawn.marker, drawn.bands[0].width)                # the value sits in the ok band
+
+    def test_lower_bounds_only_leave_the_high_end_ok(self):
+        kinds, _drawn = self.bands(9, critical_low=6, warning_low=7)
+        self.assertEqual(kinds, ['critical', 'warning', 'ok'])
+
+    def test_one_bound_and_four_bounds(self):
+        self.assertEqual(self.bands(12, critical_high=10)[0], ['ok', 'critical'])
+        self.assertEqual(self.bands(8, critical_low=6, warning_low=7, warning_high=12, critical_high=14)[0],
+                         ['critical', 'warning', 'ok', 'warning', 'critical'])
+        self.assertEqual(self.bands(8, critical_low=6, critical_high=14)[0], ['critical', 'ok', 'critical'])
+
+    def test_the_bands_cover_the_bar_once(self):
+        for bounds in ({'warning_high': 5}, {'critical_low': 6, 'warning_high': 12}, {'warning_low': 2}):
+            with self.subTest(bounds=bounds):
+                drawn = self.bands(4, **bounds)[1]
+                self.assertAlmostEqual(sum(band.width for band in drawn.bands), 100, places=1)
 
 
 class BuildTests(MonitoringCase):
@@ -144,9 +188,10 @@ class PageTests(MonitoringCase):
         card = articles(html)[f'card:{self.t2.pk}']
         self.assertEqual(card.attrs['data-template'], str(builtin.SIMPLE))
         grid = next(node for node in card.walk() if 'card-grid' in node.classes)
-        placed = [(node.attrs['class'], node.attrs['style']) for node in widgets_of(card)]
-        self.assertEqual(placed[0], ('w w-experiment', '--x:0;--y:0;--w:12;--h:1'))
-        self.assertEqual([each[0] for each in placed], [f'w w-{widget["type"]}' for widget in builtin.SIMPLE_LAYOUT['widgets']])
+        placed = [node.attrs['class'] for node in widgets_of(card)]
+        self.assertEqual(placed[0], 'w w-experiment gx-0 gy-0 gw-12 gh-1')       # placed by classes: no style attribute
+        self.assertTrue(all('style' not in node.attrs for node in widgets_of(card)))
+        self.assertEqual([each.split()[1] for each in placed], [f'w-{widget["type"]}' for widget in builtin.SIMPLE_LAYOUT['widgets']])
         self.assertTrue(grid is not None)
         self.assertIn('class="monitor-card-head"', html)                  # the frame is not a widget
 
@@ -158,9 +203,17 @@ class PageTests(MonitoringCase):
         self.assertIn('8.10', text)
         self.assertIn('Meter or test kit', text)
         self.assertIn('ago', text)
-        tan = next(node for node in widgets_of(card) if node.attrs['style'].startswith('--x:8;--y:3'))
+        tan = next(node for node in widgets_of(card) if {'gx-8', 'gy-3'} <= set(node.classes))
         self.assertIn('no data', ' '.join(tan.text().split()))
         self.assertNotIn('—', tan.text())
+
+    def test_a_worked_out_oxygen_says_on_the_card_what_it_was_worked_out_from(self):
+        """Owner rule (2026-11-07): the % worked out from a sample's mg/L names its temperature, salinity and pressure."""
+        self.sample(self.t2, hours=1, temperature_c='9.5', oxygen_mg_l='8', salinity_ppt='0')
+        layout = {'schema': 1, 'widgets': [{'id': 'w1', 'type': 'value', 'x': 0, 'y': 0, 'w': 6, 'h': 2,
+                                            'bind': {'parameter': 'oxygen_saturation_pct'}}]}
+        text = ' '.join(articles(self.page(layout))[f'card:{self.t2.pk}'].text().split())
+        self.assertIn('Worked out from 9.5 °C, 0.0 ‰ and', text)
 
     def test_a_card_says_when_the_live_sensor_values_could_not_be_read(self):
         # Owner rule A1: when the sensors cannot be read, the water shown comes from the samples only, and the card says so.
@@ -192,7 +245,7 @@ class PageTests(MonitoringCase):
         self.sample(self.t1, hours=1, temperature_c='13', oxygen_mg_l='5')            # critical
         self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='8.1')       # fine
         cards = articles(self.page(OPERATOR))
-        cells = [[node.attrs['style'] for node in widgets_of(cards[f'card:{unit.pk}'])] for unit in (self.t1, self.t2)]
+        cells = [[node.attrs['class'] for node in widgets_of(cards[f'card:{unit.pk}'])] for unit in (self.t1, self.t2)]
         self.assertEqual(cells[0], cells[1])
         self.assertNotEqual(cards[f'card:{self.t1.pk}'].attrs['class'], cards[f'card:{self.t2.pk}'].attrs['class'])
 
@@ -224,6 +277,30 @@ class PageTests(MonitoringCase):
         tasks = next(node for node in widgets_of(card) if 'w-tasks' in node.classes)
         self.assertIn('no data', ' '.join(tasks.text().split()))
 
+    def test_a_failed_source_is_said_on_the_frame_whatever_the_template_shows(self):
+        """F-134: a source that could not be read is said where no template can hide it, not as a quiet "no data"."""
+        from unittest import mock
+        read.FAILED_AT.clear()
+        layout = {'schema': 1, 'widgets': [{'id': 'f', 'type': 'fish', 'x': 0, 'y': 0, 'w': 12, 'h': 5}]}
+        with mock.patch.object(read.tasks_read, 'per_unit', side_effect=RuntimeError('down')), \
+                mock.patch.object(read.health_read, 'latest_counts', side_effect=RuntimeError('down')), \
+                self.assertLogs('monitoring.read'):
+            html = self.page(builtin.DETAILED_LAYOUT)
+        frame = next(node for node in articles(html)[f'card:{self.t2.pk}'].walk() if 'monitor-failed' in node.classes)
+        self.assertEqual(' '.join(frame.text().split()), 'Could not be read: Sea-lice counts, Tasks')
+        self.assertNotIn('monitor-failed', self.page(layout))                 # nothing failed: nothing said
+
+    def test_a_card_with_an_old_critical_value_is_marked_old_for_the_announcer(self):
+        self.limit('oxygen_mg_l', critical_low=6)
+        self.limit('temperature_c', critical_high=18)
+        self.limit('nitrite_n_mg_l', critical_high='0.2')
+        self.sample(self.t2, hours=1, temperature_c='9', oxygen_mg_l='9')
+        self.assertNotIn('data-stale', articles(self.page())[f'card:{self.t2.pk}'].attrs)
+        self.sample(self.t2, hours=200, nitrite_n_mg_l='0.5')
+        card = articles(self.page())[f'card:{self.t2.pk}']
+        self.assertEqual(card.attrs['data-state'], 'critical')
+        self.assertIn('data-stale', card.attrs)
+
 
 class AnnouncerTests(MonitoringCase):
     """frontend/announce.ts reads the state from the article and speaks through two regions outside the grid, in the
@@ -240,7 +317,49 @@ class AnnouncerTests(MonitoringCase):
         self.assertFalse([node for node in grid.walk() if 'data-announcer' in node.attrs])
         holder = next(node for node in tree.walk() if node.attrs.get('id') == 'monitor-announce')
         for key in ('data-announce-worse', 'data-announce-more', 'data-state-critical', 'data-state-warning',
-                    'data-state-blind', 'data-state-note'):
+                    'data-state-blind', 'data-state-unjudged', 'data-state-note', 'data-stale-word'):
             self.assertTrue(holder.attrs.get(key), key)
+        # the grid's notices are said aloud too (F-045, F-222): its words for each poll state
+        for key in ('data-stale-text', 'data-gone-text', 'data-updated-text'):
+            self.assertTrue(grid.attrs.get(key), key)
+        # the announcer's order of the states is the server's one list, never restated in the script
+        self.assertEqual(holder.attrs['data-states'], ' '.join(key for key, _word in read.STATES))
         self.assertIn('js/announce.js', html)
         self.assertNotIn('data-announcer', self.client.get(CARDS).content.decode())      # never inside the fragment
+
+
+class GridStyleSheetTests(SimpleTestCase):
+    """A widget's cell is given by classes (gx-, gy-, gw-, gh-) that static/css/card-grid.css turns into the grid's
+    --x, --y, --w, --h: a style attribute on the widget would be blocked by the Content-Security-Policy. The style sheet is
+    made from the catalogue (`render.grid_css`, `manage.py card_grid_css`) and covers every cell a valid layout can use."""
+
+    def test_the_style_sheet_is_the_one_the_catalogue_makes(self):
+        path = Path(settings.BASE_DIR) / 'static' / 'css' / 'card-grid.css'
+        self.assertEqual(path.read_text(encoding='utf-8'), render.grid_css(), 'run manage.py card_grid_css')
+
+    def test_it_covers_every_cell_and_size_a_valid_layout_can_use(self):
+        css = render.grid_css()
+        tallest = max(spec.max_h for spec in catalogue.WIDGETS.values())
+        self.assertEqual(catalogue.ROWS, catalogue.MAX_WIDGETS * tallest)
+        for x in range(catalogue.COLUMNS):
+            self.assertIn(f'.gx-{x}{{--x:{x}}}', css)
+        for size in range(1, catalogue.COLUMNS + 1):
+            self.assertIn(f'.gw-{size}{{--w:{size}}}', css)
+        for size in range(1, tallest + 1):
+            self.assertIn(f'.gh-{size}{{--h:{size}}}', css)
+        for y in range(catalogue.ROWS):
+            self.assertIn(f'.gy-{y}{{--y:{y}}}', css)
+        self.assertNotIn(f'.gy-{catalogue.ROWS}{{', css)
+
+    def test_a_widget_below_the_last_row_is_out_of_bounds(self):
+        from ..cards import validate
+        widget = {'id': 'w1', 'type': 'tasks', 'x': 0, 'w': 6, 'h': 2}
+        found = validate.validate({'schema': 1, 'widgets': [{**widget, 'y': catalogue.ROWS - 2}]})
+        self.assertNotIn('bounds', [problem.code for problem in found])
+        found = validate.validate({'schema': 1, 'widgets': [{**widget, 'y': catalogue.ROWS - 1}]})
+        self.assertIn('bounds', [problem.code for problem in found])
+
+    def test_the_pages_that_draw_cards_load_it(self):
+        for name in ('monitoring/monitor.html', 'monitoring/template_form.html'):
+            text = (Path(settings.BASE_DIR) / 'templates' / name).read_text(encoding='utf-8')
+            self.assertIn("{% asset 'css/card-grid.css' %}", text, name)

@@ -4,8 +4,9 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from core.crud import CodedFormMixin, TabbedForm, tab_fields
+from core.widgets import DayInput
 
-from .. import leave, read, scope
+from .. import leave, read, scope, services
 from ..models import Employee, LeaveRequest, LeaveType
 from ..models.leave import LeaveStatus
 
@@ -50,8 +51,8 @@ class LeaveRequestForm(TabbedForm):
             'reason': _('Only you and the people who see every employee can read this.'),
         }
         widgets = {
-            'first_day': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
-            'last_day': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'first_day': DayInput(),
+            'last_day': DayInput(),
             'reason': forms.Textarea(attrs={'rows': 3}),
         }
 
@@ -84,6 +85,7 @@ class LeaveRequestForm(TabbedForm):
         if last < first:
             self.add_error('last_day', _('The last day cannot be before the first.'))
             return cleaned
+        services.check_employed(employee, first, last)
         if adding and 'reason' in self.fields and employee.user_id != getattr(self.user, 'pk', None):
             cleaned['reason'] = ''
             self.instance.reason = ''

@@ -270,3 +270,50 @@ class EndpointTests(ReplayCase):
         self.client.force_login(user)
         self.assertEqual(self.client.get(reverse('sensors:deffeyes_frames'), {'target': f'unit:{self.t1.pk}'})
                          .status_code, 403)
+
+    def test_a_range_outside_the_window_of_dates_is_refused_never_a_server_error(self):
+        """`start` and `end` are typed into an address: the calendar's ends (an overflow on the site's clock) and
+        anything outside 1900-2100 are refused (400) through core.dates.read_moment."""
+        self.reader()
+        for start, end in (('0001-01-01T00:30', '0001-01-02T00:30'), ('9999-12-30T00:00', '9999-12-31T00:00'),
+                           ('1899-12-30T00:00', '1899-12-31T00:00'), ('2026-10-10', '2026-10-11')):
+            with self.subTest(start=start, end=end):
+                self.assertEqual(self.get(start=start, end=end).status_code, 400)
+
+    def test_a_step_longer_than_any_time_is_refused_never_a_server_error(self):
+        self.reader()
+        for step in ('100000000000000000', '9' * 40):            # a short step is snapped up to the ladder, kept
+            with self.subTest(step=step):
+                self.assertEqual(self.get(step=step).status_code, 400)
+
+class OneRuleTests(ReplayCase):
+    """The replay picks each input at each frame by the water's one rule, `farm.water.read.choose` (owner rule A9), as
+    the live view does: the newest fresh value of the unit's own places (its own-water points' sensors and samples), else
+    its system's (the system's sensors, those on its loop point, the loop's samples); never sensor-before-sample (A1)."""
+
+    def test_a_newer_fresh_manual_value_beats_an_older_fresh_sensor_value(self):
+        self.steady()
+        water_services.record(self.user, point=self.mid1, measured_at=START + timedelta(minutes=22), source='manual',
+                              values={'ph': Decimal('6.50')})
+        frames = read.deffeyes_frames(self.t1, START + timedelta(minutes=24), START + timedelta(minutes=25),
+                                      timedelta(minutes=1))
+        ph = frames.frames[0].inputs['ph']
+        self.assertEqual((ph.origin, ph.value), (read.MANUAL, 6.5))
+
+    def test_the_units_own_fresh_value_comes_before_the_systems_sensor(self):
+        self.steady()
+        water_services.record(self.user, point=self.mid1, measured_at=START + timedelta(minutes=30), source='manual',
+                              values={'temperature_c': Decimal('9.0')})
+        frames = read.deffeyes_frames(self.t1, START + timedelta(minutes=31), START + timedelta(minutes=32),
+                                      timedelta(minutes=1))
+        temperature = frames.frames[0].inputs['temperature_c']
+        self.assertEqual((temperature.origin, temperature.value), (read.MANUAL, 9.0))
+
+    def test_a_probe_on_the_loop_point_stands_in_for_the_unit(self):
+        oxygen = make_channel(self.device, 'oxygen_mg_l')
+        bindings.move(self.user, oxygen, point=self.loop, at=START - timedelta(days=1))
+        insert(oxygen.channel_no, [(START + timedelta(minutes=m), 8.0) for m in range(60)])
+        self.steady()
+        frames = read.deffeyes_frames(self.t1, START + timedelta(minutes=10), START + timedelta(minutes=11),
+                                      timedelta(minutes=1))
+        self.assertEqual(getattr(frames.frames[0].inputs.get('oxygen_mg_l'), 'value', None), 8.0)

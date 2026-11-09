@@ -3,15 +3,16 @@ from decimal import Decimal
 from django import forms
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.db.models import F
+from django.db.models import F, Q
 from django.template.defaultfilters import floatformat
 from django.utils import formats, timezone
 from django.utils.translation import gettext, gettext_lazy as _
 
 from core.crud import CodedFormMixin, Fieldset, TabbedForm
-from core.widgets import DependentSelect, Output
+from core.widgets import DayInput, DependentSelect, Output
 
 from ..models import ProductionDepartment, System, Tank
+from ..models.site import zone_of
 from ..models.tank import (
     KIND_FIELDS, LIMITS, LINER_THICKNESS, LINERS, OFFERED, REQUIRED, SHAPE_MEASURES, VOLUME_FIELDS, Kind, Liner,
     PondType, Shape, described_by,
@@ -21,7 +22,7 @@ DIMENSIONS = 'dimensions'   # the inner tab with the kind's own fields
 CAPACITY = 'capacity'
 CALCULATED = ['volume_m3', 'water_volume_m3', 'freeboard', 'max_biomass_kg']
 DECIMAL = {'inputmode': 'decimal'}
-DATE = forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d')
+DATE = DayInput()
 NUMBERS = [field.name for field in Tank._meta.concrete_fields if isinstance(field, models.DecimalField)]
 
 # How a kind's fields are grouped on the Dimensions tab; each kind shows only the ones it is described by.
@@ -152,12 +153,15 @@ class TankForm(CodedFormMixin, TabbedForm):
         if adding:
             del self.fields['status_changed_at']
         else:
+            site = unit.production_department.site if unit.production_department_id else None
             self.initial['status_changed_at'] = formats.date_format(
-                timezone.localtime(unit.status_changed_at), 'DATETIME_FORMAT') if unit.status_changed_at else ''
+                timezone.localtime(unit.status_changed_at, zone_of(site)), 'DATETIME_FORMAT') if unit.status_changed_at else ''
 
     def _location(self, unit):
-        departments = (ProductionDepartment.objects.select_related('site')
-                       .order_by(F('site__name').asc(nulls_last=True), 'name'))
+        # On a site (F-212); the unit's own department stays offered when a deleted site left it without one, named so.
+        departments = (ProductionDepartment.objects.filter(Q(site__isnull=False, site__is_deleted=False)
+                                                          | Q(pk=unit.production_department_id))
+                       .select_related('site').order_by(F('site__name').asc(nulls_last=True), 'name'))
         department_field = self.fields['production_department']
         department_field.queryset = departments
         department_field.empty_label = _('Select a production department')

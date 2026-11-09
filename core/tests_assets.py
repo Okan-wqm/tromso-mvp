@@ -45,7 +45,7 @@ class AssetTagTests(TestCase):
         self.assertEqual(asset('css/missing.css'), '/static/css/missing.css')
 
     def test_the_import_map_versions_every_compiled_module_and_nothing_else(self):
-        html = module_map()
+        html = module_map({})                   # outside a request: no nonce
         imports = json.loads(re.search(r'<script type="importmap">(.*)</script>', html).group(1))['imports']
         self.assertEqual(set(imports), {'/static/js/dom.js', '/static/js/main.js'})
         self.assertEqual(imports['/static/js/dom.js'], asset('js/dom.js'))
@@ -61,7 +61,7 @@ class PagesUseVersionedAssetsTests(TestCase):
             for link in links:
                 if finders.find(link.removeprefix('/static/').split('?')[0]):   # compiled scripts exist after a build
                     self.assertRegex(link, r'\?v=\d+$', link)
-            self.assertIn('<script type="importmap">', html)
+            self.assertRegex(html, r'<script type="importmap" nonce="[^"]+">')    # the policy runs it by its nonce
             self.assertLess(html.index('type="importmap"'), html.index('type="module"'))   # the map comes first
         self.client.logout()
         sign_in = self.client.get(reverse('login')).content.decode()

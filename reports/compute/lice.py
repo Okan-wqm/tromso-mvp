@@ -14,10 +14,10 @@ from decimal import Decimal
 from django.db.models import Max, Q
 from django.utils.translation import gettext as _
 
-from farm.health import read as health_read
-from farm.models import Batch, HandlingPlanItem, LiceCount, Medicine, Site, Species, Treatment
+from farm.health import lice as health_lice, read as health_read
+from farm.models import Batch, HandlingPlanItem, LiceCount, Medicine, Site, Species, StockOperation, Treatment
 from farm.models.harvest import PlanKind
-from farm.models.health import MEDICINAL, TreatmentMethod, TreatmentReason
+from farm.models.health import MEDICINAL, MedicineKind, TreatmentMethod, TreatmentReason
 from farm.models.site import zone_of
 from farm.models.species import SALMONID_CODES
 from farm.models.water_point import PointKind
@@ -47,6 +47,28 @@ def week_treatments(site, period):
                                      start_date__lte=period.end, end_date__gte=period.start)
             .select_related('medicine').prefetch_related('units__production_department').distinct()
             .order_by('start_date', 'created_at'))
+
+
+def left_out(site, period):
+    """The treatments of the site in the week with a sea-lice medicine given for another reason, which the report leaves
+    out (farm.health.lice.left_out_of_lice_report): it says so, so that a reason chosen wrongly is caught before filing
+    (audit F-083, F-239)."""
+    found = (Treatment.objects.filter(medicine__kind=MedicineKind.LICE, units__production_department__site=site,
+                                      start_date__lte=period.end, end_date__gte=period.start)
+             .exclude(reason=TreatmentReason.SEA_LICE).select_related('medicine')
+             .prefetch_related('units__production_department').distinct().order_by('start_date', 'created_at'))
+    return [treatment for treatment in found if health_lice.left_out_of_lice_report(treatment.medicine, treatment.reason)]
+
+
+def _left_out_warnings(site, period, warnings):
+    for treatment in left_out(site, period):
+        units = sorted(unit.code for unit in treatment.units.all() if unit.production_department.site_id == site.pk)
+        warnings.append(_('The treatment with %(medicine)s in %(units)s from %(start)s to %(end)s was recorded for '
+                          '“%(reason)s”, not for sea lice, so it is not in this report: if it was given against sea '
+                          'lice, void it and record it again with the reason “%(sea_lice)s”.') % {
+            'medicine': treatment.medicine, 'units': ', '.join(units), 'start': treatment.start_date.isoformat(),
+            'end': treatment.end_date.isoformat(), 'reason': treatment.get_reason_display(),
+            'sea_lice': TreatmentReason.SEA_LICE.label})
 
 
 def depth_samples(site, period):
@@ -88,6 +110,7 @@ def compute(site, period, report):
     counts = _counts(site, units, period, problems, warnings)
     _coverage(site, units, held, counts, temperature, period, problems, warnings)
     treatments = _treatments(site, units, report, counts, problems, warnings, period, salmonids)
+    _left_out_warnings(site, period, warnings)
     content = {
         'kind': 'sea_lice', 'period': period.key, 'identity': identity(site, problems),
         'temperature_c': text(temperature, 1), 'samples': samples, 'counts': counts['content'],
@@ -115,15 +138,39 @@ def _questions(treatments):
     return found
 
 
-def scope(site, period, units=None):
-    """The rows the week's figures are read from (for the fingerprint), without computing them."""
+# The version of the rows scope() reads (reports.compute.SCOPE_VERSIONS): 2 adds the earlier counts and the harvest plans
+# and their harvests (F-206) and the lice medicines given for another reason (F-239).
+SCOPE_VERSION = 2
+
+
+def scope(site, period, units=None, version=SCOPE_VERSION):
+    """The rows the week's figures are read from (for the fingerprint), without computing them; of `version` 1 for a
+    report filed before version 2 (reports.compute.SCOPE_VERSIONS)."""
     units = units if units is not None else stock.site_units(site)
+    if version == 1:
+        return stock.scope_rows(units, period.end) + [
+            ('lice_counts', LiceCount.all_objects.filter(unit__in=units, date__gte=period.start, date__lte=period.end)),
+            ('treatments', Treatment.all_objects.filter(reason=TreatmentReason.SEA_LICE,
+                                                        units__production_department__site=site,
+                                                        start_date__lte=period.end, end_date__gte=period.start)
+             .distinct()),
+            ('medicines', Medicine.all_objects.filter(treatments__in=week_treatments(site, period)).distinct()),
+            ('water_samples', depth_samples(site, period)),
+        ]
+    plans = HandlingPlanItem.all_objects.filter(kind=PlanKind.HARVEST, unit__in=units,
+                                                date__lte=period.end + timedelta(days=SLAUGHTER_DAYS))
     return stock.scope_rows(units, period.end) + [
         ('lice_counts', LiceCount.all_objects.filter(unit__in=units, date__gte=period.start, date__lte=period.end)),
-        ('treatments', Treatment.all_objects.filter(reason=TreatmentReason.SEA_LICE,
-                                                    units__production_department__site=site,
-                                                    start_date__lte=period.end, end_date__gte=period.start)
-         .distinct()),
+        # What decides whether a cage was due a count: its earlier counts and the harvest plans of § 6 (F-206).
+        ('earlier_lice_counts', LiceCount.all_objects.filter(unit__in=units, date__lt=period.start)),
+        # Only plans the § 6 exception can read: dated up to SLAUGHTER_DAYS after the week (a later plan cannot cover a
+        # count due in it), with the harvests they were recorded as (a harvest voided after filing reopens its plan).
+        ('harvest_plans', plans),
+        ('harvest_plan_operations', StockOperation.all_objects.filter(plan_items__in=plans).distinct()),
+        # The treatments for sea lice, and those with a sea-lice medicine the report leaves out and says so (F-239).
+        ('treatments', Treatment.all_objects.filter(
+            Q(reason=TreatmentReason.SEA_LICE) | Q(medicine__kind=MedicineKind.LICE),
+            units__production_department__site=site, start_date__lte=period.end, end_date__gte=period.start).distinct()),
         ('medicines', Medicine.all_objects.filter(treatments__in=week_treatments(site, period)).distinct()),
         ('water_samples', depth_samples(site, period)),
     ]
@@ -218,15 +265,16 @@ def _all_to_be_slaughtered(units, held, due, fish_on, period):
     """Whether every cage with salmonids has a harvest planned that covers its production fish (cleaner fish are not
     harvested) within 14 days of the day its count fell due (of the week's end for a cage that was not due), the fish
     being those it held that day. A plan counts when it is not cancelled, whether still open or already recorded as a
-    harvest (a voided harvest is no longer one): the exception does not lapse when the fish are slaughtered."""
+    harvest: the exception does not lapse when the fish are slaughtered, and a plan whose harvest was voided is open
+    again (HandlingPlanItem.done)."""
     closing = {unit_id: unit_stock.count for unit_id, unit_stock in read.stock_on(units, period.end).items()}
     fish = {unit_id: fish_on[due[unit_id]].get(unit_id, 0) if unit_id in due else closing.get(unit_id, 0)
             for unit_id in held}
     planned = {}
-    for item in HandlingPlanItem.objects.filter(Q(operation__isnull=True) | Q(operation__is_deleted=False),
-                                                kind=PlanKind.HARVEST, unit__in=held, cancelled_reason=''):
+    items = HandlingPlanItem.objects.filter(kind=PlanKind.HARVEST, unit__in=held, cancelled_reason='')
+    for item in items.select_related('operation'):
         reference = due.get(item.unit_id, period.end)
-        if item.operation_id is not None and item.date <= reference:
+        if item.done and item.date <= reference:
             continue                    # taken out before: its fish are not among those counted that day
         if item.date <= reference + timedelta(days=SLAUGHTER_DAYS):
             planned[item.unit_id] = planned.get(item.unit_id, 0) + (item.planned_count or 0)

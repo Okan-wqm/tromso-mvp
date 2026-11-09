@@ -23,7 +23,7 @@ from itertools import groupby
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Exists, OuterRef, Q
-from django.utils import timezone
+from django.utils import formats, timezone
 from django.utils.translation import gettext as _, gettext_lazy
 
 from core import audit
@@ -73,8 +73,8 @@ def _moment_refusal(at, current):
         return _('A binding cannot start in the future.')
     if current is not None and at <= current.valid_from:
         return _('The channel is bound since %(moment)s: a move starts after that.') % {
-            'moment': timezone.localtime(current.valid_from, clock(current.channel.device, current.target))
-            .strftime('%Y-%m-%d %H:%M')}
+            'moment': formats.date_format(timezone.localtime(current.valid_from, clock(current.channel.device,
+                                                                                      current.target)), 'DATETIME_FORMAT')}
     return ''
 
 

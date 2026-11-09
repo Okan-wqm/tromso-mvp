@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load i18n stock water %}
+{% load i18n stock water dates %}
 {% comment %} Operations › Water chemistry (farm.water.views.water_page): the latest water of every point (a unit's
    middle point, a loop, and the other points that were sampled) with its status, or the history of the samples
    (?view=history, or one owner's with ?unit= / ?system= / ?equipment=, one point's with ?point=), each value judged
@@ -8,79 +8,91 @@
 {% block title %}{{ title }}{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
+{% block head_status %}{% if not showing_history %}
+<div class="ui-head-status">
+  <span class="ui-chip" data-status="neutral">{% blocktrans trimmed count count=point_count %}{{ count }} sampling point{% plural %}{{ count }} sampling points{% endblocktrans %}</span>
+  {% if critical_count %}<span class="ui-chip" data-status="critical">{% include "icons/_icon.html" with name="octagon" %}{% blocktrans trimmed count count=critical_count %}{{ count }} critical{% plural %}{{ count }} critical{% endblocktrans %}</span>{% endif %}
+  {% if warning_count %}<span class="ui-chip" data-status="warning">{% include "icons/_icon.html" with name="alert" %}{% blocktrans trimmed count count=warning_count %}{{ count }} warning{% plural %}{{ count }} warnings{% endblocktrans %}</span>{% endif %}
+</div>
+{% endif %}{% endblock %}
+{% block head_actions %}{% if can_record %}
+<div class="ui-head-actions">
+  <a class="ui-btn" href="{{ round_url }}">{% trans "Round" %}</a>
+  <a class="ui-btn" data-variant="primary" href="{{ record_url }}" data-modal>{% include "icons/_icon.html" with name="plus" %}{% trans "Record sample" %}</a>
+</div>
+{% endif %}{% endblock %}
 {% block content %}
 {% include "farm/_water_tabs.html" with current=showing_history|yesno:"history,latest" %}
 
-<div class="toolbar">
+<div class="ui-toolbar">
   {% if showing_history %}
   <form method="get" class="toolbar-filter water-filters">
     <input type="hidden" name="view" value="history">
     <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
-    <select id="site-filter" name="site" data-autosubmit>
+    <select class="ui-select" id="site-filter" name="site" data-autosubmit>
       <option value="">{% trans "All sites" %}</option>
       {% for item in sites %}<option value="{{ item.pk }}"{% if site == item %} selected{% endif %}>{{ item.name }}</option>{% endfor %}
     </select>
     <label class="sr-only" for="owner-filter">{% trans "Unit, system or equipment" %}</label>
-    <select id="owner-filter" name="owner" data-autosubmit>
+    <select class="ui-select" id="owner-filter" name="owner" data-autosubmit>
       <option value="">{% trans "All units, systems and equipment" %}</option>
       {% for label, options in owner_groups %}<optgroup label="{{ label }}">{% for value, text, selected in options %}<option value="{{ value }}"{% if selected %} selected{% endif %}>{{ text }}</option>{% endfor %}</optgroup>{% endfor %}
     </select>
     {% if owner %}
     <label class="sr-only" for="point-filter">{% trans "Sampling point" %}</label>
-    <select id="point-filter" name="point" data-autosubmit>
+    <select class="ui-select" id="point-filter" name="point" data-autosubmit>
       <option value="">{% trans "All its points" %}</option>
       {% for option in point_choices %}<option value="{{ option.pk }}"{% if point == option %} selected{% endif %}>{{ option.name }} · {{ option.get_kind_display }}</option>{% endfor %}
     </select>
     {% endif %}
-    <label class="water-date">{% trans "From" %} <input type="date" name="from" value="{{ start|date:'Y-m-d' }}"></label>
-    <label class="water-date">{% trans "To" %} <input type="date" name="to" value="{{ end|date:'Y-m-d' }}"></label>
+    <label class="water-date">{% trans "From" %} {% day_input "from" start %}</label>
+    <label class="water-date">{% trans "To" %} {% day_input "to" end %}</label>
     <label class="check"><input type="checkbox" name="alerts" value="1"{% if alerts_only %} checked{% endif %}> {% trans "Only warnings and criticals" %}</label>
-    <button type="submit" class="button button-ghost">{% trans "Filter" %}</button>
+    <button type="submit" class="ui-btn">{% trans "Filter" %}</button>
   </form>
   {% else %}
   <form method="get" class="toolbar-filter">
     <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
-    <select id="site-filter" name="site" data-autosubmit>
+    <select class="ui-select" id="site-filter" name="site" data-autosubmit>
       <option value="">{% trans "All sites" %}</option>
       {% for item in sites %}<option value="{{ item.pk }}"{% if site == item %} selected{% endif %}>{{ item.name }}</option>{% endfor %}
     </select>
-    <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
+    <noscript><button type="submit" class="ui-btn">{% trans "Filter" %}</button></noscript>
   </form>
-  {% endif %}
-  {% if can_record %}
-  <div class="toolbar-actions">
-    <a class="button button-inline" href="{{ record_url }}" data-modal>{% include "icons/_icon.html" with name="plus" %}{% trans "Record sample" %}</a>
-    <a class="button button-ghost" href="{{ round_url }}">{% trans "Round" %}</a>
-  </div>
   {% endif %}
 </div>
 
-<p class="panel-help">{% blocktrans trimmed %}Each value is judged on read against the water limits as they are now, for the fish in the unit that day; a sample of a loop for every unit of the loop. A unit without fish shows its values with no limit. Each value says which sampling point it was taken at; the water of a unit is that of its middle point. Nobody is alerted: critical values are shown here, not sent.{% endblocktrans %}</p>
+<p class="ui-safety">{% include "icons/_icon.html" with name="alert" %}{% trans "Nobody is alerted: critical values are shown here, not sent." %}</p>
+<details class="ui-explain">
+  <summary>{% trans "How values are judged" %}</summary>
+  <p class="panel-help">{% blocktrans trimmed %}Each value is judged on read against the water limits as they are now, for the fish in the unit that day; a sample of a loop for every unit of the loop. A unit without fish shows its values with no limit. Each value says which sampling point it was taken at; the water of a unit is that of its middle point. Nobody is alerted: critical values are shown here, not sent.{% endblocktrans %}</p>
+</details>
 
 {% if showing_history %}
+{% if clipped %}<p class="notice notice-warning">{% blocktrans trimmed count days=span %}A page shows at most {{ days }} day: the first day was moved.{% plural %}A page shows at most {{ days }} days: the first day was moved.{% endblocktrans %}</p>{% endif %}
 {% if point %}<h2 class="water-point">{% blocktrans trimmed with point=point %}History of {{ point }}{% endblocktrans %}</h2>{% elif owner %}<h2 class="water-point">{% blocktrans trimmed with owner=owner.code %}History of {{ owner }}{% endblocktrans %}</h2>{% endif %}
 {% if history %}
-<div class="table-wrap">
-  <table class="data-table water-table">
+<div class="table-wrap ui-table-wrap" tabindex="0" role="region" aria-label="{% trans "Water samples, scrolls sideways" %}">
+  <table class="ui-table water-table">
     <thead>
       <tr>
-        <th scope="col">{% trans "Measured at" %}</th>
+        <th scope="col" class="sticky-first">{% trans "Measured at" %}</th>
         <th scope="col">{% trans "Sampling point" %}</th>
         <th scope="col">{% trans "Source" %}</th>
         {% for parameter in columns %}<th scope="col" class="num">{{ parameter.short }}</th>{% endfor %}
         <th scope="col">{% trans "By" %}</th>
-        <th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th>
+        <th scope="col" class="sticky-end"><span class="sr-only">{% trans "Actions" %}</span></th>
       </tr>
     </thead>
     <tbody>
       {% for row in history %}{% with sample=row.sample %}
       <tr class="{% if sample.is_deleted %}is-voided{% else %}wq-row-{{ row.status }}{% endif %}">
-        <td class="nowrap"><time datetime="{{ sample.measured_at|date:'c' }}">{{ sample|site_clock|date:"DATETIME_FORMAT" }}</time>{% if sample.is_deleted %}<span class="row-sub">{% blocktrans trimmed with reason=sample.void_reason name=sample.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>
-        <td class="nowrap"><a class="row-title" href="{{ row.history_url }}">{{ sample.point.owner.code }}</a><span class="row-sub">{{ sample.point.name }} · {{ sample.point.get_kind_display }}</span></td>
-        <td>{{ sample.get_source_display }}{% if sample.notes %}<span class="row-sub">{{ sample.notes }}</span>{% endif %}</td>
+        <td class="sticky-first nowrap"{% if not sample.is_deleted %}{% if row.status == "critical" %} data-status="critical"{% elif row.status == "warning" %} data-status="warning"{% endif %}{% endif %}><time class="ui-code" datetime="{{ sample.measured_at|date:'c' }}">{{ sample|sample_clock|date:"DATETIME_FORMAT" }}</time>{% if sample.is_deleted %}<span class="ui-sub">{% blocktrans trimmed with reason=sample.void_reason name=sample.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>
+        <td class="nowrap"><a class="ui-code" href="{{ row.history_url }}">{{ sample.point.owner.code }}</a><span class="row-sub">{{ sample.point.name }} · {{ sample.point.get_kind_display }}</span></td>
+        <td>{{ sample.get_source_display }}{% if sample.notes %}<span class="ui-sub">{{ sample.notes }}</span>{% endif %}</td>
         {% for reading in row.cells %}{% include "farm/_water_cell.html" %}{% endfor %}
         <td>{{ sample.created_by.get_username|default:"system" }}</td>
-        <td class="row-actions">{% if row.void_url %}<a class="op-void" href="{{ row.void_url }}" data-modal>{% trans "Void" %}</a>{% endif %}</td>
+        <td class="sticky-end row-actions">{% if row.void_url %}<a class="op-void" href="{{ row.void_url }}" data-modal>{% trans "Void" %}</a>{% endif %}</td>
       </tr>
       {% endwith %}{% endfor %}
     </tbody>
@@ -96,26 +108,25 @@
 {% endif %}
 
 {% else %}
-<p class="units-count">{% blocktrans trimmed count count=point_count %}{{ count }} sampling point{% plural %}{{ count }} sampling points{% endblocktrans %}{% if critical_count %} · <strong class="over-text">{% blocktrans trimmed count count=critical_count %}{{ count }} critical{% plural %}{{ count }} critical{% endblocktrans %}</strong>{% endif %}{% if warning_count %} · {% blocktrans trimmed count count=warning_count %}{{ count }} warning{% plural %}{{ count }} warnings{% endblocktrans %}{% endif %}</p>
 {% if sensors_failed %}<p class="notice notice-warning" role="status">{% trans "The live sensor values could not be read: the values below come from the water samples only." %}</p>{% endif %}
 {% if rows %}
-<div class="table-wrap">
-  <table class="data-table water-table">
+<div class="table-wrap ui-table-wrap" tabindex="0" role="region" aria-label="{% trans "Latest water values, scrolls sideways" %}">
+  <table class="ui-table water-table">
     <thead>
       <tr>
-        <th scope="col">{% trans "Sampling point" %}</th>
+        <th scope="col" class="sticky-first">{% trans "Sampling point" %}</th>
         <th scope="col">{% trans "Status" %}</th>
         {% for parameter in columns %}<th scope="col" class="num">{{ parameter.short }}</th>{% endfor %}
-        <th scope="col"><span class="sr-only">{% trans "History" %}</span></th>
+        <th scope="col" class="sticky-end"><span class="sr-only">{% trans "History" %}</span></th>
       </tr>
     </thead>
     <tbody>
       {% for row in rows %}{% with owner=row.owner point=row.point water=row.water %}
       <tr>
-        <td class="nowrap"><a class="row-title" href="{{ row.history_url }}">{{ owner.code }}</a><span class="row-sub">{% if point %}{{ point.name }} · {{ point.get_kind_display }}{% else %}{% trans "No middle point" %}{% endif %} · {% if row.loop %}{{ owner.site.name }}{% else %}{{ owner.production_department.name }}{% if owner.production_department.site %} · {{ owner.production_department.site.name }}{% endif %}{% endif %}</span></td>
-        <td class="nowrap">{% include "farm/_water_status.html" with status=water.status %}</td>
-        {% for reading in row.cells %}{% include "farm/_water_cell.html" with latest=True source=True %}{% endfor %}
-        <td class="row-actions"><a href="{{ row.history_url }}">{% trans "History" %}</a></td>
+        <td class="sticky-first"{% if water.status == "critical" %} data-status="critical"{% elif water.status == "warning" %} data-status="warning"{% endif %}><a class="ui-code" href="{{ row.history_url }}">{{ owner.code }}</a><span class="ui-sub">{% if point %}{{ point.name }} · {{ point.get_kind_display }}{% else %}{% trans "No middle point" %}{% endif %}</span><span class="ui-sub">{% if row.loop %}{{ owner.site.name }}{% else %}{{ owner.production_department.name }}{% if owner.production_department.site %}, {{ owner.production_department.site.name }}{% endif %}{% endif %}</span></td>
+        <td class="water-status">{% include "farm/_water_chip.html" with status=water.status old=water.old_alert quiet=True %}{% if water.why_no_limit %}<span class="ui-why ui-mt">{{ water.why_no_limit }}</span>{% endif %}</td>
+        {% for reading in row.cells %}{% include "farm/_water_face.html" %}{% endfor %}
+        <td class="sticky-end row-actions"><a class="ui-btn" href="{{ row.history_url }}">{% trans "History" %}</a></td>
       </tr>
       {% endwith %}{% endfor %}
     </tbody>

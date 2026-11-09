@@ -13,7 +13,7 @@ from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
 
 from core.crud import RowFormSet, TabbedForm, tab_fields
-from core.widgets import NONE, DependentSelect
+from core.widgets import DayInput, DependentSelect, NONE
 from farm.models import Batch, Site, StockMovement, Tank
 from farm.models.site import zone_of
 
@@ -22,7 +22,7 @@ from .models import (
     MAX_CHECKLIST, Frequency, Task, TaskChecklistItem, TaskNote, TaskSeries, TaskSeriesChecklistItem,
 )
 
-DATE = forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d')
+DATE = DayInput()
 TIME = forms.TimeInput(attrs={'type': 'time'}, format='%H:%M')
 
 

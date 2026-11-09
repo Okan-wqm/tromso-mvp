@@ -15,7 +15,7 @@ from core.models import AuditLog, Profile
 from ..equipment_types import TYPES
 from ..models import (Equipment, EquipmentSystem, EquipmentType, FeederCalibration, ProductionDepartment, Site,
                       System)
-from .helpers import role, rows_data
+from .helpers import leave_without_site, role, rows_data
 
 EQUIPMENT_MANAGER = (
     'view_equipment', 'add_equipment', 'change_equipment', 'delete_equipment', 'view_site', 'delete_site',
@@ -207,8 +207,9 @@ class EquipmentValidationTests(EquipmentTestCase):
         self.assertEqual(pump.specifications, {'flowRate': 5})
 
     def test_the_department_must_be_on_a_site(self):
-        orphan = ProductionDepartment.objects.create(name='Orphan', code='OR')
-        pump = self.make(department=orphan, systems=[])
+        pump = self.make(department=ProductionDepartment.objects.create(site=self.bergen, name='Orphan', code='OR'),
+                         systems=[])
+        orphan = leave_without_site(pump.production_department)   # a deleted site's, before F-212
         self.assertNotIn(orphan, self.client.get(reverse('farm:equipment_create')).context['form']
                          .fields['production_department'].queryset)
         errors = self.errors(equipment_data(self.pump, orphan, [link(self.ras)], {'flowRate': '1'}, code='P1',
@@ -556,13 +557,15 @@ class EquipmentDeletePlanTests(EquipmentTestCase):
         self.assertEqual(pump.live_links()[0].system, self.ras)
         self.assertNotContains(self.client.get(reverse('farm:equipment_list')), 'not linked to any system')
 
-    def test_deleting_a_site_leaves_the_equipment_with_its_department_but_without_systems(self):
+    def test_deleting_a_site_deletes_its_equipment_with_its_departments_and_restoring_it_brings_them_back(self):
         pump = self.make()
         self.client.post(reverse('farm:site_delete', args=[self.bergen.pk]))
         pump.refresh_from_db()
+        self.assertTrue(pump.is_deleted)
+        softdelete.restore(Site.all_objects.get(pk=self.bergen.pk), self.user)
+        pump.refresh_from_db()
         self.assertFalse(pump.is_deleted)
-        self.assertIsNone(pump.production_department.site)
-        self.assertEqual(pump.live_links(), [])
+        self.assertEqual(pump.live_links()[0].system, self.ras)
 
     def test_a_restored_equipment_is_checked_like_a_new_one(self):
         pump = self.make()

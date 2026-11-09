@@ -166,14 +166,14 @@ class LeaveRequestModelTests(LeaveTestCase):
 
     def test_every_column_is_covered(self):
         self.assertEqual(fields_of(LeaveRequest), {'employee', 'leave_type', 'first_day', 'last_day', 'status', 'reason',
-                                                   'decision_note', 'decided_by', 'decided_at', 'entry_key'})
+                                                   'decision_note', 'decided_by', 'decided_at'})
 
 
 class FilingTests(LeaveTestCase):
     def test_a_person_files_for_themselves_pending_and_the_reason_is_theirs(self):
         response = self.file(self.ann_user, self.in_a, MONDAY, TUESDAY, reason='Family matter')
         request = LeaveRequest.objects.get()
-        self.assertEqual({name: getattr(request, name) for name in fields_of(LeaveRequest) if name != 'entry_key'},
+        self.assertEqual({name: getattr(request, name) for name in fields_of(LeaveRequest)},
                          {'employee': self.in_a, 'leave_type': self.annual, 'first_day': MONDAY, 'last_day': TUESDAY,
                           'status': 'pending', 'reason': 'Family matter', 'decision_note': '', 'decided_by': None,
                           'decided_at': None})
@@ -469,7 +469,7 @@ class RosterMeetsLeaveTests(LeaveTestCase):
 class LeavingTheCompanyTests(LeaveTestCase):
     def test_a_last_day_cancels_later_pending_requests_and_removes_later_plans(self):
         later = request_for(self.in_a, date(2026, 6, 1), date(2026, 6, 2), self.annual)
-        straddling = request_for(self.in_a, date(2026, 3, 30), date(2026, 4, 3), self.annual, status='approved')
+        straddling = request_for(self.in_a, date(2026, 3, 30), date(2026, 4, 1), self.annual, status='approved')
         early_shift = Shift.objects.create(name='E', code='E1', starts_at=datetime(2026, 1, 1, 6).time(),
                                            ends_at=datetime(2026, 1, 1, 14).time())
         ShiftAssignment.objects.create(employee=self.in_a, day=date(2026, 3, 20), shift=early_shift)
@@ -479,3 +479,10 @@ class LeavingTheCompanyTests(LeaveTestCase):
         straddling.refresh_from_db()
         self.assertEqual((later.status, straddling.status), ('cancelled', 'approved'))
         self.assertEqual(list(ShiftAssignment.objects.values_list('day', flat=True)), [date(2026, 3, 20)])
+
+    def test_a_last_day_inside_approved_leave_is_refused_until_the_leave_is_put_right(self):
+        request_for(self.in_a, date(2026, 3, 30), date(2026, 4, 3), self.annual, status='approved')
+        with self.assertRaises(ValidationError):
+            services.leave_company(self.hr, self.in_a, date(2026, 4, 1))
+        self.in_a.refresh_from_db()
+        self.assertIsNone(self.in_a.left_on)

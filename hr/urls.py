@@ -27,6 +27,7 @@ def pages(root, mount=None):
         route('leave/<uuid:pk>/approve/', views.approve, 'leaverequest_approve'),
         route('leave/<uuid:pk>/reject/', views.reject, 'leaverequest_reject'),
         route('leave/<uuid:pk>/cancel/', views.cancel, 'leaverequest_cancel'),
+        route('leave/<uuid:pk>/shorten/', views.shorten, 'leaverequest_shorten'),
     ]
 
 

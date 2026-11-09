@@ -234,11 +234,14 @@ database holds the same bounds.
 
 ### Questions for the owner
 
-The status machine is ported exactly (TNK-12). These moves are not in the source's table and are not
-added; they are common on farms and need a decision:
+The status machine is ported exactly (TNK-12), with one move added (F-166, below). The other moves are not in the
+source's table and are not added; they are common on farms and need a decision:
 
 - **harvesting → active**: a partial harvest leaves fish in the unit.
-- **maintenance → active**, **cleaning → active** and **fallow → active**: a unit put straight back
+- **maintenance → active** is added (F-166): a unit serviced with its fish in it had no way out of maintenance but
+  moving every fish away (preparing and inactive need an empty unit); active needs fish, so the fish in the unit
+  decide which of the three it takes.
+- **cleaning → active** and **fallow → active**: a unit put straight back
   into use; stocking in the source already does fallow → active outside the table (TNK-14).
 - **active → cleaning** and **active → inactive**: cleaning or retiring an active unit that is empty.
 - Whether **fallow, maintenance and quarantine** need an empty unit: with the stock ported, the prototype

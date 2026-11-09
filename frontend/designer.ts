@@ -282,7 +282,7 @@ class Designer {
     this.history = commit(this.history, next);
     this.shown = this.history.present;
     this.textarea.value = JSON.stringify(serialize(this.history.present, this.cat.schema));
-    this.announce(changes(before, this.history.present));
+    this.announce(changes(before, this.history.present), before);
     this.render();
     this.schedulePreview();
   }
@@ -336,9 +336,11 @@ class Designer {
     }));
   }
 
-  private announce(found: Change[]): void {
+  // Each change said with its widget's name: a removed widget is found in the layout before the change (F-149).
+  private announce(found: Change[], before: Layout): void {
     const sentences = found.map((change) => {
-      const item = this.history.present.find((each) => each.id === change.id) ?? change;
+      const item = this.history.present.find((each) => each.id === change.id)
+        ?? before.find((each) => each.id === change.id) ?? change;
       const text = this.root.dataset[`announce${change.kind[0].toUpperCase()}${change.kind.slice(1)}`] ?? '';
       return fill(text, { label: this.labelOf(item as Item), x: change.x + 1, y: change.y + 1, w: change.w,
                           h: change.h });
@@ -386,7 +388,7 @@ class Designer {
     this.history = move_(this.history);
     this.shown = this.history.present;
     this.textarea.value = JSON.stringify(serialize(this.history.present, this.cat.schema));
-    this.announce(changes(before, this.history.present));
+    this.announce(changes(before, this.history.present), before);
     this.render();
     this.schedulePreview();
   }
@@ -469,6 +471,7 @@ class Designer {
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken(form) },
       });
       if (!response.ok) {
+        this.previewFailed();
         return;
       }
       const answer = await response.json() as { html: string; problems: Problem[] };
@@ -481,9 +484,16 @@ class Designer {
       this.status.dataset.preview = label(this.root, 'announcePreview');
     } catch (error) {
       if (!(error instanceof DOMException && error.name === 'AbortError')) {
-        throw error;
+        this.previewFailed();                                  // offline, or an answer that is not the preview
       }
     }
+  }
+
+  // A preview the server refused or could not give (F-122): said in the pane, in the page's words, never thrown; the
+  // layout and its problems are not touched, and the next change asks again.
+  private previewFailed(): void {
+    this.preview.replaceChildren(element('p', { role: 'alert', class: 'designer-preview-failed' },
+                                         label(this.root, 'labelPreviewFailed')));
   }
 
   private showProblems(problems: Problem[]): void {

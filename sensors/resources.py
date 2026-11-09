@@ -6,7 +6,7 @@ import uuid
 
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models import Count, F, IntegerField, OuterRef, Q, Subquery, Value
 from django.db.models.functions import Coalesce
 from django.urls import reverse
@@ -196,22 +196,27 @@ class BindView(CreateView):
         # Now, on the clock of the place's site, else the channel's device's (the company's while no channel is chosen).
         zone = bindings.clock(channel.device, place_of(initial.get('target', ''))) if channel is not None \
             else zone_of(None)
-        initial['valid_from'] = timezone.localtime(timezone=zone).strftime('%Y-%m-%dT%H:%M')
+        initial['valid_from'] = timezone.localtime(timezone=zone).replace(tzinfo=None, second=0, microsecond=0)
         return self.page(BindForm(initial=initial))
 
     def post(self, request):
         form = BindForm(request.POST)
+        if form.sent_before() is not None:                 # the same dialog sent again (core.models.EntryKey)
+            return done(request, reverse(self.resource.url_name('list')))
         if not form.is_valid():
             return self.page(form)
         data = form.cleaned_data
         try:
-            bindings.move(request.user, data['channel'], data['valid_from'], role=data['role'], note=data['note'],
-                          **{data['target_kind']: data['target_object']})
+            with transaction.atomic():
+                form.note_sent(bindings.move(request.user, data['channel'], data['valid_from'], role=data['role'],
+                                             note=data['note'], **{data['target_kind']: data['target_object']}))
         except ValidationError as error:
             for field, messages_ in error.message_dict.items():
                 form.add_error(field if field in form.fields else None, messages_)
             return self.page(form)
         except IntegrityError as error:
+            if form.sent_before() is not None:             # sent twice at once: the other sending bound it
+                return done(request, reverse(self.resource.url_name('list')))
             form.add_error(None, refusal_text(error))
             return self.page(form)
         messages.success(request, gettext_now('%(channel)s bound to %(target)s.') % {'channel': data['channel'],

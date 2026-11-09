@@ -46,15 +46,20 @@ class ParamsTests(SimpleTestCase):
 
 
 # ---- the state ladder, on hand-made cards ---------------------------------------------------------------------------
-def reading(code, value, hours=1, status=Status.OK, point=None):
+def reading(code, value, hours=1, status=Status.OK, point=None, judged=None):
+    """A reading as farm/water/read.py judges one: `status` what the page shows (stale when old), `judged` what its
+    limit says whatever its age (by default the status, and OK for a stale one)."""
     point = point or SimpleNamespace(name='Middle', kind='middle')
     sample = Observation(point, NOW - timedelta(hours=hours), Origin.MANUAL, {code: D(str(value))})
-    return Reading(parameters.get(code), D(str(value)), sample, status=status)
+    found = Reading(parameters.get(code), D(str(value)), sample, status=status)
+    found.judged = judged or (Status.OK if status == Status.STALE else status)
+    found.uncovered = (1,) if found.judged == Status.NO_LIMIT else ()      # the species no row judges it for
+    return found
 
 
-def water(*readings, kind='middle'):
+def water(*readings, kind='middle', sensors_failed=False):
     point = SimpleNamespace(name='Middle', kind=kind)
-    return PointWater(point, {each.code: each for each in readings})
+    return PointWater(point, {each.code: each for each in readings}, sensors_failed=sensors_failed)
 
 
 def card(**changes):
@@ -104,6 +109,20 @@ class LadderTests(SimpleTestCase):
         # the middle point alone decides: the same reading at the middle is critical
         self.assertEqual(self.key(water=(water(reading('temperature_c', 9),
                                               reading('oxygen_mg_l', 2, status=Status.CRITICAL)),)), 'critical')
+
+    def test_an_old_critical_or_warning_is_said_with_no_recent_data_never_hidden(self):
+        """The water page's rule (PointWater.status): an old critical value keeps the middle point critical, so the card
+        is critical with "Critical, no recent data", never ok because a fresh pH is fine; the same for a warning."""
+        for judged, key in ((Status.CRITICAL, 'critical'), (Status.WARNING, 'warning')):
+            with self.subTest(judged=judged):
+                old = reading('co2_mg_l', 15.6, hours=80, status=Status.STALE)
+                old.judged = judged
+                mixed = water(reading('temperature_c', 9), reading('oxygen_mg_l', 9), reading('ph', 7.2), old)
+                self.assertEqual((mixed.status, mixed.old_alert), (judged, True))
+                state = card(water=(mixed,)).state
+                label = Status(judged).label
+                self.assertEqual((state.key, state.reasons),
+                                 (key, (f'{parameters.get("co2_mg_l").label}: {label}, no recent data',)))
 
     def test_a_fresh_ph_does_not_hide_a_stale_oxygen(self):
         mixed = water(reading('ph', 7.2, hours=1), reading('temperature_c', 9),
@@ -160,6 +179,65 @@ class LadderTests(SimpleTestCase):
                  card(unit=SimpleNamespace(code='E'), withdrawal=(1,))]
         self.assertEqual([each.unit.code for each in read.attention(cards)], ['D', 'C', 'B'])
 
+    # -- danger is never shown as OK (F-090, F-244, F-134) --
+    def fine(self, *more, **changes):
+        """The middle point's water: a fresh temperature and oxygen judged OK, and `more`."""
+        return water(reading('temperature_c', 9), reading('oxygen_mg_l', 9), *more, **changes)
+
+    def test_a_stale_critical_value_keeps_the_card_critical_and_says_it_is_old(self):
+        nitrite = reading('nitrite_n_mg_l', '0.5', hours=200, status=Status.STALE, judged=Status.CRITICAL)
+        state = card(water=(self.fine(nitrite),)).state
+        self.assertEqual(state.key, 'critical')
+        self.assertEqual(len(state.reasons), 1)
+        said = state.reasons[0].replace('\xa0', ' ')
+        self.assertEqual(said, 'Nitrite (mg/L NO₂ as N): Critical, no recent data')   # the water page's words
+        self.assertEqual(state.stale, state.reasons)                   # the wall marks the card as old too
+
+    def test_a_stale_warning_value_keeps_the_card_a_warning_and_says_it_is_old(self):
+        tan = reading('tan_mg_l', '2', hours=200, status=Status.STALE, judged=Status.WARNING)
+        state = card(water=(self.fine(tan),)).state
+        self.assertEqual((state.key, len(state.stale)), ('warning', 1))
+        self.assertIn('Warning, no recent data', state.reasons[0])
+
+    def test_a_fresh_critical_value_is_not_marked_old_beside_a_stale_one(self):
+        fresh = reading('ph', '5', status=Status.CRITICAL)
+        old = reading('tan_mg_l', '2', hours=200, status=Status.STALE, judged=Status.CRITICAL)
+        state = card(water=(self.fine(fresh, old),)).state
+        self.assertEqual(state.key, 'critical')
+        self.assertEqual(len(state.reasons), 2)
+        self.assertEqual(len(state.stale), 1)
+
+    def test_a_value_the_fish_have_no_limit_for_is_never_ok(self):
+        ph = reading('ph', '4.1', status=Status.NO_LIMIT)
+        state = card(water=(self.fine(ph),)).state
+        self.assertEqual((state.key, state.reasons), ('unjudged', ('pH (NBS scale): no limit for these fish',)))
+        self.assertEqual(card(water=(self.fine(ph),), withdrawal=(1,)).state.key, 'unjudged')    # above a note
+        self.assertEqual(card(water=(self.fine(ph),), drift='now').state.key, 'warning')         # below a warning
+
+    def test_an_oxygen_value_no_row_judges_in_either_unit_is_never_ok(self):
+        """The owner's rule: the oxygen is one quantity; farm/water/read.py judges a % through the mg/L row (and the
+        reverse) and leaves `uncovered` only the fish no row of either unit judges. What it leaves is "No limit"."""
+        judged = reading('oxygen_saturation_pct', 35, status=Status.CRITICAL)                  # through the mg/L row
+        self.assertEqual(self.key(water=(self.fine(judged),)), 'critical')
+        unjudged = reading('oxygen_saturation_pct', 35, status=Status.NO_LIMIT)               # no temperature to convert
+        self.assertEqual(card(water=(self.fine(unjudged),)).state.reasons,
+                         ('Oxygen saturation (% of air saturation): no limit for these fish',))
+
+    def test_no_limit_ranks_below_no_recent_data_and_the_strip_names_it(self):
+        self.assertLess(read.RANK['blind'], read.RANK['unjudged'])
+        self.assertLess(read.RANK['unjudged'], read.RANK['note'])
+        unjudged = card(unit=SimpleNamespace(code='U'), water=(self.fine(reading('ph', 7, status=Status.NO_LIMIT)),))
+        self.assertEqual([each.unit.code for each in read.attention([card(), unjudged])], ['U'])
+
+    def test_live_sensors_that_could_not_be_read_are_never_ok(self):
+        state = card(water=(self.fine(sensors_failed=True),)).state
+        self.assertEqual((state.key, state.reasons), ('blind', ('Live sensor values could not be read: samples only.',)))
+
+    def test_every_state_has_one_word(self):
+        self.assertEqual([key for key, _word in read.STATES], list(read.RANK))
+        self.assertEqual(read.State('unjudged').word, 'No limit')
+        self.assertEqual(read.State('blind').word, 'No recent data')
+
 
 # ---- against the database --------------------------------------------------------------------------------------------
 class UnitsForTests(MonitoringCase):
@@ -198,6 +276,20 @@ class CardsTests(MonitoringCase):
         self.assertEqual(states['T-01'].key, 'critical')
         self.assertEqual(states['T-02'].key, 'blind')
 
+    def test_a_stocked_unit_whose_fish_have_no_limit_is_not_ok_and_an_old_critical_value_stays_critical(self):
+        """F-090 and F-244 on the database: no limit row for the fish is said on the card; a critical nitrite of eight
+        days ago keeps the card critical while the oxygen and the temperature are fresh and fine."""
+        self.sample(self.t2, hours=1, temperature_c='9', oxygen_mg_l='9')
+        self.assertEqual({card.unit.code: card.state.key for card in self.cards()}['T-02'], 'unjudged')
+        self.limit('oxygen_mg_l', critical_low=6, warning_low=7)
+        self.limit('temperature_c', warning_high=15, critical_high=18)
+        self.limit('nitrite_n_mg_l', warning_high='0.1', critical_high='0.2')
+        self.assertIn({card.unit.code: card.state.key for card in self.cards()}['T-02'], ('ok', 'note'))   # judged
+        self.sample(self.t2, hours=200, nitrite_n_mg_l='0.5')
+        state = {card.unit.code: card.state for card in self.cards()}['T-02']
+        self.assertEqual(state.key, 'critical')
+        self.assertIn('no recent data', state.reasons[0])
+
     def test_the_card_is_what_the_pages_say_for_the_same_unit(self):
         """No second computation: the card's figures are those the other pages print, on one fixture."""
         self.limit('oxygen_mg_l', critical_low=6, warning_low=7)
@@ -231,6 +323,8 @@ class CardsTests(MonitoringCase):
 
     def test_a_withdrawal_in_force_is_on_the_card_exactly_as_production_units_has_it(self):
         from farm.handling.withdrawal import WithdrawalBlock
+        self.limit('oxygen_mg_l', critical_low=6)
+        self.limit('temperature_c', critical_high=18)
         for unit in (self.t1, self.t2):
             self.sample(unit, hours=1, temperature_c='10', oxygen_mg_l='9')
         block = WithdrawalBlock(self.fish, self.today + timedelta(days=5), False, 'Treated.', None)
@@ -254,6 +348,8 @@ class CardsTests(MonitoringCase):
         self.assertEqual((simple['T-02'].treatments, simple['T-02'].tasks, simple['T-02'].lice), ((), None, None))
 
     def test_a_fasting_unit_says_why_it_has_no_ration(self):
+        self.limit('oxygen_mg_l', critical_low=6)
+        self.limit('temperature_c', critical_high=18)
         self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='8')
         HandlingPlanItem.objects.create(kind='harvest', date=self.today + timedelta(days=2), unit=self.t2,
                                         batch=self.fish, facility=make_facility())

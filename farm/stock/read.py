@@ -19,21 +19,24 @@ from datetime import timedelta
 from decimal import Decimal
 from typing import NamedTuple
 
-from django.db.models import Sum
+from django.db.models import Q, Sum
 
 from farm.models import Batch, Site, StockMovement, Tank
 from farm.models.feeding import FeedTarget
 
 from .fold import Line, Op, Share, fold
+from .sizes import Lots, size_mixes
 
 HUNDRED = Decimal(100)
 DAY = timedelta(days=1)
 
 
-def ledger(batch_ids):
+def ledger(batch_ids, include_op=None):
     """The live lines of these batches, as the fold reads them. Every operation belongs to one batch,
-    so the lines of an operation all come with its batch."""
-    rows = list(StockMovement.objects.filter(batch_id__in=batch_ids, operation__is_deleted=False).values_list(
+    so the lines of an operation all come with its batch. `include_op`: an operation whose lines count although it is
+    voided (the timeline before its void, farm/stock/services.py)."""
+    live = Q(operation__is_deleted=False) | Q(operation_id=include_op) if include_op else Q(operation__is_deleted=False)
+    rows = list(StockMovement.objects.filter(live, batch_id__in=batch_ids).values_list(
         'id', 'operation_id', 'operation__kind', 'operation__date', 'unit_id', 'batch_id', 'kind', 'count_delta',
         'avg_weight_g', 'pair', 'measured_weight_kg', 'reason', 'batch__species__cleaner_fish_type'))
     first = {}
@@ -188,6 +191,7 @@ class BatchShare:
     culls: int
     unit_count: int = 0      # the unit's fish of its kind (production or cleaner fish), for the share by count
     siblings: int = 1        # the batches of its kind in the unit, itself included
+    lots: list = field(default_factory=list)   # sizes.Lot: its fish by size (a grading's classes kept apart)
 
     @property
     def cleaner(self):
@@ -320,6 +324,18 @@ class UnitStock:
     def batches(self):
         return [share.batch for share in self.counted]
 
+    @property
+    def size_mixes(self):
+        """[sizes.SizeMix] of every lot in the unit (production and cleaner fish, each against its own species) at its
+        measured weight, with its day: what Production units, which shows the measured averages, warns about."""
+        return self.size_mixes_at()
+
+    def size_mixes_at(self, factors=None):
+        """The same at the feeding walk's estimates where feed was credited (`factors`: batch id -> the estimate over
+        the measured average, sizes.size_mixes): what the meal board, which shows the estimates, warns about."""
+        return size_mixes({share.batch.pk: share.lots for share in self.shares},
+                          {share.batch.pk: share.batch for share in self.shares}, factors)
+
     def days(self, today):
         return (today - self.since).days if self.since else None
 
@@ -332,7 +348,8 @@ def stock_of(units):
     batch_ids = {row['batch_id'] for row in present}
     if not batch_ids:
         return {}
-    return _unit_stocks(units, fold(ledger(batch_ids)), batch_ids)
+    lots = Lots()
+    return _unit_stocks(units, fold(ledger(batch_ids), before=lots.before, on_line=lots.line), batch_ids, lots)
 
 
 def stock_on(units, day):
@@ -341,10 +358,11 @@ def stock_on(units, day):
     day before it its opening stock. A unit without fish then is left out."""
     batch_ids = batches_ever_in([unit.pk for unit in units])
     lines = [line for line in ledger(batch_ids) if line.op.date <= day]
-    return _unit_stocks(units, fold(lines), batch_ids) if lines else {}
+    lots = Lots()
+    return _unit_stocks(units, fold(lines, before=lots.before, on_line=lots.line), batch_ids, lots) if lines else {}
 
 
-def _unit_stocks(units, shares, batch_ids):
+def _unit_stocks(units, shares, batch_ids, lots=None):
     """{unit id: UnitStock} of `units` from the fold's shares: each unit's batches with fish, oldest stay first."""
     batches = Batch.all_objects.select_related('species').in_bulk(batch_ids)
     by_id = {unit.pk: unit for unit in units}
@@ -353,7 +371,7 @@ def _unit_stocks(units, shares, batch_ids):
         if share.count and unit_id in by_id:
             stock.setdefault(unit_id, UnitStock(by_id[unit_id])).shares.append(BatchShare(
                 batches[batch_id], share.count, share.grams, share.since, share.last_weighed, share.fish_in,
-                share.deaths, share.culls))
+                share.deaths, share.culls, lots=lots.of.get((unit_id, batch_id), []) if lots else []))
     for unit_stock in stock.values():
         kinds = {target: unit_stock.of(target) for target in FeedTarget.values}
         unit_stock.shares.sort(key=lambda share: (share.cleaner, share.since, share.batch.code))

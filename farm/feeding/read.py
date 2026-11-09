@@ -111,7 +111,10 @@ def policy(units, batch_ids, first, now):
     rows = list(ProtocolAssignment.objects.filter(Q(unit_id__in=list(units)) | Q(batch_id__in=batch_ids))
                 .filter(Q(valid_until__isnull=True) | Q(valid_until__gte=first))
                 .select_related('unit', 'protocol__species'))
-    species = dict(Batch.all_objects.filter(pk__in=batch_ids).values_list('pk', 'species_id'))
+    found_batches = list(Batch.all_objects.filter(pk__in=batch_ids)
+                         .values_list('pk', 'species_id', 'species__cleaner_fish_type'))
+    species = {pk: species_id for pk, species_id, _cleaner in found_batches}
+    cleaner = frozenset(pk for pk, _species_id, cleaner_type in found_batches if cleaner_type)
     book = TemperatureBook(units.values(), datetime.combine(first, time.min, tzinfo=UTC) - timedelta(days=1), now)
     today = {unit_id: local_today(unit) for unit_id, unit in units.items()}
     found = {}
@@ -126,7 +129,7 @@ def policy(units, batch_ids, first, now):
     # The fasts planned harvests and transports ask for, from `first` to the units' today (one query).
     fasts = fasting.fasts(list(units.values()), first, max(today.values(), default=first))
     return Policy(rows, tables({row.protocol_id for row in rows}), species, temperature,
-                  fasting=lambda unit_id, day: fasts.get((unit_id, day)))
+                  fasting=lambda unit_id, day: fasts.get((unit_id, day)), cleaner=cleaner)
 
 
 @dataclass
@@ -480,9 +483,11 @@ def drift(today, measured_on):
 
 def meal_lines(unit_day, batches, today):
     """The line of each batch of a unit's day (projection.UnitDay, None: no day): its ShareDay, its batch (`batches`:
-    by id), why it has no ration, the drift of its estimate and the days since its measured point. The meal board
-    and the monitoring cards print these and nothing computed beside them."""
+    by id), why it has no ration, whether its fish are cleaner fish (marked as such; without a feeding table of their
+    own they have no ration and no why, D-1), the drift of its estimate and the days since its measured point. The meal board and the monitoring
+    cards print these and nothing computed beside them."""
     return [{'share': share, 'batch': batches[share.batch_id], 'why': share.end.why(batches[share.batch_id]),
+             'cleaner': batches[share.batch_id].species.is_cleaner_fish,
              'drift': drift(today, share.measured_on),
              'estimate_days': (today - share.measured_on).days if share.measured_on else None}
             for share in (unit_day.shares if unit_day else [])]

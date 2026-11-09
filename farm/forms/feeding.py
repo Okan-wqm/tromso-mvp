@@ -49,7 +49,7 @@ class FeedingForm(Acknowledged, ServiceErrors, forms.ModelForm):
         help_text=_('The production fish or the cleaner fish beside them: each feed goes to its own fish. Left as '
                     'the feed suits, it is the cleaner fish’s when the feed suits only them.'))
 
-    ack_field = 'high_rate_ack'
+    ack_fields = ('high_rate_ack',)
     service_fields = {'unit': NON_FIELD_ERRORS}
 
     class Meta:

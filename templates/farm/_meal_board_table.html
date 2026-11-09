@@ -21,9 +21,11 @@
       {% for line in row.lines %}{% with share=line.share basis=line.share.end %}
       <tr>
         {% if forloop.first %}
-        <th scope="rowgroup" rowspan="{{ count }}" class="sticky-first"><span class="ui-code">{{ unit.code }}</span>{% if row.placements %}<span class="ui-sub">{% include "farm/_placements.html" with chips=row.placements %}</span>{% endif %}<span class="ui-sub">{{ unit.production_department.name }}{% if unit.production_department.site %}, {{ unit.production_department.site.name }}{% endif %}</span></th>
+        <th scope="rowgroup" rowspan="{{ count }}" class="sticky-first"><span class="ui-code">{{ unit.code }}</span>{% include "farm/_size_mixes.html" with mixes=row.mixes %}{% if row.placements %}<span class="ui-sub">{% include "farm/_placements.html" with chips=row.placements %}</span>{% endif %}<span class="ui-sub">{{ unit.production_department.name }}{% if unit.production_department.site %}, {{ unit.production_department.site.name }}{% endif %}</span></th>
         {% endif %}
-        {% if line.why %}
+        {% if basis.cleaner_fish %}
+        <td colspan="2"><span class="ui-sub">{% trans "Cleaner fish: no feeding table of their own." %}</span></td>
+        {% elif line.why %}
         <td colspan="2">{% if basis.missing == "fasting" %}<span class="ui-chip" data-status="hold">{% include "icons/_icon.html" with name="hourglass" %}{% trans "Fasting" %}</span>{% endif %}<span class="ui-why ui-mt">{{ line.why }}</span></td>
         {% else %}
         <td>{% if share.next_meal_kg is not None %}<span class="ui-readout">{{ share.next_meal_kg|feed_kg }}</span>{% if basis.band %}<span class="ui-sub">{{ basis.band.feed.code }}{% if basis.band.feed.pellet_size_mm %}, {% blocktrans trimmed with size=basis.band.feed.pellet_size_mm|floatformat:"-2" %}{{ size }} mm{% endblocktrans %}{% endif %}</span>{% endif %}{% elif share.remaining_kg is not None %}<span class="ui-why">{% trans "meals done" %}</span>{% else %}<span class="ui-why">{% trans "no data" %}</span>{% endif %}</td>
@@ -33,8 +35,8 @@
         {% if forloop.first %}
         <td class="num" rowspan="{{ count }}"><span class="ui-code">{{ day.fed_kg|feed_kg }}</span>{% if day.feedings %}<span class="ui-sub">{% blocktrans trimmed count meals=day.meals_done %}{{ meals }} meal{% plural %}{{ meals }} meals{% endblocktrans %}</span>{% endif %}</td>
         {% endif %}
-        <td class="num">{% if line.why %}<span class="ui-why">{% trans "no data" %}</span>{% else %}<span class="ui-code">{{ share.ration_kg|feed_kg }}</span><span class="ui-sub">{% blocktrans trimmed with meals=share.planned_meals meal=share.meal_kg|feed_kg %}{{ meals }} × {{ meal }}{% endblocktrans %}</span><span class="ui-sub"{% if basis.sfr.interpolated %} title="{% blocktrans trimmed with low=basis.sfr.low.sfr_pct|percent:2 low_t=basis.sfr.low.temperature_c|celsius high=basis.sfr.high.sfr_pct|percent:2 high_t=basis.sfr.high.temperature_c|celsius %}{{ low }} at {{ low_t }}, {{ high }} at {{ high_t }}{% endblocktrans %}"{% endif %}><abbr title="{% trans "Specific feeding rate: the share of the body weight fed a day" %}">{% trans "SFR" %}</abbr> {{ basis.sfr.value|percent:2 }}</span>{% endif %}</td>
-        <td><span class="ui-code">{{ line.batch.code }}</span><span class="ui-sub">{% blocktrans trimmed with fish=share.fish|fish biomass=share.biomass_kg|kilos %}{{ fish }} fish · {{ biomass }} est.{% endblocktrans %}</span></td>
+        <td class="num">{% if basis.cleaner_fish %}<span class="ui-sub">–</span>{% elif line.why %}<span class="ui-why">{% trans "no data" %}</span>{% else %}<span class="ui-code">{{ share.ration_kg|feed_kg }}</span><span class="ui-sub">{% blocktrans trimmed with meals=share.planned_meals meal=share.meal_kg|feed_kg %}{{ meals }} × {{ meal }}{% endblocktrans %}</span><span class="ui-sub"{% if basis.sfr.interpolated %} title="{% blocktrans trimmed with low=basis.sfr.low.sfr_pct|percent:2 low_t=basis.sfr.low.temperature_c|celsius high=basis.sfr.high.sfr_pct|percent:2 high_t=basis.sfr.high.temperature_c|celsius %}{{ low }} at {{ low_t }}, {{ high }} at {{ high_t }}{% endblocktrans %}"{% endif %}><abbr title="{% trans "Specific feeding rate: the share of the body weight fed a day" %}">{% trans "SFR" %}</abbr> {{ basis.sfr.value|percent:2 }}</span>{% endif %}</td>
+        <td><span class="ui-code">{{ line.batch.code }}</span><span class="ui-sub">{% blocktrans trimmed with fish=share.fish|fish biomass=share.biomass_kg|kilos %}{{ fish }} fish · {{ biomass }} est.{% endblocktrans %}</span>{% if line.cleaner %}<span class="ui-chip" data-status="neutral">{% include "icons/_icon.html" with name="fish" %}<span>{% trans "Cleaner fish" %}</span></span>{% endif %}</td>
         <td class="num board-weight">
           <span class="ui-code" title="{% trans "Estimated: the measured weight and the feed since, divided by the expected FCR" %}">{{ share.end_g|grams }}</span>
           <span class="ui-sub">{% if share.last_weighed %}{% blocktrans trimmed with weight=share.measured_g|grams date=share.last_weighed|date:"DATE_FORMAT" %}{{ weight }} weighed {{ date }}{% endblocktrans %}{% else %}{% blocktrans trimmed with weight=share.measured_g|grams %}{{ weight }} as stocked{% endblocktrans %}{% endif %}</span>
@@ -50,7 +52,7 @@
           <span class="ui-code ui-code-wrap">{{ basis.protocol.name }}</span>
           <span class="ui-sub">{% if basis.scope == "batch_in_unit" %}{% blocktrans trimmed with batch=line.batch.code unit=unit.code %}via {{ batch }} in {{ unit }}{% endblocktrans %}{% elif basis.scope == "unit" %}{% blocktrans trimmed with unit=unit.code %}via unit {{ unit }}{% endblocktrans %}{% else %}{% blocktrans trimmed with batch=line.batch.code %}via batch {{ batch }}{% endblocktrans %}{% endif %}</span>
           {% if basis.band %}<span class="ui-sub">{{ basis.band|weights }} · {{ basis.band.feed.code }}{% if basis.band.feed.pellet_size_mm %} · {% blocktrans trimmed with size=basis.band.feed.pellet_size_mm|floatformat:"-2" %}{{ size }} mm{% endblocktrans %}{% endif %} · {% blocktrans trimmed with fcr=basis.fcr|fcr %}FCR {{ fcr }}{% endblocktrans %}</span>{% endif %}
-          {% else %}<span class="ui-why">{% trans "no data" %}</span>{% endif %}
+          {% elif basis.cleaner_fish %}<span class="ui-sub">–</span>{% else %}<span class="ui-why">{% trans "no data" %}</span>{% endif %}
         </td>
         {% if forloop.first %}
         <td class="sticky-end" rowspan="{{ count }}">{% if row.record_url %}<a class="ui-btn" href="{{ row.record_url }}" data-modal>{% trans "Record meal" %}</a>{% endif %}</td>

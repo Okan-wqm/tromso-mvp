@@ -20,6 +20,9 @@
     {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
   {% include "farm/_withdrawal_change.html" with withdrawal_change=form.withdrawal_change %}
     {% with field=form.reason %}{% include "registration/_field.html" %}{% endwith %}
+    {% for field in form.shown_acks %}
+    <div class="notice notice-warning">{% include "registration/_field.html" %}</div>
+    {% endfor %}
     <div class="form-actions">
       <a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Cancel" %}</a>
       <button type="submit" class="button button-inline button-danger">{% trans "Void" %}</button>

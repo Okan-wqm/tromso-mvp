@@ -3425,8 +3425,13 @@ from which device, how late) is logged. The server side is built; the push trans
   (Alarm severity rules: warning 60 s / 10 s, the ingest contract's default future skew; critical 300 s / 30 s, the clock
   tolerance), raised and cleared per device on its site by the same lifecycle (`alarms/clock.py`). The device list and the
   unit's card (for the devices whose values it shows) say it as a data-quality note ("Device clock is 4 min ahead").
-  "Behind" includes the network's and the broker's delay (seconds, against limits of a minute and more). The device's
-  values still decide its unit's status; their alarms are never delayed.
+  "Behind" is late delivery as much as a slow clock (an ingest restart, a gateway draining what it stored during a
+  link drop), so it holds only when the device is behind on every pass of its severity's window (Alarm severity rules,
+  "Device clock behind for", 600 s: the minimum over the window), and not at all while the ingest reports messages
+  waiting for the device's connection; "ahead" is judged at once. Under the ingest contract's future skew (60 s by
+  default) the ingest replaces a device time further ahead by the receive time, so the values stay right and "ahead"
+  tops out at the warning "more than 60 s ahead"; the rules page says so with the contract's own number, and the critical
+  limit is reached behind. The device's values still decide its unit's status; their alarms are never delayed.
 - **The alarm system supervises itself** (EEMUA 191, cross review F3): a step of the pass that fails is a critical system
   alarm from the pass it fails in until it passes again; the water step reads all units at once and, when that fails, each
   on its own, and evaluates each on its own, so a unit that cannot be read or evaluated raises its own critical alarm on

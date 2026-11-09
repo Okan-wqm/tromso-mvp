@@ -99,7 +99,8 @@ The cross review checked the branch with its own probes, each asserting the safe
 - Fix: `water:unit:<unit>:<slot>:<severity>`; a removed unit's subjects clear with "the unit was removed". alarms 0007
   re-keys every point-keyed subject; where two points of one unit had an alarm open at one level, the earliest stays open
   and the others are cleared with the cause "merged" (an append-only record of why); timers merged the safe way (earliest
-  pending, latest bad value, no clear timer). Reversible.
+  pending, latest bad value, no clear timer). Going back: see the round-2 review, N2 (the round-1 record said
+  "reversible" without its condition).
 - Tests: `UnitKeyTests`, `test_migration_subjects`.
 
 ### F8: routing of system alarms
@@ -154,12 +155,38 @@ The cross review checked the branch with its own probes, each asserting the safe
 - F1 still holds: a skewed device's values decide the status, their alarms are never delayed.
 - Tests: `test_clock`.
 
+## Round-2 review (LAND-WITH-FIXES) and its fixes
+
+| # | Finding | Test commit | Fix commit |
+|---|---|---|---|
+| N1 medium | "Behind" could not tell a backlog being drained from a slow clock (one pass mid-drain raised a critical clock alarm, an ingest restart a flood) | e880061 | e6c9c70 |
+| N2 low-medium | 0007, 0009, 0010 were "reversible" only without their new clearance causes, and stopped on a check | 810f281 | 82e1224 |
+| N4 low | 0008 added its checks with no data step: a row over a new bound stopped `migrate` | f1a9e00 | 82b2d00 |
+| N3 low | Under the ingest's default future skew (60 s) the critical "ahead" level cannot be reached | 0e088c0 | 20e98de |
+
+- N1: "behind" holds only when the device is behind on every pass of its severity's window
+  (`clock_behind_window_seconds`, rule data, 600 s seeded by alarms 0011: the minimum over the window), and never while
+  `sensors_ingest_status.queue_depth` reports messages waiting for its connection (then it neither holds nor clears).
+  "Ahead" is judged at once. Tests: `BehindWindowTests` (a backlog drained after a ten-minute outage raises nothing, not
+  even once; a reported backlog raises nothing; a truly slow clock raises after its window; the window is the user's).
+- N2: going back, each new cause is mapped to the nearest older one where that is honest (`structural`, "no longer
+  judged (no fish or no limit)"), logged per alarm in the activity log; "the device was removed" has no honest older
+  word, so 0010 refuses with the reason, as 0004 does. Tests in `test_migration_reverse`.
+- N4: 0008 first brings each severity rule and deadband outside its new bounds to the nearest bound, a critical
+  activity-log entry per row, then adds the checks. Test in `test_migration_reverse`.
+- N3: the safe and honest option is to keep the critical limit (it is reached behind, and ahead when the contract allows
+  more) and say it: the limit's help text and a note on the severity rules page with the contract's own future skew.
+  The values of a device far ahead carry the receive time, so the water is judged right. Tests: `AheadCeilingTests`.
+
 ## Migrations
 - core 0009_platform_settings, 0010_clock_tolerance.
 - farm 0036_opening_balances (on 0035_stock_operation_size_mix_ack), 0037_water_freshness.
 - sensors 0008, 0009 (acknowledgements moved), 0010_channel_fresh_heartbeats.
-- alarms 0001-0005 (round 2), 0006_severity_rules_kept, 0007_subjects_by_unit (data, reversible), 0008_severity_bounds,
-  0009_clearance_causes (data), 0010_device_clock (seed).
+- alarms 0001-0005 (round 2), 0006_severity_rules_kept, 0007_subjects_by_unit (data), 0008_severity_bounds (clamps
+  first, N4), 0009_clearance_causes (data), 0010_device_clock (seed), 0011_clock_behind_window (seed).
+- Going back (N2): 0009 maps "limit removed", 0007 "merged" and "unit removed" to "no longer judged (no fish or no
+  limit)", each change logged per alarm; 0010 refuses once a "device removed" clearance exists, and 0004 once a system
+  alarm exists, each saying why (the clearances and alarms are append-only).
 
 ## Test results (WORKERS=1, DB_TMPFS=1g, targeted; the full suite is not run here)
 - alarms, sensors, core.tests_platform, core.tests_routes, core.tests_layout_pages: 412 tests; the three channel-page
@@ -179,8 +206,11 @@ The cross review checked the branch with its own probes, each asserting the safe
   owner's on-delay for critical decides; no separate count of consecutive failures was added.
 - If the supervision step itself fails, nothing alarms it but the log; the worker's dead man (later phase) covers a dead
   loop.
-- A device clock "behind" includes the network's and the broker's delay; a gateway that buffers and sends late reads as
-  behind. The card's note covers only devices whose values the card shows.
+- A device clock "behind" is said after its window (600 s): a truly slow clock is said up to ten minutes late (its
+  values are never delayed). A backlog drained longer than the window with no queue the ingest reports would still read
+  as behind. The card's note covers only devices whose values the card shows.
+- `farm/water/freshness._load` writes a missing row inside the caller's transaction without a savepoint: if that write
+  fails, the step fails loudly (a `step_failed` critical alarm), not silently.
 - The water freshness rows are held per process: a change reaches another process at its next request or pass.
 - Not done from the plan (later phases): the worker process with NOTIFY wake-ups, shelving, flood grouping,
   `alarm_conditions` shared with the monitoring card, journal table, worker status. `check_sensors` still exists.

@@ -386,7 +386,7 @@ fn co2_from_air(temp_c: f64, salinity: f64, pressure: f64) -> PyResult<f64> {
     ok(c::co2_from_air(temp_c, salinity, pressure))
 }
 
-// ---- I2, fresh water's ionic strength: golden v3, not used by the application (chemcore/core/src/fresh.rs) -------
+// ---- formula 3, the application's: the fresh water's own ionic strength (chemcore/core/src/fresh.rs) ----------------
 
 fn ions(conductivity_25_us_cm: Option<f64>, hardness_mg_l: Option<f64>) -> f::Ions {
     f::Ions {

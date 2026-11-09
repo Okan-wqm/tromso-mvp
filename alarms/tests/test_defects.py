@@ -1,8 +1,10 @@
 """The seven defects the alarm plan (scratchpad plan/alarms/PLAN.md §2.3) found in this app, each pinned by its tests."""
 from farm.models import SamplingPoint
+from farm.water import sources as water_sources
 from farm.tests.helpers import point_of
 
 from ..models import Alarm, AlarmClearance, Escalation, Notification, ParameterDeadband, SeverityPolicy
+from .. import read
 from . import AlarmsCase
 
 
@@ -86,3 +88,43 @@ class LevelTests(AlarmsCase):
         self.loop()
         self.assertEqual([notification.alarm.severity for notification in Notification.objects.all()], ['critical'])
         self.assertFalse(Escalation.objects.exists())
+
+
+class Unreadable:
+    """A live water source that cannot be read (a provider of farm/water/sources.py that raises)."""
+
+    def latest(self, targets, now):
+        raise ConnectionError('the sensors cannot be read')
+
+    def value_at(self, targets, code, moment):
+        raise ConnectionError('the sensors cannot be read')
+
+    def bound(self, targets, code, since, until):
+        raise ConnectionError('the sensors cannot be read')
+
+
+class FailedSourceTests(AlarmsCase):
+    """Defect 3: while the live sources cannot be read, nothing clears (a sample alone must not end an alarm a sensor
+    raised), and the failure is an alarm of its own."""
+
+    def setUp(self):
+        super().setUp()
+        self.sample(5.5, hours=1)
+        self.loop()
+        self.unreadable = Unreadable()
+
+    def test_nothing_clears_and_the_failure_is_an_alarm_until_the_sensors_answer_again(self):
+        self.sample(7.0, hours=0.5)
+        water_sources.register(self.unreadable)
+        try:
+            self.loop(minutes=1)
+            self.loop(minutes=5)
+        finally:
+            water_sources.unregister(self.unreadable)
+        self.assertTrue(read.is_open(self.critical()))
+        system = Alarm.objects.get(source='system')
+        self.assertEqual((system.parameter, system.severity, read.is_open(system)), ('sensors_failed', 'critical', True))
+        self.loop(minutes=6)
+        self.loop(minutes=7)
+        self.assertFalse(read.is_open(self.critical()))
+        self.assertEqual(AlarmClearance.objects.get(alarm=system).cause, 'restored')

@@ -58,16 +58,15 @@ class PanelSwitcherTests(WorkspaceTestCase):
                                                  'Organization chart', 'Shift schedule', 'Team overview', 'Attendance', 'Leave requests', 'Scheduling settings'])
         production = self.page(reverse('farm:system_list'))
         self.assertEqual(production.context['workspace']['key'], 'production')
-        self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',
-                                                    'Tanks, ponds & cages', 'Monitoring boards', 'Sampling points', 'Species', 'Feeds',
-                                                    'Water limits', 'Medicines', 'Handling rules', 'Card templates',
-                                                    'Card template rules', 'Slaughter facilities',
-                                                    'Suppliers', 'Production units', 'Monitoring', 'Water chemistry', 'Storage', 'Tasks',
-                                                    'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments',
-                                                    'Harvested', 'Harvest plan', 'Production plans', 'Treatments',
-                                                    'Health events', 'Sea-lice counts', 'Experiments', 'Regulatory reports', 'Questions for the authority',
-                                                   'Messages', 'Today & attendance', 'Shift schedule', 'Leave requests', 'Attendance',
-                                                   'Team overview', 'Team list', 'Organization chart'])
+        self.assertEqual(self.labels(production), ['Overview', 'Production units', 'Monitoring', 'Water chemistry', 'Storage', 'Tasks',
+                                        'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments', 'Harvested',
+                                        'Harvest plan', 'Production plans', 'Treatments', 'Health events', 'Sea-lice counts',
+                                        'Experiments', 'Regulatory reports', 'Questions for the authority', 'Messages',
+                                        'Today & attendance', 'Shift schedule', 'Leave requests', 'Attendance', 'Team overview',
+                                        'Team list', 'Organization chart', 'Production departments', 'Systems', 'Equipment',
+                                        'Tanks, ponds & cages', 'Monitoring boards', 'Sampling points', 'Species', 'Feeds',
+                                        'Water limits', 'Medicines', 'Handling rules', 'Card templates', 'Card template rules',
+                                        'Slaughter facilities', 'Suppliers'])
 
     def test_the_switcher_lists_the_panels_and_marks_the_current_one(self):
         self.sign_in(self.admin)
@@ -121,16 +120,15 @@ class PanelMemoryTests(WorkspaceTestCase):
         self.assertEqual(self.client.session['workspace'], 'production')
         response = self.page(reverse('password_change'))
         self.assertEqual(response.context['workspace']['key'], 'production')
-        self.assertEqual(self.labels(response), ['Overview', 'Production departments', 'Systems', 'Equipment',
-                                                  'Tanks, ponds & cages', 'Monitoring boards', 'Sampling points', 'Species', 'Feeds',
-                                                  'Water limits', 'Medicines', 'Handling rules', 'Card templates',
-                                                    'Card template rules', 'Slaughter facilities',
-                                                  'Suppliers', 'Production units', 'Monitoring', 'Water chemistry', 'Storage', 'Tasks',
-                                                  'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments',
-                                                  'Harvested', 'Harvest plan', 'Production plans', 'Treatments',
-                                                  'Health events', 'Sea-lice counts', 'Experiments', 'Regulatory reports', 'Questions for the authority',
-                                                   'Messages', 'Today & attendance', 'Shift schedule', 'Leave requests', 'Attendance',
-                                                   'Team overview', 'Team list', 'Organization chart'])
+        self.assertEqual(self.labels(response), ['Overview', 'Production units', 'Monitoring', 'Water chemistry', 'Storage', 'Tasks',
+                                        'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments', 'Harvested',
+                                        'Harvest plan', 'Production plans', 'Treatments', 'Health events', 'Sea-lice counts',
+                                        'Experiments', 'Regulatory reports', 'Questions for the authority', 'Messages',
+                                        'Today & attendance', 'Shift schedule', 'Leave requests', 'Attendance', 'Team overview',
+                                        'Team list', 'Organization chart', 'Production departments', 'Systems', 'Equipment',
+                                        'Tanks, ponds & cages', 'Monitoring boards', 'Sampling points', 'Species', 'Feeds',
+                                        'Water limits', 'Medicines', 'Handling rules', 'Card templates', 'Card template rules',
+                                        'Slaughter facilities', 'Suppliers'])
         self.page(reverse('farm:site_list'))
         self.assertEqual(self.page(reverse('password_change')).context['workspace']['key'], 'company')
 
@@ -161,12 +159,11 @@ class MainHeadingTests(WorkspaceTestCase):
         self.sign_in(self.admin)
         response = self.page(reverse('farm:system_list'))
         self.assertEqual(self.headings(response),
-                         [('', ['']), ('Setup', ['Facility structure', 'Reference data', 'Harvest and logistics',
-                                                 'Purchasing']),
-                          ('Operations', ['', 'Feeding', 'Harvest', 'Health']), ('Research', ['']), ('Reports', ['']),
-                          ('Communication', ['']), ('Team', ['Time & attendance', 'People'])])
+                         [('', ['']), ('Operations', ['', 'Feeding', 'Harvest', 'Health']), ('Research', ['']),
+                          ('Reports', ['']), ('Communication', ['']), ('Team', ['Time & attendance', 'People']),
+                          ('Setup', ['Facility structure', 'Reference data', 'Harvest and logistics', 'Purchasing'])])
         self.assertContains(response, '<p class="rail-section">Operations</p>', html=True)
-        self.assertContains(response, '<p class="rail-section">Setup</p>', html=True)
+        self.assertContains(response, '<summary class="rail-section">Setup</summary>', html=True)    # (collapsible, last)
         self.assertContains(response, '<p class="rail-group">Facility structure</p>', html=True)
         self.assertContains(response, '<p class="rail-group">Reference data</p>', html=True)
         self.assertContains(response, '<p class="rail-group">Harvest and logistics</p>', html=True)

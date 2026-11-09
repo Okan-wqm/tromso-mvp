@@ -3562,9 +3562,17 @@ redesign yet.
   and the user menu; the page head (h1, a line of status chips, the page's primary action). Below 1024 px the rail is a
   sheet and a bottom bar holds Meals, Water, Units and Storage (those the person's role opens; the Company panel shows
   its first pages) and More, which opens the sheet.
+- **Rail order.** Daily work first: the overview, Operations (with Feeding, Harvest, Health), Research, Reports,
+  Communication, Team; Setup last and folded (`Section(collapsed=True)` in `config/navigation.py`), open on its own
+  pages and elsewhere as the person left it (`frontend/collapse.ts`, kept in the browser). In the collapsed rail a
+  link's name stands beside it on hover and on focus. The foot says the company (`COMPANY_NAME` in the environment)
+  and the site of the department the person is placed in today, or the farm's site when it has one (`hr.read.rail_foot`,
+  `RAIL_FOOT`); "Fish farm" when neither is known.
 - **Tables** on the three pages are real tables in a `ui-table-wrap` that scrolls inside itself, with the first column
   and the row actions sticky; each value is a value face (figure, origin and age), a missing figure says why or "no
-  data", a status is a chip with glyph and word. Dates stay dd.mm.yyyy in every language.
+  data", a status is a chip with glyph and word. Words wrap inside their columns and the meal board fits a 1440 px window
+  (the browser layout test checks it on `frontend/test/pages/meal.html`); a wider table scrolls in its frame, its sticky
+  columns shaded so a column passing under them reads as going on. Dates stay dd.mm.yyyy in every language.
 
 ## Browser code
 

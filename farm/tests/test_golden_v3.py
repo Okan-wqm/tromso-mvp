@@ -66,6 +66,17 @@ class IonicStrengthTests(SimpleTestCase):
                 self.assertEqual(native.fresh_ionic_strength(salinity, 80.0, conductivity_us_cm=500.0),
                                  (native.ionic_strength(salinity), 'seawater'))
 
+    def test_above_davies_range_it_is_refused(self):
+        """Cross review F3: Davies holds to an ionic strength of about 0.5; beyond it (a sea water's conductivity with no
+        salinity, mS/cm typed as µS/cm) the fresh path refuses, never a positive log γ."""
+        self.assertEqual(native.DAVIES_MAX, 0.5)
+        self.assertEqual(native.fresh_ionic_strength(0.0, 80.0, conductivity_us_cm=31250.0), (0.5, 'conductivity'))
+        for call in (lambda: native.fresh_ionic_strength(0.0, 80.0, conductivity_us_cm=40000.0),
+                     lambda: native.equilibria_v3(12.0, 0.0, 80.0, conductivity_us_cm=1e6),
+                     lambda: native.davies_log_gamma(12.0, 0.6, 1)):
+            with self.assertRaisesRegex(ValueError, 'ionic strength above 0.5'):
+                call()
+
 
 class DaviesTests(SimpleTestCase):
     def test_the_equation(self):

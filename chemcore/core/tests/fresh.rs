@@ -2,6 +2,7 @@
 //! farm/tests/test_golden_v3.py).
 use chemcore_core::chemistry as c;
 use chemcore_core::fresh::{self as f, Ions, Source};
+use chemcore_core::num::ChemError;
 
 #[test]
 fn davies_meets_stumm_and_morgan() {
@@ -45,4 +46,16 @@ fn the_sources_in_order() {
     assert_eq!(source(0.0, Ions::default()), Ok(Source::Alkalinity));
     assert_eq!(source(5.0, both), Ok(Source::Seawater));
     assert!(f::ionic_strength(0.0, -1.0, Ions::default()).is_err());
+}
+
+#[test]
+fn above_davies_range_it_is_refused() {
+    let sea = Ions {
+        conductivity_us_cm: Some(40000.0),
+        hardness_mg_l: None,
+    };
+    assert_eq!(f::ionic_strength(0.0, 80.0, sea), Err(ChemError::OutOfRange));
+    assert!(f::equilibria_v3(12.0, 0.0, 80.0, sea).is_err());
+    assert_eq!(f::davies_log_gamma(12.0, 0.6, 1.0), Err(ChemError::OutOfRange));
+    assert!(f::davies_log_gamma(12.0, f::DAVIES_MAX, 1.0).is_ok());
 }

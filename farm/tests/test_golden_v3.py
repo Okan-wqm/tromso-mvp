@@ -53,9 +53,18 @@ def recorder():
 
 class IonicStrengthTests(SimpleTestCase):
     def test_from_the_conductivity_first(self):
-        self.assertEqual(native.FRESH_BELOW, 5.0)
-        self.assertEqual(native.fresh_ionic_strength(0.0, 80.0, conductivity_us_cm=500.0, hardness_mg_l=300.0),
-                         (1.6e-5 * 500.0, 'conductivity'))
+        self.assertEqual((native.FRESH_UP_TO, native.SEA_FROM), (1.0, 5.0))
+        self.assertEqual(native.fresh_ionic_strength(0.0, 80.0, conductivity_us_cm=1000.0, hardness_mg_l=300.0),
+                         (1.6e-5 * 1000.0, 'conductivity'))
+
+    def test_never_below_the_measured_ions(self):
+        """An estimate below the measured ions' lower bound is taken as the bound: 500 µS/cm (I 0.008) beside 300 mg/L of
+        hardness and 80 of alkalinity (at least 0.0089); a salinity of 0.01 ‰ (0.0002) beside 80 mg/L (0.0016)."""
+        found, source = native.fresh_ionic_strength(0.0, 80.0, conductivity_us_cm=500.0, hardness_mg_l=300.0)
+        self.assertEqual(source, 'hardness')
+        self.assertGreater(found, 1.6e-5 * 500.0)
+        self.assertEqual(native.fresh_ionic_strength(0.01, 80.0)[1], 'alkalinity')
+        self.assertEqual(native.fresh_ionic_strength(0.0, None), (0.0, 'none'))
 
     def test_else_from_the_hardness_and_the_alkalinity(self):
         for hardness, alkalinity in ((250.0, 100.0), (50.0, 200.0), (300.0, 300.0)):
@@ -64,7 +73,7 @@ class IonicStrengthTests(SimpleTestCase):
                 bicarbonate = alkalinity / chemistry.MG_CACO3_PER_MEQ   # meq/L, as HCO₃⁻
                 # The ions measured, and the monovalent ones their charges must have to balance (the least there are).
                 expected = 0.5e-3 * (4 * divalent + bicarbonate + abs(2 * divalent - bicarbonate))
-                found, source = native.fresh_ionic_strength(1.0, alkalinity, hardness_mg_l=hardness)
+                found, source = native.fresh_ionic_strength(0.0, alkalinity, hardness_mg_l=hardness)
                 self.assertEqual(source, 'hardness')
                 self.assertAlmostEqual(found, expected, delta=1e-15)
 
@@ -122,6 +131,26 @@ class DaviesTests(SimpleTestCase):
         self.assertEqual(native.davies_log_gamma(12.0, 0.0, 1), 0.0)
 
 
+class BoundaryTests(SimpleTestCase):
+    """The fresh path up to 1 ‰, the sea path from 5 ‰ (Millero et al. 2006 measured K1, K2 from S 1; Dickson's 1990 KSO4
+    and KB hold from S 5), each constant blended between: nothing jumps at either end (the comparison, the jump table)."""
+
+    def test_the_sea_weight(self):
+        for salinity, weight in ((0.0, 0.0), (1.0, 0.0), (3.0, 0.5), (5.0, 1.0), (35.0, 1.0)):
+            with self.subTest(salinity=salinity):
+                self.assertEqual(native.sea_weight(salinity), weight)
+
+    def test_no_jump_at_either_end_of_the_band(self):
+        for temp_c in (0.0, 2.0, 5.0, 8.0, 12.0, 25.0):
+            for ions in ({}, {'conductivity_us_cm': 3700.0}, {'hardness_mg_l': 300.0}):
+                for edge in (native.FRESH_UP_TO, native.SEA_FROM):
+                    below = native.equilibria_v3(temp_c, edge - 1e-9, 120.0, **ions).values()[2:9]
+                    above = native.equilibria_v3(temp_c, edge + 1e-9, 120.0, **ions).values()[2:9]
+                    with self.subTest(temp_c=temp_c, ions=ions, edge=edge):
+                        for one, two in zip(below, above):
+                            self.assertAlmostEqual(two / one, 1, delta=1e-7)
+
+
 class EquilibriaV3Tests(SimpleTestCase):
     def test_from_a_salinity_of_5_it_is_v1_but_for_the_nbs_conversions_a(self):
         """Sea water keeps v1's constants bit for bit; its NBS pH is converted with the temperature's A (I1)."""
@@ -139,7 +168,7 @@ class EquilibriaV3Tests(SimpleTestCase):
     def test_fresh_water_constants_are_the_thermodynamic_ones_with_davies_activities(self):
         for temp_c, salinity, alkalinity, ions in ((12.0, 0.0, 80.0, {'conductivity_us_cm': 300.0}),
                                                    (8.0, 0.0, 200.0, {'hardness_mg_l': 300.0}),
-                                                   (18.0, 2.0, 120.0, {}), (25.0, 0.0, 20.0, {})):
+                                                   (18.0, 0.8, 120.0, {}), (25.0, 0.0, 20.0, {})):
             with self.subTest(temp_c=temp_c, salinity=salinity, ions=ions):
                 strength, _source = native.fresh_ionic_strength(salinity, alkalinity, **ions)
                 one = native.davies_log_gamma(temp_c, strength, 1)

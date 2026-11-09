@@ -15,6 +15,8 @@ fn davies_meets_stumm_and_morgan() {
 
 #[test]
 fn the_sources_in_order() {
+    // The estimate (the conductivity, else a salinity above 0) is taken unless the measured ions' lower bound (the
+    // hardness with the alkalinity, else the alkalinity alone) is above it; with nothing measured, 0.
     let both = Ions {
         conductivity_us_cm: Some(500.0),
         hardness_mg_l: Some(300.0),
@@ -23,13 +25,146 @@ fn the_sources_in_order() {
         conductivity_us_cm: None,
         hardness_mg_l: Some(300.0),
     };
-    let source = |salinity, ions| f::ionic_strength(salinity, 80.0, ions).map(|(_i, source)| source);
-    assert_eq!(source(0.0, both), Ok(Source::Conductivity));
-    assert_eq!(source(2.0, hardness), Ok(Source::Hardness));
-    assert_eq!(source(2.0, Ions::default()), Ok(Source::Salinity));
-    assert_eq!(source(0.0, Ions::default()), Ok(Source::Alkalinity));
-    assert_eq!(source(5.0, both), Ok(Source::Seawater));
-    assert!(f::ionic_strength(0.0, -1.0, Ions::default()).is_err());
+    let source = |salinity, alkalinity, ions| f::ionic_strength(salinity, alkalinity, ions).map(|(_i, source)| source);
+    assert_eq!(source(0.0, Some(80.0), both), Ok(Source::Hardness)); // 0.008 against 0.0089
+    assert_eq!(
+        source(
+            0.0,
+            Some(80.0),
+            Ions {
+                conductivity_us_cm: Some(1000.0),
+                ..both
+            }
+        ),
+        Ok(Source::Conductivity)
+    );
+    assert_eq!(source(0.2, Some(80.0), hardness), Ok(Source::Hardness)); // 0.0040 against 0.0089
+    assert_eq!(source(2.0, Some(80.0), hardness), Ok(Source::Salinity)); // 0.040 against 0.0089
+    assert_eq!(source(2.0, Some(80.0), Ions::default()), Ok(Source::Salinity));
+    assert_eq!(source(0.0, Some(80.0), Ions::default()), Ok(Source::Alkalinity));
+    assert_eq!(source(0.01, Some(80.0), Ions::default()), Ok(Source::Alkalinity)); // 0.0002 against 0.0016
+    assert_eq!(
+        f::ionic_strength(0.0, None, Ions::default()),
+        Ok((0.0, Source::Nothing))
+    );
+    assert_eq!(source(5.0, Some(80.0), both), Ok(Source::Seawater));
+    assert!(f::ionic_strength(0.0, Some(-1.0), Ions::default()).is_err());
+    assert!(f::ionic_strength(-0.1, Some(80.0), Ions::default()).is_err());
+}
+
+// ---- the boundary between the fresh and the sea path (chemcore/findings/I2-comparison.md) ------------------------
+
+fn constants(eq: &c::Equilibria) -> [f64; 7] {
+    [eq.ph_offset, eq.k1, eq.k2, eq.kw, eq.kb, eq.k_nh4, eq.k_h2s]
+}
+
+fn v3(temp_c: f64, salinity: f64, alkalinity: f64, ions: Ions) -> [f64; 7] {
+    f::equilibria_v3(temp_c, salinity, Some(alkalinity), ions)
+        .map(|(eq, _i, _source)| constants(&eq))
+        .unwrap_or([f64::NAN; 7])
+}
+
+const WATERS: [(f64, Ions); 4] = [
+    (
+        120.0,
+        Ions {
+            conductivity_us_cm: None,
+            hardness_mg_l: None,
+        },
+    ),
+    (
+        120.0,
+        Ions {
+            conductivity_us_cm: Some(3700.0),
+            hardness_mg_l: None,
+        },
+    ),
+    (
+        120.0,
+        Ions {
+            conductivity_us_cm: None,
+            hardness_mg_l: Some(300.0),
+        },
+    ),
+    (
+        20.0,
+        Ions {
+            conductivity_us_cm: None,
+            hardness_mg_l: None,
+        },
+    ),
+];
+
+#[test]
+fn the_band_is_from_1_to_5_permil() {
+    // Millero et al. (2006) measured K1, K2 from S 1; Dickson's (1990) KSO4 and KB hold from S 5.
+    assert_eq!((f::FRESH_UP_TO, f::SEA_FROM), (1.0, 5.0));
+    for (salinity, weight) in [
+        (0.0, 0.0),
+        (1.0, 0.0),
+        (2.0, 0.25),
+        (3.0, 0.5),
+        (4.0, 0.75),
+        (5.0, 1.0),
+        (35.0, 1.0),
+    ] {
+        assert_eq!(f::sea_weight(salinity), weight);
+    }
+}
+
+#[test]
+fn no_jump_at_either_end_of_the_band() {
+    // The current 5 ‰ boundary jumped up to 22 % in CO₂ (hardness) and 9 % in the NH₃ share; across the band every
+    // constant is continuous: a step of 1e-9 ‰ moves none by more than 1e-7 of itself.
+    for temp_c in [0.0, 2.0, 5.0, 12.0, 25.0] {
+        for (alkalinity, ions) in WATERS {
+            for edge in [f::FRESH_UP_TO, f::SEA_FROM] {
+                let (below, above) = (
+                    v3(temp_c, edge - 1e-9, alkalinity, ions),
+                    v3(temp_c, edge + 1e-9, alkalinity, ions),
+                );
+                for (one, two) in below.iter().zip(above.iter()) {
+                    assert!(
+                        ((two - one) / one).abs() < 1e-7,
+                        "{temp_c} °C, {edge} ‰: {one} against {two}"
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn in_the_band_each_constant_is_the_geometric_blend_of_the_two_paths() {
+    let ions = Ions::default();
+    for salinity in [2.0, 3.5] {
+        let weight = f::sea_weight(salinity);
+        let blended = v3(12.0, salinity, 120.0, ions);
+        let fresh = f::fresh_equilibria(12.0, salinity, Some(120.0), ions).map(|(eq, _i, _s)| constants(&eq));
+        let sea = c::equilibria_with(12.0, salinity, &f::debye_huckel_a).map(|eq| constants(&eq));
+        assert!(
+            matches!((fresh, sea), (Ok(fresh), Ok(sea)) if blended.iter().zip(fresh.iter().zip(sea.iter()))
+            .enumerate().all(|(index, (found, (fresh, sea)))| {
+                let expected = if index == 0 {
+                    (1.0 - weight) * fresh + weight * sea
+                } else {
+                    libm::exp((1.0 - weight) * libm::log(*fresh) + weight * libm::log(*sea))
+                };
+                ((found - expected) / expected).abs() < 1e-12
+            }))
+        );
+    }
+}
+
+#[test]
+fn a_salinity_near_0_does_not_drop_the_alkalinitys_ions() {
+    // Formula 3 before the band: a salinity of 0.01 ‰ took I = 0.0002 over the alkalinity's 0.0016 (a 7.7 % step).
+    for (one, two) in v3(12.0, 0.0, 300.0, Ions::default())
+        .iter()
+        .zip(v3(12.0, 0.01, 300.0, Ions::default()).iter())
+    {
+        assert!(((two - one) / one).abs() < 1e-12);
+    }
 }
 
 #[test]
@@ -38,8 +173,9 @@ fn above_davies_range_it_is_refused() {
         conductivity_us_cm: Some(40000.0),
         hardness_mg_l: None,
     };
-    assert_eq!(f::ionic_strength(0.0, 80.0, sea), Err(ChemError::OutOfRange));
-    assert!(f::equilibria_v3(12.0, 0.0, 80.0, sea).is_err());
+    assert_eq!(f::ionic_strength(0.0, Some(80.0), sea), Err(ChemError::OutOfRange));
+    assert!(f::equilibria_v3(12.0, 0.0, Some(80.0), sea).is_err());
+    assert!(f::equilibria_v3(12.0, 3.0, Some(80.0), sea).is_err()); // in the band the fresh path is half the answer
     assert_eq!(f::davies_log_gamma(12.0, 0.6, 1.0), Err(ChemError::OutOfRange));
     assert!(f::davies_log_gamma(12.0, f::DAVIES_MAX, 1.0).is_ok());
 }
@@ -153,7 +289,7 @@ fn sea_water_keeps_v1s_constants_and_converts_the_nbs_ph_with_the_temperatures_a
     };
     for temp_c in [2.0, 12.0, 25.0] {
         for salinity in [5.0, 10.0, 35.0] {
-            let v3 = f::equilibria_v3(temp_c, salinity, 100.0, ions).map(|(eq, _i, _source)| eq);
+            let v3 = f::equilibria_v3(temp_c, salinity, Some(100.0), ions).map(|(eq, _i, _source)| eq);
             let v1 = c::equilibria(temp_c, salinity);
             assert!(
                 matches!((v3, v1), (Ok(v3), Ok(v1)) if v3.k1 == v1.k1 && v3.k2 == v1.k2 && v3.kw == v1.kw

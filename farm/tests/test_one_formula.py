@@ -117,9 +117,20 @@ NOT_CHEMISTRY = {
 }
 
 
+NUMERIC_CALLS = {'abs', 'divmod', 'max', 'min', 'pow', 'round', 'sum'}
+
+
 def computes(node):
-    """Arithmetic or an ordering of numbers in a function's body (equality, identity and membership are not; a
-    translated text formatted with % is words)."""
+    """Arithmetic, an ordering of numbers, a numeric built-in or a call into math, an augmented assignment or a sign
+    flip of a name (equality, identity and membership are not; a translated text formatted with % is words; a negative
+    literal is a number, not arithmetic)."""
+    if isinstance(node, ast.Call):
+        return (getattr(node.func, 'id', '') in NUMERIC_CALLS
+                or (isinstance(node.func, ast.Attribute) and getattr(node.func.value, 'id', '') in ('math', 'cmath')))
+    if isinstance(node, ast.AugAssign):
+        return True
+    if isinstance(node, ast.UnaryOp):
+        return isinstance(node.op, (ast.USub, ast.UAdd)) and not isinstance(node.operand, ast.Constant)
     if isinstance(node, ast.BinOp):
         return not ((isinstance(node.op, ast.Mod) and isinstance(node.left, ast.Call)
                      and getattr(node.left.func, 'id', '') in ('_', 'gettext', 'ngettext'))
@@ -146,9 +157,12 @@ class RetirementTests(SimpleTestCase):
     def test_a_door_computes_nothing_but_what_is_listed_as_not_chemistry(self):
         for name in DOORS:
             tree = ast.parse((ROOT / name).read_text(encoding='utf-8'))
-            outside = [ast.unparse(each) for statement in tree.body
-                       if not isinstance(statement, (ast.FunctionDef, ast.ClassDef))
-                       for each in ast.walk(statement) if computes(each)]
+            # The module's top and the bodies of its classes outside their methods (a dataclass field's default).
+            tops = [statement for statement in tree.body if not isinstance(statement, (ast.FunctionDef, ast.ClassDef))]
+            tops += [statement for node in tree.body if isinstance(node, ast.ClassDef) for statement in node.body
+                     if not isinstance(statement, ast.FunctionDef)]
+            outside = [ast.unparse(each) for statement in tops for each in ast.walk(statement)
+                       if computes(each)]
             with self.subTest(module=name, function=None):
                 self.assertEqual(outside, [], 'a formula outside the core, at the top of the module')
             for function, node in functions_of(tree).items():
@@ -161,12 +175,13 @@ class RetirementTests(SimpleTestCase):
 
     def test_every_name_a_door_gives_has_a_caller_outside_the_tests(self):
         """A door nothing calls is a dead path: it goes (the tests call what the code calls)."""
-        callers = [path for folder in ('farm', 'sensors', 'monitoring', 'reports', 'core', 'chemcore/scripts')
-                   for path in (ROOT / folder).rglob('*.py')
-                   if 'tests' not in path.parts and 'migrations' not in path.parts
-               and path != ROOT / 'farm' / 'water' / 'native.py']   # the core's own names are no caller
-        callers += list((ROOT / 'templates').rglob('*.html'))
-        text = {path: path.read_text(encoding='utf-8') for path in callers}
+        # Every app, the templates, the browser's code and the shipped files; not the tests, the migrations, the
+        # installed packages or the core's own module.
+        skip = {'tests', 'migrations', 'node_modules', 'target', '.venv', 'staticfiles', '__pycache__', '.git'}
+        callers = [path for pattern in ('*.py', '*.html', '*.ts', '*.js') for path in ROOT.rglob(pattern)
+                   if not skip & set(path.relative_to(ROOT).parts) and path.name != 'test_one_formula.py'
+                   and not path.name.startswith('test_') and path != ROOT / 'farm' / 'water' / 'native.py']
+        text = {path: path.read_text(encoding='utf-8', errors='replace') for path in callers}
         for name in DOORS:
             tree = ast.parse((ROOT / name).read_text(encoding='utf-8'))
             given = set(functions_of(tree))

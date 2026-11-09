@@ -229,9 +229,32 @@
           "on_form": [],
           "how": "system",
           "why": "written by manage.py run_alarms (alarms/engine.py)"
+        },
+        {
+          "name": "cause",
+          "field": "cause",
+          "type": "varchar(12)",
+          "null": false,
+          "choices": [
+            "returned",
+            "event_closed",
+            "structural",
+            "restored"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
         }
       ],
-      "constraints": [],
+      "constraints": [
+        {
+          "name": "chk_alarm_clearances_cause",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
       "screens": {
         "create": {
           "status": "none",
@@ -289,7 +312,8 @@
         "left_out": false
       },
       "tests": [
-        "alarms/tests/test_alarms.py"
+        "alarms/tests/test_alarms.py",
+        "alarms/tests/test_defects.py"
       ]
     },
     {
@@ -564,6 +588,7 @@
       "tests": [
         "core/tests_platform.py",
         "core/tests_workspaces.py",
+        "alarms/tests/test_defects.py",
         "alarms/tests/test_reference.py"
       ]
     },
@@ -831,7 +856,8 @@
         "left_out": false
       },
       "tests": [
-        "alarms/tests/test_alarms.py"
+        "alarms/tests/test_alarms.py",
+        "alarms/tests/test_defects.py"
       ]
     },
     {
@@ -1004,7 +1030,8 @@
         "left_out": false
       },
       "tests": [
-        "alarms/tests/test_alarms.py"
+        "alarms/tests/test_alarms.py",
+        "alarms/tests/test_defects.py"
       ]
     },
     {
@@ -1683,7 +1710,125 @@
         "core/tests_platform.py",
         "core/tests_workspaces.py",
         "alarms/tests/test_alarms.py",
+        "alarms/tests/test_defects.py",
         "alarms/tests/test_reference.py"
+      ]
+    },
+    {
+      "app": "alarms",
+      "model": "AlarmSubjectState",
+      "table": "alarm_subject_state",
+      "description": "The one mutable row of an alarm subject (a unit's parameter at a level: `water:<point>:<slot>:<severity>`): the timers of its lifecycle, kept in the database so a restart loses none: since when the condition holds without an alarm yet (the on-delay, counted from the first offending value's time), since when it is over while the alarm is open (the off-delay), the time of the last value that held it, and the alarm open now.",
+      "columns": [
+        {
+          "name": "key",
+          "field": "key",
+          "type": "varchar(200)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "open_alarm_id",
+          "field": "open_alarm",
+          "type": "bigint",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "alarms",
+            "model": "alarms.Alarm",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the timers and the open alarm the loop keeps per subject (alarms/sources.py advance)"
+        },
+        {
+          "name": "pending_since",
+          "field": "pending_since",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the timers and the open alarm the loop keeps per subject (alarms/sources.py advance)"
+        },
+        {
+          "name": "clear_since",
+          "field": "clear_since",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the timers and the open alarm the loop keeps per subject (alarms/sources.py advance)"
+        },
+        {
+          "name": "last_bad_at",
+          "field": "last_bad_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the timers and the open alarm the loop keeps per subject (alarms/sources.py advance)"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        }
+      ],
+      "constraints": [],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "only the loop moves a subject's timers and its open alarm"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "a subject's row is kept: its timers survive a restart"
+        },
+        "read": {
+          "status": "none",
+          "paths": [],
+          "why": "the loop's own memory; the alarms it opened are on the Alarms page"
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "alarms/tests/test_defects.py"
       ]
     },
     {
@@ -1710,7 +1855,8 @@
           "null": false,
           "choices": [
             "sensor_rule",
-            "water_limit"
+            "water_limit",
+            "system"
           ],
           "link": null,
           "on_form": [],
@@ -1904,6 +2050,7 @@
       "tests": [
         "core/tests_workspaces.py",
         "sensors/tests/test_alarms.py",
+        "alarms/tests/__init__.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_pages.py",
@@ -34221,6 +34368,7 @@
         "core/tests_workspaces.py",
         "sensors/tests/test_alarms.py",
         "alarms/tests/test_alarms.py",
+        "alarms/tests/test_defects.py",
         "alarms/tests/test_pages.py"
       ]
     },
@@ -34616,6 +34764,7 @@
         "core/tests_workspaces.py",
         "sensors/tests/test_alarms.py",
         "alarms/tests/test_alarms.py",
+        "alarms/tests/test_defects.py",
         "alarms/tests/test_migration.py",
         "alarms/tests/test_pages.py"
       ]

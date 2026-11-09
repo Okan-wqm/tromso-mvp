@@ -7,6 +7,11 @@ LOOP = 'written by manage.py run_alarms (alarms/engine.py)'
 APPEND_ONLY = 'append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin'
 
 SCREENS = {
+    'AlarmSubjectState': Screen(
+        create=no(LOOP), edit=no("only the loop moves a subject's timers and its open alarm"),
+        delete=no("a subject's row is kept: its timers survive a restart"),
+        read=no("the loop's own memory; the alarms it opened are on the Alarms page"),
+        columns={'*': system('the timers and the open alarm the loop keeps per subject (alarms/sources.py advance)')}),
     'SeverityPolicy': Screen(create=no('migration 0002 makes one row per severity'),
                              delete=no('there is always one row per severity')),
     'Alarm': Screen(create=no(LOOP), edit=no(APPEND_ONLY), delete=no(APPEND_ONLY), read=(alarm_list, alarm_detail),

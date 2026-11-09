@@ -3329,29 +3329,46 @@ production people in Production, with the same permission.
   number of queries for few and many people) on the Team list, Departments, the week, the overview, the chart, the board and the leave
   list; and the migrations back to nothing and forward again.
 
-## Alarms (Company › Alarms: Alarms `/alarms/`, Alarm recipients `/alarms/recipients/`)
+## Alarms (Company › Alarms: Alarms `/alarms/`, Alarm recipients `/alarms/recipients/`, Alarm severity rules `/alarms/severity-rules/`, Alarm deadbands `/alarms/deadbands/`)
 
 The owner's answer (2026-11-06, F-091): alarms reach everyone's phone as push notifications through the coming mobile app
 (not e-mail: it gets too little attention), and every alarm, every notification and every acknowledgement (who, when,
 from which device, how late) is logged. The server side is built; the push transport plugs in with the app.
 
 - **What raises an alarm** is judged where it is judged today (`alarms/sources.py`): the sensor alarm rules (each event of
-  `sensors/alarms.py` is mirrored as an alarm and cleared when it closes) and the water limits (`farm/water/read.py`
-  `latest` over every active sampling point: a value critical or warning holds an alarm of that severity per point and
-  parameter; a changed severity clears it and opens one at the new severity; a fresh value back inside the limits clears it;
-  a value that only goes stale never clears it).
+  `sensors/alarms.py` is mirrored as an alarm and cleared when it closes) and the water limits: one read of every live
+  unit's water (`farm/water/read.py` `unit_water`: its middle point, its other own points and its system standing in, the
+  worst fresh value deciding), so an inlet raises nothing and a depth point or the loop raises its unit's alarm (alarm plan,
+  defect 1).
+- **Levels (ISA-18.2 L and LL)**: a unit's parameter (the dissolved oxygen in mg/L and in % is one) has a warning and a
+  critical subject, each its own alarm: warning holds while the value is judged warning or critical, critical while it is
+  judged critical, so a severity change never clears and reopens (defect 2). A level is raised once it has held for its
+  severity's on-delay, counted from the first offending value's time; it clears once a fresh value, taken after the last
+  bad one (defect 4), is clear of it even moved by the parameter's deadband toward danger (the same judgement on the moved
+  value), for the off-delay; at once when the unit has no fish or no limit any more (structural). A value that only goes
+  stale never clears it. While the live sources cannot be read nothing clears, and that is a critical system alarm of its
+  own, restored when they answer (defect 3). A clearance says why. The timers are each subject's row
+  (`alarm_subject_state`), so a restart loses none; its open alarm is a unique column set by one compare-and-set
+  statement, so a subject never has two open alarms (defect 6). A warning is not notified while its critical is open.
+- **The rules are the user's reference data** (owner, alarm plan §7c): per severity the on-delay, the off-delay, the
+  escalation time and the delivery attempts (Alarm severity rules, one row each: critical 0 s, 30 s, 5 min, 5; warning 30 s,
+  30 s, 30 min, 5), per parameter the deadband (Alarm deadbands: dissolved oxygen 0.2 mg/L and 2 %, temperature 0.3 °C, pH
+  0.05, CO₂ 1 mg/L, TAN 0.05, NH₃-N 0.002, NO₂-N 0.05 mg/L, salinity 0.5 ‰). These are the owner's defaults (§7a),
+  seeded once by `alarms` 0002; from then on they are rows edited on their tabs by the alarm admin's rights, bounded by
+  database checks, logged, read once per pass (`alarms/rules.py`): a change takes effect on the next pass. No number in the
+  alarm code is a threshold (a test reads the code for one).
 - **Who is notified**: the alarm recipient rules (a tab: a site or every site, a production department or every one, the
   least severity, a level 0 to 9, a role or one person, only while on shift by the HR roster (`hr.read.on_shift`, the
   board's own rule), the channel). Level 0 is notified when the alarm opens; a rule added later still reaches an alarm that
   is open.
 - **Escalation**: an open alarm nobody has acknowledged goes on to the next level with a rule that reaches it once its
-  level was notified the platform owner's escalation time ago (Platform settings, 15 minutes by default), or at once when
+  level was first notified its severity's escalation time ago (Alarm severity rules), or at once when
   nobody could be notified at its level. An alarm nobody can be notified of says so. A cleared or acknowledged alarm is
   never escalated.
 - **The outbox**: one notification per alarm, person, channel and level (push only; channels are pluggable). A transport
   per channel is named in `settings.ALARM_TRANSPORTS` (`alarms/transports.py`, an interface with a test double); none is
   connected, so nothing is sent anywhere, every notification waits, and the pages say so. A failing transport is tried
-  again up to five times.
+  again up to its severity's delivery attempts.
 - **Acknowledgement**: who, when, from which device and app ('console' from these pages, the app's name later), the
   notification answered; once per person; the delay is computed from the alarm's opening. Who holds Alarms: Edit may
   acknowledge, and so may anyone the alarm was sent to. The sensors' Alarm events page acknowledges through the same
@@ -3360,8 +3377,11 @@ from which device, how late) is logged. The server side is built; the push trans
   or deleted (a database trigger, as for the activity log), and each is written with its activity-log entry (critical for
   a critical alarm). The Alarms page lists them, open first; an alarm's page shows its whole history in time order.
 - **The loop**: `manage.py run_alarms [--loop SECONDS]` (`alarms/engine.py`) checks the sensor rules and the water limits,
-  queues, escalates and hands what is queued to the connected transports, under one advisory lock so two loops never
-  queue or send twice. Deployment runs it instead of `check_sensors` (the sensors' check alone).
+  queues, escalates and hands what is queued to the connected transports. Each step (sensor rules, sensor events, water,
+  notify, send) runs in its own transaction under one advisory lock, so two loops never queue or send twice and a failing
+  step rolls back alone, logged and said in the pass's summary; a failed pass is logged and the loop goes on (defect 5).
+  The writes are set-based and the routing is read once per pass (`alarms/routing.py` `Router`): a burst of alarms costs
+  the queries one costs (defect 7). Deployment runs it instead of `check_sensors` (the sensors' check alone).
 
 ## Platform settings (Company › Administration, `/administration/platform-settings/`)
 
@@ -3380,7 +3400,6 @@ The rules the platform owner (the customer the platform is given to) sets for th
 - **A second person approves a withdrawal warning acknowledgement** (F-164): `core.platform.second_approval_required(
   'withdrawal')` says whether a harvest during a medicine withdrawal waits for a second person who may approve it; an
   unknown kind is an error, never a quiet no. The waiting itself is the withdrawal acknowledgement's (farm/handling).
-- **Escalate an unacknowledged alarm after (minutes)**, 1 to 1440, 15 by default: see Alarms.
 
 ## Roles and users
 
@@ -3403,7 +3422,7 @@ only one who manages roles and users; everyone else gets exactly what their role
   (read the page, a report and its exports; create = start a report, a notice or a correction; edit = fill in a draft and
   record it as filed; delete = discard a draft), Messages (read =
   use Messages, create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit
-  also reviews an entry), Employees (read, create, edit, All production and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule (and Crew), Attendance (read = Today & attendance and the Attendance page, create = enter presence by hand, edit = correct, delete = void), Leave requests (read, create, edit = also approves, rejects and cancels), Leave types, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit), Alarms (read, edit = acknowledge), Alarm recipients (read, create, edit, delete),
+  also reviews an entry), Employees (read, create, edit, All production and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule (and Crew), Attendance (read = Today & attendance and the Attendance page, create = enter presence by hand, edit = correct, delete = void), Leave requests (read, create, edit = also approves, rejects and cancels), Leave types, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit), Alarms (read, edit = acknowledge), Alarm recipients (read, create, edit, delete), Alarm severity rules (read, edit), Alarm deadbands (read, create, edit, delete),
   Platform settings (read, edit: the platform owner's right), Opening balances (read; registering one is the platform owner's
   right) and Activity log (read).
   A new tab appears in the matrix by
@@ -4190,6 +4209,7 @@ real mail.
 | `/administration/platform-settings/` | Administration › Platform settings (the platform owner's rules) |
 | `/alarms/` | Alarms › Alarms (`?state=all` lists the cleared ones too); `<id>/` an alarm's history, `<id>/acknowledge/` (POST) |
 | `/alarms/recipients/` | Alarms › Alarm recipients (who is notified of which alarms) |
+| `/alarms/severity-rules/`, `/alarms/deadbands/` | Alarms › Alarm severity rules and Alarm deadbands (the alarm rules, the user's reference data) |
 | `/administration/opening-balances/` | Administration › Opening balances; `new/` registers one (the platform owner's right) |
 | `/roles/` | Administration › Roles (platform admin) |
 | `/users/` | Administration › Users (platform admin) |
@@ -4218,7 +4238,7 @@ real mail.
 | `core/schema.py` | Fields described by a schema (a type's specifications): the form fields and the check of stored values |
 | `farm/equipment_types.py` | The equipment type catalogue, written into the database by migrations |
 | `alarms/` | Alarms: the append-only rows (`models.py`), what raises them (`sources.py`), who is notified (`routing.py`), the write path (`services.py`), the loop (`engine.py`, `manage.py run_alarms`), the transports (`transports.py`), the pages (`views.py`) |
-| `core/platform.py` | The platform owner's settings as the code reads them: the correction window, second approval, escalation time |
+| `core/platform.py` | The platform owner's settings as the code reads them: the correction window and second approval |
 | `farm/models/stock.py`, `farm/stock/` | The stock ledger: batches, operations and their lines; the fold (`fold.py`), reading it (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_stock`), the Production units page and dialogs (`views.py`, `farm/forms/stock.py`, `farm/templatetags/stock.py`) |
 | `farm/models/feeding.py`, `farm/feeding/` | The feeding records: the walk of the feed along the stock's timeline (`fold.py`), reading it for the pages, FCR and the feed rate (`read.py`), the one write path (`services.py`), the Meal board, Records and the dialogs (`views.py`, `farm/forms/feeding.py`, `farm/templatetags/feeding.py`); the farm's dates shared with the stock (`farm/stock/dates.py`) |
 | `farm/models/feeding_protocol.py`, `farm/feeding/` | Feeding protocols and assignments: the ration on read (`ration.py`), the estimated weight kept along the walk (`projection.py`), the temperature a ration reads (`temperature.py`), the table's write path and Duplicate (`protocols.py`), the assignments' rows and write path that the dialog and an experiment's start share (`assignments.py`); the tabs (`farm/resources/feeding_protocol.py`, `farm/forms/feeding_protocol.py`) |

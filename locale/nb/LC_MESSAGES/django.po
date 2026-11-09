@@ -3566,6 +3566,9 @@ msgstr "Azametifos"
 msgid "Back"
 msgstr "Tilbake"
 
+msgid "Back inside the limit"
+msgstr "Tilbake innenfor grensen"
+
 msgid "Back to draft"
 msgstr "Tilbake til utkast"
 
@@ -8683,6 +8686,9 @@ msgstr "Ingen linjer ennå. Bruk «Legg til linje» for å legge til en."
 msgid "No longer in stock"
 msgstr "Ikke lenger i beholdningen"
 
+msgid "No longer judged (no fish or no limit)"
+msgstr "Vurderes ikke lenger (ingen fisk eller ingen grense)"
+
 msgid "No lot number"
 msgstr "Uten partinummer"
 
@@ -9534,6 +9540,9 @@ msgstr "Åpne %(name)s"
 #, python-format
 msgid "Open %(unit)s"
 msgstr "Åpne %(unit)s"
+
+msgid "Open alarm"
+msgstr "Åpen alarm"
 
 msgid "Open alarms"
 msgstr "Åpne alarmer"
@@ -12505,6 +12514,9 @@ msgstr "Adressen er feil, eller det den viste er slettet."
 msgid "The address lacks a key its protocol needs."
 msgstr "Adressen mangler en nøkkel protokollen trenger."
 
+msgid "The alarm system itself"
+msgstr "Selve alarmsystemet"
+
 msgid ""
 "The amount of a medicinal treatment is the amount used of the product; Mattilsynet asks for the "
 "amount of the active substance: confirm which it wants."
@@ -13166,6 +13178,9 @@ msgstr "Lenken er allerede brukt eller har utløpt. Be om en ny."
 msgid "The live sensor values could not be read: the values below come from the water samples only."
 msgstr "Sanntidsverdiene fra sensorene kunne ikke leses: verdiene nedenfor kommer bare fra vannprøvene."
 
+msgid "The live water values (the sensors) cannot be read: alarms are not cleared until they can."
+msgstr "De levende vannverdiene (sensorene) kan ikke leses: alarmer oppheves ikke før de kan det."
+
 msgid "The live weight as weighed at the harvest, before bleeding and gutting"
 msgstr "Levende vekt som veid ved høsting, før bløgging og sløying"
 
@@ -13627,6 +13642,9 @@ msgstr "Hemmeligheten ble byttet."
 #, python-format
 msgid "The seed is a whole number from 0 to %(top)d."
 msgstr "Frøet er et helt tall fra 0 til %(top)d."
+
+msgid "The sensor rule no longer holds"
+msgstr "Sensorregelen slår ikke lenger til"
 
 #, python-format
 msgid "The sensors at %(place)s: those there now first, then those there before."
@@ -15871,6 +15889,12 @@ msgstr "alarmregel"
 
 msgid "alarm severity rules"
 msgstr "alarmregler"
+
+msgid "alarm subject state"
+msgstr "alarmtilstand"
+
+msgid "alarm subject states"
+msgstr "alarmtilstander"
 
 msgid "alarms"
 msgstr "alarmer"

@@ -3570,6 +3570,9 @@ msgstr "Azametifos"
 msgid "Back"
 msgstr "Geri"
 
+msgid "Back inside the limit"
+msgstr "Limitin içine döndü"
+
 msgid "Back to draft"
 msgstr "Taslağa geri al"
 
@@ -8697,6 +8700,9 @@ msgstr "Henüz satır yok. Eklemek için “Satır ekle”yi kullanın."
 msgid "No longer in stock"
 msgstr "Artık stokta değil"
 
+msgid "No longer judged (no fish or no limit)"
+msgstr "Artık değerlendirilmiyor (balık ya da limit yok)"
+
 msgid "No lot number"
 msgstr "Lot numarası yok"
 
@@ -9551,6 +9557,9 @@ msgstr "%(name)s panosunu aç"
 #, python-format
 msgid "Open %(unit)s"
 msgstr "%(unit)s birimini aç"
+
+msgid "Open alarm"
+msgstr "Açık alarm"
 
 msgid "Open alarms"
 msgstr "Açık alarmlar"
@@ -12524,6 +12533,9 @@ msgstr "Adres yanlış ya da gösterdiği kayıt silinmiş."
 msgid "The address lacks a key its protocol needs."
 msgstr "Adreste, protokolünün gerektirdiği bir anahtar eksik."
 
+msgid "The alarm system itself"
+msgstr "Alarm sisteminin kendisi"
+
 msgid ""
 "The amount of a medicinal treatment is the amount used of the product; Mattilsynet asks for the "
 "amount of the active substance: confirm which it wants."
@@ -13182,6 +13194,9 @@ msgstr "Bağlantı daha önce kullanılmış veya süresi dolmuş. Yeni bir tane
 msgid "The live sensor values could not be read: the values below come from the water samples only."
 msgstr "Canlı sensör değerleri okunamadı: aşağıdaki değerler yalnızca su numunelerinden gelir."
 
+msgid "The live water values (the sensors) cannot be read: alarms are not cleared until they can."
+msgstr "Canlı su değerleri (sensörler) okunamıyor: okunabilene kadar alarmlar kapatılmaz."
+
 msgid "The live weight as weighed at the harvest, before bleeding and gutting"
 msgstr "Hasatta, kanatma ve iç temizliğinden önce tartılan canlı ağırlık"
 
@@ -13643,6 +13658,9 @@ msgstr "Gizli anahtar değiştirildi."
 #, python-format
 msgid "The seed is a whole number from 0 to %(top)d."
 msgstr "Tohum, 0 ile %(top)d arasında bir tam sayıdır."
+
+msgid "The sensor rule no longer holds"
+msgstr "Sensör kuralı artık geçerli değil"
 
 #, python-format
 msgid "The sensors at %(place)s: those there now first, then those there before."
@@ -15889,6 +15907,12 @@ msgstr "alarm önem kuralı"
 
 msgid "alarm severity rules"
 msgstr "alarm önem kuralları"
+
+msgid "alarm subject state"
+msgstr "alarm konusu durumu"
+
+msgid "alarm subject states"
+msgstr "alarm konusu durumları"
 
 msgid "alarms"
 msgstr "alarmlar"

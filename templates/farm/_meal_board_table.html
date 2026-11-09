@@ -1,0 +1,63 @@
+{% load i18n stock feeding %}{% comment %} The meal board's table (farm/meal_board.html): a row group per unit with fish, a line per batch in it. Its own part so
+   that the browser layout test lays out what the template prints (core/layout_pages.py). {% endcomment %}
+<div class="table-wrap ui-table-wrap" tabindex="0" role="region" aria-label="{% trans "Meal board, scrolls sideways" %}">
+  <table class="ui-table board-table">
+    <thead>
+      <tr>
+        <th scope="col" class="sticky-first">{% trans "Unit" %}</th>
+        <th scope="col">{% trans "Next meal" %}</th>
+        <th scope="col">{% trans "Today" %}</th>
+        <th scope="col" class="num">{% trans "Fed today" %}</th>
+        <th scope="col" class="num">{% trans "Ration" %}</th>
+        <th scope="col">{% trans "Batch" %}</th>
+        <th scope="col" class="num">{% trans "Avg. weight" %}</th>
+        <th scope="col">{% trans "Water" %}</th>
+        <th scope="col">{% trans "Protocol" %}</th>
+        <th scope="col" class="sticky-end"><span class="sr-only">{% trans "Actions" %}</span></th>
+      </tr>
+    </thead>
+    {% for row in rows %}{% with unit=row.unit day=row.day count=row.lines|length %}
+    <tbody class="board-unit">
+      {% for line in row.lines %}{% with share=line.share basis=line.share.end %}
+      <tr>
+        {% if forloop.first %}
+        <th scope="rowgroup" rowspan="{{ count }}" class="sticky-first"><span class="ui-code">{{ unit.code }}</span>{% if row.placements %}<span class="ui-sub">{% include "farm/_placements.html" with chips=row.placements %}</span>{% endif %}<span class="ui-sub">{{ unit.production_department.name }}{% if unit.production_department.site %}, {{ unit.production_department.site.name }}{% endif %}</span></th>
+        {% endif %}
+        {% if line.why %}
+        <td colspan="2">{% if basis.missing == "fasting" %}<span class="ui-chip" data-status="hold">{% include "icons/_icon.html" with name="hourglass" %}{% trans "Fasting" %}</span>{% endif %}<span class="ui-why ui-mt">{{ line.why }}</span></td>
+        {% else %}
+        <td>{% if share.next_meal_kg is not None %}<span class="ui-readout">{{ share.next_meal_kg|feed_kg }}</span>{% if basis.band %}<span class="ui-sub">{{ basis.band.feed.code }}{% if basis.band.feed.pellet_size_mm %}, {% blocktrans trimmed with size=basis.band.feed.pellet_size_mm|floatformat:"-2" %}{{ size }} mm{% endblocktrans %}{% endif %}</span>{% endif %}{% elif share.remaining_kg is not None %}<span class="ui-why">{% trans "meals done" %}</span>{% else %}<span class="ui-why">{% trans "no data" %}</span>{% endif %}</td>
+        <td>{% with pips=share|meal_pips %}{% if pips %}<span class="ui-pips" role="img" aria-label="{% blocktrans trimmed with done=share.meals planned=share.planned_meals %}{{ done }} of {{ planned }} meals done{% endblocktrans %}">{% for state in pips %}<span class="ui-pip"{% if state %} data-state="{{ state }}"{% endif %}></span>{% endfor %}</span>{% endif %}{% endwith %}
+          {% if share.remaining_kg is not None %}<span class="ui-sub">{% blocktrans trimmed with kilos=share.remaining_kg|feed_kg %}{{ kilos }} left{% endblocktrans %}</span>{% if share.over_kg > 0 %}<span class="ui-sub over-text">{% blocktrans trimmed with kilos=share.over_kg|feed_kg %}{{ kilos }} over the ration{% endblocktrans %}</span>{% endif %}{% endif %}</td>
+        {% endif %}
+        {% if forloop.first %}
+        <td class="num" rowspan="{{ count }}"><span class="ui-code">{{ day.fed_kg|feed_kg }}</span>{% if day.feedings %}<span class="ui-sub">{% blocktrans trimmed count meals=day.meals_done %}{{ meals }} meal{% plural %}{{ meals }} meals{% endblocktrans %}</span>{% endif %}</td>
+        {% endif %}
+        <td class="num">{% if line.why %}<span class="ui-why">{% trans "no data" %}</span>{% else %}<span class="ui-code">{{ share.ration_kg|feed_kg }}</span><span class="ui-sub">{% blocktrans trimmed with meals=share.planned_meals meal=share.meal_kg|feed_kg %}{{ meals }} × {{ meal }}{% endblocktrans %}</span><span class="ui-sub"{% if basis.sfr.interpolated %} title="{% blocktrans trimmed with low=basis.sfr.low.sfr_pct|percent:2 low_t=basis.sfr.low.temperature_c|celsius high=basis.sfr.high.sfr_pct|percent:2 high_t=basis.sfr.high.temperature_c|celsius %}{{ low }} at {{ low_t }}, {{ high }} at {{ high_t }}{% endblocktrans %}"{% endif %}><abbr title="{% trans "Specific feeding rate: the share of the body weight fed a day" %}">{% trans "SFR" %}</abbr> {{ basis.sfr.value|percent:2 }}</span>{% endif %}</td>
+        <td><span class="ui-code">{{ line.batch.code }}</span><span class="ui-sub">{% blocktrans trimmed with fish=share.fish|fish biomass=share.biomass_kg|kilos %}{{ fish }} fish · {{ biomass }} est.{% endblocktrans %}</span></td>
+        <td class="num board-weight">
+          <span class="ui-code" title="{% trans "Estimated: the measured weight and the feed since, divided by the expected FCR" %}">{{ share.end_g|grams }}</span>
+          <span class="ui-sub">{% if share.last_weighed %}{% blocktrans trimmed with weight=share.measured_g|grams date=share.last_weighed|date:"DATE_FORMAT" %}{{ weight }} weighed {{ date }}{% endblocktrans %}{% else %}{% blocktrans trimmed with weight=share.measured_g|grams %}{{ weight }} as stocked{% endblocktrans %}{% endif %}</span>
+          {% if line.drift == "now" %}<span class="ui-chip ui-chip-wrap" data-status="critical" data-gap>{% include "icons/_icon.html" with name="octagon" %}{% blocktrans trimmed count days=line.estimate_days %}Weigh now: the estimate is {{ days }} day old{% plural %}Weigh now: the estimate is {{ days }} days old{% endblocktrans %}</span>
+          {% elif line.drift == "soon" %}<span class="ui-chip ui-chip-wrap" data-status="warning" data-gap>{% include "icons/_icon.html" with name="alert" %}{% blocktrans trimmed count days=line.estimate_days %}Weigh soon: {{ days }} day since the last measured weight{% plural %}Weigh soon: {{ days }} days since the last measured weight{% endblocktrans %}</span>{% endif %}
+          {% if share.blind_days %}<span class="ui-chip ui-chip-wrap" data-status="warning" data-gap>{% include "icons/_icon.html" with name="alert" %}{% blocktrans trimmed count days=share.blind_days %}Estimate incomplete: {{ days }} feeding day without an expected FCR{% plural %}Estimate incomplete: {{ days }} feeding days without an expected FCR{% endblocktrans %}</span>{% endif %}
+        </td>
+        {% if forloop.first %}
+        <td class="board-water" rowspan="{{ count }}">{% with temperature=row.temperature %}{% if temperature %}<span class="ui-value"{% if not temperature.fresh %} data-status="stale"{% endif %}><b>{{ temperature.value_c|celsius }}</b><small>{% if temperature.via == "unit" %}{% blocktrans trimmed with age=temperature.age|age %}unit, {{ age }} ago{% endblocktrans %}{% else %}{% blocktrans trimmed with system=temperature.point.code age=temperature.age|age %}loop {{ system }}, {{ age }} ago{% endblocktrans %}{% endif %}</small></span>{% if not temperature.fresh %}<span class="ui-chip" data-state="stale" data-gap>{% include "icons/_icon.html" with name="clock" %}{% trans "stale" %}</span>{% endif %}{% else %}<span class="ui-why">{% trans "no data" %}</span>{% endif %}{% if row.water_url %}<span class="ui-sub"><a href="{{ row.water_url }}" data-modal>{% trans "Record water sample" %}</a></span>{% endif %}{% endwith %}</td>
+        {% endif %}
+        <td class="board-protocol">
+          {% if basis.protocol %}
+          <span class="ui-code ui-code-wrap">{{ basis.protocol.name }}</span>
+          <span class="ui-sub">{% if basis.scope == "batch_in_unit" %}{% blocktrans trimmed with batch=line.batch.code unit=unit.code %}via {{ batch }} in {{ unit }}{% endblocktrans %}{% elif basis.scope == "unit" %}{% blocktrans trimmed with unit=unit.code %}via unit {{ unit }}{% endblocktrans %}{% else %}{% blocktrans trimmed with batch=line.batch.code %}via batch {{ batch }}{% endblocktrans %}{% endif %}</span>
+          {% if basis.band %}<span class="ui-sub">{{ basis.band|weights }} · {{ basis.band.feed.code }}{% if basis.band.feed.pellet_size_mm %} · {% blocktrans trimmed with size=basis.band.feed.pellet_size_mm|floatformat:"-2" %}{{ size }} mm{% endblocktrans %}{% endif %} · {% blocktrans trimmed with fcr=basis.fcr|fcr %}FCR {{ fcr }}{% endblocktrans %}</span>{% endif %}
+          {% else %}<span class="ui-why">{% trans "no data" %}</span>{% endif %}
+        </td>
+        {% if forloop.first %}
+        <td class="sticky-end" rowspan="{{ count }}">{% if row.record_url %}<a class="ui-btn" href="{{ row.record_url }}" data-modal>{% trans "Record meal" %}</a>{% endif %}</td>
+        {% endif %}
+      </tr>
+      {% endwith %}{% endfor %}
+    </tbody>
+    {% endwith %}{% endfor %}
+  </table>
+</div>

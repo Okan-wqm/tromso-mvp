@@ -23,14 +23,14 @@ const BROWSERS = [
 const CSS = resolve('static/css');
 const PAGES = resolve('frontend/test/pages');
 const WIDTHS = [390, 1024, 1440];
-const PARTS = ['tabs', 'stock', 'water', 'matrix', 'card-en', 'card-nb', 'approve'];
+const PARTS = ['meal', 'tabs', 'stock', 'water', 'matrix', 'card-en', 'card-nb', 'approve'];
 
 const part = (name: string): string => `<section id="part-${name}">${readFileSync(join(PAGES, `${name}.html`), 'utf8')}</section>`;
 
 function page(): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>layout</title>
 <link rel="stylesheet" href="/css/tokens.css"><link rel="stylesheet" href="/css/base.css"><link rel="stylesheet" href="/css/ui.css"><link rel="stylesheet" href="/css/app.css"><link rel="stylesheet" href="/css/components.css">
-<link rel="stylesheet" href="/css/monitor.css"></head><body><div class="shell"><aside class="rail"></aside><div class="console">
+<link rel="stylesheet" href="/css/monitor.css"></head><body><div class="shell"><aside class="rail" id="rail"><nav class="rail-nav"><a class="rail-link" id="rail-units" href="#"><svg class="icon"></svg><span class="rail-label">Production units</span></a></nav></aside><div class="console">
 <header class="topbar"><div class="title-block"><h1>Layout</h1></div></header><main class="content">${PARTS.map(part).join('\n')}</main></div></div></body></html>`;
 }
 
@@ -97,6 +97,41 @@ test('the page layout of the real templates', { skip: BROWSERS.length ? false : 
         assert.ok(matrix.shaded, 'the role matrix is in the same frame');
       });
     }
+
+    await t.test('the meal board shows every column without scrolling at 1440 px, and scrolled to its end at 1024 and 390 px nothing lies under its sticky columns', async () => {
+      for (const width of [1440, 1024, 390]) {
+        await tab.setViewportSize({ width, height: 900 });
+        await tab.waitForTimeout(50);
+        const meal = await frame(tab, '#part-meal .table-wrap');
+        if (width === 1440) assert.ok(!meal.wide, 'the meal board fits its frame at 1440 px (README: five numbers never clip)');
+        const hidden = await tab.locator('#part-meal .table-wrap').evaluate((wrap) => {
+          wrap.scrollLeft = wrap.scrollWidth;
+          const first = wrap.querySelector('thead .sticky-first')!.getBoundingClientRect();
+          const end = wrap.querySelector('thead .sticky-end')!.getBoundingClientRect();
+          const heads = [...wrap.querySelectorAll('thead th:not(.sticky-first):not(.sticky-end)')];
+          const last = heads[heads.length - 1].getBoundingClientRect();
+          const cut = [...wrap.querySelectorAll('td, th')].filter((cell) => cell.scrollWidth > cell.clientWidth + 1)
+            .map((cell) => (cell.textContent ?? '').trim().slice(0, 30));
+          wrap.scrollLeft = 0;
+          return { under: last.right > end.left + 1 ? 'the last column ends under the actions' : '',
+            overlap: first.right > end.left + 1 ? 'the sticky columns overlap' : '', cut };
+        });
+        assert.deepEqual(hidden, { under: '', overlap: '', cut: [] }, `at ${width} px`);
+      }
+    });
+
+    await t.test('the collapsed rail says a link\'s name beside it on focus, not only on hover', async () => {
+      await tab.setViewportSize({ width: 1280, height: 900 });
+      await tab.evaluate(() => { document.documentElement.dataset.nav = 'collapsed'; });
+      await tab.waitForTimeout(50);
+      const hidden = await box(tab, '#rail-units .rail-label');
+      assert.ok(hidden.width <= 1, 'the name is read aloud only while the link is not in focus');
+      await tab.focus('#rail-units');
+      const shown = await box(tab, '#rail-units .rail-label');
+      const rail = await box(tab, '#rail');
+      assert.ok(shown.width > 40 && shown.left >= rail.right, `the name stands beside the rail (${JSON.stringify(shown)})`);
+      await tab.evaluate(() => { delete document.documentElement.dataset.nav; (document.activeElement as HTMLElement).blur(); });
+    });
 
     await t.test('nothing of a monitoring card spills out of it, in English and Norwegian at 390 and 1440 px', async () => {
       for (const width of [390, 1440]) {

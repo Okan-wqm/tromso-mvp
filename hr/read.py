@@ -688,3 +688,21 @@ def pending_leave_badge(user):
     waiting = scope.by_day(user, LeaveRequest.objects.filter(status=LeaveStatus.PENDING), 'employee', 'first_day',
                            PRODUCTION).exclude(employee__user=user)
     return Badge(waiting.count(), '')
+
+
+# ---- the rail's foot -----------------------------------------------------------------------------------------------
+def rail_foot(user):
+    """What the rail's foot says (settings.RAIL_FOOT, core.navigation.rail): the company (settings.COMPANY_NAME) and the
+    site of the department the person is placed in today, or the farm's site when it has only one; each left out when
+    it is not known, 'Fish farm' when neither is."""
+    from django.conf import settings
+    from core.dates import company_today
+    from farm.models import Site
+
+    person = Employee.objects.filter(user=user).first() if user.is_authenticated else None
+    site = site_on(person, company_today()) if person is not None else None
+    if site is None:
+        sites = list(Site.objects.filter(is_active=True)[:2])
+        site = sites[0] if len(sites) == 1 else None
+    parts = [part for part in (settings.COMPANY_NAME, site.name if site is not None else '') if part]
+    return ' · '.join(parts) if parts else _('Fish farm')

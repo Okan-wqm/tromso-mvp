@@ -1,5 +1,6 @@
 // Console shell: collapsible rail (remembered); below 1024px the rail is a sheet opened from the bottom bar's More
 // (static/css/app.css); the popup menus.
+import { bindCollapses } from './collapse.js';
 import { label, required } from './dom.js';
 
 const root = document.documentElement;
@@ -97,3 +98,6 @@ document.addEventListener('keydown', (event) => {
     openButton.focus();
   }
 });
+
+// The rail's folded parts (Setup): as the person left them.
+bindCollapses(document);

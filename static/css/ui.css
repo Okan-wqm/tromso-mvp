@@ -278,3 +278,34 @@ a.ui-btn { text-decoration: none; }
   .ui-table .sticky-end { padding-inline: var(--space-2); }
   .ui-table .sticky-end .ui-btn { max-width: 5.5rem; padding: 0 var(--space-2); white-space: normal; line-height: 1.2; text-align: center; }
 }
+
+/* Widths: a table's words wrap inside their column so that the meal board fits a 1440 px window (README: the five numbers
+   never clip), and where a wide table scrolls, its sticky actions carry a shade so a column passing under them reads as
+   going on, not as cut. Figures and codes stay on one line. */
+.ui-table th, .ui-table td { padding: 10px var(--space-3); }
+.ui-table thead th { white-space: normal; }
+.ui-value small, .ui-value b .wq-source { white-space: normal; }
+.ui-value b .wq-origin, .ui-value b .wq-age { white-space: nowrap; }
+.ui-table .ui-code-wrap { white-space: normal; }
+.ui-table .ui-chip-wrap { max-width: 12rem; }
+.ui-table .sticky-end { padding-inline: var(--space-2); box-shadow: -1px 0 0 var(--line-hair), -10px 0 10px -10px var(--scrim); }
+.ui-table .sticky-first { box-shadow: 10px 0 10px -10px var(--scrim); }
+.ui-table td.sticky-first[data-status="critical"] { box-shadow: var(--edge-crit), 10px 0 10px -10px var(--scrim); }
+.ui-table td.sticky-first[data-status="warning"] { box-shadow: var(--edge-warn), 10px 0 10px -10px var(--scrim); }
+.board-table .board-protocol { min-width: 8rem; max-width: 12rem; }
+.board-table .board-weight { max-width: 11rem; }
+.board-table .board-water { max-width: 10rem; }
+.units-table .units-batch { max-width: 12rem; }
+.ui-gauge { flex-wrap: wrap; white-space: normal; }
+.ui-gauge-text { white-space: nowrap; }
+.ui-table .sticky-first { min-width: 7.5rem; }
+.board-table .board-weight { max-width: 9.5rem; }
+.board-table .board-weight .ui-chip-wrap { max-width: 9rem; }
+.ui-table .sticky-end .ui-btn { padding: 0 var(--space-3); }
+.ui-table td.num.board-weight { white-space: normal; }
+.board-table .board-protocol { max-width: 11rem; }
+.ui-table .sticky-first { max-width: 12rem; }
+.ui-table .sticky-first .ui-chip, .ui-table .water-status .ui-chip { white-space: normal; line-height: 1.25; padding-block: 3px; }
+.ui-table .water-status { min-width: 8rem; max-width: 10rem; }
+.ui-value b .wq-origin { white-space: normal; }
+.ui-table td.num .ui-value { min-width: 6.5rem; }

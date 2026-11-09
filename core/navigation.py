@@ -11,9 +11,10 @@ from dataclasses import dataclass, field
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.urls import reverse
+from django.utils.functional import SimpleLazyObject
 from django.utils.module_loading import import_string
-from django.utils.text import format_lazy
-from django.utils.translation import gettext_lazy as _
+from django.utils.text import format_lazy, slugify
+from django.utils.translation import gettext_lazy as _, override
 
 SESSION_KEY = 'workspace'
 
@@ -80,9 +81,11 @@ class Group:
 
 @dataclass(frozen=True)
 class Section:
-    """A main heading of a panel's menu, e.g. Setup or Operations; '' for entries above them."""
+    """A main heading of a panel's menu, e.g. Setup or Operations; '' for entries above them. `collapsed`: folded away in
+    the rail (Setup, last), open on a page it holds and as the person left it elsewhere (frontend/collapse.ts)."""
     label: str
     groups: list = field(default_factory=list)
+    collapsed: bool = False
 
 
 @dataclass(frozen=True)
@@ -215,7 +218,9 @@ def rail(request):
                 if shown:
                     groups.append({'label': group.label, 'entries': shown})
             if groups:
-                sections.append({'label': section.label, 'groups': groups})
+                sections.append({'label': section.label, 'groups': groups, 'collapsed': section.collapsed,
+                                 'key': section_key(workspace, section),
+                                 'current': any(entry['current'] for group in groups for entry in group['entries'])})
         if sections:
             badges = [entry['badge'].count for section in sections for group in section['groups']
                       for entry in group['entries'] if entry['badge']]
@@ -225,7 +230,15 @@ def rail(request):
     chosen = workspace_of(request.path) or request.session.get(SESSION_KEY)
     current = next((panel for panel in panels if panel['key'] == chosen), panels[0] if panels else None)
     sections = current['sections'] if current else []
-    return {'workspaces': panels, 'workspace': current, 'rail_sections': sections, 'bottom_bar': bottom_bar(sections)}
+    foot = getattr(settings, 'RAIL_FOOT', '')
+    return {'workspaces': panels, 'workspace': current, 'rail_sections': sections, 'bottom_bar': bottom_bar(sections),
+            'rail_foot': SimpleLazyObject(lambda: import_string(foot)(user)) if foot else ''}
+
+
+def section_key(workspace, section):
+    """A section's name for the browser to remember it by, the same in every language: production-setup."""
+    with override('en'):
+        return f'{workspace.key}-{slugify(str(section.label)) or "top"}'
 
 
 # The bottom bar below 1024 px (docs/design/system/README.md, Shell): the daily pages under a short name, then More (the

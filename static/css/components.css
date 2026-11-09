@@ -611,6 +611,11 @@ td.wq-stale, .wq-value.wq-stale { font-style: italic; }
 /* An old value that was critical or a warning keeps its colour (and its italics): old, never read as fine (F-244). */
 td.wq-was-critical, .wq-value.wq-was-critical { color: var(--crit-text); font-weight: 700; }
 td.wq-was-warning, .wq-value.wq-was-warning { color: var(--warn-text); font-weight: 600; }
+/* The same on the design system's value face (farm/_water_face.html): stale italics, the colour and glyph of what it was. */
+.ui-value[data-was="critical"] b { color: var(--crit-text); font-weight: 700; }
+.ui-value[data-was="warning"] b { color: var(--warn-text); font-weight: 600; }
+.ui-value[data-was="critical"] .icon { color: var(--crit); }
+.ui-value[data-was="warning"] .icon { color: var(--warn); }
 .wq-derived { font-style: italic; }
 .wq-note { margin-left: .125rem; color: var(--text-3); }
 .wq-missing { color: var(--text-3); }

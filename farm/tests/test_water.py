@@ -782,6 +782,8 @@ class PageTests(WaterTestCase):
         html = self.client.get(self.url).content.decode()
         self.assertIn('wq-stale wq-was-critical', html)
         self.assertIn('title="Stale · Critical', html)
+        # On the design system's value face too: stale, and the colour and the glyph of what it was.
+        self.assertIn('data-status="stale" data-was="critical"', html)
 
     def test_a_date_that_is_no_date_is_the_default_never_a_server_error(self):
         """F-176: ?from=2026-13-45 is shown as the default span, not a 500."""

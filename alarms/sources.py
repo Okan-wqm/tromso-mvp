@@ -2,15 +2,15 @@
 
 - the sensor alarm rules: sensors/alarms.py `evaluate` keeps an AlarmEvent per rule and channel; each event gets its
   Alarm when it opens and its clearance when it closes (`sensor_events`);
-- the water limits: farm/water/read.py `latest` judges every active sampling point's latest values by the species'
-  limits; a value critical or warning holds an alarm of that severity per point and parameter, a severity that changes
+- the water limits: farm/water/read.py `unit_water` judges every live unit's water (its middle point's, with its other
+  own points and its system standing in, the worst fresh value deciding) by the species' limits; a value critical or warning holds an alarm of that severity per point and parameter, a severity that changes
   clears the alarm and opens one at the new severity, and a fresh value back inside the limits (or without a limit) clears
   it. A value that only goes stale never clears it: an alarm does not end by going blind (`water`).
 Where an alarm is (its site, its production department) is set when it opens, for the recipient rules."""
 from django.db.models import Q
 
 from core import audit
-from farm.models import SamplingPoint
+from farm.models import Tank
 from farm.models.water_point import site_of
 from farm.water import parameters, read as water_read
 from farm.water.evaluate import ALERTS, Status
@@ -79,9 +79,11 @@ def _where(point):
 
 def water(now):
     """Opens and clears the water limits' alarms at `now`: (opened, cleared)."""
-    points = list(SamplingPoint.objects.filter(is_active=True).with_owners())
-    latest = water_read.latest(points, now)
-    by_id = {point.pk: point for point in points}
+    # The subjects are the live units, each through the point that stands for it (its middle point: A9.1, never an inlet);
+    # a depth point's or the loop's value reaches it as the unit's own worst fresh value, judged for its fish. One read.
+    water = water_read.unit_water(list(Tank.objects.all()), now)
+    latest = {found.point.pk: found for found in water.values() if found.point is not None}
+    by_id = {point_id: found.point for point_id, found in latest.items()}
     held = {(alarm.point_id, alarm.parameter): alarm
             for alarm in Alarm.objects.filter(source=Source.WATER_LIMIT, clearance__isnull=True)}
     opened = cleared = 0

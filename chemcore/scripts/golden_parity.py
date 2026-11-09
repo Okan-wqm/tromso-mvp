@@ -39,7 +39,8 @@ INPUTS = ('temp_c', 'salinity', 'altitude_m')
 TIE = 1e-12
 # Fields an implementation added since golden v1 was recorded (each with its step); a field v1 holds is never
 # skipped, and a field missing from the implementation is always a difference.
-ADDED = {'angle', 'counter_productive', 'priority'}       # a reagent's angle, a recipe's ranks (S7)
+ADDED = {'angle', 'counter_productive', 'priority',       # a reagent's angle, a recipe's ranks (S7)
+         'conductivity_25_us_cm', 'hardness_mg_l', 'formula'}  # a water's ions and its formula (formula 3's switch)
 # Exceptions the core names where Python raised an accidental one: (recorded, now). Each is a deliberate, tested change.
 RENAMED_RAISES = {('StopIteration', 'ChartTooLargeError')}     # the box beyond 12 steps of 5e7 (S5)
 

@@ -1,6 +1,7 @@
 """The words of the water-chemistry core's codes (owner amendment B2: the core is language-free; the browser receives
 finished words). One table: code -> the msgid the chart always used, so the EN, TR and NB catalogues carry over
 unchanged. farm/tests/test_native_geometry.py checks that every code the core gives has its words here."""
+from django.utils.formats import number_format
 from django.utils.translation import gettext_lazy as _
 
 NOTES = {
@@ -39,3 +40,26 @@ DOSING_NOTES = {
 def dosing_note(code):
     """The words of the dosing layer's note ('' when it has none). KeyError for an unknown code."""
     return '' if code is None else DOSING_NOTES[code]
+
+
+# Where a water's ionic strength came from (the core's codes, chemcore/core/src/chemistry.rs Source).
+STRENGTH_SOURCES = {
+    'conductivity': _('from the conductivity at 25 °C'),
+    'hardness': _('at least that of the hardness and the alkalinity'),
+    'salinity': _('from the salinity'),
+    'alkalinity': _('at least that of the alkalinity'),
+    'seawater': _('of sea water of this salinity'),
+    'none': _('none measured, taken as 0 (the safe side)'),
+}
+
+
+def provenance(equilibria):
+    """What a value worked out from a water's equilibria was worked out by, in words: the formula version, the ionic
+    strength and where it came from, and the share of the seawater constants (1 to 5 ‰). Every worked-out value shown
+    says it (chemcore/findings/I2-comparison.md); KeyError for an unknown source code."""
+    said = _('Formula %(formula)d: ionic strength %(strength)s, %(source)s') % {
+        'formula': equilibria.formula, 'strength': number_format(equilibria.ionic_strength, 4),
+        'source': STRENGTH_SOURCES[equilibria.strength_source]}
+    if 0 < equilibria.sea_weight < 1:
+        said = _('%(said)s; %(share)d %% seawater constants') % {'said': said, 'share': round(100 * equilibria.sea_weight)}
+    return f'{said}.'

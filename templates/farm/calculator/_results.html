@@ -37,6 +37,7 @@
         <tr><th scope="row">{% trans "CO₂ the air leaves in it" %}</th><td class="num">{{ result.air_co2_mg_l|amount:2 }} mg/L</td></tr>
         <tr><th scope="row">{% trans "Alkalinity" %}</th><td class="num">{{ analysis.alkalinity_meq|amount:3 }} meq/L</td></tr>
         <tr><th scope="row">{% trans "Dissolved inorganic carbon (DIC)" %}</th><td class="num">{{ analysis.dic|amount:3 }} mmol/L</td></tr>
+        <tr><th scope="row">{% trans "Ionic strength" %}</th><td class="num">{{ analysis.equilibria.ionic_strength|amount:4 }} mol/L</td></tr>
         {% if analysis.target %}
         <tr><th scope="row">{% trans "Target DIC" %}</th><td class="num">{{ analysis.target_dic|amount:3 }} mmol/L</td></tr>
         <tr><th scope="row">{% trans "Target CO₂" %}</th><td class="num">{{ analysis.target_co2_mg_l|amount:2 }} mg/L</td></tr>
@@ -45,6 +46,7 @@
         <tr><th scope="row">{% trans "Oxygen saturation" %}</th><td class="num">{{ analysis.oxygen_saturation_pct|percent:1 }}</td></tr>
       </table>
     </div>
+    <p class="calc-note" data-formula="{{ analysis.equilibria.formula }}">{{ analysis.provenance }}</p>
   </section>
 
   <section class="calc-card calc-recipes" aria-labelledby="calc-recipes-title">

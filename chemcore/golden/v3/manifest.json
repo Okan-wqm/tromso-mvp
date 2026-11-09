@@ -1,19 +1,24 @@
 {
   "beside": "v1",
   "blocks": {
-    "waters": {
-      "bytes": 109619,
+    "analyses": {
+      "bytes": 86255,
       "records": 1134,
-      "sha256": "212e247dc0e1191af46bd1b0734775770389ef3fc4510ce9c23cf1422373c165"
+      "sha256": "e62c72570d819cb678164a06cc09d84275b3ce65ddb05b5bc67518a4cc879ce1"
+    },
+    "waters": {
+      "bytes": 113104,
+      "records": 1134,
+      "sha256": "23b74ca489998dc6859ab0d497a3dcc0d6bcfdc0046b83969bfcd1544ea9d1d7"
     }
   },
   "core": {
-    "core_hash": "adbab704c5ed5534",
-    "formula_version": 1,
+    "core_hash": "d4805e4c23f1caa6",
+    "formula_version": 3,
     "version": "0.1.0"
   },
   "format": 1,
   "golden_version": "v3",
-  "recorder_sha256": "50a798dac834f1555a3c2d5c6cefda91d9fe70de7b7530cd1711202d1d0942bd",
-  "what": "I2: fresh water ionic strength (conductivity, hardness and alkalinity, salinity, alkalinity) with Davies activities below a salinity of 5; v1 from 5 on. Not used by the application."
+  "recorder_sha256": "643582afb5c01d4a8780b435ded753abdf587e88efcb49d84c5390d6e4f09a66",
+  "what": "Formula 3 (the application\u2019s): I1, the Debye-H\u00fcckel A of the temperature; I2, fresh water ionic strength (the conductivity at 25 \u00b0C or the salinity, not below the hardness and alkalinity or the alkalinity) with Davies activities up to 1 permil, the seawater constants from 5, blended between. Beside formula 1 (golden v1)."
 }

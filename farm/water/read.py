@@ -30,7 +30,12 @@ The functions, by what they answer:
   temperature for the rations and the withdrawal is read the same way, by `water_sources`.
 - Un-ionised ammonia needs the pH and the temperature of the TAN sample itself; the salinity is the
   sample's, else the point's latest within WINDOW before it, else its owner's middle point's, else 0 where
-  every unit it concerns is in fresh water; otherwise it is not worked out and the reason is shown. The
+  every unit it concerns is in fresh water; otherwise it is not worked out and the reason is shown. Its ionic
+  strength (formula 3, chemcore/findings/I2-comparison.md) is the water's: the alkalinity, the conductivity at 25 °C
+  and the hardness each the sample's, else the point's latest fresh at the sample's time, else its owner's middle
+  point's, as the salinity (none of them: an ionic strength of 0, formula 1's ideal water, the safe side). Every
+  worked-out value says the formula version it was worked out by (`Reading.provenance`); nothing worked out is stored,
+  so a past sample is shown by the formula of today and says so. The
   oxygen saturation needs the sample's temperature, the same salinity and the site's altitude (sea-level
   pressure when it has none, said so).
 - The fish a value is judged for are the species in its unit on the day it was measured, at any time of
@@ -68,10 +73,12 @@ from farm.models.water_point import FlowRole, PointKind, kinds_with, local_time,
 from farm.stock.dates import local_today
 from farm.stock.read import Presence
 
-from . import chemistry, parameters, sources
+from . import chemistry, messages, parameters, sources
 from .evaluate import ALERTS, CLOCK_SKEW, MAX_AHEAD, RANK, Limits, Status, ahead, is_fresh, worst
 from .parameters import NH3_N, NH4_N, OXYGEN_MG_L, OXYGEN_PCT, TAN
 
+# The water's ionic-strength inputs of a TAN sample's ammonia (formula 3): looked up as its salinity is.
+IONIC_INPUTS = ('alkalinity_mg_l', 'conductivity_25_us_cm', 'hardness_mg_l')
 # How far back the latest values, and a salinity for a sample without one, are looked for.
 WINDOW = timedelta(days=30)
 OXYGEN = 'oxygen'
@@ -451,6 +458,7 @@ class Reading:
     worse: object = None           # the worse fresh value that decided its status (worst_fresh), else None
     through: object = None         # the Reading in the other oxygen unit it was judged as (Context.judge), else None
     why_no_limit: str = ''      # with status No limit: no fish in the unit that day, or no limit for their species
+    provenance: str = ''        # a worked-out value: the formula version (and ionic strength) it was worked out by
 
     @property
     def at(self):
@@ -603,6 +611,8 @@ class Context:
         self.limits = Limits(WaterLimit.objects.filter(species_id__in=species, species__is_deleted=False))
         self.middles = middle_points({point.owner.pk: point.owner for point in points}.values())
         self.salinity = Series([*points, *self.middles.values()], parameters.SALINITY, since - WINDOW)
+        self._series_points, self._since = [*points, *self.middles.values()], since - WINDOW
+        self._ionic = {}                                   # code -> Series, read once, when an ammonia needs it
 
     @staticmethod
     def _served(points):
@@ -648,6 +658,29 @@ class Context:
         """[(species id, water type)] a value at this point on `day` is judged for."""
         return [(species_id, unit.water_type) for unit in self.served[point.pk]
                 for species_id in self.book.on(unit.pk, day)]
+
+    def _ionic_series(self, code):
+        if code not in self._ionic:
+            self._ionic[code] = Series(self._series_points, code, self._since)
+        return self._ionic[code]
+
+    def ionic_inputs_for(self, observation):
+        """{code: float or None} of the alkalinity, the conductivity at 25 °C and the hardness a TAN sample's ammonia is
+        worked out with (formula 3's ionic strength): each the observation's own, else its point's latest sample fresh
+        at its time (a stale value never enters, PLAN A9.3), else its owner's middle point's; None when there is none."""
+        observation = observe(observation)
+        found = {}
+        for code in IONIC_INPUTS:
+            value = observation.get(code)
+            if value is None:
+                fresh = timedelta(hours=parameters.get(code).fresh_hours)
+                for where in (observation.point, self.middles.get(observation.point.owner.pk)):
+                    hit = None if where is None else self._ionic_series(code).latest(where.pk, observation.at, fresh)
+                    if hit is not None and self._ionic_series(code).fresh(hit, observation.at):
+                        value = hit.value
+                        break
+            found[code] = None if value is None else float(value)
+        return found
 
     def salinity_for(self, observation):
         """The observation's salinity, else its point's latest sample fresh at its time (at or before it, within the
@@ -695,10 +728,17 @@ class Context:
             return {NH3_N.code: Reading(NH3_N, None, observation, True, self._same_source_missing(observation))}
         if salinity is None:
             return {NH3_N.code: Reading(NH3_N, None, observation, True, self._salinity_missing())}
-        share = Decimal(chemistry.nh3_fraction(float(ph), float(temperature), float(salinity)))
+        try:
+            equilibria = chemistry.water_equilibria(float(temperature), float(salinity),
+                                                    **self.ionic_inputs_for(observation))
+        except ValueError as error:          # e.g. a conductivity beyond the fresh path's range (Davies, I > 0.5)
+            return {NH3_N.code: Reading(NH3_N, None, observation, True,
+                                        _('Cannot be worked out: %(why)s.') % {'why': error})}
+        share = Decimal(equilibria.nh3_share(float(ph)))
         nh3 = (tan * share).quantize(NH3_N.step)
-        return {NH3_N.code: Reading(NH3_N, nh3, observation, True),
-                NH4_N.code: Reading(NH4_N, (tan - nh3).quantize(NH4_N.step), observation, True)}
+        said = str(messages.provenance(equilibria))
+        return {NH3_N.code: Reading(NH3_N, nh3, observation, True, provenance=said),
+                NH4_N.code: Reading(NH4_N, (tan - nh3).quantize(NH4_N.step), observation, True, provenance=said)}
 
     def _oxygen(self, observation, temperature, salinity):
         mg_l, percent = observation.get(OXYGEN_MG_L), observation.get(OXYGEN_PCT)
@@ -721,12 +761,13 @@ class Context:
         if altitude is None:
             note = f'{note} {_("At sea-level pressure: the site has no altitude.")}'
         note = ' '.join([note, *self._basis_said(observation)])
+        said = _('Formula %(formula)d.') % {'formula': chemistry.FORMULA_VERSION}
         if missing == OXYGEN_PCT:
             value = (100 * mg_l / solubility).quantize(parameters.get(OXYGEN_PCT).step)
-            return {OXYGEN_PCT: Reading(parameters.get(OXYGEN_PCT), value, observation, True, note)}
+            return {OXYGEN_PCT: Reading(parameters.get(OXYGEN_PCT), value, observation, True, note, provenance=said)}
         if missing == OXYGEN_MG_L:
             value = (percent * solubility / 100).quantize(parameters.get(OXYGEN_MG_L).step)
-            return {OXYGEN_MG_L: Reading(parameters.get(OXYGEN_MG_L), value, observation, True, note)}
+            return {OXYGEN_MG_L: Reading(parameters.get(OXYGEN_MG_L), value, observation, True, note, provenance=said)}
         expected = percent * solubility / 100
         if expected and abs(mg_l - expected) / expected > OXYGEN_TOLERANCE:
             note = _('The mg/L and the % disagree by more than 10 % at this temperature and salinity: check the '

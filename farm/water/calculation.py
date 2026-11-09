@@ -94,7 +94,8 @@ def inputs_from(values):
         temperature_c=values['temperature_c'], salinity_ppt=values['salinity_ppt'], ph=values['ph'],
         alkalinity_mg_l=values['alkalinity_mg_l'], tan_mg_l=values.get('tan_mg_l'),
         total_sulfide_ug_l=values.get('total_sulfide_ug_l'), calcium_mg_l=values.get('calcium_mg_l'),
-        oxygen_mg_l=values.get('oxygen_mg_l'))
+        oxygen_mg_l=values.get('oxygen_mg_l'), conductivity_25_us_cm=values.get('conductivity_25_us_cm'),
+        hardness_mg_l=values.get('hardness_mg_l'))
     limits = deffeyes.Limits(
         nh3_n_mg_l=values.get('nh3_n_limit_mg_l'), co2_mg_l=values.get('co2_limit_mg_l'),
         h2s_ug_l=values.get('h2s_limit_ug_l'), alkalinity_low_mg_l=values.get('alkalinity_low_mg_l'),
@@ -163,8 +164,7 @@ def calculate(water, limits, target, pressure, layers, chosen=(), volume=None, a
     elif len(reagents) < 2:
         calculation.recipes_note = _('A recipe takes two reagents: choose at least two (the Reagents tab).')
     else:
-        calculation.recipes = dosing.recipes(start, end, chosen, volume,
-                                             (water.temperature_c, water.salinity_ppt, air))
+        calculation.recipes = dosing.recipes(start, end, chosen, volume, (eq, air))
         if not calculation.recipes:
             calculation.recipes_note = _('No two of the chosen reagents reach the target: choose others.')
     if amounts:
@@ -242,7 +242,7 @@ def fish_limits(owner):
 # ---- a unit's own chart ---------------------------------------------------------------------------------------
 # What a unit's chart must have, in the order they are listed when missing.
 REQUIRED = ['temperature_c', 'ph', 'alkalinity_mg_l', 'salinity_ppt']
-OPTIONAL = ['tan_mg_l', 'oxygen_mg_l']
+OPTIONAL = ['tan_mg_l', 'oxygen_mg_l', 'conductivity_25_us_cm', 'hardness_mg_l']
 # The limits a unit's chart takes from the fish, by the calculator field they fill.
 LIMIT_FIELDS = ['nh3_n_limit_mg_l', 'co2_limit_mg_l', 'alkalinity_low_mg_l', 'alkalinity_high_mg_l']
 
@@ -320,7 +320,7 @@ def chart_of(unit, point=None, now=None, at=None):
     if missing:
         return Refusal(unit, point, missing, points, sensors_failed=failed)
     why = deffeyes.why_impossible(values['temperature_c'], values['salinity_ppt'], values['ph'],
-                                  values['alkalinity_mg_l'])
+                                  values['alkalinity_mg_l'], **ions_of(values))
     if why:
         return Refusal(unit, point, [], points, impossible=why, sensors_failed=failed)
     if 'altitude_m' in found:
@@ -333,6 +333,12 @@ def chart_of(unit, point=None, now=None, at=None):
                    if name not in limits)
     ordered = [inputs[name] for name in (*REQUIRED, *OPTIONAL, 'altitude_m') if name in inputs]
     return UnitChart(unit, point, now, ordered, limits, made, assumed, absent, points, sensors_failed=failed)
+
+
+def ions_of(values):
+    """The conductivity at 25 °C and the hardness of field values (None when absent): the ions a water's equilibria
+    read besides its alkalinity and salinity (formula 3)."""
+    return {name: values.get(name) for name in ('conductivity_25_us_cm', 'hardness_mg_l')}
 
 
 def chart_limits(offered):

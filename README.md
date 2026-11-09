@@ -1208,10 +1208,16 @@ are in the bug document, not in the database).
 **Worked out from a sample**, never stored (`farm/water/chemistry.py`, each pinned by a test against
 published values):
 - **NH₃-N** = TAN × K / (K + [H⁺]), with K the ammonium constant of Millero (1995) on the seawater scale,
-  converted to the free scale, and the pH (NBS) converted too, ported from the source's engine; in fresh
-  water it equals Emerson et al. (1975) within 0.002 pK up to 30 °C and 0.003 up to 40 °C. It needs the pH and the temperature of the same
+  converted to the free scale, and the pH (NBS) converted too, by the core's formula 3 (Water-chemistry core): in fresh
+  water with its own ionic strength, [H⁺] = 10^−pH / γH; with nothing measured it equals Emerson et al. (1975) within
+  0.002 pK up to 30 °C and 0.003 up to 40 °C (and their table within 0.6 % from 0 to 12 °C, `test_cold_water`). It needs
+  the pH and the temperature of the same
   sample; the salinity is the sample's, else its point's latest fresh at the sample's time (measured at or before it, within the salinity's 7 days: a stale salinity never enters a calculation), else its owner's middle
-  point's, else 0 where every unit it concerns is in fresh water; otherwise the page says what is missing. NH₄-N = TAN − NH₃-N is shown.
+  point's, else 0 where every unit it concerns is in fresh water; otherwise the page says what is missing. The
+  alkalinity, the conductivity at 25 °C and the hardness that give its ionic strength are found the same way (none
+  found: an ionic strength of 0, the safe side). NH₄-N = TAN − NH₃-N is shown. Each worked-out value says the formula
+  it was worked out by in its title ("Formula 3: ionic strength 0.0072, from the conductivity at 25 °C."): nothing worked
+  out is stored, so a past sample is shown by today's formula, and says so.
 - **Oxygen saturation**: Benson & Krause (1984) as in Standard Methods 4500-O, corrected for the
   barometric pressure of the site's altitude (sea-level pressure, said so, when the site has none; the altitude is
   0 .. 5000 m (owner: no site lies below sea level, a minus sign is a slip), held by the form, the model and the
@@ -1349,13 +1355,13 @@ without values it shows its defaults.
   scale, the pH (NBS) too, as the source does. DIC = (alkalinity − [OH⁻] + [H⁺] − [B(OH)₄⁻]) / (α1 + 2 α2),
   CO₂ = DIC α0; NH₃-N = TAN K / (K + [H⁺]); H₂S = total sulfide × 34.08 / 32.07 × [H⁺] / (K + [H⁺]). A pH
   and an alkalinity that cannot go together (the hydroxide alone above the alkalinity) are refused.
-- **Two conventions inherited from the source**, kept for consistency and stated here: the ionic strength
-  comes from the salinity, so at 0 ‰ the pH needs no activity correction while fresh water's own ions
-  would give it one; entering 0 instead of 0.3 ‰ gives 7 to 13 % more CO₂ and 5 to 9 % more NH₃ at 5 to
-  25 °C and pH 6.5 to 8.5, the safe side. And a pH (NBS) is put on the seawater scale with a Davies-type
-  activity coefficient, not CO2SYS's apparent coefficient of Takahashi et al. (1982): at 35 ‰ the two
-  differ by −0.07 pH at 0 °C, −0.058 at 5 °C, about 0 at 25 °C and +0.05 at 40 °C; at 5 °C the chart
-  shows about 12 % less NH₃ and 16 % more CO₂ than CO2SYS would.
+- **The ionic strength and the NBS pH** (formula 3 since 2026-11-09; the source's convention, formula 1, took the
+  ionic strength from the salinity alone, so a fresh water was ideal): up to 1 ‰ the water's own ionic strength (the
+  conductivity at 25 °C, else the salinity, never below the measured hardness and alkalinity's ions; none measured, 0)
+  with Davies activity coefficients; from 5 ‰ the seawater constants; between, a blend (Water-chemistry core). A pH (NBS)
+  is put on the seawater scale with a Davies-type activity coefficient whose Debye-Hückel A is the temperature's, not
+  CO2SYS's apparent coefficient of Takahashi et al. (1982): at 35 ‰ the two differ by −0.048 pH at 0 °C, −0.038 at
+  5 °C, +0.001 at 25 °C and +0.034 at 40 °C (formula 1, with a fixed ε of 79: −0.073, −0.058, +0.004, +0.051).
 - **The safe zone needs every limit it is bounded by**: without the TAN, the NH₃ limit, the CO₂ limit or
   the alkalinity band, or with a total sulfide but no H₂S limit, it is not drawn and a note says what is
   missing (a missing value is never taken for a safe one). Without a total sulfide it is drawn and named
@@ -3613,21 +3619,30 @@ temperature (a synthetic page: 54 different temperatures, 99 to 164 ms, 128 KB c
   names the formula modules' git blobs. `farm/tests/test_golden.py`: the recorder reproduces itself byte for byte and
   today's Python reproduces v1 bit for bit. v1 is never re-recorded silently; a version that changes results is v2,
   after the owner decides. `chemcore/tolerances.toml` holds the parity classes the Rust core will be held to.
-- *Golden v3* (`chemcore/golden/v3`, 82 KB; I2, owner amendment B5), beside v1 and **not used by the application**
-  until the owner decides: below a salinity of 5 a water's ionic strength comes from its conductivity (1.6e-5 per
-  µS/cm), else its hardness with its alkalinity, else its salinity, else its alkalinity alone, and its constants are
-  the fresh-water ones made concentration constants with Davies activity coefficients (`chemcore/core/src/fresh.rs`,
-  `native.equilibria_v3`); from 5 on it is v1 bit for bit. `chemcore/scripts/record_golden_v3.py` records it from the
-  core (882 waters: fresh, hard, brackish and sea, each source of the ionic strength, v1 and v3 side by side);
-  `farm/tests/test_golden_v3.py` holds the core to it bit for bit, Davies to the literature's values, and the
-  application to v1. The comparison for the owner, in Turkish, is `chemcore/findings/I2-comparison.md`: in fresh
-  water v3 shows 3 to 13 % less CO₂ and NH₃ share, and at the 5 ‰ boundary a salinity-only brackish water jumps by
-  6 % (the comparison recommends a boundary of 1 ‰). The fresh path refuses an ionic strength above 0.5, the Davies
-  limit (`DAVIES_MAX`, a ValueError that says so). Conditions before v3 is switched on (cross review 2026-11-09, in
-  the comparison): a temperature-dependent dielectric constant (I1) with Davies checked at 5 and 12 °C, since the
-  fixed 79 makes A 7.5 % too large at 12 °C and 15 % at 2 °C, so the 12 °C shifts in the comparison are about 7 to
-  8 % of themselves too large; only temperature-compensated (25 °C) conductivity read; conductivity and hardness
-  wired as inputs of the water.
+- *Formula 3 and golden v3* (`chemcore/golden/v3`, 200 KB; I1 and I2, owner amendment B5; **the application's since
+  2026-11-09**, `FORMULA_VERSION` 3). Every chemistry of a water starts from `chemistry.water_equilibria` (in Rust
+  `fresh::water_equilibria`; the analysis, the chart, the dosing, the simulator, the small charts, the replay, the trail
+  and a sample's NH₃ all take it), and every `Equilibria` says what it was worked out by: its `formula`, its
+  `ionic_strength`, the `strength_source` (conductivity, hardness, salinity, alkalinity, seawater, none) and the
+  `sea_weight`; the pages say it beside every worked-out value. Up to 1 ‰ (`FRESH_UP_TO`) the ionic strength is the
+  water's own: an estimate, the conductivity compensated to 25 °C (I = 1.6e-5 κ, Russell 1976) else the salinity's (DOE
+  1994), never below the lower bound of the ions measured (the hardness with the alkalinity, else the alkalinity alone),
+  0 with nothing measured (formula 1's ideal water); the constants are the thermodynamic ones made concentration
+  constants with Davies activity coefficients whose A is the temperature's (I1: ε of Malmberg & Maryott 1956, ρ of
+  Kell 1975; Hamer's 1968 table within 0.03 %). From 5 ‰ (`SEA_FROM`) they are formula 1's seawater constants, the NBS
+  conversion with the same A. Between, each constant is the geometric blend, the sea's weight linear in the salinity
+  (Millero et al. 2006 measured K1, K2 from S 1; Dickson's 1990 KSO₄ and KB hold from S 5): the old 5 ‰ boundary jumped
+  up to 25 % in CO₂, the band not at all. The fresh path refuses an ionic strength above 0.5, the Davies limit
+  (`DAVIES_MAX`; a sample's NH₃ then says why and shows nothing). The conductivity and the hardness are water parameters
+  (cross review F8: only the compensated conductivity is read; the sensors' `conductivity_us_cm`, at the water's own
+  temperature, never). Formula 1 is still worked out exactly, by name only (`formula=1`: golden v1, `FORMULAS` = 1, 3),
+  so a value shown before the switch can be reproduced; a test fails when an application module calls formula 1's
+  `equilibria`. `chemcore/scripts/record_golden_v3.py` records golden v3 from the core (1 134 waters, each with formula
+  1's and formula 3's constants and provenance, and the whole analysis of each by both); `farm/tests/test_golden_v3.py`
+  holds the core to it bit for bit; `farm/tests/test_cold_water.py` holds formula 3 at 0 to 12 °C to Emerson et al.'s
+  table, the Plummer & Busenberg and Harned & Hamer constants and an independent implementation of the free CO₂. The
+  comparison for the owner, in Turkish, with the jump table, the choice of the band and the before and after numbers
+  at 2, 5, 8 and 12 °C, is `chemcore/findings/I2-comparison.md`; I1 is in `chemcore/findings/B1.md`.
 - *Anchors* (`chemcore/golden/anchors.json`): the constants and a carbonate chain at three waters, worked out at 50
   digits with mpmath (`chemcore/scripts/anchors_mpmath.py`, mpmath pinned by hash in `anchors.lock`, run once, never
   by the server) from the formulas typed from the papers, each paper's check value asserted first. Today's Python
@@ -3695,7 +3710,7 @@ unit's chart), each refusing a user without its permission.
 | S9 the rest: one batch call for a page's analyses and figures | open |
 | S9 the rest: a binary encoding of the figures | not needed now: a real 60 s page is 0.4 to 0.76 MB gzipped, under the 2 MB at which it would be built (the plan's 400 KB target is passed at 60 s) |
 | S10 the retirement audit: no formula left in a door (a test holds it), the dead doors gone, the docs | done; two definitions over the core's values stay in `farm/water/read.py` until `wip/fix-monitoring` lands (see Retired) |
-| I2 fresh-water ionic strength (golden v3 beside v1, the owner sees it before any switch) | v3 built and recorded, not switched: the comparison for the owner is `chemcore/findings/I2-comparison.md` |
+| I2 fresh-water ionic strength (golden v3 beside v1, the owner sees it before any switch) | switched (owner, 2026-11-09): formula 3 with I1 (A of the temperature), the band from 1 to 5 ‰, the conductivity at 25 °C and the hardness as water parameters; the comparison for the owner is `chemcore/findings/I2-comparison.md` |
 
 **The replay, measured** (development database, read only, 2000-frame pages on three units with live demo readings at
 about 1 Hz). Distinct (temperature, salinity, TAN), and so figures, per page: 140 to 215 at a 1 s step, 219 to 362 at

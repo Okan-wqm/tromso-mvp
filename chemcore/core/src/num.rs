@@ -24,6 +24,8 @@ pub enum ChemError {
     NonFinite,
     /// Outside the range its formula holds for (the Davies equation of golden v3 above an ionic strength of 0.5).
     OutOfRange,
+    /// A formula version the core does not have (crate::FORMULAS).
+    UnknownFormula,
 }
 
 /// A number or the reason there is none.

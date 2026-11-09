@@ -3,6 +3,7 @@
 //! from the TAN, H₂S from the total sulfide, each limit as a pH border with its margin and status (the source's rule:
 //! past the border critical, within 0.2 pH a warning), the oxygen saturation at a pressure.
 use crate::chemistry::{self as c, Equilibria};
+use crate::fresh::{Ions, water_equilibria};
 use crate::num::{ChemError, R, div, finite};
 
 /// The chart's pH domain (the source's): a border inside it is shown as a number.
@@ -129,6 +130,22 @@ pub struct Water {
     pub total_sulfide_ug_l: Option<f64>,
     pub calcium_mg_l: Option<f64>,
     pub oxygen_mg_l: Option<f64>,
+    /// µS/cm compensated to 25 °C; with the hardness, the fresh water's ionic strength (formula 3, crate::fresh).
+    pub conductivity_25_us_cm: Option<f64>,
+    /// mg/L as CaCO₃.
+    pub hardness_mg_l: Option<f64>,
+    /// The formula version the water is worked out by (crate::FORMULAS).
+    pub formula: u32,
+}
+
+impl Water {
+    /// The ions measured besides the alkalinity.
+    pub fn ions(&self) -> Ions {
+        Ions {
+            conductivity_25_us_cm: self.conductivity_25_us_cm,
+            hardness_mg_l: self.hardness_mg_l,
+        }
+    }
 }
 
 /// The values not to pass: NH₃-N mg/L as N, CO₂ mg/L, H₂S µg/L as H₂S; the alkalinity band, mg/L as CaCO₃.
@@ -192,6 +209,8 @@ pub fn analyse(water: &Water, limits: &Limits, target: Option<&Target>, pressure
         water.total_sulfide_ug_l,
         water.calcium_mg_l,
         water.oxygen_mg_l,
+        water.conductivity_25_us_cm,
+        water.hardness_mg_l,
         limits.nh3_n_mg_l,
         limits.co2_mg_l,
         limits.h2s_ug_l,
@@ -204,7 +223,13 @@ pub fn analyse(water: &Water, limits: &Limits, target: Option<&Target>, pressure
         finite(target.ph)?;
         finite(target.alkalinity_mg_l)?;
     }
-    let eq = c::equilibria(water.temperature_c, water.salinity_ppt)?;
+    let eq = water_equilibria(
+        water.formula,
+        water.temperature_c,
+        water.salinity_ppt,
+        Some(water.alkalinity_mg_l),
+        water.ions(),
+    )?;
     let ph = water.ph;
     let alkalinity = div(water.alkalinity_mg_l, c::MG_CACO3_PER_MEQ)?;
     let dic = eq.dic(alkalinity, ph)?;
@@ -306,11 +331,28 @@ pub fn analyse(water: &Water, limits: &Limits, target: Option<&Target>, pressure
     Ok(analysis)
 }
 
+/// What a water's equilibria are worked out from besides its temperature and salinity: the formula version, the
+/// alkalinity (mg/L as CaCO₃, if known) and the ions measured (formula 3's ionic strength).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Medium {
+    pub formula: u32,
+    pub alkalinity_mg_l: Option<f64>,
+    pub ions: Ions,
+}
+
 /// The alkalinity (mg/L as CaCO₃) a water of this pH has at least: hydroxide and borate are alkalinity too, so at a
-/// high pH the alkalinity has a floor below which the DIC would be negative (WQ-38).
-pub fn alkalinity_floor(temperature_c: f64, salinity_ppt: f64, ph: f64) -> R {
+/// high pH the alkalinity has a floor below which the DIC would be negative (WQ-38). In the medium given (formula 3's
+/// constants depend on the water's ions, its alkalinity among them).
+pub fn alkalinity_floor(temperature_c: f64, salinity_ppt: f64, ph: f64, medium: &Medium) -> R {
     finite(ph)?;
-    Ok(c::equilibria(temperature_c, salinity_ppt)?.isoline(ph)?.1 * c::MG_CACO3_PER_MEQ)
+    let eq = water_equilibria(
+        medium.formula,
+        temperature_c,
+        salinity_ppt,
+        medium.alkalinity_mg_l,
+        medium.ions,
+    )?;
+    Ok(eq.isoline(ph)?.1 * c::MG_CACO3_PER_MEQ)
 }
 
 /// The floor when a water of this pH and alkalinity cannot be (its alkalinity at or below the floor), else None.
@@ -319,9 +361,16 @@ pub fn why_impossible(
     salinity_ppt: f64,
     ph: f64,
     alkalinity_mg_l: f64,
+    formula: u32,
+    ions: Ions,
 ) -> Result<Option<f64>, ChemError> {
     finite(alkalinity_mg_l)?;
-    let floor = alkalinity_floor(temperature_c, salinity_ppt, ph)?;
+    let medium = Medium {
+        formula,
+        alkalinity_mg_l: Some(alkalinity_mg_l),
+        ions,
+    };
+    let floor = alkalinity_floor(temperature_c, salinity_ppt, ph, &medium)?;
     Ok(if alkalinity_mg_l > floor { None } else { Some(floor) })
 }
 

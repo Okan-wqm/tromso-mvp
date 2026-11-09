@@ -25,6 +25,10 @@ def formula_version():
     return chemcore.formula_version()
 
 
+FORMULA_VERSION = chemcore.formula_version()          # the formula every value of the application is worked out by
+FORMULAS = tuple(chemcore.FORMULAS)                   # the formulas the core can still work out (1, 3)
+
+
 def core_hash():
     return chemcore.core_hash()
 
@@ -127,8 +131,10 @@ judge_step = chemcore.judge_step
 bands = chemcore.bands
 saturation_index = chemcore.saturation_index
 
-# ---- I2, fresh water's ionic strength (chemcore/core/src/fresh.rs): golden v3 beside v1, NOT used by the application
-# until the owner decides (chemcore/findings/I2-comparison.md); the application reads `equilibria` (v1).
+# ---- formula 3, the application's (chemcore/core/src/fresh.rs; chemcore/findings/I2-comparison.md): fresh water's own
+# ionic strength, the Debye-Hückel A of the temperature, the band from 1 to 5 permil. Every chemistry of a water starts
+# from `water_equilibria` (the formula of FORMULA_VERSION by default); `equilibria` is formula 1, golden v1's, kept so a
+# value shown before can be worked out again exactly, never called by the application.
 FRESH_UP_TO = chemcore.FRESH_UP_TO
 SEA_FROM = chemcore.SEA_FROM
 sea_weight = chemcore.sea_weight
@@ -139,3 +145,4 @@ dielectric_constant = chemcore.dielectric_constant
 water_density = chemcore.water_density
 debye_huckel_a = chemcore.debye_huckel_a
 equilibria_v3 = chemcore.equilibria_v3
+water_equilibria = chemcore.water_equilibria

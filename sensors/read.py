@@ -639,7 +639,7 @@ def frame_analysis(values, limits):
     """(analysis, '') of a frame's water (`values` by calculator field, `limits` the fish's by field, floats), as a
     unit's chart works it out; (None, why) when its pH and alkalinity cannot go together."""
     impossible = deffeyes.why_impossible(values[parameters.TEMPERATURE], values[parameters.SALINITY],
-                                         values[parameters.PH], values['alkalinity_mg_l'])
+                                         values[parameters.PH], values['alkalinity_mg_l'], **calculation.ions_of(values))
     if impossible:
         return None, impossible
     made = calculation.inputs_from({**values, **limits})
@@ -649,9 +649,10 @@ def frame_analysis(values, limits):
 def page_figures(analyses):
     """([figure], [index or None]) of a page's analyses (None: no diagram): the whole diagram of each, in one box that
     holds every point of the page (its largest DIC and alkalinity, worked out once), worked out once for each different
-    diagram. The diagram never reads the water's pH, its alkalinity or its oxygen, only where its point sits
-    (sensors/tests/test_page_share.py proves it on random waters), so frames equal but for those share one figure,
-    its point left out (None): every frame carries its own point in its columns."""
+    diagram. The diagram reads the water's alkalinity only through its equilibria (formula 3: its ionic strength), and
+    never its pH or its oxygen, only where its point sits (sensors/tests/test_page_share.py proves it on random waters),
+    so frames equal but for those, with the same equilibria, share one figure, its point left out (None): every frame
+    carries its own point in its columns."""
     points = [(analysis.dic, analysis.alkalinity_meq) for analysis in analyses if analysis is not None]
     # The box reads only the largest DIC and the largest alkalinity of the points it holds (deffeyes.box_of), so the
     # page's extent is that one point, worked out once (every point on every figure was O(N^2)).
@@ -661,7 +662,7 @@ def page_figures(analyses):
         index = None
         if analysis is not None:
             key = (replace(analysis.water, ph=0.0, alkalinity_mg_l=0.0, oxygen_mg_l=None), analysis.limits,
-                   analysis.target)
+                   analysis.target, analysis.equilibria)
             index = shared.get(key)
             if index is None:
                 index = shared[key] = len(figures)

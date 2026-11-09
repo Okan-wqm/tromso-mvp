@@ -413,10 +413,35 @@ def encode(records):
     return buffer.getvalue()
 
 
+class FormulaOne:
+    """farm/water/deffeyes.py worked out by formula 1, the formula golden v1 holds (the application's is FORMULA_VERSION,
+    3 since the switch): its waters, floors and possible pairs ask the core for formula 1, the rest is deffeyes' own.
+    Golden v1 is never re-recorded; the core still works formula 1 out, so this recorder reproduces it."""
+
+    def __init__(self, deffeyes):
+        self._deffeyes = deffeyes
+
+    def __getattr__(self, name):
+        return getattr(self._deffeyes, name)
+
+    def Water(self, *args, **kwargs):          # noqa: N802  the dataclass's name
+        return self._deffeyes.Water(*args, formula=1, **kwargs)
+
+    def alkalinity_floor(self, *args):
+        return self._deffeyes.alkalinity_floor(*args, formula=1)
+
+    def possible(self, *args):
+        return self._deffeyes.possible(*args, formula=1)
+
+    def why_impossible(self, *args):
+        return self._deffeyes.why_impossible(*args, formula=1)
+
+
 def record_all():
-    """{block: [records]} of the whole corpus."""
+    """{block: [records]} of the whole corpus, by formula 1 (FormulaOne; chemistry.equilibria is formula 1's)."""
     setup()
-    from farm.water import charts, chemistry as c, deffeyes as d, dosing
+    from farm.water import charts, chemistry as c, deffeyes, dosing
+    d = FormulaOne(deffeyes)
     rng = random.Random(SEED)
     getattr(c.equilibria, 'cache_clear', lambda: None)()        # the Python formulas cached; the core does not
     with PathRecorder(c) as recorder:

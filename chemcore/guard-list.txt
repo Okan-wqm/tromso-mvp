@@ -97,6 +97,7 @@ name total_sulfate
 name unit_move
 name vapour_pressure_atm
 name water_density
+name water_equilibria
 name why_impossible
 number 2.8054253e-10
 number 1.0556302e-07

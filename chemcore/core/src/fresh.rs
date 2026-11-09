@@ -33,6 +33,7 @@
 //! Aquatic Chemistry, 3rd ed., section 3.4; Plummer & Busenberg 1982), with γ₀ = 1 for CO₂, NH₃, H₂S, B(OH)₃:
 //! pH free = pH NBS + log γ₁ (a meter reads the activity of H⁺); K1 = K1° / γ₁²; K2 = K2° / γ₂; Kw = Kw° / γ₁²;
 //! KB = KB° / γ₁²; KH2S = KH2S° / γ₁²; KNH4 = KNH4° (H⁺ and NH₄⁺ both monovalent); Ksp as v1 (Ω is drawn only from 5 ‰).
+pub use crate::chemistry::Source;
 use crate::chemistry::{
     self as c, Equilibria, KELVIN, MG_CACO3_PER_MEQ, k_h2s_total, k_nh4_sws, k1_sws, k2_sws, kb_total, kw_total,
     total_boron,
@@ -54,36 +55,11 @@ pub const DAVIES: f64 = 0.3;
 /// or a conductivity in mS/cm is read as µS/cm.
 pub const DAVIES_MAX: f64 = 0.5;
 
-/// Where a v3 water's ionic strength came from.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Source {
-    Conductivity,
-    Hardness,
-    Salinity,
-    Alkalinity,
-    Seawater,
-    /// Nothing measured: an ionic strength of 0 (v1's ideal fresh water).
-    Nothing,
-}
-
-impl Source {
-    /// A stable code.
-    pub fn code(self) -> &'static str {
-        match self {
-            Source::Conductivity => "conductivity",
-            Source::Hardness => "hardness",
-            Source::Salinity => "salinity",
-            Source::Alkalinity => "alkalinity",
-            Source::Seawater => "seawater",
-            Source::Nothing => "none",
-        }
-    }
-}
-
 /// What is measured of a fresh water's ions besides its alkalinity (none: None).
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Ions {
-    pub conductivity_us_cm: Option<f64>,
+    /// µS/cm, compensated to 25 °C (specific conductance; a reading at the water's own temperature is not this value).
+    pub conductivity_25_us_cm: Option<f64>,
     pub hardness_mg_l: Option<f64>,
 }
 
@@ -123,7 +99,7 @@ pub fn fresh_ionic_strength(
 ) -> Result<(f64, Source), ChemError> {
     let salinity = finite(salinity)?;
     let alkalinity = present(alkalinity_mg_l)?;
-    let conductivity = present(ions.conductivity_us_cm)?;
+    let conductivity = present(ions.conductivity_25_us_cm)?;
     let hardness = present(ions.hardness_mg_l)?;
     if salinity < 0.0
         || [alkalinity, conductivity, hardness]
@@ -212,7 +188,7 @@ pub fn fresh_equilibria(
     salinity: f64,
     alkalinity_mg_l: Option<f64>,
     ions: Ions,
-) -> Result<(Equilibria, f64, Source), ChemError> {
+) -> Result<Equilibria, ChemError> {
     let (strength, source) = fresh_ionic_strength(salinity, alkalinity_mg_l, ions)?;
     let temp_c = finite(temp_c)?;
     let one = davies_log_gamma(temp_c, strength, 1.0)?;
@@ -231,8 +207,12 @@ pub fn fresh_equilibria(
         k_h2s: div(k_h2s_total(temp_c, 0.0)?, gamma_one_squared)?,
         ksp_calcite: c::ksp_calcite(temp_c, salinity)?,
         ksp_aragonite: c::ksp_aragonite(temp_c, salinity)?,
+        formula: 3,
+        ionic_strength: strength,
+        source,
+        sea_weight: 0.0,
     };
-    checked(eq).map(|eq| (eq, strength, source))
+    checked(eq)
 }
 
 fn checked(eq: Equilibria) -> Result<Equilibria, ChemError> {
@@ -257,24 +237,30 @@ fn blend(fresh: f64, sea: f64, weight: f64) -> R {
     exp((1.0 - weight) * ln(fresh)? + weight * ln(sea)?)
 }
 
-/// The formula 3 equilibria of a water (the module's rules) with its ionic strength and where it came from: the fresh
-/// path up to `FRESH_UP_TO`, the sea path from `SEA_FROM` (v1's constants, the NBS conversion with the temperature's
-/// A), each constant blended between (the pH offset, a logarithm, linearly; the rest geometrically). In the band the
-/// ionic strength and its source are the fresh path's.
+/// The formula 3 equilibria of a water (the module's rules), its provenance with it: the fresh path up to
+/// `FRESH_UP_TO`, the sea path from `SEA_FROM` (v1's constants, the NBS conversion with the temperature's A), each
+/// constant blended between (the pH offset, a logarithm, linearly; the rest geometrically). In the band the ionic
+/// strength and its source are the fresh path's.
 pub fn equilibria_v3(
     temp_c: f64,
     salinity: f64,
     alkalinity_mg_l: Option<f64>,
     ions: Ions,
-) -> Result<(Equilibria, f64, Source), ChemError> {
+) -> Result<Equilibria, ChemError> {
     let weight = sea_weight(finite(salinity)?);
     if weight >= 1.0 {
         let (strength, source) = ionic_strength(salinity, alkalinity_mg_l, ions)?;
-        return Ok((c::equilibria_with(temp_c, salinity, &debye_huckel_a)?, strength, source));
+        let sea = c::equilibria_with(temp_c, salinity, &debye_huckel_a)?;
+        return Ok(Equilibria {
+            formula: 3,
+            ionic_strength: strength,
+            source,
+            ..sea
+        });
     }
-    let (fresh, strength, source) = fresh_equilibria(temp_c, salinity, alkalinity_mg_l, ions)?;
+    let fresh = fresh_equilibria(temp_c, salinity, alkalinity_mg_l, ions)?;
     if weight <= 0.0 {
-        return Ok((fresh, strength, source));
+        return Ok(fresh);
     }
     let sea = c::equilibria_with(temp_c, salinity, &debye_huckel_a)?;
     let eq = Equilibria {
@@ -285,7 +271,27 @@ pub fn equilibria_v3(
         kb: blend(fresh.kb, sea.kb, weight)?,
         k_nh4: blend(fresh.k_nh4, sea.k_nh4, weight)?,
         k_h2s: blend(fresh.k_h2s, sea.k_h2s, weight)?,
+        formula: 3,
+        ionic_strength: fresh.ionic_strength,
+        source: fresh.source,
+        sea_weight: weight,
         ..sea
     };
-    checked(eq).map(|eq| (eq, strength, source))
+    checked(eq)
+}
+
+/// The equilibria of a water by a formula version: 1 (golden v1: the salinity alone, ε = 79; the ions are not read) or
+/// 3 (`equilibria_v3`); any other is refused (`ChemError::UnknownFormula`).
+pub fn water_equilibria(
+    formula: u32,
+    temp_c: f64,
+    salinity: f64,
+    alkalinity_mg_l: Option<f64>,
+    ions: Ions,
+) -> Result<Equilibria, ChemError> {
+    match formula {
+        1 => c::equilibria(temp_c, salinity),
+        3 => equilibria_v3(temp_c, salinity, alkalinity_mg_l, ions),
+        _ => Err(ChemError::UnknownFormula),
+    }
 }

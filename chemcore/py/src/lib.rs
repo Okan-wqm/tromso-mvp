@@ -26,6 +26,7 @@ fn err(error: ChemError) -> PyErr {
         ChemError::ZeroDivision => PyZeroDivisionError::new_err("float division by zero"),
         ChemError::Overflow => PyOverflowError::new_err("math range error"),
         ChemError::NonFinite => NonFiniteError::new_err("not a finite number"),
+        ChemError::UnknownFormula => PyValueError::new_err("unknown formula version (the core has 1 and 3)"),
         ChemError::OutOfRange => PyValueError::new_err(
             "ionic strength above 0.5: outside the range of the Davies equation (a conductivity in mS/cm, or a sea \
              water without its salinity?)",
@@ -128,6 +129,26 @@ impl Equilibria {
     #[getter]
     fn ksp_aragonite(&self) -> f64 {
         self.0.ksp_aragonite
+    }
+    /// The formula version these equilibria were worked out by.
+    #[getter]
+    fn formula(&self) -> u32 {
+        self.0.formula
+    }
+    /// The ionic strength (mol/L) they were worked out with.
+    #[getter]
+    fn ionic_strength(&self) -> f64 {
+        self.0.ionic_strength
+    }
+    /// Where the ionic strength came from (a code: conductivity, hardness, salinity, alkalinity, seawater, none).
+    #[getter]
+    fn strength_source(&self) -> &'static str {
+        self.0.source.code()
+    }
+    /// The seawater path's share of the constants, 0 to 1.
+    #[getter]
+    fn sea_weight(&self) -> f64 {
+        self.0.sea_weight
     }
 
     /// The field names, in order (the dataclass's).
@@ -367,24 +388,24 @@ fn co2_from_air(temp_c: f64, salinity: f64, pressure: f64) -> PyResult<f64> {
 
 // ---- I2, fresh water's ionic strength: golden v3, not used by the application (chemcore/core/src/fresh.rs) -------
 
-fn ions(conductivity_us_cm: Option<f64>, hardness_mg_l: Option<f64>) -> f::Ions {
+fn ions(conductivity_25_us_cm: Option<f64>, hardness_mg_l: Option<f64>) -> f::Ions {
     f::Ions {
-        conductivity_us_cm,
+        conductivity_25_us_cm,
         hardness_mg_l,
     }
 }
 
 /// (ionic strength mol/L, its source's code) of a water by v3's rules.
 #[pyfunction]
-#[pyo3(signature = (salinity, alkalinity_mg_l=None, conductivity_us_cm=None, hardness_mg_l=None))]
+#[pyo3(signature = (salinity, alkalinity_mg_l=None, conductivity_25_us_cm=None, hardness_mg_l=None))]
 fn fresh_ionic_strength(
     salinity: f64,
     alkalinity_mg_l: Option<f64>,
-    conductivity_us_cm: Option<f64>,
+    conductivity_25_us_cm: Option<f64>,
     hardness_mg_l: Option<f64>,
 ) -> PyResult<(f64, &'static str)> {
     let (strength, source) =
-        f::ionic_strength(salinity, alkalinity_mg_l, ions(conductivity_us_cm, hardness_mg_l)).map_err(err)?;
+        f::ionic_strength(salinity, alkalinity_mg_l, ions(conductivity_25_us_cm, hardness_mg_l)).map_err(err)?;
     Ok((ok(Ok(strength))?, source.code()))
 }
 
@@ -420,23 +441,47 @@ fn davies_log_gamma(temp_c: f64, ionic_strength: f64, charge: f64) -> PyResult<f
     ok(f::davies_log_gamma(temp_c, ionic_strength, charge))
 }
 
-/// The v3 equilibria of a water (the application reads `equilibria`, v1).
+/// The formula 3 equilibria of a water, its provenance with it (see `water_equilibria`).
 #[pyfunction]
-#[pyo3(signature = (temp_c, salinity, alkalinity_mg_l=None, conductivity_us_cm=None, hardness_mg_l=None))]
+#[pyo3(signature = (temp_c, salinity, alkalinity_mg_l=None, conductivity_25_us_cm=None, hardness_mg_l=None))]
 fn equilibria_v3(
     temp_c: f64,
     salinity: f64,
     alkalinity_mg_l: Option<f64>,
-    conductivity_us_cm: Option<f64>,
+    conductivity_25_us_cm: Option<f64>,
     hardness_mg_l: Option<f64>,
 ) -> PyResult<Equilibria> {
     f::equilibria_v3(
         temp_c,
         salinity,
         alkalinity_mg_l,
-        ions(conductivity_us_cm, hardness_mg_l),
+        ions(conductivity_25_us_cm, hardness_mg_l),
     )
-    .map(|(eq, _strength, _source)| Equilibria(eq))
+    .map(Equilibria)
+    .map_err(err)
+}
+
+/// The equilibria of a water by a formula version (the application's by default): what every chemistry of a water
+/// starts from. Formula 1 reads the temperature and the salinity only (golden v1).
+#[pyfunction]
+#[pyo3(signature = (temp_c, salinity, alkalinity_mg_l=None, conductivity_25_us_cm=None, hardness_mg_l=None,
+                    formula=chemcore_core::FORMULA_VERSION))]
+fn water_equilibria(
+    temp_c: f64,
+    salinity: f64,
+    alkalinity_mg_l: Option<f64>,
+    conductivity_25_us_cm: Option<f64>,
+    hardness_mg_l: Option<f64>,
+    formula: u32,
+) -> PyResult<Equilibria> {
+    f::water_equilibria(
+        formula,
+        temp_c,
+        salinity,
+        alkalinity_mg_l,
+        ions(conductivity_25_us_cm, hardness_mg_l),
+    )
+    .map(Equilibria)
     .map_err(err)
 }
 
@@ -487,7 +532,8 @@ fn judge<'py>(
 /// borders as dicts, statuses as codes) and `equilibria`.
 #[pyfunction]
 #[pyo3(signature = (temperature_c, salinity_ppt, ph, alkalinity_mg_l, tan_mg_l=None, total_sulfide_ug_l=None,
-                    calcium_mg_l=None, oxygen_mg_l=None, nh3_n_mg_l=None, co2_mg_l=None, h2s_ug_l=None,
+                    calcium_mg_l=None, oxygen_mg_l=None, conductivity_25_us_cm=None, hardness_mg_l=None,
+                    formula=chemcore_core::FORMULA_VERSION, nh3_n_mg_l=None, co2_mg_l=None, h2s_ug_l=None,
                     alkalinity_low_mg_l=None, alkalinity_high_mg_l=None, target_ph=None, target_alkalinity_mg_l=None,
                     pressure=1.0))]
 #[allow(clippy::too_many_arguments)]
@@ -501,6 +547,9 @@ fn analyse<'py>(
     total_sulfide_ug_l: Option<f64>,
     calcium_mg_l: Option<f64>,
     oxygen_mg_l: Option<f64>,
+    conductivity_25_us_cm: Option<f64>,
+    hardness_mg_l: Option<f64>,
+    formula: u32,
     nh3_n_mg_l: Option<f64>,
     co2_mg_l: Option<f64>,
     h2s_ug_l: Option<f64>,
@@ -519,6 +568,9 @@ fn analyse<'py>(
         total_sulfide_ug_l,
         calcium_mg_l,
         oxygen_mg_l,
+        conductivity_25_us_cm,
+        hardness_mg_l,
+        formula,
     };
     let limits = a::Limits {
         nh3_n_mg_l,
@@ -561,17 +613,50 @@ fn analyse<'py>(
     Ok(dict)
 }
 
+/// The alkalinity floor of a pH in a medium (the formula; formula 3: the alkalinity and the ions measured).
 #[pyfunction]
-fn alkalinity_floor(temperature_c: f64, salinity_ppt: f64, ph: f64) -> PyResult<f64> {
+#[pyo3(signature = (temperature_c, salinity_ppt, ph, alkalinity_mg_l=None, conductivity_25_us_cm=None,
+                    hardness_mg_l=None, formula=chemcore_core::FORMULA_VERSION))]
+fn alkalinity_floor(
+    temperature_c: f64,
+    salinity_ppt: f64,
+    ph: f64,
+    alkalinity_mg_l: Option<f64>,
+    conductivity_25_us_cm: Option<f64>,
+    hardness_mg_l: Option<f64>,
+    formula: u32,
+) -> PyResult<f64> {
     inputs(&[temperature_c, salinity_ppt, ph])?;
-    ok(a::alkalinity_floor(temperature_c, salinity_ppt, ph))
+    let medium = a::Medium {
+        formula,
+        alkalinity_mg_l,
+        ions: ions(conductivity_25_us_cm, hardness_mg_l),
+    };
+    ok(a::alkalinity_floor(temperature_c, salinity_ppt, ph, &medium))
 }
 
 /// The alkalinity floor when a water of this pH and alkalinity cannot be, else None.
 #[pyfunction]
-fn why_impossible(temperature_c: f64, salinity_ppt: f64, ph: f64, alkalinity_mg_l: f64) -> PyResult<Option<f64>> {
+#[pyo3(signature = (temperature_c, salinity_ppt, ph, alkalinity_mg_l, conductivity_25_us_cm=None, hardness_mg_l=None,
+                    formula=chemcore_core::FORMULA_VERSION))]
+fn why_impossible(
+    temperature_c: f64,
+    salinity_ppt: f64,
+    ph: f64,
+    alkalinity_mg_l: f64,
+    conductivity_25_us_cm: Option<f64>,
+    hardness_mg_l: Option<f64>,
+    formula: u32,
+) -> PyResult<Option<f64>> {
     inputs(&[temperature_c, salinity_ppt, ph, alkalinity_mg_l])?;
-    ok_option(a::why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l))
+    ok_option(a::why_impossible(
+        temperature_c,
+        salinity_ppt,
+        ph,
+        alkalinity_mg_l,
+        formula,
+        ions(conductivity_25_us_cm, hardness_mg_l),
+    ))
 }
 
 /// The chart's box: (DIC end, alkalinity end, DIC step, alkalinity step).
@@ -615,6 +700,12 @@ fn water_of(water: &Bound<'_, PyDict>) -> PyResult<a::Water> {
         total_sulfide_ug_l: optional(water, "total_sulfide_ug_l")?,
         calcium_mg_l: optional(water, "calcium_mg_l")?,
         oxygen_mg_l: optional(water, "oxygen_mg_l")?,
+        conductivity_25_us_cm: optional(water, "conductivity_25_us_cm")?,
+        hardness_mg_l: optional(water, "hardness_mg_l")?,
+        formula: match water.get_item("formula")? {
+            Some(value) if !value.is_none() => value.extract::<u32>()?,
+            _ => chemcore_core::FORMULA_VERSION,
+        },
     })
 }
 
@@ -835,7 +926,7 @@ fn split(
 }
 
 /// The recipes, practical first: [{'doses': [(key, concentration, grams or None, delta DIC, delta alkalinity)],
-/// 'waypoint': (DIC, alkalinity), 'below_air': bool}]. `air`: (temperature, salinity, the air's CO2 mg/L) to flag a
+/// 'waypoint': (DIC, alkalinity), 'below_air': bool}]. `air`: (the water's Equilibria, the air's CO2 mg/L) to flag a
 /// stripping that ends below the air's whichever dose goes first.
 #[pyfunction]
 #[pyo3(signature = (start, end, chosen, volume=None, air=None))]
@@ -845,17 +936,13 @@ fn recipes<'py>(
     end: Point,
     chosen: Vec<String>,
     volume: Option<f64>,
-    air: Option<(f64, f64, f64)>,
+    air: Option<(PyRef<'py, Equilibria>, f64)>,
 ) -> PyResult<Vec<Bound<'py, PyDict>>> {
     let keys: Vec<&str> = chosen.iter().map(String::as_str).collect();
-    let equilibria = air
-        .map(|(temperature, salinity, _co2)| c::equilibria(temperature, salinity))
-        .transpose()
-        .map_err(err)?;
-    let air = match (&equilibria, air) {
-        (Some(equilibria), Some((_t, _s, co2_mg_l))) => Some(d::Air { equilibria, co2_mg_l }),
-        _ => None,
-    };
+    let air = air.as_ref().map(|(equilibria, co2_mg_l)| d::Air {
+        equilibria: &equilibria.0,
+        co2_mg_l: *co2_mg_l,
+    });
     let found = d::recipes(start, end, &keys, volume, air.as_ref()).map_err(err)?;
     let mut made = Vec::with_capacity(found.len());
     for recipe in found {
@@ -900,18 +987,17 @@ fn visual<'py>(py: Python<'py>, start: Point, end: Option<Point>, chosen: Vec<St
 
 /// The simulator's steps: [(key or None, grams, DIC, alkalinity, pH or None, CO2 mg/L or None, below the air)].
 #[pyfunction]
-#[pyo3(signature = (temperature_c, salinity_ppt, start, ph, amounts, volume, air_co2_mg_l=None))]
+#[pyo3(signature = (equilibria, start, ph, amounts, volume, air_co2_mg_l=None))]
 #[allow(clippy::type_complexity)]
 fn simulate(
-    temperature_c: f64,
-    salinity_ppt: f64,
+    equilibria: PyRef<'_, Equilibria>,
     start: Point,
     ph: f64,
     amounts: Vec<(String, f64)>,
     volume: f64,
     air_co2_mg_l: Option<f64>,
 ) -> PyResult<Vec<(Option<&'static str>, f64, f64, f64, Option<f64>, Option<f64>, bool)>> {
-    let eq = c::equilibria(temperature_c, salinity_ppt).map_err(err)?;
+    let eq = equilibria.0;
     let amounts: Vec<(&str, f64)> = amounts.iter().map(|(key, grams)| (key.as_str(), *grams)).collect();
     let steps = d::simulate(&eq, start, ph, &amounts, volume, air_co2_mg_l).map_err(err)?;
     Ok(steps
@@ -1020,19 +1106,17 @@ fn bands(
     ))
 }
 
-/// log10 Omega of a water at (temperature, salinity) with this DIC and pH, calcium (mg/L) and Ksp.
+/// log10 Omega of a water (its Equilibria) with this DIC and pH, calcium (mg/L) and Ksp.
 #[pyfunction]
 fn saturation_index(
-    temperature_c: f64,
-    salinity_ppt: f64,
+    equilibria: PyRef<'_, Equilibria>,
     dic: f64,
     ph: f64,
     calcium_mg_l: f64,
     ksp: f64,
 ) -> PyResult<f64> {
-    inputs(&[temperature_c, salinity_ppt, dic, ph, calcium_mg_l, ksp])?;
-    let eq = c::equilibria(temperature_c, salinity_ppt).map_err(err)?;
-    ok(pl::saturation_index(&eq, dic, ph, calcium_mg_l, ksp))
+    inputs(&[dic, ph, calcium_mg_l, ksp])?;
+    ok(pl::saturation_index(&equilibria.0, dic, ph, calcium_mg_l, ksp))
 }
 
 #[pymodule]
@@ -1052,6 +1136,7 @@ fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("FRESH_UP_TO", f::FRESH_UP_TO)?;
     module.add("SEA_FROM", f::SEA_FROM)?;
     module.add("DAVIES_MAX", f::DAVIES_MAX)?;
+    module.add("FORMULAS", chemcore_core::FORMULAS.to_vec())?;
     module.add_class::<Equilibria>()?;
     module.add_function(wrap_pyfunction!(version, module)?)?;
     module.add_function(wrap_pyfunction!(formula_version, module)?)?;
@@ -1111,6 +1196,7 @@ fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
         wrap_pyfunction!(water_density, module)?,
         wrap_pyfunction!(debye_huckel_a, module)?,
         wrap_pyfunction!(equilibria_v3, module)?,
+        wrap_pyfunction!(water_equilibria, module)?,
     ] {
         module.add_function(function)?;
     }

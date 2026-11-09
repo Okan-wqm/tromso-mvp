@@ -607,7 +607,7 @@ class CalculatorForm(forms.Form):
             if data.get(ph_name) is None or data.get(alkalinity_name) is None:
                 continue
             why = deffeyes.why_impossible(data['temperature_c'], data['salinity_ppt'], data[ph_name],
-                                          data[alkalinity_name])
+                                          data[alkalinity_name], **calculation.ions_of(data))
             if why:
                 self.add_error(alkalinity_name, why)
 

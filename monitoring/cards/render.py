@@ -88,7 +88,7 @@ class Face:
     stale: bool          # older than the parameter's freshness
     missing: bool
     reading: object = None
-    note: str = ''           # what a worked-out value was worked out from, or why it could not be
+    note: str = ''           # what a worked-out value was worked out from and by (its formula), or why it could not be
 
 
 def age_text(seconds):
@@ -118,7 +118,8 @@ def face(reading, now, parameter=None):
     status = '' if missing else str(reading.old_alert or reading.status)
     return Face(label, gettext('no data') if missing else water_value(reading.value, reading.code), status,
                 str(Status(status).label) if status else '', origin, age,
-                not reading.fresh(now), missing, reading, str(reading.note or ''))
+                not reading.fresh(now), missing, reading,
+                ' '.join(str(said) for said in (reading.note, reading.provenance) if said))
 
 
 def reading_at(card, code, point_kind):

@@ -66,7 +66,9 @@ ALL_LAYERS = frozenset(key for key, _label in LAYERS)
 @dataclass(frozen=True)
 class Water:
     """The water the chart is drawn for: what a sample holds. Units and bases are in the names; total
-    sulfide is as S."""
+    sulfide is as S; the conductivity is compensated to 25 °C. With the alkalinity (and the salinity) the conductivity
+    and the hardness give the water's ionic strength (formula 3, chemistry.water_equilibria); `formula` is the version it
+    is worked out by, the application's unless a recorder asks for another (golden v1: 1)."""
     temperature_c: float
     salinity_ppt: float
     ph: float
@@ -75,6 +77,9 @@ class Water:
     total_sulfide_ug_l: float | None = None
     calcium_mg_l: float | None = None
     oxygen_mg_l: float | None = None
+    conductivity_25_us_cm: float | None = None
+    hardness_mg_l: float | None = None
+    formula: int = chemistry.FORMULA_VERSION
 
 
 @dataclass(frozen=True)
@@ -149,6 +154,11 @@ class Analysis:
     nh3_share_pct: float                     # NH₃ as a share of TAN at the water's pH, %
     h2s_share_pct: float                     # H₂S as a share of the total sulfide at the water's pH, %
 
+    @property
+    def provenance(self):
+        """What every value of the analysis was worked out by, in words: the formula version and the ionic strength."""
+        return messages.provenance(self.equilibria)
+
 
 def analyse(water, limits=Limits(), target=None, pressure=1.0):
     """The values of a water against the limits (the core's analysis, chemcore/core/src/analysis.rs): DIC and CO₂ from
@@ -162,25 +172,27 @@ def analyse(water, limits=Limits(), target=None, pressure=1.0):
     return Analysis(water=water, limits=limits, target=target, **found)
 
 
-def alkalinity_floor(temperature_c, salinity_ppt, ph):
+def alkalinity_floor(temperature_c, salinity_ppt, ph, **medium):
     """The alkalinity (mg/L as CaCO₃) a water of this pH has at least: hydroxide and borate are alkalinity too, so at a
-    high pH the alkalinity has a floor, below which the DIC would be negative."""
-    return native.alkalinity_floor(temperature_c, salinity_ppt, ph)
+    high pH the alkalinity has a floor, below which the DIC would be negative. `medium`: the water's alkalinity_mg_l,
+    conductivity_25_us_cm, hardness_mg_l and formula (formula 3's constants depend on its ions)."""
+    return native.alkalinity_floor(temperature_c, salinity_ppt, ph, **medium)
 
 
-def why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l):
+def why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l, **ions):
     """Why a water of this pH and alkalinity cannot be (its alkalinity at or below the floor of `alkalinity_floor`),
-    in the active language; '' when it can. The calculator's form and a unit's chart ask here."""
-    floor = native.why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l)
+    in the active language; '' when it can. The calculator's form and a unit's chart ask here. `ions`: its
+    conductivity_25_us_cm and hardness_mg_l, and the formula."""
+    floor = native.why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l, **ions)
     if floor is None:
         return ''
     return str(_('At this pH the alkalinity is above %(floor)s mg/L as CaCO₃: the hydroxide and borate alone are '
                  'that much.') % {'floor': shown(floor, 1)})
 
 
-def possible(temperature_c, salinity_ppt, ph, alkalinity_mg_l):
+def possible(temperature_c, salinity_ppt, ph, alkalinity_mg_l, **ions):
     """Whether a water of this pH and alkalinity can be (`why_impossible` has nothing to say)."""
-    return not why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l)
+    return not why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l, **ions)
 
 
 # ---- the chart in its own units: DIC (mmol/L) across, alkalinity (meq/L) up --------------------------------

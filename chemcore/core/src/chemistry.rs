@@ -269,8 +269,35 @@ pub fn solve<E>(function: &mut dyn FnMut(f64) -> Result<f64, E>, low: f64, high:
 
 // ---- one water --------------------------------------------------------------------------------------------------
 
+/// Where a water's ionic strength came from (formula 3, crate::fresh; formula 1 takes the salinity's, `Seawater`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Source {
+    Conductivity,
+    Hardness,
+    Salinity,
+    Alkalinity,
+    Seawater,
+    /// Nothing measured: an ionic strength of 0 (formula 1's ideal fresh water).
+    Nothing,
+}
+
+impl Source {
+    /// A stable code.
+    pub fn code(self) -> &'static str {
+        match self {
+            Source::Conductivity => "conductivity",
+            Source::Hardness => "hardness",
+            Source::Salinity => "salinity",
+            Source::Alkalinity => "alkalinity",
+            Source::Seawater => "seawater",
+            Source::Nothing => "none",
+        }
+    }
+}
+
 /// The equilibria of a water at one temperature (°C) and salinity (‰), constants on the free scale, mol/kg.
-/// Concentrations: alkalinity in meq/L, DIC and CO₂ in mmol/L; a pH is NBS.
+/// Concentrations: alkalinity in meq/L, DIC and CO₂ in mmol/L; a pH is NBS. It says what it was worked out by (its
+/// provenance): the formula version, the ionic strength and its source, and the seawater path's share of its constants.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Equilibria {
     pub temp_c: f64,
@@ -288,6 +315,13 @@ pub struct Equilibria {
     /// (mol/kg)².
     pub ksp_calcite: f64,
     pub ksp_aragonite: f64,
+    /// The formula version (crate::FORMULA_VERSION; 1 or 3).
+    pub formula: u32,
+    /// mol/L; formula 1: the salinity's (DOE 1994), 0 at S ≤ 0.
+    pub ionic_strength: f64,
+    pub source: Source,
+    /// The seawater path's share of the constants, 0 to 1 (formula 1: always 1).
+    pub sea_weight: f64,
 }
 
 /// The equilibria of a water by formula 1 (golden v1). Non-finite inputs are refused.
@@ -315,6 +349,10 @@ pub fn equilibria_with(temp_c: f64, salinity: f64, a_of: &dyn Fn(f64) -> R) -> R
         k_h2s: div(k_h2s_total(temp_c, salinity)?, to_total)?,
         ksp_calcite: ksp_calcite(temp_c, salinity)?,
         ksp_aragonite: ksp_aragonite(temp_c, salinity)?,
+        formula: 1,
+        ionic_strength: if salinity > 0.0 { ionic_strength(salinity)? } else { 0.0 },
+        source: Source::Seawater,
+        sea_weight: 1.0,
     };
     for value in [
         eq.ph_offset,

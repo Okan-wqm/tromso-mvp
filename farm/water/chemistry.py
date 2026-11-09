@@ -9,14 +9,18 @@ Python formulas it replaced: golden v1 (chemcore/golden/v1) within each quantity
 the source platform's engine (chemcore/findings/B1.md).
 
 What it gives, in short (the core's documentation has the sources): the constants of a water on the free pH scale
-(`equilibria`: K1, K2 of Millero et al. 2006; Kw of Millero 1995; KB of Dickson 1990; KNH4 of Millero 1995; KH2S of
-Millero, Plese & Fernandez 1988; Ksp of Mucci 1983) with its carbonate system on the Deffeyes chart (`Equilibria`:
+by the application's formula (`water_equilibria`, formula 3: the water's own ionic strength from its conductivity at
+25 °C, hardness, alkalinity or salinity, Davies activities with the A of its temperature, the seawater constants from
+5 ‰ and a blend from 1 ‰; FORMULA_VERSION; each Equilibria says its formula and ionic strength) and formula 1's
+(`equilibria`, golden v1's, never the application's), from the constants K1, K2 of Millero et al. 2006; Kw of
+Millero 1995; KB of Dickson 1990; KNH4 of Millero 1995; KH2S of Millero, Plese & Fernandez 1988; Ksp of Mucci 1983,
+with its carbonate system on the Deffeyes chart (`Equilibria`:
 fractions, isoline, DIC, CO2, the borders of a limit), the solver (`solve`), the oxygen solubility of Benson & Krause
 1984 at a pressure (`oxygen_solubility`, `pressure_atm`, `vapour_pressure_atm`) and the CO2 of a water in equilibrium
 with the air (`k0_co2`, `co2_from_air`, Weiss 1974). An input that is not a finite number, or one where the mathematics
 fails, raises (ValueError, ZeroDivisionError, OverflowError; native.NonFiniteError for a non-finite one)."""
 from .native import (  # noqa: F401  the names the code has always used
-    H2S_PER_S, MG_CACO3_PER_MEQ, MG_CALCIUM_PER_MOL, MG_CO2_PER_MMOL, Equilibria,
+    FORMULA_VERSION, H2S_PER_S, MG_CACO3_PER_MEQ, MG_CALCIUM_PER_MOL, MG_CO2_PER_MMOL, Equilibria, water_equilibria,
     co2_from_air, equilibria, k0_co2, k1_sws, k2_sws, k_h2s_total, k_nh4_sws, kb_total, ksp_aragonite, ksp_calcite,
     kw_total, nh3_fraction, oxygen_solubility, ph_free, pk_nh4, pressure_atm, solve, vapour_pressure_atm)
 from .native import activity_coefficient_h as _activity_coefficient_h  # noqa: F401

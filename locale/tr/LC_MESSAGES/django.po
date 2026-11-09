@@ -1010,6 +1010,10 @@ msgid "%(rule)s at %(time)s"
 msgstr "%(rule)s, saat %(time)s"
 
 #, python-format
+msgid "%(said)s; %(share)d %% seawater constants"
+msgstr "%(said)s; %%%(share)d deniz suyu sabitleri"
+
+#, python-format
 msgid "%(seconds)d s ago"
 msgstr "%(seconds)d sn önce"
 
@@ -3946,6 +3950,10 @@ msgstr "İptal eden"
 msgid "Cannibalism"
 msgstr "Kanibalizm"
 
+#, python-format
+msgid "Cannot be worked out: %(why)s."
+msgstr "Hesaplanamıyor: %(why)s."
+
 msgid "Capacity"
 msgstr "Kapasite"
 
@@ -6268,6 +6276,14 @@ msgstr "Form, son tarih ve kanal doğrulanmadı (Q8). Yapılmadı."
 msgid "Format version"
 msgstr "Biçim sürümü"
 
+#, python-format
+msgid "Formula %(formula)d."
+msgstr "Formül %(formula)d."
+
+#, python-format
+msgid "Formula %(formula)d: ionic strength %(strength)s, %(source)s"
+msgstr "Formül %(formula)d: iyonik şiddet %(strength)s, %(source)s"
+
 msgid "Found at"
 msgstr "Bulunma zamanı"
 
@@ -7134,6 +7150,9 @@ msgstr "Tek bir kanal yerine: bu parametrenin tüm aktif kanalları."
 
 msgid "Instrument unit"
 msgstr "Cihaz birimi"
+
+msgid "Ionic strength"
+msgstr "İyonik şiddet"
 
 msgid "Is the diagnosis suspected or confirmed?"
 msgstr "Tanı şüpheli mi, doğrulanmış mı?"
@@ -15604,6 +15623,12 @@ msgstr "%(point)s noktasında"
 msgid "at least every %(seconds)s s"
 msgstr "en az %(seconds)s sn’de bir"
 
+msgid "at least that of the alkalinity"
+msgstr "en az alkalinitenin verdiği"
+
+msgid "at least that of the hardness and the alkalinity"
+msgstr "en az sertlik ve alkalinitenin verdiği"
+
 msgid "at once"
 msgstr "derhal"
 
@@ -16290,6 +16315,12 @@ msgstr "%(start)s – %(end)s"
 msgid "from %(weight)s g"
 msgstr "%(weight)s g ve üstü"
 
+msgid "from the conductivity at 25 °C"
+msgstr "25 °C'deki iletkenlikten"
+
+msgid "from the salinity"
+msgstr "tuzluluktan"
+
 msgid "g"
 msgstr "g"
 
@@ -16582,6 +16613,9 @@ msgstr "yok"
 msgid "none fresh now: enter it"
 msgstr "şu an güncel değer yok: girin"
 
+msgid "none measured, taken as 0 (the safe side)"
+msgstr "hiçbir şey ölçülmemiş, 0 alındı (ihtiyatlı taraf)"
+
 msgid "not enforced by the database"
 msgstr "veritabanı tarafından zorunlu kılınmıyor"
 
@@ -16612,6 +16646,9 @@ msgstr "şimdi"
 #, python-format
 msgid "now %(value)s, %(source)s"
 msgstr "şu an %(value)s, %(source)s"
+
+msgid "of sea water of this salinity"
+msgstr "bu tuzluluktaki deniz suyununki"
 
 msgid "off"
 msgstr "izinli"

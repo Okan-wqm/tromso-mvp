@@ -101,7 +101,50 @@ def _tabs():
                 ('Høstet', 'Høsteplan', 'Produksjonsplaner', 'Slakteriene', 'Håndteringsregler', 'Behandlinger'))]})
 
 
-PAGES = {'stock': _stock, 'water': _water, 'card-en': lambda: _card('en'), 'card-nb': lambda: _card('nb'),
+def _meal():
+    """The meal board's table with the seeded farm's longest lines: a trial's placement chip, an estimate to weigh
+    soon and an incomplete one, a temperature read through a loop and stale, a line whose ration cannot be worked out."""
+    department = N(name='Hatchery hall A', site=N(name='Bergen Hatchery'))
+    feed = N(code='SGR-3', pellet_size_mm=Decimal('3'))
+    band = N(min_weight_g=Decimal('0'), max_weight_g=Decimal('100'), feed=feed)
+    sfr = N(value=Decimal('1.56'), interpolated=False)
+
+    def basis(protocol='Salmon smolt RAS, standard', missing=''):
+        return N(protocol=N(name=protocol), scope='batch', band=band, fcr=Decimal('1.00'), sfr=sfr, missing=missing)
+
+    def share(next_kg, fish=15830, blind=0, end=None):
+        return N(fish=fish, biomass_kg=Decimal('1048.3'), end_g=Decimal('66.2'), measured_g=Decimal('66.0'),
+                 last_weighed=date(2026, 11, 3), blind_days=blind, next_meal_kg=next_kg,
+                 remaining_kg=None if next_kg is None else next_kg * 4, over_kg=Decimal('0'),
+                 ration_kg=None if next_kg is None else next_kg * 4, planned_meals=4, meal_kg=next_kg, meals=0,
+                 end=end or basis())
+
+    def line(batch, part, why='', drift=''):
+        return {'share': part, 'batch': N(code=batch), 'why': why, 'drift': drift, 'estimate_days': 16}
+
+    from farm.feeding.temperature import Temperature    # the board's own: its stale chip says A11's age warning
+    measured = datetime(2026, 11, 5, 20, 0, tzinfo=tz.utc)
+    temperature = Temperature(value_c=Decimal('11.6'), measured_at=measured, point=N(code='RAS-1', site=None),
+                              via='loop', age=NOW - measured, fresh=False)
+    day = N(fed_kg=Decimal('0'), feedings=[], meals_done=0)
+    rows = [
+        {'unit': N(code='HA-K02', production_department=department), 'day': day, 'temperature': temperature,
+         'placements': [], 'record_url': '#', 'water_url': '#',
+         'lines': [line('B-2026-001', share(Decimal('0.761'), fish=3000, blind=1), drift='soon')]},
+        {'unit': N(code='HA-K03', production_department=department), 'day': day, 'temperature': temperature,
+         'placements': [], 'record_url': '#', 'water_url': '#',
+         'lines': [line('B-2026-001', share(None, fish=1000, end=basis(missing='outside_table')),
+                        why='13.1 °C is outside this table (8.0–12.0 °C).')]},
+        {'unit': N(code='RT-01', production_department=N(name='Research hall', site=N(name='Bergen Hatchery'))),
+         'day': day, 'temperature': temperature, 'record_url': '#', 'water_url': '#',
+         'placements': [N(url='#', title='Experiment E-2026-002', label='E-2026-002 · EPA+DHA 1.0 %, low density · R1')],
+         'lines': [line('B-2026-003', share(Decimal('0.025'), fish=100,
+                                            end=basis('R&D diet trial – EPA+DHA 1.0 %, low density')))]},
+    ]
+    return render_to_string('farm/_meal_board_table.html', {'rows': rows})
+
+
+PAGES = {'meal': _meal, 'stock': _stock, 'water': _water, 'card-en': lambda: _card('en'), 'card-nb': lambda: _card('nb'),
          'matrix': _matrix, 'approve': _approve, 'tabs': _tabs}
 
 

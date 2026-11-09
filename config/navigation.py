@@ -14,9 +14,9 @@ LEADERS = {'show_when': LEADS, 'show_note': _('only for a person who leads produ
 # offered to people who can use something in it. Each has its own overview. Company also holds the
 # knowledge (the library and the knowledge entries); the HR pages will join it.
 #
-# Production's menu has two main headings, as in the platform: Setup (the farm's structure, its
-# reference lists and its suppliers, entered once and changed seldom) and Operations (the daily
-# production records: stocking, feeding, water chemistry, health, harvest), from Production units on.
+# Production's menu is in daily order (docs/design/system/README.md, Shell): Operations first (the daily
+# production records: stocking, feeding, water chemistry, health, harvest, from Production units on), and Setup (the
+# farm's structure, its reference lists and its suppliers, entered once and changed seldom) last, folded away.
 # A third, Reports, holds what is told to the authorities from those records; a fourth, Communication,
 # how the people running production talk to each other: Messages.
 #
@@ -71,44 +71,6 @@ WORKSPACES = [
     ]),
     Workspace('production', _('Production'), sections=[
         Section('', [Group('', [Entry(_('Overview'), 'production_home', 'home')])]),
-        Section(_('Setup'), [
-            Group(_('Facility structure'), [
-                Entry(_('Production departments'), 'farm:productiondepartment_list', 'layout-grid',
-                      'farm.view_productiondepartment'),
-                Entry(_('Systems'), 'farm:system_list', 'waves', 'farm.view_system'),
-                Entry(_('Equipment'), 'farm:equipment_list', 'wrench', 'farm.view_equipment'),
-                Entry(_('Tanks, ponds & cages'), 'farm:tank_list', 'cylinder', 'farm.view_tank'),
-                # The named wall screens of Operations › Monitoring: which units, how each card is drawn.
-                Entry(_('Monitoring boards'), 'monitoring:monitorboard_list', 'monitor', 'monitoring.view_monitorboard'),
-                # Where in the water a sample is taken: a place on a unit, a loop or a piece of equipment.
-                Entry(_('Sampling points'), 'farm:samplingpoint_list', 'droplet', 'farm.view_samplingpoint'),
-            ]),
-            # The reference lists the production side picks from: species, feeds, the water limits per species,
-            # the medicines with their withdrawal and the fast before fish are handled (harvest, transport,
-            # grading, treatment), the monitoring cards' templates and their rules; chemicals as their tab arrives.
-            Group(_('Reference data'), [
-                Entry(_('Species'), 'farm:species_list', 'fish', 'farm.view_species'),
-                Entry(_('Feeds'), 'farm:feed_list', 'wheat', 'farm.view_feed'),
-                Entry(_('Water limits'), 'farm:waterlimit_list', 'gauge', 'farm.view_waterlimit'),
-                Entry(_('Medicines'), 'farm:medicine_list', 'pill', 'farm.view_medicine'),
-                Entry(_('Handling rules'), 'farm:handlingrule_list', 'timer', 'farm.view_handlingrule'),
-                # What a monitoring card holds and which unit's card gets which (monitoring/cards/).
-                Entry(_('Card templates'), 'monitoring:cardtemplate_list', 'layout-dashboard',
-                      'monitoring.view_cardtemplate'),
-                Entry(_('Card template rules'), 'monitoring:cardtemplateassignment_list', 'list-checks',
-                      'monitoring.view_cardtemplateassignment'),
-            ]),
-            # Harvest and logistics: the outside facilities harvested fish go to; wellboats join it when they get
-            # records of their own.
-            Group(_('Harvest and logistics'), [
-                Entry(_('Slaughter facilities'), 'farm:slaughterfacility_list', 'factory',
-                      'farm.view_slaughterfacility'),
-            ]),
-            # Who the farm buys from: goods, live fish and services. Purchase orders join it later.
-            Group(_('Purchasing'), [
-                Entry(_('Suppliers'), 'farm:supplier_list', 'truck', 'farm.view_supplier'),
-            ]),
-        ]),
         # The daily production records: the fish in each unit and what happens to them, the water they are in,
         # their feeding, their harvest and their health. Feeding has four pages: today's meals per unit, what was
         # fed against the ration, the feeding tables and where each applies. Harvest has three: what was harvested,
@@ -188,22 +150,50 @@ WORKSPACES = [
                 Entry(_('Organization chart'), 'hr:production_orgchart', 'network', 'hr.view_employee'),
             ]),
         ]),
+        Section(_('Setup'), collapsed=True, groups=[
+            Group(_('Facility structure'), [
+                Entry(_('Production departments'), 'farm:productiondepartment_list', 'layout-grid',
+                      'farm.view_productiondepartment'),
+                Entry(_('Systems'), 'farm:system_list', 'waves', 'farm.view_system'),
+                Entry(_('Equipment'), 'farm:equipment_list', 'wrench', 'farm.view_equipment'),
+                Entry(_('Tanks, ponds & cages'), 'farm:tank_list', 'cylinder', 'farm.view_tank'),
+                # The named wall screens of Operations › Monitoring: which units, how each card is drawn.
+                Entry(_('Monitoring boards'), 'monitoring:monitorboard_list', 'monitor', 'monitoring.view_monitorboard'),
+                # Where in the water a sample is taken: a place on a unit, a loop or a piece of equipment.
+                Entry(_('Sampling points'), 'farm:samplingpoint_list', 'droplet', 'farm.view_samplingpoint'),
+            ]),
+            # The reference lists the production side picks from: species, feeds, the water limits per species,
+            # the medicines with their withdrawal and the fast before fish are handled (harvest, transport,
+            # grading, treatment), the monitoring cards' templates and their rules; chemicals as their tab arrives.
+            Group(_('Reference data'), [
+                Entry(_('Species'), 'farm:species_list', 'fish', 'farm.view_species'),
+                Entry(_('Feeds'), 'farm:feed_list', 'wheat', 'farm.view_feed'),
+                Entry(_('Water limits'), 'farm:waterlimit_list', 'gauge', 'farm.view_waterlimit'),
+                Entry(_('Medicines'), 'farm:medicine_list', 'pill', 'farm.view_medicine'),
+                Entry(_('Handling rules'), 'farm:handlingrule_list', 'timer', 'farm.view_handlingrule'),
+                # What a monitoring card holds and which unit's card gets which (monitoring/cards/).
+                Entry(_('Card templates'), 'monitoring:cardtemplate_list', 'layout-dashboard',
+                      'monitoring.view_cardtemplate'),
+                Entry(_('Card template rules'), 'monitoring:cardtemplateassignment_list', 'list-checks',
+                      'monitoring.view_cardtemplateassignment'),
+            ]),
+            # Harvest and logistics: the outside facilities harvested fish go to; wellboats join it when they get
+            # records of their own.
+            Group(_('Harvest and logistics'), [
+                Entry(_('Slaughter facilities'), 'farm:slaughterfacility_list', 'factory',
+                      'farm.view_slaughterfacility'),
+            ]),
+            # Who the farm buys from: goods, live fish and services. Purchase orders join it later.
+            Group(_('Purchasing'), [
+                Entry(_('Suppliers'), 'farm:supplier_list', 'truck', 'farm.view_supplier'),
+            ]),
+        ]),
     ]),
     # The sensors: where live values come from (MQTT connections, the devices and their channels), how they are read
     # and kept, and where they are bound. A panel of its own, opened from the panel switcher like Production, offered to
     # people who can use something in it. Its Administration holds the broker credentials: a right of its own.
     Workspace('sensors', _('Sensors'), sections=[
         Section('', [Group('', [Entry(_('Overview'), 'sensors:home', 'home')])]),
-        Section(_('Setup'), [
-            Group('', [
-                Entry(_('Connections'), 'sensors:connection_list', 'plug', 'sensors.view_connection'),
-                Entry(_('Payload formats'), 'sensors:payloadformat_list', 'braces', 'sensors.view_payloadformat'),
-                Entry(_('Devices'), 'sensors:device_list', 'cpu', 'sensors.view_device'),
-                Entry(_('Channels'), 'sensors:channel_list', 'activity', 'sensors.view_channel'),
-                # Where each channel's values belong over time; a move ends a binding and starts the next.
-                Entry(_('Bindings'), 'sensors:binding_list', 'link', 'sensors.view_binding'),
-            ]),
-        ]),
         # What the channels say: their values over time and now (the right to read sensor readings).
         Section(_('Operations'), [
             Group('', [
@@ -219,6 +209,16 @@ WORKSPACES = [
         Section(_('Administration'), [
             Group('', [
                 Entry(_('Credentials'), 'sensors:credential_list', 'key-round', 'sensors.view_credential'),
+            ]),
+        ]),
+        Section(_('Setup'), collapsed=True, groups=[
+            Group('', [
+                Entry(_('Connections'), 'sensors:connection_list', 'plug', 'sensors.view_connection'),
+                Entry(_('Payload formats'), 'sensors:payloadformat_list', 'braces', 'sensors.view_payloadformat'),
+                Entry(_('Devices'), 'sensors:device_list', 'cpu', 'sensors.view_device'),
+                Entry(_('Channels'), 'sensors:channel_list', 'activity', 'sensors.view_channel'),
+                # Where each channel's values belong over time; a move ends a binding and starts the next.
+                Entry(_('Bindings'), 'sensors:binding_list', 'link', 'sensors.view_binding'),
             ]),
         ]),
     ]),

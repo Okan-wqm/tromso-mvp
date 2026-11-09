@@ -180,3 +180,70 @@ class BottomBarTests(TestCase):
         first = [entry['url'] for section in response.context['rail_sections'] for group in section['groups']
                  for entry in group['entries']][:4]
         self.assertEqual(re.findall(r'<a class="ui-bottombar-link" href="([^"]+)"', bar), first)
+
+
+class RailOrderTests(TestCase):
+    """The rail in daily order (docs/design/system/README.md, Shell): the day's work first, Setup collapsed and last,
+    open on its own pages; the foot says the company and the person's site."""
+
+    def setUp(self):
+        self.admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
+        self.client.force_login(self.admin)
+
+    def rail(self, url):
+        html = self.client.get(url).content.decode()
+        return html[html.index('id="rail"'):html.index('</aside>')]
+
+    def test_setup_comes_last_in_production_and_in_sensors(self):
+        for url in (reverse('farm:meal_board'), reverse('sensors:home')):
+            with self.subTest(url=url):
+                sections = [section['label'] for section in self.client.get(url).context['rail_sections']]
+                self.assertEqual(sections[-1], 'Setup')
+                self.assertEqual(sections[0], '')
+
+    def test_setup_is_folded_away_on_a_days_page_and_open_on_its_own(self):
+        closed = self.rail(reverse('farm:meal_board'))
+        self.assertRegex(closed, r'<details class="rail-collapse" data-collapse="production-setup">\s*'
+                                 r'<summary class="rail-section">Setup</summary>')
+        opened = self.rail(reverse('farm:system_list'))
+        self.assertRegex(opened, r'<details class="rail-collapse" data-collapse="production-setup" open data-current>')
+
+    def test_the_foot_says_the_company_and_the_persons_site(self):
+        from farm.models import ProductionDepartment, Site
+        from hr.tests.helpers_people import employee, place
+        site = Site.objects.create(name='Bergen Hatchery', code='BH-01', timezone='Europe/Oslo')
+        Site.objects.create(name='Tromsø Grow-out', code='TG-02', timezone='Europe/Oslo')
+        department = ProductionDepartment.objects.create(name='Hatchery hall A', code='HA', site=site)
+        with self.settings(COMPANY_NAME='Nordhav Akva'):
+            self.assertIn('<div class="rail-foot">Nordhav Akva</div>', self.rail(reverse('home')))
+            place(employee('E-1', last='', first='', user=self.admin), department)      # (the name is the account's)
+            self.assertIn('<div class="rail-foot">Nordhav Akva · Bergen Hatchery</div>', self.rail(reverse('home')))
+
+    def test_one_site_is_the_sites_and_without_a_company_name_the_site_alone(self):
+        from farm.models import Site
+        Site.objects.create(name='Bergen Hatchery', code='BH-01', timezone='Europe/Oslo')
+        with self.settings(COMPANY_NAME=''):
+            self.assertIn('<div class="rail-foot">Bergen Hatchery</div>', self.rail(reverse('home')))
+
+
+class DisplayWeightTests(SimpleTestCase):
+    """Bricolage Grotesque is served at 600 only (static/css/fonts.css): a rule that sets it, or a heading it draws (h1,
+    h2), asks for no other weight, so the browser never fakes a bold."""
+
+    def test_the_display_face_is_never_asked_for_another_weight(self):
+        rule = re.compile(r'([^{}]+)\{([^{}]*)\}')
+        found = []
+        for path in (ROOT / 'static' / 'css').glob('*.css'):
+            css = re.sub(r'/\*.*?\*/', '', path.read_text(encoding='utf-8'), flags=re.S)
+            for selectors, body in rule.findall(css):
+                display = 'var(--font-display)' in body or 'Bricolage' in body or any(
+                    re.search(r'(^|[\s>+~,])h[12]\b', selector.strip()) for selector in selectors.split(','))
+                weight = re.search(r'font-weight:\s*(\d+)', body)
+                if display and weight and weight.group(1) != '600':
+                    found.append(f'{path.name}: {selectors.strip()} {weight.group(1)}')
+        self.assertEqual(found, [])
+
+    def test_the_sign_in_wordmark_is_set_in_the_display_face(self):
+        css = (ROOT / 'static' / 'css' / 'auth.css').read_text(encoding='utf-8')
+        brand = re.search(r'\n\.brand \{([^}]*)\}', css).group(1)
+        self.assertIn('var(--font-display)', brand)

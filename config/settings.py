@@ -218,6 +218,10 @@ LOGOUT_REDIRECT_URL = 'login'
 
 # The rail menu (core.navigation).
 RAIL_MENU = 'config.navigation.WORKSPACES'
+# What the rail's foot says for a person (the company and their site), and the company's name: from the environment until
+# the platform owner's settings hold it.
+RAIL_FOOT = 'hr.read.rail_foot'
+COMPANY_NAME = os.environ.get('COMPANY_NAME', '')
 
 # What a role can be given (core.access).
 ACCESS_AREAS = 'config.access.AREAS'

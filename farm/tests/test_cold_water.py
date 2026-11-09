@@ -22,9 +22,17 @@ CO2_GAS = (108.3865, 0.01985076, -6919.53, -40.45154, 669365.0)              # C
 # Hamer (1968), NSRDS-NBS 24, table 3: the Debye-Hückel A (molal) by °C.
 HAMER_A = {0: 0.4918, 5: 0.4953, 10: 0.4989, 15: 0.5027}
 # Emerson, Russo, Lund & Thurston (1975), J. Fish. Res. Board Can. 32: 2379, the % un-ionised ammonia of their table
-# as US EPA (1985), Ambient water quality criteria for ammonia, reprints it: {°C: (pH 7.0, 7.5, 8.0)}.
+# as US EPA (1985), Ambient water quality criteria for ammonia, reprints it: {°C: (pH 7.0, 7.5, 8.0)}. A secondary
+# check: the reprinted values lie 0.3 to 0.5 % above Emerson et al.'s own equation (below) at every point (cross review
+# F7: 0.261 against 0.2597 at 0 °C, pH 7.5; 1.83 against 1.8221 at 10 °C, pH 8.0), more than the table's three digits
+# explain (about 0.06 %): the reprint was probably made with slightly different pK values (EPA 1985 not checked in print).
 EMERSON = {0: (0.0826, 0.261, 0.820), 5: (0.125, 0.394, 1.23), 10: (0.186, 0.586, 1.83), 12: (0.217, 0.684, 2.13)}
 COLD = (0.0, 2.0, 5.0, 8.0, 10.0, 12.0)
+
+
+def emerson_pka(temp_c):
+    """Emerson et al. (1975), their primary equation: pKa = 0.09018 + 2729.92 / T (T in K), fresh water, 0 to 30 °C."""
+    return 0.09018 + 2729.92 / (temp_c + 273.15)
 
 
 def log_k(coefficients, temp_c):
@@ -70,6 +78,11 @@ class ConstantsTests(SimpleTestCase):
             with self.subTest(temp_c=temp_c):
                 self.assertAlmostEqual(-math.log10(chemistry.k1_sws(temp_c, 0)), pk1, delta=0.002)
                 self.assertAlmostEqual(-math.log10(chemistry.k2_sws(temp_c, 0)), pk2, delta=0.002)
+                # Why 0.007 for Kw: the core's is Millero (1995)'s seawater fit on the total scale (DOE 1994, its ln
+                # constant 148.9652) at S = 0, which lies 0.004 to 0.006 pK above Harned & Owen's pure-water Kw (14.9435
+                # at 0 °C, 13.9965 at 25 °C) and wateq4f's Harned & Hamer expression; Millero's own pure-water constant
+                # 148.9802 would lie 0.002 below (cross review F8). It moves neither CO2 nor NH3 measurably below pH 9,
+                # where OH- is under 0.1 % of the alkalinity.
                 self.assertAlmostEqual(-math.log10(chemistry.kw_total(temp_c, 0)), -log_k(WATER, temp_c), delta=0.007)
 
     def test_the_co2_solubility(self):
@@ -88,6 +101,16 @@ class AmmoniaTests(SimpleTestCase):
                 with self.subTest(temp_c=temp_c, ph=ph):
                     found = 100 * chemistry.water_equilibria(float(temp_c), 0.0).nh3_share(ph)
                     self.assertAlmostEqual(found / published, 1, delta=0.006)
+
+    def test_the_nh3_share_meets_emersons_equation(self):
+        """With nothing measured the share's pK (pH + log10((1 − f) / f)) is Emerson et al.'s primary equation within
+        0.002 pK from 0 to 25 °C (cross review F7: the core is within 0.0016, 0.0008 at 12 °C); the table above is the
+        secondary check, with its +0.4 % bias."""
+        for temp_c in (0.0, 2.0, 5.0, 8.0, 10.0, 12.0, 15.0, 20.0, 25.0):
+            for ph in (7.0, 7.5, 8.0):
+                share = chemistry.water_equilibria(temp_c, 0.0).nh3_share(ph)
+                with self.subTest(temp_c=temp_c, ph=ph):
+                    self.assertAlmostEqual(ph + math.log10((1 - share) / share), emerson_pka(temp_c), delta=0.002)
 
     def test_an_ion_rich_water_has_less_nh3_by_its_activities(self):
         """NH4+ and H+ are both monovalent, so KNH4 needs no activity: the share moves only by the meter's pH,

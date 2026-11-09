@@ -34,7 +34,7 @@ Who did what to which record, with old and new values.
 - **how it works**: A record's own rows are also shown on the History tab of its edit page.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log
 - **constraints**: chk_audit_log_severity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 81 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 82 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -81,7 +81,7 @@ What the platform keeps about a person beyond Django's account.
 - **how it works**: Today the profile holds the language only: chosen with the language switcher, or on the Users tab.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › profiles
 - **forms**: `UserForm`
-- **tests that mention it**: `core/test_languages.py`, `farm/tests/test_calculator.py`, `farm/tests/test_deffeyes.py` and 23 more
+- **tests that mention it**: `core/test_languages.py`, `farm/tests/test_calculator.py`, `farm/tests/test_cleaner_ration.py` and 25 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1010,7 +1010,7 @@ A production unit within a site: a hatchery hall, a nursery, a grow-out unit.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › production_departments
 - **forms**: `ProductionDepartmentForm`
 - **constraints**: uq_production_departments_code_live (unique: code); uq_production_departments_site_name_live (unique: site, name); chk_production_departments_capacity (check); chk_production_departments_live_on_a_site (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_design_shell.py` and 47 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_design_shell.py` and 48 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1074,7 +1074,7 @@ A protocol in force for a unit, a whole batch or a batch in one unit, from a day
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › protocol_assignments
 - **forms**: `AssignmentForm`, `NewAssignmentForm`
 - **constraints**: chk_protocol_assignments_target (check); chk_protocol_assignments_period (check); excl_protocol_assignments_unit (exclusion: unit, valid_from, valid_until); excl_protocol_assignments_batch (exclusion: batch, valid_from, valid_until); excl_protocol_assignments_batch_in_unit (exclusion: unit, batch, valid_from, valid_until)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_assignments.py`, `farm/tests/test_protocols.py` and 5 more
+- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_assignments.py`, `farm/tests/test_cleaner_ration.py` and 6 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1133,7 +1133,7 @@ A physical facility (locality).
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › sites
 - **forms**: `SiteForm`
 - **constraints**: uq_sites_code_live (unique: code); uq_sites_name_live (unique: name); uq_sites_lokalitetsnummer_live (unique: lokalitetsnummer); chk_sites_lokalitetsnummer_range (check); chk_sites_organisation_number (check); chk_sites_production_form (check); chk_sites_latitude_range (check); chk_sites_longitude_range (check); chk_sites_altitude_range (check); chk_sites_coordinates_paired (check); chk_sites_sea_cage_location (check); chk_sites_timezone_given (check); chk_sites_lice_area (check)
-- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 64 more
+- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 65 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1244,8 +1244,8 @@ A species the farm grows or stocks, with its names, codes and the water it lives
 - **read**: species tab (`/species/`)
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › species
 - **forms**: `SpeciesForm`
-- **constraints**: uq_species_code_live (unique: code); uq_species_scientific_name_live (unique: scientific_name); chk_species_scientific_name (check); chk_species_code (check); chk_species_official_code (check); chk_species_category (check); chk_species_status (check); chk_species_cleaner_fish_type (check); chk_species_withdrawal_temperature (check); chk_species_water (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_scope.py`, `core/tests_workspaces.py` and 19 more
+- **constraints**: uq_species_code_live (unique: code); uq_species_scientific_name_live (unique: scientific_name); chk_species_scientific_name (check); chk_species_code (check); chk_species_official_code (check); chk_species_category (check); chk_species_status (check); chk_species_cleaner_fish_type (check); chk_species_withdrawal_temperature (check); chk_species_max_weight_ratio (check); chk_species_water (check)
+- **tests that mention it**: `core/test_languages.py`, `core/tests_scope.py`, `core/tests_workspaces.py` and 20 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1272,6 +1272,7 @@ A species the farm grows or stocks, with its names, codes and the water it lives
 | status | varchar(20) |  |  | SpeciesForm › Status and notes |
 | cleaner_fish_type | varchar(20) |  |  | SpeciesForm › Regulatory |
 | withdrawal_temperature_c | numeric(4, 1) | yes |  | SpeciesForm › Regulatory |
+| max_weight_ratio | numeric(6, 2) | yes |  | SpeciesForm › Stocking |
 | notes | varchar(2000) |  |  | SpeciesForm › Status and notes |
 
 <a id="farmstockmovement"></a>
@@ -1468,7 +1469,7 @@ A unit fish are held in: a tank, a pond or a cage.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › tanks
 - **forms**: `TankForm`
 - **constraints**: uq_tanks_code_live (unique: code); uq_tanks_regulatory_unit_id_live (unique: production_department, regulatory_unit_id); chk_tanks_kind (check); chk_tanks_status (check); chk_tanks_water_type (check); chk_tanks_shape_by_kind (check); chk_tanks_material_by_kind (check); chk_tanks_pond_type_by_kind (check); chk_tanks_liner_type_by_kind (check); chk_tanks_water_source_by_kind (check); chk_tanks_cage_type_by_kind (check); chk_tanks_frame_type_by_kind (check); chk_tanks_net_material_by_kind (check); chk_tanks_tank_required (check); chk_tanks_pond_required (check); chk_tanks_cage_required (check); chk_tanks_diameter_by_shape (check); chk_tanks_length_by_shape (check); chk_tanks_stated_volume_m3_by_shape (check); chk_tanks_width_by_shape (check); chk_tanks_square_sides (check); chk_tanks_long_side_first (check); chk_tanks_water_depth (check); chk_tanks_max_depth (check); chk_tanks_liner_by_pond_type (check); chk_tanks_liner_thickness (check); chk_tanks_submersion (check); chk_tanks_diameter_range (check); chk_tanks_length_range (check); chk_tanks_width_range (check); chk_tanks_stated_volume_m3_range (check); chk_tanks_depth_range (check); chk_tanks_surface_area_m2_range (check); chk_tanks_max_depth_range (check); chk_tanks_mesh_size_mm_range (check); chk_tanks_max_submersion_depth_range (check); chk_tanks_max_density_kg_m3_range (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_workspaces.py` and 29 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_workspaces.py` and 31 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

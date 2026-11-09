@@ -211,6 +211,7 @@
         "farm/tests/test_site_structure.py",
         "farm/tests/test_sites.py",
         "farm/tests/test_species.py",
+        "farm/tests/test_species_size_limit.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_suppliers.py",
         "farm/tests/test_systems.py",
@@ -519,6 +520,7 @@
       "tests": [
         "core/test_languages.py",
         "farm/tests/test_calculator.py",
+        "farm/tests/test_cleaner_ration.py",
         "farm/tests/test_deffeyes.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_feeding.py",
@@ -527,6 +529,7 @@
         "farm/tests/test_health.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_species.py",
+        "farm/tests/test_species_size_limit.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_suppliers.py",
         "farm/tests/test_tanks.py",
@@ -10585,6 +10588,7 @@
         "farm/tests/test_restore.py",
         "farm/tests/test_site_structure.py",
         "farm/tests/test_sites.py",
+        "farm/tests/test_species_size_limit.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_suppliers.py",
         "farm/tests/test_systems.py",
@@ -11271,6 +11275,7 @@
       "tests": [
         "core/tests_workspaces.py",
         "farm/tests/test_assignments.py",
+        "farm/tests/test_cleaner_ration.py",
         "farm/tests/test_protocols.py",
         "reports/tests/test_compute.py",
         "experiments/tests/test_amend.py",
@@ -12283,6 +12288,7 @@
         "farm/tests/test_restore.py",
         "farm/tests/test_site_structure.py",
         "farm/tests/test_sites.py",
+        "farm/tests/test_species_size_limit.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_suppliers.py",
         "farm/tests/test_systems.py",
@@ -13196,6 +13202,19 @@
           "why": ""
         },
         {
+          "name": "max_weight_ratio",
+          "field": "max_weight_ratio",
+          "type": "numeric(6, 2)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SpeciesForm › Stocking"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
           "name": "notes",
           "field": "notes",
           "type": "varchar(2000)",
@@ -13264,6 +13283,12 @@
         },
         {
           "name": "chk_species_withdrawal_temperature",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_species_max_weight_ratio",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -13360,6 +13385,7 @@
             "official_code": "Regulatory",
             "cleaner_fish_type": "Regulatory",
             "withdrawal_temperature_c": "Regulatory",
+            "max_weight_ratio": "Stocking",
             "status": "Status and notes",
             "notes": "Status and notes",
             "version": ""
@@ -13388,6 +13414,7 @@
         "farm/tests/test_migration_withdrawals.py",
         "farm/tests/test_restore.py",
         "farm/tests/test_species.py",
+        "farm/tests/test_species_size_limit.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
@@ -16775,6 +16802,7 @@
         "core/test_languages.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
+        "farm/tests/test_cleaner_ration.py",
         "farm/tests/test_escape_delivery.py",
         "farm/tests/test_feeding.py",
         "farm/tests/test_harvest.py",
@@ -16783,6 +16811,7 @@
         "farm/tests/test_migration_points.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_site_structure.py",
+        "farm/tests/test_species_size_limit.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",

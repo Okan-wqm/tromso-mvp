@@ -4,6 +4,7 @@
 use chemcore_core::analysis as a;
 use chemcore_core::chemistry as c;
 use chemcore_core::dosing as d;
+use chemcore_core::fresh as f;
 use chemcore_core::geometry as g;
 use chemcore_core::num::ChemError;
 use chemcore_core::plots as pl;
@@ -358,6 +359,56 @@ fn oxygen_solubility(temp_c: f64, salinity: f64, pressure: f64) -> PyResult<f64>
 fn co2_from_air(temp_c: f64, salinity: f64, pressure: f64) -> PyResult<f64> {
     inputs(&[temp_c, salinity, pressure])?;
     ok(c::co2_from_air(temp_c, salinity, pressure))
+}
+
+// ---- I2, fresh water's ionic strength: golden v3, not used by the application (chemcore/core/src/fresh.rs) -------
+
+fn ions(conductivity_us_cm: Option<f64>, hardness_mg_l: Option<f64>) -> f::Ions {
+    f::Ions {
+        conductivity_us_cm,
+        hardness_mg_l,
+    }
+}
+
+/// (ionic strength mol/L, its source's code) of a water by v3's rules.
+#[pyfunction]
+#[pyo3(signature = (salinity, alkalinity_mg_l, conductivity_us_cm=None, hardness_mg_l=None))]
+fn fresh_ionic_strength(
+    salinity: f64,
+    alkalinity_mg_l: f64,
+    conductivity_us_cm: Option<f64>,
+    hardness_mg_l: Option<f64>,
+) -> PyResult<(f64, &'static str)> {
+    let (strength, source) =
+        f::ionic_strength(salinity, alkalinity_mg_l, ions(conductivity_us_cm, hardness_mg_l)).map_err(err)?;
+    Ok((ok(Ok(strength))?, source.code()))
+}
+
+/// log10 of an ion's Davies activity coefficient.
+#[pyfunction]
+fn davies_log_gamma(temp_c: f64, ionic_strength: f64, charge: f64) -> PyResult<f64> {
+    inputs(&[temp_c, ionic_strength, charge])?;
+    ok(f::davies_log_gamma(temp_c, ionic_strength, charge))
+}
+
+/// The v3 equilibria of a water (the application reads `equilibria`, v1).
+#[pyfunction]
+#[pyo3(signature = (temp_c, salinity, alkalinity_mg_l, conductivity_us_cm=None, hardness_mg_l=None))]
+fn equilibria_v3(
+    temp_c: f64,
+    salinity: f64,
+    alkalinity_mg_l: f64,
+    conductivity_us_cm: Option<f64>,
+    hardness_mg_l: Option<f64>,
+) -> PyResult<Equilibria> {
+    f::equilibria_v3(
+        temp_c,
+        salinity,
+        alkalinity_mg_l,
+        ions(conductivity_us_cm, hardness_mg_l),
+    )
+    .map(|(eq, _strength, _source)| Equilibria(eq))
+    .map_err(err)
 }
 
 // ---- the analysis of a water (chemcore/core/src/analysis.rs) ---------------------------------------------------
@@ -969,6 +1020,7 @@ fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("H2S_PER_S", c::H2S_PER_S)?;
     module.add("SOLVER_PH", c::SOLVER_PH)?;
     module.add("AIR_CO2", c::AIR_CO2)?;
+    module.add("FRESH_BELOW", f::FRESH_BELOW)?;
     module.add_class::<Equilibria>()?;
     module.add_function(wrap_pyfunction!(version, module)?)?;
     module.add_function(wrap_pyfunction!(formula_version, module)?)?;
@@ -1021,6 +1073,9 @@ fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
         wrap_pyfunction!(judge_step, module)?,
         wrap_pyfunction!(bands, module)?,
         wrap_pyfunction!(saturation_index, module)?,
+        wrap_pyfunction!(fresh_ionic_strength, module)?,
+        wrap_pyfunction!(davies_log_gamma, module)?,
+        wrap_pyfunction!(equilibria_v3, module)?,
     ] {
         module.add_function(function)?;
     }

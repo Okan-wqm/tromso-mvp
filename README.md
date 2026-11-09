@@ -3405,7 +3405,7 @@ wheel is 225 KB, imports in 10 ms, a call costs 0.2 to 0.3 µs. One whole chart 
 25 ms); 2000 all-different waters take 2 to 3 s, so the replay shares the heavy layers between frames of the same
 temperature (a synthetic page: 54 different temperatures, 99 to 164 ms, 128 KB compressed).
 
-**Nothing changes a result silently.** Three references hold the chemistry before any of it moves:
+**Nothing changes a result silently.** These references hold the chemistry (golden v3 beside them, for the owner):
 
 - *Golden v1* (`chemcore/golden/v1`, 2.8 MB): what today's Python returns for a fixed corpus (every constant of
   1 245 waters, 1 920 carbonate waters with each solve's path, 1 500 analyses, 600 charts, the dosing and simulator,
@@ -3414,6 +3414,16 @@ temperature (a synthetic page: 54 different temperatures, 99 to 164 ms, 128 KB c
   names the formula modules' git blobs. `farm/tests/test_golden.py`: the recorder reproduces itself byte for byte and
   today's Python reproduces v1 bit for bit. v1 is never re-recorded silently; a version that changes results is v2,
   after the owner decides. `chemcore/tolerances.toml` holds the parity classes the Rust core will be held to.
+- *Golden v3* (`chemcore/golden/v3`, 82 KB; I2, owner amendment B5), beside v1 and **not used by the application**
+  until the owner decides: below a salinity of 5 a water's ionic strength comes from its conductivity (1.6e-5 per
+  µS/cm), else its hardness with its alkalinity, else its salinity, else its alkalinity alone, and its constants are
+  the fresh-water ones made concentration constants with Davies activity coefficients (`chemcore/core/src/fresh.rs`,
+  `native.equilibria_v3`); from 5 on it is v1 bit for bit. `chemcore/scripts/record_golden_v3.py` records it from the
+  core (882 waters: fresh, hard, brackish and sea, each source of the ionic strength, v1 and v3 side by side);
+  `farm/tests/test_golden_v3.py` holds the core to it bit for bit, Davies to the literature's values, and the
+  application to v1. The comparison for the owner, in Turkish, is `chemcore/findings/I2-comparison.md`: in fresh
+  water v3 shows 3 to 13 % less CO₂ and NH₃ share, and at the 5 ‰ boundary a salinity-only brackish water jumps by
+  6 % (the comparison recommends a boundary of 1 ‰).
 - *Anchors* (`chemcore/golden/anchors.json`): the constants and a carbonate chain at three waters, worked out at 50
   digits with mpmath (`chemcore/scripts/anchors_mpmath.py`, mpmath pinned by hash in `anchors.lock`, run once, never
   by the server) from the formulas typed from the papers, each paper's check value asserted first. Today's Python
@@ -3481,7 +3491,7 @@ unit's chart), each refusing a user without its permission.
 | S9 the rest: one batch call for a page's analyses and figures | open |
 | S9 the rest: a binary encoding of the figures | not needed now: a real 60 s page is 0.4 to 0.76 MB gzipped, under the 2 MB at which it would be built (the plan's 400 KB target is passed at 60 s) |
 | S10 the retirement audit: no formula left in a door (a test holds it), the dead doors gone, the docs | done; two definitions over the core's values stay in `farm/water/read.py` until `wip/fix-monitoring` lands (see Retired) |
-| I2 fresh-water ionic strength (golden v3 beside v1, the owner sees it before any switch) | after S10 |
+| I2 fresh-water ionic strength (golden v3 beside v1, the owner sees it before any switch) | v3 built and recorded, not switched: the comparison for the owner is `chemcore/findings/I2-comparison.md` |
 
 **The replay, measured** (development database, read only, 2000-frame pages on three units with live demo readings at
 about 1 Hz). Distinct (temperature, salinity, TAN), and so figures, per page: 140 to 215 at a 1 s step, 219 to 362 at

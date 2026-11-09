@@ -7,12 +7,15 @@ name AT_TARGET
 name BY_KEY
 name DEFAULT_REAGENTS
 name FORMULA_VERSION
+name FRESH_BELOW
 name H2S_PER_S
+name IONIC_PER_MICROSIEMENS
 name LABEL_AT
 name LEFT_OUT_G
 name LINE_LENGTH
 name MAX_RECIPES
 name MG_CACO3_PER_MEQ
+name MG_CACO3_PER_MMOL
 name MG_CALCIUM_PER_MOL
 name MG_CO2_PER_MMOL
 name OMEGA_SALINITY
@@ -31,7 +34,9 @@ name co2_curve
 name co2_from_air
 name core_hash
 name counter_productive
+name davies_log_gamma
 name direction_line
+name equilibria_v3
 name free_to_sws
 name free_to_total
 name from_code

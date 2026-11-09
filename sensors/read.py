@@ -469,6 +469,7 @@ def replay_rows(found, first, step, count, tier):
 # at 1 s the span's readings 0.3 s, the look-ups 0.6 to 1.2 s; at 60 s the span's readings (sorted) 7 to 9 s, the
 # look-ups 0.65 to 0.95 s.
 SPAN_STEP = timedelta(seconds=5)
+RUNTIME_EXCLUSION = 'timescaledb.enable_runtime_exclusion'
 
 
 def _raw_rows(numbers, starts, ends, fresh, first, last, step, count):
@@ -506,14 +507,17 @@ def _raw_rows(numbers, starts, ends, fresh, first, last, step, count):
         return rows
     # One indexed look-up per segment and moment (the primary key (channel_no, ts) read backwards, one row). The
     # runtime exclusion of TimescaleDB, which would only find again the chunks left out when planning, is switched off
-    # for this one transaction: it cost about 60 µs on every look-up (0.8 s instead of 0.2 s for 10 000 of them on the
-    # development data).
+    # for this one query and then set back to what it was (a caller's enclosing transaction keeps its own setting): it
+    # cost about 60 µs on every look-up (0.8 s instead of 0.2 s for 10 000 of them on the development data).
     sql = (f'{segments}, m AS (SELECT * FROM unnest(%s::timestamptz[]) WITH ORDINALITY AS m(at, slot)) '
            f'SELECT s.ord, m.slot, r.ts, r.value FROM s CROSS JOIN m CROSS JOIN LATERAL ({newest.format(at="m.at")}) r')
     with transaction.atomic(), connection.cursor() as cursor:
-        cursor.execute('SET LOCAL timescaledb.enable_runtime_exclusion = off')
+        cursor.execute(f"SELECT current_setting('{RUNTIME_EXCLUSION}'), set_config('{RUNTIME_EXCLUSION}', 'off', true)")
+        previous = cursor.fetchone()[0]
         cursor.execute(sql, [numbers, starts, ends, fresh, [first + slot * step for slot in range(count)], since, last])
-        return {(int(ordinal) - 1, int(slot) - 1): (ts, value) for ordinal, slot, ts, value in cursor.fetchall()}
+        found = {(int(ordinal) - 1, int(slot) - 1): (ts, value) for ordinal, slot, ts, value in cursor.fetchall()}
+        cursor.execute(f"SELECT set_config('{RUNTIME_EXCLUSION}', %s, true)", [previous])
+        return found
 
 
 def _water_types(target):

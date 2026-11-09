@@ -24,6 +24,7 @@ from core.models import AuditLog, Profile
 from core.softdelete import plan_delete, restore
 
 from ..models import ProductionDepartment, SamplingPoint, Site, System, Tank, WaterLimit, WaterMeasurement
+from ..stock.dates import local_today
 from ..stock.services import AlreadyRecorded
 from ..water import chemistry, parameters, read, services, views as water_views
 from ..water.evaluate import Limits, Status, judge, worst
@@ -764,7 +765,7 @@ class PageTests(WaterTestCase):
         self.assertEqual(history(unit=self.t1.pk), ['T-01'])
         self.assertEqual(history(system=self.ras.pk), ['R1'])
         self.assertEqual(history(alerts='1'), ['T-01'])
-        today = timezone.localdate()
+        today = local_today()                                   # the page's clock: the company's
         self.assertEqual(history(**{'from': (today - timedelta(days=1)).isoformat()}), ['T-02', 'R1'])
         self.assertEqual(history(to=(today - timedelta(days=2)).isoformat()), ['T-01'])
         page = self.client.get(self.url, {'unit': self.t1.pk})
@@ -785,7 +786,7 @@ class PageTests(WaterTestCase):
     def test_a_date_that_is_no_date_is_the_default_never_a_server_error(self):
         """F-176: ?from=2026-13-45 is shown as the default span, not a 500."""
         self.sample(ph='7.2')
-        today = timezone.localdate()
+        today = local_today()                                   # the page's clock: the company's
         for query in ({'from': '2026-13-45'}, {'to': '2026-02-30'}, {'from': 'x', 'to': '99999-01-01'}):
             with self.subTest(query=query):
                 response = self.client.get(self.url, {'view': 'history', **query})
@@ -796,7 +797,7 @@ class PageTests(WaterTestCase):
     def test_the_first_and_the_last_day_a_calendar_has_are_no_server_error(self):
         """Cross review: 9999-12-31 is a day, and the day after it is none; 0001-01-01 lies before any clock's zone. A
         day outside core.dates.read_day's window (1900-2100) is the default: never a server error."""
-        today = timezone.localdate()
+        today = local_today()                                   # the page's clock: the company's
         for query in ({'to': '9999-12-31'}, {'from': '9999-12-31', 'to': '9999-12-31'},
                       {'from': '0001-01-01', 'to': '0001-01-02'}, {'from': '0001-01-01'}):
             with self.subTest(query=query):
@@ -812,7 +813,7 @@ class PageTests(WaterTestCase):
         page's are judged, and the first day a sample may be voided is asked once per point."""
         for hours in range(1, 6):
             self.sample(hours=hours, ph='7.2')
-        today = timezone.localdate()
+        today = local_today()                                   # the page's clock: the company's
         response = self.client.get(self.url, {'view': 'history', 'from': '1900-01-02'})     # read_day's window
         self.assertEqual(response.context['start'], today - timedelta(days=366))
         self.assertContains(response, 'A page shows at most 366 days: the first day was moved.')

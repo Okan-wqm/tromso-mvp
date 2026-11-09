@@ -413,7 +413,8 @@ def cards(units, user, choice, occupancy=STOCKED, now=None):
 def _middle(card):
     """The PointWater of the card's middle point (always the first, when there is one), else None."""
     first = card.water[0] if card.water else None
-    return first if first is not None and first.point is not None and first.for_unit else None
+    return first if first is not None and first.point is not None and (
+        first.for_unit or first.point.kind == water_read.MIDDLE) else None
 
 
 def _key_readings(card):

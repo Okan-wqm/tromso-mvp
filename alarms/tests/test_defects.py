@@ -4,10 +4,12 @@ from io import StringIO
 from unittest import mock
 
 from django.core.management import call_command
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
+from django.test.utils import CaptureQueriesContext
 
 from farm.models import SamplingPoint
-from farm.tests.helpers import point_of
+from farm.tests.helpers import point_of, stock_fish
+from farm.tests.test_stock import make_unit
 from farm.water import services as water, sources as water_sources
 from sensors import alarms as sensor_alarms, bindings
 from sensors.models import AlarmEvent, AlarmRule
@@ -215,3 +217,32 @@ class OneOpenAlarmTests(AlarmsCase):
                 parameter='ph', site=self.bergen, production_department=self.hall))
         self.assertEqual(Alarm.objects.filter(severity='critical', source='water_limit').count(), 1)
         self.assertEqual(AlarmSubjectState.objects.get(key=self.key).open_alarm, self.alarm)
+
+
+class BulkTests(AlarmsCase):
+    """Defect 7: a pass's writes are set-based and its routing is resolved once per pass: its queries do not grow with the
+    alarms it raises, the notifications it queues or the rules and people it reads (a burst of alarms at once costs what
+    one costs)."""
+
+    def setUp(self):
+        super().setUp()
+        for name in ('ann', 'bob', 'cy'):
+            type(self.operator).objects.create_user(name, f'{name}@example.com', 'x').groups.add(self.operators)
+        self.rule()
+        self.rule(user=self.manager, on_shift_only=True)
+
+    def queries_of_a_burst(self, units):
+        for number in range(units):
+            unit = make_unit(f'B{units}-{number}', self.hall, system=self.ras)
+            stock_fish(self.keeper, unit, 100, '50', 10, species=self.salmon)
+            self.sample(5.5, point=point_of(unit))
+        with CaptureQueriesContext(connection) as queries:
+            summary = self.loop(minutes=units)
+        self.assertEqual(summary.failed_steps, [])
+        return len(queries), summary.opened
+
+    def test_a_pass_costs_the_same_for_two_alarming_units_and_for_six(self):
+        few, opened_few = self.queries_of_a_burst(2)
+        many, opened_many = self.queries_of_a_burst(6)
+        self.assertEqual((opened_few, opened_many), (4, 12))          # each unit's warning and critical levels
+        self.assertEqual(few, many)

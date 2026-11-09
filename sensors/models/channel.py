@@ -12,8 +12,9 @@ from .device import Device
 from .format import POINTER
 
 HEARTBEAT_MIN, HEARTBEAT_MAX = 10, 86400
-# How many heartbeats without a good value before a channel's value is no longer fresh (`fresh_s`).
-FRESH_HEARTBEATS = 3
+# How many heartbeats without a good value before a channel's value is no longer fresh is the channel's own
+# `fresh_heartbeats` (the user's, cross review F10; 3 is the value the code held): at least one, at most twenty.
+FRESH_HEARTBEATS_BOUNDS = (1, 20)
 INF = float('inf')
 # The sequence channel numbers are drawn from (migration 0001): never reused, so a number names one channel for ever,
 # its readings included.
@@ -67,7 +68,7 @@ class Channel(CodedMixin, AuditedModel):
     JSON pointer in an object, or the item's name in a list), the conversion from the instrument's unit to the
     quantity's (`unit_factor`, `unit_offset`; calibration is applied first), and how it is stored: every value, or a
     value when it moves past the deadband, and at least once per heartbeat. Its `channel_no`, drawn from a sequence and
-    never reused, is the key its readings are stored under. A value is fresh for three heartbeats (`fresh_s`).
+    never reused, is the key its readings are stored under. A value is fresh for its `fresh_heartbeats` heartbeats (`fresh_s`).
 
     In maintenance its values are stored flagged and used nowhere; retired, the ingest ignores it. Deleting it keeps its
     readings (they are history)."""
@@ -93,7 +94,11 @@ class Channel(CodedMixin, AuditedModel):
     deadband = models.FloatField(_('Deadband'), default=0.0, validators=[MinValueValidator(0)])
     heartbeat_s = models.PositiveIntegerField(
         _('Heartbeat (seconds)'), validators=[MinValueValidator(HEARTBEAT_MIN), MaxValueValidator(HEARTBEAT_MAX)])
-    fresh_s = models.GeneratedField(expression=F('heartbeat_s') * FRESH_HEARTBEATS, output_field=models.IntegerField(),
+    fresh_heartbeats = models.PositiveSmallIntegerField(
+        _('Fresh for (heartbeats)'), default=3,
+        validators=[MinValueValidator(FRESH_HEARTBEATS_BOUNDS[0]), MaxValueValidator(FRESH_HEARTBEATS_BOUNDS[1])],
+        help_text=_('How many heartbeats a value stays fresh without a new one; then the place shows no recent data.'))
+    fresh_s = models.GeneratedField(expression=F('heartbeat_s') * F('fresh_heartbeats'), output_field=models.IntegerField(),
                                     db_persist=True, verbose_name=_('Fresh for (seconds)'))
     range_min = models.FloatField(_('Range from'), null=True, blank=True)
     range_max = models.FloatField(_('Range to'), null=True, blank=True)
@@ -116,6 +121,9 @@ class Channel(CodedMixin, AuditedModel):
             models.CheckConstraint(condition=~Q(unit_factor=0) & finite('unit_factor'), name='chk_sensors_channel_unit_factor',
                                    violation_error_message=_('The unit factor is a number other than 0.')),
             models.CheckConstraint(condition=finite('unit_offset'), name='chk_sensors_channel_unit_offset'),
+            models.CheckConstraint(condition=Q(fresh_heartbeats__gte=FRESH_HEARTBEATS_BOUNDS[0],
+                                               fresh_heartbeats__lte=FRESH_HEARTBEATS_BOUNDS[1]),
+                                   name='chk_sensors_channel_fresh_heartbeats'),
             models.CheckConstraint(condition=(Q(value_path='') & ~Q(item_name='')) | (~Q(value_path='') & Q(item_name='')),
                                    name='chk_sensors_channel_source',
                                    violation_error_message=_('Give either the value’s path or the item’s name, one of the two.')),

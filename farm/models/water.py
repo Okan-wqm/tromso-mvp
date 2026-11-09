@@ -15,6 +15,7 @@ from core.models import ActiveManager, AuditedModel
 
 from ..water import parameters
 from ..water.evaluate import ANY_WATER
+from ..water.freshness import FRESH_HOURS_BOUNDS
 from ..water.parameters import COLUMNS, LIMIT_CHOICES, LIMITED, MEASURED
 from .species import Species
 from .tank import WaterType
@@ -202,6 +203,34 @@ def _bound_checks():
     checks.append(models.CheckConstraint(condition=ordered, name='chk_water_limits_order',
                                          violation_error_message=ORDER_MESSAGE))
     return checks
+
+
+class WaterFreshness(AuditedModel):
+    """How long a value of a water parameter says something about the water now (hours), one row per parameter: an older
+    value is shown stale, never OK, and never clears an alarm. The user's reference data (alarm plan §7c, cross review
+    F10), seeded by migration 0037 with the values the code held; changed, never added or deleted (a row lost is made
+    again from the seed: farm/water/freshness.py). Read once per page and per alarm pass."""
+
+    parameter = models.CharField(_('Parameter'), max_length=30, choices=[(each.code, each.label)
+                                                                         for each in parameters.BY_CODE.values()], editable=False)
+    fresh_hours = models.PositiveIntegerField(_('Fresh for (hours)'))
+
+    class Meta:
+        db_table = 'water_freshness'
+        ordering = ['parameter']
+        verbose_name = _('water freshness')
+        verbose_name_plural = _('water freshness')
+        constraints = [
+            models.UniqueConstraint(fields=['parameter'], name='uq_water_freshness_parameter'),
+            models.CheckConstraint(condition=Q(fresh_hours__gte=FRESH_HOURS_BOUNDS[0],
+                                               fresh_hours__lte=FRESH_HOURS_BOUNDS[1]),
+                                   name='chk_water_freshness_hours',
+                                   violation_error_message=_('From 1 hour to a year (8760 hours).')),
+            models.CheckConstraint(condition=Q(is_deleted=False), name='chk_water_freshness_kept'),
+        ]
+
+    def __str__(self):
+        return str(self.get_parameter_display())
 
 
 class WaterLimit(AuditedModel):

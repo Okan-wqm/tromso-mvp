@@ -152,6 +152,7 @@ class PasswordResetForm(auth_forms.PasswordResetForm):
 
 PLATFORM_TABS = [
     ('records', _('Records'), ['correction_window_days', 'second_approval_withdrawal']),
+    ('clocks', _('Clocks'), ['clock_tolerance_seconds']),
 ]
 
 
@@ -172,4 +173,8 @@ class PlatformSettingsForm(TabbedForm):
                                             'treatment reaching back over a harvest) needs a second person’s approval. '
                                             'That approval is not built yet: while this is ticked, every such step is '
                                             'refused, so nobody goes on alone.'),
+            'clock_tolerance_seconds': _('How far ahead of the server’s clock a water value may be stamped and still '
+                                         'count as fresh (a device or tablet clock a little fast). A value further ahead, '
+                                         'up to an hour, still decides its unit’s status and its alarm, but is not shown '
+                                         'as the newest. 0 to 3600; 300 until you set another.'),
         }

@@ -261,6 +261,7 @@ class Profile(models.Model):
 
 # The bounds of the platform owner's settings: the database holds them (PlatformSettings' checks) and the form says them.
 WINDOW_DAYS = (1, 3650)           # a day back at least; ten years at most, which keeps every date's arithmetic sane
+CLOCK_TOLERANCE = (0, 3600)          # seconds: at most the sensors' ingest contract's hour
 
 
 class PlatformSettings(AuditedModel):
@@ -282,6 +283,11 @@ class PlatformSettings(AuditedModel):
         validators=[MinValueValidator(WINDOW_DAYS[0]), MaxValueValidator(WINDOW_DAYS[1])])
     second_approval_withdrawal = models.BooleanField(
         _('A second person approves a withdrawal warning acknowledgement'), default=False)
+    # How far ahead of the server's clock a value may be stamped and still count as fresh (farm/water/freshness.py): at
+    # most the sensors' ingest contract's hour (evaluate.MAX_AHEAD). 300 s is the value the code held (cross review F10).
+    clock_tolerance_seconds = models.PositiveIntegerField(
+        _('Clock tolerance (seconds)'), default=300,
+        validators=[MinValueValidator(CLOCK_TOLERANCE[0]), MaxValueValidator(CLOCK_TOLERANCE[1])])
 
     class Meta:
         db_table = 'platform_settings'
@@ -293,6 +299,10 @@ class PlatformSettings(AuditedModel):
             models.CheckConstraint(
                 condition=models.Q(correction_window_days__gte=WINDOW_DAYS[0], correction_window_days__lte=WINDOW_DAYS[1]),
                 name='chk_platform_settings_window'),
+            models.CheckConstraint(
+                condition=models.Q(clock_tolerance_seconds__gte=CLOCK_TOLERANCE[0],
+                                   clock_tolerance_seconds__lte=CLOCK_TOLERANCE[1]),
+                name='chk_platform_settings_clock_tolerance'),
         ]
 
     def __str__(self):
@@ -307,6 +317,8 @@ class PlatformSettings(AuditedModel):
     def get(cls):
         """The one row (made by the migration; made again here if a restore left none)."""
         return cls.objects.first() or cls.objects.create()
+
+
 class EntryKey(models.Model):
     """The key a new-record form carries (core.crud.ENTRY_KEY) and the record its first sending created, for every
     kind of record (F-232): the same form sent twice, by a double click, a retried request or two sendings at once,

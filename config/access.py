@@ -19,6 +19,8 @@ AREAS = [
     Area(_('Species'), 'farm.Species'),
     Area(_('Feeds'), 'farm.Feed'),
     Area(_('Water limits'), 'farm.WaterLimit'),
+    # How long a water value counts as fresh, one seeded row per parameter: Read, Edit.
+    Area(_('Water freshness'), 'farm.WaterFreshness', actions=('view', 'change')),
     Area(_('Medicines'), 'farm.Medicine'),
     Area(_('Slaughter facilities'), 'farm.SlaughterFacility'),
     Area(_('Handling rules'), 'farm.HandlingRule'),

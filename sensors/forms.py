@@ -141,7 +141,8 @@ CHANNEL_TABS = [
     ('source', gettext_lazy('Source'), ['device', 'code', 'name', 'value_path', 'item_name', 'note']),
     ('quantity', gettext_lazy('Quantity and unit'), ['quantity', 'unit', 'unit_factor', 'unit_offset']),
     ('address', gettext_lazy('Address'), ['address_protocol', 'address']),
-    ('reduction', gettext_lazy('Storing'), ['reduction', 'deadband', 'heartbeat_s', 'range_min', 'range_max', 'state']),
+    ('reduction', gettext_lazy('Storing'), ['reduction', 'deadband', 'heartbeat_s', 'fresh_heartbeats', 'range_min',
+                                            'range_max', 'state']),
 ]
 # The fields a new channel takes from its quantity when they are left empty.
 DEFAULTED = ('unit', 'reduction', 'deadband', 'heartbeat_s', 'range_min', 'range_max')
@@ -188,7 +189,7 @@ class ChannelForm(CodedFormMixin, TabbedForm):
             'deadband': gettext_lazy('A value is stored again when it moves this much from the last stored one, in the '
                                      'quantity’s unit. Empty: the quantity’s default.'),
             'heartbeat_s': gettext_lazy('A value is stored at least this often even when it does not move. Fresh for '
-                                        'three heartbeats. Empty: the quantity’s default.'),
+                                        'the heartbeats below. Empty: the quantity’s default.'),
             'range_min': gettext_lazy('A value outside the range is stored, marked, and used nowhere. Empty on a new '
                                       'channel: what the quantity can be.'),
             'state': gettext_lazy('In maintenance its values are stored, marked, and used nowhere; retired, they are '

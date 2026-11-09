@@ -345,7 +345,7 @@ def _removed_limit(reading):
             return {label: str(_('No removed limit row found: the fish have no limit row for it.'))}
         who = row.deleted_by.get_username() if row.deleted_by else '-'
         return {label: f'#{row.pk} ({row.species}, {row.get_parameter_display()}, {row.get_water_type_display()}) '
-                       f'{_("by")} {who} {row.deleted_at.isoformat() if row.deleted_at else ""}'.strip()}
+                       f'by {who} {row.deleted_at.isoformat() if row.deleted_at else ""}'.strip()}
 
 
 def water(now, rules):

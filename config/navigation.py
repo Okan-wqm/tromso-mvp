@@ -183,6 +183,8 @@ WORKSPACES = [
                 Entry(_('Species'), 'farm:species_list', 'fish', 'farm.view_species'),
                 Entry(_('Feeds'), 'farm:feed_list', 'wheat', 'farm.view_feed'),
                 Entry(_('Water limits'), 'farm:waterlimit_list', 'gauge', 'farm.view_waterlimit'),
+                # How long a water value counts as fresh, per parameter (the user's, alarm plan §7c).
+                Entry(_('Water freshness'), 'farm:waterfreshness_list', 'timer', 'farm.view_waterfreshness'),
                 Entry(_('Medicines'), 'farm:medicine_list', 'pill', 'farm.view_medicine'),
                 Entry(_('Handling rules'), 'farm:handlingrule_list', 'timer', 'farm.view_handlingrule'),
                 # What a monitoring card holds and which unit's card gets which (monitoring/cards/).

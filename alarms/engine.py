@@ -20,6 +20,7 @@ from django.db import connection, transaction
 from django.db.models import Max
 from django.utils import timezone
 
+from farm.water import freshness
 from sensors import alarms as sensor_alarms
 
 from . import read, routing, rules as alarm_rules, services, sources
@@ -128,6 +129,7 @@ def run_once(now=None):
     """One pass of the loop at `now`; returns its Summary."""
     now = now or timezone.now()
     summary = Summary()
+    freshness.forget()          # the water's staleness rules as they are now (farm/water/freshness.py)
     rules = alarm_rules.current()
 
     def count(found):

@@ -20,7 +20,7 @@ from .stock import Batch, DeliveryRecord, EscapeRecord, OpeningBalance, StockMov
 from .supplier import Supplier, SupplierContact
 from .system import System
 from .tank import Tank
-from .water import WaterLimit, WaterMeasurement
+from .water import WaterFreshness, WaterLimit, WaterMeasurement
 from .water_point import SamplingPoint
 
 __all__ = [
@@ -28,6 +28,6 @@ __all__ = [
     'FeedingProtocol', 'FeedingRecord', 'HandlingAcknowledgement', 'HandlingPlanItem', 'HandlingRule', 'HarvestRecord',
     'HealthEvent', 'LiceCount', 'Medicine', 'MedicineWithdrawal', 'OpeningBalance', 'ProductionDepartment', 'ProductionPlan', 'ProtocolAssignment',
     'ProtocolBand', 'ProtocolRate', 'SamplingPoint', 'Site', 'SiteContact', 'SlaughterFacility', 'Species', 'StockMovement',
-    'StockOperation', 'Supplier', 'SupplierContact', 'System', 'Tank', 'Treatment', 'WaterLimit',
+    'StockOperation', 'Supplier', 'SupplierContact', 'System', 'Tank', 'Treatment', 'WaterFreshness', 'WaterLimit',
     'WaterMeasurement', 'WithdrawalAcknowledgement',
 ]

@@ -148,8 +148,9 @@ class LadderTests(SimpleTestCase):
     def test_the_oxygen_may_be_the_saturation_and_a_day_is_the_limit(self):
         percent = water(reading('temperature_c', 9, hours=23), reading('oxygen_saturation_pct', 95, hours=23))
         self.assertEqual(self.key(water=(percent,)), 'ok')
-        self.assertEqual(parameters.get('temperature_c').fresh_hours, 24)      # the owner's 24 hours are the parameter's
-        self.assertEqual(parameters.get('oxygen_mg_l').fresh_hours, 24)
+        from farm.water import freshness
+        self.assertEqual(freshness.hours('temperature_c'), 24)      # the owner's 24 hours are the parameter's row
+        self.assertEqual(freshness.hours('oxygen_mg_l'), 24)
 
     def test_blind_is_never_ok_and_never_worse_than_a_warning(self):
         blind = card(water=())

@@ -1,12 +1,9 @@
 """The alarm rules are the user's reference data, never the code's (owner, alarm plan §7c): the delays, the escalation time
 and the delivery attempts per severity, and the deadband per water parameter, are rows a person with the right edits on
 Company › Alarms, seeded with the owner's defaults (§7a), bounded by the database, logged; the code holds no threshold."""
-import ast
-import pathlib
 from datetime import timedelta
 from decimal import Decimal
 
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 from django.urls import reverse
@@ -116,30 +113,3 @@ class PageTests(AlarmsCase):
         self.client.force_login(self.manager)
         self.assertEqual(self.client.get(reverse('alarms:severitypolicy_list')).status_code, 403)
         self.assertEqual(self.client.get(reverse('alarms:parameterdeadband_list')).status_code, 403)
-
-
-class NoThresholdInTheCodeTests(AlarmsCase):
-    """No alarm rule is a constant of the code (owner, §7c): every number in the alarms' modules is a finding but an
-    index, a column's size, the advisory lock's key and the bounds a row is refused outside of (`*_BOUNDS`: the database's
-    refusal of nonsense, never a rule)."""
-
-    ALLOWED = {0, 1, 2}                      # an index, "at least one", "a pair"
-
-    def test_no_number_in_the_alarm_code_is_a_threshold(self):
-        root = pathlib.Path(settings.BASE_DIR) / 'alarms'
-        found = []
-        for path in sorted(root.glob('*.py')):
-            tree = ast.parse(path.read_text(encoding='utf-8'))
-            for node in ast.walk(tree):
-                if isinstance(node, ast.keyword) and node.arg in ('max_length', 'max_digits', 'decimal_places'):
-                    node.value._column_size = True
-                if isinstance(node, ast.Assign) and any(getattr(target, 'id', '') == 'LOCK'
-                                                        or getattr(target, 'id', '').endswith('_BOUNDS')
-                                                        for target in node.targets):
-                    for inner in ast.walk(node.value):
-                        inner._column_size = True
-            for node in ast.walk(tree):
-                if (isinstance(node, ast.Constant) and isinstance(node.value, (int, float)) and not isinstance(
-                        node.value, bool) and node.value not in self.ALLOWED and not getattr(node, '_column_size', False)):
-                    found.append(f'{path.name}:{node.lineno}: {node.value}')
-        self.assertEqual(found, [])

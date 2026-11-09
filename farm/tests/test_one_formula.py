@@ -103,8 +103,12 @@ NOT_CHEMISTRY = {
                                'isoline_colour': 'the colour ramp of an isoline (the scene)',
                                '_pairs': 'a flat array read as points (the scene)',
                                'render': 'the SVG in pixels (the scene)', '_arrow': 'an arrow head (the scene)',
-                               '_star': 'the target star (the scene)'},
-    'farm/water/dosing.py': {'Dose.mg_l': "mmol/L times the core's molar mass: the dose in the unit shown",
+                               '_star': 'the target star (the scene)',
+                               'shown': 'a number rounded to a few decimals as the language writes it (display)'},
+    'farm/water/dosing.py': {'Dose.mg_l': "mmol/L times the core's molar mass, the dose in g/m³ shown when no volume is "
+                                          "given: the same product the core makes for the grams (dosing.rs), so the "
+                                          "two cannot differ; moving it into the core would change the recorded shape "
+                                          "of golden v1's dosing block",
                              'Dose.kilograms': 'grams shown as kilograms'},
     'farm/water/charts.py': {'nice_step': 'the step of an axis (the scene)',
                              '_decimals': 'the decimals of an axis label (the scene)',

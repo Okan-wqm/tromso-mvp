@@ -1,11 +1,14 @@
 # Continuous integration (README, CI and dependency updates). Every job runs what a developer runs locally:
-#   python    scripts/test.sh with CHECKS=1: the project checks, in the test runner's image on a TimescaleDB server of its
-#             own, then the catalogs must be unchanged. On a pull request that is all (SUITE=0, minutes); the whole
-#             suite (an hour or more on a hosted runner) runs on a push to main, nightly and by hand
+#   python    the browser build (static/js, which `check` asks for), then scripts/test.sh with CHECKS=1: the project
+#             checks, in the test runner's image (scripts/testrunner/image.sh) on a TimescaleDB server of its own, then
+#             the catalogs must be unchanged. On a pull request that is all (SUITE=0, minutes); the whole suite (an
+#             hour or more on a hosted runner) runs on a push to main, nightly and by hand
 #   frontend  npm ci, the browser build (tsc) and the TypeScript tests (npm test)
 #   rust      sensors-ingest: rustfmt, clippy, the tests against the real schema and a broker, cargo deny, THIRD_PARTY
+#   chemcore  chemcore/scripts/test.sh in the chemcore-tools stage of docker/testrunner.Dockerfile
 #   security  pip-audit, the Python licence gate, npm audit
-# No secret is used: the database passwords are throwaway values that live only inside a job.
+# No secret is used: the database passwords are throwaway values that live only inside a job, and the layer cache is
+# GitHub's own (the job's token, nothing configured).
 name: CI
 
 on:
@@ -45,21 +48,28 @@ jobs:
         with:
           persist-credentials: false
 
-      # The image scripts/test.sh runs the tests in, built here with its layers (the pip installs) cached between runs,
-      # and tagged as the script tags it (the hash of the requirements), so the script finds it and builds nothing.
-      - name: Test runner image tag (as scripts/test.sh computes it)
-        id: image
+      # The compiled browser code (static/js, not committed): without it `check` fails on core.W001, as a server would
+      # start without its scripts.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Browser build (npm ci, npm run build)
         run: |
-          hash=$(cat requirements.txt scripts/testrunner/requirements.txt scripts/testrunner/Dockerfile | sha256sum | cut -c1-12)
-          echo "tag=balik-testrunner:req-$hash" >> "$GITHUB_OUTPUT"
-          mkdir -p "$RUNNER_TEMP/testrunner"
-          cp requirements.txt "$RUNNER_TEMP/testrunner/requirements.txt"
-          cp scripts/testrunner/requirements.txt "$RUNNER_TEMP/testrunner/test-requirements.txt"
-          cp scripts/testrunner/Dockerfile "$RUNNER_TEMP/testrunner/Dockerfile"
+          npm ci
+          npm run build
+
+      # The image scripts/test.sh runs the tests in, as scripts/testrunner/image.sh defines it (Dockerfile, stage,
+      # context, tag), built here with its layers cached between runs, so the script finds it and builds nothing.
+      - name: Test runner image (scripts/testrunner/image.sh)
+        id: image
+        run: sh scripts/testrunner/image.sh >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
-          context: ${{ runner.temp }}/testrunner
+          context: ${{ steps.image.outputs.context }}
+          file: ${{ steps.image.outputs.file }}
+          target: ${{ steps.image.outputs.target }}
           tags: ${{ steps.image.outputs.tag }}
           load: true
           push: false
@@ -144,23 +154,30 @@ jobs:
       - run: cargo fmt --check
       - run: cargo clippy --locked --all-targets -- -D warnings
 
-      # The tests run against the real schema, migrated by Django, and a broker with the production configuration
-      # (as tests/run.sh does them on a developer's machine).
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      # The tests run against the real schema, migrated by Django in the test runner's image (the server's own
+      # packages, as tests/run.sh migrates in a Django image), and a broker with the production configuration.
+      - name: Test runner image (scripts/testrunner/image.sh)
+        id: image
+        working-directory: .
+        run: sh scripts/testrunner/image.sh >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
-          cache-dependency-path: requirements.txt
+          context: ${{ steps.image.outputs.context }}
+          file: ${{ steps.image.outputs.file }}
+          target: ${{ steps.image.outputs.target }}
+          tags: ${{ steps.image.outputs.tag }}
+          load: true
+          push: false
+          # the python job writes this cache; reading it only, two jobs never race to write it
+          cache-from: type=gha,scope=testrunner
       - name: Schema (manage.py migrate on the test database)
         working-directory: .
         env:
-          DB_HOST: 127.0.0.1
-          DB_PORT: "5432"
-          DB_NAME: sensors_ingest_test
-          DB_USER: balik
+          IMAGE: ${{ steps.image.outputs.tag }}
         run: |
-          python -m pip install -r requirements.txt
-          python manage.py migrate --no-input
+          docker run --rm --network host -v "$PWD:/app" -w /app -e DB_HOST=127.0.0.1 -e DB_PORT=5432 \
+            -e DB_NAME=sensors_ingest_test -e DB_USER=balik -e DB_PASSWORD "$IMAGE" python manage.py migrate --no-input
       - name: Broker (Mosquitto, users ingest and dev)
         working-directory: .
         run: |
@@ -192,8 +209,48 @@ jobs:
       - name: THIRD_PARTY matches Cargo.lock
         run: |
           cargo metadata --format-version 1 --locked --filter-platform x86_64-unknown-linux-gnu > "$RUNNER_TEMP/meta.json"
-          python -I tests/third_party.py "$RUNNER_TEMP/meta.json" > "$RUNNER_TEMP/THIRD_PARTY"
+          python3 -I tests/third_party.py "$RUNNER_TEMP/meta.json" > "$RUNNER_TEMP/THIRD_PARTY"
           diff -u THIRD_PARTY "$RUNNER_TEMP/THIRD_PARTY" || { echo "::error::sensors-ingest/THIRD_PARTY is out of date"; exit 1; }
+
+  # The water-chemistry core's gates, chemcore/scripts/test.sh (rustfmt, clippy, cargo test, libm the chemistry's only
+  # dependency, no WebAssembly, cargo deny with advisories, THIRD_PARTY, docker/requirements.lock naming the pins of
+  # requirements.txt), run where that script says: the chemcore-tools stage of docker/testrunner.Dockerfile. The built
+  # module's handshake with chemcore/EXPECTED (core.E001) is checked by the python job's `check`, in the image that
+  # holds the wheel. Until chemcore is on main the job finds no chemcore/ and says so (README, CI and dependency updates).
+  chemcore:
+    name: chemcore (chemcore/scripts/test.sh)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: chemcore in this checkout
+        id: here
+        run: |
+          if [ -f chemcore/scripts/test.sh ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::no chemcore/ in this checkout: nothing to test"
+          fi
+      - if: steps.here.outputs.present == 'true'
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - if: steps.here.outputs.present == 'true'
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: docker/testrunner.Dockerfile
+          target: chemcore-tools
+          tags: chemcore-tools:ci
+          load: true
+          push: false
+          cache-from: |
+            type=gha,scope=chemcore-tools
+            type=gha,scope=testrunner
+          cache-to: type=gha,mode=max,scope=chemcore-tools
+      - name: The gates (chemcore/scripts/test.sh)
+        if: steps.here.outputs.present == 'true'
+        run: docker run --rm -v "$PWD:/repo" -w /repo chemcore-tools:ci sh chemcore/scripts/test.sh
 
   security:
     name: Advisories and licences

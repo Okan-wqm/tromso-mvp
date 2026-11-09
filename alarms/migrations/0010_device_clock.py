@@ -25,7 +25,6 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('alarms', '0009_clearance_causes'),
-        ('farm', '0036_opening_balances'),
         ('sensors', '0009_alarm_event_acknowledgement_columns_removed'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]

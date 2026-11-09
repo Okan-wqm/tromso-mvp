@@ -3717,9 +3717,11 @@ redesign yet.
   `RAIL_FOOT`); "Fish farm" when neither is known.
 - **Tables** on the three pages are real tables in a `ui-table-wrap` that scrolls inside itself, with the first column
   and the row actions sticky; each value is a value face (figure, origin and age), a missing figure says why or "no
-  data", a status is a chip with glyph and word. Words wrap inside their columns and the meal board fits a 1440 px window
-  (the browser layout test checks it on `frontend/test/pages/meal.html`); a wider table scrolls in its frame, its sticky
-  columns shaded so a column passing under them reads as going on. Dates stay dd.mm.yyyy in every language.
+  data", a status is a chip with glyph and word. Words wrap inside their columns, column heads too (a figure column's
+  head as well; its figures stay on one line), and the meal board fits a 1440 px window with at least 24 px to spare (the
+  browser layout test checks it on `frontend/test/pages/meal.html` in the product's own typefaces, so Windows and Linux
+  Chrome measure alike); a wider table scrolls in its frame, its sticky columns shaded so a column passing under them
+  reads as going on. Dates stay dd.mm.yyyy in every language.
 
 ## Browser code
 
@@ -3967,7 +3969,7 @@ What one tab needed and the next ones will too lives in `core/`:
 
 The layout rules every page relies on are in the style sheets, once, and checked by tests (`core/tests_templates.py`
 reads the templates and the style sheets; `frontend/test/layout.browser.test.ts` lays the parts out in a real browser at
-390, 1024 and 1440 px):
+390, 1024 and 1440 px, in the typefaces of `static/css/fonts.css`, not the machine's fallback font):
 
 - **No page scrolls sideways.** A word longer than the line (a content hash) breaks (`.content`); a grid track is never a
   bare `1fr` (that is at least as wide as its widest content) but `minmax(0, …fr)`; a filter's fields, view tabs and a

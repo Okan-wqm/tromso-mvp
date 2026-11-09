@@ -268,14 +268,14 @@ class ShownTests(SourcesCase):
         self.assertEqual(origins, {'ph': read.Origin.SENSOR, 'temperature_c': read.Origin.SYSTEM_SENSOR,
                                    'alkalinity_mg_l': read.Origin.MANUAL, 'salinity_ppt': read.Origin.MANUAL})
         html = text(self.client.get(reverse('farm:water_unit_chart', args=[self.t1.pk])))
-        self.assertRegex(html, r'unit sensor #\d+ · 1[2-9] s ago')
-        self.assertRegex(html, r'system sensor #\d+ · 4[0-9] s ago')
+        self.assertRegex(html, r'unit sensor #\d+ · 12 s ago')
+        self.assertRegex(html, r'system sensor #\d+ · 40 s ago')
         self.assertRegex(html, r'manual · 1.day ago')
 
     def test_the_water_page_and_the_card_name_the_origin(self):
         self.stock()                                              # an empty unit's card shows no water
         page = text(self.client.get(reverse('farm:water')))
-        self.assertRegex(page, r'unit sensor #\d+ · 1[2-9] s ago')
+        self.assertRegex(page, r'unit sensor #\d+ · 12 s ago')
         card = text(self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all'}))
         # A card says the age in bands (monitoring/cards/render.py age_text): 12 s is "10 s ago", 40 s "40 s ago".
         self.assertRegex(card, r'unit sensor #\d+ · 10 s ago')
@@ -288,9 +288,9 @@ class ShownTests(SourcesCase):
         self.stock()
         part = r'<span class="wq-source"><span class="wq-origin">unit sensor #\d+</span> · <span class="wq-age">{age}</span></span>'
         page = self.client.get(reverse('farm:water')).content.decode()
-        self.assertRegex(page, r'7\.41' + part.format(age=r'1[2-9] s ago'))
+        self.assertRegex(page, r'7\.41' + part.format(age=r'12 s ago'))
         chart = self.client.get(reverse('farm:water_unit_chart', args=[self.t1.pk])).content.decode()
-        self.assertRegex(chart, part.format(age=r'1[2-9] s ago'))
+        self.assertRegex(chart, part.format(age=r'12 s ago'))
         card = self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all'}).content.decode()
         self.assertRegex(card, r'<dd class="row-sub wq-said">' + part.format(age='10 s ago') + '</dd>')
 

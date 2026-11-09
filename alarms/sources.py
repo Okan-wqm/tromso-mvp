@@ -164,17 +164,7 @@ def advance(state, holds, clear_ok, bad_at, severity, rules, now, structural=Fal
     return step
 
 
-def _apply(state, step, now, make, cause=None):
-    """Writes what a Step says: raises the alarm `make()` opens as the subject's open alarm (a compare-and-set on its row,
-    services.raise_for), or clears the open one; (opened, cleared)."""
-    if step.raise_alarm:
-        state.open_alarm, state.pending_since = services.raise_for(state.key, make), None
-        return 1, 0
-    if step.clear_cause is not None:
-        services.clear(state.open_alarm, now, cause or step.clear_cause)
-        state.open_alarm, state.clear_since = None, None
-        return 0, 1
-    return 0, 0
+STATE_FIELDS = ['open_alarm', 'pending_since', 'clear_since', 'last_bad_at', 'updated_at']
 
 
 def _states(keys):
@@ -182,9 +172,8 @@ def _states(keys):
         'open_alarm').filter(key__in=keys)}
 
 
-def _save(state, before):
-    if (state.open_alarm_id, state.pending_since, state.clear_since, state.last_bad_at) != before:
-        state.save()
+def _snapshot(state):
+    return state.open_alarm_id, state.pending_since, state.clear_since, state.last_bad_at
 
 
 SENSORS_FAILED = 'sensors_failed'
@@ -193,7 +182,8 @@ SENSORS_FAILED = 'sensors_failed'
 def water(now, rules):
     """Raises and clears the water limits' levels at `now` (alarms.rules `rules`), and the system alarm of live sources that
     cannot be read: (opened, cleared). While they cannot be read nothing clears: a sample alone must never end an alarm a
-    sensor raised (alarm plan, defect 3)."""
+    sensor raised (alarm plan, defect 3). Set-based: one read of the water, one of the subjects' rows, and the alarms,
+    clearances, log entries and rows written in one statement each, however many units alarm at once (defect 7)."""
     # The subjects are the live units, each through the point that stands for it (its middle point: A9.1, never an inlet);
     # a depth point's or the loop's value reaches it as the unit's own worst fresh value, judged for its fish. One read.
     found_water = water_read.unit_water(list(Tank.objects.all()), now)
@@ -206,28 +196,38 @@ def water(now, rules):
                     readings[f'water:{found.point.pk}:{slot}:{severity}'] = (found.point, severity, reading)
     system_key = f'system:{SENSORS_FAILED}'
     states = _states([*readings, system_key])
-    opened = cleared = 0
+    raises, clears, before = [], [], {}
+
+    def step(key, holds, clear_ok, bad_at, severity, spec, structural=False, cause=None):
+        state = states.setdefault(key, AlarmSubjectState(key=key))
+        before[key] = _snapshot(state)
+        done = advance(state, holds, clear_ok, bad_at, severity, rules, now, structural=structural)
+        if done.raise_alarm:
+            raises.append((key, spec()))
+        elif done.clear_cause is not None:
+            clears.append((state, cause or done.clear_cause))
+
     for key, (point, severity, reading) in readings.items():
-        state = states.get(key) or AlarmSubjectState(key=key)
-        before = (state.open_alarm_id, state.pending_since, state.clear_since, state.last_bad_at)
-        step = advance(state, reading.judged in HOLDS[severity],
-                       not failed and clear_evidence(reading, severity, rules, state.last_bad_at),
-                       (reading.worse or reading).at, severity,
-                       rules, now, structural=reading.judged in UNJUDGED)
-        found = _apply(state, step, now, lambda: services.open_alarm(
-            at=now, severity=severity, summary=_summary(point, reading), source=Source.WATER_LIMIT, point=point,
-            parameter=reading.code, **_where(point)))
-        opened, cleared = opened + found[0], cleared + found[1]
-        _save(state, before)
-    state = states.get(system_key) or AlarmSubjectState(key=system_key)
-    before = (state.open_alarm_id, state.pending_since, state.clear_since, state.last_bad_at)
-    step = advance(state, failed, not failed, now, Severity.CRITICAL, rules, now)
+        step(key, reading.judged in HOLDS[severity],
+             not failed and clear_evidence(reading, severity, rules, states[key].last_bad_at if key in states else None),
+             (reading.worse or reading).at, severity,
+             lambda point=point, severity=severity, reading=reading: {
+                 'at': now, 'severity': severity, 'summary': _summary(point, reading), 'source': Source.WATER_LIMIT,
+                 'point': point, 'parameter': reading.code, **_where(point)},
+             structural=reading.judged in UNJUDGED)
     with audit.source_language():
-        summary = str(_('The live water values (the sensors) cannot be read: alarms are not cleared until they can.'))
-    found = _apply(state, step, now, lambda: services.open_alarm(
-        at=now, severity=Severity.CRITICAL, summary=summary, source=Source.SYSTEM, parameter=SENSORS_FAILED),
-        cause=ClearCause.RESTORED)
-    _save(state, before)
+        failure = str(_('The live water values (the sensors) cannot be read: alarms are not cleared until they can.'))
+    step(system_key, failed, not failed, now, Severity.CRITICAL, lambda: {
+        'at': now, 'severity': Severity.CRITICAL, 'summary': failure, 'source': Source.SYSTEM,
+        'parameter': SENSORS_FAILED}, cause=ClearCause.RESTORED)
+    services.clear_many([(state.open_alarm, now, cause) for state, cause in clears])
+    for state, _cause in clears:
+        state.open_alarm, state.clear_since = None, None
+    for key, alarm in services.raise_many(raises).items():
+        states[key].open_alarm, states[key].pending_since = alarm, None
+    changed = [state for key, state in states.items() if key in before and _snapshot(state) != before[key]]
+    AlarmSubjectState.objects.bulk_create(changed, update_conflicts=True, unique_fields=['key'],
+                                          update_fields=STATE_FIELDS)
     # A subject read no more (its point made inactive, its owner deleted, the parameter gone) keeps its alarm open: nothing
     # says it is over, so it stays on the page until a person sees it.
-    return opened + found[0], cleared + found[1]
+    return len(raises), len(clears)

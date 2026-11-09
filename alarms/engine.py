@@ -10,16 +10,17 @@
 Each step runs in its own transaction under a transaction-level advisory lock, so two loops never queue, escalate or send
 twice, and a step that fails rolls back alone, is logged and counted, and the others still run (alarm plan, defect 5)."""
 import logging
+from collections import defaultdict
 from dataclasses import dataclass, field
 
 from django.db import connection, transaction
-from django.db.models import Min
+from django.db.models import Max
 from django.utils import timezone
 
 from sensors import alarms as sensor_alarms
 
 from . import read, routing, rules as alarm_rules, services, sources
-from .models import Acknowledgement, Alarm, AlarmClearance, Notification, Severity, Source
+from .models import Acknowledgement, Alarm, AlarmClearance, Escalation, Notification, Severity, Source
 from .transports import transport_for
 
 logger = logging.getLogger(__name__)
@@ -52,20 +53,43 @@ def _lock():
         cursor.execute('SELECT pg_advisory_xact_lock(%s)', [LOCK])
 
 
-def _advance(alarm, now, summary, rules):
-    """Step 3 for one alarm."""
-    level = read.level(alarm)
-    while True:
-        summary.queued += len(services.enqueue(alarm, level, routing.recipients(alarm, level, now), now))
-        started = Notification.objects.filter(alarm=alarm, level=level).aggregate(first=Min('queued_at'))['first']
-        if started is not None and now - started < rules.escalation_after(alarm.severity):
-            return
-        following = routing.next_level(alarm, level)
-        if following is None:
-            return
-        services.escalate(alarm, following, now)
-        summary.escalated += 1
-        level = following
+def _route(alarms, now, summary, rules):
+    """Step 3 for every open, unacknowledged, unsuppressed alarm, set-based (alarm plan, defect 7): its level and what its
+    levels were sent are read in two queries, the rules once (routing.Router), and the new notifications and escalations
+    are written in one statement each. An alarm gets the notifications of its level (rules added since reach it too),
+    and goes on to the next level with a rule that reaches it once its level was first notified the severity's escalation
+    time ago, or at once when nobody could be notified at its level."""
+    if not alarms:
+        return
+    router = routing.Router(now)
+    ids = [alarm.pk for alarm in alarms]
+    levels = dict(Escalation.objects.filter(alarm__in=ids).values('alarm').annotate(top=Max('level'))
+                  .values_list('alarm', 'top'))
+    sent, first = defaultdict(set), {}
+    for alarm_id, level, recipient_id, channel, queued_at in Notification.objects.filter(alarm__in=ids).values_list(
+            'alarm', 'level', 'recipient', 'channel', 'queued_at'):
+        sent[(alarm_id, level)].add((recipient_id, channel))
+        first[(alarm_id, level)] = min(queued_at, first.get((alarm_id, level), queued_at))
+    queued, escalated = [], []
+    for alarm in alarms:
+        level = levels.get(alarm.pk, 0)
+        while True:
+            key = (alarm.pk, level)
+            for user, rule in router.recipients(alarm, level):
+                if (user.pk, rule.channel) not in sent[key]:
+                    sent[key].add((user.pk, rule.channel))
+                    first.setdefault(key, now)
+                    queued.append(Notification(alarm=alarm, recipient=user, channel=rule.channel, level=level, rule=rule,
+                                               queued_at=now))
+            if key in first and now - first[key] < rules.escalation_after(alarm.severity):
+                break
+            following = router.next_level(alarm, level)
+            if following is None:
+                break
+            escalated.append(Escalation(alarm=alarm, level=following, escalated_at=now))
+            level = following
+    summary.queued += len(services.queue_many(queued))
+    summary.escalated += len(services.escalate_many(escalated))
 
 
 def _unsuppressed(alarms):
@@ -103,8 +127,7 @@ def run_once(now=None):
     def notify():
         waiting = list(Alarm.objects.exclude(pk__in=AlarmClearance.objects.values('alarm'))
                        .exclude(pk__in=Acknowledgement.objects.values('alarm')).order_by('opened_at', 'id'))
-        for alarm in _unsuppressed(waiting):
-            _advance(alarm, now, summary, rules)
+        _route(_unsuppressed(waiting), now, summary, rules)
 
     def send():
         for notification in read.pending(rules):

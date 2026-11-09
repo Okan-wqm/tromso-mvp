@@ -13,13 +13,14 @@ Definitions (stock-db §4), for a unit u today:
 FCR, the last feeding and the feed rate are read from the feeding records with the same ledger
 (farm/feeding/read.py)."""
 from bisect import bisect_right
+from contextvars import ContextVar
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import timedelta
 from decimal import Decimal
 from typing import NamedTuple
 
-from django.db.models import Q, Sum
+from django.db.models import F, IntegerField, Q, Sum, Value
 
 from farm.models import Batch, Site, StockMovement, Tank
 from farm.models.feeding import FeedTarget
@@ -31,15 +32,21 @@ HUNDRED = Decimal(100)
 DAY = timedelta(days=1)
 
 
+# Whether the database holds the opening balances (farm 0036). Only a dry run on a database not migrated yet
+# (fix_seed_size_mix) says no: then there can be none, and the ledger reads the lines without them.
+OPENING_BALANCES = ContextVar('opening_balances', default=True)
+
+
 def ledger(batch_ids, include_op=None):
     """The live lines of these batches, as the fold reads them. Every operation belongs to one batch,
     so the lines of an operation all come with its batch. `include_op`: an operation whose lines count although it is
     voided (the timeline before its void, farm/stock/services.py)."""
     live = Q(operation__is_deleted=False) | Q(operation_id=include_op) if include_op else Q(operation__is_deleted=False)
-    rows = list(StockMovement.objects.filter(live, batch_id__in=batch_ids).values_list(
+    opening = Value(None, output_field=IntegerField()) if not OPENING_BALANCES.get() else F('operation__opening_balance')
+    rows = list(StockMovement.objects.filter(live, batch_id__in=batch_ids).annotate(opening=opening).values_list(
         'id', 'operation_id', 'operation__kind', 'operation__date', 'unit_id', 'batch_id', 'kind', 'count_delta',
         'avg_weight_g', 'pair', 'measured_weight_kg', 'reason', 'batch__species__cleaner_fish_type',
-        'operation__opening_balance', 'batch__input_date'))
+        'opening', 'batch__input_date'))
     first = {}
     for row in rows:
         first[row[1]] = min(first.get(row[1], row[0]), row[0])

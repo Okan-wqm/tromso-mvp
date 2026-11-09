@@ -250,3 +250,49 @@ class FailedStepTests(CrossReviewCase):
         self.loop(minutes=2)
         self.assertFalse(read.is_open(alarm))
         self.assertEqual(open_levels(point__unit=self.t2), ['critical', 'warning'])
+
+
+class UnitKeyTests(CrossReviewCase):
+    """F7: a water alarm's subject is the unit's parameter at a level (`water:unit:<unit>:<slot>:<severity>`), never the
+    point that stood for the unit: replacing the middle point keeps the one alarm per level (no orphan, no duplicate); a
+    unit removed ends its alarms (cause "unit removed")."""
+
+    def replace_middle_point(self):
+        from farm.health.withdrawal import guarded_units
+        from farm.models import SamplingPoint
+        guarded_units(self.keeper, [self.t1.pk], None,
+                      lambda: SamplingPoint.objects.filter(pk=self.mid1.pk).update(is_active=False))
+        return guarded_units(self.keeper, [self.t1.pk], None, lambda: SamplingPoint.objects.create(
+            unit=self.t1, kind='middle', name='Middle 2'))
+
+    def test_a_replaced_middle_point_keeps_one_alarm_per_level(self):
+        from ..models import AlarmSubjectState
+        self.sample(5.5, hours=1)
+        self.loop()
+        self.loop(seconds=31)
+        new = self.replace_middle_point()
+        self.sample(5.4, hours=0.5, point=new)
+        self.loop(minutes=1)
+        self.assertEqual(open_levels(), ['critical', 'warning'])
+        self.assertEqual(sorted(AlarmSubjectState.objects.filter(key__startswith='water:', open_alarm__isnull=False)
+                                .values_list('key', flat=True)),
+                         [f'water:unit:{self.t1.pk}:ph:critical', f'water:unit:{self.t1.pk}:ph:warning'])
+
+    def test_the_new_point_clears_what_the_old_one_raised(self):
+        self.sample(5.5, hours=1)
+        self.loop()
+        new = self.replace_middle_point()
+        self.sample(7.0, hours=0.5, point=new)
+        self.loop(minutes=1)
+        self.loop(minutes=2)
+        self.assertEqual(open_levels(), [])
+
+    def test_a_unit_removed_ends_its_alarms(self):
+        from farm.models import Tank
+        from ..models import AlarmClearance
+        self.sample(5.5, hours=1)
+        self.loop()
+        Tank.objects.filter(pk=self.t1.pk).update(is_deleted=True)     # as a restore or a hand edit would leave it
+        self.loop(minutes=1)
+        self.assertEqual(open_levels(), [])
+        self.assertEqual(set(AlarmClearance.objects.values_list('cause', flat=True)), {'unit_removed'})

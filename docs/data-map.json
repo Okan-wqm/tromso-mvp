@@ -200,6 +200,7 @@
         "farm/tests/test_escape_delivery.py",
         "farm/tests/test_feeding.py",
         "farm/tests/test_feeds.py",
+        "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_harvest_inside_withdrawal.py",
         "farm/tests/test_health.py",
@@ -210,6 +211,7 @@
         "farm/tests/test_restore.py",
         "farm/tests/test_site_structure.py",
         "farm/tests/test_sites.py",
+        "farm/tests/test_size_mix.py",
         "farm/tests/test_species.py",
         "farm/tests/test_species_size_limit.py",
         "farm/tests/test_stock.py",
@@ -528,6 +530,8 @@
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
         "farm/tests/test_protocols.py",
+        "farm/tests/test_size_mix.py",
+        "farm/tests/test_size_mix_chips.py",
         "farm/tests/test_species.py",
         "farm/tests/test_species_size_limit.py",
         "farm/tests/test_stock.py",
@@ -3497,7 +3501,8 @@
             "token": "",
             "count": "",
             "avg_weight_g": "",
-            "over_capacity_ack": ""
+            "over_capacity_ack": "",
+            "size_mix_ack": ""
           }
         }
       ],
@@ -3518,6 +3523,7 @@
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_health.py",
         "farm/tests/test_protocols.py",
+        "farm/tests/test_size_mix.py",
         "farm/tests/test_stock.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_compute.py",
@@ -7457,6 +7463,7 @@
         "left_out": false
       },
       "tests": [
+        "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
         "farm/tests/test_lice_reason.py",
@@ -10582,6 +10589,7 @@
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
+        "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_lock_order.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_production_departments.py",
@@ -12278,6 +12286,7 @@
         "farm/tests/test_clocks.py",
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
+        "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_health.py",
         "farm/tests/test_lock_order.py",
         "farm/tests/test_migration_altitude.py",
@@ -13413,6 +13422,7 @@
         "farm/tests/test_health.py",
         "farm/tests/test_migration_withdrawals.py",
         "farm/tests/test_restore.py",
+        "farm/tests/test_size_mix.py",
         "farm/tests/test_species.py",
         "farm/tests/test_species_size_limit.py",
         "farm/tests/test_stock.py",
@@ -13865,7 +13875,8 @@
             "date": "",
             "notes": "",
             "reason": "",
-            "over_capacity_ack": ""
+            "over_capacity_ack": "",
+            "size_mix_ack": ""
           }
         },
         {
@@ -13885,7 +13896,8 @@
             "date": "",
             "notes": "",
             "remainder_avg_weight_g": "",
-            "over_capacity_ack": ""
+            "over_capacity_ack": "",
+            "size_mix_ack": ""
           }
         },
         {
@@ -13967,6 +13979,7 @@
       "tests": [
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_escape_delivery.py",
+        "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_withdrawal_gate.py",
@@ -14167,6 +14180,20 @@
           "why": ""
         },
         {
+          "name": "size_mix_ack",
+          "field": "size_mix_ack",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "TransferForm",
+            "GradingForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
           "name": "health_event_id",
           "field": "health_event",
           "type": "uuid",
@@ -14213,6 +14240,12 @@
         },
         {
           "name": "chk_stock_operations_ack_on_arrival",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_stock_operations_size_mix_ack_on_arrival",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -14364,7 +14397,8 @@
             "date": "",
             "notes": "",
             "reason": "",
-            "over_capacity_ack": ""
+            "over_capacity_ack": "",
+            "size_mix_ack": ""
           }
         },
         {
@@ -14384,7 +14418,8 @@
             "date": "",
             "notes": "",
             "remainder_avg_weight_g": "",
-            "over_capacity_ack": ""
+            "over_capacity_ack": "",
+            "size_mix_ack": ""
           }
         },
         {
@@ -14475,10 +14510,12 @@
         "core/tests_workspaces.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_escape_delivery.py",
+        "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
         "farm/tests/test_migration_purging.py",
         "farm/tests/test_protocols.py",
+        "farm/tests/test_size_mix.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_withdrawal_gate.py",
         "reports/tests/test_cleaner.py",
@@ -16805,6 +16842,7 @@
         "farm/tests/test_cleaner_ration.py",
         "farm/tests/test_escape_delivery.py",
         "farm/tests/test_feeding.py",
+        "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
         "farm/tests/test_lock_order.py",
@@ -19065,6 +19103,7 @@
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
         "farm/tests/test_calculator.py",
+        "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_followups.py",

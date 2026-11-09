@@ -388,6 +388,24 @@ fn fresh_ionic_strength(
     Ok((ok(Ok(strength))?, source.code()))
 }
 
+/// The dielectric constant of water at a temperature (Malmberg & Maryott 1956).
+#[pyfunction]
+fn dielectric_constant(temp_c: f64) -> PyResult<f64> {
+    ok(f::dielectric_constant(temp_c))
+}
+
+/// The density of water at a temperature, g/cm3 (Kell 1975).
+#[pyfunction]
+fn water_density(temp_c: f64) -> PyResult<f64> {
+    ok(f::water_density(temp_c))
+}
+
+/// The Debye-Hückel A of water at a temperature (formula 3).
+#[pyfunction]
+fn debye_huckel_a(temp_c: f64) -> PyResult<f64> {
+    ok(f::debye_huckel_a(temp_c))
+}
+
 /// log10 of an ion's Davies activity coefficient.
 #[pyfunction]
 fn davies_log_gamma(temp_c: f64, ionic_strength: f64, charge: f64) -> PyResult<f64> {
@@ -1080,6 +1098,9 @@ fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
         wrap_pyfunction!(saturation_index, module)?,
         wrap_pyfunction!(fresh_ionic_strength, module)?,
         wrap_pyfunction!(davies_log_gamma, module)?,
+        wrap_pyfunction!(dielectric_constant, module)?,
+        wrap_pyfunction!(water_density, module)?,
+        wrap_pyfunction!(debye_huckel_a, module)?,
         wrap_pyfunction!(equilibria_v3, module)?,
     ] {
         module.add_function(function)?;

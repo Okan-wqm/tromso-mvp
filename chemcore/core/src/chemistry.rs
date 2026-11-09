@@ -88,22 +88,41 @@ pub fn free_to_total(temp_c: f64, salinity: f64) -> R {
     Ok(1.0 + div(total_sulfate(salinity), ks(temp_c, salinity)?)?)
 }
 
+/// The Debye–Hückel A of formula 1 (golden v1): 1.82e6 (ε T)^−1.5 with a fixed dielectric constant ε = 79, right only
+/// near 25 °C (I1, chemcore/findings/B1.md). Kept so that formula 1 is reproduced bit for bit; formula 3 takes A from
+/// the dielectric constant of its temperature (`fresh::debye_huckel_a`).
+pub fn debye_huckel_a_v1(temp_c: f64) -> R {
+    let t = temp_c + KELVIN;
+    Ok(1820000.0 * pow(79.0 * t, -1.5)?)
+}
+
 /// The H⁺ activity coefficient for the NBS scale (Zeebe & Wolf-Gladrow 2001, a Davies-type equation with the
 /// Debye–Hückel A of a fixed dielectric constant 79); 1 in fresh water. Valid to I ≈ 0.7 (sea water).
 pub fn activity_coefficient_h(temp_c: f64, salinity: f64) -> R {
+    activity_coefficient_h_with(temp_c, salinity, &debye_huckel_a_v1)
+}
+
+/// The H⁺ activity coefficient of `activity_coefficient_h` with the Debye–Hückel A of `a_of` (of the temperature, °C).
+pub fn activity_coefficient_h_with(temp_c: f64, salinity: f64, a_of: &dyn Fn(f64) -> R) -> R {
     if salinity <= 0.0 {
         return Ok(1.0);
     }
-    let t = temp_c + KELVIN;
     let i = ionic_strength(salinity)?;
     let root = sqrt(i)?;
-    let a = 1820000.0 * pow(79.0 * t, -1.5)?;
+    let a = a_of(temp_c)?;
     pow(10.0, -(a * (div(root, 1.0 + root)? - 0.2 * i)))
 }
 
 /// The SWS-to-NBS factor: the activity coefficient over the molal-to-per-kg factor 1 − 0.001005 S.
 pub fn sws_to_nbs(temp_c: f64, salinity: f64) -> R {
-    div(activity_coefficient_h(temp_c, salinity)?, 1.0 - 0.001005 * salinity)
+    sws_to_nbs_with(temp_c, salinity, &debye_huckel_a_v1)
+}
+
+fn sws_to_nbs_with(temp_c: f64, salinity: f64, a_of: &dyn Fn(f64) -> R) -> R {
+    div(
+        activity_coefficient_h_with(temp_c, salinity, a_of)?,
+        1.0 - 0.001005 * salinity,
+    )
 }
 
 /// A pH read on the NBS scale (a meter or a kit), on the free scale.
@@ -271,8 +290,14 @@ pub struct Equilibria {
     pub ksp_aragonite: f64,
 }
 
-/// The equilibria of a water. Non-finite inputs are refused.
+/// The equilibria of a water by formula 1 (golden v1). Non-finite inputs are refused.
 pub fn equilibria(temp_c: f64, salinity: f64) -> Result<Equilibria, ChemError> {
+    equilibria_with(temp_c, salinity, &debye_huckel_a_v1)
+}
+
+/// The seawater equilibria of `equilibria` with the NBS pH converted by the Debye–Hückel A of `a_of` (formula 3
+/// passes the A of the temperature's dielectric constant, `fresh::debye_huckel_a`). Non-finite inputs are refused.
+pub fn equilibria_with(temp_c: f64, salinity: f64, a_of: &dyn Fn(f64) -> R) -> Result<Equilibria, ChemError> {
     let temp_c = finite(temp_c)?;
     let salinity = finite(salinity)?;
     let to_sws = free_to_sws(temp_c, salinity)?;
@@ -280,7 +305,7 @@ pub fn equilibria(temp_c: f64, salinity: f64) -> Result<Equilibria, ChemError> {
     let eq = Equilibria {
         temp_c,
         salinity,
-        ph_offset: log10(sws_to_nbs(temp_c, salinity)?)? + log10(to_sws)?,
+        ph_offset: log10(sws_to_nbs_with(temp_c, salinity, a_of)?)? + log10(to_sws)?,
         k1: div(k1_sws(temp_c, salinity)?, to_sws)?,
         k2: div(k2_sws(temp_c, salinity)?, to_sws)?,
         kw: div(kw_total(temp_c, salinity)?, to_total)?,

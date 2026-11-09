@@ -6,7 +6,7 @@
 //! strength near 0.01, where a monovalent ion's activity coefficient is about 0.9. Below a salinity of `FRESH_BELOW`
 //! the v3 water takes its ionic strength from what is measured, and its constants are the fresh-water (thermodynamic,
 //! infinite dilution) ones made concentration constants with Davies activity coefficients; from `FRESH_BELOW` on it is
-//! v1's seawater path, bit for bit.
+//! v1's seawater path but for the NBS pH's conversion, whose Debye–Hückel A is the temperature's (I1, below).
 //!
 //! The ionic strength, the first source there is:
 //! 1. the conductivity κ (µS/cm, at 25 °C): I = 1.6e-5 κ (Russell 1976, J. Am. Water Works Assoc. 68: 2; as in
@@ -19,15 +19,18 @@
 //!
 //! Concentrations per litre are taken as per kg (a fresh water's density is 1 within 0.3 %).
 //!
-//! Davies (1962), Ion Association, p. 41: log γ = −A z² (√I / (1 + √I) − 0.3 I), valid to I ≈ 0.5; A is the
-//! Debye–Hückel constant of the seawater path, 1.82e6 (ε T)^−1.5 with the same fixed dielectric constant 79 (I1, a
-//! separate debt, kept so that v3 changes only the ionic strength). The concentration constants (Stumm & Morgan 1996,
+//! Davies (1962), Ion Association, p. 41: log γ = −A z² (√I / (1 + √I) − 0.3 I), valid to I ≈ 0.5. A is the
+//! Debye–Hückel constant of the water's temperature (`debye_huckel_a`: its dielectric constant by Malmberg & Maryott
+//! 1956 and its density by Kell 1975), I1 closed: formula 1's fixed ε = 79 made A 7.5 % too large at 12 °C and 15 % at
+//! 2 °C. The seawater path's NBS conversion (Zeebe & Wolf-Gladrow 2001) takes the same A from formula 3 on, which moves
+//! it towards CO2SYS's Takahashi et al. (1982) at every temperature from 10 ‰ up (chemcore/findings/I2-comparison.md).
+//! The concentration constants (Stumm & Morgan 1996,
 //! Aquatic Chemistry, 3rd ed., section 3.4; Plummer & Busenberg 1982), with γ₀ = 1 for CO₂, NH₃, H₂S, B(OH)₃:
 //! pH free = pH NBS + log γ₁ (a meter reads the activity of H⁺); K1 = K1° / γ₁²; K2 = K2° / γ₂; Kw = Kw° / γ₁²;
 //! KB = KB° / γ₁²; KH2S = KH2S° / γ₁²; KNH4 = KNH4° (H⁺ and NH₄⁺ both monovalent); Ksp as v1 (Ω is drawn only from 5 ‰).
 use crate::chemistry::{
-    self as c, Equilibria, KELVIN, MG_CACO3_PER_MEQ, equilibria, k_h2s_total, k_nh4_sws, k1_sws, k2_sws, kb_total,
-    kw_total, total_boron,
+    self as c, Equilibria, KELVIN, MG_CACO3_PER_MEQ, k_h2s_total, k_nh4_sws, k1_sws, k2_sws, kb_total, kw_total,
+    total_boron,
 };
 use crate::num::{ChemError, R, div, finite, pow, sqrt};
 
@@ -117,16 +120,48 @@ fn any_ionic_strength(salinity: f64, alkalinity_mg_l: f64, ions: Ions) -> Result
     Ok((bicarbonate / 1000.0, Source::Alkalinity))
 }
 
-/// log₁₀ of an ion's activity coefficient by Davies (1962) at a temperature (°C), an ionic strength (mol/L) and a
-/// charge; refused (`ChemError::OutOfRange`) above an ionic strength of `DAVIES_MAX`.
-pub fn davies_log_gamma(temp_c: f64, ionic_strength: f64, charge: f64) -> R {
+/// The dielectric constant (relative permittivity) of water at a temperature (°C): Malmberg & Maryott (1956), J. Res.
+/// Natl. Bur. Stand. 56: 1, eq. (5) as their abstract prints it, ε = 87.740 − 0.40008 t + 9.398e-4 t² − 1.410e-6 t³,
+/// fitted to their measurements from 0.1 to 99 °C within 0.01 (table 2: 87.740 at 0 °C, 83.832 at 10, 78.304 at 25).
+pub fn dielectric_constant(temp_c: f64) -> R {
+    let t = finite(temp_c)?;
+    Ok(87.740 - 0.40008 * t + 9.398e-4 * t * t - 1.410e-6 * t * t * t)
+}
+
+/// The density of pure water at 1 atm, g/cm³: Kell (1975), J. Chem. Eng. Data 20: 97, the rational function of the
+/// temperature (°C) for 0 to 150 °C, as reproduced in J. Res. NIST 97: 335 (1992) with its denominator's misprint
+/// (16.897850e-3) corrected to 16.879850e-3 (0.99984 g/cm³ at 0 °C, the maximum 0.99997 at 3.98 °C, 0.99705 at 25 °C).
+pub fn water_density(temp_c: f64) -> R {
+    let t = finite(temp_c)?;
+    let numerator = 999.83952 + 16.945176 * t - 7.9870401e-3 * t * t - 46.170461e-6 * pow(t, 3.0)?
+        + 105.56302e-9 * pow(t, 4.0)?
+        - 280.54253e-12 * pow(t, 5.0)?;
+    Ok(div(numerator, 1.0 + 16.879850e-3 * t)? / 1000.0)
+}
+
+/// The Debye–Hückel constant: A = 1.824812e6 √ρ (ε T)^−3/2 (log₁₀, molal, kg^½ mol^−½, ρ in g/cm³), the limiting
+/// law's (1/ln 10) √(2π N_A ρ) (e² / (4π ε₀ ε k T))^3/2 worked out with the CODATA 2018 constants; Hamer (1968),
+/// NSRDS-NBS 24, prints 1.824829238e6 (older constants) and Nordstrom et al. (1984), USGS WRI 84-4186, 1.824814e6.
+pub const DEBYE_HUCKEL: f64 = 1.824812e6;
+
+/// The Debye–Hückel A of water at a temperature (°C) from its own dielectric constant and density (Malmberg & Maryott
+/// 1956; Kell 1975): 0.4918 at 0 °C, 0.4989 at 10 °C, 0.5108 at 25 °C, Hamer's (1968) table 3 within 0.03 %, and
+/// the USGS table of another ε (Nordstrom et al. 1984, table 1) within 0.3 % (chemcore/core/tests/fresh.rs). Formula 3; formula 1 kept ε = 79 (`chemistry::debye_huckel_a_v1`, I1).
+pub fn debye_huckel_a(temp_c: f64) -> R {
     let t = finite(temp_c)? + KELVIN;
+    Ok(DEBYE_HUCKEL * sqrt(water_density(temp_c)?)? * pow(dielectric_constant(temp_c)? * t, -1.5)?)
+}
+
+/// log₁₀ of an ion's activity coefficient by Davies (1962) at a temperature (°C), an ionic strength (mol/L) and a
+/// charge, with the A of the temperature (`debye_huckel_a`); refused (`ChemError::OutOfRange`) above an ionic strength
+/// of `DAVIES_MAX`.
+pub fn davies_log_gamma(temp_c: f64, ionic_strength: f64, charge: f64) -> R {
+    let a = debye_huckel_a(temp_c)?;
     let i = finite(ionic_strength)?;
     if i > DAVIES_MAX {
         return Err(ChemError::OutOfRange);
     }
     let root = sqrt(i)?;
-    let a = 1820000.0 * pow(79.0 * t, -1.5)?;
     Ok(-a * charge * charge * (div(root, 1.0 + root)? - DAVIES * i))
 }
 
@@ -140,7 +175,7 @@ pub fn equilibria_v3(
 ) -> Result<(Equilibria, f64, Source), ChemError> {
     let (strength, source) = ionic_strength(salinity, alkalinity_mg_l, ions)?;
     if source == Source::Seawater {
-        return Ok((equilibria(temp_c, salinity)?, strength, source));
+        return Ok((c::equilibria_with(temp_c, salinity, &debye_huckel_a)?, strength, source));
     }
     let temp_c = finite(temp_c)?;
     let one = davies_log_gamma(temp_c, strength, 1.0)?;

@@ -133,4 +133,7 @@ FRESH_BELOW = chemcore.FRESH_BELOW
 DAVIES_MAX = chemcore.DAVIES_MAX
 fresh_ionic_strength = chemcore.fresh_ionic_strength
 davies_log_gamma = chemcore.davies_log_gamma
+dielectric_constant = chemcore.dielectric_constant
+water_density = chemcore.water_density
+debye_huckel_a = chemcore.debye_huckel_a
 equilibria_v3 = chemcore.equilibria_v3

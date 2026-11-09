@@ -2,13 +2,13 @@
   "beside": "v1",
   "blocks": {
     "waters": {
-      "bytes": 81982,
+      "bytes": 86537,
       "records": 882,
-      "sha256": "e1e6a1a1fef8cda90e23bf9e6a9c1a16940be014a392c9d27b8918e0d9e1c509"
+      "sha256": "050c56dd33ae405924b44af7fbff7e2f84c8be497a889de5fc2781fe5960bcbc"
     }
   },
   "core": {
-    "core_hash": "e9092a315d7cdbfb",
+    "core_hash": "92306f5e22eed5bc",
     "formula_version": 1,
     "version": "0.1.0"
   },

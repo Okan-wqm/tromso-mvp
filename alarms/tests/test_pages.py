@@ -30,7 +30,7 @@ class PageTests(AlarmsCase):
         self.rule()
         self.sample(5.5)
         self.loop()
-        self.alarm = Alarm.objects.get()
+        self.alarm = self.critical()
 
     def test_they_sit_in_company_and_in_the_matrix(self):
         for perm, actions in (('alarms.view_alarm', ('view', 'change')),
@@ -78,6 +78,7 @@ class PageTests(AlarmsCase):
         self.client.force_login(self.desk)
         self.sample(7.0, hours=0.5)
         self.loop(minutes=1)
+        self.loop(minutes=2)                                   # cleared after the off-delay
         self.assertNotContains(self.client.get(reverse('alarms:alarm_list'), {'state': 'open'}),
                                reverse('alarms:alarm_detail', args=[self.alarm.pk]))
         self.assertContains(self.client.get(reverse('alarms:alarm_list'), {'state': 'all'}),

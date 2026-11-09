@@ -13,7 +13,7 @@ from farm.tests.test_stock import make_unit
 from farm.water import services as water
 
 from .. import engine
-from ..models import RecipientRule
+from ..models import Alarm, RecipientRule
 
 D = Decimal
 
@@ -50,5 +50,9 @@ class AlarmsCase(TestCase):
             values['role'] = self.operators
         return RecipientRule.objects.create(**values)
 
-    def loop(self, minutes=0):
-        return engine.run_once(self.now + timedelta(minutes=minutes))
+    def loop(self, minutes=0, seconds=0):
+        return engine.run_once(self.now + timedelta(minutes=minutes, seconds=seconds))
+
+    def critical(self):
+        """The one critical alarm (a critical value holds the warning level too: its alarm opens beside it)."""
+        return Alarm.objects.get(severity='critical')

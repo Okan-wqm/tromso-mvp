@@ -142,11 +142,14 @@ class FrameTests(ReplayCase):
                 self.assertEqual(frame.inputs['salinity_ppt'].value, 3.0)
                 self.assertEqual(frame.point.co2_mg_l, chart.co2_mg_l)
                 self.assertEqual(frames.figures[frame.figure], self.figure_at(frames, frame))
-        # A sampling point of the unit takes its unit's origin too (read.Context._served), as its samples' NH3 does.
+        # A sampling point of the unit takes its unit's origin too (read.Context._served), as its samples' NH3 does: each
+        # frame is its own inputs worked out as salt-added water.
         at_point = read.deffeyes_frames(self.mid1, START + timedelta(minutes=5), START + timedelta(minutes=35),
                                         timedelta(minutes=10))
-        for mine, unit in zip(at_point.frames, frames.frames):
-            self.assertEqual(mine.point.co2_mg_l, unit.point.co2_mg_l)
+        for mine in at_point.frames:
+            made = calculation.inputs_from({**{code: item.value for code, item in mine.inputs.items()},
+                                            'water_origin': 'salt_added'})
+            self.assertEqual(mine.point.co2_mg_l, deffeyes.analyse(made['water']).co2_mg_l)
 
     def test_mixed_origins_are_named(self):
         self.steady()

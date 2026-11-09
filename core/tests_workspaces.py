@@ -67,8 +67,8 @@ class PanelSwitcherTests(WorkspaceTestCase):
                                         'Today & attendance', 'Shift schedule', 'Leave requests', 'Attendance', 'Team overview',
                                         'Team list', 'Organization chart', 'Production departments', 'Systems', 'Equipment',
                                         'Tanks, ponds & cages', 'Monitoring boards', 'Sampling points', 'Species', 'Feeds',
-                                        'Water limits', 'Medicines', 'Handling rules', 'Card templates', 'Card template rules',
-                                        'Slaughter facilities', 'Suppliers'])
+                                        'Water limits', 'Water freshness', 'Medicines', 'Handling rules', 'Card templates',
+                                        'Card template rules', 'Slaughter facilities', 'Suppliers'])
 
     def test_the_switcher_lists_the_panels_and_marks_the_current_one(self):
         self.sign_in(self.admin)
@@ -129,8 +129,8 @@ class PanelMemoryTests(WorkspaceTestCase):
                                         'Today & attendance', 'Shift schedule', 'Leave requests', 'Attendance', 'Team overview',
                                         'Team list', 'Organization chart', 'Production departments', 'Systems', 'Equipment',
                                         'Tanks, ponds & cages', 'Monitoring boards', 'Sampling points', 'Species', 'Feeds',
-                                        'Water limits', 'Medicines', 'Handling rules', 'Card templates', 'Card template rules',
-                                        'Slaughter facilities', 'Suppliers'])
+                                        'Water limits', 'Water freshness', 'Medicines', 'Handling rules', 'Card templates',
+                                        'Card template rules', 'Slaughter facilities', 'Suppliers'])
         self.page(reverse('farm:site_list'))
         self.assertEqual(self.page(reverse('password_change')).context['workspace']['key'], 'company')
 
@@ -211,6 +211,7 @@ class MenuPlacementTests(TestCase):
             'farm.Species': 'Production · Setup · Reference data',
             'farm.Feed': 'Production · Setup · Reference data',
             'farm.WaterLimit': 'Production · Setup · Reference data',
+            'farm.WaterFreshness': 'Production · Setup · Reference data',
             'farm.Medicine': 'Production · Setup · Reference data',
             'farm.SlaughterFacility': 'Production · Setup · Harvest and logistics',
             'farm.HandlingRule': 'Production · Setup · Reference data',

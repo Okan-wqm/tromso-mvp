@@ -15,7 +15,7 @@
 
 /* What the build reads for class names: every template, and the Python that may build a class name. */
 @source "../templates/**/*.html";
-@source "../{config,core,experiments,farm,hr,inventory,knowledge,messaging,monitoring,reports,sensors,tasks}/**/*.py";
+@source "../{alarms,config,core,experiments,farm,hr,inventory,knowledge,messaging,monitoring,reports,sensors,tasks}/**/*.py";
 
 /* A finger, a glove or a stylus: the tank side's 48 px targets (README, Principles). */
 @custom-variant coarse (@media (pointer: coarse));

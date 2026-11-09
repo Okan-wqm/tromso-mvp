@@ -335,7 +335,8 @@ class ValueAtTests(ReplayCase):
     """Each frame's sensor value is what the live view's rule gives at the frame's moment (`sensors.provider` value_at:
     the channel's newest clean reading at or before the moment, taken while it was bound there), within the channel's
     freshness: on irregular readings with bad ones among them, readings exactly on a frame's moment, gaps longer than the
-    freshness, a backup channel and a sensor moved away and back, at every step of the raw tier, page by page."""
+    freshness, a backup channel and a sensor moved away and back (for less and for more than its freshness), at every
+    step of the raw tier, page by page."""
 
     @classmethod
     def setUpTestData(cls):
@@ -344,7 +345,10 @@ class ValueAtTests(ReplayCase):
         rng = Random(20261108)
         cls.backup = make_channel(cls.device, 'ph', code='PH-B')                  # fresh 900 s
         bindings.move(cls.user, cls.backup, point=cls.mid1, role='backup', at=START - timedelta(days=1))
-        # The pH probe goes to T-02 for 40 minutes and comes back.
+        # The pH probe goes to T-02 for two minutes and comes back (shorter than its freshness: both of its stays in
+        # T-01 have fresh values after it), then for 40 minutes (longer than its freshness).
+        bindings.move(cls.user, cls.ph, point=cls.mid2, at=START + timedelta(minutes=60, seconds=7))
+        bindings.move(cls.user, cls.ph, point=cls.mid1, at=START + timedelta(minutes=62, seconds=3))
         bindings.move(cls.user, cls.ph, point=cls.mid2, at=START + timedelta(minutes=100, seconds=7))
         bindings.move(cls.user, cls.ph, point=cls.mid1, at=START + timedelta(minutes=140, seconds=3))
         gaps = {cls.channel.channel_no: (0.2, 0.7, 1, 1, 1, 2, 3, 5, 30, 200, 400),
@@ -436,8 +440,8 @@ class ValueAtTests(ReplayCase):
         with CaptureQueriesContext(connection) as queries:
             read.deffeyes_frames(self.t1, first, first + count * step, step)
         (query,) = readings_queries(queries)
-        # The dense probe and the system's temperature, the pH probe before and after its stay in T-02, the backup.
+        # The dense probe and the system's temperature, the pH probe's three stays in T-01, the backup.
         segments = [segment for code in read.REPLAY_INPUTS
                     for segment in read.segments(self.t1, code, first - read.CARRY, first + count * step)]
-        self.assertEqual(len(segments), 5)
+        self.assertEqual(len(segments), 6)
         self.assertLessEqual(scanned(query['sql']), 2 * count * len(segments))

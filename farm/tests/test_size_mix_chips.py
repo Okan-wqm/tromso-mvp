@@ -10,10 +10,9 @@ from core.models import Profile
 from ..stock import read, services
 from .helpers import role
 from .test_cleaner_fish import CleanerFishTestCase
-from .test_size_mix import SizeMixTestCase
+from .test_size_mix import SizeMixTestCase, stocked
 
 D = Decimal
-CHIP = '<span>Mixed sizes: 4,217 g and 78.0 g (limit 2×)</span>'
 
 
 class MixedSizesChipTests(SizeMixTestCase):
@@ -21,6 +20,8 @@ class MixedSizesChipTests(SizeMixTestCase):
         super().setUp()
         self.user.groups.add(role('Board reader', 'view_feedingrecord'))
         self.little = self.small(size_mix_ack=True)
+        self.chip = (f'<span>Mixed sizes: {stocked("4,217 g", self.day(10))} and {stocked("78.0 g", self.day(5))} '
+                     '(limit 2×)</span>')     # no feeding table: measured weights, with the day they were measured
 
     def pages(self):
         return self.client.get(reverse('farm:meal_board')), self.client.get(reverse('farm:production_units'))
@@ -31,7 +32,7 @@ class MixedSizesChipTests(SizeMixTestCase):
                          (self.big, self.little, D(4217), D(78), D(2)))
         for page in self.pages():
             with self.subTest(page=page.request['PATH_INFO']):
-                self.assertContains(page, CHIP, count=1)
+                self.assertContains(page, self.chip, count=1)
                 self.assertContains(page, 'data-status="warning"')
 
     def test_no_chip_within_the_limit_without_a_limit_or_once_the_mix_has_gone(self):

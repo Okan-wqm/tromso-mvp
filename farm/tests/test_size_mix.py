@@ -23,6 +23,11 @@ D = Decimal
 TICK = 'Tick the box below to put them together anyway.'
 
 
+def stocked(weight, day):
+    """A measured weight as the message and the chip say it: the weight and the day it was measured at the stocking."""
+    return f'{weight} as stocked {services.shown_date(day)}'
+
+
 def mix_message(unit, species, day, heavy, light, times, limit='2×'):
     """The refusal's text: `heavy` and `light` are (batch code, weight as shown)."""
     return (f'{unit} would hold {species} of very different sizes on {services.shown_date(day)}: {heavy[0]} at '
@@ -51,8 +56,8 @@ class StockingTests(SizeMixTestCase):
     def test_a_stocking_beside_a_batch_of_another_size_asks_and_writes_nothing_without_the_tick(self):
         errors = self.refused(self.small)
         self.assertEqual(errors, {'size_mix_ack': [mix_message(
-            'T-01', 'Atlantic salmon (SAL)', self.day(5), (self.big.code, '4,217 g'), (self.code(2), '78.0 g'),
-            '54.1')]})
+            'T-01', 'Atlantic salmon (SAL)', self.day(5), (self.big.code, stocked('4,217 g', self.day(10))),
+            (self.code(2), stocked('78.0 g', self.day(5))), '54.07')]})
         self.assertEqual((Batch.all_objects.count(), StockOperation.objects.count(), self.fish(self.t1)),
                          (1, 1, 1000))
 
@@ -83,7 +88,8 @@ class StockingTests(SizeMixTestCase):
     def test_the_heaviest_and_the_lightest_are_named_whatever_the_order_they_came_in(self):
         self.stock(self.t1, count=100, weight='3000', days_ago=8)          # 1.4 times: no question
         errors = self.refused(self.stock, self.t1, count=100, weight='600', days_ago=5)
-        self.assertIn(f'{self.big.code} at 4,217 g and {self.code(3)} at 600 g, 7.0 times as heavy',
+        self.assertIn(f'{self.big.code} at {stocked("4,217 g", self.day(10))} and {self.code(3)} at '
+                      f'{stocked("600 g", self.day(5))}, 7.03 times as heavy',
                       errors['size_mix_ack'][0])
 
     def test_over_the_capacity_and_mixed_sizes_are_asked_together_and_each_tick_answers_its_own(self):
@@ -125,8 +131,8 @@ class TransferAndGradingTests(SizeMixTestCase):
     def test_a_split_asks_for_the_unit_it_would_mix_only(self):
         errors = self.refused(self.transfer, [(self.t3, 400), (self.t2, 100)])
         self.assertEqual(errors, {'size_mix_ack': [mix_message(
-            'T-02', 'Atlantic salmon (SAL)', self.day(1), (self.big.code, '4,217 g'), (self.little.code, '78.0 g'),
-            '54.1')]})
+            'T-02', 'Atlantic salmon (SAL)', self.day(1), (self.big.code, stocked('4,217 g', self.day(10))),
+            (self.little.code, stocked('78.0 g', self.day(5))), '54.07')]})
         self.assertFalse(StockOperation.objects.filter(kind='transfer').exists())
         self.transfer([(self.t3, 400), (self.t2, 100)], size_mix_ack=True)
         self.assertTrue(StockOperation.objects.get(kind='transfer').size_mix_ack)
@@ -144,7 +150,8 @@ class TransferAndGradingTests(SizeMixTestCase):
                                            outputs=[(self.t2, 200, D(3500), 'Small')], remainder_avg_weight_g=D(4400),
                                            **fields)
         errors = self.refused(grade)
-        self.assertIn(f'{self.big.code} at 3,500 g and {self.little.code} at 78.0 g, 44.9 times as heavy',
+        self.assertIn(f'{self.big.code} at 3,500 g weighed {services.shown_date(self.day(1))} and {self.little.code} at '
+                      f'{stocked("78.0 g", self.day(5))}, 44.88 times as heavy',
                       errors['size_mix_ack'][0])
         grade(size_mix_ack=True)
         self.assertTrue(StockOperation.objects.get(kind='grading').size_mix_ack)
@@ -164,7 +171,8 @@ class CleanerFishAreAnotherSpeciesTests(CleanerFishTestCase):
         self.stock(self.cage2, count=500, weight='20', days_ago=3, species=self.lump)   # 200 times lighter: no question
         errors = self.refused(self.stock, self.cage, count=500, weight='200', days_ago=3, species=self.lump)
         self.assertIn(f'C-01 would hold Lumpfish (LUM) of very different sizes', errors['size_mix_ack'][0])
-        self.assertIn(f'at 200 g and {self.lump_batch.code} at 50.0 g, 4.0 times as heavy', errors['size_mix_ack'][0])
+        self.assertIn(f'at {stocked("200 g", self.day(3))} and {self.lump_batch.code} at {stocked("50.0 g", self.day(10))}, '
+                      '4.00 times as heavy', errors['size_mix_ack'][0])
 
 
 class SizeMixDialogTests(SizeMixTestCase):
@@ -177,8 +185,8 @@ class SizeMixDialogTests(SizeMixTestCase):
         response = self.post(url, data)
         self.assertEqual(response.status_code, 422)
         self.assertEqual(response.context['form'].errors['size_mix_ack'], [mix_message(
-            'T-01', 'Atlantic salmon (SAL)', self.day(5), (self.big.code, '4,217 g'), (self.code(2), '78.0 g'),
-            '54.1')])
+            'T-01', 'Atlantic salmon (SAL)', self.day(5), (self.big.code, stocked('4,217 g', self.day(10))),
+            (self.code(2), stocked('78.0 g', self.day(5))), '54.07')])
         self.assertContains(response, 'name="size_mix_ack"', status_code=422)
         self.assertNotContains(response, 'name="over_capacity_ack"', status_code=422)   # only the box asked for
         self.assertEqual(Batch.all_objects.count(), 1)

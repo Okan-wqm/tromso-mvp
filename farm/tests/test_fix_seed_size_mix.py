@@ -9,13 +9,16 @@ from decimal import Decimal
 from unittest import mock
 
 from django.core.management import CommandError, call_command
+from django.db import connection
+from django.db.migrations.executor import MigrationExecutor
+from django.test import TransactionTestCase
 from django.urls import reverse
 
 from core.models import AuditLog
 
 from ..management.commands import fix_seed_size_mix
 from ..models import (
-    HandlingAcknowledgement, ProductionDepartment, SamplingPoint, Site, StockMovement, StockOperation, Tank,
+    Batch, HandlingAcknowledgement, ProductionDepartment, SamplingPoint, Site, StockMovement, StockOperation, Tank,
 )
 from ..models.feeding import FeedTarget
 from ..stock import integrity, read, services
@@ -51,7 +54,7 @@ class SeedCagesTestCase(FeedingTestCase):
         def stock(lines, days_ago, species=None, **fields):
             operation = services.record_input(self.user, species=species or self.salmon, day=self.day(days_ago),
                                               lines=[(unit, count, D(weight)) for unit, count, weight in lines],
-                                              **{**sea, **fields})
+                                              **{**sea, 'notes': f'{fix_seed_size_mix.MARK} [seed]', **fields})
             return operation.movements.first().batch
         self.grow = stock([(self.m01, 1000, '4217')], 20)
         self.post = stock([(self.m01, 1000, '594'), (self.m02, 2000, '594')], 18)
@@ -215,3 +218,76 @@ class RefusalTests(SeedCagesTestCase):
     def test_a_refusal_of_the_stock_rolls_back_the_cages_made_before_it(self):
         with mock.patch.object(services, 'record_transfer', side_effect=services.ValidationError('Refused here.')):
             self.assertIn('Refused, nothing written: Refused here.', self.refused())
+
+
+class SeedMarkerTests(SeedCagesTestCase):
+    """F7: only the seed's own fish and cages: the batches kept and moved carry its marker, a cage of the plan that is
+    there already was made by this command."""
+
+    def test_a_batch_without_the_marker_stops_it(self):
+        Batch.objects.filter(pk=self.post.pk).update(notes='Bought in August')
+        state = self.state()
+        with self.assertRaisesMessage(CommandError, f'{self.post.code} does not carry the seed’s marker'):
+            self.command()
+        self.assertEqual(self.state(), state)
+
+    def test_a_cage_of_the_plan_not_made_by_it_stops_it(self):
+        make_cage('TG-M03', 'Cage 3', self.m01.production_department)
+        with self.assertRaisesMessage(CommandError, 'TG-M03 was not made by fix_seed_size_mix'):
+            self.command()
+
+
+class LockOrderTests(SeedCagesTestCase):
+    """F8: a cage of the plan that is there already is locked with the fish, before a new cage locks its department
+    and its site (core/softdelete.py, LOCK ORDER)."""
+
+    def test_the_existing_cage_is_locked_before_the_new_one_is_made(self):
+        cage = make_cage('TG-M04', 'Cage 4', self.m01.production_department)
+        Tank.objects.filter(pk=cage.pk).update(notes=f'{fix_seed_size_mix.MARK}: made by fix_seed_size_mix')
+        calls = []
+        lock = services.lock_fish
+        make = fix_seed_size_mix.Command.make_unit
+        with mock.patch.object(services, 'lock_fish', side_effect=lambda ids, *a: calls.append(('lock', set(ids)))
+                               or lock(ids, *a)), \
+                mock.patch.object(fix_seed_size_mix.Command, 'make_unit', autospec=True,
+                                  side_effect=lambda self_, *a: calls.append(('make', a[2])) or make(self_, *a)):
+            self.command()
+        self.assertEqual(calls[0], ('lock', {self.m01.pk, self.m02.pk, cage.pk}))
+        self.assertEqual(calls[1], ('make', 'TG-M03'))
+        self.assertEqual(self.held(cage), {self.smolt.code: 993})
+
+
+class UnmigratedDryRunTests(TransactionTestCase):
+    """F10: the dry run on a database at farm 0033 (before the size columns): it reads, and says the run would refuse."""
+    serialized_rollback = True
+
+    def migrate(self, targets):
+        executor = MigrationExecutor(connection)
+        executor.loader.build_graph()
+        executor.migrate(targets)
+
+    def test_the_dry_run_reads_an_old_schema(self):
+        from django.contrib.auth import get_user_model
+        user = get_user_model().objects.create_user('seed', 'seed@example.com', 'x')
+        site = Site.objects.create(name='Tromsø', code='TG-02', type='sea_cage', timezone='UTC',
+                                   latitude=D('69.6'), longitude=D('18.9'))
+        north = ProductionDepartment.objects.create(site=site, name='North', code='N')
+        m01, m02 = make_cage('TG-M01', 'Cage 1', north), make_cage('TG-M02', 'Cage 2', north)
+        salmon = make_species()
+        today = services.local_today(m01)
+
+        def stock(unit, weight):
+            return services.record_input(user, species=salmon, day=today, input_stage='smolt', origin='own_hatchery',
+                                         lines=[(unit, 100, D(weight))], notes=f'{fix_seed_size_mix.MARK} [seed]',
+                                         size_mix_ack=True).movements.get().batch
+        keep, post = stock(m01, '4000'), stock(m01, '500')
+        self.addCleanup(lambda: self.migrate(MigrationExecutor(connection).loader.graph.leaf_nodes()))
+        self.migrate([('farm', '0033_oxygen_basis')])
+        out = io.StringIO()
+        call_command('fix_seed_size_mix', '--user', 'seed', '--keep', keep.code, '--move', f'{post.code}:TG-M03:Cage 3',
+                     '--move-cleaner', '', '--dry-run', stdout=out)
+        self.assertIn('lacks farm.0034_species_max_weight_ratio, farm.0035_stock_operation_size_mix_ack', out.getvalue())
+        self.assertIn(f'Transfer 100 fish of {post.code} (500.0 g) from TG-M01 to TG-M03', out.getvalue())
+        with self.assertRaisesMessage(CommandError, 'Migrate first'):
+            call_command('fix_seed_size_mix', '--user', 'seed', '--keep', keep.code, '--move',
+                         f'{post.code}:TG-M03:Cage 3', '--move-cleaner', '', stdout=io.StringIO())

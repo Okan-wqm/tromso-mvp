@@ -357,7 +357,10 @@ def points_for(owner):
 
 
 def origin_of(owner):
-    """Where the salt of a unit's or a system's water comes from (read.common_origin of its units; '' not said)."""
+    """Where the salt of a unit's, a system's or a sampling point's water comes from (read.common_origin of its units, a
+    point's those it serves as its samples' NH3 takes them; '' not said)."""
+    if isinstance(owner, SamplingPoint):
+        return read.common_origin(read.Context._served([owner])[owner.pk])
     return read.common_origin(owner.tanks.all() if isinstance(owner, System) else [owner])
 
 

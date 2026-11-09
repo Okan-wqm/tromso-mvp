@@ -32,7 +32,7 @@ from ..feeding import read as feeding_read, views as feeding_views
 from ..health import views as health_views
 from ..forms.stock import (
     BatchDetailsForm, BatchInputForm, CullForm, DeliveryForm, EscapeForm, GradingForm, HarvestForm, InputLineFormSet, MortalityForm,
-    PlannedForm, TransferForm, VoidForm, WeighingForm, kept_rows, stockable_units,
+    PlannedForm, StockVoidForm, TransferForm, WeighingForm, kept_rows, stockable_units,
 )
 from ..harvest import read as harvest_read, views as harvest_views
 from .. import placements
@@ -533,11 +533,12 @@ def void_operation(request, pk):
     context = _context(operation=operation, lines=lines, heading=_('Void operation'),
                        back_url=_back(request, unit))
     if request.method == 'POST':
-        form = VoidForm(request.POST)
+        form = StockVoidForm(request.POST)
         if form.is_valid():
             try:
                 services.void(request.user, operation, form.cleaned_data['reason'],
-                              withdrawal_ack=form.cleaned_data['withdrawal_ack'])
+                              withdrawal_ack=form.cleaned_data['withdrawal_ack'],
+                              ack=form.cleaned_data['over_capacity_ack'], size_mix_ack=form.cleaned_data['size_mix_ack'])
             except ValidationError as error:
                 form.add_service_error(error)
             else:
@@ -545,7 +546,7 @@ def void_operation(request, pk):
                     'operation': operation.get_kind_display(), 'date': services.shown_date(operation.date)})
                 return done(request, _back(request, unit))
         return _refused(request, 'farm/stock_void.html', {**context, 'form': form})
-    return render_page(request, 'farm/stock_void.html', {**context, 'form': VoidForm()})
+    return render_page(request, 'farm/stock_void.html', {**context, 'form': StockVoidForm()})
 
 
 def overview_tiles(user):

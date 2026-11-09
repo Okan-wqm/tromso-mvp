@@ -283,7 +283,9 @@ a.ui-btn { text-decoration: none; }
    never clip), and where a wide table scrolls, its sticky actions carry a shade so a column passing under them reads as
    going on, not as cut. Figures and codes stay on one line. */
 .ui-table th, .ui-table td { padding: 10px var(--space-3); }
-.ui-table thead th { white-space: normal; }
+/* a figure column's head wraps too (.ui-table .num, which keeps the figures on one line, outranked the plain head rule):
+   "Fed today" held its column at 59 px of head over a 31 px figure */
+.ui-table thead th, .ui-table thead th.num { white-space: normal; }
 .ui-value small, .ui-value b .wq-source { white-space: normal; }
 .ui-value b .wq-origin, .ui-value b .wq-age { white-space: nowrap; }
 .ui-table .ui-code-wrap { white-space: normal; }

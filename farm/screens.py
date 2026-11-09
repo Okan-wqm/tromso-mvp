@@ -73,6 +73,8 @@ SCREENS = {
                       'avg_weight_g': 'the average weight stocked: a line of the stocking operation',
                       'over_capacity_ack': "the person's acknowledgement of a unit over capacity: stored on the "
                                            'stocking operation',
+                      'size_mix_ack': "the person's acknowledgement of batches of very different sizes in a unit: "
+                                      'stored on the stocking operation',
                       'day': "an opening balance's takeover day: the date of its stocking operation",
                       'document': "an opening balance's source document: stored on its OpeningBalance"},
     ),
@@ -81,8 +83,8 @@ SCREENS = {
         edit=no(LEDGER),
         delete=(stock.void_operation,),
         read=(stock.production_units, harvest.harvests),
-        forms=STOCK_DIALOGS + (stock_forms.VoidForm,),
-        fills={'VoidForm.reason': 'void_reason'},
+        forms=STOCK_DIALOGS + (stock_forms.StockVoidForm,),
+        fills={'StockVoidForm.reason': 'void_reason'},
         columns={'kind': computed('which dialog was used: stocking, mortality, cull, weighing, transfer, grading, '
                                   'harvest, delivery or escape')},
     ),

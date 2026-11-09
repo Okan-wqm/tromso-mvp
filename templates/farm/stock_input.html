@@ -14,7 +14,7 @@
   {% include "farm/_withdrawal_change.html" with withdrawal_change=form.withdrawal_change %}
   <p class="panel-help">{% if intro %}{{ intro }}{% else %}{% trans "The batch number is given on saving." %}{% endif %}</p>
   <div class="form-grid">
-    {% for field in form.visible_fields %}{% if field.name != form.ack_field %}{% include "registration/_field.html" %}{% endif %}{% endfor %}
+    {% for field in form.visible_fields %}{% if field.name in form.ack_fields %}{% else %}{% include "registration/_field.html" %}{% endif %}{% endfor %}
   </div>
 
   <fieldset class="form-fieldset" data-formset>
@@ -29,9 +29,9 @@
     <button type="button" class="button button-ghost" data-add-row>{% include "icons/_icon.html" with name="plus" %}{% trans "Add unit" %}</button>
   </fieldset>
 
-  {% if form.needs_ack %}
-  <div class="notice notice-warning">{% with field=form.ack %}{% include "registration/_field.html" %}{% endwith %}</div>
-  {% endif %}
+  {% for field in form.shown_acks %}
+  <div class="notice notice-warning">{% include "registration/_field.html" %}</div>
+  {% endfor %}
 
   <div class="form-actions">
     <a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Cancel" %}</a>

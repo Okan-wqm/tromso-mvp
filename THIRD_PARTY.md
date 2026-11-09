@@ -68,4 +68,4 @@ Run only on GitHub's runners (and by hand, README, CI and dependency updates); n
 | `pip-audit` 2.10.1 | Apache-2.0 | Known vulnerabilities in the Python requirements |
 | `pip-licenses` 5.5.5 | MIT | The Python licence gate above |
 | `cargo-deny` 0.20.2 | MIT OR Apache-2.0 | The ingest's licence, source and advisory gate (also in `sensors-ingest/tests/run.sh`) |
-| GitHub Actions: `actions/checkout`, `actions/setup-python`, `actions/setup-node`, `docker/setup-buildx-action`, `docker/build-push-action`, `Swatinem/rust-cache` | MIT, MIT, MIT, Apache-2.0, Apache-2.0, LGPL-3.0 | Run the jobs; each pinned to a commit |
+| GitHub Actions: `actions/checkout`, `actions/setup-python`, `actions/setup-node`, `actions/upload-artifact`, `docker/setup-buildx-action`, `docker/build-push-action`, `Swatinem/rust-cache` | MIT, MIT, MIT, MIT, Apache-2.0, Apache-2.0, LGPL-3.0 | Run the jobs; each pinned to a commit |

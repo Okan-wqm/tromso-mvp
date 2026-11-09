@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('farm', '0033_oxygen_basis'),
+        ('farm', '0035_stock_operation_size_mix_ack'),
     ]
 
     operations = [

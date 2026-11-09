@@ -280,6 +280,9 @@ class StockOperation(AuditedModel):
     notes = models.CharField(_('Notes'), max_length=2000, blank=True)
     # The person accepted that the fish arriving take a unit above its max density (owner decision Q4).
     over_capacity_ack = models.BooleanField(_('Above the max density, accepted'), default=False)
+    # The person accepted that the fish arriving leave a unit holding batches of a species further apart in weight than
+    # the species' size limit (Species.max_weight_ratio; the owner, 2026-11-09).
+    size_mix_ack = models.BooleanField(_('Batches of different sizes, accepted'), default=False)
     # The health event the deaths or culls belong to (Operations › Health events), on a mortality or a cull
     # only; the event counts its deaths from these operations' lines.
     health_event = models.ForeignKey('HealthEvent', null=True, blank=True, on_delete=models.PROTECT,
@@ -300,6 +303,10 @@ class StockOperation(AuditedModel):
             models.CheckConstraint(
                 condition=Q(over_capacity_ack=False) | Q(kind__in=ARRIVING_OPERATIONS),
                 name='chk_stock_operations_ack_on_arrival',
+            ),
+            models.CheckConstraint(
+                condition=Q(size_mix_ack=False) | Q(kind__in=ARRIVING_OPERATIONS),
+                name='chk_stock_operations_size_mix_ack_on_arrival',
             ),
             models.CheckConstraint(
                 condition=Q(health_event__isnull=True) | Q(kind__in=[OperationKind.MORTALITY, OperationKind.CULL]),

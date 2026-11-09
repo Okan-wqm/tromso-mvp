@@ -5,7 +5,6 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('alarms', '0003_levels'),
-        ('farm', '0034_opening_balances'),
         ('sensors', '0009_alarm_event_acknowledgement_columns_removed'),
     ]
 

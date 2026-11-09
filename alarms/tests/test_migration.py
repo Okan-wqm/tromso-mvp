@@ -6,7 +6,7 @@ from datetime import datetime, timezone as utc
 from django.contrib.auth import get_user_model
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
-from django.test import TransactionTestCase
+from django.test import SimpleTestCase, TransactionTestCase
 
 from farm.models import Site
 from sensors.models import AlarmRule
@@ -57,3 +57,17 @@ class AcknowledgementMigrationTests(TransactionTestCase):
         self.migrate(BEFORE)
         self.assertEqual(rows('SELECT acknowledged_by_id, acknowledged_at FROM sensors_alarm_event ORDER BY opened_at'),
                          [(person.pk, datetime(2026, 11, 1, 8, 5, tzinfo=utc.utc)), (None, None)])
+
+
+class FarmDependencyTests(SimpleTestCase):
+    """The alarms' migrations need the farm only as far as the tables they read (sites, departments, sampling points:
+    farm 0019). A later farm dependency (one the autodetector adds because it was the leaf) makes a farm migration test
+    that goes back and forward to the farm's leaf alone leave the alarms half unapplied for the tests after it."""
+
+    def test_no_alarms_migration_depends_on_a_later_farm_migration(self):
+        from django.db.migrations.loader import MigrationLoader
+        loader = MigrationLoader(None, ignore_no_migrations=True)
+        found = sorted((key[1], dependency[1]) for key, migration in loader.disk_migrations.items()
+                       if key[0] == 'alarms' for dependency in migration.dependencies
+                       if dependency[0] == 'farm' and dependency[1] > '0019_water_points')
+        self.assertEqual(found, [])

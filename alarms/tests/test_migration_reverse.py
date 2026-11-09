@@ -84,3 +84,19 @@ class MigrationTests(TransactionTestCase):
         self.cleared(['device_removed'])
         with self.assertRaisesRegex(RuntimeError, 'device was removed'):
             self.migrate([('alarms', '0009_clearance_causes')])
+
+    def test_rows_over_the_new_bounds_are_clamped_and_logged_before_the_checks(self):
+        """Round-2 review N4: alarms 0008 first brings every row into its new bounds, logging each change, then adds the
+        checks, so `migrate` never stops on a value the earlier bounds allowed."""
+        self.migrate([('alarms', '0007_subjects_by_unit')])
+        rows("UPDATE alarm_severity_policies SET on_delay_seconds = 60, escalation_minutes = 120 WHERE severity = 'critical'")
+        rows("UPDATE alarm_severity_policies SET on_delay_seconds = 1200 WHERE severity = 'warning'")
+        rows("UPDATE alarm_deadbands SET deadband = 20 WHERE parameter = 'ph'")
+        self.migrate(MigrationExecutor(connection).loader.graph.leaf_nodes())
+        self.assertEqual(rows('SELECT severity, on_delay_seconds, escalation_minutes FROM alarm_severity_policies '
+                              'ORDER BY severity'), [('critical', 10, 30), ('warning', 900, 30)])
+        self.assertEqual(rows("SELECT deadband FROM alarm_deadbands WHERE parameter = 'ph'"), [(10,)])
+        notes = rows("SELECT entity_type, changes::text FROM audit_log WHERE changes::text LIKE '%%alarms 0008%%' "
+                     'ORDER BY entity_type')
+        self.assertEqual(sorted(entity for entity, _changes in notes),
+                         ['alarm deadband', 'alarm severity rule', 'alarm severity rule'])

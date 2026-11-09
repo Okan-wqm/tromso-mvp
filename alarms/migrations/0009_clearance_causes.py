@@ -5,10 +5,19 @@ so their trigger is set aside for that one statement, in this migration's transa
 
 from django.db import migrations, models
 
+from ._reverse import remap
+
+
+
+def back_to_old_causes(apps, schema_editor):
+    """Going back: "limit removed" did not exist before; it is "no longer judged (no fish or no limit)" (structural)."""
+    remap(apps, schema_editor, {'limit_removed': 'structural'}, '0009')
+
 
 class Migration(migrations.Migration):
 
     dependencies = [
+        ('core', '0002_audit_log'),          # going back logs each clearance it changes (audit_log)
         ('alarms', '0008_severity_bounds'),
         ('sensors', '0009_alarm_event_acknowledgement_columns_removed'),
     ]
@@ -33,4 +42,5 @@ class Migration(migrations.Migration):
             "AND alarm_id IN (SELECT id FROM alarms WHERE source = 'sensor_rule'); "
             "ALTER TABLE alarm_clearances ENABLE TRIGGER trg_alarm_clearances_append_only;",
             reverse_sql=migrations.RunSQL.noop),
+        migrations.RunPython(migrations.RunPython.noop, back_to_old_causes),
     ]

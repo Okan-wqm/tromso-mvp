@@ -11,6 +11,8 @@ import django.db.models.deletion
 from django.conf import settings
 from django.db import migrations, models
 
+from ._reverse import refuse
+
 
 SEEDS = {'warning': (60, 10), 'critical': (300, 30)}
 
@@ -19,6 +21,11 @@ def seed(apps, schema_editor):
     Policy = apps.get_model('alarms', 'SeverityPolicy')
     for severity, (limit, deadband) in SEEDS.items():
         Policy.objects.filter(severity=severity).update(clock_skew_seconds=limit, clock_skew_deadband_seconds=deadband)
+
+
+
+def refuse_with_devices_removed(apps, schema_editor):
+    refuse(apps, 'device_removed', '0010', 'a device was removed or deactivated')
 
 
 class Migration(migrations.Migration):
@@ -73,4 +80,5 @@ class Migration(migrations.Migration):
             model_name='severitypolicy',
             constraint=models.CheckConstraint(condition=models.Q(('clock_skew_deadband_seconds__gte', 0), ('clock_skew_deadband_seconds__lt', models.F('clock_skew_seconds')), ('clock_skew_seconds__gte', 1), ('clock_skew_seconds__lte', 3600)), name='chk_alarm_severity_policies_clock'),
         ),
+        migrations.RunPython(migrations.RunPython.noop, refuse_with_devices_removed),
     ]

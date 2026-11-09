@@ -3,12 +3,15 @@
 (its middle point replaced while an alarm was open) become one: the alarm opened first stays the subject's open alarm,
 every other open one is cleared now with the cause "merged" (the append-only record says why, nothing is deleted), and
 the timers are merged the safe way: the earliest pending time, the latest bad value's time, no clear timer running (the
-off-delay starts again from evidence). Going back writes the point keys again, each unit's subject at the point of its
+off-delay starts again from evidence). Going back (round-2 review N2) first gives the clearances "merged" and "unit
+removed" the nearest older cause, "no longer judged" (structural), each logged, then writes the point keys again, each unit's subject at the point of its
 open alarm (else its anchor at the time), so nothing is lost either way."""
 from collections import defaultdict
 
 from django.db import migrations, models
 from django.utils import timezone
+
+from ._reverse import remap
 
 
 def by_unit(apps, schema_editor):
@@ -56,9 +59,16 @@ def by_point(apps, schema_editor):
                              last_bad_at=state.last_bad_at)
 
 
+
+def back_to_old_causes(apps, schema_editor):
+    """Going back: "merged" and "unit removed" did not exist before; both are "no longer judged" (structural)."""
+    remap(apps, schema_editor, {'merged': 'structural', 'unit_removed': 'structural'}, '0007')
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
+        ('core', '0002_audit_log'),          # going back logs each clearance it changes (audit_log)
         ('alarms', '0006_severity_rules_kept'),
     ]
 
@@ -77,4 +87,5 @@ class Migration(migrations.Migration):
             constraint=models.CheckConstraint(condition=models.Q(('cause__in', ['returned', 'event_closed', 'structural', 'restored', 'unit_removed', 'merged'])), name='chk_alarm_clearances_cause'),
         ),
         migrations.RunPython(by_unit, by_point),
+        migrations.RunPython(migrations.RunPython.noop, back_to_old_causes),
     ]

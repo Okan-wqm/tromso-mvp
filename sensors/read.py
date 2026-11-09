@@ -26,7 +26,7 @@ from bisect import bisect_right
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta, timezone as dt_timezone
 
-from django.db import connection
+from django.db import connection, transaction
 from django.db.models import Q
 from django.utils import timezone
 
@@ -450,10 +450,10 @@ def replay_step(step):
 
 
 def replay_rows(found, first, step, count, tier):
-    """{(segment index, frame index): (ts, value)}: each segment's newest clean value at or before each of `count`
-    moments from `first` every `step`, taken while it was bound there. ONE query for every segment and moment. Below an
-    hour the readings of the page's span, the newest of each step (the one at or before the moment that ends it) and the
-    newest before the first moment within the channel's freshness; above, the hours of the span read once and each moment
+    """{(segment index, frame index): (ts, value)}: each segment's value at each of `count` moments from `first` every
+    `step`, taken while it was bound there. ONE query for every segment and moment. Below an hour the live view's rule
+    (`value_at`, sensors/provider.py): the newest clean reading at or before the moment, given only when it is no older
+    than the channel's freshness (a staler one is never used); above, the hours of the span read once and each moment
     given the last value of the newest hour ENDED by it (never an hour still running at the moment), an hour a segment
     only partly holds giving the last reading of its part (`hours_of`)."""
     if not found or count < 1:
@@ -463,31 +463,9 @@ def replay_rows(found, first, step, count, tier):
     ends = [segment.end for segment in found]
     fresh = [segment.fresh_s for segment in found]
     last = first + (count - 1) * step
-    rows = {}
     if tier == RAW:
-        sql = (f'WITH s AS (SELECT * FROM unnest(%s::int[], %s::timestamptz[], %s::timestamptz[], %s::int[]) '
-               f'WITH ORDINALITY AS s(channel_no, valid_from, valid_to, fresh_s, ord)) '
-               f'SELECT s.ord, 0, r.ts, r.value FROM s CROSS JOIN LATERAL ('
-               f'SELECT ts, value FROM sensors_reading WHERE channel_no = s.channel_no AND ts <= %s '
-               f'AND ts >= greatest(s.valid_from, %s - make_interval(secs => s.fresh_s)) AND ts < s.valid_to '
-               f'AND (quality & {BAD_MASK}) = 0 ORDER BY ts DESC LIMIT 1) r '
-               f'UNION ALL (SELECT DISTINCT ON (s.ord, slot) s.ord, '
-               f'ceil(extract(epoch FROM r.ts - %s) / %s::numeric)::int AS slot, r.ts, r.value '
-               f'FROM s JOIN sensors_reading r ON r.channel_no = s.channel_no AND r.ts > %s AND r.ts <= %s '
-               f'AND r.ts >= s.valid_from AND r.ts < s.valid_to AND (r.quality & {BAD_MASK}) = 0 '
-               f'ORDER BY s.ord, slot, r.ts DESC)')
-        with connection.cursor() as cursor:
-            cursor.execute(sql, [numbers, starts, ends, fresh, first, first, first, step.total_seconds(), first, last])
-            for ordinal, slot, ts, value in cursor.fetchall():
-                rows.setdefault(int(ordinal) - 1, {})[slot] = (ts, value)
-        found_rows = {}
-        for index, slots in rows.items():
-            carried = None
-            for slot in range(count):
-                carried = slots.get(slot, carried)
-                if carried is not None:
-                    found_rows[(index, slot)] = carried
-        return found_rows
+        return _raw_rows(numbers, starts, ends, fresh, first, last, step, count)
+    rows = {}
     reach = timedelta(seconds=max(fresh)) + HOUR
     # The parts of hours a segment only partly holds (`hours_of`): each its last clean reading, in the same query.
     spans = [hours_of(segment) for segment in found]
@@ -517,6 +495,64 @@ def replay_rows(found, first, step, count, tier):
             if position >= 0:
                 found_rows[(index, slot)] = (hours[position][1], hours[position][2])
     return found_rows
+
+
+# A raw page reads its readings in one of two ways, the same values either way (sensors/tests/test_replay.py
+# ValueAtTests): at a step this short or shorter every reading of the span, the last of each step kept (about as many
+# readings as frames at 1 Hz); at a longer one a look-up per frame and segment, which reads about one reading per frame
+# however dense the readings are. Measured read only on the development data (about 1 Hz, nine segments, 2000 frames):
+# at 1 s the span's readings 0.3 s, the look-ups 0.6 to 1.2 s; at 60 s the span's readings (sorted) 7 to 9 s, the
+# look-ups 0.65 to 0.95 s.
+SPAN_STEP = timedelta(seconds=5)
+RUNTIME_EXCLUSION = 'timescaledb.enable_runtime_exclusion'
+
+
+def _raw_rows(numbers, starts, ends, fresh, first, last, step, count):
+    """`replay_rows` below an hour (the live view's rule at each moment, `SPAN_STEP` says which way it is read). The
+    page's own bounds are constants, so TimescaleDB leaves out the chunks outside them when it plans."""
+    since = first - timedelta(seconds=max(fresh))
+    segments = (f'WITH s AS (SELECT * FROM unnest(%s::int[], %s::timestamptz[], %s::timestamptz[], %s::int[]) '
+                f'WITH ORDINALITY AS s(channel_no, valid_from, valid_to, fresh_s, ord))')
+    # The newest clean reading of a segment at or before a moment `at`, no older than the channel's freshness.
+    newest = ('SELECT ts, value FROM sensors_reading WHERE channel_no = s.channel_no AND ts <= {at} '
+              'AND ts >= greatest(s.valid_from, {at} - make_interval(secs => s.fresh_s)) AND ts < s.valid_to '
+              f'AND ts >= %s AND ts <= %s AND (quality & {BAD_MASK}) = 0 ORDER BY ts DESC LIMIT 1')
+    if step <= SPAN_STEP:
+        # The newest before the first moment, then per segment and step the last clean reading of the step (the one at
+        # or before the moment that ends it), carried to the next moments while it is fresh.
+        before = newest.format(at="%s::timestamptz")
+        sql = (f'{segments} SELECT s.ord, 0, r.ts, r.value FROM s CROSS JOIN LATERAL ({before}) r '
+               f'UNION ALL SELECT s.ord, ceil(extract(epoch FROM r.ts - %s) / %s::numeric)::int AS slot, max(r.ts), '
+               f'last(r.value, r.ts) FROM s JOIN sensors_reading r ON r.channel_no = s.channel_no AND r.ts > %s '
+               f'AND r.ts <= %s AND r.ts >= s.valid_from AND r.ts < s.valid_to AND (r.quality & {BAD_MASK}) = 0 '
+               f'GROUP BY s.ord, slot')
+        with connection.cursor() as cursor:
+            cursor.execute(sql, [numbers, starts, ends, fresh, first, first, since, first, first,
+                                 step.total_seconds(), first, last])
+            stepped = {}
+            for ordinal, slot, ts, value in cursor.fetchall():
+                stepped.setdefault(int(ordinal) - 1, {})[slot] = (ts, value)
+        rows = {}
+        for index, slots in stepped.items():
+            carried, fresh_for = None, timedelta(seconds=fresh[index])
+            for slot in range(count):
+                carried = slots.get(slot, carried)
+                if carried is not None and first + slot * step - carried[0] <= fresh_for:
+                    rows[(index, slot)] = carried
+        return rows
+    # One indexed look-up per segment and moment (the primary key (channel_no, ts) read backwards, one row). The
+    # runtime exclusion of TimescaleDB, which would only find again the chunks left out when planning, is switched off
+    # for this one query and then set back to what it was (a caller's enclosing transaction keeps its own setting): it
+    # cost about 60 µs on every look-up (0.8 s instead of 0.2 s for 10 000 of them on the development data).
+    sql = (f'{segments}, m AS (SELECT * FROM unnest(%s::timestamptz[]) WITH ORDINALITY AS m(at, slot)) '
+           f'SELECT s.ord, m.slot, r.ts, r.value FROM s CROSS JOIN m CROSS JOIN LATERAL ({newest.format(at="m.at")}) r')
+    with transaction.atomic(), connection.cursor() as cursor:
+        cursor.execute(f"SELECT current_setting('{RUNTIME_EXCLUSION}'), set_config('{RUNTIME_EXCLUSION}', 'off', true)")
+        previous = cursor.fetchone()[0]
+        cursor.execute(sql, [numbers, starts, ends, fresh, [first + slot * step for slot in range(count)], since, last])
+        found = {(int(ordinal) - 1, int(slot) - 1): (ts, value) for ordinal, slot, ts, value in cursor.fetchall()}
+        cursor.execute(f"SELECT set_config('{RUNTIME_EXCLUSION}', %s, true)", [previous])
+        return found
 
 
 def _water_types(target):
@@ -612,17 +648,23 @@ def frame_analysis(values, limits):
 
 def page_figures(analyses):
     """([figure], [index or None]) of a page's analyses (None: no diagram): the whole diagram of each, in one box that
-    holds every point of the page, worked out once for each different water. The diagram never reads the oxygen (only
-    its saturation, which is not drawn), so waters exactly equal but for it share one figure; nothing else is shared."""
-    extent = [(analysis.dic, analysis.alkalinity_meq) for analysis in analyses if analysis is not None]
+    holds every point of the page (its largest DIC and alkalinity, worked out once), worked out once for each different
+    diagram. The diagram never reads the water's pH, its alkalinity or its oxygen, only where its point sits
+    (sensors/tests/test_page_share.py proves it on random waters), so frames equal but for those share one figure,
+    its point left out (None): every frame carries its own point in its columns."""
+    points = [(analysis.dic, analysis.alkalinity_meq) for analysis in analyses if analysis is not None]
+    # The box reads only the largest DIC and the largest alkalinity of the points it holds (deffeyes.box_of), so the
+    # page's extent is that one point, worked out once (every point on every figure was O(N^2)).
+    extent = [(max(dic for dic, _alkalinity in points), max(alkalinity for _dic, alkalinity in points))] if points else []
     figures, shared, indexes = [], {}, []
     for analysis in analyses:
         index = None
         if analysis is not None:
-            key = (replace(analysis.water, oxygen_mg_l=None), analysis.limits, analysis.target)
+            key = (replace(analysis.water, ph=0.0, alkalinity_mg_l=0.0, oxygen_mg_l=None), analysis.limits,
+                   analysis.target)
             index = shared.get(key)
             if index is None:
                 index = shared[key] = len(figures)
-                figures.append(deffeyes.figure(analysis, deffeyes.geometry(analysis, extent=extent)))
+                figures.append({**deffeyes.figure(analysis, deffeyes.geometry(analysis, extent=extent)), 'point': None})
         indexes.append(index)
     return figures, indexes

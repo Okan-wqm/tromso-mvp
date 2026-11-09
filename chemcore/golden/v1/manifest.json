@@ -1,0 +1,78 @@
+{
+  "blocks": {
+    "analysis": {
+      "bytes": 370289,
+      "records": 1500,
+      "sha256": "a15a3cf7e94a4c97911bef1cbac559f34fe93ef65e6079e38ac120a85eb24f63"
+    },
+    "carbonate": {
+      "bytes": 520660,
+      "records": 1920,
+      "sha256": "5d6960b1feeec6b022fc0f360c461b4667254bdeec496274f296f26249200055"
+    },
+    "constants": {
+      "bytes": 536326,
+      "records": 1245,
+      "sha256": "eb97dc78e68fdab890ae988e2aa4c531432c9f9974d7831dd516f7a5bd847cbc"
+    },
+    "dosing": {
+      "bytes": 54547,
+      "records": 2430,
+      "sha256": "a68002dddcd949fe59e4f6f66eb05021f1a17e038ddba0fdb0959f8786b9c0e3"
+    },
+    "edges": {
+      "bytes": 19120,
+      "records": 114,
+      "sha256": "32b3d735795588920420e439c0a4972b9a375b83fdf2158a7f991594ef5ea00d"
+    },
+    "geometry": {
+      "bytes": 895434,
+      "records": 600,
+      "sha256": "3c910226f4246d680d9480afad39a99b087da4b3b350d19aced0fafc9bc06240"
+    },
+    "plots": {
+      "bytes": 414458,
+      "records": 40,
+      "sha256": "142d3c185561ba0a8e1cc52016154e9682e948dc1cf641c15be657bc2357f1ed"
+    }
+  },
+  "format": 1,
+  "formula_modules": {
+    "farm/water/calculation.py": {
+      "git_blob": "0f2a3019320dc5eb09f26eeb0f823a0fef61d6ea",
+      "sha256": "49addf22750e2cbda067da2e4488f09bd2356073ae4e9f66503bff8b58dd0161"
+    },
+    "farm/water/charts.py": {
+      "git_blob": "87adcb751d67e70833f1f0bf0326b60b061c8828",
+      "sha256": "0ceb8244cd922838af0bfb84d4fe80f5363bd57bad8fa80e8069d8c85b5d1dee"
+    },
+    "farm/water/chemistry.py": {
+      "git_blob": "4bc51c31cf61822fc720c344353dc8fe9db6f0e4",
+      "sha256": "01b3ce187897af4ccdcf23ce3c787526fe5dcaf5043eb9c417ff1c3518b69813"
+    },
+    "farm/water/deffeyes.py": {
+      "git_blob": "fefb6f9320a929e4e71f6dceef4106e078fd850e",
+      "sha256": "e38acc9a98b0bbd769c2f26a268f574c84d7ca97354fdd4ff32d050d5a7db01e"
+    },
+    "farm/water/dosing.py": {
+      "git_blob": "ed714b84fc229532b29c8fa75f006adddc5da3e9",
+      "sha256": "da31b35a8eaf85c235535df0264fd2e51a952cf64def198699f00ddfd900146c"
+    },
+    "farm/water/evaluate.py": {
+      "git_blob": "11ea9f7c17af8fece0876d6f1d65c872e609eb1f",
+      "sha256": "09b22bab03bba03a6142362a509b807c0286a42570dae43bdb725afac9f02d23"
+    }
+  },
+  "golden_version": "v1",
+  "recorded_with": {
+    "libc": [
+      "glibc",
+      "2.41"
+    ],
+    "machine": "x86_64",
+    "python": "3.12.16",
+    "system": "Linux"
+  },
+  "recorder_sha256": "c2b9468b1a7e4367d4ae32229871c0850c0cecbcfd142485bbdc44c4ef5ddd68",
+  "seed": 20261105
+}

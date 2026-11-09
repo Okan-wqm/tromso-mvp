@@ -36,59 +36,38 @@ and the point between the two doses is the waypoint. As the source does: every p
 a reagent left out under 0.001 g ("X only"), the same reagents once, a pair where one reagent adds
 alkalinity and the other takes it away (an overshoot and a correction) only when nothing else reaches the
 target, ranked by the reagents' places in REAGENTS (sodium bicarbonate first), at most MAX_RECIPES."""
-import math
 from dataclasses import dataclass, field
 
 from django.utils.translation import gettext_lazy as _
 
-from . import chemistry
+from . import messages, native
 
-# Standard atomic weights (IUPAC), as farm/water/chemistry.py's molar masses use them.
-ATOMIC_WEIGHT = {'H': 1.00794, 'C': 12.0107, 'O': 15.9994, 'Na': 22.98976928, 'Ca': 40.078, 'Cl': 35.453}
-MAX_RECIPES = 6
-LEFT_OUT_G = 0.001         # a dose under this is left out of a recipe (the source's)
-AT_TARGET = 0.001          # mmol/L and meq/L: closer than this the water is at its target (the source's)
-
-
-def molar_mass(**atoms):
-    """g/mol of a formula given as atom counts: molar_mass(Na=1, H=1, C=1, O=3)."""
-    return sum(ATOMIC_WEIGHT[atom] * count for atom, count in atoms.items())
+MAX_RECIPES = 6              # the core's (chemcore/core/src/dosing.rs, where the rules above are computed)
+NAMES = {
+    'nahco3': (_('Sodium bicarbonate'), 'NaHCO₃'), 'na2co3': (_('Sodium carbonate'), 'Na₂CO₃'),
+    'naoh': (_('Sodium hydroxide'), 'NaOH'), 'caco3': (_('Calcium carbonate'), 'CaCO₃'),
+    'caoh2': (_('Calcium hydroxide'), 'Ca(OH)₂'), 'cao': (_('Calcium oxide'), 'CaO'),
+    'co2': (_('Carbon dioxide, added'), 'CO₂'), 'degas': (_('Carbon dioxide, stripped'), '−CO₂'),
+    'hcl': (_('Hydrochloric acid'), 'HCl'),
+}
 
 
 @dataclass(frozen=True)
 class Reagent:
-    """A reagent and its direction on the chart: the DIC (mmol) and the alkalinity (meq) one mmol of it adds."""
+    """A reagent and its direction on the chart: the DIC (mmol) and the alkalinity (meq) one mmol of it adds; its
+    molar mass from the atomic weights (the core's)."""
     key: str
     name: str
     formula: str
     molar_mass: float       # g/mol
     dic: float
     alkalinity: float
-
-    @property
-    def angle(self):
-        """Its direction on the chart, DIC across and alkalinity up, from 0 to 2π (the source's `radians`)."""
-        return math.atan2(self.alkalinity, self.dic) % (2 * math.pi)
-
-    def unit_move(self):
-        """Its direction scaled to one unit along DIC, or along alkalinity when it leaves the DIC alone (the
-        source's reagentDirectionLine)."""
-        scale = abs(self.dic) or abs(self.alkalinity)
-        return self.dic / scale, self.alkalinity / scale
+    angle: float            # its direction on the chart, 0 to 2π (the source's `radians`)
 
 
 # The source's REAGENTS, in its order, which is also the order of practicality the recipes are ranked by.
-REAGENTS = [
-    Reagent('nahco3', _('Sodium bicarbonate'), 'NaHCO₃', molar_mass(Na=1, H=1, C=1, O=3), 1, 1),
-    Reagent('na2co3', _('Sodium carbonate'), 'Na₂CO₃', molar_mass(Na=2, C=1, O=3), 1, 2),
-    Reagent('naoh', _('Sodium hydroxide'), 'NaOH', molar_mass(Na=1, O=1, H=1), 0, 1),
-    Reagent('caco3', _('Calcium carbonate'), 'CaCO₃', molar_mass(Ca=1, C=1, O=3), 1, 2),
-    Reagent('caoh2', _('Calcium hydroxide'), 'Ca(OH)₂', molar_mass(Ca=1, O=2, H=2), 0, 2),
-    Reagent('cao', _('Calcium oxide'), 'CaO', molar_mass(Ca=1, O=1), 0, 2),
-    Reagent('co2', _('Carbon dioxide, added'), 'CO₂', molar_mass(C=1, O=2), 1, 0),
-    Reagent('degas', _('Carbon dioxide, stripped'), '−CO₂', molar_mass(C=1, O=2), -1, 0),
-    Reagent('hcl', _('Hydrochloric acid'), 'HCl', molar_mass(H=1, Cl=1), 0, -1),
-]
+REAGENTS = [Reagent(key, *NAMES[key], molar_mass, dic, alkalinity, angle)
+            for key, molar_mass, dic, alkalinity, angle in native.reagents()]
 BY_KEY = {reagent.key: reagent for reagent in REAGENTS}
 # The source's starting choice (WaterChemistryPage.tsx).
 DEFAULT_REAGENTS = ['nahco3', 'naoh', 'co2', 'degas']
@@ -119,100 +98,36 @@ class Recipe:
     doses: list
     waypoint: tuple                 # (DIC, alkalinity) after the first reagent
     below_air: bool = False         # a stripping step would take the CO₂ below the air's
-
-    @property
-    def counter_productive(self):
-        """One reagent adds alkalinity and the other takes it away: an overshoot and a correction."""
-        return (any(dose.delta_alkalinity > 1e-9 for dose in self.doses)
-                and any(dose.delta_alkalinity < -1e-9 for dose in self.doses))
-
-    @property
-    def priority(self):
-        return sum(REAGENTS.index(dose.reagent) for dose in self.doses)
+    counter_productive: bool = False    # one reagent adds alkalinity and the other takes it away
+    priority: int = 0                   # the reagents' places in REAGENTS, summed: the practical first
 
 
 def split(start, end, first, second):
-    """How much of each of two reagents takes the water from `start` to `end`, both (DIC mmol/L, alkalinity
-    meq/L): (lower, a, higher, b), a and b in mmol/L, `lower` the reagent of the smaller angle; None when the
-    move is not a sum of their directions with amounts ≥ 0 (they cannot reach it), or there is no move."""
-    lower, higher = sorted((first, second), key=lambda reagent: reagent.angle)
-    across, up = end[0] - start[0], end[1] - start[1]
-    if abs(across) < 1e-6 and abs(up) < 1e-6:
-        return None
-    determinant = lower.dic * higher.alkalinity - lower.alkalinity * higher.dic
-    if abs(determinant) < 1e-12:            # the same or opposite directions: no single way
-        return None
-    a = (across * higher.alkalinity - up * higher.dic) / determinant
-    b = (lower.dic * up - lower.alkalinity * across) / determinant
-    if a < -1e-9 or b < -1e-9:
-        return None
-    return lower, max(a, 0.0), higher, max(b, 0.0)
-
-
-def _dose(reagent, concentration, volume):
-    return Dose(reagent, concentration, None if volume is None else concentration * reagent.molar_mass * volume,
-                concentration * reagent.dic, concentration * reagent.alkalinity)
-
-
-def recipe(start, end, first, second, volume=None, below_air=None):
-    """The recipe of two reagents from `start` to `end` (volume in m³; None gives the doses per litre only);
-    None when they cannot reach it. `below_air(dic, alkalinity)` says whether a water's CO₂ is below the
-    air's, to flag a recipe whose stripping would go there whichever of its two doses goes first."""
-    found = split(start, end, first, second)
+    """How much of each of two reagents takes the water from `start` to `end` (the core's Cramer's rule): (lower, a,
+    higher, b), a and b in mmol/L, `lower` the reagent of the smaller angle; None when they cannot reach it."""
+    found = native.split(tuple(start), tuple(end), first.key, second.key)
     if found is None:
         return None
     lower, a, higher, b = found
-    waypoint = (start[0] + a * lower.dic, start[1] + a * lower.alkalinity)
-    weight = 1.0 if volume is None else volume          # a dose is left out by its weight in the volume
-    doses = [_dose(reagent, amount, volume) for reagent, amount in ((lower, a), (higher, b))
-             if amount * reagent.molar_mass * weight > LEFT_OUT_G]
-    if not doses:
-        return None
-    return Recipe(doses, waypoint, _below_air(start, end, found, doses, below_air))
+    return BY_KEY[lower], a, BY_KEY[higher], b
 
 
 def at_target(start, end):
-    """The water is at its target: closer than AT_TARGET in DIC and in alkalinity."""
-    return abs(end[0] - start[0]) < AT_TARGET and abs(end[1] - start[1]) < AT_TARGET
+    """The water is at its target: closer than 0.001 in DIC and in alkalinity (the core's)."""
+    return native.at_target(tuple(start), tuple(end))
 
 
-def _below_air(start, end, found, doses, below_air):
-    """Whether the recipe's stripping ends below the air's CO₂ whichever way round the doses go: first (the
-    water ends at the start's alkalinity with the DIC less the stripping) or last (it ends at the target). Only
-    when both do is it flagged: the other order can do it."""
-    if below_air is None or 'degas' not in {dose.reagent.key for dose in doses}:
-        return False
-    lower, a, higher, b = found
-    stripped = a if lower.key == 'degas' else b
-    first = (start[0] - stripped, start[1])
-    return below_air(*first) and below_air(*end)
-
-
-def recipes(start, end, chosen, volume=None, below_air=None):
+def recipes(start, end, chosen, volume=None, air=None):
     """The recipes from the water to the target with the chosen reagents (keys), practical ones first, at most
-    MAX_RECIPES; none when the water is at the target."""
-    if at_target(start, end):
-        return []
-    reagents = [reagent for reagent in REAGENTS if reagent.key in chosen]
-    found, seen = [], set()
-    for index, first in enumerate(reagents):
-        for second in reagents[index + 1:]:
-            made = recipe(start, end, first, second, volume, below_air)
-            if made is None:
-                continue
-            same = tuple(sorted(dose.reagent.key for dose in made.doses))
-            if same in seen:
-                continue
-            seen.add(same)
-            found.append(made)
-    productive = [made for made in found if not made.counter_productive]
-    return sorted(productive or found, key=lambda made: made.priority)[:MAX_RECIPES]
+    MAX_RECIPES; none when the water is at the target. `air`: (temperature, salinity, the air's CO₂ in mg/L) to flag
+    a recipe whose stripping would end below the air's CO₂ whichever of its doses goes first."""
+    return [Recipe([Dose(BY_KEY[key], concentration, grams, delta_dic, delta_alkalinity)
+                    for key, concentration, grams, delta_dic, delta_alkalinity in made['doses']],
+                   made['waypoint'], made['below_air'], made['counter_productive'], made['priority'])
+            for made in native.recipes(tuple(start), tuple(end), list(chosen), volume, air)]
 
 
 # ---- the dosing layer of the chart ------------------------------------------------------------------------
-LINE_LENGTH = 8             # the source's direction lines: 8 mmol/L along DIC (or meq/L along alkalinity)
-
-
 @dataclass
 class Visual:
     """What the chart's dosing layer draws, as the source does: one reagent chosen, its line from the water;
@@ -225,30 +140,11 @@ class Visual:
     note: str = ''
 
 
-def direction_line(start, reagent, length=LINE_LENGTH):
-    across, up = reagent.unit_move()
-    return [start, (start[0] + length * across, start[1] + length * up)]
-
-
 def visual(start, end, chosen):
     """The dosing layer for the chosen reagents (keys, in the order chosen); `end` None without a target."""
-    reagents = [BY_KEY[key] for key in chosen if key in BY_KEY]
-    shown = Visual()
-    if len(reagents) == 1:
-        shown.lines = [(reagents[0], direction_line(start, reagents[0]))]
-    elif len(reagents) == 2:
-        shown.lines = [(reagent, direction_line(start, reagent)) for reagent in reagents]
-        shown.wedge = [start, shown.lines[0][1][1], shown.lines[1][1][1]]
-        found = split(start, end, *reagents) if end is not None else None
-        if found is not None:
-            lower, a, _higher, _b = found
-            shown.waypoint = (start[0] + a * lower.dic, start[1] + a * lower.alkalinity)
-            shown.path = [start, shown.waypoint, end]
-        elif end is not None:
-            shown.note = _('Dosing path: these two reagents cannot reach the target.')
-    else:
-        shown.note = _('Dosing path: tick one reagent to draw its line, or two to draw their path to the target.')
-    return shown
+    found = native.visual(tuple(start), None if end is None else tuple(end), list(chosen))
+    return Visual([(BY_KEY[key], line) for key, line in found['lines']], found['wedge'], found['path'],
+                  found['waypoint'], messages.dosing_note(found['note']))
 
 
 # ---- the simulator --------------------------------------------------------------------------------------
@@ -266,23 +162,10 @@ class Step:
 
 
 def simulate(eq, start, ph, amounts, volume, air_co2_mg_l=None):
-    """The water after each amount (grams by reagent key) added in turn to `volume` m³, in REAGENTS' order
-    (the source's), from `start` (DIC, alkalinity) at `ph`; a stripping step that takes the CO₂ below
-    `air_co2_mg_l` is flagged. [] without an amount."""
-    doses = [(reagent, amounts[reagent.key]) for reagent in REAGENTS if amounts.get(reagent.key)]
-    if not doses:
-        return []
-    dic, alkalinity = start
-    steps = [Step(None, 0.0, dic, alkalinity, ph, eq.co2(dic, ph) * chemistry.MG_CO2_PER_MMOL)]
-    for reagent, grams in doses:
-        concentration = grams / reagent.molar_mass / volume          # mmol/L
-        dic += concentration * reagent.dic
-        alkalinity += concentration * reagent.alkalinity
-        reached = eq.ph_at(dic, alkalinity)
-        if reached is None:
-            steps.append(Step(reagent, grams, dic, alkalinity, None, None))
-            break
-        co2 = eq.co2(dic, reached) * chemistry.MG_CO2_PER_MMOL
-        below = reagent.key == 'degas' and air_co2_mg_l is not None and co2 < air_co2_mg_l
-        steps.append(Step(reagent, grams, dic, alkalinity, reached, co2, below))
-    return steps
+    """The water after each amount (grams by reagent key) added in turn to `volume` m³, in REAGENTS' order (the
+    source's), from `start` (DIC, alkalinity) at `ph`; a stripping step that takes the CO₂ below `air_co2_mg_l` is
+    flagged; [] without an amount (the core's)."""
+    return [Step(None if key is None else BY_KEY[key], *rest)
+            for key, *rest in native.simulate(eq.temp_c, eq.salinity, tuple(start), ph,
+                                              [(key, grams) for key, grams in amounts.items() if grams is not None],
+                                              volume, air_co2_mg_l)]

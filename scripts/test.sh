@@ -17,8 +17,10 @@
 #       so no job runs behind a test's back either.
 #   fsync, synchronous_commit, full_page_writes off  the data lives only as long as the run (crash safety buys nothing).
 #   max_connections=200  one connection per worker and the few a test opens itself, far below it.
-# The tests run in the image built from scripts/testrunner/Dockerfile (the project's requirements and tblib), tagged
-# by the hash of the requirements, built when missing.
+# The tests run in the image built from docker/testrunner.Dockerfile, its `tests` stage: the project's requirements
+# (hashed), the water-chemistry core built from this checkout (chemcore/: no server starts without it, README,
+# Water-chemistry core) and tblib. It is tagged by a hash of everything it is built from, so a change to the core or
+# to a requirement builds a new one; built when missing.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 export MSYS_NO_PATHCONV=1
@@ -31,15 +33,11 @@ DB=balik-test-db-$RUN
 NET=balik-test-$RUN
 TESTS=balik-test-run-$RUN
 
-HASH=$(cat requirements.txt scripts/testrunner/requirements.txt scripts/testrunner/Dockerfile | sha256sum | cut -c1-12)
-IMAGE=balik-testrunner:req-$HASH
+HASH=$( { cat requirements.txt docker/* scripts/testrunner/requirements.txt;
+          find chemcore -type f ! -path 'chemcore/target/*' | sort | xargs cat; } | sha256sum | cut -c1-12)
+IMAGE=balik-testrunner-chemcore:req-$HASH
 if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
-  context=$(mktemp -d)
-  cp requirements.txt "$context/requirements.txt"
-  cp scripts/testrunner/requirements.txt "$context/test-requirements.txt"
-  cp scripts/testrunner/Dockerfile "$context/Dockerfile"
-  docker build -q -t "$IMAGE" "$(win "$context")" >/dev/null
-  rm -rf "$context"
+  docker build -q -f docker/testrunner.Dockerfile --target tests -t "$IMAGE" "$REPO" >/dev/null
 fi
 
 cleanup() {

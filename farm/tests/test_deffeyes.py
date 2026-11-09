@@ -25,6 +25,8 @@ from .helpers import role
 
 REFERENCE = json.loads((Path(__file__).parent / 'deffeyes_reference' / 'reference.json').read_text(encoding='utf-8'))
 H2S_PER_S = chemistry.H2S_PER_S
+# The isolines the source draws: every quarter pH from 4.25 to 12.5 (the core draws them, chemcore/core/src/geometry.rs).
+ISOLINE_PHS = [round(4.25 + 0.25 * step, 2) for step in range(34)]
 
 
 def setUpModule():
@@ -260,7 +262,7 @@ class SourceReferenceTests(SimpleTestCase):
             eq = result.equilibria
             with self.subTest(temperature=case['temperature_c'], salinity=case['salinity_ppt'], ph=case['ph']):
                 # The isolines (the source rounds its points to 4 decimals): their ends at DIC 0 and 8.
-                self.assertEqual([isoline[0] for isoline in case['isolines']], deffeyes.ISOLINE_PHS)
+                self.assertEqual([isoline[0] for isoline in case['isolines']], ISOLINE_PHS)
                 for ph, at_zero, end, at_end in case['isolines']:
                     slope, intercept = eq.isoline(ph)
                     self.assertClose(intercept, at_zero, absolute=1e-4)
@@ -631,7 +633,7 @@ class GeometryTests(SimpleTestCase):
                 # Every isoline that crosses the chart; the others pass wholly above it (at 12 °C pH 12.25 and
                 # 12.5, their hydroxide alone more than 6 meq/L) or below it (pH 4.25).
                 drawn = {float(ph) for ph in re.findall(r'class="deffeyes-isoline[^"]*" data-ph="([\d.]+)"', html)}
-                hidden = set(deffeyes.ISOLINE_PHS) - drawn
+                hidden = set(ISOLINE_PHS) - drawn
                 self.assertEqual(len(drawn) + len(hidden), 34)
                 self.assertEqual(hidden, {4.25, 12.25, 12.5})
                 for ph in hidden:

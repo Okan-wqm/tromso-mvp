@@ -604,7 +604,8 @@ wrasse may change).
 [--accept-handling-warnings]` separates what the seed history (seed-history-2026-11) stocked together in Tromsø's TG-M01
 and TG-M02: the post-smolt B-2026-005 and the smolt B-2026-007 go by the app's own transfers (reason "growth stage",
 dated the farm's today) into cages of their own, TG-M03 and TG-M04, made like TG-M02 through the units form; the
-grow-out salmon B-2026-004 and the lumpfish stay. Not dated back to the stocking: every later record of those fish
+grow-out salmon B-2026-004 and its lumpfish stay in TG-M01, and TG-M02's lumpfish follow the post-smolt into TG-M03
+after them (reason "other", the notes say why: a cage of cleaner fish alone is not realistic), leaving TG-M02 empty. Not dated back to the stocking: every later record of those fish
 (mortalities, weighings, the escape, the cages' feedings) was booked in the old cages, and the stock refuses a transfer
 that would leave them without their fish. One transaction, locks in the lock order, checked before it commits (the
 cages, `check_stock` finding nothing new); run again it does nothing; `--dry-run` only reads, in a read-only

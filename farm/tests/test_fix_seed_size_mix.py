@@ -138,8 +138,7 @@ class SeparationTests(SeedCagesTestCase):
         self.assertIn(f'Transfer 300 fish of {self.lumps.code} (63.0 g) from TG-M02 to TG-M03, cleaner fish with the '
                       'production fish they clean', out)
         self.assertIn(f'Leave the cleaner fish {self.lumps.code} in TG-M01.', out)
-        self.assertNotIn('in TG-M02.
-', out.split('Leave', 1)[1])
+        self.assertNotIn(f'Leave the cleaner fish {self.lumps.code} in TG-M02', out)
         self.assertFalse(Tank.all_objects.filter(code='TG-M03').exists())
         self.command()                                                     # the database is writable again after it
         self.assertTrue(Tank.objects.filter(code='TG-M03').exists())

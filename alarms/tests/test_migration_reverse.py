@@ -46,3 +46,41 @@ class MigrationTests(TransactionTestCase):
              "VALUES ('system', 'sensors_failed', 'critical', %s, 'The sensors cannot be read')", [AT])
         with self.assertRaisesRegex(RuntimeError, 'system alarm'):
             self.migrate([('alarms', '0003_levels')])
+
+    def cleared(self, causes):
+        """{cause: alarm id} of alarms cleared with these causes (a device's clock alarm for "device removed")."""
+        from farm.models import ProductionDepartment
+        from farm.tests.helpers import point_of
+        from farm.tests.test_stock import make_unit
+        site = Site.objects.create(name='Bergen', code='BG')
+        point = point_of(make_unit('T-01', ProductionDepartment.objects.create(site=site, name='Hall', code='H')))
+        device = make_device(make_connection(), make_format(), site)
+        ids = {}
+        for cause in causes:
+            water = cause != 'device_removed'
+            ids[cause] = rows('INSERT INTO alarms (source, point_id, device_id, parameter, severity, opened_at, summary) '
+                              "VALUES (%s, %s, %s, %s, 'critical', %s, %s) RETURNING id",
+                              ['water_limit' if water else 'system', point.pk if water else None,
+                               None if water else device.pk, 'ph' if water else 'device_clock', AT,
+                               f'an alarm cleared as {cause}'])[0][0]
+            rows('INSERT INTO alarm_clearances (alarm_id, cleared_at, cause) VALUES (%s, %s, %s)', [ids[cause], AT, cause])
+        return ids
+
+    def test_going_back_past_the_new_clearance_causes_maps_each_to_the_nearest_old_one_and_logs_it(self):
+        """Round-2 review N2: alarms 0009 and 0007 go back with clearances of the causes they added ("limit removed",
+        "unit removed", "merged"): each becomes the nearest cause there was before, "no longer judged (no fish or no
+        limit)" (`structural`), and the activity log says so per alarm. Nothing is deleted."""
+        ids = self.cleared(['merged', 'unit_removed', 'limit_removed'])
+        self.migrate([('alarms', '0006_severity_rules_kept')])
+        self.assertEqual(dict(rows('SELECT alarm_id, cause FROM alarm_clearances')),
+                         {alarm_id: 'structural' for alarm_id in ids.values()})
+        notes = rows("SELECT entity_id, changes::text FROM audit_log WHERE entity_type = 'alarm' "
+                     "AND changes::text LIKE '%%reversed%%'")
+        self.assertEqual(sorted(entity for entity, _changes in notes), sorted(str(alarm_id) for alarm_id in ids.values()))
+
+    def test_going_back_past_the_device_clock_with_a_device_removed_says_why_it_cannot(self):
+        """Round-2 review N2: "the device was removed" has no honest older word (the alarms before 0010 knew no
+        devices), so alarms 0010 refuses to go back once such a clearance exists, as 0004 does, saying why."""
+        self.cleared(['device_removed'])
+        with self.assertRaisesRegex(RuntimeError, 'device was removed'):
+            self.migrate([('alarms', '0009_clearance_causes')])

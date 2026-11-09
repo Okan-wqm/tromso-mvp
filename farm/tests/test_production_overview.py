@@ -135,11 +135,13 @@ class TodayTests(OverviewTestCase):
         critical, warning = card_of(today, 'water-critical'), card_of(today, 'water-warning')
         self.assertEqual(figure_of(today, 'water-critical'), '1')
         self.assertIn('data-status="critical"', critical)
-        self.assertIn('octagon', critical)                                # the glyph, and the word in the label
+        self.assertIn('<svg class="icon"', critical)                      # the glyph, and the word in the label
         self.assertIn('critical', re.sub(r'<[^>]+>', ' ', critical).lower())
         self.assertEqual(figure_of(today, 'water-warning'), '0')
         self.assertNotIn('data-status', warning)
-        self.assertIn('of 3 sampling points', critical)
+        self.assertNotIn('<svg', warning)
+        points = self.client.get(reverse('farm:water')).context['point_count']
+        self.assertIn(f'of {points} sampling points', critical)
 
     def test_no_value_is_a_dash(self):
         today = section(self.page(), 'Today on the farm')

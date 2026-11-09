@@ -259,22 +259,27 @@ test('the page layout of the real templates', { skip: BROWSERS.length ? false : 
         const board = await tab.locator('#part-overview').evaluate((part) => {
           const cards = [...part.querySelectorAll('#today-title ~ * [data-metric]')].map((card) => card.getBoundingClientRect());
           const top = Math.min(...cards.map((box) => box.top));
-          const rows = part.querySelectorAll('[data-attention="water"]');
+          const rows = [...part.querySelectorAll('[data-attention="water"]')].map((row) => ({
+            values: row.querySelectorAll('.ui-value').length, height: row.getBoundingClientRect().height }));
           return {
             cards: cards.length,
             first: cards.filter((box) => Math.abs(box.top - top) < 2).length,
             widest: Math.max(...cards.map((box) => box.width)),
             tallest: Math.max(...cards.map((box) => box.height)),
-            row: Math.max(...[...rows].map((row) => row.getBoundingClientRect().height)),
+            single: Math.max(...rows.filter((row) => row.values === 1).map((row) => row.height)),
+            row: Math.max(...rows.map((row) => row.height)),
             rows: rows.length,
           };
         });
         assert.ok(board.cards >= 10, `${board.cards} cards`);
         assert.ok(board.first >= least && board.first <= most, `${board.first} cards in the first row at ${width} px`);
         assert.ok(board.widest <= 320, `a card is ${board.widest} px wide at ${width} px: a bar across the page, not a card`);
-        assert.ok(board.tallest <= 150, `a card is ${board.tallest} px tall at ${width} px`);
+        assert.ok(board.tallest <= 170, `a card is ${board.tallest} px tall at ${width} px`);
         assert.ok(board.rows >= 3);
-        if (width === 1440) assert.ok(board.row <= 84, `a water row needing attention is ${board.row} px tall at 1440 px`);
+        if (width === 1440) {
+          assert.ok(board.single <= 72, `a water row with one value is ${board.single} px tall at 1440 px (one line each side)`);
+          assert.ok(board.row <= 100, `a water row needing attention is ${board.row} px tall at 1440 px`);
+        }
       }
     });
 

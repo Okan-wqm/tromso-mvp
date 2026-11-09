@@ -616,7 +616,7 @@ class EquipmentListTests(EquipmentTestCase):
 
     def test_the_production_overview_counts_equipment(self):
         response = self.client.get(reverse('production_home'))
-        self.assertIn({'label': 'Equipment', 'count': 4, 'url': reverse('farm:equipment_list')},
+        self.assertIn({'key': 'equipment', 'label': 'Equipment', 'count': 4, 'url': reverse('farm:equipment_list')},
                       [{**tile, 'label': str(tile['label'])} for tile in response.context['tiles']])
 
 

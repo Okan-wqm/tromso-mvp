@@ -1,8 +1,54 @@
-"""Per-severity bounds of the alarm rules and a deadband ceiling, held by the database (cross review F9; alarms/models.py)."""
-
+"""Per-severity bounds of the alarm rules and a deadband ceiling, held by the database (cross review F9; alarms/models.py).
+A row the earlier bounds allowed but these do not is first brought to the nearest bound, each change logged in the
+activity log, so `migrate` never stops on old data (round-2 review N4). The bounds are written here as they stood."""
+import json
 from decimal import Decimal
+
 from django.conf import settings
 from django.db import migrations, models
+
+ON_DELAY = {'critical': (0, 10), 'warning': (0, 900)}
+ESCALATION = {'critical': (1, 30), 'warning': (1, 1440)}
+LABELS = {'on_delay_seconds': 'Raise after (seconds)', 'escalation_minutes': 'Escalate after (minutes)',
+          'deadband': 'Deadband'}
+
+
+def _log(cursor, entity_type, row, label, changes):
+    cursor.execute(
+        "INSERT INTO audit_log (id, created_at, user_name, action, entity_type, entity_id, entity_label, changes, "
+        "severity) VALUES (gen_random_uuid(), now(), 'system', 'update', %s, %s, %s, %s::jsonb, 'critical')",
+        [entity_type, str(row.pk), label, json.dumps({
+            **changes, 'Note': [None, 'alarms 0008: outside the new bounds, brought to the nearest one']})])
+
+
+def clamp(apps, schema_editor):
+    """Every severity rule and deadband outside the new bounds, brought to the nearest bound, logged."""
+    from farm.water import parameters
+    Policy = apps.get_model('alarms', 'SeverityPolicy')
+    Deadband = apps.get_model('alarms', 'ParameterDeadband')
+    with schema_editor.connection.cursor() as cursor:
+        for row in Policy.objects.all():
+            changes = {}
+            for field, bounds in (('on_delay_seconds', ON_DELAY), ('escalation_minutes', ESCALATION)):
+                low, high = bounds.get(row.severity, (None, None))
+                value = getattr(row, field)
+                if low is not None and not low <= value <= high:
+                    fitted = min(max(value, low), high)
+                    changes[LABELS[field]] = [str(value), str(fitted)]
+                    setattr(row, field, fitted)
+            if changes:
+                Policy.objects.filter(pk=row.pk).update(on_delay_seconds=row.on_delay_seconds,
+                                                        escalation_minutes=row.escalation_minutes)
+                _log(cursor, 'alarm severity rule', row, row.severity.capitalize(), changes)
+        for row in Deadband.objects.all():
+            if row.parameter not in parameters.BY_CODE:
+                continue
+            measure = parameters.get(row.parameter)
+            ceiling = measure.high - measure.low
+            if row.deadband > ceiling:
+                Deadband.objects.filter(pk=row.pk).update(deadband=ceiling)
+                _log(cursor, 'alarm deadband', row, row.parameter,
+                     {LABELS['deadband']: [str(row.deadband.normalize()), str(ceiling.normalize())]})
 
 
 class Migration(migrations.Migration):
@@ -13,6 +59,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunPython(clamp, migrations.RunPython.noop),
         migrations.RemoveConstraint(
             model_name='severitypolicy',
             name='chk_alarm_severity_policies_delays',

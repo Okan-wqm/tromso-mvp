@@ -167,6 +167,33 @@ class BehindWindowTests(ClockCase):
         self.assertEqual(self.levels(), ['critical', 'warning'])
 
 
+class AheadCeilingTests(ClockCase):
+    """Round-2 review N3: the ingest replaces a device time further ahead than its contract's future skew (60 s by
+    default) by the time it received the value, so the values stay right and a device "ahead" is measured as "more than
+    60 s ahead": with a critical limit above that, ahead tops out at the warning. The rules page and the help say so,
+    with the contract's own number; behind still reaches the critical."""
+
+    def page(self):
+        viewer = get_user_model().objects.create_user('ruler', 'ruler@example.com', 'x')
+        viewer.groups.add(role('Alarm admin', 'view_severitypolicy', 'change_severitypolicy'))
+        self.client.force_login(viewer)
+        return self.client.get(reverse('alarms:severitypolicy_list'))
+
+    def test_the_rules_page_says_ahead_tops_out_at_the_warning_under_the_contract(self):
+        self.assertContains(self.page(), 'ahead tops out at the warning')
+        self.assertContains(self.page(), '60 s')
+
+    def test_it_says_nothing_when_the_contract_lets_the_critical_be_reached(self):
+        from sensors.models import Contract
+        Contract.objects.update(future_skew_s=600)
+        self.assertNotContains(self.page(), 'ahead tops out at the warning')
+
+    def test_the_help_says_it_too(self):
+        from ..forms import SeverityPolicyForm
+        self.assertIn('ahead', str(SeverityPolicyForm._meta.help_texts['clock_skew_seconds']))
+        self.assertIn('future skew', str(SeverityPolicyForm._meta.help_texts['clock_skew_seconds']))
+
+
 class ClockSkewRuleTests(ClockCase):
     def test_the_seeded_limits(self):
         self.assertEqual({policy.severity: (policy.clock_skew_seconds, policy.clock_skew_deadband_seconds)

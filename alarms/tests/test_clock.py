@@ -59,10 +59,9 @@ class ClockSkewAlarmTests(ClockCase):
         self.assertEqual(self.levels(), ['critical'])
 
     def test_a_device_behind_is_measured_too(self):
-        self.skew(-120)
-        self.loop()
-        self.skew(-120, received=31)
-        self.loop(seconds=31)
+        for seconds in range(0, 631, 30):                           # behind on every pass for the whole window
+            self.skew(-120, received=seconds)
+            self.loop(seconds=seconds)
         self.assertEqual(self.levels(), ['warning'])
         self.assertIn('behind', Alarm.objects.get(parameter='device_clock').summary)
 
@@ -118,6 +117,54 @@ class ClockSkewAlarmTests(ClockCase):
         self.assertEqual(self.levels(), ['critical', 'warning'])
         self.assertEqual({notification.alarm.severity for notification in Notification.objects.all()}, {'critical'})
         self.assertTrue(read.is_open(Alarm.objects.get(parameter='device_clock', severity='warning')))
+
+
+class BehindWindowTests(ClockCase):
+    """Round-2 review N1: a value received late is not a slow clock. "Behind" holds only when the device is behind on
+    every pass of its severity's window (the user's rule data, `clock_behind_window_seconds`, 600 s by default: the
+    minimum over the window), and never while the ingest says messages are waiting for its connection (a backlog being
+    drained). "Ahead" is judged at once, as before."""
+
+    def test_a_backlog_drained_after_a_ten_minute_outage_raises_no_clock_alarm(self):
+        self.skew(-600)                                             # the first message of the backlog, read mid-drain
+        self.loop()
+        self.skew(-300, received=5)
+        self.loop(seconds=5)
+        for seconds in range(10, 700, 30):                          # drained: the device's own clock is right
+            self.skew(-1, received=seconds)
+            self.loop(seconds=seconds)
+        self.assertFalse(Alarm.objects.filter(parameter='device_clock').exists())      # never raised, not even once
+
+    def test_a_backlog_the_ingest_reports_is_never_a_slow_clock(self):
+        from sensors.models import IngestStatus
+        IngestStatus.objects.create(connection_id=self.device.connection_id, heartbeat_at=self.now, connected=True,
+                                    queue_depth=5000)
+        for seconds in range(0, 700, 30):                           # a long drain, behind on every pass
+            self.skew(-400, received=seconds)
+            self.loop(seconds=seconds)
+        self.assertFalse(Alarm.objects.filter(parameter='device_clock').exists())
+
+    def test_a_truly_slow_clock_still_raises_after_the_window(self):
+        for seconds in range(0, 571, 30):
+            self.skew(-360, received=seconds)
+            self.loop(seconds=seconds)
+        self.assertEqual(self.levels(), [])                         # inside the window: not yet
+        for seconds in range(600, 661, 30):
+            self.skew(-360, received=seconds)
+            self.loop(seconds=seconds)
+        self.assertEqual(self.levels(), ['critical', 'warning'])
+
+    def test_ahead_is_still_at_once(self):
+        self.skew(360)
+        self.loop()
+        self.assertEqual(self.levels(), ['critical'])
+
+    def test_the_window_is_the_users(self):
+        SeverityPolicy.objects.update(clock_behind_window_seconds=60)
+        for seconds in range(0, 121, 30):
+            self.skew(-360, received=seconds)
+            self.loop(seconds=seconds)
+        self.assertEqual(self.levels(), ['critical', 'warning'])
 
 
 class ClockSkewRuleTests(ClockCase):

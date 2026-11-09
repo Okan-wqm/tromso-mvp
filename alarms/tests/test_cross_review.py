@@ -81,3 +81,34 @@ class ClockAheadTests(CrossReviewCase):
         self.assertEqual(open_levels(), ['critical'])
         self.loop(seconds=32)                                       # the off-delay (30 s) from the pass that saw it
         self.assertEqual(open_levels(), [])
+
+
+class DeadbandAcrossCandidatesTests(CrossReviewCase):
+    """F2: a level clears only when EVERY fresh value of the unit's water is back inside its limit by the deadband (alarm
+    plan §2.1), not only the value that decided it: a depth point 0.02 over the critical pH limit, inside pH's deadband
+    (0.05), keeps the critical open beside a newer warning value of the middle point, so the next 5.98 never re-raises
+    it (no chatter)."""
+
+    def test_another_points_value_inside_the_deadband_keeps_the_level(self):
+        from farm.models import SamplingPoint
+        depth = SamplingPoint.objects.create(unit=self.t1, kind='depth', name='Bottom', depth_m=1)
+        self.sample(5.5, hours=1, point=depth)
+        self.loop()
+        self.loop(seconds=31)
+        self.assertEqual(open_levels(), ['critical', 'warning'])
+        self.sample(6.02, hours=0.6, point=depth)          # back over 6 by less than the deadband
+        self.sample(6.4, hours=0.5)                         # the middle point: a warning, newer
+        self.loop(seconds=32)
+        self.loop(seconds=80)
+        self.assertEqual(open_levels(), ['critical', 'warning'])
+
+    def test_every_value_clear_by_the_deadband_clears(self):
+        from farm.models import SamplingPoint
+        depth = SamplingPoint.objects.create(unit=self.t1, kind='depth', name='Bottom', depth_m=1)
+        self.sample(5.5, hours=1, point=depth)
+        self.loop()
+        self.sample(6.2, hours=0.6, point=depth)           # clear of the critical limit by more than the deadband
+        self.sample(6.4, hours=0.5)
+        self.loop(seconds=1)
+        self.loop(seconds=40)
+        self.assertEqual(open_levels(), ['warning'])

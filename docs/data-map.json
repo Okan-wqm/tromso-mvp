@@ -212,6 +212,7 @@
         "farm/tests/test_site_structure.py",
         "farm/tests/test_sites.py",
         "farm/tests/test_size_mix.py",
+        "farm/tests/test_size_mix_review.py",
         "farm/tests/test_species.py",
         "farm/tests/test_species_size_limit.py",
         "farm/tests/test_stock.py",
@@ -3521,6 +3522,7 @@
         "core/test_datamap.py",
         "farm/tests/test_batch_details.py",
         "farm/tests/test_cleaner_fish.py",
+        "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_health.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_size_mix.py",
@@ -6439,6 +6441,7 @@
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_feeding.py",
         "farm/tests/test_protocols.py",
+        "farm/tests/test_size_mix_review.py",
         "farm/tests/test_withdrawal_gate.py",
         "reports/tests/test_compute.py",
         "monitoring/tests/test_pages.py"
@@ -7099,6 +7102,7 @@
         "farm/tests/test_health.py",
         "farm/tests/test_probe_review.py",
         "farm/tests/test_protocols.py",
+        "farm/tests/test_size_mix_review.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_suppliers.py",
         "farm/tests/test_withdrawal_gate.py",
@@ -13423,6 +13427,7 @@
         "farm/tests/test_migration_withdrawals.py",
         "farm/tests/test_restore.py",
         "farm/tests/test_size_mix.py",
+        "farm/tests/test_size_mix_review.py",
         "farm/tests/test_species.py",
         "farm/tests/test_species_size_limit.py",
         "farm/tests/test_stock.py",
@@ -14174,7 +14179,8 @@
           "link": null,
           "on_form": [
             "TransferForm",
-            "GradingForm"
+            "GradingForm",
+            "StockVoidForm"
           ],
           "how": "form",
           "why": ""
@@ -14188,7 +14194,8 @@
           "link": null,
           "on_form": [
             "TransferForm",
-            "GradingForm"
+            "GradingForm",
+            "StockVoidForm"
           ],
           "how": "form",
           "why": ""
@@ -14219,7 +14226,7 @@
           "choices": [],
           "link": null,
           "on_form": [
-            "VoidForm.reason"
+            "StockVoidForm.reason"
           ],
           "how": "form",
           "why": ""
@@ -14487,10 +14494,12 @@
           }
         },
         {
-          "form": "VoidForm",
+          "form": "StockVoidForm",
           "module": "farm.forms.stock",
           "fields": {
-            "reason": ""
+            "reason": "",
+            "over_capacity_ack": "",
+            "size_mix_ack": ""
           }
         }
       ],
@@ -14516,6 +14525,7 @@
         "farm/tests/test_migration_purging.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_size_mix.py",
+        "farm/tests/test_size_mix_review.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_withdrawal_gate.py",
         "reports/tests/test_cleaner.py",

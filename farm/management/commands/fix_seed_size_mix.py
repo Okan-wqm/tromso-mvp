@@ -13,6 +13,9 @@ grow-out salmon) was booked in the old cages, and the stock refuses a transfer t
 their fish; moving them would mean voiding about 300 records outside the backdating window and inventing how the
 feedings split between cages. So the history stays as recorded, and from today each cage holds one size of salmon.
 
+Only the seed's data: every batch it keeps or moves carries the seed's marker in its notes (seed-history-2026-11), and a
+cage of the plan that is there already was made by this command (the marker in its notes); otherwise nothing is done.
+
 Safe to run again: what was moved is not moved twice (a batch with no fish left in a source cage is skipped, a cage of the
 plan that exists already is used when it is empty or holds the batch's own fish), and each transfer carries a
 deterministic entry key. Everything is one transaction: a refusal (a handling warning not accepted, the withdrawal guard,
@@ -74,6 +77,7 @@ class Plan:
     moves: list                                   # [(batch, destination code, destination name)]
     legs: list = field(default_factory=list)
     new_units: list = field(default_factory=list)  # [(code, name)] to make like `like`
+    existing: list = field(default_factory=list)   # the cages of the plan that are there already
     cleaner: list = field(default_factory=list)   # [(unit, batch)] left where they are
 
 
@@ -164,6 +168,8 @@ class Command(BaseCommand):
         if missing:
             raise CommandError(f'No live batch {", ".join(missing)}.')
         keep = batches[keep_code]
+        for batch in batches.values():
+            self.marked(batch)
         cleaner_species = set(Batch.objects.filter(species__cleaner_fish_type__gt='').values_list('pk', flat=True))
         plan = Plan(sources, like, keep, [(batches[code], unit, name) for code, unit, name in moves])
         moved = {batches[code].pk: (unit, name) for code, unit, name in moves}
@@ -178,6 +184,7 @@ class Command(BaseCommand):
                 continue
             if batch.pk in cleaner_species:
                 if unit.code in cleaner_to:
+                    self.marked(batch)
                     share = read.share_on(unit.pk, batch.pk, services.local_today(unit))
                     going.append(Leg(batch, unit, cleaner_to[unit.code], row['fish'], share.avg_weight_g, True))
                 else:
@@ -202,7 +209,16 @@ class Command(BaseCommand):
             if others.exists() or unit.production_department.site_id != site.pk or unit.kind != Tank.Kind.CAGE:
                 raise CommandError(f'{code} exists and is not an empty cage of {site.code} for {batch.code}'
                                    f'{" (it holds it already)" if held else ""}: nothing done.')
+            if MARK not in unit.notes:
+                raise CommandError(f'{code} was not made by fix_seed_size_mix (no {MARK} in its notes): nothing done.')
+            plan.existing.append(unit)
         return plan
+
+    @staticmethod
+    def marked(batch):
+        if MARK not in batch.notes:
+            raise CommandError(f'{batch.code} does not carry the seed’s marker ({MARK}) in its notes: not the seed’s '
+                               'data, nothing done.')
 
     def show(self, plan, pending, user):
         out = self.stdout.write
@@ -240,9 +256,10 @@ class Command(BaseCommand):
                 if not plan.legs:
                     self.stdout.write('Nothing to move: the cages hold only the kept batch and the cleaner fish.')
                     return
-                # The lock order (core/softdelete.py): the fish first, batches then units, before a new unit locks its
-                # department and site; the transfers then take the same locks again (held) and the new units' (ours).
-                services.lock_fish([unit.pk for unit in plan.sources])
+                # The lock order (core/softdelete.py): the fish first, batches then units (the sources and the cages
+                # of the plan there already), before a new unit locks its department and site; the transfers then take
+                # the same locks again (held) and the new units' (ours, which nobody else can see yet).
+                services.lock_fish([unit.pk for unit in [*plan.sources, *plan.existing]])
                 made = {code: self.make_unit(user, plan.like, code, name) for code, name in plan.new_units}
                 units = {**{unit.code: unit for unit in Tank.objects.filter(
                     code__in=[code for _batch, code, _name in plan.moves])}, **made}

@@ -81,8 +81,8 @@ SCREENS = {
         edit=no(LEDGER),
         delete=(stock.void_operation,),
         read=(stock.production_units, harvest.harvests),
-        forms=STOCK_DIALOGS + (stock_forms.VoidForm,),
-        fills={'VoidForm.reason': 'void_reason'},
+        forms=STOCK_DIALOGS + (stock_forms.StockVoidForm,),
+        fills={'StockVoidForm.reason': 'void_reason'},
         columns={'kind': computed('which dialog was used: stocking, mortality, cull, weighing, transfer, grading, '
                                   'harvest, delivery or escape')},
     ),

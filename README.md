@@ -512,10 +512,11 @@ production department · site), batch ("B-2026-001 + B-2026-004" and the species
 stock"), fish, average weight, biomass, density · capacity with its bar, biological FCR (bFCR), survival and last
 fed, both from the feeding records (see Feeding records; the source showed 0 and nothing). A row
 picked (accent tint and bar) and a row over its max biomass (amber, an "Over" mark, a rust bar) look
-different. A unit holding batches of one species further apart in average weight than the species' size limit (stocked
-with the acknowledgement, or weighed apart since) has a warning chip by its code, on this page and on the Meal board:
-"Mixed sizes: 4,217 g and 78.0 g (limit 2×)", the heaviest and the lightest batch now (`UnitStock.size_mixes`; cleaner
-fish against their own species only). The filters and the open unit are in the address, so a view can be linked and the back
+different. A unit holding lots of one species further apart in weight than the species' size limit (stocked with the
+acknowledgement, or weighed apart since) has a warning chip by its code, on this page and on the Meal board, at the
+weights each page shows: here the measured ones with their day ("Mixed sizes: 4,217 g as stocked 10 Oct 2026 and 78.0 g
+weighed 3 Nov 2026 (limit 2×)", `UnitStock.size_mixes`), on the board its estimates ("4,602 g est."), so the chip and
+the line beside it never disagree; cleaner fish against their own species only. The filters and the open unit are in the address, so a view can be linked and the back
 button works; a row is one link. Two empty states: no units at all (with a link to Setup) and no match
 (with "Clear filters"). The column chooser and sorting come next.
 For people who may read the water (see Water chemistry), the table also has **Temp. (°C)** and **O₂ (mg/L)**
@@ -572,15 +573,22 @@ writes and folds every batch involved from its first line, so a backdated
 operation is accepted only if every later day stays right (no share ever below 0 fish, and every feeding
 recorded in the unit still finds fish there on its day: "The feeding of 2 Nov in T-01 would have no fish:
 void it first."); above a unit's max biomass it asks for an acknowledgement, stored on the operation. The same way, a
-stocking, a transfer or split and a grading that would leave a unit holding batches of one species further apart in
-average weight than the species' size limit (Setup › Species; none set: no check) ask for an acknowledgement of their
-own ("T-01 would hold Atlantic salmon (SAL) of very different sizes on 4 Nov 2026: B-2026-004 at 4,217 g and
-B-2026-007 at 78.0 g, 54.1 times as heavy, above the limit of 2×"), stored on the operation (`size_mix_ack`, a
-database check keeps it to operations that bring fish in) and in its log entry; both questions are asked together and
-each box answers its own. The weights are the book's averages on the operation's date, as the capacity reads them;
-cleaner fish are weighed against their own species only, never the salmon they clean. A weighing, a mortality or any
-operation that brings no fish in is never asked (a weighing that shows a mix is warned about on the pages instead), and
-neither is a void. The unit's status follows its fish:
+stocking, a transfer or split and a grading that would leave a unit holding lots of one species further apart in
+weight than the species' size limit (Setup › Species; none set: no check) ask for an acknowledgement of their own ("T-01
+would hold Atlantic salmon (SAL) of very different sizes on 4 Nov 2026: B-2026-004 at 4,217 g as stocked 10 Oct 2026
+and B-2026-007 at 78.0 g as stocked 20 Oct 2026, 54.07 times as heavy, above the limit of 2×"), stored on the
+operation (`size_mix_ack`, a database check keeps it to operations that bring fish in) and in its log entry; both
+questions are asked together and each box answers its own. **Lots** (`farm/stock/sizes.py`): a unit's fish by size,
+kept along the fold, so the size classes of one batch put back together after a grading are compared like two batches
+(the cross review's F1); a weighing keeps the lots' spread, a grading's weighing of the fish that stay makes them one.
+The weights compared are the feeding walk's estimates where feed was credited since the measured point, else the
+measured weights, said with their day; the ratio is rounded up to 0.01 so it never reads as the limit; cleaner fish are
+weighed against their own species only, never the salmon they clean. **Every later day too** (F2): the timeline with
+the operation is folded against the one without it, and a unit over its capacity, or a mix, that appears on any day
+from the operation's date on because of it is asked about (a backdated stocking before a later one), at that day. **A
+void** (F3) asks the same of the fish it brings back, with the same boxes on its dialog, the answer kept in its log
+entry. A weighing, a mortality or any operation that brings no fish in is never asked (a weighing that shows a mix is
+warned about on the pages instead). The unit's status follows its fish:
 the first fish make a preparing or fallow unit active, the last fish out make an active one fallow and
 a harvesting or quarantined one due for cleaning; a void that brings fish back makes the unit active.
 Every operation, every void and every status change is in the activity log ("Voided", with the reason).
@@ -969,8 +977,10 @@ system), a line per batch: fish and estimated biomass, the estimated and the mea
 mark), the temperature with its age and whether it is the unit's or a loop's (Record water sample), the protocol and
 which row applied ("via unit T-01", "via batch B-2026-001", "via B-2026-001 in T-01"), the band, feed and pellet,
 the expected FCR, the SFR (the two cells read, in its title), the ration and meals × kg, fed today, remaining and the
-next meal; a unit without a ration says why in the row. Cleaner fish without a feeding table of their own (no
-protocol row applies to them: they eat what the salmon leave, their own feed block and the lice) are no fault: their
+next meal; a unit without a ration says why in the row. Cleaner fish beside production fish without a feeding table
+of their own (no protocol row applies to them: they eat what the salmon leave, their own feed block and the lice) are
+no fault (cleaner fish alone in a unit, a hatchery's tank of lumpfish, are its production fish: no table is a gap, said
+as for any fish): their
 line is marked **Cleaner fish**, with their fish and weight, and has no ration, no "No protocol is assigned" and no
 "Estimate incomplete" for their feedings (their estimate stays the measured weight); the drawer, Records' days view and
 the monitoring card say the same. A protocol of their own (their batch's row, or a unit's row of their species) gives

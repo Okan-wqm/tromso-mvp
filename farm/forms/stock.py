@@ -725,3 +725,13 @@ class VoidForm(ServiceErrors, forms.Form):
                                          'struck through, with this reason.'))
 
     service_fields = {}
+
+
+class StockVoidForm(Acknowledged, VoidForm):
+    """The void of a stock operation: fish it brings back that leave a unit over its capacity or holding a mix are asked
+    about with the same boxes as an arrival (farm/stock/services.py `void`)."""
+
+    over_capacity_ack = acknowledgement()
+    size_mix_ack = size_mix_acknowledgement()
+
+    ack_fields = ('over_capacity_ack', 'size_mix_ack')

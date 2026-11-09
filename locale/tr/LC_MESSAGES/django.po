@@ -1445,6 +1445,14 @@ msgid "%(weight)s as stocked"
 msgstr "stoklamada %(weight)s"
 
 #, python-format
+msgid "%(weight)s as stocked %(date)s"
+msgstr "%(weight)s, stoklamada %(date)s"
+
+#, python-format
+msgid "%(weight)s est."
+msgstr "%(weight)s tahmini"
+
+#, python-format
 msgid "%(weight)s is outside %(protocol)s (%(range)s)."
 msgstr "%(weight)s, %(protocol)s protokolünün ağırlık aralıkları dışında (%(range)s)."
 

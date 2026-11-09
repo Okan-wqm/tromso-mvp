@@ -259,8 +259,12 @@ def meal_board(request):
         batches = {share.batch.pk: share.batch for share in stock[unit.pk].shares}
         lines = read.meal_lines(unit_day, batches, today[unit.pk])
         temperature = next((line['share'].end.temperature for line in lines if line['share'].end.temperature), None)
+        # The chip compares the weights the lines show: the estimate where feed was credited since the measured point.
+        factors = {line['share'].batch_id: line['share'].end_g / line['share'].measured_g for line in lines
+                   if line['share'].fed_since_kg > 0 and line['share'].measured_g}
         rows.append({
             'unit': unit, 'stock': stock[unit.pk], 'day': unit_day, 'lines': lines, 'temperature': temperature,
+            'mixes': stock[unit.pk].size_mixes_at(factors),
             'placements': chips.get(unit.pk, ()),
             'record_url': f'{reverse("farm:feeding_record", args=[unit.pk])}?'
                           f'{urlencode({"meal": "next", "next": here})}' if can_record else '',

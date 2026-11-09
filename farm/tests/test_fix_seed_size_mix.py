@@ -103,7 +103,7 @@ class SeparationTests(SeedCagesTestCase):
             self.assertTrue(SamplingPoint.objects.filter(unit=unit).exists())       # as a person's new unit gets
             self.assertTrue(AuditLog.objects.filter(entity_type='unit', entity_id=str(unit.pk), action='create')
                             .exists())
-        transfers = list(StockOperation.objects.filter(kind='transfer').order_by('pk'))
+        transfers = list(StockOperation.objects.filter(kind='transfer').order_by('created_at'))
         self.assertEqual(len(transfers), 5)
         for operation in transfers:
             out_line = operation.movements.get(kind='transfer_out')

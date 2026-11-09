@@ -92,10 +92,10 @@ class LaterDaysTests(SizeMixTestCase):
             '50.00 kg/m³). Tick the box below to stock it anyway.']})
         self.stock(self.t2, count=1000, weight='1500', days_ago=8, ack=True)
 
-    def test_a_mix_there_already_is_not_asked_again(self):
+    def test_fish_arriving_beside_a_mix_accepted_before_are_asked_against_it(self):
+        """Each arriving lot is weighed against what is there already (F1): an accepted mix is asked again."""
         self.small(size_mix_ack=True)                                           # 78 g beside 4,217 g, accepted
-        self.small(weight='80', days_ago=4, size_mix_ack=False)                 # another small lot: within its kind
-        self.assertEqual(StockOperation.objects.filter(size_mix_ack=True).count(), 1)
+        self.assertIn('size_mix_ack', self.refused(self.small, weight='80', days_ago=4))
 
 
 class VoidTests(SizeMixTestCase):

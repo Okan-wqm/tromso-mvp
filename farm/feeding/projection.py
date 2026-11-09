@@ -14,8 +14,8 @@ rations sized on biomass that feed itself raised (FP-01) cannot happen.
   feed above it is "over the ration" and not growth. The next meal is read at the new estimate.
 - A feeding of fish without an expected FCR (no protocol, a weight outside its bands) adds nothing and is counted:
   the estimate is incomplete for that many feeding days, and the pages say so. Never a default FCR. Cleaner fish
-  without a feeding table of their own (ration.CLEANER_FISH) are not modelled at all: their estimate stays at the
-  measured weight and their feedings are no gap.
+  without a feeding table of their own beside production fish (ration.CLEANER_FISH) are not modelled at all: their
+  estimate stays at the measured weight and their feedings are no gap; alone in a unit they are its production fish.
 
 The day's calculated ration follows the same rule: with M meals a day in the band and R the ration at the estimate
 (farm/feeding/ration.py), each recorded meal counts R ÷ M at the estimate just before it (a record's meals, or one
@@ -340,6 +340,9 @@ class Projector:
         asked = (unit_id, day) in self.asked
         ordered = sorted(feedings, key=lambda feeding: feeding.order)
         found = []
+        # Cleaner fish are exempt from a missing table only beside production fish (ration.Policy.basis).
+        beside = any(share.count and batch_id not in self.cleaner for (unit, batch_id), share in shares.items()
+                     if unit == unit_id)
         for (unit, batch_id), share in shares.items():
             if unit != unit_id or not share.count:
                 continue
@@ -349,7 +352,7 @@ class Projector:
                 continue
             share_day = feed(self.tracks[(unit_id, batch_id)], share.count, share.avg_weight_g, share.last_weighed,
                              day, parts, lambda weight, batch_id=batch_id: self.policy.basis(unit_id, batch_id, day,
-                                                                                             weight))
+                                                                                             weight, beside))
             share_day.batch_id = batch_id
             found.append(share_day)
         if asked:

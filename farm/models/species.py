@@ -131,7 +131,7 @@ class Species(CodedMixin, AuditedModel):
         _('Max weight ratio of batches in one unit'), max_digits=6, decimal_places=2, null=True, blank=True,
         validators=[MinValueValidator(MIN_WEIGHT_RATIO), MaxValueValidator(MAX_WEIGHT_RATIO)],
     )
-    notes =models.CharField(_('Notes'), max_length=2000, blank=True)
+    notes = models.CharField(_('Notes'), max_length=2000, blank=True)
 
     class Meta:
         db_table = 'species'

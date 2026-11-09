@@ -1436,6 +1436,14 @@ msgid "%(weight)s as stocked"
 msgstr "%(weight)s ved utsett"
 
 #, python-format
+msgid "%(weight)s as stocked %(date)s"
+msgstr "%(weight)s ved utsett %(date)s"
+
+#, python-format
+msgid "%(weight)s est."
+msgstr "%(weight)s ansl."
+
+#, python-format
 msgid "%(weight)s is outside %(protocol)s (%(range)s)."
 msgstr "%(weight)s er utenfor vektklassene i %(protocol)s (%(range)s)."
 

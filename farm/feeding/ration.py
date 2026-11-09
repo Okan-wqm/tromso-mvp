@@ -5,9 +5,10 @@ walk (farm/feeding/fold.py) asks it at every feeding, so the projected growth an
 - The protocol: the row in force that day for the batch in this unit, else the unit's row, else the whole batch's
   row (owner decision Q8). A unit's row for another species is skipped, with the reason kept: a unit's row
   outlives the fish in it. None: no ration, "no protocol". Cleaner fish (D-1) have no feeding table of their own as
-  a rule: when no row applies to them (a unit's row of the production species is read past as for any batch) they
-  have no ration and no warning, "cleaner fish"; a row for their species, of their batch or of their unit, is read
-  as any batch's.
+  a rule: when no row applies to them (a unit's row of the production species is read past as for any batch) and
+  they share the unit with production fish, they have no ration and no warning, "cleaner fish"; a row for their
+  species, of their batch or of their unit, is read as any batch's. Cleaner fish alone in a unit (a hatchery's tank of
+  lumpfish) are its production fish: no protocol is a gap, said as for any fish.
 - The band: the one with lower weight ≤ W < upper weight, W the fish's estimated average (owner decision Q7).
   None: the fish are outside the protocol, no ration (the source fed the first or last band, FP-03).
 - The temperature: farm/feeding/temperature.py. None: no ration.
@@ -221,11 +222,13 @@ class Policy:
         self._resolved[(unit_id, batch_id, day)] = result = (found, skipped)
         return result
 
-    def basis(self, unit_id, batch_id, day, weight_g):
-        """The Basis of the batch's ration in the unit on `day`, for fish of `weight_g` on average."""
+    def basis(self, unit_id, batch_id, day, weight_g, beside=False):
+        """The Basis of the batch's ration in the unit on `day`, for fish of `weight_g` on average. `beside`: the unit
+        holds production fish that day, so cleaner fish there are cleaning them (D-1); cleaner fish without production
+        fish (a hatchery tank of lumpfish) are that unit's production fish, and a missing table is a gap."""
         assignment, skipped = self.resolve(unit_id, batch_id, day)
         if assignment is None:
-            if batch_id in self.cleaner:
+            if batch_id in self.cleaner and beside:
                 # No table of their own (the unit's row, if any, is the production fish's): no ration, no warning.
                 return Basis(weight_g, missing=CLEANER_FISH)
             return Basis(weight_g, missing=NO_PROTOCOL, skipped=skipped)

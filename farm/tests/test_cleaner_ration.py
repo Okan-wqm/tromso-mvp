@@ -133,9 +133,11 @@ class CleanerFishPolicyTests(SimpleTestCase):
     def test_cleaner_fish_have_no_ration_and_no_warning_without_a_row_of_their_own(self):
         for rows in ([], [Row('P', unit_id='T1')]):
             with self.subTest(rows=rows):
-                basis = self.policy(rows).basis('T1', 'L1', date(2026, 11, 5), D(50))
+                basis = self.policy(rows).basis('T1', 'L1', date(2026, 11, 5), D(50), beside=True)
                 self.assertEqual((basis.missing, basis.why(), basis.has_ration, basis.fcr, basis.skipped),
                                  (ration.CLEANER_FISH, '', False, None, None))
+        alone = self.policy([]).basis('T1', 'L1', date(2026, 11, 5), D(50))     # no production fish beside them
+        self.assertEqual((alone.missing, alone.why()), (ration.NO_PROTOCOL, 'No protocol is assigned to these fish.'))
         salmon = self.policy([]).basis('T1', 'B1', date(2026, 11, 5), D(50))
         self.assertEqual((salmon.missing, salmon.why()), (ration.NO_PROTOCOL, 'No protocol is assigned to these fish.'))
 

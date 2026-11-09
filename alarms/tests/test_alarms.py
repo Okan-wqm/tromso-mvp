@@ -10,15 +10,14 @@ from django.db import DatabaseError, IntegrityError, connection, transaction
 from django.test import override_settings
 from django.utils import timezone
 
-from core.models import AuditLog, PlatformSettings
+from core.models import AuditLog
 from sensors import alarms as sensor_alarms
 from sensors.models import AlarmEvent, AlarmRule
 from sensors.tests import make_channel, make_connection, make_device, make_format
 
 from .. import engine, read, routing, services
 from ..models import (APPEND_ONLY, Acknowledgement, Alarm, AlarmClearance, DeliveryAttempt, Escalation, Notification,
-                      RecipientRule)
-from ..transports import MAX_ATTEMPTS
+                      RecipientRule, SeverityPolicy)
 from . import AlarmsCase
 from .doubles import FailingTransport, RecordingTransport
 
@@ -222,12 +221,13 @@ class OutboxTests(AlarmsCase):
         self.assertTrue(read.transport_connected('push'))
 
     @override_settings(ALARM_TRANSPORTS=PUSH_FAILING)
-    def test_a_failing_transport_is_tried_again_up_to_the_cap(self):
+    def test_a_failing_transport_is_tried_again_up_to_the_severitys_attempts(self):
+        SeverityPolicy.objects.filter(severity='critical').update(delivery_attempts=3)
         self.rule()
         self.sample(5.5)
-        for minute in range(MAX_ATTEMPTS + 3):
+        for minute in range(6):
             self.loop(minutes=minute)
-        self.assertEqual(DeliveryAttempt.objects.filter(outcome='failed').count(), MAX_ATTEMPTS)
+        self.assertEqual(DeliveryAttempt.objects.filter(outcome='failed').count(), 3)
         self.assertEqual(read.status(Notification.objects.get()), 'failed')
         self.assertEqual(DeliveryAttempt.objects.first().detail, FailingTransport.reason)
 
@@ -235,7 +235,7 @@ class OutboxTests(AlarmsCase):
 class EscalationTests(AlarmsCase):
     def setUp(self):
         super().setUp()
-        PlatformSettings.objects.update(alarm_escalation_minutes=10)
+        SeverityPolicy.objects.filter(severity='critical').update(escalation_minutes=10)
         self.rule()
         self.rule(level=1, user=self.manager)
         self.sample(5.5)

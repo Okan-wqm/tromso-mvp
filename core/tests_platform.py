@@ -17,8 +17,7 @@ from .models import AuditLog, PlatformSettings
 class RowTests(TestCase):
     def test_the_migration_makes_the_one_row_with_todays_rules(self):
         row = PlatformSettings.objects.get()
-        self.assertEqual((row.correction_window_days, row.second_approval_withdrawal, row.alarm_escalation_minutes),
-                         (31, False, 15))
+        self.assertEqual((row.correction_window_days, row.second_approval_withdrawal), (31, False))
 
     def test_the_database_keeps_it_one_row(self):
         with self.assertRaises(IntegrityError), transaction.atomic():
@@ -30,11 +29,6 @@ class RowTests(TestCase):
                 PlatformSettings.objects.update(correction_window_days=days)
         PlatformSettings.objects.update(correction_window_days=3650)
         PlatformSettings.objects.update(correction_window_days=1)
-
-    def test_the_database_bounds_the_escalation_time(self):
-        for minutes in (0, 1441):
-            with self.subTest(minutes=minutes), self.assertRaises(IntegrityError), transaction.atomic():
-                PlatformSettings.objects.update(alarm_escalation_minutes=minutes)
 
     def test_get_makes_the_row_again_when_a_restore_left_none(self):
         PlatformSettings.objects.all().delete()
@@ -60,9 +54,10 @@ class ReaderTests(TestCase):
         with self.assertRaises(ValueError):
             platform.second_approval_required('fast')
 
-    def test_the_escalation_time(self):
-        PlatformSettings.objects.update(alarm_escalation_minutes=20)
-        self.assertEqual(platform.escalation_after().total_seconds(), 1200)
+    def test_the_alarms_rules_are_not_here(self):
+        # The escalation time, the delays and the deadbands are the alarms' reference data (alarms.SeverityPolicy,
+        # alarms.ParameterDeadband), per severity and per parameter: owner, alarm plan §7c.
+        self.assertFalse(hasattr(platform, 'escalation_after'))
 
 
 class RequestMemoTests(TestCase):
@@ -109,7 +104,7 @@ class PageTests(TestCase):
         self.row = PlatformSettings.get()
 
     def edit(self, **values):
-        data = {'correction_window_days': 31, 'alarm_escalation_minutes': 15, 'version': self.row.version, **values}
+        data = {'correction_window_days': 31, 'version': self.row.version, **values}
         if data.pop('second_approval_withdrawal', False):
             data['second_approval_withdrawal'] = 'on'
         return self.client.post(reverse('core:platformsettings_edit', args=[self.row.pk]), data)

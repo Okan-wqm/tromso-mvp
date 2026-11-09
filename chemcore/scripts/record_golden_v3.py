@@ -9,8 +9,9 @@ runs give the same bytes) and <out>/manifest.json. A water of the corpus: a temp
 alkalinity and what is measured of its ions (nothing, a conductivity at 25 °C, a hardness), fresh, hard, brackish and sea
 water. For each, formula 1's and formula 3's constants (Equilibria's fields) and provenance (formula, ionic strength,
 its source, the seawater share), and what the owner compares: at each of five pHs the CO2 (mg/L) at its alkalinity and
-the NH3 share of the TAN, with the pH offset (free - NBS) among the constants. Block `analyses`: the whole analysis
-(native.analyse: CO2 and its border, NH3-N and its border, H2S, the oxygen) of every water at pH 7.0 with a TAN, a
+the NH3 share of the TAN (the judged one, the larger of the limits' basis and the activity-corrected, cross review F1,
+and the corrected one), with the pH offset (free - NBS) among the constants. Block `analyses`: the whole analysis
+(native.analyse: CO2 and its border, NH3-N and its border, each judged with its corrected value and basis, H2S, the oxygen) of every water at pH 7.0 with a TAN, a
 sulfide, the default limits and a target, by formula 1 and by formula 3. The values are the core's (bit for bit on every platform, `libm`), so
 farm/tests/test_golden_v3.py holds the core to them exactly. Standard library and farm.water.native only."""
 import gzip
@@ -31,7 +32,8 @@ IONS = ({}, {'conductivity_25_us_cm': 50.0}, {'conductivity_25_us_cm': 300.0}, {
 LIMITS = {'nh3_n_mg_l': 0.0103, 'co2_mg_l': 15.0, 'h2s_ug_l': 2.0, 'alkalinity_low_mg_l': 50.0,
           'alkalinity_high_mg_l': 150.0}
 ANALYSIS_KEYS = ('co2_mg_l', 'co2', 'nh3_n_mg_l', 'nh3', 'safe_tan_mg_l', 'h2s_ug_l', 'h2s', 'dic', 'target_dic',
-                 'oxygen_solubility_mg_l', 'oxygen_saturation_pct', 'nh3_share_pct', 'h2s_share_pct')
+                 'oxygen_solubility_mg_l', 'oxygen_saturation_pct', 'nh3_share_pct', 'h2s_share_pct',
+                 'co2_corrected_mg_l', 'co2_basis', 'nh3_corrected_n_mg_l', 'nh3_basis')
 
 
 def native():
@@ -48,7 +50,10 @@ def outputs(eq, alkalinity_mg_l, native_):
             'provenance': {'formula': eq.formula, 'ionic_strength': eq.ionic_strength, 'source': eq.strength_source,
                            'sea_weight': eq.sea_weight},
             'at_ph': [{'ph': ph, 'co2_mg_l': eq.co2(eq.dic(meq, ph), ph) * native_.MG_CO2_PER_MMOL,
-                       'nh3_share': eq.nh3_share(ph)} for ph in PHS]}
+                       'co2_judged_mg_l': eq.co2_judged(meq, ph)[0] * native_.MG_CO2_PER_MMOL,
+                       'nh3_share': eq.nh3_share(ph), 'nh3_share_corrected': eq.nh3_share_corrected(ph)}
+                      for ph in PHS],
+            'nh3_basis': eq.nh3_basis}
 
 
 def record_all():

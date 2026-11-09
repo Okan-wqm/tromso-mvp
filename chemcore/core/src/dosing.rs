@@ -425,7 +425,7 @@ pub fn simulate(
         dic,
         alkalinity,
         ph: Some(ph),
-        co2_mg_l: Some(eq.co2(dic, ph)? * c::MG_CO2_PER_MMOL),
+        co2_mg_l: Some(eq.co2_judged(alkalinity, ph, eq.co2(dic, ph)?)?.0 * c::MG_CO2_PER_MMOL),
         below_air: false,
     }];
     for (reagent, grams) in doses {
@@ -444,8 +444,11 @@ pub fn simulate(
             });
             break;
         };
-        let co2 = eq.co2(dic, reached)? * c::MG_CO2_PER_MMOL;
-        let below = reagent.key == "degas" && air_co2_mg_l.is_some_and(|air| co2 < air);
+        // The air's CO₂ is a true concentration (Weiss 1974): stripping is held to it by the water's own CO₂; the step shows
+        // the judged CO₂ (Equilibria::co2_judged, cross review F1).
+        let own = eq.co2(dic, reached)?;
+        let co2 = eq.co2_judged(alkalinity, reached, own)?.0 * c::MG_CO2_PER_MMOL;
+        let below = reagent.key == "degas" && air_co2_mg_l.is_some_and(|air| own * c::MG_CO2_PER_MMOL < air);
         steps.push(Step {
             reagent: Some(reagent.key),
             grams,

@@ -3859,6 +3859,22 @@ msgstr "CO₂"
 msgid "CO₂ (mg/L)"
 msgstr "CO₂ (mg/L)"
 
+msgid "CO₂ activity-corrected (information, not judged)"
+msgstr "CO₂ aktiviteye göre düzeltilmiş (bilgi, değerlendirmede kullanılmaz)"
+
+msgid "CO₂ judged on its activity-corrected value, the larger here."
+msgstr "CO₂, burada daha büyük olan aktiviteye göre düzeltilmiş değeriyle değerlendirildi."
+
+#, python-format
+msgid ""
+"CO₂ judged on the basis its limits were set on (to 1 ‰ the ideal water, every activity 1, as "
+"Standard Methods 4500-CO₂ D; from 5 ‰ formula 1’s seawater constants), the larger; activity-"
+"corrected %(value)s mg/L."
+msgstr ""
+"CO₂, sınır değerlerinin konduğu temelde değerlendirildi (1 ‰'ye kadar ideal su, tüm aktiviteler "
+"1, Standard Methods 4500-CO₂ D gibi; 5 ‰'den itibaren formül 1'in deniz suyu sabitleri), büyük "
+"olan; aktiviteye göre düzeltilmiş %(value)s mg/L."
+
 msgid "CO₂ limit"
 msgstr "CO₂ sınırı"
 
@@ -8232,6 +8248,19 @@ msgstr ""
 msgid "NH₃ and NH₄⁺ together, as nitrogen. The NH₃ limit is drawn from it."
 msgstr "NH₃ ve NH₄⁺ birlikte, azot olarak. NH₃ sınırı buna göre çizilir."
 
+msgid "NH₃ judged on its activity-corrected value, the larger here."
+msgstr "NH₃, burada daha büyük olan aktiviteye göre düzeltilmiş değeriyle değerlendirildi."
+
+#, python-format
+msgid ""
+"NH₃ judged on the basis its limits were set on (to 1 ‰ the ideal water, every activity 1, as "
+"Emerson et al. 1975; from 5 ‰ formula 1’s seawater constants), the larger; activity-corrected "
+"%(value)s mg/L."
+msgstr ""
+"NH₃, sınır değerlerinin konduğu temelde değerlendirildi (1 ‰'ye kadar ideal su, tüm aktiviteler "
+"1, Emerson ve ark. 1975 gibi; 5 ‰'den itibaren formül 1'in deniz suyu sabitleri), büyük olan; "
+"aktiviteye göre düzeltilmiş %(value)s mg/L."
+
 msgid "NH₃ share of TAN at the border"
 msgstr "Sınırda TAN içindeki NH₃ payı"
 
@@ -8250,6 +8279,9 @@ msgstr "NH₃-N"
 
 msgid "NH₃-N (mg/L)"
 msgstr "NH₃-N (mg/L)"
+
+msgid "NH₃-N activity-corrected (information, not judged)"
+msgstr "NH₃-N aktiviteye göre düzeltilmiş (bilgi, değerlendirmede kullanılmaz)"
 
 msgid "NH₃-N limit"
 msgstr "NH₃-N sınırı"

@@ -63,3 +63,29 @@ def provenance(equilibria):
     if 0 < equilibria.sea_weight < 1:
         said = _('%(said)s; %(share)d %% seawater constants') % {'said': said, 'share': round(100 * equilibria.sea_weight)}
     return f'{said}.'
+
+
+# What judged a water's NH3 or CO2 against its limits (cross review F1; chemcore/core/src/chemistry.rs Basis): the
+# larger of the basis the limits were set on and the activity-corrected value.
+JUDGED = {
+    ('nh3', 'limits'): _('NH₃ judged on the basis its limits were set on (to 1 ‰ the ideal water, every activity 1, as '
+                         'Emerson et al. 1975; from 5 ‰ formula 1’s seawater constants), the larger; activity-corrected '
+                         '%(value)s mg/L.'),
+    ('nh3', 'corrected'): _('NH₃ judged on its activity-corrected value, the larger here.'),
+    ('co2', 'limits'): _('CO₂ judged on the basis its limits were set on (to 1 ‰ the ideal water, every activity 1, as '
+                         'Standard Methods 4500-CO₂ D; from 5 ‰ formula 1’s seawater constants), the larger; '
+                         'activity-corrected %(value)s mg/L.'),
+    ('co2', 'corrected'): _('CO₂ judged on its activity-corrected value, the larger here.'),
+}
+JUDGED_DECIMALS = {'nh3': 4, 'co2': 2}
+
+
+def judged(kind, basis, corrected, equilibria):
+    """Which value judged a water's NH3 ('nh3') or CO2 ('co2'), with the activity-corrected value beside it, in words;
+    '' for formula 1 (its own value is the limits' basis), for the ideal water (an ionic strength of 0 in fresh water:
+    the two are one) or without a value. KeyError for an unknown kind or basis."""
+    words = JUDGED[kind, basis]
+    ideal = equilibria.ionic_strength == 0 and equilibria.sea_weight == 0
+    if equilibria.formula == 1 or ideal or corrected is None:
+        return ''
+    return str(words % {'value': number_format(corrected, JUDGED_DECIMALS[kind])} if basis == 'limits' else words)

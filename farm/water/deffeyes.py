@@ -153,11 +153,28 @@ class Analysis:
 
     nh3_share_pct: float                     # NH₃ as a share of TAN at the water's pH, %
     h2s_share_pct: float                     # H₂S as a share of the total sulfide at the water's pH, %
+    # NH₃ and CO₂ are judged on the larger of the basis their limits were set on (formula 1: the ideal water in fresh
+    # water) and the activity-corrected value (cross review F1): co2_mg_l and nh3_n_mg_l above, their borders, the
+    # safe TAN and the shares are the judged ones; the corrected ones are information, said beside them.
+    co2_corrected_mg_l: float
+    co2_basis: str                          # 'limits' or 'corrected'
+    nh3_corrected_n_mg_l: float | None
+    nh3_basis: str
 
     @property
     def provenance(self):
         """What every value of the analysis was worked out by, in words: the formula version and the ionic strength."""
         return messages.provenance(self.equilibria)
+
+    @property
+    def nh3_judged(self):
+        """Which value judged the NH₃ and the corrected one beside it, in words ('' without a TAN)."""
+        return messages.judged('nh3', self.nh3_basis, self.nh3_corrected_n_mg_l, self.equilibria)
+
+    @property
+    def co2_judged(self):
+        """Which value judged the CO₂ and the corrected one beside it, in words."""
+        return messages.judged('co2', self.co2_basis, self.co2_corrected_mg_l, self.equilibria)
 
 
 def analyse(water, limits=Limits(), target=None, pressure=1.0):

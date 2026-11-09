@@ -259,9 +259,39 @@ impl Equilibria {
         inputs(&[dic, ph])?;
         ok(self.0.carbonate(dic, ph))
     }
+    /// The judged share: the larger of the limits' basis and the activity-corrected (cross review F1).
     fn nh3_share(&self, ph: f64) -> PyResult<f64> {
         inputs(&[ph])?;
         ok(self.0.nh3_share(ph))
+    }
+    /// The activity-corrected share (formula 3), information beside the judged one.
+    fn nh3_share_corrected(&self, ph: f64) -> PyResult<f64> {
+        inputs(&[ph])?;
+        ok(self.0.nh3_share_corrected(ph))
+    }
+    /// Which share judges NH3: 'limits' (the basis the limits were set on) or 'corrected'.
+    #[getter]
+    fn nh3_basis(&self) -> PyResult<&'static str> {
+        self.0.nh3_basis().map(|basis| basis.code()).map_err(err)
+    }
+    /// The equilibria of the basis the limits were set on (None for formula 1).
+    fn limits_equilibria(&self) -> Option<Equilibria> {
+        self.0.limits_equilibria().map(Equilibria)
+    }
+    /// (judged CO2 mmol/L, its basis code) of a water of this alkalinity (meq/L) and pH.
+    fn co2_judged(&self, alkalinity: f64, ph: f64) -> PyResult<(f64, &'static str)> {
+        inputs(&[alkalinity, ph])?;
+        let own = self.0.co2_corrected(alkalinity, ph).map_err(err)?;
+        let (co2, basis) = self.0.co2_judged(alkalinity, ph, own).map_err(err)?;
+        Ok((ok(Ok(co2))?, basis.code()))
+    }
+    fn ph_where_nh3_corrected(&self, tan: f64, limit: f64) -> PyResult<Option<f64>> {
+        inputs(&[tan, limit])?;
+        ok_option(self.0.ph_where_nh3_corrected(tan, limit))
+    }
+    fn ph_where_co2_corrected(&self, alkalinity: f64, co2: f64) -> PyResult<Option<f64>> {
+        inputs(&[alkalinity, co2])?;
+        ok_option(self.0.ph_where_co2_corrected(alkalinity, co2))
     }
     fn h2s_share(&self, ph: f64) -> PyResult<f64> {
         inputs(&[ph])?;
@@ -591,10 +621,12 @@ fn analyse<'py>(
         ("alkalinity_meq", Some(result.alkalinity_meq)),
         ("dic", Some(result.dic)),
         ("co2_mg_l", Some(result.co2_mg_l)),
+        ("co2_corrected_mg_l", Some(result.co2_corrected_mg_l)),
         ("target_alkalinity_meq", result.target_alkalinity_meq),
         ("target_dic", result.target_dic),
         ("target_co2_mg_l", result.target_co2_mg_l),
         ("nh3_n_mg_l", result.nh3_n_mg_l),
+        ("nh3_corrected_n_mg_l", result.nh3_corrected_n_mg_l),
         ("safe_tan_mg_l", result.safe_tan_mg_l),
         ("nh3_share_at_border_pct", result.nh3_share_at_border_pct),
         ("h2s_ug_l", result.h2s_ug_l),
@@ -607,6 +639,8 @@ fn analyse<'py>(
     ] {
         dict.set_item(name, value.map(|value| ok(Ok(value))).transpose()?)?;
     }
+    dict.set_item("co2_basis", result.co2_basis.code())?;
+    dict.set_item("nh3_basis", result.nh3_basis.code())?;
     dict.set_item("co2", border(py, &result.co2)?)?;
     dict.set_item("nh3", border(py, &result.nh3)?)?;
     dict.set_item("h2s", border(py, &result.h2s)?)?;

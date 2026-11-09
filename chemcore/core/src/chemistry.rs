@@ -322,6 +322,81 @@ pub struct Equilibria {
     pub source: Source,
     /// The seawater path's share of the constants, 0 to 1 (formula 1: always 1).
     pub sea_weight: f64,
+    /// The constants of the basis the NH₃ and CO₂ limits were set on (formula 3; `crate::fresh::limits_basis`), against
+    /// which a judgement takes the larger value (`nh3_share`, `ph_where_nh3`, `co2_judged`, `ph_where_co2`); None for
+    /// formula 1, which is that basis itself.
+    pub limits_basis: Option<LimitsBasis>,
+}
+
+/// Which value judged a water's NH₃ or CO₂ against its limits: the larger of the limits' basis and the
+/// activity-corrected value (cross review F1; owner decision 2026-11-09, safety with live fish).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Basis {
+    /// The basis the limits were set on (`crate::fresh::limits_basis`: up to 1 ‰ the ideal water, every activity 1, as
+    /// Emerson et al. 1975 and Standard Methods 4500-CO₂ D; from 5 ‰ formula 1's seawater constants; blended between).
+    Limits,
+    /// The activity-corrected value of formula 3, the larger here.
+    Corrected,
+}
+
+impl Basis {
+    /// A stable code.
+    pub fn code(self) -> &'static str {
+        match self {
+            Basis::Limits => "limits",
+            Basis::Corrected => "corrected",
+        }
+    }
+}
+
+/// The constants of a water's limits basis that its NH₃ and CO₂ judgements need (`Equilibria::limits_basis`).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct LimitsBasis {
+    pub ph_offset: f64,
+    pub k1: f64,
+    pub k2: f64,
+    pub kw: f64,
+    pub kb: f64,
+    pub boron: f64,
+    pub k_nh4: f64,
+}
+
+impl LimitsBasis {
+    /// The basis constants of equilibria worked out on it.
+    pub fn of(eq: &Equilibria) -> LimitsBasis {
+        LimitsBasis {
+            ph_offset: eq.ph_offset,
+            k1: eq.k1,
+            k2: eq.k2,
+            kw: eq.kw,
+            kb: eq.kb,
+            boron: eq.boron,
+            k_nh4: eq.k_nh4,
+        }
+    }
+}
+
+/// The larger of two numbers, the first on a tie.
+fn larger(one: f64, two: f64) -> f64 {
+    if two > one { two } else { one }
+}
+
+/// The higher of two optional pHs (None when both are).
+fn higher(one: Option<f64>, two: Option<f64>) -> Option<f64> {
+    match (one, two) {
+        (Some(one), Some(two)) => Some(larger(one, two)),
+        (one, None) => one,
+        (None, two) => two,
+    }
+}
+
+/// The lower of two optional pHs (None when both are).
+fn lower(one: Option<f64>, two: Option<f64>) -> Option<f64> {
+    match (one, two) {
+        (Some(one), Some(two)) => Some(if two < one { two } else { one }),
+        (one, None) => one,
+        (None, two) => two,
+    }
 }
 
 /// The equilibria of a water by formula 1 (golden v1). Non-finite inputs are refused.
@@ -353,6 +428,7 @@ pub fn equilibria_with(temp_c: f64, salinity: f64, a_of: &dyn Fn(f64) -> R) -> R
         ionic_strength: if salinity > 0.0 { ionic_strength(salinity)? } else { 0.0 },
         source: Source::Seawater,
         sea_weight: 1.0,
+        limits_basis: None,
     };
     for value in [
         eq.ph_offset,
@@ -431,9 +507,48 @@ impl Equilibria {
         Ok(dic * self.fractions(ph)?.2)
     }
 
-    /// The share of TAN that is un-ionised NH₃, 0 to 1: K / (K + [H⁺]).
-    pub fn nh3_share(&self, ph: f64) -> R {
+    /// The equilibria of the basis the limits were set on (`limits_basis`), the same water otherwise; None for formula 1.
+    pub fn limits_equilibria(&self) -> Option<Equilibria> {
+        self.limits_basis.map(|basis| Equilibria {
+            ph_offset: basis.ph_offset,
+            k1: basis.k1,
+            k2: basis.k2,
+            kw: basis.kw,
+            kb: basis.kb,
+            boron: basis.boron,
+            k_nh4: basis.k_nh4,
+            limits_basis: None,
+            ..*self
+        })
+    }
+
+    /// The share of TAN that is un-ionised NH₃ as these constants give it, 0 to 1: K / (K + [H⁺]). Formula 3: the
+    /// activity-corrected share, information beside the judged one (`nh3_share`).
+    pub fn nh3_share_corrected(&self, ph: f64) -> R {
         div(self.k_nh4, self.k_nh4 + self.hydrogen(ph)?)
+    }
+
+    /// The share of TAN that is un-ionised NH₃ that every judgement, alarm, status, border and safe TAN takes, 0 to 1:
+    /// the larger of the limits' basis and the activity-corrected share (cross review F1), so formula 3 never
+    /// understates NH₃ against how its limits were set (Emerson et al. 1975's ideal fraction; Piper et al. 1982; US
+    /// EPA 1985). Formula 1: its own share.
+    pub fn nh3_share(&self, ph: f64) -> R {
+        let corrected = self.nh3_share_corrected(ph)?;
+        match self.limits_equilibria() {
+            Some(basis) => Ok(larger(basis.nh3_share_corrected(ph)?, corrected)),
+            None => Ok(corrected),
+        }
+    }
+
+    /// Which share `nh3_share` takes: [NH₃]/[NH₄⁺] = K 10^(pH + offset), so the larger share is the larger K 10^offset
+    /// at every pH; the limits' basis on a tie (and always for formula 1).
+    pub fn nh3_basis(&self) -> Result<Basis, ChemError> {
+        match self.limits_basis {
+            Some(basis) if self.k_nh4 * pow(10.0, self.ph_offset)? > basis.k_nh4 * pow(10.0, basis.ph_offset)? => {
+                Ok(Basis::Corrected)
+            }
+            _ => Ok(Basis::Limits),
+        }
     }
 
     /// The share of the total sulfide that is H₂S, 0 to 1: [H⁺] / (K + [H⁺]).
@@ -442,14 +557,23 @@ impl Equilibria {
         div(h, self.k_h2s + h)
     }
 
-    /// The pH above which NH₃-N exceeds `limit` (mg/L as TAN): [H⁺] = K (1 − f) / f, f = limit / TAN; None when the
-    /// TAN cannot give that much.
-    pub fn ph_where_nh3(&self, tan: f64, limit: f64) -> Result<Option<f64>, ChemError> {
+    /// The pH above which NH₃-N as these constants give it exceeds `limit` (mg/L as TAN): [H⁺] = K (1 − f) / f,
+    /// f = limit / TAN; None when the TAN cannot give that much.
+    pub fn ph_where_nh3_corrected(&self, tan: f64, limit: f64) -> Result<Option<f64>, ChemError> {
         if tan <= 0.0 || limit <= 0.0 || limit >= tan {
             return Ok(None);
         }
         let share = div(limit, tan)?;
         Ok(Some(self.ph_of(div(self.k_nh4 * (1.0 - share), share)?)?))
+    }
+
+    /// The pH above which the judged NH₃-N (`nh3_share`) exceeds `limit`: the lower of the two borders.
+    pub fn ph_where_nh3(&self, tan: f64, limit: f64) -> Result<Option<f64>, ChemError> {
+        let corrected = self.ph_where_nh3_corrected(tan, limit)?;
+        match self.limits_equilibria() {
+            Some(basis) => Ok(lower(basis.ph_where_nh3_corrected(tan, limit)?, corrected)),
+            None => Ok(corrected),
+        }
     }
 
     /// The pH below which H₂S exceeds `limit`: [H⁺] = K f / (1 − f), f = limit / total; None when the total cannot.
@@ -461,13 +585,59 @@ impl Equilibria {
         Ok(Some(self.ph_of(div(self.k_h2s * share, 1.0 - share)?)?))
     }
 
-    /// The pH below which CO₂ (mmol/L) exceeds `co2` at a fixed alkalinity (meq/L); None when not in range.
-    pub fn ph_where_co2(&self, alkalinity: f64, co2: f64) -> Result<Option<f64>, ChemError> {
+    /// The pH below which CO₂ (mmol/L) as these constants give it exceeds `co2` at a fixed alkalinity (meq/L); None
+    /// when not in range.
+    pub fn ph_where_co2_corrected(&self, alkalinity: f64, co2: f64) -> Result<Option<f64>, ChemError> {
         solve(
             &mut |ph| Ok(self.co2(self.dic(alkalinity, ph)?, ph)? - co2),
             SOLVER_PH.0,
             SOLVER_PH.1,
         )
+    }
+
+    /// The pH below which the judged CO₂ (`co2_judged`) exceeds `co2` at a fixed alkalinity: the higher of the two
+    /// borders (CO₂ falls as the pH rises at a fixed alkalinity).
+    pub fn ph_where_co2(&self, alkalinity: f64, co2: f64) -> Result<Option<f64>, ChemError> {
+        let corrected = self.ph_where_co2_corrected(alkalinity, co2)?;
+        match self.limits_equilibria() {
+            Some(basis) => Ok(higher(basis.ph_where_co2_corrected(alkalinity, co2)?, corrected)),
+            None => Ok(corrected),
+        }
+    }
+
+    /// The CO₂ (mmol/L) of a water of this alkalinity (meq/L) and pH (NBS) as these constants give it.
+    pub fn co2_corrected(&self, alkalinity: f64, ph: f64) -> R {
+        self.co2(self.dic(alkalinity, ph)?, ph)
+    }
+
+    /// The CO₂ (mmol/L) every CO₂ judgement takes, of a water of this alkalinity (meq/L) and pH, and its basis: the
+    /// larger of the limits' basis and the activity-corrected CO₂ (cross review F1, as `nh3_share`); `own` is this
+    /// water's own CO₂ as these constants give it (a state's `co2(dic, ph)`, passed so a simulator step keeps its own).
+    pub fn co2_judged(&self, alkalinity: f64, ph: f64, own: f64) -> Result<(f64, Basis), ChemError> {
+        match self.limits_equilibria() {
+            Some(basis) => {
+                let limits = basis.co2_corrected(alkalinity, ph)?;
+                Ok(if own > limits {
+                    (own, Basis::Corrected)
+                } else {
+                    (limits, Basis::Limits)
+                })
+            }
+            None => Ok((own, Basis::Limits)),
+        }
+    }
+
+    /// The alkalinity (meq/L) at which the judged CO₂ is `co2` (mmol/L) at a pH: the lower of the two (CO₂ rises with
+    /// the alkalinity at a fixed pH).
+    pub fn alkalinity_where_co2(&self, co2: f64, ph: f64) -> R {
+        let corrected = self.alkalinity(div(co2, self.fractions(ph)?.0)?, ph)?;
+        match self.limits_equilibria() {
+            Some(basis) => {
+                let limits = basis.alkalinity(div(co2, basis.fractions(ph)?.0)?, ph)?;
+                Ok(if limits < corrected { limits } else { corrected })
+            }
+            None => Ok(corrected),
+        }
     }
 
     /// The pH at which a DIC holds `co2` as CO₂: α0 = c / DIC solved for [H⁺]; None when c ≥ DIC (B1-02).

@@ -35,8 +35,8 @@
 //! KB = KB° / γ₁²; KH2S = KH2S° / γ₁²; KNH4 = KNH4° (H⁺ and NH₄⁺ both monovalent); Ksp as v1 (Ω is drawn only from 5 ‰).
 pub use crate::chemistry::Source;
 use crate::chemistry::{
-    self as c, Equilibria, KELVIN, MG_CACO3_PER_MEQ, k_h2s_total, k_nh4_sws, k1_sws, k2_sws, kb_total, kw_total,
-    total_boron,
+    self as c, Equilibria, KELVIN, LimitsBasis, MG_CACO3_PER_MEQ, k_h2s_total, k_nh4_sws, k1_sws, k2_sws, kb_total,
+    kw_total, total_boron,
 };
 use crate::num::{ChemError, R, div, exp, finite, ln, pow, sqrt};
 
@@ -190,6 +190,15 @@ pub fn fresh_equilibria(
     ions: Ions,
 ) -> Result<Equilibria, ChemError> {
     let (strength, source) = fresh_ionic_strength(salinity, alkalinity_mg_l, ions)?;
+    let eq = fresh_at(temp_c, salinity, strength, source)?;
+    Ok(Equilibria {
+        limits_basis: Some(LimitsBasis::of(&fresh_at(temp_c, salinity, 0.0, Source::Nothing)?)),
+        ..eq
+    })
+}
+
+/// The fresh path's equilibria at an ionic strength (mol/L; 0: every activity 1, the ideal water).
+fn fresh_at(temp_c: f64, salinity: f64, strength: f64, source: Source) -> Result<Equilibria, ChemError> {
     let temp_c = finite(temp_c)?;
     let one = davies_log_gamma(temp_c, strength, 1.0)?;
     let gamma_one_squared = pow(10.0, 2.0 * one)?;
@@ -211,8 +220,37 @@ pub fn fresh_equilibria(
         ionic_strength: strength,
         source,
         sea_weight: 0.0,
+        limits_basis: None,
     };
     checked(eq)
+}
+
+/// The basis the NH₃ and CO₂ limits were set on, for a water of formula 3 (cross review F1; owner decision 2026-11-09):
+/// up to `FRESH_UP_TO` the ideal water (the fresh path at an ionic strength of 0, formula 1's fresh water at S 0: every
+/// activity 1, the NBS pH taken as −log [H⁺], as Emerson et al. 1975's fraction, on which Piper et al. 1982 and US EPA
+/// 1985 set the NH₃ limits, and Standard Methods 4500-CO₂ D's free CO₂), from `SEA_FROM` formula 1's seawater
+/// constants (the salinity's; its NBS conversion with ε = 79), and between the same blend as the water's own (the
+/// module's rules) with the same weight. Up to 1 ‰ this is the ideal water even where formula 1 took seawater constants
+/// (0 < S ≤ 1): at the calculator's example (12 °C, 1 ‰, pH 7, 80 mg/L) the NH₃ border is 7.986, against formula 3's
+/// corrected 8.045 and formula 1's 8.040; the CO₂ 19.62 mg/L, against 17.12 and 16.94. Judgements take the larger of this and the activity-corrected value.
+pub fn limits_basis(temp_c: f64, salinity: f64, weight: f64) -> Result<LimitsBasis, ChemError> {
+    if weight >= 1.0 {
+        return Ok(LimitsBasis::of(&c::equilibria(temp_c, salinity)?));
+    }
+    let ideal = fresh_at(temp_c, salinity, 0.0, Source::Nothing)?;
+    if weight <= 0.0 {
+        return Ok(LimitsBasis::of(&ideal));
+    }
+    let sea = c::equilibria(temp_c, salinity)?;
+    Ok(LimitsBasis {
+        ph_offset: (1.0 - weight) * ideal.ph_offset + weight * sea.ph_offset,
+        k1: blend(ideal.k1, sea.k1, weight)?,
+        k2: blend(ideal.k2, sea.k2, weight)?,
+        kw: blend(ideal.kw, sea.kw, weight)?,
+        kb: blend(ideal.kb, sea.kb, weight)?,
+        boron: sea.boron,
+        k_nh4: blend(ideal.k_nh4, sea.k_nh4, weight)?,
+    })
 }
 
 fn checked(eq: Equilibria) -> Result<Equilibria, ChemError> {
@@ -255,6 +293,7 @@ pub fn equilibria_v3(
             formula: 3,
             ionic_strength: strength,
             source,
+            limits_basis: Some(limits_basis(temp_c, salinity, 1.0)?),
             ..sea
         });
     }
@@ -275,6 +314,7 @@ pub fn equilibria_v3(
         ionic_strength: fresh.ionic_strength,
         source: fresh.source,
         sea_weight: weight,
+        limits_basis: Some(limits_basis(temp_c, salinity, weight)?),
         ..sea
     };
     checked(eq)

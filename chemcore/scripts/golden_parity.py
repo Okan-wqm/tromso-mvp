@@ -40,7 +40,10 @@ TIE = 1e-12
 # Fields an implementation added since golden v1 was recorded (each with its step); a field v1 holds is never
 # skipped, and a field missing from the implementation is always a difference.
 ADDED = {'angle', 'counter_productive', 'priority',       # a reagent's angle, a recipe's ranks (S7)
-         'conductivity_25_us_cm', 'hardness_mg_l', 'formula'}  # a water's ions and its formula (formula 3's switch)
+         'conductivity_25_us_cm', 'hardness_mg_l', 'formula',   # a water's ions and its formula (formula 3's switch)
+         # the judged NH3 and CO2's activity-corrected value and basis (cross review F1); for formula 1 the corrected
+         # equals the judged and the basis is 'limits' (farm/tests/test_limits_basis.py)
+         'co2_corrected_mg_l', 'co2_basis', 'nh3_corrected_n_mg_l', 'nh3_basis'}
 # Exceptions the core names where Python raised an accidental one: (recorded, now). Each is a deliberate, tested change.
 RENAMED_RAISES = {('StopIteration', 'ChartTooLargeError')}     # the box beyond 12 steps of 5e7 (S5)
 

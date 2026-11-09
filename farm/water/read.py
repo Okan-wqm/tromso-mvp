@@ -734,9 +734,13 @@ class Context:
         except ValueError as error:          # e.g. a conductivity beyond the fresh path's range (Davies, I > 0.5)
             return {NH3_N.code: Reading(NH3_N, None, observation, True,
                                         _('Cannot be worked out: %(why)s.') % {'why': error})}
+        # The judged share: the larger of the basis the limits were set on and the activity-corrected (cross review
+        # F1); the corrected NH3-N is said beside it, never judged.
         share = Decimal(equilibria.nh3_share(float(ph)))
         nh3 = (tan * share).quantize(NH3_N.step)
-        said = str(messages.provenance(equilibria))
+        corrected = (tan * Decimal(equilibria.nh3_share_corrected(float(ph)))).quantize(NH3_N.step)
+        said = ' '.join(filter(None, (str(messages.provenance(equilibria)),
+                                      messages.judged('nh3', equilibria.nh3_basis, corrected, equilibria))))
         return {NH3_N.code: Reading(NH3_N, nh3, observation, True, provenance=said),
                 NH4_N.code: Reading(NH4_N, (tan - nh3).quantize(NH4_N.step), observation, True, provenance=said)}
 

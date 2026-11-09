@@ -1218,6 +1218,14 @@ published values):
   found: an ionic strength of 0, the safe side). NH₄-N = TAN − NH₃-N is shown. Each worked-out value says the formula
   it was worked out by in its title ("Formula 3: ionic strength 0.0072, from the conductivity at 25 °C."): nothing worked
   out is stored, so a past sample is shown by today's formula, and says so.
+  **The NH₃-N shown, judged and alarmed is the larger of two** (cross review F1, owner decision 2026-11-09, safety with live
+  fish): the share on the basis the limits were set on (up to 1 ‰ the ideal water, every activity 1, Emerson et al.
+  1975, as Piper et al. 1982 and US EPA 1985 used it; from 5 ‰ formula 1's seawater constants) and formula 3's
+  activity-corrected share. The corrected NH₃-N is said in the title beside it ("NH₃ judged on the basis its limits were
+  set on ..., the larger; activity-corrected 0.0121 mg/L."); it is never judged. In fresh water the basis is always the
+  larger (at 12 °C, pH 7.5 the corrected NH₃ is 8.7 % lower at 500 µS/cm, 11.6 % at 1000 and 17.2 % at 3000), so the
+  status, the alarm and the safe TAN are those of the ideal share; in cold sea water formula 3's own share is the larger
+  (+5.5 % at 2 °C, 35 ‰) and judges.
 - **Oxygen saturation**: Benson & Krause (1984) as in Standard Methods 4500-O, corrected for the
   barometric pressure of the site's altitude (sea-level pressure, said so, when the site has none; the altitude is
   0 .. 5000 m (owner: no site lies below sea level, a minus sign is a slip), held by the form, the model and the
@@ -1362,6 +1370,21 @@ without values it shows its defaults.
   is put on the seawater scale with a Davies-type activity coefficient whose Debye-Hückel A is the temperature's, not
   CO2SYS's apparent coefficient of Takahashi et al. (1982): at 35 ‰ the two differ by −0.048 pH at 0 °C, −0.038 at
   5 °C, +0.001 at 25 °C and +0.034 at 40 °C (formula 1, with a fixed ε of 79: −0.073, −0.058, +0.004, +0.051).
+- **NH₃ and CO₂ are judged on the larger of the limits' basis and the activity-corrected value** (cross review F1,
+  owner 2026-11-09; `chemistry::Basis`, `fresh::limits_basis`): the NH₃-N, the CO₂, their statuses, borders and margins,
+  the safe TAN, the NH₃ share, the target CO₂, the small NH₃ chart, the simulator's steps and the safe zone all take the
+  larger; the activity-corrected NH₃-N and CO₂ are shown beside them as information ("not judged"), with a line saying
+  which judged. The limits' basis is the ideal water up to 1 ‰ (every activity 1: Emerson et al. 1975's fraction, on
+  which Piper et al. 1982 and US EPA 1985 set the NH₃ limits; Standard Methods 4500-CO₂ D's free CO₂), formula 1's
+  seawater constants from 5 ‰, blended between as formula 3 blends. CO₂ needs the same rule: the salmonid CO₂ guidelines
+  rest partly on free CO₂ worked out from pH and alkalinity the ideal way (Standard Methods 4500-CO₂ D, which the
+  calculator is checked against), partly on probes; which basis each was set on was not verified study by study, so for
+  live fish the larger is taken. At 12 °C, 80 mg/L, pH 7.5 the corrected CO₂ is 8.8 % below the judged at 500 µS/cm,
+  11.7 % at 1000 and 17.5 % at 3000. At the calculator's example (12 °C, 1 ‰) the NH₃ border is 7.986 (formula 3's
+  corrected share alone 8.045) and the CO₂ 19.62 mg/L (corrected 17.12). The chart's CO₂ curve is drawn in the water's own
+  constants at the limit times its corrected-to-judged ratio: through the water exactly, and within −1.4 to +0.3 % of the
+  limit along the curve (a grid of 0 to 25 °C, 0 to 35 ‰, 6.5 to 8 pH); the statuses and borders are exact. The stripping
+  floor (the air's CO₂, a true concentration, Weiss 1974) is held against the water's own CO₂.
 - **The safe zone needs every limit it is bounded by**: without the TAN, the NH₃ limit, the CO₂ limit or
   the alkalinity band, or with a total sulfide but no H₂S limit, it is not drawn and a note says what is
   missing (a missing value is never taken for a safe one). Without a total sulfide it is drawn and named
@@ -3641,7 +3664,9 @@ temperature (a synthetic page: 54 different temperatures, 99 to 164 ms, 128 KB c
   `equilibria`. `chemcore/scripts/record_golden_v3.py` records golden v3 from the core (1 134 waters, each with formula
   1's and formula 3's constants and provenance, and the whole analysis of each by both); `farm/tests/test_golden_v3.py`
   holds the core to it bit for bit; `farm/tests/test_cold_water.py` holds formula 3 at 0 to 12 °C to Emerson et al.'s
-  table, the Plummer & Busenberg and Harned & Hamer constants and an independent implementation of the free CO₂. The
+  table, the Plummer & Busenberg and Harned & Hamer constants and an independent implementation of the free CO₂. Every NH₃ and CO₂ judgement takes the larger of the basis the limits were set on and the activity-corrected
+  value (cross review F1: `Equilibria::nh3_share`, `ph_where_nh3`, `co2_judged`, `ph_where_co2`, `fresh::limits_basis`;
+  the corrected values beside them as information; `farm/tests/test_limits_basis.py`, `chemcore/core/tests/basis.rs`). The
   comparison for the owner, in Turkish, with the jump table, the choice of the band and the before and after numbers
   at 2, 5, 8 and 12 °C, is `chemcore/findings/I2-comparison.md`; I1 is in `chemcore/findings/B1.md`.
 - *Anchors* (`chemcore/golden/anchors.json`): the constants and a carbonate chain at three waters, worked out at 50

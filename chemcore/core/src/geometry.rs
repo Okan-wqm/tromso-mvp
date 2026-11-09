@@ -262,7 +262,7 @@ pub fn safe_zone(analysis: &a::Analysis, limits: &a::Limits, chart: &ChartBox) -
     let top = analysis.nh3.ph.unwrap_or(a::PH_RANGE.1);
     let co2 = div(co2_mg, c::MG_CO2_PER_MMOL)?;
     let h2s = analysis.h2s.ph;
-    let co2_alkalinity = |ph: f64| -> Result<f64, ChemError> { eq.alkalinity(div(co2, eq.fractions(ph)?.0)?, ph) };
+    let co2_alkalinity = |ph: f64| -> Result<f64, ChemError> { eq.alkalinity_where_co2(co2, ph) };
     let floor = |alkalinity: f64| -> Result<f64, ChemError> {
         let mut most = a::PH_RANGE.0;
         if let Some(border) = eq.ph_where_co2(alkalinity, co2)? {
@@ -484,7 +484,8 @@ pub fn geometry<'a>(
     if layers.co2 {
         match limits.co2_mg_l {
             Some(limit) => {
-                let (curve, leaves_top) = co2_curve(&eq, div(limit, c::MG_CO2_PER_MMOL)?, &chart)?;
+                let (curve, leaves_top) =
+                    co2_curve(&eq, div(analysis.co2_chart_limit(limit), c::MG_CO2_PER_MMOL)?, &chart)?;
                 if !curve.is_empty() {
                     shape
                         .regions

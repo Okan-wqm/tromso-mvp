@@ -27,6 +27,7 @@ name SOLVER_PH
 name activity_coefficient_h
 name activity_coefficient_h_with
 name alkalinity_floor
+name alkalinity_where_co2
 name at_target
 name box_of
 name by_key
@@ -34,8 +35,11 @@ name carbonate_plot
 name clip_polyline
 name clip_segment
 name clip_to_box
+name co2_chart_limit
+name co2_corrected
 name co2_curve
 name co2_from_air
+name co2_judged
 name core_hash
 name counter_productive
 name davies_log_gamma
@@ -67,9 +71,13 @@ name kb_total
 name ksp_aragonite
 name ksp_calcite
 name kw_total
+name limits_basis
+name limits_equilibria
+name nh3_basis
 name nh3_fraction
 name nh3_plot
 name nh3_share
+name nh3_share_corrected
 name nice_step
 name off_chart
 name omega_line
@@ -80,8 +88,10 @@ name ph_label
 name ph_where_carbonate
 name ph_where_co2
 name ph_where_co2_at_dic
+name ph_where_co2_corrected
 name ph_where_h2s
 name ph_where_nh3
+name ph_where_nh3_corrected
 name pk_nh4
 name pressure_atm
 name region_names

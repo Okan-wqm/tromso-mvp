@@ -3850,6 +3850,22 @@ msgstr "CO₂"
 msgid "CO₂ (mg/L)"
 msgstr "CO₂ (mg/L)"
 
+msgid "CO₂ activity-corrected (information, not judged)"
+msgstr "CO₂ aktivitetskorrigert (informasjon, ikke vurdert)"
+
+msgid "CO₂ judged on its activity-corrected value, the larger here."
+msgstr "CO₂ vurdert etter den aktivitetskorrigerte verdien, som er størst her."
+
+#, python-format
+msgid ""
+"CO₂ judged on the basis its limits were set on (to 1 ‰ the ideal water, every activity 1, as "
+"Standard Methods 4500-CO₂ D; from 5 ‰ formula 1’s seawater constants), the larger; activity-"
+"corrected %(value)s mg/L."
+msgstr ""
+"CO₂ vurdert på grunnlaget grenseverdiene ble satt på (til 1 ‰ ideelt vann, alle aktiviteter 1, "
+"som Standard Methods 4500-CO₂ D; fra 5 ‰ formel 1s sjøvannskonstanter), den største; "
+"aktivitetskorrigert %(value)s mg/L."
+
 msgid "CO₂ limit"
 msgstr "CO₂-grense"
 
@@ -8215,6 +8231,19 @@ msgstr ""
 msgid "NH₃ and NH₄⁺ together, as nitrogen. The NH₃ limit is drawn from it."
 msgstr "NH₃ og NH₄⁺ sammen, som nitrogen. NH₃-grensen tegnes ut fra den."
 
+msgid "NH₃ judged on its activity-corrected value, the larger here."
+msgstr "NH₃ vurdert etter den aktivitetskorrigerte verdien, som er størst her."
+
+#, python-format
+msgid ""
+"NH₃ judged on the basis its limits were set on (to 1 ‰ the ideal water, every activity 1, as "
+"Emerson et al. 1975; from 5 ‰ formula 1’s seawater constants), the larger; activity-corrected "
+"%(value)s mg/L."
+msgstr ""
+"NH₃ vurdert på grunnlaget grenseverdiene ble satt på (til 1 ‰ ideelt vann, alle aktiviteter 1, "
+"som Emerson mfl. 1975; fra 5 ‰ formel 1s sjøvannskonstanter), den største; aktivitetskorrigert "
+"%(value)s mg/L."
+
 msgid "NH₃ share of TAN at the border"
 msgstr "NH₃-andelen av TAN ved grensen"
 
@@ -8233,6 +8262,9 @@ msgstr "NH₃-N"
 
 msgid "NH₃-N (mg/L)"
 msgstr "NH₃-N (mg/L)"
+
+msgid "NH₃-N activity-corrected (information, not judged)"
+msgstr "NH₃-N aktivitetskorrigert (informasjon, ikke vurdert)"
 
 msgid "NH₃-N limit"
 msgstr "NH₃-N-grense"

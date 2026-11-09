@@ -2,7 +2,7 @@
 //! floor, the chart's box), ported literally from golden v1's Python: DIC and CO₂ from the alkalinity and the pH, NH₃-N
 //! from the TAN, H₂S from the total sulfide, each limit as a pH border with its margin and status (the source's rule:
 //! past the border critical, within 0.2 pH a warning), the oxygen saturation at a pressure.
-use crate::chemistry::{self as c, Equilibria};
+use crate::chemistry::{self as c, Basis, Equilibria};
 use crate::fresh::{Ions, water_equilibria};
 use crate::num::{ChemError, R, div, finite};
 
@@ -170,12 +170,21 @@ pub struct Analysis {
     pub equilibria: Equilibria,
     pub alkalinity_meq: f64,
     pub dic: f64,
+    /// The CO₂ every judgement takes: the larger of the limits' basis and the activity-corrected CO₂ (`co2_basis`;
+    /// Equilibria::co2_judged, cross review F1).
     pub co2_mg_l: f64,
+    /// The activity-corrected CO₂ (formula 3), information beside the judged one.
+    pub co2_corrected_mg_l: f64,
+    pub co2_basis: Basis,
     pub co2: Border,
     pub target_alkalinity_meq: Option<f64>,
     pub target_dic: Option<f64>,
     pub target_co2_mg_l: Option<f64>,
+    /// The NH₃-N every judgement takes (Equilibria::nh3_share: the larger of the limits' basis and the corrected).
     pub nh3_n_mg_l: Option<f64>,
+    /// The activity-corrected NH₃-N (formula 3), information beside the judged one.
+    pub nh3_corrected_n_mg_l: Option<f64>,
+    pub nh3_basis: Basis,
     pub nh3: Border,
     /// The TAN that gives the NH₃-N limit at this pH.
     pub safe_tan_mg_l: Option<f64>,
@@ -193,6 +202,20 @@ pub struct Analysis {
     pub nh3_share_pct: f64,
     /// H₂S as a share of the total sulfide at the water's pH, %.
     pub h2s_share_pct: f64,
+}
+
+impl Analysis {
+    /// The CO₂ limit (mg/L) the chart's CO₂ curve is drawn at in the water's own constants (the chart is drawn in them): the
+    /// limit times the water's corrected-to-judged CO₂ ratio, so the curve meets the water exactly where its judged CO₂
+    /// meets the limit; elsewhere it takes the water's ratio, which in fresh water is 1 / γ₁ wherever the bicarbonate
+    /// holds the alkalinity (README, Water-chemistry core). Formula 1, or a water judged on its corrected CO₂: the limit.
+    pub fn co2_chart_limit(&self, limit: f64) -> f64 {
+        if self.co2_mg_l > self.co2_corrected_mg_l && self.co2_corrected_mg_l > 0.0 {
+            limit * (self.co2_corrected_mg_l / self.co2_mg_l)
+        } else {
+            limit
+        }
+    }
 }
 
 fn finite_option(value: Option<f64>) -> Result<Option<f64>, ChemError> {
@@ -257,7 +280,7 @@ pub fn analyse(water: &Water, limits: &Limits, target: Option<&Target>, pressure
         let dic = eq.dic(alkalinity, target.ph)?;
         target_alkalinity = Some(alkalinity);
         target_dic = Some(dic);
-        target_co2 = Some(eq.co2(dic, target.ph)? * c::MG_CO2_PER_MMOL);
+        target_co2 = Some(eq.co2_judged(alkalinity, target.ph, eq.co2(dic, target.ph)?)?.0 * c::MG_CO2_PER_MMOL);
     }
 
     let (tan, nh3_limit) = (water.tan_mg_l, limits.nh3_n_mg_l);
@@ -297,17 +320,25 @@ pub fn analyse(water: &Water, limits: &Limits, target: Option<&Target>, pressure
         },
     );
 
+    let (co2_judged, co2_basis) = eq.co2_judged(alkalinity, ph, eq.co2(dic, ph)?)?;
     let solubility = c::oxygen_solubility(water.temperature_c, water.salinity_ppt, pressure)?;
     let analysis = Analysis {
         equilibria: eq,
         alkalinity_meq: alkalinity,
         dic,
-        co2_mg_l: eq.co2(dic, ph)? * c::MG_CO2_PER_MMOL,
+        co2_mg_l: co2_judged * c::MG_CO2_PER_MMOL,
+        co2_corrected_mg_l: eq.co2(dic, ph)? * c::MG_CO2_PER_MMOL,
+        co2_basis,
         co2,
         target_alkalinity_meq: target_alkalinity,
         target_dic,
         target_co2_mg_l: target_co2,
         nh3_n_mg_l: tan.map(|tan| tan * nh3_share),
+        nh3_corrected_n_mg_l: match tan {
+            Some(tan) => Some(tan * eq.nh3_share_corrected(ph)?),
+            None => None,
+        },
+        nh3_basis: eq.nh3_basis()?,
         nh3,
         safe_tan_mg_l: nh3_limit.map(|limit| div(limit, nh3_share)).transpose()?,
         nh3_share_at_border_pct: match (nh3.ph, nh3_limit, tan) {

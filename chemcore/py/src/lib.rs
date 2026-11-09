@@ -26,6 +26,10 @@ fn err(error: ChemError) -> PyErr {
         ChemError::ZeroDivision => PyZeroDivisionError::new_err("float division by zero"),
         ChemError::Overflow => PyOverflowError::new_err("math range error"),
         ChemError::NonFinite => NonFiniteError::new_err("not a finite number"),
+        ChemError::OutOfRange => PyValueError::new_err(
+            "ionic strength above 0.5: outside the range of the Davies equation (a conductivity in mS/cm, or a sea \
+             water without its salinity?)",
+        ),
     }
 }
 
@@ -1021,6 +1025,7 @@ fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("SOLVER_PH", c::SOLVER_PH)?;
     module.add("AIR_CO2", c::AIR_CO2)?;
     module.add("FRESH_BELOW", f::FRESH_BELOW)?;
+    module.add("DAVIES_MAX", f::DAVIES_MAX)?;
     module.add_class::<Equilibria>()?;
     module.add_function(wrap_pyfunction!(version, module)?)?;
     module.add_function(wrap_pyfunction!(formula_version, module)?)?;

@@ -39,6 +39,10 @@ pub const IONIC_PER_MICROSIEMENS: f64 = 1.6e-5;
 pub const MG_CACO3_PER_MMOL: f64 = 100.0869;
 /// The Davies equation's linear term (Davies 1962).
 pub const DAVIES: f64 = 0.3;
+/// The largest ionic strength the Davies equation is taken to (Stumm & Morgan 1996, table 3.3: "I < 0.5"); above it
+/// the fresh-water path refuses (`ChemError::OutOfRange`), as when a sea water's conductivity comes without its salinity
+/// or a conductivity in mS/cm is read as µS/cm.
+pub const DAVIES_MAX: f64 = 0.5;
 
 /// Where a v3 water's ionic strength came from.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -77,9 +81,17 @@ fn present(value: Option<f64>) -> Result<Option<f64>, ChemError> {
     }
 }
 
-/// The ionic strength (mol/L) of a water and where it came from (the module's list). Refuses a non-finite input and
-/// a negative conductivity, hardness or alkalinity.
+/// The ionic strength (mol/L) of a water and where it came from (the module's list). Refuses a non-finite input, a
+/// negative conductivity, hardness or alkalinity, and on the fresh-water path an ionic strength above `DAVIES_MAX`.
 pub fn ionic_strength(salinity: f64, alkalinity_mg_l: f64, ions: Ions) -> Result<(f64, Source), ChemError> {
+    let (strength, source) = any_ionic_strength(salinity, alkalinity_mg_l, ions)?;
+    if source != Source::Seawater && strength > DAVIES_MAX {
+        return Err(ChemError::OutOfRange);
+    }
+    Ok((strength, source))
+}
+
+fn any_ionic_strength(salinity: f64, alkalinity_mg_l: f64, ions: Ions) -> Result<(f64, Source), ChemError> {
     let salinity = finite(salinity)?;
     let alkalinity_mg_l = finite(alkalinity_mg_l)?;
     let conductivity = present(ions.conductivity_us_cm)?;
@@ -106,10 +118,13 @@ pub fn ionic_strength(salinity: f64, alkalinity_mg_l: f64, ions: Ions) -> Result
 }
 
 /// log₁₀ of an ion's activity coefficient by Davies (1962) at a temperature (°C), an ionic strength (mol/L) and a
-/// charge. Valid to I ≈ 0.5.
+/// charge; refused (`ChemError::OutOfRange`) above an ionic strength of `DAVIES_MAX`.
 pub fn davies_log_gamma(temp_c: f64, ionic_strength: f64, charge: f64) -> R {
     let t = finite(temp_c)? + KELVIN;
     let i = finite(ionic_strength)?;
+    if i > DAVIES_MAX {
+        return Err(ChemError::OutOfRange);
+    }
     let root = sqrt(i)?;
     let a = 1820000.0 * pow(79.0 * t, -1.5)?;
     Ok(-a * charge * charge * (div(root, 1.0 + root)? - DAVIES * i))

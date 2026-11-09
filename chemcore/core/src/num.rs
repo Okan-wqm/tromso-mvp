@@ -22,6 +22,8 @@ pub enum ChemError {
     Overflow,
     /// A non-finite input, or a result that is not a finite number.
     NonFinite,
+    /// Outside the range its formula holds for (the Davies equation of golden v3 above an ionic strength of 0.5).
+    OutOfRange,
 }
 
 /// A number or the reason there is none.

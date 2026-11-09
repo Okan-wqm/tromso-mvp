@@ -29,14 +29,6 @@ msgid "%(age)s ago"
 msgstr "%(age)s önce"
 
 #, python-format
-msgid "%(amount)s over the last 7 days"
-msgstr "son 7 günde %(amount)s"
-
-#, python-format
-msgid "%(amount)s today"
-msgstr "bugün %(amount)s"
-
-#, python-format
 msgid "%(batch)s has no fish at %(place)s now."
 msgstr "%(batch)s partisinin şu anda %(place)s yerinde balığı yok."
 
@@ -386,10 +378,6 @@ msgid "%(count)s due"
 msgid_plural "%(count)s due"
 msgstr[0] "%(count)s tane zamanı geldi"
 msgstr[1] "%(count)s tane zamanı geldi"
-
-#, python-format
-msgid "%(count)s due today"
-msgstr "bugün %(count)s görev"
 
 #, python-format
 msgid "%(count)s fish stay in %(unit)s: weigh them too."
@@ -758,10 +746,6 @@ msgstr "%(kilos)s tartıldı"
 #, python-format
 msgid "%(kind)s form sections"
 msgstr "%(kind)s formu bölümleri"
-
-#, python-format
-msgid "%(label)s %(count)s"
-msgstr "%(label)s %(count)s"
 
 #, python-format
 msgid "%(label)s %(value)s, %(status)s; limits: %(limits)s"
@@ -4692,10 +4676,6 @@ msgstr "Sayılan"
 msgid "Counted by %(name)s, recorded %(when)s"
 msgstr "Sayan %(name)s, kayıt %(when)s"
 
-#, python-format
-msgid "Counted from Setup at %(clock)s"
-msgstr "Saat %(clock)s itibarıyla Kurulum kayıtlarından sayıldı"
-
 msgid "Counted location"
 msgstr "Sayılan yer"
 
@@ -4759,6 +4739,9 @@ msgstr "Kritik üst sınır"
 
 msgid "Critical below"
 msgstr "Kritik alt sınır"
+
+msgid "Critical water points"
+msgstr "Kritik numune noktaları"
 
 msgid "Criticality"
 msgstr "Kritiklik"
@@ -5973,6 +5956,10 @@ msgstr "Yemleme kaydedildi: %(date)s tarihinde %(unit)s birimine %(kilos)s kg %(
 msgid "Feeding records"
 msgstr "Yemleme kayıtları"
 
+#, python-format
+msgid "Feeding records at %(clock)s"
+msgstr "Yemleme kayıtları, saat %(clock)s"
+
 msgid "Feeding table"
 msgstr "Yemleme tablosu"
 
@@ -6388,28 +6375,12 @@ msgstr "Çıkış lokalitetsnummer"
 msgid "From the backup or the system’s channel"
 msgstr "Yedekten veya sistemin kanalından"
 
-#, python-format
-msgid "From the feeding records at %(clock)s"
-msgstr "Saat %(clock)s itibarıyla yemleme kayıtlarından"
-
 msgid "From the floor to the rim."
 msgstr "Tabandan kenara kadar."
 
 #, python-format
-msgid "From the latest samples and sensors at %(clock)s"
-msgstr "Saat %(clock)s itibarıyla son numunelerden ve sensörlerden"
-
-#, python-format
 msgid "From the plan of %(date)s: it is linked to the plan when it is recorded."
 msgstr "%(date)s planından: kaydedildiğinde plana bağlanır."
-
-#, python-format
-msgid "From the stock records at %(clock)s"
-msgstr "Saat %(clock)s itibarıyla stok kayıtlarından"
-
-#, python-format
-msgid "From the tasks at %(clock)s"
-msgstr "Saat %(clock)s itibarıyla görevlerden"
 
 msgid "From the water surface to the bottom of the net."
 msgstr "Su yüzeyinden ağın dibine kadar."
@@ -8464,9 +8435,6 @@ msgstr "Bu filtrelere uyan sayım yok."
 msgid "No count recorded yet"
 msgstr "Henüz sayım kaydedilmedi"
 
-msgid "No critical value or warning"
-msgstr "Kritik değer veya uyarı yok"
-
 msgid "No dead letters."
 msgstr "Kaydedilemeyen mesaj yok."
 
@@ -8903,6 +8871,9 @@ msgstr "Yok"
 
 msgid "None (bare soil)"
 msgstr "Yok (çıplak toprak)"
+
+msgid "None overdue"
+msgstr "Geciken yok"
 
 msgid "None."
 msgstr "Yok."
@@ -10692,6 +10663,10 @@ msgstr "Raporlar"
 msgid "Reports and notices due"
 msgstr "Zamanı gelen raporlar ve bildirimler"
 
+#, python-format
+msgid "Reports at %(clock)s"
+msgstr "Raporlar, saat %(clock)s"
+
 msgid "Reports due"
 msgstr "Verilecek raporlar"
 
@@ -10933,6 +10908,10 @@ msgstr "Numuneler"
 
 msgid "Samples and analyses"
 msgstr "Numune ve analizler"
+
+#, python-format
+msgid "Samples and sensors at %(clock)s"
+msgstr "Numuneler ve sensörler, saat %(clock)s"
 
 #, python-format
 msgid "Samples can be dated at most %(days)d days back."
@@ -11465,6 +11444,10 @@ msgstr "Ayarlar"
 msgid "Setup"
 msgstr "Kurulum"
 
+#, python-format
+msgid "Setup at %(clock)s"
+msgstr "Kurulum, saat %(clock)s"
+
 msgid "Severity"
 msgstr "Önem"
 
@@ -11947,6 +11930,10 @@ msgstr "Ay sonundaki stok"
 msgid "Stock lines"
 msgstr "Stok satırları"
 
+#, python-format
+msgid "Stock records at %(clock)s"
+msgstr "Stok kayıtları, saat %(clock)s"
+
 msgid "Stock the batch"
 msgstr "Partiyi stokla"
 
@@ -12140,6 +12127,9 @@ msgstr "Sistemler"
 msgid "Systems (loop)"
 msgstr "Sistemler (döngü)"
 
+msgid "Systems by status"
+msgstr "Duruma göre sistemler"
+
 msgid "TAN (mg/L N)"
 msgstr "TAN (mg/L N)"
 
@@ -12193,6 +12183,10 @@ msgstr "Görev"
 
 msgid "Tasks"
 msgstr "Görevler"
+
+#, python-format
+msgid "Tasks at %(clock)s"
+msgstr "Görevler, saat %(clock)s"
 
 msgid "Tasks due today"
 msgstr "Bugün süresi dolan görevler"
@@ -14612,6 +14606,9 @@ msgstr "Birim, sistem veya ekipman"
 msgid "Units"
 msgstr "Birimler"
 
+msgid "Units by kind"
+msgstr "Türe göre birimler"
+
 msgid "Units counted"
 msgstr "Sayılan birimler"
 
@@ -14886,6 +14883,9 @@ msgstr ""
 
 msgid "Water limits"
 msgstr "Su sınırları"
+
+msgid "Water points with a warning"
+msgstr "Uyarı veren numune noktaları"
 
 msgid "Water quality"
 msgstr "Su kalitesi"
@@ -16405,12 +16405,6 @@ msgstr "%(location)s içinde: %(held)s, süresi %(date)s tarihinde doluyor."
 msgid "in %(name)s"
 msgstr "%(name)s içinde"
 
-#, python-format
-msgid "in %(stocked)s of %(total)s unit"
-msgid_plural "in %(stocked)s of %(total)s units"
-msgstr[0] "%(total)s birimin %(stocked)s tanesinde"
-msgstr[1] "%(total)s birimin %(stocked)s tanesinde"
-
 msgid "ingest contract"
 msgstr "veri alım sözleşmesi"
 
@@ -16670,6 +16664,18 @@ msgstr "şimdi"
 #, python-format
 msgid "now %(value)s, %(source)s"
 msgstr "şu an %(value)s, %(source)s"
+
+#, python-format
+msgid "of %(total)s sampling point"
+msgid_plural "of %(total)s sampling points"
+msgstr[0] "%(total)s numune noktasından"
+msgstr[1] "%(total)s numune noktasından"
+
+#, python-format
+msgid "of %(total)s unit"
+msgid_plural "of %(total)s units"
+msgstr[0] "%(total)s birimden"
+msgstr[1] "%(total)s birimden"
 
 msgid "off"
 msgstr "izinli"

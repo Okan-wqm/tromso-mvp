@@ -403,3 +403,78 @@ class RuleBoundsTests(CrossReviewCase):
         self.login()
         self.assertNotContains(self.client.get(reverse('alarms:severitypolicy_list')), 'notice-warning')
         self.assertNotContains(self.client.get(reverse('alarms:parameterdeadband_list')), 'notice-warning')
+
+
+class StructuralClearTests(CrossReviewCase):
+    """F12: a limit deleted while its alarm is open is the easiest way to silence it, so the clearance says so: the cause
+    "limit removed" (not "no fish"), and its log entry names the limit row deleted, who deleted it and when."""
+
+    def test_a_deleted_limit_clears_with_its_cause_and_names_the_row_and_the_person(self):
+        from core.models import AuditLog
+        from farm.models import WaterLimit
+        from ..models import AlarmClearance
+        self.sample(5.5, hours=1)
+        self.loop()
+        limit = WaterLimit.objects.get(parameter='ph')
+        limit.soft_delete(self.keeper)
+        self.loop(seconds=1)
+        self.assertEqual(open_levels(), [])
+        self.assertEqual(set(AlarmClearance.objects.values_list('cause', flat=True)), {'limit_removed'})
+        entry = AuditLog.objects.filter(entity_type='alarm', action='update').latest('id')
+        said = ' '.join(str(value) for value in entry.changes.values())
+        self.assertIn(str(limit.pk), said)
+        self.assertIn('keeper', said)
+
+    def test_an_emptied_unit_clears_with_no_fish(self):
+        from farm.stock import services as stock_services
+        from ..models import AlarmClearance
+        self.sample(5.5, hours=1)
+        self.loop()
+        stock_services.void(self.keeper, stock_services.StockOperation.objects.get(), 'Wrong unit')
+        self.loop(seconds=1)
+        self.assertEqual(set(AlarmClearance.objects.values_list('cause', flat=True)), {'structural'})
+
+
+class TextTests(CrossReviewCase):
+    """F15: the escalation time moved from the Platform settings to each severity's rule: no text says otherwise."""
+
+    def test_no_text_sends_the_escalation_time_to_the_platform_settings(self):
+        import pathlib
+        from django.conf import settings
+        from ..forms import RecipientRuleForm
+        self.assertNotIn('Platform settings', str(RecipientRuleForm._meta.help_texts['level']))
+        access = (pathlib.Path(settings.BASE_DIR) / 'config' / 'access.py').read_text(encoding='utf-8')
+        self.assertNotIn("the alarms' escalation time", access)
+
+
+class UnwatchedUnitTests(CrossReviewCase):
+    """F16: a unit with fish and no point to read its own water at (no middle point, no other own-water point) has no water
+    alarm at all, so it is a configuration warning of its own, on its site, until a point is there."""
+
+    def test_a_stocked_unit_without_a_point_is_a_configuration_warning(self):
+        from farm.health.withdrawal import guarded_units
+        from farm.models import SamplingPoint
+        from .. import read
+        guarded_units(self.keeper, [self.t1.pk], None,
+                      lambda: SamplingPoint.objects.filter(pk=self.mid1.pk).update(is_active=False))
+        self.loop()
+        self.loop(seconds=31)
+        alarm = Alarm.objects.get(source='system', parameter='no_water_point')
+        self.assertEqual((alarm.severity, alarm.site), ('warning', self.bergen))
+        self.assertIn('T-01', alarm.summary)
+        guarded_units(self.keeper, [self.t1.pk], None,
+                      lambda: SamplingPoint.objects.filter(pk=self.mid1.pk).update(is_active=True))
+        self.loop(minutes=1)
+        self.loop(minutes=2)
+        self.assertFalse(read.is_open(alarm))
+
+    def test_an_empty_unit_without_a_point_is_nothing(self):
+        from farm.tests.test_stock import make_unit
+        unit = make_unit('T-09', self.hall)
+        from farm.health.withdrawal import guarded_units
+        from farm.models import SamplingPoint
+        guarded_units(self.keeper, [unit.pk], None,
+                      lambda: SamplingPoint.objects.filter(unit=unit).update(is_active=False))
+        self.loop()
+        self.loop(seconds=31)
+        self.assertFalse(Alarm.objects.filter(parameter='no_water_point').exists())

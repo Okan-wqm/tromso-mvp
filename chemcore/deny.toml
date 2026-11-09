@@ -1,0 +1,50 @@
+# The licence gate of chemcore (owner rule: no dependency whose licence forbids commercial use).
+# `cargo deny --locked check` runs in chemcore/scripts/test.sh; chemcore/THIRD_PARTY lists every crate.
+#
+# Never copy reference code under a copyleft licence into chemcore: in particular PyCO2SYS (GPL-3.0) and CO2SYS
+# ports may be READ to check a published constant, never copied or translated line by line. Every formula is
+# written from its paper (the source and validity range are stated beside it in the code).
+
+[graph]
+targets = ["x86_64-unknown-linux-gnu"]
+all-features = false
+no-default-features = false
+
+[licenses]
+# Permissive licences only. Anything else fails the build until it is reviewed and added here with a reason
+# (BSD-2/3-Clause, ISC or Zlib would be acceptable, each with its reason written beside it).
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "Unicode-3.0",   # unicode-ident (a build-time dependency of the PyO3 macros), Unicode data licence, permissive
+]
+confidence-threshold = 0.93
+
+[licenses.private]
+# chemcore's own crates (publish = false) are Suderra's
+ignore = true
+
+[bans]
+multiple-versions = "allow"
+wildcards = "deny"
+# chemcore-py reaches chemcore-core by path (one workspace, never published)
+allow-wildcard-paths = true
+deny = [
+    # non-commercial licence (owner rule A3, as in sensors-ingest)
+    { crate = "rodbus" },
+    # owner amendment B2: no WebAssembly build of the chemistry, ever
+    { crate = "wasm-bindgen" },
+    { crate = "js-sys" },
+    { crate = "web-sys" },
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+
+[advisories]
+# RustSec advisories: a vulnerable or yanked crate fails the gate (needs network to fetch the database;
+# CHEMCORE_OFFLINE=1 skips only this part, never the licences).
+yanked = "deny"

@@ -1,4 +1,0 @@
-# The build context of scripts/testrunner/Dockerfile (the checkout): only what the image is built from.
-*
-!requirements.txt
-!scripts/testrunner/requirements.txt

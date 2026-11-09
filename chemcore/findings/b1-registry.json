@@ -1,0 +1,23 @@
+{
+  "about": "The B1 findings (chemcore/findings/B1.md) and the compared quantities each covers; farm/tests/test_b1.py fails on a disagreement no finding covers and on an open finding that no longer disagrees. Every finding is decided for ours (owner amendment B5): golden v1 stays the reference; the test still fails on any new disagreement.",
+  "findings": {
+    "B1-01": {"title": "CO2 molar mass 44.0096 (source) against 44.0095 (ours)", "status": "decided: ours (owner amendment B5, 2026-11-06)",
+              "quantities": ["analysis.co2_mg_l", "analysis.target_co2_mg_l", "analysis.co2_border",
+                             "carbonate.ph_where_co2_5", "carbonate.ph_where_co2_15", "carbonate.ph_where_co2_40",
+                             "chart.safe_zone_co2_side"]},
+    "B1-02": {"title": "A CO2 a DIC cannot hold: the source answers its search end (pH 0), ours no pH", "status": "decided: ours (owner amendment B5, 2026-11-06)",
+              "quantities": ["carbonate.ph_where_co2_at_dic"]},
+    "B1-03": {"title": "Borders beyond the source's search range are clamped (NH3 to 12, H2S to 3.0 / 13.5)", "status": "decided: ours (owner amendment B5, 2026-11-06)",
+              "quantities": ["analysis.nh3_border", "analysis.h2s_border", "analysis.nh3_share_at_border_pct",
+                             "chart.nh3_boundary", "chart.h2s_boundary", "chart.h2s_zone_drawn",
+                             "chart.safe_zone_nh3_side"]},
+    "B1-04": {"title": "Reagent molar masses: the source's 3-decimal values against ours from the atomic weights", "status": "decided: ours (owner amendment B5, 2026-11-06)",
+              "quantities": ["dosing.recipe_grams"]},
+    "B1-05": {"title": "A base with CO2 stripping gives no recipe in the source (WQ-40)", "status": "decided: ours (owner amendment B5, 2026-11-06)",
+              "quantities": ["dosing.recipe_count"]},
+    "B1-06": {"title": "The source's simulator clamps DIC and alkalinity at 0 (WQ-41)", "status": "decided: ours (owner amendment B5, 2026-11-06)",
+              "quantities": ["dosing.simulate_dic", "dosing.simulate_ph"]},
+    "B1-07": {"title": "The source's safe zone ignores H2S and can cross itself (WQ-30)", "status": "decided: ours (owner amendment B5, 2026-11-06)",
+              "quantities": ["chart.safe_zone_drawn"]}
+  }
+}

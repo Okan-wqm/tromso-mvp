@@ -216,7 +216,7 @@ jobs:
   # dependency, no WebAssembly, cargo deny with advisories, THIRD_PARTY, docker/requirements.lock naming the pins of
   # requirements.txt), run where that script says: the chemcore-tools stage of docker/testrunner.Dockerfile. The built
   # module's handshake with chemcore/EXPECTED (core.E001) is checked by the python job's `check`, in the image that
-  # holds the wheel. Until chemcore is on main the job finds no chemcore/ and says so (README, CI and dependency updates).
+  # holds the wheel.
   chemcore:
     name: chemcore (chemcore/scripts/test.sh)
     runs-on: ubuntu-24.04
@@ -225,18 +225,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: chemcore in this checkout
-        id: here
-        run: |
-          if [ -f chemcore/scripts/test.sh ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::notice::no chemcore/ in this checkout: nothing to test"
-          fi
-      - if: steps.here.outputs.present == 'true'
-        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-      - if: steps.here.outputs.present == 'true'
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: docker/testrunner.Dockerfile
@@ -249,7 +239,6 @@ jobs:
             type=gha,scope=testrunner
           cache-to: type=gha,mode=max,scope=chemcore-tools
       - name: The gates (chemcore/scripts/test.sh)
-        if: steps.here.outputs.present == 'true'
         run: docker run --rm -v "$PWD:/repo" -w /repo chemcore-tools:ci sh chemcore/scripts/test.sh
 
   security:
@@ -274,6 +263,8 @@ jobs:
       - name: pip-audit (known vulnerabilities in the Python requirements)
         run: |
           "$RUNNER_TEMP/tools/bin/pip-audit" --strict -r requirements.txt -r scripts/testrunner/requirements.txt
+          # what the runner image installs, pinned with hashes, and the chemcore wheel's build tool (maturin)
+          "$RUNNER_TEMP/tools/bin/pip-audit" --strict --require-hashes -r docker/requirements.lock -r docker/chemcore-build.lock
       # The licences the requirements install (the test runner's too), each allowed in THIRD_PARTY.md; anything else
       # fails: AGPL, SSPL, BUSL, a non-commercial licence or a new one nobody has reviewed yet.
       - name: Python licences (pip-licenses, the allow-list of THIRD_PARTY.md)

@@ -1,0 +1,6 @@
+# The images built from this checkout (docker/testrunner.Dockerfile) need only these.
+*
+!chemcore/
+!docker/
+!scripts/testrunner/
+chemcore/target/

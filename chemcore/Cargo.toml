@@ -1,0 +1,36 @@
+# chemcore: the water chemistry of the Deffeyes chart, the calculator and the replay, in Rust, used ONLY on the
+# server through PyO3 (owner amendment B2: no chemistry in the browser, no WebAssembly). README.md says how to
+# build it from a clean machine; every version here is pinned and Cargo.lock is committed (--locked everywhere).
+[workspace]
+members = ["core", "py"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+license = "LicenseRef-Suderra-Proprietary"
+publish = false
+
+[workspace.dependencies]
+# The only dependency of the chemistry: every transcendental function comes from this crate, never from the
+# platform, so a result never moves with the server's C library (S0: glibc and libm differ by 1 ulp in up to
+# 11 % of exp/pow calls). A version bump is a re-recorded golden (README, chemcore).
+libm = "=0.2.16"
+pyo3 = { version = "=0.30.1", default-features = false, features = ["macros", "abi3-py312", "extension-module"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+indexing_slicing = "deny"
+todo = "deny"
+unimplemented = "deny"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = "fat"

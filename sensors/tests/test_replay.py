@@ -4,6 +4,7 @@ order at that moment (a fresh sensor value at or before it, carried no longer th
 sample; else missing, never invented), and the whole diagram of that moment's water worked out by farm/water/deffeyes.py
 (every frame its own geometry, frames whose diagram reads exactly the same inputs sharing one), one query of the readings
 per tier and page; and its JSON endpoint: the page's figures once each, the frames as columns, the cursor of the next page."""
+import gzip
 import json
 from datetime import datetime, timedelta, timezone as tz
 from decimal import Decimal
@@ -61,7 +62,9 @@ class ReplayCase(SensorsCase):
         """The figure of the unit's own chart at the frame's moment (calculation.chart_of with `at`), in the page's box."""
         analysis = calculation.chart_of(frames.target, at=frame.at).calculation.analysis
         extent = [(each.point.dic, each.point.alkalinity_meq) for each in frames.frames if each.point is not None]
-        return deffeyes.figure(analysis, deffeyes.geometry(analysis, extent=extent))
+        # A page's figure leaves its point out (None): the diagram does not read the pH, the alkalinity or the oxygen
+        # (sensors/tests/test_page_share.py proves it), so frames of one diagram share it and carry their own point.
+        return {**deffeyes.figure(analysis, deffeyes.geometry(analysis, extent=extent)), 'point': None}
 
 
 class FrameTests(ReplayCase):
@@ -94,10 +97,12 @@ class FrameTests(ReplayCase):
         for frame in frames.frames:
             with self.subTest(at=frame.at):
                 self.assertEqual(frames.figures[frame.figure], self.figure_at(frames, frame))
-        # One figure for each different water (at the parameters' decimals): the frames of one water share it.
+        # One figure for each different diagram (the water but its pH, alkalinity and oxygen, at the parameters'
+        # decimals): the frames of one diagram share it.
         waters = {}
         for frame in frames.frames:
-            waters.setdefault(tuple(sorted((code, item.value) for code, item in frame.inputs.items())), set()).add(
+            waters.setdefault(tuple(sorted((code, item.value) for code, item in frame.inputs.items()
+                                           if code not in ('ph', 'alkalinity_mg_l', 'oxygen_mg_l'))), set()).add(
                 frame.figure)
         self.assertEqual(len(frames.figures), len(waters))
         self.assertGreater(len(waters), 5)
@@ -231,6 +236,19 @@ class EndpointTests(ReplayCase):
             'target': f'unit:{self.t1.pk}', 'start': '2026-10-10T00:05', 'end': '2026-10-10T00:55', 'step': '300',
             **params})
 
+    def test_a_page_is_sent_compressed_to_a_browser_that_takes_gzip(self):
+        """Owner amendment B4: the replay endpoint compresses its page (the figures are geometry, no secret)."""
+        self.steady()
+        self.reader()
+        plain = self.get()
+        packed = self.client.get(reverse('sensors:deffeyes_frames'), {
+            'target': f'unit:{self.t1.pk}', 'start': '2026-10-10T00:05', 'end': '2026-10-10T00:55', 'step': '300'},
+            HTTP_ACCEPT_ENCODING='gzip')
+        self.assertNotIn('Content-Encoding', plain)
+        self.assertEqual(packed['Content-Encoding'], 'gzip')
+        self.assertLess(len(packed.content), len(plain.content))
+        self.assertEqual(json.loads(gzip.decompress(packed.content)), json.loads(plain.content))
+
     def test_a_page_has_each_figure_once_and_the_frames_as_columns(self):
         self.steady()
         self.reader()
@@ -248,9 +266,11 @@ class EndpointTests(ReplayCase):
         self.assertEqual(columns['inputs']['ph']['value'], [frame.inputs['ph'].value for frame in frames.frames])
         self.assertEqual(columns['inputs']['ph']['origin'], ['sensor'] * 10)
         self.assertEqual(set(columns['inputs']), {'ph', 'temperature_c', 'alkalinity_mg_l', 'salinity_ppt'})
-        # The server's SVG of a frame is drawn from the figure the player gets.
-        figure = found['figures'][columns['figure'][3]]
-        self.assertEqual(deffeyes.render(figure), deffeyes.render(frames.figures[frames.frames[3].figure]))
+        # The server's SVG of a frame is drawn from the figure the player gets and the frame's own point.
+        figure = {**found['figures'][columns['figure'][3]], 'point': [columns['dic'][3], columns['alkalinity_meq'][3]]}
+        point = frames.frames[3].point
+        self.assertEqual(deffeyes.render(figure), deffeyes.render({**frames.figures[frames.frames[3].figure],
+                                                                   'point': [point.dic, point.alkalinity_meq]}))
         self.assertNotIn('diagram', found)
 
     def test_the_next_page_is_asked_by_its_cursor(self):
@@ -285,6 +305,163 @@ class EndpointTests(ReplayCase):
         for step in ('100000000000000000', '9' * 40):            # a short step is snapped up to the ladder, kept
             with self.subTest(step=step):
                 self.assertEqual(self.get(step=step).status_code, 400)
+
+
+def insert_many(channel_no, rows):
+    """[(ts, value, quality)] of one channel in one statement."""
+    with connection.cursor() as cursor:
+        cursor.execute('INSERT INTO sensors_reading (channel_no, ts, value, quality) '
+                       'SELECT %s, * FROM unnest(%s::timestamptz[], %s::float8[], %s::smallint[])',
+                       [channel_no, [at for at, *_rest in rows], [value for _at, value, _q in rows],
+                        [quality for *_rest, quality in rows]])
+
+
+def scanned(sql):
+    """How many rows of the readings' chunks a query reads (returned and filtered out), from its EXPLAIN ANALYZE."""
+    with connection.cursor() as cursor:
+        cursor.execute('EXPLAIN (ANALYZE, FORMAT JSON) ' + sql)
+        plan = cursor.fetchone()[0]
+    plan = json.loads(plan) if isinstance(plan, str) else plan
+    total, nodes = 0, [plan[0]['Plan']]
+    while nodes:
+        node = nodes.pop()
+        nodes.extend(node.get('Plans', []))
+        if node.get('Relation Name', '').startswith('_hyper_'):
+            total += (node['Actual Rows'] + node.get('Rows Removed by Filter', 0)) * node['Actual Loops']
+    return total
+
+
+class ValueAtTests(ReplayCase):
+    """Each frame's sensor value is what the live view's rule gives at the frame's moment (`sensors.provider` value_at:
+    the channel's newest clean reading at or before the moment, taken while it was bound there), within the channel's
+    freshness: on irregular readings with bad ones among them, readings exactly on a frame's moment, gaps longer than the
+    freshness, a backup channel and a sensor moved away and back (for less and for more than its freshness), at every
+    step of the raw tier, page by page."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        from random import Random
+        rng = Random(20261108)
+        cls.backup = make_channel(cls.device, 'ph', code='PH-B')                  # fresh 900 s
+        bindings.move(cls.user, cls.backup, point=cls.mid1, role='backup', at=START - timedelta(days=1))
+        # The pH probe goes to T-02 for two minutes and comes back (shorter than its freshness: both of its stays in
+        # T-01 have fresh values after it), then for 40 minutes (longer than its freshness).
+        bindings.move(cls.user, cls.ph, point=cls.mid2, at=START + timedelta(minutes=60, seconds=7))
+        bindings.move(cls.user, cls.ph, point=cls.mid1, at=START + timedelta(minutes=62, seconds=3))
+        bindings.move(cls.user, cls.ph, point=cls.mid2, at=START + timedelta(minutes=100, seconds=7))
+        bindings.move(cls.user, cls.ph, point=cls.mid1, at=START + timedelta(minutes=140, seconds=3))
+        gaps = {cls.channel.channel_no: (0.2, 0.7, 1, 1, 1, 2, 3, 5, 30, 200, 400),
+                cls.ph.channel_no: (5, 20, 60, 120, 600, 1200),
+                cls.backup.channel_no: (60, 300, 900, 1500)}
+        cls.rows = {}
+        for number, choices in gaps.items():
+            at, made = START - timedelta(minutes=20), []
+            while at < START + timedelta(hours=3, minutes=10):
+                if rng.random() < 0.1:                                     # exactly on a frame's moment (pages())
+                    at = at.replace(second=7, microsecond=250000) + timedelta(minutes=1)
+                else:
+                    at += timedelta(microseconds=int(rng.choice(choices) * rng.uniform(0.5, 1.5) * 1e6))
+                quality = rng.choice((0,) * 16 + (1, 8, 32, 64, 16, 128))    # good, heartbeat, late, and bad ones
+                made.append((at, round(rng.uniform(6.5, 12.5), 4), quality))
+            insert_many(number, made)
+            cls.rows[number] = made
+
+    def pages(self):
+        """Every page of the raw tier's steps over the readings, from a moment on no whole second."""
+        start = START + timedelta(seconds=7, microseconds=250000)
+        for step, frames, size in ((timedelta(seconds=1), 360, 150), (timedelta(seconds=5), 300, 120),
+                                   (timedelta(seconds=15), 300, 120), (timedelta(minutes=1), 190, 70),
+                                   (timedelta(minutes=5), 38, 2000), (timedelta(minutes=30), 6, 2000)):
+            cursor = 0
+            while cursor is not None:
+                page = read.deffeyes_frames(self.t1, start, start + frames * step, step, cursor=cursor, size=size)
+                self.assertEqual(page.tier, read.RAW)
+                yield step, page
+                cursor = page.next
+
+    def test_each_frames_sensor_value_is_value_at_of_its_channel_at_its_moment(self):
+        from farm.water import sources
+        from sensors.provider import PROVIDER
+        targets = {'sensor': (sources.POINT, self.mid1.pk), 'system_sensor': (sources.SYSTEM, self.ras.pk)}
+        seen = {}
+        for step, page in self.pages():
+            for frame in page.frames:
+                for code in ('ph', 'temperature_c'):
+                    item = frame.inputs.get(code)
+                    if item is None or item.channel_no is None:
+                        continue
+                    with self.subTest(step=step, at=frame.at, code=code):
+                        target = targets[item.origin]
+                        found = {value.channel_no: value
+                                 for value in PROVIDER.value_at([target], code, frame.at).get(target, [])}
+                        expected = found[item.channel_no]
+                        self.assertLessEqual(frame.at - expected.at, timedelta(seconds=expected.fresh_for))
+                        self.assertEqual(item.value, float(water_read.as_parameter(code, expected.value)))
+                        self.assertEqual(item.age_s, (frame.at - expected.at).total_seconds())
+                    seen[(step, code)] = seen.get((step, code), 0) + 1
+        self.assertEqual(len(seen), 12)                                   # both inputs from a sensor at every step
+
+    def test_the_rows_are_each_segments_newest_clean_reading_at_each_moment_within_its_freshness(self):
+        """`replay_rows` gives, for every segment and moment, the segment's newest clean reading at or before the moment
+        and inside its binding when it is no older than the channel's freshness; nothing else (a staler value is never
+        used)."""
+        from sensors.quality import BAD_MASK
+        given = on_the_moment = 0
+        for step, page in self.pages():
+            first, count = page.frames[0].at, len(page.frames)
+            found = [segment for code in read.REPLAY_INPUTS
+                     for segment in read.segments(self.t1, code, first - read.CARRY, first + count * step)]
+            rows = read.replay_rows(found, first, step, count, read.RAW)
+            expected = {}
+            for index, segment in enumerate(found):
+                clean = [(at, value) for at, value, quality in self.rows.get(segment.channel_no, [])
+                         if not quality & BAD_MASK and segment.start <= at < segment.end]
+                for slot in range(count):
+                    moment = first + slot * step
+                    before = [row for row in clean if row[0] <= moment]
+                    if before and moment - before[-1][0] <= timedelta(seconds=segment.fresh_s):
+                        expected[(index, slot)] = before[-1]
+                        on_the_moment += before[-1][0] == moment
+            given += len(expected)
+            with self.subTest(step=step, cursor=page.cursor):
+                self.assertEqual(rows, expected)
+        self.assertGreater(given, 1000)
+        self.assertGreater(on_the_moment, 10)                            # a reading exactly at a frame counts for it
+
+    def test_a_page_reads_about_one_reading_per_frame_and_channel_never_every_reading_of_its_span(self):
+        """The readings query of a raw page reads about the readings it gives (one per frame and segment), not every
+        reading of the page's span: at a minute's step over 1 Hz readings it read sixty times more."""
+        dense = make_channel(self.device, 'temperature_c', code='T-DENSE', heartbeat_s=60)
+        bindings.move(self.user, dense, point=self.mid1, at=START - timedelta(days=1))
+        insert_many(dense.channel_no, [(START + timedelta(seconds=second), 10.0 + second / 1e4, 0)
+                                       for second in range(4 * 3600)])
+        first, count, step = START + timedelta(minutes=20), 200, timedelta(minutes=1)
+        with CaptureQueriesContext(connection) as queries:
+            read.deffeyes_frames(self.t1, first, first + count * step, step)
+        (query,) = readings_queries(queries)
+        # The dense probe and the system's temperature, the pH probe's three stays in T-01, the backup.
+        segments = [segment for code in read.REPLAY_INPUTS
+                    for segment in read.segments(self.t1, code, first - read.CARRY, first + count * step)]
+        self.assertEqual(len(segments), 6)
+        self.assertLessEqual(scanned(query['sql']), 2 * count * len(segments))
+
+    def test_the_planner_setting_is_as_it_was_after_a_page_inside_a_callers_transaction(self):
+        """Cross review F4: the look-ups switch TimescaleDB's runtime exclusion off for their own query only; inside a
+        caller's transaction (an atomic block around the replay) the setting is back to what it was afterwards."""
+        from django.db import transaction
+
+        def setting():
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_setting('timescaledb.enable_runtime_exclusion')")
+                return cursor.fetchone()[0]
+
+        with transaction.atomic():
+            before = setting()
+            read.deffeyes_frames(self.t1, START, START + timedelta(hours=2), timedelta(minutes=1))
+            self.assertEqual(setting(), before)
+        self.assertEqual(before, 'on')
+
 
 class OneRuleTests(ReplayCase):
     """The replay picks each input at each frame by the water's one rule, `farm.water.read.choose` (owner rule A9), as

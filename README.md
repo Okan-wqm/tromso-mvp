@@ -2868,9 +2868,15 @@ controls are the UI's, not built here):
   sample), a sensor's before a sample's at one time; else for the salinity of fresh water the assumption; else missing.
   Nothing is interpolated or carried past its freshness. A moved sensor counts for the place it was in. The hourly
   trail (`sensors/trail.py`) picks each hour's inputs the same way at the hour's end.
-- One query of the readings per tier and page: below an hour the readings of the page's span, the newest of each step,
-  and the newest still fresh before the page; from an hour the page's hours of the hour rollup read once, each frame
-  given the last value of the newest hour ended by it.
+- One query of the readings per tier and page. Below an hour each channel's value at a frame is what the live view's
+  rule (`value_at`) gives at its moment: the newest clean reading at or before it, taken while the channel was bound
+  there, when it is no older than the channel's freshness; `read.choose` then takes the newest of a tier's fresh
+  values, so a probe moved away and back gives its newest reading (`sensors/tests/test_replay.py` ValueAtTests holds
+  every frame equal to value_at on irregular readings at every raw step). At a step of 5 s or less the page's span is
+  read, the last reading of each step kept; at a longer step one indexed look-up per frame and channel (the primary
+  key read backwards), so a page reads about one reading per frame however dense the readings are (a test holds it to
+  two). From an hour the page's hours of the hour rollup are read once, each frame given the last value of the newest
+  hour ended by it.
 - Every frame with its required inputs carries the whole diagram of its water (A8): isolines, regions, borders, Ω
   lines, names and notes, with the fish's limits, computed only by `farm/water/deffeyes.py` as `deffeyes.figure`, a
   JSON shape of flat number arrays. The server's SVG is drawn from the same shape (`deffeyes.draw` is
@@ -3480,11 +3486,188 @@ C:\Python312\python.exe -m venv .venv
 .venv\Scripts\python.exe manage.py runserver 8047
 ```
 
+The water chemistry needs the `chemcore` module, which is built only in the container image (see
+[Water-chemistry core](#water-chemistry-core-chemcore)); a plain virtual environment does not start without it.
+
 The database connection reads `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST` and `DB_PORT`; the
 defaults match the local container in `docker-compose.yml`. `COMPANY_TIME_ZONE` is the company's time zone, a new site's and the one migration farm/0028 gives a site without one
 (default `Europe/Oslo`; the server's own clock stays UTC; one of the zones a site may have, or the server refuses to start: `farm.E001`). `DB_CONN_MAX_AGE` keeps a connection open between requests for that many seconds (default 0, one per request) and is meant for a server with long-lived worker threads or processes (gunicorn); a kept connection is health-checked before reuse. Never set it for `manage.py runserver`: the development server starts a new thread for every request, so each request leaves its own connection open until the database refuses new clients ("too many clients"). Uploaded files (the library's PDFs) go to
 `MEDIA_ROOT`: `DJANGO_MEDIA_ROOT`, by default `media/` in the checkout (ignored by git); keep it outside the
 checkout anywhere but a developer's machine, and back it up with the database.
+
+## Water-chemistry core (`chemcore/`)
+
+The chemistry of the Water Quality Management Chart, the calculator and the replay has moved, function by function,
+from `farm/water/*.py` into a Rust core, `chemcore/`, that runs **only on the server**, called from Django through
+PyO3. Nothing of it is ever shipped to the browser (owner amendment B2: no calculation, formula or constant is
+reachable there, no WebAssembly); the browser receives finished results. The plan, the owner's amendments and the
+steps are in the scratchpad plan `chemcore/PLAN.md`; the state of each step is below.
+
+- `chemcore/core`: the chemistry, `#![no_std]`, `unsafe` forbidden, its only dependency `libm` (every exp, log,
+  pow comes from it, never from the platform, so a result never moves with the server's C library).
+- `chemcore/py`: the Python module `chemcore` (PyO3, abi3 for CPython 3.12 and later), built into a wheel by
+  maturin. Only `farm/water/native.py` imports it (a test checks the whole checkout). There is no Python
+  fallback: without the module the server does not start, and the checkout's own `chemcore/` directory is refused
+  as a module.
+- The handshake: `chemcore/EXPECTED` names the build the server accepts (version, formula version, a digest of the
+  core's source). The system check `core.E001` (an Error) stops the server when the installed module differs.
+  `chemcore/scripts/gen_expected.sh` writes the file from the built module; it is never edited by hand.
+- Errors are explicit: never a silent fallback, never a NaN shown as a number. Every formula carries its
+  literature source and validity range in the code.
+
+**Building from a clean machine** (Docker is the only requirement; native Windows builds are not supported: the
+development machine has no MSVC linker, and the owner chose container-only development):
+
+```
+docker build -f docker/testrunner.Dockerfile -t balik-testrunner-chemcore .          # tools, wheel, runner
+docker build -f docker/testrunner.Dockerfile --target chemcore-tools -t chemcore-tools .
+docker run --rm -v "$PWD:/repo" -w /repo chemcore-tools sh chemcore/scripts/test.sh     # every gate
+docker run --rm -v "$PWD:/app" -w /app balik-testrunner-chemcore sh chemcore/scripts/gen_expected.sh   # after a core change
+docker run --rm --network balik-ciftligi_default -e DB_HOST=db -e DB_PORT=5432 -v "$PWD:/app" balik-testrunner-chemcore python manage.py test
+```
+
+The image's stages: `chemcore-tools` (`rust:1.88.0-slim-bookworm` by digest, rustfmt and clippy, maturin 1.16.0 by
+hash from `docker/chemcore-build.lock`, cargo-deny 0.20.2 by sha256), `chemcore-wheel` (`maturin build --release
+--locked`), `runner` (`python:3.12-slim` by digest, every package by hash from `docker/requirements.lock`, then
+the wheel; the build fails when `import chemcore` does). `chemcore/scripts/test.sh` is the gate list: rustfmt,
+clippy with `unwrap`, `expect`, `panic`, indexing and `todo` denied, `cargo test`, the core depends on `libm` only,
+no wasm crate or target, `cargo deny` (licences MIT, Apache-2.0, Apache-2.0 WITH LLVM-exception, Unicode-3.0; no
+copyleft reference code such as PyCO2SYS copied; rodbus and wasm crates banned; advisories), `chemcore/THIRD_PARTY`
+regenerated and compared, and the runner's lock agreeing with `requirements.txt`.
+
+**Pinned, and how to upgrade.** Rust 1.88.0 (`chemcore/rust-toolchain.toml` and the image digest), `libm` 0.2.16
+and `pyo3` 0.30.1 exactly (`chemcore/Cargo.toml`, `Cargo.lock` committed, `--locked` everywhere), maturin 1.16.0,
+cargo-deny 0.20.2, the two base images by digest. To upgrade one: change the pin (and the digest or hash) in one
+commit, rebuild, run `test.sh` and the Django suite, regenerate `EXPECTED`. A `libm` or toolchain change can move a
+last bit, so it also bumps `FORMULA_VERSION` and re-records the golden reference (never silently). The Python
+locks are regenerated with `pip-compile --generate-hashes` (pip-tools) in the runner's base image from
+`requirements.txt` (and `maturin==<version>` for the build lock).
+
+**Measured before the first line of product code (S0 spike, 2026-11-05).** `libm` and glibc (2.36 and 2.41) differ
+in the last bit in 1 to 11 % of exp/log/pow calls (at most 2 ulp), so the Rust core can never be bit-identical to
+today's Python: every comparison with the Python reference is by a tolerance class, and only native against PyO3
+is bit-for-bit. `libm::pow(x, 2.0)` equals `x * x` on 7 x 10^7 draws. Rust `{:.2}` formats exactly as Python
+`%.2f` (10^6 values, ties included), while the `shown` rule (half-even on the shortest digits) differs from
+`%.2f` on 9.6 % of a tie-heavy sample: one display rule for the card and the player is still to be chosen. The
+wheel is 225 KB, imports in 10 ms, a call costs 0.2 to 0.3 µs. One whole chart takes about 1 ms (Python 18 to
+25 ms); 2000 all-different waters take 2 to 3 s, so the replay shares the heavy layers between frames of the same
+temperature (a synthetic page: 54 different temperatures, 99 to 164 ms, 128 KB compressed).
+
+**Nothing changes a result silently.** These references hold the chemistry (golden v3 beside them, for the owner):
+
+- *Golden v1* (`chemcore/golden/v1`, 2.8 MB): what today's Python returns for a fixed corpus (every constant of
+  1 245 waters, 1 920 carbonate waters with each solve's path, 1 500 analyses, 600 charts, the dosing and simulator,
+  the small charts, and the edges: which inputs Python refuses, the alkalinity floor ±1e-9, the box's ties).
+  `chemcore/scripts/record_golden.py` records it, only in the runner image (the last bits are glibc's); its manifest
+  names the formula modules' git blobs. `farm/tests/test_golden.py`: the recorder reproduces itself byte for byte and
+  today's Python reproduces v1 bit for bit. v1 is never re-recorded silently; a version that changes results is v2,
+  after the owner decides. `chemcore/tolerances.toml` holds the parity classes the Rust core will be held to.
+- *Golden v3* (`chemcore/golden/v3`, 82 KB; I2, owner amendment B5), beside v1 and **not used by the application**
+  until the owner decides: below a salinity of 5 a water's ionic strength comes from its conductivity (1.6e-5 per
+  µS/cm), else its hardness with its alkalinity, else its salinity, else its alkalinity alone, and its constants are
+  the fresh-water ones made concentration constants with Davies activity coefficients (`chemcore/core/src/fresh.rs`,
+  `native.equilibria_v3`); from 5 on it is v1 bit for bit. `chemcore/scripts/record_golden_v3.py` records it from the
+  core (882 waters: fresh, hard, brackish and sea, each source of the ionic strength, v1 and v3 side by side);
+  `farm/tests/test_golden_v3.py` holds the core to it bit for bit, Davies to the literature's values, and the
+  application to v1. The comparison for the owner, in Turkish, is `chemcore/findings/I2-comparison.md`: in fresh
+  water v3 shows 3 to 13 % less CO₂ and NH₃ share, and at the 5 ‰ boundary a salinity-only brackish water jumps by
+  6 % (the comparison recommends a boundary of 1 ‰). The fresh path refuses an ionic strength above 0.5, the Davies
+  limit (`DAVIES_MAX`, a ValueError that says so). Conditions before v3 is switched on (cross review 2026-11-09, in
+  the comparison): a temperature-dependent dielectric constant (I1) with Davies checked at 5 and 12 °C, since the
+  fixed 79 makes A 7.5 % too large at 12 °C and 15 % at 2 °C, so the 12 °C shifts in the comparison are about 7 to
+  8 % of themselves too large; only temperature-compensated (25 °C) conductivity read; conductivity and hardness
+  wired as inputs of the water.
+- *Anchors* (`chemcore/golden/anchors.json`): the constants and a carbonate chain at three waters, worked out at 50
+  digits with mpmath (`chemcore/scripts/anchors_mpmath.py`, mpmath pinned by hash in `anchors.lock`, run once, never
+  by the server) from the formulas typed from the papers, each paper's check value asserted first. Today's Python
+  agrees to 1e-12.
+- *The source platform* (owner amendment B1): its engine, copied unchanged from aquaculture_platform 352aa2a8 into a
+  scratchpad harness and run under Node by `farm/tests/deffeyes_reference/b1/driver.ts`, on the golden's inputs; its
+  outputs in `chemcore/golden/b1/source.json.gz` with their provenance; the noise floors declared before the
+  comparison (`floors.toml`). `chemcore/scripts/b1_compare.py` and `farm/tests/test_b1.py` compare every output and
+  intermediate, the chart point by point, and fail on any disagreement that `chemcore/findings/b1-registry.json` does
+  not cover. The seven findings, each with its inputs, both values, cause and literature verdict, are in
+  `chemcore/findings/B1.md` for the owner, with the note on fresh water's missing ionic strength (I2). To run the
+  source again: the steps in the driver's header, then `b1_compare.py inputs`, the driver, and the test.
+
+**Moving a function.** Its Rust port is written to the Python it replaces (the same operations in the same order,
+`libm` for every transcendental, `chemcore/core/src/num.rs` failing exactly where CPython's `math` raised), tested
+against golden v1 by class and against the anchors (`farm/tests/test_native_chemistry.py`), then switched: the Python
+module keeps its names as a door (`from .native import ...`) and loses its bodies in the same commit, and
+`farm/tests/test_one_formula.py` checks that a switched module holds no formula. From then on golden v1 is held by
+class (`chemcore/scripts/golden_parity.py`), not bit for bit. Two deliberate differences from the Python it replaced:
+a tie (an alkalinity on the floor or one ulp beside it) may be decided apart by two libms: such cases are listed by
+`farm/tests/test_native_analysis.py` (one flips in golden v1: 10 °C, S 0, pH 9, one ulp above Python's floor); where
+Python ran out of the box's 1-2-5 steps with a bare StopIteration the core raises `ChartTooLargeError`; an input that is not a finite number is refused (`native.NonFiniteError`, a ValueError) where Python sometimes
+returned NaN, and nothing is cached (a water's constants take about 1 µs). After a change to `chemcore/`, rebuild the
+image and run `chemcore/scripts/gen_expected.sh`; the browser guard's list is regenerated with
+`gen_guard_list.py`.
+
+**Retired (S10, 2026-11-09).** Every function has moved: `farm/tests/test_one_formula.py` RetirementTests holds the
+five doors (`chemistry.py`, `deffeyes.py`, `dosing.py`, `charts.py`, `calculation.py`) to computing nothing, in a
+function or at a module's top, but a reviewed list of what is not chemistry, each with why: the SVG scene in pixels
+(`deffeyes.render`, `charts.draw` and their helpers; S8, the scene in the core, is deferred by the owner), a dose shown
+in g/m³ or kg, the simulator's change shown, an input's accepted range. A new formula anywhere in a door fails it, and
+so does a name a door gives that nothing outside the tests calls (the dead doors went: `charts.nh3_plot`, `h2s_plot`,
+`carbonate_plot`, `saturation_plot`, which the tests now read as `charts.plots(analysis)[key]`; deffeyes'
+`ISOLINE_PHS`, `LABELLED_PHS`, `OMEGA_SALINITY`; chemistry's `AIR_CO2`, `KELVIN`, `SOLVER_PH`). Left in Python on
+purpose, outside the doors: `farm/water/read.py` works out a reading's NH₃-N and NH₄-N as the TAN times the core's NH₃
+share, and the other oxygen unit as 100 × mg/L ÷ the core's solubility (and back), in Decimal at the parameter's
+decimals. They are definitions over the core's chemistry, not a model, and `wip/fix-monitoring` rewrites that code
+(the oxygen basis); moving them into the core would change Decimal into float arithmetic before quantising, so it is
+a step of its own after that branch lands. The plan's differential run of 20 000 fresh waters against the Python
+formulas was not made: the formulas were deleted function by function at each switch (S4 to S7), each switch held to
+golden v1 by class, which the suite runs on every change (`farm/tests/test_golden.py`); the uncommitted tier 2 of the
+golden was never made, so there is nothing to replace with snapshot hashes.
+
+**No chemistry in the browser** (B2) is a test: `core/test_no_chemistry_in_browser.py` reads the deny-list
+`chemcore/guard-list.txt` (the core's public names and coefficients, generated by `chemcore/scripts/gen_guard_list.py`
+and never stale) and fails if anything shipped (frontend/, static/, a template's script, the calculator's pages as
+rendered) holds an entry, a `.wasm` or a source map. `core/test_lean_endpoints.py` works out from the code which views
+compute on values from the request and holds them to a reviewed list of four (the calculator's three pages and a
+unit's chart), each refusing a user without its permission.
+
+| Step | State |
+|---|---|
+| S0 spike (measurements, go) | done |
+| S1 plumbing: workspace, image, gates, `native.py`, `core.E001` | done |
+| S2 golden reference, anchors, browser guard, lean endpoints | done |
+| S3 three-way cross-validation with the source platform: seven findings | done; all decided for ours (owner, B5) |
+| S4 the constants, the equilibria, the solver, the gases: `farm/water/chemistry.py` is a door to the core | done |
+| S5 the analysis (judge, analyse, the alkalinity floor, the box): deffeyes.py's analysis is a door to the core | done |
+| A replay page's box worked out once (its largest DIC and alkalinity), not every point for every figure | done |
+| S6 the chart in its own units (box, isolines, regions, borders, safe zone, Omega, dosing clipped): deffeyes.py's geometry is a door to the core; the notes are codes, farm/water/messages.py says them | done |
+| S7 the dosing, the small charts, the simulator's judging: dosing.py, charts.py and calculation.judge_step are doors to the core | done |
+| S9 (part) a replay page shares one diagram among frames equal but for pH, alkalinity and oxygen (proved invariant on random waters), its point left out (each frame carries its own); the page is sent gzipped | done |
+| S8 the SVG scene in the core | deferred (owner direction, 2026-11-09): the scene stays Python (`deffeyes.render`, `charts.draw`), drawing from the core's figures |
+| S9 the rest: the readings read per frame (`replay_window`) | done (see the measured table below) |
+| S9 the rest: one batch call for a page's analyses and figures | open |
+| S9 the rest: a binary encoding of the figures | not needed now: a real 60 s page is 0.4 to 0.76 MB gzipped, under the 2 MB at which it would be built (the plan's 400 KB target is passed at 60 s) |
+| S10 the retirement audit: no formula left in a door (a test holds it), the dead doors gone, the docs | done; two definitions over the core's values stay in `farm/water/read.py` until `wip/fix-monitoring` lands (see Retired) |
+| I2 fresh-water ionic strength (golden v3 beside v1, the owner sees it before any switch) | v3 built and recorded, not switched: the comparison for the owner is `chemcore/findings/I2-comparison.md` |
+
+**The replay, measured** (development database, read only, 2000-frame pages on three units with live demo readings at
+about 1 Hz). Distinct (temperature, salinity, TAN), and so figures, per page: 140 to 215 at a 1 s step, 219 to 362 at
+5 s, 927 to 1 158 at 60 s; a figure takes about 1 to 3 ms in the core (21 to 23 ms in Python before). The readings
+query (`replay_rows`) was the bottleneck at long steps: below an hour it read and sorted every raw reading of the page's
+span. Since `replay_window` (2026-11-09) it reads at a step over 5 s one indexed reading per frame and channel. Measured
+the same way, old and new code back to back on the same data (the machine shared with other test runs, so the
+spread is wide):
+
+| Step | Whole page, before | Whole page, after | Readings query, before | Readings query, after |
+|---|---|---|---|---|
+| 1 s | 2.0 to 3.5 s | 2.2 to 2.9 s | 0.3 to 0.7 s | 0.26 to 0.6 s |
+| 5 s | 2.1 to 3.1 s | 2.4 to 3.1 s | 0.58 to 0.91 s | 0.59 to 0.83 s |
+| 60 s | 8.7 to 12.5 s | 2.4 to 3.8 s | 6.7 to 9.6 s | 0.55 to 1.06 s |
+
+These are warm figures (the database's pages in memory): a cross review read cold windows at 2.5 to 5.7 s for
+1 600 to 1 800 look-ups, about 40 µs a look-up once warm. (On 2026-11-08, on a busier machine, the old 60 s page had
+taken 44 to 62 s.) What is left of a 60 s page is, besides
+the readings, the figures (0.6 to 1.3 s), the bindings read per input (0.4 to 0.5 s) and the 2000 analyses (0.2 to
+0.5 s): the next levers are the one batch call of S9 and fewer binding queries. On a synthetic page (2000 frames, 54
+temperatures) the figures take 131 ms and the page is 746 KB of JSON, 169 KB gzipped. Real pages as the endpoint sends
+them (2026-11-09, the same three units): at 1 s 1.9 to 2.6 MB of JSON, 124 to 147 KB gzipped; at 5 s 2.7 to 4.1 MB, 149
+to 204 KB; at 60 s 9.6 to 12 MB, 396 to 764 KB.
 
 ## Languages
 
@@ -3963,6 +4146,7 @@ real mail.
 | `farm/models/health.py`, `farm/health/`, `farm/handling/` | Fish health: medicines, treatments, health events, lice counts; the disease catalogue (`diseases.py`), the statutory lice rules (`lice.py`), the withdrawal worked out on read (`withdrawal.py`), the lice weeks and the records' days (`read.py`), the one write path (`services.py`), the pages and dialogs (`views.py`, `farm/forms/health.py`, `farm/resources/medicine.py`, `farm/resources/health_event.py`, `farm/templatetags/health.py`); the withdrawal registry the harvest side reads (`farm/handling/withdrawal.py`) |
 | `farm/models/water_point.py`, `farm/water/points.py`, `farm/forms/water_point.py`, `farm/resources/water_point.py` | Sampling points: the model with its kinds, flow roles and rules, the default points and the share report, the form and the tab |
 | `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the chemistry worked out from a sample or the calculator (`chemistry.py`), judging on read (`evaluate.py`), the one read API of the samples: the latest values, the history, a unit's water and where its temperature is read from (`read.py`), the one write path (`services.py`), the Water Quality Management Chart (`deffeyes.py`), the small charts (`charts.py`), the dosing (`dosing.py`), the calculator's one calculation and a point's values for it (`calculation.py`), the page, the calculator and the dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
+| `chemcore/`, `farm/water/native.py`, `docker/testrunner.Dockerfile` | The water-chemistry core in Rust (server only): the chemistry crate, the PyO3 module, the gates (`chemcore/scripts/test.sh`), the handshake file `chemcore/EXPECTED`; the one door Django calls it through; the image that builds it |
 | `farm/models/harvest.py`, `farm/harvest/` | Harvest: slaughter facilities, a harvest's record, production plans and plan items; the Harvested list and its totals (`read.py`, `views.py`), the drawer's harvest part; the plan pages (`farm/resources/harvest_plan.py`, `farm/forms/harvest.py`) |
 | `farm/models/handling.py`, `farm/handling/` | The handling check: the withdrawal registry (`withdrawal.py`), fasting, the purging in degree-days, when feeding must stop and the fasts plans ask for (`fasting.py`, `start_of_fast`, `fasting_on`), the check, the earliest suitable harvest date and the acknowledgement (`check.py`); the handling rules tab (`farm/forms/handling.py`, `farm/resources/handling_rule.py`) |
 | `farm/placements.py` | The placement registry: the chip an app puts beside a unit (the experiments', on Production units, its drawer and the meal board); fails open |
@@ -4014,8 +4198,9 @@ WORKERS=1 scripts/test.sh                # one process, without --parallel
 `scripts/test.sh` starts a PostgreSQL server for the run alone (the development database's image,
 `timescale/timescaledb:2.17.2-pg17`, in a container `balik-test-db-<run>` on a network of its own, no host port, its data in
 memory), runs `manage.py compile_catalogs` and `manage.py test --noinput --parallel $WORKERS` in the test runner's
-image (the requirements and `tblib`; `scripts/testrunner/image.sh` defines it, its Dockerfile, stage, context and a tag
-hashed from everything it is built from, and builds it when missing; CI builds it by the same script), and removes the
+image, stage `tests` of `docker/testrunner.Dockerfile` (the hashed requirements, the water-chemistry core built from the
+checkout and `tblib`; `scripts/testrunner/image.sh` defines it, its Dockerfile, stage, context and a tag hashed from
+everything it is built from, and builds it when missing; CI builds it by the same script), and removes the
 server and the network at the end (`KEEP_DB=1` keeps them). So a run never touches the development database `balik`, its
 server or its volume, never shares test databases, roles or the shared server's 100 connections with another run, and needs
 no `DB_TEST_NAME`. There is no serial-only group: every test runs in the parallel run. Why the run is shaped so:
@@ -4099,8 +4284,8 @@ so run `scripts/test.sh` on the branch before asking for a merge.
 | `python` | the browser build first (`npm ci`, `npm run build`: `check` fails on core.W001 without `static/js`), then `CHECKS=1 scripts/test.sh` (`SUITE=0` on a pull request) with 4 workers, in the test runner's image (`scripts/testrunner/image.sh`, built with its layers cached): `compile_catalogs` (a fresh checkout has no `.mo`, and core.W002 would fail the check); `manage.py check --fail-level WARNING`; `check --deploy` with production-like settings (DEBUG off, a random key, a host), where any issue but the five still open fails (`DEPLOY_OPEN` in `scripts/testrunner/in-container.sh`: the console mail backend and the four HTTPS settings, until the production settings exist); `makemigrations --check`; `data_map --check`; `update_catalogs`, then `git diff --exit-code -- locale` (the catalogs were up to date); `compile_catalogs`; then, except on a pull request, the whole suite with warnings as errors | `CHECKS=1 SUITE=0 scripts/test.sh` (the checks only) or `CHECKS=1 scripts/test.sh`, then `git diff -- locale` |
 | `frontend` | `npm ci`, `npm run build` (tsc, `tsconfig.json`), `npm test` (the TypeScript tests, the designer's browser test on the runner's Chrome) | the same three |
 | `rust` | in `sensors-ingest/`, on the toolchain of `rust-toolchain.toml` (1.88.0, the release image's and the crate's `rust-version`): `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked --all-targets` against a TimescaleDB service migrated by Django (`manage.py migrate` in the test runner's image, the server's own packages) and a Mosquitto broker (`REQUIRE_DB=1`: the database and broker tests run, never skip), `cargo deny --locked check` (licences, bans, sources, RustSec advisories), `THIRD_PARTY` equal to what `Cargo.lock` says | `sensors-ingest/tests/run.sh` |
-| `chemcore` | `chemcore/scripts/test.sh` in the `chemcore-tools` stage of `docker/testrunner.Dockerfile` (its layers cached): rustfmt, clippy, `cargo test`, libm the chemistry's only dependency, no WebAssembly, `cargo deny` with advisories, `chemcore/THIRD_PARTY`, `docker/requirements.lock` naming the pins of `requirements.txt`; the built module's handshake with `chemcore/EXPECTED` (core.E001) is the python job's `check`. Until `chemcore/` is on `main` the job finds none and says so | the same `docker run` as the script's header |
-| `security` | `pip-audit --strict` on `requirements.txt` and the test runner's; the Python licence gate (`pip-licenses --allow-only`, the licences [`THIRD_PARTY.md`](THIRD_PARTY.md) allows: AGPL, SSPL, BUSL, non-commercial or any unreviewed licence fails); the banned components, MinIO and rodbus, whatever licence a client library carries (a Python or npm package, or an image a compose file or Dockerfile names; the crates are denied in `deny.toml`); `npm audit --omit=dev --audit-level=high` | see below |
+| `chemcore` | `chemcore/scripts/test.sh` in the `chemcore-tools` stage of `docker/testrunner.Dockerfile` (its layers cached): rustfmt, clippy, `cargo test`, libm the chemistry's only dependency, no WebAssembly, `cargo deny` with advisories, `chemcore/THIRD_PARTY`, `docker/requirements.lock` naming the pins of `requirements.txt`; the built module's handshake with `chemcore/EXPECTED` (core.E001) is the python job's `check`. | the same `docker run` as the script's header |
+| `security` | `pip-audit --strict` on `requirements.txt` and the test runner's, and with `--require-hashes` on what the runner image installs (`docker/requirements.lock`) and the chemcore wheel's build tool (`docker/chemcore-build.lock`, maturin); the Python licence gate (`pip-licenses --allow-only`, the licences [`THIRD_PARTY.md`](THIRD_PARTY.md) allows: AGPL, SSPL, BUSL, non-commercial or any unreviewed licence fails); the banned components, MinIO and rodbus, whatever licence a client library carries (a Python or npm package, or an image a compose file or Dockerfile names; the crates are denied in `deny.toml`); `npm audit --omit=dev --audit-level=high` | see below |
 
 The security job by hand (Docker, nothing installed on the machine):
 
@@ -4119,12 +4304,14 @@ here (4 workers on a small runner; the job allows 150 minutes, the checks alone 
 run it while working.
 
 **Dependency updates** come from Dependabot (`.github/dependabot.yml`): every Monday for pip (the requirements and the
-test runner's), npm, cargo (`sensors-ingest`), the GitHub actions and the Dockerfiles' images; minor and patch releases
+test runner's), npm, cargo (`sensors-ingest` grouped, `chemcore` one pull request per crate, its pins exact: a libm move is a re-recorded golden), the GitHub actions and the Dockerfiles' images (`docker/`, `sensors-ingest/`); minor and patch releases
 grouped into one pull request per ecosystem, each major in a pull request of its own, at most 5 open per ecosystem. Django's
 feature releases (6.1 to 6.2) never come in the group, and a new Python or Rust (minor) is not proposed at all: they are
 planned moves. The TimescaleDB image is pinned by hand in `docker-compose.yml`, `scripts/test.sh`, the workflow and
 `sensors-ingest/tests/run.sh`, and moves in all four together. Dependabot's security updates are a repository setting
-(Settings, Code security), to be switched on by the owner.
+(Settings, Code security), to be switched on by the owner. Dependabot does not regenerate `docker/requirements.lock`: a
+pull request that moves a pin of `requirements.txt` fails the chemcore job (the lock must name the same pins) until the lock
+is regenerated on its branch (README, chemcore, Upgrading).
 
 **Upgrade policy:**
 

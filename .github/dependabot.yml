@@ -41,6 +41,15 @@ updates:
         patterns: ["*"]
         update-types: ["minor", "patch"]
 
+  # The water-chemistry core (chemcore/Cargo.toml and Cargo.lock). Its pins are exact (=x.y.z): a libm move is a
+  # re-recorded golden (README, chemcore), so each update is reviewed on its own merit; cargo deny still gates licences.
+  - package-ecosystem: cargo
+    directory: "/chemcore"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+
   # The actions of .github/workflows, pinned to a commit; Dependabot moves the commit and its version comment together.
   - package-ecosystem: github-actions
     directory: "/"
@@ -53,9 +62,9 @@ updates:
         patterns: ["*"]
         update-types: ["minor", "patch"]
 
-  # The images the Dockerfiles build from: the test runner's (scripts/testrunner) and the ingest's (sensors-ingest).
+  # The images the Dockerfiles build from: the test runner's (docker/testrunner.Dockerfile: Python, Rust) and the ingest's.
   - package-ecosystem: docker
-    directories: ["/scripts/testrunner", "/sensors-ingest"]
+    directories: ["/docker", "/sensors-ingest"]
     schedule:
       interval: weekly
       day: monday

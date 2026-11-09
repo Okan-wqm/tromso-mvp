@@ -14,6 +14,7 @@ from django.db.models import F
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.views.decorators.gzip import gzip_page
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _, gettext_lazy
@@ -377,6 +378,7 @@ def alarm_event_acknowledge(request, pk):
     return redirect(reverse('sensors:alarm_events'))
 
 
+@gzip_page                 # owner amendment B4: the page compressed (geometry, no secret)
 @permission_required((READ, 'farm.view_watermeasurement'), raise_exception=True)
 def deffeyes_frames(request):
     """A page of the Deffeyes replay of a unit's or a system's water (A6, A7, A8) as JSON for the player: `figures`, the

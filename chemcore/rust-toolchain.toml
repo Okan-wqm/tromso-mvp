@@ -1,0 +1,5 @@
+# The toolchain is pinned; README (chemcore, Upgrading) says how to move it.
+[toolchain]
+channel = "1.88.0"
+components = ["clippy", "rustfmt"]
+profile = "minimal"

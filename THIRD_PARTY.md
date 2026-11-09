@@ -1,8 +1,10 @@
 # Third-party software
 
 Nothing from a package registry is shipped to the browser: the browser runs only this project's own TypeScript, compiled
-into `static/js/`. The Python packages the server runs are in `requirements.txt`; the MQTT ingest's crates are in
-`sensors-ingest/THIRD_PARTY` (checked against `Cargo.lock`, licences gated by `sensors-ingest/deny.toml`).
+into `static/js/`. The Python packages the server runs are in `requirements.txt` (pinned with hashes in
+`docker/requirements.lock`); the MQTT ingest's crates are in `sensors-ingest/THIRD_PARTY` (checked against `Cargo.lock`,
+licences gated by `sensors-ingest/deny.toml`) and the water-chemistry core's (the server only) in `chemcore/THIRD_PARTY`
+(gated by `chemcore/deny.toml`).
 
 ## Python packages the server runs (`requirements.txt`, with what they pull in)
 

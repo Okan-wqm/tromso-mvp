@@ -130,6 +130,7 @@ class FrameTests(ReplayCase):
         a salt-added unit at 3 permil is worked out on the fresh path, never as diluted sea water."""
         Tank.objects.filter(pk__in=[self.t1.pk, self.t2.pk]).update(water_origin='salt_added')
         self.t1.refresh_from_db()
+        self.mid1.refresh_from_db()                 # its unit, as the database holds it now
         water_services.record(self.user, point=self.mid1, measured_at=START - timedelta(hours=1), source='manual',
                               values={'salinity_ppt': Decimal('3')})
         self.steady()

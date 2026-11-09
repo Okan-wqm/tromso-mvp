@@ -142,7 +142,8 @@ class SeaWaterTests(SimpleTestCase):
 
     def test_the_basis_is_nearly_continuous_from_fresh_to_sea(self):
         """The band blends the ideal water (to 1 permil) into Khoo's (from 5): no step at either end, and at 5 permil
-        Khoo's share is within 2 % of the ideal's."""
+        Khoo's share is within 4 % of the ideal's (3.5 %: its ionic term, (0.1552 − 0.0003142 t) I with t in °C, is +0.015
+        pK at I 0.10; the round-2 review's 1.6 % took t in K)."""
         for temp_c in (2.0, 12.0, 25.0):
             with self.subTest(temp_c=temp_c):
                 for edge in (1.0, 5.0):
@@ -151,7 +152,7 @@ class SeaWaterTests(SimpleTestCase):
                     self.assertAlmostEqual(above / below, 1, delta=1e-7)
                 at_five = native.water_equilibria(temp_c, 5.0, 115.0).nh3_share_limits(8.0)
                 ideal = native.water_equilibria(temp_c, 0.0).nh3_share(8.0)
-                self.assertAlmostEqual(at_five / ideal, 1, delta=0.02)
+                self.assertAlmostEqual(at_five / ideal, 1, delta=0.04)
 
     def test_the_co2_basis_at_sea_stays_formula_1s(self):
         meq = 115.0 / chemistry.MG_CACO3_PER_MEQ

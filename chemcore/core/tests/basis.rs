@@ -108,8 +108,13 @@ fn salt_added_water_never_drops_across_the_davies_limit() {
         let alkalinity = 80.0 / c::MG_CACO3_PER_MEQ;
         for ph in [7.0, 7.5, 8.0] {
             assert!(above.nh3_share(ph)? >= below.nh3_share(ph)? * (1.0 - 1e-12));
-            let (one, two) = (below.co2_corrected(alkalinity, ph)?, above.co2_corrected(alkalinity, ph)?);
-            assert!(above.co2_judged(alkalinity, ph, two)?.0 >= below.co2_judged(alkalinity, ph, one)?.0 * (1.0 - 1e-12));
+            let (one, two) = (
+                below.co2_corrected(alkalinity, ph)?,
+                above.co2_corrected(alkalinity, ph)?,
+            );
+            assert!(
+                above.co2_judged(alkalinity, ph, two)?.0 >= below.co2_judged(alkalinity, ph, one)?.0 * (1.0 - 1e-12)
+            );
         }
         Ok(())
     };

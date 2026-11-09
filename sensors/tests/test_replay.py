@@ -129,6 +129,7 @@ class FrameTests(ReplayCase):
         """Cross review round 2, R1: the replay takes the unit's water origin, as its chart does (calculation.origin_of):
         a salt-added unit at 3 permil is worked out on the fresh path, never as diluted sea water."""
         Tank.objects.filter(pk__in=[self.t1.pk, self.t2.pk]).update(water_origin='salt_added')
+        self.t1.refresh_from_db()
         water_services.record(self.user, point=self.mid1, measured_at=START - timedelta(hours=1), source='manual',
                               values={'salinity_ppt': Decimal('3')})
         self.steady()

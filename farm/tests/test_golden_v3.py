@@ -230,7 +230,11 @@ class GoldenV3Tests(SimpleTestCase):
         self.assertEqual({row['source'] for row in rows},
                          {'conductivity', 'hardness', 'salinity', 'alkalinity', 'seawater'})
         self.assertTrue(all(row['v3']['constants']['k1'] == row['v1']['constants']['k1'] for row in rows
-                            if row['salinity'] >= 5))
+                            if row['salinity'] >= 5 and row['ions'].get('water_origin') != 'salt_added'))
+        # Salt-added water (cross review F3): the fresh path to the Davies limit, past it the sea path.
+        salted = [row for row in rows if row['ions'] == {'water_origin': 'salt_added'}]
+        self.assertTrue(all(row['v3']['provenance']['sea_weight'] == (1.0 if row['salinity'] >= 28.4 else 0.0)
+                            for row in salted))
         self.assertTrue(any(row['v3'] != row['v1'] for row in rows if row['salinity'] < 5))
 
     def test_the_application_reads_formula_3_and_formula_1_is_still_golden_v1s(self):

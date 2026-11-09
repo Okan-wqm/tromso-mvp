@@ -12,7 +12,7 @@ saltier point, a conductivity that disagrees with the salinity. Each is now said
   sulfate give 10 to 20 times: round 2 tuned it so normal RAS water stays quiet), or less than the bound by more than
   Russell's scatter, 1.5 times (not compensated to 25 °C, or in the wrong unit? the bound is used);
 - a sea water's conductivity on a fresh water: with a salinity under 1 permil (or none), a conductivity that PSS-78
-  (UNESCO 1983, extended below 2 by Hill et al. 1986) reads as 5 permil or more, past the band (about 8 900 µS/cm; a hard
+  (UNESCO 1983, extended below 2 by Hill et al. 1986) reads as 5 permil or more, past the band (about 8 950 µS/cm; a hard
   fresh RAS at 2000 to 3000 µS/cm stays quiet)."""
 from django.test import SimpleTestCase
 from django.urls import reverse

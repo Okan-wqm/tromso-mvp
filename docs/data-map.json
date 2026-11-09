@@ -16903,7 +16903,8 @@
         "monitoring/tests/test_templates_db.py",
         "monitoring/tests/test_token.py",
         "sensors/tests/test_pages.py",
-        "sensors/tests/test_portable.py"
+        "sensors/tests/test_portable.py",
+        "sensors/tests/test_replay.py"
       ]
     },
     {

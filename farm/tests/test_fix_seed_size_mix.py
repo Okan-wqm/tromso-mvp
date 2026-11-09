@@ -1,7 +1,8 @@
 """`manage.py fix_seed_size_mix`: the development seed's two Tromsø cages, each with grow-out salmon (only TG-M01), the
 post-smolt, the smolt and the lumpfish, separated through the app's own transfers dated today, in one transaction: the
-post-smolt and the smolt get a cage each, made like TG-M02 through the units tab's form; the grow-out salmon and the
-lumpfish stay; the history before stays as recorded; check_stock finds nothing new; a second run does nothing; the dry
+post-smolt and the smolt get a cage each, made like TG-M02 through the units tab's form; the grow-out salmon and its
+lumpfish stay in TG-M01, TG-M02's lumpfish go with the post-smolt into TG-M03 (no cage holds cleaner fish alone, the
+owner's decision of 2026-11-09), so TG-M02 is left empty; the history before stays as recorded; check_stock finds nothing new; a second run does nothing; the dry
 run writes nothing; every refusal leaves the database as it was."""
 import io
 from decimal import Decimal
@@ -88,8 +89,9 @@ class SeparationTests(SeedCagesTestCase):
         out = self.command()
         m03, m04 = Tank.objects.get(code='TG-M03'), Tank.objects.get(code='TG-M04')
         self.assertEqual(self.held(self.m01), {self.grow.code: 993, self.lumps.code: 300})
-        self.assertEqual(self.held(self.m02), {self.lumps.code: 300})
-        self.assertEqual(self.held(m03), {self.post.code: 2993})
+        self.assertEqual(self.held(self.m02), {})
+        self.assertEqual(Tank.objects.get(pk=self.m02.pk).status, 'fallow')
+        self.assertEqual(self.held(m03), {self.post.code: 2993, self.lumps.code: 300})
         self.assertEqual(self.held(m04), {self.smolt.code: 993})
         for unit, name in ((m03, 'Cage 3'), (m04, 'Cage 4')):
             self.assertEqual((unit.name, unit.kind, unit.production_department.site, unit.status, unit.cage_type,
@@ -99,12 +101,18 @@ class SeparationTests(SeedCagesTestCase):
             self.assertTrue(AuditLog.objects.filter(entity_type='unit', entity_id=str(unit.pk), action='create')
                             .exists())
         transfers = list(StockOperation.objects.filter(kind='transfer').order_by('pk'))
-        self.assertEqual(len(transfers), 4)
+        self.assertEqual(len(transfers), 5)
         for operation in transfers:
             out_line = operation.movements.get(kind='transfer_out')
-            self.assertEqual((operation.date, out_line.reason, operation.created_by), (self.today, 'growth_stage',
-                                                                                        self.user))
+            cleaner = out_line.batch == self.lumps
+            self.assertEqual((operation.date, out_line.reason, operation.created_by),
+                             (self.today, 'other' if cleaner else 'growth_stage', self.user))
             self.assertIn('seed-history-2026-11', operation.notes)
+            if cleaner:
+                self.assertEqual((out_line.unit, operation.movements.get(kind='transfer_in').unit), (self.m02, m03))
+                self.assertIn('with the post-smolt they clean', operation.notes)
+        last = transfers[-1].movements.get(kind='transfer_out')                 # the salmon arrive first
+        self.assertEqual(last.batch, self.lumps)
         self.assertEqual(list(StockOperation.objects.filter(pk__in=[pk for pk, _kind, _date in self.history])
                               .order_by('pk').values_list('pk', 'kind', 'date')), self.history)   # history as it was
         self.assertEqual(integrity.problems(), [])
@@ -127,16 +135,21 @@ class SeparationTests(SeedCagesTestCase):
         self.assertIn(f'Transfer 1993 fish of {self.post.code} (594.0 g) from TG-M02 to TG-M03 on '
                       f'{self.today.isoformat()}.', out)
         self.assertIn(f'Transfer 1000 fish of {self.post.code} (610.0 g) from TG-M01 to TG-M03', out)
-        self.assertIn(f'Leave the cleaner fish {self.lumps.code} in TG-M02.', out)
+        self.assertIn(f'Transfer 300 fish of {self.lumps.code} (63.0 g) from TG-M02 to TG-M03, cleaner fish with the '
+                      'production fish they clean', out)
+        self.assertIn(f'Leave the cleaner fish {self.lumps.code} in TG-M01.', out)
+        self.assertNotIn('in TG-M02.
+', out.split('Leave', 1)[1])
         self.assertFalse(Tank.all_objects.filter(code='TG-M03').exists())
         self.command()                                                     # the database is writable again after it
         self.assertTrue(Tank.objects.filter(code='TG-M03').exists())
 
     def test_the_default_plan_is_the_dev_databases(self):
         self.assertEqual((fix_seed_size_mix.SOURCES, fix_seed_size_mix.KEEP, fix_seed_size_mix.MOVES,
-                          fix_seed_size_mix.LIKE),
+                          fix_seed_size_mix.LIKE, fix_seed_size_mix.CLEANER_MOVES),
                          (('TG-M01', 'TG-M02'), 'B-2026-004',
-                          (('B-2026-005', 'TG-M03', 'Cage 3'), ('B-2026-007', 'TG-M04', 'Cage 4')), 'TG-M02'))
+                          (('B-2026-005', 'TG-M03', 'Cage 3'), ('B-2026-007', 'TG-M04', 'Cage 4')), 'TG-M02',
+                          (('TG-M02', 'TG-M03'),)))
 
     def test_the_pages_after_it(self):
         self.command()
@@ -144,7 +157,21 @@ class SeparationTests(SeedCagesTestCase):
         self.assertEqual(board.status_code, 200)
         rows = {row['unit'].code: [line['batch'].code for line in row['lines']] for row in board.context['rows']}
         self.assertEqual(sorted(rows['TG-M01']), sorted([self.grow.code, self.lumps.code]))
-        self.assertEqual(rows['TG-M03'], [self.post.code])
+        self.assertEqual(rows['TG-M03'], [self.post.code, self.lumps.code])
+        self.assertNotIn('TG-M02', rows)
+
+
+class CleanerMoveTests(SeedCagesTestCase):
+    def test_cleaner_fish_go_only_into_a_cage_of_the_plan(self):
+        state = self.state()
+        with self.assertRaisesMessage(CommandError, '--move-cleaner TG-M02:TG-M01: TG-M01 is not a cage the plan moves '
+                                                    'salmon into'):
+            self.command('--move-cleaner', 'TG-M02:TG-M01')
+        self.assertEqual(self.state(), state)
+
+    def test_without_a_cleaner_move_the_lumpfish_stay(self):
+        self.command('--move-cleaner', '')
+        self.assertEqual(self.held(self.m02), {self.lumps.code: 300})
 
 
 class RefusalTests(SeedCagesTestCase):

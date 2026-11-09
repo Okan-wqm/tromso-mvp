@@ -9,6 +9,7 @@ from django.utils.translation import gettext_lazy as _
 from . import access, navigation
 from .crud import TabbedForm, tab_fields
 from .language import account_language, save_account_language
+from .models import PlatformSettings
 
 User = get_user_model()
 
@@ -147,3 +148,33 @@ class PasswordResetForm(auth_forms.PasswordResetForm):
     def get_users(self, email):
         users = User._default_manager.filter(email__iexact=email, is_active=True)
         return (user for user in users if auth_forms._unicode_ci_compare(email, user.email))
+
+
+PLATFORM_TABS = [
+    ('records', _('Records'), ['correction_window_days', 'second_approval_withdrawal']),
+    ('clocks', _('Clocks'), ['clock_tolerance_seconds']),
+]
+
+
+class PlatformSettingsForm(TabbedForm):
+    """The platform owner's settings (core.models.PlatformSettings); the bounds are the database's."""
+
+    tabs = PLATFORM_TABS
+
+    class Meta:
+        model = PlatformSettings
+        fields = tab_fields(PLATFORM_TABS)
+        help_texts = {
+            'correction_window_days': _('How many days back a daily record (a stock operation, a feeding, a water sample, '
+                                        'a movement of the store, a plan, a treatment) may be dated, and how old a record '
+                                        'may be voided. Older records stay as they are. 1 to 3650; 31 until you set '
+                                        'another.'),
+            'second_approval_withdrawal': _('When ticked, going on past a medicine withdrawal (a harvest during one, a '
+                                            'treatment reaching back over a harvest) needs a second person’s approval. '
+                                            'That approval is not built yet: while this is ticked, every such step is '
+                                            'refused, so nobody goes on alone.'),
+            'clock_tolerance_seconds': _('How far ahead of the server’s clock a water value may be stamped and still '
+                                         'count as fresh (a device or tablet clock a little fast). A value further ahead, '
+                                         'up to an hour, still decides its unit’s status and its alarm, but is not shown '
+                                         'as the newest. 0 to 3600; 300 until you set another.'),
+        }

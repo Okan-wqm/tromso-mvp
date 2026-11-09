@@ -109,5 +109,6 @@ Only four things move: drawer, dialog and movable window open in 180ms; recordin
 - Do make the next meal the largest figure on the board (`readout`).
 - Do keep a safety sentence visible: "Nobody is alerted: critical values are shown here, not sent."
 - Do not use red for brand, link or button; do not put the brand accent on data; do not colour a normal value.
-- Do not put a KPI tile row on an overview, eyebrows over every block, or arrows on buttons.
+- Do not put eyebrows over every block or arrows on buttons.
+- Do make the production overview a dashboard (the owner's decision, over the earlier "no KPI tile row"): its figures are metric cards on one sheet, several to a row (five from 768 px, two on a phone), each the figure large with its label, one sub-line and its source and time, the whole card the link. A card is grey; only an abnormal figure gets the 4px `edge-crit` / `edge-warn`, its glyph and the status word in its label. No figure as a label | figure | link bar across the page.
 - Do not let a table scroll silently or cut its actions.

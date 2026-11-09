@@ -4,7 +4,6 @@ dialogs (several units at once on create, one row on edit)."""
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
-from django.conf import settings
 
 from django import forms
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
@@ -12,6 +11,7 @@ from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _, ngettext
 
 from core.crud import DRAFT, CodedFormMixin, TabbedForm, tab_fields
+from core.platform import correction_window_days
 from core.widgets import DayInput
 
 from ..feeding import assignments
@@ -251,11 +251,11 @@ def batches_in_stock():
 
 
 def within_window(day, stored=None, unit=None):
-    """A first day changed or new is at most STOCK_BACKDATE_DAYS back, as every daily record (farm/stock/dates.py):
+    """A first day changed or new is at most the correction window back, as every daily record (farm/stock/dates.py):
     the days before are history."""
     if day != stored and day < earliest(unit):
         raise ValidationError(_('An assignment can start at most %(days)d days back.') % {
-            'days': settings.STOCK_BACKDATE_DAYS})
+            'days': correction_window_days()})
     return day
 
 

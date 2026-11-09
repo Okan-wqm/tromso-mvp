@@ -117,12 +117,18 @@ class Command(BaseCommand):
             pending = self.pending_migrations()
             if options['dry_run']:
                 # Reads only: the database itself refuses a write in this transaction, which is rolled back at the end.
-                with transaction.atomic():
-                    with connection.cursor() as cursor:
-                        cursor.execute('SET TRANSACTION READ ONLY')
-                    plan = self.plan(sources, options['keep'], moves, options['like'], cleaner_moves)
-                    self.show(plan, pending, user)
-                    transaction.set_rollback(True)
+                # On a database without the opening balances' table (farm 0036) there are none: the stock is read
+                # without them (farm.stock.read.OPENING_BALANCES).
+                opening = read.OPENING_BALANCES.set('farm.0036_opening_balances' not in pending)
+                try:
+                    with transaction.atomic():
+                        with connection.cursor() as cursor:
+                            cursor.execute('SET TRANSACTION READ ONLY')
+                        plan = self.plan(sources, options['keep'], moves, options['like'], cleaner_moves)
+                        self.show(plan, pending, user)
+                        transaction.set_rollback(True)
+                finally:
+                    read.OPENING_BALANCES.reset(opening)
                 return
             if pending:
                 raise CommandError(f'Migrate first: {", ".join(pending)} not applied.')

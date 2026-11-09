@@ -20,6 +20,7 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _, gettext_lazy
 from django.views.decorators.http import require_POST
 
+from alarms import read as alarms_read, services as alarm_services, sources as alarm_sources
 from core import audit, navigation
 from core.crud import DRAFT, done, refusal_text, render_page
 from core.dates import read_moment
@@ -352,28 +353,28 @@ def state_tiles(user, now):
 # ---- alarm events ----------------------------------------------------------------------------------------------
 @permission_required('sensors.view_alarmevent', raise_exception=True)
 def alarm_events(request):
-    """Sensors › Operations › Alarm events: the times a rule held, the open ones first. Shown, never sent."""
-    events = AlarmEvent.objects.select_related('rule__channel__device', 'acknowledged_by', 'binding__point__unit',
-                                               'binding__point__system', 'binding__point__equipment', 'binding__system',
-                                               'binding__equipment').order_by(
-        F('closed_at').desc(nulls_first=True), '-opened_at')
+    """Sensors › Operations › Alarm events: the times a rule held, the open ones first, with who acknowledged each (the
+    alarms app keeps it)."""
+    events = AlarmEvent.objects.select_related(
+        'rule__channel__device', 'alarm', 'binding__point__unit', 'binding__point__system', 'binding__point__equipment',
+        'binding__system', 'binding__equipment').prefetch_related(
+        'alarm__acknowledgements__user').order_by(F('closed_at').desc(nulls_first=True), '-opened_at')
     page = Paginator(events, DEAD_PAGE).get_page(request.GET.get('page'))
     return render_page(request, 'sensors/alarm_events.html', _context(
-        'sensors:alarm_events', page=page, events=page.object_list,
+        'sensors:alarm_events', page=page, events=page.object_list, connected=alarms_read.connected(),
         can_acknowledge=request.user.has_perm('sensors.change_alarmevent')))
 
 
 @require_POST
 @permission_required('sensors.change_alarmevent', raise_exception=True)
 def alarm_event_acknowledge(request, pk):
-    """A person says they saw an alarm event (logged); it stays open until its rule no longer holds."""
+    """A person says they saw an alarm event: the alarms' acknowledgement of its alarm (alarms.services.acknowledge, logged;
+    app 'console'), once per person; the event stays open until its rule no longer holds."""
     with transaction.atomic():
         event = get_object_or_404(AlarmEvent.objects.select_for_update(), pk=pk)
-        if event.acknowledged_at is None:
-            event.acknowledged_at, event.acknowledged_by = timezone.now(), request.user
-            event.save(update_fields=['acknowledged_at', 'acknowledged_by'])
-            with audit.source_language():
-                audit.record(request.user, AuditLog.Action.UPDATE, event, {'Acknowledged': [None, 'yes']})
+        alarm = getattr(event, 'alarm', None) or alarm_sources.mirror(event)
+        if not alarm.acknowledgements.filter(user=request.user).exists():
+            alarm_services.acknowledge(alarm, request.user, app='console')
     messages.success(request, _('Alarm event acknowledged.'))
     return redirect(reverse('sensors:alarm_events'))
 

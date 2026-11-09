@@ -10,7 +10,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from django.conf import settings
-from django.test import SimpleTestCase, override_settings
+from django.test import SimpleTestCase
 from django.urls import reverse
 from django.utils import timezone, translation
 
@@ -63,7 +63,6 @@ def raw_words(label):
             if part == str(labels.UNNAMED) or (RAW_KEY.match(part) and part not in known)]
 
 
-@override_settings(STOCK_BACKDATE_DAYS=3650)
 class EveryKeyThatReachesAPageTests(NoticeTestCase):
     maxDiff = None
     """What the pages really show, not what the code's literals hold: a report of every kind computed from records that

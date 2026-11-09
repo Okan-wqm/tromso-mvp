@@ -1,8 +1,11 @@
-{% load i18n dates water %}{% comment %} The body of Production › Overview (production_home.html; config.views.production_home), drawn with the Tailwind
-   build (tw: utilities over the role tokens, docs/design/system/tailwind.md) and the ui-* parts. Grey by default: colour
-   only on a critical or warning value and on what is overdue, always as glyph, word and fill. Every figure says where it
-   comes from and when it was worked out (`now`, on the company's clock). Each part shows only for a person who may read
-   its area; a link only to a page the person may open. Two columns from 1280 px, one below. {% endcomment %}
+{% load i18n dates water %}{% comment %} The body of Production › Overview (production_home.html; config.views.production_home), a dashboard drawn with the
+   Tailwind build (tw: utilities over the role tokens, docs/design/system/tailwind.md) and the ui-* parts. First the day's
+   figures as metric cards (_metric_card.html) on one board, several to a row (two on a phone, five from 768 px); then what
+   needs attention in compact rows, and beside it (from 1024 px) the farm's structure as cards and the reports due. Every
+   figure the page showed before its redesign is a card (farm/tests/test_production_overview.py, OldFiguresTests). Grey by
+   default: colour only on a critical or warning value and on what is overdue, always as glyph, word and edge. Every figure
+   says where it comes from and when it was worked out (`now`, on the company's clock). Each part shows only for a person
+   who may read its area; a link only to a page the person may open. {% endcomment %}
 {% with clock=now|company_clock|date:"TIME_FORMAT" %}
 {% if not stock and not feeding and not water and not tasks and not upcoming and not tiles %}
 <div class="empty">
@@ -11,177 +14,152 @@
   <p>{% trans "The pages your role opens are in the menu." %}</p>
 </div>
 {% else %}
-<div class="tw:grid tw:gap-6 tw:items-start tw:xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-  <div class="tw:grid tw:gap-6 tw:min-w-0">
+<div class="tw:grid tw:gap-6">
 
-    {% if stock or feeding or water or tasks %}
-    <section class="tw:grid tw:gap-3 tw:min-w-0" aria-labelledby="today-title">
-      <h2 id="today-title" class="tw:m-0 tw:text-h2">{% trans "Today on the farm" %}</h2>
-      <dl class="ui-sheet tw:m-0 tw:divide-y tw:divide-hair">
-        {% if stock %}
-        <div class="tw:grid tw:gap-x-4 tw:gap-y-1 tw:p-4 tw:sm:grid-cols-[8rem_minmax(0,1fr)_auto] tw:sm:items-start">
-          <dt class="tw:font-semibold tw:text-ink-2">{% trans "Stock" %}</dt>
-          <dd class="tw:m-0 tw:min-w-0">
-            <p class="tw:m-0 tw:text-figure tw:font-semibold">{% blocktrans trimmed with fish=stock.fish.count biomass=stock.biomass.count %}{{ fish }} fish, {{ biomass }}{% endblocktrans %}</p>
-            <p class="tw:m-0">{% blocktrans trimmed count total=stock.stocked.of with stocked=stock.stocked.count %}in {{ stocked }} of {{ total }} unit{% plural %}in {{ stocked }} of {{ total }} units{% endblocktrans %}</p>
-            <p class="tw:m-0 tw:mt-1 tw:text-small tw:text-ink-3">{% blocktrans trimmed %}From the stock records at {{ clock }}{% endblocktrans %}</p>
-          </dd>
-          <dd class="tw:m-0"><a class="tw:inline-flex tw:items-center tw:min-h-10 tw:coarse:min-h-12 tw:font-semibold" href="{{ stock.fish.url }}">{% trans "Production units" %}</a></dd>
-        </div>
-        {% endif %}
-        {% if feeding %}
-        <div class="tw:grid tw:gap-x-4 tw:gap-y-1 tw:p-4 tw:sm:grid-cols-[8rem_minmax(0,1fr)_auto] tw:sm:items-start">
-          <dt class="tw:font-semibold tw:text-ink-2">{% trans "Feed" %}</dt>
-          <dd class="tw:m-0 tw:min-w-0">
-            <p class="tw:m-0 tw:text-figure tw:font-semibold">{% blocktrans trimmed with amount=feeding.today.count %}{{ amount }} today{% endblocktrans %}</p>
-            <p class="tw:m-0">{% blocktrans trimmed with amount=feeding.week.count %}{{ amount }} over the last 7 days{% endblocktrans %}</p>
-            <p class="tw:m-0 tw:mt-1 tw:text-small tw:text-ink-3">{% blocktrans trimmed %}From the feeding records at {{ clock }}{% endblocktrans %}</p>
-          </dd>
-          <dd class="tw:m-0">{% if meal_board_url %}<a class="tw:inline-flex tw:items-center tw:min-h-10 tw:coarse:min-h-12 tw:font-semibold" href="{{ meal_board_url }}">{% trans "Meal board" %}</a>{% endif %}</dd>
-        </div>
-        {% endif %}
-        {% if water %}
-        <div class="tw:grid tw:gap-x-4 tw:gap-y-1 tw:p-4 tw:sm:grid-cols-[8rem_minmax(0,1fr)_auto] tw:sm:items-start">
-          <dt class="tw:font-semibold tw:text-ink-2">{% trans "Water" %}</dt>
-          <dd class="tw:m-0 tw:min-w-0">
-            <p class="tw:m-0 tw:flex tw:flex-wrap tw:items-center tw:gap-2 tw:min-h-7">
-              {% if water.critical %}<span class="ui-chip" data-status="critical">{% include "icons/_icon.html" with name="octagon" %}{% blocktrans trimmed count count=water.critical %}{{ count }} critical{% plural %}{{ count }} critical{% endblocktrans %}</span>{% endif %}
-              {% if water.warning %}<span class="ui-chip" data-status="warning">{% include "icons/_icon.html" with name="alert" %}{% blocktrans trimmed count count=water.warning %}{{ count }} warning{% plural %}{{ count }} warnings{% endblocktrans %}</span>{% endif %}
-              {% if not water.critical and not water.warning %}<span class="tw:text-figure tw:font-semibold">{% trans "No critical value or warning" %}</span>{% endif %}
-            </p>
-            <p class="tw:m-0">{% blocktrans trimmed count count=water.points %}{{ count }} sampling point{% plural %}{{ count }} sampling points{% endblocktrans %}</p>
-            <p class="tw:m-0 tw:mt-1 tw:text-small tw:text-ink-3">{% blocktrans trimmed %}From the latest samples and sensors at {{ clock }}{% endblocktrans %}</p>
-          </dd>
-          <dd class="tw:m-0"><a class="tw:inline-flex tw:items-center tw:min-h-10 tw:coarse:min-h-12 tw:font-semibold" href="{{ water.url }}">{% trans "Water chemistry" %}</a></dd>
-        </div>
-        {% endif %}
-        {% if tasks %}
-        <div class="tw:grid tw:gap-x-4 tw:gap-y-1 tw:p-4 tw:sm:grid-cols-[8rem_minmax(0,1fr)_auto] tw:sm:items-start">
-          <dt class="tw:font-semibold tw:text-ink-2">{% trans "Tasks" %}</dt>
-          <dd class="tw:m-0 tw:min-w-0">
-            <p class="tw:m-0 tw:flex tw:flex-wrap tw:items-center tw:gap-2">
-              <span class="tw:text-figure tw:font-semibold">{% blocktrans trimmed with count=tasks.due_today.count %}{{ count }} due today{% endblocktrans %}</span>
-              {% if late_tasks %}<span class="ui-chip" data-status="warning">{% include "icons/_icon.html" with name="clock" %}{% blocktrans trimmed count count=late_tasks %}{{ count }} overdue{% plural %}{{ count }} overdue{% endblocktrans %}</span>{% endif %}
-            </p>
-            <p class="tw:m-0 tw:mt-1 tw:text-small tw:text-ink-3">{% blocktrans trimmed %}From the tasks at {{ clock }}{% endblocktrans %}</p>
-          </dd>
-          <dd class="tw:m-0"><a class="tw:inline-flex tw:items-center tw:min-h-10 tw:coarse:min-h-12 tw:font-semibold" href="{{ tasks.due_today.url }}">{% trans "Tasks" %}</a></dd>
-        </div>
-        {% endif %}
-      </dl>
-    </section>
-    {% endif %}
+  {% if stock or feeding or water or tasks or upcoming %}
+  <section class="tw:grid tw:min-w-0" aria-labelledby="today-title">
+    <h2 id="today-title" class="sr-only">{% trans "Today on the farm" %}</h2>
+    <div class="ui-sheet tw:overflow-hidden"><div class="tw:grid tw:grid-cols-2 tw:min-[48rem]:grid-cols-5 tw:-mr-px tw:-mb-px">
+      {% if stock %}
+      {% blocktrans trimmed asvar source %}Stock records at {{ clock }}{% endblocktrans %}
+      {% blocktrans trimmed count total=stock.stocked.of asvar of_units %}of {{ total }} unit{% plural %}of {{ total }} units{% endblocktrans %}
+      {% include "_metric_card.html" with key="stock-fish" url=stock.fish.url label=stock.fish.label figure=stock.fish.count source=source only %}
+      {% include "_metric_card.html" with key="stock-biomass" url=stock.biomass.url label=stock.biomass.label figure=stock.biomass.count source=source only %}
+      {% include "_metric_card.html" with key="stock-stocked" url=stock.stocked.url label=stock.stocked.label figure=stock.stocked.count sub=of_units source=source only %}
+      {% endif %}
+      {% if feeding %}
+      {% blocktrans trimmed asvar source %}Feeding records at {{ clock }}{% endblocktrans %}
+      {% include "_metric_card.html" with key="feed-today" url=feeding.today.url label=feeding.today.label figure=feeding.today.count source=source only %}
+      {% include "_metric_card.html" with key="feed-week" url=feeding.week.url label=feeding.week.label figure=feeding.week.count source=source only %}
+      {% endif %}
+      {% if water %}
+      {% blocktrans trimmed asvar source %}Samples and sensors at {{ clock }}{% endblocktrans %}
+      {% blocktrans trimmed count total=water.points asvar of_points %}of {{ total }} sampling point{% plural %}of {{ total }} sampling points{% endblocktrans %}
+      {% trans "Critical water points" as critical_label %}{% trans "Water points with a warning" as warning_label %}
+      {% include "_metric_card.html" with key="water-critical" url=water.url label=critical_label figure=water.critical sub=of_points source=source status=water.critical|yesno:"critical," icon=water.critical|yesno:"octagon," only %}
+      {% include "_metric_card.html" with key="water-warning" url=water.url label=warning_label figure=water.warning sub=of_points source=source status=water.warning|yesno:"warning," icon=water.warning|yesno:"alert," only %}
+      {% endif %}
+      {% if tasks %}
+      {% blocktrans trimmed asvar source %}Tasks at {{ clock }}{% endblocktrans %}
+      {% include "_metric_card.html" with key="tasks-due_today" url=tasks.due_today.url label=tasks.due_today.label figure=tasks.due_today.count source=source only %}
+      {% include "_metric_card.html" with key="tasks-overdue" url=tasks.overdue.url label=tasks.overdue.label figure=tasks.overdue.count source=source status=late_tasks|yesno:"warning," icon=late_tasks|yesno:"clock," only %}
+      {% endif %}
+      {% if upcoming %}
+      {% blocktrans trimmed asvar source %}Reports at {{ clock }}{% endblocktrans %}
+      {% trans "Reports due" as reports_label %}{% trans "None overdue" as none_late %}
+      {% blocktrans trimmed count count=late_reports asvar late %}{{ count }} overdue{% plural %}{{ count }} overdue{% endblocktrans %}
+      {% if late_reports %}{% include "_metric_card.html" with key="reports-due" url=upcoming.url label=reports_label figure=upcoming.count chip=late source=source only %}{% else %}{% include "_metric_card.html" with key="reports-due" url=upcoming.url label=reports_label figure=upcoming.count sub=none_late source=source only %}{% endif %}
+      {% endif %}
+    </div></div>
+  </section>
+  {% endif %}
 
+  <div class="tw:grid tw:gap-6 tw:items-start tw:lg:grid-cols-[minmax(0,1fr)_20rem] tw:xl:grid-cols-[minmax(0,1fr)_24rem]">
     {% if water or tasks or upcoming %}
-    <section class="tw:grid tw:gap-3 tw:min-w-0" aria-labelledby="attention-title">
+    <section class="tw:grid tw:gap-x-4 tw:gap-y-2 tw:min-w-0 tw:items-baseline tw:sm:grid-cols-[auto_minmax(0,1fr)]" aria-labelledby="attention-title">
       <h2 id="attention-title" class="tw:m-0 tw:text-h2">{% trans "Needs attention" %}</h2>
-      {% if water %}<p class="ui-safety tw:m-0">{% include "icons/_icon.html" with name="alert" %}{% trans "Nobody is alerted: critical values are shown here, not sent." %}</p>{% endif %}
-      {% if water.sensors_failed %}<p class="notice notice-warning tw:m-0" role="status">{% trans "The live sensor values could not be read: the values below come from the water samples only." %}</p>{% endif %}
+      {% if water %}<p class="ui-safety tw:m-0 tw:sm:justify-self-end">{% include "icons/_icon.html" with name="alert" %}{% trans "Nobody is alerted: critical values are shown here, not sent." %}</p>{% else %}<span></span>{% endif %}
+      {% if water.sensors_failed %}<p class="notice notice-warning tw:m-0 tw:sm:col-span-2" role="status">{% trans "The live sensor values could not be read: the values below come from the water samples only." %}</p>{% endif %}
       {% if water.alerts or late_tasks or upcoming.late or upcoming.late_duties %}
-      <ul class="ui-sheet tw:m-0 tw:p-0 tw:list-none tw:divide-y tw:divide-hair tw:overflow-hidden" role="list">
+      <ul class="ui-sheet tw:m-0 tw:p-0 tw:list-none tw:divide-y tw:divide-hair tw:overflow-hidden tw:sm:col-span-2" role="list">
         {% for row in water.alerts %}{% with point=row.point owner=row.owner status=row.water.point_status %}
-        <li class="tw:grid tw:gap-x-4 tw:gap-y-2 tw:py-3 tw:pr-4 tw:pl-3 tw:border-l-4 tw:sm:grid-cols-[minmax(0,1fr)_auto] tw:sm:items-center {% if status == "critical" %}tw:border-l-crit{% else %}tw:border-l-warn{% endif %}">
-          <div class="tw:grid tw:gap-2 tw:min-w-0">
-            <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-x-3 tw:gap-y-1">
-              {% include "farm/_water_chip.html" with status=status old=row.water.old_alert %}
-              <span class="tw:font-semibold">{{ owner.code }}</span>
-              <span class="tw:text-small tw:text-ink-3">{% if row.loop %}{{ point.name }}, {{ owner.site.name }}{% else %}{{ point.name }}, {{ owner.production_department.name }}{% if owner.production_department.site %}, {{ owner.production_department.site.name }}{% endif %}{% endif %}</span>
-            </div>
-            <div class="tw:flex tw:flex-wrap tw:gap-x-6 tw:gap-y-2">
-              {% for reading, judged, old in row.water.alerts %}
-              <span class="ui-value" data-status="{{ judged }}"><span class="tw:text-small tw:text-ink-2">{{ reading.parameter.short }}</span><span class="ui-value-figure tw:items-start">{% if judged == "critical" %}{% include "icons/_icon.html" with name="octagon" %}{% else %}{% include "icons/_icon.html" with name="alert" %}{% endif %}{% include "farm/_water_value.html" with tag="b" latest=True source=True %}</span></span>
-              {% endfor %}
-            </div>
+        <li class="tw:grid tw:gap-x-4 tw:gap-y-2 tw:py-2 tw:pr-3 tw:pl-4 tw:grid-cols-[minmax(0,1fr)_auto] tw:items-center tw:xl:grid-cols-[minmax(0,19rem)_minmax(0,1fr)_auto] {% if status == "critical" %}tw:[box-shadow:var(--edge-crit)]{% else %}tw:[box-shadow:var(--edge-warn)]{% endif %}" data-attention="water">
+          <div class="tw:grid tw:gap-1 tw:min-w-0 tw:col-start-1">
+            <span class="tw:flex tw:flex-wrap tw:items-center tw:gap-x-2 tw:gap-y-1">{% include "farm/_water_chip.html" with status=status old=row.water.old_alert %}<b>{{ owner.code }}</b></span>
+            <span class="tw:text-small tw:text-ink-2">{% if row.loop %}{{ point.name }}, {{ owner.site.name }}{% else %}{{ point.name }}, {{ owner.production_department.name }}{% if owner.production_department.site %}, {{ owner.production_department.site.name }}{% endif %}{% endif %}</span>
           </div>
-          <a class="ui-btn tw:justify-self-start tw:coarse:min-h-12" href="{{ row.history_url }}">{% trans "History" %}</a>
+          <div class="tw:flex tw:flex-wrap tw:gap-x-6 tw:gap-y-1 tw:min-w-0 tw:col-start-1 tw:xl:col-start-2 tw:xl:row-start-1 tw:[&_.ui-value]:flex-wrap tw:[&_b]:whitespace-normal tw:[&_b_.wq-source]:inline tw:[&_b_.wq-source]:ml-2">
+            {% for reading, judged, old in row.water.alerts %}
+            <span class="ui-value tw:flex-row tw:items-baseline tw:gap-2" data-status="{{ judged }}"><span class="tw:text-small tw:text-ink-2 tw:whitespace-nowrap">{{ reading.parameter.short }}</span><span class="ui-value-figure tw:items-start">{% if judged == "critical" %}{% include "icons/_icon.html" with name="octagon" %}{% else %}{% include "icons/_icon.html" with name="alert" %}{% endif %}{% include "farm/_water_value.html" with tag="b" latest=True source=True %}</span></span>
+            {% endfor %}
+          </div>
+          <a class="ui-btn tw:min-h-8 tw:px-3 tw:text-small tw:col-start-2 tw:row-start-1 tw:row-span-2 tw:self-center tw:justify-self-end tw:xl:col-start-3 tw:xl:row-span-1 tw:coarse:min-h-12" href="{{ row.history_url }}">{% trans "History" %}</a>
         </li>
         {% endwith %}{% endfor %}
         {% if water.more %}
-        <li class="tw:py-3 tw:px-4"><a class="tw:inline-flex tw:items-center tw:min-h-10 tw:coarse:min-h-12 tw:font-semibold" href="{{ water.url }}">{% blocktrans trimmed count count=water.more %}{{ count }} more sampling point on Water chemistry{% plural %}{{ count }} more sampling points on Water chemistry{% endblocktrans %}</a></li>
+        <li class="tw:px-4"><a class="tw:inline-flex tw:items-center tw:min-h-10 tw:coarse:min-h-12 tw:text-small tw:font-semibold" href="{{ water.url }}">{% blocktrans trimmed count count=water.more %}{{ count }} more sampling point on Water chemistry{% plural %}{{ count }} more sampling points on Water chemistry{% endblocktrans %}</a></li>
         {% endif %}
         {% if late_tasks %}
-        <li class="tw:grid tw:gap-x-4 tw:gap-y-2 tw:py-3 tw:pr-4 tw:pl-3 tw:border-l-4 tw:border-l-warn tw:sm:grid-cols-[minmax(0,1fr)_auto] tw:sm:items-center">
-          <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-x-3 tw:gap-y-1 tw:min-w-0">
-            <span class="ui-chip" data-status="warning">{% include "icons/_icon.html" with name="clock" %}{% trans "Overdue" %}</span>
-            <span class="tw:font-semibold">{% blocktrans trimmed count count=late_tasks %}{{ count }} task is overdue{% plural %}{{ count }} tasks are overdue{% endblocktrans %}</span>
-          </div>
-          <a class="ui-btn tw:justify-self-start tw:coarse:min-h-12" href="{{ tasks.overdue.url }}">{% trans "Tasks" %}</a>
+        <li class="tw:grid tw:gap-x-4 tw:gap-y-2 tw:py-2 tw:pr-3 tw:pl-4 tw:[box-shadow:var(--edge-warn)] tw:grid-cols-[minmax(0,1fr)_auto] tw:items-center tw:xl:grid-cols-[minmax(0,19rem)_minmax(0,1fr)_auto]" data-attention="tasks">
+          <span class="tw:flex tw:col-start-1"><span class="ui-chip" data-status="warning">{% include "icons/_icon.html" with name="clock" %}{% trans "Overdue" %}</span></span>
+          <span class="tw:font-semibold tw:min-w-0 tw:col-start-1 tw:xl:col-start-2 tw:xl:row-start-1">{% blocktrans trimmed count count=late_tasks %}{{ count }} task is overdue{% plural %}{{ count }} tasks are overdue{% endblocktrans %}</span>
+          <a class="ui-btn tw:min-h-8 tw:px-3 tw:text-small tw:col-start-2 tw:row-start-1 tw:row-span-2 tw:self-center tw:justify-self-end tw:xl:col-start-3 tw:xl:row-span-1 tw:coarse:min-h-12" href="{{ tasks.overdue.url }}">{% trans "Tasks" %}</a>
         </li>
         {% endif %}
         {% for row in upcoming.late %}
-        <li class="tw:grid tw:gap-x-4 tw:gap-y-2 tw:py-3 tw:pr-4 tw:pl-3 tw:border-l-4 tw:border-l-warn tw:sm:grid-cols-[minmax(0,1fr)_auto] tw:sm:items-center">
-          <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-x-3 tw:gap-y-1 tw:min-w-0">
-            <span class="ui-chip" data-status="warning">{% include "icons/_icon.html" with name="clock" %}{% trans "Overdue" %}</span>
-            <span class="tw:font-semibold">{{ row.kind.label }}, {{ row.place }}{% if row.period %}, {{ row.period.label }}{% endif %}</span>
-            <span class="tw:text-small tw:text-ink-3">{% blocktrans trimmed with date=row.deadline|date:"DATE_FORMAT" %}Due {{ date }}{% endblocktrans %}</span>
-          </div>
-          <a class="ui-btn tw:justify-self-start tw:coarse:min-h-12" href="{{ upcoming.url }}">{% trans "Regulatory reports" %}</a>
+        <li class="tw:grid tw:gap-x-4 tw:gap-y-2 tw:py-2 tw:pr-3 tw:pl-4 tw:[box-shadow:var(--edge-warn)] tw:grid-cols-[minmax(0,1fr)_auto] tw:items-center tw:xl:grid-cols-[minmax(0,19rem)_minmax(0,1fr)_auto]" data-attention="report">
+          <span class="tw:flex tw:col-start-1"><span class="ui-chip" data-status="warning">{% include "icons/_icon.html" with name="clock" %}{% trans "Overdue" %}</span></span>
+          <span class="tw:min-w-0 tw:col-start-1 tw:xl:col-start-2 tw:xl:row-start-1"><span class="tw:font-semibold">{{ row.kind.label }}, {{ row.place }}{% if row.period %}, {{ row.period.label }}{% endif %}</span> <span class="tw:text-small tw:text-ink-2 tw:whitespace-nowrap">{% blocktrans trimmed with date=row.deadline|date:"DATE_FORMAT" %}Due {{ date }}{% endblocktrans %}</span></span>
+          <a class="ui-btn tw:min-h-8 tw:px-3 tw:text-small tw:col-start-2 tw:row-start-1 tw:row-span-2 tw:self-center tw:justify-self-end tw:xl:col-start-3 tw:xl:row-span-1 tw:coarse:min-h-12" href="{{ upcoming.url }}">{% trans "Regulatory reports" %}</a>
         </li>
         {% endfor %}
         {% for line in upcoming.late_duties %}
-        <li class="tw:grid tw:gap-x-4 tw:gap-y-2 tw:py-3 tw:pr-4 tw:pl-3 tw:border-l-4 tw:border-l-warn tw:sm:grid-cols-[minmax(0,1fr)_auto] tw:sm:items-center">
-          <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-x-3 tw:gap-y-1 tw:min-w-0">
-            <span class="ui-chip" data-status="warning">{% include "icons/_icon.html" with name="clock" %}{% trans "Overdue" %}</span>
-            <span class="tw:font-semibold">{{ line.duty.title }}, {{ line.site.name }}, {{ line.year }}</span>
-            <span class="tw:text-small tw:text-ink-3">{% blocktrans trimmed with date=line.deadline|date:"DATE_FORMAT" %}Due {{ date }}{% endblocktrans %}</span>
-          </div>
-          <a class="ui-btn tw:justify-self-start tw:coarse:min-h-12" href="{{ upcoming.duties_url }}">{% trans "Outside this system" %}</a>
+        <li class="tw:grid tw:gap-x-4 tw:gap-y-2 tw:py-2 tw:pr-3 tw:pl-4 tw:[box-shadow:var(--edge-warn)] tw:grid-cols-[minmax(0,1fr)_auto] tw:items-center tw:xl:grid-cols-[minmax(0,19rem)_minmax(0,1fr)_auto]" data-attention="duty">
+          <span class="tw:flex tw:col-start-1"><span class="ui-chip" data-status="warning">{% include "icons/_icon.html" with name="clock" %}{% trans "Overdue" %}</span></span>
+          <span class="tw:min-w-0 tw:col-start-1 tw:xl:col-start-2 tw:xl:row-start-1"><span class="tw:font-semibold">{{ line.duty.title }}, {{ line.site.name }}, {{ line.year }}</span> <span class="tw:text-small tw:text-ink-2 tw:whitespace-nowrap">{% blocktrans trimmed with date=line.deadline|date:"DATE_FORMAT" %}Due {{ date }}{% endblocktrans %}</span></span>
+          <a class="ui-btn tw:min-h-8 tw:px-3 tw:text-small tw:col-start-2 tw:row-start-1 tw:row-span-2 tw:self-center tw:justify-self-end tw:xl:col-start-3 tw:xl:row-span-1 tw:coarse:min-h-12" href="{{ upcoming.duties_url }}">{% trans "Outside this system" %}</a>
         </li>
         {% endfor %}
       </ul>
       {% else %}
-      <p class="ui-sheet tw:m-0 tw:flex tw:flex-wrap tw:items-center tw:gap-x-3 tw:gap-y-1 tw:p-4">
+      <p class="ui-sheet tw:m-0 tw:flex tw:flex-wrap tw:items-center tw:gap-x-3 tw:gap-y-1 tw:px-4 tw:py-3 tw:sm:col-span-2">
         <span class="ui-chip" data-status="ok">{% include "icons/_icon.html" with name="check-circle" %}<span>{% trans "Nothing needs attention" %}</span></span>
         <span class="tw:text-small tw:text-ink-3">{% blocktrans trimmed %}Checked at {{ clock }}.{% endblocktrans %}</span>
       </p>
       {% endif %}
     </section>
     {% endif %}
-  </div>
 
-  {% if upcoming or tiles %}
-  <div class="tw:grid tw:gap-6 tw:min-w-0 tw:lg:grid-cols-2 tw:xl:grid-cols-1">
-    {% if upcoming %}
-    <section class="tw:grid tw:gap-3 tw:min-w-0 tw:content-start" aria-labelledby="reports-title">
-      <h2 id="reports-title" class="tw:m-0 tw:text-h2">{% trans "Reports due" %}</h2>
-      <div class="ui-sheet tw:p-4 tw:grid tw:gap-3">
-        {% if upcoming.due or upcoming.due_duties %}
-        <ul class="tw:m-0 tw:p-0 tw:list-none tw:grid tw:gap-3" role="list">
-          {% for row in upcoming.due %}
-          <li class="tw:grid tw:gap-0.5"><span class="tw:font-semibold">{{ row.kind.label }}, {{ row.place }}{% if row.period %}, {{ row.period.label }}{% endif %}</span><span class="tw:text-small tw:text-ink-2">{% if row.deadline %}{% blocktrans trimmed with date=row.deadline|date:"DATE_FORMAT" %}Due {{ date }}{% endblocktrans %}{% else %}{% trans "Due at once" %}{% endif %}</span></li>
-          {% endfor %}
-          {% for line in upcoming.due_duties %}
-          <li class="tw:grid tw:gap-0.5"><span class="tw:font-semibold">{{ line.duty.title }}, {{ line.site.name }}, {{ line.year }}</span><span class="tw:text-small tw:text-ink-2">{% blocktrans trimmed with date=line.deadline|date:"DATE_FORMAT" %}Due {{ date }}{% endblocktrans %}, <a href="{{ upcoming.duties_url }}">{% trans "Outside this system" %}</a></span></li>
-          {% endfor %}
-        </ul>
-        {% else %}
-        <p class="tw:m-0">{% trans "No report is due." %}</p>
-        {% endif %}
-        <a class="tw:inline-flex tw:items-center tw:min-h-10 tw:coarse:min-h-12 tw:font-semibold tw:justify-self-start" href="{{ upcoming.url }}">{% if upcoming.more %}{% blocktrans trimmed with count=upcoming.more %}and {{ count }} more: all reports{% endblocktrans %}{% else %}{% trans "All reports" %}{% endif %}</a>
-      </div>
-    </section>
-    {% endif %}
-
-    {% if tiles %}
-    <section class="tw:grid tw:gap-3 tw:min-w-0 tw:content-start" aria-labelledby="farm-title">
-      <h2 id="farm-title" class="tw:m-0 tw:text-h2">{% trans "The farm" %}</h2>
-      <div class="ui-sheet">
-        <dl class="tw:m-0 tw:divide-y tw:divide-hair">
-          {% for tile in tiles %}
-          <div class="tw:grid tw:grid-cols-[minmax(0,1fr)_auto] tw:gap-x-4 tw:gap-y-1 tw:px-4 tw:py-2 tw:items-baseline">
-            <dt><a class="tw:inline-flex tw:items-center tw:min-h-10 tw:coarse:min-h-12" href="{{ tile.url }}">{{ tile.label }}</a></dt>
-            <dd class="tw:m-0 tw:text-figure tw:font-semibold tw:text-right">{{ tile.count }}</dd>
-            {% if tile.url == systems_url and systems_by_status %}<dd class="tw:m-0 tw:col-span-2 tw:pb-1 tw:text-small tw:text-ink-2 tw:flex tw:flex-wrap tw:gap-x-4">{% for item in systems_by_status %}{% if item.count %}<span class="tw:whitespace-nowrap">{% blocktrans trimmed with label=item.label count=item.count %}{{ label }} {{ count }}{% endblocktrans %}</span>{% endif %}{% endfor %}</dd>{% endif %}
-            {% if tile.url == units_url and units_by_kind %}<dd class="tw:m-0 tw:col-span-2 tw:pb-1 tw:text-small tw:flex tw:flex-wrap tw:gap-x-4">{% for item in units_by_kind %}{% if item.count %}<a class="tw:inline-flex tw:items-center tw:min-h-8 tw:coarse:min-h-12" href="{{ item.url }}">{% blocktrans trimmed with label=item.label count=item.count %}{{ label }} {{ count }}{% endblocktrans %}</a>{% endif %}{% endfor %}</dd>{% endif %}
+    {% if tiles or upcoming %}
+    <div class="tw:grid tw:gap-6 tw:min-w-0 {% if not water and not tasks and not upcoming %}tw:lg:col-span-2{% endif %}">
+      {% if tiles %}
+      <section class="tw:grid tw:gap-2 tw:min-w-0 tw:content-start" aria-labelledby="farm-title">
+        <h2 id="farm-title" class="tw:m-0 tw:text-h2">{% trans "The farm" %}</h2>
+        {% blocktrans trimmed asvar source %}Setup at {{ clock }}{% endblocktrans %}
+        <div class="ui-sheet tw:overflow-hidden"><div class="tw:grid tw:-mr-px tw:-mb-px">
+          <div class="tw:grid tw:grid-cols-2">
+            {% for tile in tiles %}{% include "_metric_card.html" with key="farm-"|add:tile.key url=tile.url label=tile.label figure=tile.count source=source only %}{% endfor %}
           </div>
-          {% endfor %}
-        </dl>
-        <p class="tw:m-0 tw:px-4 tw:py-3 tw:border-t tw:border-hair tw:text-small tw:text-ink-3">{% blocktrans trimmed %}Counted from Setup at {{ clock }}{% endblocktrans %}</p>
-      </div>
-    </section>
+          {% if systems_by_status %}
+          <h3 class="tw:m-0 tw:px-3 tw:pt-2 tw:pb-1 tw:border-r tw:border-b tw:border-hair tw:bg-sunken tw:text-small tw:font-semibold tw:text-ink-2">{% trans "Systems by status" %}</h3>
+          <div class="tw:grid tw:grid-cols-2">
+              {% for item in systems_by_status %}{% include "_metric_card.html" with key="system-"|add:item.value url=item.url label=item.label figure=item.count small=True only %}{% endfor %}
+          </div>
+          {% endif %}
+          {% if units_by_kind %}
+          <h3 class="tw:m-0 tw:px-3 tw:pt-2 tw:pb-1 tw:border-r tw:border-b tw:border-hair tw:bg-sunken tw:text-small tw:font-semibold tw:text-ink-2">{% trans "Units by kind" %}</h3>
+          <div class="tw:grid tw:grid-cols-3">
+              {% for item in units_by_kind %}{% include "_metric_card.html" with key="kind-"|add:item.value url=item.url label=item.label figure=item.count small=True only %}{% endfor %}
+          </div>
+          {% endif %}
+          <p class="tw:m-0 tw:px-4 tw:py-2 tw:border-r tw:border-b tw:border-hair tw:text-caption tw:text-ink-3" data-source>{{ source }}</p>
+        </div></div>
+      </section>
+      {% endif %}
+
+      {% if upcoming %}
+      <section class="tw:grid tw:gap-2 tw:min-w-0 tw:content-start" aria-labelledby="reports-title">
+        <h2 id="reports-title" class="tw:m-0 tw:text-h2">{% trans "Reports due" %}</h2>
+        <div class="ui-sheet tw:overflow-hidden">
+          {% if upcoming.due or upcoming.due_duties %}
+          <ul class="tw:m-0 tw:p-0 tw:list-none tw:divide-y tw:divide-hair" role="list">
+            {% for row in upcoming.due %}
+            <li class="tw:grid tw:px-4 tw:py-2"><span class="tw:text-small tw:font-semibold">{{ row.kind.label }}, {{ row.place }}{% if row.period %}, {{ row.period.label }}{% endif %}</span><span class="tw:text-small tw:text-ink-2">{% if row.deadline %}{% blocktrans trimmed with date=row.deadline|date:"DATE_FORMAT" %}Due {{ date }}{% endblocktrans %}{% else %}{% trans "Due at once" %}{% endif %}</span></li>
+            {% endfor %}
+            {% for line in upcoming.due_duties %}
+            <li class="tw:grid tw:px-4 tw:py-2"><span class="tw:text-small tw:font-semibold">{{ line.duty.title }}, {{ line.site.name }}, {{ line.year }}</span><span class="tw:text-small tw:text-ink-2">{% blocktrans trimmed with date=line.deadline|date:"DATE_FORMAT" %}Due {{ date }}{% endblocktrans %}, <a href="{{ upcoming.duties_url }}">{% trans "Outside this system" %}</a></span></li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="tw:m-0 tw:px-4 tw:py-3">{% trans "No report is due." %}</p>
+          {% endif %}
+          <a class="tw:flex tw:items-center tw:min-h-10 tw:coarse:min-h-12 tw:px-4 tw:border-t tw:border-hair tw:text-small tw:font-semibold" href="{{ upcoming.url }}">{% if upcoming.more %}{% blocktrans trimmed with count=upcoming.more %}and {{ count }} more: all reports{% endblocktrans %}{% else %}{% trans "All reports" %}{% endif %}</a>
+        </div>
+      </section>
+      {% endif %}
+    </div>
     {% endif %}
   </div>
-  {% endif %}
 </div>
 {% endif %}
 {% endwith %}

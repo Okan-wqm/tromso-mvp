@@ -62,10 +62,10 @@
   {% endif %}
 </div>
 
-<p class="ui-safety">{% include "icons/_icon.html" with name="alert" %}{% trans "Nobody is alerted: critical values are shown here, not sent." %}</p>
+<p class="ui-safety">{% include "icons/_icon.html" with name="alert" %}{% trans "A warning or a critical value raises an alarm (Company › Alarms); nothing is sent until the push transport is connected." %}</p>
 <details class="ui-explain">
   <summary>{% trans "How values are judged" %}</summary>
-  <p class="panel-help">{% blocktrans trimmed %}Each value is judged on read against the water limits as they are now, for the fish in the unit that day; a sample of a loop for every unit of the loop. A unit without fish shows its values with no limit. Each value says which sampling point it was taken at; the water of a unit is that of its middle point. Nobody is alerted: critical values are shown here, not sent.{% endblocktrans %}</p>
+  <p class="panel-help">{% blocktrans trimmed %}Each value is judged on read against the water limits as they are now, for the fish in the unit that day; a sample of a loop for every unit of the loop. A unit without fish shows its values with no limit. Each value says which sampling point it was taken at; the water of a unit is that of its middle point.{% endblocktrans %}</p>
 </details>
 
 {% if showing_history %}

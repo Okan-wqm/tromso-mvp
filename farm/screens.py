@@ -13,7 +13,7 @@ from .models.water import BASIS_COLUMNS
 from .harvest import views as harvest
 from .health import views as health
 from .resources.feeding_protocol import FeedingProtocolResource
-from .stock import views as stock
+from .stock import opening, views as stock
 from .water import views as water
 
 TOKEN = "the form's one-time token: the same form sent twice records once"
@@ -64,7 +64,7 @@ SCREENS = {
 
     # --- the stock: one write path (farm/stock/services.py), shown on Production units ---
     'Batch': Screen(
-        create=(stock.stock_input,),
+        create=(stock.stock_input, opening.opening_balance_create),
         edit=(stock.batch_details,),
         delete=(stock.void_operation,),
         read=(stock.production_units, harvest.harvests),
@@ -74,8 +74,12 @@ SCREENS = {
                       'over_capacity_ack': "the person's acknowledgement of a unit over capacity: stored on the "
                                            'stocking operation',
                       'size_mix_ack': "the person's acknowledgement of batches of very different sizes in a unit: "
-                                      'stored on the stocking operation'},
+                                      'stored on the stocking operation',
+                      'day': "an opening balance's takeover day: the date of its stocking operation",
+                      'document': "an opening balance's source document: stored on its OpeningBalance"},
     ),
+    'WaterFreshness': Screen(create=no('migration 0037 makes one row per water parameter'),
+                             delete=no('there is always one row per water parameter (a lost one is made again)')),
     'StockOperation': Screen(
         create=STOCK_WRITE,
         edit=no(LEDGER),
@@ -99,6 +103,9 @@ SCREENS = {
     ),
     'EscapeRecord': Screen(part_of='farm.StockOperation', create=('farm:stock_escape',),
                            read=(stock.production_units,), forms=(stock_forms.EscapeForm,)),
+    'OpeningBalance': Screen(part_of='farm.StockOperation', create=('farm:opening_balance_create',),
+                             read=(opening.opening_balances, stock.production_units),
+                             forms=(stock_forms.OpeningBalanceForm,)),
     'DeliveryRecord': Screen(part_of='farm.StockOperation', create=('farm:stock_delivery',),
                              read=(stock.production_units,), forms=(stock_forms.DeliveryForm,)),
     'HarvestRecord': Screen(part_of='farm.StockOperation', create=('farm:stock_harvest',),

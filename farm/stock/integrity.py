@@ -14,7 +14,8 @@ from farm.feeding import read as feeding_read
 from farm.feeding.fold import walk
 from farm.health import read as health_read
 from farm.models import (
-    Batch, DeliveryRecord, EscapeRecord, HandlingAcknowledgement, HandlingPlanItem, HarvestRecord, ProductionDepartment,
+    Batch, DeliveryRecord, EscapeRecord, HandlingAcknowledgement, HandlingPlanItem, HarvestRecord, OpeningBalance,
+    ProductionDepartment,
     Species, StockMovement, StockOperation, Tank,
 )
 from farm.models.handling import KIND_OF_OPERATION
@@ -31,7 +32,7 @@ ONE_LINE = {OperationKind.MORTALITY: MovementKind.MORTALITY, OperationKind.CULL:
             OperationKind.DELIVERY: MovementKind.DELIVERY}
 
 
-def _operation_problems(operation, lines, batches):
+def _operation_problems(operation, lines, batches, openings=frozenset()):
     name = f'{operation.get_kind_display()} {operation.pk} of {operation.date}'
     kinds = Counter(line.kind for line in lines)
     if not lines:
@@ -45,7 +46,13 @@ def _operation_problems(operation, lines, batches):
         if len({line.unit_id for line in lines}) != len(lines):
             problems.append(f'{name} stocks a unit twice.')
         batch = batches.get(lines[0].batch_id)
-        if batch is not None and batch.input_date != operation.date:
+        if batch is None:
+            pass
+        elif operation.pk in openings:
+            if batch.input_date > operation.date:
+                problems.append(f'{name} is an opening balance of {batch.code}, whose stocking date ({batch.input_date}) '
+                                f'is after its takeover day.')
+        elif batch.input_date != operation.date:
             problems.append(f'{name} is not on the stocking date of {batch.code} ({batch.input_date}).')
     elif operation.kind in ONE_LINE:
         if len(lines) != 1 or lines[0].kind != ONE_LINE[operation.kind]:
@@ -78,8 +85,12 @@ def problems():
     lines_of = defaultdict(list)
     for line in StockMovement.objects.filter(operation__is_deleted=False):
         lines_of[line.operation_id].append(line)
+    openings = set(OpeningBalance.objects.values_list('operation_id', flat=True))
     for operation in operations.values():
-        found += _operation_problems(operation, lines_of.get(operation.pk, []), batches)
+        found += _operation_problems(operation, lines_of.get(operation.pk, []), batches, openings)
+    for opening in OpeningBalance.objects.select_related('operation'):
+        if opening.operation.kind != OperationKind.INPUT:
+            found.append(f'Opening balance {opening.pk} belongs to a {opening.operation.kind}, not a stocking.')
 
     inputs = Counter()
     for operation in operations.values():

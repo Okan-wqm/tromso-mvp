@@ -141,7 +141,8 @@ CHANNEL_TABS = [
     ('source', gettext_lazy('Source'), ['device', 'code', 'name', 'value_path', 'item_name', 'note']),
     ('quantity', gettext_lazy('Quantity and unit'), ['quantity', 'unit', 'unit_factor', 'unit_offset']),
     ('address', gettext_lazy('Address'), ['address_protocol', 'address']),
-    ('reduction', gettext_lazy('Storing'), ['reduction', 'deadband', 'heartbeat_s', 'range_min', 'range_max', 'state']),
+    ('reduction', gettext_lazy('Storing'), ['reduction', 'deadband', 'heartbeat_s', 'fresh_heartbeats', 'range_min',
+                                            'range_max', 'state']),
 ]
 # The fields a new channel takes from its quantity when they are left empty.
 DEFAULTED = ('unit', 'reduction', 'deadband', 'heartbeat_s', 'range_min', 'range_max')
@@ -188,11 +189,13 @@ class ChannelForm(CodedFormMixin, TabbedForm):
             'deadband': gettext_lazy('A value is stored again when it moves this much from the last stored one, in the '
                                      'quantity’s unit. Empty: the quantity’s default.'),
             'heartbeat_s': gettext_lazy('A value is stored at least this often even when it does not move. Fresh for '
-                                        'three heartbeats. Empty: the quantity’s default.'),
+                                        'the heartbeats below. Empty: the quantity’s default.'),
             'range_min': gettext_lazy('A value outside the range is stored, marked, and used nowhere. Empty on a new '
                                       'channel: what the quantity can be.'),
             'state': gettext_lazy('In maintenance its values are stored, marked, and used nowhere; retired, they are '
                                   'not listened to.'),
+            'fresh_heartbeats': gettext_lazy('How many heartbeats a value stays fresh without a new one; then the place '
+                                             'shows no recent data. 1 to 20. Empty: as it is (3 for a new channel).'),
         }
         widgets = {
             'note': forms.Textarea(attrs={'rows': 2}),
@@ -208,6 +211,9 @@ class ChannelForm(CodedFormMixin, TabbedForm):
         for name in DEFAULTED:
             if adding:
                 self.fields[name].required = False
+        # Empty: as it is (a new channel: the platform's default, 3), so a form or a client that does not send it
+        # changes nothing (cross review F10 made it the channel's own).
+        self.fields['fresh_heartbeats'].required = False
         if adding and self.draft is not None and self.draft.get(DRAFT) == 'quantity' \
                 and self.draft.get('quantity') in quantities.BY_CODE:
             for name, value in quantities.defaults(self.draft['quantity']).items():
@@ -220,6 +226,12 @@ class ChannelForm(CodedFormMixin, TabbedForm):
                 and self.draft is not None and self.draft.get(DRAFT) == 'quantity':
             return self.initial[field_name]
         return super().get_initial_for_field(field, field_name)
+
+    def clean_fresh_heartbeats(self):
+        found = self.cleaned_data.get('fresh_heartbeats')
+        if found is None:
+            return self.instance.fresh_heartbeats if self.instance.fresh_heartbeats is not None else                 Channel._meta.get_field('fresh_heartbeats').default
+        return found
 
     def clean(self):
         cleaned = super().clean()
@@ -535,7 +547,7 @@ ALARM_TABS = [('general', gettext_lazy('Alarm rule'), ['channel', 'quantity', 'k
 
 
 class AlarmRuleForm(TabbedForm):
-    """An alarm rule: on one channel or on every channel of a quantity. Shown on the Sensors pages, never sent."""
+    """An alarm rule: on one channel or on every channel of a quantity. Its events are alarms (Company › Alarms)."""
 
     tabs = ALARM_TABS
 

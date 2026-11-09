@@ -4,7 +4,6 @@ the plan asked for still started when it did: restkontrollforskriften § 9a, "se
 from datetime import date, datetime, timezone as utc
 from decimal import Decimal
 
-from django.test import override_settings
 from django.urls import reverse
 
 from farm.models import HandlingPlanItem, HandlingRule, Supplier
@@ -21,7 +20,6 @@ from .test_due import TODAY, DueTestCase
 MONDAY = date(2026, 10, 26)            # week 44; Thursday of the week before: 22 October
 
 
-@override_settings(STOCK_BACKDATE_DAYS=3650)
 class OneDeadlineTests(DueTestCase):
     def setUp(self):
         super().setUp()

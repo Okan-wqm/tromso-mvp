@@ -144,7 +144,7 @@
         <li class="op-entry{% if operation.is_deleted %} is-voided{% endif %}">
           <div class="op-head">
             <time datetime="{{ operation.date|date:'Y-m-d' }}">{{ operation.date|date:"DATE_FORMAT" }}</time>
-            <strong>{{ operation.get_kind_display }}</strong>
+            <strong>{{ operation.kind_label }}</strong>
             {% if operation.is_deleted %}<span class="badge badge-voided">{% trans "Voided" %}</span>{% endif %}
             {% if item.void_url %}<a class="op-void" href="{{ item.void_url }}" data-modal>{% trans "Void" %}</a>{% endif %}
           </div>
@@ -154,6 +154,7 @@
             {% endfor %}
           </ul>
           {% if item.escape %}<p class="op-meta">{% if item.escape.suspected %}{% trans "Suspected escape" %} · {% endif %}{{ item.escape.cause }}{% if item.escape.found_time %} · {% blocktrans trimmed with time=item.escape.found_time|time:"TIME_FORMAT" %}found {{ time }}{% endblocktrans %}{% endif %}{% if item.escape.health_status %} · {{ item.escape.health_status }}{% endif %}{% if item.escape.recaptured is not None %} · {% blocktrans trimmed with fish=item.escape.recaptured|fish %}{{ fish }} recaptured{% endblocktrans %}{% endif %}</p>{% endif %}
+          {% if item.opening %}<p class="op-meta">{% blocktrans trimmed with date=item.lines.0.batch.input_date|date:"DATE_FORMAT" %}Taken over: stocked on {{ date }}{% endblocktrans %} · {{ item.opening.document }}</p>{% endif %}
           {% if item.delivery %}<p class="op-meta">{% blocktrans trimmed with destination=item.delivery.destination %}To {{ destination }}{% endblocktrans %}{% if item.delivery.destination_site_number %} · {{ item.delivery.destination_site_number }}{% endif %}</p>{% endif %}
           {% if item.record %}<p class="op-meta">{% blocktrans trimmed with facility=item.record.facility %}To {{ facility }}{% endblocktrans %}{% if item.record.transport %} · {{ item.record.transport.name }}{% endif %}{% if item.record.vessel %} · {{ item.record.vessel }}{% endif %}</p>{% endif %}
           {% if operation.acknowledgements.all %}<p class="op-meta"><span class="badge badge-critical">{% trans "Handling warning acknowledged" %}</span></p>{% endif %}

@@ -57,6 +57,20 @@ def unit_number(unit):
     return unit.regulatory_unit_id or unit.code
 
 
+def taken_over(lines, units, batches, warnings):
+    """The warning of every opening balance among a period's lines (farm/stock/services.py record_opening_balance): fish
+    the farm already had when it started using the platform are stock, never fish stocked, and the report says where they
+    came into the book. `units` and `batches` by id."""
+    from farm.models import OpeningBalance
+    openings = OpeningBalance.all_objects.in_bulk({line.operation_id for line in lines if line.opening})
+    for line in lines:
+        if line.opening:
+            note(warnings, _('%(fish)d fish of %(batch)s in unit %(unit)s were taken over on %(date)s (an opening balance, '
+                             'from %(document)s): they are counted as stock the farm already had, not as fish stocked.') % {
+                'fish': line.count, 'batch': batches[line.batch_id].code, 'unit': unit_number(units[line.unit_id]),
+                'date': line.date.isoformat(), 'document': openings[line.operation_id].document})
+
+
 def identity(site, problems):
     """The site as the authority knows it; what is missing goes into `problems`."""
     organisation = site.organisation_number      # nine digits or empty: the database holds it

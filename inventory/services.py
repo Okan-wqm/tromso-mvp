@@ -4,7 +4,7 @@
 1. locks the items, then the locations, each in primary-key order (two writers of one item or one
    location take turns; a feeding takes no lock: it never waits for the store);
 2. refuses a form sent twice (its token) and checks what needs no folding: the date on the clock of every
-   site it touches (the farm's dates, farm/stock/dates.py: not in the future, at most STOCK_BACKDATE_DAYS
+   site it touches (the farm's dates, farm/stock/dates.py: not in the future, at most the correction window
    back), live locations, arrivals into active locations only, the lot of the item, a live supplier that
    supplies the item's category, lot number and expiry where the category needs them (owner decision
    Q-S5: not for feed, yes for medicines);

@@ -1,6 +1,7 @@
 import uuid
 
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import models
 from django.utils import timezone
@@ -256,6 +257,66 @@ class Profile(models.Model):
 
     def __str__(self):
         return str(self.user)
+
+
+# The bounds of the platform owner's settings: the database holds them (PlatformSettings' checks) and the form says them.
+WINDOW_DAYS = (1, 3650)           # a day back at least; ten years at most, which keeps every date's arithmetic sane
+CLOCK_TOLERANCE = (0, 3600)          # seconds: at most the sensors' ingest contract's hour
+
+
+class PlatformSettings(AuditedModel):
+    """The rules the platform owner (the customer the platform is given to) sets for their whole company, one row (a
+    database check keeps it one), changed on Company › Administration › Platform settings by who holds Platform settings:
+    Edit, every change in the activity log. Nothing reads these columns but core.platform.
+
+    - The correction window: how many days back a daily record (a stock operation, a feeding, a water sample, a movement
+      of the store, a plan, a treatment) may be dated, and how old a record may be voided (owner decisions Q3 and Q-F4,
+      31 days until the owner sets another). A record older than that stays as it is.
+    - Whether a second person must approve the acknowledgement of a medicine-withdrawal warning before what it was given
+      for counts (F-164); other critical acknowledgements may join it.
+    The alarms' rules (delays, escalation, deadbands) are the alarms app's own reference data, per severity and per
+    parameter (alarms.SeverityPolicy, alarms.ParameterDeadband)."""
+
+    singleton = models.BooleanField(default=True, editable=False)
+    correction_window_days = models.PositiveSmallIntegerField(
+        _('Correction window (days)'), default=31,
+        validators=[MinValueValidator(WINDOW_DAYS[0]), MaxValueValidator(WINDOW_DAYS[1])])
+    second_approval_withdrawal = models.BooleanField(
+        _('A second person approves a withdrawal warning acknowledgement'), default=False)
+    # How far ahead of the server's clock a value may be stamped and still count as fresh (farm/water/freshness.py): at
+    # most the sensors' ingest contract's hour (evaluate.MAX_AHEAD). 300 s is the value the code held (cross review F10).
+    clock_tolerance_seconds = models.PositiveIntegerField(
+        _('Clock tolerance (seconds)'), default=300,
+        validators=[MinValueValidator(CLOCK_TOLERANCE[0]), MaxValueValidator(CLOCK_TOLERANCE[1])])
+
+    class Meta:
+        db_table = 'platform_settings'
+        verbose_name = _('platform settings')
+        verbose_name_plural = _('platform settings')
+        constraints = [
+            models.UniqueConstraint(fields=['singleton'], name='uq_platform_settings_singleton'),
+            models.CheckConstraint(condition=models.Q(singleton=True), name='chk_platform_settings_singleton'),
+            models.CheckConstraint(
+                condition=models.Q(correction_window_days__gte=WINDOW_DAYS[0], correction_window_days__lte=WINDOW_DAYS[1]),
+                name='chk_platform_settings_window'),
+            models.CheckConstraint(
+                condition=models.Q(clock_tolerance_seconds__gte=CLOCK_TOLERANCE[0],
+                                   clock_tolerance_seconds__lte=CLOCK_TOLERANCE[1]),
+                name='chk_platform_settings_clock_tolerance'),
+        ]
+
+    def __str__(self):
+        return str(_('Platform settings'))
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        from . import platform
+        platform.forget()                 # the request that saved it reads the new row from now on
+
+    @classmethod
+    def get(cls):
+        """The one row (made by the migration; made again here if a restore left none)."""
+        return cls.objects.first() or cls.objects.create()
 
 
 class EntryKey(models.Model):

@@ -20,7 +20,7 @@ from farm.stock import read
 
 from ..models import HarvestCondition
 from . import stock
-from .common import Result, identity, species_code, text, unit_number, year_class
+from .common import Result, identity, species_code, taken_over, text, unit_number, year_class
 
 ZERO = Decimal(0)
 
@@ -57,6 +57,7 @@ def compute(site, period, report=None):
         {line.batch_id for line in lines} | {share.batch.pk for found in (opening, closing) for unit_stock in
                                              found.values() for share in unit_stock.shares})
     lines = [line for line in lines if is_production(batches[line.batch_id])]
+    taken_over(lines, {unit.pk: unit for unit in units}, batches, warnings)
     others = {unit.pk: unit for unit in Tank.all_objects.filter(
         pk__in={line.other_unit_id for line in lines if line.other_unit_id})
         .select_related('production_department__site')}
@@ -85,6 +86,8 @@ def compute(site, period, report=None):
             code, batch_year = species_code(batch.species, problems), year_class(batch, problems)
             other = others.get(line.other_unit_id)
             other_site = other.production_department.site if other else None
+            if line.opening:
+                continue                            # stock the farm already had: in the month's stock, never stocked
             if line.kind == MovementKind.INPUT or (line.kind == MovementKind.TRANSFER_IN and other_site != site):
                 row['stocked'].append({'species': code, 'year_class': batch_year, 'fish': line.count,
                                        'from_lokalitetsnummer': other_site.lokalitetsnummer if other_site else None})

@@ -19,6 +19,8 @@ AREAS = [
     Area(_('Species'), 'farm.Species'),
     Area(_('Feeds'), 'farm.Feed'),
     Area(_('Water limits'), 'farm.WaterLimit'),
+    # How long a water value counts as fresh, one seeded row per parameter: Read, Edit.
+    Area(_('Water freshness'), 'farm.WaterFreshness', actions=('view', 'change')),
     Area(_('Medicines'), 'farm.Medicine'),
     Area(_('Slaughter facilities'), 'farm.SlaughterFacility'),
     Area(_('Handling rules'), 'farm.HandlingRule'),
@@ -114,10 +116,27 @@ AREAS = [
     Area(_('Sensor readings'), 'sensors.Reading', actions=('view',)),
     # Dead letters: Read is their page, Edit marks one resolved (logged). The ingest writes them; nobody deletes one.
     Area(_('Dead letters'), 'sensors.DeadLetter', actions=('view', 'change')),
-    # Alarms are shown, not sent. Rules: read, create, edit, delete. Events: Read is their page, Edit acknowledges one.
+    # The sensors' alarm rules: read, create, edit, delete. Events: Read is their page, Edit acknowledges one (written as the
+    # alarms' acknowledgement, alarms/services.py; who is notified is Company › Alarms).
     Area(_('Alarm rules'), 'sensors.AlarmRule'),
     Area(_('Alarm events'), 'sensors.AlarmEvent', actions=('view', 'change')),
     # The broker credentials, a right apart from the devices: Create and Edit show a secret once (made, or replaced).
     Area(_('Sensor credentials'), 'sensors.Credential'),
+    # The alarms (Company › Alarms): Read is the page with every alarm's history, Edit acknowledges one (a person an alarm was
+    # sent to may acknowledge it without Edit). Nothing in them is ever changed or deleted. Who is notified is the recipient
+    # rules: read, create, edit, delete.
+    Area(_('Alarms'), 'alarms.Alarm', actions=('view', 'change')),
+    Area(_('Alarm recipients'), 'alarms.RecipientRule'),
+    # The alarm rules: per severity the delays, the escalation time and the delivery attempts (one seeded row each: Read,
+    # Edit), per water parameter the deadband (read, create, edit, delete). The alarm admin's rights.
+    Area(_('Alarm severity rules'), 'alarms.SeverityPolicy', actions=('view', 'change')),
+    Area(_('Alarm deadbands'), 'alarms.ParameterDeadband'),
+    # The platform owner's settings (one row: Read, Edit). "Platform owner" is the role that holds Edit here: the correction
+    # window and whether a second person approves a withdrawal acknowledgement (when an alarm escalates is its severity's
+    # rule, above).
+    Area(_('Platform settings'), 'core.PlatformSettings', actions=('view', 'change')),
+    # Opening balances: Read is their list. Registering one is the platform owner's right (Platform settings: Edit), never
+    # a right of its own: it is the one record dated beyond the correction window.
+    Area(_('Opening balances'), 'farm.OpeningBalance', actions=('view',)),
     Area(_('Activity log'), 'core.AuditLog', actions=('view',)),
 ]

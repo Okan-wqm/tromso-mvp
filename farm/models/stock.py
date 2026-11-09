@@ -320,7 +320,18 @@ class StockOperation(AuditedModel):
         """Its escape record, or None: a count adjustment with one is an escape, and is named so wherever it is listed."""
         return getattr(self, 'escape_record', None)
 
+    @property
+    def opening(self):
+        """Its opening balance, or None: a stocking with one is an opening balance, and is named so wherever it is listed."""
+        return getattr(self, 'opening_balance', None)
+
+    def kind_label(self):
+        """Its kind as a list names it: a stocking with an opening balance is an opening balance."""
+        return gettext('Opening balance') if self.opening is not None else self.get_kind_display()
+
     def __str__(self):
+        if self.opening is not None:
+            return f'{gettext("Opening balance")} {self.date.isoformat()}'
         if self.escape is not None:
             line = next(iter(self.movements.all()), None)
             if line is not None:
@@ -495,3 +506,33 @@ class DeliveryRecord(models.Model):
 
     def __str__(self):
         return f'{self.operation} → {self.destination}'
+
+
+class OpeningBalance(models.Model):
+    """What makes a stocking the opening balance of fish the farm already had when it started using the platform (F-197):
+    the source document the counts come from. One per such stocking (its primary key), written with it by the stock service
+    on the platform owner's right (record_opening_balance), never edited, voided with it.
+
+    The stocking is dated the takeover day, inside the correction window, with the count and the average weight of that
+    day; its batch's stocking date is the real one, any day before (beyond the window by design), and its year class is
+    given. Every read of the ledger takes the fish as stock that was already there: their stay starts on the real stocking
+    date (days stocked), their average counts as measured on the takeover day, and the reports never count them as fish
+    stocked. A stocking with one is an opening balance, and is named so wherever it is listed."""
+
+    operation = models.OneToOneField(StockOperation, primary_key=True, on_delete=models.PROTECT,
+                                     related_name='opening_balance', limit_choices_to={'kind': OperationKind.INPUT},
+                                     verbose_name=_('Operation'))
+    document = models.CharField(_('Source document'), max_length=300)
+
+    objects = LiveOperations()
+    all_objects = models.Manager()
+
+    class Meta:
+        db_table = 'opening_balances'
+        base_manager_name = 'all_objects'
+        verbose_name = _('opening balance')
+        verbose_name_plural = _('opening balances')
+        constraints = [models.CheckConstraint(condition=~Q(document=''), name='chk_opening_balances_document')]
+
+    def __str__(self):
+        return str(self.operation)

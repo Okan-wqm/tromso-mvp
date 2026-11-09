@@ -17,7 +17,7 @@ What works today:
 - A database viewer (`/database/`): every table as a spreadsheet-style grid, for the platform admin
   (see Database viewer).
 - Three panels, switched from the top left: **Company** (overview, Facility › Sites and Storage locations,
-  Knowledge, Administration, and HR) and **Production** (overview, production departments, systems, equipment, tanks,
+  Knowledge, Alarms, Administration, and HR) and **Production** (overview, production departments, systems, equipment, tanks,
   ponds & cages, species, feeds, water limits, medicines, slaughter facilities, handling rules, suppliers, and
   under Operations the production units with their fish, the water chemistry, the store (Storage), the tasks and
   the recurring tasks, Feeding: the meal board, the records, the feeding protocols and their assignments,
@@ -559,8 +559,24 @@ fish recaptured: a count adjustment of the reason escape with its record, from w
 escape from several units is recorded for each). A harvest shows the handling check (the medicine withdrawal and the fast) and a transfer, a grading and a
 delivery the fast alone (a medicine withdrawal is a meat withdrawal: it means nothing for live fish), and each asks for an
 acknowledgement when it warns. A unit holding two batches asks which one.
-Dates default to the farm's today (the site's time zone), never in the future, at most 31 days back
-(`STOCK_BACKDATE_DAYS`). A form sent twice records once (the form's key, stored with it in `entry_keys`).
+Dates default to the farm's today (the site's time zone), never in the future, at most the platform owner's correction window (31 days until they set another; Platform settings) back
+(`core.platform.correction_window_days`). A form sent twice records once (the form's key, stored with it in `entry_keys`).
+
+**The opening balance** (F-197; Company › Administration › Opening balances, `/administration/opening-balances/`): the fish
+a farm already has on the day it starts using the platform. The platform owner (Platform settings: Edit; nobody else, checked
+in the view and in the service) registers each batch with the stocking dialog's form and unit rows plus the takeover day,
+the real stocking date, the year class (required) and the source document the counts come from (the old system's export,
+a count sheet). It is a stocking (`OperationKind.INPUT`) with an `OpeningBalance` record, as an escape is a count adjustment
+with its record, and is named "Opening balance" wherever it is listed: the operation is dated the takeover day, inside the
+correction window, with the count and average weight of that day; the batch's stocking date is the real one, any day up to
+the takeover day, beyond the window by design. Every read of the ledger takes the fish as stock already there: their stay
+starts on the real stocking date (days stocked, the drawer's "since"), their average counts as measured on the takeover day
+(the biomass report's basis, the feeding projection's start), nothing exists before the takeover day, and the reports never
+count them as fish stocked (the monthly biomass report leaves them out of "stocked", the cleaner-fish report adds them to the
+month's opening figure, a site-in-use notice does not count them as fish arriving), each saying in a warning that the stock
+was taken over that day. Its log entry is critical, with the document and the real stocking date. It is voided like any
+stocking (inside the window), which voids its batch. `check_stock` accepts an opening balance dated after its batch's
+stocking date and still finds any other stocking off its batch's date.
 
 **The ledger.** A batch holds its identity and origin, no count. An operation (`StockOperation`) is what
 a person did, with its date; its lines (`StockMovement`) say how many fish of which batch came into (+)
@@ -929,7 +945,7 @@ force per unit, per batch and per batch in a unit on any day (three exclusion co
 checks them by the constraint itself and says which unit clashes). For a batch in a unit on a day the most specific
 row wins: batch in unit, then unit, then whole batch (owner decision Q8); a unit's row for another species is read
 past with its reason. Only active protocols are assigned, a batch only with its species; a first day may be at most
-`STOCK_BACKDATE_DAYS` back. Before its first day a row may change or be deleted; from then on only its last day
+the correction window back (Platform settings). Before its first day a row may change or be deleted; from then on only its last day
 (yesterday at the earliest) and notes change, and it is ended, not deleted: the days it fed keep their protocol.
 The list groups the rows of one dialog, filters by site, unit, batch, protocol and in force / starting later /
 ended, and counts the fish each row feeds today after the more specific rows.
@@ -1048,7 +1064,7 @@ target says how the feed is split ("Split by the book biomass at the start of 2 
 B-2026-001 71 %, B-2026-004 29 %"). The rules, in one write path (`farm/feeding/services.py`), each with
 the server's reason on its field:
 
-- the date as for the stock: the farm's today at the latest, at most `STOCK_BACKDATE_DAYS` (31) back;
+- the date as for the stock: the farm's today at the latest, at most the correction window (Platform settings) back;
 - the unit must hold fish of the target at the start or the end of that day (from the stock ledger; the
   reason is on the target when the unit holds the other kind); and the other way round, a stock operation (a backdated harvest or transfer, the void of the stocking that brought the
   fish) is refused while a recorded feeding would be left without fish, naming it;
@@ -1164,7 +1180,7 @@ bounds hold 10 digits, 4 of them decimals, so a conductivity's limit fits:
 parameter, empty when not measured, at least one value (a database check). The point is one sampling point
 (`point`, a required foreign key; the table has no unit or system column: the unit, loop or equipment is the
 point's owner, so the two cannot disagree). The time is on the clock of the point's site, never in the
-future and at most 31 days back (`STOCK_BACKDATE_DAYS`, `farm/stock/dates.py`), the rule of every daily
+future and at most the correction window back (Platform settings, `farm/stock/dates.py`), the rule of every daily
 record; the source is a meter or kit, or a laboratory; the person is the one signed in. A form sent twice
 records once (its key, stored with the time). Samples are never edited: **Void** (with a reason, logged as
 "Voided" like a stock operation) and a new entry correct one; a voided sample stays in the history, struck
@@ -1450,9 +1466,10 @@ sight while it is deleted (the links are `DO_NOTHING`; the confirmation counts b
 as its stock lines are: points are history of their owner, not a part deleted with it. A species takes its water
 limits with it, each listed and logged. The admin shows voided samples but does not restore them.
 
-**The MVP alerts nobody.** A critical value is shown on the page, on the unit in Production units (its
-columns, dot, count line and drawer) and as a tile of the production overview, never sent: there is no
-email, SMS or push, no acknowledgement and no escalation. Someone has to look.
+**Alarms.** A warning or a critical value is shown on the page, on the unit in Production units (its columns, dot, count
+line and drawer) and as a tile of the production overview, and it raises an alarm (Company › Alarms, see Alarms): its
+recipients are notified by push, it escalates when nobody acknowledges it, and everything is kept. Nothing is sent yet:
+the push transport comes with the mobile app, and the pages say so.
 
 Differences from the source (details in the bug document, WQ-01 to WQ-49):
 
@@ -1621,7 +1638,7 @@ Q-S7). One person records a count; there is no approval step.
 **One write path** (`inventory/services.py`, `_commit`): it locks the items, then the locations, each in
 primary-key order (a feeding takes no lock), refuses a form sent twice (its token), checks the date on the
 clock of every site it touches (`farm.stock.dates.check_site_date`: the farm's today at the latest, at most
-`STOCK_BACKDATE_DAYS` back), live locations, arrivals into active locations only, a live supplier that
+the correction window back), live locations, arrivals into active locations only, a live supplier that
 supplies the item's category (feed), lot number and expiry where the category needs them, then writes the
 operation and its lines and folds every item it touches from its first line: a backdated operation is placed
 where it belongs and accepted only if every later day stays right ("The write-off of 3 Nov from WH-1 would be
@@ -1852,7 +1869,8 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
 
 **The activity log** has a severity: normal, or critical for an operation someone went on with past a handling
 warning (`AuditLog.severity`, a database check, a partial index); critical entries have a red edge and a
-Critical badge, and the log filters by severity. Nobody is alerted yet: the later alarms read these entries.
+Critical badge, and the log filters by severity. (An opening balance, the one record dated beyond the correction window,
+is critical too.)
 
 **Who may do what** (Production · Operations · Harvest, and Setup · Reference data): Harvested (read; a harvest
 is recorded and voided as a stock operation, Production units' Create and Delete), Harvest plan and Production
@@ -2860,7 +2878,7 @@ What works:
   topic each, at a site (the site of where it is placed), optionally the instrument of a piece of equipment; offline after three intervals without a
   message), Channels (what a value measures, from the quantity catalogue `sensors/quantities.py`; where it is in the
   message; the unit conversion; how it is stored: every value, or a value that moves past the deadband and at least once
-  per heartbeat; fresh for three heartbeats; a range outside which a value is stored but flagged and used nowhere;
+  per heartbeat; fresh for its own number of heartbeats (`fresh_heartbeats`, 3 by default, 1 to 20); a range outside which a value is stored but flagged and used nowhere;
   maintenance and retired states; calibrations as a list on the site's clock, applied by the ingest at the device time,
   never rewriting stored values), Bindings (where a channel's values belong over time: a sampling point or a system for a
   water value, a piece of equipment or a system for a process value; one primary and one backup per place and quantity;
@@ -2871,8 +2889,8 @@ What works:
   own, as the water pages say it: `sensors/templatetags/sensors.py` `measured`, also the alarm thresholds and peaks; its
   age, fresh or stale, where it is bound),
   Dead letters (what the ingest could not store, counted, the payload shown escaped as text and hex; resolved by a
-  person, logged), Alarm rules and Alarm events (**shown, not sent**: nobody is notified until a delivery path exists, and
-  the pages say so).
+  person, logged), Alarm rules and Alarm events (each event is an alarm of Company › Alarms, which notifies its recipients and keeps
+  who acknowledged it; the Acknowledge button here writes that record).
 - **Administration**: Credentials (a publisher's sign-in at the broker; the secret is made on the server, shown once
   when made or replaced, stored only as Mosquitto's `$7$` PBKDF2-SHA512 hash, masked in the database viewer and never in
   the activity log).
@@ -2922,8 +2940,8 @@ a salinity older than its 7 days is not used (the value is then not worked out a
 was measured here in the 7 days before.", "Not worked out: the TAN is no longer fresh."). A % judged against an mg/L
 limit (or the reverse) says so beside it: "Judged as 3.98 mg/L. Worked out from 9.0 °C, 0.0 ‰ and 1.000 atm. Limit:
 Atlantic salmon: critical below 6.00." (`Reading.through` keeps the converted reading and its limit rows). A channel in maintenance
-or retired is skipped. A value stamped more than five minutes ahead of the server's clock (`evaluate.CLOCK_SKEW`: a
-device whose clock runs fast) is never fresh and never shown as the newest, but up to the ingest contract's hour
+or retired is skipped. A value stamped further ahead of the server's clock than the platform owner's clock tolerance
+(Platform settings, 300 s by default: a device whose clock runs fast) is never fresh and never shown as the newest, but up to the ingest contract's hour
 (`evaluate.MAX_AHEAD`) it takes part in the worst fresh value and says so ("The device clock is ahead by 10 min.");
 beyond the hour it is a data error the card says ("Dissolved oxygen (mg/L O₂): timestamp in the future"), never
 silently OK. A probe bound to the loop point is a system sensor in a unit's system tier. Sensor values enter as the parameter's Decimal at its decimals and are judged by the same water
@@ -2956,7 +2974,7 @@ controls are the UI's, not built here):
   there), each by owner rule A9 at that moment through the live view's one function (`farm.water.read.choose`, over
   `sensors.read.tiers`: the unit's own-water points, never the inlet, then its system's sensors, those on its loop
   point and the loop's samples): the newest of the fresh values (a sensor value at or before it, no older than its
-  channel's freshness (three heartbeats), at the parameter's decimals as the chart takes it; a fresh manual or lab
+  channel's freshness (its fresh heartbeats), at the parameter's decimals as the chart takes it; a fresh manual or lab
   sample), a sensor's before a sample's at one time; else for the salinity of fresh water the assumption; else missing.
   Nothing is interpolated or carried past its freshness. A moved sensor counts for the place it was in. The hourly
   trail (`sensors/trail.py`) picks each hour's inputs the same way at the hour's end.
@@ -3052,7 +3070,7 @@ the device.
   multi-row `INSERT ... ON CONFLICT` that meets a compressed chunk (`sensors/tests/test_timescale.py` holds the case).
   A `DELETE` of rows in a compressed chunk fails in 2.17.2 ("btree index keys must be ordered by attribute"); nothing in
   the application deletes readings (retention drops whole chunks).
-- A value is fresh while both its device time and its receipt are within the channel's freshness (three heartbeats): a
+- A value is fresh while both its device time and its receipt are within the channel's freshness (its fresh heartbeats): a
   gateway replaying an old backlog delivers values received now but measured long ago, which are not fresh.
 - The database viewer counts a hypertable by the database's estimate and leaves the readings out (billions of rows).
 - Licences: compression, continuous aggregates and their policies are TimescaleDB's TSL features of the community build
@@ -3403,6 +3421,120 @@ production people in Production, with the same permission.
   number of queries for few and many people) on the Team list, Departments, the week, the overview, the chart, the board and the leave
   list; and the migrations back to nothing and forward again.
 
+## Alarms (Company › Alarms: Alarms `/alarms/`, Alarm recipients `/alarms/recipients/`, Alarm severity rules `/alarms/severity-rules/`, Alarm deadbands `/alarms/deadbands/`)
+
+The owner's answer (2026-11-06, F-091): alarms reach everyone's phone as push notifications through the coming mobile app
+(not e-mail: it gets too little attention), and every alarm, every notification and every acknowledgement (who, when,
+from which device, how late) is logged. The server side is built; the push transport plugs in with the app.
+
+- **What raises an alarm** is judged where it is judged today (`alarms/sources.py`): the sensor alarm rules (each event of
+  `sensors/alarms.py` is mirrored as an alarm and cleared when it closes) and the water limits: one read of every live
+  unit's water (`farm/water/read.py` `unit_water`: its middle point, its other own points and its system standing in, the
+  worst fresh value deciding), so an inlet raises nothing and a depth point or the loop raises its unit's alarm (alarm plan,
+  defect 1). A water alarm's subject is the unit's quantity at a level (`water:unit:<unit>:<slot>:<severity>`), never the
+  point that stood for it, so a replaced middle point keeps one alarm per level and its successor's values clear it; a
+  removed unit ends its alarms ("the unit was removed"); `alarms` 0007 re-keyed the subjects and cleared any duplicate
+  with the cause "merged" (cross review F7).
+- **Levels (ISA-18.2 L and LL)**: a unit's parameter (the dissolved oxygen in mg/L and in % is one) has a warning and a
+  critical subject, each its own alarm: warning holds while the value is judged warning or critical, critical while it is
+  judged critical, so a severity change never clears and reopens (defect 2). A level is raised once it has held for its
+  severity's on-delay, counted from the first offending value's time, or from the pass for a value stamped ahead of the
+  clock (`sources.seen_at`: a device whose clock is fast never delays or suppresses an alarm, cross review F1); it clears
+  once a fresh value, taken after the last bad one (defect 4), is clear of it and EVERY fresh value that takes part in
+  the unit's status (`Reading.deciding`) is clear of it even moved by the parameter's deadband (the same judgement on the
+  moved values, cross review F2), for the off-delay; at once when the unit has no fish ("no fish in the unit any more") or
+  its fish no limit row ("the water limit was removed", the log entry naming the row, who removed it and when, F12). A value that only goes
+  stale never clears it. While the live sources cannot be read nothing clears, and that is a critical system alarm of its
+  own, restored when they answer (defect 3). A clearance says why. The timers are each subject's row
+  (`alarm_subject_state`), so a restart loses none; its open alarm is a unique column set by one compare-and-set
+  statement, so a subject never has two open alarms (defect 6). A warning is not notified while its critical is open.
+- **The rules are the user's reference data** (owner, alarm plan §7c): per severity the on-delay, the off-delay, the
+  escalation time and the delivery attempts (Alarm severity rules, one row each: critical 0 s, 30 s, 5 min, 5; warning 30 s,
+  30 s, 30 min, 5), per parameter the deadband (Alarm deadbands: dissolved oxygen 0.2 mg/L and 2 %, temperature 0.3 °C, pH
+  0.05, CO₂ 1 mg/L, TAN 0.05, NH₃-N 0.002, NO₂-N 0.05 mg/L, salinity 0.5 ‰). These are the owner's defaults (§7a),
+  seeded once by `alarms` 0002; from then on they are rows edited on their tabs by the alarm admin's rights, bounded by
+  database checks, logged, read once per pass (`alarms/rules.py`): a change takes effect on the next pass. The bounds are
+  per severity and the model's and the database's, not only the form's (cross review F9): a critical alarm is raised
+  within the owner's 10 s target (on-delay at most 10 s) and escalated within 30 min, a warning raised within 15 min, a
+  deadband at most its parameter's range; an unusual value inside them (any critical on-delay, a long escalation, a
+  deadband over half the narrowest band of the live limits) is shown with a warning on the rules' page, never refused. A
+  severity's rule is never deleted (model, check, trigger: `alarms` 0006); a row lost all the same (a restore) never stops
+  the evaluation: the safest value of each field stands in (no on-delay, the longest off-delay, the shortest escalation,
+  the most attempts) and a critical configuration alarm says so until the row is back (F6). The staleness thresholds the
+  alarms depend on are rule data too (F10): how long a water value counts as fresh per parameter (Setup › Reference data ›
+  Water freshness, seeded with the hours the code held), the clock tolerance (Platform settings) and a sensor channel's
+  fresh heartbeats; the ingest contract's hour (`evaluate.MAX_AHEAD`) is the contract's and stays. No number in the modules
+  an alarm's decision reads is a threshold: a test reads them, each named exception with its reason.
+- **A device clock** that differs from the platform's is an alarm of its own (owner, 2026-11-09): the skew is measured per
+  device from what the ingest stores (`sensors/clock.py`: the device's time of its newest good value against when it was
+  received, ahead or behind; a time the ingest replaced is ahead by more than the contract's future skew; a value received
+  longer ago than the channel's freshness measures nothing), judged by each severity's device clock limit and deadband
+  (Alarm severity rules: warning 60 s / 10 s, the ingest contract's default future skew; critical 300 s / 30 s, the clock
+  tolerance), raised and cleared per device on its site by the same lifecycle (`alarms/clock.py`). The device list and the
+  unit's card (for the devices whose values it shows) say it as a data-quality note ("Device clock is 4 min ahead").
+  "Behind" is late delivery as much as a slow clock (an ingest restart, a gateway draining what it stored during a
+  link drop), so it holds only when the device is behind on every pass of its severity's window (Alarm severity rules,
+  "Device clock behind for", 600 s: the minimum over the window), and not at all while the ingest reports messages
+  waiting for the device's connection; "ahead" is judged at once. Under the ingest contract's future skew (60 s by
+  default) the ingest replaces a device time further ahead by the receive time, so the values stay right and "ahead"
+  tops out at the warning "more than 60 s ahead"; the rules page says so with the contract's own number, and the critical
+  limit is reached behind. The device's values still decide its unit's status; their alarms are never delayed.
+- **The alarm system supervises itself** (EEMUA 191, cross review F3): a step of the pass that fails is a critical system
+  alarm from the pass it fails in until it passes again; the water step reads all units at once and, when that fails, each
+  on its own, and evaluates each on its own, so a unit that cannot be read or evaluated raises its own critical alarm on
+  its site ("could not be evaluated") and every other unit goes on; a unit with fish and no point to read its own water at
+  is a configuration warning on its site (F16). A system alarm reaches its site's recipient rules; a farm-wide one the
+  company-wide rules, and where no rule reaches it by site, every rule its severity reaches: it never reaches nobody (F8).
+- **Who is notified**: the alarm recipient rules (a tab: a site or every site, a production department or every one, the
+  least severity, a level 0 to 9, a role or one person, only while on shift by the HR roster (`hr.read.on_shift`, the
+  board's own rule), the channel). Level 0 is notified when the alarm opens; a rule added later still reaches an alarm that
+  is open.
+- **Escalation**: an open alarm nobody has acknowledged goes on to the next level with a rule that reaches it once its
+  level was first notified its severity's escalation time ago (Alarm severity rules), or at once when
+  nobody could be notified at its level. An alarm nobody can be notified of says so. A cleared or acknowledged alarm is
+  never escalated.
+- **The outbox**: one notification per alarm, person, channel and level (push only; channels are pluggable). A transport
+  per channel is named in `settings.ALARM_TRANSPORTS` (`alarms/transports.py`, an interface with a test double); none is
+  connected, so nothing is sent anywhere, every notification waits, and the pages say so. A failing transport is tried
+  again up to its severity's delivery attempts.
+- **Acknowledgement**: who, when, from which device and app ('console' from these pages, the app's name later), the
+  notification answered; once per person; the delay is computed from the alarm's opening. Who holds Alarms: Edit may
+  acknowledge, and so may anyone the alarm was sent to. The sensors' Alarm events page acknowledges through the same
+  service: the event's own acknowledgement columns were carried over by a migration and removed.
+- **Append-only**: alarms, clearances, notifications, delivery attempts, escalations and acknowledgements are never changed
+  or deleted (a database trigger, as for the activity log), and each is written with its activity-log entry (critical for
+  a critical alarm). The Alarms page lists them, open first; an alarm's page shows its whole history in time order.
+- **The loop**: `manage.py run_alarms [--loop SECONDS]` (`alarms/engine.py`) checks the sensor rules and the water limits,
+  queues, escalates and hands what is queued to the connected transports. Each step (sensor rules, sensor events, water,
+  device clocks, notify, send, and the supervision last) runs in its own transaction under one advisory lock, so two loops never queue or send twice and a failing
+  step rolls back alone, logged and said in the pass's summary; a failed pass is logged and the loop goes on (defect 5).
+  The writes are set-based and the routing is read once per pass (`alarms/routing.py` `Router`): a burst of alarms costs
+  the queries one costs (defect 7). Deployment runs it instead of `check_sensors` (the sensors' check alone).
+
+## Platform settings (Company › Administration, `/administration/platform-settings/`)
+
+The rules the platform owner (the customer the platform is given to) sets for the whole company, one row
+(`core.models.PlatformSettings`, database checks keep it one row and bound each value), read by the rest of the code through
+`core/platform.py` only (once per request: `PlatformSettingsMiddleware`). Read and Edit are an access area of their own;
+"platform owner" is the role that holds Edit. Every change is in the activity log with its old and new value.
+
+- **Correction window (days)**, 1 to 3650, 31 until the owner sets another (owner decisions Q3 and Q-F4, F-243): how far
+  back a daily record (a stock operation, a feeding, a water sample, a movement of the store, a plan, a treatment, a protocol
+  assignment, an experiment's day 0) may be dated, and how old a record may be voided. Older records stay as they are;
+  inside the window every record is logged as before. `core.platform.correction_window_days()` is its one reader; the
+  messages name the days it says. The regulatory reports re-read a filed report for changes only inside it.
+  (Not this window: the fast's 31-day look-back for the last feeding, longer than the longest handling rule, and the
+  31 days one page of feeding records covers.)
+- **A second person approves a withdrawal warning acknowledgement** (F-164): `core.platform.second_approval_required(
+  'withdrawal')` is asked by the one hook (`farm/handling/check.py` `second_person_must_approve`); an unknown kind is an
+  error, never a quiet no. The second person's approval flow is not built yet, so the setting FAILS CLOSED (cross review
+  F4): ticked, going on past a medicine withdrawal is refused with the reason (a second person must approve, and that
+  approval cannot be given here yet); nobody goes on alone. Unticked (the default), one person's acknowledgement goes on,
+  logged as critical.
+- **Clock tolerance (seconds)**, 0 to 3600, 300 until the owner sets another (cross review F10): how far ahead of the
+  server's clock a water value may be stamped and still count as fresh. A value further ahead, up to the ingest
+  contract's hour, still decides its unit's status and its alarm, but is not shown as the newest.
+
 ## Roles and users
 
 There are no built-in roles. The platform admin (a Django superuser) can open everything and is the
@@ -3424,7 +3556,9 @@ only one who manages roles and users; everyone else gets exactly what their role
   (read the page, a report and its exports; create = start a report, a notice or a correction; edit = fill in a draft and
   record it as filed; delete = discard a draft), Messages (read =
   use Messages, create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit
-  also reviews an entry), Employees (read, create, edit, All production and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule (and Crew), Attendance (read = Today & attendance and the Attendance page, create = enter presence by hand, edit = correct, delete = void), Leave requests (read, create, edit = also approves, rejects and cancels), Leave types, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit) and Activity log (read).
+  also reviews an entry), Employees (read, create, edit, All production and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule (and Crew), Attendance (read = Today & attendance and the Attendance page, create = enter presence by hand, edit = correct, delete = void), Leave requests (read, create, edit = also approves, rejects and cancels), Leave types, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit), Alarms (read, edit = acknowledge), Alarm recipients (read, create, edit, delete), Alarm severity rules (read, edit), Alarm deadbands (read, create, edit, delete),
+  Platform settings (read, edit: the platform owner's right), Opening balances (read; registering one is the platform owner's
+  right) and Activity log (read).
   A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
@@ -3827,14 +3961,20 @@ without a redesign yet, and are redesigned one page at a time.
   they were (`core/tests_tailwind.py`). `npm run build` writes it (`npm run build:css` alone); `npm run check:css` (CI,
   before the build, and `npm test`) fails when it is not what the source and the templates build now. Nothing is loaded
   from a CDN and nothing runs in the browser.
-- **Overview** (`/production/`, `templates/production_home.html`). The panel's landing page at the start of a shift, with
-  no KPI tiles: the day in four lines (stock from the ledger, feed today and over 7 days, the water's critical and warning
-  points, tasks due and overdue), each with its source and the time it was worked out; then Needs attention (the water
-  points with a critical or warning value measured at them, the critical first, at most six, each value with its origin
-  and age and a History button; overdue tasks; overdue reports and duties), then the reports due and the farm's
-  structure. Read once by the areas' own functions (`farm.water.views.overview` reads the water page's rows, so the two
-  never disagree); each part only for a person whose role reads its area. The one primary action is Record water
-  sample, for a person who may record one.
+- **Overview** (`/production/`, `templates/production_home.html`). The panel's landing page at the start of a shift, a
+  dashboard (the owner's decision over the design system's earlier "no KPI tile row"): the day's figures as metric cards
+  (`templates/_metric_card.html`) on one sheet, five to a row from 768 px and two on a phone: fish, biomass, stocked units
+  (of all units), feed today and over 7 days, critical water points and water points with a warning (of all sampling
+  points), tasks due today, overdue tasks, reports due (with the overdue ones as a chip). Each card is the figure large
+  with its label, one sub-line and its source and time ("Stock records at 15:35"), the whole card a link; grey unless
+  abnormal (the 4 px status edge, glyph and word). Below, Needs attention in compact rows (the water points with a
+  critical or warning value measured at them, the critical first, at most six, each value on one line with its origin and
+  age, a small History button; overdue tasks; overdue reports and duties) and beside it, from 1024 px, the farm as cards
+  (production departments, systems, equipment, tanks, ponds and cages; the systems by status and the units by kind) and
+  the reports due. Every figure the page showed before its redesign is a card
+  (`farm/tests/test_production_overview.py`, OldFiguresTests). Read once by the areas' own functions
+  (`farm.water.views.overview` reads the water page's rows, so the two never disagree); each part only for a person
+  whose role reads its area. The one primary action is Record water sample, for a person who may record one.
 - **Themes.** Fjord (the default), Polarnatt, Nordlys (for the monitoring wall), Tang and Laks, picked in the user menu
   beside the language. The choice is a cookie (`theme`, kept a year, `core/theme.py`) that the server writes on
   `<html data-theme>`, so the first paint has it; never the system's colour scheme.
@@ -4254,6 +4394,11 @@ real mail.
 | `/knowledge/entries/new/?document=<id>` | A new entry whose source is that document |
 | `/knowledge/entries/<id>/review/` | Marks an entry reviewed, or takes it back to draft (POST) |
 | `/activity/` | Activity log |
+| `/administration/platform-settings/` | Administration › Platform settings (the platform owner's rules) |
+| `/alarms/` | Alarms › Alarms (`?state=all` lists the cleared ones too); `<id>/` an alarm's history, `<id>/acknowledge/` (POST) |
+| `/alarms/recipients/` | Alarms › Alarm recipients (who is notified of which alarms) |
+| `/alarms/severity-rules/`, `/alarms/deadbands/` | Alarms › Alarm severity rules and Alarm deadbands (the alarm rules, the user's reference data) |
+| `/administration/opening-balances/` | Administration › Opening balances; `new/` registers one (the platform owner's right) |
 | `/roles/` | Administration › Roles (platform admin) |
 | `/users/` | Administration › Users (platform admin) |
 | `/database/` | Administration › Database: every table (platform admin) |
@@ -4280,6 +4425,8 @@ real mail.
 | `core/codes.py` | The next generated code of a kind of record (a batch's, an experiment's), under an advisory lock |
 | `core/schema.py` | Fields described by a schema (a type's specifications): the form fields and the check of stored values |
 | `farm/equipment_types.py` | The equipment type catalogue, written into the database by migrations |
+| `alarms/` | Alarms: the append-only rows (`models.py`), what raises them (`sources.py`), who is notified (`routing.py`), the write path (`services.py`), the loop (`engine.py`, `manage.py run_alarms`), the transports (`transports.py`), the pages (`views.py`) |
+| `core/platform.py` | The platform owner's settings as the code reads them: the correction window and second approval |
 | `farm/models/stock.py`, `farm/stock/` | The stock ledger: batches, operations and their lines; the fold (`fold.py`), reading it (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_stock`), the Production units page and dialogs (`views.py`, `farm/forms/stock.py`, `farm/templatetags/stock.py`) |
 | `farm/models/feeding.py`, `farm/feeding/` | The feeding records: the walk of the feed along the stock's timeline (`fold.py`), reading it for the pages, FCR and the feed rate (`read.py`), the one write path (`services.py`), the Meal board, Records and the dialogs (`views.py`, `farm/forms/feeding.py`, `farm/templatetags/feeding.py`); the farm's dates shared with the stock (`farm/stock/dates.py`) |
 | `farm/models/feeding_protocol.py`, `farm/feeding/` | Feeding protocols and assignments: the ration on read (`ration.py`), the estimated weight kept along the walk (`projection.py`), the temperature a ration reads (`temperature.py`), the table's write path and Duplicate (`protocols.py`), the assignments' rows and write path that the dialog and an experiment's start share (`assignments.py`); the tabs (`farm/resources/feeding_protocol.py`, `farm/forms/feeding_protocol.py`) |

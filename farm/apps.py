@@ -14,6 +14,19 @@ class FarmConfig(AppConfig):
             Treatment, WaterMeasurement,
         )
 
+        # The water's staleness rules (farm/water/freshness.py) are read again after a row is saved and at every request.
+        from django.core.signals import request_started
+        from django.db.models.signals import post_delete, post_save
+
+        from core.models import PlatformSettings
+
+        from .models import WaterFreshness
+        from .water import freshness
+        for model in (WaterFreshness, PlatformSettings):
+            post_save.connect(freshness.forget, sender=model, dispatch_uid=f'freshness-{model.__name__}-save')
+            post_delete.connect(freshness.forget, sender=model, dispatch_uid=f'freshness-{model.__name__}-delete')
+        request_started.connect(freshness.forget, dispatch_uid='freshness-request')
+
         # The medicine withdrawal the handling check reads (farm/handling/withdrawal.py) is the health records'.
         withdrawal.register(provider)
         # What a withdrawal is worked out from: changed only inside the withdrawal guard (farm/withdrawal_gate.py), a

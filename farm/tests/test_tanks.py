@@ -780,7 +780,7 @@ class TankListTests(TankTestCase):
 
     def test_the_production_overview_counts_units_by_kind(self):
         response = self.client.get(reverse('production_home'))
-        self.assertIn({'label': 'Tanks, ponds & cages', 'count': 3, 'url': reverse('farm:tank_list')},
+        self.assertIn({'key': 'tank', 'label': 'Tanks, ponds & cages', 'count': 3, 'url': reverse('farm:tank_list')},
                       [{**tile, 'label': str(tile['label'])} for tile in response.context['tiles']])
         self.assertEqual([(item['value'], item['count']) for item in response.context['units_by_kind']],
                          [('tank', 1), ('pond', 1), ('cage', 1)])

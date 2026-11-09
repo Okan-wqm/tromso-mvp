@@ -6,7 +6,7 @@ every void: the forms call these functions and the views show what they refuse o
   system's loop or on a piece of equipment. Each locks the owners of its points and the points in
   primary-key order, refuses a point that is deleted, inactive or on a deleted owner, refuses a form sent twice
   (its key), checks the time and every value, writes the rows and their activity-log rows.
-- The time: not in the future and at most STOCK_BACKDATE_DAYS back, on the clock of the point's site, the
+- The time: not in the future and at most the correction window back, on the clock of the point's site, the
   rule of every daily record (farm/stock/dates.py; WQ-10).
 - A value: inside its parameter's plausible range and at its precision (farm/water/parameters.py); the
   database checks both again. At least one value per sample; nothing is required beyond that (WQ-08).
@@ -18,7 +18,6 @@ code, 'reason' or NON_FIELD_ERRORS; for a round, a row's errors are under ('row'
 written."""
 import uuid
 
-from django.conf import settings
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import transaction
 from django.utils import timezone
@@ -26,6 +25,7 @@ from django.utils.translation import gettext as _, gettext_lazy
 
 from core import audit
 from core.models import AuditLog, EntryKey
+from core.platform import correction_window_days
 from farm.health import withdrawal
 from farm.models import Equipment, SamplingPoint, System, Tank, WaterMeasurement
 from farm.models.water import BASIS_COLUMNS
@@ -56,7 +56,7 @@ def _check_time(measured_at, points):
     for point in points:
         if local_time(measured_at, point).date() < earliest(point):
             raise ValidationError({'measured_at': _('Samples can be dated at most %(days)d days back.')
-                                   % {'days': settings.STOCK_BACKDATE_DAYS}})
+                                   % {'days': correction_window_days()}})
 
 
 def value_errors(values):
@@ -234,7 +234,7 @@ def void(user, sample, reason, withdrawal_ack=None):
             raise ValidationError({NON_FIELD_ERRORS: _('This sample is already voided.')})
         if local_time(sample.measured_at, sample.point).date() < earliest(sample.point):
             raise ValidationError({NON_FIELD_ERRORS: _('Samples older than %(days)d days cannot be voided.')
-                                   % {'days': settings.STOCK_BACKDATE_DAYS}})
+                                   % {'days': correction_window_days()}})
 
         def write():
             sample.void_reason = reason

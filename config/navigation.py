@@ -38,11 +38,25 @@ WORKSPACES = [
                 Entry(_('Knowledge entries'), 'knowledge:knowledgeentry_list', 'lightbulb',
                       'knowledge.view_knowledgeentry'),
             ]),
+            # The alarms of the water limits and the sensor rules, with who was notified, the escalations and the
+            # acknowledgements (all kept), and the rules of who is notified. Nothing is sent until the push transport (the
+            # mobile app) is connected; the pages say so.
+            Group(_('Alarms'), [
+                Entry(_('Alarms'), 'alarms:alarm_list', 'bell', 'alarms.view_alarm'),
+                Entry(_('Alarm recipients'), 'alarms:recipientrule_list', 'send', 'alarms.view_recipientrule'),
+                # The alarm rules are the user's reference data (owner, alarm plan §7c): per severity and per parameter.
+                Entry(_('Alarm severity rules'), 'alarms:severitypolicy_list', 'timer', 'alarms.view_severitypolicy'),
+                Entry(_('Alarm deadbands'), 'alarms:parameterdeadband_list', 'gauge', 'alarms.view_parameterdeadband'),
+            ]),
             Group(_('Administration'), [
                 Entry(_('Activity log'), 'core:activity_log', 'history', 'core.view_auditlog'),
                 Entry(_('Roles'), 'core:group_list', 'shield', 'auth.view_group'),
                 Entry(_('Users'), 'core:user_list', 'users', 'auth.view_user'),
                 Entry(_('Database'), 'core:database', 'database', 'core.browse_database'),
+                # The platform owner's rules for the whole company: the correction window, second approvals, alarm escalation.
+                Entry(_('Platform settings'), 'core:platformsettings_list', 'settings', 'core.view_platformsettings'),
+                # The fish already on the farm when it started using the platform, registered by the platform owner.
+                Entry(_('Opening balances'), 'farm:opening_balances', 'download', 'farm.view_openingbalance'),
             ]),
         ]),
         # The company's office people: who they are, where they work and their time (the production people are under
@@ -169,6 +183,8 @@ WORKSPACES = [
                 Entry(_('Species'), 'farm:species_list', 'fish', 'farm.view_species'),
                 Entry(_('Feeds'), 'farm:feed_list', 'wheat', 'farm.view_feed'),
                 Entry(_('Water limits'), 'farm:waterlimit_list', 'gauge', 'farm.view_waterlimit'),
+                # How long a water value counts as fresh, per parameter (the user's, alarm plan §7c).
+                Entry(_('Water freshness'), 'farm:waterfreshness_list', 'timer', 'farm.view_waterfreshness'),
                 Entry(_('Medicines'), 'farm:medicine_list', 'pill', 'farm.view_medicine'),
                 Entry(_('Handling rules'), 'farm:handlingrule_list', 'timer', 'farm.view_handlingrule'),
                 # What a monitoring card holds and which unit's card gets which (monitoring/cards/).
@@ -201,7 +217,7 @@ WORKSPACES = [
                 Entry(_('Live values'), 'sensors:live', 'radio', 'sensors.view_reading'),
                 # What the ingest could not store, kept as evidence and counted.
                 Entry(_('Dead letters'), 'sensors:dead_letters', 'inbox', 'sensors.view_deadletter'),
-                # Alarms are shown, not sent: nobody is notified yet.
+                # The sensors' alarm rules and their events; who is notified of them is Company › Alarms.
                 Entry(_('Alarm rules'), 'sensors:alarmrule_list', 'bell', 'sensors.view_alarmrule'),
                 Entry(_('Alarm events'), 'sensors:alarm_events', 'alert', 'sensors.view_alarmevent'),
             ]),

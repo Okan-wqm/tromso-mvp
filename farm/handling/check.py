@@ -357,10 +357,13 @@ def second_person_must_approve(user, kinds, record):
     2026-11-06, audit F-164): `user` is the person about to go on, `kinds` the withdrawal warnings (WITHDRAWAL_WARNINGS)
     they go on past, `record` what they acknowledge (the assessment or the withdrawal change: its warnings, messages and
     fingerprint), so the approval flow can name both people and what was approved.
-    It is the one place that setting is consulted (require_acknowledged, every dialog's save); the setting itself and
-    the second person's approval flow are built in the owner-settings work. Until then the setting does not exist and is
-    off: one person's acknowledgement goes on, stored and logged as critical."""
-    return False
+    It is the one place that setting is consulted (require_acknowledged, every dialog's save): the platform owner's
+    setting (core.platform.second_approval_required). The second person's approval flow does not exist yet, so the
+    setting FAILS CLOSED (cross review F4): ticked, going on past a withdrawal is refused, saying a second person must
+    approve and that the approval cannot be given here yet; nobody goes on alone. Unticked (the default), one person's
+    acknowledgement goes on, stored and logged as critical."""
+    from core import platform
+    return platform.second_approval_required('withdrawal')
 
 
 def acknowledge(record, assessment):

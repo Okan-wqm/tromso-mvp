@@ -5,11 +5,11 @@ the farm's today, the service's reasons on their fields)."""
 import uuid
 
 from django import forms
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
 from core.crud import RowFormSet, TabbedForm, tab_fields
+from core.platform import correction_window_days
 
 from ..health import services
 from ..health.withdrawal import rules_text
@@ -214,7 +214,7 @@ class HealthEventForm(TabbedForm):
                 self.add_error('date', _('The date cannot be in the future.'))
             elif day < site_earliest(site):
                 self.add_error('date', _('Operations can be dated at most %(days)d days back.') % {
-                    'days': settings.STOCK_BACKDATE_DAYS})
+                    'days': correction_window_days()})
         return cleaned
 
 

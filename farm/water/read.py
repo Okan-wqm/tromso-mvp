@@ -74,7 +74,8 @@ from farm.stock.dates import local_today
 from farm.stock.read import Presence
 
 from . import chemistry, messages, parameters, sources
-from .evaluate import ALERTS, CLOCK_SKEW, MAX_AHEAD, RANK, Limits, Status, ahead, is_fresh, worst
+from . import freshness
+from .evaluate import ALERTS, MAX_AHEAD, RANK, Limits, Status, ahead, is_fresh, worst
 from .parameters import NH3_N, NH4_N, OXYGEN_MG_L, OXYGEN_PCT, TAN
 
 # The water's ionic-strength inputs of a TAN sample's ammonia (formula 3): looked up as its salinity is.
@@ -463,6 +464,9 @@ class Reading:
     judged: str = Status.NOT_MEASURED
     uncovered: tuple = ()          # the species it concerns that no limit row judges it for
     worse: object = None           # the worse fresh value that decided its status (worst_fresh), else None
+    # The place's other values that take part in its status (latest: fresh, or ahead of the clock within the ingest
+    # contract's hour), each judged for its fish: what an alarm on the reading clears only past (alarms/sources.py).
+    deciding: tuple = ()
     through: object = None         # the Reading in the other oxygen unit it was judged as (Context.judge), else None
     why_no_limit: str = ''      # with status No limit: no fish in the unit that day, or no limit for their species
     provenance: str = ''        # a worked-out value: the formula version (and ionic strength) it was worked out by
@@ -686,7 +690,7 @@ class Context:
         for code in IONIC_INPUTS:
             value = observation.get(code)
             if value is None:
-                fresh = timedelta(hours=parameters.get(code).fresh_hours)
+                fresh = freshness.fresh_for(code)
                 for where in (observation.point, self.middles.get(observation.point.owner.pk)):
                     hit = None if where is None else self._ionic_series(code).latest(where.pk, observation.at, fresh)
                     if hit is not None and self._ionic_series(code).fresh(hit, observation.at):
@@ -706,7 +710,7 @@ class Context:
         if parameters.SALINITY in observation.basis:
             return observation.basis[parameters.SALINITY].value
         point = observation.point
-        fresh = timedelta(hours=parameters.get(parameters.SALINITY).fresh_hours)
+        fresh = freshness.fresh_for(parameters.SALINITY)
         for where in (point, self.middles.get(point.owner.pk)):
             found = None if where is None else self.salinity.latest(where.pk, observation.at, fresh)
             if found is not None and self.salinity.fresh(found, observation.at):
@@ -728,7 +732,7 @@ class Context:
     @staticmethod
     def _salinity_missing():
         return _('Needs the salinity: none was measured here in the %(days)d days before.') % {
-            'days': parameters.get(parameters.SALINITY).fresh_hours // 24}
+            'days': freshness.fresh_for(parameters.SALINITY).days}
 
     @staticmethod
     def _same_source_missing(observation):
@@ -945,8 +949,8 @@ def newest(found):
 
 def fresh_at(reading, moment):
     """Whether a reading can stand for the water at `moment` in a calculation (PLAN A9.3): measured at or before it (or
-    within evaluate.CLOCK_SKEW after it, one moment for two clocks) and still fresh then."""
-    return reading.at <= moment + CLOCK_SKEW and is_fresh(reading.parameter, reading.at, moment, reading.sample.fresh_for)
+    within the clock tolerance after it, freshness.tolerance: one moment for two clocks) and still fresh then."""
+    return reading.at <= moment + freshness.tolerance() and is_fresh(reading.parameter, reading.at, moment, reading.sample.fresh_for)
 
 
 def newest_shown(found, now):
@@ -1176,7 +1180,7 @@ def latest(points, now=None, at=None):
                 point_water.future += [judged(each) for each in found if each.at - moment > MAX_AHEAD]
                 # Fresh, or ahead of the clock within the ingest contract's hour: they take part in the status.
                 deciding = [judged(each) for each in found
-                            if each.fresh(moment) or CLOCK_SKEW < each.at - moment <= MAX_AHEAD]
+                            if each.fresh(moment) or freshness.tolerance() < each.at - moment <= MAX_AHEAD]
                 # MEASURED AT THE POINT: the point's own newest value of the code, and its fresh others, each judged
                 # before another point's value decides (the point's own old critical stays).
                 here = [each for each in (resolved[code], *found) if each.value is not None
@@ -1185,6 +1189,7 @@ def latest(points, now=None, at=None):
                 if shown_here is not None:
                     point_water.measured += [(each.status, each.judged) for each in map(judged, [
                         shown_here, *(each for each in here if each is not shown_here and each.fresh(moment))])]
+                reading.deciding = tuple(deciding)
                 worst_fresh(reading, deciding, moment)    # COMPUTED FOR THE PLACE the point stands for
             point_water.readings[code] = reading
     return water
@@ -1204,7 +1209,7 @@ def oxygen_basis(rows, moment):
     if not wanted:
         return {}, {}
     points = list({rows[index][0].pk: rows[index][0] for index in wanted}.values())
-    water = latest(points, at=min(moment + CLOCK_SKEW, timezone.now()))     # one moment for two clocks (fresh_at)
+    water = latest(points, at=min(moment + freshness.tolerance(), timezone.now()))     # one moment for two clocks (fresh_at)
     assumed = assumed_salinities(points)
     found, missing = defaultdict(dict), defaultdict(list)
     for index, codes in wanted.items():

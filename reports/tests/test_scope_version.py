@@ -4,7 +4,6 @@ recorded as). A report filed before keeps being compared by the rule it was file
 every recent filing as "records changed since filing" (cross-review 2, 12)."""
 from datetime import datetime, timezone as utc
 
-from django.test import override_settings
 
 from .. import compute, due, services
 from ..models import Report, ReportSnapshot
@@ -13,7 +12,6 @@ from .test_due import TODAY
 from .test_lice import WARM, WEEK_44, LiceTestCase, temperature
 
 
-@override_settings(STOCK_BACKDATE_DAYS=3650)
 class ScopeVersionTests(LiceTestCase):
     def setUp(self):
         super().setUp()

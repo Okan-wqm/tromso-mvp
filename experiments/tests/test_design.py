@@ -8,6 +8,7 @@ from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.urls import reverse
 
 from core.models import AuditLog
+from farm.tests.helpers import correction_window
 from farm.models import Feed, FeedingProtocol, ProtocolAssignment, ProtocolBand, ProtocolRate
 
 from .. import design, services
@@ -344,6 +345,14 @@ class ProblemsTests(DesignTestCase):
         Experiment.objects.filter(pk=self.trial.pk).update(starts_on=self.day(31))
         ReplicateUnit.objects.update(from_on=self.day(31), until_on=self.day(31) + timedelta(days=56))
         self.assertEqual(self.codes('error'), [])
+        with correction_window(60):
+            Experiment.objects.filter(pk=self.trial.pk).update(starts_on=self.day(61))
+            ReplicateUnit.objects.update(from_on=self.day(61), until_on=self.day(61) + timedelta(days=56))
+            self.assertEqual(self.found()[0].text, 'Day 0 is further back than records can be dated: an '
+                                                   'experiment is registered at most 60 days after it begins.')
+            Experiment.objects.filter(pk=self.trial.pk).update(starts_on=self.day(45))
+            ReplicateUnit.objects.update(from_on=self.day(45), until_on=self.day(45) + timedelta(days=56))
+            self.assertEqual(self.codes('error'), [])
 
     def test_a_started_experiment_is_not_too_old_for_the_days_that_passed_since_day_0(self):
         self.good()

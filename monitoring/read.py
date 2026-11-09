@@ -245,6 +245,7 @@ class Card:
     sections: frozenset = frozenset()
     failed: frozenset = frozenset()     # the optional sources that failed: their widgets say "no data"
     now: object = None
+    clock: tuple = ()                   # data-quality notes: a device of its water whose clock is off (clock_notes)
 
     @cached_property
     def widgets(self):
@@ -372,6 +373,7 @@ def cards(units, user, choice, occupancy=STOCKED, now=None):
         kept, now, middle_only=[unit.pk for unit in kept if unit.pk not in need[POINTS]]))
         if WATER in sections and kept else {})
     withdrawals = _required('withdrawal', harvest_views.withdrawals, stocked) if STOCK in sections and stocked else {}
+    clocks = _clocks({unit.pk: water.get(unit.pk, ()) for unit in stocked}, now) if water and stocked else {}
     events = _required(EVENTS, health_read.open_events, kept) if EVENTS in sections and kept else {}
     failed = set()
 
@@ -405,8 +407,54 @@ def cards(units, user, choice, occupancy=STOCKED, now=None):
             withdrawal=tuple(withdrawals.get(unit.pk, ())), treatments=tuple(treatments.get(unit.pk, ())),
             events=tuple(events.get(unit.pk, ())), lice=counts.get(unit.pk), tasks=tasks.get(unit.pk),
             chips=tuple(chips.get(unit.pk, ())), failed=frozenset(failed),
-            hidden=hidden, sections=sections, now=now))
+            hidden=hidden, sections=sections, now=now, clock=tuple(clocks.get(unit.pk, ()))))
     return found
+
+
+def _live_channels(water):
+    """{channel number: {unit id}} of the live values on the units' cards (`water`: {unit id: [PointWater]})."""
+    channels = {}
+    for unit_id, points in water.items():
+        for point_water in points:
+            for reading in point_water.readings.values():
+                for each in (reading, *reading.deciding):
+                    if each.sample.live and each.sample.channel_no is not None:
+                        channels.setdefault(each.sample.channel_no, set()).add(unit_id)
+    return channels
+
+
+def _clocks(water, now):
+    """`clock_notes`, in a savepoint (only when a card shows a live value): a data-quality note that cannot be read is
+    left out and logged, never a reason to keep the wall's last picture."""
+    if not _live_channels(water):
+        return {}
+    try:
+        with transaction.atomic():
+            return clock_notes(water, now)
+    except Exception:
+        _log_failure('clock', 'The %s notes of the monitoring cards could not be read; the cards go on without them.')
+        return {}
+
+
+def clock_notes(water, now):
+    """{unit id: ['Device clock is 4 min ahead (PROBE-1)']} of the devices whose live values are on the units' cards
+    (`water`: {unit id: [PointWater]}, the card's own read) and whose clock is past the alarm rules' warning limit
+    (alarms/clock.py: the alarm's own judgement, never a second one). No query when no card shows a live value."""
+    from alarms import clock
+    from sensors.models import Channel
+    channels = _live_channels(water)
+    if not channels:
+        return {}
+    devices = {}
+    for channel_no, device_id, code in Channel.all_objects.filter(channel_no__in=list(channels)).values_list(
+            'channel_no', 'device_id', 'device__code'):
+        devices.setdefault(device_id, (code, set()))[1].update(channels[channel_no])
+    by_unit = {}
+    for device_id, note in clock.notes(list(devices), now).items():
+        code, units = devices[device_id]
+        for unit_id in units:
+            by_unit.setdefault(unit_id, []).append(f'{note} ({code})')
+    return {unit_id: sorted(notes) for unit_id, notes in by_unit.items()}
 
 
 # ---- the state ---------------------------------------------------------------------------------------------------------
@@ -463,6 +511,16 @@ def _alerts(middle, now):
 
 
 def state_of(card):
+    """The card's roll-up (`_ladder`), with its data-quality notes (a device of its water whose clock is off, owner
+    2026-11-09) said whatever its rung: beside a critical, a warning or a blind card's reasons, and as a note where it
+    would be OK. An empty unit's card has none."""
+    state = _ladder(card)
+    if not card.clock or state.key == EMPTY_STATE:
+        return state
+    return State(NOTE if state.key == OK else state.key, state.reasons + card.clock, state.basis, state.stale)
+
+
+def _ladder(card):
     """The one roll-up of a card, a ladder whose thresholds are the owners' and none invented here:
     1. critical: a water value judged critical, fresh or old (an old one says its age, and the card is marked old);
     2. warning: a value judged a warning (fresh or old, the same), the unit over its capacity, an estimate that says

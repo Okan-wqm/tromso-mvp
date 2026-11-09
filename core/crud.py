@@ -900,9 +900,18 @@ class DeleteView(ResourceView):
                     return done(request, self.url('list'))
                 softdelete.execute(plan, request.user)
             else:
-                # Logged first: a hard delete clears the object's primary key.
-                audit.record_delete(request.user, obj, entity_type=r.entity_type())
-                obj.delete()
+                try:
+                    with transaction.atomic():
+                        # Logged first: a hard delete clears the object's primary key.
+                        audit.record_delete(request.user, obj, entity_type=r.entity_type())
+                        obj.delete()
+                except models.ProtectedError as error:
+                    # A record that keeps pointing at it (a role an alarm recipient rule names) holds it: said, not a 500.
+                    kinds = sorted({str(capfirst(record._meta.verbose_name_plural)) for record in error.protected_objects})
+                    messages.error(request, _('%(name)s “%(object)s” cannot be deleted: %(reasons)s') % {
+                        'name': capfirst(r.name), 'object': obj,
+                        'reasons': _('%(records)s still use it.') % {'records': ', '.join(kinds)}})
+                    return done(request, self.url('list'))
         # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
         flash(request, _('%(name)s “%(object)s” deleted.'), r, obj)
         return done(request, self.url('list'))

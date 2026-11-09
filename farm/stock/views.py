@@ -191,7 +191,7 @@ def _drawer(request, unit, stock, feeding, params):
     can_record, can_void = request.user.has_perm(RECORD), request.user.has_perm(VOID)
     operations = list(StockOperation.all_objects.filter(movements__unit=unit).distinct()
                       .select_related('created_by', 'deleted_by', 'harvest_record__facility',
-                                      'harvest_record__transport', 'escape_record', 'delivery_record')
+                                      'harvest_record__transport', 'escape_record', 'delivery_record', 'opening_balance')
                       .prefetch_related(Prefetch('movements', StockMovement.objects.select_related('unit', 'batch')),
                                         'acknowledgements')
                       .order_by('-date', '-created_at')[:HISTORY])
@@ -207,6 +207,7 @@ def _drawer(request, unit, stock, feeding, params):
             'operation': operation, 'lines': lines, 'record': getattr(operation, 'harvest_record', None),
             'escape': getattr(operation, 'escape_record', None),
             'delivery': getattr(operation, 'delivery_record', None),
+            'opening': operation.opening,
             'corrections': [{'correction': corrections[(line.batch_id, operation.date)], 'batch': line.batch}
                             for line in lines if line.kind == 'weighing' and line.unit_id == unit.pk
                             and not operation.is_deleted and (line.batch_id, operation.date) in corrections],

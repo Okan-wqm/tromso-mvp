@@ -144,7 +144,21 @@ def revision():
 def record(user, action, instance, changes=None, entity_type=None, label=None, severity=AuditLog.Severity.NORMAL):
     """One entry. `severity` critical marks someone going on past a warning that protects fish or food
     (farm/handling): the activity log shows it apart and the later alarms read it."""
-    return AuditLog.objects.create(
+    found = entry(user, action, instance, changes, entity_type, label, severity)
+    found.save()
+    return found
+
+
+def created(user, instance, values, **kwargs):
+    """The entry of a new record with its non-empty values (a snapshot), not saved yet: for a writer that logs many
+    records in one statement (AuditLog.objects.bulk_create, the alarms' pass)."""
+    changes = {label: [None, value] for label, value in values.items() if value is not None}
+    return entry(user, AuditLog.Action.CREATE, instance, changes, **kwargs)
+
+
+def entry(user, action, instance, changes=None, entity_type=None, label=None, severity=AuditLog.Severity.NORMAL):
+    """One entry as `record` writes it, not saved yet."""
+    return AuditLog(
         user=user if user and user.is_authenticated else None,
         user_name=user.get_username() if user and user.is_authenticated else 'system',
         action=action,
@@ -160,8 +174,9 @@ def record(user, action, instance, changes=None, entity_type=None, label=None, s
 
 def record_create(user, instance, values, **kwargs):
     """Logs a new record with its non-empty values (a snapshot)."""
-    changes = {label: [None, value] for label, value in values.items() if value is not None}
-    return record(user, AuditLog.Action.CREATE, instance, changes, **kwargs)
+    found = created(user, instance, values, **kwargs)
+    found.save()
+    return found
 
 
 def record_update(user, instance, before, after, **kwargs):

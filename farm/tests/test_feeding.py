@@ -13,6 +13,7 @@ from django.core.management import call_command
 from django.db import IntegrityError, transaction
 from django.test import SimpleTestCase
 from django.urls import reverse
+from django.utils import translation
 
 from core import access, database, navigation
 from core.models import AuditLog, Profile
@@ -23,7 +24,7 @@ from ..handling import check
 from ..models import Equipment, EquipmentType, Feed, FeedingRecord, FeedSuitability, Tank
 from ..stock import integrity, read as stock_read, services as stock_services
 from ..stock.fold import Line, Op
-from .helpers import make_facility, role
+from .helpers import correction_window, make_facility, role
 from .test_stock import StockTestCase, make_unit
 from farm import withdrawal_gate
 
@@ -454,6 +455,19 @@ class VoidTests(FeedingTestCase):
         FeedingRecord.objects.filter(pk=feeding.pk).update(date=self.day(32))
         self.assertEqual(self.refused(services.void_feeding, self.user, feeding, 'old'),
                          {'__all__': ['Operations older than 31 days cannot be voided.']})
+
+    @correction_window(60)
+    @translation.override('en')              # the test before it voided in Turkish: the language must not leak in
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
+    def test_the_window_is_the_platform_owners_setting(self):
+        self.assertEqual(self.refused(self.record, days_ago=61),
+                         {'date': ['Operations can be dated at most 60 days back.']})
+        self.assertEqual(self.refused(self.record, days_ago=32),             # not the window: the fish
+                         {'date': [f'T-01 holds no fish on {stock_services.shown_date(self.day(32))}.']})
+        feeding = self.record(days_ago=20)
+        FeedingRecord.objects.filter(pk=feeding.pk).update(date=self.day(61))
+        self.assertEqual(self.refused(services.void_feeding, self.user, feeding, 'old'),
+                         {'__all__': ['Operations older than 60 days cannot be voided.']})
 
 
 class FiguresTests(FeedingTestCase):

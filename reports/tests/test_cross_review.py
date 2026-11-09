@@ -6,7 +6,6 @@ from datetime import date, datetime, timezone as utc
 from decimal import Decimal
 from unittest import mock
 
-from django.test import override_settings
 from django.urls import reverse
 
 from farm.models import Batch, HandlingPlanItem
@@ -33,7 +32,6 @@ class LiceFingerprintTests(LiceTestCase):
         self.assertNotEqual(before, compute.fingerprint(compute.scope(self.draft)))
 
 
-@override_settings(STOCK_BACKDATE_DAYS=3650)
 class ReportListDeadlineTests(DueTestCase):
     def test_the_list_works_each_deadline_out_once(self):
         for start in (date(2026, 10, 19), date(2026, 10, 26)):
@@ -43,7 +41,6 @@ class ReportListDeadlineTests(DueTestCase):
         self.assertEqual(worked_out.call_count, 2)
 
 
-@override_settings(STOCK_BACKDATE_DAYS=3650)
 class PlanBeforeReportsFromTests(DueTestCase):
     def test_a_harvest_of_a_plan_before_the_reports_from_date_is_owed_nowhere(self):
         batch = self.stock(self.m1, 1000, '4000', day(9, 1))

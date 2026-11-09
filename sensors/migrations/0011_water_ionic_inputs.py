@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('sensors', '0007_device_site'),
+        ('sensors', '0010_channel_fresh_heartbeats'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

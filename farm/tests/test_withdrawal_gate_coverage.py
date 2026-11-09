@@ -222,6 +222,8 @@ NOT_INPUT_TABLES = {
     'medicines': 'a medicine\'s name and how it is given; its withdrawal is its rows (registered)',
     'harvest_records': 'where a harvest went: the facility named in the text, never whether the withdrawal holds it',
     'slaughter_facilities': 'the facility named in the text',
+    'opening_balances': 'written once with its stocking operation, inside the guard (the operation and its lines are '
+                        'registered whole), never changed; voided with it',
     'equipment': 'a point\'s equipment, loaded with the point (with_owners): the withdrawal reads the middle points of '
                  'units and loops only',
     'feeds': None,                           # registered (feed_type); its other columns are names

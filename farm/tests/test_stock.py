@@ -24,7 +24,7 @@ from ..models import (
 )
 from ..stock import integrity, read, services
 from ..stock.fold import Line, Op, StockError, fold
-from .helpers import make_facility, make_species, role, stock_fish
+from .helpers import correction_window, make_facility, make_species, role, stock_fish
 from farm import withdrawal_gate
 
 Status = Tank.Status
@@ -231,6 +231,15 @@ class InputTests(StockTestCase):
         stock(self.day(31))
         self.assertEqual(Batch.objects.count(), 1)
 
+    @correction_window(60)
+    def test_the_window_is_the_platform_owners_setting(self):
+        def stock(day):
+            return services.record_input(self.user, species=self.salmon, input_stage='fry', origin='own_hatchery',
+                                         day=day, lines=[(self.t1, 10, Decimal(1))])
+        self.assertEqual(self.refused(stock, self.day(61)), {'date': ['Operations can be dated at most 60 days back.']})
+        stock(self.day(60))
+        self.assertEqual(Batch.objects.count(), 1)
+
     def test_the_farms_today_is_in_the_sites_time_zone(self):
         self.bergen.timezone = 'Asia/Tokyo'
         self.bergen.save()
@@ -390,6 +399,17 @@ class VoidTests(StockTestCase):
         StockOperation.objects.filter(pk=died.pk).update(date=self.day(32))
         self.assertEqual(self.refused(services.void, self.user, died, 'old'),
                          {'__all__': ['Operations older than 31 days cannot be voided.']})
+
+    @correction_window(60)
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
+    def test_the_void_window_is_the_platform_owners_setting(self):
+        batch = self.stock(days_ago=50)
+        died = self.mortality(batch, 1, days_ago=45)
+        StockOperation.objects.filter(pk=died.pk).update(date=self.day(61))
+        self.assertEqual(self.refused(services.void, self.user, died, 'old'),
+                         {'__all__': ['Operations older than 60 days cannot be voided.']})
+        StockOperation.objects.filter(pk=died.pk).update(date=self.day(45))
+        services.void(self.user, died, 'old, but inside the window')
 
 
 class StatusTests(StockTestCase):

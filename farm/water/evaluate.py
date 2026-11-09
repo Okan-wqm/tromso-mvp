@@ -11,12 +11,15 @@ a limit changed today re-judges every sample at once (the source froze it at wri
 - A value is judged against every species it concerns, the fish in its unit on that day (several
   batches, later cleaner fish), and the worst status wins. No fish, or no row for their species: "no
   limit" (owner decision 1: an empty unit's values are shown, not judged).
-- A value older than its parameter's freshness is "stale" (shown with its age), never ok.
+- A value older than its parameter's freshness is "stale" (shown with its age), never ok. The freshness and the clock
+  tolerance are the user's reference data (farm/water/freshness.py), read once per page and per alarm pass.
 - A unit's status is the worst status of its fresh values; stale when nothing is fresh."""
 from datetime import timedelta
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+
+from . import freshness
 
 # The water type of a limit row for any water (farm.models.water.WaterLimit).
 ANY_WATER = 'any'
@@ -33,11 +36,11 @@ class Status(models.TextChoices):
 
 
 RANK = {status: rank for rank, status in enumerate(Status)}
-# How far ahead of the server's clock a value may be stamped and still count (a device's clock a little fast).
-CLOCK_SKEW = timedelta(minutes=5)
-# The furthest ahead the sensors' ingest contract lets a device's time be (sensors_contract.future_skew_s, at most 3600 s):
-# a value between CLOCK_SKEW and this decides a status (read.worst_fresh, said as a clock ahead) but is never shown as
-# the newest; beyond it, it is a data error the card says ("timestamp in the future").
+# How far ahead of the server's clock a value may be stamped and still count is the platform owner's clock tolerance
+# (freshness.tolerance). The furthest ahead the sensors' ingest contract lets a device's time be
+# (sensors_contract.future_skew_s, at most 3600 s) is the contract's, not a rule: a value between the tolerance and this
+# decides a status (read.worst_fresh, said as a clock ahead) but is never shown as the newest; beyond it, it is a data
+# error the card says ("timestamp in the future").
 MAX_AHEAD = timedelta(seconds=3600)
 ALERTS = (Status.CRITICAL, Status.WARNING)
 
@@ -89,16 +92,17 @@ class Limits:
 
 
 def ahead(measured_at, now):
-    """Whether a value is stamped further ahead of `now` than CLOCK_SKEW: a device whose clock runs ahead (the sensors'
-    contract lets a device be up to an hour ahead). Such a value is never fresh and never the newest (read.newest)."""
-    return measured_at - now > CLOCK_SKEW
+    """Whether a value is stamped further ahead of `now` than the clock tolerance (freshness.tolerance): a device whose
+    clock runs ahead (the sensors' contract lets a device be up to an hour ahead). Such a value is never fresh and never
+    the newest (read.newest)."""
+    return measured_at - now > freshness.tolerance()
 
 
 def is_fresh(parameter, measured_at, now, fresh_for=None):
-    """The one freshness rule: a value says something about the water now for its parameter's `fresh_hours`, or, for a
-    live value, for `fresh_for` seconds (a sensor channel's three heartbeats); a value from further ahead than
-    CLOCK_SKEW says nothing (`ahead`)."""
+    """The one freshness rule: a value says something about the water now for its parameter's freshness (the user's
+    row, freshness.hours), or, for a live value, for `fresh_for` seconds (a sensor channel's heartbeats); a value from
+    further ahead than the clock tolerance says nothing (`ahead`)."""
     if ahead(measured_at, now):
         return False
-    limit = timedelta(seconds=fresh_for) if fresh_for is not None else timedelta(hours=parameter.fresh_hours)
+    limit = timedelta(seconds=fresh_for) if fresh_for is not None else freshness.fresh_for(parameter.code)
     return now - measured_at <= limit

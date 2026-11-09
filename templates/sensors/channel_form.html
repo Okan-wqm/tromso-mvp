@@ -6,7 +6,7 @@
 {% block extra_panels %}
 {% if object %}
 <section class="tab-panel" role="tabpanel" data-panel="reduction">
-  <p class="panel-help">{% blocktrans trimmed with seconds=object.fresh_s number=object.channel_no %}Channel number {{ number }}. A value is fresh for three heartbeats: {{ seconds }} seconds.{% endblocktrans %}</p>
+  <p class="panel-help">{% blocktrans trimmed with seconds=object.fresh_s number=object.channel_no heartbeats=object.fresh_heartbeats %}Channel number {{ number }}. A value is fresh for {{ heartbeats }} heartbeats: {{ seconds }} seconds.{% endblocktrans %}</p>
 </section>
 {% endif %}
 {% trans "Calibration" as panel_title %}

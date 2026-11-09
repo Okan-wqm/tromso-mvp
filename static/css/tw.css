@@ -1,13 +1,28 @@
 /*! tailwindcss v4.3.3 | MIT License | https://tailwindcss.com */
 @layer properties;
-.tw\:col-span-2 {
-  grid-column: span 2 / span 2;
+.tw\:col-start-1 {
+  grid-column-start: 1;
+}
+.tw\:col-start-2 {
+  grid-column-start: 2;
+}
+.tw\:row-span-2 {
+  grid-row: span 2 / span 2;
+}
+.tw\:row-start-1 {
+  grid-row-start: 1;
 }
 .tw\:m-0 {
   margin: 0px;
 }
-.tw\:mt-1 {
-  margin-top: var(--space-1);
+.tw\:mt-auto {
+  margin-top: auto;
+}
+.tw\:-mr-px {
+  margin-right: -1px;
+}
+.tw\:-mb-px {
+  margin-bottom: -1px;
 }
 .tw\:flex {
   display: flex;
@@ -18,9 +33,6 @@
 .tw\:inline-flex {
   display: inline-flex;
 }
-.tw\:min-h-7 {
-  min-height: calc(var(--space-1) * 7);
-}
 .tw\:min-h-8 {
   min-height: calc(var(--space-1) * 8);
 }
@@ -30,11 +42,26 @@
 .tw\:min-w-0 {
   min-width: 0px;
 }
+.tw\:shrink-0 {
+  flex-shrink: 0;
+}
 .tw\:list-none {
   list-style-type: none;
 }
+.tw\:grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.tw\:grid-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
 .tw\:grid-cols-\[minmax\(0\,1fr\)_auto\] {
   grid-template-columns: minmax(0,1fr) auto;
+}
+.tw\:flex-col {
+  flex-direction: column;
+}
+.tw\:flex-row {
+  flex-direction: row;
 }
 .tw\:flex-wrap {
   flex-wrap: wrap;
@@ -54,14 +81,17 @@
 .tw\:gap-0\.5 {
   gap: calc(var(--space-1) * 0.5);
 }
+.tw\:gap-1 {
+  gap: var(--space-1);
+}
 .tw\:gap-2 {
   gap: calc(var(--space-1) * 2);
 }
-.tw\:gap-3 {
-  gap: calc(var(--space-1) * 3);
-}
 .tw\:gap-6 {
   gap: calc(var(--space-1) * 6);
+}
+.tw\:gap-x-2 {
+  column-gap: calc(var(--space-1) * 2);
 }
 .tw\:gap-x-3 {
   column-gap: calc(var(--space-1) * 3);
@@ -88,8 +118,11 @@
 :where(.tw\:divide-hair > :not(:last-child)) {
   border-color: var(--line-hair);
 }
-.tw\:justify-self-start {
-  justify-self: flex-start;
+.tw\:self-center {
+  align-self: center;
+}
+.tw\:justify-self-end {
+  justify-self: flex-end;
 }
 .tw\:overflow-hidden {
   overflow: hidden;
@@ -98,24 +131,28 @@
   border-top-style: var(--tw-border-style);
   border-top-width: 1px;
 }
-.tw\:border-l-4 {
-  border-left-style: var(--tw-border-style);
-  border-left-width: 4px;
+.tw\:border-r {
+  border-right-style: var(--tw-border-style);
+  border-right-width: 1px;
+}
+.tw\:border-b {
+  border-bottom-style: var(--tw-border-style);
+  border-bottom-width: 1px;
 }
 .tw\:border-hair {
   border-color: var(--line-hair);
 }
-.tw\:border-l-crit {
-  border-left-color: var(--crit);
+.tw\:bg-sheet {
+  background-color: var(--surface-sheet);
 }
-.tw\:border-l-warn {
-  border-left-color: var(--warn);
+.tw\:bg-sunken {
+  background-color: var(--surface-sunken);
 }
 .tw\:p-0 {
   padding: 0px;
 }
-.tw\:p-4 {
-  padding: calc(var(--space-1) * 4);
+.tw\:px-3 {
+  padding-inline: calc(var(--space-1) * 3);
 }
 .tw\:px-4 {
   padding-inline: calc(var(--space-1) * 4);
@@ -126,17 +163,24 @@
 .tw\:py-3 {
   padding-block: calc(var(--space-1) * 3);
 }
-.tw\:pr-4 {
-  padding-right: calc(var(--space-1) * 4);
+.tw\:pt-1 {
+  padding-top: var(--space-1);
+}
+.tw\:pt-2 {
+  padding-top: calc(var(--space-1) * 2);
+}
+.tw\:pr-3 {
+  padding-right: calc(var(--space-1) * 3);
 }
 .tw\:pb-1 {
   padding-bottom: var(--space-1);
 }
-.tw\:pl-3 {
-  padding-left: calc(var(--space-1) * 3);
+.tw\:pl-4 {
+  padding-left: calc(var(--space-1) * 4);
 }
-.tw\:text-right {
-  text-align: right;
+.tw\:text-caption {
+  font-size: 12px;
+  line-height: var(--tw-leading, 1.45);
 }
 .tw\:text-figure {
   font-size: 18px;
@@ -145,6 +189,10 @@
 .tw\:text-h2 {
   font-size: 22px;
   line-height: var(--tw-leading, 1.2);
+}
+.tw\:text-readout {
+  font-size: 28px;
+  line-height: var(--tw-leading, 1.15);
 }
 .tw\:text-small {
   font-size: 13px;
@@ -157,37 +205,83 @@
 .tw\:whitespace-nowrap {
   white-space: nowrap;
 }
+.tw\:text-crit {
+  color: var(--crit);
+}
+.tw\:text-crit-text {
+  color: var(--crit-text);
+}
+.tw\:text-ink-1 {
+  color: var(--text-1);
+}
 .tw\:text-ink-2 {
   color: var(--text-2);
 }
 .tw\:text-ink-3 {
   color: var(--text-3);
 }
+.tw\:text-warn {
+  color: var(--warn);
+}
+.tw\:text-warn-text {
+  color: var(--warn-text);
+}
+.tw\:no-underline {
+  text-decoration-line: none;
+}
+.tw\:\[box-shadow\:var\(--edge-crit\)\] {
+  box-shadow: var(--edge-crit);
+}
+.tw\:\[box-shadow\:var\(--edge-warn\)\] {
+  box-shadow: var(--edge-warn);
+}
+@media (hover: hover) {
+  .tw\:hover\:bg-sunken:hover {
+    background-color: var(--surface-sunken);
+  }
+}
 @media (width >= 40rem) {
-  .tw\:sm\:grid-cols-\[8rem_minmax\(0\,1fr\)_auto\] {
-    grid-template-columns: 8rem minmax(0,1fr) auto;
+  .tw\:sm\:col-span-2 {
+    grid-column: span 2 / span 2;
   }
-  .tw\:sm\:grid-cols-\[minmax\(0\,1fr\)_auto\] {
-    grid-template-columns: minmax(0,1fr) auto;
+  .tw\:sm\:grid-cols-\[auto_minmax\(0\,1fr\)\] {
+    grid-template-columns: auto minmax(0,1fr);
   }
-  .tw\:sm\:items-center {
-    align-items: center;
+  .tw\:sm\:justify-self-end {
+    justify-self: flex-end;
   }
-  .tw\:sm\:items-start {
-    align-items: flex-start;
+}
+@media (width >= 48rem) {
+  .tw\:min-\[48rem\]\:grid-cols-5 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 @media (width >= 64rem) {
-  .tw\:lg\:grid-cols-2 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .tw\:lg\:col-span-2 {
+    grid-column: span 2 / span 2;
+  }
+  .tw\:lg\:grid-cols-\[minmax\(0\,1fr\)_20rem\] {
+    grid-template-columns: minmax(0,1fr) 20rem;
   }
 }
 @media (width >= 80rem) {
-  .tw\:xl\:grid-cols-1 {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
+  .tw\:xl\:col-start-2 {
+    grid-column-start: 2;
   }
-  .tw\:xl\:grid-cols-\[minmax\(0\,2fr\)_minmax\(0\,1fr\)\] {
-    grid-template-columns: minmax(0,2fr) minmax(0,1fr);
+  .tw\:xl\:col-start-3 {
+    grid-column-start: 3;
+  }
+  .tw\:xl\:row-span-1 {
+    grid-row: span 1 / span 1;
+  }
+  .tw\:xl\:row-start-1 {
+    grid-row-start: 1;
+  }
+  .tw\:xl\:grid-cols-\[minmax\(0\,1fr\)_24rem\] {
+    grid-template-columns: minmax(0,1fr) 24rem;
+  }
+  .tw\:xl\:grid-cols-\[minmax\(0\,19rem\)_minmax\(0\,1fr\)_auto\] {
+    grid-template-columns: minmax(0,19rem) minmax(0,1fr) auto;
   }
 }
 @media (pointer: coarse) {
@@ -197,6 +291,25 @@
   .tw\:coarse\:min-h-14 {
     min-height: calc(var(--space-1) * 14);
   }
+}
+.tw\:\[\&_\.icon\]\:mt-px .icon {
+  margin-top: 1px;
+}
+.tw\:\[\&_\.icon\]\:size-4 .icon {
+  width: calc(var(--space-1) * 4);
+  height: calc(var(--space-1) * 4);
+}
+.tw\:\[\&_\.ui-value\]\:flex-wrap .ui-value {
+  flex-wrap: wrap;
+}
+.tw\:\[\&_b\]\:whitespace-normal b {
+  white-space: normal;
+}
+.tw\:\[\&_b_\.wq-source\]\:ml-2 b .wq-source {
+  margin-left: calc(var(--space-1) * 2);
+}
+.tw\:\[\&_b_\.wq-source\]\:inline b .wq-source {
+  display: inline;
 }
 @property --tw-divide-y-reverse {
   syntax: "*";

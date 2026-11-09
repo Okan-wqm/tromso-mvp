@@ -15,7 +15,7 @@
 
 /* What the build reads for class names: every template, and the Python that may build a class name. */
 @source "../templates/**/*.html";
-@source "../{config,core,experiments,farm,hr,inventory,knowledge,messaging,monitoring,reports,sensors,tasks}/**/*.py";
+@source "../{alarms,config,core,experiments,farm,hr,inventory,knowledge,messaging,monitoring,reports,sensors,tasks}/**/*.py";
 
 /* A finger, a glove or a stylus: the tank side's 48 px targets (README, Principles). */
 @custom-variant coarse (@media (pointer: coarse));
@@ -38,6 +38,8 @@
   --text-h2--line-height: 1.2;
   --text-h1: 28px;
   --text-h1--line-height: 1.2;
+  --text-readout: 28px;
+  --text-readout--line-height: 1.15;
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;

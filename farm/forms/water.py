@@ -22,8 +22,8 @@ from django.utils.translation import gettext, gettext_lazy as _
 from core.crud import Fieldset, TabbedForm, tab_fields
 from core.widgets import MomentInput
 
-from ..models import (Equipment, ProductionDepartment, SamplingPoint, Site, Species, System, Tank, WaterLimit,
-                      WaterMeasurement)
+from ..models import (Equipment, ProductionDepartment, SamplingPoint, Site, Species, System, Tank, WaterFreshness,
+                      WaterLimit, WaterMeasurement)
 from ..models.site import ALTITUDE_HIGH, ALTITUDE_LOW, zone_of
 from ..models.water import BOUNDS
 from ..models.water_point import EQUIPMENT, SYSTEM, UNIT, PointKind, owner_type_of, site_of
@@ -654,3 +654,18 @@ class CalculatorForm(forms.Form):
             step = Decimal(1).scaleb(-fields[name].decimal_places)
             data[name] = '' if offer.value is None else formats.localize_input(offer.value.quantize(step))
         return data
+
+
+FRESHNESS_TABS = [('freshness', _('Freshness'), ['fresh_hours'])]
+
+
+class WaterFreshnessForm(TabbedForm):
+    """How long a value of a water parameter says something about the water now (farm.WaterFreshness)."""
+
+    tabs = FRESHNESS_TABS
+
+    class Meta:
+        model = WaterFreshness
+        fields = tab_fields(FRESHNESS_TABS)
+        help_texts = {'fresh_hours': _('An older value is shown stale with its age, never OK, and never clears an alarm. '
+                                       '1 to 8760 hours (a year).')}

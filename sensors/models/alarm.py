@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
@@ -28,8 +27,8 @@ THRESHOLD_KINDS = (AlarmKind.HIGH, AlarmKind.LOW, AlarmKind.RATE)
 
 class AlarmRule(AuditedModel):
     """When a channel needs a look: no fresh value, its device offline, above or below a threshold for a time, or a change
-    faster than a rate over a time. On one channel, or on every channel of a quantity. Shown, never sent: nobody is
-    notified until a delivery path exists (owner question 1). A high or low rule on a water quantity is refused: the
+    faster than a rate over a time. On one channel, or on every channel of a quantity. Its events become alarms (Company ›
+    Alarms, the alarms app), whose recipient rules say who is notified. A high or low rule on a water quantity is refused: the
     water limits of the species judge those (Water limits)."""
 
     channel = models.ForeignKey(Channel, null=True, blank=True, on_delete=models.CASCADE, related_name='alarm_rules',
@@ -80,8 +79,9 @@ class AlarmRule(AuditedModel):
 
 
 class AlarmEvent(models.Model):
-    """A time a rule held for a channel: when it opened and closed, the furthest value it reached, and who acknowledged
-    it. At most one open event per rule and channel. Written by manage.py check_sensors; a person only acknowledges.
+    """A time a rule held for a channel: when it opened and closed and the furthest value it reached. At most one open
+    event per rule and channel. Written by the sensors' check (sensors/alarms.py); each event is an alarm of the alarms app
+    (alarms.Alarm.sensor_event), which keeps who was notified and who acknowledged it.
     It belongs to the place the channel was bound to when it opened (`binding`): a move or taking the device out of the
     water closes it then (sensors/bindings.py), and a site's events are its places' (sensors/alarms.py `open_events`)."""
 
@@ -92,9 +92,6 @@ class AlarmEvent(models.Model):
     opened_at = models.DateTimeField(_('Opened at'))
     closed_at = models.DateTimeField(_('Closed at'), null=True, blank=True)
     peak = models.FloatField(_('Furthest value'), null=True, blank=True)
-    acknowledged_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
-                                        related_name='+', verbose_name=_('Acknowledged by'))
-    acknowledged_at = models.DateTimeField(_('Acknowledged at'), null=True, blank=True)
 
     class Meta:
         db_table = 'sensors_alarm_event'

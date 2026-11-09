@@ -25,8 +25,9 @@ class ClockSkewTests(SimpleTestCase):
     def test_a_value_from_further_ahead_than_the_skew_is_not_fresh(self):
         now = datetime(2026, 11, 8, 12, tzinfo=dt_timezone.utc)
         ph = get('ph')
-        CLOCK_SKEW = getattr(evaluate, 'CLOCK_SKEW', timedelta(minutes=5))
-        self.assertEqual(getattr(evaluate, 'CLOCK_SKEW', None), timedelta(minutes=5))
+        from ..water import freshness
+        CLOCK_SKEW = freshness.tolerance()                  # the platform owner's clock tolerance, 300 s by default
+        self.assertEqual(CLOCK_SKEW, timedelta(minutes=5))
         self.assertTrue(is_fresh(ph, now + CLOCK_SKEW, now))
         self.assertFalse(is_fresh(ph, now + CLOCK_SKEW + timedelta(seconds=1), now))
         self.assertFalse(is_fresh(ph, now + timedelta(minutes=50), now, fresh_for=3600))

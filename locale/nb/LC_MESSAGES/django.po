@@ -939,6 +939,18 @@ msgid "%(person)s (can no longer be chosen)"
 msgstr "%(person)s (kan ikke velges lenger)"
 
 #, python-format
+msgid "%(person)s has %(records)s: correct them first."
+msgstr "%(person)s har %(records)s: rett dem først."
+
+#, python-format
+msgid "%(person)s joined on %(day)s."
+msgstr "%(person)s begynte %(day)s."
+
+#, python-format
+msgid "%(person)s left on %(day)s."
+msgstr "%(person)s sluttet %(day)s."
+
+#, python-format
 msgid "%(person)s, %(day)s: %(what)s"
 msgstr "%(person)s, %(day)s: %(what)s"
 
@@ -5388,6 +5400,9 @@ msgstr "Koding"
 msgid "End"
 msgstr "Slutt"
 
+msgid "End the leave earlier"
+msgstr "Avslutt permisjonen tidligere"
+
 msgid "End unknown"
 msgstr "Slutt ukjent"
 
@@ -7045,6 +7060,10 @@ msgstr "Er diagnosen mistenkt eller bekreftet?"
 msgid "Issue"
 msgstr "Hefte"
 
+msgctxt "stock operation"
+msgid "Issue"
+msgstr "Uttak"
+
 #, python-format
 msgid "It carried %(count)d harvest: keep “%(category)s” ticked."
 msgid_plural "It carried %(count)d harvests: keep “%(category)s” ticked."
@@ -8192,6 +8211,9 @@ msgstr "Ny fiskegruppe"
 
 msgid "New channel"
 msgstr "Ny kanal"
+
+msgid "New last day"
+msgstr "Ny siste dag"
 
 msgid "New message"
 msgstr "Ny melding"
@@ -12811,6 +12833,9 @@ msgstr[1] "De siste %(weeks)s ukene med tellinger, per lokalitet."
 msgid "The layout as text"
 msgstr "Oppsettet som tekst"
 
+msgid "The leave was shortened."
+msgstr "Permisjonen ble forkortet."
+
 #, python-format
 msgid "The level %(label)s of %(factor)s has two different values."
 msgstr "Nivået %(label)s av %(factor)s har to ulike verdier."
@@ -12894,6 +12919,10 @@ msgid ""
 msgstr ""
 "Overvåkingens navngitte veggskjermer: et navn, malen kortene tegnes med som standard, hvor brede "
 "kortene er og hvor ofte skjermene spør."
+
+#, python-format
+msgid "The new last day must lie between %(first)s and the day before %(last)s."
+msgstr "Den nye siste dagen må ligge mellom %(first)s og dagen før %(last)s."
 
 #, python-format
 msgid "The new placement must start after the last one ended (%(day)s)."
@@ -13917,6 +13946,10 @@ msgstr "Dette oppsettet har en ukjent versjon (%(version)s)."
 
 msgid "This layout is too large to store."
 msgstr "Dette oppsettet er for stort til å lagres."
+
+#, python-format
+msgid "This leave ended on %(day)s, more than %(days)s days ago: it can no longer be corrected."
+msgstr "Denne permisjonen sluttet %(day)s, for mer enn %(days)s dager siden: den kan ikke rettes lenger."
 
 #, python-format
 msgid "This liner is %(low)s to %(high)s mm thick."
@@ -15461,6 +15494,9 @@ msgstr "minst hvert %(seconds)s s"
 msgid "at once"
 msgstr "straks"
 
+msgid "attendance outside these days"
+msgstr "oppmøte utenfor disse dagene"
+
 msgid "attendance record"
 msgstr "oppmøteregistrering"
 
@@ -16244,6 +16280,9 @@ msgstr "kunnskapsoppføring"
 msgid "lab"
 msgstr "laboratorium"
 
+msgid "leave outside these days"
+msgstr "permisjon utenfor disse dagene"
+
 msgid "leave request"
 msgstr "permisjonssøknad"
 
@@ -16572,6 +16611,10 @@ msgstr "planlagt høsting eller transport"
 
 msgid "planned harvests and transports"
 msgstr "planlagte høstinger og transporter"
+
+#, python-format
+msgid "planned shifts before %(day)s"
+msgstr "planlagte vakter før %(day)s"
 
 msgid "plans"
 msgstr "planer"

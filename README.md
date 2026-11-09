@@ -739,7 +739,8 @@ value and value-against-limits (one parameter), water (the middle point's key va
 (the key figures or every figure), feeding (the week too or not), health, tasks, experiments, the Deffeyes chart button,
 and a trend that is catalogued but refused until a bulk series read exists. `validate.py` is the one validator (pure, no
 query; the model, the form, the preview and the tests call it): errors block (the shape, an unknown version, more than 40
-widgets or 32 KB, keys, ids, kinds, whole numbers, a widget outside the 12 columns or outside its sizes, each overlapping
+widgets or 32 KB, keys, ids, kinds, whole numbers, a widget outside the 12 columns or below the grid's last row (`catalogue.ROWS`, the
+tallest widgets stacked 40 high: a designer's layout, compacted upwards, always fits) or outside its sizes, each overlapping
 pair named once, a binding the widget cannot have, an option its schema refuses), warnings never do (no oxygen anywhere,
 more than two large widgets, more than 16 widgets). An older layout version is upgraded one pure step at a time and checked
 as upgraded, never changed in place; a fixture per version passes. The geometry is shared with the designer's TypeScript
@@ -787,7 +788,9 @@ savepoint of its own: 4 savepoint statements simple, 10 detailed (`RecordedCount
 **How a card is drawn** (`monitoring/cards/render.py`, `templates/monitoring/_card.html`, `templates/monitoring/widgets/`). The
 frame (the unit and its link, the state word, shape and reasons, the withdrawal, the flip link named after the template it
 shows, "Empty", what the state is from) is not data and no template can remove it. Below it `div.card-grid`: one
-`div.w.w-<type>` per widget with `--x --y --w --h`, placed by plain CSS grid on 12 columns (`static/css/monitor.css`; a row at
+`div.w.w-<type>` per widget with the classes of its cell (`gx-<x> gy-<y> gw-<w> gh-<h>`, never a style attribute, which the
+Content-Security-Policy blocks; `static/css/card-grid.css`, made from the catalogue by `manage.py card_grid_css`, whose `--check`
+and a test fail when it is stale, turns them into `--x --y --w --h`), placed by plain CSS grid on 12 columns (`static/css/monitor.css`; a row at
 least `--row` 1.75 rem high, growing with its content) and, below 30 rem of card, one column in the same order; the wall runs no
 layout script. `build(card)` (no query) gives the widgets in reading order (y, then x), so what is read, what Tab visits and
 what is seen agree; a unit with no fish shows only the experiments and the Deffeyes button; a widget whose sources the person
@@ -3048,6 +3051,11 @@ any below it, and, for a holder of Everyone (`hr.all_employee`, a column on the 
 employee. `EmployeeResource.scoped` is that function, so the list, a person's read page, the edit and the placement given
 are all of the team, whatever the address or the query. A lead with a role that gives Read on Employees reads their
 team's read pages; the form needs Edit, and only a holder of Everyone can create someone (a new person has no team yet).
+A move is a placement in a department, so the department moved to must be one the lead manages too
+(`hr.scope.can_manage`, from the same `managed_departments` as the team): a lead does not hand a person to another
+manager or into the office, and a holder of All production moves people between production departments only. A lead does
+not write their own record either (placement, title, last day: `hr.services.own_record`, the rule of one's own attendance
+and plan); the list offers them their own read page, not the form. A holder of Everyone does both.
 A person who moved belongs to the old manager up to the move and to the new one from it (`scope.visible_days`, for the
 reads that run over several days). A manager without a role, or a role without a department, reaches nothing beyond
 themselves. The Departments page counts, per department, the people placed there today that the viewer may reach.
@@ -3124,9 +3132,30 @@ interface for the places that may only learn that someone is away, never why.
 and **Edit also approves, rejects and cancels** (the matrix has no extra column, as for a knowledge entry's review). The decider
 is someone with Edit whose team holds the person and who is not the person; a lead's own request therefore reaches whoever has
 them in their team, or a holder of Everyone. A type that needs no approval is granted the moment it is filed, with no decider. A
-pending request is cancelled by the person or a decider at any time, an approved one only while its first day has not started on
-the site's clock; the decisions are `hr.services.decide_leave` and `cancel_leave` (POST routes, a dialog for the rejection
+pending request is cancelled by the person or a decider at any time, an approved one by the person only while its first day
+has not started on the site's clock. Once it has begun, a decider (never the person, never on their own leave:
+`hr.services.can_correct`) still puts it right: **ends it earlier** (`shorten_leave`, a new last day from its first day to the
+day before its last: the person came back early; the request's page has the field) or cancels it (it was never taken). Only
+within the correction window after the leave's last day (`hr.services.correction_window_days`, the platform owner's
+correction-window setting, 31 days by default): an older leave is history and is refused with the reason. The
+decisions are `hr.services.decide_leave`, `cancel_leave` and `shorten_leave` (POST routes, a dialog for the rejection
 note), each in one transaction with its audit row, and every refusal leaves rows and log unchanged.
+
+**Within the employment.** No shift is planned, no presence entered or punched and no leave asked for a day before the person
+joined or after their last day (`hr.services.check_employed`, the one rule for the plan, the punch, the entered presence, the
+attendance form and the leave form; clearing a planned day is always allowed). A lead was already held to it by the
+placements, which end on the last day; a holder of Everyone and the person themselves are held by this rule. Every path
+reads it with the person's row locked (`lock_employed`: the forms check it first for the sentence, the save checks it
+again under the lock in the tab's `after_save`, which rolls the save back onto the form; `enter_presence`, the punch and
+approving a pending leave lock first), so a last day committed meanwhile is never passed. HR's lock order: the person
+first (`hr.services.lock_person`, FOR NO KEY UPDATE, so a record being added for them does not wait on it), then their
+records; an edit of a plan, a punch or a leave request locks the person before the record (`PersonFirst`, through
+`Resource.edited`), as the batch plan, the punch and `leave_company` do. It holds the other way too: a
+first or last day that would leave plans, held leave or punches outside is refused on the person form and by
+`leave_company`, naming what to correct first (`employment_conflicts`; later plans and later pending leave go with the
+last day as before). The database backs it (`hr/0011_employment_bounds`: constraint triggers deferred to the commit on
+plans, leave, punches and the person's dates; a punch is checked on the UTC day with a day of slack, its exact day is
+the site's).
 
 **Privacy.** A lead sees the person and the days; the **type** (sick, annual) only the person, who may decide the request (Edit) and the
 holders of Everyone see: in the list, on the read page and in the search (the scope marks each request `type_shown` and a search for a
@@ -3304,7 +3333,7 @@ only one who manages roles and users; everyone else gets exactly what their role
   users are not areas, so no role can grant them.
 - **Roles** (`/roles/`, Django `Group`): a table with each role's users and what it allows; the
   dialog has the name and a permission matrix (areas by group, columns Read / Create / Edit /
-  Delete, and Crew, All production and Everyone where an area offers them: see Row scope). Create, Edit, Delete, Crew, All production and Everyone include Read: the form adds it and the browser ticks it. Saving
+  Delete, and Crew, All production and Everyone where an area offers them: see Row scope). Create, Edit and Delete include Read: the form adds it and the browser ticks it. Crew, All production and Everyone include nothing: they widen whose rows the role's other rights reach, so a role saved in the matrix keeps exactly what it had (the Production manager preset has All production without the Team list, `hr/roles.py`). **Deploying this rule:** a role saved before it kept the Read the old rule added; migration `hr/0010_restore_preset_rights` puts the two presets back to exactly their rights, and `manage.py check --database default` lists any other role whose Read on an area may come only from it (core.W003: Read and a widening column, no Create, Edit or Delete there) for the administrator to review in Roles. Saving
   sets exactly the ticked boxes (the model's standard view/add/change/delete permissions). The
   activity log shows permission changes as "Sites: read, create; Activity log: read". Deleting a
   role removes it from its people.
@@ -3313,6 +3342,35 @@ only one who manages roles and users; everyone else gets exactly what their role
   email, whose link sets their first password (and "Forgot password" sends a new link if it
   expired). People are deactivated, not deleted, and nobody can deactivate their own account.
   Platform admin status is not edited here (only with `createsuperuser`).
+
+## Security in the pages
+
+- **Text is escaped everywhere.** No template prints a value with `|safe` or `autoescape off` (the one exception is
+  the password reset e-mail, which is plain text). A form's help text is text too: several forms write a name into it
+  (a task whose place was deleted, equipment whose systems were deleted), so `templates/registration/_field.html`
+  escapes it, and Django's own layouts (`{{ form }}`, `as_p`, `as_table`, `as_ul`, `as_field_group`) draw their fields
+  with the same template (`templates/django/forms/`). Markup reaches a page only from the few places that build it with
+  every piece of text escaped (a reference, a found passage, a sensor chart, the import map);
+  `core/tests_escaping.py` names them and fails when a new one appears.
+- **Every page asks for a right.** `core/tests_routes.py` walks every route of the project: someone not signed in is
+  sent to sign in everywhere but the sign-in and password-reset pages and the language switch, and a signed-in person
+  with no role is refused (403, a record page too: it asks for the right before it looks the record up) everywhere but a
+  short named list (the overviews, which show only
+  the tiles a person's roles allow, and the person's own password; the clock-in/out route, whose argument is a word, not a record). A new page without a check fails it. A page that
+  writes asks for its right before it reads the request (the shift plan answered such a person 400 for a malformed
+  request before; now 403).
+- **A Content-Security-Policy on every response** (`config/settings.py` SECURE_CSP, Django's own middleware): a page loads
+  only from its own address; scripts are the project's files plus what carries the response's nonce (the import map,
+  `core/templatetags/assets.py`); no inline script, no inline style (a monitoring widget's cell is a class,
+  `static/css/card-grid.css`; a capacity bar's or gauge's fill an SVG rectangle's width, `templates/farm/_capacity_bar.html`
+  and the units table's `ui-gauge-track`), no
+  event-handler attribute, no plug-in, no frame around a page, no form sent elsewhere. So even text that slipped past the
+  escaping could not run. `core/tests_csp.py` opens every page that takes no record as the platform admin, as a page and
+  as a dialog, and fails on anything the policy would block; it also reads every template for the parts that appear only
+  with data. A script that changes a style through the DOM (`element.style`) is allowed by the policy.
+- **The fonts are the project's own** (`static/fonts`, declared in `static/css/fonts.css`: Atkinson Hyperlegible Next and
+  Bricolage Grotesque under the SIL Open Font License 1.1, one entry each in `THIRD_PARTY.md`): no page asks Google or any
+  other site for anything, so no reader's address leaves the farm with a page, and the farm's own network shows them.
 
 ## Database viewer
 
@@ -3598,7 +3656,7 @@ whatever the address or the query, and nothing is written or logged. Nothing els
 record, so a rule is never written a second time.
 
 The matrix has one more column for the same purpose, **Everyone** (`all`): offered by the one area whose rows
-are scoped (HR's Employees), it implies Read like Create, Edit and Delete, and the scope function reads it as
+are scoped (HR's Employees), it includes no other right (it widens rows; Read is ticked on its own), and the scope function reads it as
 "no limit". A tab's `private_fields` name form fields that hold a person's own words (a leave reason, a
 punch's note): the activity log says "Private text" for a filled one and never stores the words, so it shows
 that the field was set, replaced or cleared, not what it says (a short keyed digest of the text is kept so that

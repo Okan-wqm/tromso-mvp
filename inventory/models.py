@@ -25,7 +25,7 @@ from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 from django.db.models import Case, F, Q, Value, When
 from django.db.models.functions import Lower, Upper
-from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
+from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy, pgettext_lazy
 
 from core.models import CODE, CODE_MESSAGE, AuditedModel, CodedMixin
 from farm.models import Equipment, EquipmentType, Feed, Site, Supplier
@@ -228,7 +228,7 @@ class InventoryLot(AuditedModel):
 
 class OperationKind(models.TextChoices):
     RECEIPT = 'receipt', _('Delivery')
-    ISSUE = 'issue', _('Issue')
+    ISSUE = 'issue', pgettext_lazy('stock operation', 'Issue')     # taken out for use; not a journal's issue
     WRITE_OFF = 'write_off', _('Write-off')
     RETURN = 'return', _('Return to supplier')
     TRANSFER = 'transfer', _('Transfer')

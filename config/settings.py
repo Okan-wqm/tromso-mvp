@@ -67,6 +67,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Every response says where its page may load from (SECURE_CSP below).
+    'django.middleware.csp.ContentSecurityPolicyMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     # The language comes from the cookie, then the browser's Accept-Language, then LANGUAGE_CODE.
     'django.middleware.locale.LocaleMiddleware',
@@ -99,6 +101,7 @@ TEMPLATES = [
                 'django.template.context_processors.i18n',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.csp',
                 'core.navigation.rail',
                 'core.navigation.page_base',
                 'core.theme.context',
@@ -106,6 +109,25 @@ TEMPLATES = [
         },
     },
 ]
+
+# Where a page may load from: its own address only. Scripts are the project's own files, plus what carries the response's
+# nonce (the import map, core/templatetags/assets.py); no inline style (a widget's cell is a class, static/css/card-grid.css);
+# the font is the project's (static/fonts); no plug-in, no frame around a page, no form sent elsewhere. So even a name that
+# slipped past the escaping could not run as a script. core/tests_csp.py opens every page against it.
+from django.utils.csp import CSP  # noqa: E402
+
+SECURE_CSP = {
+    'default-src': [CSP.SELF],
+    'script-src': [CSP.SELF, CSP.NONCE],
+    'style-src': [CSP.SELF],
+    'img-src': [CSP.SELF, 'data:'],
+    'font-src': [CSP.SELF],
+    'connect-src': [CSP.SELF],
+    'object-src': [CSP.NONE],
+    'base-uri': [CSP.NONE],
+    'form-action': [CSP.SELF],
+    'frame-ancestors': [CSP.NONE],
+}
 
 # Widgets render with the project's templates too (e.g. the role form's permission matrix).
 FORM_RENDERER = 'django.forms.renderers.TemplatesSetting'

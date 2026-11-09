@@ -95,6 +95,12 @@ KEY_WATER = (parameters.TEMPERATURE, parameters.OXYGEN_MG_L, parameters.OXYGEN_P
 OXYGEN = (parameters.OXYGEN_MG_L, parameters.OXYGEN_PCT)
 
 
+# The rows a card's grid has: as many as the tallest widgets stacked, one per widget the card may hold. A designer's layout
+# is compacted upwards, so it always fits; the validator refuses a widget below it, and static/css/card-grid.css has a
+# class for every row (render.grid_css).
+ROWS = MAX_WIDGETS * max(spec.max_h for spec in WIDGETS.values())
+
+
 def bindable():
     """The parameter codes a widget may be bound to: every parameter the water module knows, measured or worked out."""
     return list(parameters.BY_CODE)
@@ -111,7 +117,7 @@ def as_data():
         return shown
 
     return {
-        'columns': COLUMNS, 'schema': SCHEMA_VERSION, 'max_widgets': MAX_WIDGETS,
+        'columns': COLUMNS, 'rows': ROWS, 'schema': SCHEMA_VERSION, 'max_widgets': MAX_WIDGETS,
         'widgets': [{'type': spec.type, 'label': str(spec.label), 'min_w': spec.min_w, 'min_h': spec.min_h,
                      'max_w': spec.max_w, 'max_h': spec.max_h, 'default_w': spec.default_w,
                      'default_h': spec.default_h, 'bind': spec.bind, 'enabled': spec.enabled,

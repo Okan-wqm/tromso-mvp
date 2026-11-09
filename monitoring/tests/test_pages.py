@@ -75,8 +75,10 @@ class PageTests(MonitoringCase):
         for text in ('12,000', '13.2', '8.10', '7.20', 'Deffeyes chart', 'State from'):
             self.assertIn(text, card)
         self.assertIn(f'data-window="{reverse("farm:water_unit_chart", args=[self.t2.pk])}"', card)
-        self.assertEqual(card.count('<svg'), 0)                      # the chart lives in the window, never in a card
-        self.assertEqual(html.count('<svg'), html.count('class="icon"'))     # (the icons are the only svg)
+        # the chart lives in the window, never in a card: the only svg are the icons and the capacity bar (an SVG rectangle,
+        # templates/farm/_capacity_bar.html, since the Content-Security-Policy allows no style attribute)
+        self.assertEqual(card.count('<svg') - card.count('<svg class="capacity-bar'), 0)
+        self.assertEqual(html.count('<svg'), html.count('class="icon"') + html.count('<svg class="capacity-bar'))
 
     def test_a_card_that_may_not_see_a_section_says_so_and_prints_no_value_of_it(self):
         self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='8.1')
@@ -141,7 +143,7 @@ class FragmentTests(MonitoringCase):
         html = response.content.decode()
         for shell in ('<html', 'rail', 'Skip to content', 'id="monitor-windows"'):
             self.assertNotIn(shell, html)                           # no request: the shell's context never ran
-        self.assertNotIn('<svg', html.replace('<svg class="icon"', ''))
+        self.assertNotIn('<svg', html.replace('<svg class="icon"', '').replace('<svg class="capacity-bar', ''))
 
     def test_the_fragment_is_the_pages_grid(self):
         page = self.client.get(PAGE)

@@ -53,6 +53,33 @@ class PresetTests(PeopleTestCase):
                 self.assertFalse(name.startswith('auth.'), name)
 
 
+class MatrixRoundTripTests(PeopleTestCase):
+    """A preset opened in the role matrix and saved as it is (even only renamed) keeps exactly its rights: the matrix's
+    one rule (Create, Edit and Delete include Read; Crew, All production and Everyone only widen whose rows the other
+    rights reach) is the rule the presets are written in."""
+
+    def test_saving_each_preset_unchanged_gives_it_nothing(self):
+        from django.contrib.auth import get_user_model
+        run()
+        admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
+        self.client.force_login(admin)
+        for preset in roles.PRESETS:
+            group = Group.objects.get(name=preset.name)
+            before = codenames(preset.name)
+            response = self.client.post(reverse('core:group_edit', args=[group.pk]), {
+                'name': f'{preset.name} (renamed)', 'version': '',
+                'permissions': [str(permission.pk) for permission in group.permissions.all()]})
+            self.assertLess(response.status_code, 400, preset.name)
+            group.refresh_from_db()
+            self.assertEqual(group.name, f'{preset.name} (renamed)')
+            self.assertEqual(codenames(group.name), before, preset.name)
+            self.assertNotIn('view_employee', codenames(group.name))
+
+    def test_every_preset_is_closed_under_the_matrix_rule(self):
+        for preset in roles.PRESETS:
+            self.assertEqual(access.implied(preset.permissions), set(preset.permissions), preset.name)
+
+
 class WalkTests(PeopleTestCase):
     """Each preset on every address it might try."""
 

@@ -15,7 +15,7 @@ from ..forms.attendance import AttendanceRecordForm
 from ..models import AttendanceRecord, Posting
 
 
-class AttendanceRecordResource(Resource):
+class AttendanceRecordResource(services.PersonFirst, Resource):
     """The Attendance page: the stretches of presence of the viewer's team, newest first, over the last days or the days
     asked for. Typed by a lead (Create, with a reason), corrected (Edit, logged with before and after) or voided (Delete);
     a person's own clock-in and clock-out are on the Today page. The same read permission opens Today and this page, so the
@@ -49,8 +49,14 @@ class AttendanceRecordResource(Resource):
                             scope.realm_for(request))
 
     @classmethod
+    def after_save(cls, request, record, created):
+        """The employment rule again under the person's lock (the form checked it before any lock)."""
+        services.lock_employed(record.employee, services.punch_day(record.employee, record.clock_in),
+                               services.punch_day(record.employee, record.clock_out) if record.clock_out else None)
+
+    @classmethod
     def allowed(cls, request, obj, action):
-        return not services.self_plan(request.user, obj.employee)
+        return not services.own_record(request.user, obj.employee)
 
     @classmethod
     def form(cls, request, *args, **kwargs):

@@ -944,6 +944,18 @@ msgid "%(person)s (can no longer be chosen)"
 msgstr "%(person)s (artık seçilemez)"
 
 #, python-format
+msgid "%(person)s has %(records)s: correct them first."
+msgstr "%(person)s için %(records)s var: önce bunları düzeltin."
+
+#, python-format
+msgid "%(person)s joined on %(day)s."
+msgstr "%(person)s %(day)s tarihinde işe başladı."
+
+#, python-format
+msgid "%(person)s left on %(day)s."
+msgstr "%(person)s %(day)s tarihinde ayrıldı."
+
+#, python-format
 msgid "%(person)s, %(day)s: %(what)s"
 msgstr "%(person)s, %(day)s: %(what)s"
 
@@ -5394,6 +5406,9 @@ msgstr "Kodlama"
 msgid "End"
 msgstr "Bitiş"
 
+msgid "End the leave earlier"
+msgstr "İzni erken bitir"
+
 msgid "End unknown"
 msgstr "Bitişi bilinmiyor"
 
@@ -7061,6 +7076,10 @@ msgstr "Tanı şüpheli mi, doğrulanmış mı?"
 msgid "Issue"
 msgstr "Sayı"
 
+msgctxt "stock operation"
+msgid "Issue"
+msgstr "Çıkış"
+
 #, python-format
 msgid "It carried %(count)d harvest: keep “%(category)s” ticked."
 msgid_plural "It carried %(count)d harvests: keep “%(category)s” ticked."
@@ -8204,6 +8223,9 @@ msgstr "Yeni parti"
 
 msgid "New channel"
 msgstr "Yeni kanal"
+
+msgid "New last day"
+msgstr "Yeni son gün"
 
 msgid "New message"
 msgstr "Yeni mesaj"
@@ -12818,6 +12840,9 @@ msgstr[1] "Saha başına son %(weeks)s haftanın sayımları."
 msgid "The layout as text"
 msgstr "Metin olarak yerleşim"
 
+msgid "The leave was shortened."
+msgstr "İzin kısaltıldı."
+
 #, python-format
 msgid "The level %(label)s of %(factor)s has two different values."
 msgstr "%(factor)s faktörünün %(label)s düzeyinin iki farklı değeri var."
@@ -12901,6 +12926,10 @@ msgid ""
 msgstr ""
 "İzlemenin adlandırılmış duvar ekranları: bir ad, kartlarının varsayılan olarak çizildiği şablon, "
 "kartlarının genişliği ve ekranlarının ne sıklıkla sorduğu."
+
+#, python-format
+msgid "The new last day must lie between %(first)s and the day before %(last)s."
+msgstr "Yeni son gün %(first)s ile %(last)s tarihinden önceki gün arasında olmalı."
 
 #, python-format
 msgid "The new placement must start after the last one ended (%(day)s)."
@@ -13934,6 +13963,10 @@ msgstr "Bu yerleşimin sürümü bilinmiyor (%(version)s)."
 
 msgid "This layout is too large to store."
 msgstr "Bu yerleşim kaydedilemeyecek kadar büyük."
+
+#, python-format
+msgid "This leave ended on %(day)s, more than %(days)s days ago: it can no longer be corrected."
+msgstr "Bu izin %(day)s tarihinde, %(days)s günden daha önce bitti: artık düzeltilemez."
 
 #, python-format
 msgid "This liner is %(low)s to %(high)s mm thick."
@@ -15472,6 +15505,9 @@ msgstr "en az %(seconds)s sn’de bir"
 msgid "at once"
 msgstr "derhal"
 
+msgid "attendance outside these days"
+msgstr "bu günlerin dışında devam kaydı"
+
 msgid "attendance record"
 msgstr "yoklama kaydı"
 
@@ -16257,6 +16293,9 @@ msgstr "bilgi kaydı"
 msgid "lab"
 msgstr "laboratuvar"
 
+msgid "leave outside these days"
+msgstr "bu günlerin dışında izin"
+
 msgid "leave request"
 msgstr "izin talebi"
 
@@ -16585,6 +16624,10 @@ msgstr "planlanmış hasat veya taşıma"
 
 msgid "planned harvests and transports"
 msgstr "planlanmış hasatlar ve taşımalar"
+
+#, python-format
+msgid "planned shifts before %(day)s"
+msgstr "%(day)s tarihinden önce planlanmış vardiyalar"
 
 msgid "plans"
 msgstr "planlar"

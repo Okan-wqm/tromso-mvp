@@ -6,7 +6,7 @@
    replaced; the windows sit beside it (frontend/windows.ts). {% endcomment %}
 {% block title %}{{ title }}{% endblock %}
 {% block html_attrs %}{% if wall %} data-wall{% endif %}{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{% asset 'css/monitor.css' %}"><script type="module" src="{% asset 'js/windows.js' %}"></script><script type="module" src="{% asset 'js/announce.js' %}"></script>{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% asset 'css/monitor.css' %}"><link rel="stylesheet" href="{% asset 'css/card-grid.css' %}"><script type="module" src="{% asset 'js/windows.js' %}"></script><script type="module" src="{% asset 'js/announce.js' %}"></script>{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}

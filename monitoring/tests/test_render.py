@@ -188,9 +188,10 @@ class PageTests(MonitoringCase):
         card = articles(html)[f'card:{self.t2.pk}']
         self.assertEqual(card.attrs['data-template'], str(builtin.SIMPLE))
         grid = next(node for node in card.walk() if 'card-grid' in node.classes)
-        placed = [(node.attrs['class'], node.attrs['style']) for node in widgets_of(card)]
-        self.assertEqual(placed[0], ('w w-experiment', '--x:0;--y:0;--w:12;--h:1'))
-        self.assertEqual([each[0] for each in placed], [f'w w-{widget["type"]}' for widget in builtin.SIMPLE_LAYOUT['widgets']])
+        placed = [node.attrs['class'] for node in widgets_of(card)]
+        self.assertEqual(placed[0], 'w w-experiment gx-0 gy-0 gw-12 gh-1')       # placed by classes: no style attribute
+        self.assertTrue(all('style' not in node.attrs for node in widgets_of(card)))
+        self.assertEqual([each.split()[1] for each in placed], [f'w-{widget["type"]}' for widget in builtin.SIMPLE_LAYOUT['widgets']])
         self.assertTrue(grid is not None)
         self.assertIn('class="monitor-card-head"', html)                  # the frame is not a widget
 
@@ -202,7 +203,7 @@ class PageTests(MonitoringCase):
         self.assertIn('8.10', text)
         self.assertIn('Meter or test kit', text)
         self.assertIn('ago', text)
-        tan = next(node for node in widgets_of(card) if node.attrs['style'].startswith('--x:8;--y:3'))
+        tan = next(node for node in widgets_of(card) if {'gx-8', 'gy-3'} <= set(node.classes))
         self.assertIn('no data', ' '.join(tan.text().split()))
         self.assertNotIn('—', tan.text())
 
@@ -244,7 +245,7 @@ class PageTests(MonitoringCase):
         self.sample(self.t1, hours=1, temperature_c='13', oxygen_mg_l='5')            # critical
         self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='8.1')       # fine
         cards = articles(self.page(OPERATOR))
-        cells = [[node.attrs['style'] for node in widgets_of(cards[f'card:{unit.pk}'])] for unit in (self.t1, self.t2)]
+        cells = [[node.attrs['class'] for node in widgets_of(cards[f'card:{unit.pk}'])] for unit in (self.t1, self.t2)]
         self.assertEqual(cells[0], cells[1])
         self.assertNotEqual(cards[f'card:{self.t1.pk}'].attrs['class'], cards[f'card:{self.t2.pk}'].attrs['class'])
 
@@ -325,3 +326,40 @@ class AnnouncerTests(MonitoringCase):
         self.assertEqual(holder.attrs['data-states'], ' '.join(key for key, _word in read.STATES))
         self.assertIn('js/announce.js', html)
         self.assertNotIn('data-announcer', self.client.get(CARDS).content.decode())      # never inside the fragment
+
+
+class GridStyleSheetTests(SimpleTestCase):
+    """A widget's cell is given by classes (gx-, gy-, gw-, gh-) that static/css/card-grid.css turns into the grid's
+    --x, --y, --w, --h: a style attribute on the widget would be blocked by the Content-Security-Policy. The style sheet is
+    made from the catalogue (`render.grid_css`, `manage.py card_grid_css`) and covers every cell a valid layout can use."""
+
+    def test_the_style_sheet_is_the_one_the_catalogue_makes(self):
+        path = Path(settings.BASE_DIR) / 'static' / 'css' / 'card-grid.css'
+        self.assertEqual(path.read_text(encoding='utf-8'), render.grid_css(), 'run manage.py card_grid_css')
+
+    def test_it_covers_every_cell_and_size_a_valid_layout_can_use(self):
+        css = render.grid_css()
+        tallest = max(spec.max_h for spec in catalogue.WIDGETS.values())
+        self.assertEqual(catalogue.ROWS, catalogue.MAX_WIDGETS * tallest)
+        for x in range(catalogue.COLUMNS):
+            self.assertIn(f'.gx-{x}{{--x:{x}}}', css)
+        for size in range(1, catalogue.COLUMNS + 1):
+            self.assertIn(f'.gw-{size}{{--w:{size}}}', css)
+        for size in range(1, tallest + 1):
+            self.assertIn(f'.gh-{size}{{--h:{size}}}', css)
+        for y in range(catalogue.ROWS):
+            self.assertIn(f'.gy-{y}{{--y:{y}}}', css)
+        self.assertNotIn(f'.gy-{catalogue.ROWS}{{', css)
+
+    def test_a_widget_below_the_last_row_is_out_of_bounds(self):
+        from ..cards import validate
+        widget = {'id': 'w1', 'type': 'tasks', 'x': 0, 'w': 6, 'h': 2}
+        found = validate.validate({'schema': 1, 'widgets': [{**widget, 'y': catalogue.ROWS - 2}]})
+        self.assertNotIn('bounds', [problem.code for problem in found])
+        found = validate.validate({'schema': 1, 'widgets': [{**widget, 'y': catalogue.ROWS - 1}]})
+        self.assertIn('bounds', [problem.code for problem in found])
+
+    def test_the_pages_that_draw_cards_load_it(self):
+        for name in ('monitoring/monitor.html', 'monitoring/template_form.html'):
+            text = (Path(settings.BASE_DIR) / 'templates' / name).read_text(encoding='utf-8')
+            self.assertIn("{% asset 'css/card-grid.css' %}", text, name)

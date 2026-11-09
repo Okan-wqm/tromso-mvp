@@ -25,8 +25,22 @@ CACO3 = 100.0869                     # mg per mmol (IUPAC 2007), as the core's h
 FIELDS = ('ph_offset', 'k1', 'k2', 'kw', 'kb', 'boron', 'k_nh4', 'k_h2s', 'ksp_calcite', 'ksp_aragonite')
 
 
-def debye_huckel_a(temp_c):
-    """The Debye–Hückel A of the core's activity coefficients (a fixed dielectric constant of 79, I1)."""
+# The Debye–Hückel A (log10, molal) as tabulated by Hamer (1968), NSRDS-NBS 24, table 3 (Malmberg & Maryott's ε and
+# the density of water): {°C: A}.
+A_TABLE = {0.0: 0.4918, 5.0: 0.4953, 10.0: 0.4989, 15.0: 0.5027, 20.0: 0.5067, 25.0: 0.5108, 30.0: 0.5151}
+
+
+def tabulated_a(temp_c):
+    """The table's A at a temperature, linearly between its rows (0 to 25 °C)."""
+    rows = sorted(A_TABLE.items())
+    for (t0, a0), (t1, a1) in zip(rows, rows[1:]):
+        if t0 <= temp_c <= t1:
+            return a0 + (a1 - a0) * (temp_c - t0) / (t1 - t0)
+    raise ValueError(temp_c)
+
+
+def v1_a(temp_c):
+    """Formula 1's A: a fixed dielectric constant of 79 (I1)."""
     return 1820000.0 * (79.0 * (temp_c + 273.15)) ** -1.5
 
 
@@ -79,13 +93,27 @@ class IonicStrengthTests(SimpleTestCase):
 
 
 class DaviesTests(SimpleTestCase):
-    def test_the_equation(self):
-        for temp_c, strength in ((25.0, 0.01), (5.0, 0.001), (12.0, 0.05), (30.0, 0.1)):
-            root = math.sqrt(strength)
-            expected = -debye_huckel_a(temp_c) * (root / (1 + root) - 0.3 * strength)
-            with self.subTest(temp_c=temp_c, strength=strength):
-                self.assertAlmostEqual(native.davies_log_gamma(temp_c, strength, 1), expected, delta=1e-15)
-                self.assertAlmostEqual(native.davies_log_gamma(temp_c, strength, 2), 4 * expected, delta=4e-15)
+    def test_a_is_the_temperatures_own(self):
+        """I1 (cross review F2): A from the dielectric constant and the density of the temperature meets the table within
+        0.03 % from 0 to 30 °C; formula 1's fixed ε = 79 was 7.5 % too large at 12 °C and 15 % at 2 °C."""
+        for temp_c, a in A_TABLE.items():
+            with self.subTest(temp_c=temp_c):
+                self.assertAlmostEqual(native.debye_huckel_a(temp_c) / a, 1, delta=0.0003)
+        self.assertAlmostEqual(v1_a(12.0) / tabulated_a(12.0) - 1, 0.075, delta=0.01)
+        self.assertAlmostEqual(v1_a(2.0) / tabulated_a(2.0) - 1, 0.15, delta=0.01)
+
+    def test_the_equation_at_cold_and_warm_temperatures(self):
+        for temp_c in (2.0, 5.0, 12.0, 25.0):
+            for strength in (0.001, 0.01, 0.05, 0.1):
+                root = math.sqrt(strength)
+                expected = -tabulated_a(temp_c) * (root / (1 + root) - 0.3 * strength)
+                with self.subTest(temp_c=temp_c, strength=strength):
+                    # γ within 0.1 % of Davies with the table's A, monovalent and divalent
+                    self.assertAlmostEqual(10 ** (native.davies_log_gamma(temp_c, strength, 1) - expected), 1, delta=1e-3)
+                    self.assertAlmostEqual(10 ** (native.davies_log_gamma(temp_c, strength, 2) - 4 * expected), 1,
+                                           delta=1e-3)
+                    self.assertEqual(native.davies_log_gamma(temp_c, strength, 2),
+                                     4 * native.davies_log_gamma(temp_c, strength, 1))
 
     def test_the_literatures_value(self):
         # Stumm & Morgan (1996), table 3.3: by Davies a monovalent ion at I = 0.01 and 25 °C has γ = 0.90, a divalent 0.66.
@@ -95,12 +123,18 @@ class DaviesTests(SimpleTestCase):
 
 
 class EquilibriaV3Tests(SimpleTestCase):
-    def test_from_a_salinity_of_5_it_is_v1_bit_for_bit(self):
+    def test_from_a_salinity_of_5_it_is_v1_but_for_the_nbs_conversions_a(self):
+        """Sea water keeps v1's constants bit for bit; its NBS pH is converted with the temperature's A (I1)."""
         for temp_c in (2.0, 12.0, 25.0):
             for salinity in (5.0, 10.0, 35.0):
                 with self.subTest(temp_c=temp_c, salinity=salinity):
                     found = native.equilibria_v3(temp_c, salinity, 100.0, conductivity_us_cm=500.0)
-                    self.assertEqual(found.values(), native.equilibria(temp_c, salinity).values())
+                    v1 = native.equilibria(temp_c, salinity)
+                    self.assertEqual(found.values()[3:], v1.values()[3:])
+                    strength = native.ionic_strength(salinity)
+                    term = math.sqrt(strength) / (1 + math.sqrt(strength)) - 0.2 * strength
+                    shift = -(native.debye_huckel_a(temp_c) - v1_a(temp_c)) * term
+                    self.assertAlmostEqual(found.ph_offset, v1.ph_offset + shift, delta=1e-12)
 
     def test_fresh_water_constants_are_the_thermodynamic_ones_with_davies_activities(self):
         for temp_c, salinity, alkalinity, ions in ((12.0, 0.0, 80.0, {'conductivity_us_cm': 300.0}),
@@ -163,7 +197,8 @@ class GoldenV3Tests(SimpleTestCase):
         rows = self.records['waters']
         self.assertEqual({row['source'] for row in rows},
                          {'conductivity', 'hardness', 'salinity', 'alkalinity', 'seawater'})
-        self.assertTrue(all(row['v3'] == row['v1'] for row in rows if row['salinity'] >= 5))
+        self.assertTrue(all(row['v3']['constants']['k1'] == row['v1']['constants']['k1'] for row in rows
+                            if row['salinity'] >= 5))
         self.assertTrue(any(row['v3'] != row['v1'] for row in rows if row['salinity'] < 5))
 
     def test_the_application_still_reads_v1(self):

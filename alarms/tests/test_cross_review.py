@@ -112,3 +112,67 @@ class DeadbandAcrossCandidatesTests(CrossReviewCase):
         self.loop(seconds=1)
         self.loop(seconds=40)
         self.assertEqual(open_levels(), ['warning'])
+
+
+def without_triggers(sql, params=()):
+    """Runs `sql` as a restore or a hand edit would, past the tables' triggers (the test database's owner may)."""
+    from django.db import connection
+    with connection.cursor() as cursor:
+        cursor.execute('SET session_replication_role = replica')
+        try:
+            cursor.execute(sql, params)
+        finally:
+            cursor.execute('SET session_replication_role = DEFAULT')
+
+
+class MissingRuleTests(CrossReviewCase):
+    """F6: a severity's rule row that is missing (a restore, a hand edit) never stops the evaluation: the pass uses the
+    safest value of each field (no on-delay; the longest off-delay, shortest escalation and most delivery attempts of the
+    rows there are, else their bounds), says so with a critical configuration alarm of the alarm system, and clears it
+    once the row is back. The last live row of a severity cannot be deleted, by the model or the database."""
+
+    def system_alarms(self):
+        from ..read import is_open
+        return {alarm.parameter: is_open(alarm) for alarm in Alarm.objects.filter(source='system')}
+
+    def test_a_missing_warning_rule_never_stops_the_critical(self):
+        without_triggers("DELETE FROM alarm_severity_policies WHERE severity = 'warning'")
+        self.sample(5.5, hours=0)
+        summary = self.loop()
+        self.assertEqual(summary.failed_steps, [])
+        self.assertIn('critical', open_levels())
+        self.assertEqual(self.system_alarms(), {'alarm_rules': True})
+        self.assertEqual(Alarm.objects.get(source='system').severity, 'critical')
+
+    def test_a_missing_critical_rule_raises_the_critical_at_once(self):
+        from ..models import SeverityPolicy
+        SeverityPolicy.objects.filter(severity='warning').update(on_delay_seconds=600)
+        without_triggers("DELETE FROM alarm_severity_policies WHERE severity = 'critical'")
+        self.sample(5.5, hours=0)
+        self.loop()
+        self.assertIn('critical', open_levels())                   # no on-delay: never the warning's 600 s
+
+    def test_the_configuration_alarm_clears_when_the_row_is_back(self):
+        from ..models import SeverityPolicy
+        row = SeverityPolicy.objects.get(severity='warning')
+        without_triggers("DELETE FROM alarm_severity_policies WHERE severity = 'warning'")
+        self.loop()
+        without_triggers('INSERT INTO alarm_severity_policies (id, severity, on_delay_seconds, off_delay_seconds, '
+                         'escalation_minutes, delivery_attempts, created_at, updated_at, version, is_deleted) '
+                         'VALUES (%s, %s, 30, 30, 30, 5, now(), now(), 1, false)', [row.pk, 'warning'])
+        self.loop(seconds=1)
+        self.loop(minutes=2)
+        self.assertEqual(self.system_alarms(), {'alarm_rules': False})
+
+    def test_the_last_rule_of_a_severity_cannot_be_deleted(self):
+        from django.core.exceptions import ValidationError
+        from django.db import DatabaseError, transaction
+        from ..models import SeverityPolicy
+        row = SeverityPolicy.objects.get(severity='critical')
+        with self.assertRaises(ValidationError):
+            row.soft_delete(self.keeper)
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            SeverityPolicy.all_objects.filter(pk=row.pk).update(is_deleted=True)
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            SeverityPolicy.all_objects.filter(pk=row.pk).delete()
+        self.assertTrue(SeverityPolicy.objects.filter(severity='critical').exists())

@@ -1,4 +1,5 @@
 """The seven defects the alarm plan (scratchpad plan/alarms/PLAN.md §2.3) found in this app, each pinned by its tests."""
+from farm.models import SamplingPoint
 from farm.tests.helpers import point_of
 
 from ..models import Alarm
@@ -17,7 +18,8 @@ class UnitSubjectTests(AlarmsCase):
         self.assertFalse(Alarm.objects.exists())
 
     def test_a_depth_points_critical_value_is_its_units_one_alarm(self):
-        self.sample(5.5, point=point_of(self.t1, 'depth'))
+        depth = SamplingPoint.objects.create(unit=self.t1, kind='depth', name='Bottom')
+        self.sample(5.5, point=depth)
         self.sample(5.4, hours=0.5)                          # the middle point critical too: still one alarm
         self.loop()
         alarm = Alarm.objects.get()

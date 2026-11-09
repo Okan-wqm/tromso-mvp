@@ -71,7 +71,9 @@ test('the page layout of the real templates', { skip: BROWSERS.length ? false : 
   const address = server.address();
   const browser = await chromium.launch({ executablePath: BROWSERS[0], headless: true });
   try {
-    const tab = await browser.newPage();
+    // The layout is measured settled: with motion the rail's width moves for 0.2 s (app.css) after a collapse or a new
+    // window size, longer than the 50 ms the steps wait, and a measure taken mid-move failed one run in three.
+    const tab = await browser.newPage({ reducedMotion: 'reduce' });
     await tab.goto(`http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}/`);
 
     for (const width of WIDTHS) {

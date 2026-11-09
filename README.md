@@ -600,6 +600,16 @@ record (see Feeding records). `check_stock` holds the species rule with the same
 species is a cleaner fish is fixed once fish of it have been stocked (every read takes the flag live; lumpfish to
 wrasse may change).
 
+**The development seed's mixed cages.** `manage.py fix_seed_size_mix --user <name> [--dry-run]
+[--accept-handling-warnings]` separates what the seed history (seed-history-2026-11) stocked together in Tromsø's TG-M01
+and TG-M02: the post-smolt B-2026-005 and the smolt B-2026-007 go by the app's own transfers (reason "growth stage",
+dated the farm's today) into cages of their own, TG-M03 and TG-M04, made like TG-M02 through the units form; the
+grow-out salmon B-2026-004 and the lumpfish stay. Not dated back to the stocking: every later record of those fish
+(mortalities, weighings, the escape, the cages' feedings) was booked in the old cages, and the stock refuses a transfer
+that would leave them without their fish. One transaction, locks in the lock order, checked before it commits (the
+cages, `check_stock` finding nothing new); run again it does nothing; `--dry-run` only reads, in a read-only
+transaction. The run needs the database migrated.
+
 **Batch details.** A batch's year class (årsklasse) and whether its fish are farmed or wild-caught are what the reports
 ask of a batch and what fish stocked before they were asked for do not have; stock is never edited, so the drawer's batch
 table has a **Batch details** dialog (who may record stock) that sets the two, logged as an update of the batch whose version

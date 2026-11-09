@@ -63,7 +63,7 @@ class SeedCagesTestCase(FeedingTestCase):
         for unit in (self.m01, self.m02):
             for days_ago in (12, 5, 2):
                 self.record(kilos='40', days_ago=days_ago, unit=unit)
-            self.record(kilos='2', days_ago=2, unit=unit, target=FeedTarget.CLEANER_FISH)
+            self.record(kilos='1', days_ago=2, unit=unit, target=FeedTarget.CLEANER_FISH)   # 5 % of 18.9 kg
         self.history = list(StockOperation.objects.order_by('pk').values_list('pk', 'kind', 'date'))
         self.assertEqual(integrity.problems(), [])
 
@@ -124,7 +124,7 @@ class SeparationTests(SeedCagesTestCase):
         self.assertEqual(self.state(), state)
         self.assertIn('Dry run', out)
         self.assertIn('Make TG-M03 "Cage 3" like TG-M02', out)
-        self.assertIn(f'Transfer 2000 fish of {self.post.code} (594.0 g) from TG-M02 to TG-M03 on '
+        self.assertIn(f'Transfer 1993 fish of {self.post.code} (594.0 g) from TG-M02 to TG-M03 on '
                       f'{self.today.isoformat()}.', out)
         self.assertIn(f'Transfer 1000 fish of {self.post.code} (610.0 g) from TG-M01 to TG-M03', out)
         self.assertIn(f'Leave the cleaner fish {self.lumps.code} in TG-M02.', out)
@@ -173,7 +173,7 @@ class RefusalTests(SeedCagesTestCase):
             self.assertIn('Migrate first: farm.0035_x', self.refused())
             out = self.command('--dry-run')
         self.assertIn('lacks farm.0035_x', out)
-        self.assertIn(f'Transfer 2000 fish of {self.post.code}', out)
+        self.assertIn(f'Transfer 1993 fish of {self.post.code}', out)
 
     def test_a_cage_of_the_plan_holding_other_fish_or_an_unknown_user_stops_it(self):
         cage = make_cage('TG-M03', 'Cage 3', self.m01.production_department)

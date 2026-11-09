@@ -164,8 +164,11 @@ Koşulların dördü de yerine getirildi:
 1. **I1 kapandı.** Davies'in A katsayısı artık suyun kendi sıcaklığından: A = 1,824812·10⁶ √ρ (εT)^−3/2, ε Malmberg &
    Maryott (1956) denkleminden, ρ Kell (1975) denkleminden. Hamer'ın (1968) tablosuyla %0,03, farklı bir ε kullanan
    USGS tablosuyla (Nordstrom vd. 1984) %0,3 içinde (ayrıntılı tablo: `chemcore/findings/B1.md`, I1). Aynı A deniz
-   suyu yolunun NBS dönüşümüne de girdi: bu, 10 ‰'nin üstünde CO2SYS'in Takahashi vd. (1982) kuralına her sıcaklıkta
-   daha yakın (35 ‰'de 0 °C'de fark −0,073'ten −0,048'e, 40 °C'de +0,051'den +0,034'e).
+   suyu yolunun NBS dönüşümüne de girdi (bu, Zeebe & Wolf-Gladrow'un yönteminin bize ait bir çeşitlemesi, yayımlanmış
+   bir yöntem değil). CO2SYS'in Takahashi vd. (1982) kuralına 20–35 ‰'de 15 °C'ye kadar ve 35 ‰'de her sıcaklıkta daha
+   yakın (35 ‰'de 0 °C'de fark −0,073'ten −0,048'e, 40 °C'de +0,051'den +0,034'e); ama **her sıcaklıkta değil**: 10 ‰'de
+   10–20 °C arasında ve 20 ‰'de 20 °C'de formül 1 daha yakındı (çapraz inceleme F2, F6; önceki "10 ‰'nin üstünde her
+   sıcaklıkta" ifadesi yanlıştı).
 2. **Davies sınırı** (I ≤ 0,5) zaten vardı; tatlı su yolu bant içinde de bunun üstünü reddediyor. Uygulamada böyle bir
    su (ör. 50 000 µS/cm iletkenlik, tuzluluk girilmemiş) NH₃'ü göstermiyor, nedenini yazıyor.
 3. **İletkenlik yalnız 25 °C'ye telafi edilmiş olarak okunuyor** (F8). Yeni su parametresi
@@ -253,13 +256,58 @@ Okuma:
 - PyCO2SYS (GPL) ve PHREEQC'nin kodu kullanılmadı ve kopyalanmadı; yalnız PHREEQC veritabanının (kamu malı) analitik
   ifadelerinin katsayıları sayı olarak alındı.
 
+## Çapraz incelemeden sonra değişenler (2026-11-09)
+
+Bağımsız bir aquatik kimya incelemesi formül 3'ün kimyasını doğruladı (A(T), aktivite dönüşümleri, pH işareti, soğuk su
+sabitleri) ve "düzeltmelerle birleştirilebilir" dedi. Yapılanlar:
+
+1. **NH₃ ve CO₂ artık iki değerin büyüğüyle değerlendiriliyor (F1, en önemlisi).** Literatürdeki NH₃ sınırları (Piper vd.
+   1982'nin 0,0125 mg/L'si, US EPA 1985) Emerson vd. (1975)'in **ideal** (bütün aktiviteler 1) payıyla konmuştur. Formül
+   3'ün aktiviteye göre düzeltilmiş NH₃'ü iyonca zengin suda daha düşüktür. Aynı sınırı bu düşük değere uygulamak, sınırı
+   konduğundan daha gevşek kullanmak demektir: canlı balık için kabul edilemez. Bu yüzden her NH₃ kararı (durum, alarm,
+   sınır pH'ı, en çok TAN, küçük grafik, simülatör, güvenli bölge) **ideal temel ile düzeltilmiş değerin büyüğünü** alıyor.
+   Düzeltilmiş değer bilgi olarak yanında gösteriliyor ("değerlendirmede kullanılmaz"), başlıkta hangisinin karar verdiği
+   yazıyor. Temel: 1 ‰'ye kadar ideal su, 5 ‰'den sonra formül 1'in deniz suyu sabitleri, arada aynı karışım.
+   12 °C, pH 7,5, 80 mg/L alkalinitede düzeltilmiş NH₃ değerlendirilenden şu kadar düşük:
+
+   | İletkenlik | NH₃ | CO₂ |
+   |---|---|---|
+   | 500 µS/cm | −%8,7 | −%8,8 |
+   | 1000 µS/cm | −%11,6 | −%11,7 |
+   | 3000 µS/cm | −%17,2 | −%17,5 |
+
+   Tatlı suda büyük olan hep idealdir, yani karar formül 1'in tatlı su kararıyla aynıdır. Soğuk deniz suyunda (35 ‰,
+   2 °C) formül 3'ün kendi NH₃'ü %5,5 daha büyük, o karar veriyor. **CO₂ için de aynı kural** uygulandı: somon CO₂
+   kılavuzları kısmen pH ve alkaliniteden ideal yolla hesaplanan serbest CO₂'ye (Standard Methods 4500-CO₂ D) dayanıyor,
+   kısmen probla ölçülen gerçek değere; her çalışmanın hangi temeli kullandığı tek tek doğrulanamadı, bu yüzden canlı
+   balık için büyük olan alındı. Hesap makinesindeki örnek su (12 °C, 1 ‰) artık NH₃ sınırını pH 7,986'da gösteriyor
+   (önce 8,045) ve CO₂'yi 19,62 mg/L (düzeltilmiş 17,12).
+2. **Deniz suyu yolundaki A(T) korundu (F2).** Sabitlerin ölçeğini bozmuyor, soğuk deniz suyunda NH₃'ü güvenli yöne
+   taşıyor. Bunun yayımlanmış bir yöntem değil, bize ait bir çeşitleme olduğu belgelere yazıldı. Sonraki adım "formül 4":
+   20–40 ‰ için Takahashi'nin fH'si (sahip onayı ve kendi golden'ıyla).
+3. **"Her sıcaklıkta daha yakın" ifadesi düzeltildi (F6):** 10 ‰'de 10–20 °C'de doğru değildi.
+4. **Su kökeni (F3, F4).** Bir ünite artık suyunun tuzunun nereden geldiğini söyleyebiliyor: "deniz suyu veya seyreltilmiş
+   deniz suyu" ya da "tuz eklenmiş tatlı su". Tuz (NaCl) eklenmiş tatlı su Davies sınırına kadar tatlı su yolundan
+   hesaplanıyor (deniz suyunun sülfat, magnezyum, bor gibi iyonları olmadan); iyonik şiddeti NaCl'ninki (iletkenlik
+   katsayısı 8,4·10⁻⁶, Russell'ın 1,6·10⁻⁵'i yerine; Russell'ınki NaCl suyunda iyonik şiddeti yaklaşık 1,9 kat abartıyor).
+   3 ‰'de bu suyun CO₂'si bandın verdiğinden %4,6–9,2 yüksek. Köken söylenmezse bant kalıyor ve değerin yanında "deniz
+   suyunun iyon bileşimini varsayar; tuz eklenmiş tatlı suda CO₂ düşük çıkabilir" yazıyor.
+5. **Tutarlılık uyarıları (F5).** Değerin yanında, değeri hiç reddetmeden: iletkenlik ile tuzluluk uyuşmuyorsa; iletkenlik
+   sertlik ve alkalinitenin açıkladığının 10 katından fazlaysa ya da 1,5 katı azsa (telafisiz okuma, yanlış birim); tatlı
+   suda deniz suyu iletkenliği varsa (PSS-78'e göre 1 ‰ ve üstü, yaklaşık 1 970 µS/cm).
+6. **Soğuk su testi (F7)** artık Emerson'un kendi denklemine de bakıyor (pKa = 0,09018 + 2729,92/T, 0,002 pK içinde);
+   EPA'nın yeniden bastığı tablo ikinci kontrol olarak kaldı (+%0,4 sapmasıyla).
+
 ## Zayıf noktalar (geçişten sonra, dürüstçe)
 
-- **Deniz suyunda soğukta CO₂ biraz daha düşük görünüyor** (2 °C'de −%5,4). Takahashi'ye göre daha doğru, ama CO₂ sınırına
-  yakın bir deniz suyu birimi "uyarı"dan "güvenli"ye geçebilir. NH₃ ise aynı yerde %5,6 daha yüksek (ihtiyatlı).
-- **Tatlı suda CO₂ ve NH₃ daha düşük görünüyor** (%2–9): bu bilinçli ve literatüre uygun, ama sınıra yakın bir su
-  "uyarı"dan "güvenli"ye geçebilir. İletkenlik yanlış girilirse (ör. telafisiz ya da mS/cm) iyonik şiddet yanlış olur;
-  0,5'in üstü reddedilir, altındaki hatalar yakalanmaz.
+- **Deniz suyunda soğukta CO₂ biraz daha düşük görünüyor** (2 °C'de −%5,4). Soğuk, 20–35 ‰ deniz suyunda Takahashi'ye daha
+  yakın, ama CO₂ hâlâ CO2SYS'in değerinin üstünde. Artık CO₂ ve NH₃, formül 1 ile formül 3'ün büyüğüyle değerlendiriliyor
+  (aşağıda), bu yüzden durum ve alarm formül 1'e göre gevşemiyor. Soğuk deniz suyunda NH₃ CO2SYS'e göre hâlâ yaklaşık %10
+  düşük (formül 4 ile kapanacak).
+- **Tatlı suda düzeltilmiş CO₂ ve NH₃ daha düşük** (RAS suyunda 1000–3000 µS/cm'de %12–17; ilk yazılan "%2–9" yalnız
+  seçilen sular içindi). Artık yalnız bilgi olarak gösteriliyor; değerlendirme idealle (büyük olan) yapılıyor. İletkenlik
+  yanlış girilirse (telafisiz, mS/cm, deniz suyu iletkenliği) artık değerin yanında bir "Kontrol edin" uyarısı çıkıyor; değer
+  yine hesaplanıyor (yalnız 0,5'in üstü reddedilir).
 - **Sertlik ve yalnız alkalinite alt sınırdır**; ölçülmeyen iyonlar (Na, Cl, SO₄) iyonik şiddeti artırır. İletkenlik
   ölçülürse en iyisi o.
 - **Bant içinde çıktı hafifçe geri dönebiliyor** (yalnız tuzlulukta NH₃ en çok %0,44; tutarsız iletkenlik–tuzluluk

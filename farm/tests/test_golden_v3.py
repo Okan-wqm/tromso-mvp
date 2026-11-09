@@ -113,7 +113,8 @@ class EquilibriaV3Tests(SimpleTestCase):
                 self.assertEqual(found.ksp_calcite, native.equilibria(temp_c, salinity).ksp_calcite)
 
     def test_with_no_ions_it_is_v1(self):
-        found = native.equilibria_v3(12.0, 0.0, 80.0, conductivity_us_cm=1e-9)
+        # log γ goes as √I: at 1e-20 µS/cm, I = 1.6e-25 and log γ about −2e-13.
+        found = native.equilibria_v3(12.0, 0.0, 80.0, conductivity_us_cm=1e-20)
         for name, value, ideal in zip(FIELDS, found.values()[2:], native.equilibria(12.0, 0.0).values()[2:]):
             with self.subTest(name=name):
                 self.assertTrue(math.isclose(value, ideal, rel_tol=1e-9, abs_tol=1e-12), (value, ideal))

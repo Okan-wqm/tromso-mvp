@@ -188,7 +188,65 @@ def _snapshot(state):
     return state.open_alarm_id, state.pending_since, state.clear_since, state.last_bad_at
 
 
+@dataclass
+class Subject:
+    """What one pass says of one alarm subject: whether its condition holds, whether the evidence clears it (a bool, or
+    a function of the subject's row: its last bad value's time is in it), the time the on-delay runs from (`bad_at`), its severity, the alarm's spec when it is raised (`spec()`), and why it clears: `cause`
+    when the evidence clears it, `structural` (a cause) when it is no longer judged at all."""
+    key: str
+    holds: bool
+    clear_ok: bool
+    bad_at: object
+    severity: str
+    spec: object
+    cause: str = ClearCause.RETURNED
+    structural: str = ''
+
+
+def settle(subjects, now, rules):
+    """Moves every subject one pass on its row (`advance`), set-based (alarm plan, defect 7): one read of the rows, and the
+    alarms, clearances, log entries and rows written in one statement each. Returns (opened, cleared)."""
+    states = _states([subject.key for subject in subjects])
+    raises, clears, before = [], [], {}
+    for subject in subjects:
+        state = states.setdefault(subject.key, AlarmSubjectState(key=subject.key))
+        before[subject.key] = _snapshot(state)
+        clear_ok = subject.clear_ok(state) if callable(subject.clear_ok) else subject.clear_ok
+        done = advance(state, subject.holds, clear_ok, subject.bad_at, subject.severity, rules, now,
+                       structural=bool(subject.structural))
+        if done.raise_alarm:
+            raises.append((subject.key, subject.spec()))
+        elif done.clear_cause is not None:
+            clears.append((state, subject.structural or subject.cause))
+    services.clear_many([(state.open_alarm, now, cause) for state, cause in clears])
+    for state, _cause in clears:
+        state.open_alarm, state.clear_since = None, None
+    for key, alarm in services.raise_many(raises).items():
+        states[key].open_alarm, states[key].pending_since = alarm, None
+    changed = [state for key, state in states.items() if key in before and _snapshot(state) != before[key]]
+    AlarmSubjectState.objects.bulk_create(changed, update_conflicts=True, unique_fields=['key'],
+                                          update_fields=STATE_FIELDS)
+    return len(raises), len(clears)
+
+
+def system_subject(name, holds, severity, summary, now, *, where=None):
+    """A subject of the alarm system itself (source 'system', subject `system:<name>`): raised while `holds`, restored
+    once it no longer does, for the severity's off-delay. `where` ({site, production_department}) is set where one
+    applies, so a site's recipient rules reach it (alarms/routing.py); without it the alarm is the whole farm's."""
+    parameter = name.split(':')[-1]
+    return Subject(f'system:{name}', holds, not holds, now, severity, lambda: {
+        'at': now, 'severity': severity, 'summary': summary, 'source': Source.SYSTEM, 'parameter': parameter,
+        **(where or {})}, cause=ClearCause.RESTORED)
+
+
+def _text(message, **values):
+    """A system alarm's summary, in English at rest."""
+    with audit.source_language():
+        return str(message) % values if values else str(message)
+
+
 SENSORS_FAILED = 'sensors_failed'
+ALARM_RULES = 'alarm_rules'
 
 
 def water(now, rules):
@@ -200,47 +258,35 @@ def water(now, rules):
     # a depth point's or the loop's value reaches it as the unit's own worst fresh value, judged for its fish. One read.
     found_water = water_read.unit_water(list(Tank.objects.all()), now)
     failed = any(found.sensors_failed for found in found_water.values())
-    readings = {}
+    subjects = []
     for found in found_water.values():
-        if found.point is not None:
-            for slot, reading in _slots(found).items():
-                for severity in HOLDS:
-                    readings[f'water:{found.point.pk}:{slot}:{severity}'] = (found.point, severity, reading)
-    system_key = f'system:{SENSORS_FAILED}'
-    states = _states([*readings, system_key])
-    raises, clears, before = [], [], {}
-
-    def step(key, holds, clear_ok, bad_at, severity, spec, structural=False, cause=None):
-        state = states.setdefault(key, AlarmSubjectState(key=key))
-        before[key] = _snapshot(state)
-        done = advance(state, holds, clear_ok, bad_at, severity, rules, now, structural=structural)
-        if done.raise_alarm:
-            raises.append((key, spec()))
-        elif done.clear_cause is not None:
-            clears.append((state, cause or done.clear_cause))
-
-    for key, (point, severity, reading) in readings.items():
-        step(key, reading.judged in HOLDS[severity],
-             not failed and clear_evidence(reading, severity, rules, states[key].last_bad_at if key in states else None,
-                                           now),
-             seen_at(reading.worse or reading, now), severity,
-             lambda point=point, severity=severity, reading=reading: {
-                 'at': now, 'severity': severity, 'summary': _summary(point, reading), 'source': Source.WATER_LIMIT,
-                 'point': point, 'parameter': reading.code, **_where(point)},
-             structural=reading.judged in UNJUDGED)
-    with audit.source_language():
-        failure = str(_('The live water values (the sensors) cannot be read: alarms are not cleared until they can.'))
-    step(system_key, failed, not failed, now, Severity.CRITICAL, lambda: {
-        'at': now, 'severity': Severity.CRITICAL, 'summary': failure, 'source': Source.SYSTEM,
-        'parameter': SENSORS_FAILED}, cause=ClearCause.RESTORED)
-    services.clear_many([(state.open_alarm, now, cause) for state, cause in clears])
-    for state, _cause in clears:
-        state.open_alarm, state.clear_since = None, None
-    for key, alarm in services.raise_many(raises).items():
-        states[key].open_alarm, states[key].pending_since = alarm, None
-    changed = [state for key, state in states.items() if key in before and _snapshot(state) != before[key]]
-    AlarmSubjectState.objects.bulk_create(changed, update_conflicts=True, unique_fields=['key'],
-                                          update_fields=STATE_FIELDS)
+        if found.point is None:
+            continue
+        for slot, reading in _slots(found).items():
+            for severity in HOLDS:
+                key = f'water:{found.point.pk}:{slot}:{severity}'
+                subjects.append((key, found.point, severity, reading))
+    found = [Subject(
+        key, reading.judged in HOLDS[severity],
+        lambda state, severity=severity, reading=reading: not failed and clear_evidence(
+            reading, severity, rules, state.last_bad_at, now),
+        seen_at(reading.worse or reading, now), severity,
+        lambda point=point, severity=severity, reading=reading: {
+            'at': now, 'severity': severity, 'summary': _summary(point, reading), 'source': Source.WATER_LIMIT,
+            'point': point, 'parameter': reading.code, **_where(point)},
+        structural=ClearCause.STRUCTURAL if reading.judged in UNJUDGED else '')
+        for key, point, severity, reading in subjects]
+    found.append(system_subject(SENSORS_FAILED, failed, Severity.CRITICAL, _text(_(
+        'The live water values (the sensors) cannot be read: alarms are not cleared until they can.')), now))
     # A subject read no more (its point made inactive, its owner deleted, the parameter gone) keeps its alarm open: nothing
     # says it is over, so it stays on the page until a person sees it.
-    return len(raises), len(clears)
+    return settle(found, now, rules)
+
+
+def supervise(now, rules):
+    """The alarm system's own subjects at the end of a pass: a severity whose rule row is missing (alarms.rules: the
+    safest values stand in, cross review F6) is a critical configuration alarm until the row is back. (opened, cleared)"""
+    missing = ', '.join(sorted(rules.missing))
+    return settle([system_subject(ALARM_RULES, bool(rules.missing), Severity.CRITICAL, _text(_(
+        'The alarm rules are incomplete (no rule row for: %(severities)s): the safest values are used until the rows '
+        'are restored.'), severities=missing or '-'), now)], now, rules)

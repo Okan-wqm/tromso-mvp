@@ -342,10 +342,22 @@ class SeverityPolicy(AuditedModel):
             models.CheckConstraint(condition=Q(delivery_attempts__gte=ATTEMPTS_BOUNDS[0],
                                                delivery_attempts__lte=ATTEMPTS_BOUNDS[1]),
                                    name='chk_alarm_severity_policies_attempts'),
+            # A severity's rule is never deleted (cross review F6): it is changed. A database trigger refuses DELETE too
+            # (migration 0006); a row lost all the same is the evaluation's to survive (alarms/rules.py).
+            models.CheckConstraint(condition=Q(is_deleted=False), name='chk_alarm_severity_policies_kept'),
         ]
 
     def __str__(self):
         return str(self.get_severity_display())
+
+    def soft_delete(self, user):
+        raise ValidationError(_('A severity’s alarm rule is changed, never deleted: the alarms of that severity need it.'))
+
+    def mark_deleted(self, user, at):
+        self.soft_delete(user)
+
+    def delete(self, *args, **kwargs):
+        self.soft_delete(None)
 
 
 class ParameterDeadband(AuditedModel):

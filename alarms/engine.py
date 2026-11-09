@@ -6,7 +6,8 @@
    goes on to the next level with a rule that reaches it when its level was notified at least the platform owner's
    escalation time ago, or at once when nobody could be notified at its level;
 4. every queued notification whose channel has a transport is handed to it (alarms/transports.py). None is connected
-   today: nothing is sent, and the outbox waits.
+   today: nothing is sent, and the outbox waits;
+5. the alarm system supervises itself (alarms/sources.py supervise): its own configuration (a missing rule row).
 Each step runs in its own transaction under a transaction-level advisory lock, so two loops never queue, escalate or send
 twice, and a step that fails rolls back alone, is logged and counted, and the others still run (alarm plan, defect 5)."""
 import logging
@@ -146,4 +147,5 @@ def run_once(now=None):
     _step('water', summary, lambda: count(sources.water(now, rules)))
     _step('notify', summary, notify)
     _step('send', summary, send)
+    _step('supervision', summary, lambda: count(sources.supervise(now, rules)))
     return summary

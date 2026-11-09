@@ -3887,14 +3887,20 @@ without a redesign yet, and are redesigned one page at a time.
   they were (`core/tests_tailwind.py`). `npm run build` writes it (`npm run build:css` alone); `npm run check:css` (CI,
   before the build, and `npm test`) fails when it is not what the source and the templates build now. Nothing is loaded
   from a CDN and nothing runs in the browser.
-- **Overview** (`/production/`, `templates/production_home.html`). The panel's landing page at the start of a shift, with
-  no KPI tiles: the day in four lines (stock from the ledger, feed today and over 7 days, the water's critical and warning
-  points, tasks due and overdue), each with its source and the time it was worked out; then Needs attention (the water
-  points with a critical or warning value measured at them, the critical first, at most six, each value with its origin
-  and age and a History button; overdue tasks; overdue reports and duties), then the reports due and the farm's
-  structure. Read once by the areas' own functions (`farm.water.views.overview` reads the water page's rows, so the two
-  never disagree); each part only for a person whose role reads its area. The one primary action is Record water
-  sample, for a person who may record one.
+- **Overview** (`/production/`, `templates/production_home.html`). The panel's landing page at the start of a shift, a
+  dashboard (the owner's decision over the design system's earlier "no KPI tile row"): the day's figures as metric cards
+  (`templates/_metric_card.html`) on one sheet, five to a row from 768 px and two on a phone: fish, biomass, stocked units
+  (of all units), feed today and over 7 days, critical water points and water points with a warning (of all sampling
+  points), tasks due today, overdue tasks, reports due (with the overdue ones as a chip). Each card is the figure large
+  with its label, one sub-line and its source and time ("Stock records at 15:35"), the whole card a link; grey unless
+  abnormal (the 4 px status edge, glyph and word). Below, Needs attention in compact rows (the water points with a
+  critical or warning value measured at them, the critical first, at most six, each value on one line with its origin and
+  age, a small History button; overdue tasks; overdue reports and duties) and beside it, from 1024 px, the farm as cards
+  (production departments, systems, equipment, tanks, ponds and cages; the systems by status and the units by kind) and
+  the reports due. Every figure the page showed before its redesign is a card
+  (`farm/tests/test_production_overview.py`, OldFiguresTests). Read once by the areas' own functions
+  (`farm.water.views.overview` reads the water page's rows, so the two never disagree); each part only for a person
+  whose role reads its area. The one primary action is Record water sample, for a person who may record one.
 - **Themes.** Fjord (the default), Polarnatt, Nordlys (for the monitoring wall), Tang and Laks, picked in the user menu
   beside the language. The choice is a cookie (`theme`, kept a year, `core/theme.py`) that the server writes on
   `<html data-theme>`, so the first paint has it; never the system's colour scheme.

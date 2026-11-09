@@ -14,9 +14,10 @@ from tasks.views import overview_tiles as task_tiles
 
 
 def _counts(user, *tiles):
-    """[(label, count, url)] for the records the person may see; tiles are (label, model, url name)."""
+    """[{key, label, count, url}] for the records the person may see; tiles are (label, model, url name), the key is the
+    model's name."""
     return [
-        {'label': label, 'count': model.objects.count(), 'url': reverse(url_name)}
+        {'key': model._meta.model_name, 'label': label, 'count': model.objects.count(), 'url': reverse(url_name)}
         for label, model, url_name in tiles
         if user.has_perm(f'{model._meta.app_label}.view_{model._meta.model_name}')
     ]
@@ -37,23 +38,26 @@ def _named(tiles):
 
 def _upcoming(user):
     """The reports due (reports.views.overview_upcoming), split for the page: the overdue ones (and the overdue duties
-    outside this system) need attention, the others are due; None for a person who may not read the reports."""
+    outside this system) need attention, the others are due; `count` is all of them (the ones listed, the ones beyond the
+    list and the duties); None for a person who may not read the reports."""
     upcoming = overview_upcoming(user)
     if upcoming is None:
         return None
-    return {**upcoming, 'late': [row for row in upcoming['rows'] if row.overdue],
+    return {**upcoming, 'count': len(upcoming['rows']) + upcoming['more'] + len(upcoming['duties']),
+            'late': [row for row in upcoming['rows'] if row.overdue],
             'due': [row for row in upcoming['rows'] if not row.overdue],
             'late_duties': [line for line in upcoming['duties'] if line.status == duties.OVERDUE],
             'due_duties': [line for line in upcoming['duties'] if line.status != duties.OVERDUE]}
 
 
 def production_home(request):
-    """The production overview, the panel's landing page at the start of a shift (templates/production_home.html): the
-    day in four lines (the stock now from the ledger, the feed given today and over 7 days, the water's counts, the tasks
-    due today and overdue), each with its source and the moment it was worked out; what needs attention (the water points
-    with a critical or warning value, the critical first; overdue tasks and reports); then the reports due and the farm's
-    structure. Each part only for a person who may read it, read by the areas' own functions; the one primary action,
-    Record water sample, only for a person who may record one."""
+    """The production overview, the panel's landing page at the start of a shift and a dashboard
+    (templates/production_home.html): the day's figures as metric cards (the stock now from the ledger, the feed given
+    today and over 7 days, the water's critical and warning points, the tasks due today and overdue, the reports due), each
+    with its source and the moment it was worked out; what needs attention (the water points with a critical or warning
+    value, the critical first; overdue tasks and reports); beside it the farm's structure (departments, systems and their
+    status, equipment, units and their kind) and the reports due. Each part only for a person who may read it, read by the
+    areas' own functions; the one primary action, Record water sample, only for a person who may record one."""
     user = request.user
     stock, feeding, tasks = overview_tiles(user), feeding_tiles(user), task_tiles(user)
     water = water_overview(user)
@@ -66,8 +70,6 @@ def production_home(request):
         'task_tiles': tasks,
         'stock': _named(stock), 'feeding': _named(feeding), 'tasks': tasks_named, 'water': water,
         'upcoming': upcoming, 'now': timezone.now(),
-        'systems_url': reverse('farm:system_list'), 'units_url': reverse('farm:tank_list'),
-        'meal_board_url': reverse('farm:meal_board') if user.has_perm('farm.view_feedingrecord') else '',
         'record_url': f"{reverse('farm:water_record')}?{urlencode({'next': request.get_full_path()})}"
         if user.has_perm(WATER_RECORD) else '',
         'late_tasks': tasks_named['overdue']['count'] if tasks_named else 0,
@@ -78,7 +80,8 @@ def production_home(request):
                          (_('Equipment'), Equipment, 'farm:equipment_list'),
                          (_('Tanks, ponds & cages'), Tank, 'farm:tank_list')),
         'systems_by_status': [
-            {'value': value, 'label': label, 'count': System.objects.filter(status=value).count()}
+            {'value': value, 'label': label, 'count': System.objects.filter(status=value).count(),
+             'url': reverse('farm:system_list')}
             for value, label in System.Status.choices
         ] if request.user.has_perm('farm.view_system') else [],
         'units_by_kind': [

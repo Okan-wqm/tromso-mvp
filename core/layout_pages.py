@@ -147,7 +147,9 @@ def _meal():
 def _overview():
     """Production › Overview's body (templates/_production_overview.html) with every part a full right shows: two critical
     water points and a warning (real readings with their origin and age), overdue tasks and an overdue report with a long
-    name, the day's four lines, the reports due and the farm's structure, in Norwegian (its labels are the longest)."""
+    name, the day's ten metric cards, the reports due and the farm's structure with every system status and unit kind, in
+    Norwegian (its labels are the longest)."""
+    from django.utils.translation import gettext as _
     from farm.water.evaluate import Status
 
     with translation.override('nb'):
@@ -165,24 +167,28 @@ def _overview():
                                deadline=date(2026, 10, 29), overdue=True)],
                     'due': [N(kind=N(label='Sykdom'), place='Tromsø Grow-out (TG-02)', period=None, deadline=None,
                               overdue=False)],
-                    'late_duties': [], 'due_duties': [], 'more': 2, 'url': '#', 'duties_url': '#'}
+                    'late_duties': [], 'due_duties': [], 'more': 2, 'count': 4, 'url': '#', 'duties_url': '#'}
         return render_to_string('_production_overview.html', {
-            'now': NOW, 'meal_board_url': '#', 'late_tasks': 18, 'systems_url': '/systems/', 'units_url': '/units/',
-            'stock': {'stocked': {'count': 19, 'of': 23, 'url': '#'}, 'fish': {'count': '311 665', 'url': '#'},
-                      'biomass': {'count': '137,9 t', 'url': '#'}},
-            'feeding': {'today': {'count': '848 kg', 'url': '#'}, 'week': {'count': '7,4 t', 'url': '#'}},
-            'tasks': {'due_today': {'count': 3, 'url': '#'}, 'overdue': {'count': 18, 'url': '#'}},
+            'now': NOW, 'late_tasks': 18, 'late_reports': 1,
+            'stock': {'stocked': {'label': _('Stocked units'), 'count': 19, 'of': 23, 'url': '#'},
+                      'fish': {'label': _('Fish'), 'count': '311\xa0665', 'url': '#'},
+                      'biomass': {'label': _('Biomass'), 'count': '137,9\xa0t', 'url': '#'}},
+            'feeding': {'today': {'label': _('Feed today'), 'count': '848\xa0kg', 'url': '#'},
+                        'week': {'label': _('Feed, last 7 days'), 'count': '7,4\xa0t', 'url': '#'}},
+            'tasks': {'due_today': {'label': _('Tasks due today'), 'count': 3, 'url': '#'},
+                      'overdue': {'label': _('Overdue tasks'), 'count': 18, 'url': '#'}},
             'water': {'points': 40, 'critical': 2, 'warning': 6, 'alerts': alerts, 'more': 4, 'url': '#',
                       'sensors_failed': False},
             'upcoming': upcoming,
-            'tiles': [{'label': 'Produksjonsavdelinger', 'count': 6, 'url': '#'},
-                      {'label': 'Systemer', 'count': 6, 'url': '/systems/'},
-                      {'label': 'Utstyr', 'count': 29, 'url': '#'},
-                      {'label': 'Kar, dammer og merder', 'count': 23, 'url': '/units/'}],
-            'systems_by_status': [{'value': 'operational', 'label': 'I drift', 'count': 5},
-                                  {'value': 'maintenance', 'label': 'Vedlikehold', 'count': 1}],
-            'units_by_kind': [{'value': 'tank', 'label': 'Kar', 'count': 19, 'url': '#'},
-                              {'value': 'cage', 'label': 'Merd', 'count': 4, 'url': '#'}],
+            'tiles': [{'key': 'productiondepartment', 'label': _('Production departments'), 'count': 6, 'url': '#'},
+                      {'key': 'system', 'label': _('Systems'), 'count': 6, 'url': '#'},
+                      {'key': 'equipment', 'label': _('Equipment'), 'count': 29, 'url': '#'},
+                      {'key': 'tank', 'label': _('Tanks, ponds & cages'), 'count': 23, 'url': '#'}],
+            'systems_by_status': [{'value': value, 'label': _(label), 'count': count, 'url': '#'} for value, label, count in
+                                  (('operational', 'Operational', 5), ('maintenance', 'Maintenance', 1),
+                                   ('offline', 'Offline', 0), ('construction', 'Construction', 0))],
+            'units_by_kind': [{'value': value, 'label': _(label), 'count': count, 'url': '#'}
+                              for value, label, count in (('tank', 'Tank', 19), ('pond', 'Pond', 0), ('cage', 'Cage', 4))],
         })
 
 

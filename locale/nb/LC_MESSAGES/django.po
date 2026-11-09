@@ -27,14 +27,6 @@ msgid "%(age)s ago"
 msgstr "%(age)s siden"
 
 #, python-format
-msgid "%(amount)s over the last 7 days"
-msgstr "%(amount)s de siste 7 dagene"
-
-#, python-format
-msgid "%(amount)s today"
-msgstr "%(amount)s i dag"
-
-#, python-format
 msgid "%(batch)s has no fish at %(place)s now."
 msgstr "%(batch)s har ingen fisk i %(place)s nå."
 
@@ -386,10 +378,6 @@ msgid "%(count)s due"
 msgid_plural "%(count)s due"
 msgstr[0] "%(count)s skal sendes"
 msgstr[1] "%(count)s skal sendes"
-
-#, python-format
-msgid "%(count)s due today"
-msgstr "%(count)s med frist i dag"
 
 #, python-format
 msgid "%(count)s fish stay in %(unit)s: weigh them too."
@@ -768,10 +756,6 @@ msgstr "%(kilos)s veid"
 #, python-format
 msgid "%(kind)s form sections"
 msgstr "Seksjoner i skjemaet: %(kind)s"
-
-#, python-format
-msgid "%(label)s %(count)s"
-msgstr "%(label)s %(count)s"
 
 #, python-format
 msgid "%(label)s %(value)s, %(status)s; limits: %(limits)s"
@@ -4874,10 +4858,6 @@ msgstr "Telt"
 msgid "Counted by %(name)s, recorded %(when)s"
 msgstr "Telt av %(name)s, registrert %(when)s"
 
-#, python-format
-msgid "Counted from Setup at %(clock)s"
-msgstr "Telt fra Oppsett kl. %(clock)s"
-
 msgid "Counted location"
 msgstr "Telt lagerplass"
 
@@ -4941,6 +4921,9 @@ msgstr "Kritisk over"
 
 msgid "Critical below"
 msgstr "Kritisk under"
+
+msgid "Critical water points"
+msgstr "Kritiske prøvepunkter"
 
 msgid "Criticality"
 msgstr "Kritikalitet"
@@ -6226,6 +6209,10 @@ msgstr "Fôring registrert: %(kilos)s kg %(feed)s i %(unit)s %(date)s."
 msgid "Feeding records"
 msgstr "Fôringer"
 
+#, python-format
+msgid "Feeding records at %(clock)s"
+msgstr "Fôringer kl. %(clock)s"
+
 msgid "Feeding table"
 msgstr "Fôringstabell"
 
@@ -6677,28 +6664,12 @@ msgstr "Fra lokalitetsnummer"
 msgid "From the backup or the system’s channel"
 msgstr "Fra reserven eller systemets kanal"
 
-#, python-format
-msgid "From the feeding records at %(clock)s"
-msgstr "Fra fôringene kl. %(clock)s"
-
 msgid "From the floor to the rim."
 msgstr "Fra bunnen til kanten."
 
 #, python-format
-msgid "From the latest samples and sensors at %(clock)s"
-msgstr "Fra de siste prøvene og sensorene kl. %(clock)s"
-
-#, python-format
 msgid "From the plan of %(date)s: it is linked to the plan when it is recorded."
 msgstr "Fra planen for %(date)s: den knyttes til planen når den registreres."
-
-#, python-format
-msgid "From the stock records at %(clock)s"
-msgstr "Fra beholdningsføringene kl. %(clock)s"
-
-#, python-format
-msgid "From the tasks at %(clock)s"
-msgstr "Fra oppgavene kl. %(clock)s"
 
 msgid "From the water surface to the bottom of the net."
 msgstr "Fra vannflaten til bunnen av nota."
@@ -8823,9 +8794,6 @@ msgstr "Ingen telling samsvarer med disse filtrene."
 msgid "No count recorded yet"
 msgstr "Ingen telling registrert ennå"
 
-msgid "No critical value or warning"
-msgstr "Ingen kritisk verdi eller advarsel"
-
 msgid "No dead letters."
 msgstr "Ingen ulagrede meldinger."
 
@@ -9281,6 +9249,9 @@ msgstr "Ingen"
 
 msgid "None (bare soil)"
 msgstr "Ingen (bar jord)"
+
+msgid "None overdue"
+msgstr "Ingen forfalt"
 
 msgid "None."
 msgstr "Ingen."
@@ -11150,6 +11121,10 @@ msgstr "Rapporter"
 msgid "Reports and notices due"
 msgstr "Rapporter og varsler som skal sendes"
 
+#, python-format
+msgid "Reports at %(clock)s"
+msgstr "Rapporter kl. %(clock)s"
+
 msgid "Reports due"
 msgstr "Rapporter som skal sendes"
 
@@ -11390,6 +11365,10 @@ msgstr "Prøver"
 
 msgid "Samples and analyses"
 msgstr "Prøver og analyser"
+
+#, python-format
+msgid "Samples and sensors at %(clock)s"
+msgstr "Prøver og sensorer kl. %(clock)s"
 
 #, python-format
 msgid "Samples can be dated at most %(days)d days back."
@@ -11934,6 +11913,10 @@ msgstr "Innstillinger"
 msgid "Setup"
 msgstr "Oppsett"
 
+#, python-format
+msgid "Setup at %(clock)s"
+msgstr "Oppsett kl. %(clock)s"
+
 msgid "Severity"
 msgstr "Alvorlighet"
 
@@ -12417,6 +12400,10 @@ msgstr "Beholdning ved månedsslutt"
 msgid "Stock lines"
 msgstr "Beholdningslinjer"
 
+#, python-format
+msgid "Stock records at %(clock)s"
+msgstr "Beholdningsføringer kl. %(clock)s"
+
 msgid "Stock the batch"
 msgstr "Sett ut fiskegruppen"
 
@@ -12616,6 +12603,9 @@ msgstr "Systemer"
 msgid "Systems (loop)"
 msgstr "Systemer (kretsløp)"
 
+msgid "Systems by status"
+msgstr "Systemer etter status"
+
 msgid "TAN (mg/L N)"
 msgstr "TAN (mg/L N)"
 
@@ -12676,6 +12666,10 @@ msgstr "Oppgave"
 
 msgid "Tasks"
 msgstr "Oppgaver"
+
+#, python-format
+msgid "Tasks at %(clock)s"
+msgstr "Oppgaver kl. %(clock)s"
 
 msgid "Tasks due today"
 msgstr "Oppgaver med frist i dag"
@@ -15161,6 +15155,9 @@ msgstr "Enhet, system eller utstyr"
 msgid "Units"
 msgstr "Enheter"
 
+msgid "Units by kind"
+msgstr "Enheter etter type"
+
 msgid "Units counted"
 msgstr "Telte enheter"
 
@@ -15444,6 +15441,9 @@ msgstr "Vanngrense"
 
 msgid "Water limits"
 msgstr "Vanngrenser"
+
+msgid "Water points with a warning"
+msgstr "Prøvepunkter med advarsel"
 
 msgid "Water quality"
 msgstr "Vannkvalitet"
@@ -17053,12 +17053,6 @@ msgstr "på %(location)s: %(held)s, utløper %(date)s."
 msgid "in %(name)s"
 msgstr "i %(name)s"
 
-#, python-format
-msgid "in %(stocked)s of %(total)s unit"
-msgid_plural "in %(stocked)s of %(total)s units"
-msgstr[0] "i %(stocked)s av %(total)s enhet"
-msgstr[1] "i %(stocked)s av %(total)s enheter"
-
 msgid "ingest contract"
 msgstr "innhentingskontrakt"
 
@@ -17328,6 +17322,18 @@ msgstr "nå"
 #, python-format
 msgid "now %(value)s, %(source)s"
 msgstr "nå %(value)s, %(source)s"
+
+#, python-format
+msgid "of %(total)s sampling point"
+msgid_plural "of %(total)s sampling points"
+msgstr[0] "av %(total)s prøvepunkt"
+msgstr[1] "av %(total)s prøvepunkter"
+
+#, python-format
+msgid "of %(total)s unit"
+msgid_plural "of %(total)s units"
+msgstr[0] "av %(total)s enhet"
+msgstr[1] "av %(total)s enheter"
 
 msgid "off"
 msgstr "fri"

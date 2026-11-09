@@ -279,13 +279,36 @@ def _read(units, now):
     return found, failed
 
 
+def water_key(unit_id, slot, severity):
+    """The subject of a unit's quantity at a level: the unit's, never its point's (cross review F7)."""
+    return f'water:unit:{unit_id}:{slot}:{severity}'
+
+
+UNIT_PREFIXES = ('water:unit:', 'system:unit:')
+
+
+def _removed(units, now):
+    """The subjects with an alarm open whose unit is no longer there (deleted): no value will ever end them, so they end
+    at once, with the cause "unit removed" (one query)."""
+    there = {str(unit.pk) for unit in units}
+    found = []
+    query = Q()
+    for prefix in UNIT_PREFIXES:
+        query |= Q(key__startswith=prefix)
+    for key, severity in AlarmSubjectState.objects.filter(query, open_alarm__isnull=False).values_list(
+            'key', 'open_alarm__severity'):
+        if key.split(':')[2] not in there:
+            found.append(Subject(key, False, False, now, severity, None, structural=ClearCause.UNIT_REMOVED))
+    return found
+
+
 def _water_subjects(found, failed, rules, now):
     """The water subjects of one unit's PointWater: per quantity, a warning and a critical level."""
     subjects = []
     for slot, reading in _slots(found).items():
         for severity in HOLDS:
             subjects.append(Subject(
-                f'water:{found.point.pk}:{slot}:{severity}', reading.judged in HOLDS[severity],
+                water_key(found.point.unit_id, slot, severity), reading.judged in HOLDS[severity],
                 lambda state, severity=severity, reading=reading: not failed and clear_evidence(
                     reading, severity, rules, state.last_bad_at, now),
                 seen_at(reading.worse or reading, now), severity,
@@ -324,9 +347,9 @@ def water(now, rules):
     subjects += [system_subject(f'unit:{unit.pk}:{UNIT_UNEVALUATED}', unit.pk in unevaluated, Severity.CRITICAL, _text(_(
         '%(unit)s: the water could not be evaluated; its alarms are neither raised nor cleared until it can.'),
         unit=unit.code), now, parameter=UNIT_UNEVALUATED, where=_unit_where(unit)) for unit in units]
-    # A subject read no more (its point made inactive, its owner deleted, the parameter gone) keeps its alarm open: nothing
-    # says it is over, so it stays on the page until a person sees it.
-    return settle(subjects, now, rules)
+    # A unit whose water is read no more (no point to read it at, the parameter gone) keeps its alarm open: nothing says it
+    # is over. A unit removed has nothing left to judge: its alarms end (cause "unit removed").
+    return settle(subjects + _removed(units, now), now, rules)
 
 
 def supervise(now, rules, steps, failed_steps):

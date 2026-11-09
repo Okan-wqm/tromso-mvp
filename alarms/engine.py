@@ -98,10 +98,12 @@ def _unsuppressed(alarms):
     """The alarms whose people are notified: all but a water warning while the same parameter's critical alarm is open
     (ISA-18.2: the low level under the low-low one); it is still raised and recorded, and notified once the critical
     clears with the warning still open."""
-    critical = {(alarm.point_id, sources.slot_of(alarm.parameter)) for alarm in alarms
+    def subject(alarm):         # the unit's quantity (cross review F7: the unit, never the point that stood for it)
+        return alarm.point.unit_id, sources.slot_of(alarm.parameter)
+    critical = {subject(alarm) for alarm in alarms
                 if alarm.source == Source.WATER_LIMIT and alarm.severity == Severity.CRITICAL}
     return [alarm for alarm in alarms if not (alarm.source == Source.WATER_LIMIT and alarm.severity == Severity.WARNING
-                                              and (alarm.point_id, sources.slot_of(alarm.parameter)) in critical)]
+                                              and subject(alarm) in critical)]
 
 
 def _step(name, summary, work):
@@ -128,7 +130,8 @@ def run_once(now=None):
 
     def notify():
         waiting = list(Alarm.objects.exclude(pk__in=AlarmClearance.objects.values('alarm'))
-                       .exclude(pk__in=Acknowledgement.objects.values('alarm')).order_by('opened_at', 'id'))
+                       .exclude(pk__in=Acknowledgement.objects.values('alarm')).select_related('point')
+                       .order_by('opened_at', 'id'))
         _route(_unsuppressed(waiting), now, summary, rules)
 
     def send():

@@ -48,6 +48,8 @@ class ClearCause(models.TextChoices):
     EVENT_CLOSED = 'event_closed', _('The sensor rule no longer holds')
     STRUCTURAL = 'structural', _('No longer judged (no fish or no limit)')
     RESTORED = 'restored', _('Restored')
+    UNIT_REMOVED = 'unit_removed', _('The unit was removed')
+    MERGED = 'merged', _('Merged into the unit’s one alarm of that level')
 
 
 class Outcome(models.TextChoices):
@@ -114,7 +116,9 @@ class AlarmClearance(models.Model):
 
 
 class AlarmSubjectState(models.Model):
-    """The one mutable row of an alarm subject (a unit's parameter at a level: `water:<point>:<slot>:<severity>`): the
+    """The one mutable row of an alarm subject (a unit's parameter at a level: `water:unit:<unit>:<slot>:<severity>`,
+    never the point that stands for the unit, so a point replaced keeps the subject: cross review F7; or one of the alarm
+    system's own, `system:<name>`): the
     timers of its lifecycle, kept in the database so a restart loses none: since when the condition holds without an
     alarm yet (the on-delay, counted from the first offending value's time), since when it is over while the alarm is open
     (the off-delay), the time of the last value that held it, and the alarm open now. Not history: the alarms, their

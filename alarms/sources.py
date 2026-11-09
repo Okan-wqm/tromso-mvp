@@ -6,7 +6,8 @@
   own points and its system standing in, the worst fresh value deciding) by the species' limits (`water`). A unit's
   parameter has two levels, each its own alarm subject (ISA-18.2 L and LL): warning holds while the value is judged
   warning or critical, critical while it is judged critical. A level is raised once its condition has held for its
-  severity's on-delay, counted from the first offending value's time; it clears once a fresh value is clear of it even
+  severity's on-delay, counted from the first offending value's time (the pass's, for a value stamped ahead of the
+  clock: `seen_at`); it clears once a fresh value is clear of it even
   moved by the parameter's deadband toward danger, for the severity's off-delay (alarms.rules: the user's rows). A value
   that only goes stale never clears it (an alarm does not end by going blind); a unit with no fish or no limit any more
   clears it at once (structural). The timers are the subjects' rows (AlarmSubjectState), so a restart loses none.
@@ -121,12 +122,20 @@ def judged_clear(reading, rules):
     return worst(found) if found else decider.judged
 
 
-def clear_evidence(reading, severity, rules, last_bad_at):
+def seen_at(reading, now):
+    """When a value counts as taken for an alarm's timers: its own time, or the pass's when it is stamped ahead of the
+    server's clock (cross review F1). The read layer lets a value up to the ingest contract's hour ahead decide the status
+    (farm/water/read.py worst_fresh), so its alarm runs from the moment the card shows it, never from a moment to come:
+    a device whose clock is fast never delays or suppresses an alarm."""
+    return min(reading.at, now)
+
+
+def clear_evidence(reading, severity, rules, last_bad_at, now):
     """Whether this pass's reading says the level is over: fresh, taken after the last value that held it (an older value
     that is the newest again, its bad successor voided or its probe taken out, says nothing new: alarm plan, defect 4),
-    and clear of it by the deadband."""
+    and clear of it by the deadband. Times are `seen_at`, the same clamp as the raise."""
     decider = reading.worse or reading
-    return (reading.status != Status.STALE and (last_bad_at is None or decider.at > last_bad_at)
+    return (reading.status != Status.STALE and (last_bad_at is None or seen_at(decider, now) > last_bad_at)
             and judged_clear(reading, rules) not in HOLDS[severity])
 
 
@@ -209,8 +218,9 @@ def water(now, rules):
 
     for key, (point, severity, reading) in readings.items():
         step(key, reading.judged in HOLDS[severity],
-             not failed and clear_evidence(reading, severity, rules, states[key].last_bad_at if key in states else None),
-             (reading.worse or reading).at, severity,
+             not failed and clear_evidence(reading, severity, rules, states[key].last_bad_at if key in states else None,
+                                           now),
+             seen_at(reading.worse or reading, now), severity,
              lambda point=point, severity=severity, reading=reading: {
                  'at': now, 'severity': severity, 'summary': _summary(point, reading), 'source': Source.WATER_LIMIT,
                  'point': point, 'parameter': reading.code, **_where(point)},

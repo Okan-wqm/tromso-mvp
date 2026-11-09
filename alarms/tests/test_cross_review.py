@@ -74,10 +74,10 @@ class ClockAheadTests(CrossReviewCase):
     def test_a_fast_value_that_comes_back_clears_after_the_off_delay_counted_from_the_pass(self):
         probe = self.live_ph(5.5, self.now + timedelta(minutes=4))
         self.loop()
-        self.assertEqual(open_levels(), ['critical', 'warning'])
+        self.assertEqual(open_levels(), ['critical'])               # the warning waits for its own on-delay
         probe.values = {(water_sources.POINT, self.mid1.pk): {'ph': [sensor_value(
             'ph', 7.0, self.now + timedelta(minutes=4, seconds=1))]}}    # back, the same probe 4 min fast
         self.loop(seconds=1)
-        self.assertEqual(open_levels(), ['critical', 'warning'])
+        self.assertEqual(open_levels(), ['critical'])
         self.loop(seconds=32)                                       # the off-delay (30 s) from the pass that saw it
         self.assertEqual(open_levels(), [])

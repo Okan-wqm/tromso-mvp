@@ -165,9 +165,10 @@ def advance(state, holds, clear_ok, bad_at, severity, rules, now, structural=Fal
 
 
 def _apply(state, step, now, make, cause=None):
-    """Writes what a Step says: raises the alarm `make()` opens, or clears the open one; (opened, cleared)."""
+    """Writes what a Step says: raises the alarm `make()` opens as the subject's open alarm (a compare-and-set on its row,
+    services.raise_for), or clears the open one; (opened, cleared)."""
     if step.raise_alarm:
-        state.open_alarm, state.pending_since = make(), None
+        state.open_alarm, state.pending_since = services.raise_for(state.key, make), None
         return 1, 0
     if step.clear_cause is not None:
         services.clear(state.open_alarm, now, cause or step.clear_cause)

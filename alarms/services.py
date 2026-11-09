@@ -2,7 +2,7 @@
 audit; the loop writes as 'system'). Nothing here decides whether a condition holds (alarms/sources.py), who is notified
 (alarms/routing.py) or when (alarms/engine.py)."""
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import connection, transaction
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
@@ -32,6 +32,30 @@ def open_alarm(*, at, severity, summary, site=None, production_department=None, 
                                           str(_('What')): alarm.summary, str(_('Opened at')): at.isoformat()},
                             label=alarm.summary, severity=_severity(alarm))
     return alarm
+
+
+class AlreadyOpen(Exception):
+    """A raise for a subject whose alarm is open: nothing was written."""
+
+
+RAISE = """
+INSERT INTO alarm_subject_state (key, open_alarm_id, updated_at) VALUES (%s, %s, now())
+ON CONFLICT (key) DO UPDATE SET open_alarm_id = EXCLUDED.open_alarm_id, pending_since = NULL, updated_at = now()
+WHERE alarm_subject_state.open_alarm_id IS NULL
+RETURNING key
+"""
+
+
+def raise_for(key, make):
+    """Opens the alarm `make()` writes as subject `key`'s open alarm, a compare-and-set on the subject's row in one
+    statement: it is set only where none is open, else nothing is written (AlreadyOpen). Returns the alarm."""
+    with transaction.atomic():
+        alarm = make()
+        with connection.cursor() as cursor:
+            cursor.execute(RAISE, [key, alarm.pk])
+            if cursor.fetchone() is None:
+                raise AlreadyOpen(key)
+        return alarm
 
 
 def clear(alarm, at, cause):

@@ -121,8 +121,10 @@ class AlarmSubjectState(models.Model):
     clearances and the activity log are."""
 
     key = models.CharField(primary_key=True, max_length=200)
-    open_alarm = models.ForeignKey(Alarm, null=True, blank=True, on_delete=models.PROTECT, related_name='+',
-                                   verbose_name=_('Open alarm'))
+    # Unique: an alarm is the open alarm of one subject at most; a raise sets it only where it is empty
+    # (alarms.services.raise_for), so one subject never has two open alarms (alarm plan, defect 6).
+    open_alarm = models.OneToOneField(Alarm, null=True, blank=True, on_delete=models.PROTECT, related_name='+',
+                                      verbose_name=_('Open alarm'))
     pending_since = models.DateTimeField(null=True, blank=True)
     clear_since = models.DateTimeField(null=True, blank=True)
     last_bad_at = models.DateTimeField(null=True, blank=True)

@@ -7301,6 +7301,13 @@ msgstr ""
 msgid "How many heartbeats a value stays fresh without a new one; then the place shows no recent data."
 msgstr "Hvor mange hjerteslag en verdi forblir fersk uten en ny; deretter viser stedet ingen nye data."
 
+msgid ""
+"How many heartbeats a value stays fresh without a new one; then the place shows no recent data. 1"
+" to 20. Empty: as it is (3 for a new channel)."
+msgstr ""
+"Hvor mange hjerteslag en verdi forblir fersk uten en ny; deretter viser stedet ingen nye data. 1 "
+"til 20. Tom: som den er (3 for en ny kanal)."
+
 msgid "How many times a failing transport is tried with one notification."
 msgstr "Hvor mange ganger en transport som feiler prøves med ett varsel."
 

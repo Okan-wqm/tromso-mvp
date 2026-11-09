@@ -194,6 +194,8 @@ class ChannelForm(CodedFormMixin, TabbedForm):
                                       'channel: what the quantity can be.'),
             'state': gettext_lazy('In maintenance its values are stored, marked, and used nowhere; retired, they are '
                                   'not listened to.'),
+            'fresh_heartbeats': gettext_lazy('How many heartbeats a value stays fresh without a new one; then the place '
+                                             'shows no recent data. 1 to 20. Empty: as it is (3 for a new channel).'),
         }
         widgets = {
             'note': forms.Textarea(attrs={'rows': 2}),
@@ -209,6 +211,9 @@ class ChannelForm(CodedFormMixin, TabbedForm):
         for name in DEFAULTED:
             if adding:
                 self.fields[name].required = False
+        # Empty: as it is (a new channel: the platform's default, 3), so a form or a client that does not send it
+        # changes nothing (cross review F10 made it the channel's own).
+        self.fields['fresh_heartbeats'].required = False
         if adding and self.draft is not None and self.draft.get(DRAFT) == 'quantity' \
                 and self.draft.get('quantity') in quantities.BY_CODE:
             for name, value in quantities.defaults(self.draft['quantity']).items():
@@ -221,6 +226,12 @@ class ChannelForm(CodedFormMixin, TabbedForm):
                 and self.draft is not None and self.draft.get(DRAFT) == 'quantity':
             return self.initial[field_name]
         return super().get_initial_for_field(field, field_name)
+
+    def clean_fresh_heartbeats(self):
+        found = self.cleaned_data.get('fresh_heartbeats')
+        if found is None:
+            return self.instance.fresh_heartbeats if self.instance.fresh_heartbeats is not None else                 Channel._meta.get_field('fresh_heartbeats').default
+        return found
 
     def clean(self):
         cleaned = super().clean()

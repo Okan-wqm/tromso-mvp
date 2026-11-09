@@ -7323,6 +7323,13 @@ msgstr ""
 "Yeni bir değer gelmeden bir değerin kaç kalp atışı taze kaldığı; sonra yer güncel veri yok "
 "gösterir."
 
+msgid ""
+"How many heartbeats a value stays fresh without a new one; then the place shows no recent data. 1"
+" to 20. Empty: as it is (3 for a new channel)."
+msgstr ""
+"Yeni bir değer gelmeden bir değerin kaç kalp atışı taze kaldığı; sonra yer güncel veri yok "
+"gösterir. 1 ile 20 arası. Boş: olduğu gibi (yeni bir kanal için 3)."
+
 msgid "How many times a failing transport is tried with one notification."
 msgstr "Başarısız bir aktarımın bir bildirimle kaç kez deneneceği."
 

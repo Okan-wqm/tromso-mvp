@@ -18,7 +18,7 @@ class UnitSubjectTests(AlarmsCase):
         self.assertFalse(Alarm.objects.exists())
 
     def test_a_depth_points_critical_value_is_its_units_one_alarm(self):
-        depth = SamplingPoint.objects.create(unit=self.t1, kind='depth', name='Bottom')
+        depth = SamplingPoint.objects.create(unit=self.t1, kind='depth', name='Bottom', depth_m=1)
         self.sample(5.5, point=depth)
         self.sample(5.4, hours=0.5)                          # the middle point critical too: still one alarm
         self.loop()

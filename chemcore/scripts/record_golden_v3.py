@@ -24,11 +24,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent.parent
 FORMAT = 1
 TEMPERATURES = (2.0, 8.0, 12.0, 18.0, 25.0, 30.0)
-SALINITIES = (0.0, 0.5, 1.0, 2.0, 3.0, 4.99, 5.0, 10.0, 35.0)
+SALINITIES = (0.0, 0.5, 1.0, 2.0, 3.0, 4.99, 5.0, 10.0, 28.3, 28.5, 35.0)   # 28.3, 28.5: NaCl's Davies limit
 PHS = (6.5, 7.0, 7.5, 8.0, 8.5)
 ALKALINITIES = (20.0, 80.0, 200.0)                    # mg/L as CaCO3
 IONS = ({}, {'conductivity_25_us_cm': 50.0}, {'conductivity_25_us_cm': 300.0}, {'conductivity_25_us_cm': 1000.0},
-        {'conductivity_25_us_cm': 3000.0}, {'hardness_mg_l': 50.0}, {'hardness_mg_l': 300.0})
+        {'conductivity_25_us_cm': 3000.0}, {'hardness_mg_l': 50.0}, {'hardness_mg_l': 300.0},
+        # Salt-added fresh water (cross review F3; round 2): the fresh path to the Davies limit, then the sea path.
+        {'water_origin': 'salt_added'}, {'conductivity_25_us_cm': 3000.0, 'water_origin': 'salt_added'},
+        {'water_origin': 'seawater'})
 LIMITS = {'nh3_n_mg_l': 0.0103, 'co2_mg_l': 15.0, 'h2s_ug_l': 2.0, 'alkalinity_low_mg_l': 50.0,
           'alkalinity_high_mg_l': 150.0}
 ANALYSIS_KEYS = ('co2_mg_l', 'co2', 'nh3_n_mg_l', 'nh3', 'safe_tan_mg_l', 'h2s_ug_l', 'h2s', 'dic', 'target_dic',
@@ -48,10 +51,12 @@ def outputs(eq, alkalinity_mg_l, native_):
     meq = alkalinity_mg_l / native_.MG_CACO3_PER_MEQ
     return {'constants': dict(zip(native_.Equilibria.fields, eq.values())),
             'provenance': {'formula': eq.formula, 'ionic_strength': eq.ionic_strength, 'source': eq.strength_source,
-                           'sea_weight': eq.sea_weight, 'warnings': eq.warnings},
+                           'sea_weight': eq.sea_weight, 'warnings': eq.warnings,
+                           'water_origin': eq.water_origin},
             'at_ph': [{'ph': ph, 'co2_mg_l': eq.co2(eq.dic(meq, ph), ph) * native_.MG_CO2_PER_MMOL,
                        'co2_judged_mg_l': eq.co2_judged(meq, ph)[0] * native_.MG_CO2_PER_MMOL,
-                       'nh3_share': eq.nh3_share(ph), 'nh3_share_corrected': eq.nh3_share_corrected(ph)}
+                       'nh3_share': eq.nh3_share(ph), 'nh3_share_corrected': eq.nh3_share_corrected(ph),
+                       'nh3_share_limits': eq.nh3_share_limits(ph)}
                       for ph in PHS],
             'nh3_basis': eq.nh3_basis}
 

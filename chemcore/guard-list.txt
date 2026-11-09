@@ -88,6 +88,7 @@ name nh3_fraction
 name nh3_plot
 name nh3_share
 name nh3_share_corrected
+name nh3_share_limits
 name nice_step
 name off_chart
 name omega_line
@@ -103,6 +104,7 @@ name ph_where_h2s
 name ph_where_nh3
 name ph_where_nh3_corrected
 name pk_nh4
+name pk_nh4_seawater
 name practical_salinity
 name pressure_atm
 name region_names
@@ -151,6 +153,7 @@ number 0.77712
 number 0.99705
 number 0.99984
 number 0.99997
+number 1.005109
 number 1.00794
 number 1.0495
 number 1.62142
@@ -174,6 +177,7 @@ number 16.945176
 number 18.998
 number 19.568224
 number 19.924
+number 19.9273
 number 20.051
 number 21.0894
 number 22.294
@@ -232,6 +236,8 @@ number 1590.2
 number 1776.0
 number 2140.7
 number 2698.0
+number 2729.2
+number 2729.92
 number 2839.319
 number 2890.53
 number 2903.293

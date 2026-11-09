@@ -56,15 +56,17 @@ STRENGTH_SOURCES = {
 # The plausibility warnings of a water's ionic inputs (cross review F5; chemcore/core/src/fresh.rs plausibility): said
 # beside the value, never a refusal.
 WARNINGS = {
-    'conductivity_salinity': _('Check: the conductivity at 25 °C and the salinity disagree, beyond what any water from '
-                               'NaCl brine to a hard fresh water allows.'),
-    'conductivity_above_ions': _('Check: the conductivity gives over ten times the ions the hardness and the alkalinity '
-                                 'account for (salt added, or mS/cm typed as µS/cm?).'),
-    'conductivity_below_ions': _('Check: the conductivity gives fewer ions than the hardness and the alkalinity need '
+    'conductivity_salinity': _('Check the conductivity and the salinity: they disagree beyond what any water from NaCl '
+                               'brine to a hard fresh water allows (one of them mistyped, uncompensated, or from '
+                               'another point?).'),
+    'conductivity_above_ions': _('Check the conductivity: it gives over 30 times the ions the hardness and the '
+                                 'alkalinity account for (salt added, or mS/cm typed as µS/cm?).'),
+    'conductivity_below_ions': _('Check the conductivity: it gives fewer ions than the hardness and the alkalinity need '
                                  '(not compensated to 25 °C, or in the wrong unit?); theirs is used.'),
-    'seawater_conductivity': _('Check: the conductivity is that of sea water of 1 ‰ or more (PSS-78) on a fresh '
-                               'water: give the salinity.'),
+    'seawater_conductivity': _('Check the salinity: the conductivity is that of sea water of 5 ‰ or more (PSS-78) on '
+                               'a water without a salinity; give the salinity, or the unit’s water origin.'),
 }
+
 
 def provenance(equilibria):
     """What a value worked out from a water's equilibria was worked out by, in words: the formula version, the ionic
@@ -89,12 +91,12 @@ def provenance(equilibria):
 # larger of the basis the limits were set on and the activity-corrected value.
 JUDGED = {
     ('nh3', 'limits'): _('NH₃ judged on the basis its limits were set on (to 1 ‰ the ideal water, every activity 1, as '
-                         'Emerson et al. 1975; from 5 ‰ formula 1’s seawater constants), the larger; activity-corrected '
-                         '%(value)s mg/L.'),
+                         'Emerson et al. 1975; from 5 ‰ Khoo et al. 1977’s pKa on the NBS pH, as Bower & Bidwell 1978; '
+                         'salt-added water: the ideal throughout), the larger; activity-corrected %(value)s mg/L.'),
     ('nh3', 'corrected'): _('NH₃ judged on its activity-corrected value, the larger here.'),
     ('co2', 'limits'): _('CO₂ judged on the basis its limits were set on (to 1 ‰ the ideal water, every activity 1, as '
-                         'Standard Methods 4500-CO₂ D; from 5 ‰ formula 1’s seawater constants), the larger; '
-                         'activity-corrected %(value)s mg/L.'),
+                         'Standard Methods 4500-CO₂ D; from 5 ‰ formula 1’s seawater constants; salt-added water: '
+                         'the ideal throughout), the larger; activity-corrected %(value)s mg/L.'),
     ('co2', 'corrected'): _('CO₂ judged on its activity-corrected value, the larger here.'),
 }
 JUDGED_DECIMALS = {'nh3': 4, 'co2': 2}

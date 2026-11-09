@@ -267,7 +267,8 @@ sabitleri) ve "düzeltmelerle birleştirilebilir" dedi. Yapılanlar:
    konduğundan daha gevşek kullanmak demektir: canlı balık için kabul edilemez. Bu yüzden her NH₃ kararı (durum, alarm,
    sınır pH'ı, en çok TAN, küçük grafik, simülatör, güvenli bölge) **ideal temel ile düzeltilmiş değerin büyüğünü** alıyor.
    Düzeltilmiş değer bilgi olarak yanında gösteriliyor ("değerlendirmede kullanılmaz"), başlıkta hangisinin karar verdiği
-   yazıyor. Temel: 1 ‰'ye kadar ideal su, 5 ‰'den sonra formül 1'in deniz suyu sabitleri, arada aynı karışım.
+   yazıyor. Temel: 1 ‰'ye kadar ideal su; 5 ‰'den sonra NH₃ için Khoo vd. (1977) pKaˢ'si, CO₂ için formül 1'in deniz
+   suyu sabitleri (ikinci tur, aşağıda); arada aynı karışım.
    12 °C, pH 7,5, 80 mg/L alkalinitede düzeltilmiş NH₃ değerlendirilenden şu kadar düşük:
 
    | İletkenlik | NH₃ | CO₂ |
@@ -276,8 +277,8 @@ sabitleri) ve "düzeltmelerle birleştirilebilir" dedi. Yapılanlar:
    | 1000 µS/cm | −%11,6 | −%11,7 |
    | 3000 µS/cm | −%17,2 | −%17,5 |
 
-   Tatlı suda büyük olan hep idealdir, yani karar formül 1'in tatlı su kararıyla aynıdır. Soğuk deniz suyunda (35 ‰,
-   2 °C) formül 3'ün kendi NH₃'ü %5,5 daha büyük, o karar veriyor. **CO₂ için de aynı kural** uygulandı: somon CO₂
+   Tatlı suda büyük olan hep idealdir, yani karar formül 1'in tatlı su kararıyla aynıdır. Deniz suyunda da artık
+   Khoo temeli büyük olan (ikinci tur, aşağıda). **CO₂ için de aynı kural** uygulandı: somon CO₂
    kılavuzları kısmen pH ve alkaliniteden ideal yolla hesaplanan serbest CO₂'ye (Standard Methods 4500-CO₂ D) dayanıyor,
    kısmen probla ölçülen gerçek değere; her çalışmanın hangi temeli kullandığı tek tek doğrulanamadı, bu yüzden canlı
    balık için büyük olan alındı. Hesap makinesindeki örnek su (12 °C, 1 ‰) artık NH₃ sınırını pH 7,986'da gösteriyor
@@ -294,20 +295,53 @@ sabitleri) ve "düzeltmelerle birleştirilebilir" dedi. Yapılanlar:
    suyunun iyon bileşimini varsayar; tuz eklenmiş tatlı suda CO₂ düşük çıkabilir" yazıyor.
 5. **Tutarlılık uyarıları (F5).** Değerin yanında, değeri hiç reddetmeden: iletkenlik ile tuzluluk uyuşmuyorsa; iletkenlik
    sertlik ve alkalinitenin açıkladığının 10 katından fazlaysa ya da 1,5 katı azsa (telafisiz okuma, yanlış birim); tatlı
-   suda deniz suyu iletkenliği varsa (PSS-78'e göre 1 ‰ ve üstü, yaklaşık 1 970 µS/cm).
+   suda deniz suyu iletkenliği varsa (PSS-78'e göre 5 ‰ ve üstü, yaklaşık 8 950 µS/cm; ikinci turda ayarlandı, aşağıda).
 6. **Soğuk su testi (F7)** artık Emerson'un kendi denklemine de bakıyor (pKa = 0,09018 + 2729,92/T, 0,002 pK içinde);
    EPA'nın yeniden bastığı tablo ikinci kontrol olarak kaldı (+%0,4 sapmasıyla).
+
+## İkinci inceleme turundan sonra değişenler (2026-11-09)
+
+İkinci bağımsız inceleme ilk turun düzeltmelerini 432 su üzerinde denedi ve tutarsızlık bulmadı. Yeni bulunanlar ve
+yapılanlar:
+
+1. **Geçmişi yeniden oynatma ekranı (R1)** birimin su kökenini almıyordu: tuz eklenmiş bir birimde 3–4 ‰'de CO₂ %10–23
+   düşük görünebiliyordu. Artık her kare birimin diyagramıyla aynı hesaplanıyor (testle).
+2. **Deniz suyunda NH₃ temeli değişti (S1).** Kural "literatür otoritedir". Deniz suyu amonyak kılavuzları (Bower &
+   Bidwell 1978, ve onları kullanan izleme raporları) NH₃ payını Khoo vd. (1977)'nin deniz suyu pKa'sıyla, **ölçülen
+   NBS pH'ına doğrudan** uygulayarak hesaplar: pKaˢ = 0,09018 + 2729,92/T + (0,1552 − 0,0003142·t)·I (T kelvin, t °C,
+   I = 19,9273·S / (1000 − 1,005109·S)). Önceki temel (formül 1'in deniz suyu sabitleri) bundan daha az NH₃ veriyordu,
+   yani deniz kafeslerinde sınırın konduğu hesaba göre gevşekti. Şimdi 5 ‰'den sonra NH₃ bu temelle, CO₂ ise yine formül
+   1'in deniz suyu sabitleriyle değerlendiriliyor (CO₂ sınırları ölçülen gerçek değere uygulanır). 1–5 ‰ arasında ideal
+   sudan Khoo'ya yumuşak geçiş var; 5 ‰'de Khoo payı idealden yalnız %3,5 düşük. pH 8'de 35 ‰'de formül 3'ün
+   düzeltilmiş payı bu temelden %10–23 (25 °C'den 2 °C'ye), formül 1 ise %10–27 düşük; bu yüzden denizde karar artık
+   Khoo temeliyle veriliyor. Deniz kafeslerinde daha çok NH₃ uyarısı çıkabilir: bilinçli.
+   - **Dürüstçe:** Khoo'nun makalesi, Bower & Bidwell ve EPA 1989 belgeleri açılamadı. Denklem Florida DEP'in okunabilen
+     bir notundan alındı ve Bower & Bidwell yöntemini uygulayan bir rapordaki değerlerle (S 32: 25 °C'de 9,35, 22 °C'de
+     9,44) 0,01 içinde doğrulandı. İnceleyici sıcaklığı iyonik terimde kelvin almıştı (35 ‰, 25 °C'de 9,29); okunabilen
+     kaynak °C diyor ve kontrol değeri de °C ile tutuyor. Florida DEP'e göre EPA 1989 Khoo'yu değil Whitfield (1974)
+     yöntemini kullanmış; Bell vd. (2007) Khoo'nun basılı denkleminde bir hata bildiriyor (burada kullanılan biçim bu
+     hatayı Emerson'un sıcaklık terimiyle gideriyor, ama Bell vd.'nin önerdiği ifadeler okunamadı).
+3. **Tuz eklenmiş su, Davies sınırında (28,39 ‰).** Burada sabitler tatlı su yolundan deniz suyu yoluna sıçrıyor. Artık
+   bu suyun değerlendirme temeli iki yanda da ideal su, böylece değerlendirilen NH₃ ve CO₂ sınırı geçerken asla düşmüyor
+   (testle). Golden v3'e tuz eklenmiş sular ve 28,3 / 28,5 ‰ eklendi.
+4. **Uyarılar ayarlandı (F5).** Normal yoğun RAS suyu (1000–3000 µS/cm, sertlik 100–150) artık uyarı vermiyor: "iyonların
+   üstünde" uyarısı yalnız sertlik ölçülmüşse ve 30 katın üstünde çıkıyor; "deniz suyu iletkenliği" uyarısı PSS-78'e göre
+   5 ‰'den (yaklaşık 8 950 µS/cm) itibaren. Her uyarı neyin kontrol edileceğini söylüyor. Yazdırılan raporda da artık
+   kaynak satırı, uyarılar ve hangi temelin karar verdiği görünüyor.
+5. Diyagramdaki CO₂ eğrisinin sapması incelemenin 165 888 noktasında −%0,74 ile +%0,38 (durumlar ve sınır pH'ları tam).
 
 ## Zayıf noktalar (geçişten sonra, dürüstçe)
 
 - **Büyük olanla değerlendirme ihtiyatlı ama kaba**: 0–1 ‰ arasındaki sularda temel ideal su, formül 1 ise orada deniz suyu
   sabitlerini kullanıyordu; örnek suda CO₂ formül 1'e göre %16 daha yüksek değerlendiriliyor (19,62 / 16,94 mg/L). Daha
   çok "uyarı" çıkabilir; bu, sahibin güvenlik kararının bilinçli sonucu. Diyagramdaki CO₂ eğrisi suyun pH'ına bakmayan bir oranla
-  çiziliyor (tekrar oynatma sayfası diyagramı paylaşabilsin diye); eğri boyunca sınırdan −%0,6 ile +%0,3 sapabiliyor
+  çiziliyor (tekrar oynatma sayfası diyagramı paylaşabilsin diye); eğri boyunca sınırdan −%0,74 ile +%0,38 sapabiliyor
   (durumlar ve sınır pH'ları tam).
-- **Deniz suyunda temel formül 1'in deniz suyu sabitleri**: "ideal" (I = 0) burada %30–42 fazla NH₃ verirdi; tuzlu su
-  sınırları (US EPA 1989) tuzluluğa göre düzeltilmiş pKa ile konduğundan (birincil kaynak açılmadı) ideal kullanılmadı.
-  Sahip denizde de ideali isterse bu tek satırlık bir değişiklik.
+- **Deniz suyunda NH₃ temeli Khoo vd. (1977)**: katsayılar birincil kaynaktan **doğrulanamadı**; Florida DEP'in
+  belgesinden ve Hong Kong'daki bir uygulamanın kontrol değerlerinden (S 32, 25 °C'de 9,35) alındı. Bell vd. (2007)
+  Khoo'nun basılı denkleminde bir hata bildiriyor; burada kullanılan biçim sıcaklık etkisini Emerson'dan alıyor, ama
+  Bell vd.'nin önerdiği düzeltilmiş ifadeler okunamadı. US EPA 1989 ise (Florida DEP'e göre) Khoo'yu değil Whitfield
+  (1974) yöntemini kullanmış.
 - **Deniz suyunda soğukta CO₂ biraz daha düşük görünüyor** (2 °C'de −%5,4). Soğuk, 20–35 ‰ deniz suyunda Takahashi'ye daha
   yakın, ama CO₂ hâlâ CO2SYS'in değerinin üstünde. Artık CO₂ ve NH₃, formül 1 ile formül 3'ün büyüğüyle değerlendiriliyor
   (aşağıda), bu yüzden durum ve alarm formül 1'e göre gevşemiyor. Soğuk deniz suyunda NH₃ CO2SYS'e göre hâlâ yaklaşık %10

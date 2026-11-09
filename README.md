@@ -1224,12 +1224,13 @@ published values):
   out is stored, so a past sample is shown by today's formula, and says so.
   **The NH₃-N shown, judged and alarmed is the larger of two** (cross review F1, owner decision 2026-11-09, safety with live
   fish): the share on the basis the limits were set on (up to 1 ‰ the ideal water, every activity 1, Emerson et al.
-  1975, as Piper et al. 1982 and US EPA 1985 used it; from 5 ‰ formula 1's seawater constants) and formula 3's
+  1975, as Piper et al. 1982 and US EPA 1985 used it; from 5 ‰ Khoo et al. 1977's pKaˢ on the NBS pH, as Bower & Bidwell
+  1978 apply it for saltwater, cross review round 2, S1; salt-added water: the ideal throughout) and formula 3's
   activity-corrected share. The corrected NH₃-N is said in the title beside it ("NH₃ judged on the basis its limits were
   set on ..., the larger; activity-corrected 0.0121 mg/L."); it is never judged. In fresh water the basis is always the
   larger (at 12 °C, pH 7.5 the corrected NH₃ is 8.7 % lower at 500 µS/cm, 11.6 % at 1000 and 17.2 % at 3000), so the
-  status, the alarm and the safe TAN are those of the ideal share; in cold sea water formula 3's own share is the larger
-  (+5.5 % at 2 °C, 35 ‰) and judges.
+  status, the alarm and the safe TAN are those of the ideal share; in sea water Khoo's share is the larger too (at pH 8 formula
+  3's corrected share is 10 to 23 % below it at 35 ‰ from 25 to 2 °C, formula 1's 10 to 27 %).
 - **Oxygen saturation**: Benson & Krause (1984) as in Standard Methods 4500-O, corrected for the
   barometric pressure of the site's altitude (sea-level pressure, said so, when the site has none; the altitude is
   0 .. 5000 m (owner: no site lies below sea level, a minus sign is a slip), held by the form, the model and the
@@ -1382,7 +1383,10 @@ without values it shows its defaults.
   larger; the activity-corrected NH₃-N and CO₂ are shown beside them as information ("not judged"), with a line saying
   which judged. The limits' basis is the ideal water up to 1 ‰ (every activity 1: Emerson et al. 1975's fraction, on
   which Piper et al. 1982 and US EPA 1985 set the NH₃ limits; Standard Methods 4500-CO₂ D's free CO₂), formula 1's
-  seawater constants from 5 ‰, blended between as formula 3 blends. CO₂ needs the same rule: the salmonid CO₂ guidelines
+  seawater constants from 5 ‰ for CO₂ and, for NH₃, the saltwater criteria's convention from 5 ‰ (cross review round 2,
+  S1): Khoo et al. 1977's pKaˢ = 0.09018 + 2729.92/T + (0.1552 − 0.0003142 t) I on the NBS pH as measured, as Bower &
+  Bidwell 1978 apply it (`fresh::pk_nh4_seawater`), blended between as formula 3 blends; a salt-added water keeps the
+  ideal throughout, past the Davies limit too. CO₂ needs the same rule: the salmonid CO₂ guidelines
   rest partly on free CO₂ worked out from pH and alkalinity the ideal way (Standard Methods 4500-CO₂ D, which the
   calculator is checked against), partly on probes; which basis each was set on was not verified study by study, so for
   live fish the larger is taken. At 12 °C, 80 mg/L, pH 7.5 the corrected CO₂ is 8.8 % below the judged at 500 µS/cm,
@@ -1390,7 +1394,8 @@ without values it shows its defaults.
   corrected share alone 8.045) and the CO₂ 19.62 mg/L (corrected 17.12). The chart's CO₂ curve is drawn in the water's own
   constants at the limit over the bicarbonate-range ratio of the basis's CO₂ to its own (K1 10^offset over the basis's, a
   ratio of the equilibria alone, so a replay page still shares one diagram among frames equal but for pH and alkalinity):
-  the judged CO₂ along it within −0.6 to +0.3 % of the limit (a grid of 0 to 25 °C, 0 to 35 ‰, 6.5 to 8 pH); the statuses and borders are exact. The stripping
+  the judged CO₂ along it within −0.74 to +0.38 % of the limit (the round-2 review's 165 888 boundary points, S 0 to
+  35 ‰, 2 to 25 °C, unsaid and salt-added); the statuses and borders are exact. The stripping
   floor (the air's CO₂, a true concentration, Weiss 1974) is held against the water's own CO₂.
 - **The safe zone needs every limit it is bounded by**: without the TAN, the NH₃ limit, the CO₂ limit or
   the alkalinity band, or with a total sulfide but no H₂S limit, it is not drawn and a note says what is
@@ -3665,7 +3670,8 @@ temperature (a synthetic page: 54 different temperatures, 99 to 164 ms, 128 KB c
   (Millero et al. 2006 measured K1, K2 from S 1; Dickson's 1990 KSO₄ and KB hold from S 5): the old 5 ‰ boundary jumped
   up to 25 % in CO₂, the band not at all. The band assumes sea water's ions (sulfate, fluoride, the Mg and Ca ion pairs in Millero's K1
   and K2, borate): a unit may say its **water origin** (cross review F3, F4). Salt-added fresh water takes the fresh path up
-  to the Davies limit (to about 28 ‰; then the sea path), its ionic strength NaCl's (the salinity as NaCl's molality,
+  to the Davies limit (S 28.39 ‰ as NaCl, or a conductivity of about 59 500 µS/cm; then the sea path, its constants and
+  corrected values jumping there, its judged NH₃ and CO₂ never dropping, the ideal basis kept on both sides), its ionic strength NaCl's (the salinity as NaCl's molality,
   58.443 g/mol; the conductivity by NaCl's 8.4e-6 per µS/cm, from its molar conductivity of about 118.5 S cm²/mol at
   0.01 mol/L, 25 °C, instead of Russell's 1.6e-5, which fits bicarbonate waters and overstates a NaCl water's ionic
   strength about 1.9 times, its corrected NH₃ and CO₂ about 4 % low at 3000 µS/cm), no seawater boron: at 3 ‰ its CO₂ is 4.6 to
@@ -3673,11 +3679,12 @@ temperature (a synthetic page: 54 different temperatures, 99 to 164 ms, 128 KB c
   composition; salt-added fresh water may read low CO₂". **Plausibility warnings** (cross review F5; `fresh::plausibility`, on every
   `Equilibria` as `warnings`), said after the provenance with the value, never a refusal: the conductivity against the
   salinity (the salinity's ionic strength outside 5.9e-6 to 2.1e-5 per µS/cm, NaCl's 8.4e-6 to Russell's 1.6e-5 each
-  widened by Russell's ±30 % scatter); a conductivity with no salinity giving over 10 times the ionic strength of the
-  measured hardness and alkalinity (in-house; world-average river water, Livingstone 1963, has about 1.3), or giving less
+  widened by Russell's ±30 % scatter); a conductivity with no salinity and the hardness measured giving over 30 times the
+  ionic strength of the hardness and alkalinity (in-house, round 2: world-average river water, Livingstone 1963, has
+  about 1.3, an intensive RAS 10 to 20), or giving less
   than their bound by over 1.5 times (Russell's scatter; the bound is used); a sea water's conductivity on a fresh water
-  (a salinity under 1 ‰ with a conductivity PSS-78, UNESCO 1983 with Hill et al. 1986, reads as 1 ‰ or more, about
-  1 970 µS/cm). The thresholds are documented constants: no reference table holds per-water constants. The fresh path refuses an ionic strength above 0.5, the Davies limit
+  (a salinity under 1 ‰ with a conductivity PSS-78, UNESCO 1983 with Hill et al. 1986, reads as 5 ‰ or more, about
+  8 950 µS/cm: a hard fresh RAS at 2000 to 3000 µS/cm stays quiet). Each says what to check. The thresholds are documented constants: no reference table holds per-water constants. The fresh path refuses an ionic strength above 0.5, the Davies limit
   (`DAVIES_MAX`; a sample's NH₃ then says why and shows nothing). The conductivity and the hardness are water parameters
   (cross review F8: only the compensated conductivity is read; the sensors' `conductivity_us_cm`, at the water's own
   temperature, never). Formula 1 is still worked out exactly, by name only (`formula=1`: golden v1, `FORMULAS` = 1, 3),

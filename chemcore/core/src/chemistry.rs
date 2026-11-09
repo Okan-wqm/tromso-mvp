@@ -369,7 +369,8 @@ impl Origin {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Basis {
     /// The basis the limits were set on (`crate::fresh::limits_basis`: up to 1 ‰ the ideal water, every activity 1, as
-    /// Emerson et al. 1975 and Standard Methods 4500-CO₂ D; from 5 ‰ formula 1's seawater constants; blended between).
+    /// Emerson et al. 1975 and Standard Methods 4500-CO₂ D; from 5 ‰ Khoo et al. 1977's pKaˢ on the NBS pH for NH₃ and
+    /// formula 1's seawater constants for CO₂; blended between; a salt-added water the ideal throughout).
     Limits,
     /// The activity-corrected value of formula 3, the larger here.
     Corrected,
@@ -395,6 +396,9 @@ pub struct LimitsBasis {
     pub kb: f64,
     pub boron: f64,
     pub k_nh4: f64,
+    /// The pH offset (free − NBS) of the NH₃ basis: from 5 ‰ the saltwater criteria apply their pKa^s to the NBS pH as
+    /// measured (Bower & Bidwell 1978), so 0 there, while the CO₂ basis keeps formula 1's offset (`ph_offset`).
+    pub nh3_ph_offset: f64,
 }
 
 impl LimitsBasis {
@@ -408,6 +412,7 @@ impl LimitsBasis {
             kb: eq.kb,
             boron: eq.boron,
             k_nh4: eq.k_nh4,
+            nh3_ph_offset: eq.ph_offset,
         }
     }
 }
@@ -560,6 +565,24 @@ impl Equilibria {
         })
     }
 
+    /// The NH₃ basis as equilibria: `limits_equilibria` with the NH₃ basis's pH offset (`LimitsBasis::nh3_ph_offset`).
+    fn limits_nh3(&self) -> Option<Equilibria> {
+        self.limits_basis.map(|basis| Equilibria {
+            ph_offset: basis.nh3_ph_offset,
+            k_nh4: basis.k_nh4,
+            limits_basis: None,
+            ..*self
+        })
+    }
+
+    /// The NH₃ share on the basis the limits were set on, 0 to 1 (formula 1: its own).
+    pub fn nh3_share_limits(&self, ph: f64) -> R {
+        match self.limits_nh3() {
+            Some(basis) => basis.nh3_share_corrected(ph),
+            None => self.nh3_share_corrected(ph),
+        }
+    }
+
     /// The share of TAN that is un-ionised NH₃ as these constants give it, 0 to 1: K / (K + [H⁺]). Formula 3: the
     /// activity-corrected share, information beside the judged one (`nh3_share`).
     pub fn nh3_share_corrected(&self, ph: f64) -> R {
@@ -572,7 +595,7 @@ impl Equilibria {
     /// EPA 1985). Formula 1: its own share.
     pub fn nh3_share(&self, ph: f64) -> R {
         let corrected = self.nh3_share_corrected(ph)?;
-        match self.limits_equilibria() {
+        match self.limits_nh3() {
             Some(basis) => Ok(larger(basis.nh3_share_corrected(ph)?, corrected)),
             None => Ok(corrected),
         }
@@ -582,7 +605,7 @@ impl Equilibria {
     /// at every pH; the limits' basis on a tie (and always for formula 1).
     pub fn nh3_basis(&self) -> Result<Basis, ChemError> {
         match self.limits_basis {
-            Some(basis) if self.k_nh4 * pow(10.0, self.ph_offset)? > basis.k_nh4 * pow(10.0, basis.ph_offset)? => {
+            Some(basis) if self.k_nh4 * pow(10.0, self.ph_offset)? > basis.k_nh4 * pow(10.0, basis.nh3_ph_offset)? => {
                 Ok(Basis::Corrected)
             }
             _ => Ok(Basis::Limits),
@@ -608,7 +631,7 @@ impl Equilibria {
     /// The pH above which the judged NH₃-N (`nh3_share`) exceeds `limit`: the lower of the two borders.
     pub fn ph_where_nh3(&self, tan: f64, limit: f64) -> Result<Option<f64>, ChemError> {
         let corrected = self.ph_where_nh3_corrected(tan, limit)?;
-        match self.limits_equilibria() {
+        match self.limits_nh3() {
             Some(basis) => Ok(lower(basis.ph_where_nh3_corrected(tan, limit)?, corrected)),
             None => Ok(corrected),
         }

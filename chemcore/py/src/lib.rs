@@ -284,6 +284,11 @@ impl Equilibria {
         inputs(&[ph])?;
         ok(self.0.nh3_share(ph))
     }
+    /// The share on the basis the limits were set on (formula 1: its own).
+    fn nh3_share_limits(&self, ph: f64) -> PyResult<f64> {
+        inputs(&[ph])?;
+        ok(self.0.nh3_share_limits(ph))
+    }
     /// The activity-corrected share (formula 3), information beside the judged one.
     fn nh3_share_corrected(&self, ph: f64) -> PyResult<f64> {
         inputs(&[ph])?;

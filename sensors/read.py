@@ -591,6 +591,7 @@ def deffeyes_frames(target, start, end, step, cursor=0, size=PAGE):
     manual = {code: WaterSeries(points, code, first - WINDOW, page_end) for code in REPLAY_INPUTS}
     assumed = assumed_salinity(_water_types(target))
     limits = {name: float(offer.value) for name, offer in calculation.chart_limits(calculation.fish_limits(target)).items()}
+    water_origin = calculation.origin_of(target)  # one a page, as the unit's chart (round 2, R1)
     found = Frames(target, start, end, step, tier, total, cursor, cursor + count if cursor + count < total else None)
     waters = []
     for slot in range(count):
@@ -624,7 +625,8 @@ def deffeyes_frames(target, start, end, step, cursor=0, size=PAGE):
                 missing.append(code)
         analysis, impossible = None, ''
         if not missing:
-            analysis, impossible = frame_analysis({code: item.value for code, item in inputs.items()}, limits)
+            analysis, impossible = frame_analysis(
+                {**{code: item.value for code, item in inputs.items()}, 'water_origin': water_origin}, limits)
         waters.append((at, inputs, tuple(missing), impossible, analysis))
     analyses = [analysis for *_rest, analysis in waters]
     found.figures, indexes = page_figures(analyses)
@@ -636,8 +638,8 @@ def deffeyes_frames(target, start, end, step, cursor=0, size=PAGE):
 
 
 def frame_analysis(values, limits):
-    """(analysis, '') of a frame's water (`values` by calculator field, `limits` the fish's by field, floats), as a
-    unit's chart works it out; (None, why) when its pH and alkalinity cannot go together."""
+    """(analysis, '') of a frame's water (`values` by calculator field, its water origin among them, `limits` the fish's by
+    field, floats), as a unit's chart works it out; (None, why) when its pH and alkalinity cannot go together."""
     impossible = deffeyes.why_impossible(values[parameters.TEMPERATURE], values[parameters.SALINITY],
                                          values[parameters.PH], values['alkalinity_mg_l'], **calculation.ions_of(values))
     if impossible:

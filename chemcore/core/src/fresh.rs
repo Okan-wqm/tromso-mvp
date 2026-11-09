@@ -57,7 +57,9 @@ pub const IONIC_PER_MICROSIEMENS: f64 = 1.6e-5;
 /// (CRC Handbook of Chemistry and Physics, molar conductivity of aqueous electrolytes; Robinson & Stokes 1959, Electrolyte
 /// Solutions, appendix 6.2; neither printed table was opened here: the value agrees with Kohlrausch's law from NaCl's
 /// limiting 126.4 and with the 0.01 mol/L KCl standard's 1413 µS/cm), so κ ≈ 1185 µS/cm and I / κ = 8.4e-6. It rises
-/// with the concentration (about 8.1e-6 at 0.001 mol/L, 9.4e-6 at 0.1): within ±12 % from 120 to 11 000 µS/cm.
+/// with the concentration (about 8.1e-6 at 0.001 mol/L, 9.4e-6 at 0.1): within ±12 % from 120 to 11 000 µS/cm; about
+/// 1.07e-5 at 0.5 mol/L (near the Davies limit, 28 ‰), where it understates I by about 21 % (the corrected values a
+/// little high, the conservative side; the judged one is the ideal anyway).
 pub const IONIC_PER_MICROSIEMENS_NACL: f64 = 8.4e-6;
 /// NaCl, g/mol (IUPAC 2007: Na 22.98977, Cl 35.453): a salt-added water's salinity as NaCl's molality.
 pub const NACL_G_PER_MOL: f64 = 58.443;
@@ -162,20 +164,24 @@ pub fn fresh_ionic_strength(
 
 /// The salinity's ionic strength outside what the conductivity allows (`PLAUSIBLE_PER_MICROSIEMENS`).
 pub const CONDUCTIVITY_SALINITY: u8 = 1;
-/// A conductivity (no salinity) giving more than `ESTIMATE_OVER_BOUND` times the measured ions' ionic strength.
+/// A conductivity (no salinity, the hardness measured) giving more than `ESTIMATE_OVER_BOUND` times the measured ions'
+/// ionic strength.
 pub const CONDUCTIVITY_ABOVE_IONS: u8 = 2;
 /// A conductivity below the measured ions' ionic strength by more than `BOUND_OVER_ESTIMATE`: the bound is used.
 pub const CONDUCTIVITY_BELOW_IONS: u8 = 4;
-/// A salinity under `FRESH_UP_TO` with a conductivity PSS-78 reads as `FRESH_UP_TO` or more (`practical_salinity`).
+/// A salinity under `FRESH_UP_TO` with a conductivity PSS-78 reads as `SEA_FROM` or more (`practical_salinity`): past the
+/// band, about 8 950 µS/cm, so a hard fresh RAS at 2000 to 3000 µS/cm (PSS-78 1 to 1.6) stays quiet (cross review round 2).
 pub const SEAWATER_CONDUCTIVITY: u8 = 8;
 /// The ionic strength per µS/cm a water may have: NaCl's `IONIC_PER_MICROSIEMENS_NACL` to Russell's
 /// `IONIC_PER_MICROSIEMENS`, each widened by Russell's scatter of about ±30 % (as the cross review quotes it; the paper
 /// itself was not read): 0.7 × 8.4e-6 and 1.3 × 1.6e-5.
 pub const PLAUSIBLE_PER_MICROSIEMENS: (f64, f64) = (5.88e-6, 2.08e-5);
-/// The conductivity's ionic strength over the measured ions' bound beyond which a fresh water's conductivity is
-/// suspect (salted, or mS/cm read as µS/cm): 10, an in-house threshold (cross review F5); world-average river water
-/// (Livingstone 1963, USGS PP 440-G: Ca 15, Mg 4.1, Na 6.3, K 2.3, HCO₃ 58.4, SO₄ 11.2, Cl 7.8 mg/L) has about 1.3.
-pub const ESTIMATE_OVER_BOUND: f64 = 10.0;
+/// The conductivity's ionic strength over the hardness and alkalinity's bound beyond which a fresh water's conductivity is
+/// suspect (salt added, or mS/cm read as µS/cm), checked only with the hardness measured (the alkalinity alone is too
+/// low a reference): 30, an in-house threshold (cross review F5, round 2). World-average river water (Livingstone 1963,
+/// USGS PP 440-G: Ca 15, Mg 4.1, Na 6.3, K 2.3, HCO₃ 58.4, SO₄ 11.2, Cl 7.8 mg/L) has about 1.3; an intensive RAS's
+/// accumulated nitrate, chloride and sulfate (hundreds of mg/L, our reasoning, not a measured survey) take it to 10 to 20.
+pub const ESTIMATE_OVER_BOUND: f64 = 30.0;
 /// The measured ions' bound over the conductivity's ionic strength beyond which the conductivity is suspect (not
 /// compensated to 25 °C, about 45 % low at 2 °C; or in the wrong unit): 1.5, about 1 / (1 − 0.3), Russell's scatter.
 pub const BOUND_OVER_ESTIMATE: f64 = 1.5;
@@ -227,7 +233,7 @@ pub fn plausibility(salinity: f64, alkalinity_mg_l: Option<f64>, ions: Ions) -> 
             warnings |= CONDUCTIVITY_SALINITY;
         }
     }
-    if salinity < FRESH_UP_TO && practical_salinity(kappa)? >= FRESH_UP_TO {
+    if salinity < FRESH_UP_TO && practical_salinity(kappa)? >= SEA_FROM {
         warnings |= SEAWATER_CONDUCTIVITY;
     }
     let per = if ions.origin == Origin::SaltAdded {
@@ -237,7 +243,7 @@ pub fn plausibility(salinity: f64, alkalinity_mg_l: Option<f64>, ions: Ions) -> 
     };
     let estimate = per * kappa;
     if let Some(bound) = measured_bound(alkalinity_mg_l, ions.hardness_mg_l)? {
-        if salinity == 0.0 && estimate > ESTIMATE_OVER_BOUND * bound.0 {
+        if salinity == 0.0 && bound.1 == Source::Hardness && estimate > ESTIMATE_OVER_BOUND * bound.0 {
             warnings |= CONDUCTIVITY_ABOVE_IONS;
         }
         if bound.0 > BOUND_OVER_ESTIMATE * estimate {
@@ -375,23 +381,33 @@ fn fresh_at(
     checked(eq)
 }
 
-/// The basis the NH₃ and CO₂ limits were set on, for a water of formula 3 (cross review F1; owner decision 2026-11-09):
-/// up to `FRESH_UP_TO` the ideal water (the fresh path at an ionic strength of 0, formula 1's fresh water at S 0: every
-/// activity 1, the NBS pH taken as −log [H⁺], as Emerson et al. 1975's fraction, on which Piper et al. 1982 and US EPA
-/// 1985 set the NH₃ limits, and Standard Methods 4500-CO₂ D's free CO₂), from `SEA_FROM` formula 1's seawater
-/// constants (the salinity's; its NBS conversion with ε = 79), and between the same blend as the water's own (the
-/// module's rules) with the same weight. Up to 1 ‰ this is the ideal water even where formula 1 took seawater constants
-/// (0 < S ≤ 1): at the calculator's example (12 °C, 1 ‰, pH 7, 80 mg/L) the NH₃ border is 7.986, against formula 3's
-/// corrected 8.045 and formula 1's 8.040; the CO₂ 19.62 mg/L, against 17.12 and 16.94. Judgements take the larger of this and the activity-corrected value.
+/// The basis the NH₃ and CO₂ limits were set on, for a water of formula 3 (cross review F1; owner decision 2026-11-09;
+/// the sea side's NH₃, cross review round 2, S1). Up to `FRESH_UP_TO` the ideal water (the fresh path at an ionic
+/// strength of 0, formula 1's fresh water at S 0: every activity 1, the NBS pH taken as −log [H⁺], as Emerson et al.
+/// 1975's fraction, on which Piper et al. 1982 and US EPA 1985 set the NH₃ limits, and Standard Methods 4500-CO₂ D's free
+/// CO₂). From `SEA_FROM`: for NH₃ the saltwater criteria's convention, Khoo et al. (1977)'s pKa^s on the NBS pH as
+/// measured (`pk_nh4_seawater`; Bower & Bidwell 1978), for CO₂ formula 1's seawater constants (the salinity's; its NBS
+/// conversion with ε = 79: CO₂ limits are applied to measured true concentrations, which Millero's apparent constants
+/// estimate). Between, the same blend as the water's own (the module's rules) with the same weight. Up to 1 ‰ this is
+/// the ideal water even where formula 1 took seawater constants (0 < S ≤ 1): at the calculator's example (12 °C, 1 ‰,
+/// pH 7, 80 mg/L) the NH₃ border is 7.986, against formula 3's corrected 8.045 and formula 1's 8.040; the CO₂ 19.62
+/// mg/L, against 17.12 and 16.94. A salt-added water's basis is the ideal water throughout, past the Davies limit too
+/// (its constants jump there, S 28.39 ‰ as NaCl, its judged NH₃ and CO₂ never drop). Judgements take the larger of this
+/// and the activity-corrected value.
 pub fn limits_basis(temp_c: f64, salinity: f64, weight: f64, origin: Origin) -> Result<LimitsBasis, ChemError> {
-    if weight >= 1.0 {
-        return Ok(LimitsBasis::of(&c::equilibria(temp_c, salinity)?));
-    }
     let ideal = fresh_at(temp_c, salinity, 0.0, Source::Nothing, origin)?;
-    if weight <= 0.0 {
+    if weight <= 0.0 || origin == Origin::SaltAdded {
         return Ok(LimitsBasis::of(&ideal));
     }
     let sea = c::equilibria(temp_c, salinity)?;
+    let k_khoo = pow(10.0, -pk_nh4_seawater(temp_c, salinity)?)?;
+    if weight >= 1.0 {
+        return Ok(LimitsBasis {
+            k_nh4: k_khoo,
+            nh3_ph_offset: 0.0,
+            ..LimitsBasis::of(&sea)
+        });
+    }
     Ok(LimitsBasis {
         ph_offset: (1.0 - weight) * ideal.ph_offset + weight * sea.ph_offset,
         k1: blend(ideal.k1, sea.k1, weight)?,
@@ -399,8 +415,26 @@ pub fn limits_basis(temp_c: f64, salinity: f64, weight: f64, origin: Origin) -> 
         kw: blend(ideal.kw, sea.kw, weight)?,
         kb: blend(ideal.kb, sea.kb, weight)?,
         boron: sea.boron,
-        k_nh4: blend(ideal.k_nh4, sea.k_nh4, weight)?,
+        k_nh4: blend(ideal.k_nh4, k_khoo, weight)?,
+        nh3_ph_offset: 0.0,
     })
+}
+
+/// The stoichiometric pKa of NH₄⁺ in sea water against the NBS pH as measured, the saltwater ammonia criteria's
+/// convention: Khoo, Culberson & Bates (1977), J. Solution Chem. 6: 281, as Bower & Bidwell (1978), J. Fish. Res. Board
+/// Can. 35: 1012, apply it, pKa^s = 0.09018 + 2729.92 / T + (0.1552 − 0.0003142 t) I, T in K (Emerson et al. 1975's
+/// pure-water term), t in °C, I = 19.9273 S / (1000 − 1.005109 S) the molal ionic strength of sea water. The form as
+/// read here: Florida DEP (2013), the un-ionized ammonia calculator's SOP (Spotte & Adams 1983, from Thurston 1974, 1979
+/// and Khoo et al. 1977; it prints 2729.2 / (t + 273.2), taken as Emerson's 2729.92 / T), with t in °C in the ionic
+/// term; checked against Bower & Bidwell's method as a monitoring report applies it (S 32: 9.35 at 25 °C, 9.44 at 22.15
+/// °C). Not read: Khoo et al. 1977, Bower & Bidwell 1978, US EPA 1989 (which, per the same Florida DEP note, takes the
+/// 25 °C pKa^s with 0.0324 (298 − T) after Whitfield 1974 instead), nor Bell et al. (2007, Environ. Chem. 4: 183), who
+/// report that Khoo et al.'s printed equation 5 has no temperature effect at I = 0 (this form takes Emerson's).
+pub fn pk_nh4_seawater(temp_c: f64, salinity: f64) -> R {
+    let t = finite(temp_c)?;
+    let s = finite(salinity)?;
+    let strength = div(19.9273 * s, 1000.0 - 1.005109 * s)?;
+    Ok(0.09018 + div(2729.92, t + KELVIN)? + (0.1552 - 0.0003142 * t) * strength)
 }
 
 fn checked(eq: Equilibria) -> Result<Equilibria, ChemError> {

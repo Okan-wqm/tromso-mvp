@@ -54,6 +54,9 @@
           <tr><th scope="row">{% trans "Oxygen saturation" %}</th><td class="num">{{ analysis.oxygen_saturation_pct|percent:1 }}</td></tr>
         </tbody>
       </table>
+      <p class="calc-note" data-formula="{{ analysis.equilibria.formula }}">{{ analysis.provenance }}</p>
+      {% if analysis.nh3_judged %}<p class="calc-note">{{ analysis.nh3_judged }}</p>{% endif %}
+      {% if analysis.co2_judged %}<p class="calc-note">{{ analysis.co2_judged }}</p>{% endif %}
     </div>
   </div>
   {% endwith %}

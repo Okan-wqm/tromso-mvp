@@ -4277,6 +4277,11 @@ inside the job. When it runs (the owner's decision, 2026-11-08):
   06:00: until the golden-card fix G-03 lands, six subtests of `monitoring.tests.test_golden` fail before 06:00 UTC) and
   by hand (Actions, CI, Run workflow). These runs carry the other four jobs too and are never cancelled.
 
+Artifacts: none on a passing run. The three jobs that build an image (`python`, `rust`, `chemcore`) keep the build's
+record (`docker buildx history export`, for Docker Desktop's Builds view) only when that build failed, for 3 days, as
+`build-record-<job>`; `docker/build-push-action`'s own upload of every build's record is off (`DOCKER_BUILD_RECORD_UPLOAD`),
+as it filled the account's artifact storage. Neither step can fail a job or hide its failure (`continue-on-error`).
+
 The python job is the same job on every event, only `SUITE` differs; its logic is in one place, `scripts/test.sh` and
 `scripts/testrunner/in-container.sh`, which a developer runs the same way. The suite itself is not run on a pull request,
 so run `scripts/test.sh` on the branch before asking for a merge.

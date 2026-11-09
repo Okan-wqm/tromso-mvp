@@ -34,7 +34,7 @@ class CleanerFishWithoutAFeedingTableTests(CleanerFishTestCase):
         ProtocolTestCase.water(self, '13', unit=self.cage, hours=0)
 
     def board(self):
-        response = self.client.get(reverse('farm:meal_board'))
+        response = self.client.get(reverse('farm:meal_board'), {'site': self.fjord.pk})     # the cage's site only
         row = next(row for row in response.context['rows'] if row['unit'] == self.cage)
         return response, row, {line['batch']: line for line in row['lines']}
 
@@ -89,8 +89,8 @@ class CleanerFishWithoutAFeedingTableTests(CleanerFishTestCase):
         self.assertEqual(lines[self.lump_batch]['share'].end_g, D(50))     # no table, no growth credited
         self.assertNotContains(response, 'Estimate incomplete')
         ProtocolAssignment.objects.all().delete()                          # the salmon's own gap is still told
-        self.assertContains(self.client.get(reverse('farm:meal_board')), 'Estimate incomplete: 1 feeding day',
-                            count=1)
+        board = self.client.get(reverse('farm:meal_board'), {'site': self.fjord.pk})
+        self.assertContains(board, 'Estimate incomplete: 1 feeding day', count=1)
 
     def test_the_drawer_the_days_view_and_the_monitoring_card_do_not_warn_either(self):
         drawer = self.client.get(reverse('farm:production_units'), {'unit': self.cage.pk})
@@ -98,7 +98,7 @@ class CleanerFishWithoutAFeedingTableTests(CleanerFishTestCase):
         self.assertEqual(rows[self.lump_batch], '')
         self.assertNotContains(drawer, 'these fish are Lumpfish')
         self.assertContains(drawer, 'Cleaner fish: no feeding table of their own.', count=1)
-        days = self.client.get(reverse('farm:feeding_records'), {'view': 'days'})
+        days = self.client.get(reverse('farm:feeding_records'), {'view': 'days', 'unit': self.cage.pk})
         self.assertNotContains(days, 'these fish are Lumpfish')
         self.assertNotContains(days, 'No protocol is assigned')
         self.assertContains(days, 'Cleaner fish: no feeding table of their own.')
@@ -115,7 +115,8 @@ class CleanerFishWithoutAFeedingTableTests(CleanerFishTestCase):
         for language, word in {'nb': 'Rensefisk', 'tr': 'Temizleyici balık'}.items():
             Profile.objects.update_or_create(user=self.user, defaults={'language': language})
             with self.subTest(language=language):
-                self.assertContains(self.client.get(reverse('farm:meal_board')), f'<span>{word}</span>', count=1)
+                board = self.client.get(reverse('farm:meal_board'), {'site': self.fjord.pk})
+                self.assertContains(board, f'<span>{word}</span>', count=1)
 
 
 class CleanerFishPolicyTests(SimpleTestCase):
@@ -141,3 +142,9 @@ class CleanerFishPolicyTests(SimpleTestCase):
     def test_a_row_of_their_own_gives_them_a_ration(self):
         basis = self.policy([Row('L', batch_id='L1')]).basis('T1', 'L1', date(2026, 11, 5), D(50))
         self.assertEqual((basis.missing, basis.protocol.name, basis.has_ration), ('', 'Lumpfish', True))
+
+    def test_a_units_row_of_their_species_feeds_them_and_the_salmon_read_it_past(self):
+        policy = self.policy([Row('L', unit_id='T1')])
+        lump, salmon = (policy.basis('T1', batch, date(2026, 11, 5), D(50)) for batch in ('L1', 'B1'))
+        self.assertEqual((lump.missing, lump.protocol.name), ('', 'Lumpfish'))
+        self.assertEqual((salmon.missing, salmon.skipped.protocol_id), (ration.NO_PROTOCOL, 'L'))

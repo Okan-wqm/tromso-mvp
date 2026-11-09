@@ -4254,6 +4254,9 @@ msgstr "Rensefisk: %(fish)s fisk, %(biomass)s: ikke med i tallene under, som gje
 msgid "Cleaner fish: %(fish)s · %(weight)s · %(biomass)s"
 msgstr "Rensefisk: %(fish)s · %(weight)s · %(biomass)s"
 
+msgid "Cleaner fish: no feeding table of their own."
+msgstr "Rensefisk: ingen egen fôringstabell."
+
 msgid "Cleaning"
 msgstr "Rengjøring"
 

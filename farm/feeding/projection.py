@@ -13,7 +13,9 @@ rations sized on biomass that feed itself raised (FP-01) cannot happen.
   expected FCR of its band at its estimated weight then (Q7, Q9), but only up to the day's calculated ration (Q4):
   feed above it is "over the ration" and not growth. The next meal is read at the new estimate.
 - A feeding of fish without an expected FCR (no protocol, a weight outside its bands) adds nothing and is counted:
-  the estimate is incomplete for that many feeding days, and the pages say so. Never a default FCR.
+  the estimate is incomplete for that many feeding days, and the pages say so. Never a default FCR. Cleaner fish
+  without a feeding table of their own (ration.CLEANER_FISH) are not modelled at all: their estimate stays at the
+  measured weight and their feedings are no gap.
 
 The day's calculated ration follows the same rule: with M meals a day in the band and R the ration at the estimate
 (farm/feeding/ration.py), each recorded meal counts R ÷ M at the estimate just before it (a record's meals, or one
@@ -242,7 +244,8 @@ def feed(track, fish, measured_g, last_weighed, day, parts, basis_of):
         basis = basis_of(track.grams / fish)
         result.fed_kg += part
         if basis.fcr is None:
-            track.blind_days.add(day)
+            if not basis.cleaner_fish:      # cleaner fish without a table of their own are not modelled: no gap
+                track.blind_days.add(day)
             continue
         credit = part
         if basis.has_ration:

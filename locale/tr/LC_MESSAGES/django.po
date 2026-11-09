@@ -4266,6 +4266,9 @@ msgstr ""
 msgid "Cleaner fish: %(fish)s · %(weight)s · %(biomass)s"
 msgstr "Temizleyici balık: %(fish)s · %(weight)s · %(biomass)s"
 
+msgid "Cleaner fish: no feeding table of their own."
+msgstr "Temizleyici balık: kendine ait yemleme tablosu yok."
+
 msgid "Cleaning"
 msgstr "Temizlik"
 

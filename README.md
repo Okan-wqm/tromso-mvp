@@ -939,7 +939,12 @@ system), a line per batch: fish and estimated biomass, the estimated and the mea
 mark), the temperature with its age and whether it is the unit's or a loop's (Record water sample), the protocol and
 which row applied ("via unit T-01", "via batch B-2026-001", "via B-2026-001 in T-01"), the band, feed and pellet,
 the expected FCR, the SFR (the two cells read, in its title), the ration and meals × kg, fed today, remaining and the
-next meal; a unit without a ration says why in the row. **Record meal** opens the existing feeding dialog with today,
+next meal; a unit without a ration says why in the row. Cleaner fish without a feeding table of their own (no
+protocol row applies to them: they eat what the salmon leave, their own feed block and the lice) are no fault: their
+line is marked **Cleaner fish**, with their fish and weight, and has no ration, no "No protocol is assigned" and no
+"Estimate incomplete" for their feedings (their estimate stays the measured weight); the drawer, Records' days view and
+the monitoring card say the same. A protocol of their own (their batch's row, or a unit's row of their species) gives
+them a ration on their own line, never in the production fish's figures or the next meal (D-1). **Record meal** opens the existing feeding dialog with today,
 now on the site's clock, the band's feed, the next meal's kilos and one meal, posts the existing feeding record path
 unchanged (`farm.feeding.services.record_feeding`) and comes back to the board. No new column on `feeding_records`.
 The unit's drawer on Production units has the same per batch under Feeding (Today's ration).

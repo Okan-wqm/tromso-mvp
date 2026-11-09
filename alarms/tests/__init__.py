@@ -54,5 +54,5 @@ class AlarmsCase(TestCase):
         return engine.run_once(self.now + timedelta(minutes=minutes, seconds=seconds))
 
     def critical(self):
-        """The one critical alarm (a critical value holds the warning level too: its alarm opens beside it)."""
-        return Alarm.objects.get(severity='critical')
+        """The one critical water alarm (a critical value holds the warning level too: its alarm opens beside it)."""
+        return Alarm.objects.get(severity='critical', source='water_limit')

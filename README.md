@@ -294,6 +294,13 @@ code, filters by category, water environment, cleaner fish (any, lumpfish, wrass
   measurement and a withdrawal projected when none was measured at all do not silently count as nothing (see
   Operations › Health). It is the farm's own assumption, never filled in from the catalogue; a low value is the
   conservative choice, and empty keeps such a day at 0 °C.
+- **Stocking**: under **Batches of different sizes**, the **max weight ratio of batches in one unit** (1 to 1000, a
+  database check, empty allowed): how many times heavier, on average, one batch of the species may be than another
+  sharing a unit with it (the owner: fish of very different weights of the same species must not be in the same tank;
+  the bigger ones outcompete the smaller at feeding). A stocking, transfer or grading beyond it asks for an
+  acknowledgement first, and a unit holding such a mix says so (see Production units). Empty means no check, and the
+  list says "No check"; the list's **Size limit** column shows it (2×). Migration 0034 gave every species there the
+  owner's default 2; a new species is offered 2 on its form. It is not a withdrawal input: it is edited freely.
 - **Status and notes**: active, experimental, inactive or discontinued; notes. Active and
   experimental species are the ones a new batch can take (Production units).
 

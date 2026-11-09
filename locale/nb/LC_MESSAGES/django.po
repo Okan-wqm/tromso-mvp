@@ -1408,6 +1408,11 @@ msgstr "%(value)s t"
 msgid "%(value)s °C"
 msgstr "%(value)s °C"
 
+#. Translators: a ratio, how many times as much, e.g. 2× (a size limit).
+#, python-format
+msgid "%(value)s×"
+msgstr "%(value)s×"
+
 #, python-format
 msgid "%(volume)s m³"
 msgstr "%(volume)s m³"
@@ -3594,6 +3599,9 @@ msgstr "Fiskegrupper og tilbakeholdelsestid"
 
 msgid "Batches fed"
 msgstr "Fôrede fiskegrupper"
+
+msgid "Batches of different sizes"
+msgstr "Grupper av ulik størrelse"
 
 msgid "Bath"
 msgstr "Bad"
@@ -6054,6 +6062,13 @@ msgstr "Fisk nå"
 msgid "Fish of the own hatchery are farmed, fish caught in the wild wild-caught."
 msgstr "Fisk fra eget klekkeri er oppdrett, fisk fanget i naturen er villfanget."
 
+msgid ""
+"Fish of very different weights of the same species are not kept in one unit: the bigger ones "
+"outcompete the smaller at feeding."
+msgstr ""
+"Fisk av samme art med svært ulik vekt holdes ikke i samme enhet: de store utkonkurrerer de små "
+"ved fôringen."
+
 msgid "Fish recaptured"
 msgstr "Gjenfanget fisk"
 
@@ -6870,6 +6885,15 @@ msgstr ""
 "den lengste av sin regel og transportregelen. For kort sulting er en advarsel, aldri en sperre: å"
 " fortsette registreres og logges som kritisk. Dette er driftens egne regler: startverdiene må "
 "kontrolleres med veterinæren din."
+
+msgid ""
+"How many times heavier, on average, one batch of this species may be than another in the same "
+"unit, e.g. 2: fish of 100 g and of 200 g may share a unit. A stocking, transfer or grading beyond"
+" it asks for an acknowledgement first. Empty: no check."
+msgstr ""
+"Hvor mange ganger tyngre, i snitt, én gruppe av denne arten kan være enn en annen i samme enhet, "
+"f.eks. 2: fisk på 100 g og på 200 g kan dele en enhet. Et utsett, en flytting eller en sortering "
+"utover dette ber først om en bekreftelse. Tom: ingen kontroll."
 
 msgid "How often the device sends a message. Offline after three times this without one."
 msgstr "Hvor ofte apparatet sender en melding. Frakoblet etter tre ganger dette uten en melding."
@@ -7770,6 +7794,9 @@ msgstr "Maks. dybde (m)"
 msgid "Max submersion depth (m)"
 msgstr "Maks. nedsenkingsdybde (m)"
 
+msgid "Max weight ratio of batches in one unit"
+msgstr "Største vektforhold mellom grupper i én enhet"
+
 msgid "Maximum flow rate"
 msgstr "Maksimal vannmengde"
 
@@ -8309,6 +8336,9 @@ msgstr "Ingen kanal på apparatet samsvarer"
 
 msgid "No channels yet: add them on the Channels page."
 msgstr "Ingen kanaler ennå: legg dem til på Kanaler-siden."
+
+msgid "No check"
+msgstr "Ingen kontroll"
 
 msgid "No checklist."
 msgstr "Ingen sjekkliste."
@@ -11517,6 +11547,9 @@ msgstr "Størrelsesklasse"
 
 msgid "Size classes"
 msgstr "Størrelsesklasser"
+
+msgid "Size limit"
+msgstr "Størrelsesgrense"
 
 msgid "Skip to content"
 msgstr "Hopp til innholdet"
@@ -15765,6 +15798,9 @@ msgstr "f.eks. 150"
 
 msgid "e.g. 1–10 kg/h"
 msgstr "f.eks. 1–10 kg/h"
+
+msgid "e.g. 2"
+msgstr "f.eks. 2"
 
 msgid "e.g. 20"
 msgstr "f.eks. 20"

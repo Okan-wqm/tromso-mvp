@@ -1416,6 +1416,11 @@ msgstr "%(value)s t"
 msgid "%(value)s °C"
 msgstr "%(value)s °C"
 
+#. Translators: a ratio, how many times as much, e.g. 2× (a size limit).
+#, python-format
+msgid "%(value)s×"
+msgstr "%(value)s×"
+
 #, python-format
 msgid "%(volume)s m³"
 msgstr "%(volume)s m³"
@@ -3597,6 +3602,9 @@ msgstr "Partiler ve bekleme süresi"
 
 msgid "Batches fed"
 msgstr "Yemlenen partiler"
+
+msgid "Batches of different sizes"
+msgstr "Farklı boydaki partiler"
 
 msgid "Bath"
 msgstr "Banyo"
@@ -6066,6 +6074,13 @@ msgstr "Şimdiki balık"
 msgid "Fish of the own hatchery are farmed, fish caught in the wild wild-caught."
 msgstr "Kendi kuluçkahanenin balıkları yetiştirilmiştir, doğadan yakalananlar doğadan yakalanmıştır."
 
+msgid ""
+"Fish of very different weights of the same species are not kept in one unit: the bigger ones "
+"outcompete the smaller at feeding."
+msgstr ""
+"Aynı türden ağırlıkları çok farklı balıklar aynı birimde tutulmaz: büyükler yemlemede küçükleri "
+"bastırır."
+
 msgid "Fish recaptured"
 msgstr "Yeniden yakalanan balık"
 
@@ -6886,6 +6901,15 @@ msgstr ""
 " olan kuralın önüne geçer; boylama, kendi kuralı ile taşıma kuralından uzun olanı alır. Çok kısa "
 "aç bırakma bir uyarıdır, engel değil: devam etmek kaydedilir ve kritik olarak günlüğe yazılır. "
 "Bunlar çiftliğin kendi kurallarıdır: başlangıç değerleri veterinerinizle kontrol edilmelidir."
+
+msgid ""
+"How many times heavier, on average, one batch of this species may be than another in the same "
+"unit, e.g. 2: fish of 100 g and of 200 g may share a unit. A stocking, transfer or grading beyond"
+" it asks for an acknowledgement first. Empty: no check."
+msgstr ""
+"Bu türün bir partisinin aynı birimdeki başka bir partiden ortalamada kaç kat ağır olabileceği, "
+"ör. 2: 100 g ve 200 g balıklar aynı birimi paylaşabilir. Bunu aşan bir stoklama, transfer veya "
+"boylama önce onay ister. Boş: denetim yok."
 
 msgid "How often the device sends a message. Offline after three times this without one."
 msgstr ""
@@ -7784,6 +7808,9 @@ msgstr "Azami derinlik (m)"
 msgid "Max submersion depth (m)"
 msgstr "Azami batırma derinliği (m)"
 
+msgid "Max weight ratio of batches in one unit"
+msgstr "Bir birimdeki partilerin en büyük ağırlık oranı"
+
 msgid "Maximum flow rate"
 msgstr "Azami debi"
 
@@ -8321,6 +8348,9 @@ msgstr "Cihazın hiçbir kanalı eşleşmiyor"
 
 msgid "No channels yet: add them on the Channels page."
 msgstr "Henüz kanal yok: Kanallar sayfasından ekleyin."
+
+msgid "No check"
+msgstr "Denetim yok"
 
 msgid "No checklist."
 msgstr "Kontrol listesi yok."
@@ -11524,6 +11554,9 @@ msgstr "Boy sınıfı"
 
 msgid "Size classes"
 msgstr "Boy sınıfları"
+
+msgid "Size limit"
+msgstr "Boy sınırı"
 
 msgid "Skip to content"
 msgstr "İçeriğe geç"
@@ -15776,6 +15809,9 @@ msgstr "örn. 150"
 
 msgid "e.g. 1–10 kg/h"
 msgstr "örn. 1–10 kg/h"
+
+msgid "e.g. 2"
+msgstr "ör. 2"
 
 msgid "e.g. 20"
 msgstr "örn. 20"

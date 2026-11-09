@@ -30,6 +30,7 @@ class SizeLimitSetupTests(SpeciesTestCase):
         self.create(max_weight_ratio='2')
         species = Species.objects.get()
         self.assertEqual(stored(species, 'max_weight_ratio'), (D('2.00'),))
+        Profile.objects.create(user=self.user, language='nb')
         self.edit(species, max_weight_ratio='2,5')                          # typed the way the language writes it
         self.assertEqual(stored(species, 'max_weight_ratio'), (D('2.50'),))
         self.edit(species, max_weight_ratio='')

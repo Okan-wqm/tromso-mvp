@@ -23,6 +23,7 @@ PUBLIC = {
     'password_reset_complete': 'the "password set" page',
     'logout': 'signing out',
     'core:set_language': 'the language of the sign-in page too',
+    'core:set_theme': 'the colour theme in a cookie, the sign-in page too (core/theme.py); it reads and writes nothing else',
 }
 
 # Open to every signed-in person. Each shows only what the person's roles allow, or is the person's own account.

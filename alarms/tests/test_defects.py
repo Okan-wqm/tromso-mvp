@@ -130,8 +130,9 @@ class FailedSourceTests(AlarmsCase):
         self.sample(7.0, hours=0.5)
         water_sources.register(self.unreadable)
         try:
-            self.loop(minutes=1)
-            self.loop(minutes=5)
+            with self.assertLogs('farm.water.sources', level='ERROR'):    # said, and kept out of the run's output
+                self.loop(minutes=1)
+                self.loop(minutes=5)
         finally:
             water_sources.unregister(self.unreadable)
         self.assertTrue(read.is_open(self.critical()))

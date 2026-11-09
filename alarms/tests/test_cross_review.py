@@ -296,3 +296,45 @@ class UnitKeyTests(CrossReviewCase):
         self.loop(minutes=1)
         self.assertEqual(open_levels(), [])
         self.assertEqual(set(AlarmClearance.objects.values_list('cause', flat=True)), {'unit_removed'})
+
+
+class SystemRoutingTests(CrossReviewCase):
+    """F8: a system alarm carries its site where one applies (a unit's), so that site's recipient rules reach it; a
+    farm-wide one (the sensors cannot be read, a failed step, the rules) goes to the company-wide rules, and, where there
+    is none, to every rule that reaches its severity: the alarm system's own alarm never reaches nobody."""
+
+    def system_alarm(self, site=None):
+        from .. import services
+        return services.open_alarm(at=self.now, severity='critical', summary='The sensors cannot be read',
+                                   source='system', parameter='sensors_failed', site=site)
+
+    def people(self, alarm):
+        from .. import routing
+        return sorted(user.username for user, _rule in routing.recipients(alarm, 0, self.now))
+
+    def test_a_farm_wide_system_alarm_reaches_the_site_rules_when_there_is_no_company_wide_one(self):
+        self.rule(site=self.bergen)
+        self.rule(site=self.oslo, role=None, user=self.manager)
+        self.assertEqual(self.people(self.system_alarm()), ['manager', 'operator'])
+
+    def test_a_farm_wide_system_alarm_goes_to_the_company_wide_rule_where_there_is_one(self):
+        self.rule(site=self.bergen)
+        self.rule(site=None, role=None, user=self.manager)
+        self.assertEqual(self.people(self.system_alarm()), ['manager'])
+
+    def test_a_system_alarm_of_a_site_reaches_that_sites_rules(self):
+        self.rule(site=self.bergen)
+        self.rule(site=self.oslo, role=None, user=self.manager)
+        self.assertEqual(self.people(self.system_alarm(site=self.bergen)), ['operator'])
+
+    def test_the_loop_notifies_the_sensors_failure_with_site_rules_only(self):
+        from ..models import Notification
+        from .test_defects import Unreadable
+        self.rule(site=self.bergen)
+        unreadable = Unreadable()
+        water_sources.register(unreadable)
+        self.addCleanup(water_sources.unregister, unreadable)
+        with self.assertLogs('farm.water.sources', level='ERROR'):
+            self.loop()
+            self.loop(minutes=1)
+        self.assertTrue(Notification.objects.filter(alarm__source='system', recipient=self.operator).exists())

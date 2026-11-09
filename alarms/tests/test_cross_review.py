@@ -338,3 +338,68 @@ class SystemRoutingTests(CrossReviewCase):
             self.loop()
             self.loop(minutes=1)
         self.assertTrue(Notification.objects.filter(alarm__source='system', recipient=self.operator).exists())
+
+
+class RuleBoundsTests(CrossReviewCase):
+    """F9: the rules' bounds are the model's and the database's, per severity, not only the form's: a critical alarm is
+    raised within the owner's 10 s target (alarm plan §2.4, §7a Q3: critical on-delay 0, "the 10 s rule wins over spike
+    filtering"), so its on-delay is at most 10 s; a critical alarm unacknowledged goes up within 30 min; a deadband is at
+    most its parameter's whole range. A value inside the bounds but unusual is shown with a warning, never refused."""
+    ADMIN = ('view_severitypolicy', 'change_severitypolicy', 'view_parameterdeadband', 'add_parameterdeadband',
+             'change_parameterdeadband', 'delete_parameterdeadband')
+
+    def login(self):
+        from django.contrib.auth import get_user_model
+        from farm.tests.helpers import role
+        admin = get_user_model().objects.create_user('alarmadmin', 'alarmadmin@example.com', 'x')
+        admin.groups.add(role('Alarm admin', *self.ADMIN))
+        self.client.force_login(admin)
+
+    def test_the_database_refuses_unsafe_values_per_severity(self):
+        from decimal import Decimal
+        from django.db import IntegrityError, transaction
+        from ..models import ParameterDeadband, SeverityPolicy
+        for severity, values in (('critical', {'on_delay_seconds': 11}), ('critical', {'escalation_minutes': 31}),
+                                 ('warning', {'on_delay_seconds': 901})):
+            with self.subTest(severity=severity, values=values), self.assertRaises(IntegrityError), \
+                    transaction.atomic():
+                SeverityPolicy.objects.filter(severity=severity).update(**values)
+        SeverityPolicy.objects.filter(severity='critical').update(on_delay_seconds=10, escalation_minutes=30)
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            ParameterDeadband.objects.filter(parameter='ph').update(deadband=Decimal('50'))
+
+    def test_the_model_refuses_them_with_a_reason(self):
+        from django.core.exceptions import ValidationError
+        from ..models import SeverityPolicy
+        policy = SeverityPolicy.objects.get(severity='critical')
+        policy.on_delay_seconds, policy.escalation_minutes = 3600, 1440
+        with self.assertRaises(ValidationError) as refused:
+            policy.full_clean()
+        self.assertEqual(set(refused.exception.message_dict), {'on_delay_seconds', 'escalation_minutes'})
+
+    def test_the_form_refuses_a_critical_raised_after_an_hour(self):
+        from ..forms import SeverityPolicyForm
+        from ..models import SeverityPolicy
+        form = SeverityPolicyForm({'on_delay_seconds': 3600, 'off_delay_seconds': 3600, 'escalation_minutes': 1440,
+                                   'delivery_attempts': 1}, instance=SeverityPolicy.objects.get(severity='critical'))
+        self.assertFalse(form.is_valid())
+        self.assertIn('on_delay_seconds', form.errors)
+
+    def test_an_unusual_value_is_shown_with_a_warning(self):
+        from decimal import Decimal
+        from django.urls import reverse
+        from ..models import ParameterDeadband, SeverityPolicy
+        self.login()
+        SeverityPolicy.objects.filter(severity='critical').update(on_delay_seconds=5)
+        page = self.client.get(reverse('alarms:severitypolicy_list'))
+        self.assertContains(page, 'notice-warning')
+        self.assertContains(page, 'Critical: raised 5 s after the value')
+        ParameterDeadband.objects.filter(parameter='ph').update(deadband=Decimal('0.4'))   # the warning band is 0.5 wide
+        page = self.client.get(reverse('alarms:parameterdeadband_list'))
+        self.assertContains(page, 'notice-warning')
+
+    def test_the_seeded_values_are_not_unusual(self):
+        from django.urls import reverse
+        self.login()
+        self.assertNotContains(self.client.get(reverse('alarms:severitypolicy_list')), 'notice-warning')
+        self.assertNotContains(self.client.get(reverse('alarms:parameterdeadband_list')), 'notice-warning')

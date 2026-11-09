@@ -3858,6 +3858,13 @@ msgstr "Kalsitt- og aragonittmetning mot pH"
 msgid "Calcium (mg/L Ca²⁺)"
 msgstr "Kalsium (mg/L Ca²⁺)"
 
+msgid ""
+"Calcium and magnesium together, as CaCO₃. A kit in dGH: multiply by 17.85. With the alkalinity it"
+" gives the fresh water’s ionic strength when no conductivity is measured."
+msgstr ""
+"Kalsium og magnesium samlet, som CaCO₃. Et sett i dGH: gang med 17,85. Sammen med alkaliteten gir"
+" den ferskvannets ionestyrke når ingen ledningsevne er målt."
+
 msgid "Calcium carbonate"
 msgstr "Kalsiumkarbonat"
 
@@ -4431,8 +4438,11 @@ msgstr "Tilstand"
 msgid "Conductivity"
 msgstr "Ledningsevne"
 
-msgid "Conductivity (µS/cm)"
-msgstr "Ledningsevne (µS/cm)"
+msgid "Conductivity at 25 °C (µS/cm, temperature-compensated)"
+msgstr "Ledningsevne ved 25 °C (µS/cm, temperaturkompensert)"
+
+msgid "Conductivity at the water’s temperature (µS/cm, not compensated)"
+msgstr "Ledningsevne ved vannets temperatur (µS/cm, ikke kompensert)"
 
 msgid "Configuration epoch"
 msgstr "Konfigurasjonsepoke"
@@ -5277,6 +5287,9 @@ msgid ""
 msgstr ""
 "F.eks. «registrert i feil enhet». Prøven blir stående i historikken, gjennomstreket, med denne "
 "årsaken."
+
+msgid "EC 25 °C (µS/cm)"
+msgstr "EC 25 °C (µS/cm)"
 
 msgid "EPDM"
 msgstr "EPDM"
@@ -6683,6 +6696,9 @@ msgstr "Bekreftede håndteringsadvarsler"
 
 msgid "Happened on"
 msgstr "Skjedde"
+
+msgid "Hardness (mg/L)"
+msgstr "Hardhet (mg/L)"
 
 msgid "Harvest"
 msgstr "Høsting"
@@ -11710,6 +11726,15 @@ msgstr "Arter og fiskevekter kan legges til når fôret er opprettet."
 msgid "Species it takes"
 msgstr "Arter det tar imot"
 
+msgid ""
+"Specific conductance: the meter’s reading compensated to 25 °C (the meter’s temperature "
+"compensation on, referred to 25 °C, not 20 °C). A reading at the water’s own temperature is not "
+"this value. In fresh water the ionic strength is taken from it (Russell 1976)."
+msgstr ""
+"Spesifikk ledningsevne: målerens avlesning kompensert til 25 °C (målerens temperaturkompensasjon "
+"på, med 25 °C som referanse, ikke 20 °C). En avlesning ved vannets egen temperatur er ikke denne "
+"verdien. I ferskvann tas ionestyrken fra den (Russell 1976)."
+
 msgid "Specific feeding rate: the share of the body weight fed a day"
 msgstr "Spesifikk fôringsrate: andelen av kroppsvekten som fôres per dag"
 
@@ -14319,6 +14344,9 @@ msgstr "Totalt areal (m²)"
 #, python-format
 msgid "Total gas pressure (% of barometric pressure)"
 msgstr "Totalt gasstrykk (% av lufttrykket)"
+
+msgid "Total hardness (mg/L as CaCO₃)"
+msgstr "Total hardhet (mg/L som CaCO₃)"
 
 msgid "Total sulfide (µg/L as S)"
 msgstr "Totalt sulfid (µg/L som S)"

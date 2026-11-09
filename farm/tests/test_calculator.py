@@ -740,7 +740,9 @@ class ValuesFromAUnitTests(UnitWaterCase):
         self.assertContains(response, 'its fish have no such bound')
         bounds = response.context['result'] and response.context['form'].inputs()['ph_bounds']
         self.assertEqual(bounds, calculation.PhBounds(6.8, 7.0, None, 8.2))
-        self.assertEqual(source['missing'], ['Dissolved oxygen (mg/L O₂)'])
+        self.assertEqual(source['missing'], ['Dissolved oxygen (mg/L O₂)',
+                                             'Conductivity at 25 °C (µS/cm, temperature-compensated)',
+                                             'Total hardness (mg/L as CaCO₃)'])
         self.assertContains(response, 'The latest values of T-01')
         self.assertContains(response, 'Atlantic salmon: warning above 0.0100, critical above 0.0200')
         self.assertEqual(response.context['analysis'].water.ph, 7.12)

@@ -1133,7 +1133,11 @@ TimescaleDB hypertable) and `water_limits`; the points are `water_sampling_point
 basis in its label and its column's name, so a value can never be relabelled into another unit and
 nitrogen is always recorded as N (owner decision 3; the help of each field gives the kit conversions,
 NO₂⁻ ÷ 3.29, NO₃⁻ ÷ 4.43, NH₄⁺ ÷ 1.29). Each has a plausible range, which catches a typing slip and is a
-database check (the ranges are argued in the bug document), its precision and how long a value is fresh:
+database check (the ranges are argued in the bug document), its precision and how long a value is fresh. The
+hardness and the conductivity compensated to 25 °C are the fresh water's ionic-strength inputs of the chemistry (formula 3,
+Water-chemistry core); a conductivity at the water's own temperature is the sensors' process quantity `conductivity_us_cm`
+and the chemistry never reads it (cross review F8: a meter's temperature compensation on, referred to 25 °C). A limit's
+bounds hold 10 digits, 4 of them decimals, so a conductivity's limit fits:
 
 | Column | Label | Decimals | Plausible | Fresh |
 |---|---|---|---|---|
@@ -1142,12 +1146,14 @@ database check (the ranges are argued in the bug document), its precision and ho
 | `oxygen_saturation_pct` | Oxygen saturation (% of air saturation) | 1 | 0 … 400 | 24 h |
 | `ph` | pH (NBS scale) | 2 | 2 … 12 | 72 h |
 | `alkalinity_mg_l` | Alkalinity (mg/L as CaCO₃) | 0 | 0 … 1000 | 14 days |
+| `hardness_mg_l` | Total hardness (mg/L as CaCO₃) | 0 | 0 … 10000 | 14 days |
 | `co2_mg_l` | Carbon dioxide (mg/L free CO₂) | 1 | 0 … 200 | 72 h |
 | `tan_mg_l` | Total ammonia nitrogen (mg/L TAN as N) | 3 | 0 … 100 | 7 days |
 | `nitrite_n_mg_l` | Nitrite (mg/L NO₂ as N) | 3 | 0 … 100 | 7 days |
 | `nitrate_n_mg_l` | Nitrate (mg/L NO₃ as N) | 1 | 0 … 1000 | 14 days |
 | `tgp_pct` | Total gas pressure (% of barometric pressure) | 1 | 50 … 200 | 7 days |
 | `salinity_ppt` | Salinity (‰, g/kg) | 1 | 0 … 50 | 7 days |
+| `conductivity_25_us_cm` | Conductivity at 25 °C (µS/cm, temperature-compensated) | 0 | 0 … 100000 | 7 days |
 | `turbidity_ntu` | Turbidity (NTU) | 1 | 0 … 4000 | 7 days |
 
 **A sample** is one row: what a person measured at one point at one moment, a typed column per
@@ -1234,7 +1240,7 @@ a filter by site), **History** (the samples, newest first, 50 a page, filtered b
 equipment and then by one of its points, dates, and "only warnings and criticals"; each value says which point
 it was taken at, coloured as judged now, worked-out values in italics; Void while the sample is in the window)
 and **Calculator** (below). **Record sample** opens the dialog (a sampling point chosen from the points grouped
-by what owns them, "T-01 › Middle"; date and time on the site's clock, source, the twelve values in four
+by what owns them, "T-01 › Middle"; date and time on the site's clock, source, the fourteen values in four
 groups, notes). Opened from a unit, a loop or a piece of equipment (`?unit=`, `?system=`, `?equipment=`) it
 offers that owner's active points with its middle point chosen, so a routine sample takes no more fields than
 before, and when the owner has only one point it is fixed; each field's help shows the limits of the fish
@@ -1432,7 +1438,7 @@ Differences from the source (details in the bug document, WQ-01 to WQ-49):
   charts keep the water on them (WQ-42).
 - Not ported: sensors and their reading sources (their channels, the priority of a primary and a backup source,
   the inheritance of a site's values), charts and daily means,
-  notifications, H₂S as a sample parameter, hardness and the other lab
+  notifications, H₂S as a sample parameter, the other lab
   parameters, detection limits ("< 0.02"), attachments, limits per life stage or site, a sampling plan
   per unit, and a site's intake water. The rations read the latest water temperature from here and keep
   no copy of their own (WQ-02; `farm/feeding/temperature.py`).

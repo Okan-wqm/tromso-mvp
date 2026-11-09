@@ -3867,6 +3867,13 @@ msgstr "pH’ye göre kalsit ve aragonit doygunluğu"
 msgid "Calcium (mg/L Ca²⁺)"
 msgstr "Kalsiyum (mg/L Ca²⁺)"
 
+msgid ""
+"Calcium and magnesium together, as CaCO₃. A kit in dGH: multiply by 17.85. With the alkalinity it"
+" gives the fresh water’s ionic strength when no conductivity is measured."
+msgstr ""
+"Kalsiyum ve magnezyum birlikte, CaCO₃ olarak. dGH okuyan bir kit: 17,85 ile çarpın. Alkaliniteyle"
+" birlikte, iletkenlik ölçülmediğinde tatlı suyun iyonik şiddetini verir."
+
 msgid "Calcium carbonate"
 msgstr "Kalsiyum karbonat"
 
@@ -4444,8 +4451,11 @@ msgstr "Durum"
 msgid "Conductivity"
 msgstr "İletkenlik"
 
-msgid "Conductivity (µS/cm)"
-msgstr "İletkenlik (µS/cm)"
+msgid "Conductivity at 25 °C (µS/cm, temperature-compensated)"
+msgstr "25 °C'de iletkenlik (µS/cm, sıcaklık telafili)"
+
+msgid "Conductivity at the water’s temperature (µS/cm, not compensated)"
+msgstr "Suyun kendi sıcaklığında iletkenlik (µS/cm, telafisiz)"
 
 msgid "Configuration epoch"
 msgstr "Yapılandırma dönemi"
@@ -5284,6 +5294,9 @@ msgid ""
 "E.g. “typed into the wrong unit”. The sample stays in the history, struck through, with this "
 "reason."
 msgstr "Örn. “yanlış birime girildi”. Numune geçmişte üstü çizili olarak, bu nedenle birlikte kalır."
+
+msgid "EC 25 °C (µS/cm)"
+msgstr "EC 25 °C (µS/cm)"
 
 msgid "EPDM"
 msgstr "EPDM"
@@ -6698,6 +6711,9 @@ msgstr "Onaylanan elleçleme uyarıları"
 
 msgid "Happened on"
 msgstr "Olduğu gün"
+
+msgid "Hardness (mg/L)"
+msgstr "Sertlik (mg/L)"
 
 msgid "Harvest"
 msgstr "Hasat"
@@ -11718,6 +11734,15 @@ msgstr "Balık türleri ve balık ağırlıkları yem oluşturulduktan sonra ekl
 msgid "Species it takes"
 msgstr "Aldığı türler"
 
+msgid ""
+"Specific conductance: the meter’s reading compensated to 25 °C (the meter’s temperature "
+"compensation on, referred to 25 °C, not 20 °C). A reading at the water’s own temperature is not "
+"this value. In fresh water the ionic strength is taken from it (Russell 1976)."
+msgstr ""
+"Özgül iletkenlik: ölçerin 25 °C'ye telafi edilmiş okuması (ölçerin sıcaklık telafisi açık, "
+"referans 25 °C, 20 °C değil). Suyun kendi sıcaklığındaki okuma bu değer değildir. Tatlı suda "
+"iyonik şiddet bundan alınır (Russell 1976)."
+
 msgid "Specific feeding rate: the share of the body weight fed a day"
 msgstr "Spesifik yemleme oranı: günde verilen yemin vücut ağırlığına oranı"
 
@@ -14335,6 +14360,9 @@ msgstr "Toplam alan (m²)"
 #, python-format
 msgid "Total gas pressure (% of barometric pressure)"
 msgstr "Toplam gaz basıncı (barometrik basıncın %'si)"
+
+msgid "Total hardness (mg/L as CaCO₃)"
+msgstr "Toplam sertlik (mg/L CaCO₃ olarak)"
 
 msgid "Total sulfide (µg/L as S)"
 msgstr "Toplam sülfür (µg/L S olarak)"

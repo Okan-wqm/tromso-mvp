@@ -1610,10 +1610,10 @@ The water a species is kept in: for one parameter, the bounds outside which a va
 | species_id | uuid |  | species (CASCADE) | WaterLimitForm › Limit |
 | parameter | varchar(30) |  |  | WaterLimitForm › Limit |
 | water_type | varchar(20) |  |  | WaterLimitForm › Limit |
-| critical_low | numeric(8, 4) | yes |  | WaterLimitForm › Limit |
-| warning_low | numeric(8, 4) | yes |  | WaterLimitForm › Limit |
-| warning_high | numeric(8, 4) | yes |  | WaterLimitForm › Limit |
-| critical_high | numeric(8, 4) | yes |  | WaterLimitForm › Limit |
+| critical_low | numeric(10, 4) | yes |  | WaterLimitForm › Limit |
+| warning_low | numeric(10, 4) | yes |  | WaterLimitForm › Limit |
+| warning_high | numeric(10, 4) | yes |  | WaterLimitForm › Limit |
+| critical_high | numeric(10, 4) | yes |  | WaterLimitForm › Limit |
 | reference | varchar(300) |  |  | WaterLimitForm › Limit |
 
 <a id="farmwatermeasurement"></a>
@@ -1627,8 +1627,8 @@ A water sample: what a person measured at one sampling point (a place on a unit,
 - **read**: farm.water.views.water_page (`/operations/water/`); farm.stock.views.production_units (`/operations/units/`)
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › water_measurements
 - **forms**: `WaterSampleForm`, `RoundForm`, `RoundRowForm`, `SampleVoidForm`
-- **constraints**: chk_water_measurements_any_value (check); chk_water_measurements_source (check); chk_water_measurements_void_reason (check); chk_water_measurements_temperature_c (check); chk_water_measurements_oxygen_mg_l (check); chk_water_measurements_oxygen_saturation_pct (check); chk_water_measurements_ph (check); chk_water_measurements_alkalinity_mg_l (check); chk_water_measurements_co2_mg_l (check); chk_water_measurements_tan_mg_l (check); chk_water_measurements_nitrite_n_mg_l (check); chk_water_measurements_nitrate_n_mg_l (check); chk_water_measurements_tgp_pct (check); chk_water_measurements_salinity_ppt (check); chk_water_measurements_turbidity_ntu (check); chk_water_measurements_oxygen_basis_temperature (check); chk_water_measurements_oxygen_basis_salinity (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 16 more
+- **constraints**: chk_water_measurements_any_value (check); chk_water_measurements_source (check); chk_water_measurements_void_reason (check); chk_water_measurements_temperature_c (check); chk_water_measurements_oxygen_mg_l (check); chk_water_measurements_oxygen_saturation_pct (check); chk_water_measurements_ph (check); chk_water_measurements_alkalinity_mg_l (check); chk_water_measurements_hardness_mg_l (check); chk_water_measurements_co2_mg_l (check); chk_water_measurements_tan_mg_l (check); chk_water_measurements_nitrite_n_mg_l (check); chk_water_measurements_nitrate_n_mg_l (check); chk_water_measurements_tgp_pct (check); chk_water_measurements_salinity_ppt (check); chk_water_measurements_conductivity_25_us_cm (check); chk_water_measurements_turbidity_ntu (check); chk_water_measurements_oxygen_basis_temperature (check); chk_water_measurements_oxygen_basis_salinity (check)
+- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 17 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1649,12 +1649,14 @@ A water sample: what a person measured at one sampling point (a place on a unit,
 | oxygen_saturation_pct | numeric(4, 1) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | ph | numeric(4, 2) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | alkalinity_mg_l | numeric(4, 0) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
+| hardness_mg_l | numeric(5, 0) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | co2_mg_l | numeric(4, 1) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | tan_mg_l | numeric(6, 3) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | nitrite_n_mg_l | numeric(6, 3) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | nitrate_n_mg_l | numeric(5, 1) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | tgp_pct | numeric(4, 1) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | salinity_ppt | numeric(3, 1) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
+| conductivity_25_us_cm | numeric(6, 0) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | turbidity_ntu | numeric(5, 1) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | oxygen_basis_temperature_c | numeric(3, 1) | yes |  | computed: what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis) |
 | oxygen_basis_temperature_source | varchar(20) |  |  | computed: what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis) |

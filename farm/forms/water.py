@@ -476,6 +476,8 @@ class CalculatorForm(forms.Form):
         _('Sulfide as a laboratory or a methylene-blue kit reports it, as S. The H₂S is worked out from it, the '
           'pH, the temperature and the salinity.'))
     oxygen_mg_l = _measured('oxygen_mg_l', help_text=_('For the oxygen saturation.'))
+    conductivity_25_us_cm = _measured('conductivity_25_us_cm')
+    hardness_mg_l = _measured('hardness_mg_l')
     volume_m3 = number_field(_('Volume (m³)'), Decimal('0.01'), 1000000, 2,
                              _('The water the amounts are for: a tank or a loop. Empty: the doses per m³ only.'))
     calcium_mg_l = number_field(_('Calcium (mg/L Ca²⁺)'), 0, 2000, 1,
@@ -515,7 +517,7 @@ class CalculatorForm(forms.Form):
     DOSES = [dose_name(reagent) for reagent in dosing.REAGENTS]
     TABS = [
         ('water', _('Water'), ['temperature_c', 'ph', 'salinity_ppt', 'alkalinity_mg_l', 'tan_mg_l',
-                               'total_sulfide_ug_l', 'oxygen_mg_l']),
+                               'total_sulfide_ug_l', 'oxygen_mg_l', 'conductivity_25_us_cm', 'hardness_mg_l']),
         ('system', _('System'), ['volume_m3', 'calcium_mg_l', 'altitude_m']),
         ('target', _('Target'), ['target_ph', 'target_alkalinity_mg_l', 'alkalinity_low_mg_l', 'alkalinity_high_mg_l']),
         ('limits', _('Limits'), ['nh3_n_limit_mg_l', 'co2_limit_mg_l', 'h2s_limit_ug_l', *PH_FIELDS]),
@@ -526,7 +528,7 @@ class CalculatorForm(forms.Form):
         'point': '', 'loaded': '',
         'temperature_c': Decimal('12'), 'ph': Decimal('7.00'), 'salinity_ppt': Decimal('1'),
         'alkalinity_mg_l': Decimal('80'), 'tan_mg_l': Decimal('0.5'), 'total_sulfide_ug_l': Decimal('2'),
-        'oxygen_mg_l': None, 'volume_m3': Decimal('1'), 'calcium_mg_l': None, 'altitude_m': None,
+        'oxygen_mg_l': None, 'conductivity_25_us_cm': None, 'hardness_mg_l': None, 'volume_m3': Decimal('1'), 'calcium_mg_l': None, 'altitude_m': None,
         'target_ph': Decimal('7.5'), 'target_alkalinity_mg_l': Decimal('100'),
         'alkalinity_low_mg_l': Decimal('50'), 'alkalinity_high_mg_l': Decimal('100'),
         'nh3_n_limit_mg_l': Decimal('0.0103'), 'co2_limit_mg_l': Decimal('15'), 'h2s_limit_ug_l': Decimal('2'),

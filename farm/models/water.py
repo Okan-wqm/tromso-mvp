@@ -129,12 +129,14 @@ class WaterMeasurement(AuditedModel):
     oxygen_saturation_pct = parameters.get('oxygen_saturation_pct').field()
     ph = parameters.get('ph').field()
     alkalinity_mg_l = parameters.get('alkalinity_mg_l').field()
+    hardness_mg_l = parameters.get('hardness_mg_l').field()
     co2_mg_l = parameters.get('co2_mg_l').field()
     tan_mg_l = parameters.get('tan_mg_l').field()
     nitrite_n_mg_l = parameters.get('nitrite_n_mg_l').field()
     nitrate_n_mg_l = parameters.get('nitrate_n_mg_l').field()
     tgp_pct = parameters.get('tgp_pct').field()
     salinity_ppt = parameters.get('salinity_ppt').field()
+    conductivity_25_us_cm = parameters.get('conductivity_25_us_cm').field()
     turbidity_ntu = parameters.get('turbidity_ntu').field()
     # The provenance of an oxygen entered without its own temperature or salinity (BASIS): the value the server found
     # fresh at the sample's point and time when it was written (farm/water/read.oxygen_basis), where it came from (the
@@ -220,10 +222,10 @@ class WaterLimit(AuditedModel):
                                 verbose_name=_('Species'))
     parameter = models.CharField(_('Parameter'), max_length=30, choices=LIMIT_CHOICES)
     water_type = models.CharField(_('Water type'), max_length=20, choices=WATER_CHOICES, default=ANY_WATER)
-    critical_low = models.DecimalField(_('Critical below'), max_digits=8, decimal_places=4, null=True, blank=True)
-    warning_low = models.DecimalField(_('Warning below'), max_digits=8, decimal_places=4, null=True, blank=True)
-    warning_high = models.DecimalField(_('Warning above'), max_digits=8, decimal_places=4, null=True, blank=True)
-    critical_high = models.DecimalField(_('Critical above'), max_digits=8, decimal_places=4, null=True, blank=True)
+    critical_low = models.DecimalField(_('Critical below'), max_digits=10, decimal_places=4, null=True, blank=True)
+    warning_low = models.DecimalField(_('Warning below'), max_digits=10, decimal_places=4, null=True, blank=True)
+    warning_high = models.DecimalField(_('Warning above'), max_digits=10, decimal_places=4, null=True, blank=True)
+    critical_high = models.DecimalField(_('Critical above'), max_digits=10, decimal_places=4, null=True, blank=True)
     reference = models.CharField(_('Source of the values'), max_length=300, blank=True)
 
     class Meta:

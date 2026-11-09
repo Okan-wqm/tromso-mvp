@@ -32,7 +32,8 @@ from . import charts, chemistry, deffeyes, dosing, native, parameters, read
 from .evaluate import Status, judge as judge_bounds
 
 # The calculator's fields a unit or a loop measures, by the parameter they are.
-MEASURED_FIELDS = ['temperature_c', 'ph', 'salinity_ppt', 'alkalinity_mg_l', 'tan_mg_l', 'oxygen_mg_l']
+MEASURED_FIELDS = ['temperature_c', 'ph', 'salinity_ppt', 'alkalinity_mg_l', 'tan_mg_l', 'oxygen_mg_l',
+                   'conductivity_25_us_cm', 'hardness_mg_l']
 # The pH bounds, the field each fills and how the strictest of several species' is picked.
 PH_BOUNDS = [('ph_critical_low', 'critical_low', max), ('ph_warning_low', 'warning_low', max),
              ('ph_warning_high', 'warning_high', min), ('ph_critical_high', 'critical_high', min)]

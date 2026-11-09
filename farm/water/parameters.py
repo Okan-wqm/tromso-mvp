@@ -77,6 +77,9 @@ MEASURED = [
                _('As a pH meter or kit reads it.')),
     _parameter('alkalinity_mg_l', _('Alkalinity (mg/L as CaCO₃)'), _('Alkalinity (mg/L)'), 0, 0, 1000, 336, 'acid',
                _('Total alkalinity. A kit in dKH: multiply by 17.85.')),
+    _parameter('hardness_mg_l', _('Total hardness (mg/L as CaCO₃)'), _('Hardness (mg/L)'), 0, 0, 10000, 336, 'acid',
+               _('Calcium and magnesium together, as CaCO₃. A kit in dGH: multiply by 17.85. With the alkalinity it '
+                 'gives the fresh water’s ionic strength when no conductivity is measured.')),
     _parameter('co2_mg_l', _('Carbon dioxide (mg/L free CO₂)'), _('CO₂ (mg/L)'), 1, 0, 200, 72, 'acid',
                _('Free carbon dioxide, from a CO₂ probe or a titration.')),
     _parameter('tan_mg_l', _('Total ammonia nitrogen (mg/L TAN as N)'), _('TAN (mg/L N)'), 3, 0, 100, 168,
@@ -91,6 +94,11 @@ MEASURED = [
                _('From a saturometer (total dissolved gas).')),
     _parameter('salinity_ppt', _('Salinity (‰, g/kg)'), _('Salinity (‰)'), 1, 0, 50, 168, 'other',
                _('PSU is the same number: 0 in fresh water, about 35 in the sea.')),
+    _parameter('conductivity_25_us_cm', _('Conductivity at 25 °C (µS/cm, temperature-compensated)'),
+               _('EC 25 °C (µS/cm)'), 0, 0, 100000, 168, 'other',
+               _('Specific conductance: the meter’s reading compensated to 25 °C (the meter’s temperature compensation '
+                 'on, referred to 25 °C, not 20 °C). A reading at the water’s own temperature is not this value. In '
+                 'fresh water the ionic strength is taken from it (Russell 1976).')),
     _parameter('turbidity_ntu', _('Turbidity (NTU)'), _('Turbidity (NTU)'), 1, 0, 4000, 168, 'other'),
 ]
 

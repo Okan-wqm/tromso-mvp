@@ -176,3 +176,77 @@ class MissingRuleTests(CrossReviewCase):
         with self.assertRaises(DatabaseError), transaction.atomic():
             SeverityPolicy.all_objects.filter(pk=row.pk).delete()
         self.assertTrue(SeverityPolicy.objects.filter(severity='critical').exists())
+
+
+class FailedStepTests(CrossReviewCase):
+    """F3: the alarm system supervises itself (EEMUA 191). A step of the pass that fails is a critical system alarm from
+    the pass it fails in until it passes again; and the water step is isolated per unit, so one unit that cannot be
+    evaluated raises that unit's own "could not be evaluated" alarm (on its site) and never silences the others."""
+
+    def setUp(self):
+        super().setUp()
+        from farm.tests.helpers import point_of, stock_fish
+        from farm.tests.test_stock import make_unit
+        self.t2 = make_unit('T-02', self.hall, system=self.ras)
+        stock_fish(self.keeper, self.t2, 1000, '50', 10, species=self.salmon)
+        self.mid2 = point_of(self.t2)
+
+    def system(self, **filters):
+        return Alarm.objects.filter(source='system', **filters)
+
+    def test_a_step_that_fails_every_pass_is_a_critical_system_alarm_until_it_passes(self):
+        from unittest import mock
+        from .. import read, sources
+        self.sample(5.5, hours=0)
+        with mock.patch.object(sources, 'water', side_effect=RuntimeError('a bug')), \
+                self.assertLogs('alarms.engine', level='ERROR'):
+            self.loop()
+            self.loop(minutes=1)
+        alarm = self.system().get()
+        self.assertEqual((alarm.severity, alarm.parameter), ('critical', 'step_failed'))
+        self.assertIn('water', alarm.summary)
+        self.loop(minutes=2)
+        self.loop(minutes=3)
+        self.assertFalse(read.is_open(alarm))
+        self.assertIn('critical', open_levels())                   # the water's own alarm, once the step runs
+
+    def test_one_unit_that_cannot_be_read_never_silences_the_others(self):
+        from unittest import mock
+        real = water_read.unit_water
+
+        def unit_water(units, now=None):
+            if any(unit.pk == self.t2.pk for unit in units):
+                raise ValueError('a bad row of T-02')
+            return real(units, now)
+        self.sample(5.5, hours=0)
+        self.sample(5.5, hours=0, point=self.mid2)
+        with mock.patch.object(water_read, 'unit_water', side_effect=unit_water), \
+                self.assertLogs('alarms.sources', level='ERROR'):
+            summary = self.loop()
+        self.assertEqual(summary.failed_steps, [])
+        self.assertEqual(open_levels(point__unit=self.t1), ['critical'])
+        alarm = self.system().get()
+        self.assertEqual((alarm.severity, alarm.parameter, alarm.site, alarm.production_department),
+                         ('critical', 'unit_unevaluated', self.bergen, self.hall))
+        self.assertIn('T-02', alarm.summary)
+
+    def test_one_unit_whose_evaluation_fails_never_silences_the_others(self):
+        from unittest import mock
+        from .. import read, sources
+        real = sources._slots
+
+        def slots(found):
+            if found.point is not None and found.point.unit_id == self.t2.pk:
+                raise ArithmeticError('a value nobody expected')
+            return real(found)
+        self.sample(5.5, hours=0)
+        self.sample(5.5, hours=0, point=self.mid2)
+        with mock.patch.object(sources, '_slots', side_effect=slots), self.assertLogs('alarms.sources', level='ERROR'):
+            self.loop()
+        self.assertEqual(open_levels(point__unit=self.t1), ['critical'])
+        alarm = self.system().get()
+        self.assertEqual(alarm.parameter, 'unit_unevaluated')
+        self.loop(minutes=1)                                       # evaluated again: restored, its alarms raised
+        self.loop(minutes=2)
+        self.assertFalse(read.is_open(alarm))
+        self.assertEqual(open_levels(point__unit=self.t2), ['critical', 'warning'])

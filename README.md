@@ -3771,7 +3771,8 @@ without a redesign yet, and are redesigned one page at a time.
   and the SU/DERRA wordmark and the panel switch under them; the top bar with the breadcrumb, the EN / TR / NB switch
   and the user menu; the page head (h1, a line of status chips, the page's primary action). Below 1024 px the rail is a
   sheet and a bottom bar holds Meals, Water, Units and Storage (those the person's role opens; the Company panel shows
-  its first pages) and More, which opens the sheet.
+  its first pages) and More, which opens the sheet; the console keeps the bar's height free at its end, so a page's last
+  line is never under the bar (the browser layout test checks it at 390 and 1023 px).
 - **Rail order.** Daily work first: the overview, Operations (with Feeding, Harvest, Health), Research, Reports,
   Communication, Team; Setup last and folded (`Section(collapsed=True)` in `config/navigation.py`), open on its own
   pages and elsewhere as the person left it (`frontend/collapse.ts`, kept in the browser). In the collapsed rail a

@@ -158,6 +158,41 @@ class SecondPersonHookTests(HarvestInsideTestCase):
         self.assertFalse(check.second_person_must_approve(self.user, ['withdrawal'], change))   # off until it exists
 
 
+class SecondPersonSettingTests(HarvestInsideTestCase):
+    """Cross review F4: the platform owner's setting "a second person approves a withdrawal acknowledgement" is wired to
+    the one hook, and fails closed while the approval flow does not exist: ticked, going on past a medicine withdrawal is
+    refused with the reason (a second approver is needed), never let through by one person; its help text says so."""
+
+    def tick(self, value=True):
+        from core.models import PlatformSettings
+        PlatformSettings.objects.update(second_approval_withdrawal=value)
+
+    def test_ticked_a_withdrawal_is_never_gone_past_by_one_person(self):
+        self.tick()
+        self.harvest(3)
+        bath = self.medicine(days=7)
+        change = self.change_of(self.treat, bath, 5, 5)
+        with self.assertRaises(WithdrawalChanged) as caught:
+            self.treat(bath, 5, 5, withdrawal_ack=change.fingerprint)
+        self.assertIn('A second person must approve', caught.exception.message_dict['withdrawal_ack'][0])
+        self.assertFalse(Treatment.all_objects.exists())
+        self.assertTrue(check.second_person_must_approve(self.user, ['harvested'], change))
+
+    def test_unticked_one_persons_acknowledgement_goes_on(self):
+        self.tick(False)
+        self.harvest(3)
+        bath = self.medicine(days=7)
+        change = self.change_of(self.treat, bath, 5, 5)
+        self.treat(bath, 5, 5, withdrawal_ack=change.fingerprint)
+        self.assertTrue(Treatment.objects.exists())
+
+    def test_the_help_text_tells_the_truth(self):
+        from core.forms import PlatformSettingsForm
+        text = str(PlatformSettingsForm.base_fields['second_approval_withdrawal'].help_text)
+        self.assertIn('refused', text)
+        self.assertIn('not built yet', text)
+
+
 class AcknowledgementShapeTests(HarvestInsideTestCase):
     def test_a_harvested_row_names_its_harvest_and_a_released_row_none(self):
         harvest = self.harvest(3)

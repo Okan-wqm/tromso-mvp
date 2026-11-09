@@ -327,6 +327,9 @@ ATTEMPTS_BOUNDS = (1, 20)
 # at most the ingest contract's hour (sensors_contract.future_skew_s is at most 3600: past it the ingest replaces a
 # device's time, and the read layer refuses a value further ahead, evaluate.MAX_AHEAD). Its deadband is below the limit.
 CLOCK_SKEW_BOUNDS = (1, 3600)
+# How long a device must be behind on every pass before its clock level holds (seconds, round-2 review N1): from none to an
+# hour, the longest a backlog the ingest keeps is allowed to take.
+CLOCK_WINDOW_BOUNDS = (0, 3600)
 # Past these, inside the bounds, a value is shown with a warning on the rules' page, never refused: the alarm protects less
 # than the owner's decisions (§7a: critical at once and escalated after 5 min, warning after 30 s and 30 min) intended.
 USUAL_BOUNDS = {Severity.CRITICAL: {'on_delay_seconds': 0, 'escalation_minutes': 15},
@@ -368,6 +371,9 @@ class SeverityPolicy(AuditedModel):
         _('Device clock off by more than (seconds)'),
         validators=[MinValueValidator(CLOCK_SKEW_BOUNDS[0]), MaxValueValidator(CLOCK_SKEW_BOUNDS[1])])
     clock_skew_deadband_seconds = models.PositiveIntegerField(_('Device clock deadband (seconds)'))
+    clock_behind_window_seconds = models.PositiveIntegerField(
+        _('Device clock behind for (seconds)'),
+        validators=[MinValueValidator(CLOCK_WINDOW_BOUNDS[0]), MaxValueValidator(CLOCK_WINDOW_BOUNDS[1])])
 
     class Meta:
         db_table = 'alarm_severity_policies'
@@ -392,6 +398,9 @@ class SeverityPolicy(AuditedModel):
                                                clock_skew_deadband_seconds__gte=0,
                                                clock_skew_deadband_seconds__lt=models.F('clock_skew_seconds')),
                                    name='chk_alarm_severity_policies_clock'),
+            models.CheckConstraint(condition=Q(clock_behind_window_seconds__gte=CLOCK_WINDOW_BOUNDS[0],
+                                               clock_behind_window_seconds__lte=CLOCK_WINDOW_BOUNDS[1]),
+                                   name='chk_alarm_severity_policies_clock_window'),
             # A severity's rule is never deleted (cross review F6): it is changed. A database trigger refuses DELETE too
             # (migration 0006); a row lost all the same is the evaluation's to survive (alarms/rules.py).
             models.CheckConstraint(condition=Q(is_deleted=False), name='chk_alarm_severity_policies_kept'),

@@ -101,6 +101,8 @@ NAMED = {
     ('alarms/models.py', 'ATTEMPTS_BOUNDS'): 'the refusal of nonsense of delivery attempts (§7c)',
     ('alarms/models.py', 'CLOCK_SKEW_BOUNDS'): "the refusal of nonsense of a device clock limit: at most the ingest "
                                                "contract's hour",
+    ('alarms/models.py', 'CLOCK_WINDOW_BOUNDS'): 'the refusal of nonsense of a device clock window (none to an hour), '
+                                                 'never the window in force',
     ('alarms/models.py', 'USUAL_BOUNDS'): 'where the rules page warns (never refuses): advice, not a rule in force',
     ('farm/water/evaluate.py', 'MAX_AHEAD'): "the ingest contract's hour (sensors_contract.future_skew_s is at most "
                                              '3600 s): a protocol limit both sides of the contract hold, not a policy',

@@ -46,7 +46,8 @@ class RecipientRuleForm(TabbedForm):
 
 
 POLICY_TABS = [('rule', _('Rule'), ['on_delay_seconds', 'off_delay_seconds', 'escalation_minutes', 'delivery_attempts']),
-               ('clock', _('Device clock'), ['clock_skew_seconds', 'clock_skew_deadband_seconds'])]
+               ('clock', _('Device clock'), ['clock_skew_seconds', 'clock_skew_deadband_seconds',
+                                             'clock_behind_window_seconds'])]
 DEADBAND_TABS = [('deadband', _('Deadband'), ['parameter', 'deadband'])]
 
 
@@ -71,6 +72,11 @@ class SeverityPolicyForm(TabbedForm):
                                     '1 to 3600; the warning’s below the critical’s.'),
             'clock_skew_deadband_seconds': _('How far back inside the limit the clock must come before the alarm clears. '
                                              'Below the limit.'),
+            'clock_behind_window_seconds': _('A device behind is raised only when it is behind on every pass for this '
+                                             'long: values delivered late (an ingest restart, a gateway sending what it '
+                                             'stored during a link drop) are not a slow clock. While the ingest reports '
+                                             'waiting messages, behind is not judged at all. Ahead is judged at once. '
+                                             '0 to 3600; 600 until you set another.'),
         }
 
 

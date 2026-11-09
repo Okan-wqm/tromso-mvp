@@ -155,18 +155,20 @@ class Step:
     clear_cause: str = None
 
 
-def advance(state, holds, clear_ok, bad_at, severity, rules, now, structural=False):
+def advance(state, holds, clear_ok, bad_at, severity, rules, now, structural=False, on_delay=None):
     """One pass of a subject's lifecycle on its row (AlarmSubjectState), the one rule every subject follows: while its
     condition holds, the clear timer stops, the last bad value's time is kept and, without an open alarm, the on-delay runs
     from the first offending value's time (`bad_at`); once it is over, an open alarm clears after the off-delay while the
-    evidence clears it (`clear_ok`), at once when the subject is no longer judged (`structural`). Returns the Step."""
+    evidence clears it (`clear_ok`), at once when the subject is no longer judged (`structural`). `on_delay`, when given,
+    stands for the severity's (a device clock behind: its window). Returns the Step."""
     step = Step()
     if holds:
         state.clear_since = None
         state.last_bad_at = max(filter(None, (state.last_bad_at, bad_at)))
         if state.open_alarm_id is None:
             state.pending_since = state.pending_since or bad_at
-            step.raise_alarm = now - state.pending_since >= rules.on_delay(severity)
+            step.raise_alarm = now - state.pending_since >= (on_delay if on_delay is not None
+                                                             else rules.on_delay(severity))
         return step
     state.pending_since = None
     if state.open_alarm_id is None:
@@ -208,6 +210,7 @@ class Subject:
     cause: str = ClearCause.RETURNED
     structural: str = ''
     detail: object = None          # () -> {label: text} the clearance's log entry adds (what changed), or None
+    on_delay: object = None        # a timedelta standing for the severity's on-delay (a device clock behind), or None
 
 
 def settle(subjects, now, rules):
@@ -220,7 +223,7 @@ def settle(subjects, now, rules):
         before[subject.key] = _snapshot(state)
         clear_ok = subject.clear_ok(state) if callable(subject.clear_ok) else subject.clear_ok
         done = advance(state, subject.holds, clear_ok, subject.bad_at, subject.severity, rules, now,
-                       structural=bool(subject.structural))
+                       structural=bool(subject.structural), on_delay=subject.on_delay)
         if done.raise_alarm:
             raises.append((subject.key, subject.spec()))
         elif done.clear_cause is not None:
@@ -406,7 +409,8 @@ def device_clocks(now, rules):
                     'at': now, 'severity': severity, 'source': Source.SYSTEM, 'parameter': DEVICE_CLOCK,
                     'device': device, 'site': device.site,
                     'summary': _text(_('%(device)s: %(skew)s of the platform’s (its values still count; their alarms '
-                                       'are never delayed).'), device=device.code, skew=_clock_text(skew))}))
+                                       'are never delayed).'), device=device.code, skew=_clock_text(skew))},
+                on_delay=clock.on_delay(skew, severity, rules)))
     there = {str(device.pk) for device in devices}
     for key, severity in AlarmSubjectState.objects.filter(key__startswith='clock:', open_alarm__isnull=False).values_list(
             'key', 'open_alarm__severity'):

@@ -159,8 +159,8 @@ class MissingRuleTests(CrossReviewCase):
         self.loop()
         without_triggers('INSERT INTO alarm_severity_policies (id, severity, on_delay_seconds, off_delay_seconds, '
                          'escalation_minutes, delivery_attempts, clock_skew_seconds, clock_skew_deadband_seconds, '
-                         'created_at, updated_at, version, is_deleted) '
-                         'VALUES (%s, %s, 30, 30, 30, 5, 60, 10, now(), now(), 1, false)', [row.pk, 'warning'])
+                         'clock_behind_window_seconds, created_at, updated_at, version, is_deleted) '
+                         'VALUES (%s, %s, 30, 30, 30, 5, 60, 10, 600, now(), now(), 1, false)', [row.pk, 'warning'])
         self.loop(seconds=1)
         self.loop(minutes=2)
         self.assertEqual(self.system_alarms(), {'alarm_rules': False})

@@ -19,7 +19,7 @@ from decimal import Decimal
 
 from sensors.models.alarm import Severity
 
-from .models import (ATTEMPTS_BOUNDS, CLOCK_SKEW_BOUNDS, DELAY_BOUNDS, ESCALATION_BOUNDS, ON_DELAY_BOUNDS,
+from .models import (ATTEMPTS_BOUNDS, CLOCK_SKEW_BOUNDS, CLOCK_WINDOW_BOUNDS, DELAY_BOUNDS, ESCALATION_BOUNDS, ON_DELAY_BOUNDS,
                      ParameterDeadband, SeverityPolicy)
 
 logger = logging.getLogger(__name__)
@@ -63,6 +63,11 @@ class Rules:
         """How far a device's clock may be off, either way, before the level holds (missing row: the smallest of the rows
         there are, else the lowest bound)."""
         return timedelta(seconds=self._value(severity, 'clock_skew_seconds', min, CLOCK_SKEW_BOUNDS[0]))
+
+    def clock_behind_window(self, severity):
+        """How long a device must be behind on every pass before its clock level holds (missing row: the shortest of the
+        rows there are, else none)."""
+        return timedelta(seconds=self._value(severity, 'clock_behind_window_seconds', min, CLOCK_WINDOW_BOUNDS[0]))
 
     def clock_deadband(self, severity):
         """How far back inside its limit a device's clock must come before the level clears (missing row: none)."""

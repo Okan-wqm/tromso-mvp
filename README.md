@@ -2831,7 +2831,7 @@ What works:
   topic each, at a site (the site of where it is placed), optionally the instrument of a piece of equipment; offline after three intervals without a
   message), Channels (what a value measures, from the quantity catalogue `sensors/quantities.py`; where it is in the
   message; the unit conversion; how it is stored: every value, or a value that moves past the deadband and at least once
-  per heartbeat; fresh for three heartbeats; a range outside which a value is stored but flagged and used nowhere;
+  per heartbeat; fresh for its own number of heartbeats (`fresh_heartbeats`, 3 by default, 1 to 20); a range outside which a value is stored but flagged and used nowhere;
   maintenance and retired states; calibrations as a list on the site's clock, applied by the ingest at the device time,
   never rewriting stored values), Bindings (where a channel's values belong over time: a sampling point or a system for a
   water value, a piece of equipment or a system for a process value; one primary and one backup per place and quantity;
@@ -2893,8 +2893,8 @@ a salinity older than its 7 days is not used (the value is then not worked out a
 was measured here in the 7 days before.", "Not worked out: the TAN is no longer fresh."). A % judged against an mg/L
 limit (or the reverse) says so beside it: "Judged as 3.98 mg/L. Worked out from 9.0 °C, 0.0 ‰ and 1.000 atm. Limit:
 Atlantic salmon: critical below 6.00." (`Reading.through` keeps the converted reading and its limit rows). A channel in maintenance
-or retired is skipped. A value stamped more than five minutes ahead of the server's clock (`evaluate.CLOCK_SKEW`: a
-device whose clock runs fast) is never fresh and never shown as the newest, but up to the ingest contract's hour
+or retired is skipped. A value stamped further ahead of the server's clock than the platform owner's clock tolerance
+(Platform settings, 300 s by default: a device whose clock runs fast) is never fresh and never shown as the newest, but up to the ingest contract's hour
 (`evaluate.MAX_AHEAD`) it takes part in the worst fresh value and says so ("The device clock is ahead by 10 min.");
 beyond the hour it is a data error the card says ("Dissolved oxygen (mg/L O₂): timestamp in the future"), never
 silently OK. A probe bound to the loop point is a system sensor in a unit's system tier. Sensor values enter as the parameter's Decimal at its decimals and are judged by the same water
@@ -2927,7 +2927,7 @@ controls are the UI's, not built here):
   there), each by owner rule A9 at that moment through the live view's one function (`farm.water.read.choose`, over
   `sensors.read.tiers`: the unit's own-water points, never the inlet, then its system's sensors, those on its loop
   point and the loop's samples): the newest of the fresh values (a sensor value at or before it, no older than its
-  channel's freshness (three heartbeats), at the parameter's decimals as the chart takes it; a fresh manual or lab
+  channel's freshness (its fresh heartbeats), at the parameter's decimals as the chart takes it; a fresh manual or lab
   sample), a sensor's before a sample's at one time; else for the salinity of fresh water the assumption; else missing.
   Nothing is interpolated or carried past its freshness. A moved sensor counts for the place it was in. The hourly
   trail (`sensors/trail.py`) picks each hour's inputs the same way at the hour's end.
@@ -3023,7 +3023,7 @@ the device.
   multi-row `INSERT ... ON CONFLICT` that meets a compressed chunk (`sensors/tests/test_timescale.py` holds the case).
   A `DELETE` of rows in a compressed chunk fails in 2.17.2 ("btree index keys must be ordered by attribute"); nothing in
   the application deletes readings (retention drops whole chunks).
-- A value is fresh while both its device time and its receipt are within the channel's freshness (three heartbeats): a
+- A value is fresh while both its device time and its receipt are within the channel's freshness (its fresh heartbeats): a
   gateway replaying an old backlog delivers values received now but measured long ago, which are not fresh.
 - The database viewer counts a hypertable by the database's estimate and leaves the readings out (billions of rows).
 - Licences: compression, continuous aggregates and their policies are TimescaleDB's TSL features of the community build
@@ -3384,13 +3384,19 @@ from which device, how late) is logged. The server side is built; the push trans
   `sensors/alarms.py` is mirrored as an alarm and cleared when it closes) and the water limits: one read of every live
   unit's water (`farm/water/read.py` `unit_water`: its middle point, its other own points and its system standing in, the
   worst fresh value deciding), so an inlet raises nothing and a depth point or the loop raises its unit's alarm (alarm plan,
-  defect 1).
+  defect 1). A water alarm's subject is the unit's quantity at a level (`water:unit:<unit>:<slot>:<severity>`), never the
+  point that stood for it, so a replaced middle point keeps one alarm per level and its successor's values clear it; a
+  removed unit ends its alarms ("the unit was removed"); `alarms` 0007 re-keyed the subjects and cleared any duplicate
+  with the cause "merged" (cross review F7).
 - **Levels (ISA-18.2 L and LL)**: a unit's parameter (the dissolved oxygen in mg/L and in % is one) has a warning and a
   critical subject, each its own alarm: warning holds while the value is judged warning or critical, critical while it is
   judged critical, so a severity change never clears and reopens (defect 2). A level is raised once it has held for its
-  severity's on-delay, counted from the first offending value's time; it clears once a fresh value, taken after the last
-  bad one (defect 4), is clear of it even moved by the parameter's deadband toward danger (the same judgement on the moved
-  value), for the off-delay; at once when the unit has no fish or no limit any more (structural). A value that only goes
+  severity's on-delay, counted from the first offending value's time, or from the pass for a value stamped ahead of the
+  clock (`sources.seen_at`: a device whose clock is fast never delays or suppresses an alarm, cross review F1); it clears
+  once a fresh value, taken after the last bad one (defect 4), is clear of it and EVERY fresh value that takes part in
+  the unit's status (`Reading.deciding`) is clear of it even moved by the parameter's deadband (the same judgement on the
+  moved values, cross review F2), for the off-delay; at once when the unit has no fish ("no fish in the unit any more") or
+  its fish no limit row ("the water limit was removed", the log entry naming the row, who removed it and when, F12). A value that only goes
   stale never clears it. While the live sources cannot be read nothing clears, and that is a critical system alarm of its
   own, restored when they answer (defect 3). A clearance says why. The timers are each subject's row
   (`alarm_subject_state`), so a restart loses none; its open alarm is a unique column set by one compare-and-set
@@ -3400,8 +3406,33 @@ from which device, how late) is logged. The server side is built; the push trans
   30 s, 30 min, 5), per parameter the deadband (Alarm deadbands: dissolved oxygen 0.2 mg/L and 2 %, temperature 0.3 °C, pH
   0.05, CO₂ 1 mg/L, TAN 0.05, NH₃-N 0.002, NO₂-N 0.05 mg/L, salinity 0.5 ‰). These are the owner's defaults (§7a),
   seeded once by `alarms` 0002; from then on they are rows edited on their tabs by the alarm admin's rights, bounded by
-  database checks, logged, read once per pass (`alarms/rules.py`): a change takes effect on the next pass. No number in the
-  alarm code is a threshold (a test reads the code for one).
+  database checks, logged, read once per pass (`alarms/rules.py`): a change takes effect on the next pass. The bounds are
+  per severity and the model's and the database's, not only the form's (cross review F9): a critical alarm is raised
+  within the owner's 10 s target (on-delay at most 10 s) and escalated within 30 min, a warning raised within 15 min, a
+  deadband at most its parameter's range; an unusual value inside them (any critical on-delay, a long escalation, a
+  deadband over half the narrowest band of the live limits) is shown with a warning on the rules' page, never refused. A
+  severity's rule is never deleted (model, check, trigger: `alarms` 0006); a row lost all the same (a restore) never stops
+  the evaluation: the safest value of each field stands in (no on-delay, the longest off-delay, the shortest escalation,
+  the most attempts) and a critical configuration alarm says so until the row is back (F6). The staleness thresholds the
+  alarms depend on are rule data too (F10): how long a water value counts as fresh per parameter (Setup › Reference data ›
+  Water freshness, seeded with the hours the code held), the clock tolerance (Platform settings) and a sensor channel's
+  fresh heartbeats; the ingest contract's hour (`evaluate.MAX_AHEAD`) is the contract's and stays. No number in the modules
+  an alarm's decision reads is a threshold: a test reads them, each named exception with its reason.
+- **A device clock** that differs from the platform's is an alarm of its own (owner, 2026-11-09): the skew is measured per
+  device from what the ingest stores (`sensors/clock.py`: the device's time of its newest good value against when it was
+  received, ahead or behind; a time the ingest replaced is ahead by more than the contract's future skew; a value received
+  longer ago than the channel's freshness measures nothing), judged by each severity's device clock limit and deadband
+  (Alarm severity rules: warning 60 s / 10 s, the ingest contract's default future skew; critical 300 s / 30 s, the clock
+  tolerance), raised and cleared per device on its site by the same lifecycle (`alarms/clock.py`). The device list and the
+  unit's card (for the devices whose values it shows) say it as a data-quality note ("Device clock is 4 min ahead").
+  "Behind" includes the network's and the broker's delay (seconds, against limits of a minute and more). The device's
+  values still decide its unit's status; their alarms are never delayed.
+- **The alarm system supervises itself** (EEMUA 191, cross review F3): a step of the pass that fails is a critical system
+  alarm from the pass it fails in until it passes again; the water step reads all units at once and, when that fails, each
+  on its own, and evaluates each on its own, so a unit that cannot be read or evaluated raises its own critical alarm on
+  its site ("could not be evaluated") and every other unit goes on; a unit with fish and no point to read its own water at
+  is a configuration warning on its site (F16). A system alarm reaches its site's recipient rules; a farm-wide one the
+  company-wide rules, and where no rule reaches it by site, every rule its severity reaches: it never reaches nobody (F8).
 - **Who is notified**: the alarm recipient rules (a tab: a site or every site, a production department or every one, the
   least severity, a level 0 to 9, a role or one person, only while on shift by the HR roster (`hr.read.on_shift`, the
   board's own rule), the channel). Level 0 is notified when the alarm opens; a rule added later still reaches an alarm that
@@ -3423,7 +3454,7 @@ from which device, how late) is logged. The server side is built; the push trans
   a critical alarm). The Alarms page lists them, open first; an alarm's page shows its whole history in time order.
 - **The loop**: `manage.py run_alarms [--loop SECONDS]` (`alarms/engine.py`) checks the sensor rules and the water limits,
   queues, escalates and hands what is queued to the connected transports. Each step (sensor rules, sensor events, water,
-  notify, send) runs in its own transaction under one advisory lock, so two loops never queue or send twice and a failing
+  device clocks, notify, send, and the supervision last) runs in its own transaction under one advisory lock, so two loops never queue or send twice and a failing
   step rolls back alone, logged and said in the pass's summary; a failed pass is logged and the loop goes on (defect 5).
   The writes are set-based and the routing is read once per pass (`alarms/routing.py` `Router`): a burst of alarms costs
   the queries one costs (defect 7). Deployment runs it instead of `check_sensors` (the sensors' check alone).
@@ -3443,8 +3474,14 @@ The rules the platform owner (the customer the platform is given to) sets for th
   (Not this window: the fast's 31-day look-back for the last feeding, longer than the longest handling rule, and the
   31 days one page of feeding records covers.)
 - **A second person approves a withdrawal warning acknowledgement** (F-164): `core.platform.second_approval_required(
-  'withdrawal')` says whether a harvest during a medicine withdrawal waits for a second person who may approve it; an
-  unknown kind is an error, never a quiet no. The waiting itself is the withdrawal acknowledgement's (farm/handling).
+  'withdrawal')` is asked by the one hook (`farm/handling/check.py` `second_person_must_approve`); an unknown kind is an
+  error, never a quiet no. The second person's approval flow is not built yet, so the setting FAILS CLOSED (cross review
+  F4): ticked, going on past a medicine withdrawal is refused with the reason (a second person must approve, and that
+  approval cannot be given here yet); nobody goes on alone. Unticked (the default), one person's acknowledgement goes on,
+  logged as critical.
+- **Clock tolerance (seconds)**, 0 to 3600, 300 until the owner sets another (cross review F10): how far ahead of the
+  server's clock a water value may be stamped and still count as fresh. A value further ahead, up to the ingest
+  contract's hour, still decides its unit's status and its alarm, but is not shown as the newest.
 
 ## Roles and users
 

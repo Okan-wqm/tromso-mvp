@@ -18,7 +18,7 @@ from django.utils import timezone
 from sensors import alarms as sensor_alarms
 
 from . import read, routing, rules as alarm_rules, services, sources
-from .models import Acknowledgement, Alarm, AlarmClearance, Notification
+from .models import Acknowledgement, Alarm, AlarmClearance, Notification, Severity, Source
 from .transports import transport_for
 
 LOCK = 4_261_607_201          # the alarm loop's advisory lock key (any constant no other code takes)
@@ -63,6 +63,16 @@ def _advance(alarm, now, summary, rules):
         level = following
 
 
+def _unsuppressed(alarms):
+    """The alarms whose people are notified: all but a water warning while the same parameter's critical alarm is open
+    (ISA-18.2: the low level under the low-low one); it is still raised and recorded, and notified once the critical
+    clears with the warning still open."""
+    critical = {(alarm.point_id, sources.slot_of(alarm.parameter)) for alarm in alarms
+                if alarm.source == Source.WATER_LIMIT and alarm.severity == Severity.CRITICAL}
+    return [alarm for alarm in alarms if not (alarm.source == Source.WATER_LIMIT and alarm.severity == Severity.WARNING
+                                              and (alarm.point_id, sources.slot_of(alarm.parameter)) in critical)]
+
+
 def run_once(now=None):
     """One pass of the loop at `now`; returns its Summary."""
     now = now or timezone.now()
@@ -71,12 +81,12 @@ def run_once(now=None):
     with transaction.atomic():
         _lock()
         sensor_alarms.evaluate(now)
-        for opened, cleared in (sources.sensor_events(), sources.water(now)):
+        for opened, cleared in (sources.sensor_events(), sources.water(now, rules)):
             summary.opened += opened
             summary.cleared += cleared
-        waiting = (Alarm.objects.exclude(pk__in=AlarmClearance.objects.values('alarm'))
-                   .exclude(pk__in=Acknowledgement.objects.values('alarm')).order_by('opened_at', 'id'))
-        for alarm in waiting:
+        waiting = list(Alarm.objects.exclude(pk__in=AlarmClearance.objects.values('alarm'))
+                       .exclude(pk__in=Acknowledgement.objects.values('alarm')).order_by('opened_at', 'id'))
+        for alarm in _unsuppressed(waiting):
             _advance(alarm, now, summary, rules)
     with transaction.atomic():
         _lock()

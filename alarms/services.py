@@ -34,12 +34,13 @@ def open_alarm(*, at, severity, summary, site=None, production_department=None, 
     return alarm
 
 
-def clear(alarm, at):
-    """The alarm stopped holding at `at`; logged as a change of the alarm."""
-    clearance = AlarmClearance.objects.create(alarm=alarm, cleared_at=max(at, alarm.opened_at))
+def clear(alarm, at, cause):
+    """The alarm stopped holding at `at` for `cause` (ClearCause); logged as a change of the alarm."""
+    clearance = AlarmClearance.objects.create(alarm=alarm, cleared_at=max(at, alarm.opened_at), cause=cause)
     with audit.source_language():
-        audit.record(None, AuditLog.Action.UPDATE, alarm, {str(_('Cleared at')): [None, clearance.cleared_at.isoformat()]},
-                     label=alarm.summary)
+        audit.record(None, AuditLog.Action.UPDATE, alarm, {
+            str(_('Cleared at')): [None, clearance.cleared_at.isoformat()],
+            str(_('Why')): [None, audit.message(clearance.get_cause_display())]}, label=alarm.summary)
     return clearance
 
 

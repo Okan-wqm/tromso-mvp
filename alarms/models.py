@@ -42,6 +42,13 @@ class Channel(models.TextChoices):
     PUSH = 'push', _('Push')
 
 
+class ClearCause(models.TextChoices):
+    RETURNED = 'returned', _('Back inside the limit')
+    EVENT_CLOSED = 'event_closed', _('The sensor rule no longer holds')
+    STRUCTURAL = 'structural', _('No longer judged (no fish or no limit)')
+    RESTORED = 'restored', _('Restored')
+
+
 class Outcome(models.TextChoices):
     SENT = 'sent', _('Sent')
     FAILED = 'failed', _('Failed')
@@ -92,14 +99,40 @@ class AlarmClearance(models.Model):
     alarm = models.OneToOneField(Alarm, primary_key=True, on_delete=models.PROTECT, related_name='clearance',
                                  verbose_name=_('Alarm'))
     cleared_at = models.DateTimeField(_('Cleared at'))
+    cause = models.CharField(_('Why'), max_length=12, choices=ClearCause.choices, default=ClearCause.RETURNED)
 
     class Meta:
         db_table = 'alarm_clearances'
         verbose_name = _('alarm clearance')
         verbose_name_plural = _('alarm clearances')
+        constraints = [models.CheckConstraint(condition=Q(cause__in=ClearCause.values), name='chk_alarm_clearances_cause')]
 
     def __str__(self):
         return f'{self.alarm} · {self.cleared_at:%Y-%m-%d %H:%M}'
+
+
+class AlarmSubjectState(models.Model):
+    """The one mutable row of an alarm subject (a unit's parameter at a level: `water:<point>:<slot>:<severity>`): the
+    timers of its lifecycle, kept in the database so a restart loses none: since when the condition holds without an
+    alarm yet (the on-delay, counted from the first offending value's time), since when it is over while the alarm is open
+    (the off-delay), the time of the last value that held it, and the alarm open now. Not history: the alarms, their
+    clearances and the activity log are."""
+
+    key = models.CharField(primary_key=True, max_length=200)
+    open_alarm = models.ForeignKey(Alarm, null=True, blank=True, on_delete=models.PROTECT, related_name='+',
+                                   verbose_name=_('Open alarm'))
+    pending_since = models.DateTimeField(null=True, blank=True)
+    clear_since = models.DateTimeField(null=True, blank=True)
+    last_bad_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'alarm_subject_state'
+        verbose_name = _('alarm subject state')
+        verbose_name_plural = _('alarm subject states')
+
+    def __str__(self):
+        return self.key
 
 
 class RecipientRule(AuditedModel):

@@ -1,5 +1,6 @@
 """Who is notified of an alarm at a level (the recipient rules, alarms.models.RecipientRule): every live, active rule of that
-level whose site and production department are the alarm's or every one, and whose least severity the alarm reaches; its
+level whose site and production department are the alarm's or every one (an alarm of the alarm system that none
+reaches: every rule, `Router.reaching`), and whose least severity the alarm reaches; its
 role's active members or its person, if active; with `on_shift_only`, only those on shift now (hr.read.on_shift). A person
 reached by several rules is notified once, by the first.
 
@@ -11,7 +12,7 @@ from django.contrib.auth import get_user_model
 
 from hr import read as hr_read
 
-from .models import RANK, RecipientRule
+from .models import RANK, RecipientRule, Source
 
 
 class Router:
@@ -35,10 +36,16 @@ class Router:
         return self._on_shift
 
     def reaching(self, alarm):
-        """The rules whose site, department and least severity reach the alarm, at any level."""
-        return [rule for rule in self.rules if RANK[rule.min_severity] <= RANK[alarm.severity]
-                and rule.site_id in (None, alarm.site_id)
-                and rule.production_department_id in (None, alarm.production_department_id)]
+        """The rules whose site, department and least severity reach the alarm, at any level. An alarm of the alarm
+        system itself (source 'system': the sensors cannot be read, a step failed, a unit cannot be evaluated) that no
+        such rule reaches goes to every rule its severity reaches, whatever their site (cross review F8): a farm-wide one
+        (no site) is the company-wide rules' first, and never nobody's."""
+        severe = [rule for rule in self.rules if RANK[rule.min_severity] <= RANK[alarm.severity]]
+        found = [rule for rule in severe if rule.site_id in (None, alarm.site_id)
+                 and rule.production_department_id in (None, alarm.production_department_id)]
+        if not found and alarm.source == Source.SYSTEM:
+            return severe
+        return found
 
     def recipients(self, alarm, level):
         """[(user, rule)] notified of the alarm at `level`, each person once, by username."""

@@ -223,6 +223,19 @@ test('the page layout of the real templates', { skip: BROWSERS.length ? false : 
       assert.ok(approve.left > cancel.right, 'Approve comes after Cancel');
       assert.ok(approve.width < 400, `Approve is ${approve.width} px wide`);
     });
+    await t.test('below 1024 px the page ends above the bottom bar: its last line is never under the bar', async () => {
+      for (const width of [390, 1023]) {
+        await tab.setViewportSize({ width, height: 900 });
+        await tab.waitForTimeout(50);
+        const room = await tab.evaluate(() => {
+          const bar = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bottombar-h'));
+          const end = document.querySelector('main')!.getBoundingClientRect().bottom + window.scrollY;
+          return { bar, below: document.documentElement.scrollHeight - end };
+        });
+        assert.ok(room.below >= room.bar - 1, `at ${width} px the page goes on ${room.below} px below its content, the bar is ${room.bar} px`);
+      }
+    });
+
   } finally {
     await browser.close();
     server.close();

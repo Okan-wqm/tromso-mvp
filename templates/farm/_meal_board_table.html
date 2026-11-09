@@ -21,7 +21,7 @@
       {% for line in row.lines %}{% with share=line.share basis=line.share.end %}
       <tr>
         {% if forloop.first %}
-        <th scope="rowgroup" rowspan="{{ count }}" class="sticky-first"><span class="ui-code">{{ unit.code }}</span>{% if row.placements %}<span class="ui-sub">{% include "farm/_placements.html" with chips=row.placements %}</span>{% endif %}<span class="ui-sub">{{ unit.production_department.name }}{% if unit.production_department.site %}, {{ unit.production_department.site.name }}{% endif %}</span></th>
+        <th scope="rowgroup" rowspan="{{ count }}" class="sticky-first"><span class="ui-code">{{ unit.code }}</span>{% include "farm/_size_mixes.html" with mixes=row.stock.size_mixes %}{% if row.placements %}<span class="ui-sub">{% include "farm/_placements.html" with chips=row.placements %}</span>{% endif %}<span class="ui-sub">{{ unit.production_department.name }}{% if unit.production_department.site %}, {{ unit.production_department.site.name }}{% endif %}</span></th>
         {% endif %}
         {% if basis.cleaner_fish %}
         <td colspan="2"><span class="ui-sub">{% trans "Cleaner fish: no feeding table of their own." %}</span></td>

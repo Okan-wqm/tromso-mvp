@@ -7997,6 +7997,10 @@ msgstr "Eksik"
 msgid "Mixed"
 msgstr "Karışık"
 
+#, python-format
+msgid "Mixed sizes: %(heavy)s and %(light)s (limit %(limit)s)"
+msgstr "Karışık boylar: %(heavy)s ve %(light)s (sınır %(limit)s)"
+
 msgid "Mobile"
 msgstr "Hareketli"
 

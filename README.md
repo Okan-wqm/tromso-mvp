@@ -512,7 +512,10 @@ production department · site), batch ("B-2026-001 + B-2026-004" and the species
 stock"), fish, average weight, biomass, density · capacity with its bar, biological FCR (bFCR), survival and last
 fed, both from the feeding records (see Feeding records; the source showed 0 and nothing). A row
 picked (accent tint and bar) and a row over its max biomass (amber, an "Over" mark, a rust bar) look
-different. The filters and the open unit are in the address, so a view can be linked and the back
+different. A unit holding batches of one species further apart in average weight than the species' size limit (stocked
+with the acknowledgement, or weighed apart since) has a warning chip by its code, on this page and on the Meal board:
+"Mixed sizes: 4,217 g and 78.0 g (limit 2×)", the heaviest and the lightest batch now (`UnitStock.size_mixes`; cleaner
+fish against their own species only). The filters and the open unit are in the address, so a view can be linked and the back
 button works; a row is one link. Two empty states: no units at all (with a link to Setup) and no match
 (with "Clear filters"). The column chooser and sorting come next.
 For people who may read the water (see Water chemistry), the table also has **Temp. (°C)** and **O₂ (mg/L)**

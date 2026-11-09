@@ -7980,6 +7980,10 @@ msgstr "Mangler"
 msgid "Mixed"
 msgstr "Blandet"
 
+#, python-format
+msgid "Mixed sizes: %(heavy)s and %(light)s (limit %(limit)s)"
+msgstr "Blandede størrelser: %(heavy)s og %(light)s (grense %(limit)s)"
+
 msgid "Mobile"
 msgstr "Bevegelige"
 

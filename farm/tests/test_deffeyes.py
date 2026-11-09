@@ -419,9 +419,13 @@ class GeometryTests(SimpleTestCase):
         for dic, alkalinity in shape.regions['h2s']:
             if dic > 1e-9 and alkalinity > 1e-9:
                 self.assertLessEqual(eq.ph_at(dic, alkalinity), result.h2s.ph + 1e-9)
-        # The CO₂ curve is drawn in the water's own constants at the limit times its corrected-to-judged ratio
-        # (the core's Analysis::co2_chart_limit, cross review F1): exact at the water; the judged CO₂ on it within -1.5 to +0.5 %.
-        co2 = 15 * result.co2_corrected_mg_l / result.co2_mg_l / chemistry.MG_CO2_PER_MMOL
+        # The CO₂ curve is drawn in the water's own constants at the limit over the bicarbonate-range ratio of the limits'
+        # basis to its own CO₂, K1 10^offset over the basis's (Equilibria::co2_chart_ratio, cross review F1): a ratio of the
+        # equilibria alone, so a replay page still shares one diagram among frames equal but for pH and alkalinity
+        # (sensors.tests.test_page_share); the judged CO₂ on the curve within 1.5 % of the limit.
+        basis = eq.limits_equilibria()
+        ratio = eq.k1 * 10 ** eq.ph_offset / (basis.k1 * 10 ** basis.ph_offset)
+        co2 = 15 / ratio / chemistry.MG_CO2_PER_MMOL
         self.assertLess(co2, 15 / chemistry.MG_CO2_PER_MMOL)
         for dic, alkalinity in shape.regions['co2']:
             ph = eq.ph_at(dic, alkalinity)

@@ -27,8 +27,11 @@
 //! Davies (1962), Ion Association, p. 41: log γ = −A z² (√I / (1 + √I) − 0.3 I), valid to I ≈ 0.5. A is the
 //! Debye–Hückel constant of the water's temperature (`debye_huckel_a`: its dielectric constant by Malmberg & Maryott
 //! 1956 and its density by Kell 1975), I1 closed: formula 1's fixed ε = 79 made A 7.5 % too large at 12 °C and 15 % at
-//! 2 °C. The seawater path's NBS conversion (Zeebe & Wolf-Gladrow 2001) takes the same A from formula 3 on, which moves
-//! it towards CO2SYS's Takahashi et al. (1982) at every temperature from 10 ‰ up (chemcore/findings/I2-comparison.md).
+//! 2 °C. The seawater path's NBS conversion (Zeebe & Wolf-Gladrow 2001's Davies-type γH) takes the same A from formula 3
+//! on: an in-house variant, not a published method (formula 1 codes ZWG with ε fixed at 79). Against CO2SYS's Takahashi et al. (1982) fH (fitted
+//! for S 20 to 40) it is closer at 20 to 35 ‰ for t ≤ 15 °C and at 35 ‰ at every temperature, but not at 10 ‰ from 10
+//! to 20 °C nor at 20 ‰, 20 °C, where formula 1 was closer (cross review F2; chemcore/findings/B1.md, the follow-up
+//! formula 4: Takahashi's fH from 20 to 40 ‰).
 //! The concentration constants (Stumm & Morgan 1996,
 //! Aquatic Chemistry, 3rd ed., section 3.4; Plummer & Busenberg 1982), with γ₀ = 1 for CO₂, NH₃, H₂S, B(OH)₃:
 //! pH free = pH NBS + log γ₁ (a meter reads the activity of H⁺); K1 = K1° / γ₁²; K2 = K2° / γ₂; Kw = Kw° / γ₁²;

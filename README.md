@@ -1371,9 +1371,11 @@ without values it shows its defaults.
   ionic strength from the salinity alone, so a fresh water was ideal): up to 1 ‰ the water's own ionic strength (the
   conductivity at 25 °C, else the salinity, never below the measured hardness and alkalinity's ions; none measured, 0)
   with Davies activity coefficients; from 5 ‰ the seawater constants; between, a blend (Water-chemistry core). A pH (NBS)
-  is put on the seawater scale with a Davies-type activity coefficient whose Debye-Hückel A is the temperature's, not
-  CO2SYS's apparent coefficient of Takahashi et al. (1982): at 35 ‰ the two differ by −0.048 pH at 0 °C, −0.038 at
-  5 °C, +0.001 at 25 °C and +0.034 at 40 °C (formula 1, with a fixed ε of 79: −0.073, −0.058, +0.004, +0.051).
+  is put on the seawater scale with a Davies-type activity coefficient whose Debye-Hückel A is the temperature's (an
+  in-house variant of Zeebe & Wolf-Gladrow's, not a published method; cross review F2), not CO2SYS's apparent coefficient of Takahashi et al. (1982): at 35 ‰ the two differ by −0.048 pH at 0 °C, −0.038 at
+  5 °C, +0.001 at 25 °C and +0.034 at 40 °C (formula 1, with a fixed ε of 79: −0.073, −0.058, +0.004, +0.051). Closer
+  to it at 20 to 35 ‰ for t ≤ 15 °C and at 35 ‰ at every temperature; not at 10 ‰ from 10 to 20 °C (B1.md; formula 4,
+  Takahashi's fH for 20 to 40 ‰, is the planned follow-up).
 - **NH₃ and CO₂ are judged on the larger of the limits' basis and the activity-corrected value** (cross review F1,
   owner 2026-11-09; `chemistry::Basis`, `fresh::limits_basis`): the NH₃-N, the CO₂, their statuses, borders and margins,
   the safe TAN, the NH₃ share, the target CO₂, the small NH₃ chart, the simulator's steps and the safe zone all take the
@@ -3674,7 +3676,7 @@ temperature (a synthetic page: 54 different temperatures, 99 to 164 ms, 128 KB c
   measured hardness and alkalinity (in-house; world-average river water, Livingstone 1963, has about 1.3), or giving less
   than their bound by over 1.5 times (Russell's scatter; the bound is used); a sea water's conductivity on a fresh water
   (a salinity under 1 ‰ with a conductivity PSS-78, UNESCO 1983 with Hill et al. 1986, reads as 1 ‰ or more, about
-  1 900 µS/cm). The thresholds are documented constants: no reference table holds per-water constants. the band not at all. The fresh path refuses an ionic strength above 0.5, the Davies limit
+  1 970 µS/cm). The thresholds are documented constants: no reference table holds per-water constants. The fresh path refuses an ionic strength above 0.5, the Davies limit
   (`DAVIES_MAX`; a sample's NH₃ then says why and shows nothing). The conductivity and the hardness are water parameters
   (cross review F8: only the compensated conductivity is read; the sensors' `conductivity_us_cm`, at the water's own
   temperature, never). Formula 1 is still worked out exactly, by name only (`formula=1`: golden v1, `FORMULAS` = 1, 3),

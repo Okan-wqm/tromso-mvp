@@ -6,6 +6,7 @@ activity 1; the CO2 guidelines on the free CO2 worked out the same way (Standard
 against limits of the ideal basis they would understate. Every judgement, alarm, status, border and safe TAN therefore
 takes the LARGER of the limits' basis (formula 1: the ideal water in fresh water, formula 1's seawater constants from 5
 permil) and the activity-corrected value; the corrected value is shown beside it, and the provenance says which judged."""
+import math
 from decimal import Decimal as D
 
 from django.test import SimpleTestCase
@@ -106,22 +107,64 @@ class FreshWaterTests(SimpleTestCase):
 
 
 class SeaWaterTests(SimpleTestCase):
-    def test_in_sea_water_the_limits_basis_is_formula_1s_and_the_larger_judges(self):
-        """From 5 permil the limits' basis is formula 1's seawater constants; formula 3's NBS conversion gives more NH3
-        in cold sea water (cross review F2) and less at 25 °C, so each temperature takes its larger."""
-        for temp_c, basis in ((2.0, 'corrected'), (25.0, 'limits')):
-            eq = native.water_equilibria(temp_c, 35.0, 2300.0 * 0.05004345)
-            one = native.equilibria(temp_c, 35.0)
+    """From 5 permil the NH3 limits' basis is the saltwater criteria's convention (cross review round 2, S1; owner rule:
+    the literature is the authority): Khoo, Culberson & Bates (1977)'s pKa^s, as Bower & Bidwell (1978) and Spotte &
+    Adams (1983) use it, applied to the NBS pH as measured: pKa^s = 0.09018 + 2729.92 / T + (0.1552 − 0.0003142 t) I,
+    T in K, t in °C, I = 19.9273 S / (1000 − 1.005109 S) the molal ionic strength of sea water. The CO2 basis there
+    stays formula 1's seawater constants."""
+
+    @staticmethod
+    def khoo(temp_c, salinity):
+        strength = 19.9273 * salinity / (1000 - 1.005109 * salinity)
+        return 0.09018 + 2729.92 / (temp_c + 273.15) + (0.1552 - 0.0003142 * temp_c) * strength
+
+    @staticmethod
+    def pka(share, ph):
+        return ph + math.log10((1 - share) / share)
+
+    def test_the_sea_nh3_basis_is_khoos_pka_on_the_nbs_ph(self):
+        for temp_c in (2.0, 12.0, 25.0):
+            for salinity in (5.0, 20.0, 35.0):
+                eq = native.water_equilibria(temp_c, salinity, 115.0)
+                with self.subTest(temp_c=temp_c, salinity=salinity):
+                    for ph in (7.6, 8.0):
+                        basis = eq.nh3_share_limits(ph)
+                        self.assertAlmostEqual(self.pka(basis, ph), self.khoo(temp_c, salinity), delta=1e-9)
+                        self.assertEqual(eq.nh3_share(ph), max(basis, eq.nh3_share_corrected(ph)))
+                        # Never below formula 1 (golden v1's sea water) nor formula 3's own.
+                        self.assertGreaterEqual(eq.nh3_share(ph), native.equilibria(temp_c, salinity).nh3_share(ph))
+
+    def test_khoos_pka_meets_bower_and_bidwells_as_applied(self):
+        """Bower & Bidwell's method as a monitoring report applies it (Hong Kong Electric, Lamma extension baseline,
+        appendix L): S 32, pKa^s 9.35 at 25 °C and 9.44 at 22.15 °C (two decimals)."""
+        self.assertAlmostEqual(self.khoo(25.0, 32.0), 9.35, delta=0.01)
+        self.assertAlmostEqual(self.khoo(22.15, 32.0), 9.44, delta=0.01)
+
+    def test_the_basis_is_nearly_continuous_from_fresh_to_sea(self):
+        """The band blends the ideal water (to 1 permil) into Khoo's (from 5): no step at either end, and at 5 permil
+        Khoo's share is within 2 % of the ideal's."""
+        for temp_c in (2.0, 12.0, 25.0):
             with self.subTest(temp_c=temp_c):
-                self.assertEqual(eq.nh3_basis, basis)
-                for ph in (7.6, 8.0):
-                    self.assertEqual(eq.nh3_share(ph), max(eq.nh3_share_corrected(ph), one.nh3_share(ph)))
-                    self.assertGreaterEqual(eq.nh3_share(ph), one.nh3_share(ph))
+                for edge in (1.0, 5.0):
+                    below = native.water_equilibria(temp_c, edge - 1e-9, 115.0).nh3_share_limits(8.0)
+                    above = native.water_equilibria(temp_c, edge + 1e-9, 115.0).nh3_share_limits(8.0)
+                    self.assertAlmostEqual(above / below, 1, delta=1e-7)
+                at_five = native.water_equilibria(temp_c, 5.0, 115.0).nh3_share_limits(8.0)
+                ideal = native.water_equilibria(temp_c, 0.0).nh3_share(8.0)
+                self.assertAlmostEqual(at_five / ideal, 1, delta=0.02)
+
+    def test_the_co2_basis_at_sea_stays_formula_1s(self):
+        meq = 115.0 / chemistry.MG_CACO3_PER_MEQ
+        for temp_c in (2.0, 25.0):
+            eq, one = native.water_equilibria(temp_c, 35.0, 115.0), native.equilibria(temp_c, 35.0)
+            own = eq.co2(eq.dic(meq, 8.0), 8.0)
+            self.assertEqual(eq.co2_judged(meq, 8.0)[0], max(own, one.co2(one.dic(meq, 8.0), 8.0)))
 
     def test_formula_1_stays_golden_v1s(self):
         one = native.equilibria(12.0, 35.0)
         self.assertIsNone(one.limits_equilibria())
         self.assertEqual(one.nh3_share(8.0), one.nh3_share_corrected(8.0))
+        self.assertEqual(one.nh3_share_limits(8.0), one.nh3_share(8.0))
         self.assertEqual(one.nh3_basis, 'limits')
 
 

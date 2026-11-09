@@ -14,7 +14,7 @@ from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
-from farm.models import System
+from farm.models import System, Tank
 from farm.tests.helpers import point_of, role
 from farm.tests.test_stock import make_unit
 from farm.water import calculation, chemistry, deffeyes, read as water_read, services as water_services
@@ -124,6 +124,23 @@ class FrameTests(ReplayCase):
         for frame in frames.frames:
             self.assertEqual(frame.figure, 0)
             self.assertEqual(frames.figures[0], self.figure_at(frames, frame))
+
+    def test_a_salt_added_units_frames_are_worked_out_as_its_chart_works_them_out(self):
+        """Cross review round 2, R1: the replay takes the unit's water origin, as its chart does (calculation.origin_of):
+        a salt-added unit at 3 permil is worked out on the fresh path, never as diluted sea water."""
+        Tank.objects.filter(pk__in=[self.t1.pk, self.t2.pk]).update(water_origin='salt_added')
+        water_services.record(self.user, point=self.mid1, measured_at=START - timedelta(hours=1), source='manual',
+                              values={'salinity_ppt': Decimal('3')})
+        self.steady()
+        frames = read.deffeyes_frames(self.t1, START + timedelta(minutes=5), START + timedelta(minutes=35),
+                                      timedelta(minutes=10))
+        for frame in frames.frames:
+            with self.subTest(at=frame.at):
+                chart = calculation.chart_of(frames.target, at=frame.at).calculation.analysis
+                self.assertEqual(chart.equilibria.water_origin, 'salt_added')
+                self.assertEqual(frame.inputs['salinity_ppt'].value, 3.0)
+                self.assertEqual(frame.point.co2_mg_l, chart.co2_mg_l)
+                self.assertEqual(frames.figures[frame.figure], self.figure_at(frames, frame))
 
     def test_mixed_origins_are_named(self):
         self.steady()

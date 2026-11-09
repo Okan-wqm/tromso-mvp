@@ -122,3 +122,25 @@ class UnitOriginTests(WaterTestCase):
         self.assertEqual(page.status_code, 200)
         self.assertEqual(page.context['analysis'].equilibria.water_origin, 'salt_added')
         self.assertContains(page, 'salt-added fresh water')
+
+
+class DaviesLimitTests(SimpleTestCase):
+    """Salt-added water leaves the fresh path where NaCl's ionic strength reaches the Davies limit, 0.5: S 28.39 permil
+    (by the conductivity, 8.4e-6 κ = 0.5 at about 59 500 µS/cm). Its basis stays the ideal water on both sides (the
+    larger of the two sides' bases), so the judged NH3 and CO2 never drop across it; the corrected values jump."""
+
+    def test_the_judged_values_never_drop_across_the_davies_limit(self):
+        meq = 80.0 / chemistry.MG_CACO3_PER_MEQ
+        for temp_c in (2.0, 12.0, 25.0):
+            below = native.water_equilibria(temp_c, 28.3, 80.0, water_origin='salt_added')
+            above = native.water_equilibria(temp_c, 28.5, 80.0, water_origin='salt_added')
+            with self.subTest(temp_c=temp_c):
+                self.assertEqual((below.sea_weight, above.sea_weight), (0.0, 1.0))
+                for ph in (7.0, 7.5, 8.0):
+                    self.assertGreaterEqual(above.nh3_share(ph), below.nh3_share(ph) * (1 - 1e-12))
+                    self.assertGreaterEqual(above.co2_judged(meq, ph)[0], below.co2_judged(meq, ph)[0] * (1 - 1e-12))
+
+    def test_the_judged_basis_says_salt_added_water_keeps_the_ideal(self):
+        eq = native.water_equilibria(12.0, 3.0, 80.0, water_origin='salt_added')
+        self.assertIn('salt-added water: the ideal throughout', messages.judged('nh3', 'limits', 0.001, eq))
+        self.assertIn('salt-added water: the ideal throughout', messages.judged('co2', 'limits', 1.0, eq))

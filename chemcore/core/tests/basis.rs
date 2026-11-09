@@ -70,3 +70,50 @@ fn in_the_band_and_the_sea_the_larger_judges() {
         }
     }
 }
+
+/// Khoo, Culberson & Bates (1977)'s pKa^s as Bower & Bidwell (1978) apply it to the NBS pH (cross review round 2, S1).
+fn khoo(temp_c: f64, salinity: f64) -> f64 {
+    let strength = 19.9273 * salinity / (1000.0 - 1.005109 * salinity);
+    0.09018 + 2729.92 / (temp_c + 273.15) + (0.1552 - 0.0003142 * temp_c) * strength
+}
+
+#[test]
+fn the_sea_nh3_basis_is_khoos_pka_on_the_nbs_ph() {
+    let check = |temp_c: f64, salinity: f64| -> Result<(), ChemError> {
+        let eq = f::equilibria_v3(temp_c, salinity, Some(115.0), Ions::default())?;
+        for ph in [7.6, 8.0] {
+            let share = eq.nh3_share_limits(ph)?;
+            assert!((ph + libm::log10((1.0 - share) / share) - khoo(temp_c, salinity)).abs() < 1e-9);
+            assert!(eq.nh3_share(ph)? >= share && eq.nh3_share(ph)? >= c::equilibria(temp_c, salinity)?.nh3_share(ph)?);
+        }
+        Ok(())
+    };
+    for temp_c in [2.0, 12.0, 25.0] {
+        for salinity in [5.0, 20.0, 35.0] {
+            assert_eq!(check(temp_c, salinity), Ok(()));
+        }
+    }
+}
+
+#[test]
+fn salt_added_water_never_drops_across_the_davies_limit() {
+    let salted = Ions {
+        origin: Origin::SaltAdded,
+        ..Ions::default()
+    };
+    let check = |temp_c: f64| -> Result<(), ChemError> {
+        let below = f::equilibria_v3(temp_c, 28.3, Some(80.0), salted)?;
+        let above = f::equilibria_v3(temp_c, 28.5, Some(80.0), salted)?;
+        assert_eq!((below.sea_weight, above.sea_weight), (0.0, 1.0));
+        let alkalinity = 80.0 / c::MG_CACO3_PER_MEQ;
+        for ph in [7.0, 7.5, 8.0] {
+            assert!(above.nh3_share(ph)? >= below.nh3_share(ph)? * (1.0 - 1e-12));
+            let (one, two) = (below.co2_corrected(alkalinity, ph)?, above.co2_corrected(alkalinity, ph)?);
+            assert!(above.co2_judged(alkalinity, ph, two)?.0 >= below.co2_judged(alkalinity, ph, one)?.0 * (1.0 - 1e-12));
+        }
+        Ok(())
+    };
+    for temp_c in [2.0, 12.0, 25.0] {
+        assert_eq!(check(temp_c), Ok(()));
+    }
+}

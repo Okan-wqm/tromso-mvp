@@ -19,7 +19,8 @@ from .test_water import WaterTestCase
 
 ROOT = Path(settings.BASE_DIR)
 JUDGED = ('NH₃ judged on the basis its limits were set on (to 1 ‰ the ideal water, every activity 1, as Emerson et al. '
-          '1975; from 5 ‰ formula 1’s seawater constants), the larger; activity-corrected %s mg/L.')
+          '1975; from 5 ‰ Khoo et al. 1977’s pKa on the NBS pH, as Bower & Bidwell 1978; salt-added water: the ideal '
+          'throughout), the larger; activity-corrected %s mg/L.')
 LIMITS = deffeyes.Limits(nh3_n_mg_l=0.0103, co2_mg_l=15.0, h2s_ug_l=2.0, alkalinity_low_mg_l=50.0,
                          alkalinity_high_mg_l=150.0)
 

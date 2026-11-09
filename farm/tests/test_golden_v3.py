@@ -196,14 +196,15 @@ class EquilibriaV3Tests(SimpleTestCase):
                     self.assertTrue(math.isclose(value, ideal, rel_tol=1e-9, abs_tol=1e-12), (value, ideal))
 
     def test_ions_lower_the_co2_and_the_nh3_share_at_a_measured_ph_and_alkalinity(self):
-        # CO₂ = aH [HCO₃⁻] γHCO₃ / K1°: an ion-rich water holds less CO₂ at the pH its meter reads; NH₃'s share is
-        # K / (K + [H⁺]) with [H⁺] = aH / γH, larger.
+        # CO₂ = aH [HCO₃⁻] γHCO₃ / K1°: an ion-rich water holds less CO₂ at the pH its meter reads; NH₃'s corrected share
+        # is K / (K + [H⁺]) with [H⁺] = aH / γH, smaller; the judged share is the larger, the ideal (cross review F1).
         for conductivity in (100.0, 500.0, 2000.0):
             v1, v3 = native.equilibria(12.0, 0.0), native.equilibria_v3(12.0, 0.0, 80.0, conductivity_25_us_cm=conductivity)
             meq = 80.0 / chemistry.MG_CACO3_PER_MEQ
             with self.subTest(conductivity=conductivity):
                 self.assertLess(v3.co2(v3.dic(meq, 7.0), 7.0), v1.co2(v1.dic(meq, 7.0), 7.0))
-                self.assertLess(v3.nh3_share(7.5), v1.nh3_share(7.5))
+                self.assertLess(v3.nh3_share_corrected(7.5), v1.nh3_share(7.5))
+                self.assertEqual(v3.nh3_share(7.5), v1.nh3_share(7.5))   # judged on the larger, the ideal (F1)
                 self.assertLess(v3.ph_offset, 0.0)
 
 

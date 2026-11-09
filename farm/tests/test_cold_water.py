@@ -114,7 +114,8 @@ class AmmoniaTests(SimpleTestCase):
 
     def test_an_ion_rich_water_has_less_nh3_by_its_activities(self):
         """NH4+ and H+ are both monovalent, so KNH4 needs no activity: the share moves only by the meter's pH,
-        [H+] = 10^−pH / γ1, so NH3% ≈ Emerson's at pH + log γ1."""
+        [H+] = 10^−pH / γ1, so the corrected NH3% ≈ Emerson's at pH + log γ1. It is information: the judged share is
+        the larger, the ideal one the limits were set on (cross review F1; test_limits_basis)."""
         for temp_c in (2.0, 5.0, 8.0, 12.0):
             for conductivity in (100.0, 500.0, 1000.0):
                 eq = chemistry.water_equilibria(temp_c, 0.0, 80.0, conductivity_25_us_cm=conductivity)
@@ -122,7 +123,8 @@ class AmmoniaTests(SimpleTestCase):
                 k = chemistry.k_nh4_sws(temp_c, 0)
                 expected = k / (k + 10 ** -7.5 / gamma)
                 with self.subTest(temp_c=temp_c, conductivity=conductivity):
-                    self.assertAlmostEqual(eq.nh3_share(7.5) / expected, 1, delta=0.001)
+                    self.assertAlmostEqual(eq.nh3_share_corrected(7.5) / expected, 1, delta=0.001)
+                    self.assertAlmostEqual(eq.nh3_share(7.5) / (k / (k + 10 ** -7.5)), 1, delta=1e-12)
 
 
 class CarbonDioxideTests(SimpleTestCase):

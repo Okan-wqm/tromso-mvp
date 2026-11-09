@@ -18,6 +18,8 @@ from .helpers import role
 from .test_water import WaterTestCase
 
 ROOT = Path(settings.BASE_DIR)
+JUDGED = ('NH₃ judged on the basis its limits were set on (to 1 ‰ the ideal water, every activity 1, as Emerson et al. '
+          '1975; from 5 ‰ formula 1’s seawater constants), the larger; activity-corrected %s mg/L.')
 LIMITS = deffeyes.Limits(nh3_n_mg_l=0.0103, co2_mg_l=15.0, h2s_ug_l=2.0, alkalinity_low_mg_l=50.0,
                          alkalinity_high_mg_l=150.0)
 
@@ -38,8 +40,10 @@ class FormulaTests(SimpleTestCase):
                          (3, 1.6e-5 * 300.0, 'conductivity', 0.0))
         self.assertEqual(analysis.provenance, 'Formula 3: ionic strength 0.0048, from the conductivity at 25 °C.')
         ideal = deffeyes.analyse(deffeyes.Water(12.0, 0.0, 7.0, 80.0, tan_mg_l=0.5, formula=1), LIMITS)
-        self.assertLess(analysis.co2_mg_l, ideal.co2_mg_l)
-        self.assertLess(analysis.nh3_n_mg_l, ideal.nh3_n_mg_l)
+        # The activity-corrected values are lower; the judged ones are the larger, here the ideal (cross review F1).
+        self.assertLess(analysis.co2_corrected_mg_l, ideal.co2_mg_l)
+        self.assertLess(analysis.nh3_corrected_n_mg_l, ideal.nh3_n_mg_l)
+        self.assertEqual((analysis.co2_mg_l, analysis.nh3_n_mg_l), (ideal.co2_mg_l, ideal.nh3_n_mg_l))
 
     def test_formula_1_is_still_golden_v1s_and_only_by_name(self):
         for salinity in (0.0, 2.0, 35.0):
@@ -101,8 +105,12 @@ class ReadTests(WaterTestCase):
         eq = chemistry.water_equilibria(8.0, 0.0, 120.0, conductivity_25_us_cm=450.0)
         nh3 = self.nh3()
         self.assertEqual(nh3.value, (D(2) * D(eq.nh3_share(7.5))).quantize(D('0.0001')))
-        self.assertLess(nh3.value, (D(2) * D(native.equilibria(8.0, 0.0).nh3_share(7.5))).quantize(D('0.0001')))
-        self.assertEqual(nh3.provenance, 'Formula 3: ionic strength 0.0072, from the conductivity at 25 °C.')
+        # Judged on the larger, here the ideal share the limits were set on; the corrected one is said (F1).
+        self.assertEqual(nh3.value, (D(2) * D(native.equilibria(8.0, 0.0).nh3_share(7.5))).quantize(D('0.0001')))
+        corrected = (D(2) * D(eq.nh3_share_corrected(7.5))).quantize(D('0.0001'))
+        self.assertLess(corrected, nh3.value)
+        self.assertEqual(nh3.provenance,
+                         'Formula 3: ionic strength 0.0072, from the conductivity at 25 °C. ' + JUDGED % corrected)
         page = self.client.get(reverse('farm:water'))
         self.assertContains(page, 'Formula 3: ionic strength 0.0072, from the conductivity at 25 °C.')
 

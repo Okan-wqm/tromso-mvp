@@ -110,13 +110,15 @@ class DerivedTests(SimpleTestCase):
     def test_free_co2_follows_standard_methods(self):
         # Standard Methods 4500-CO₂ D (APHA): in fresh water at 25 °C, free CO₂ (mg/L) = 2.0 B 10^(6.0 − pH), with
         # B the bicarbonate alkalinity in mg/L as CaCO₃ (all of it below pH 8.3); the 2.0 is rounded: within 3 %. The
-        # equation takes every activity as 1 (no ionic strength): formula 1's convention. Formula 3 gives the water its
-        # own ionic strength (here the alkalinity's, I 0.002) and less CO₂ by the activities (test_formula_v3).
+        # equation takes every activity as 1 (no ionic strength): formula 1's convention, the basis CO₂ limits are judged
+        # on. Formula 3 gives the water its own ionic strength (here the alkalinity's, I 0.002) and less CO₂ by the
+        # activities, said beside the judged one, the larger (cross review F1).
         for ph in (6.5, 7.0, 7.5, 8.0):
             with self.subTest(ph=ph):
                 result = analyse(Water(25, 0, ph, 100, formula=1))
                 self.assertAlmostEqual(result.co2_mg_l / (2.0 * 100 * 10 ** (6.0 - ph)), 1, delta=0.03)
-                self.assertLess(analyse(Water(25, 0, ph, 100)).co2_mg_l, result.co2_mg_l)
+                self.assertLess(analyse(Water(25, 0, ph, 100)).co2_corrected_mg_l, result.co2_mg_l)
+                self.assertEqual(analyse(Water(25, 0, ph, 100)).co2_mg_l, result.co2_mg_l)    # judged on it (F1)
 
     def test_co2_rises_as_the_ph_falls_at_a_fixed_alkalinity(self):
         for temp_c in (0, 12, 30):
@@ -417,7 +419,10 @@ class GeometryTests(SimpleTestCase):
         for dic, alkalinity in shape.regions['h2s']:
             if dic > 1e-9 and alkalinity > 1e-9:
                 self.assertLessEqual(eq.ph_at(dic, alkalinity), result.h2s.ph + 1e-9)
-        co2 = 15 / chemistry.MG_CO2_PER_MMOL
+        # The CO₂ curve is drawn in the water's own constants at the limit times its corrected-to-judged ratio
+        # (the core's Analysis::co2_chart_limit, cross review F1): exact at the water; the judged CO₂ on it within -1.5 to +0.5 %.
+        co2 = 15 * result.co2_corrected_mg_l / result.co2_mg_l / chemistry.MG_CO2_PER_MMOL
+        self.assertLess(co2, 15 / chemistry.MG_CO2_PER_MMOL)
         for dic, alkalinity in shape.regions['co2']:
             ph = eq.ph_at(dic, alkalinity)
             if ph is not None:
@@ -427,6 +432,8 @@ class GeometryTests(SimpleTestCase):
             ph = eq.ph_at(dic, alkalinity)
             if alkalinity > 1e-9:
                 self.assertAlmostEqual(eq.co2(dic, ph) / co2, 1, places=8)
+                judged = eq.co2_judged(alkalinity, ph)[0] * chemistry.MG_CO2_PER_MMOL
+                self.assertAlmostEqual(judged / 15, 1, delta=0.015)
         for key in ('nh3', 'h2s'):
             border = getattr(result, key).ph
             for dic, alkalinity in shape.boundaries[key][0]:
@@ -561,8 +568,10 @@ class GeometryTests(SimpleTestCase):
         self.assertIn({'key': 'nh3', 'name': 'NH₃ toxic (at every pH of the chart)'}, deffeyes.draw(result).legend)
         # Inside the range the border is a number with its margin.
         html = table(default_analysis().nh3)
-        self.assertIn('8.045', html)                       # formula 3 (8.040 by formula 1)
-        self.assertIn('+1.04', html)
+        # Judged on the larger NH₃, here the ideal share its limit was set on (cross review F1): 7.986; formula 3's
+        # activity-corrected share alone would put it at 8.045, formula 1 at 8.040.
+        self.assertIn('7.986', html)
+        self.assertIn('+0.99', html)
 
     def assert_shaded_where_passed(self, result, key, toxic):
         """Points sampled over the box: a point whose pH passes the border (`toxic(ph)`) is in the region,
@@ -644,7 +653,7 @@ class GeometryTests(SimpleTestCase):
                     slope, intercept = result.equilibria.isoline(ph)
                     self.assertTrue(intercept > 6 or slope * 6 + intercept < 0, ph)
         self.assertIn('pH 7,0', html)                                # the labels in the language
-        self.assertIn('pH &gt; 8,04', html)
+        self.assertIn('pH &gt; 7,99', html)
 
 
 # ---- the page --------------------------------------------------------------------------------------------
@@ -661,8 +670,10 @@ class CalculatorPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         html = response.content.decode()
         for text in ('Water Quality Management Chart', '<svg class="deffeyes-chart"', 'Carbon dioxide (CO₂)',
-                     'NH₃ toxic (pH &gt; 8.04)', 'CO₂ toxic (&gt; 15 mg/L)', 'H₂S toxic (pH &lt; 5.93)',
-                     '1.987 mmol/L', '17.12 mg/L', 'wq-critical', 'data-formula="3"'):     # formula 3
+                     'NH₃ toxic (pH &gt; 7.99)', 'CO₂ toxic (&gt; 15 mg/L)', 'H₂S toxic (pH &lt; 5.93)',
+                     '1.987 mmol/L', '19.62 mg/L', '17.12 mg/L', 'wq-critical', 'data-formula="3"'):
+            # formula 3; NH₃ and CO₂ judged on the larger, the limits' basis (cross review F1): CO₂ 19.62 mg/L, the
+            # activity-corrected 17.12 said beside it
             self.assertIn(text, html)
         self.assertContains(response, f'href="{self.url}" aria-current="page"')
         self.assertContains(response, f'href="{reverse("farm:water")}" title="Water chemistry" aria-current="page"')

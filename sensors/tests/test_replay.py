@@ -445,3 +445,19 @@ class ValueAtTests(ReplayCase):
                     for segment in read.segments(self.t1, code, first - read.CARRY, first + count * step)]
         self.assertEqual(len(segments), 6)
         self.assertLessEqual(scanned(query['sql']), 2 * count * len(segments))
+
+    def test_the_planner_setting_is_as_it_was_after_a_page_inside_a_callers_transaction(self):
+        """Cross review F4: the look-ups switch TimescaleDB's runtime exclusion off for their own query only; inside a
+        caller's transaction (an atomic block around the replay) the setting is back to what it was afterwards."""
+        from django.db import transaction
+
+        def setting():
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_setting('timescaledb.enable_runtime_exclusion')")
+                return cursor.fetchone()[0]
+
+        with transaction.atomic():
+            before = setting()
+            read.deffeyes_frames(self.t1, START, START + timedelta(hours=2), timedelta(minutes=1))
+            self.assertEqual(setting(), before)
+        self.assertEqual(before, 'on')

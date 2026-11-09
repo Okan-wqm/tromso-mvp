@@ -258,7 +258,7 @@ Differences from the source:
   are in it; deleting a system takes its units out of it, logged.
 - Water type is required and has no default (the source defaulted to saltwater in one place and
   freshwater in another).
-- The water origin is optional (cross review F3, farm 0037, `chk_tanks_water_origin`): sea water or diluted sea water,
+- The water origin is optional (cross review F3, farm 0039, `chk_tanks_water_origin`): sea water or diluted sea water,
   or fresh water with salt added (NaCl, for smolt or against disease). The water chemistry reads it (Water-chemistry
   core): salt-added water is worked out without sea water's ions; not said, a salinity of 1 to 5 ‰ is taken as diluted
   sea water and the value says so. A loop or a sampling point takes its units' origin when they all say the same.
@@ -3462,7 +3462,8 @@ from which device, how late) is logged. The server side is built; the push trans
   the evaluation: the safest value of each field stands in (no on-delay, the longest off-delay, the shortest escalation,
   the most attempts) and a critical configuration alarm says so until the row is back (F6). The staleness thresholds the
   alarms depend on are rule data too (F10): how long a water value counts as fresh per parameter (Setup › Reference data ›
-  Water freshness, seeded with the hours the code held), the clock tolerance (Platform settings) and a sensor channel's
+  Water freshness, seeded with the hours the code held; the conductivity at 25 °C and the hardness by farm 0040, 7 and 14
+  days), the clock tolerance (Platform settings) and a sensor channel's
   fresh heartbeats; the ingest contract's hour (`evaluate.MAX_AHEAD`) is the contract's and stays. No number in the modules
   an alarm's decision reads is a threshold: a test reads them, each named exception with its reason.
 - **A device clock** that differs from the platform's is an alarm of its own (owner, 2026-11-09): the skew is measured per

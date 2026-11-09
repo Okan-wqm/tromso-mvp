@@ -1,10 +1,19 @@
 """The seven defects the alarm plan (scratchpad plan/alarms/PLAN.md §2.3) found in this app, each pinned by its tests."""
-from farm.models import SamplingPoint
-from farm.water import services as water, sources as water_sources
-from farm.tests.helpers import point_of
+from datetime import timedelta
+from io import StringIO
+from unittest import mock
 
+from django.core.management import call_command
+
+from farm.models import SamplingPoint
+from farm.tests.helpers import point_of
+from farm.water import services as water, sources as water_sources
+from sensors import alarms as sensor_alarms, bindings
+from sensors.models import AlarmEvent, AlarmRule
+from sensors.tests import make_channel, make_connection, make_device, make_format
+
+from .. import engine, read, sources
 from ..models import Alarm, AlarmClearance, Escalation, Notification, ParameterDeadband, SeverityPolicy
-from .. import read
 from . import AlarmsCase
 
 
@@ -146,3 +155,36 @@ class OlderEvidenceTests(AlarmsCase):
         self.loop(minutes=6)
         self.loop(minutes=7)
         self.assertFalse(read.is_open(self.critical()))
+
+
+class FailureIsolationTests(AlarmsCase):
+    """Defect 5: one failing step never takes the others with it (each step is its own transaction, its failure logged and
+    counted), and the loop goes on after a failed pass."""
+
+    def setUp(self):
+        super().setUp()
+        device = make_device(make_connection(), make_format(), self.bergen)
+        flow = make_channel(device, 'flow_m3_h')
+        rule = AlarmRule.objects.create(kind='low', severity='warning', channel=flow, threshold=10)
+        bound = bindings.move(self.keeper, flow, self.now - timedelta(days=1), system=self.ras)
+        AlarmEvent.objects.create(rule=rule, channel_no=flow.channel_no, opened_at=self.now, peak=4, binding=bound)
+
+    def test_a_failing_water_step_leaves_the_sensor_alarms_done_and_is_said(self):
+        with mock.patch.object(sensor_alarms, 'evaluate', return_value=(0, 0)), \
+                mock.patch.object(sources, 'water', side_effect=RuntimeError('the water read failed')), \
+                self.assertLogs('alarms.engine', level='ERROR') as logged:
+            summary = self.loop()
+        self.assertEqual(summary.failed_steps, ['water'])
+        self.assertTrue(Alarm.objects.filter(source='sensor_rule').exists())
+        self.assertIn('the water read failed', '\n'.join(logged.output))
+        self.assertIn('1 step failed: water', str(summary))
+
+    def test_the_loop_goes_on_after_a_failed_pass(self):
+        out, err = StringIO(), StringIO()
+        with mock.patch.object(engine, 'run_once', side_effect=[RuntimeError('the pass failed'), engine.Summary()]) \
+                as passes, mock.patch('time.sleep', side_effect=[None, KeyboardInterrupt]), \
+                self.assertLogs('alarms', level='ERROR'):
+            with self.assertRaises(KeyboardInterrupt):
+                call_command('run_alarms', loop=1, stdout=out, stderr=err)
+        self.assertEqual(passes.call_count, 2)
+        self.assertIn('the pass failed', err.getvalue())

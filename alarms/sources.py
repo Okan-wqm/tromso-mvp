@@ -121,9 +121,13 @@ def judged_clear(reading, rules):
     return worst(found) if found else decider.judged
 
 
-def clear_evidence(reading, severity, rules):
-    """Whether this pass's reading says the level is over: fresh, and clear of it by the deadband."""
-    return reading.status != Status.STALE and judged_clear(reading, rules) not in HOLDS[severity]
+def clear_evidence(reading, severity, rules, last_bad_at):
+    """Whether this pass's reading says the level is over: fresh, taken after the last value that held it (an older value
+    that is the newest again, its bad successor voided or its probe taken out, says nothing new: alarm plan, defect 4),
+    and clear of it by the deadband."""
+    decider = reading.worse or reading
+    return (reading.status != Status.STALE and (last_bad_at is None or decider.at > last_bad_at)
+            and judged_clear(reading, rules) not in HOLDS[severity])
 
 
 @dataclass
@@ -206,7 +210,8 @@ def water(now, rules):
         state = states.get(key) or AlarmSubjectState(key=key)
         before = (state.open_alarm_id, state.pending_since, state.clear_since, state.last_bad_at)
         step = advance(state, reading.judged in HOLDS[severity],
-                       not failed and clear_evidence(reading, severity, rules), (reading.worse or reading).at, severity,
+                       not failed and clear_evidence(reading, severity, rules, state.last_bad_at),
+                       (reading.worse or reading).at, severity,
                        rules, now, structural=reading.judged in UNJUDGED)
         found = _apply(state, step, now, lambda: services.open_alarm(
             at=now, severity=severity, summary=_summary(point, reading), source=Source.WATER_LIMIT, point=point,

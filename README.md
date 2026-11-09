@@ -568,7 +568,16 @@ several batches of it; on a sea site cleaner fish may join the production specie
 writes and folds every batch involved from its first line, so a backdated
 operation is accepted only if every later day stays right (no share ever below 0 fish, and every feeding
 recorded in the unit still finds fish there on its day: "The feeding of 2 Nov in T-01 would have no fish:
-void it first."); above a unit's max biomass it asks for an acknowledgement, stored on the operation. The unit's status follows its fish:
+void it first."); above a unit's max biomass it asks for an acknowledgement, stored on the operation. The same way, a
+stocking, a transfer or split and a grading that would leave a unit holding batches of one species further apart in
+average weight than the species' size limit (Setup › Species; none set: no check) ask for an acknowledgement of their
+own ("T-01 would hold Atlantic salmon (SAL) of very different sizes on 4 Nov 2026: B-2026-004 at 4,217 g and
+B-2026-007 at 78.0 g, 54.1 times as heavy, above the limit of 2×"), stored on the operation (`size_mix_ack`, a
+database check keeps it to operations that bring fish in) and in its log entry; both questions are asked together and
+each box answers its own. The weights are the book's averages on the operation's date, as the capacity reads them;
+cleaner fish are weighed against their own species only, never the salmon they clean. A weighing, a mortality or any
+operation that brings no fish in is never asked (a weighing that shows a mix is warned about on the pages instead), and
+neither is a void. The unit's status follows its fish:
 the first fish make a preparing or fallow unit active, the last fish out make an active one fallow and
 a harvesting or quarantined one due for cleaning; a void that brings fish back makes the unit active.
 Every operation, every void and every status change is in the activity log ("Voided", with the reason).

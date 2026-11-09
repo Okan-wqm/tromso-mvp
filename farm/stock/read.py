@@ -71,6 +71,43 @@ def mixed(species_ids, cleaner, sea):
     return len(set(species_ids) - set(cleaner)) > 1
 
 
+@dataclass(frozen=True)
+class SizeMix:
+    """Batches of one species in one unit further apart in weight than the species' size limit
+    (Species.max_weight_ratio): the heaviest and the lightest of them by average weight, and the limit."""
+    species: object
+    heavy: object             # Batch
+    heavy_g: Decimal
+    light: object             # Batch
+    light_g: Decimal
+    limit: Decimal
+
+    @property
+    def ratio(self):
+        return self.heavy_g / self.light_g
+
+
+def size_mixes(fish):
+    """[SizeMix] of the batches in one unit, `fish` = [(batch, its average weight in g)], batches with their species:
+    for each species with a size limit and two batches or more there, the heaviest against the lightest when the
+    heavier is more than the limit times the lighter (exactly the limit is within it). Batches are compared with their
+    own species only, so cleaner fish never against the salmon they clean (D-1). A species without a limit is not
+    checked; the order is the species' name."""
+    by_species = defaultdict(list)
+    for batch, weight in fish:
+        by_species[batch.species].append((batch, Decimal(weight)))
+    found = []
+    for species, weighed in by_species.items():
+        limit = species.max_weight_ratio
+        if limit is None or len(weighed) < 2:
+            continue
+        heavy = max(weighed, key=lambda item: (item[1], item[0].code))
+        light = min(weighed, key=lambda item: (item[1], item[0].code))
+        if light[1] > 0 and heavy[1] > limit * light[1]:
+            found.append(SizeMix(species, heavy[0], heavy[1], light[0], light[1], limit))
+    return sorted(found, key=lambda mix: str(mix.species))
+
+
 def sea_units(unit_ids):
     """The ids of these units on a sea site (Site type sea cage), deleted units included."""
     return set(Tank.all_objects.filter(pk__in=unit_ids, production_department__site__type=Site.Type.SEA_CAGE)
@@ -319,6 +356,12 @@ class UnitStock:
     @property
     def batches(self):
         return [share.batch for share in self.counted]
+
+    @property
+    def size_mixes(self):
+        """[SizeMix] of every batch in the unit (production and cleaner fish, each against its own species) at its
+        average now: what the meal board and Production units warn about."""
+        return size_mixes([(share.batch, share.avg_weight_g) for share in self.shares])
 
     def days(self, today):
         return (today - self.since).days if self.since else None

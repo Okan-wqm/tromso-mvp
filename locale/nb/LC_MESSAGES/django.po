@@ -1346,6 +1346,16 @@ msgstr ""
 
 #, python-format
 msgid ""
+"%(unit)s would hold %(species)s of very different sizes on %(date)s: %(heavy_batch)s at %(heavy)s"
+" and %(light_batch)s at %(light)s, %(ratio)s times as heavy, above the limit of %(limit)s (Setup "
+"› Species). Tick the box below to put them together anyway."
+msgstr ""
+"%(unit)s ville holdt %(species)s av svært ulik størrelse %(date)s: %(heavy_batch)s på %(heavy)s "
+"og %(light_batch)s på %(light)s, %(ratio)s ganger så tung, over grensen på %(limit)s (Oppsett › "
+"Arter). Kryss av i boksen under for å sette dem sammen likevel."
+
+#, python-format
+msgid ""
 "%(unit)s would hold %(species)s on %(date)s: a unit holds one species at a time (cleaner fish "
 "join the production fish only on a sea site)."
 msgstr ""
@@ -3602,6 +3612,9 @@ msgstr "Fôrede fiskegrupper"
 
 msgid "Batches of different sizes"
 msgstr "Grupper av ulik størrelse"
+
+msgid "Batches of different sizes, accepted"
+msgstr "Grupper av ulik størrelse, godtatt"
 
 msgid "Bath"
 msgstr "Bad"
@@ -10182,6 +10195,9 @@ msgstr ""
 "Bare for fisk som høstes og sendes til slakteriet. Oppgis den sammen med timer eller dager, må "
 "begge nås."
 
+msgid "Put batches of different sizes together"
+msgstr "Sett sammen grupper av ulik størrelse"
+
 msgid "QoS 0 messages dropped on a full queue"
 msgstr "QoS 0-meldinger forkastet fordi køen var full"
 
@@ -13637,6 +13653,15 @@ msgstr "Enhetsfaktoren er et tall forskjellig fra 0."
 
 msgid "The unit the instrument sends, when it differs from the quantity’s."
 msgstr "Enheten instrumentet sender, når den avviker fra parameterens."
+
+msgid ""
+"The unit will hold batches of one species further apart in weight than the species allows: the "
+"bigger fish outcompete the smaller at feeding. Tick it only when that is meant, e.g. for the days"
+" before a grading."
+msgstr ""
+"Enheten vil holde grupper av én art med større vektforskjell enn arten tillater: de store fiskene"
+" utkonkurrerer de små ved fôringen. Kryss av bare når det er meningen, f.eks. de dagene før en "
+"sortering."
 
 msgid ""
 "The unit will hold more fish than its max density allows. Tick it only when that is meant, e.g. "

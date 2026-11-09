@@ -1354,6 +1354,17 @@ msgstr ""
 
 #, python-format
 msgid ""
+"%(unit)s would hold %(species)s of very different sizes on %(date)s: %(heavy_batch)s at %(heavy)s"
+" and %(light_batch)s at %(light)s, %(ratio)s times as heavy, above the limit of %(limit)s (Setup "
+"› Species). Tick the box below to put them together anyway."
+msgstr ""
+"%(unit)s, %(date)s tarihinde çok farklı boyda %(species)s tutacak: %(heavy)s ağırlığında "
+"%(heavy_batch)s ve %(light)s ağırlığında %(light_batch)s, %(ratio)s kat ağır, %(limit)s sınırının"
+" üzerinde (Kurulum › Balık türleri). Onları yine de bir araya koymak için aşağıdaki kutuyu "
+"işaretleyin."
+
+#, python-format
+msgid ""
 "%(unit)s would hold %(species)s on %(date)s: a unit holds one species at a time (cleaner fish "
 "join the production fish only on a sea site)."
 msgstr ""
@@ -3605,6 +3616,9 @@ msgstr "Yemlenen partiler"
 
 msgid "Batches of different sizes"
 msgstr "Farklı boydaki partiler"
+
+msgid "Batches of different sizes, accepted"
+msgstr "Farklı boydaki partiler, kabul edildi"
 
 msgid "Bath"
 msgstr "Banyo"
@@ -10188,6 +10202,9 @@ msgstr ""
 "Yalnızca hasat edilip fabrikaya gönderilen balıklar için. Saat veya günle birlikte verilirse "
 "ikisine de ulaşılmalıdır."
 
+msgid "Put batches of different sizes together"
+msgstr "Farklı boydaki partileri bir araya koy"
+
 msgid "QoS 0 messages dropped on a full queue"
 msgstr "Kuyruk dolu olduğu için atılan QoS 0 mesajları"
 
@@ -13648,6 +13665,15 @@ msgstr "Birim çarpanı, 0 dışında bir sayıdır."
 
 msgid "The unit the instrument sends, when it differs from the quantity’s."
 msgstr "Parametreninkinden farklıysa cihazın gönderdiği birim."
+
+msgid ""
+"The unit will hold batches of one species further apart in weight than the species allows: the "
+"bigger fish outcompete the smaller at feeding. Tick it only when that is meant, e.g. for the days"
+" before a grading."
+msgstr ""
+"Birim, bir türün türün izin verdiğinden daha farklı ağırlıktaki partilerini tutacak: büyük "
+"balıklar yemlemede küçükleri bastırır. Yalnızca bu isteniyorsa işaretleyin, ör. bir boylamadan "
+"önceki günler için."
 
 msgid ""
 "The unit will hold more fish than its max density allows. Tick it only when that is meant, e.g. "

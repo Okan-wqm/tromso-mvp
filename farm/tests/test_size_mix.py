@@ -17,6 +17,7 @@ from ..models import Batch, Species, StockOperation
 from ..stock import integrity, read, services
 from .test_cleaner_fish import CleanerFishTestCase
 from .test_stock import DialogTests, StockTestCase, make_unit
+from farm import withdrawal_gate
 
 D = Decimal
 TICK = 'Tick the box below to put them together anyway.'
@@ -80,8 +81,8 @@ class StockingTests(SizeMixTestCase):
         self.assertEqual(self.fish(self.t1), 2000)
 
     def test_the_heaviest_and_the_lightest_are_named_whatever_the_order_they_came_in(self):
-        self.small(weight='3000', days_ago=8)                              # 1.4 times: no question
-        errors = self.refused(self.small, weight='600')
+        self.stock(self.t1, count=100, weight='3000', days_ago=8)          # 1.4 times: no question
+        errors = self.refused(self.stock, self.t1, count=100, weight='600', days_ago=5)
         self.assertIn(f'{self.big.code} at 4,217 g and {self.code(3)} at 600 g, 7.0 times as heavy',
                       errors['size_mix_ack'][0])
 
@@ -104,6 +105,7 @@ class StockingTests(SizeMixTestCase):
         services.record_cull(self.user, unit=self.t1, batch=small, day=self.day(1), count=5, reason='grading')
         self.assertEqual(StockOperation.objects.filter(size_mix_ack=True).count(), 1)
 
+    @withdrawal_gate.opened('test fixture: a stock operation written straight in the database')
     def test_the_database_keeps_the_acknowledgement_to_operations_that_bring_fish_in(self):
         with self.assertRaisesMessage(IntegrityError, 'chk_stock_operations_size_mix_ack_on_arrival'), \
                 transaction.atomic():

@@ -72,7 +72,9 @@ SCREENS = {
         extra_fields={'token': TOKEN, 'count': 'the fish stocked: a line of the stocking operation',
                       'avg_weight_g': 'the average weight stocked: a line of the stocking operation',
                       'over_capacity_ack': "the person's acknowledgement of a unit over capacity: stored on the "
-                                           'stocking operation'},
+                                           'stocking operation',
+                      'size_mix_ack': "the person's acknowledgement of batches of very different sizes in a unit: "
+                                      'stored on the stocking operation'},
     ),
     'StockOperation': Screen(
         create=STOCK_WRITE,

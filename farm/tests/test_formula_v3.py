@@ -57,7 +57,8 @@ class FormulaTests(SimpleTestCase):
     def test_the_band_says_its_seawater_share(self):
         eq = chemistry.water_equilibria(12.0, 3.0, 80.0)
         self.assertEqual(messages.provenance(eq),
-                         'Formula 3: ionic strength 0.0599, from the salinity; 50 % seawater constants.')
+                         'Formula 3: ionic strength 0.0599, from the salinity; 50 % seawater constants (assumes sea '
+                         'water’s ion composition; salt-added fresh water may read low CO₂: say the unit’s water origin).')
 
     def test_dosing_and_the_saturation_follow_the_waters_own_equilibria(self):
         water = deffeyes.Water(12.0, 0.0, 7.0, 80.0, conductivity_25_us_cm=1000.0)

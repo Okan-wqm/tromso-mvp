@@ -1,7 +1,7 @@
 //! The basis NH₃ and CO₂ are judged on (cross review F1; owner decision 2026-11-09): the larger of the basis the limits
 //! were set on (formula 1: the ideal water in fresh water, every activity 1, as Emerson et al. 1975) and formula 3's
 //! activity-corrected value, so formula 3 never understates NH₃ or CO₂ against how the limits were derived.
-use chemcore_core::chemistry::{self as c, Basis};
+use chemcore_core::chemistry::{self as c, Basis, Origin};
 use chemcore_core::fresh::{self as f, Ions};
 use chemcore_core::num::ChemError;
 
@@ -9,6 +9,7 @@ fn conductivity(kappa: f64) -> Ions {
     Ions {
         conductivity_25_us_cm: Some(kappa),
         hardness_mg_l: None,
+        origin: Origin::Unknown,
     }
 }
 

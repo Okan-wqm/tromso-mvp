@@ -1,6 +1,7 @@
 //! I2 (golden v3): the fresh-water path meets the literature and leaves sea water as v1 (the corpus comparison is
 //! farm/tests/test_golden_v3.py).
 use chemcore_core::chemistry as c;
+use chemcore_core::chemistry::Origin;
 use chemcore_core::fresh::{self as f, Ions, Source};
 use chemcore_core::num::ChemError;
 
@@ -20,10 +21,12 @@ fn the_sources_in_order() {
     let both = Ions {
         conductivity_25_us_cm: Some(500.0),
         hardness_mg_l: Some(300.0),
+        origin: Origin::Unknown,
     };
     let hardness = Ions {
         conductivity_25_us_cm: None,
         hardness_mg_l: Some(300.0),
+        origin: Origin::Unknown,
     };
     let source = |salinity, alkalinity, ions| f::ionic_strength(salinity, alkalinity, ions).map(|(_i, source)| source);
     assert_eq!(source(0.0, Some(80.0), both), Ok(Source::Hardness)); // 0.008 against 0.0089
@@ -70,6 +73,7 @@ const WATERS: [(f64, Ions); 4] = [
         Ions {
             conductivity_25_us_cm: None,
             hardness_mg_l: None,
+            origin: Origin::Unknown,
         },
     ),
     (
@@ -77,6 +81,7 @@ const WATERS: [(f64, Ions); 4] = [
         Ions {
             conductivity_25_us_cm: Some(3700.0),
             hardness_mg_l: None,
+            origin: Origin::Unknown,
         },
     ),
     (
@@ -84,6 +89,7 @@ const WATERS: [(f64, Ions); 4] = [
         Ions {
             conductivity_25_us_cm: None,
             hardness_mg_l: Some(300.0),
+            origin: Origin::Unknown,
         },
     ),
     (
@@ -91,6 +97,7 @@ const WATERS: [(f64, Ions); 4] = [
         Ions {
             conductivity_25_us_cm: None,
             hardness_mg_l: None,
+            origin: Origin::Unknown,
         },
     ),
 ];
@@ -172,6 +179,7 @@ fn above_davies_range_it_is_refused() {
     let sea = Ions {
         conductivity_25_us_cm: Some(40000.0),
         hardness_mg_l: None,
+        origin: Origin::Unknown,
     };
     assert_eq!(f::ionic_strength(0.0, Some(80.0), sea), Err(ChemError::OutOfRange));
     assert!(f::equilibria_v3(12.0, 0.0, Some(80.0), sea).is_err());
@@ -286,6 +294,7 @@ fn sea_water_keeps_v1s_constants_and_converts_the_nbs_ph_with_the_temperatures_a
     let ions = Ions {
         conductivity_25_us_cm: Some(500.0),
         hardness_mg_l: None,
+        origin: Origin::Unknown,
     };
     for temp_c in [2.0, 12.0, 25.0] {
         for salinity in [5.0, 10.0, 35.0] {
@@ -312,6 +321,7 @@ fn every_equilibria_says_its_formula_its_ionic_strength_and_where_it_came_from()
     let ions = Ions {
         conductivity_25_us_cm: Some(300.0),
         hardness_mg_l: None,
+        origin: Origin::Unknown,
     };
     let fresh = f::water_equilibria(3, 12.0, 0.0, Some(80.0), ions);
     assert!(fresh.is_ok_and(|eq| eq.formula == 3

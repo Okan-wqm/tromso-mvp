@@ -30,7 +30,7 @@ class TableTests(AlarmsCase):
         self.rule()
         self.sample(5.5)
         self.loop()
-        alarm = Alarm.objects.get()
+        alarm = self.critical()
         services.acknowledge(alarm, self.operator, device='phone-1', app='Suderra 1.0', at=self.now)
         for table in ('alarms', 'alarm_notifications', 'alarm_acknowledgements'):   # the database itself, past PROTECT
             with self.subTest(table=table), connection.cursor() as cursor:
@@ -337,6 +337,6 @@ class CommandTests(AlarmsCase):
         out = StringIO()
         with mock.patch.object(timezone, 'now', return_value=self.now):
             call_command('run_alarms', stdout=out)
-        self.assertIn('1 opened', out.getvalue())
+        self.assertIn('2 opened', out.getvalue())                    # the critical level and the warning level
         self.assertIn('1 queued', out.getvalue())
         self.assertIn('nothing sent: no transport', out.getvalue())

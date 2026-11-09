@@ -22,13 +22,14 @@ class UnitSubjectTests(AlarmsCase):
         self.sample(5.5, point=depth)
         self.sample(5.4, hours=0.5)                          # the middle point critical too: still one alarm
         self.loop()
-        alarm = Alarm.objects.get()
+        alarm = self.critical()                              # one critical alarm, at the unit's middle point
         self.assertEqual((alarm.point, alarm.parameter, alarm.severity), (self.mid1, 'ph', 'critical'))
 
     def test_a_loops_value_is_judged_for_the_units_fish_and_raises_the_units_alarm_only(self):
         self.sample(5.5, point=point_of(self.ras))
         self.loop()
-        self.assertEqual([(alarm.point, alarm.severity) for alarm in Alarm.objects.all()], [(self.mid1, 'critical')])
+        self.assertEqual(sorted((alarm.point.pk, alarm.severity) for alarm in Alarm.objects.all()),
+                         [(self.mid1.pk, 'critical'), (self.mid1.pk, 'warning')])      # the unit's two levels, no loop's
 
 
 class LevelTests(AlarmsCase):

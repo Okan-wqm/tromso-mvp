@@ -425,9 +425,9 @@ def overview_tiles(user):
         today=Sum('amount_kg', filter=Q(date=today)), week=Sum('amount_kg'))
     url = reverse('farm:feeding_records')
     return [
-        {'label': _('Feed today'), 'count': tonnes(kilos['today'] or 0),
+        {'key': 'today', 'label': _('Feed today'), 'count': tonnes(kilos['today'] or 0),
          'url': f'{url}?{urlencode({"from": today.isoformat(), "to": today.isoformat()})}'},
-        {'label': _('Feed, last 7 days'), 'count': tonnes(kilos['week'] or 0),
+        {'key': 'week', 'label': _('Feed, last 7 days'), 'count': tonnes(kilos['week'] or 0),
          'url': f'{url}?{urlencode({"from": first.isoformat(), "to": today.isoformat()})}'},
     ]
 

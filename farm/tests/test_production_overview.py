@@ -1,7 +1,7 @@
 """Production › Overview (config.views.production_home, templates/production_home.html): the panel's landing page at the
-start of a shift. What needs attention first (the critical and warning water points, the critical first, each value with
-where it came from and how old it is; overdue tasks and reports), the day in four lines (stock, feed, water, tasks) each
-saying its source and time, the reports due and the farm's structure, all of it only as far as the person's rights reach.
+start of a shift. The day in four lines (stock, feed, water, tasks) each saying its source and time; what needs attention
+(the critical and warning water points, the critical first, each value with where it came from and how old it is;
+overdue tasks and reports), the reports due and the farm's structure, all of it only as far as the person's rights reach.
 One primary action, Record water sample, for a person who may record one. No KPI tile row."""
 import re
 from datetime import date

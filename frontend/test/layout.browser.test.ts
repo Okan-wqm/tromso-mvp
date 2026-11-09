@@ -26,14 +26,14 @@ const CSS = resolve('static/css');
 const FONTS = resolve('static/fonts');
 const PAGES = resolve('frontend/test/pages');
 const WIDTHS = [390, 1024, 1440];
-const PARTS = ['meal', 'tabs', 'stock', 'water', 'matrix', 'card-en', 'card-nb', 'approve'];
+const PARTS = ['meal', 'tabs', 'stock', 'water', 'matrix', 'card-en', 'card-nb', 'approve', 'overview'];
 
 const part = (name: string): string => `<section id="part-${name}">${readFileSync(join(PAGES, `${name}.html`), 'utf8')}</section>`;
 
 function page(): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>layout</title>
 <link rel="stylesheet" href="/css/fonts.css"><link rel="stylesheet" href="/css/tokens.css"><link rel="stylesheet" href="/css/base.css"><link rel="stylesheet" href="/css/ui.css"><link rel="stylesheet" href="/css/app.css"><link rel="stylesheet" href="/css/components.css">
-<link rel="stylesheet" href="/css/monitor.css"></head><body><div class="shell"><aside class="rail" id="rail"><nav class="rail-nav"><a class="rail-link" id="rail-units" href="#"><svg class="icon"></svg><span class="rail-label">Production units</span></a></nav></aside><div class="console">
+<link rel="stylesheet" href="/css/monitor.css"><link rel="stylesheet" href="/css/tw.css"></head><body><div class="shell"><aside class="rail" id="rail"><nav class="rail-nav"><a class="rail-link" id="rail-units" href="#"><svg class="icon"></svg><span class="rail-label">Production units</span></a></nav></aside><div class="console">
 <header class="topbar"><div class="title-block"><h1>Layout</h1></div></header><main class="content">${PARTS.map(part).join('\n')}</main></div></div></body></html>`;
 }
 
@@ -236,6 +236,37 @@ test('the page layout of the real templates', { skip: BROWSERS.length ? false : 
       }
     });
 
+    await t.test('the production overview: two columns at 1440 px, one at 390 px, nothing spills, in Norwegian', async () => {
+      for (const width of [1440, 390]) {
+        await tab.setViewportSize({ width, height: 900 });
+        await tab.waitForTimeout(50);
+        const layout = await tab.locator('#part-overview').evaluate((part) => {
+          const sections = [...part.querySelectorAll('section')].map((section) => section.getBoundingClientRect());
+          const edge = part.getBoundingClientRect().right;
+          const spill = [...part.querySelectorAll('*')].filter((inner) => inner.getBoundingClientRect().right > edge + 1)
+            .map((inner) => `${inner.tagName}.${inner.className} "${(inner.textContent ?? '').trim().slice(0, 30)}"`);
+          return { lefts: [...new Set(sections.map((box) => Math.round(box.left)))].length, spill };
+        });
+        assert.deepEqual(layout.spill, [], `at ${width} px`);
+        assert.equal(layout.lefts, width === 1440 ? 2 : 1, `the sections stand in ${layout.lefts} columns at ${width} px`);
+      }
+    });
+
+    await t.test('the production overview\'s links and buttons are 48 px targets on a coarse pointer', async () => {
+      const touch = await browser.newContext({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 900 }, reducedMotion: 'reduce' });
+      try {
+        const phone = await touch.newPage();
+        await phone.goto(tab.url());
+        const coarse = await phone.evaluate(() => matchMedia('(pointer: coarse)').matches);
+        assert.ok(coarse, 'the touch context has a coarse pointer');
+        const small = await phone.locator('#part-overview a').evaluateAll((links) => links
+          .map((link) => [(link.textContent ?? '').trim().slice(0, 30), link.getBoundingClientRect().height] as const)
+          .filter(([, height]) => height < 48));
+        assert.deepEqual(small, []);
+      } finally {
+        await touch.close();
+      }
+    });
   } finally {
     await browser.close();
     server.close();

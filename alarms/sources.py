@@ -11,7 +11,10 @@
   that only goes stale never clears it (an alarm does not end by going blind); a unit with no fish or no limit any more
   clears it at once (structural). The timers are the subjects' rows (AlarmSubjectState), so a restart loses none.
 Where an alarm is (its site, its production department) is set when it opens, for the recipient rules."""
+from dataclasses import dataclass
+
 from django.db.models import Q
+from django.utils.translation import gettext as _
 
 from core import audit
 from farm.models import Tank
@@ -123,53 +126,102 @@ def clear_evidence(reading, severity, rules):
     return reading.status != Status.STALE and judged_clear(reading, rules) not in HOLDS[severity]
 
 
+@dataclass
+class Step:
+    """What a subject's row says after one pass: an alarm to raise (with what makes it), or one to clear (with why)."""
+    raise_alarm: bool = False
+    clear_cause: str = None
+
+
+def advance(state, holds, clear_ok, bad_at, severity, rules, now, structural=False):
+    """One pass of a subject's lifecycle on its row (AlarmSubjectState), the one rule every subject follows: while its
+    condition holds, the clear timer stops, the last bad value's time is kept and, without an open alarm, the on-delay runs
+    from the first offending value's time (`bad_at`); once it is over, an open alarm clears after the off-delay while the
+    evidence clears it (`clear_ok`), at once when the subject is no longer judged (`structural`). Returns the Step."""
+    step = Step()
+    if holds:
+        state.clear_since = None
+        state.last_bad_at = max(filter(None, (state.last_bad_at, bad_at)))
+        if state.open_alarm_id is None:
+            state.pending_since = state.pending_since or bad_at
+            step.raise_alarm = now - state.pending_since >= rules.on_delay(severity)
+        return step
+    state.pending_since = None
+    if state.open_alarm_id is None:
+        return step
+    if structural:
+        step.clear_cause = ClearCause.STRUCTURAL
+    elif clear_ok:
+        state.clear_since = state.clear_since or now
+        if now - state.clear_since >= rules.off_delay(severity):
+            step.clear_cause = ClearCause.RETURNED
+    else:
+        state.clear_since = None
+    return step
+
+
+def _apply(state, step, now, make, cause=None):
+    """Writes what a Step says: raises the alarm `make()` opens, or clears the open one; (opened, cleared)."""
+    if step.raise_alarm:
+        state.open_alarm, state.pending_since = make(), None
+        return 1, 0
+    if step.clear_cause is not None:
+        services.clear(state.open_alarm, now, cause or step.clear_cause)
+        state.open_alarm, state.clear_since = None, None
+        return 0, 1
+    return 0, 0
+
+
+def _states(keys):
+    return {state.key: state for state in AlarmSubjectState.objects.select_for_update(of=('self',)).select_related(
+        'open_alarm').filter(key__in=keys)}
+
+
+def _save(state, before):
+    if (state.open_alarm_id, state.pending_since, state.clear_since, state.last_bad_at) != before:
+        state.save()
+
+
+SENSORS_FAILED = 'sensors_failed'
+
+
 def water(now, rules):
-    """Raises and clears the water limits' levels at `now` (alarms.rules `rules`): (opened, cleared)."""
+    """Raises and clears the water limits' levels at `now` (alarms.rules `rules`), and the system alarm of live sources that
+    cannot be read: (opened, cleared). While they cannot be read nothing clears: a sample alone must never end an alarm a
+    sensor raised (alarm plan, defect 3)."""
     # The subjects are the live units, each through the point that stands for it (its middle point: A9.1, never an inlet);
     # a depth point's or the loop's value reaches it as the unit's own worst fresh value, judged for its fish. One read.
     found_water = water_read.unit_water(list(Tank.objects.all()), now)
+    failed = any(found.sensors_failed for found in found_water.values())
     readings = {}
     for found in found_water.values():
         if found.point is not None:
             for slot, reading in _slots(found).items():
                 for severity in HOLDS:
                     readings[f'water:{found.point.pk}:{slot}:{severity}'] = (found.point, severity, reading)
-    states = {state.key: state for state in AlarmSubjectState.objects.select_for_update(of=('self',)).select_related(
-        'open_alarm').filter(key__in=readings)}
+    system_key = f'system:{SENSORS_FAILED}'
+    states = _states([*readings, system_key])
     opened = cleared = 0
     for key, (point, severity, reading) in readings.items():
         state = states.get(key) or AlarmSubjectState(key=key)
         before = (state.open_alarm_id, state.pending_since, state.clear_since, state.last_bad_at)
-        decider = reading.worse or reading
-        if reading.judged in HOLDS[severity]:
-            state.clear_since = None
-            state.last_bad_at = max(filter(None, (state.last_bad_at, decider.at)))
-            if state.open_alarm_id is None:
-                state.pending_since = state.pending_since or decider.at
-                if now - state.pending_since >= rules.on_delay(severity):
-                    state.open_alarm = services.open_alarm(
-                        at=now, severity=severity, summary=_summary(point, reading), source=Source.WATER_LIMIT,
-                        point=point, parameter=reading.code, **_where(point))
-                    state.pending_since = None
-                    opened += 1
-        else:
-            state.pending_since = None
-            if state.open_alarm_id is not None:
-                cause = None
-                if reading.judged in UNJUDGED:
-                    cause = ClearCause.STRUCTURAL
-                elif clear_evidence(reading, severity, rules):
-                    state.clear_since = state.clear_since or now
-                    if now - state.clear_since >= rules.off_delay(severity):
-                        cause = ClearCause.RETURNED
-                else:
-                    state.clear_since = None
-                if cause is not None:
-                    services.clear(state.open_alarm, now, cause)
-                    state.open_alarm, state.clear_since = None, None
-                    cleared += 1
-        if (state.open_alarm_id, state.pending_since, state.clear_since, state.last_bad_at) != before:
-            state.save()
+        step = advance(state, reading.judged in HOLDS[severity],
+                       not failed and clear_evidence(reading, severity, rules), (reading.worse or reading).at, severity,
+                       rules, now, structural=reading.judged in UNJUDGED)
+        found = _apply(state, step, now, lambda: services.open_alarm(
+            at=now, severity=severity, summary=_summary(point, reading), source=Source.WATER_LIMIT, point=point,
+            parameter=reading.code, **_where(point)))
+        opened, cleared = opened + found[0], cleared + found[1]
+        _save(state, before)
+    state = states.get(system_key) or AlarmSubjectState(key=system_key)
+    before = (state.open_alarm_id, state.pending_since, state.clear_since, state.last_bad_at)
+    step = advance(state, failed, not failed, now, Severity.CRITICAL, rules, now)
+    with audit.source_language():
+        summary = str(_('The live water values (the sensors) cannot be read: alarms are not cleared until they can.'))
+    found = _apply(state, step, now, lambda: services.open_alarm(
+        at=now, severity=Severity.CRITICAL, summary=summary, source=Source.SYSTEM, parameter=SENSORS_FAILED),
+        cause=ClearCause.RESTORED)
+    _save(state, before)
     # A subject read no more (its point made inactive, its owner deleted, the parameter gone) keeps its alarm open: nothing
     # says it is over, so it stays on the page until a person sees it.
-    return opened, cleared
+    return opened + found[0], cleared + found[1]

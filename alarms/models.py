@@ -34,6 +34,7 @@ MAX_LEVEL = LEVEL_BOUNDS[1]
 class Source(models.TextChoices):
     SENSOR_RULE = 'sensor_rule', _('Sensor alarm rule')
     WATER_LIMIT = 'water_limit', _('Water limit')
+    SYSTEM = 'system', _('The alarm system itself')
 
 
 class Channel(models.TextChoices):
@@ -84,7 +85,8 @@ class Alarm(models.Model):
             models.CheckConstraint(condition=Q(severity__in=Severity.values), name='chk_alarms_severity'),
             models.CheckConstraint(
                 condition=Q(source=Source.SENSOR_RULE, sensor_event__isnull=False, point__isnull=True, parameter='')
-                | (Q(source=Source.WATER_LIMIT, sensor_event__isnull=True, point__isnull=False) & ~Q(parameter='')),
+                | (Q(source=Source.WATER_LIMIT, sensor_event__isnull=True, point__isnull=False) & ~Q(parameter=''))
+                | (Q(source=Source.SYSTEM, sensor_event__isnull=True, point__isnull=True) & ~Q(parameter='')),
                 name='chk_alarms_shape'),
         ]
 

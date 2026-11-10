@@ -5812,6 +5812,9 @@ msgstr "Ekipman kendisinin parçası olamaz."
 msgid "Equipment that fits none of the other types."
 msgstr "Diğer türlerin hiçbirine uymayan ekipman."
 
+msgid "Erased on request"
+msgstr "Talep üzerine silindi"
+
 msgid "Error"
 msgstr "Hata"
 

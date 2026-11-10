@@ -96,7 +96,8 @@ def digest(text):
     a value changed; two equal digests say "probably the same value" (32 bits: sure enough for one change, not across
     a whole log). Whoever holds the key and the log can test a guess, and so recover a short value such as a phone
     number by trying them all; without the key that cannot be done from the stored rows, and no page prints a digest
-    (AuditLog.shown_changes), so nobody tests a guess through the application either. The one digest of the log:
+    (AuditLog.shown_changes; the database viewer masks the log's `changes`), so nobody tests a guess through the
+    application either: a digest is read only with direct access to the database. The one digest of the log:
     whatever keeps a private value out of it calls this."""
     return hmac.new(digest_key().encode(), str(text).encode(), hashlib.sha256).hexdigest()[:8]
 
@@ -230,4 +231,7 @@ MIGRATION_WORDS = (
     gettext_noop('Roles made private with a phone they could not be told apart from'),
     gettext_noop('Contact lists made private whole'),
     gettext_noop('Entries whose contact list was made private whole'), gettext_noop('Role or phone'),
+    # the label of the row the erasure procedure writes on a task (docs/erasure.md, step 6): not 'Note', which is
+    # a private label of a task and would read as a plain value left behind (core.W004)
+    gettext_noop('Erased on request'),
 )

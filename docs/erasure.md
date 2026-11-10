@@ -32,7 +32,10 @@ is not set). What it is and is not:
   trying them all against one digest took the reviewer 141 seconds on a desktop and left exactly one match. An e-mail
   from a known list is instant. Long free text cannot be recovered so, but a guessed sentence can be confirmed.
 - **Without the key** the stored digests say nothing, and **no page prints a digest**: the activity log and the History
-  tab of a record show "Private text", so nobody tests a guess through the application (typing a value and comparing).
+  tab of a record show "Private text", and the database viewer masks the log's `changes` column (cells, search, sort,
+  filter and CSV export), so nobody tests a guess through the application (typing a value and comparing). **Who can see
+  a digest:** only someone with direct access to the database or to a dump of it (the database administrator, whoever
+  holds a backup). That is accepted: the same person reads the tables the values themselves are in.
 - Two equal digests mean **probably the same value** (32 bits: reliable for "this field changed in this edit", not for
   "the same value" across a whole log; a false match among 10,000 different values has about a 1 % chance).
 - **Cutting the link for good** is rotating the digests' key: every digest written before stops comparing with
@@ -41,14 +44,19 @@ is not set). What it is and is not:
 
 **Who reads the log.** The activity log page needs the Activity log right (`core.view_auditlog`), which the platform
 admin grants. A record's **History tab** (its last 20 log rows) is read by whoever may **edit** that record, without that
-right: a second audience. Both show the same text, never a digest. The database viewer (the platform admin only) shows
-the stored rows, digests included.
+right: a second audience. Both show the same text, never a digest. The database viewer (the platform admin only) lists
+the log's rows with `changes` masked: who, when and which record, not what changed.
 
 **The rows written before** were converted by migration `core/0011_private_log_values`, with the trigger set aside for
 those updates only, inside its transaction, and set back; who, when and which record were not touched. An old contact
 list was one sentence; it was taken apart so that only the e-mail and the phone were hidden and the name, the role, the
-primary flag and who was added or taken off stayed. Where a role and a phone could not be told apart, both became one
-private part beside the name; a sentence that could not be taken apart at all became one private value. Both are
+primary flag and who was added or taken off stayed. It is read with matched brackets (a role such as "Service manager
+(24 h line)" or a phone such as "(0532) 123 45 67" is read as what it is) and from the right-hand end: the e-mail is
+what the contact form itself accepts as an address, the phone is digits in a phone's form. No address and no number of
+five digits or more is left in plain text unless it stood in the role, left of the e-mail. Where a role and a phone
+could not be told apart (a number written with words, an address typed into the role), both became one private part
+beside the name; a sentence whose brackets do not balance, or with a name that holds an address or a number, became one
+private value. Words without a number typed into the phone box ("ask reception") stay in plain text as a role. Both are
 counted in the migration's output and in its own log row (record type "activity log"), which lists the entries of the
 second kind. **The conversion is one-way**: nothing restores the words but a backup taken before it (see Backups).
 
@@ -81,7 +89,8 @@ wrote is lost by a reopening. Look for a person's words in `task_notes` as well 
 Step 6, in one transaction, for the rows the DPO names (the checks on both tables want words, so the text is replaced,
 not emptied; a completion note may be emptied). The last statement writes the log's row, as every other direct write in
 this system does (the shape of `core/migrations/_log.system_entry`): the task, that it was erased on request, never the
-words.
+words. Its label is `Erased on request`, not `Note`: a task's `Note` is a private label, and a plain sentence under it
+would be reported by the check core.W004 as a value left behind and turned into "Private text" by the command it names.
 
 ```sql
 BEGIN;
@@ -90,7 +99,7 @@ UPDATE tasks SET completion_note = '' WHERE id IN (...);
 UPDATE tasks SET cancel_reason = '[Erased on request, 2026-11-10]' WHERE id IN (...);
 INSERT INTO audit_log (id, created_at, user_name, action, entity_type, entity_id, entity_label, changes, severity)
 SELECT gen_random_uuid(), clock_timestamp(), 'system', 'update', 'task', id::text, left(title, 255),
-       '{"Note": [null, "Free text erased on request (DPO instruction of 2026-11-10); carried out by <name>."]}'::jsonb,
+       '{"Erased on request": [null, "Free text erased on request (DPO instruction of 2026-11-10); carried out by <name>."]}'::jsonb,
        'normal'
 FROM tasks WHERE id IN (...);        -- every task touched above
 COMMIT;

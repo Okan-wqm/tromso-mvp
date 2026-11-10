@@ -5800,6 +5800,9 @@ msgstr "Utstyr kan ikke være en del av seg selv."
 msgid "Equipment that fits none of the other types."
 msgstr "Utstyr som ikke passer i noen av de andre typene."
 
+msgid "Erased on request"
+msgstr "Slettet på forespørsel"
+
 msgid "Error"
 msgstr "Feil"
 

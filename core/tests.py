@@ -400,9 +400,8 @@ class UserTests(AdminTestCase):
         self.client.post(reverse('password_reset'), {'email': 'kari@example.com'})
         self.assertEqual(len(mail.outbox), 1)
 
-    def test_email_is_required_and_unique(self):
-        response = self.client.post(reverse('core:user_create'), user_data(email=''))
-        self.assertIn('email', response.context['form'].errors)
+    def test_email_is_unique(self):
+        # (it may be left out: core.tests_account_mail, a user without an address)
         response = self.client.post(reverse('core:user_create'), user_data(username='other', email='ROOT@example.com'))
         self.assertEqual(response.context['form'].errors['email'], ['Another user already uses this email.'])
         self.assertEqual(get_user_model().objects.count(), 1)

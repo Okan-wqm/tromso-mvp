@@ -79,6 +79,14 @@ class DraftTests(ReportPagesTestCase):
         report.refresh_from_db()
         self.assertEqual((report.contact_phone, report.notes, report.kind, report.site, report.version),
                          ('+47 12345678', 'Checked', 'smolt', self.hatchery, 2))
+        # the contact's e-mail and telephone are private in the log (owner decision F-059); who the contact is stays
+        from core.audit import private
+        made, changed = AuditLog.objects.filter(entity_id=str(report.pk)).order_by('created_at')
+        self.assertEqual((made.changes['Contact e-mail'], made.changes['Contact telephone'],
+                          made.changes['Contact person']),
+                         ([None, private('kari@example.com')], [None, private('+47 98989898')], [None, 'Kari Nord']))
+        self.assertEqual(changed.changes['Contact telephone'], [private('+47 98989898'), private('+47 12345678')])
+        self.assertNotIn('kari@example.com', str(list(AuditLog.objects.values_list('changes', flat=True))))
         self.client.post(reverse('reports:report_delete', args=[report.pk]))
         self.assertTrue(Report.all_objects.get(pk=report.pk).is_deleted)
         self.assertFalse(Report.objects.exists())

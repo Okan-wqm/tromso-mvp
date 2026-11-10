@@ -15,7 +15,7 @@ from django.db import models
 from django.db.models import Max
 from django.utils import translation
 from django.utils.text import capfirst
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _, gettext_noop
 
 from .models import AuditLog
 
@@ -219,3 +219,15 @@ def record_update(user, instance, before, after, **kwargs):
 
 def record_delete(user, instance, **kwargs):
     return record(user, AuditLog.Action.DELETE, instance, **kwargs)
+
+
+# The words a data migration writes into the log (core/migrations/_private.py: the record type of the conversion's own
+# row, the labels of its counts, what a contact's unsure part is called). The catalogs are not read from migrations,
+# so they are marked here; core/tests_private_log.py holds the two lists together.
+MIGRATION_WORDS = (
+    gettext_noop('activity log'), gettext_noop('Entries converted'), gettext_noop('Values made private'),
+    gettext_noop('Contact e-mails and phones made private, the contact kept'),
+    gettext_noop('Roles made private with a phone they could not be told apart from'),
+    gettext_noop('Contact lists made private whole'),
+    gettext_noop('Entries whose contact list was made private whole'), gettext_noop('Role or phone'),
+)

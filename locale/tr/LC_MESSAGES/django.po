@@ -4727,8 +4727,14 @@ msgstr "İletişim"
 msgid "Contact e-mail"
 msgstr "İletişim e-postası"
 
+msgid "Contact e-mails and phones made private, the contact kept"
+msgstr "Özel yapılan kişi e-postaları ve telefonları, kişi korundu"
+
 msgid "Contact email"
 msgstr "İletişim e-postası"
+
+msgid "Contact lists made private whole"
+msgstr "Bütünüyle özel yapılan kişi listeleri"
 
 msgid "Contact person"
 msgstr "İletişim kişisi"
@@ -5780,6 +5786,12 @@ msgstr "Burada girilen"
 
 msgid "Entries"
 msgstr "Kayıtlar"
+
+msgid "Entries converted"
+msgstr "Dönüştürülen kayıtlar"
+
+msgid "Entries whose contact list was made private whole"
+msgstr "Kişi listesi bütünüyle özel yapılan kayıtlar"
 
 msgid "Epizootic haematopoietic necrosis (EHN)"
 msgstr "Epizootik hematopoietik nekroz (EHN)"
@@ -11318,8 +11330,14 @@ msgstr "Rol"
 msgid "Role name"
 msgstr "Rol adı"
 
+msgid "Role or phone"
+msgstr "Rol veya telefon"
+
 msgid "Roles"
 msgstr "Roller"
+
+msgid "Roles made private with a phone they could not be told apart from"
+msgstr "Ayırt edilemediği bir telefonla birlikte özel yapılan roller"
 
 msgid "Roles: a name and the permissions it allows."
 msgstr "Roller: bir ad ve izin verdiği izinler."
@@ -15389,6 +15407,9 @@ msgstr "Değerlerin kaynağı"
 msgid "Values in the open run"
 msgstr "Açık serideki değerler"
 
+msgid "Values made private"
+msgstr "Özel yapılan değerler"
+
 msgid "Values the chart is drawn from"
 msgstr "Grafiğin çizildiği değerler"
 
@@ -16293,6 +16314,9 @@ msgstr "salmonid bulunan bir deniz lokasyonu (yükümlülük balığı izler, ü
 
 msgid "a site with cleaner-fish broodstock"
 msgstr "temizleyici balık damızlığı olan bir lokasyon"
+
+msgid "activity log"
+msgstr "etkinlik günlüğü"
 
 msgid "after the count"
 msgstr "sayımdan sonra"

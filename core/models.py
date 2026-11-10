@@ -243,8 +243,8 @@ class AuditLog(models.Model):
                 nested = bool(value) and all(isinstance(item, list) for item in value)
                 return ('; ' if nested else ', ').join(shown(item) for item in value)
             if isinstance(value, dict):
-                words = gettext(value['msgid'])
-                return f'{gettext(value["of"])}: {words}' if value.get('of') else words
+                msgid, what = value['msgid'], value.get('of')      # by name: the catalog extraction reads a literal here
+                return f'{gettext(what)}: {gettext(msgid)}' if what else gettext(msgid)
             return value
         return [(gettext(label), shown(old), shown(new)) for label, (old, new) in self.changes.items()]
 

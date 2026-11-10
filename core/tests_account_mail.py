@@ -393,18 +393,40 @@ class InvitationRecordTests(AccountMailCase):
         self.assertEqual(mail.outbox, [])
         self.assertEqual(stored('user', 'kind', 'address', 'error', 'sent_at'),
                          [(kari.pk, 'invitation', 'kari@example.com', REFUSED, None)])
-        self.assertEqual(invite_rows(), [invited(), not_sent(REFUSED)])
+        # the activity log names the kind of failure; the mail server's words are for the platform admin (below)
+        self.assertEqual(invite_rows(), [invited(), not_sent('OSError')])
         self.assertEqual(AuditLog.objects.filter(action='create', entity_type='user').count(), 1)
         row = row_of(self.users(), 'kari')
         self.assertIn('Invitation not sent', row)
         self.assertIn(REFUSED, row)
         self.assertIn('Send invitation again', row)
 
+    @override_settings(MAILERS=REFUSING)
+    def test_the_mail_servers_words_are_not_for_every_reader_of_the_activity_log(self):
+        # (review R4) a mail server's reply can name relay hosts and its account: the users tab and the database
+        # viewer, the platform admin's, show it; the activity log, which a role can be given, does not
+        with self.assertLogs('core.accountmail', 'ERROR'):
+            self.client.post(reverse('core:user_create'), user_data())
+        reader = get_user_model().objects.create_user('ola', 'ola@example.com', 'x')
+        role = Group.objects.create(name='Reads the log')
+        role.permissions.set(access.permissions().filter(codename='view_auditlog'))
+        reader.groups.add(role)
+        self.client.force_login(reader)
+        log = self.client.get(reverse('core:activity_log'))
+        self.assertEqual(log.status_code, 200)
+        self.assertContains(log, 'Not sent')
+        self.assertContains(log, 'OSError')
+        self.assertNotContains(log, 'no mail server')
+        self.assertNotIn('no mail server', json.dumps(list(AuditLog.objects.values_list('changes', flat=True))))
+        self.assertIn(REFUSED, row_of(self.users(), 'kari'))
+
     @override_settings(MAILERS=SILENT)
     def test_a_mail_server_that_takes_nothing_counts_as_not_sent(self):
         with self.assertLogs('core.accountmail', 'ERROR'):
             self.client.post(reverse('core:user_create'), user_data())
         self.assertEqual(outcomes(), ['The mail server took no message.'])
+        # the platform's own sentence is no mail server's: the log has it, as a value it can show in each language
+        self.assertEqual(invite_rows(), [invited(), not_sent({'msgid': 'The mail server took no message.'})])
 
     @override_settings(PUBLIC_BASE_URL='')
     def test_without_a_public_address_nothing_is_sent_and_the_row_says_so(self):
@@ -431,7 +453,7 @@ class InvitationRecordTests(AccountMailCase):
         self.assertIn('Hi Kari Nordmann,', error)                                # the mail's words are in it,
         self.assertNotRegex(error, r'[0-9a-z]{6}-[0-9a-f]{32}')                  # its link's token is not
         self.assertNotIn(kari.password, error)
-        self.assertNotRegex(json.dumps(invite_rows()), r'[0-9a-z]{6}-[0-9a-f]{32}')
+        self.assertEqual(invite_rows()[1][4]['Reason'], [None, 'RuntimeError'])        # the log: its kind alone
 
     def test_a_user_without_an_address_is_created_and_the_row_says_what_then(self):
         response = self.client.post(reverse('core:user_create'), user_data(email=''), follow=True)
@@ -559,7 +581,7 @@ class ResendTests(AccountMailCase):
         self.client.post(self.url)
         self.assertEqual(len(mail.outbox), 2)
         self.assertEqual(outcomes(), ['sent', REFUSED, 'sent'])
-        self.assertEqual(invite_rows(), [invited(), invited(), not_sent(REFUSED), invited()])
+        self.assertEqual(invite_rows(), [invited(), invited(), not_sent('OSError'), invited()])
         self.assertIn('Invitation sent', row_of(self.client.get(reverse('core:user_list')), 'kari'))
 
     def test_it_goes_to_the_address_the_account_has_now(self):

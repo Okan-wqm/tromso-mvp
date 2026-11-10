@@ -1,5 +1,6 @@
 {% load i18n %}{% autoescape off %}{% blocktrans trimmed %}Hi {{ name }},{% endblocktrans %}
 
+{% blocktrans trimmed %}Your username is {{ username }}.{% endblocktrans %}
 {% trans "Open this link to set a new password:" %}
 {{ link }}
 

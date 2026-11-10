@@ -127,6 +127,10 @@ SHAPES = [
      [['Kari (Vet)', E('kari@example.com'), P('55 12 34 56, 90 00 00 00')]]),
     ('Kari (kari@example.com, ask reception)', [['Kari', E('kari@example.com'), P('ask reception')]]),
     ('Kari (Vet, 55 12 34 56, 90 00 00 00)', [['Kari (Vet)', P('55 12 34 56, 90 00 00 00')]]),
+    # an address is whatever the contact form takes as one (review R20): these two pass its e-mail field
+    ('Kari (kari@localhost)', [['Kari', E('kari@localhost')]]),
+    ('Kari (Vet, kari@localhost, 98989898)', [['Kari (Vet)', E('kari@localhost'), P('98989898')]]),
+    ('Kari ("a,b"@example.com, +47 98989898)', [['Kari', E('"a,b"@example.com'), P('+47 98989898')]]),
     # words without a number typed into the phone box cannot be told from a role, and hold no number: they stay
     ('Kari (ask reception)', [['Kari (ask reception)']]),
     ('Kari (Vet, ask reception)', [['Kari (Vet, ask reception)']]),
@@ -191,6 +195,22 @@ class ContactSentenceTests(TestCase):
                 else:
                     self.assertEqual(made, expected)
                     self.assertEqual(kind, 'part' if 'Role or phone' in str(expected) else 'kept')
+
+    def test_the_parser_and_the_contact_form_agree_on_what_an_address_is(self):
+        """One definition (review R20): what the form's e-mail field accepts is what the conversion reads as the
+        e-mail, so an address the form took is never left standing as a role."""
+        from django import forms
+        from farm.models import SiteContact
+        field = SiteContact._meta.get_field('email').formfield()
+        for text in ('kari@example.com', 'kari@localhost', '"a,b"@example.com', 'kari@bedrift-æøå.no',
+                     'kari.nordmann+farm@example.co.uk', 'Vet', 'see post@firma.no', 'kari@', '@example.com',
+                     'kari@example', 'a@b@c.no', '+47 98989898', 'Head of fish health', ''):
+            try:
+                field.clean(text)
+                taken = bool(text)
+            except forms.ValidationError:
+                taken = False
+            self.assertEqual(_private.is_email(text), taken, text)
 
     def test_the_real_lists_keep_every_name_and_role_and_hide_every_address_and_number(self):
         for sentence, kept in zip(REAL, REAL_KEPT):

@@ -122,28 +122,48 @@ class ForgottenSettingTests(SettingsTestCase):
                 with self.assertRaisesMessage(IntegrityError, 'chk_scheduling_forgotten_after'), transaction.atomic():
                     cursor.execute('UPDATE scheduling_settings SET forgotten_after_hours = %s', [value])
 
-    def test_a_limit_shorter_than_an_active_shift_is_refused_naming_the_shift(self):
-        """A person on a 14-hour shift must not count as forgotten before it ends: they could not clock out."""
+    def test_a_limit_shorter_than_an_active_shift_and_its_punch_window_is_refused_naming_the_shift(self):
+        """A person on a 14-hour shift who clocked in when the punch window opened (120 minutes before it) must not
+        count as forgotten before the shift ends: they could not clock out (review R8)."""
         Shift.objects.create(name='Long day', code='LONG', starts_at=time(6), ends_at=time(20))
         Shift.objects.create(name='Old watch', code='WATCH', starts_at=time(0), ends_at=time(23), status='inactive')
-        errors = self.post(forgotten_after_hours='13').context['form'].errors
+        said = ('The shift Long day (LONG) and the 120 minutes a person may clock in before it are longer than %s '
+                'hours: a person on it would count as forgotten before it ends.')
+        for hours in ('13', '14', '15'):
+            errors = self.post(forgotten_after_hours=hours).context['form'].errors
+            self.assertEqual(errors, {'forgotten_after_hours': [said % hours]}, hours)
+        self.assertEqual(self.post(forgotten_after_hours='16').status_code, 302)      # the shift and its window: allowed
+        row = SchedulingSettings.objects.get()
+        self.assertEqual(row.forgotten_after_hours, 16)
+        # the window counts too: widening it alone is refused the same way
+        errors = self.post(forgotten_after_hours='16', punch_window_minutes='180', version=str(row.version)
+                           ).context['form'].errors
         self.assertEqual(errors, {'forgotten_after_hours': [
-            'The shift Long day (LONG) is longer than 13 hours: a person on it would count as forgotten before it '
-            'ends.']})
-        self.assertEqual(self.post(forgotten_after_hours='14').status_code, 302)      # as long as the shift: allowed
-        self.assertEqual(SchedulingSettings.objects.get().forgotten_after_hours, 14)
+            'The shift Long day (LONG) and the 180 minutes a person may clock in before it are longer than 16 hours: a '
+            'person on it would count as forgotten before it ends.']})
 
-    def test_a_shift_longer_than_the_limit_is_refused_until_the_limit_is_raised(self):
-        response = self.client.post(reverse('hr:shift_create'), shift_data(starts_at='06:00', ends_at='23:00'))
-        self.assertEqual(response.context['form'].errors, {'ends_at': [
-            'This shift is longer than the 16 hours after which a clock-in counts as forgotten (Scheduling settings): '
-            'raise that limit first.']})
+    def test_a_shift_too_long_for_the_limit_is_refused_until_the_limit_is_raised(self):
+        said = ('This shift and the 120 minutes a person may clock in before it are longer than the 16 hours after '
+                'which a clock-in counts as forgotten (Scheduling settings): raise that limit first.')
+        for ends_at in ('23:00', '20:01'):                                   # 17 hours; 14 hours 1 minute and the window
+            response = self.client.post(reverse('hr:shift_create'), shift_data(starts_at='06:00', ends_at=ends_at))
+            self.assertEqual(response.context['form'].errors, {'ends_at': [said]}, ends_at)
         self.assertFalse(Shift.objects.exists())
         self.assertEqual(self.client.post(reverse('hr:shift_create'), shift_data(
             starts_at='06:00', ends_at='23:00', status='inactive')).status_code, 302)   # not planned: nobody is on it
-        SchedulingSettings.objects.update(forgotten_after_hours=17)
+        SchedulingSettings.objects.update(forgotten_after_hours=19)
         self.assertEqual(self.client.post(reverse('hr:shift_create'), shift_data(
             code='long', starts_at='06:00', ends_at='23:00')).status_code, 302)
+
+    def test_with_settings_the_forms_accept_an_early_clock_in_is_never_forgotten_before_the_shift_ends(self):
+        """The reviewer's case: a 06:00-20:00 shift, the limit the least the forms allow for it (16), a clock-in when
+        the punch window opens (04:00). At 20:00 the person is still present, not forgotten: they can clock out."""
+        long_day = Shift.objects.create(name='Long day', code='LONG', starts_at=time(6), ends_at=time(20))
+        self.assertEqual(self.post(forgotten_after_hours='16').status_code, 302)
+        row = SchedulingSettings.objects.get()
+        standing = rules.status((at(6), at(20)), [(at(4), None)], False, at(20), long_day.grace_minutes,
+                                row.absent_after_minutes, row.punch_window_minutes, row.forgotten_after_hours)
+        self.assertEqual(standing.state, 'present')
 
     def test_the_setting_speaks_each_language(self):
         from core.models import Profile

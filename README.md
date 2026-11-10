@@ -637,7 +637,10 @@ after them (reason "other", the notes say why: a cage of cleaner fish alone is n
 (mortalities, weighings, the escape, the cages' feedings) was booked in the old cages, and the stock refuses a transfer
 that would leave them without their fish. One transaction, locks in the lock order, checked before it commits (the
 cages, `check_stock` finding nothing new); run again it does nothing; `--dry-run` only reads, in a read-only
-transaction. The run needs the database migrated.
+transaction. The run needs the database migrated. The dry run also reads a database not migrated yet: the units and
+batches of the plan are read with the columns the database holds (`stored`: a column a pending migration adds to their
+tables, the unit's water origin of farm 0039 for one, is left out, whichever it is), and the stock without the opening
+balances.
 
 **Batch details.** A batch's year class (årsklasse) and whether its fish are farmed or wild-caught are what the reports
 ask of a batch and what fish stocked before they were asked for do not have; stock is never edited, so the drawer's batch

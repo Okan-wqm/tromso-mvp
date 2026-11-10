@@ -396,7 +396,7 @@ class ActivityLogLanguageTests(TestCase):
         self.assertEqual(created.changes['Status'], [None, message('Under maintenance')])
         self.assertEqual(created.changes['Site type'], [None, message('Hatchery')])
         self.assertEqual(edited.changes, {'Status': [message('Under maintenance'), message('Closed')]})
-        self.assertEqual(contacts.changes, {'Contacts': [None, 'Kari (Vet, primary)']})
+        self.assertEqual(contacts.changes, {'Contacts': [None, [['Kari (Vet, primary)']]]})
 
     def test_the_page_shows_them_in_the_readers_language_but_not_a_persons_own_text(self):
         self.in_language('en')

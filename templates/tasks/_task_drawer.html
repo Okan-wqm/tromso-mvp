@@ -62,7 +62,7 @@
       {% if drawer_notes %}
       <ul class="op-history">
         {% for note in drawer_notes %}
-        <li class="op-entry"><p class="op-head"><strong>{{ note.author|person }}</strong> <time datetime="{{ note.created_at|date:'c' }}">{{ note.created_at|site_clock:task.place_site|date:"DATETIME_FORMAT" }}</time></p><p class="task-note">{{ note.body|linebreaksbr }}</p></li>
+        <li class="op-entry"><p class="op-head"><strong>{{ note.author|person }}</strong> <time datetime="{{ note.created_at|date:'c' }}">{{ note.created_at|site_clock:task.place_site|date:"DATETIME_FORMAT" }}</time>{% if note.kind == "completion_note" %} <span class="muted">{% trans "Completion note, kept when the task was reopened" %}</span>{% elif note.kind == "cancel_reason" %} <span class="muted">{% trans "Reason for cancelling, kept when the task was reopened" %}</span>{% endif %}</p><p class="task-note">{{ note.body|linebreaksbr }}</p></li>
         {% endfor %}
       </ul>
       {% else %}

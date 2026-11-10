@@ -22,11 +22,11 @@ AFTER = [('farm', '0034_species_max_weight_ratio')]
 
 
 class SizeLimitSetupTests(SpeciesTestCase):
-    def test_a_new_species_is_offered_2_and_the_limit_is_saved_changed_cleared_and_logged(self):
+    def test_a_new_species_limit_is_typed_saved_changed_cleared_and_logged(self):
         form = self.client.get(reverse('farm:species_create'), headers={'X-Modal': '1'})
-        self.assertEqual(form.context['form']['max_weight_ratio'].value(), D(2))
+        self.assertIsNone(form.context['form']['max_weight_ratio'].value())     # empty: the offer of its kind
         self.assertContains(form, 'data-tab="stocking">Stocking</button>')
-        self.assertContains(form, 'Empty: no check.')
+        self.assertContains(form, 'Left empty on a new species: 2 for a production species')
         self.create(max_weight_ratio='2')
         species = Species.objects.get()
         self.assertEqual(stored(species, 'max_weight_ratio'), (D('2.00'),))

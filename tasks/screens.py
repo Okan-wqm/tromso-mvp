@@ -24,8 +24,11 @@ SCREENS = {
         edit=no('part of the task\'s record, never edited'),
         delete=no('part of the task\'s record, never removed'),
         read=(TaskResource,),
-        note="Shown in the task's drawer.",
+        note="Shown in the task's drawer. Reopening a task keeps its completion note and its reason for cancelling "
+             "here, by their writer.",
         forms=(NoteForm,),
-        columns={'task': system('the task the note is added to'), 'author': system('the person who adds it')},
+        columns={'task': system('the task the note is added to'), 'author': system('the person who adds it'),
+                 'kind': system('note for a note added in the drawer; completion_note or cancel_reason for the words '
+                                'a reopening took off the task and kept here (tasks.services.reopen)')},
     ),
 }

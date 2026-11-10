@@ -289,7 +289,7 @@ The account e-mails the platform sent, or tried to: the invitation a new person 
 - **how it works**: Written when a mail is sent: creating a user and "Send invitation" on the users tab send an invitation, "Forgot your password?" a reset. Never the link or its token.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › account_mails
 - **constraints**: chk_account_mails_kind (check)
-- **tests that mention it**: `core/tests_account_mail.py`
+- **tests that mention it**: `core/tests_account_mail.py`, `core/tests_account_mail_worker.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -311,9 +311,9 @@ Who did what to which record, with old and new values.
 - **delete**: none, by design: append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin
 - **read**: core.views.activity_log (`/activity/`)
 - **how it works**: A record's own rows are also shown on the History tab of its edit page.
-- **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log
+- **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log (never shown: changes)
 - **constraints**: chk_audit_log_severity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 92 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 101 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -391,7 +391,7 @@ What the platform keeps about a person beyond Django's account.
 - **how it works**: Today the profile holds the language only: chosen with the language switcher, or on the Users tab.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › profiles
 - **forms**: `UserForm`
-- **tests that mention it**: `core/test_languages.py`, `core/tests_account_mail.py`, `farm/tests/test_calculator.py` and 28 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_account_mail.py`, `core/tests_matrix_notes.py` and 31 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -657,7 +657,7 @@ A group of fish that came in together: its identity and origin, no counts.
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › batches
 - **forms**: `BatchDetailsForm`, `BatchInputForm`, `OpeningBalanceForm`
 - **constraints**: uq_batches_code (unique: code); chk_batches_code (check); chk_batches_stage (check); chk_batches_origin (check); chk_batches_supplier (check); chk_batches_provenance (check); chk_batches_origin_provenance (check); chk_batches_year_class (check); chk_batches_harvest_after_input (check)
-- **tests that mention it**: `core/test_datamap.py`, `farm/tests/test_batch_details.py`, `farm/tests/test_cleaner_fish.py` and 14 more
+- **tests that mention it**: `core/test_datamap.py`, `farm/tests/test_batch_details.py`, `farm/tests/test_cleaner_fish.py` and 15 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -994,7 +994,7 @@ A feed the farm uses: its maker, what it is made for, its pellet and its analysi
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › feeds
 - **forms**: `FeedForm`
 - **constraints**: uq_feeds_code_live (unique: code); uq_feeds_name_live (unique: name); chk_feeds_code (check); chk_feeds_feed_type (check); chk_feeds_feed_form (check); chk_feeds_buoyancy (check); chk_feeds_status (check); chk_feeds_pellet_size (check); chk_feeds_protein_pct (check); chk_feeds_fat_pct (check); chk_feeds_nfe_pct (check); chk_feeds_fibre_pct (check); chk_feeds_ash_pct (check); chk_feeds_moisture_pct (check); chk_feeds_phosphorus_pct (check); chk_feeds_gross_energy_mj_kg (check); chk_feeds_digestible_energy_mj_kg (check); chk_feeds_fractions (check); chk_feeds_phosphorus_in_ash (check); chk_feeds_digestible_energy (check); chk_feeds_price (check); chk_feeds_price_currency (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_equipment.py`, `farm/tests/test_feeding.py` and 28 more
+- **tests that mention it**: `core/tests_private_log.py`, `core/tests_workspaces.py`, `farm/tests/test_equipment.py` and 30 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1339,7 +1339,7 @@ A production unit within a site: a hatchery hall, a nursery, a grow-out unit.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › production_departments
 - **forms**: `ProductionDepartmentForm`
 - **constraints**: uq_production_departments_code_live (unique: code); uq_production_departments_site_name_live (unique: site, name); chk_production_departments_capacity (check); chk_production_departments_live_on_a_site (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_design_shell.py` and 52 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_design_shell.py` and 53 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1436,7 +1436,7 @@ An operational contact of a site.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › site_contacts
 - **forms**: `SiteContactForm`
 - **constraints**: uq_site_contacts_one_primary (unique: site)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `farm/tests/test_sites.py`
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_private_log.py` and 2 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1462,7 +1462,7 @@ A physical facility (locality).
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › sites
 - **forms**: `SiteForm`
 - **constraints**: uq_sites_code_live (unique: code); uq_sites_name_live (unique: name); uq_sites_lokalitetsnummer_live (unique: lokalitetsnummer); chk_sites_lokalitetsnummer_range (check); chk_sites_organisation_number (check); chk_sites_production_form (check); chk_sites_latitude_range (check); chk_sites_longitude_range (check); chk_sites_altitude_range (check); chk_sites_coordinates_paired (check); chk_sites_sea_cage_location (check); chk_sites_timezone_given (check); chk_sites_lice_area (check)
-- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 70 more
+- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 73 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1574,7 +1574,7 @@ A species the farm grows or stocks, with its names, codes and the water it lives
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › species
 - **forms**: `SpeciesForm`
 - **constraints**: uq_species_code_live (unique: code); uq_species_scientific_name_live (unique: scientific_name); chk_species_scientific_name (check); chk_species_code (check); chk_species_official_code (check); chk_species_category (check); chk_species_status (check); chk_species_cleaner_fish_type (check); chk_species_withdrawal_temperature (check); chk_species_max_weight_ratio (check); chk_species_water (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_scope.py`, `core/tests_workspaces.py` and 22 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_scope.py`, `core/tests_workspaces.py` and 23 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1646,7 +1646,7 @@ One thing a person did to the stock (a stocking, a mortality, a weighing), the u
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › stock_operations
 - **forms**: `MortalityForm`, `CullForm`, `WeighingForm`, `TransferForm`, `LegForm`, `GradingForm`, `OutputForm`, `HarvestForm`, `DeliveryForm`, `EscapeForm`, `InputLineForm`, `StockVoidForm`
 - **constraints**: chk_stock_operations_kind (check); chk_stock_operations_void_reason (check); chk_stock_operations_ack_on_arrival (check); chk_stock_operations_size_mix_ack_on_arrival (check); chk_stock_operations_health_event (check)
-- **tests that mention it**: `core/tests_entry_key.py`, `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py` and 16 more
+- **tests that mention it**: `core/tests_entry_key.py`, `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py` and 17 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1722,7 +1722,7 @@ A company the farm buys from: what it supplies (goods, live fish, services), how
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › suppliers
 - **forms**: `SupplierForm`
 - **constraints**: uq_suppliers_code_live (unique: code); uq_suppliers_name_live (unique: name); uq_suppliers_organisation_number_live (unique: organisation_number); chk_suppliers_code (check); chk_suppliers_organisation_number (check); chk_suppliers_supplies (check); chk_suppliers_supplies_not_empty (check); chk_suppliers_status (check); chk_suppliers_rating (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_batch_details.py`, `farm/tests/test_feeds.py` and 10 more
+- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_batch_details.py`, `farm/tests/test_feeds.py` and 11 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2101,11 +2101,11 @@ One stretch of a person’s presence: from a clock-in to a clock-out, by the per
 - **edit**: attendance records tab (`/hr/time/attendance/<uuid:pk>/`); hr.views.punch (`/production/team/today/clock-<str:direction>/`, `/hr/today/clock-<str:direction>/`)
 - **delete**: attendance records tab (`/hr/time/attendance/<uuid:pk>/delete/`)
 - **read**: attendance records tab (`/hr/time/attendance/`); hr.views.today (`/production/team/`, `/hr/`)
-- **how it works**: A person's own clock-in and clock-out are written by hr.services at the server's time.
+- **how it works**: A person's own clock-in and clock-out are written by hr.services at the server's time; a clock-in left open longer than Scheduling settings' limit is a forgotten clock-out, closed on the Attendance page.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › attendance_records (never shown: note)
 - **forms**: `AttendanceRecordForm`
 - **constraints**: chk_attendance_records_order (check); chk_attendance_records_via (check); chk_attendance_records_note (check); excl_attendance_employee_span (exclusion: employee, clock_in, clock_out)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 7 more
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 9 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2121,7 +2121,7 @@ One stretch of a person’s presence: from a clock-in to a clock-out, by the per
 | employee_id | uuid |  | employees (PROTECT) | AttendanceRecordForm › Record |
 | clock_in | timestamp with time zone |  |  | AttendanceRecordForm › Record |
 | clock_out | timestamp with time zone | yes |  | AttendanceRecordForm › Record |
-| via | varchar(10) |  |  | system: self for a person's own clock-in and out, entered for a lead's form |
+| via | varchar(10) |  |  | system: self for a person's own clock-in and out, entered for a lead's form and for a stretch whose time a lead's correction changed (a forgotten clock-out closed by hand) |
 | note | varchar(200) |  |  | AttendanceRecordForm › Record |
 
 <a id="hremployee"></a>
@@ -2137,7 +2137,7 @@ The people of the company for HR: number, name (or the account that names them),
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › employees
 - **forms**: `EmployeeForm`
 - **constraints**: uq_employees_number_live (unique: employee_number); uq_employees_user_live (unique: user); chk_employees_identity (check); chk_employees_period (check); chk_employees_type (check); chk_employees_number (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/helpers_people.py`, `hr/tests/test_attendance.py` and 20 more
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/helpers_people.py`, `hr/tests/test_attendance.py` and 21 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2299,7 +2299,7 @@ Where each person works from a day: one department, production or office, and th
 - **how it works**: One placement covers any day (exclusion constraint); a move closes the open one the day before.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › postings
 - **constraints**: chk_postings_one_department (check); chk_postings_period (check); excl_postings_employee_period (exclusion: employee, valid_from, valid_until)
-- **tests that mention it**: `farm/tests/test_systems.py`, `hr/tests/helpers_people.py`, `hr/tests/test_attendance.py` and 9 more
+- **tests that mention it**: `farm/tests/test_systems.py`, `hr/tests/helpers_people.py`, `hr/tests/test_attendance.py` and 10 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2330,8 +2330,8 @@ The one row of scheduling limits and defaults (rest, weekly hours, days in a row
 - **read**: scheduling settings tab (`/hr/settings/scheduling/`)
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › scheduling_settings
 - **forms**: `SchedulingSettingsForm`
-- **constraints**: uq_scheduling_settings_singleton (unique: singleton); chk_scheduling_settings_singleton (check); chk_scheduling_week (check); chk_scheduling_rest (check); chk_scheduling_consecutive (check); chk_scheduling_rule (check); chk_scheduling_weekdays (check); chk_scheduling_punch_window (check); chk_scheduling_absent_after (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_hardening.py` and 5 more
+- **constraints**: uq_scheduling_settings_singleton (unique: singleton); chk_scheduling_settings_singleton (check); chk_scheduling_week (check); chk_scheduling_rest (check); chk_scheduling_consecutive (check); chk_scheduling_rule (check); chk_scheduling_weekdays (check); chk_scheduling_punch_window (check); chk_scheduling_absent_after (check); chk_scheduling_forgotten_after (check)
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_forgotten.py` and 6 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2352,6 +2352,7 @@ The one row of scheduling limits and defaults (rest, weekly hours, days in a row
 | working_weekdays | smallint[] |  |  | SchedulingSettingsForm › Days and punches |
 | punch_window_minutes | smallint |  |  | SchedulingSettingsForm › Days and punches |
 | absent_after_minutes | smallint |  |  | SchedulingSettingsForm › Days and punches |
+| forgotten_after_hours | smallint |  |  | SchedulingSettingsForm › Days and punches |
 
 <a id="hrshiftassignment"></a>
 ### hr.ShiftAssignment (`shift_assignments`)
@@ -2366,7 +2367,7 @@ One person’s plan for one day: the shift they start that day, or none for plan
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › shift_assignments (never shown: note)
 - **forms**: `ShiftAssignmentForm`
 - **constraints**: uq_shift_assignments_employee_day (unique: employee, day)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 13 more
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 15 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2396,7 +2397,7 @@ The shift patterns of the roster: a start and an end on the wall clock of the si
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › shifts
 - **forms**: `ShiftForm`
 - **constraints**: uq_shifts_code_live (unique: code); chk_shifts_code (check); chk_shifts_span (check); chk_shifts_break (check); chk_shifts_grace (check); chk_shifts_tone (check); chk_shifts_status (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 14 more
+- **tests that mention it**: `core/tests_private_log.py`, `core/tests_workspaces.py`, `hr/tests/test_attendance.py` and 19 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3463,7 +3464,7 @@ An MQTT broker the ingest service listens to: where it is, how the service signs
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Sensors › sensors_connection (never shown: secret_file)
 - **forms**: `ConnectionForm`
 - **constraints**: uq_sensors_connection_name_live (unique: name); uq_sensors_connection_client_live (unique: client_id); chk_sensors_connection_name (check); chk_sensors_connection_host (check); chk_sensors_connection_client_id (check); chk_sensors_connection_port (check); chk_sensors_connection_keepalive (check); chk_sensors_connection_secret_file (check); chk_sensors_connection_secret_dots (check)
-- **tests that mention it**: `core/tests_account_mail.py`, `core/tests_workspaces.py`, `sensors/tests/__init__.py` and 3 more
+- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/__init__.py`, `sensors/tests/test_demo.py` and 2 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3782,17 +3783,17 @@ A line of a task's checklist and whether it is done, by whom and when (plain row
 <a id="taskstasknote"></a>
 ### tasks.TaskNote (`task_notes`)
 
-A note on a task by a person who can read it: part of the task's record, never edited or removed (tasks.services.add_note is its only writer), and in the activity log.
+A note on a task by a person who can read it: part of the task's record, never edited or removed (tasks.services.add_note is its only writer).
 
 - **create**: tasks.views.add_note (`/operations/tasks/<uuid:pk>/notes/`)
 - **edit**: none, by design: part of the task's record, never edited
 - **delete**: none, by design: part of the task's record, never removed
 - **read**: tasks tab (`/operations/tasks/`, `/operations/tasks/<uuid:pk>/`)
-- **how it works**: Shown in the task's drawer.
+- **how it works**: Shown in the task's drawer. Reopening a task keeps its completion note and its reason for cancelling here, by their writer.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Tasks › task_notes
 - **forms**: `NoteForm`
-- **constraints**: chk_task_notes_body (check)
-- **tests that mention it**: `tasks/tests/test_models.py`, `tasks/tests/test_pages.py`, `tasks/tests/test_series.py`
+- **constraints**: chk_task_notes_body (check); chk_task_notes_kind (check)
+- **tests that mention it**: `tasks/tests/test_models.py`, `tasks/tests/test_pages.py`, `tasks/tests/test_reopen_keeps.py` and 1 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3800,6 +3801,7 @@ A note on a task by a person who can read it: part of the task's record, never e
 | task_id | uuid |  | tasks (CASCADE) | system: the task the note is added to |
 | author_id | integer |  | auth_user (PROTECT) | system: the person who adds it |
 | body | varchar(4000) |  |  | NoteForm |
+| kind | varchar(20) |  |  | system: note for a note added in the drawer; completion_note or cancel_reason for the words a reopening took off the task and kept here (tasks.services.reopen) |
 | created_at | timestamp with time zone |  |  | system: author, time, version or delete mark |
 
 <a id="taskstaskseries"></a>
@@ -3814,7 +3816,7 @@ A recurring task: the rule that plans a task at one place for its people, every 
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Tasks › task_series
 - **forms**: `TaskSeriesForm`
 - **constraints**: chk_task_series_one_place (check); chk_task_series_title (check); chk_task_series_category (check); chk_task_series_priority (check); chk_task_series_frequency (check); chk_task_series_interval (check); chk_task_series_weekdays (check); chk_task_series_weekly (check); chk_task_series_monthly (check); chk_task_series_ends_after_start (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `tasks/tests/test_models.py`, `tasks/tests/test_pages.py` and 1 more
+- **tests that mention it**: `core/tests_private_log.py`, `core/tests_workspaces.py`, `tasks/tests/test_models.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3897,7 +3899,7 @@ A job at one place for one or more people, due on a day on the clock of the plac
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Tasks › tasks
 - **forms**: `TaskForm`
 - **constraints**: chk_tasks_one_place (check); chk_tasks_title (check); chk_tasks_category (check); chk_tasks_priority (check); chk_tasks_status (check); chk_tasks_started (check); chk_tasks_in_progress_started (check); chk_tasks_open_not_started (check); chk_tasks_done (check); chk_tasks_cancelled (check); chk_tasks_occurrence (check); uq_tasks_series_occurrence (unique: series, occurrence_date)
-- **tests that mention it**: `core/tests_workspaces.py`, `tasks/tests/__init__.py`, `tasks/tests/test_models.py` and 5 more
+- **tests that mention it**: `core/tests_private_log.py`, `core/tests_workspaces.py`, `tasks/tests/__init__.py` and 7 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

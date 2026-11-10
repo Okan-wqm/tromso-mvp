@@ -19,6 +19,7 @@
     <div><dt>{% trans "Working weekdays" %}</dt><dd>{{ settings.weekday_labels|join:", " }}</dd></div>
     <div><dt>{% trans "Punch window (minutes)" %}</dt><dd>{{ settings.punch_window_minutes }}</dd></div>
     <div><dt>{% trans "Absent after (minutes)" %}</dt><dd>{{ settings.absent_after_minutes }}</dd></div>
+    <div><dt>{% trans "A clock-in counts as forgotten after (hours)" %}</dt><dd>{{ settings.forgotten_after_hours }}</dd></div>
   </dl>
   {% if can_change %}<p><a class="button button-inline" href="{% url 'hr:schedulingsettings_edit' settings.pk %}" data-modal>{% include "icons/_icon.html" with name="pencil" %}{% trans "Edit the limits" %}</a></p>{% endif %}
 </section>

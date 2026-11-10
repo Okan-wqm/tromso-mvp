@@ -20,7 +20,7 @@ from farm.models.site import zone_of
 from farm.stock.dates import site_today
 
 from . import read, rules, scope, services, units
-from .models import AttendanceRecord, Shift
+from .models import Shift
 
 OFF, CLEAR = 'off', 'clear'
 
@@ -168,11 +168,19 @@ def cancel(request, pk):
 
 # ---- today & attendance -------------------------------------------------------------------------------------------
 def _today_context(request):
+    """The board, the person's own open stretch and, when it is a forgotten clock-out, what they are told instead of the
+    buttons (services.forgotten_refusal); a forgotten row carries the address of its stretch for who may correct it."""
     own = services.own_employee(request.user)
-    open_punch = AttendanceRecord.objects.filter(employee=own, clock_out__isnull=True).first() if own else None
+    open_punch = services.open_stretch(own) if own else None
     open_zone = zone_of(read.site_on(own, site_today(None))) if open_punch else None
-    return {'board': read.board(request.user, realm=scope.realm_for(request)), 'own': own, 'open_punch': open_punch,
-            'open_zone': open_zone,
+    refusal = services.forgotten_refusal(open_punch)
+    board = read.board(request.user, realm=scope.realm_for(request))
+    if request.user.has_perm('hr.change_attendancerecord'):
+        for row in board.rows:
+            if row.open_record is not None and not services.own_record(request.user, row.employee):
+                row.close_url = _here(request, 'hr:attendancerecord_edit', row.open_record)
+    return {'board': board, 'own': own, 'open_punch': open_punch, 'open_zone': open_zone,
+            'forgotten': ' '.join(refusal.messages) if refusal is not None else '',
             'can_enter': request.user.has_perm('hr.add_attendancerecord'), 'states': rules.STATES}
 
 

@@ -916,6 +916,12 @@ msgid "%(minutes)s min"
 msgstr "%(minutes)s min"
 
 #, python-format
+msgid "%(more)s more not planned today"
+msgid_plural "%(more)s more not planned today"
+msgstr[0] "%(more)s til uten plan i dag"
+msgstr[1] "%(more)s til uten plan i dag"
+
+#, python-format
 msgid "%(name)s (copy %(number)d)"
 msgstr "%(name)s (kopi %(number)d)"
 
@@ -969,10 +975,10 @@ msgid "%(number)s deleted"
 msgstr "%(number)s slettet"
 
 #, python-format
-msgid "%(open)s open more than 12 hours: check"
-msgid_plural "%(open)s open more than 12 hours: check"
-msgstr[0] "%(open)s åpen i mer enn 12 timer: sjekk"
-msgstr[1] "%(open)s åpne i mer enn 12 timer: sjekk"
+msgid "%(open)s of them open more than %(hours)s hours: clock-out forgotten"
+msgid_plural "%(open)s of them open more than %(hours)s hours: clock-out forgotten"
+msgstr[0] "%(open)s av dem åpen i mer enn %(hours)s timer: utstempling glemt"
+msgstr[1] "%(open)s av dem åpne i mer enn %(hours)s timer: utstempling glemt"
 
 #, python-format
 msgid "%(operation)s of %(date)s voided."
@@ -1816,6 +1822,20 @@ msgid "A checklist has at most %(num)d line."
 msgid_plural "A checklist has at most %(num)d lines."
 msgstr[0] "En sjekkliste har høyst %(num)d linje."
 msgstr[1] "En sjekkliste har høyst %(num)d linjer."
+
+msgid "A clock-in counts as forgotten after (hours)"
+msgstr "En innstempling regnes som glemt etter (timer)"
+
+msgid ""
+"A clock-in still open after this many hours counts as a forgotten clock-out: the board says so "
+"instead of present, the person is told to ask their lead, and the lead closes it on the "
+"Attendance page with the real time and a reason. Default 16 hours; 1 to 168, and not shorter than"
+" the longest active shift with the punch window before it."
+msgstr ""
+"En innstempling som fortsatt er åpen etter så mange timer, regnes som en glemt utstempling: "
+"tavlen sier det i stedet for til stede, personen får beskjed om å spørre lederen sin, og lederen "
+"lukker den på Oppmøte-siden med det virkelige tidspunktet og en begrunnelse. Standard 16 timer; 1"
+" til 168, og ikke kortere enn det lengste aktive skiftet med stemplingsvinduet før det."
 
 msgid "A combination is numbered 1 to 9."
 msgstr "En kombinasjon nummereres fra 1 til 9."
@@ -4550,6 +4570,9 @@ msgstr "Stemple ut"
 msgid "Clock tolerance (seconds)"
 msgstr "Klokketoleranse (sekunder)"
 
+msgid "Clock-out forgotten"
+msgstr "Utstempling glemt"
+
 msgid "Clocked in by the person"
 msgstr "Stemplet inn av personen"
 
@@ -4661,6 +4684,9 @@ msgstr "Fullført av"
 msgid "Completion note"
 msgstr "Merknad ved fullføring"
 
+msgid "Completion note, kept when the task was reopened"
+msgstr "Merknad ved fullføring, beholdt da oppgaven ble åpnet igjen"
+
 msgid "Composition as fed"
 msgstr "Sammensetning slik det fôres"
 
@@ -4718,8 +4744,14 @@ msgstr "Kontakt"
 msgid "Contact e-mail"
 msgstr "Kontakt-e-post"
 
+msgid "Contact e-mails and phones made private, the contact kept"
+msgstr "Kontakters e-post og telefon gjort private, kontakten beholdt"
+
 msgid "Contact email"
 msgstr "Kontakt-e-post"
+
+msgid "Contact lists made private whole"
+msgstr "Kontaktlister gjort private i sin helhet"
 
 msgid "Contact person"
 msgstr "Kontaktperson"
@@ -5775,6 +5807,12 @@ msgstr "Lagt inn her"
 msgid "Entries"
 msgstr "Oppføringer"
 
+msgid "Entries converted"
+msgstr "Oppføringer konvertert"
+
+msgid "Entries whose contact list was made private whole"
+msgstr "Oppføringer der kontaktlisten ble gjort privat i sin helhet"
+
 msgid "Epizootic haematopoietic necrosis (EHN)"
 msgstr "Epizootisk hematopoetisk nekrose (EHN)"
 
@@ -5789,6 +5827,9 @@ msgstr "Utstyr kan ikke være en del av seg selv."
 
 msgid "Equipment that fits none of the other types."
 msgstr "Utstyr som ikke passer i noen av de andre typene."
+
+msgid "Erased on request"
+msgstr "Slettet på forespørsel"
 
 msgid "Error"
 msgstr "Feil"
@@ -6798,6 +6839,9 @@ msgstr ""
 msgid "Give a target pH and alkalinity for the recipes."
 msgstr "Oppgi en mål-pH og en målalkalitet for oppskriftene."
 
+msgid "Give a whole number of hours from 1 to 168 (a week)."
+msgstr "Oppgi et helt antall timer fra 1 til 168 (en uke)."
+
 msgid "Give a year from 2026."
 msgstr "Oppgi et år fra 2026."
 
@@ -7336,6 +7380,19 @@ msgstr ""
 "Hvor mange ganger tyngre, i snitt, én gruppe av denne arten kan være enn en annen i samme enhet, "
 "f.eks. 2: fisk på 100 g og på 200 g kan dele en enhet. Et utsett, en flytting eller en sortering "
 "utover dette ber først om en bekreftelse. Tom: ingen kontroll."
+
+msgid ""
+"How many times heavier, on average, one batch of this species may be than another in the same "
+"unit, e.g. 2: fish of 100 g and of 200 g may share a unit. A stocking, transfer or grading beyond"
+" it asks for an acknowledgement first. Left empty on a new species: 2 for a production species, "
+"no check for a cleaner fish (its cages are topped up with fish of other sizes). To have no check "
+"on a production species, empty it after saving."
+msgstr ""
+"Hvor mange ganger tyngre, i snitt, én gruppe av denne arten kan være enn en annen i samme enhet, "
+"f.eks. 2: fisk på 100 g og på 200 g kan dele en enhet. Et utsett, en flytting eller en sortering "
+"utover dette ber først om en bekreftelse. Står feltet tomt på en ny art: 2 for en produksjonsart,"
+" ingen kontroll for en rensefisk (merdene fylles på med fisk av andre størrelser). For ingen "
+"kontroll på en produksjonsart: tøm feltet etter lagring."
 
 msgid "How often the device sends a message. Offline after three times this without one."
 msgstr "Hvor ofte apparatet sender en melding. Frakoblet etter tre ganger dette uten en melding."
@@ -9140,6 +9197,13 @@ msgstr "Ingen lokalitet er bundet av en årlig plikt utenfor dette systemet."
 msgid "No site or facility to report for."
 msgstr "Ingen lokalitet eller anlegg å rapportere for."
 
+msgid ""
+"No size check was set: a cleaner fish is topped up with fish of other sizes. Give it a limit on "
+"the Stocking tab if this farm wants one."
+msgstr ""
+"Ingen størrelseskontroll ble satt: rensefisk fylles på med fisk av andre størrelser. Gi arten en "
+"grense på fanen Utsett hvis anlegget vil ha en."
+
 msgid "No species yet. Use “Add species” to add a row."
 msgstr "Ingen arter ennå. Bruk «Legg til art» for å legge til en rad."
 
@@ -9928,8 +9992,8 @@ msgid "Open questions acknowledged"
 msgstr "Bekreftede åpne spørsmål"
 
 #, python-format
-msgid "Open since %(since)s: check"
-msgstr "Åpen siden %(since)s: sjekk"
+msgid "Open since %(since)s: to be closed on the Attendance page"
+msgstr "Åpen siden %(since)s: lukkes på Oppmøte-siden"
 
 msgid "Open the PDF"
 msgstr "Åpne PDF-en"
@@ -10865,6 +10929,24 @@ msgstr "Lagringstid for rådata (dager)"
 msgid "Read"
 msgstr "Les"
 
+msgid ""
+"Read also shows and exports the farm figures a report is computed from (stock and biomass, feed "
+"given, slaughter and harvest plans, smolt, cleaner fish, sea-lice counts and treatments with "
+"their medicines, health events with diagnosis and deaths, escapes, sea temperature) to a person "
+"without Read on the farm areas they come from."
+msgstr ""
+"Les viser og eksporterer også driftstallene en rapport beregnes fra (beholdning og biomasse, "
+"utfôring, slakt og slakteplaner, smolt, rensefisk, lusetellinger og behandlinger med legemidlene,"
+" helsehendelser med diagnose og dødelighet, rømminger, sjøtemperatur) til en person uten Les på "
+"driftsområdene de kommer fra."
+
+msgid ""
+"Read also shows the farm figures of an experiment’s own tanks (batches, fish, biomass, survival, "
+"feed conversion) to a person without Read on the farm areas they come from."
+msgstr ""
+"Les viser også driftstallene for forsøkets egne kar (fiskegrupper, fisk, biomasse, overlevelse, "
+"fôrfaktor) til en person uten Les på driftsområdene de kommer fra."
+
 #, python-format
 msgid ""
 "Read from the database itself and matched with the Django model <code>%(model)s</code> of the "
@@ -10890,6 +10972,9 @@ msgstr "Årsak"
 
 msgid "Reason for cancelling"
 msgstr "Grunn til avlysning"
+
+msgid "Reason for cancelling, kept when the task was reopened"
+msgstr "Grunn til avlysning, beholdt da oppgaven ble åpnet igjen"
 
 msgid "Reason for placing by hand"
 msgstr "Begrunnelse for manuell plassering"
@@ -11336,8 +11421,14 @@ msgstr "Rolle"
 msgid "Role name"
 msgstr "Rollenavn"
 
+msgid "Role or phone"
+msgstr "Rolle eller telefon"
+
 msgid "Roles"
 msgstr "Roller"
+
+msgid "Roles made private with a phone they could not be told apart from"
+msgstr "Roller gjort private sammen med en telefon de ikke kunne skilles fra"
 
 msgid "Roles: a name and the permissions it allows."
 msgstr "Roller: et navn og tillatelsene det gir."
@@ -11550,6 +11641,9 @@ msgstr "Lagre enheter"
 
 msgid "Save withdrawal"
 msgstr "Lagre tilbakeholdelsestid"
+
+msgid "Say after how many hours an open clock-in counts as a forgotten clock-out."
+msgstr "Oppgi etter hvor mange timer en åpen innstempling regnes som en glemt utstempling."
 
 msgid "Say from which day the change counts."
 msgstr "Si fra hvilken dag endringen gjelder."
@@ -13077,8 +13171,14 @@ msgstr "Diagrammene og verdiene vises igjen når alle verdiene er riktige."
 msgid "The checklist has been started: its lines can no longer be changed. Add a note instead."
 msgstr "Sjekklisten er påbegynt: linjene kan ikke lenger endres. Legg til et notat i stedet."
 
+msgid "The clock-in cannot be later than now."
+msgstr "Innstemplingen kan ikke være senere enn nå."
+
 msgid "The clock-ins of your team in these days appear here."
 msgstr "Teamets innstemplinger i disse dagene vises her."
+
+msgid "The clock-out cannot be later than now: give the time the person really left."
+msgstr "Utstemplingen kan ikke være senere enn nå: oppgi tidspunktet personen faktisk gikk."
 
 msgid ""
 "The companies the farm buys from: feed, live fish and eggs, equipment, medicines and services "
@@ -14100,6 +14200,14 @@ msgstr "Sensorregelen slår ikke lenger til"
 msgid "The sensors at %(place)s: those there now first, then those there before."
 msgstr "Sensorene ved %(place)s: først de som er der nå, så de som var der før."
 
+#, python-format
+msgid ""
+"The shift %(shift)s and the %(window)s minutes a person may clock in before it are longer than "
+"%(hours)s hours: a person on it would count as forgotten before it ends."
+msgstr ""
+"Skiftet %(shift)s og de %(window)s minuttene en person kan stemple inn før det, er lengre enn "
+"%(hours)s timer: en person på det ville regnes som glemt før det er slutt."
+
 msgid ""
 "The shift patterns of the roster: a start and an end on the wall clock of the site, a break and a"
 " grace."
@@ -14174,6 +14282,14 @@ msgstr "Situasjonen i området"
 
 msgid "The situation now"
 msgstr "Situasjonen nå"
+
+#, python-format
+msgid ""
+"The size limit was set to %(limit)s×, the default for a production species. Empty it on the "
+"Stocking tab if this species needs no check."
+msgstr ""
+"Størrelsesgrensen ble satt til %(limit)s×, standarden for en produksjonsart. Tøm den på fanen "
+"Utsett hvis denne arten ikke trenger kontroll."
 
 msgid ""
 "The slaughterhouses harvested fish go to, with Mattilsynet’s approval number: every harvest names"
@@ -14850,6 +14966,16 @@ msgstr "Denne rapporten er allerede lukket."
 msgid "This sample is already voided."
 msgstr "Denne prøven er allerede annullert."
 
+#, python-format
+msgid ""
+"This shift and the %(window)s minutes a person may clock in before it are longer than the "
+"%(hours)s hours after which a clock-in counts as forgotten (Scheduling settings): raise that "
+"limit first."
+msgstr ""
+"Dette skiftet og de %(window)s minuttene en person kan stemple inn før det, er lengre enn de "
+"%(hours)s timene som en innstempling regnes som glemt etter (Planleggingsinnstillinger): øk den "
+"grensen først."
+
 msgid "This shift overlaps another shift of the person."
 msgstr "Dette skiftet overlapper et annet skift for personen."
 
@@ -15403,6 +15529,9 @@ msgstr "Verdier fra"
 
 msgid "Values in the open run"
 msgstr "Verdier i den åpne serien"
+
+msgid "Values made private"
+msgstr "Verdier gjort private"
 
 msgid "Values the chart is drawn from"
 msgstr "Verdiene diagrammet er tegnet fra"
@@ -16268,6 +16397,16 @@ msgstr ""
 "Du ser ikke lenger meldingene. Meldingene dine blir stående med navnet ditt; en eier kan legge "
 "deg til igjen."
 
+#, python-format
+msgid ""
+"Your clock-in of %(since)s was never closed: it has been open more than %(hours)s hours and "
+"counts as a forgotten clock-out. Ask your lead, or whoever keeps attendance for you, to close it "
+"on the Attendance page with the time you really left; then you can clock in again."
+msgstr ""
+"Innstemplingen din fra %(since)s ble aldri lukket: den har vært åpen i mer enn %(hours)s timer og"
+" regnes som en glemt utstempling. Be lederen din, eller den som fører oppmøte for deg, lukke den "
+"på Oppmøte-siden med tidspunktet du faktisk gikk; da kan du stemple inn igjen."
+
 msgid "Your farm console account: set your password"
 msgstr "Kontoen din i driftskonsollen: velg passord"
 
@@ -16310,6 +16449,9 @@ msgstr "en sjølokalitet med laksefisk (plikten følger fisken, ikke produksjons
 
 msgid "a site with cleaner-fish broodstock"
 msgstr "en lokalitet med rensefiskstamfisk"
+
+msgid "activity log"
+msgstr "aktivitetslogg"
 
 msgid "after the count"
 msgstr "etter tellingen"

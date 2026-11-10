@@ -26,8 +26,10 @@ SCREENS = {
     ),
     'AttendanceRecord': Screen(
         create=(views.punch,), edit=(views.punch,), read=(views.today,),
-        columns={'via': system('self for a person\'s own clock-in and out, entered for a lead\'s form')},
-        note="A person's own clock-in and clock-out are written by hr.services at the server's time.",
+        columns={'via': system('self for a person\'s own clock-in and out, entered for a lead\'s form and for a stretch '
+                               'whose time a lead\'s correction changed (a forgotten clock-out closed by hand)')},
+        note="A person's own clock-in and clock-out are written by hr.services at the server's time; a clock-in left open "
+             "longer than Scheduling settings' limit is a forgotten clock-out, closed on the Attendance page.",
     ),
     'LeaveRequest': Screen(
         edit=(views.approve, views.reject, views.cancel),

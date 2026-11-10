@@ -24,6 +24,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 # Local development fallback only; set DJANGO_SECRET_KEY anywhere else.
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-local-development-only')
+# The key of the activity log's digests of private values (core.audit.digest_key): its own, so that it and the secret
+# key are rotated apart; empty means the secret key. Set it before core/0011 converts real data: that conversion is
+# one-way and keeps the key it ran under (it refuses the fallback above when DEBUG is off).
+AUDIT_DIGEST_KEY = os.environ.get('DJANGO_AUDIT_DIGEST_KEY', '')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', '1') == '1'

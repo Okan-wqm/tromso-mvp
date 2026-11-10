@@ -14,7 +14,7 @@ from django.apps import apps
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
-from django.core.management import call_command
+from django.core.management import CommandError, call_command
 from django.db import DatabaseError, connection, transaction
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -24,6 +24,7 @@ from .migrations import _private
 from .models import AuditLog
 
 LONG = 'kari.nordmann@example.com'
+KEY = 'a-key-of-its-own-for-the-digests-of-these-tests'      # the conversion refuses the repository's fallback key
 
 
 def migration():
@@ -150,6 +151,7 @@ class ContactSentenceTests(TestCase):
             self.assertEqual(_private.contacts(sentence), (SiteContacts.summary(site), 'kept'))
 
 
+@override_settings(AUDIT_DIGEST_KEY=KEY)
 class ConversionTests(TestCase):
     """core/0011 on rows as they were written before it."""
 
@@ -284,6 +286,7 @@ class ConversionTests(TestCase):
         # the fields: MoreDecidedPrivateTests.test_the_conversions_list_is_every_private_field_of_the_code
 
 
+@override_settings(AUDIT_DIGEST_KEY=KEY)
 class MoreDecidedPrivateTests(TestCase):
     """Review R7, decided with the conversion so that no second one is ever needed: a supplier's own e-mail and phone
     (a supplier may be one person) and the description of a task and of a recurring task (a person's free text) are
@@ -328,3 +331,53 @@ class MoreDecidedPrivateTests(TestCase):
         self.assertEqual((tasks.PRIVATE, tasks.SERIES_PRIVATE),
                          (('description', 'completion_note', 'cancel_reason'), ('description',)))
         self.assertEqual(set(_private.PRIVATE), expected)
+
+
+class DigestKeyTests(TestCase):
+    """Review R3: the conversion is one-way, so the key in force when it runs is the key of every converted value for
+    good. The digest has a key of its own (settings.AUDIT_DIGEST_KEY, the secret key when it is not set), and the
+    conversion refuses to run on real data under a key that is printed in the repository."""
+
+    FALLBACK = 'django-insecure-local-development-only'
+
+    def convert(self):
+        with connection.schema_editor() as editor:
+            return migration().convert(apps, editor)
+
+    def test_the_digest_uses_its_own_key_and_the_secret_key_when_it_has_none(self):
+        self.assertEqual(settings.AUDIT_DIGEST_KEY, '')                     # not set here: the secret key stands in
+        plain = audit.digest(LONG)
+        with override_settings(AUDIT_DIGEST_KEY=KEY):
+            own = audit.digest(LONG)
+            self.assertEqual(own, hmac.new(KEY.encode(), LONG.encode(), hashlib.sha256).hexdigest()[:8])
+            self.assertEqual(_private.private(LONG), audit.private(LONG))
+            with override_settings(SECRET_KEY='the-secret-key-was-rotated'):
+                self.assertEqual(audit.digest(LONG), own)                   # signing everyone out does not touch the log
+        self.assertNotEqual(own, plain)
+
+    def test_real_data_is_not_converted_under_the_repositorys_key_or_an_insecure_one(self):
+        entry = old('task', {'Note': [None, 'Ola was ill today']})
+        for key in ('', self.FALLBACK, 'django-insecure-anything'):
+            with self.subTest(key=key), override_settings(AUDIT_DIGEST_KEY=key, SECRET_KEY=self.FALLBACK, DEBUG=False):
+                with self.assertRaisesMessage(RuntimeError, 'core 0011 will not convert'):
+                    self.convert()
+                with self.assertRaises(CommandError):
+                    call_command('private_log_values', stdout=StringIO())
+                out = StringIO()
+                call_command('private_log_values', '--dry-run', stdout=out)   # the dry run says it, and still counts
+                self.assertIn('would be refused', out.getvalue())
+                self.assertIn('1 activity-log row(s) hold plain values', out.getvalue())
+        self.assertEqual(AuditLog.objects.get(pk=entry.pk).changes, {'Note': [None, 'Ola was ill today']})
+        self.assertFalse(AuditLog.objects.filter(user_name='system').exists())
+
+    def test_a_development_database_and_an_empty_log_are_not_held_up(self):
+        with override_settings(AUDIT_DIGEST_KEY='', SECRET_KEY=self.FALLBACK, DEBUG=False):
+            self.assertEqual(self.convert()['rows'], 0)                     # nothing to convert: a fresh database migrates
+        old('task', {'Note': [None, 'Ola was ill today']})
+        with override_settings(AUDIT_DIGEST_KEY='', SECRET_KEY=self.FALLBACK, DEBUG=True):
+            self.assertEqual(self.convert()['rows'], 1)                     # the developer's own machine
+
+    def test_a_real_key_converts(self):
+        old('task', {'Note': [None, 'Ola was ill today']})
+        with override_settings(AUDIT_DIGEST_KEY='', SECRET_KEY='a-long-random-production-key', DEBUG=False):
+            self.assertEqual(self.convert()['rows'], 1)

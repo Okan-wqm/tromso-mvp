@@ -30,7 +30,7 @@ from django.contrib.auth.forms import _unicode_ci_compare
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.mail import DEFAULT_MAILER_ALIAS, EmailMessage, mailers
 from django.db import connections, transaction
-from django.db.models import CharField, OuterRef, Subquery
+from django.db.models import CharField, OuterRef, Q, Subquery
 from django.db.models.functions import Cast
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -295,8 +295,8 @@ def reset_later(address):
     the language it was asked in) to the worker. Whether the address has an account, whether that account has had its
     share, whether the mail goes out: none of it happens before the answer, so the answer takes the same time and the
     same work for every address."""
-    if not background(reset_now, address, translation.get_language()):
-        logger.error('A password reset request was dropped: too many mails are waiting to be sent.')
+    if not background(reset_now, address, translation.get_language()) and _tell(dropped_told, 'requests', 60):
+        logger.error('Password reset requests are being dropped: too many mails are waiting to be sent.')
 
 
 def accounts_on(address):
@@ -305,19 +305,47 @@ def accounts_on(address):
     return [user for user in users if _unicode_ci_compare(address, user.email)]
 
 
+# How long a reset mail that did not go out counts against its account's hour: long enough that a mail server which
+# is down is not tried for every request, short enough that nobody is kept out for an hour by mails that never came.
+FAILED_COUNTS_FOR = timedelta(minutes=5)
+# When the server's log last said that an account's requests are held back, and that requests are dropped: once an
+# hour for an account and once a minute, not a line for every request anybody sends (this process's own memory).
+held_told, dropped_told = {}, {}
+
+
+def _tell(told, key, seconds):
+    """Whether the log should say it (again): not said for `key` within `seconds`."""
+    last, now = told.get(key), time.monotonic()
+    if last is not None and now - last < seconds:
+        return False
+    told[key] = now
+    return True
+
+
+def held_back(user):
+    """Whether `user` has had the reset mails of an hour (settings.PASSWORD_RESET_MAILS_PER_HOUR): the ones that
+    went out or are waiting, and the ones that failed in the last five minutes. Said in the server's log, once an
+    hour for the account."""
+    now = timezone.now()
+    recent = AccountMail.objects.filter(user=user, kind=RESET, created_at__gte=now - timedelta(hours=1)).filter(
+        Q(error='') | Q(created_at__gte=now - FAILED_COUNTS_FOR)).count()
+    if recent < settings.PASSWORD_RESET_MAILS_PER_HOUR:
+        return False
+    if _tell(held_told, user.pk, 3600):
+        logger.warning('Password reset mails for user %s are held back: %s in the last hour.', user.pk, recent)
+    return True
+
+
 def reset_now(address, language):
     """The worker's job for a reset: each account on `address` is sent a reset mail, unless it has had its share for
-    the hour (settings.PASSWORD_RESET_MAILS_PER_HOUR; a mail that was tried counts), which the server's log then says.
+    the hour (`held_back`).
     The account's row is locked only while its mails are counted and the new one is written as waiting, so two server
     processes at one account take turns and cannot both read "none yet"; the mail server is talked to after the lock
     is gone."""
     for user in accounts_on(address):
         with transaction.atomic():
             get_user_model().objects.select_for_update().get(pk=user.pk)
-            since = timezone.now() - timedelta(hours=1)
-            recent = AccountMail.objects.filter(user=user, kind=RESET, created_at__gte=since).count()
-            if recent >= settings.PASSWORD_RESET_MAILS_PER_HOUR:
-                logger.warning('A password reset mail for user %s was held back: %s in the last hour.', user.pk, recent)
+            if held_back(user):
                 continue
             mail = queue(user, RESET)
         deliver(mail.pk, language)

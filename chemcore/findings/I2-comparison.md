@@ -330,6 +330,62 @@ yapılanlar:
    kaynak satırı, uyarılar ve hangi temelin karar verdiği görünüyor.
 5. Diyagramdaki CO₂ eğrisinin sapması incelemenin 165 888 noktasında −%0,74 ile +%0,38 (durumlar ve sınır pH'ları tam).
 
+## Bağımsız doğrulamadan sonra üç düzeltme (2026-11-10)
+
+Çekirdek 2026-11-09'da bağımsız olarak PyCO2SYS 1.8.3.4 ve seacarb 3.4.2 ile karşılaştırıldı (yalnız sayılar; kodları
+kopyalanmadı). Üç bulgu sahibin onayıyla **formül 3'ün içine** işlendi (formül 3 henüz dalından çıkmamıştı). Formül 1 ve
+golden v1'e dokunulmadı; golden v3 kendi betiğiyle yeniden kaydedildi, golden v3'teki formül 1 değerlerinin hiçbiri
+değişmedi.
+
+1. **Suyun iyon çarpımı (Kw).** Eski sayı (148,9652) Millero'nun (1995) değil, 2007 Kılavuzu'nun (Dickson, Sabine &
+   Christian, bölüm 5, denklem 62) deniz suyu için yaklaşık çevirdiği değerdi: Millero'nun sabitinden 0,015 çıkarılmış.
+   Tatlı suda bu %1,5 hata veriyordu. Formül 3 artık Millero'nun kendi değerini (148,9802, SWS ölçeği) K1, K2 ve KNH4
+   gibi serbest ölçeğe çevirerek kullanıyor: deniz yolunda, 1–5 ‰ bandında ve tatlı su yolunda.
+
+   | Ne | Önce | Sonra |
+   |---|---|---|
+   | Saf suda pKw, 25 °C | 14,0012 | 13,9946 (kaynak değer 13,995) |
+   | Kw, golden v3'teki 1 980 su | — | −%0,83 … +%1,51 değişti |
+   | Formül 3'ün kendi CO₂'si, golden v3 (pH 6,5–8,5; 9 900 değer) | — | en çok +%0,085 (30 °C, 35 ‰, 20 mg/L, pH 8,5), ortanca %0,0002 |
+   | Değerlendirilen CO₂, golden v3 | — | 9 900 değerin 1 440'ı değişti (yalnız formül 3'ün kendi değerinin karar verdiği sular), en çok +%0,085 |
+   | pH 7'deki analizlerde DIC | — | en çok +%0,0015 |
+
+   Daha geniş bir ızgarada (0–40 °C, 0–40 ‰, alkalinite 0,5–5 meq/L, pH 6,5–9; 2 160 su) 22 suda değişim %0,13'ü
+   geçiyor (18'i pH 9'da, 4'ü pH 8,5'te): alkalinite tabanından en az 0,2 meq/L uzakta en çok %0,40 (40 °C, 40 ‰, 1 meq/L,
+   pH 9), tabana 0,04 meq/L kala %3,8. Sebep basit: değişim, Kw'deki değişim ile hidroksitin "tabanın üstünde kalan
+   alkalinite"ye oranının çarpımı. Doğrulama raporundaki "taban dışında en çok %0,13" cümlesi bu ızgarada tutmuyor;
+   balık suyu aralığında (pH 8,5'e kadar, golden v3) değişim %0,09'un altında.
+   **Sınırların temeli formül 1'in Kw'sini koruyor**: böylece değerlendirilen CO₂ formül 1'inkinin altına hiçbir zaman
+   düşmüyor (mevcut güvenlik testleri aynen geçiyor). Bu uygulayıcının kararıdır; istenirse temel de düzeltilebilir.
+2. **Kalsit ve aragonit doygunluğu (Ω).** Kalsiyum (mg/L) ve karbonat litre başına, Mucci'nin (1983) Ksp'si ise kg²
+   başınaydı; Ω bu yüzden deniz suyunun yoğunluğunun karesi kadar yüksek çıkıyordu. Formül 3 artık Ksp'yi litre başına
+   alıyor (Ksp × ρ²; yoğunluk EOS-80, Millero & Poisson 1981). Küçük grafikteki doygunluk indeksi ve diyagramdaki Ω = 1
+   çizgisi aynı tek tanımı kullanıyor.
+
+   | Tuzluluk | Ω'daki değişim (2–30 °C) |
+   |---|---|
+   | 5 ‰ | −%0,79 … +%0,12 |
+   | 10 ‰ | −%1,58 … −%0,62 |
+   | 28 ‰ | −%4,4 … −%3,2 |
+   | 35 ‰ | −%5,37 … −%4,13 (25 °C'de −%4,5; log Ω'da en çok −0,024) |
+
+   Formül 1'in 9 000 Ω değeri bit bit aynı. Bu bir kireçlenme göstergesi; balık zehirliliğiyle ilgisi yok.
+3. **Olamayacak su.** Yüksek pH'ta hidroksit ve borat tek başına alkalinitedir; alkalinite bu tabanın altındaysa öyle
+   bir su olamaz. Hesap makinesi ve ünite grafiği bunu zaten sebebiyle reddediyordu, ama çekirdek hesaplayıp eksi
+   derişim veriyordu (40 °C, 40 ‰, 0,5 meq/L, pH 9: DIC −0,017 mmol/L, CO₂ −0,0002 mg/L). Artık çekirdek her kapıda
+   açık bir hatayla reddediyor (`ImpossibleWaterError`); hiçbir zaman eksi derişim dönmüyor. Kural tek: sayfaların
+   söylediği sebep ile çekirdeğin reddi aynı karar (3 000 rastgele suda ve tabanın tam üstünde/altında test edildi).
+   Sayfalar eski mesajı aynen gösteriyor (metin değişmedi). Saatlik iz (trail) böyle bir saati
+   artık eksi DIC'li bir nokta olarak çizmiyor, "olanaksız" diye listeliyor. Formül 1 eskisi gibi hesaplıyor (golden v1
+   bu değerleri tutuyor).
+
+**Bu üç düzeltmenin zayıf noktaları.** Millero (1995), Millero & Poisson (1981) ve UNESCO (1983) birincil kaynaktan
+açılmadı: Kw sabiti 2007 Kılavuzu'nun dipnotundan (148,9652 + 0,015) ve iki kütüphanenin sayılarından, yoğunluk
+denklemi Kılavuz'un bölüm 5, denklem 6–10'undan alındı; UNESCO kontrol değerleri (1027,67547 ve 1023,34306) iki
+yazılımın belgelerinden okundu ve denklem bunları 5·10⁻⁶ içinde veriyor. Saf su pKw değeri 13,995 için basılı tablo
+açılmadı. Tuz eklenmiş (NaCl) suda Ω için de deniz suyu yoğunluğu kullanılıyor. Ω 44 ‰'ye kadar çiziliyor, yoğunluk
+denklemi 42 ‰'ye kadar geçerli.
+
 ## Zayıf noktalar (geçişten sonra, dürüstçe)
 
 - **Büyük olanla değerlendirme ihtiyatlı ama kaba**: 0–1 ‰ arasındaki sularda temel ideal su, formül 1 ise orada deniz suyu

@@ -1342,7 +1342,8 @@ without values it shows its defaults.
   12.5 (every 0.5 labelled); the regions where NH₃ (above its border's isoline), H₂S (below its border's
   isoline) and CO₂ (below the curve where CO₂ = the limit) pass their limits; the safe zone (the band, between
   the NH₃ border and the higher of the CO₂ and H₂S borders); Ω = 1 for calcite and aragonite with the calcium
-  given, from 5 to 44 ‰ (Mucci's range); the water (a star) and the target (a cross); the dosing layer (one
+  given, from 5 to 44 ‰ (Mucci's range; the calcium and the carbonate per litre against the Ksp per litre, Mucci's
+  times the square of the sea water's density, Water-chemistry core); the water (a star) and the target (a cross); the dosing layer (one
   reagent chosen: its direction from the water; two: both, the wedge between them and their path to the
   target through the waypoint; more: a note) and the simulator's path, an arrow at each step. A note says
   why a layer asked for is not drawn; a region's name with its border (NH₃ toxic (pH > 8.04)) is in its
@@ -1381,12 +1382,14 @@ without values it shows its defaults.
   on), the simulator and the recipes, on a page of its own for A4 across.
 - **The chemistry** (`farm/water/chemistry.py`, one module with the ammonia and oxygen above): K1 and K2
   of carbonic acid of Millero, Graham, Huang, Bustos-Serrano & Pierrot (2006), fresh to sea water (the
-  source calls them Millero 2010, WQ-39); Kw of Millero (1995); KB of Dickson (1990)
+  source calls them Millero 2010, WQ-39); Kw of Millero (1995) on his seawater scale (pure water's at a salinity of 0;
+  formula 1 took the 2007 Guide's approximate total-scale value); KB of Dickson (1990)
   with Uppström's (1974) boron; the ammonium constant of Millero (1995); KH₂S of Millero, Plese &
   Fernandez (1988); the Ksp of Mucci (1983); the CO₂ solubility of Weiss (1974); each converted to the free
   scale, the pH (NBS) too, as the source does. DIC = (alkalinity − [OH⁻] + [H⁺] − [B(OH)₄⁻]) / (α1 + 2 α2),
   CO₂ = DIC α0; NH₃-N = TAN K / (K + [H⁺]); H₂S = total sulfide × 34.08 / 32.07 × [H⁺] / (K + [H⁺]). A pH
-  and an alkalinity that cannot go together (the hydroxide alone above the alkalinity) are refused.
+  and an alkalinity that cannot go together (the hydroxide and the borate alone at or above the alkalinity) are refused:
+  by the form and a unit's chart with the reason, and by the core itself (`ImpossibleWaterError`), by one rule.
 - **The ionic strength and the NBS pH** (formula 3 since 2026-11-09; the source's convention, formula 1, took the
   ionic strength from the salinity alone, so a fresh water was ideal): up to 1 ‰ the water's own ionic strength (the
   conductivity at 25 °C, else the salinity, never below the measured hardness and alkalinity's ions; none measured, 0)
@@ -2959,7 +2962,8 @@ the samples only. The ration's temperature takes a fresh sensor value at its mom
 A unit's or a system's Deffeyes can be drawn as it was at a past moment (`?at=` on the window's address, read by
 `core.dates.read_moment`, 1900-2100, else 400; the site's
 clock): the samples taken up to then and each channel's value then, from the bindings that held then. The hourly trail of
-a unit's point on the diagram is `sensors:trail` (JSON, from the hour rollup). The monitoring card's own buttons for
+a unit's point on the diagram is `sensors:trail` (JSON, from the hour rollup: `points`, the hours `missing` an input and
+the hours `impossible`, whose pH and alkalinity cannot go together, never drawn). The monitoring card's own buttons for
 these, for a place's charts (`sensors:target_charts`) and for binding a channel from a card (`sensors:binding_create`
 with `?channel=&target=`) are left to the card-template designer.
 
@@ -3743,8 +3747,9 @@ steps are in the scratchpad plan `chemcore/PLAN.md`; the state of each step is b
 - The handshake: `chemcore/EXPECTED` names the build the server accepts (version, formula version, a digest of the
   core's source). The system check `core.E001` (an Error) stops the server when the installed module differs.
   `chemcore/scripts/gen_expected.sh` writes the file from the built module; it is never edited by hand.
-- Errors are explicit: never a silent fallback, never a NaN shown as a number. Every formula carries its
-  literature source and validity range in the code.
+- Errors are explicit: never a silent fallback, never a NaN shown as a number, never a concentration below 0 (a water
+  that cannot be is refused: `ImpossibleWaterError`, below). Every formula carries its literature source and validity
+  range in the code.
 
 **Building from a clean machine** (Docker is the only requirement; native Windows builds are not supported: the
 development machine has no MSVC linker, and the owner chose container-only development):
@@ -3793,7 +3798,7 @@ temperature (a synthetic page: 54 different temperatures, 99 to 164 ms, 128 KB c
   names the formula modules' git blobs. `farm/tests/test_golden.py`: the recorder reproduces itself byte for byte and
   today's Python reproduces v1 bit for bit. v1 is never re-recorded silently; a version that changes results is v2,
   after the owner decides. `chemcore/tolerances.toml` holds the parity classes the Rust core will be held to.
-- *Formula 3 and golden v3* (`chemcore/golden/v3`, 200 KB; I1 and I2, owner amendment B5; **the application's since
+- *Formula 3 and golden v3* (`chemcore/golden/v3`, 480 KB; I1 and I2, owner amendment B5; **the application's since
   2026-11-09**, `FORMULA_VERSION` 3). Every chemistry of a water starts from `chemistry.water_equilibria` (in Rust
   `fresh::water_equilibria`; the analysis, the chart, the dosing, the simulator, the small charts, the replay, the trail
   and a sample's NH₃ all take it), and every `Equilibria` says what it was worked out by: its `formula`, its
@@ -3804,7 +3809,7 @@ temperature (a synthetic page: 54 different temperatures, 99 to 164 ms, 128 KB c
   0 with nothing measured (formula 1's ideal water); the constants are the thermodynamic ones made concentration
   constants with Davies activity coefficients whose A is the temperature's (I1: ε of Malmberg & Maryott 1956, ρ of
   Kell 1975; Hamer's 1968 table within 0.03 %). From 5 ‰ (`SEA_FROM`) they are formula 1's seawater constants, the NBS
-  conversion with the same A. Between, each constant is the geometric blend, the sea's weight linear in the salinity
+  conversion with the same A and Kw Millero's on his seawater scale (the corrections of 2026-11-10, below). Between, each constant is the geometric blend, the sea's weight linear in the salinity
   (Millero et al. 2006 measured K1, K2 from S 1; Dickson's 1990 KSO₄ and KB hold from S 5): the old 5 ‰ boundary jumped
   up to 25 % in CO₂, the band not at all. The band assumes sea water's ions (sulfate, fluoride, the Mg and Ca ion pairs in Millero's K1
   and K2, borate): a unit may say its **water origin** (cross review F3, F4). Salt-added fresh water takes the fresh path up
@@ -3827,14 +3832,40 @@ temperature (a synthetic page: 54 different temperatures, 99 to 164 ms, 128 KB c
   (cross review F8: only the compensated conductivity is read; the sensors' `conductivity_us_cm`, at the water's own
   temperature, never). Formula 1 is still worked out exactly, by name only (`formula=1`: golden v1, `FORMULAS` = 1, 3),
   so a value shown before the switch can be reproduced; a test fails when an application module calls formula 1's
-  `equilibria`. `chemcore/scripts/record_golden_v3.py` records golden v3 from the core (1 134 waters, each with formula
-  1's and formula 3's constants and provenance, and the whole analysis of each by both); `farm/tests/test_golden_v3.py`
+  `equilibria`. `chemcore/scripts/record_golden_v3.py` records golden v3 from the core (1 980 waters, each with formula
+  1's and formula 3's constants and provenance, the CO₂, the NH₃ share and, from 5 ‰, log Ω at five pH, and the whole
+  analysis of each by both; each recording again is by the script, its reason in the script's docstring); `farm/tests/test_golden_v3.py`
   holds the core to it bit for bit; `farm/tests/test_cold_water.py` holds formula 3 at 0 to 12 °C to Emerson et al.'s
   table, the Plummer & Busenberg and Harned & Hamer constants and an independent implementation of the free CO₂. Every NH₃ and CO₂ judgement takes the larger of the basis the limits were set on and the activity-corrected
   value (cross review F1: `Equilibria::nh3_share`, `ph_where_nh3`, `co2_judged`, `ph_where_co2`, `fresh::limits_basis`;
   the corrected values beside them as information; `farm/tests/test_limits_basis.py`, `chemcore/core/tests/basis.rs`). The
   comparison for the owner, in Turkish, with the jump table, the choice of the band and the before and after numbers
   at 2, 5, 8 and 12 °C, is `chemcore/findings/I2-comparison.md`; I1 is in `chemcore/findings/B1.md`.
+- *Three corrections to formula 3* (2026-11-10, owner-approved after an independent check of the core against PyCO2SYS
+  1.8.3.4 and seacarb 3.4.2, numbers only; formula 3 had not left its branch, so they are in formula 3 itself and golden
+  v3 was recorded again by its script; formula 1 and golden v1 are untouched, each keeping its old behaviour by name).
+  **Kw**: formula 3's ion product of water is Millero's (1995) on his seawater scale (`kw_sws`, ln constant 148.9802)
+  over [H⁺]SWS / [H⁺]free (`kw_free`), as K1, K2 and KNH4 are converted, on the sea path (`fresh::sea_equilibria`), in
+  the band and on the fresh path, where at S 0 it is pure water's (pKw 13.995 at 25 °C). Formula 1's `kw_total` is the
+  2007 Guide's total-scale value (Dickson, Sabine & Christian 2007, ch. 5, eq. 62: Millero's constant less 0.015, a
+  sea-water approximation that leaves pKw 14.001 in pure water); its docstring had named Millero as the source. Kw
+  moved by −0.8 to +1.5 % in golden v3, formula 3's own CO₂ by at most +0.085 % there (pH 6.5 to 8.5); nearer the
+  alkalinity floor more (the change is Kw's times the hydroxide's share of what is above the floor: 0.4 % at 40 °C, S 40,
+  1 meq/L, pH 9). The basis the limits were set on keeps formula 1's Kw, so a judged CO₂ never falls below formula 1's.
+  **Ω**: the calcite and aragonite saturation takes the calcium (mg/L) and the carbonate (of a per-litre alkalinity) per
+  litre, and Mucci's Ksp is per kg², so formula 3 takes the Ksp per litre (`Equilibria::ksp_per_litre`: times the square
+  of `seawater_density`, the one-atmosphere EOS-80 of Millero & Poisson 1981, check values of UNESCO 1983), one
+  definition for the small chart's index and the chart's Ω = 1 line. Ω had been ρ² too high: it fell by 4.1 to 5.4 % at
+  S 35 and under 0.8 % at S 5. **A water that cannot be**: a pH whose hydroxide and borate alone are at least the
+  alkalinity (its DIC, CO₂ and carbonate would be 0 or negative; 40 °C, S 40, 0.5 meq/L, pH 9 gave a DIC of −0.017
+  mmol/L) is refused by the core at every door (`ChemError::ImpossibleWater`, in Python `native.ImpossibleWaterError`, a
+  ValueError): the analysis (the water and the target), the equilibria's `dic`, `co2_judged`, `co2` and `carbonate`,
+  the chart, the small charts, the safe zone, a judged step and the simulator's start. One rule,
+  `Equilibria::possible`, which `why_impossible` asks too, so the reason the calculator's form, a unit's chart and a
+  replay frame say and the core's refusal are one decision; the trail (`sensors:trail`) lists such an hour under
+  `impossible` and draws no point. The chart's own geometry still follows a pH line below its floor (the safe zone's
+  corners, the solver of a CO₂ border): those are not waters. Tests: `chemcore/core/tests/kw.rs`, `omega.rs`,
+  `impossible.rs`; `farm/tests/test_saturation.py`, `test_impossible_water.py`, `sensors/tests/test_impossible.py`.
 - *Anchors* (`chemcore/golden/anchors.json`): the constants and a carbonate chain at three waters, worked out at 50
   digits with mpmath (`chemcore/scripts/anchors_mpmath.py`, mpmath pinned by hash in `anchors.lock`, run once, never
   by the server) from the formulas typed from the papers, each paper's check value asserted first. Today's Python

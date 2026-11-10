@@ -63,8 +63,12 @@ AREAS = [
     Area(_('Sea-lice counts'), 'farm.LiceCount', actions=('view', 'add', 'delete')),
     # Regulatory reports: Read is the Reports page, a report and its exports; Create starts a report, a notice or a
     # correction; Edit fills in a draft and records that it was filed (a state change under Edit, as a review is for
-    # knowledge entries); Delete discards a draft. A filed report is never changed or deleted.
-    Area(_('Regulatory reports'), 'reports.Report'),
+    # knowledge entries); Delete discards a draft. A filed report is never changed or deleted. A report is computed from
+    # the farm's records, so its reader sees and exports those figures without the farm areas' Read: kept on purpose (a
+    # regulatory filing needs them; owner decision F-173, 2026-11-10) and said under the area in the role matrix.
+    Area(_('Regulatory reports'), 'reports.Report',
+         note=_('Read also shows and exports the farm figures a report is computed from (stock and biomass, slaughter, '
+                'smolt, cleaner fish, sea-lice counts) to a person without Read on the farm areas they come from.')),
     # Questions for the authority: the register of what only Mattilsynet, Fiskeridirektoratet or the county can answer, which
     # the people who run the reports keep (Read, Create, Edit with the answer, Delete).
     Area(_('Questions for the authority'), 'reports.OpenQuestion'),
@@ -101,8 +105,12 @@ AREAS = [
     Area(_('Scheduling settings'), 'hr.SchedulingSettings', actions=('view', 'change')),
     # Experiments: Read the list and the read pages, Create makes an experiment (and copies one), Edit changes it, designs
     # and places it, starts it and releases or replaces a tank, Delete removes a draft. A started experiment is never
-    # deleted. Who may do what to which experiment (its team) comes with the permissions plan.
-    Area(_('Experiments'), 'experiments.Experiment'),
+    # deleted. Who may do what to which experiment (its team) comes with the permissions plan. An experiment's read page
+    # shows the figures of its own tanks read from the farm's records, without the farm areas' Read: kept on purpose (a
+    # trial needs its own tanks' figures; owner decision F-168, 2026-11-10) and said under the area in the role matrix.
+    Area(_('Experiments'), 'experiments.Experiment',
+         note=_('Read also shows the farm figures of an experiment’s own tanks (batches, fish, biomass, survival, feed '
+                'conversion) to a person without Read on the farm areas they come from.')),
     # Sensors: the configuration of where live values come from. Edit on Channels also saves a channel's calibrations.
     Area(_('Connections'), 'sensors.Connection'),
     Area(_('Payload formats'), 'sensors.PayloadFormat'),

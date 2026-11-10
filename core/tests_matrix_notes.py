@@ -19,8 +19,8 @@ SAID = {
                               'the farm areas they come from.',
     },
     'nb': {
-        'Forsøk': 'Les viser også driftstallene for forsøkets egne kar (partier, fisk, biomasse, overlevelse, fôrfaktor) '
-                  'til en person uten Les på driftsområdene de kommer fra.',
+        'Forsøk': 'Les viser også driftstallene for forsøkets egne kar (fiskegrupper, fisk, biomasse, overlevelse, '
+                  'fôrfaktor) til en person uten Les på driftsområdene de kommer fra.',
         'Lovpålagte rapporter': 'Les viser og eksporterer også driftstallene en rapport beregnes fra (beholdning og '
                                 'biomasse, slakt, smolt, rensefisk, lusetellinger) til en person uten Les på '
                                 'driftsområdene de kommer fra.',

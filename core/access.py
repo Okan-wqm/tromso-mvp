@@ -39,6 +39,9 @@ class Area:
     label: str            # _('Sites'), translatable text
     model: str            # 'farm.Site'
     actions: tuple = ('view', 'add', 'change', 'delete')
+    # What the area's rights also reach that its name does not say, in a sentence for whoever grants it: the role matrix
+    # prints it under the area (an experiment's and a report's pages show farm figures without the farm areas' Read).
+    note: str = ''
 
     def perm(self, action):
         meta = apps.get_model(self.model)._meta

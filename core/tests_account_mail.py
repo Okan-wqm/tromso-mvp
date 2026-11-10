@@ -3,6 +3,7 @@ Through the pages, checked against the outbox, the stored rows and the activity 
 configured public address, works once and for a limited time, and says so plainly when it no longer does."""
 import json
 import re
+import threading
 from datetime import datetime, timedelta
 from unittest import mock
 
@@ -13,11 +14,12 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
 from django.core.mail.backends.base import BaseEmailBackend
 from django.core.management import call_command
-from django.test import TestCase, override_settings
+from django.db import connection
+from django.test import TestCase, TransactionTestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from . import access
+from . import access, accountmail
 from .models import AccountMail, AuditLog, Profile
 from .tests import user_data
 
@@ -356,7 +358,10 @@ class InvitationRecordTests(AccountMailCase):
 
     @override_settings(MAILERS=REFUSING)
     def test_a_failed_send_keeps_the_user_and_shows_on_their_row_why(self):
-        response = self.client.post(reverse('core:user_create'), user_data(), follow=True)
+        with self.assertLogs('core.accountmail', 'ERROR') as logged:
+            response = self.client.post(reverse('core:user_create'), user_data(), follow=True)
+        self.assertEqual(len(logged.records), 1)                                  # the server's log has the line
+        self.assertIn('was not sent: ConnectionRefusedError: [Errno 111] Connection refused', logged.output[0])
         kari = get_user_model().objects.get(username='kari')                      # the user is there
         self.assertEqual(mail.outbox, [])
         self.assertEqual([(str(message), message.level_tag) for message in response.context['messages']], [
@@ -376,12 +381,14 @@ class InvitationRecordTests(AccountMailCase):
 
     @override_settings(MAILERS=SILENT)
     def test_a_mail_server_that_takes_nothing_counts_as_not_sent(self):
-        self.client.post(reverse('core:user_create'), user_data())
+        with self.assertLogs('core.accountmail', 'ERROR'):
+            self.client.post(reverse('core:user_create'), user_data())
         self.assertEqual(stored('error'), [('The mail server took no message.',)])
 
     @override_settings(PUBLIC_BASE_URL='')
     def test_without_a_public_address_nothing_is_sent_and_the_row_says_so(self):
-        self.client.post(reverse('core:user_create'), user_data())
+        with self.assertLogs('core.accountmail', 'ERROR'):
+            self.client.post(reverse('core:user_create'), user_data())
         self.assertEqual(mail.outbox, [])
         self.assertTrue(get_user_model().objects.filter(username='kari').exists())
         self.assertIn('PUBLIC_BASE_URL is not set', stored('error')[0][0])
@@ -392,8 +399,10 @@ class InvitationRecordTests(AccountMailCase):
                 raise RuntimeError(f'could not deliver {messages[0].body}')
 
         with mock.patch('django.core.mail.handler.import_string', return_value=Leaking), \
-                override_settings(MAILERS={'default': {'BACKEND': 'leaking'}}):
+                override_settings(MAILERS={'default': {'BACKEND': 'leaking'}}), \
+                self.assertLogs('core.accountmail', 'ERROR') as logged:
             self.client.post(reverse('core:user_create'), user_data())
+        self.assertNotRegex(logged.output[0], r'[0-9a-z]{6}-[0-9a-f]{32}')         # nor does the server's log
         kari = get_user_model().objects.get(username='kari')
         error = AccountMail.objects.get().error
         self.assertTrue(error.startswith('RuntimeError: could not deliver'))
@@ -497,7 +506,7 @@ class ResendTests(AccountMailCase):
         self.assertEqual((response.status_code, response['X-Modal-Redirect']), (204, reverse('core:user_list')))
 
     def test_after_a_failed_send_sending_again_goes_out(self):
-        with override_settings(MAILERS=REFUSING):
+        with override_settings(MAILERS=REFUSING), self.assertLogs('core.accountmail', 'ERROR'):
             response = self.client.post(self.url, follow=True)
         self.assertEqual([(str(message), message.level_tag) for message in response.context['messages']], [(
             'The invitation to kari@example.com was not sent: ConnectionRefusedError: [Errno 111] Connection refused',
@@ -559,3 +568,133 @@ class ResendTests(AccountMailCase):
         self.assertContains(log, '<span class="audit-action">Invited</span>', html=True)
         self.assertContains(log, 'kari@example.com')
         self.assertNotContains(log, '<del>')                                    # an event, not a change of a value
+
+
+class ForgotPasswordTests(AccountMailCase):
+    """“Forgot your password?”: the answer never says whether an address has an account, and one account is sent only
+    so many mails an hour."""
+
+    def setUp(self):
+        super().setUp()
+        self.client.logout()
+        self.ali = get_user_model().objects.create_user('ali', 'ali@example.com', 'eski-sifre-123')
+
+    def ask(self, address, **extra):
+        return self.client.post(reverse('password_reset'), {'email': address}, **extra)
+
+    def answer(self, address):
+        """What the person asking sees: where they are sent and the page there, without the per-request tokens."""
+        response = self.ask(address, follow=True)
+        page = re.sub(r'name="csrfmiddlewaretoken" value="[^"]+"|nonce="[^"]+"', '', response.content.decode())
+        return response.redirect_chain, response.status_code, page
+
+    def test_an_unknown_address_is_answered_like_a_known_one_and_gets_nothing(self):
+        known = self.answer('ali@example.com')
+        self.assertEqual(len(mail.outbox), 1)
+        get_user_model().objects.filter(pk=self.ali.pk).update(is_active=False)
+        for address in ('nobody@example.com', 'ali@example.com', 'ALI@EXAMPLE.COM'):      # unknown, and inactive
+            with self.subTest(address=address):
+                self.assertEqual(self.answer(address), known)
+        self.assertEqual(known[0], [(reverse('password_reset_done'), 302)])
+        self.assertIn('If an account uses this address, a reset link is on its way.', known[2])
+        self.assertEqual((len(mail.outbox), AccountMail.objects.count()), (1, 1))
+
+    def test_a_reset_is_recorded_as_the_persons_own_and_not_in_the_activity_log(self):
+        self.ask('Ali@Example.com')                                               # the address in any case
+        self.assertEqual(stored('user', 'kind', 'address', 'requested_by', 'error'),
+                         [(self.ali.pk, 'reset', 'ali@example.com', None, '')])
+        self.assertEqual(AuditLog.objects.count(), 0)
+        token = link_in(mail.outbox[0]).strip('/').split('/')[-1]
+        self.assertNotIn(token, json.dumps(list(AccountMail.objects.values()), default=str))
+
+    def test_one_account_gets_three_reset_mails_an_hour_and_the_fourth_request_is_answered_the_same(self):
+        answers = [self.answer('ali@example.com') for _ in range(5)]
+        self.assertEqual(len(mail.outbox), 3)
+        self.assertEqual(AccountMail.objects.count(), 3)
+        self.assertEqual(answers, [answers[0]] * 5)
+        # another account is not held back by it
+        get_user_model().objects.create_user('ola', 'ola@example.com', 'x')
+        self.ask('ola@example.com')
+        self.assertEqual(mail.outbox[-1].to, ['ola@example.com'])
+        # an hour later the account is sent one again
+        AccountMail.objects.filter(user=self.ali).update(created_at=timezone.now() - timedelta(minutes=61))
+        self.ask('ali@example.com')
+        self.assertEqual([sent.to for sent in mail.outbox].count(['ali@example.com']), 4)
+
+    def test_a_request_held_back_is_written_to_the_servers_log(self):
+        with self.assertLogs('core.accountmail', 'WARNING') as logged:
+            for _ in range(4):
+                self.ask('ali@example.com')
+        self.assertEqual(len(logged.records), 1)
+        self.assertIn(f'user {self.ali.pk}', logged.output[0])
+        self.assertNotIn('ali@example.com', logged.output[0])
+
+    @override_settings(PASSWORD_RESET_MAILS_PER_HOUR=1)
+    def test_the_limit_is_a_setting_and_a_failed_send_counts(self):
+        with override_settings(MAILERS=REFUSING), self.assertLogs('core.accountmail', 'ERROR'):
+            failed = self.answer('ali@example.com')
+        self.assertEqual(stored('kind', 'error'),
+                         [('reset', 'ConnectionRefusedError: [Errno 111] Connection refused')])
+        self.assertEqual(self.answer('ali@example.com'), failed)                 # the same answer, sent or not
+        self.assertEqual((mail.outbox, AccountMail.objects.count()), ([], 1))
+
+    def test_invitations_do_not_count_and_the_admins_resend_is_not_held_back(self):
+        self.client.force_login(self.admin)
+        self.client.post(reverse('core:user_create'), user_data())
+        kari = get_user_model().objects.get(username='kari')
+        for _ in range(4):
+            self.client.post(reverse('core:user_invite', args=[kari.pk]))
+        self.assertEqual(len(mail.outbox), 5)
+        self.client.logout()
+        self.ask('kari@example.com')                                              # her own request still goes out
+        self.assertEqual((len(mail.outbox), mail.outbox[-1].subject), (6, 'Reset your password'))
+
+    def test_two_accounts_on_one_address_each_get_their_own_link(self):
+        twin = get_user_model().objects.create_user('ali2', 'ali@example.com', 'x')   # made outside the users tab
+        self.ask('ali@example.com')
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertEqual(set(stored('user')), {(self.ali.pk,), (twin.pk,)})
+
+
+class WaitingBackend(BaseEmailBackend):
+    """A mail server that answers only when the test lets it, so two requests are under way at once."""
+    started = threading.Event()
+    release = threading.Event()
+    sent = []
+
+    def send_messages(self, messages):
+        type(self).started.set()
+        type(self).release.wait(timeout=20)
+        type(self).sent.extend(messages)
+        return len(messages)
+
+
+class ResetLimitAtOnceTests(TransactionTestCase):
+    """The hourly limit holds for requests that arrive together: each waits for the one before it on the account's
+    row, so a burst of requests does not get past the count (they would all read "none sent yet")."""
+
+    @override_settings(MAILERS={'default': {'BACKEND': 'core.tests_account_mail.WaitingBackend'}},
+                       PASSWORD_RESET_MAILS_PER_HOUR=1, PUBLIC_BASE_URL=BASE)
+    def test_two_requests_at_once_send_one_mail(self):
+        ali = get_user_model().objects.create_user('ali', 'ali@example.com', 'eski-sifre-123')
+        WaitingBackend.started.clear(), WaitingBackend.release.clear(), WaitingBackend.sent.clear()
+        results = []
+
+        def ask():
+            try:
+                results.append(accountmail.reset(get_user_model().objects.get(pk=ali.pk)))
+            finally:
+                connection.close()
+
+        first, second = threading.Thread(target=ask), threading.Thread(target=ask)
+        first.start()
+        self.assertTrue(WaitingBackend.started.wait(timeout=20))               # the first is at the mail server
+        with self.assertLogs('core.accountmail', 'WARNING'):
+            second.start()
+            second.join(timeout=1)
+            self.assertTrue(second.is_alive())                                      # the second waits its turn
+            WaitingBackend.release.set()
+            first.join(timeout=20), second.join(timeout=20)
+        self.assertFalse(first.is_alive() or second.is_alive())
+        self.assertEqual((len(WaitingBackend.sent), AccountMail.objects.count()), (1, 1))
+        self.assertEqual(sorted(result is None for result in results), [False, True])

@@ -88,6 +88,15 @@ class MailSettingsTests(SimpleTestCase):
         self.assertEqual(computed('s.PASSWORD_RESET_MAILS_PER_HOUR'), 3)
         self.assertEqual(computed('s.PASSWORD_RESET_MAILS_PER_HOUR', PASSWORD_RESET_MAILS_PER_HOUR='1'), 1)
 
+    def test_a_lifetime_or_a_limit_under_one_stops_the_settings(self):
+        # no link would ever work, no reset mail ever be sent: said when the server starts, not found out by a person
+        for name in ('ACCOUNT_LINK_HOURS', 'PASSWORD_RESET_MAILS_PER_HOUR'):
+            for value in ('0', '-1'):
+                with self.subTest(name=name, value=value):
+                    done = run(['-c', 'import config.settings'], **{name: value})
+                    self.assertNotEqual(done.returncode, 0)
+                    self.assertIn(f'{name} must be 1 or more', done.stderr)
+
 
 def smtp(**options):
     return {'default': {'BACKEND': SMTP, 'OPTIONS': {

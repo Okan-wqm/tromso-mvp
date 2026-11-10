@@ -370,3 +370,49 @@ class ClosingTests(ForgottenTestCase):
                                                 'version': '2'}).status_code, 302)
         done.refresh_from_db()
         self.assertEqual((done.clock_out, done.via), (at(15), 'entered'))
+
+
+class NoTimeAheadTests(ForgottenTestCase):
+    """Review R6: a time typed by hand is a time that has been. A clock-out ahead of now would close a forgotten stretch
+    days ahead (invented hours), keep the person from clocking in with the wrong sentence and take them out of every
+    count; so neither a clock-in nor a clock-out later than the server's now is taken, on the form or by the service."""
+
+    AHEAD_OUT = 'The clock-out cannot be later than now: give the time the person really left.'
+    AHEAD_IN = 'The clock-in cannot be later than now.'
+
+    def post(self, url, **values):
+        self.client.force_login(self.lead)
+        with now(at(10)):
+            return self.client.post(url, {'clock_in': '2026-02-27T07:00', 'clock_out': '', 'note': 'Phone was flat',
+                                          **values})
+
+    def test_a_forgotten_stretch_is_not_closed_with_a_time_ahead(self):
+        url = reverse('hr:production_attendancerecord_edit', args=[self.open.pk])
+        before = AuditLog.objects.count()
+        errors = self.post(url, clock_out='2026-03-05T15:30', version='1').context['form'].errors
+        self.assertEqual(errors, {'clock_out': [self.AHEAD_OUT]})
+        errors = self.post(url, clock_out='2026-03-02T10:01', version='1').context['form'].errors     # a minute ahead
+        self.assertEqual(errors, {'clock_out': [self.AHEAD_OUT]})
+        self.open.refresh_from_db()
+        self.assertEqual((self.open.clock_out, self.open.via, AuditLog.objects.count()), (None, 'self', before))
+        board = read.board(self.lead, at(10))
+        self.assertEqual((board.on_site, board.forgotten_open), (1, 1))             # still counted, still to be closed
+        self.assertEqual(self.post(url, clock_out='2026-03-02T10:00', version='1').status_code, 302)   # now itself
+        self.open.refresh_from_db()
+        self.assertEqual(self.open.clock_out, at(10))
+
+    def test_presence_is_not_entered_ahead_on_the_form_or_by_the_service(self):
+        self.open.soft_delete(self.lead)
+        url = reverse('hr:production_attendancerecord_create')
+        errors = self.post(url, employee=str(self.in_a.pk), clock_in='2026-03-09T07:00').context['form'].errors
+        self.assertEqual(errors, {'clock_in': [self.AHEAD_IN]})
+        errors = self.post(url, employee=str(self.in_a.pk), clock_in='2026-03-02T07:00',
+                           clock_out='2026-03-02T15:00').context['form'].errors
+        self.assertEqual(errors, {'clock_out': [self.AHEAD_OUT]})
+        with now(at(10)):
+            for start, end, sentence in ((at(11), None, self.AHEAD_IN), (at(7), at(15), self.AHEAD_OUT)):
+                with self.assertRaisesMessage(ValidationError, sentence):
+                    services.enter_presence(self.lead, self.in_a, start, end, 'Phone was flat')
+            self.assertFalse(AttendanceRecord.objects.exists())
+            record = services.enter_presence(self.lead, self.in_a, at(7), at(10), 'Phone was flat')
+        self.assertEqual(record.clock_out, at(10))

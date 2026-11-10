@@ -23,6 +23,8 @@ D = Decimal
 LABEL = 'Max weight ratio of batches in one unit'
 NO_CHECK = ('No size check was set: a cleaner fish is topped up with fish of other sizes. Give it a limit on the '
             'Stocking tab if this farm wants one.')
+DEFAULT_SET = ('The size limit was set to 2×, the default for a production species. Empty it on the Stocking tab if this '
+               'species needs no check.')
 LUMPFISH = {'common_name': 'Lumpfish', 'scientific_name': 'Cyclopterus lumpus', 'code': 'LUMP', 'freshwater': False,
             'saltwater': True}
 
@@ -32,12 +34,21 @@ def migration():
 
 
 class CleanerFishOfferTests(SpeciesTestCase):
+    """A new species' size limit: the box is empty, and an empty box takes the offer of the species' kind (2 for a
+    production species, no check for a cleaner fish), said after saving. Whatever is typed is kept, a 2 for a cleaner
+    fish too: the form never has to guess whether a value was typed or only left standing (review R11)."""
+
     def messages(self, response):
         return [str(message) for message in response.context['messages']]
 
-    def test_a_new_cleaner_fish_left_at_the_offered_2_is_saved_with_no_check_and_the_person_is_told(self):
+    def test_the_box_is_empty_on_a_new_species_and_the_form_says_what_empty_means(self):
+        form = self.client.get(reverse('farm:species_create'), headers={'X-Modal': '1'})
+        self.assertIsNone(form.context['form']['max_weight_ratio'].value())
+        self.assertContains(form, 'Left empty on a new species: 2 for a production species, no check for a cleaner fish')
+
+    def test_an_empty_box_on_a_new_cleaner_fish_is_no_check_and_the_person_is_told(self):
         response = self.client.post(reverse('farm:species_create'), species_data(
-            **LUMPFISH, cleaner_fish_type='lumpfish', max_weight_ratio='2'), follow=True)
+            **LUMPFISH, cleaner_fish_type='lumpfish', max_weight_ratio=''), follow=True)
         species = Species.objects.get()
         self.assertEqual(stored(species, 'cleaner_fish_type', 'max_weight_ratio'), ('lumpfish', None))
         self.assertIn(NO_CHECK, self.messages(response))
@@ -46,32 +57,34 @@ class CleanerFishOfferTests(SpeciesTestCase):
 
     def test_a_species_the_catalogue_knows_as_a_cleaner_fish_gets_no_check_too(self):
         """The type was not chosen: the catalogue fills it in from the scientific name when the species is saved."""
-        response = self.client.post(reverse('farm:species_create'), species_data(**LUMPFISH, max_weight_ratio='2'),
-                                    follow=True)
+        response = self.client.post(reverse('farm:species_create'), species_data(**LUMPFISH), follow=True)
         self.assertEqual(stored(Species.objects.get(), 'cleaner_fish_type', 'max_weight_ratio'), ('lumpfish', None))
         self.assertIn(NO_CHECK, self.messages(response))
 
-    def test_a_limit_typed_for_a_cleaner_fish_is_kept_and_it_stays_editable(self):
+    def test_a_2_typed_for_a_new_cleaner_fish_is_kept(self):
+        """The reviewer's case: a person who wants 2 for a wrasse says so on the create form, and it stands."""
         response = self.client.post(reverse('farm:species_create'), species_data(
-            **LUMPFISH, cleaner_fish_type='lumpfish', max_weight_ratio='3'), follow=True)
+            **LUMPFISH, cleaner_fish_type='lumpfish', max_weight_ratio='2'), follow=True)
         species = Species.objects.get()
-        self.assertEqual(stored(species, 'max_weight_ratio'), (D('3.00'),))
-        self.assertNotIn(NO_CHECK, self.messages(response))
-        self.edit(species, **LUMPFISH, cleaner_fish_type='lumpfish', max_weight_ratio='2')      # an edit is never rewritten
         self.assertEqual(stored(species, 'max_weight_ratio'), (D('2.00'),))
-        self.edit(species, **LUMPFISH, cleaner_fish_type='lumpfish', max_weight_ratio='')
-        self.assertEqual(stored(species, 'max_weight_ratio'), (None,))
-        self.assertEqual([entry.changes[LABEL] for entry in AuditLog.objects.filter(
-            entity_id=str(species.pk), action='update').order_by('created_at')], [['3.00', '2.00'], ['2.00', None]])
-
-    def test_a_production_species_is_offered_2_and_keeps_it(self):
-        response = self.client.post(reverse('farm:species_create'), species_data(max_weight_ratio='2'), follow=True)
-        self.assertEqual(stored(Species.objects.get(), 'max_weight_ratio'), (D('2.00'),))
         self.assertNotIn(NO_CHECK, self.messages(response))
+        self.assertEqual(AuditLog.objects.get(entity_id=str(species.pk)).changes[LABEL], [None, '2.00'])
+        self.edit(species, **LUMPFISH, cleaner_fish_type='lumpfish', max_weight_ratio='')      # an edit: empty is no check
+        self.assertEqual(stored(species, 'max_weight_ratio'), (None,))
 
-    def test_the_form_says_it(self):
-        form = self.client.get(reverse('farm:species_create'), headers={'X-Modal': '1'})
-        self.assertContains(form, 'A new cleaner fish (lumpfish, wrasse) left at the offered value is saved with no check')
+    def test_an_empty_box_on_a_new_production_species_is_2_and_the_person_is_told(self):
+        response = self.client.post(reverse('farm:species_create'), species_data(max_weight_ratio=''), follow=True)
+        species = Species.objects.get()
+        self.assertEqual(stored(species, 'max_weight_ratio'), (D('2.00'),))
+        self.assertIn(DEFAULT_SET, self.messages(response))
+        self.assertEqual(AuditLog.objects.get(entity_id=str(species.pk)).changes[LABEL], [None, '2.00'])
+        self.edit(species, max_weight_ratio='')                              # afterwards it can be emptied: no check
+        self.assertEqual(stored(species, 'max_weight_ratio'), (None,))
+        response = self.client.post(reverse('farm:species_create'), species_data(
+            common_name='Rainbow trout', scientific_name='Oncorhynchus mykiss', code='RBT', max_weight_ratio='3'),
+            follow=True)
+        self.assertEqual(stored(Species.objects.get(code='RBT'), 'max_weight_ratio'), (D('3.00'),))
+        self.assertNotIn(DEFAULT_SET, self.messages(response))
 
 
 class CleanerFishTopUpTests(CleanerFishTestCase):
@@ -89,7 +102,7 @@ class CleanerFishTopUpTests(CleanerFishTestCase):
         self.user.groups.add(role('Species maker', 'view_species', 'add_species'))
         made = self.client.post(reverse('farm:species_create'), species_data(
             common_name='Ballan wrasse', scientific_name='Labrus bergylta', code='USB', freshwater=False, saltwater=True,
-            cleaner_fish_type='wrasse', max_weight_ratio='2'))
+            cleaner_fish_type='wrasse', max_weight_ratio=''))
         self.assertEqual(made.status_code, 302, made.context and made.context['form'].errors)
         self.wrasse = Species.objects.get(code='USB')
         self.url = reverse('farm:stock_input')
@@ -157,6 +170,10 @@ class CleanerFishMigrationTests(SpeciesTestCase):
         self.edit(self.chosen, common_name='Corkwing wrasse', scientific_name='Symphodus melops', code='COR',
                   cleaner_fish_type='wrasse', max_weight_ratio='2')             # a person set 2: theirs, not the default
         self.unchecked = self.make('Cuckoo wrasse', 'Labrus mixtus', 'CUC', cleaner_fish_type='wrasse')
+        self.client.post(reverse('farm:species_create'), species_data(
+            common_name='Rock cook', scientific_name='Centrolabrus exoletus', code='ROC', freshwater=False,
+            saltwater=True, cleaner_fish_type='wrasse', max_weight_ratio='2'))    # 2 from its create form: typed?
+        self.typed = Species.objects.get(code='ROC')
 
     def limits(self):
         return {row.code: row.max_weight_ratio for row in Species.all_objects.all()}
@@ -164,9 +181,12 @@ class CleanerFishMigrationTests(SpeciesTestCase):
     def test_a_cleaner_fish_still_at_the_untouched_default_loses_it_logged_and_every_other_limit_stays(self):
         self.assertEqual(stored(self.chosen, 'max_weight_ratio'), (D('2.00'),))
         before = AuditLog.objects.count()
+        self.assertEqual([species.code for species in migration().sort(apps, connection)[1]], ['ROC'])
         self.assertEqual(self.run_migration(), 2)
         self.assertEqual(self.limits(), {'SAL': D('2.00'), 'LUMP': None, 'USB': None, 'GOL': D('2.50'),
-                                         'COR': D('2.00'), 'CUC': None})
+                                         'COR': D('2.00'), 'CUC': None, 'ROC': D('2.00')})
+        # a 2 that came with the species' own creation may have been typed: it is left, and reported
+        self.assertEqual(self.said(self.typed), [])
         self.assertEqual(self.said(self.lump), [('system', 'update', 'Lumpfish (LUMP)', ['2.00', None])])
         self.assertEqual(self.said(self.gone), [('system', 'update', 'Ballan wrasse (USB)', ['2.00', None])])
         self.assertEqual(AuditLog.objects.count(), before + 2)                  # the two it changed, nothing else
@@ -184,7 +204,7 @@ class CleanerFishMigrationTests(SpeciesTestCase):
                   cleaner_fish_type='lumpfish', max_weight_ratio='')
         self.assertEqual(self.run_migration('backward'), 1)
         self.assertEqual(self.limits(), {'SAL': D('2.00'), 'LUMP': None, 'USB': D('2.00'), 'GOL': D('2.50'),
-                                         'COR': D('2.00'), 'CUC': None})         # CUC never had one: not invented
+                                         'COR': D('2.00'), 'CUC': None, 'ROC': D('2.00')})         # CUC never had one: not invented
         self.assertEqual(self.said(self.gone)[-1], ('system', 'update', 'Ballan wrasse (USB)', [None, '2.00']))
         self.assertEqual(len(self.said(self.lump)), 1)                           # only the forward's row
         self.run_migration()                                                     # forward again: the wrasse again

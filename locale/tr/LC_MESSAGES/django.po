@@ -16286,12 +16286,12 @@ msgstr "Artık mesajlarını görmezsiniz. Mesajlarınız adınızla kalır; bir
 #, python-format
 msgid ""
 "Your clock-in of %(since)s was never closed: it has been open more than %(hours)s hours and "
-"counts as a forgotten clock-out. Ask your lead to close it on the Attendance page with the time "
-"you really left; then you can clock in again."
+"counts as a forgotten clock-out. Ask your lead, or whoever keeps attendance for you, to close it "
+"on the Attendance page with the time you really left; then you can clock in again."
 msgstr ""
 "%(since)s tarihli girişiniz hiç kapatılmadı: %(hours)s saatten uzun süredir açık ve unutulmuş "
-"çıkış sayılıyor. Sorumlunuzdan, Yoklama sayfasında gerçekten ayrıldığınız saatle kapatmasını "
-"isteyin; ardından yeniden giriş yapabilirsiniz."
+"çıkış sayılıyor. Sorumlunuzdan veya yoklamanızı tutan kişiden, Yoklama sayfasında gerçekten "
+"ayrıldığınız saatle kapatmasını isteyin; ardından yeniden giriş yapabilirsiniz."
 
 msgid "Your new password is saved. Use it the next time you sign in."
 msgstr "Yeni parolanız kaydedildi. Bir sonraki girişinizde kullanın."

@@ -530,8 +530,8 @@ def forgotten_refusal(record, now=None):
     _day, zone = read.local_day(record.employee, record.clock_in)
     return ValidationError(
         _('Your clock-in of %(since)s was never closed: it has been open more than %(hours)s hours and counts as a '
-          'forgotten clock-out. Ask your lead to close it on the Attendance page with the time you really left; then '
-          'you can clock in again.')
+          'forgotten clock-out. Ask your lead, or whoever keeps attendance for you, to close it on the Attendance page '
+          'with the time you really left; then you can clock in again.')
         % {'since': date_format(timezone.localtime(record.clock_in, zone), 'DATETIME_FORMAT'), 'hours': hours})
 
 

@@ -7,7 +7,7 @@ rest shorter than the minimum, measured between the real instants (so across a w
 only: more hours than the standard week, more days in a row than the maximum, work on a holiday. The statutory figures
 are not constants here: they are settings the owner confirms (hr.models.SchedulingSettings)."""
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, timedelta, timezone
 
 from django.utils.translation import gettext, gettext_noop
 
@@ -120,8 +120,9 @@ STATES = (UPCOMING, PRESENT, LATE, NOT_IN, ABSENT, ON_LEAVE, DONE, FORGOTTEN)
 
 def forgotten_before(now, forgotten_after_hours):
     """The instant before which an open clock-in counts as a forgotten clock-out at `now`: the limit is HR's setting
-    (SchedulingSettings.forgotten_after_hours), never a figure here."""
-    return now - timedelta(hours=forgotten_after_hours)
+    (SchedulingSettings.forgotten_after_hours), never a figure here. Counted in UTC: hours taken off a moment on a
+    site's own clock would be an hour out on the night the clocks change."""
+    return now.astimezone(timezone.utc) - timedelta(hours=forgotten_after_hours)    # elapsed hours, in any zone
 
 
 def forgotten(clock_in, clock_out, now, forgotten_after_hours):

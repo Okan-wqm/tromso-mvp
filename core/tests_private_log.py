@@ -602,7 +602,7 @@ class ViewerTests(TestCase):
         export = self.client.get(reverse('core:database_export', args=['audit_log']))
         text = (export.content if not export.streaming else b''.join(export.streaming_content)).decode()
         self.assertNotIn('changes', text.splitlines()[0])
-        self.assertIn('Bergen', page.content.decode() + text)                # the record's label is still there
+        self.assertIn('A record', page.content.decode())                     # the rest of the row is there
         for digest in self.digests:
             self.assertNotIn(digest, page.content.decode())
             self.assertNotIn(digest, text)

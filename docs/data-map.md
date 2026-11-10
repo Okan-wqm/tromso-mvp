@@ -287,7 +287,7 @@ Who did what to which record, with old and new values.
 - **delete**: none, by design: append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin
 - **read**: core.views.activity_log (`/activity/`)
 - **how it works**: A record's own rows are also shown on the History tab of its edit page.
-- **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log
+- **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log (never shown: changes)
 - **constraints**: chk_audit_log_severity (check)
 - **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 99 more
 
@@ -2373,7 +2373,7 @@ The shift patterns of the roster: a start and an end on the wall clock of the si
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › shifts
 - **forms**: `ShiftForm`
 - **constraints**: uq_shifts_code_live (unique: code); chk_shifts_code (check); chk_shifts_span (check); chk_shifts_break (check); chk_shifts_grace (check); chk_shifts_tone (check); chk_shifts_status (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 18 more
+- **tests that mention it**: `core/tests_private_log.py`, `core/tests_workspaces.py`, `hr/tests/test_attendance.py` and 19 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

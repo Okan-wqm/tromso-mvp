@@ -74,3 +74,23 @@ class ImpliedReadCheckTests(PeopleTestCase):
         self.assertIn('Employees', found[0].msg)
         self.assertNotIn('Edits', found[0].msg)
         self.assertNotIn('Plain', found[0].msg)
+
+    def test_crew_is_read_on_its_own_areas_page_so_read_beside_it_is_never_a_leftover(self):
+        """Review R13: Crew is drawn only on the Shift schedule's own page, which needs Read on that area, so Read with
+        Crew is the one way Crew does anything; it is what the Production worker preset holds. The access model says
+        which widening columns are read so (core.access.OWN_PAGE), and the check leaves them alone. All production and
+        Everyone widen other areas' rows and stand without Read on Employees: Read beside them alone is still listed."""
+        from core import access
+        self.assertEqual(access.OWN_PAGE, ('crew',))
+        roles.create()
+        self.assertEqual(checks.implied_reads(None), [])                    # the two presets as they are made
+        office = Group.objects.create(name='Office staff')
+        give(office, 'hr.view_shiftassignment', 'hr.crew_shiftassignment', 'hr.view_attendancerecord')
+        self.assertEqual(checks.implied_reads(None), [])
+        everyone = Group.objects.create(name='Sees everyone')
+        give(everyone, 'hr.view_employee', 'hr.all_employee')
+        found = checks.implied_reads(None)
+        self.assertEqual([warning.id for warning in found], ['core.W003'])
+        self.assertIn('Sees everyone (Employees)', found[0].msg)
+        self.assertNotIn('Office staff', found[0].msg)
+        self.assertNotIn('Production worker', found[0].msg)

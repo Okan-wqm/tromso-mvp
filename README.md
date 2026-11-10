@@ -3147,10 +3147,15 @@ who reads the log sees everything else but not the people.
 with a check keeps it one; the migration makes it, the only seed: no shift, holiday or leave type is seeded). It is
 changed, never added or deleted. Every setting has exactly one reader: the standard week (the Team overview), the
 minimum rest, the most days in a row and the rest rule, warn or block (the rules of the roster), the working weekdays
-(the days a leave request is charged for) and the punch window and the absent-after minutes (Today). The figures are
+(the days a leave request is charged for), the punch window and the absent-after minutes (Today) and the hours after
+which an open clock-in counts as a forgotten clock-out (`forgotten_after_hours`, 16 until HR sets another; its one rule
+is `hr.rules.forgotten`, see Today & attendance). The figures are
 labelled defaults on the page, **not the law**: none of the statutory figures is verified, so none is a database
 constraint (a rest of 60 minutes can be stored); the settings may only be set stricter than the statute, and the owner
-confirms them. Sanity checks only: ranges and the enumerations.
+confirms them. Sanity checks only: ranges and the enumerations. The forgotten clock-out limit is 1 to 168 hours (a
+database check); a blank or an out-of-range value is refused with its reason, and so is one shorter than the longest
+active shift (a person on that shift would count as forgotten before it ends and could not clock out), as the shift
+form refuses an active shift longer than the limit.
 
 **Shifts** (`/hr/settings/shifts/`, no menu line, reached from the settings page; Shifts is its own matrix area): a name,
 a code (capital letters, digits, hyphens, underscores; unique among live shifts, free again after a delete), the start
@@ -3264,20 +3269,48 @@ the clock-ins inside the window say whether they were late). People planned off,
 with nothing planned or on a day off are not listed (the source counted every unrecorded person absent, HR-12); pending leave is not
 leave; nothing planned and on leave is not listed either. Today shows the figures (`hr.read.Board`): **On site now** first (every open
 clock-in on the farm, whoever looks: the emergency muster, a number only, never names past the viewer's team, by site when
-there are several, `hr.read.muster`; the tile says "Everyone clocked in, all teams" and how many are open more than 12 hours),
+there are several, `hr.read.muster`; the tile says "Everyone clocked in, all teams" and how many of them are forgotten
+clock-outs, with the limit's own number),
 Planned today, then one
 tile per state the planned people are in, each person in exactly one, so they add up to it (upcoming, here now with the late among
-them said in it, not in yet, absent, on leave, done), and "Here, not planned" apart (only those still in; someone unplanned who clocked
-out is listed as done, not counted here); closed stretches are read from two days back and an open clock-in whatever its age:
-one open more than 12 hours stays on site and its row says "Open since …: check" (a forgotten clock-out is closed on the
-attendance page); then the people; the board is a fragment the page
+them said in it, not in yet, absent, on leave, done, and clock-out forgotten, a tile shown when someone is in it), and "Here, not planned" apart (only those still in; someone unplanned who clocked
+out is listed as done, not counted here); closed stretches are read from two days back and an open clock-in whatever its age;
+then the people; the board is a fragment the page
 polls (`data-poll`, 30 seconds) and the server draws every number and every time, on the clock of each person's site. The person's own
 **Clock in** and **Clock out** buttons need Read on Attendance and an employee row of their own, and are refused while a stretch is open
 or none is.
 
+**A forgotten clock-out** (owner decision F-095, 2026-11-10; `hr.rules.forgotten`, the one rule): a clock-in still open longer
+than the limit of Scheduling settings (16 hours until HR sets another, never a figure in the code). Nobody knows when the person
+left, so nothing is assumed in either direction and no hours are invented:
+
+- **The board** gives the person a state of their own, *clock-out forgotten*, whatever their plan or leave, with "Open since …: to
+  be closed on the Attendance page" and, for who may correct that person's attendance, a link to the stretch. Never present or
+  here now (that would be an assumed value), never done (there is no time to say) and never absent (the person may be back at
+  work, unable to clock in beside the open stretch). A planned person in it is counted in its own tile, so the tiles still add
+  up to Planned today; one not planned is listed and said under that tile, in no other figure.
+- **The emergency count** (On site now) keeps every open clock-in, the forgotten ones too, and says how many of them are that old:
+  an overcount is checked, a person missed is not, and a forgotten stretch may be the only trace of someone who came back to work.
+- **The person** is told in words on Today instead of the two buttons ("Your clock-in of … was never closed: … Ask your lead to
+  close it on the Attendance page with the time you really left; then you can clock in again."), and a clock-in or clock-out sent
+  all the same is refused with the same sentence and writes nothing (`hr.services.forgotten_refusal`). A clock-out now would store
+  the days since as worked; a second clock-in cannot stand beside an open stretch (the table's exclusion constraint), and closing
+  the old one for them would invent the time they left.
+- **The lead closes it** on the Attendance page: whoever may correct that person's attendance under the existing scope (Edit on
+  Attendance, the person in their team on the stretch's day, never one's own stretch without Everyone) types the real clock-out
+  and the reason. The stretch becomes an entered one (`via`), and the log row says who closed it, the clock-out, that it was
+  entered by hand and that a reason was given (never its words). Then the person clocks in again.
+- **Totals.** Nothing in the code sums worked time yet (state is read, not stored); the rule for whatever does is the same: a
+  forgotten stretch has no end and counts for nothing until it is closed.
+
 **The Attendance page** lists the stretches of the viewer's team over the last fortnight or the days asked for, times on the site's clock,
 with **Mark present** (Create: a person of the team, the times, the reason), a correction (Edit, logged with what it was before) and a
-void (Delete). The page's heading is Attendance though it shares its permission with Today (the role matrix places the area under
+void (Delete). A stretch still open is listed whenever it began (it runs on through the days asked for), so a forgotten
+clock-out is always there to close, marked "Clock-out forgotten". **A time typed by hand needs its reason, whoever clocked
+in:** a correction that changes the clock-in or clock-out of a stretch the person clocked themselves makes it an entered
+stretch (the table's own check then holds the reason); an edit that leaves both times alone leaves it the person's own. The
+log keeps what the person's own clock-in keeps, so also who made the stretch (`AttendanceRecordResource.snapshot`,
+`hr.services.PUNCH_FIELDS`). The page's heading is Attendance though it shares its permission with Today (the role matrix places the area under
 HR dashboard, where its Read page first sits).
 
 ### HR dashboard › Organization chart (`/hr/organization/`) and Time & shifts › Team overview (`/hr/overview/`)

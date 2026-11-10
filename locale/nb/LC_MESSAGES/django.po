@@ -908,6 +908,12 @@ msgid "%(minutes)s min"
 msgstr "%(minutes)s min"
 
 #, python-format
+msgid "%(more)s more not planned today"
+msgid_plural "%(more)s more not planned today"
+msgstr[0] "%(more)s til uten plan i dag"
+msgstr[1] "%(more)s til uten plan i dag"
+
+#, python-format
 msgid "%(name)s (copy %(number)d)"
 msgstr "%(name)s (kopi %(number)d)"
 
@@ -945,10 +951,10 @@ msgid "%(number)s deleted"
 msgstr "%(number)s slettet"
 
 #, python-format
-msgid "%(open)s open more than 12 hours: check"
-msgid_plural "%(open)s open more than 12 hours: check"
-msgstr[0] "%(open)s åpen i mer enn 12 timer: sjekk"
-msgstr[1] "%(open)s åpne i mer enn 12 timer: sjekk"
+msgid "%(open)s of them open more than %(hours)s hours: clock-out forgotten"
+msgid_plural "%(open)s of them open more than %(hours)s hours: clock-out forgotten"
+msgstr[0] "%(open)s av dem åpen i mer enn %(hours)s timer: utstempling glemt"
+msgstr[1] "%(open)s av dem åpne i mer enn %(hours)s timer: utstempling glemt"
 
 #, python-format
 msgid "%(operation)s of %(date)s voided."
@@ -1788,6 +1794,20 @@ msgid "A checklist has at most %(num)d line."
 msgid_plural "A checklist has at most %(num)d lines."
 msgstr[0] "En sjekkliste har høyst %(num)d linje."
 msgstr[1] "En sjekkliste har høyst %(num)d linjer."
+
+msgid "A clock-in counts as forgotten after (hours)"
+msgstr "En innstempling regnes som glemt etter (timer)"
+
+msgid ""
+"A clock-in still open after this many hours counts as a forgotten clock-out: the board says so "
+"instead of present, the person is told to ask their lead, and the lead closes it on the "
+"Attendance page with the real time and a reason. Default 16 hours; 1 to 168, and not shorter than"
+" the longest active shift."
+msgstr ""
+"En innstempling som fortsatt er åpen etter så mange timer, regnes som en glemt utstempling: "
+"tavlen sier det i stedet for til stede, personen får beskjed om å spørre lederen sin, og lederen "
+"lukker den på Oppmøte-siden med det virkelige tidspunktet og en begrunnelse. Standard 16 timer; 1"
+" til 168, og ikke kortere enn det lengste aktive skiftet."
 
 msgid "A combination is numbered 1 to 9."
 msgstr "En kombinasjon nummereres fra 1 til 9."
@@ -4522,6 +4542,9 @@ msgstr "Stemple ut"
 msgid "Clock tolerance (seconds)"
 msgstr "Klokketoleranse (sekunder)"
 
+msgid "Clock-out forgotten"
+msgstr "Utstempling glemt"
+
 msgid "Clocked in by the person"
 msgstr "Stemplet inn av personen"
 
@@ -6769,6 +6792,9 @@ msgstr ""
 
 msgid "Give a target pH and alkalinity for the recipes."
 msgstr "Oppgi en mål-pH og en målalkalitet for oppskriftene."
+
+msgid "Give a whole number of hours from 1 to 168 (a week)."
+msgstr "Oppgi et helt antall timer fra 1 til 168 (en uke)."
 
 msgid "Give a year from 2026."
 msgstr "Oppgi et år fra 2026."
@@ -9858,8 +9884,8 @@ msgid "Open questions acknowledged"
 msgstr "Bekreftede åpne spørsmål"
 
 #, python-format
-msgid "Open since %(since)s: check"
-msgstr "Åpen siden %(since)s: sjekk"
+msgid "Open since %(since)s: to be closed on the Attendance page"
+msgstr "Åpen siden %(since)s: lukkes på Oppmøte-siden"
 
 msgid "Open the PDF"
 msgstr "Åpne PDF-en"
@@ -11486,6 +11512,9 @@ msgstr "Lagre enheter"
 
 msgid "Save withdrawal"
 msgstr "Lagre tilbakeholdelsestid"
+
+msgid "Say after how many hours an open clock-in counts as a forgotten clock-out."
+msgstr "Oppgi etter hvor mange timer en åpen innstempling regnes som en glemt utstempling."
 
 msgid "Say from which day the change counts."
 msgstr "Si fra hvilken dag endringen gjelder."
@@ -14013,6 +14042,14 @@ msgstr "Sensorregelen slår ikke lenger til"
 msgid "The sensors at %(place)s: those there now first, then those there before."
 msgstr "Sensorene ved %(place)s: først de som er der nå, så de som var der før."
 
+#, python-format
+msgid ""
+"The shift %(shift)s is longer than %(hours)s hours: a person on it would count as forgotten "
+"before it ends."
+msgstr ""
+"Skiftet %(shift)s er lengre enn %(hours)s timer: en person på det ville regnes som glemt før det "
+"er slutt."
+
 msgid ""
 "The shift patterns of the roster: a start and an end on the wall clock of the site, a break and a"
 " grace."
@@ -14762,6 +14799,14 @@ msgstr "Denne rapporten er allerede lukket."
 
 msgid "This sample is already voided."
 msgstr "Denne prøven er allerede annullert."
+
+#, python-format
+msgid ""
+"This shift is longer than the %(hours)s hours after which a clock-in counts as forgotten "
+"(Scheduling settings): raise that limit first."
+msgstr ""
+"Dette skiftet er lengre enn de %(hours)s timene som en innstempling regnes som glemt etter "
+"(Planleggingsinnstillinger): øk den grensen først."
 
 msgid "This shift overlaps another shift of the person."
 msgstr "Dette skiftet overlapper et annet skift for personen."
@@ -16180,6 +16225,16 @@ msgid "You stop seeing its messages. Your messages stay, with your name; an owne
 msgstr ""
 "Du ser ikke lenger meldingene. Meldingene dine blir stående med navnet ditt; en eier kan legge "
 "deg til igjen."
+
+#, python-format
+msgid ""
+"Your clock-in of %(since)s was never closed: it has been open more than %(hours)s hours and "
+"counts as a forgotten clock-out. Ask your lead to close it on the Attendance page with the time "
+"you really left; then you can clock in again."
+msgstr ""
+"Innstemplingen din fra %(since)s ble aldri lukket: den har vært åpen i mer enn %(hours)s timer og"
+" regnes som en glemt utstempling. Be lederen din lukke den på Oppmøte-siden med tidspunktet du "
+"faktisk gikk; da kan du stemple inn igjen."
 
 msgid "Your new password is saved. Use it the next time you sign in."
 msgstr "Det nye passordet ditt er lagret. Bruk det neste gang du logger inn."

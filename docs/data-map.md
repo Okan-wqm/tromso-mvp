@@ -289,7 +289,7 @@ Who did what to which record, with old and new values.
 - **how it works**: A record's own rows are also shown on the History tab of its edit page.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log
 - **constraints**: chk_audit_log_severity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 91 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 95 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -367,7 +367,7 @@ What the platform keeps about a person beyond Django's account.
 - **how it works**: Today the profile holds the language only: chosen with the language switcher, or on the Users tab.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › profiles
 - **forms**: `UserForm`
-- **tests that mention it**: `core/test_languages.py`, `farm/tests/test_calculator.py`, `farm/tests/test_cleaner_ration.py` and 27 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_matrix_notes.py`, `farm/tests/test_calculator.py` and 29 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -633,7 +633,7 @@ A group of fish that came in together: its identity and origin, no counts.
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › batches
 - **forms**: `BatchDetailsForm`, `BatchInputForm`, `OpeningBalanceForm`
 - **constraints**: uq_batches_code (unique: code); chk_batches_code (check); chk_batches_stage (check); chk_batches_origin (check); chk_batches_supplier (check); chk_batches_provenance (check); chk_batches_origin_provenance (check); chk_batches_year_class (check); chk_batches_harvest_after_input (check)
-- **tests that mention it**: `core/test_datamap.py`, `farm/tests/test_batch_details.py`, `farm/tests/test_cleaner_fish.py` and 14 more
+- **tests that mention it**: `core/test_datamap.py`, `farm/tests/test_batch_details.py`, `farm/tests/test_cleaner_fish.py` and 15 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1315,7 +1315,7 @@ A production unit within a site: a hatchery hall, a nursery, a grow-out unit.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › production_departments
 - **forms**: `ProductionDepartmentForm`
 - **constraints**: uq_production_departments_code_live (unique: code); uq_production_departments_site_name_live (unique: site, name); chk_production_departments_capacity (check); chk_production_departments_live_on_a_site (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_design_shell.py` and 52 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_design_shell.py` and 53 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1438,7 +1438,7 @@ A physical facility (locality).
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › sites
 - **forms**: `SiteForm`
 - **constraints**: uq_sites_code_live (unique: code); uq_sites_name_live (unique: name); uq_sites_lokalitetsnummer_live (unique: lokalitetsnummer); chk_sites_lokalitetsnummer_range (check); chk_sites_organisation_number (check); chk_sites_production_form (check); chk_sites_latitude_range (check); chk_sites_longitude_range (check); chk_sites_altitude_range (check); chk_sites_coordinates_paired (check); chk_sites_sea_cage_location (check); chk_sites_timezone_given (check); chk_sites_lice_area (check)
-- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 70 more
+- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 71 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1550,7 +1550,7 @@ A species the farm grows or stocks, with its names, codes and the water it lives
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › species
 - **forms**: `SpeciesForm`
 - **constraints**: uq_species_code_live (unique: code); uq_species_scientific_name_live (unique: scientific_name); chk_species_scientific_name (check); chk_species_code (check); chk_species_official_code (check); chk_species_category (check); chk_species_status (check); chk_species_cleaner_fish_type (check); chk_species_withdrawal_temperature (check); chk_species_max_weight_ratio (check); chk_species_water (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_scope.py`, `core/tests_workspaces.py` and 22 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_scope.py`, `core/tests_workspaces.py` and 23 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1622,7 +1622,7 @@ One thing a person did to the stock (a stocking, a mortality, a weighing), the u
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › stock_operations
 - **forms**: `MortalityForm`, `CullForm`, `WeighingForm`, `TransferForm`, `LegForm`, `GradingForm`, `OutputForm`, `HarvestForm`, `DeliveryForm`, `EscapeForm`, `InputLineForm`, `StockVoidForm`
 - **constraints**: chk_stock_operations_kind (check); chk_stock_operations_void_reason (check); chk_stock_operations_ack_on_arrival (check); chk_stock_operations_size_mix_ack_on_arrival (check); chk_stock_operations_health_event (check)
-- **tests that mention it**: `core/tests_entry_key.py`, `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py` and 16 more
+- **tests that mention it**: `core/tests_entry_key.py`, `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py` and 17 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2077,11 +2077,11 @@ One stretch of a person’s presence: from a clock-in to a clock-out, by the per
 - **edit**: attendance records tab (`/hr/time/attendance/<uuid:pk>/`); hr.views.punch (`/production/team/today/clock-<str:direction>/`, `/hr/today/clock-<str:direction>/`)
 - **delete**: attendance records tab (`/hr/time/attendance/<uuid:pk>/delete/`)
 - **read**: attendance records tab (`/hr/time/attendance/`); hr.views.today (`/production/team/`, `/hr/`)
-- **how it works**: A person's own clock-in and clock-out are written by hr.services at the server's time.
+- **how it works**: A person's own clock-in and clock-out are written by hr.services at the server's time; a clock-in left open longer than Scheduling settings' limit is a forgotten clock-out, closed on the Attendance page.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › attendance_records (never shown: note)
 - **forms**: `AttendanceRecordForm`
 - **constraints**: chk_attendance_records_order (check); chk_attendance_records_via (check); chk_attendance_records_note (check); excl_attendance_employee_span (exclusion: employee, clock_in, clock_out)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 7 more
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 9 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2097,7 +2097,7 @@ One stretch of a person’s presence: from a clock-in to a clock-out, by the per
 | employee_id | uuid |  | employees (PROTECT) | AttendanceRecordForm › Record |
 | clock_in | timestamp with time zone |  |  | AttendanceRecordForm › Record |
 | clock_out | timestamp with time zone | yes |  | AttendanceRecordForm › Record |
-| via | varchar(10) |  |  | system: self for a person's own clock-in and out, entered for a lead's form |
+| via | varchar(10) |  |  | system: self for a person's own clock-in and out, entered for a lead's form and for a stretch whose time a lead's correction changed (a forgotten clock-out closed by hand) |
 | note | varchar(200) |  |  | AttendanceRecordForm › Record |
 
 <a id="hremployee"></a>
@@ -2113,7 +2113,7 @@ The people of the company for HR: number, name (or the account that names them),
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › employees
 - **forms**: `EmployeeForm`
 - **constraints**: uq_employees_number_live (unique: employee_number); uq_employees_user_live (unique: user); chk_employees_identity (check); chk_employees_period (check); chk_employees_type (check); chk_employees_number (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/helpers_people.py`, `hr/tests/test_attendance.py` and 20 more
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/helpers_people.py`, `hr/tests/test_attendance.py` and 21 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2306,8 +2306,8 @@ The one row of scheduling limits and defaults (rest, weekly hours, days in a row
 - **read**: scheduling settings tab (`/hr/settings/scheduling/`)
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › scheduling_settings
 - **forms**: `SchedulingSettingsForm`
-- **constraints**: uq_scheduling_settings_singleton (unique: singleton); chk_scheduling_settings_singleton (check); chk_scheduling_week (check); chk_scheduling_rest (check); chk_scheduling_consecutive (check); chk_scheduling_rule (check); chk_scheduling_weekdays (check); chk_scheduling_punch_window (check); chk_scheduling_absent_after (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_hardening.py` and 5 more
+- **constraints**: uq_scheduling_settings_singleton (unique: singleton); chk_scheduling_settings_singleton (check); chk_scheduling_week (check); chk_scheduling_rest (check); chk_scheduling_consecutive (check); chk_scheduling_rule (check); chk_scheduling_weekdays (check); chk_scheduling_punch_window (check); chk_scheduling_absent_after (check); chk_scheduling_forgotten_after (check)
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_forgotten.py` and 6 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2328,6 +2328,7 @@ The one row of scheduling limits and defaults (rest, weekly hours, days in a row
 | working_weekdays | smallint[] |  |  | SchedulingSettingsForm › Days and punches |
 | punch_window_minutes | smallint |  |  | SchedulingSettingsForm › Days and punches |
 | absent_after_minutes | smallint |  |  | SchedulingSettingsForm › Days and punches |
+| forgotten_after_hours | smallint |  |  | SchedulingSettingsForm › Days and punches |
 
 <a id="hrshiftassignment"></a>
 ### hr.ShiftAssignment (`shift_assignments`)
@@ -2342,7 +2343,7 @@ One person’s plan for one day: the shift they start that day, or none for plan
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › shift_assignments (never shown: note)
 - **forms**: `ShiftAssignmentForm`
 - **constraints**: uq_shift_assignments_employee_day (unique: employee, day)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 13 more
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 15 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2372,7 +2373,7 @@ The shift patterns of the roster: a start and an end on the wall clock of the si
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › shifts
 - **forms**: `ShiftForm`
 - **constraints**: uq_shifts_code_live (unique: code); chk_shifts_code (check); chk_shifts_span (check); chk_shifts_break (check); chk_shifts_grace (check); chk_shifts_tone (check); chk_shifts_status (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 14 more
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 17 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

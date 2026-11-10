@@ -912,6 +912,12 @@ msgid "%(minutes)s min"
 msgstr "%(minutes)s dk"
 
 #, python-format
+msgid "%(more)s more not planned today"
+msgid_plural "%(more)s more not planned today"
+msgstr[0] "bugün planı olmayan %(more)s kişi daha"
+msgstr[1] "bugün planı olmayan %(more)s kişi daha"
+
+#, python-format
 msgid "%(name)s (copy %(number)d)"
 msgstr "%(name)s (kopya %(number)d)"
 
@@ -949,10 +955,10 @@ msgid "%(number)s deleted"
 msgstr "%(number)s silinmiş"
 
 #, python-format
-msgid "%(open)s open more than 12 hours: check"
-msgid_plural "%(open)s open more than 12 hours: check"
-msgstr[0] "%(open)s kayıt 12 saatten uzun süredir açık: kontrol edin"
-msgstr[1] "%(open)s kayıt 12 saatten uzun süredir açık: kontrol edin"
+msgid "%(open)s of them open more than %(hours)s hours: clock-out forgotten"
+msgid_plural "%(open)s of them open more than %(hours)s hours: clock-out forgotten"
+msgstr[0] "bunların %(open)s tanesi %(hours)s saatten uzun süredir açık: çıkış unutulmuş"
+msgstr[1] "bunların %(open)s tanesi %(hours)s saatten uzun süredir açık: çıkış unutulmuş"
 
 #, python-format
 msgid "%(operation)s of %(date)s voided."
@@ -1795,6 +1801,19 @@ msgid "A checklist has at most %(num)d line."
 msgid_plural "A checklist has at most %(num)d lines."
 msgstr[0] "Bir kontrol listesi en çok %(num)d satırdır."
 msgstr[1] "Bir kontrol listesi en çok %(num)d satırdır."
+
+msgid "A clock-in counts as forgotten after (hours)"
+msgstr "Girişin unutulmuş sayılacağı süre (saat)"
+
+msgid ""
+"A clock-in still open after this many hours counts as a forgotten clock-out: the board says so "
+"instead of present, the person is told to ask their lead, and the lead closes it on the "
+"Attendance page with the real time and a reason. Default 16 hours; 1 to 168, and not shorter than"
+" the longest active shift."
+msgstr ""
+"Bu kadar saat sonra hâlâ açık olan bir giriş, unutulmuş çıkış sayılır: pano “burada” yerine bunu "
+"söyler, kişiye sorumlusuna başvurması söylenir ve sorumlu, Yoklama sayfasında gerçek saat ve bir "
+"gerekçe ile kapatır. Varsayılan 16 saat; 1 ile 168 arası ve en uzun etkin vardiyadan kısa olamaz."
 
 msgid "A combination is numbered 1 to 9."
 msgstr "Bir kombinasyon 1 ile 9 arasında numaralanır."
@@ -4537,6 +4556,9 @@ msgstr "Çıkış"
 msgid "Clock tolerance (seconds)"
 msgstr "Saat toleransı (saniye)"
 
+msgid "Clock-out forgotten"
+msgstr "Çıkış unutulmuş"
+
 msgid "Clocked in by the person"
 msgstr "Kişinin kendisi giriş yaptı"
 
@@ -6788,6 +6810,9 @@ msgstr ""
 
 msgid "Give a target pH and alkalinity for the recipes."
 msgstr "Reçeteler için bir hedef pH ve alkalinite girin."
+
+msgid "Give a whole number of hours from 1 to 168 (a week)."
+msgstr "1 ile 168 (bir hafta) arasında tam bir saat sayısı girin."
 
 msgid "Give a year from 2026."
 msgstr "2026’dan itibaren bir yıl girin."
@@ -9878,8 +9903,8 @@ msgid "Open questions acknowledged"
 msgstr "Onaylanan açık sorular"
 
 #, python-format
-msgid "Open since %(since)s: check"
-msgstr "%(since)s tarihinden beri açık: kontrol edin"
+msgid "Open since %(since)s: to be closed on the Attendance page"
+msgstr "%(since)s’den beri açık: Yoklama sayfasında kapatılacak"
 
 msgid "Open the PDF"
 msgstr "PDF’i aç"
@@ -11507,6 +11532,9 @@ msgstr "Birimleri kaydet"
 
 msgid "Save withdrawal"
 msgstr "Bekleme süresini kaydet"
+
+msgid "Say after how many hours an open clock-in counts as a forgotten clock-out."
+msgstr "Açık bir girişin kaç saat sonra unutulmuş çıkış sayılacağını girin."
 
 msgid "Say from which day the change counts."
 msgstr "Değişikliğin hangi günden itibaren geçerli olduğunu belirtin."
@@ -14035,6 +14063,14 @@ msgstr "Sensör kuralı artık geçerli değil"
 msgid "The sensors at %(place)s: those there now first, then those there before."
 msgstr "%(place)s yerindeki sensörler: önce şu an orada olanlar, sonra daha önce orada olanlar."
 
+#, python-format
+msgid ""
+"The shift %(shift)s is longer than %(hours)s hours: a person on it would count as forgotten "
+"before it ends."
+msgstr ""
+"%(shift)s vardiyası %(hours)s saatten uzun: bu vardiyadaki kişi vardiya bitmeden unutulmuş "
+"sayılırdı."
+
 msgid ""
 "The shift patterns of the roster: a start and an end on the wall clock of the site, a break and a"
 " grace."
@@ -14792,6 +14828,14 @@ msgstr "Bu rapor zaten kapatıldı."
 
 msgid "This sample is already voided."
 msgstr "Bu numune zaten iptal edildi."
+
+#, python-format
+msgid ""
+"This shift is longer than the %(hours)s hours after which a clock-in counts as forgotten "
+"(Scheduling settings): raise that limit first."
+msgstr ""
+"Bu vardiya, bir girişin unutulmuş sayıldığı %(hours)s saatten uzun (Planlama ayarları): önce o "
+"sınırı yükseltin."
 
 msgid "This shift overlaps another shift of the person."
 msgstr "Bu vardiya, kişinin başka bir vardiyasıyla çakışıyor."
@@ -16203,6 +16247,16 @@ msgstr "Bu sayfayı açamazsınız"
 
 msgid "You stop seeing its messages. Your messages stay, with your name; an owner can add you again."
 msgstr "Artık mesajlarını görmezsiniz. Mesajlarınız adınızla kalır; bir sahip sizi yeniden ekleyebilir."
+
+#, python-format
+msgid ""
+"Your clock-in of %(since)s was never closed: it has been open more than %(hours)s hours and "
+"counts as a forgotten clock-out. Ask your lead to close it on the Attendance page with the time "
+"you really left; then you can clock in again."
+msgstr ""
+"%(since)s tarihli girişiniz hiç kapatılmadı: %(hours)s saatten uzun süredir açık ve unutulmuş "
+"çıkış sayılıyor. Sorumlunuzdan, Yoklama sayfasında gerçekten ayrıldığınız saatle kapatmasını "
+"isteyin; ardından yeniden giriş yapabilirsiniz."
 
 msgid "Your new password is saved. Use it the next time you sign in."
 msgstr "Yeni parolanız kaydedildi. Bir sonraki girişinizde kullanın."

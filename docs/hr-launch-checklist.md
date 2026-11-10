@@ -28,7 +28,7 @@ between shifts, the standard week, the absence and punch windows. They start as 
 | 2.1 | Every limit in Scheduling settings is set by HR to the figure the company applies, and whether each one warns or blocks. | HR | ☐ |
 | 2.2 | It is understood that the rules run on the **planned** shifts only, not on the punches: a day worked longer than planned is not checked against a daily or weekly maximum (a later piece of work). | HR | ☐ |
 | 2.3 | Night work, Sunday work and work by people under 18: none of these is modelled. HR confirms whether they occur and how they are handled outside the system. | HR | ☐ |
-| 2.4 | "Clocked in" is not presence and not an emergency head count: a forgotten clock-out keeps a person shown as present. The site's emergency routine does not rely on this system. | HR + safety | ☐ |
+| 2.4 | "Clocked in" is not presence and not an emergency head count. A clock-in open longer than the limit HR sets in Scheduling settings (16 hours by default) is shown as "Clock-out forgotten", not as present, until a lead closes it with the real time; until that limit a forgotten clock-out still shows the person as present, and the On site now count keeps every open clock-in (it says how many are that old). The site's emergency routine does not rely on this system. HR confirms the limit (longer than the longest shift worked). | HR + safety | ☐ |
 
 ## 3. Who sees what
 

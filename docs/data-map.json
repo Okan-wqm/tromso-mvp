@@ -2354,6 +2354,7 @@
         "farm/tests/test_assignments.py",
         "farm/tests/test_batch_details.py",
         "farm/tests/test_cleaner_fish.py",
+        "farm/tests/test_cleaner_size_limit.py",
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_escape_delivery.py",
@@ -2406,12 +2407,15 @@
         "hr/tests/test_departments.py",
         "hr/tests/test_employees.py",
         "hr/tests/test_employment_bounds.py",
+        "hr/tests/test_forgotten.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_correction.py",
+        "hr/tests/test_manager_rights.py",
         "hr/tests/test_own_record.py",
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm.py",
         "hr/tests/test_review.py",
+        "hr/tests/test_roles.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scheduling_settings.py",
         "hr/tests/test_scope.py",
@@ -2959,6 +2963,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_matrix_notes.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_ration.py",
         "farm/tests/test_deffeyes.py",
@@ -2981,6 +2986,7 @@
         "messaging/tests/test_pages.py",
         "inventory/tests/test_pages.py",
         "tasks/tests/test_pages.py",
+        "hr/tests/test_forgotten.py",
         "experiments/tests/test_amend.py",
         "experiments/tests/test_deviations.py",
         "experiments/tests/test_pages.py",
@@ -6006,6 +6012,7 @@
         "core/test_datamap.py",
         "farm/tests/test_batch_details.py",
         "farm/tests/test_cleaner_fish.py",
+        "farm/tests/test_cleaner_size_limit.py",
         "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_health.py",
         "farm/tests/test_opening_balance.py",
@@ -13250,6 +13257,7 @@
         "hr/tests/helpers_people.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_departments.py",
+        "hr/tests/test_forgotten.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_impact.py",
@@ -14963,6 +14971,7 @@
         "hr/tests/helpers_people.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_departments.py",
+        "hr/tests/test_forgotten.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_overview_chart.py",
@@ -16065,6 +16074,7 @@
         "core/tests_scope.py",
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
+        "farm/tests/test_cleaner_size_limit.py",
         "farm/tests/test_feeds.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
@@ -17162,6 +17172,7 @@
         "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_cleaner_fish.py",
+        "farm/tests/test_cleaner_size_limit.py",
         "farm/tests/test_escape_delivery.py",
         "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_harvest.py",
@@ -22542,7 +22553,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "self for a person's own clock-in and out, entered for a lead's form"
+          "why": "self for a person's own clock-in and out, entered for a lead's form and for a stretch whose time a lead's correction changed (a forgotten clock-out closed by hand)"
         },
         {
           "name": "note",
@@ -22690,7 +22701,7 @@
           "why": ""
         }
       },
-      "note": "A person's own clock-in and clock-out are written by hr.services at the server's time.",
+      "note": "A person's own clock-in and clock-out are written by hr.services at the server's time; a clock-in left open longer than Scheduling settings' limit is a forgotten clock-out, closed on the Attendance page.",
       "forms": [
         {
           "form": "AttendanceRecordForm",
@@ -22723,11 +22734,13 @@
         "hr/tests/test_boundary.py",
         "hr/tests/test_crew.py",
         "hr/tests/test_employment_bounds.py",
+        "hr/tests/test_forgotten.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_menu_access.py",
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm.py",
-        "hr/tests/test_review.py"
+        "hr/tests/test_review.py",
+        "hr/tests/test_roles.py"
       ]
     },
     {
@@ -23089,6 +23102,7 @@
         "hr/tests/test_crew.py",
         "hr/tests/test_employees.py",
         "hr/tests/test_employment_bounds.py",
+        "hr/tests/test_forgotten.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_correction.py",
@@ -25019,6 +25033,19 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "forgotten_after_hours",
+          "field": "forgotten_after_hours",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SchedulingSettingsForm › Days and punches"
+          ],
+          "how": "form",
+          "why": ""
         }
       ],
       "constraints": [
@@ -25074,6 +25101,12 @@
         },
         {
           "name": "chk_scheduling_absent_after",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_scheduling_forgotten_after",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -25136,6 +25169,7 @@
             "working_weekdays": "Days and punches",
             "punch_window_minutes": "Days and punches",
             "absent_after_minutes": "Days and punches",
+            "forgotten_after_hours": "Days and punches",
             "version": ""
           }
         }
@@ -25154,6 +25188,7 @@
       "tests": [
         "core/tests_workspaces.py",
         "hr/tests/test_attendance.py",
+        "hr/tests/test_forgotten.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_on_shift.py",
@@ -25486,6 +25521,7 @@
         "hr/tests/test_boundary.py",
         "hr/tests/test_crew.py",
         "hr/tests/test_employment_bounds.py",
+        "hr/tests/test_forgotten.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_impact.py",
@@ -25496,6 +25532,7 @@
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm_reads.py",
         "hr/tests/test_review.py",
+        "hr/tests/test_roles.py",
         "hr/tests/test_roster.py"
       ]
     },
@@ -25871,9 +25908,11 @@
         "hr/tests/test_boundary.py",
         "hr/tests/test_crew.py",
         "hr/tests/test_employment_bounds.py",
+        "hr/tests/test_forgotten.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_impact.py",
+        "hr/tests/test_manager_rights.py",
         "hr/tests/test_menu_access.py",
         "hr/tests/test_on_shift.py",
         "hr/tests/test_overview_chart.py",
@@ -25881,6 +25920,7 @@
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm_reads.py",
         "hr/tests/test_review.py",
+        "hr/tests/test_roles.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scheduling_settings.py"
       ]

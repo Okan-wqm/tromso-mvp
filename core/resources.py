@@ -72,8 +72,9 @@ class UserResource(Resource):
 
     @classmethod
     def queryset(cls):
-        # each person's invitations, newest first, for their row (accountmail.standing)
-        invitations = AccountMail.objects.filter(kind=accountmail.INVITATION).order_by('-created_at', '-id')
+        # each person's last invitation, for their row (accountmail.standing): one mail a person, however many were sent
+        invitations = (AccountMail.objects.filter(kind=accountmail.INVITATION)
+                       .order_by('user', '-created_at', '-id').distinct('user'))
         # and when each last set a password through a link (the activity log's own row of it)
         return accountmail.with_password_set(User.objects.order_by('username')).prefetch_related(
             'groups', Prefetch('account_mails', queryset=invitations, to_attr='invitations'))

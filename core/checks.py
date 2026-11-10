@@ -66,6 +66,9 @@ def _public_address_problem(must_send):
     parts = urlsplit(address)
     if parts.scheme not in ('http', 'https') or not parts.hostname:
         return f'{address!r} is not an address like https://farm.example.no'
+    if parts.username is not None or parts.password is not None:
+        # not quoted: it may hold a password, and what stands before the @ reads as the host to a person
+        return 'it holds a user part before the host'
     if parts.path or parts.query or parts.fragment:
         return f'{address!r} holds more than the scheme and the host'
     if must_send and parts.scheme != 'https':

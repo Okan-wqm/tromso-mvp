@@ -18,6 +18,7 @@ what happened, and the server's log has the line."""
 import atexit
 import logging
 import queue as queues
+import re
 import socket
 import threading
 import time
@@ -182,14 +183,19 @@ def message(user, kind, by, language, uid, token):
     return EmailMessage(subject, body, settings.DEFAULT_FROM_EMAIL, [user.email])
 
 
+# A token as a quoted mail may carry it: the time part, a hyphen, then the 32 hex digits of the signature, which the
+# wire's quoted-printable form may have wrapped ("=" and a line end, a space once the words are on one line).
+TOKEN_LIKE = re.compile(r'[0-9a-z]{1,13}-(?:[0-9a-f]|=\s*){32,}')
+
+
 def reason(failure, token):
     """Why a mail did not go out, as the users tab shows it: the platform's own sentence, or the error's kind and its
     words on one line, cut to the column, and never the link (an error that quotes the mail would otherwise put its
-    token in the table)."""
+    token in the table): the token itself, and anything shaped like one."""
     if isinstance(failure, NotSent):
         return str(failure)
     text = ' '.join(f'{type(failure).__name__}: {failure}'.split())
-    text = text.replace(token, '…')
+    text = TOKEN_LIKE.sub('…', text.replace(token, '…'))
     return text if len(text) <= REASON_LENGTH else text[:REASON_LENGTH - 1] + '…'
 
 
@@ -283,8 +289,10 @@ def _close(mail, error, what):
     (`kind`)."""
     if not AccountMail.objects.filter(pk=mail.pk, sent_at=None, error='').update(error=error):
         return
-    # the reason alone, not the exception: its own words may quote the mail, link and all
-    logger.error('The %s mail %s for user %s was not sent: %s', mail.kind, mail.pk, mail.user_id, error)
+    # the kind of failure and where its words are: a mail server's reply can name the recipient, and an exception's
+    # own text may quote the mail, link and all
+    logger.error('The %s mail for user %s was not sent (%s): the reason is on account_mails %s.', mail.kind,
+                 mail.user_id, what['msgid'] if isinstance(what, dict) else what, mail.pk)
     if mail.kind == INVITATION:
         with audit.source_language():
             changes = {str(INVITATION_LABEL): [None, audit.message(NOT_SENT)],

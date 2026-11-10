@@ -450,6 +450,27 @@ class InvitationRecordTests(AccountMailCase):
         # the platform's own sentence is no mail server's: the log has it, as a value it can show in each language
         self.assertEqual(invite_rows(), [invited(), not_sent({'msgid': 'The mail server took no message.'})])
 
+    @override_settings(MAILERS=SILENT)
+    def test_the_platforms_own_reasons_are_shown_in_the_readers_language(self):
+        # (review R9) English at rest, translated where it is shown, like the rest of the log; a mail server's own
+        # words are shown as it said them
+        with self.assertLogs('core.accountmail', 'ERROR'):
+            self.client.post(reverse('core:user_create'), user_data())
+        self.assertEqual(outcomes(), ['The mail server took no message.'])
+        for language, words in (('nb', 'E-postserveren tok ikke imot meldingen.'),
+                                ('tr', 'E-posta sunucusu iletiyi almadı.')):
+            with self.subTest(language=language):
+                self.client.force_login(self.admin)
+                users = self.client.get(reverse('core:user_list'), headers={'Accept-Language': language})
+                self.assertIn(words, row_of(users, 'kari'))
+                log = self.client.get(reverse('core:activity_log'), {'action': 'invite'},
+                                      headers={'Accept-Language': language})
+                self.assertContains(log, words)
+        # a mail that never finished has no stored reason: the page's own sentence, in the reader's language too
+        AccountMail.objects.update(error='', created_at=timezone.now() - timedelta(days=1))
+        users = self.client.get(reverse('core:user_list'), headers={'Accept-Language': 'nb'})
+        self.assertIn('Sendingen ble avbrutt', row_of(users, 'kari'))
+
     @override_settings(PUBLIC_BASE_URL='')
     def test_without_a_public_address_nothing_is_sent_and_the_row_says_so(self):
         with self.assertLogs('core.accountmail', 'ERROR'):

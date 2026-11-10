@@ -9920,7 +9920,7 @@ msgstr "Onaylanan açık sorular"
 
 #, python-format
 msgid "Open since %(since)s: to be closed on the Attendance page"
-msgstr "%(since)s’den beri açık: Yoklama sayfasında kapatılacak"
+msgstr "%(since)s tarihinden beri açık: Yoklama sayfasında kapatılacak"
 
 msgid "Open the PDF"
 msgstr "PDF’i aç"

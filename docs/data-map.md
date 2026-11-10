@@ -289,7 +289,7 @@ Who did what to which record, with old and new values.
 - **how it works**: A record's own rows are also shown on the History tab of its edit page.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log
 - **constraints**: chk_audit_log_severity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 95 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 97 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -970,7 +970,7 @@ A feed the farm uses: its maker, what it is made for, its pellet and its analysi
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › feeds
 - **forms**: `FeedForm`
 - **constraints**: uq_feeds_code_live (unique: code); uq_feeds_name_live (unique: name); chk_feeds_code (check); chk_feeds_feed_type (check); chk_feeds_feed_form (check); chk_feeds_buoyancy (check); chk_feeds_status (check); chk_feeds_pellet_size (check); chk_feeds_protein_pct (check); chk_feeds_fat_pct (check); chk_feeds_nfe_pct (check); chk_feeds_fibre_pct (check); chk_feeds_ash_pct (check); chk_feeds_moisture_pct (check); chk_feeds_phosphorus_pct (check); chk_feeds_gross_energy_mj_kg (check); chk_feeds_digestible_energy_mj_kg (check); chk_feeds_fractions (check); chk_feeds_phosphorus_in_ash (check); chk_feeds_digestible_energy (check); chk_feeds_price (check); chk_feeds_price_currency (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_equipment.py`, `farm/tests/test_feeding.py` and 28 more
+- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_equipment.py`, `farm/tests/test_feeding.py` and 29 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1412,7 +1412,7 @@ An operational contact of a site.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › site_contacts
 - **forms**: `SiteContactForm`
 - **constraints**: uq_site_contacts_one_primary (unique: site)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `farm/tests/test_sites.py`
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `farm/tests/test_private_contacts.py` and 1 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1438,7 +1438,7 @@ A physical facility (locality).
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › sites
 - **forms**: `SiteForm`
 - **constraints**: uq_sites_code_live (unique: code); uq_sites_name_live (unique: name); uq_sites_lokalitetsnummer_live (unique: lokalitetsnummer); chk_sites_lokalitetsnummer_range (check); chk_sites_organisation_number (check); chk_sites_production_form (check); chk_sites_latitude_range (check); chk_sites_longitude_range (check); chk_sites_altitude_range (check); chk_sites_coordinates_paired (check); chk_sites_sea_cage_location (check); chk_sites_timezone_given (check); chk_sites_lice_area (check)
-- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 71 more
+- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 73 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1698,7 +1698,7 @@ A company the farm buys from: what it supplies (goods, live fish, services), how
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › suppliers
 - **forms**: `SupplierForm`
 - **constraints**: uq_suppliers_code_live (unique: code); uq_suppliers_name_live (unique: name); uq_suppliers_organisation_number_live (unique: organisation_number); chk_suppliers_code (check); chk_suppliers_organisation_number (check); chk_suppliers_supplies (check); chk_suppliers_supplies_not_empty (check); chk_suppliers_status (check); chk_suppliers_rating (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_batch_details.py`, `farm/tests/test_feeds.py` and 10 more
+- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_batch_details.py`, `farm/tests/test_feeds.py` and 11 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3759,7 +3759,7 @@ A line of a task's checklist and whether it is done, by whom and when (plain row
 <a id="taskstasknote"></a>
 ### tasks.TaskNote (`task_notes`)
 
-A note on a task by a person who can read it: part of the task's record, never edited or removed (tasks.services.add_note is its only writer), and in the activity log.
+A note on a task by a person who can read it: part of the task's record, never edited or removed (tasks.services.add_note is its only writer).
 
 - **create**: tasks.views.add_note (`/operations/tasks/<uuid:pk>/notes/`)
 - **edit**: none, by design: part of the task's record, never edited
@@ -3874,7 +3874,7 @@ A job at one place for one or more people, due on a day on the clock of the plac
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Tasks › tasks
 - **forms**: `TaskForm`
 - **constraints**: chk_tasks_one_place (check); chk_tasks_title (check); chk_tasks_category (check); chk_tasks_priority (check); chk_tasks_status (check); chk_tasks_started (check); chk_tasks_in_progress_started (check); chk_tasks_open_not_started (check); chk_tasks_done (check); chk_tasks_cancelled (check); chk_tasks_occurrence (check); uq_tasks_series_occurrence (unique: series, occurrence_date)
-- **tests that mention it**: `core/tests_workspaces.py`, `tasks/tests/__init__.py`, `tasks/tests/test_models.py` and 5 more
+- **tests that mention it**: `core/tests_private_log.py`, `core/tests_workspaces.py`, `tasks/tests/__init__.py` and 6 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

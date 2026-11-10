@@ -2096,8 +2096,10 @@ optionally a due time, and:
   who can no longer be chosen (deactivated, or the role taken away) stays on the tasks they had, marked so.
 - a **checklist**, once the task exists: its lines, at most 30, edited as a list on the dialog's Checklist
   tab until the first line is ticked; then each tick is the only change, with who and when.
-- **notes**: anyone who can read Tasks adds one in the drawer; a note is never edited or removed and is in
-  the activity log with its text (task notes are part of the work record; Messages are not, see below).
+- **notes**: anyone who can read Tasks adds one in the drawer; a note is never edited or removed there (task
+  notes are part of the work record; Messages are not, see below). The activity log says that a note was added,
+  by whom and when, never its words; a completion note and a reason for cancelling are logged the same way (a
+  person's free text is private in the log, which nobody can erase from: Security in the pages, Personal data).
 
 **Statuses**: open, **in progress** (who started it and when), **done** (who completed it, when, and a
 note), **cancelled** (who, when and why). Start, Complete and a tick: a person the task is for, or whoever
@@ -2154,7 +2156,8 @@ free-text conditions), maintenance (preventive maintenance as a recurring task a
 repair as a task), a calendar, people without a login (with HR), and the AI assistants (reading
 `tasks/read.py`, writing through `tasks/services.py` with the person's confirmation). Task notes are not a
 Messages conversation: a conversation is for its members only and not in the activity log, while a task's
-notes are part of the farm's record that a supervisor, the next shift or an auditor reads.
+notes are part of the farm's record that a supervisor, the next shift or an auditor reads on the task (the
+activity log records that a note was added, not what it says).
 
 Differences from the source (details in the bug document, TSK-01 to TSK-23):
 
@@ -3610,6 +3613,18 @@ only one who manages roles and users; everyone else gets exactly what their role
 - **The fonts are the project's own** (`static/fonts`, declared in `static/css/fonts.css`: Atkinson Hyperlegible Next and
   Bricolage Grotesque under the SIL Open Font License 1.1, one entry each in `THIRD_PARTY.md`): no page asks Google or any
   other site for anything, so no reader's address leaves the farm with a page, and the farm's own network shows them.
+- **Personal data is private in the activity log** (owner decision F-059 / F-061 / F-179 / F-050, 2026-11-10). The log
+  is append-only (a trigger), so whatever is written into it can never be erased. A contact person's e-mail and phone
+  (a site's and a supplier's contact list, `ContactList.describe`; a site's and a report's own contact e-mail and
+  phone, the tabs' `private_fields`) and a task's free text (a note, a completion note, a reason for cancelling:
+  `tasks.services.PRIVATE`, `add_note`) are logged as private values by the one mechanism, `core.audit.private` /
+  `core.audit.digest`: "Private text" with eight hex digits of an HMAC-SHA256 under the server's `SECRET_KEY`. The log
+  still shows that the value changed and whether two values were equal (a contact list reads `Kari (Vet, email
+  #1a2b3c4d, primary)`), never the value; HR's leave reasons and notes were kept so already. Migration
+  `core/0011_private_log_values` converted the rows written before in the same way (the trigger set aside for those
+  updates inside its transaction, and back; only `changes` is written; it prints the count and says it in the log).
+  The log stays readable only with the Activity log right. What is erased where on a person's request, what remains
+  (names, who did what, the digests) and who may do it: [docs/erasure.md](docs/erasure.md).
 
 ## Database viewer
 

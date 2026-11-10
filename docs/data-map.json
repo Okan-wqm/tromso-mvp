@@ -2349,6 +2349,7 @@
         "core/tests_crud_mount.py",
         "core/tests_entry_key.py",
         "core/tests_platform.py",
+        "core/tests_private_log.py",
         "core/tests_scope.py",
         "core/tests_workspaces.py",
         "farm/tests/test_assignments.py",
@@ -2367,6 +2368,7 @@
         "farm/tests/test_lice_reason.py",
         "farm/tests/test_migration_altitude.py",
         "farm/tests/test_opening_balance.py",
+        "farm/tests/test_private_contacts.py",
         "farm/tests/test_production_departments.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
@@ -9592,6 +9594,7 @@
         "farm/tests/test_feeding.py",
         "farm/tests/test_feeds.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_private_contacts.py",
         "farm/tests/test_probe_review.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_size_mix_review.py",
@@ -14172,6 +14175,7 @@
       "tests": [
         "core/test_database.py",
         "core/test_languages.py",
+        "farm/tests/test_private_contacts.py",
         "farm/tests/test_sites.py"
       ]
     },
@@ -14927,6 +14931,7 @@
         "core/tests_crud_mount.py",
         "core/tests_design_shell.py",
         "core/tests_entry_key.py",
+        "core/tests_private_log.py",
         "core/tests_query_pages.py",
         "core/tests_schema.py",
         "core/tests_scope.py",
@@ -14944,6 +14949,7 @@
         "farm/tests/test_migration_altitude.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_migration_site_zone.py",
+        "farm/tests/test_private_contacts.py",
         "farm/tests/test_production_departments.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
@@ -18055,6 +18061,7 @@
         "farm/tests/test_feeds.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_private_contacts.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_suppliers.py",
         "inventory/tests/helpers.py",
@@ -39751,7 +39758,7 @@
       "app": "tasks",
       "model": "TaskNote",
       "table": "task_notes",
-      "description": "A note on a task by a person who can read it: part of the task's record, never edited or removed (tasks.services.add_note is its only writer), and in the activity log.",
+      "description": "A note on a task by a person who can read it: part of the task's record, never edited or removed (tasks.services.add_note is its only writer).",
       "columns": [
         {
           "name": "id",
@@ -41441,6 +41448,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_private_log.py",
         "core/tests_workspaces.py",
         "tasks/tests/__init__.py",
         "tasks/tests/test_models.py",

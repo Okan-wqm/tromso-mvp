@@ -136,3 +136,18 @@ and sheet). The route sweep names main's theme switch (a cookie) among the publi
 Full suite on the merge with bd6416d (`scripts/test.sh`, archive copy): 3152 tests, 6 failures, all
 `monitoring.tests.test_golden` "titles that are gone" (stale values' titles); main bd6416d alone fails the same 6 at the
 same time, so they come from main, not this branch.
+
+## Owner decisions, 2026-11-10 ("go with your recommendations"; branch wip/owner-decisions)
+
+The four questions above are decided and built, each with its `Test:` commit first.
+
+| Finding | Decision | What was built |
+|---|---|---|
+| F-095 | A clock-in open longer than a limit is a forgotten clock-out; the lead closes it | `SchedulingSettings.forgotten_after_hours` (16, HR edits it; hr/0013), one rule `hr.rules.forgotten`: its own state on the board, kept in the emergency count and said apart, the person told in words and neither clocked in nor out, closed on the Attendance page with the real time and a reason (README › Today & attendance). `hr.tests.test_forgotten` |
+| F-203 | The Production manager preset clears a planned day and enters and corrects attendance | `hr/roles.py`; `hr/0012_production_manager_rights` gives an existing role the three rights, logged. 0010's restore is left as it was made: with 0012 it is the preset today, and F-046's test stays green. `hr.tests.test_manager_rights`, `test_roles`, `test_preset_restore` |
+| F-168 / F-173 | Kept; said in the role matrix | `core.access.Area.note`, printed under Experiments and Regulatory reports in EN/NB/TR. `core.tests_matrix_notes` |
+| F-059 / F-061 / F-179 / F-050 | Contact e-mail and phone and task free text are private in the log; the log's audience stays `core.view_auditlog` | `core.audit.private` / `digest` (the existing mechanism, named); contacts, a site's and a report's contact fields, task notes; `core/0011_private_log_values` converts the old rows; [docs/erasure.md](../erasure.md). `core.tests_private_log`, `farm.tests.test_private_contacts`, `tasks.tests.test_pages`, `reports.tests.test_pages` |
+
+Still open from this group (said in docs/erasure.md): names in the log (a contact's, a site manager's, a report's contact
+person), a user account's own e-mail in the Users rows (F-050), a supplier's company e-mail and phone, and a logged page
+for erasing a task note (today a database administrator's write on the DPO's instruction).

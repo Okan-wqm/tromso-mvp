@@ -56,7 +56,7 @@ once; it never changes a role an administrator has edited.
 | # | Item | Owner | Done |
 |---|---|---|---|
 | 4.1 | A retention period is set for leave requests, plans, punches and placements, and who deletes them when it runs out. | DPO | ☐ |
-| 4.2 | The activity log cannot be deleted, by design, and it records changes to people's HR records (never the words of a leave reason or a note). Whether this conflicts with 4.1, and how, is decided by the owner. | Owner + DPO | ☐ |
+| 4.2 | The activity log cannot be deleted, by design, and it records changes to people's HR records (never the words of a leave reason or a note; never a contact's e-mail or phone or the text of a task note either: [erasure.md](erasure.md)). Whether this conflicts with 4.1, and how, is decided by the owner. | Owner + DPO | ☐ |
 | 4.3 | The database viewer is given to nobody outside IT administration. | Owner | ☐ |
 
 ## 5. Sign-off

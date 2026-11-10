@@ -117,7 +117,10 @@ pub async fn device(a: &Client, fx: &Fx, id: Uuid, code: &str, topic: &str, form
     .unwrap();
 }
 
-/// A channel; returns its channel number (drawn by the database).
+/// A channel; returns its channel number (drawn by the database). It names every column the database does not fill
+/// (Django's defaults are Python's): `fresh_heartbeats` is Django's own (how long a value reads as fresh, 3 as its
+/// form gives; not in the view, the ingest never reads it). The Python suite reads this statement against the
+/// schema (sensors/tests/test_contract.py, IngestSqlTests).
 #[allow(clippy::too_many_arguments)]
 pub async fn channel(
     a: &Client,
@@ -136,9 +139,9 @@ pub async fn channel(
             &format!(
                 "INSERT INTO sensors_channel (id, created_at, updated_at, version, is_deleted, code, name, quantity, \
                  unit, unit_factor, unit_offset, value_path, item_name, address_protocol, address, reduction, deadband, \
-                 heartbeat_s, range_min, range_max, state, note, device_id) \
-                 VALUES ($1, {AUDIT}, $2, $2, 'temperature_c', 'C', 1, 0, $3, $4, 'mqtt', '{{}}', $5, $6, $7, $8, $9, \
-                 'active', '', $10) RETURNING channel_no"
+                 heartbeat_s, fresh_heartbeats, range_min, range_max, state, note, device_id) \
+                 VALUES ($1, {AUDIT}, $2, $2, 'temperature_c', 'C', 1, 0, $3, $4, 'mqtt', '{{}}', $5, $6, $7, 3, \
+                 $8, $9, 'active', '', $10) RETURNING channel_no"
             ),
             &[
                 &id,

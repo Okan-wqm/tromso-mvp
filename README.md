@@ -4465,6 +4465,7 @@ real mail.
 | `tsconfig.test.json`, `scripts/mark-esm.mjs` | The TypeScript unit tests' build (`npm test`) |
 | `scripts/test.sh`, `scripts/testrunner/` | The whole suite in Docker, in parallel, on a database server of its own (Tests); `in-container.sh` the checks and the run inside the container, deprecations as errors |
 | `config/test_runner.py`, `config/tests.py` | The test runner: the parallel suite, fast password hashing, warnings as errors (Tests) |
+| `core/testing.py` | The tests' clock: `FrozenClock` holds `timezone.now()` at a class's `NOW`, so a test dated on fixed days does not read the day it runs on (Tests) |
 | `.github/workflows/ci.yml`, `.github/dependabot.yml`, `sensors-ingest/rust-toolchain.toml`, `scripts/testrunner/image.sh` | CI, dependency updates and the ingest's pinned toolchain (CI and dependency updates) |
 
 ## Tests
@@ -4545,6 +4546,14 @@ empty: the whole suite raises none). `scripts/test.sh` also runs every command w
 import (`scripts/testrunner/in-container.sh`), which catches one raised while the models are imported, before the runner
 starts; a plain `manage.py test` has the runner's filters only.
 
+**A test does not read the day it runs on.** A test whose records are dated on fixed days holds the clock
+(`core.testing.FrozenClock`, mixed in before the TestCase with `NOW`: `django.utils.timezone.now`, the one clock the code
+reads, stands at that moment for the class's data and every test of it). Otherwise the rules that count from today (a
+record dated at most the correction window back, nothing in the future, a freshness) fail the test by the calendar:
+`sensors/tests/test_replay.py`, dated 10.10.2026 with a sample of the day before, failed from 10.11.2026 on (31 days).
+The dates stay as written and the clock is held, rather than the dates moved with the run's day, wherever the data is
+tied to its dates (seeded readings, whole hours, an address's `2026-10-10T00:05`). The database's own `now()` is not held.
+
 ## CI and dependency updates
 
 GitHub Actions (`.github/workflows/ci.yml`) runs five jobs in parallel, `permissions: contents: read`, every action pinned
@@ -4573,6 +4582,14 @@ so run `scripts/test.sh` on the branch before asking for a merge.
 | `rust` | in `sensors-ingest/`, on the toolchain of `rust-toolchain.toml` (1.88.0, the release image's and the crate's `rust-version`): `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked --all-targets` against a TimescaleDB service migrated by Django (`manage.py migrate` in the test runner's image, the server's own packages) and a Mosquitto broker (`REQUIRE_DB=1`: the database and broker tests run, never skip), `cargo deny --locked check` (licences, bans, sources, RustSec advisories), `THIRD_PARTY` equal to what `Cargo.lock` says | `sensors-ingest/tests/run.sh` |
 | `chemcore` | `chemcore/scripts/test.sh` in the `chemcore-tools` stage of `docker/testrunner.Dockerfile` (its layers cached): rustfmt, clippy, `cargo test`, libm the chemistry's only dependency, no WebAssembly, `cargo deny` with advisories, `chemcore/THIRD_PARTY`, `docker/requirements.lock` naming the pins of `requirements.txt`; the built module's handshake with `chemcore/EXPECTED` (core.E001) is the python job's `check`. | the same `docker run` as the script's header |
 | `security` | `pip-audit --strict` on `requirements.txt` and the test runner's, and with `--require-hashes` on what the runner image installs (`docker/requirements.lock`) and the chemcore wheel's build tool (`docker/chemcore-build.lock`, maturin); the Python licence gate (`pip-licenses --allow-only`, the licences [`THIRD_PARTY.md`](THIRD_PARTY.md) allows: AGPL, SSPL, BUSL, non-commercial or any unreviewed licence fails); the banned components, MinIO and rodbus, whatever licence a client library carries (a Python or npm package, or an image a compose file or Dockerfile names; the crates are denied in `deny.toml`); `npm audit --omit=dev --audit-level=high` | see below |
+
+The ingest's tests, bench and end-to-end runs make their configuration in SQL of their own (`sensors-ingest/tests/common/mod.rs`,
+`bench/seed.sql`, `bench/multisource_setup.py`, `e2e/seed.sql`) on the schema Django migrates, so a migration breaks them
+without touching `sensors-ingest/`: a NOT NULL column without a database default (a model's `default` is Python's) that
+they do not give (`sensors_channel.fresh_heartbeats`, sensors 0010, kept the `rust` job red on `main` from its landing).
+Two things hold it: `sensors.tests.test_contract.IngestSqlTests`, in the Python suite, reads every `INSERT INTO table
+(columns)` under `sensors-ingest/` against the schema (a column the database does not fill left out, a column that is
+gone), and a branch with a migration runs `sensors-ingest/tests/run.sh` before it lands (CLAUDE.md, How work lands).
 
 The security job by hand (Docker, nothing installed on the machine):
 

@@ -293,6 +293,17 @@ PASSWORD_RESET_TIMEOUT = int(os.environ.get('ACCOUNT_LINK_HOURS', '24')) * 3600
 # other and send nothing (core.accountmail.reset), so nobody's inbox is flooded through the form.
 PASSWORD_RESET_MAILS_PER_HOUR = int(os.environ.get('PASSWORD_RESET_MAILS_PER_HOUR', '3'))
 
+# The account e-mails' lines in the server's log (a mail that did not go out, requests held back or dropped): a reset
+# that failed shows nowhere else but on its account_mails row, so they do not depend on Python's last-resort handler
+# (warnings only, no time, no level). To the process's stderr, where the server's other output goes.
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {'dated': {'format': '%(asctime)s %(levelname)s %(name)s: %(message)s'}},
+    'handlers': {'stderr': {'class': 'logging.StreamHandler', 'formatter': 'dated'}},
+    'loggers': {'core.accountmail': {'handlers': ['stderr'], 'level': 'INFO', 'propagate': False}},
+}
+
 # Under one, no link would ever work, no reset mail ever be sent and no mail have the time to leave: said here, not
 # found out by a person.
 for _name, _value in (('ACCOUNT_LINK_HOURS', PASSWORD_RESET_TIMEOUT), ('EMAIL_TIMEOUT', MAIL_SEND_SECONDS),

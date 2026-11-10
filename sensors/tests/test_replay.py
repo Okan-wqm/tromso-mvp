@@ -14,6 +14,7 @@ from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
+from core.testing import FrozenClock
 from farm.models import System
 from farm.tests.helpers import point_of, role
 from farm.tests.test_stock import make_unit
@@ -25,6 +26,12 @@ from sensors.models import Channel
 from . import SensorsCase, make_channel
 
 START = datetime(2026, 10, 10, tzinfo=tz.utc)
+# The clock stands a week after START. The replay is a function of a range of stored moments, and its data is dated on
+# START's days (the seeded readings, the hour tier's whole hours, the addresses' '2026-10-10T00:05'), so the dates stay
+# and the clock is held: the rules that read it (a sample at most the correction window back, no binding and no sample in
+# the future, the read's "no later than now") then see what they saw the day the tests were written, whatever the day
+# of the run: every replayed moment is past, and the sample of the day before START is eight days old.
+NOW = START + timedelta(days=7)
 
 
 def insert(channel_no, rows):
@@ -38,7 +45,9 @@ def readings_queries(queries):
     return [query for query in queries if 'sensors_reading' in query['sql'] or 'sensors_rollup' in query['sql']]
 
 
-class ReplayCase(SensorsCase):
+class ReplayCase(FrozenClock, SensorsCase):
+    NOW = NOW
+
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()

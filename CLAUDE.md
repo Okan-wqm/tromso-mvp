@@ -109,6 +109,7 @@ Landing a branch, one at a time, in the agreed order:
 1. Independent review of the branch (a reviewer that did not write it), findings fixed on the branch.
 2. Merge `main` into the branch; renumber migrations after main's; regenerate the data map and the catalogs.
 3. Full `scripts/test.sh` on the branch, plus `makemigrations --check`, `npm run check`, `npm test`.
+   A branch with a migration or a change under `sensors-ingest/` also runs `sensors-ingest/tests/run.sh` (CI's `rust` job: the ingest's tests on the schema Django migrates).
 4. Back up the dev database (`pg_dump -U balik`, about 7 minutes, into `Programlar\db-backups\`).
 5. Fast-forward `main`, then `migrate` + `compile_catalogs` + `npm run build` in one go, restart the dev server.
 6. Live check through the real pages (create, edit and delete one record of every new kind; crawl the pages in

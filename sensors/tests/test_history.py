@@ -16,7 +16,7 @@ from django.utils import timezone
 from farm.models import System
 from farm.tests.helpers import point_of, role
 from farm.tests.test_stock import make_unit
-from farm.water import calculation, chemistry, read as water_read, services as water_services
+from farm.water import calculation, chemistry, deffeyes, read as water_read, services as water_services
 
 from sensors import bindings, trail
 from sensors.models import Binding
@@ -152,6 +152,28 @@ class TrailTests(HistoryCase):
         found = trail.trail(self.t1, start, self.now)
         self.assertEqual([point.at for point in found.points], [start])
         self.assertEqual(found.missing, [start + timedelta(hours=1)])
+
+    def test_an_hour_whose_ph_and_alkalinity_cannot_go_together_is_listed_never_drawn(self):
+        """The core refuses a water below the alkalinity floor of its pH (the correction of 2026-11-10): the trail lists
+        that hour as impossible; before, it drew a point with a DIC below 0."""
+        start = self.now - timedelta(hours=2)
+        insert(self.ph.channel_no, [(start + timedelta(minutes=10), 7.2), (start + timedelta(hours=1, minutes=10), 11.5)])
+        insert(self.channel.channel_no, [(start + timedelta(hours=hour, minutes=5), 10.0) for hour in range(2)])
+        self.sample(self.mid1, start - timedelta(days=1), alkalinity_mg_l='20', salinity_ppt='0')
+        self.assertTrue(deffeyes.why_impossible(10.0, 0.0, 11.5, 20.0))
+        found = trail.trail(self.t1, start, self.now)
+        self.assertEqual([point.at for point in found.points], [start])
+        self.assertEqual(found.impossible, [start + timedelta(hours=1)])
+        self.assertEqual(found.missing, [])
+        self.assertTrue(all(point.dic > 0 for point in found.points))
+        user = get_user_model().objects.create_user('reader', 'reader@example.com', 'x')
+        user.groups.add(role('Reader', 'view_watermeasurement'), role('Readings', 'view_reading'))
+        self.client.force_login(user)
+        response = self.client.get(reverse('sensors:trail'), {'target': f'unit:{self.t1.pk}', 'range': '6h'})
+        self.assertEqual(response.status_code, 200)
+        answer = json.loads(response.content)
+        self.assertEqual(answer['impossible'], [(start + timedelta(hours=1)).isoformat()])
+        self.assertEqual(len(answer['points']), 1)
 
     def test_the_trail_endpoint_needs_both_rights_and_gives_the_points(self):
         start = self.now - timedelta(hours=1)

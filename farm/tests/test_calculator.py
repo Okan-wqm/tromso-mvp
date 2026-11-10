@@ -22,7 +22,7 @@ from core.models import Profile
 
 from ..forms.water import CalculatorForm
 from ..models import ProductionDepartment, SamplingPoint, Site, System, Tank, WaterLimit, WaterMeasurement
-from ..water import calculation, charts, chemistry, deffeyes, dosing, parameters, services
+from ..water import calculation, charts, chemistry, deffeyes, dosing, native, parameters, services
 from ..water.deffeyes import Limits, Target, Water, analyse
 from ..water.evaluate import Status
 from .helpers import make_species, point_of, role, stock_fish
@@ -584,6 +584,30 @@ class CalculatorPageTests(TestCase):
         self.assertIn('ph', page.context['form'].errors)
         self.assertIsNone(page.context['chart'])
 
+    def test_a_water_that_cannot_be_comes_back_with_its_reason_on_every_page(self):
+        """The core refuses a pH and an alkalinity no water has (native.ImpossibleWaterError); the form refuses them
+        first, by the same rule, so the page, its live parts and the report say why and never fail."""
+        odd = self.query(temperature_c='10', salinity_ppt='0.2', ph='11', alkalinity_mg_l='3')
+        with self.assertRaises(native.ImpossibleWaterError):
+            deffeyes.analyse(Water(10.0, 0.2, 11.0, 3.0))
+        for url in (self.url, self.results_url, self.report_url):
+            with self.subTest(url=url):
+                response = self.client.get(url, odd)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn('alkalinity_mg_l', response.context['form'].errors)
+                self.assertContains(response, 'At this pH the alkalinity is above')
+                self.assertIsNone(response.context['result'])
+        # The target likewise, on its own field.
+        target = self.query(target_ph='11.5', target_alkalinity_mg_l='20')
+        with self.assertRaises(native.ImpossibleWaterError):
+            deffeyes.analyse(Water(12.0, 1.0, 7.0, 80.0), target=Target(11.5, 20.0))
+        for url in (self.url, self.results_url, self.report_url):
+            with self.subTest(url=url, target=True):
+                response = self.client.get(url, target)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn('target_alkalinity_mg_l', response.context['form'].errors)
+                self.assertContains(response, 'At this pH the alkalinity is above')
+
     def test_the_recipes_and_the_dosing_layer(self):
         response = self.client.get(self.results_url, self.query())
         recipes = response.context['result'].recipes
@@ -914,6 +938,14 @@ class UnitChartTests(UnitWaterCase):
         self.assertEqual(refused.impossible, deffeyes.why_impossible(10, 0.2, 11, 3))
         self.assertFalse(deffeyes.possible(10, 0.2, 11, 3))
         self.assertTrue(deffeyes.possible(10, 0.2, 7.2, 90))
+        # The core itself refuses that water (the correction of 2026-11-10): the chart's refusal comes first, by the
+        # same rule, and the window says the reason.
+        with self.assertRaises(native.ImpossibleWaterError):
+            deffeyes.analyse(Water(10.0, 0.2, 11.0, 3.0))
+        page = self.client.get(reverse('farm:water_unit_chart', args=[odd.pk]))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'At this pH the alkalinity is above')
+        self.assertNotContains(page, '<svg')
 
     def test_the_loops_temperature_stands_in_when_the_unit_has_none_of_its_own(self):
         """Owner rule A9 (2026-11-07) replaces the decision of 2026-11-04 (the chart refused a loop's temperature)."""

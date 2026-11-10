@@ -254,6 +254,31 @@ class GoldenV3Tests(SimpleTestCase):
                             for row in salted))
         self.assertTrue(any(row['v3'] != row['v1'] for row in rows if row['salinity'] < 5))
 
+    def test_the_corpus_holds_omega_where_mucci_measured(self):
+        """log10 Ω of calcite and aragonite at each pH with the recorder's calcium, from 5 ‰ (Mucci 1983: 5 to 44 ‰), by
+        both formulas: formula 3's takes the Ksp per litre (times the square of the sea water's density, EOS-80),
+        formula 1's the per-kg Ksp as it is, so formula 1's arithmetic on formula 3's own carbonate lies 2 log10 ρ
+        above formula 3's (0.020 at S 35 and 25 °C: Ω 4.7 % too high)."""
+        rows = self.records['waters']
+        calcium, held = self.module.CALCIUM_MG_L, 0
+        for row in rows:
+            for formula in (1, 3):
+                found = [at['log_omega'] for at in row[f'v{formula}']['at_ph']]
+                if row['salinity'] < 5:
+                    self.assertEqual(found, [None] * len(found))
+                    continue
+                held += len(found)
+                eq = native.water_equilibria(row['temp_c'], row['salinity'], row['alkalinity_mg_l'], **row['ions'],
+                                             formula=formula)
+                density = native.seawater_density(row['temp_c'], row['salinity']) if formula == 3 else 1.0
+                meq = row['alkalinity_mg_l'] / native.MG_CACO3_PER_MEQ
+                for at, omega in zip(row[f'v{formula}']['at_ph'], found):
+                    carbonate = eq.carbonate(eq.dic(meq, at['ph']), at['ph']) / 1000
+                    for name, ksp in (('calcite', eq.ksp_calcite), ('aragonite', eq.ksp_aragonite)):
+                        expected = math.log10(calcium / native.MG_CALCIUM_PER_MOL * carbonate / (ksp * density ** 2))
+                        self.assertAlmostEqual(omega[name], expected, delta=1e-11)
+        self.assertEqual(held, 2 * 5 * 5 * 6 * 3 * 10)        # both formulas, 5 pH, 5 salinities from 5 ‰, 180 waters each
+
     def test_the_application_reads_formula_3_and_formula_1_is_still_golden_v1s(self):
         self.assertIs(chemistry.water_equilibria, native.water_equilibria)
         self.assertEqual(chemistry.water_equilibria(12.0, 0.0, 80.0), native.equilibria_v3(12.0, 0.0, 80.0))

@@ -489,7 +489,12 @@ class GeometryTests(SimpleTestCase):
         sea = analyse(Water(25, 35, 8.1, 115, calcium_mg_l=412), Limits())
         shape = deffeyes.geometry(sea)
         self.assertTrue(shape.omega['calcite'] and shape.omega['aragonite'])
-        carbonate = sea.equilibria.ksp_calcite / (412 / chemistry.MG_CALCIUM_PER_MOL) * 1000
+        # On the line the carbonate (mmol/L) times the calcium (mol/L) is the Ksp per litre: Mucci's per-kg² Ksp times
+        # the square of the sea water's density (the correction of 2026-11-10; the per-kg Ksp alone put the line where Ω
+        # is 1 / ρ², 0.955 at S 35 and 25 °C).
+        density = native.seawater_density(25.0, 35.0)
+        self.assertAlmostEqual(density, 1.023343, delta=1e-6)
+        carbonate = sea.equilibria.ksp_calcite * density ** 2 / (412 / chemistry.MG_CALCIUM_PER_MOL) * 1000
         for line in shape.omega['calcite']:
             for dic, alkalinity in line[1:-1]:
                 ph = sea.equilibria.ph_at(dic, alkalinity)

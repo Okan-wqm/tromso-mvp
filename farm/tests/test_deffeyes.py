@@ -18,7 +18,7 @@ from django.utils import translation
 from core.models import Profile
 
 from ..models import WaterMeasurement
-from ..water import chemistry, deffeyes
+from ..water import chemistry, deffeyes, native
 from ..water.deffeyes import Limits, Target, Water, analyse
 from ..water.evaluate import Status
 from .helpers import role
@@ -73,12 +73,18 @@ class ConstantTests(SimpleTestCase):
         self.assertAlmostEqual(-math.log10(chemistry.k2_sws(25, 35) * to_total), 8.9660, delta=0.01)
 
     def test_water_and_boric_acid_are_the_handbooks_check_values(self):
-        # DOE (1994) Handbook of methods, ch. 5, and Dickson et al. (2007), at S 35 and 25 °C, total scale:
-        # ln Kw = −30.434 (Millero 1995), ln KB = −19.7964 (Dickson 1990).
+        # Dickson, Sabine & Christian (2007), Guide to Best Practices, ch. 5, at S 35 and 25 °C, total scale: ln Kw =
+        # −30.434 (eq. 62: Millero's 1995 expression with 0.015 taken from its constant, footnote 5; formula 1's
+        # `kw_total`), ln KB = −19.7964 (Dickson 1990). Millero's own, on his seawater scale (formula 3's `kw_sws`), is
+        # therefore −30.434 + 0.015.
         self.assertAlmostEqual(math.log(chemistry.kw_total(25, 35)), -30.434, delta=0.001)
+        self.assertAlmostEqual(math.log(native.kw_sws(25, 35)), -30.419, delta=0.001)
         self.assertAlmostEqual(math.log(chemistry.kb_total(25, 35)), -19.7964, delta=0.0001)
-        # In pure water: pKw 13.995 (Harned & Owen 1958) and pKB 9.237 (Manov et al. 1944) at 25 °C.
-        self.assertAlmostEqual(-math.log10(chemistry.kw_total(25, 0)), 13.995, delta=0.01)
+        # In pure water at 25 °C: pKw 13.995 (the value this test has always held; Harned & Owen 1958 print 13.9965),
+        # which Millero's expression gives at S 0 (13.9946) and the Guide's shifted constant misses by 0.006 (14.0012);
+        # pKB 9.237 (Manov et al. 1944).
+        self.assertAlmostEqual(-math.log10(native.kw_sws(25, 0)), 13.995, delta=0.001)
+        self.assertAlmostEqual(-math.log10(chemistry.kw_total(25, 0)), 14.0012, delta=0.0001)
         self.assertAlmostEqual(-math.log10(chemistry.kb_total(25, 0)), 9.237, delta=0.002)
 
     def test_hydrogen_sulfide_is_milleros(self):

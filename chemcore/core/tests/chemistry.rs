@@ -56,7 +56,8 @@ fn a_water_is_refused_where_python_raised() {
 fn the_constants_meet_their_papers() {
     let ln = |x: Result<f64, ChemError>| x.map(libm::log).unwrap_or(f64::NAN);
     assert!((ln(c::kb_total(25.0, 35.0)) - -19.7964).abs() < 5e-5); // Dickson 1990, DOE 1994
-    assert!((ln(c::kw_total(25.0, 35.0)) - -30.434).abs() < 5e-4); // Millero 1995, DOE 1994
+    // Dickson et al. 2007, ch. 5, eq. 62: Millero's (1995) with 0.015 taken from its constant (formula 1's; tests/kw.rs)
+    assert!((ln(c::kw_total(25.0, 35.0)) - -30.434).abs() < 5e-4);
     assert!((ln(c::ks(25.0, 35.0)) - -2.30).abs() < 5e-3); // Dickson 1990, DOE 1994
     assert!((c::oxygen_solubility(25.0, 0.0, 1.0).unwrap_or(f64::NAN) - 8.26).abs() < 5e-3); // APHA 4500-O
     assert!((c::ksp_calcite(25.0, 35.0).unwrap_or(f64::NAN) * 1e7 - 4.27).abs() < 5e-3); // Mucci 1983

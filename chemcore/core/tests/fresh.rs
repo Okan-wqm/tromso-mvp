@@ -148,7 +148,7 @@ fn in_the_band_each_constant_is_the_geometric_blend_of_the_two_paths() {
         let weight = f::sea_weight(salinity);
         let blended = v3(12.0, salinity, 120.0, ions);
         let fresh = f::fresh_equilibria(12.0, salinity, Some(120.0), ions).map(|eq| constants(&eq));
-        let sea = c::equilibria_with(12.0, salinity, &f::debye_huckel_a).map(|eq| constants(&eq));
+        let sea = f::sea_equilibria(12.0, salinity).map(|eq| constants(&eq));
         assert!(
             matches!((fresh, sea), (Ok(fresh), Ok(sea)) if blended.iter().zip(fresh.iter().zip(sea.iter()))
             .enumerate().all(|(index, (found, (fresh, sea)))| {
@@ -290,7 +290,8 @@ fn davies_at_2_5_and_12_degrees_meets_the_tabulated_a() {
 }
 
 #[test]
-fn sea_water_keeps_v1s_constants_and_converts_the_nbs_ph_with_the_temperatures_a() {
+fn sea_water_keeps_v1s_constants_but_the_kw_and_converts_the_nbs_ph_with_the_temperatures_a() {
+    // Kw is Millero's (1995) on his seawater scale since the correction of 2026-11-10 (tests/kw.rs); the rest is v1's.
     let ions = Ions {
         conductivity_25_us_cm: Some(500.0),
         hardness_mg_l: None,
@@ -301,9 +302,10 @@ fn sea_water_keeps_v1s_constants_and_converts_the_nbs_ph_with_the_temperatures_a
             let v3 = f::equilibria_v3(temp_c, salinity, Some(100.0), ions);
             let v1 = c::equilibria(temp_c, salinity);
             assert!(
-                matches!((v3, v1), (Ok(v3), Ok(v1)) if v3.k1 == v1.k1 && v3.k2 == v1.k2 && v3.kw == v1.kw
+                matches!((v3, v1), (Ok(v3), Ok(v1)) if v3.k1 == v1.k1 && v3.k2 == v1.k2 && v3.kw != v1.kw
                 && v3.kb == v1.kb && v3.k_nh4 == v1.k_nh4 && v3.k_h2s == v1.k_h2s && v3.boron == v1.boron)
             );
+            assert_eq!(v3.map(|eq| eq.kw), c::kw_free(temp_c, salinity));
             let gamma = |a_of: &dyn Fn(f64) -> chemcore_core::num::R| {
                 c::activity_coefficient_h_with(temp_c, salinity, a_of).map(libm::log10)
             };

@@ -153,14 +153,23 @@ class BoundaryTests(SimpleTestCase):
 
 
 class EquilibriaV3Tests(SimpleTestCase):
-    def test_from_a_salinity_of_5_it_is_v1_but_for_the_nbs_conversions_a(self):
-        """Sea water keeps v1's constants bit for bit; its NBS pH is converted with the temperature's A (I1)."""
+    def test_from_a_salinity_of_5_it_is_v1_but_for_the_nbs_conversions_a_and_the_kw(self):
+        """Sea water keeps v1's constants bit for bit but two: its NBS pH is converted with the temperature's A (I1), and
+        its Kw is Millero's (1995) on his seawater scale over [H+]SWS / [H+]free, as K1, K2 and KNH4 are converted (the
+        correction of 2026-11-10; v1 keeps the 2007 Guide's approximate total-scale value, by name)."""
         for temp_c in (2.0, 12.0, 25.0):
             for salinity in (5.0, 10.0, 35.0):
                 with self.subTest(temp_c=temp_c, salinity=salinity):
                     found = native.equilibria_v3(temp_c, salinity, 100.0, conductivity_25_us_cm=500.0)
                     v1 = native.equilibria(temp_c, salinity)
-                    self.assertEqual(found.values()[3:], v1.values()[3:])
+                    for name, value, old in zip(native.Equilibria.fields[3:], found.values()[3:], v1.values()[3:]):
+                        if name != 'kw':
+                            self.assertEqual(value, old, name)
+                    self.assertEqual(found.kw, native.kw_sws(temp_c, salinity) / native.free_to_sws(temp_c, salinity))
+                    self.assertEqual(v1.kw, native.kw_total(temp_c, salinity) / native.free_to_total(temp_c, salinity))
+                    # the two differ by the Guide's 0.015 in ln Kw and by the fluoride between the two scales
+                    self.assertAlmostEqual(found.kw / v1.kw, 1, delta=0.012)
+                    self.assertNotEqual(found.kw, v1.kw)
                     strength = native.ionic_strength(salinity)
                     term = math.sqrt(strength) / (1 + math.sqrt(strength)) - 0.2 * strength
                     shift = -(native.debye_huckel_a(temp_c) - v1_a(temp_c)) * term
@@ -180,20 +189,28 @@ class EquilibriaV3Tests(SimpleTestCase):
                 close = {'rel_tol': 1e-13}
                 self.assertTrue(math.isclose(found.k1, ideal.k1 / 10 ** (2 * one), **close))      # γH γHCO₃
                 self.assertTrue(math.isclose(found.k2, ideal.k2 / 10 ** two, **close))            # γH γCO₃ / γHCO₃
-                self.assertTrue(math.isclose(found.kw, ideal.kw / 10 ** (2 * one), **close))      # γH γOH
+                # γH γOH; Kw° is pure water's, Millero's (1995) at S 0 (v1's is the Guide's, 1.49 % lower)
+                self.assertTrue(math.isclose(found.kw, native.kw_sws(temp_c, 0.0) / 10 ** (2 * one), **close))
+                self.assertAlmostEqual(native.kw_sws(temp_c, 0.0) / ideal.kw, math.exp(0.015), delta=1e-12)
                 self.assertTrue(math.isclose(found.k_h2s, ideal.k_h2s / 10 ** (2 * one), **close))
                 self.assertTrue(math.isclose(found.kb, ideal.kb / 10 ** (2 * one), **close))
                 self.assertEqual(found.k_nh4, ideal.k_nh4)                  # γH and γNH₄ cancel
                 self.assertEqual(found.boron, native.equilibria(temp_c, salinity).boron)
                 self.assertEqual(found.ksp_calcite, native.equilibria(temp_c, salinity).ksp_calcite)
 
-    def test_with_no_ions_it_is_v1(self):
-        # Nothing measured (S 0, no alkalinity): an ionic strength of 0, v1's ideal fresh water exactly; with a tiny
-        # conductivity and no alkalinity, log γ goes as √I (at 1e-20 µS/cm, I = 1.6e-25, log γ about −2e-13).
+    def test_with_no_ions_it_is_v1_but_for_the_kw(self):
+        # Nothing measured (S 0, no alkalinity): an ionic strength of 0, v1's ideal fresh water exactly, but for Kw, which
+        # is pure water's (Millero 1995 at S 0: pKw 13.995 at 25 °C; v1's, the 2007 Guide's shifted constant, gives
+        # 14.001); with a tiny conductivity and no alkalinity, log γ goes as √I (at 1e-20 µS/cm, I = 1.6e-25, log γ about
+        # −2e-13).
         for found in (native.equilibria_v3(12.0, 0.0), native.equilibria_v3(12.0, 0.0, conductivity_25_us_cm=1e-20)):
             for name, value, ideal in zip(FIELDS, found.values()[2:], native.equilibria(12.0, 0.0).values()[2:]):
                 with self.subTest(name=name):
+                    if name == 'kw':
+                        ideal = native.kw_sws(12.0, 0.0)
                     self.assertTrue(math.isclose(value, ideal, rel_tol=1e-9, abs_tol=1e-12), (value, ideal))
+        self.assertAlmostEqual(-math.log10(native.equilibria_v3(25.0, 0.0).kw), 13.995, delta=0.001)
+        self.assertAlmostEqual(-math.log10(native.equilibria(25.0, 0.0).kw), 14.0012, delta=0.0001)
 
     def test_ions_lower_the_co2_and_the_nh3_share_at_a_measured_ph_and_alkalinity(self):
         # CO₂ = aH [HCO₃⁻] γHCO₃ / K1°: an ion-rich water holds less CO₂ at the pH its meter reads; NH₃'s corrected share

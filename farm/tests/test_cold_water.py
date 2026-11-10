@@ -71,19 +71,23 @@ def free_co2(temp_c, ph, alkalinity_mg_l, strength):
 class ConstantsTests(SimpleTestCase):
     def test_the_carbonic_acid_and_water_constants_at_0_to_12_degrees(self):
         # Millero et al. (2006) at S 0 against Plummer & Busenberg (1982): within 0.002 pK; Millero (1995) against
-        # Harned & Hamer (1933): within 0.007 pK (the core is 0.005 to 0.006 above it from 0 to 12 °C).
+        # Harned & Hamer (1933): within 0.003 pK.
         for temp_c in COLD:
             pk2 = log_k(HCO3_FORMATION, temp_c)
             pk1 = log_k(CO2_FORMATION, temp_c) - pk2
             with self.subTest(temp_c=temp_c):
                 self.assertAlmostEqual(-math.log10(chemistry.k1_sws(temp_c, 0)), pk1, delta=0.002)
                 self.assertAlmostEqual(-math.log10(chemistry.k2_sws(temp_c, 0)), pk2, delta=0.002)
-                # Why 0.007 for Kw: the core's is Millero (1995)'s seawater fit on the total scale (DOE 1994, its ln
-                # constant 148.9652) at S = 0, which lies 0.004 to 0.006 pK above Harned & Owen's pure-water Kw (14.9435
-                # at 0 °C, 13.9965 at 25 °C) and wateq4f's Harned & Hamer expression; Millero's own pure-water constant
-                # 148.9802 would lie 0.002 below (cross review F8). It moves neither CO2 nor NH3 measurably below pH 9,
-                # where OH- is under 0.1 % of the alkalinity.
-                self.assertAlmostEqual(-math.log10(chemistry.kw_total(temp_c, 0)), -log_k(WATER, temp_c), delta=0.007)
+                # Kw: formula 3 takes Millero's (1995) own expression, on his seawater scale (its ln constant 148.9802), so
+                # at S 0 pure water's Kw: about 0.002 pK below Harned & Owen's (14.9435 at 0 °C, 13.9965 at 25 °C) and
+                # wateq4f's Harned & Hamer expression (cross review F8; the correction of 2026-11-10 after the independent
+                # check). Until then it took the 2007 Guide's total-scale constant (148.9652: Millero's less 0.015, a
+                # sea-water approximation), 0.004 to 0.006 pK above them: formula 1 keeps that one, by name (golden v1).
+                pkw = -log_k(WATER, temp_c)
+                self.assertAlmostEqual(-math.log10(native.kw_sws(temp_c, 0)), pkw, delta=0.003)
+                self.assertAlmostEqual(-math.log10(chemistry.water_equilibria(temp_c, 0.0).kw), pkw, delta=0.003)
+                self.assertAlmostEqual(-math.log10(chemistry.kw_total(temp_c, 0)), pkw, delta=0.007)
+                self.assertGreater(-math.log10(chemistry.kw_total(temp_c, 0)) - pkw, 0.004)
 
     def test_the_co2_solubility(self):
         # Weiss (1974), per litre, against the PHREEQC database's KH, per kg: within 0.002 in log K (0.5 %).

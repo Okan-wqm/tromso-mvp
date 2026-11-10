@@ -61,7 +61,7 @@ class AuthFlowTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ['ali@example.com'])
 
-        link = re.search(r'http://testserver(\S+)', mail.outbox[0].body).group(1)
+        link = re.search(re.escape(settings.PUBLIC_BASE_URL) + r'(/\S+)', mail.outbox[0].body).group(1)
         response = self.client.get(link, follow=True)
         self.assertTrue(response.context['validlink'])
         response = self.client.post(
@@ -379,7 +379,7 @@ class UserTests(AdminTestCase):
         self.client.post(reverse('core:user_create'), user_data())
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ['kari@example.com'])
-        link = re.search(r'http://testserver(\S+)', mail.outbox[0].body).group(1)
+        link = re.search(re.escape(settings.PUBLIC_BASE_URL) + r'(/\S+)', mail.outbox[0].body).group(1)
 
         self.client.logout()
         response = self.client.get(link, follow=True)

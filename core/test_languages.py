@@ -483,8 +483,8 @@ class EmailLanguageTests(TestCase):
         self.client.force_login(admin)                                  # the admin reads English
         self.client.post(reverse('core:user_create'), user_data(language='nb'))
         self.assertEqual(Profile.objects.get(user__username='kari').language, 'nb')
-        self.assertEqual(mail.outbox[0].subject, 'Tilbakestill passordet ditt')
-        self.assertIn('Hei kari,', mail.outbox[0].body)
+        self.assertEqual(mail.outbox[0].subject, 'Kontoen din i driftskonsollen: velg passord')
+        self.assertIn('Hei Kari Nordmann,', mail.outbox[0].body)
         self.assertEqual(lang_of(self.client.get(reverse('home'))), 'en')     # the admin's own page is unchanged
 
 

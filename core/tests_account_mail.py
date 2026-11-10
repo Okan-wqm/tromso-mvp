@@ -202,6 +202,15 @@ class ResetMailTests(AccountMailCase):
         self.assertTrue(self.ali.check_password('yeni-sifre-456'))
         self.assert_dead(self.client.get(link_in(sent), follow=True))
 
+    def test_the_reset_mail_names_the_username_which_is_what_signs_in(self):
+        # (review R5) someone who forgot both sets a new password and still needs the name to sign in with
+        get_user_model().objects.create_user('k.nordmann', 'kari@example.com', 'x', first_name='Kari',
+                                             last_name='Nordmann')
+        self.client.post(reverse('password_reset'), {'email': 'kari@example.com'})
+        body = mail.outbox[-1].body
+        self.assertIn('Hi Kari Nordmann,', body)
+        self.assertIn('Your username is k.nordmann.', body)
+
     def test_the_old_password_works_until_a_new_one_is_set(self):
         self.client.post(reverse('password_reset'), {'email': 'ali@example.com'})
         self.client.post(reverse('login'), {'username': 'ali', 'password': 'eski-sifre-123'})
@@ -220,11 +229,13 @@ INVITATION = {
            'Bağlantı bir kez kullanılabilir ve 24 saat sonra geçerliliğini yitirir.'),
 }
 RESET = {
-    'en': ('Reset your password', 'Hi ali,', 'Open this link to set a new password:',
+    'en': ('Reset your password', 'Hi ali,', 'Your username is ali.', 'Open this link to set a new password:',
            'The link works once and expires after 24 hours.'),
-    'nb': ('Tilbakestill passordet ditt', 'Hei ali,', 'Åpne denne lenken for å velge nytt passord:',
+    'nb': ('Tilbakestill passordet ditt', 'Hei ali,', 'Brukernavnet ditt er ali.',
+           'Åpne denne lenken for å velge nytt passord:',
            'Lenken virker én gang og utløper etter 24 timer.'),
-    'tr': ('Parolanızı sıfırlayın', 'Merhaba ali,', 'Yeni parola belirlemek için bu bağlantıyı açın:',
+    'tr': ('Parolanızı sıfırlayın', 'Merhaba ali,', 'Kullanıcı adınız: ali.',
+           'Yeni parola belirlemek için bu bağlantıyı açın:',
            'Bağlantı bir kez kullanılabilir ve 24 saat sonra geçerliliğini yitirir.'),
 }
 SET_PASSWORD_HEADING = {'en': 'Set a new password', 'nb': 'Velg nytt passord', 'tr': 'Yeni parola belirleyin'}

@@ -235,6 +235,7 @@ class BoardTests(ForgottenTestCase):
 
     def test_the_queries_do_not_grow_with_the_people(self):
         from django.test.utils import CaptureQueriesContext
+        read.board(self.lead, at(10))                                       # the lead's rights are read once
 
         def count(people):
             for n in range(people):

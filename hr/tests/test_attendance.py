@@ -157,13 +157,14 @@ class SelfPunchTests(PeopleTestCase):
         with mock.patch('django.utils.timezone.now', return_value=at(6)):
             services.clock_in(self.ann)
         before = (AttendanceRecord.objects.count(), AuditLog.objects.count())
-        with self.assertRaises(ValidationError):
-            services.clock_in(self.ann)
-        self.assertEqual((AttendanceRecord.objects.count(), AuditLog.objects.count()), before)
-        services.clock_out(self.ann)
-        before = (AttendanceRecord.objects.count(), AuditLog.objects.count())
-        with self.assertRaises(ValidationError):
+        with mock.patch('django.utils.timezone.now', return_value=at(14)):      # the same day: an ordinary open stretch
+            with self.assertRaisesMessage(ValidationError, 'You are already clocked in.'):
+                services.clock_in(self.ann)
+            self.assertEqual((AttendanceRecord.objects.count(), AuditLog.objects.count()), before)
             services.clock_out(self.ann)
+            before = (AttendanceRecord.objects.count(), AuditLog.objects.count())
+            with self.assertRaisesMessage(ValidationError, 'You are not clocked in.'):
+                services.clock_out(self.ann)
         self.assertEqual((AttendanceRecord.objects.count(), AuditLog.objects.count()), before)
 
     def test_only_a_person_with_read_and_an_employee_row_clocks(self):

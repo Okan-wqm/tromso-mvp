@@ -1,18 +1,19 @@
 from datetime import timedelta
 
-from django.db.models import OuterRef, Q, Subquery, Value
+from django.db.models import BooleanField, ExpressionWrapper, OuterRef, Q, Subquery, Value
 from django.db.models.functions import Coalesce, TruncDate
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from core import navigation
+from core import audit, navigation
 from core.crud import Mount, Resource
 from core.dates import company_zone, read_day
 from farm.models.site import zone_of
 from farm.stock.dates import site_today
 
-from .. import clock, scope, services
+from .. import clock, rules, scope, services
 from ..forms.attendance import AttendanceRecordForm
-from ..models import AttendanceRecord, Posting
+from ..models import AttendanceRecord, Posting, SchedulingSettings
 
 
 class AttendanceRecordResource(services.PersonFirst, Resource):
@@ -29,7 +30,7 @@ class AttendanceRecordResource(services.PersonFirst, Resource):
     list_template = 'hr/attendance_list.html'
     page_size = 50
     icon = 'user-check'
-    private_fields = ('note',)
+    private_fields = tuple(services.PRIVATE_PUNCH)
     DAYS = 14
 
     @classmethod
@@ -47,6 +48,12 @@ class AttendanceRecordResource(services.PersonFirst, Resource):
         day = TruncDate('clock_in', tzinfo=company_zone())
         return scope.by_day(request.user, objects.annotate(clocked_day=day), 'employee', 'clocked_day',
                             scope.realm_for(request))
+
+    @classmethod
+    def snapshot(cls, record):
+        """What the log keeps of a stretch: what the person's own clock-in keeps (services.PUNCH_FIELDS), so also who
+        made it (`via`, which the form sets and never shows: a stretch a lead closed by hand says so in the log)."""
+        return audit.snapshot(record, services.PUNCH_FIELDS, private=services.PRIVATE_PUNCH)
 
     @classmethod
     def after_save(cls, request, record, created):
@@ -74,10 +81,15 @@ class AttendanceRecordResource(services.PersonFirst, Resource):
         today = site_today(None)
         first = read_day(request.GET.get('from', ''), request) or today - timedelta(days=cls.DAYS)
         last = read_day(request.GET.get('to', ''), request) or today
-        # whole days on the company's clock: the list is a log of stretches, not a day's roster
+        # whole days on the company's clock: the list is a log of stretches, not a day's roster. A stretch still open
+        # runs on through the days asked for, so it is listed whenever it began: a forgotten clock-out is closed here,
+        # however old it is (the page says which they are, by the one rule: hr.rules.forgotten_before).
         zone = zone_of(None)
-        objects = objects.filter(clock_in__gte=clock.start_of_day(first, zone),
+        objects = objects.filter(Q(clock_in__gte=clock.start_of_day(first, zone)) | Q(clock_out__isnull=True),
                                  clock_in__lt=clock.start_of_day(last + timedelta(days=1), zone))
+        too_old = rules.forgotten_before(timezone.now(), SchedulingSettings.get().forgotten_after_hours)
+        objects = objects.annotate(forgotten=ExpressionWrapper(Q(clock_out__isnull=True, clock_in__lt=too_old),
+                                                               output_field=BooleanField()))
         # each record carries the time zone of the site its person was placed on that day (one query: a subquery), so the page
         # shows the times on the site's clock
         placement = Posting.objects.filter(scope.covering(OuterRef('day')), employee=OuterRef('employee'))

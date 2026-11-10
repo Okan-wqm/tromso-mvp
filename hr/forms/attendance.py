@@ -18,8 +18,10 @@ TABS = [('record', _('Record'), ['employee', 'clock_in', 'clock_out', 'note'])]
 class AttendanceRecordForm(TabbedForm):
     """A stretch of presence typed by hand: for a person of the user's team (checked for the day), the times on the site's
     clock, and the reason (required: this is the lead's entry, not the person's own clock-in). The same form corrects a
-    punch (the change is logged with what it was before) and a punch is voided by deleting it. A stretch never overlaps
-    another of the same person and at most one is open: the database refuses the rest."""
+    punch (the change is logged with what it was before) and a punch is voided by deleting it. A correction that
+    changes a time of a stretch the person clocked themselves makes it an entered one, with its reason: so a forgotten
+    clock-out is closed here, with the real time and why. A stretch never overlaps another of the same person and at
+    most one is open: the database refuses the rest."""
 
     tabs = TABS
     fixed_after_creation = ('employee',)
@@ -97,10 +99,13 @@ class AttendanceRecordForm(TabbedForm):
             return cleaned
         services.check_employed(employee, started.astimezone(zone).date(),
                                 ended.astimezone(zone).date() if ended is not None else None)
-        entered = adding or self.instance.via == AttendanceRecord.Via.ENTERED
-        if entered and not (cleaned.get('note') or '').strip():
+        # A time typed by hand is an entered time, whoever clocked in: a new stretch, and a stretch whose clock-in or
+        # clock-out this edit changes (a forgotten clock-out closed by a lead, hr.rules.forgotten). An edit that leaves
+        # both times as they are leaves the person's own stretch their own.
+        typed = adding or started != self.instance.clock_in or ended != self.instance.clock_out
+        if (typed or self.instance.via == AttendanceRecord.Via.ENTERED) and not (cleaned.get('note') or '').strip():
             self.add_error('note', _('Say why the time was entered by hand.'))
             return cleaned
-        if adding:
+        if typed:
             self.instance.via = AttendanceRecord.Via.ENTERED
         return cleaned

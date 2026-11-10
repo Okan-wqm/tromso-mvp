@@ -8,7 +8,10 @@
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
 <div class="toolbar">
-  {% if own %}
+  {% if own and forgotten %}
+  {# A forgotten clock-out (hr.services.forgotten_refusal): no button would be honest; the person is told the way forward. #}
+  <p class="notice notice-warning" role="status">{{ forgotten }}</p>
+  {% elif own %}
   <form method="post" action="{% url 'hr:punch'|mounted:request 'out' %}" {% if not open_punch %}hidden{% endif %}>{% csrf_token %}<button type="submit" class="button">{% include "icons/_icon.html" with name="user-check" %}{% trans "Clock out" %}</button></form>
   <form method="post" action="{% url 'hr:punch'|mounted:request 'in' %}" {% if open_punch %}hidden{% endif %}>{% csrf_token %}<button type="submit" class="button">{% include "icons/_icon.html" with name="user-check" %}{% trans "Clock in" %}</button></form>
   {% if open_punch %}<span class="muted">{% blocktrans trimmed with since=open_punch.clock_in|on_clock:open_zone|date:"TIME_FORMAT" %}Clocked in since {{ since }}.{% endblocktrans %}</span>{% endif %}

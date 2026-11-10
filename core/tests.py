@@ -430,8 +430,7 @@ class UserTests(AdminTestCase):
             'Email': [None, 'kari@example.com'], 'Active': [None, message('Yes')], 'Roles': [None, 'Feeder'],
         }))
         # the invitation the new person was sent (core.tests_account_mail)
-        self.assertEqual(invited, ('invite', 'user', {
-            'Invitation': [None, message('Sent')], 'Sent to': [None, 'kari@example.com']}))
+        self.assertEqual(invited, ('invite', 'user', {'Sent to': [None, 'kari@example.com']}))
         self.assertEqual(edited, ('update', 'user', {'Active': [message('Yes'), message('No')], 'Roles': ['Feeder', 'Vet']}))
 
 

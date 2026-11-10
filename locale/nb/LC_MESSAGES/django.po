@@ -8125,6 +8125,9 @@ msgstr "Duktykkelse (mm)"
 msgid "Lines"
 msgstr "Linjer"
 
+msgid "Link sent to"
+msgstr "Lenke sendt til"
+
 msgid "List what was delivered."
 msgstr "List opp det som ble levert."
 
@@ -10372,6 +10375,16 @@ msgstr "Passordet er lagret"
 
 msgid "Password set"
 msgstr "Passord valgt"
+
+#, python-format
+msgid "Password set %(when)s through an emailed link."
+msgstr "Passord valgt %(when)s via en lenke sendt på e-post."
+
+#, python-format
+msgid ""
+"Password set %(when)s through the link sent to %(address)s, which is not this account’s address "
+"now."
+msgstr "Passord valgt %(when)s via lenken sendt til %(address)s, som ikke er denne kontoens adresse nå."
 
 msgid "Past the limit"
 msgstr "Over grensen"

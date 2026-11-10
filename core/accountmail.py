@@ -27,9 +27,11 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import _unicode_ci_compare
-from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.mail import DEFAULT_MAILER_ALIAS, EmailMessage, mailers
 from django.db import connections, transaction
+from django.db.models import CharField, OuterRef, Subquery
+from django.db.models.functions import Cast
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone, translation
@@ -59,6 +61,8 @@ INTERRUPTED = 'The sending was interrupted: the server stopped, or the mail serv
 # row is core.resources.UserResource.invite's).
 INVITATION_LABEL, SENT_TO_LABEL = gettext_noop('Invitation'), gettext_noop('Sent to')
 REASON_LABEL, NOT_SENT = gettext_noop('Reason'), gettext_noop('Not sent')
+# A password set through a link, in the activity log (core.views.SetPasswordView): the address the link went to.
+LINK_SENT_TO_LABEL = gettext_noop('Link sent to')
 
 
 class NotSent(Exception):
@@ -140,9 +144,23 @@ def public_url(path):
     return settings.PUBLIC_BASE_URL + path
 
 
+class AccountTokens(PasswordResetTokenGenerator):
+    """Django's one-time token, with the account's `is_active` among what it signs. Django's own value holds the id,
+    the password, the last sign-in and the address, so a link ends when the password is set, the person signs in or
+    the address changes; with this, deactivating an account ends its links too (an inactive account could otherwise
+    be given a password through a link sent before, to be used the day it is active again). An account made active
+    again within the link's lifetime has the link back: the admin who reactivates it sees its row."""
+
+    def _make_hash_value(self, user, timestamp):
+        return f'{super()._make_hash_value(user, timestamp)}{user.is_active}'
+
+
+tokens = AccountTokens()      # the one generator: the links are made with it here and checked with it by SetPasswordView
+
+
 def link_parts(user):
-    """What Django's one-time link for `user` is made of: the person's id as the link carries it, and the token."""
-    return urlsafe_base64_encode(force_bytes(user.pk)), default_token_generator.make_token(user)
+    """What the one-time link for `user` is made of: the person's id as the link carries it, and the token."""
+    return urlsafe_base64_encode(force_bytes(user.pk)), tokens.make_token(user)
 
 
 def message(user, kind, by, language, uid, token):
@@ -338,6 +356,32 @@ def cannot_invite(user):
     return None
 
 
+def password_sets():
+    """The activity log's rows of a password set through a link, newest first, for a users queryset to read each
+    account's last one from (`with_password_set`)."""
+    return AuditLog.objects.filter(
+        action=AuditLog.Action.PASSWORD, entity_type=audit.entity_type_of(get_user_model()),
+        entity_id=Cast(OuterRef('pk'), CharField())).order_by('-created_at')
+
+
+def with_password_set(users):
+    """`users` with when each last set a password through a link and what the log says of it."""
+    return users.annotate(password_set_at=Subquery(password_sets().values('created_at')[:1]),
+                          password_set_changes=Subquery(password_sets().values('changes')[:1]))
+
+
+def password_set(user):
+    """(when, the address the link went to) of the last password `user` set through a link; (None, '') when the
+    password was not set through one. Read from what `with_password_set` put on the user, else asked."""
+    if hasattr(user, 'password_set_at'):
+        when, changes = user.password_set_at, user.password_set_changes
+    else:
+        when, changes = (AuditLog.objects.filter(
+            action=AuditLog.Action.PASSWORD, entity_type=audit.entity_type_of(get_user_model()),
+            entity_id=str(user.pk)).values_list('created_at', 'changes').first() or (None, None))
+    return when, ((changes or {}).get(LINK_SENT_TO_LABEL) or [None, ''])[1] or ''
+
+
 @dataclass(frozen=True)
 class Standing:
     """Where a person stands with their invitation, for their row on the users tab."""
@@ -345,6 +389,8 @@ class Standing:
     mail: object = None   # the last invitation's record, when there is one
     can_send: bool = False
     reason: str = ''      # why it was not sent, for NOT_SENT
+    set_at: object = None  # for PASSWORD_SET: when it was set through a link (None: not through one)
+    link_address: str = ''  # and the address that link went to, when the account's is another now
 
     PASSWORD_SET, INACTIVE, NO_ADDRESS, NOT_INVITED = 'password_set', 'inactive', 'no_address', 'not_invited'
     SENDING, NOT_SENT, ADDRESS_CHANGED, EXPIRED, SENT = 'sending', 'not_sent', 'address_changed', 'expired', 'sent'
@@ -354,7 +400,8 @@ def standing(user):
     """`user`'s standing: the password set, or what became of the last invitation. Reads the invitations prefetched on
     the user as `invitations` (newest first) when the list did that, else asks."""
     if user.has_usable_password():
-        return Standing(Standing.PASSWORD_SET)
+        set_at, address = password_set(user)
+        return Standing(Standing.PASSWORD_SET, set_at=set_at, link_address='' if address == user.email else address)
     if not user.is_active:
         return Standing(Standing.INACTIVE)
     if not user.email:

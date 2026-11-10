@@ -1,6 +1,6 @@
 {% load i18n dates %}{# Where a person stands with their invitation (core.accountmail.Standing), and the button that sends it (again). #}
 {% with mail=standing.mail state=standing.state %}
-{% if state == "password_set" %}{% trans "Password set" %}
+{% if state == "password_set" %}{% if standing.link_address %}{% blocktrans trimmed with when=standing.set_at|company_clock|date:"DATETIME_FORMAT" address=standing.link_address %}Password set {{ when }} through the link sent to {{ address }}, which is not this account’s address now.{% endblocktrans %}{% elif standing.set_at %}{% blocktrans trimmed with when=standing.set_at|company_clock|date:"DATETIME_FORMAT" %}Password set {{ when }} through an emailed link.{% endblocktrans %}{% else %}{% trans "Password set" %}{% endif %}
 {% elif state == "inactive" %}{% trans "Not invited: the account is inactive." %}
 {% elif state == "no_address" %}{% trans "Not invited: no email address. Add one, then send the invitation." %}
 {% elif state == "not_invited" %}{% trans "Not invited yet." %}

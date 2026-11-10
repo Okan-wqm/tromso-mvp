@@ -2422,7 +2422,8 @@
             "delete",
             "restore",
             "void",
-            "invite"
+            "invite",
+            "password"
           ],
           "link": null,
           "on_form": [],

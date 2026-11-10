@@ -188,6 +188,9 @@ class AuditLog(models.Model):
         # A person sent their invitation, at first and each time again (core.resources.UserResource.invite): an
         # event with what became of it, not a change of a value.
         INVITE = 'invite', _('Invited')
+        # A person set their password through the link of an invitation or a reset mail (core.views.SetPasswordView):
+        # by them, with the address the link went to.
+        PASSWORD = 'password', _('Password set')
 
     # Defined outside the class so that its Meta can name their values in the constraint.
     Severity = AuditSeverity

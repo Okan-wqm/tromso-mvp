@@ -8149,6 +8149,9 @@ msgstr "Kaplama kalınlığı (mm)"
 msgid "Lines"
 msgstr "Satırlar"
 
+msgid "Link sent to"
+msgstr "Bağlantının gönderildiği adres"
+
 msgid "List what was delivered."
 msgstr "Teslim edileni listeleyin."
 
@@ -10395,6 +10398,18 @@ msgstr "Parola kaydedildi"
 
 msgid "Password set"
 msgstr "Parola belirlendi"
+
+#, python-format
+msgid "Password set %(when)s through an emailed link."
+msgstr "Parola %(when)s tarihinde e-postayla gönderilen bağlantıyla belirlendi."
+
+#, python-format
+msgid ""
+"Password set %(when)s through the link sent to %(address)s, which is not this account’s address "
+"now."
+msgstr ""
+"Parola %(when)s tarihinde %(address)s adresine gönderilen bağlantıyla belirlendi; bu adres artık "
+"bu hesabın adresi değil."
 
 msgid "Past the limit"
 msgstr "Sınırın ötesinde"

@@ -4,13 +4,14 @@ from django.conf import settings
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_not_required, permission_required
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.shortcuts import render
 from django.utils import timezone, translation
 from django.utils.translation import gettext
 from django.views import i18n
 
 from .dates import company_zone, read_day
-from . import audit
+from . import accountmail, audit
 from .language import account_language, is_supported, save_account_language
 from .models import AuditLog
 
@@ -18,7 +19,21 @@ from .models import AuditLog
 class SetPasswordView(auth_views.PasswordResetConfirmView):
     """Django's page behind the link of an account e-mail (core.accountmail), shown in the language saved on the
     account the link is for: the admin chose it with the invitation, and the mail was written in it. Only a link
-    that works says whose it is; one that does not follows the browser like every page before sign-in."""
+    that works says whose it is; one that does not follows the browser like every page before sign-in.
+
+    The link is checked with the account e-mails' own token (accountmail.tokens: Django's, with `is_active` in it). A
+    password set here is written to the activity log in the same transaction: by the person, with the address the
+    link went to. A link works only while the account's address is the one it was sent to, so that address is the
+    account's at this moment; should it be put right later, the log and the users row still name it."""
+    token_generator = accountmail.tokens
+
+    def form_valid(self, form):
+        with transaction.atomic():
+            response = super().form_valid(form)
+            audit.record(self.user, AuditLog.Action.PASSWORD, self.user,
+                         {accountmail.LINK_SENT_TO_LABEL: [None, self.user.email]},
+                         entity_type=audit.entity_type_of(type(self.user)))
+        return response
 
     def get_context_data(self, **kwargs):
         language = account_language(self.user) if self.validlink else None

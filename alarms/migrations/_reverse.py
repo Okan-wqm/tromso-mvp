@@ -1,7 +1,7 @@
 """What alarms 0007, 0009 and 0010 do going back with clearances of the causes they added (round-2 review N2). The
 clearances are append-only (a trigger), so the trigger is set aside for the one statement, in the migration's own
 transaction, and set back; each changed clearance is said in the activity log. Not a migration (the underscore)."""
-import json
+from core.migrations._log import system_entry
 
 LABELS = {'structural': 'No longer judged (no fish or no limit)'}
 
@@ -22,10 +22,7 @@ def remap(apps, schema_editor, causes, migration):
             changes = {'Why': [row.cause, old],
                        'Note': [None, f'alarms {migration} reversed: the cause "{row.cause}" did not exist before it; '
                                       f'the nearest one, "{LABELS.get(old, old)}", stands in.']}
-            cursor.execute(
-                "INSERT INTO audit_log (id, created_at, user_name, action, entity_type, entity_id, entity_label, changes, "
-                "severity) VALUES (gen_random_uuid(), now(), 'system', 'update', 'alarm', %s, %s, %s::jsonb, 'normal')",
-                [str(row.alarm_id), row.alarm.summary[:255], json.dumps(changes)])
+            system_entry(schema_editor, 'alarm', row.alarm_id, row.alarm.summary, changes)
 
 
 def refuse(apps, cause, migration, why):

@@ -242,7 +242,7 @@ def hand_over(mail):
     (its queue is full) is marked not sent here; whether it was taken."""
     if background(deliver, mail.pk, translation.get_language()):
         return True
-    _close(mail, BUSY)
+    _close(mail, BUSY, audit.message(BUSY))
     return False
 
 
@@ -260,14 +260,23 @@ def deliver(mail_id, language):
             raise NotSent(CHANGED)
         _send(message(user, mail.kind, mail.requested_by, account_language(user) or language, uid, token))
     except Exception as failure:
-        _close(mail, reason(failure, token))
+        _close(mail, reason(failure, token), kind(failure))
     else:
         AccountMail.objects.filter(pk=mail.pk, sent_at=None, error='').update(sent_at=timezone.now())
 
 
-def _close(mail, error):
-    """Marks a waiting mail as not sent, with why: on its row, in the server's log and, for an invitation, in the
-    activity log (the platform's own line after the admin's "Invited")."""
+def kind(failure):
+    """What the activity log says of a mail that did not go out: the platform's own sentence (a value the log shows
+    in each language), or of anything else the error's kind alone. A mail server's own words can name its relay
+    hosts and its account, and the log is read by whoever a role lets; they stay on the mail's row, which the
+    platform admin reads on the users tab."""
+    return audit.message(str(failure)) if isinstance(failure, NotSent) else type(failure).__name__
+
+
+def _close(mail, error, what):
+    """Marks a waiting mail as not sent: `error` on its row and in the server's log and, for an invitation, the
+    platform's own line in the activity log after the admin's "Invited", with `what` kind of failure it was
+    (`kind`)."""
     if not AccountMail.objects.filter(pk=mail.pk, sent_at=None, error='').update(error=error):
         return
     # the reason alone, not the exception: its own words may quote the mail, link and all
@@ -275,7 +284,7 @@ def _close(mail, error):
     if mail.kind == INVITATION:
         with audit.source_language():
             changes = {str(INVITATION_LABEL): [None, audit.message(NOT_SENT)],
-                       str(SENT_TO_LABEL): [None, mail.address], str(REASON_LABEL): [None, error]}
+                       str(SENT_TO_LABEL): [None, mail.address], str(REASON_LABEL): [None, what]}
         audit.record(None, AuditLog.Action.INVITE, mail.user, changes,
                      entity_type=audit.entity_type_of(get_user_model()))
 

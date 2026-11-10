@@ -22,7 +22,11 @@ into formula 3 itself, formula 1's values in these files never moved; chemcore/f
   (pure water's at S 0), no longer the 2007 Guide's approximate total-scale value (owner-approved after the independent
   check of 2026-11-09 against PyCO2SYS and seacarb). The constant `kw` moves by -0.8 to +1.5 % in the corpus; the CO2
   worked out from it by at most +0.085 % (30 °C, S 35, 20 mg/L, pH 8.5), a median of 0.0002 %. The judged CO2 moves only
-  where the water's own value judges (1 440 of 9 900): the basis the limits were set on keeps formula 1's Kw."""
+  where the water's own value judges (1 440 of 9 900): the basis the limits were set on keeps formula 1's Kw.
+- 2026-11-10, Ω: each pH of a water from 5 permil also holds `log_omega`, log10 Ω of calcite and of aragonite with 400
+  mg/L of calcium (no Ω was recorded before). Formula 3's takes the Ksp per litre, Mucci's per-kg2 Ksp times the square
+  of the sea water's density (EOS-80; owner-approved after the same check, claim 12b: Ω was ρ2 too high); formula 1's
+  keeps the per-kg Ksp, as golden v1 holds it. FORMAT 2: a key was added."""
 import gzip
 import hashlib
 import io
@@ -31,7 +35,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-FORMAT = 1
+FORMAT = 2
 TEMPERATURES = (2.0, 8.0, 12.0, 18.0, 25.0, 30.0)
 SALINITIES = (0.0, 0.5, 1.0, 2.0, 3.0, 4.99, 5.0, 10.0, 28.3, 28.5, 35.0)   # 28.3, 28.5: NaCl's Davies limit
 PHS = (6.5, 7.0, 7.5, 8.0, 8.5)
@@ -43,6 +47,8 @@ IONS = ({}, {'conductivity_25_us_cm': 50.0}, {'conductivity_25_us_cm': 300.0}, {
         {'water_origin': 'seawater'})
 LIMITS = {'nh3_n_mg_l': 0.0103, 'co2_mg_l': 15.0, 'h2s_ug_l': 2.0, 'alkalinity_low_mg_l': 50.0,
           'alkalinity_high_mg_l': 150.0}
+CALCIUM_MG_L = 400.0                                  # the calcium Ω is recorded with (the calculator's example)
+OMEGA_SALINITY = (5.0, 44.0)                          # Ω is drawn where Mucci (1983) measured (the core's geometry.rs)
 ANALYSIS_KEYS = ('co2_mg_l', 'co2', 'nh3_n_mg_l', 'nh3', 'safe_tan_mg_l', 'h2s_ug_l', 'h2s', 'dic', 'target_dic',
                  'oxygen_solubility_mg_l', 'oxygen_saturation_pct', 'nh3_share_pct', 'h2s_share_pct',
                  'co2_corrected_mg_l', 'co2_basis', 'nh3_corrected_n_mg_l', 'nh3_basis')
@@ -55,8 +61,18 @@ def native():
     return found
 
 
+def log_omega(eq, alkalinity_meq, ph, native_):
+    """log10 Ω of calcite and of aragonite of a water with CALCIUM_MG_L of calcium (the small chart's saturation index);
+    None outside the salinities Ω is drawn for."""
+    if not OMEGA_SALINITY[0] <= eq.salinity <= OMEGA_SALINITY[1]:
+        return None
+    dic = eq.dic(alkalinity_meq, ph)
+    return {name: native_.saturation_index(eq, dic, ph, CALCIUM_MG_L, ksp)
+            for name, ksp in (('calcite', eq.ksp_calcite), ('aragonite', eq.ksp_aragonite))}
+
+
 def outputs(eq, alkalinity_mg_l, native_):
-    """The constants (the pH offset among them) and, at each pH, the CO2 (mg/L) and the NH3 share."""
+    """The constants (the pH offset among them) and, at each pH, the CO2 (mg/L), the NH3 share and log10 Ω."""
     meq = alkalinity_mg_l / native_.MG_CACO3_PER_MEQ
     return {'constants': dict(zip(native_.Equilibria.fields, eq.values())),
             'provenance': {'formula': eq.formula, 'ionic_strength': eq.ionic_strength, 'source': eq.strength_source,
@@ -65,7 +81,7 @@ def outputs(eq, alkalinity_mg_l, native_):
             'at_ph': [{'ph': ph, 'co2_mg_l': eq.co2(eq.dic(meq, ph), ph) * native_.MG_CO2_PER_MMOL,
                        'co2_judged_mg_l': eq.co2_judged(meq, ph)[0] * native_.MG_CO2_PER_MMOL,
                        'nh3_share': eq.nh3_share(ph), 'nh3_share_corrected': eq.nh3_share_corrected(ph),
-                       'nh3_share_limits': eq.nh3_share_limits(ph)}
+                       'nh3_share_limits': eq.nh3_share_limits(ph), 'log_omega': log_omega(eq, meq, ph, native_)}
                       for ph in PHS],
             'nh3_basis': eq.nh3_basis}
 

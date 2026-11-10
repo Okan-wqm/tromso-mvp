@@ -262,6 +262,24 @@ pub fn ksp_aragonite(temp_c: f64, salinity: f64) -> R {
     )
 }
 
+/// The density of sea water at one atmosphere, kg/L: the one-atmosphere International Equation of State of Seawater,
+/// 1980 (Millero & Poisson 1981, Deep-Sea Res. 28A: 625), ρ = ρ_SMOW + A S + B S^3/2 + C S², as Dickson, Sabine &
+/// Christian (2007, Guide to Best Practices, ch. 5, section 4.2, eq. 6 to 10) print it (the paper itself was not opened).
+/// S 0–42, t 0–40 °C on IPTS-68, taken here as the temperature given (ITS-90 is 0.006 °C lower at 25 °C: 2e-6 of ρ).
+/// Check values: 1027.67547 kg/m³ at S 35, 5 °C and 1023.34306 at S 35, 25 °C (UNESCO 1983, Fofonoff & Millard, Tech.
+/// Pap. Mar. Sci. 44), 1023.343 (the Guide). Formula 3's Ω takes it (`Equilibria::ksp_per_litre`), to S 44, 2 ‰ past the
+/// equation's range.
+pub fn seawater_density(temp_c: f64, salinity: f64) -> R {
+    let t = finite(temp_c)?;
+    let s = finite(salinity)?;
+    let (t2, t3, t4) = (t * t, t * t * t, t * t * t * t);
+    let pure =
+        999.842594 + 6.793952e-2 * t - 9.095290e-3 * t2 + 1.001685e-4 * t3 - 1.120083e-6 * t4 + 6.536332e-9 * t4 * t;
+    let a = 8.24493e-1 - 4.0899e-3 * t + 7.6438e-5 * t2 - 8.2467e-7 * t3 + 5.3875e-9 * t4;
+    let b = -5.72466e-3 + 1.0227e-4 * t - 1.6546e-6 * t2;
+    Ok((pure + a * s + b * s * sqrt(s)? + 4.8314e-4 * s * s) / 1000.0)
+}
+
 // ---- the solver -------------------------------------------------------------------------------------------------
 
 /// Where a monotone function crosses zero between `low` and `high`: bisection to a bracket under 1e-10, at most 200
@@ -579,6 +597,21 @@ impl Equilibria {
 
     pub fn carbonate(&self, dic: f64, ph: f64) -> R {
         Ok(dic * self.fractions(ph)?.2)
+    }
+
+    /// A solubility product of this water per litre, (mol/L)²: its Ksp per kg² (Mucci 1983) times the square of the sea
+    /// water's density at its temperature and salinity (`seawater_density`). Ω = [Ca²⁺] [CO₃²⁻] / Ksp is worked out from
+    /// the calcium in mg/L and the carbonate of an alkalinity per litre, so the Ksp must be per litre too: the one
+    /// definition the small chart's saturation index (`plots::saturation_index`) and the chart's Ω = 1 line
+    /// (`geometry::omega_line`) both take. Formula 1 took the per-kg Ksp as it is, Ω too high by ρ² (+4.7 % at S 35 and
+    /// 25 °C, up to +7.6 % at S 40): kept by name, golden v1 holds it. A salt-added water takes sea
+    /// water's density of its salinity, not a NaCl solution's own.
+    pub fn ksp_per_litre(&self, ksp: f64) -> R {
+        if self.formula == 1 {
+            return Ok(ksp);
+        }
+        let density = seawater_density(self.temp_c, self.salinity)?;
+        Ok(ksp * density * density)
     }
 
     /// The equilibria of the basis the limits were set on (`limits_basis`), the same water otherwise; None for formula 1.

@@ -387,7 +387,8 @@ of_temperature_and_salinity!(
     k_h2s_total,
     ksp_calcite,
     ksp_aragonite,
-    k0_co2
+    k0_co2,
+    seawater_density
 );
 
 #[pyfunction]
@@ -1254,6 +1255,7 @@ fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
         wrap_pyfunction!(ksp_calcite, module)?,
         wrap_pyfunction!(ksp_aragonite, module)?,
         wrap_pyfunction!(k0_co2, module)?,
+        wrap_pyfunction!(seawater_density, module)?,
         wrap_pyfunction!(ionic_strength, module)?,
         wrap_pyfunction!(total_sulfate, module)?,
         wrap_pyfunction!(total_fluoride, module)?,

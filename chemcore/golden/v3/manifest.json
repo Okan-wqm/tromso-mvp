@@ -7,18 +7,18 @@
       "sha256": "d08a9fae7e6305b0ab3df70d9976f54845771370850b0af202a8412fd402074d"
     },
     "waters": {
-      "bytes": 301325,
+      "bytes": 359278,
       "records": 1980,
-      "sha256": "be7328d3b12e87ad96140f5d1ab89b78898a55ca40b945121d1108e7a7ac91cd"
+      "sha256": "72c3ed35f8f7566b439981222b6d3e8c610babdc8e6218d40715e3c1702eb555"
     }
   },
   "core": {
-    "core_hash": "7ca02b0ee7b617f0",
+    "core_hash": "263e1ffffc54ae57",
     "formula_version": 3,
     "version": "0.1.0"
   },
-  "format": 1,
+  "format": 2,
   "golden_version": "v3",
-  "recorder_sha256": "b7a1fe114b4d6b7a0764599c0c9e06ac47f21f88dec9494ff6cdeef5dd8e2772",
+  "recorder_sha256": "5195c2293ab6d561fb469166aa872e42273f089b917cfcd8e57c8d799f1795ff",
   "what": "Formula 3 (the application\u2019s): I1, the Debye-H\u00fcckel A of the temperature; I2, fresh water ionic strength (the conductivity at 25 \u00b0C or the salinity, not below the hardness and alkalinity or the alkalinity) with Davies activities up to 1 permil, the seawater constants from 5, blended between. Beside formula 1 (golden v1)."
 }

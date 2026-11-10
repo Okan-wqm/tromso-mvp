@@ -310,10 +310,10 @@ pub fn safe_zone(analysis: &a::Analysis, limits: &a::Limits, chart: &ChartBox) -
     Ok(clip_to_box(&polygon, chart))
 }
 
-/// The line Ω = 1 (calcium × carbonate = Ksp) inside the box, from just above that carbonate (the source's start) to
-/// the box's right edge.
+/// The line Ω = 1 (calcium × carbonate = Ksp, all per litre: `Equilibria::ksp_per_litre`, as the small chart's
+/// saturation index) inside the box, from just above that carbonate (the source's start) to the box's right edge.
 pub fn omega_line(eq: &Equilibria, calcium_mg_l: f64, ksp: f64, chart: &ChartBox) -> G<Vec<Vec<P>>> {
-    let carbonate = div(ksp, div(calcium_mg_l, c::MG_CALCIUM_PER_MOL)?)? * 1000.0;
+    let carbonate = div(eq.ksp_per_litre(ksp)?, div(calcium_mg_l, c::MG_CALCIUM_PER_MOL)?)? * 1000.0;
     let start = if carbonate + 0.01 >= 0.05 {
         carbonate + 0.01
     } else {

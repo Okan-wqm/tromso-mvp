@@ -100,6 +100,7 @@ vapour_pressure_atm = chemcore.vapour_pressure_atm
 oxygen_solubility = chemcore.oxygen_solubility
 k0_co2 = chemcore.k0_co2
 co2_from_air = chemcore.co2_from_air
+seawater_density = chemcore.seawater_density      # EOS-80 at one atmosphere, kg/L: formula 3's Ω takes the Ksp per litre
 
 # ---- the analysis of a water (chemcore/core/src/analysis.rs) ---------------------------------------------------
 ChartTooLargeError = chemcore.ChartTooLargeError

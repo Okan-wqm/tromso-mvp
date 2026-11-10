@@ -8,6 +8,7 @@ import re
 from datetime import date, datetime, time, timedelta, timezone as utc
 from unittest import mock
 
+from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, connection, transaction
 from django.test import SimpleTestCase
@@ -516,3 +517,23 @@ class SmallThingsTests(ForgottenTestCase):
         with now(at(10)), self.assertRaises(ValidationError) as refused:
             services.clock_in(self.ann)
         self.assertIn('Ask your lead, or whoever keeps attendance for you, to close it', refused.exception.messages[0])
+
+
+class TurkishTests(ForgottenTestCase):
+    """Review R12: no case suffix glued to a date and time (vowel harmony fails for most values), and the settings'
+    help text uses the board's own word for Present."""
+
+    def test_the_board_and_the_help_text_read_right_in_turkish(self):
+        from core.models import Profile
+        Profile.objects.create(user=self.lead, language='tr')
+        self.lead.groups.get().permissions.add(*Permission.objects.filter(
+            codename__in=['view_schedulingsettings', 'change_schedulingsettings']))
+        self.client.force_login(self.lead)
+        with now(at(10)):
+            board = self.client.get(reverse('hr:production_today_board')).content.decode()
+            form = self.client.get(reverse('hr:schedulingsettings_edit', args=[SchedulingSettings.get().pk]),
+                                   headers={'X-Modal': '1'}).content.decode()
+        self.assertIn('27.02.2026 07:00 tarihinden beri açık: Yoklama sayfasında kapatılacak', board)
+        self.assertNotIn('’den beri açık', board)
+        self.assertIn('pano “Mevcut” yerine bunu söyler', form)
+        self.assertNotIn('burada', form)

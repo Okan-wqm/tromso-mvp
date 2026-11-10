@@ -29,8 +29,8 @@ PUNCH_PERMS = ('view_employee', 'view_attendancerecord')
 ENTER_PERMS = (*PUNCH_PERMS, 'add_attendancerecord', 'change_attendancerecord', 'delete_attendancerecord')
 LABEL = 'A clock-in counts as forgotten after (hours)'
 TOLD = ('Your clock-in of 27.02.2026 07:00 was never closed: it has been open more than 16 hours and counts as a '
-        'forgotten clock-out. Ask your lead to close it on the Attendance page with the time you really left; then you '
-        'can clock in again.')
+        'forgotten clock-out. Ask your lead, or whoever keeps attendance for you, to close it on the Attendance page '
+        'with the time you really left; then you can clock in again.')
 GOOD = {'standard_week_minutes': '2400', 'min_rest_minutes': '660', 'max_consecutive_days': '6', 'rest_rule': 'warn',
         'working_weekdays': ['0'], 'punch_window_minutes': '120', 'absent_after_minutes': '30', 'version': '1'}
 
@@ -487,3 +487,32 @@ class MovedPersonTests(ForgottenTestCase):
         self.assertEqual(self.client.get(url).status_code, 404)
         self.assertEqual(self.client.post(url, {'clock_in': '2026-02-26T06:00', 'clock_out': '2026-02-26T15:00',
                                                 'note': 'x', 'version': '1'}).status_code, 404)
+
+
+class SmallThingsTests(ForgottenTestCase):
+    """Review R18."""
+
+    def test_the_limit_counts_elapsed_hours_whatever_zone_the_moment_is_given_in(self):
+        """The night the clocks go forward in Oslo (29 March 2026): 15 and a half hours have passed, not 16."""
+        from zoneinfo import ZoneInfo
+        noon = datetime(2026, 3, 29, 12, 0, tzinfo=ZoneInfo('Europe/Oslo'))          # 10:00 UTC
+        clocked_in = datetime(2026, 3, 28, 18, 30, tzinfo=UTC)
+        self.assertEqual(noon - clocked_in, timedelta(hours=15, minutes=30))
+        self.assertFalse(rules.forgotten(clocked_in, None, noon, 16))
+        self.assertTrue(rules.forgotten(clocked_in, None, noon + timedelta(minutes=31), 16))
+        self.assertEqual(rules.forgotten_before(noon, 16), datetime(2026, 3, 28, 18, 0, tzinfo=UTC))
+
+    def test_a_clock_out_before_the_clock_in_is_told_as_that_on_the_correction_form(self):
+        self.open.soft_delete(self.lead)
+        punch(self.in_a, at(6), at(10))
+        later = punch(self.in_a, at(12), at(14))
+        self.client.force_login(self.lead)
+        errors = self.client.post(reverse('hr:production_attendancerecord_edit', args=[later.pk]), {
+            'clock_in': '2026-03-02T12:00', 'clock_out': '2026-03-02T09:00', 'note': 'x', 'version': '1'}
+        ).context['form'].errors
+        self.assertEqual(errors, {'clock_out': ['The person cannot clock out before they clocked in.']})
+
+    def test_the_sentence_also_fits_a_lead_and_a_person_without_one(self):
+        with now(at(10)), self.assertRaises(ValidationError) as refused:
+            services.clock_in(self.ann)
+        self.assertIn('Ask your lead, or whoever keeps attendance for you, to close it', refused.exception.messages[0])

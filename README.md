@@ -7,7 +7,8 @@ What works today:
 
 - Sign in, sign out, forgot password (reset link by email), change password. All of it is Django's
   built-in auth: PBKDF2 password hashing, signed one-time reset tokens, the standard password
-  validators, CSRF protection and sign-out by POST only.
+  validators, CSRF protection and sign-out by POST only. A new person is invited by email with a one-time
+  link that sets their password (see Email).
 - An activity log (`/activity/`): who created, changed or deleted which record, when, with the old
   and new value of every changed field. Rows are written in the same transaction as the change and a
   database trigger refuses to update or delete them. Each record's form has a History tab. An entry where
@@ -3522,16 +3523,26 @@ only one who manages roles and users; everyone else gets exactly what their role
   sets exactly the ticked boxes (the model's standard view/add/change/delete permissions). The
   activity log shows permission changes as "Sites: read, create; Activity log: read". Deleting a
   role removes it from its people.
-- **Users** (`/users/`): username, name, email, roles, active, last sign-in, and a Platform admin
-  badge. Email is required and unique. A new user has no password: they are sent the password reset
-  email, whose link sets their first password (and "Forgot password" sends a new link if it
-  expired). People are deactivated, not deleted, and nobody can deactivate their own account.
-  Platform admin status is not edited here (only with `createsuperuser`).
+- **Users** (`/users/`): username, name, email, roles, active, invitation, last sign-in, and a Platform admin
+  badge. A new user has no password and cannot sign in until they set one: creating them sends the
+  **invitation**, a mail with a one-time link that sets their first password (see Email). The Invitation column
+  says where each person stands: "Invitation sent 10.11.2026 14:05 to kari@example.com. Password not set yet.",
+  its link has expired, the address has changed since (so that link no longer works), "Invitation not sent" with
+  the mail server's reason, "Not invited yet", or "Password set"; while the password is not set, the row has
+  **Send invitation (again)** (POST `/users/<id>/invite/`, the platform admin only, never to someone who has
+  set a password, is inactive or has no address). Every invitation, the first and each one sent again, is a
+  line in the activity log and on the person's History tab (Invited: by whom, when, to which address, sent or
+  not and why), never its link. An edit sends nothing.
+  Email is unique and may be left out: the person is created, the admin is told that no invitation was sent,
+  the row says "Not invited: no email address", and the person cannot sign in until an address is added and
+  the invitation sent from the row (nobody hands out a password here). An inactive person is not invited.
+  Guests and students are users like everyone else. People are deactivated, not deleted, and nobody can
+  deactivate their own account. Platform admin status is not edited here (only with `createsuperuser`).
 
 ## Security in the pages
 
 - **Text is escaped everywhere.** No template prints a value with `|safe` or `autoescape off` (the one exception is
-  the password reset e-mail, which is plain text). A form's help text is text too: several forms write a name into it
+  the two account e-mails' bodies, `templates/mail/`, which are plain text; `core/tests_escaping.py` names them). A form's help text is text too: several forms write a name into it
   (a task whose place was deleted, equipment whose systems were deleted), so `templates/registration/_field.html`
   escapes it, and Django's own layouts (`{{ form }}`, `as_p`, `as_table`, `as_ul`, `as_field_group`) draw their fields
   with the same template (`templates/django/forms/`). Markup reaches a page only from the few places that build it with
@@ -3670,7 +3681,7 @@ The water chemistry needs the `chemcore` module, which is built only in the cont
 [Water-chemistry core](#water-chemistry-core-chemcore)); a plain virtual environment does not start without it.
 
 The database connection reads `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST` and `DB_PORT`; the
-defaults match the local container in `docker-compose.yml`. `COMPANY_TIME_ZONE` is the company's time zone, a new site's and the one migration farm/0028 gives a site without one
+defaults match the local container in `docker-compose.yml`. The mail settings (`EMAIL_HOST`, `DEFAULT_FROM_EMAIL`, `PUBLIC_BASE_URL` and the rest) are listed under Email: a development server needs none and prints its mail in the `runserver` terminal. `COMPANY_TIME_ZONE` is the company's time zone, a new site's and the one migration farm/0028 gives a site without one
 (default `Europe/Oslo`; the server's own clock stays UTC; one of the zones a site may have, or the server refuses to start: `farm.E001`). `DB_CONN_MAX_AGE` keeps a connection open between requests for that many seconds (default 0, one per request) and is meant for a server with long-lived worker threads or processes (gunicorn); a kept connection is health-checked before reuse. Never set it for `manage.py runserver`: the development server starts a new thread for every request, so each request leaves its own connection open until the database refuses new clients ("too many clients"). Uploaded files (the library's PDFs) go to
 `MEDIA_ROOT`: `DJANGO_MEDIA_ROOT`, by default `media/` in the checkout (ignored by git); keep it outside the
 checkout anywhere but a developer's machine, and back it up with the database.
@@ -3855,7 +3866,8 @@ English is the source language of every text in the code and templates; Norwegia
 Turkish (`tr`) are translations kept in `locale/<language>/LC_MESSAGES/django.po`. A visitor gets the
 language of the cookie set by the switch, otherwise of the browser, otherwise English; a signed-in
 person's choice is also saved on their account (`Profile`) and the admin can set it on the user form,
-so an invitation email arrives in the new person's language. Numbers and dates follow the language
+so an invitation email arrives in the new person's language, and the page its link opens is shown in it
+(`core.views.SetPasswordView`). Numbers and dates follow the language
 (`60,3913`); a date is shown and typed the European way in every language (`02.11.2026`, `02.11.2026 13:05`, owner rule). The activity log is stored in English and shown translated.
 
 GNU gettext is not needed: `manage.py update_catalogs` and `manage.py compile_catalogs` (Babel) do
@@ -4236,10 +4248,71 @@ Every text file is LF (`.gitattributes`), so tools on any system produce the sam
 
 ## Email
 
-Email uses the console backend for now: the password reset email is printed in the `runserver`
-terminal instead of being sent. It is written in the recipient's saved language, otherwise in the
-language of the request. Put an SMTP backend into `MAILERS` in `config/settings.py` to send
-real mail.
+Two mails go out, both about a person's account and both by one path (`core/accountmail.py`): the **invitation** a
+new person gets when the platform admin creates their account (and each time the admin sends it again), and the
+**password reset** ("Forgot your password?" on the sign-in page). Nothing else sends mail (the alarms' transports are
+their own, see Alarms).
+
+- **The link** is Django's own one-time link (`default_token_generator`; the page behind it is Django's
+  `PasswordResetConfirmView`, served as `core.views.SetPasswordView`): no token is stored and none is written by this
+  project. It stops working when the password is set (so it works once), when the account's address changes, and
+  after `ACCOUNT_LINK_HOURS` (24): a day is long enough to open a mail the next morning, and a person whose link has
+  expired asks for a new one themselves or the admin sends the invitation again. Sending again does not end an earlier
+  link that is still in time; setting the password ends them all. A link that no longer works says so ("The link was
+  already used or has expired") and offers "Request a new link" and the sign-in page. Setting the password does not
+  sign in: the person signs in with it.
+- **The link starts with `PUBLIC_BASE_URL`**, never with the Host header of the request that caused the mail.
+- **The text** is plain text (`templates/mail/`), in English, Norwegian bokmål and Turkish: in the language saved on
+  the recipient's account (the admin chooses it on the user form), otherwise the language of whoever caused the mail.
+  The invitation says who created the account, the username, how long the link lives and where to ask for a new one.
+  The set-password page is shown in the same saved language once the link has proved who it is for.
+- **Every mail is recorded** (`core.AccountMail`, table `account_mails`): who it is for, the address, who asked for it
+  and, when it did not go out, why (the mail server's or the settings' own words, cut to 500 characters, the link's
+  token taken out). Never the link. A mail that cannot be sent never fails the page that caused it and never undoes
+  the user just created: the admin is told, the person's row on Users says "Invitation not sent" with the reason and
+  offers "Send invitation again", and the server's log has the line. An invitation is also a line in the activity log
+  (Invited: who invited whom, when, to which address, sent or not and why); a reset is not (anyone can ask for one).
+- **Forgot your password** answers every address the same way (the same page, whether the address has an account, is
+  inactive, or has had its share), and one account is sent at most `PASSWORD_RESET_MAILS_PER_HOUR` (3) reset mails an
+  hour, a failed attempt counted; a request held back is a warning in the server's log. The admin's "Send invitation
+  again" is not limited (it is the admin's, and logged). An invited person who has not set a password yet can ask for
+  a link here too.
+
+**Where the mail goes** is the environment's alone; no address, user or password is in the repository:
+
+| Variable | What | Default |
+|---|---|---|
+| `EMAIL_HOST` | the SMTP server | none: a development server prints the mail in its terminal |
+| `EMAIL_PORT` | its port | the encryption's own: 587 (starttls), 465 (ssl), 25 (off) |
+| `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | the account to sign in to the SMTP server with (both or neither) | no sign-in |
+| `EMAIL_TLS` | `starttls`, `ssl` or `off` | `starttls` |
+| `EMAIL_TIMEOUT` | seconds a send may wait for the server | 10 |
+| `DEFAULT_FROM_EMAIL` | the sender address | none (a development server: `webmaster@localhost`) |
+| `PUBLIC_BASE_URL` | the address people open the console at, scheme and host only (`https://farm.example.no`) | a development server: `http://127.0.0.1:8047` |
+| `ACCOUNT_LINK_HOURS` | how long an invitation's or a reset's link works | 24 |
+| `PASSWORD_RESET_MAILS_PER_HOUR` | reset mails one account is sent in an hour | 3 |
+
+A development server (`DJANGO_DEBUG` on, the default) without `EMAIL_HOST` uses Django's console backend: the mail is
+printed in the `runserver` terminal, link and all. **With `DJANGO_DEBUG=0` there is no console to fall back on**: the
+mailer is SMTP whatever the environment holds, and the system check `core.checks.mail_is_configured` stops `runserver`,
+`migrate` and `check` with an Error when something is missing:
+
+- `core.E002`: no SMTP server (`EMAIL_HOST`);
+- `core.E003`: no sender address (`DEFAULT_FROM_EMAIL`), or not an address;
+- `core.E004`: `PUBLIC_BASE_URL` not set, not `https://host[:port]` alone, or a host this server does not answer to
+  (`DJANGO_ALLOWED_HOSTS`);
+- `core.E005`: an SMTP user without a password (or the other way round), or a password with `EMAIL_TLS=off`.
+
+A development server pointed at a real SMTP server is held to E003 to E005 too. The deploy check
+(`CHECKS=1 scripts/test.sh`) runs with an SMTP server, a sender and a public address in its production-like settings,
+so Django's `mail.E001` (a development-only mail backend) is closed and no longer in the list of open deploy issues.
+A WSGI server does not run the system checks by itself: run `manage.py check --deploy` (or `migrate`) in the
+deployment before it starts, as for the water-chemistry core's check. Should it start without them all the same, a
+send fails and shows on the person's row as any failed send.
+
+The mail is sent inside the request that causes it (there is no queue): a dead mail server costs that request at most
+`EMAIL_TIMEOUT` seconds, and the answer to "Forgot your password?" takes longer for an address with an account than
+for one without.
 
 ## Pages
 
@@ -4326,13 +4399,14 @@ real mail.
 | `/alarms/severity-rules/`, `/alarms/deadbands/` | Alarms › Alarm severity rules and Alarm deadbands (the alarm rules, the user's reference data) |
 | `/administration/opening-balances/` | Administration › Opening balances; `new/` registers one (the platform owner's right) |
 | `/roles/` | Administration › Roles (platform admin) |
-| `/users/` | Administration › Users (platform admin) |
+| `/users/` | Administration › Users (platform admin); `<id>/invite/` sends a person their invitation (again; POST) |
 | `/database/` | Administration › Database: every table (platform admin) |
 | `/database/<table>/` | One table: Data and Structure tabs; `export.csv` below it downloads the filtered rows |
 | `/language/` | Language switch (POST; sets the cookie and the account's language) |
 | `/accounts/login/` | Sign in |
 | `/accounts/logout/` | Sign out (POST) |
 | `/accounts/password_reset/` | Forgot password |
+| `/accounts/reset/<uid>/<token>/` | The link of an invitation or a reset mail: set the password (once, while the link lives) |
 | `/accounts/password_change/` | Change password |
 | `/admin/` | Django admin: deleted farm records, and restoring them (platform admin) |
 
@@ -4344,6 +4418,7 @@ real mail.
 | `core/` | TimescaleDB extension, audit log (model, append-only trigger, `audit.py` helpers, activity page), roles and users (`resources.py`, `forms.py`), tests |
 | `core/language.py`, `core/catalogs.py`, `locale/`, `config/formats/`, `docs/i18n.md` | Languages: which one a request gets, the catalogs without GNU gettext, the English date look, the guide and glossary |
 | `core/access.py`, `config/access.py` | Access areas: what a role can be given (the permission matrix) |
+| `core/accountmail.py`, `templates/mail/`, `core/checks.py` | The account e-mails, one path: the invitation and the password reset, their record (`account_mails`), the reset limit, a person's standing on the users tab; the check that stops a server that could not send them (Email) |
 | `farm/` | Farm module, one module per tab under `models/`, `forms/`, `resources/`; tests |
 | `core/widgets.py`, `core/links.py` | `DependentSelect`: a choice that belongs to another field's value (a production department to its site); `Output`: a value shown, not typed; `LinkList`: check boxes for a record's links, with their details |
 | `core/fields.py` | Model fields the tabs share: `ChoiceArrayField`, several choices stored as an array |
@@ -4499,7 +4574,7 @@ so run `scripts/test.sh` on the branch before asking for a merge.
 
 | Job | What it runs | The same on a developer's machine |
 |---|---|---|
-| `python` | the browser build first (`npm ci`, `npm run build`: `check` fails on core.W001 without `static/js`), then `CHECKS=1 scripts/test.sh` (`SUITE=0` on a pull request) with 4 workers, in the test runner's image (`scripts/testrunner/image.sh`, built with its layers cached): `compile_catalogs` (a fresh checkout has no `.mo`, and core.W002 would fail the check); `manage.py check --fail-level WARNING`; `check --deploy` with production-like settings (DEBUG off, a random key, a host), where any issue but the five still open fails (`DEPLOY_OPEN` in `scripts/testrunner/in-container.sh`: the console mail backend and the four HTTPS settings, until the production settings exist); `makemigrations --check`; `data_map --check`; `update_catalogs`, then `git diff --exit-code -- locale` (the catalogs were up to date); `compile_catalogs`; then, except on a pull request, the whole suite with warnings as errors | `CHECKS=1 SUITE=0 scripts/test.sh` (the checks only) or `CHECKS=1 scripts/test.sh`, then `git diff -- locale` |
+| `python` | the browser build first (`npm ci`, `npm run build`: `check` fails on core.W001 without `static/js`), then `CHECKS=1 scripts/test.sh` (`SUITE=0` on a pull request) with 4 workers, in the test runner's image (`scripts/testrunner/image.sh`, built with its layers cached): `compile_catalogs` (a fresh checkout has no `.mo`, and core.W002 would fail the check); `manage.py check --fail-level WARNING`; `check --deploy` with production-like settings (DEBUG off, a random key, a host, an SMTP server, a sender and an https public address: Email), where any issue but the four still open fails (`DEPLOY_OPEN` in `scripts/testrunner/in-container.sh`: the four HTTPS settings, until the production settings exist); `makemigrations --check`; `data_map --check`; `update_catalogs`, then `git diff --exit-code -- locale` (the catalogs were up to date); `compile_catalogs`; then, except on a pull request, the whole suite with warnings as errors | `CHECKS=1 SUITE=0 scripts/test.sh` (the checks only) or `CHECKS=1 scripts/test.sh`, then `git diff -- locale` |
 | `frontend` | `npm ci`, `npm run check:css` (the committed `static/css/tw.css` is what `frontend/tailwind.css` and the templates build now), `npm run build` (tsc, `tsconfig.json`, then the Tailwind build), `npm test` (the TypeScript tests, the designer's and the layout's browser tests on the runner's Chrome) | the same four |
 | `rust` | in `sensors-ingest/`, on the toolchain of `rust-toolchain.toml` (1.88.0, the release image's and the crate's `rust-version`): `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked --all-targets` against a TimescaleDB service migrated by Django (`manage.py migrate` in the test runner's image, the server's own packages) and a Mosquitto broker (`REQUIRE_DB=1`: the database and broker tests run, never skip), `cargo deny --locked check` (licences, bans, sources, RustSec advisories), `THIRD_PARTY` equal to what `Cargo.lock` says | `sensors-ingest/tests/run.sh` |
 | `chemcore` | `chemcore/scripts/test.sh` in the `chemcore-tools` stage of `docker/testrunner.Dockerfile` (its layers cached): rustfmt, clippy, `cargo test`, libm the chemistry's only dependency, no WebAssembly, `cargo deny` with advisories, `chemcore/THIRD_PARTY`, `docker/requirements.lock` naming the pins of `requirements.txt`; the built module's handshake with `chemcore/EXPECTED` (core.E001) is the python job's `check`. | the same `docker run` as the script's header |

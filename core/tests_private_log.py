@@ -95,7 +95,8 @@ class LogPageTests(TestCase):
 
 
 # An old contact-list sentence (main's ContactList.describe: `name` or `name (role?, email?, phone?, primary?)`, the
-# contacts joined by "; ") and what it becomes: the parts the code writes now, or WHOLE when it cannot be taken apart.
+# contacts joined by "; ") and what it becomes: the parts the code writes now, or WHOLE when it cannot be taken apart
+# safely.
 WHOLE = object()
 SHAPES = [
     ('Kari Nordmann (Vet, kari@example.com, +47 98989898, primary); Ola Hansen (Diver, ola@example.com)',
@@ -106,17 +107,76 @@ SHAPES = [
     ('Kari (+47 98989898)', [['Kari', P('+47 98989898')]]),
     ('Kari (Vet, 98 98 98 98)', [['Kari (Vet)', P('98 98 98 98')]]),
     ('Kari (Head of fish health, Bergen, kari@example.com)', [['Kari (Head of fish health, Bergen)', E('kari@example.com')]]),
+    ('Kari (Head of fish health, Bergen, +47 98989898)', [['Kari (Head of fish health, Bergen)', P('+47 98989898')]]),
     ('Kari; Ola (Vet, ola@example.com)', [['Kari'], ['Ola (Vet)', E('ola@example.com')]]),
     ('Kari (kari@example.com, 98989898, primary)', [['Kari (primary)', E('kari@example.com'), P('98989898')]]),
-    # a role and a phone that cannot be told apart (the phone was free text): both private, the name and primary stay
-    ('Kari (Vet, primary)', [['Kari (primary)', U('Vet')]]),
-    ('Kari (ask reception)', [['Kari', U('ask reception')]]),
-    ('Kari (Vet, ask reception)', [['Kari', U('Vet, ask reception')]]),
-    # cannot be taken apart: a "; " or a bracket typed inside a field, two addresses
-    ('Kari (Vet, kari@example.com, 123; 456)', WHOLE),
-    ('Kari (vet) Nordmann (Vet, kari@example.com)', WHOLE),
-    ('Kari (a@example.com, b@example.com)', WHOLE),
+    # a role alone, and a role that only looks like a number: kept (the real data has roles; a phone is five digits or more)
+    ('Kari (Vet, primary)', [['Kari (Vet, primary)']]),
+    ('Ola (24/7, 55 12 34 56)', [['Ola (24/7)', P('55 12 34 56')]]),
+    # a bracket inside a role or a phone (review R19): the brackets balance, so the sentence is read
+    ('Kjetil Ness (Service manager (24 h line), service@nordicpumps.example, +47 800 45 600, primary)',
+     [['Kjetil Ness (Service manager (24 h line), primary)', E('service@nordicpumps.example'), P('+47 800 45 600')]]),
+    ('Şule Çağrı (Veteriner, sule@example.com, (0532) 123 45 67)',
+     [['Şule Çağrı (Veteriner)', E('sule@example.com'), P('(0532) 123 45 67')]]),
+    ('Şule Çağrı (Veteriner, +90 (532) 123 45 67)', [['Şule Çağrı (Veteriner)', P('+90 (532) 123 45 67')]]),
+    ('Kari (vet) Nordmann (Vet, kari@example.com)', [['Kari (vet) Nordmann (Vet)', E('kari@example.com')]]),
+    ('Kari (vet)', [['Kari (vet)']]),
+    # everything right of the address is the phone, whatever its form: a "; " inside it, two numbers, words
+    ('Kari (Vet, kari@example.com, 123; 456)', [['Kari (Vet)', E('kari@example.com'), P('123; 456')]]),
+    ('Kari (Vet, kari@example.com, 55 12 34 56, 90 00 00 00)',
+     [['Kari (Vet)', E('kari@example.com'), P('55 12 34 56, 90 00 00 00')]]),
+    ('Kari (kari@example.com, ask reception)', [['Kari', E('kari@example.com'), P('ask reception')]]),
+    ('Kari (Vet, 55 12 34 56, 90 00 00 00)', [['Kari (Vet)', P('55 12 34 56, 90 00 00 00')]]),
+    # words without a number typed into the phone box cannot be told from a role, and hold no number: they stay
+    ('Kari (ask reception)', [['Kari (ask reception)']]),
+    ('Kari (Vet, ask reception)', [['Kari (Vet, ask reception)']]),
+    # a number that is not in the form of a phone, an address in the role: the details are private, the name stays
+    ('Kari (Vet, mob 98989898); Ola (tlf 55123456)', [['Kari', U('Vet, mob 98989898')], ['Ola', U('tlf 55123456')]]),
+    ('Kari (see post@firma.no, +47 98989898)', [['Kari', U('see post@firma.no, +47 98989898')]]),
+    ('Kari (a@example.com, b@example.com, primary)', [['Kari (primary)', U('a@example.com, b@example.com')]]),
+    # cannot be taken apart safely: the brackets do not balance, a name that holds an address or a number, no name
+    ('Kari (Vet, 98 work); 99123456 (home)', WHOLE),      # a phone "98 work); 99123456 (home" reads like two contacts
+    ('Kari (Vet, kari@example.com', WHOLE),
+    ('Kari Vet), 98989898', WHOLE),
+    ('Kari (Vet, 98989898 (work)', WHOLE),
+    ('Per; 99123456', WHOLE),
+    ('name.box@example.com (Vet); Per', WHOLE),
+    ('(Vet, kari@example.com)', WHOLE),
 ]
+# The contact lists the development database's log really holds that the first parser made private whole (the
+# coordinator's rehearsal, 2026-11-10): eight people. Every name and role must stay.
+REAL = [
+    'Kjetil Ness (Service manager (24 h line), service@nordicpumps.example, +47 800 45 600, primary)',
+    'Torstein Våge (Key account manager, torstein.vage@fjordfeed.example, +47 915 20 114, primary); Lene Hovland '
+    '(Order desk, orders@fjordfeed.example, +47 55 90 21 00); Dr. Rune Aspheim (Nutritionist (R&D diets), '
+    'rune.aspheim@fjordfeed.example, +47 934 11 870)',
+    'Bjørn Eriksen (Site manager, bjorn.eriksen@nordhav.example, +47 913 40 227, primary); Kristoffer Pedersen (Shift '
+    'leader (on call), kristoffer.pedersen@nordhav.example, +47 948 12 650); Ingvild Stene (Veterinarian (Havet '
+    'Fiskehelse), ingvild@havetfiskehelse.example, +47 920 44 312); Feed barge Nordhav I (Barge control room, '
+    '+47 77 61 40 90)',
+]
+REAL_KEPT = [
+    ['Kjetil Ness (Service manager (24 h line), primary)'],
+    ['Torstein Våge (Key account manager, primary)', 'Lene Hovland (Order desk)',
+     'Dr. Rune Aspheim (Nutritionist (R&D diets))'],
+    ['Bjørn Eriksen (Site manager, primary)', 'Kristoffer Pedersen (Shift leader (on call))',
+     'Ingvild Stene (Veterinarian (Havet Fiskehelse))', 'Feed barge Nordhav I (Barge control room)'],
+]
+
+
+def old_describe(name, role, email, phone, primary):
+    """main's ContactList.describe, the sentence the rows written before hold."""
+    details = [value for value in (role, email, phone) if value] + (['primary'] if primary else [])
+    return f'{name} ({", ".join(details)})' if details else name
+
+
+def plain_of(made):
+    """What a converted sentence leaves in plain text: the first part of each contact (the rest are private values)."""
+    return [parts[0] for parts in made] if isinstance(made, list) else []
+
+
+def digits(text):
+    return sum(character.isdigit() for character in text)
 
 
 class ContactSentenceTests(TestCase):
@@ -132,13 +192,58 @@ class ContactSentenceTests(TestCase):
                     self.assertEqual(made, expected)
                     self.assertEqual(kind, 'part' if 'Role or phone' in str(expected) else 'kept')
 
-    def test_nothing_that_stood_in_the_email_or_the_phone_field_comes_out_plain(self):
+    def test_the_real_lists_keep_every_name_and_role_and_hide_every_address_and_number(self):
+        for sentence, kept in zip(REAL, REAL_KEPT):
+            made, kind = _private.contacts(sentence)
+            self.assertEqual((kind, plain_of(made)), ('kept', kept))
+            for parts in made:
+                self.assertTrue(all(part.get('of') in ('Email', 'Phone') for part in parts[1:]), parts)
+            self.assertNotIn('@', str(plain_of(made)))
+            self.assertNotIn('+47', str(plain_of(made)))
+        self.assertEqual(sum(len(kept) for kept in REAL_KEPT), 8)
+
+    def test_no_address_and_no_number_comes_out_plain_on_a_grid_of_every_field_shape(self):
+        """The reviewer's grid (review/p2_parser.py), built with main's own describe: 5 names x 8 roles x 5 addresses x
+        13 phones x primary or not = 5,200 sentences, with commas, brackets, digits and an address inside a role,
+        addresses the form accepts in odd forms, phones with brackets, words, two numbers, a "; " and unbalanced
+        brackets. No e-mail address and no number of five digits or more is left in plain text; the only sentences made
+        private whole are those whose phone holds an unbalanced bracket that reads like a second contact; everywhere
+        else the name stays."""
+        import itertools
+        import re
+        names = ['Kari', 'Nordmann, Kari', 'Åse Ødegård', 'Kari (vet) Nordmann', 'Feed barge Nordhav I']
+        roles = ['', 'Vet', 'Head of fish health, Bergen', '24/7', 'Service manager (24 h line)',
+                 'Nutritionist (R&D diets)', 'Veterinarian (Havet Fiskehelse)', 'see post@firma.no']
+        emails = ['', 'kari@example.com', 'kari@localhost', '"a,b"@example.com', 'kari@bedrift-æøå.no']
+        phones = ['', '+47 98989898', '989 89 898', '(0532) 123 45 67', '+90 (532) 123 45 67', 'mob 98989898',
+                  '55 12 34 56, 90 00 00 00', '55 12 34 56; 90 00 00 00', 'ask reception', '98989898 (work)',
+                  'mob 98989898, 55 12 34 56', '98 work); 99123456 (home', '98989898); Ola (Diver']
+        kinds, leaks, lost = {}, [], []
+        for name, role, email, phone, primary in itertools.product(names, roles, emails, phones, (False, True)):
+            sentence = old_describe(name, role, email, phone, primary)
+            made, kind = _private.contacts(sentence)
+            kinds[kind] = kinds.get(kind, 0) + 1
+            text = ' | '.join(plain_of(made))
+            numbers = [found for found in re.findall(r'\d[\d ]{3,}\d', phone) if digits(found) >= 5]
+            if (email and email in text) or any(number in text for number in numbers):
+                leaks.append((sentence, text))
+            if kind == 'whole':
+                if phone != '98 work); 99123456 (home':
+                    lost.append(sentence)
+            elif name not in text:
+                lost.append(sentence)
+        self.assertEqual(sum(kinds.values()), 5200)
+        self.assertEqual(leaks, [])
+        self.assertEqual(lost, [])
+        self.assertEqual(kinds['whole'], 400)                               # 5 names x 8 roles x 5 addresses x 2
+
+    def test_nothing_that_looks_like_an_address_or_a_number_is_kept_in_any_shape(self):
         for sentence, _expected in SHAPES:
             made, _kind = _private.contacts(sentence)
-            plain = [parts[0] for parts in made] if isinstance(made, list) else []      # the rest are private values
             self.assertTrue(isinstance(made, dict) or all(isinstance(part, dict) for parts in made for part in parts[1:]))
-            for value in ('@', '98989898', '98 98 98 98', '123', '456', 'ask reception'):
-                self.assertNotIn(value, str(plain), sentence)
+            for text in plain_of(made):
+                self.assertNotIn('@', text, sentence)
+                self.assertLess(max((digits(run) for run in text.split(',')), default=0), 5, sentence)
 
     def test_an_old_row_becomes_exactly_what_the_code_writes_now_so_old_and_new_rows_compare(self):
         from farm.models import Site
@@ -164,9 +269,9 @@ class ConversionTests(TestCase):
 
     def setUp(self):
         self.contacts = old('site', {'Contacts': [None, 'Kari (Vet, kari@example.com, +47 98989898, primary)']})
-        self.replaced = old('supplier', {'Contacts': ['Kari (Sales, kari@example.com); Ola (Diver)', 'Kari (Sales, '
-                                                      'kari@example.com)']})          # Ola was taken off
-        self.odd = old('site', {'Contacts': ['Per', 'Per; Kari (vet) Nordmann (Vet, kari@example.com)']})
+        self.replaced = old('supplier', {'Contacts': ['Kari (Sales, kari@example.com); Ola (Diver, mob 98989898)',
+                                                      'Kari (Sales, kari@example.com)']})          # Ola was taken off
+        self.odd = old('site', {'Contacts': ['Per', 'Per; Kari (Vet, 98 work); 99123456 (home)']})
         self.site = old('site', {'Contact email': ['old@example.com', LONG], 'Contact phone': [None, '+47 98989898'],
                                  'Site name': ['Bergen', 'Bergen havn']})
         self.report = old('regulatory report', {'Contact e-mail': [None, LONG], 'Contact telephone': [None, '+47 1'],
@@ -192,10 +297,11 @@ class ConversionTests(TestCase):
             ['Kari (Vet, primary)', E('kari@example.com'), P('+47 98989898')]]]})
         # who was taken off the list is still said, by name and role
         self.assertEqual(self.changes(self.replaced), {'Contacts': [
-            [['Kari (Sales)', E('kari@example.com')], ['Ola', U('Diver')]], [['Kari (Sales)', E('kari@example.com')]]]})
+            [['Kari (Sales)', E('kari@example.com')], ['Ola', U('Diver, mob 98989898')]],
+            [['Kari (Sales)', E('kari@example.com')]]]})
         # a sentence that cannot be taken apart is made private whole; the one beside it is not
         self.assertEqual(self.changes(self.odd), {'Contacts': [
-            [['Per']], p('Per; Kari (vet) Nordmann (Vet, kari@example.com)')]})
+            [['Per']], p('Per; Kari (Vet, 98 work); 99123456 (home)')]})
         self.assertEqual(self.changes(self.site), {'Contact email': [p('old@example.com'), p(LONG)],
                                                    'Contact phone': [None, p('+47 98989898')],
                                                    'Site name': ['Bergen', 'Bergen havn']})

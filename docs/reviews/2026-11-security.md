@@ -171,6 +171,15 @@ The four questions above are decided and built, each with its `Test:` commit fir
 | R17 | The reports note named less than a report shows | Feed, harvest plans, treatments with medicines, health events, escapes, sea temperature named, three languages |
 | R18 | Elapsed hours across a clock change; "ask your lead" for a lead; the wrong sentence for a clock-out before the clock-in | `forgotten_before` in UTC; "your lead, or whoever keeps attendance for you"; the times' rule runs before the overlap check |
 
+Second pass of the review (one blocker, three minors), fixed:
+
+| Finding | What was wrong | Fix |
+|---|---|---|
+| R19 blocker | A bracket inside a role or a phone made the whole contact list private: 3 lists and 8 people on the real data | The parser matches brackets and reads the details from the right-hand end; the dry run on the restored copy reports 0 lists made private whole and 0 parts |
+| R20 | An address the form accepts but the parser's pattern did not stayed as the "role" | The parser reads an e-mail by `validate_email`, the form field's own validator |
+| R21 | The database viewer and its CSV showed the digests | `audit_log.changes` is a masked column of the viewer |
+| R22 | The erasure procedure's own log row tripped core.W004 | Its label is `Erased on request` (translated), not the private label `Note` |
+
 Still open (said in docs/erasure.md): how long a database dump is kept and who deletes it (the dump taken before
 core/0011 holds the whole log in plain text); names in the log, if the DPO wants them out; a logged page for erasing a
 task note (today a database administrator's statement, which writes its own log row).

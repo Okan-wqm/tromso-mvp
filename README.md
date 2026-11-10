@@ -3648,13 +3648,19 @@ only one who manages roles and users; everyone else gets exactly what their role
     recover a short value (a phone number) by trying them all.
   - **The digest is stored, never shown.** `AuditLog.shown_changes` is the one place a stored value becomes text (the
     activity log, and a record's History tab, which whoever may edit the record reads without the Activity log right),
-    and it never prints a digest: nobody types a guess, saves and compares it with a removed contact's.
+    and it never prints a digest: nobody types a guess, saves and compares it with a removed contact's. The database
+    viewer masks `audit_log.changes` (`config/database.py`: cells, search, sort, filter and the CSV export), so the
+    platform admin cannot either; a digest is read only with direct access to the database.
   - **The rows written before** were converted by migration `core/0011_private_log_values`
     (`core/migrations/_private.py`, one place the migration, the command and the check call). An old contact-list
     sentence is taken apart and becomes exactly what the code writes now, so the name, the role, the primary flag and
-    who was added or taken off stay; a role and a phone that cannot be told apart become one private part beside the
-    name; a sentence that cannot be taken apart becomes one private value, counted, its entries named by id in the
-    log's own row. The table is locked against writers before it is read; the append-only trigger is set aside for the
+    who was added or taken off stay. It is read with matched brackets (contacts split on "; " and details on ", " only
+    where no bracket is open, so "Service manager (24 h line)" is a role) and from the right-hand end: the e-mail is
+    what the contact form's own field accepts (`validate_email`, one definition), the phone is digits in a phone's
+    form, "primary" is last. No address and no number of five digits or more stays plain unless it is the role left of
+    the e-mail: a role and a phone that cannot be told apart become one private part beside the name; a sentence whose
+    brackets do not balance, or with a name that holds an address or a number, becomes one private value, counted, its
+    entries named by id in the log's own row. Words without a number typed into the phone box stay plain as a role. The table is locked against writers before it is read; the append-only trigger is set aside for the
     updates only, inside the transaction, and set back; only `changes` is written. **One-way:** going back is refused
     once a row was converted. It refuses to convert real data under a key printed in the repository (DEBUG off and a
     `django-insecure-` key).
@@ -3696,8 +3702,9 @@ app belongs to. The tables of other apps (sessions, the Django admin's log) are 
 Everything the query string names is checked against the table's real columns and the rows come
 through the ORM.
 
-**Sensitive data.** `config/database.py` lists the masked columns (`auth_user.password`, and
-`messages.body`: what people write to each other, see Messages). A masked
+**Sensitive data.** `config/database.py` lists the masked columns (`auth_user.password`,
+`messages.body`: what people write to each other, see Messages, and `audit_log.changes`: it holds the digests of
+private values, and what changed is read on the activity log page). A masked
 column is never read from the database: its cells show a placeholder, it cannot be sorted, filtered or
 searched (that would reveal it a character at a time) and the export leaves it out. A column that
 holds a secret belongs in that list; a test fails when a column named like a password, secret, token

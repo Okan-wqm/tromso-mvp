@@ -9,11 +9,15 @@ of a private value: an old database migrating later runs exactly this. Not a mig
 - A contact list (CONTACTS) was one composed sentence, main's ContactList.describe: per contact `name` or
   `name (role?, email?, phone?, primary?)`, the contacts joined by "; ". It is taken apart and becomes exactly what the
   code writes now (one list of parts per contact: who it is in plain text, the e-mail and the phone as private values
-  that say which they are), so only what was decided private is hidden and old and new rows compare. Nothing that
-  stood in the e-mail or the phone field may come out plain, so what cannot be proved is made private, never left:
-  a role and a phone that cannot be told apart become one private part beside the name (`part`), and a sentence that
-  cannot be taken apart at all (a "; " or a bracket typed inside a field, two addresses) becomes one private value
-  (`whole`). Both are counted, and the entries of the second kind are named in the log's row.
+  that say which they are), so only what was decided private is hidden and old and new rows compare. It is read with
+  matched brackets (a bracket inside a role or a phone is part of it) and from the right-hand end, where the e-mail
+  and the phone are known by their form. No e-mail address and no number of five digits or more may come out plain
+  unless it is proved to be the role (the one field left of the e-mail): what cannot be told apart is made private,
+  never left. A role and a phone that cannot be told apart become one private part beside the name (`part`); a
+  sentence whose brackets do not balance, or with a name that holds an address or a number, becomes one private value
+  (`whole`). Both are counted, and the entries of the second kind are named in the log's row. Chosen: a role that
+  stands alone or beside a phone is kept, so words without a number typed into the phone box ("ask reception") stay
+  in plain text as a role; they hold no number.
 
 One-way: the words are not kept anywhere, which is the point. The only way back is a backup taken before."""
 import hashlib
@@ -49,9 +53,9 @@ COUNTS = {
 }
 WHOLE_IDS = 'Entries whose contact list was made private whole'
 
-ITEM = re.compile(r'^([^()]+?)(?: \(([^()]*)\))?$')
 EMAIL = re.compile(r'^[^@\s,;()]+@[^@\s,;()]+\.[^@\s,;()]+$')
-PHONE = re.compile(r'^\+?\d[\d\s./-]{3,}$')
+PHONE = re.compile(r'^[+(]?\d[\d\s()./+-]*$')
+NUMBER = 5            # this many digits make a number: a phone has them, a role ("24/7", "Shift 2") has fewer
 
 
 def key():
@@ -78,14 +82,76 @@ def private(text, of=None):
     return {'msgid': 'Private text', 'rev': rev, **({'of': of} if of else {})}
 
 
+def _digits(text):
+    return sum(character.isdigit() for character in text)
+
+
+def _telling(text):
+    """Whether `text` holds what may not stay in plain text unless it is proved to be something else: an address
+    (an "@") or a number (five digits or more)."""
+    return '@' in text or _digits(text) >= NUMBER
+
+
+def _phone(text):
+    """Whether `text` has the form of a phone number: digits with spaces and + ( ) . / -, five digits or more."""
+    return bool(PHONE.match(text)) and _digits(text) >= NUMBER
+
+
+def _split(text, separator):
+    """`text` split on `separator` where no bracket is open, or None when its brackets do not balance (one closes that
+    was never opened, or one stays open). A separator inside brackets belongs to what the brackets hold."""
+    parts, depth, start, index = [], 0, 0, 0
+    while index < len(text):
+        if text[index] == '(':
+            depth += 1
+        elif text[index] == ')':
+            depth -= 1
+            if depth < 0:
+                return None
+        elif depth == 0 and text.startswith(separator, index):
+            parts.append(text[start:index])
+            index += len(separator)
+            start = index
+            continue
+        index += 1
+    return None if depth else [*parts, text[start:]]
+
+
+def _name_and_details(item):
+    """(name, details) of one contact as main's describe wrote it, `name` or `name (details)`: the details are the last
+    bracket group, found by matching brackets from the end, and the name is everything before it (it may hold balanced
+    brackets of its own). (item, None) for a contact without details; (None, None) when the last group has no name
+    before it. The brackets of `item` balance (the caller split on them)."""
+    if not item.endswith(')'):
+        return item, None
+    depth = 0
+    for index in range(len(item) - 1, -1, -1):
+        depth += {')': 1, '(': -1}.get(item[index], 0)
+        if depth == 0:
+            if index < 2 or item[index - 1] != ' ':
+                return None, None
+            return item[:index - 1], item[index + 1:-1]
+    return None, None
+
+
 def _contact(item):
-    """One contact of an old sentence as (its parts, the values made private, whether a role went with a phone), or
-    None when it cannot be taken apart."""
-    found = ITEM.match(item)
-    if not found:
+    """One contact of an old sentence as (its parts, whether its details went private together), or None when it cannot
+    be taken apart safely.
+
+    The details were written in a fixed order: role, e-mail, phone, then "primary". Read from the right-hand end:
+    - a last "primary" is the flag;
+    - exactly one detail in the form of an e-mail is the e-mail; everything left of it is the role (the role is the
+      only field before the e-mail, so that is proved whatever the role looks like) and everything right of it is the
+      phone, whatever its form;
+    - no e-mail: the trailing details in the form of a phone number are the phone, and what stands left of them is the
+      role, unless a detail of it holds an address or a number (`_telling`): then role and phone cannot be told apart
+      and the details become one private part beside the name;
+    - more than one detail in the form of an e-mail: the details become one private part beside the name.
+    A name is never kept when it holds an address or a number, and a contact is never kept without a name."""
+    name, inside = _name_and_details(item)
+    if not name or _telling(name):
         return None
-    name, inside = found.groups()
-    tokens = inside.split(', ') if inside else []
+    tokens = _split(inside, ', ') if inside else []
     primary = bool(tokens) and tokens[-1] == 'primary'
     tokens = tokens[:-1] if primary else tokens
 
@@ -94,27 +160,32 @@ def _contact(item):
         return f'{name} ({", ".join(details)})' if details else name
 
     mails = [index for index, token in enumerate(tokens) if EMAIL.match(token)]
-    if len(mails) > 1:
-        return None
-    if mails:                                   # the address anchors the split: the role before it, the phone after it
+    if len(mails) == 1:
         role, phone = ', '.join(tokens[:mails[0]]), ', '.join(tokens[mails[0] + 1:])
         hidden = [private(tokens[mails[0]], CONTACT_FIELDS[0])] + ([private(phone, CONTACT_FIELDS[1])] if phone else [])
-        return [who(role), *hidden], len(hidden), False
-    if len(tokens) == 2 and PHONE.match(tokens[1]) and not PHONE.match(tokens[0]):
-        return [who(tokens[0]), private(tokens[1], CONTACT_FIELDS[1])], 1, False
-    if len(tokens) == 1 and PHONE.match(tokens[0]):
-        return [who(), private(tokens[0], CONTACT_FIELDS[1])], 1, False
-    if not tokens:
-        return [who()], 0, False
-    return [who(), private(', '.join(tokens), UNSURE)], 0, True      # a role, a phone or both: private together
+        return [who(role), *hidden], False
+    if not mails:
+        cut = len(tokens)
+        while cut and _phone(tokens[cut - 1]):
+            cut -= 1
+        if not any(_telling(token) for token in tokens[:cut]):
+            phone = ', '.join(tokens[cut:])
+            return [who(', '.join(tokens[:cut])), *([private(phone, CONTACT_FIELDS[1])] if phone else [])], False
+    return [who(), private(', '.join(tokens), UNSURE)], True
 
 
 def contacts(sentence):
-    """(what an old contact-list sentence becomes, 'kept' | 'part' | 'whole')."""
-    made = [_contact(item) for item in sentence.split('; ')]
+    """(what an old contact-list sentence becomes, 'kept' | 'part' | 'whole'). The contacts are split on "; " where no
+    bracket is open, so a bracket inside a role or a phone ("Service manager (24 h line)", "(0532) 123 45 67") is read
+    as part of it. Whole, the sentence as one private value: its brackets do not balance, or a contact has no name or
+    a name that holds an address or a number. (A phone such as `98 work); 99123456 (home` reads exactly like the end of
+    one contact and the start of the next; the second "name" is a number, so the sentence is made private whole
+    rather than a number kept as a name.)"""
+    items = _split(sentence, '; ')
+    made = [_contact(item) for item in items] if items is not None else [None]
     if any(contact is None for contact in made):
         return private(sentence), 'whole'
-    return [parts for parts, _hidden, _unsure in made], 'part' if any(unsure for *_rest, unsure in made) else 'kept'
+    return [parts for parts, _unsure in made], 'part' if any(unsure for _parts, unsure in made) else 'kept'
 
 
 def plan(cursor):
@@ -211,5 +282,5 @@ def report(found, counts):
              f'name kept',
              f'  {counts["whole"]} contact list(s) made private whole: they could not be taken apart']
     by_id = {pk: (entity_type, entity_label) for pk, entity_type, entity_label, _created, _changes in found}
-    lines += [f'    {pk}  {by_id[pk][0]}  {by_id[pk][1]}' for pk in counts['whole_ids']]
+    lines += [f'    {pk}  {"  ".join(by_id.get(pk, ("", "")))}'.rstrip() for pk in counts['whole_ids']]
     return lines

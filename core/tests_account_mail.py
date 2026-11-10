@@ -12,7 +12,6 @@ from unittest import mock
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
-from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
 from django.core.mail.backends.base import BaseEmailBackend
 from django.core.management import call_command
@@ -41,7 +40,7 @@ def link_in(message):
 
 def later(seconds):
     """The token generator's clock moved `seconds` ahead (Django's own hook for it)."""
-    return mock.patch.object(default_token_generator, '_now', return_value=datetime.now() + timedelta(seconds=seconds))
+    return mock.patch.object(accountmail.tokens, '_now', return_value=datetime.now() + timedelta(seconds=seconds))
 
 
 @override_settings(PUBLIC_BASE_URL=BASE, COMPANY_NAME='Nordhav Akva')
@@ -723,6 +722,102 @@ class ForgotPasswordTests(AccountMailCase):
         self.ask('ali@example.com')
         self.assertEqual(len(mail.outbox), 2)
         self.assertEqual(set(stored('user')), {(self.ali.pk,), (twin.pk,)})
+
+
+class PasswordSetTests(AccountMailCase):
+    """A password set through a link is part of the account's history (review R3): who, when, and the address the
+    link went to. A link sent to a wrong address and used before the address was put right is then seen, on the row
+    and in the log. Deactivating an account ends its links."""
+
+    def password_rows(self):
+        return [(row.user_name, row.action, row.entity_type, row.entity_label, row.changes)
+                for row in AuditLog.objects.filter(action='password').order_by('created_at')]
+
+    def users(self):
+        self.client.force_login(self.admin)
+        return self.client.get(reverse('core:user_list'))
+
+    def test_setting_a_password_is_logged_with_the_address_its_link_went_to(self):
+        kari, sent = self.invite()
+        self.set_password(link_in(sent))
+        self.assertEqual(self.password_rows(),
+                         [('kari', 'password', 'user', 'kari', {'Link sent to': [None, 'kari@example.com']})])
+        self.assertEqual(AuditLog.objects.get(action='password').entity_id, str(kari.pk))
+        # a reset's link too, each time
+        self.client.post(reverse('password_reset'), {'email': 'kari@example.com'})
+        self.set_password(link_in(mail.outbox[-1]))
+        self.assertEqual(len(self.password_rows()), 2)
+        kept = json.dumps(self.password_rows())
+        self.assertNotIn('yeni-sifre-456', kept)
+        self.assertNotIn(link_in(sent).strip('/').split('/')[-1], kept)
+        # on the person's History tab and in the activity log, as an event of its own
+        self.client.force_login(self.admin)
+        history = self.client.get(reverse('core:user_edit', args=[kari.pk])).context['history']
+        self.assertEqual([entry.action for entry in history], ['password', 'password', 'invite', 'create'])
+        log = self.client.get(reverse('core:activity_log'), {'action': 'password'})
+        self.assertEqual(len(log.context['page'].object_list), 2)
+        self.assertContains(log, '<span class="audit-action">Password set</span>', html=True)
+        self.assertContains(log, 'kari@example.com')
+        self.assertNotContains(log, '<del>')
+
+    def test_a_refused_password_and_a_dead_link_log_nothing(self):
+        kari, sent = self.invite()
+        opened = self.client.get(link_in(sent), follow=True)
+        refused = self.client.post(opened.redirect_chain[-1][0], {'new_password1': '123', 'new_password2': '123'})
+        self.assertEqual(refused.status_code, 200)
+        with later(settings.PASSWORD_RESET_TIMEOUT + 1):
+            self.assert_dead(self.client.post(opened.redirect_chain[-1][0], NEW_PASSWORD))
+        self.assertEqual(self.password_rows(), [])
+        kari.refresh_from_db()
+        self.assertFalse(kari.has_usable_password())
+
+    def test_the_row_says_when_and_names_an_address_the_account_no_longer_has(self):
+        kari, sent = self.invite(email='wrong@example.com')
+        self.set_password(link_in(sent))                                          # the wrong recipient is quicker
+        row = row_of(self.users(), 'kari')
+        self.assertIn('Password set', row)
+        self.assertIn('through an emailed link', row)
+        self.assertNotIn('Send invitation', row)
+        self.client.post(reverse('core:user_edit', args=[kari.pk]), user_data(email='kari@example.com'))
+        row = row_of(self.users(), 'kari')
+        self.assertIn('through the link sent to wrong@example.com', row)
+        self.assertIn('not this account’s address now', row)
+        history = self.client.get(reverse('core:user_edit', args=[kari.pk])).context['history']
+        self.assertEqual([entry.action for entry in history], ['update', 'password', 'invite', 'create'])
+        # an account whose password was not set through a link (the platform admin's own) says only that it is set
+        own = row_of(self.users(), 'root')
+        self.assertIn('Password set', own)
+        self.assertNotIn('through', own)
+
+    def test_the_row_in_norwegian_and_turkish(self):
+        _kari, sent = self.invite()
+        self.set_password(link_in(sent))
+        for language, words in (('nb', 'via en lenke sendt på e-post'), ('tr', 'e-postayla gönderilen bağlantıyla')):
+            with self.subTest(language=language):
+                self.client.force_login(self.admin)
+                response = self.client.get(reverse('core:user_list'), headers={'Accept-Language': language})
+                self.assertIn(words, row_of(response, 'kari'))
+
+    def test_deactivating_an_account_ends_its_links(self):
+        kari, sent = self.invite()
+        self.client.force_login(self.admin)
+        self.client.post(reverse('core:user_invite', args=[kari.pk]))            # a second link, as live as the first
+        self.client.post(reverse('core:user_edit', args=[kari.pk]), user_data(is_active=''))
+        self.client.logout()
+        for message in mail.outbox:
+            self.assert_dead(self.client.get(link_in(message), follow=True))
+        kari.refresh_from_db()
+        self.assertFalse(kari.has_usable_password())
+        # a reset link of someone who has a password, and a page opened before the account was deactivated
+        ali = get_user_model().objects.create_user('ali', 'ali@example.com', 'eski-sifre-123')
+        self.client.post(reverse('password_reset'), {'email': 'ali@example.com'})
+        opened = self.client.get(link_in(mail.outbox[-1]), follow=True)
+        self.assertTrue(opened.context['validlink'])
+        get_user_model().objects.filter(pk=ali.pk).update(is_active=False)
+        self.assert_dead(self.client.post(opened.redirect_chain[-1][0], NEW_PASSWORD))
+        ali.refresh_from_db()
+        self.assertTrue(ali.check_password('eski-sifre-123'))
+        self.assertEqual(self.password_rows(), [])
 
 
 class Tarpit(socketserver.BaseRequestHandler):

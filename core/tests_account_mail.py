@@ -411,6 +411,11 @@ class InvitationRecordTests(AccountMailCase):
             self.client.post(reverse('core:user_create'), user_data())
         self.assertEqual(len(logged.records), 1)                                  # the server's log has the line
         self.assertIn('was not sent', logged.output[0])
+        # (review R14) with the kind of failure and the row to read; the mail server's words, which can name the
+        # recipient, are on that row
+        self.assertIn('OSError', logged.output[0])
+        self.assertIn(f'account_mails {AccountMail.objects.get().pk}', logged.output[0])
+        self.assertNotIn('no mail server', logged.output[0])
         kari = get_user_model().objects.get(username='kari')                      # the user is there
         self.assertEqual(mail.outbox, [])
         self.assertEqual(stored('user', 'kind', 'address', 'error', 'sent_at'),
@@ -497,6 +502,34 @@ class InvitationRecordTests(AccountMailCase):
         self.assertNotRegex(error, r'[0-9a-z]{6}-[0-9a-f]{32}')                  # its link's token is not
         self.assertNotIn(kari.password, error)
         self.assertEqual(invite_rows()[1][4]['Reason'], [None, 'RuntimeError'])        # the log: its kind alone
+
+    def test_a_link_quoted_as_the_mail_carries_it_on_the_wire_is_taken_out_too(self):
+        # (review R13) on the wire the link's line is wrapped (quoted-printable): an error quoting the raw mail holds
+        # the token in two halves, which the exact token does not match
+        token = 'cx1abc-0123456789abcdef0123456789abcdef'
+        for quoted in ('554 rejected: https://farm.example/accounts/reset/MQ/cx1abc-0123456789abcd=\nef0123456789abcdef/ end',
+                       '554 rejected: https://farm.example/accounts/reset/MQ/cx1abc-0123456789abcd=\r\n ef0123456789abcdef/ end',
+                       f'554 rejected: https://farm.example/accounts/reset/MQ/{token}/ end'):
+            found = accountmail.reason(RuntimeError(quoted), token)
+            self.assertNotIn('0123456789abcd', found)
+            self.assertNotIn('ef0123456789', found)
+            self.assertTrue(found.startswith('RuntimeError: 554 rejected: https://farm.example/accounts/reset/MQ/'))
+            self.assertTrue(found.endswith(' end'), found)
+        # an ordinary reply is left as the mail server said it
+        said = "SMTPRecipientsRefused: {'kari@example.com': (550, b'5.1.1 unknown user')}"
+        self.assertEqual(accountmail.reason(RuntimeError(said[said.index(' ') + 1:]), token),
+                         'RuntimeError: ' + said[said.index(' ') + 1:])
+
+    def test_the_list_reads_one_mail_a_person_not_all_of_them(self):
+        # (review R14) the row needs the last invitation alone, however many were sent
+        kari, _sent = self.invite()
+        self.client.force_login(self.admin)
+        for _ in range(3):
+            self.client.post(reverse('core:user_invite', args=[kari.pk]))
+        listed = {person.username: person for person in self.client.get(reverse('core:user_list')).context['objects']}
+        last = AccountMail.objects.order_by('-id').first()
+        self.assertEqual([found.pk for found in listed['kari'].invitations], [last.pk])
+        self.assertEqual(listed['root'].invitations, [])
 
     def test_a_user_without_an_address_is_created_and_the_row_says_what_then(self):
         response = self.client.post(reverse('core:user_create'), user_data(email=''), follow=True)

@@ -171,8 +171,10 @@ class MailCheckTests(SimpleTestCase):
                              PUBLIC_BASE_URL='http://127.0.0.1:8047'), ['core.E003'])
 
     def test_the_links_need_a_public_address_this_server_answers_to(self):
+        # (review R14: an address with a user part reads as another host's)
         for address in ('', 'farm.invalid', 'http://farm.invalid', 'https://farm.invalid/console',
-                        'https://farm.invalid?x=1', 'https://elsewhere.invalid', 'ftp://farm.invalid'):
+                        'https://farm.invalid?x=1', 'https://elsewhere.invalid', 'ftp://farm.invalid',
+                        'https://evil.invalid@farm.invalid', 'https://user:secret@farm.invalid'):
             with self.subTest(address=address):
                 self.assertEqual(ids(PUBLIC_BASE_URL=address), ['core.E004'])
         self.assertEqual(ids(PUBLIC_BASE_URL='https://farm.invalid:8443'), [])

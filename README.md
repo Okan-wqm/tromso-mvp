@@ -3343,9 +3343,14 @@ production people in Production, with the same permission.
 - **Approving leave** opens a dialog with the person's planned shifts inside the request (`hr.read.leave_impact`) to cover; it never
   blocks the approval. Nobody decides their own leave (service and trigger), so a sole production manager's own request goes to a head
   of production or HR.
-- **Roles.** `manage.py hr_roles` creates **Production manager** (Today, Attendance, Shift schedule with planning, Leave requests with
-  deciding, All production; no Team list, chart, settings or office people) and **Production worker** (own Today, own week with Crew,
+- **Roles.** `manage.py hr_roles` creates **Production manager** (Today, Attendance with entering presence and correcting a
+  stretch, Shift schedule with planning and clearing a day, Leave requests with deciding, All production; no voiding of a
+  stretch, no Team list, chart, settings or office people) and **Production worker** (own Today, own week with Crew,
   own leave) when they do not exist, and keeps a role an administrator changed as it is (`hr/roles.py`, never run on migrate).
+  Clearing a day and entering and correcting attendance are the owner's addition of 2026-11-10 (F-203: the manager closes
+  a forgotten clock-out). A Production manager role made before it gets the three rights from migration
+  `hr/0012_production_manager_rights`, one activity-log row per right given (by `system`); a right the role held already
+  is not said, what an administrator changed otherwise stays, and going back takes away exactly what it gave.
 - **Not built here** (decided with the owner): a minimum crew per shift and an on-site count. The legal items (information and
   discussion on attendance recording, impact assessment, working-time figures, retention, the undeletable log) are on
   [docs/hr-launch-checklist.md](docs/hr-launch-checklist.md) for HR and the data-protection officer: nothing there is encoded as law.

@@ -540,7 +540,7 @@ class SpeciesAuditTests(SpeciesTestCase):
         self.create(local_name='Tilapia', official_code='TLN')
         species = Species.objects.get()
         self.edit(species, local_name='Tilapia', official_code='TLN', status='discontinued', brackish=True,
-                  cleaner_fish_type='wrasse')
+                  cleaner_fish_type='wrasse', max_weight_ratio='2')
         self.client.post(reverse('farm:species_delete', args=[species.pk]))
         created, edited, deleted = AuditLog.objects.order_by('created_at')
         self.assertEqual((created.action, created.entity_type, created.entity_label),
@@ -551,6 +551,7 @@ class SpeciesAuditTests(SpeciesTestCase):
             'Category': [None, message('Fish')], 'Fresh water': [None, message('Yes')],
             'Brackish water': [None, message('No')], 'Sea water': [None, message('No')],
             'Official code': [None, 'TLN'], 'Status': [None, message('Active')],
+            'Max weight ratio of batches in one unit': [None, '2.00'],      # the box left empty: the default of its kind
         })
         self.assertEqual(edited.changes, {
             'Brackish water': [message('No'), message('Yes')],

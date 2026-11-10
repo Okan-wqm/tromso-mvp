@@ -26,7 +26,7 @@ class SizeLimitSetupTests(SpeciesTestCase):
         form = self.client.get(reverse('farm:species_create'), headers={'X-Modal': '1'})
         self.assertIsNone(form.context['form']['max_weight_ratio'].value())     # empty: the offer of its kind
         self.assertContains(form, 'data-tab="stocking">Stocking</button>')
-        self.assertContains(form, 'Empty: no check.')
+        self.assertContains(form, 'Left empty on a new species: 2 for a production species')
         self.create(max_weight_ratio='2')
         species = Species.objects.get()
         self.assertEqual(stored(species, 'max_weight_ratio'), (D('2.00'),))

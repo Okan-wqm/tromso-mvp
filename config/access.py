@@ -67,8 +67,11 @@ AREAS = [
     # the farm's records, so its reader sees and exports those figures without the farm areas' Read: kept on purpose (a
     # regulatory filing needs them; owner decision F-173, 2026-11-10) and said under the area in the role matrix.
     Area(_('Regulatory reports'), 'reports.Report',
-         note=_('Read also shows and exports the farm figures a report is computed from (stock and biomass, slaughter, '
-                'smolt, cleaner fish, sea-lice counts) to a person without Read on the farm areas they come from.')),
+         # Named in full: whoever grants the area must know that diagnoses and treatments come with it (review R17).
+         note=_('Read also shows and exports the farm figures a report is computed from (stock and biomass, feed '
+                'given, slaughter and harvest plans, smolt, cleaner fish, sea-lice counts and treatments with their '
+                'medicines, health events with diagnosis and deaths, escapes, sea temperature) to a person without '
+                'Read on the farm areas they come from.')),
     # Questions for the authority: the register of what only Mattilsynet, Fiskeridirektoratet or the county can answer, which
     # the people who run the reports keep (Read, Create, Edit with the answer, Delete).
     Area(_('Questions for the authority'), 'reports.OpenQuestion'),

@@ -67,7 +67,15 @@ class TemplateEscapingTests(SimpleTestCase):
                          set(PLAIN_TEXT))
         for name in PLAIN_TEXT:
             self.assertTrue((Path(settings.BASE_DIR) / name).is_file(), name)
-        self.assertEqual(accountmail.EmailMessage.content_subtype, 'plain')
+        # what goes out, as accountmail builds it for each kind (not a property of Django's class)
+        from django.contrib.auth import get_user_model
+        from django.test import override_settings
+        person = get_user_model()(pk=1, username='kari', email='kari@example.com')
+        with override_settings(PUBLIC_BASE_URL='https://farm.example'):
+            for kind in (accountmail.INVITATION, accountmail.RESET):
+                built = accountmail.message(person, kind, person, 'en', 'MQ', 'token')
+                self.assertEqual((built.content_subtype, getattr(built, 'alternatives', [])), ('plain', []), kind)
+                self.assertEqual(built.message().get_content_type(), 'text/plain', kind)
 
     def test_only_the_known_builders_mark_markup_safe(self):
         found = set()

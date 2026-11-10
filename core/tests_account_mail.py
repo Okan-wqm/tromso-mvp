@@ -16,7 +16,7 @@ from django.core import mail
 from django.core.mail.backends.base import BaseEmailBackend
 from django.core.management import call_command
 from django.db import connection
-from django.test import TestCase, override_settings
+from django.test import Client, TestCase, override_settings
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
@@ -893,6 +893,113 @@ class PasswordSetTests(AccountMailCase):
         ali.refresh_from_db()
         self.assertTrue(ali.check_password('eski-sifre-123'))
         self.assertEqual(self.password_rows(), [])
+
+
+class AroundTheLinkTests(AccountMailCase):
+    """What the review found right and untested (R10): the pages' own protections, the link's other endings, the
+    worker's last look at the account, and what the platform admin sees of the mails."""
+
+    def test_the_resend_and_the_forgot_form_refuse_a_request_without_their_token(self):
+        kari, _first = self.invite()
+        strict = Client(enforce_csrf_checks=True)
+        strict.force_login(self.admin)
+        self.assertEqual(strict.post(reverse('core:user_invite', args=[kari.pk])).status_code, 403)
+        anyone = Client(enforce_csrf_checks=True)
+        self.assertEqual(anyone.post(reverse('password_reset'), {'email': 'kari@example.com'}).status_code, 403)
+        self.assertEqual((len(mail.outbox), AccountMail.objects.count()), (1, 1))
+
+    @override_settings(ALLOWED_HOSTS=['*'])
+    def test_sending_again_and_the_links_pages_never_use_the_requests_host(self):
+        kari, _first = self.invite()
+        self.client.force_login(self.admin)
+        self.client.post(reverse('core:user_invite', args=[kari.pk]), headers={'Host': 'evil.example'})
+        self.client.logout()
+        self.assertNotIn('evil.example', mail.outbox[-1].body)
+        link = link_in(mail.outbox[-1])
+        token = link.strip('/').split('/')[-1]
+        hop = self.client.get(link, headers={'Host': 'evil.example'})
+        # the page's own address has no token and no host, and is neither kept nor passed on
+        self.assertEqual(hop.status_code, 302)
+        self.assertTrue(hop['Location'].startswith('/accounts/reset/'))
+        self.assertNotIn(token, hop['Location'])
+        self.assertIn('no-store', hop['Cache-Control'])
+        page = self.client.get(hop['Location'], headers={'Host': 'evil.example'})
+        self.assertEqual(page['Referrer-Policy'], 'same-origin')
+        self.assertIn('no-store', page['Cache-Control'])
+        self.assertNotIn(token, page.content.decode())
+        self.assertNotIn('evil.example', page.content.decode())
+        done = self.client.post(hop['Location'], NEW_PASSWORD, headers={'Host': 'evil.example'})
+        self.assertEqual(done['Location'], reverse('password_reset_complete'))
+
+    def test_a_reset_link_ends_when_the_person_signs_in_and_when_its_time_is_up(self):
+        self.client.logout()
+        ali = get_user_model().objects.create_user('ali', 'ali@example.com', 'eski-sifre-123')
+        self.client.post(reverse('password_reset'), {'email': 'ali@example.com'})
+        self.client.post(reverse('password_reset'), {'email': 'ali@example.com'})
+        first, second = (link_in(sent) for sent in mail.outbox)
+        with later(settings.PASSWORD_RESET_TIMEOUT - 5):
+            self.assertTrue(self.client.get(first, follow=True).context['validlink'])
+        with later(settings.PASSWORD_RESET_TIMEOUT + 1):
+            self.assert_dead(self.client.get(first, follow=True))
+        self.client.post(reverse('login'), {'username': 'ali', 'password': 'eski-sifre-123'})     # they remembered it
+        self.client.logout()
+        self.assert_dead(self.client.get(second, follow=True))
+        ali.refresh_from_db()
+        self.assertTrue(ali.check_password('eski-sifre-123'))
+
+    def test_a_waiting_mail_is_not_sent_to_an_account_that_changed_meanwhile(self):
+        # between the request and the worker: the address was changed, or the account deactivated
+        kari = get_user_model().objects.create_user('kari', 'kari@example.com')
+        for change in ({'email': 'kari@farm.no'}, {'is_active': False}):
+            with self.subTest(change=change):
+                AccountMail.objects.all().delete()
+                get_user_model().objects.filter(pk=kari.pk).update(email='kari@example.com', is_active=True)
+                waiting = AccountMail.objects.create(user=kari, kind='reset', address='kari@example.com')
+                get_user_model().objects.filter(pk=kari.pk).update(**change)
+                with self.assertLogs('core.accountmail', 'ERROR'):
+                    accountmail.deliver(waiting.pk, 'en')
+                self.assertEqual((mail.outbox, outcomes()), ([], ['The account changed before the mail was sent.']))
+        # and a mail the worker has dealt with is not sent a second time
+        accountmail.deliver(waiting.pk, 'en')
+        self.assertEqual(mail.outbox, [])
+
+    def test_the_platform_admin_reads_the_mails_in_the_database_viewer(self):
+        kari, sent = self.invite()
+        with override_settings(MAILERS=REFUSING), self.assertLogs('core.accountmail', 'ERROR'):
+            self.client.force_login(self.admin)
+            self.client.post(reverse('core:user_invite', args=[kari.pk]))
+        page = self.client.get(reverse('core:database_table', args=['account_mails']))
+        self.assertEqual(page.status_code, 200)
+        for shown in ('kari@example.com', REFUSED, 'sent_at', 'requested_by_id'):      # nothing of it is masked
+            self.assertContains(page, shown)
+        self.assertNotContains(page, link_in(sent).strip('/').split('/')[-1])            # and no token is there to show
+        from config.database import VIEWER
+        self.assertNotIn('account_mails', VIEWER.masked)
+        # nobody else: a role cannot hold the viewer
+        reader = get_user_model().objects.create_user('ola', 'ola@example.com', 'x')
+        self.client.force_login(reader)
+        self.assertEqual(self.client.get(reverse('core:database_table', args=['account_mails'])).status_code, 403)
+
+    def test_the_users_address_is_plain_in_the_log_by_decision_and_under_no_private_label(self):
+        # docs/erasure.md: an account's address stays plain (a changed address is the evidence of a take-over).
+        # None of this branch's labels is one the log keeps private (core.W004 reads the same list).
+        from .migrations import _private
+        private = {label for record, label in _private.PRIVATE}
+        labels = {accountmail.INVITATION_LABEL, accountmail.SENT_TO_LABEL, accountmail.REASON_LABEL,
+                  accountmail.LINK_SENT_TO_LABEL}
+        self.assertEqual(labels & private, set())
+        self.assertFalse([entry for entry in _private.PRIVATE if entry[0] == 'user'])
+
+    def test_a_warning_has_its_own_colour(self):
+        # the warning this tab shows (no address: no invitation) is drawn as one; before, only an error had a rule
+        # and a warning looked like a success
+        css = (settings.BASE_DIR / 'static' / 'css' / 'app.css').read_text(encoding='utf-8')
+        self.assertRegex(css, r'\.flash-warning \{[^}]*var\(--warn\)[^}]*var\(--warn-tint\)[^}]*var\(--warn-text\)')
+        for base in ('app_base.html', 'modal_base.html'):
+            self.assertIn('flash flash-{{ message.tags }}',
+                          (settings.BASE_DIR / 'templates' / base).read_text(encoding='utf-8'))
+        response = self.client.post(reverse('core:user_create'), user_data(email=''), follow=True)
+        self.assertContains(response, 'class="flash flash-warning"')
 
 
 class Tarpit(socketserver.BaseRequestHandler):

@@ -2404,6 +2404,8 @@
         "reports/tests/test_tabs.py",
         "reports/tests/test_take_away_once.py",
         "tasks/tests/test_pages.py",
+        "tasks/tests/test_private_text.py",
+        "tasks/tests/test_reopen_keeps.py",
         "tasks/tests/test_series.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_departments.py",
@@ -2974,6 +2976,7 @@
         "farm/tests/test_feeds.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_private_contacts.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_size_mix.py",
         "farm/tests/test_size_mix_chips.py",
@@ -9589,6 +9592,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_private_log.py",
         "core/tests_workspaces.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_feeding.py",
@@ -14175,6 +14179,7 @@
       "tests": [
         "core/test_database.py",
         "core/test_languages.py",
+        "core/tests_private_log.py",
         "farm/tests/test_private_contacts.py",
         "farm/tests/test_sites.py"
       ]
@@ -39815,6 +39820,21 @@
           "why": ""
         },
         {
+          "name": "kind",
+          "field": "kind",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [
+            "note",
+            "completion_note",
+            "cancel_reason"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "note for a note added in the drawer; completion_note or cancel_reason for the words a reopening took off the task and kept here (tasks.services.reopen)"
+        },
+        {
           "name": "created_at",
           "field": "created_at",
           "type": "timestamp with time zone",
@@ -39829,6 +39849,12 @@
       "constraints": [
         {
           "name": "chk_task_notes_body",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_task_notes_kind",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -39880,7 +39906,7 @@
           "why": ""
         }
       },
-      "note": "Shown in the task's drawer.",
+      "note": "Shown in the task's drawer. Reopening a task keeps its completion note and its reason for cancelling here, by their writer.",
       "forms": [
         {
           "form": "NoteForm",
@@ -39904,6 +39930,7 @@
       "tests": [
         "tasks/tests/test_models.py",
         "tasks/tests/test_pages.py",
+        "tasks/tests/test_reopen_keeps.py",
         "tasks/tests/test_series.py"
       ]
     },
@@ -40461,9 +40488,11 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_private_log.py",
         "core/tests_workspaces.py",
         "tasks/tests/test_models.py",
         "tasks/tests/test_pages.py",
+        "tasks/tests/test_private_text.py",
         "tasks/tests/test_series.py"
       ]
     },
@@ -41453,6 +41482,7 @@
         "tasks/tests/__init__.py",
         "tasks/tests/test_models.py",
         "tasks/tests/test_pages.py",
+        "tasks/tests/test_private_text.py",
         "tasks/tests/test_read.py",
         "tasks/tests/test_series.py",
         "monitoring/tests/test_golden.py",

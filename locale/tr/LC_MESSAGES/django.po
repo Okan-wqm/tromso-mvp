@@ -4670,6 +4670,9 @@ msgstr "Tamamlayan"
 msgid "Completion note"
 msgstr "Tamamlama notu"
 
+msgid "Completion note, kept when the task was reopened"
+msgstr "Tamamlama notu, görev yeniden açıldığında korundu"
+
 msgid "Composition as fed"
 msgstr "Verildiği hâliyle bileşim"
 
@@ -10883,6 +10886,9 @@ msgstr "Neden"
 
 msgid "Reason for cancelling"
 msgstr "İptal nedeni"
+
+msgid "Reason for cancelling, kept when the task was reopened"
+msgstr "İptal nedeni, görev yeniden açıldığında korundu"
 
 msgid "Reason for placing by hand"
 msgstr "Elle yerleştirme gerekçesi"

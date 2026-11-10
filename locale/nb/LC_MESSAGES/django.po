@@ -4656,6 +4656,9 @@ msgstr "Fullført av"
 msgid "Completion note"
 msgstr "Merknad ved fullføring"
 
+msgid "Completion note, kept when the task was reopened"
+msgstr "Merknad ved fullføring, beholdt da oppgaven ble åpnet igjen"
+
 msgid "Composition as fed"
 msgstr "Sammensetning slik det fôres"
 
@@ -10864,6 +10867,9 @@ msgstr "Årsak"
 
 msgid "Reason for cancelling"
 msgstr "Grunn til avlysning"
+
+msgid "Reason for cancelling, kept when the task was reopened"
+msgstr "Grunn til avlysning, beholdt da oppgaven ble åpnet igjen"
 
 msgid "Reason for placing by hand"
 msgstr "Begrunnelse for manuell plassering"

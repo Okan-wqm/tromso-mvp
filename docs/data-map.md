@@ -289,7 +289,7 @@ Who did what to which record, with old and new values.
 - **how it works**: A record's own rows are also shown on the History tab of its edit page.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log
 - **constraints**: chk_audit_log_severity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 97 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 99 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -367,7 +367,7 @@ What the platform keeps about a person beyond Django's account.
 - **how it works**: Today the profile holds the language only: chosen with the language switcher, or on the Users tab.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › profiles
 - **forms**: `UserForm`
-- **tests that mention it**: `core/test_languages.py`, `core/tests_matrix_notes.py`, `farm/tests/test_calculator.py` and 29 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_matrix_notes.py`, `farm/tests/test_calculator.py` and 30 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -970,7 +970,7 @@ A feed the farm uses: its maker, what it is made for, its pellet and its analysi
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › feeds
 - **forms**: `FeedForm`
 - **constraints**: uq_feeds_code_live (unique: code); uq_feeds_name_live (unique: name); chk_feeds_code (check); chk_feeds_feed_type (check); chk_feeds_feed_form (check); chk_feeds_buoyancy (check); chk_feeds_status (check); chk_feeds_pellet_size (check); chk_feeds_protein_pct (check); chk_feeds_fat_pct (check); chk_feeds_nfe_pct (check); chk_feeds_fibre_pct (check); chk_feeds_ash_pct (check); chk_feeds_moisture_pct (check); chk_feeds_phosphorus_pct (check); chk_feeds_gross_energy_mj_kg (check); chk_feeds_digestible_energy_mj_kg (check); chk_feeds_fractions (check); chk_feeds_phosphorus_in_ash (check); chk_feeds_digestible_energy (check); chk_feeds_price (check); chk_feeds_price_currency (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_equipment.py`, `farm/tests/test_feeding.py` and 29 more
+- **tests that mention it**: `core/tests_private_log.py`, `core/tests_workspaces.py`, `farm/tests/test_equipment.py` and 30 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1412,7 +1412,7 @@ An operational contact of a site.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › site_contacts
 - **forms**: `SiteContactForm`
 - **constraints**: uq_site_contacts_one_primary (unique: site)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `farm/tests/test_private_contacts.py` and 1 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_private_log.py` and 2 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3765,11 +3765,11 @@ A note on a task by a person who can read it: part of the task's record, never e
 - **edit**: none, by design: part of the task's record, never edited
 - **delete**: none, by design: part of the task's record, never removed
 - **read**: tasks tab (`/operations/tasks/`, `/operations/tasks/<uuid:pk>/`)
-- **how it works**: Shown in the task's drawer.
+- **how it works**: Shown in the task's drawer. Reopening a task keeps its completion note and its reason for cancelling here, by their writer.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Tasks › task_notes
 - **forms**: `NoteForm`
-- **constraints**: chk_task_notes_body (check)
-- **tests that mention it**: `tasks/tests/test_models.py`, `tasks/tests/test_pages.py`, `tasks/tests/test_series.py`
+- **constraints**: chk_task_notes_body (check); chk_task_notes_kind (check)
+- **tests that mention it**: `tasks/tests/test_models.py`, `tasks/tests/test_pages.py`, `tasks/tests/test_reopen_keeps.py` and 1 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3777,6 +3777,7 @@ A note on a task by a person who can read it: part of the task's record, never e
 | task_id | uuid |  | tasks (CASCADE) | system: the task the note is added to |
 | author_id | integer |  | auth_user (PROTECT) | system: the person who adds it |
 | body | varchar(4000) |  |  | NoteForm |
+| kind | varchar(20) |  |  | system: note for a note added in the drawer; completion_note or cancel_reason for the words a reopening took off the task and kept here (tasks.services.reopen) |
 | created_at | timestamp with time zone |  |  | system: author, time, version or delete mark |
 
 <a id="taskstaskseries"></a>
@@ -3791,7 +3792,7 @@ A recurring task: the rule that plans a task at one place for its people, every 
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Tasks › task_series
 - **forms**: `TaskSeriesForm`
 - **constraints**: chk_task_series_one_place (check); chk_task_series_title (check); chk_task_series_category (check); chk_task_series_priority (check); chk_task_series_frequency (check); chk_task_series_interval (check); chk_task_series_weekdays (check); chk_task_series_weekly (check); chk_task_series_monthly (check); chk_task_series_ends_after_start (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `tasks/tests/test_models.py`, `tasks/tests/test_pages.py` and 1 more
+- **tests that mention it**: `core/tests_private_log.py`, `core/tests_workspaces.py`, `tasks/tests/test_models.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3874,7 +3875,7 @@ A job at one place for one or more people, due on a day on the clock of the plac
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Tasks › tasks
 - **forms**: `TaskForm`
 - **constraints**: chk_tasks_one_place (check); chk_tasks_title (check); chk_tasks_category (check); chk_tasks_priority (check); chk_tasks_status (check); chk_tasks_started (check); chk_tasks_in_progress_started (check); chk_tasks_open_not_started (check); chk_tasks_done (check); chk_tasks_cancelled (check); chk_tasks_occurrence (check); uq_tasks_series_occurrence (unique: series, occurrence_date)
-- **tests that mention it**: `core/tests_private_log.py`, `core/tests_workspaces.py`, `tasks/tests/__init__.py` and 6 more
+- **tests that mention it**: `core/tests_private_log.py`, `core/tests_workspaces.py`, `tasks/tests/__init__.py` and 7 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

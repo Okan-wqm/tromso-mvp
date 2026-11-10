@@ -37,7 +37,8 @@ LOGGED = ['title', 'description', 'category', 'priority', 'status', 'due_date', 
 LOGGED_AFTER = ['batch', 'assignees', 'started_by', 'completed_by', 'completion_note', 'cancelled_by', 'cancel_reason']
 # A person's free text on a task: the log says that it was given, replaced or cleared, never its words (it may name a
 # person, and nobody can erase from the log; owner decision F-061, 2026-11-10). A task's note (`add_note`) is kept the
-# same way. The words stay on the task, for who reads it.
+# same way. The words stay on the task, for who reads it: also after a reopening, which clears the completion note and
+# the reason on the task and keeps each as a note (`reopen`).
 PRIVATE = ('description', 'completion_note', 'cancel_reason')
 SERIES_PRIVATE = ('description',)     # a recurring task's description is the same free text
 SERIES_LOGGED = ['title', 'description', 'category', 'priority']
@@ -155,7 +156,10 @@ def cancel(user, task, reason):
 
 def reopen(user, task):
     """Done or cancelled → open, the completion, the cancellation and the start cleared (the source left the
-    completer on a reopened task until it fixed it, FARM-HIGH-056). Needs Edit on tasks."""
+    completer on a reopened task until it fixed it, FARM-HIGH-056). Needs Edit on tasks. What the person wrote when
+    they closed it (the completion note, the reason for cancelling) is not lost with the clearing: each is kept on the
+    task as a note by its writer, marked as what it was (TaskNote.kind). The log has only their digests, so this is
+    where the words live on; only the erasure procedure removes them (docs/erasure.md)."""
     with transaction.atomic():
         task = _locked(task)
         if not user.has_perm(EDIT):
@@ -163,6 +167,10 @@ def reopen(user, task):
         if task.status in OPEN_STATUSES:
             raise ValidationError({NON_FIELD_ERRORS: _('This task is open already.')})
         before = _before(task)
+        for kind, words, writer in ((TaskNote.Kind.COMPLETION_NOTE, task.completion_note, task.completed_by),
+                                    (TaskNote.Kind.CANCEL_REASON, task.cancel_reason, task.cancelled_by)):
+            if words.strip():
+                TaskNote.objects.create(task=task, author=writer or user, body=words, kind=kind)
         task.status = Status.OPEN
         task.started_at = task.started_by = task.completed_at = task.completed_by = None
         task.cancelled_at = task.cancelled_by = None

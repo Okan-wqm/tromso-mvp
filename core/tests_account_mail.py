@@ -3,7 +3,9 @@ Through the pages, checked against the outbox, the stored rows and the activity 
 configured public address, works once and for a limited time, and says so plainly when it no longer does."""
 import json
 import re
+import socketserver
 import threading
+import time
 from datetime import datetime, timedelta
 from unittest import mock
 
@@ -14,12 +16,11 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
 from django.core.mail.backends.base import BaseEmailBackend
 from django.core.management import call_command
-from django.db import connection
-from django.test import TestCase, TransactionTestCase, override_settings
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from . import access, accountmail
+from . import access
 from .models import AccountMail, AuditLog, Profile
 from .tests import user_data
 
@@ -289,11 +290,12 @@ class LanguageTests(AccountMailCase):
         self.assertContains(dead, '<h1>Denne lenken fungerer ikke lenger</h1>', html=True)
 
 
+
 class RefusingBackend(BaseEmailBackend):
     """A mail server that is not there."""
 
     def send_messages(self, messages):
-        raise ConnectionRefusedError(111, 'Connection refused')
+        raise OSError('no mail server')
 
 
 class SilentBackend(BaseEmailBackend):
@@ -305,6 +307,7 @@ class SilentBackend(BaseEmailBackend):
 
 REFUSING = {'default': {'BACKEND': 'core.tests_account_mail.RefusingBackend'}}
 SILENT = {'default': {'BACKEND': 'core.tests_account_mail.SilentBackend'}}
+REFUSED = 'OSError: no mail server'
 
 
 def invite_rows():
@@ -313,8 +316,24 @@ def invite_rows():
             for row in AuditLog.objects.filter(action='invite').order_by('created_at')]
 
 
+def invited(address='kari@example.com'):
+    """The log row of the admin inviting kari."""
+    return 'root', 'invite', 'user', 'kari', {'Sent to': [None, address]}
+
+
+def not_sent(reason, address='kari@example.com'):
+    """The log row the platform writes when an invitation did not go out."""
+    return 'system', 'invite', 'user', 'kari', {
+        'Invitation': [None, {'msgid': 'Not sent'}], 'Sent to': [None, address], 'Reason': [None, reason]}
+
+
 def stored(*fields):
     return list(AccountMail.objects.order_by('created_at', 'id').values_list(*fields))
+
+
+def outcomes():
+    """What became of each mail, oldest first: 'sent', 'waiting' or why it did not go out."""
+    return [error or ('sent' if sent_at else 'waiting') for error, sent_at in stored('error', 'sent_at')]
 
 
 def row_of(response, username):
@@ -325,9 +344,17 @@ def row_of(response, username):
     raise AssertionError(f'no row of {username}')
 
 
+def flashes(response):
+    return [(str(message), message.level_tag) for message in response.context['messages']]
+
+
+BEING_SENT = ('The invitation to kari@example.com is being sent: this person’s row says whether it went out.',
+              'success')
+
+
 class InvitationRecordTests(AccountMailCase):
     """What is kept of an invitation: one row per mail (never its link), a line in the activity log (who invited whom,
-    when, and whether it went out), and where the person stands on the users tab."""
+    when, to which address; another when it did not go out), and where the person stands on the users tab."""
 
     def users(self):
         self.client.force_login(self.admin)
@@ -337,8 +364,8 @@ class InvitationRecordTests(AccountMailCase):
         kari, sent = self.invite()
         self.assertEqual(stored('user', 'kind', 'address', 'requested_by', 'error'),
                          [(kari.pk, 'invitation', 'kari@example.com', self.admin.pk, '')])
-        self.assertEqual(invite_rows(), [('root', 'invite', 'user', 'kari', {
-            'Invitation': [None, {'msgid': 'Sent'}], 'Sent to': [None, 'kari@example.com']})])
+        self.assertEqual(outcomes(), ['sent'])
+        self.assertEqual(invite_rows(), [invited()])
         self.assertEqual(AuditLog.objects.get(action='invite').entity_id, str(kari.pk))
         # the link, its token and the person's id in it are in the mail alone
         uid, token = link_in(sent).strip('/').split('/')[-2:]
@@ -351,39 +378,32 @@ class InvitationRecordTests(AccountMailCase):
         self.assertIn('to kari@example.com', row)
         self.assertIn('Password not set yet', row)
 
-    def test_the_admin_is_told_that_it_went_out(self):
+    def test_the_admin_is_told_where_to_see_what_became_of_it(self):
         response = self.client.post(reverse('core:user_create'), user_data(), follow=True)
-        self.assertEqual([(str(message), message.level_tag) for message in response.context['messages']],
-                         [('Invitation sent to kari@example.com.', 'success'), ('User “kari” created.', 'success')])
+        self.assertEqual(flashes(response), [BEING_SENT, ('User “kari” created.', 'success')])
 
     @override_settings(MAILERS=REFUSING)
     def test_a_failed_send_keeps_the_user_and_shows_on_their_row_why(self):
         with self.assertLogs('core.accountmail', 'ERROR') as logged:
-            response = self.client.post(reverse('core:user_create'), user_data(), follow=True)
+            self.client.post(reverse('core:user_create'), user_data())
         self.assertEqual(len(logged.records), 1)                                  # the server's log has the line
-        self.assertIn('was not sent: ConnectionRefusedError: [Errno 111] Connection refused', logged.output[0])
+        self.assertIn('was not sent', logged.output[0])
         kari = get_user_model().objects.get(username='kari')                      # the user is there
         self.assertEqual(mail.outbox, [])
-        self.assertEqual([(str(message), message.level_tag) for message in response.context['messages']], [
-            ('The invitation to kari@example.com was not sent: ConnectionRefusedError: [Errno 111] Connection refused',
-             'error'),
-            ('User “kari” created.', 'success')])
-        self.assertEqual(stored('user', 'kind', 'address', 'error'), [
-            (kari.pk, 'invitation', 'kari@example.com', 'ConnectionRefusedError: [Errno 111] Connection refused')])
-        self.assertEqual(invite_rows(), [('root', 'invite', 'user', 'kari', {
-            'Invitation': [None, {'msgid': 'Not sent'}], 'Sent to': [None, 'kari@example.com'],
-            'Reason': [None, 'ConnectionRefusedError: [Errno 111] Connection refused']})])
+        self.assertEqual(stored('user', 'kind', 'address', 'error', 'sent_at'),
+                         [(kari.pk, 'invitation', 'kari@example.com', REFUSED, None)])
+        self.assertEqual(invite_rows(), [invited(), not_sent(REFUSED)])
         self.assertEqual(AuditLog.objects.filter(action='create', entity_type='user').count(), 1)
         row = row_of(self.users(), 'kari')
         self.assertIn('Invitation not sent', row)
-        self.assertIn('ConnectionRefusedError: [Errno 111] Connection refused', row)
+        self.assertIn(REFUSED, row)
         self.assertIn('Send invitation again', row)
 
     @override_settings(MAILERS=SILENT)
     def test_a_mail_server_that_takes_nothing_counts_as_not_sent(self):
         with self.assertLogs('core.accountmail', 'ERROR'):
             self.client.post(reverse('core:user_create'), user_data())
-        self.assertEqual(stored('error'), [('The mail server took no message.',)])
+        self.assertEqual(outcomes(), ['The mail server took no message.'])
 
     @override_settings(PUBLIC_BASE_URL='')
     def test_without_a_public_address_nothing_is_sent_and_the_row_says_so(self):
@@ -391,7 +411,7 @@ class InvitationRecordTests(AccountMailCase):
             self.client.post(reverse('core:user_create'), user_data())
         self.assertEqual(mail.outbox, [])
         self.assertTrue(get_user_model().objects.filter(username='kari').exists())
-        self.assertIn('PUBLIC_BASE_URL is not set', stored('error')[0][0])
+        self.assertIn('PUBLIC_BASE_URL', outcomes()[0])
 
     def test_a_failed_send_never_keeps_the_link(self):
         class Leaking(BaseEmailBackend):
@@ -410,13 +430,14 @@ class InvitationRecordTests(AccountMailCase):
         self.assertIn('Hi Kari Nordmann,', error)                                # the mail's words are in it,
         self.assertNotRegex(error, r'[0-9a-z]{6}-[0-9a-f]{32}')                  # its link's token is not
         self.assertNotIn(kari.password, error)
+        self.assertNotRegex(json.dumps(invite_rows()), r'[0-9a-z]{6}-[0-9a-f]{32}')
 
     def test_a_user_without_an_address_is_created_and_the_row_says_what_then(self):
         response = self.client.post(reverse('core:user_create'), user_data(email=''), follow=True)
         kari = get_user_model().objects.get(username='kari')
         self.assertEqual((kari.email, kari.has_usable_password()), ('', False))
         self.assertEqual((mail.outbox, stored('id'), invite_rows()), ([], [], []))
-        self.assertEqual([(str(message), message.level_tag) for message in response.context['messages']], [
+        self.assertEqual(flashes(response), [
             ('No invitation was sent: kari has no email address. They cannot sign in until an address is added and '
              'the invitation sent.', 'warning'),
             ('User “kari” created.', 'success')])
@@ -447,12 +468,12 @@ class InvitationRecordTests(AccountMailCase):
     def test_the_row_follows_the_invitation_to_its_end(self):
         kari, sent = self.invite()
         # the link has expired
-        AccountMail.objects.update(created_at=timezone.now() - timedelta(seconds=settings.PASSWORD_RESET_TIMEOUT + 60))
+        AccountMail.objects.update(sent_at=timezone.now() - timedelta(seconds=settings.PASSWORD_RESET_TIMEOUT + 60))
         row = row_of(self.users(), 'kari')
         self.assertIn('its link has expired', row)
         self.assertIn('Send invitation again', row)
         # the address changed since: the link that went to the old one is dead
-        AccountMail.objects.update(created_at=timezone.now())
+        AccountMail.objects.update(sent_at=timezone.now())
         self.client.post(reverse('core:user_edit', args=[kari.pk]), user_data(email='kari@farm.no'))
         row = row_of(self.users(), 'kari')
         self.assertIn('to kari@example.com', row)
@@ -466,6 +487,32 @@ class InvitationRecordTests(AccountMailCase):
         self.assertIn('Password set', row)
         self.assertNotIn('Send invitation', row)
         self.assertIn('Password set', row_of(self.users(), 'root'))
+
+    def test_a_mail_under_way_says_so_and_one_that_never_finished_is_not_sent(self):
+        # the row as the request writes it, before the worker has it: waiting
+        kari = get_user_model().objects.create_user('kari', 'kari@example.com')
+        waiting = AccountMail.objects.create(user=kari, kind='invitation', address='kari@example.com',
+                                             requested_by=self.admin)
+        row = row_of(self.users(), 'kari')
+        self.assertIn('The invitation to kari@example.com is being sent', row)
+        self.assertNotIn('Send invitation', row)                                 # not twice at once
+        response = self.client.post(reverse('core:user_invite', args=[kari.pk]), follow=True)
+        self.assertEqual(flashes(response), [
+            ('An invitation to kari is being sent right now: wait for it, the row says what became of it.', 'error')])
+        self.assertEqual((mail.outbox, AccountMail.objects.count()), ([], 1))
+        # the server stopped before it was sent (or the mail server never answered): it shows as not sent, never as
+        # sent, and can be sent again
+        AccountMail.objects.filter(pk=waiting.pk).update(
+            created_at=timezone.now() - timedelta(seconds=2 * settings.MAIL_SEND_SECONDS + 1))
+        row = row_of(self.users(), 'kari')
+        self.assertIn('Invitation not sent', row)
+        self.assertIn('The sending was interrupted', row)
+        self.assertNotIn('Invitation sent', row)
+        self.assertIn('Send invitation again', row)
+        self.client.post(reverse('core:user_invite', args=[kari.pk]))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(outcomes(), ['waiting', 'sent'])
+        self.assertIn('Invitation sent', row_of(self.users(), 'kari'))
 
     def test_the_row_in_norwegian_and_turkish(self):
         self.invite()
@@ -488,14 +535,13 @@ class ResendTests(AccountMailCase):
     def test_sending_again_sends_records_and_logs_again(self):
         response = self.client.post(self.url, follow=True)
         self.assertRedirects(response, reverse('core:user_list'))
-        self.assertEqual([str(message) for message in response.context['messages']],
-                         ['Invitation sent to kari@example.com.'])
+        self.assertEqual(flashes(response), [BEING_SENT])
         self.assertEqual([(sent.to, sent.subject) for sent in mail.outbox],
                          [(['kari@example.com'], 'Your farm console account: set your password')] * 2)
         self.assertEqual(stored('kind', 'address', 'requested_by', 'error'),
                          [('invitation', 'kari@example.com', self.admin.pk, '')] * 2)
-        self.assertEqual(invite_rows(), [('root', 'invite', 'user', 'kari', {
-            'Invitation': [None, {'msgid': 'Sent'}], 'Sent to': [None, 'kari@example.com']})] * 2)
+        self.assertEqual(outcomes(), ['sent', 'sent'])
+        self.assertEqual(invite_rows(), [invited()] * 2)
         # the new link works; once the password is set, the first one is dead too
         self.client.logout()
         self.assertRedirects(self.set_password(link_in(mail.outbox[1])), reverse('password_reset_complete'))
@@ -508,16 +554,11 @@ class ResendTests(AccountMailCase):
     def test_after_a_failed_send_sending_again_goes_out(self):
         with override_settings(MAILERS=REFUSING), self.assertLogs('core.accountmail', 'ERROR'):
             response = self.client.post(self.url, follow=True)
-        self.assertEqual([(str(message), message.level_tag) for message in response.context['messages']], [(
-            'The invitation to kari@example.com was not sent: ConnectionRefusedError: [Errno 111] Connection refused',
-            'error')])
         self.assertIn('Invitation not sent', row_of(response, 'kari'))
         self.client.post(self.url)
         self.assertEqual(len(mail.outbox), 2)
-        self.assertEqual([error for (error,) in stored('error')],
-                         ['', 'ConnectionRefusedError: [Errno 111] Connection refused', ''])
-        self.assertEqual([changes['Invitation'][1]['msgid'] for *_row, changes in invite_rows()],
-                         ['Sent', 'Not sent', 'Sent'])
+        self.assertEqual(outcomes(), ['sent', REFUSED, 'sent'])
+        self.assertEqual(invite_rows(), [invited(), invited(), not_sent(REFUSED), invited()])
         self.assertIn('Invitation sent', row_of(self.client.get(reverse('core:user_list')), 'kari'))
 
     def test_it_goes_to_the_address_the_account_has_now(self):
@@ -538,9 +579,7 @@ class ResendTests(AccountMailCase):
         for refusal, arrange in cases.items():
             with self.subTest(refusal=refusal):
                 arrange()
-                response = self.client.post(self.url, follow=True)
-                self.assertEqual([(str(message), message.level_tag) for message in response.context['messages']],
-                                 [(refusal, 'error')])
+                self.assertEqual(flashes(self.client.post(self.url, follow=True)), [(refusal, 'error')])
         self.assertEqual((len(mail.outbox), AccountMail.objects.count(), len(invite_rows())), (1, 1, 1))
 
     def test_only_the_platform_admin_sends_it_and_only_by_post(self):
@@ -603,6 +642,7 @@ class ForgotPasswordTests(AccountMailCase):
         self.ask('Ali@Example.com')                                               # the address in any case
         self.assertEqual(stored('user', 'kind', 'address', 'requested_by', 'error'),
                          [(self.ali.pk, 'reset', 'ali@example.com', None, '')])
+        self.assertEqual(outcomes(), ['sent'])
         self.assertEqual(AuditLog.objects.count(), 0)
         token = link_in(mail.outbox[0]).strip('/').split('/')[-1]
         self.assertNotIn(token, json.dumps(list(AccountMail.objects.values()), default=str))
@@ -633,8 +673,7 @@ class ForgotPasswordTests(AccountMailCase):
     def test_the_limit_is_a_setting_and_a_failed_send_counts(self):
         with override_settings(MAILERS=REFUSING), self.assertLogs('core.accountmail', 'ERROR'):
             failed = self.answer('ali@example.com')
-        self.assertEqual(stored('kind', 'error'),
-                         [('reset', 'ConnectionRefusedError: [Errno 111] Connection refused')])
+        self.assertEqual(stored('kind', 'error'), [('reset', REFUSED)])
         self.assertEqual(self.answer('ali@example.com'), failed)                 # the same answer, sent or not
         self.assertEqual((mail.outbox, AccountMail.objects.count()), ([], 1))
 
@@ -656,45 +695,65 @@ class ForgotPasswordTests(AccountMailCase):
         self.assertEqual(set(stored('user')), {(self.ali.pk,), (twin.pk,)})
 
 
-class WaitingBackend(BaseEmailBackend):
-    """A mail server that answers only when the test lets it, so two requests are under way at once."""
-    started = threading.Event()
-    release = threading.Event()
-    sent = []
+class Tarpit(socketserver.BaseRequestHandler):
+    """A mail server that answers every step of the conversation, each after `delay` seconds: under the per-step
+    timeout every time, far over it in all."""
+    delay = 0.6
 
-    def send_messages(self, messages):
-        type(self).started.set()
-        type(self).release.wait(timeout=20)
-        type(self).sent.extend(messages)
-        return len(messages)
-
-
-class ResetLimitAtOnceTests(TransactionTestCase):
-    """The hourly limit holds for requests that arrive together: each waits for the one before it on the account's
-    row, so a burst of requests does not get past the count (they would all read "none sent yet")."""
-
-    @override_settings(MAILERS={'default': {'BACKEND': 'core.tests_account_mail.WaitingBackend'}},
-                       PASSWORD_RESET_MAILS_PER_HOUR=1, PUBLIC_BASE_URL=BASE)
-    def test_two_requests_at_once_send_one_mail(self):
-        ali = get_user_model().objects.create_user('ali', 'ali@example.com', 'eski-sifre-123')
-        WaitingBackend.started.clear(), WaitingBackend.release.clear(), WaitingBackend.sent.clear()
-        results = []
-
-        def ask():
+    def handle(self):
+        def answer(line):
+            time.sleep(self.delay)
             try:
-                results.append(accountmail.reset(get_user_model().objects.get(pk=ali.pk)))
-            finally:
-                connection.close()
+                self.request.sendall(line)
+            except OSError:
+                pass
+        answer(b'220 tarpit ESMTP\r\n')
+        data, buffer = False, b''
+        while True:
+            try:
+                chunk = self.request.recv(4096)
+            except OSError:
+                return
+            if not chunk:
+                return
+            buffer += chunk
+            while b'\r\n' in buffer:
+                line, buffer = buffer.split(b'\r\n', 1)
+                if data:
+                    if line == b'.':
+                        data = False
+                        answer(b'250 queued\r\n')
+                    continue
+                verb = line[:4].upper()
+                if verb == b'DATA':
+                    data = True
+                    answer(b'354 go on\r\n')
+                elif verb == b'QUIT':
+                    answer(b'221 bye\r\n')
+                    return
+                else:
+                    answer(b'250 ok\r\n')
 
-        first, second = threading.Thread(target=ask), threading.Thread(target=ask)
-        first.start()
-        self.assertTrue(WaitingBackend.started.wait(timeout=20))               # the first is at the mail server
-        with self.assertLogs('core.accountmail', 'WARNING'):
-            second.start()
-            second.join(timeout=1)
-            self.assertTrue(second.is_alive())                                      # the second waits its turn
-            WaitingBackend.release.set()
-            first.join(timeout=20), second.join(timeout=20)
-        self.assertFalse(first.is_alive() or second.is_alive())
-        self.assertEqual((len(WaitingBackend.sent), AccountMail.objects.count()), (1, 1))
-        self.assertEqual(sorted(result is None for result in results), [False, True])
+
+class SendTimeTests(AccountMailCase):
+    """A mail is given MAIL_SEND_SECONDS (EMAIL_TIMEOUT) in all, not for each step of the SMTP conversation: a server
+    that answers every step just in time is cut off at that, and the mail counts as not sent."""
+
+    def test_a_server_that_answers_every_step_slowly_is_cut_off_at_the_limit(self):
+        server = socketserver.ThreadingTCPServer(('127.0.0.1', 0), Tarpit)
+        server.daemon_threads = True
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        mailers = {'default': {'BACKEND': 'django.core.mail.backends.smtp.EmailBackend', 'OPTIONS': {
+            'host': '127.0.0.1', 'port': server.server_address[1], 'username': None, 'password': None,
+            'use_tls': False, 'use_ssl': False, 'timeout': 1}}}
+        with override_settings(MAILERS=mailers, MAIL_SEND_SECONDS=1, DEFAULT_FROM_EMAIL='console@farm.example'), \
+                self.assertLogs('core.accountmail', 'ERROR'):
+            start = time.perf_counter()
+            self.client.post(reverse('core:user_create'), user_data())
+            took = time.perf_counter() - start
+        # seven steps of 0.6 s would be over four seconds; the limit is one
+        self.assertLess(took, 2.5)
+        self.assertEqual(outcomes(), ['The mail server did not finish in time.'])
+        self.assertIn('The mail server did not finish in time', row_of(self.client.get(reverse('core:user_list')), 'kari'))

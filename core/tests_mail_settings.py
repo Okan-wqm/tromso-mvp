@@ -59,7 +59,7 @@ class MailSettingsTests(SimpleTestCase):
         self.assertEqual(found, [
             {'default': {'BACKEND': SMTP, 'OPTIONS': {
                 'host': 'smtp.example.net', 'port': None, 'username': 'farm', 'password': 's3cret',
-                'use_tls': True, 'use_ssl': False, 'timeout': 10}}},
+                'use_tls': True, 'use_ssl': False, 'timeout': 30}}},
             'farm@example.net', 'https://farm.example.net'])
 
     def test_the_port_the_encryption_and_the_timeout_are_the_environments(self):
@@ -69,6 +69,14 @@ class MailSettingsTests(SimpleTestCase):
         found = computed(options, EMAIL_HOST='smtp.example.net', EMAIL_TLS='off')
         self.assertEqual((found['use_tls'], found['use_ssl'], found['username'], found['password']),
                          (False, False, None, None))
+
+    def test_a_mail_gets_half_a_minute_in_all_and_leaves_after_the_request(self):
+        # EMAIL_TIMEOUT is the whole conversation's time (core.accountmail cuts it off there), and each step's too
+        self.assertEqual(computed('[s.MAIL_SEND_SECONDS, s.MAIL_IN_BACKGROUND]'), [30, True])
+        self.assertEqual(computed('[s.MAIL_SEND_SECONDS, s.MAILERS["default"]["OPTIONS"]["timeout"]]',
+                                  EMAIL_HOST='smtp.example.net', EMAIL_TIMEOUT='7'), [7, 7])
+        # the tests run the worker's jobs in the request (config.test_runner); core.tests_account_mail_worker runs it
+        self.assertIs(settings.MAIL_IN_BACKGROUND, False)
 
     def test_an_encryption_it_does_not_know_stops_the_settings_with_its_name(self):
         done = run(['-c', 'import config.settings'], EMAIL_HOST='smtp.example.net', EMAIL_TLS='yes')

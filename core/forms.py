@@ -142,10 +142,12 @@ class PasswordResetForm(auth_forms.PasswordResetForm):
         return (user for user in users if auth_forms._unicode_ci_compare(email, user.email))
 
     def save(self, **kwargs):
-        """Sends each active account on the address its reset mail. What Django's view hands over (the request, the
-        templates' names) is not used: the link starts with the configured public address, not with the request's."""
+        """Sends each active account on the address its reset mail, unless it has had its share for the hour
+        (accountmail.reset). Nothing here tells the page what happened: an address without an account, a request
+        held back and a mail that failed are answered like one that went out. What Django's view hands over (the
+        request, the templates' names) is not used: the link starts with the configured public address."""
         for user in self.get_users(self.cleaned_data['email']):
-            accountmail.send(user, accountmail.RESET)
+            accountmail.reset(user)
 
 
 PLATFORM_TABS = [

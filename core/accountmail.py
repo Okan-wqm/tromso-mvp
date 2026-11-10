@@ -14,9 +14,11 @@ from dataclasses import dataclass
 from datetime import timedelta
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ImproperlyConfigured
 from django.core.mail import DEFAULT_MAILER_ALIAS, EmailMessage
+from django.db import transaction
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone, translation
@@ -81,20 +83,28 @@ def send(user, kind, by=None):
             error = 'The mail server took no message.'
     except Exception as failure:
         error = reason(failure, token)
+    if error:
+        # the reason alone, not the exception: its own words may quote the mail, link and all
         logger.error('The %s mail for user %s was not sent: %s', kind, user.pk, error)
     return AccountMail.objects.create(user=user, kind=kind, address=user.email, requested_by=by, error=error)
 
 
 def reset(user):
     """Sends `user` a password reset mail, unless the account has had its share for the hour
-    (settings.PASSWORD_RESET_MAILS_PER_HOUR; tried counts as sent). Returns the record, or None when held back: the
-    person asking is answered the same either way, and the server's log says it."""
-    since = timezone.now() - timedelta(hours=1)
-    recent = AccountMail.objects.filter(user=user, kind=RESET, created_at__gte=since).count()
-    if recent >= settings.PASSWORD_RESET_MAILS_PER_HOUR:
-        logger.warning('A password reset mail for user %s was held back: %s sent in the last hour.', user.pk, recent)
-        return None
-    return send(user, RESET)
+    (settings.PASSWORD_RESET_MAILS_PER_HOUR; a mail that was tried counts). Returns the record, or None when the
+    request was held back: the person asking is answered the same either way, and the server's log says it. The
+    account's row is locked while its mails are counted and the mail is sent, so requests that arrive together take
+    turns and cannot all read "none sent yet"."""
+    with transaction.atomic():
+        user = get_user_model().objects.select_for_update().filter(pk=user.pk, is_active=True).first()
+        if user is None:                 # deactivated since the form looked the address up
+            return None
+        since = timezone.now() - timedelta(hours=1)
+        recent = AccountMail.objects.filter(user=user, kind=RESET, created_at__gte=since).count()
+        if recent >= settings.PASSWORD_RESET_MAILS_PER_HOUR:
+            logger.warning('A password reset mail for user %s was held back: %s in the last hour.', user.pk, recent)
+            return None
+        return send(user, RESET)
 
 
 def cannot_invite(user):

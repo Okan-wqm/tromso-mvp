@@ -284,6 +284,13 @@ PASSWORD_RESET_TIMEOUT = int(os.environ.get('ACCOUNT_LINK_HOURS', '24')) * 3600
 # other and send nothing (core.accountmail.reset), so nobody's inbox is flooded through the form.
 PASSWORD_RESET_MAILS_PER_HOUR = int(os.environ.get('PASSWORD_RESET_MAILS_PER_HOUR', '3'))
 
+# Under one, no link would ever work and no reset mail ever be sent: said here, not found out by a person.
+for _name, _value in (('ACCOUNT_LINK_HOURS', PASSWORD_RESET_TIMEOUT), ('PASSWORD_RESET_MAILS_PER_HOUR',
+                                                                       PASSWORD_RESET_MAILS_PER_HOUR)):
+    if _value < 1:
+        from django.core.exceptions import ImproperlyConfigured
+        raise ImproperlyConfigured(f'{_name} must be 1 or more.')
+
 
 # Auth
 LOGIN_URL = 'login'

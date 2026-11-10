@@ -98,7 +98,10 @@ class AttendanceRecordForm(TabbedForm):
             return cleaned
         adding = self.instance._state.adding
         employee, zone, started, ended = placed
-        if not scope.can_reach(self.user, employee, started.astimezone(zone).date()):
+        # the person in the user's team on the stretch's day or, for a stretch still open, today (scope.stretches)
+        still_open = not adding and self.instance.clock_out is None
+        if not scope.can_reach(self.user, employee, started.astimezone(zone).date()) and not (
+                still_open and scope.can_reach(self.user, employee)):
             raise ValidationError(_('You do not see this person on this day.'))
         if services.own_record(self.user, employee):
             raise ValidationError(_('You do not enter or correct your own attendance.'))

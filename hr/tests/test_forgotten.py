@@ -478,7 +478,8 @@ class MovedPersonTests(ForgottenTestCase):
                          (at(15, 30, day=ago(3)), 'entered', self.new_lead))
         self.assertEqual(AuditLog.objects.get(entity_id=str(self.open.pk), action='update').user, self.new_lead)
         # closed, it is history of its day: the old lead's, no longer the new one's
-        self.assertEqual(self.client.get(self.edit).status_code, 404)
+        with now(at(10)):                                                   # (the session was made on this clock)
+            self.assertEqual(self.client.get(self.edit).status_code, 404)
 
     def test_a_closed_stretch_of_before_the_move_is_not_the_new_leads(self):
         self.client.force_login(self.new_lead)

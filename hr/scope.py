@@ -124,6 +124,15 @@ def by_day(user, objects, employee='employee', day='day', realm=None):
     return objects.filter(Q(**{f'{employee}__user': user}) | Exists(placed))
 
 
+def stretches(user, objects, realm=None, day='clocked_day'):
+    """Attendance stretches (annotated with their `day`) that `user` reaches: a stretch belongs to the manager of the
+    department the person was placed in on its day (`by_day`), and while it is still open also to whoever reaches the
+    person today. An open stretch is today's business: a person who moved since they clocked in is told to ask their
+    lead, and their lead of today is who closes a forgotten clock-out (review R9). Once closed it is history of its day."""
+    still_open = Q(clock_out__isnull=True, employee__in=team(user, realm=realm).values('pk'))
+    return objects.filter(Q(pk__in=by_day(user, objects, 'employee', day, realm).values('pk')) | still_open)
+
+
 def team(user, day=None, realm=None):
     """The employees `user` may reach on `day` (the company's today by default), only those in `realm` that day if one is
     given: live rows only. Path joins bypass the soft-delete manager, so a deleted department or placement is left out

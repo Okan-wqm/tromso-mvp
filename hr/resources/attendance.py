@@ -46,8 +46,8 @@ class AttendanceRecordResource(services.PersonFirst, Resource):
         # the day that decides who sees a stretch is the company's (a site's clock per person would need its posting first;
         # the company's zone is the farm's, and never the server's UTC: a stretch from 00:30 is that day's)
         day = TruncDate('clock_in', tzinfo=company_zone())
-        return scope.by_day(request.user, objects.annotate(clocked_day=day), 'employee', 'clocked_day',
-                            scope.realm_for(request))
+        # (and a stretch still open is also reached by whoever reaches the person today: scope.stretches)
+        return scope.stretches(request.user, objects.annotate(clocked_day=day), scope.realm_for(request))
 
     @classmethod
     def snapshot(cls, record):

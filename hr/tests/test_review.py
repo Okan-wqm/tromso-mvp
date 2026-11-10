@@ -38,7 +38,8 @@ class Moved(PeopleTestCase):
         self.shift = Shift.objects.create(name='Early', code='EARLY', starts_at=time(6), ends_at=time(14))
         self.cell = ShiftAssignment.objects.create(employee=self.p, day=date(2026, 3, 10), shift=self.shift, note='old note')
         self.punch = AttendanceRecord.objects.create(
-            employee=self.p, clock_in=datetime(2026, 3, 10, 6, tzinfo=utc.utc), via='entered', note='old reason')
+            employee=self.p, clock_in=datetime(2026, 3, 10, 6, tzinfo=utc.utc), clock_out=datetime(2026, 3, 10, 14, tzinfo=utc.utc),
+            via='entered', note='old reason')       # closed: history of its day (an open one is today's lead's too, R9)
         kind = LeaveType.objects.create(name='Annual', code='AN')
         self.request = LeaveRequest.objects.create(employee=self.p, leave_type=kind, first_day=date(2026, 3, 10),
                                                    last_day=date(2026, 3, 10))

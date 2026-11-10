@@ -32,6 +32,10 @@ READ = 'view'
 ALL = 'all'
 # The actions that include Read on their area. The others widen rows (crew, all_production, all) and include nothing.
 INCLUDES_READ = ('add', 'change', 'delete')
+# The widening columns that are read on their own area's page, through its Read: Crew is drawn only under one's own week on
+# the Shift schedule, so Read beside it is how it works at all (the Production worker preset), never a Read left over from
+# the old matrix rule. The others (all_production, all) widen other areas' rows and stand without Read on their area.
+OWN_PAGE = ('crew',)
 
 
 @dataclass(frozen=True)

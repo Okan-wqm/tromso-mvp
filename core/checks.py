@@ -48,14 +48,16 @@ def chemcore_matches(app_configs, **kwargs):
 
 @register(Tags.database)
 def implied_reads(app_configs, **kwargs):
-    """Roles whose Read on an area may come only from the matrix's old rule (Crew, All production or Everyone once added
-    Read on save): Read and a widening column, but no Create, Edit or Delete there. Listed for the administrator to
+    """Roles whose Read on an area may come only from the matrix's old rule (All production or Everyone once added
+    Read on save): Read and such a widening column, but no Create, Edit or Delete there. Listed for the administrator to
     review in the role matrix; nothing is changed. Run with `manage.py check --database default`."""
     from django.contrib.auth.models import Group
     from django.db import DatabaseError
 
     from . import access
-    widening = [action for action, _label in access.ACTIONS if action not in (access.READ, *access.INCLUDES_READ)]
+    # Not the columns read on their own area's page (access.OWN_PAGE: Crew): Read beside one of those is needed, not left over.
+    widening = [action for action, _label in access.ACTIONS
+                if action not in (access.READ, *access.INCLUDES_READ, *access.OWN_PAGE)]
     found = []
     try:
         for group in Group.objects.prefetch_related('permissions__content_type').order_by('name'):
@@ -72,7 +74,7 @@ def implied_reads(app_configs, **kwargs):
         return []
     return [Warning(
         f'These roles hold Read where it may come only from the old matrix rule: {"; ".join(found)}.',
-        hint='Open each in Roles and untick Read where the role should only widen rows (Crew, All production, Everyone '
+        hint='Open each in Roles and untick Read where the role should only widen rows (All production, Everyone '
              'include no right of their own).', id='core.W003')]
 
 

@@ -132,7 +132,7 @@ class SiteAuditTests(SiteTestCase):
         self.assertEqual(edited, ('update', 'ali', {
             'Total area (m²)': ['100.00', '250.00'], 'Status': [message('Active'), message('Under maintenance')],
         }))
-        self.assertEqual(contacts, ('update', 'ali', {'Contacts': [None, 'Kari (Vet, primary)']}))
+        self.assertEqual(contacts, ('update', 'ali', {'Contacts': [None, [['Kari (Vet, primary)']]]}))
         self.assertEqual(deleted, ('delete', 'ali', {}))
 
     def test_saving_without_changes_logs_nothing(self):

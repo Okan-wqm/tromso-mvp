@@ -290,7 +290,7 @@ class SupplierContactTests(SupplierTestCase):
                                                  record=self.supplier))
         entry = AuditLog.objects.get()
         self.assertEqual((entry.action, entry.entity_type, entry.entity_id, entry.changes),
-                         ('update', 'supplier', str(self.supplier.pk), {'Contacts': [None, 'Kari (Sales, primary)']}))
+                         ('update', 'supplier', str(self.supplier.pk), {'Contacts': [None, [['Kari (Sales, primary)']]]}))
 
     def test_saving_contacts_needs_the_change_permission(self):
         reader = get_user_model().objects.create_user('ola', 'ola@example.com', 'x')

@@ -123,8 +123,12 @@ class SettingsRowTests(SettingsTestCase):
     def test_the_row_exists_after_migrating_and_there_is_only_one(self):
         row = SchedulingSettings.objects.get()
         self.assertEqual((row.standard_week_minutes, row.min_rest_minutes, row.max_consecutive_days, row.rest_rule,
-                          row.working_weekdays, row.punch_window_minutes, row.absent_after_minutes),
-                         (2400, 660, 6, 'warn', [0, 1, 2, 3, 4], 120, 30))
+                          row.working_weekdays, row.punch_window_minutes, row.absent_after_minutes,
+                          row.forgotten_after_hours),
+                         (2400, 660, 6, 'warn', [0, 1, 2, 3, 4], 120, 30, 16))
+        self.assertEqual(fields_of(SchedulingSettings), {
+            'singleton', 'standard_week_minutes', 'min_rest_minutes', 'max_consecutive_days', 'rest_rule',
+            'working_weekdays', 'punch_window_minutes', 'absent_after_minutes', 'forgotten_after_hours'})
         with self.assertRaises(IntegrityError), transaction.atomic():
             SchedulingSettings.objects.create()
         with self.assertRaises(IntegrityError), transaction.atomic():
@@ -139,11 +143,12 @@ class SettingsRowTests(SettingsTestCase):
         self.client.post(reverse('hr:schedulingsettings_edit', args=[row.pk]), {
             'standard_week_minutes': '2250', 'min_rest_minutes': '720', 'max_consecutive_days': '5',
             'rest_rule': 'block', 'working_weekdays': ['0', '1', '2', '3', '4', '5'], 'punch_window_minutes': '60',
-            'absent_after_minutes': '15', 'version': '1'})
+            'absent_after_minutes': '15', 'forgotten_after_hours': '20', 'version': '1'})
         row.refresh_from_db()
         self.assertEqual((row.standard_week_minutes, row.min_rest_minutes, row.max_consecutive_days, row.rest_rule,
-                          row.working_weekdays, row.punch_window_minutes, row.absent_after_minutes, row.version),
-                         (2250, 720, 5, 'block', [0, 1, 2, 3, 4, 5], 60, 15, 2))
+                          row.working_weekdays, row.punch_window_minutes, row.absent_after_minutes,
+                          row.forgotten_after_hours, row.version),
+                         (2250, 720, 5, 'block', [0, 1, 2, 3, 4, 5], 60, 15, 20, 2))
         self.assertEqual(self.client.get('/hr/settings/scheduling/new/').status_code, 404)
         self.assertEqual(self.client.post(f'/hr/settings/scheduling/{row.pk}/delete/').status_code, 404)
 
@@ -151,7 +156,7 @@ class SettingsRowTests(SettingsTestCase):
         row = SchedulingSettings.objects.get()
         good = {'standard_week_minutes': '2400', 'min_rest_minutes': '660', 'max_consecutive_days': '6',
                 'rest_rule': 'warn', 'working_weekdays': ['0'], 'punch_window_minutes': '120',
-                'absent_after_minutes': '30', 'version': '1'}
+                'absent_after_minutes': '30', 'forgotten_after_hours': '16', 'version': '1'}
         for field, value in (('standard_week_minutes', '10081'), ('min_rest_minutes', '1441'),
                              ('max_consecutive_days', '0'), ('max_consecutive_days', '15'), ('rest_rule', 'ignore'),
                              ('working_weekdays', []), ('punch_window_minutes', '721'), ('absent_after_minutes', '241')):

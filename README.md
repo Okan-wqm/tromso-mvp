@@ -300,16 +300,18 @@ code, filters by category, water environment, cleaner fish (any, lumpfish, wrass
   the bigger ones outcompete the smaller at feeding). A stocking, transfer or grading beyond it asks for an
   acknowledgement first, and a unit holding such a mix says so (see Production units). Empty means no check, and the
   list says "No check"; the list's **Size limit** column shows it (2×). Migration 0034 gave every species there the
-  owner's default 2; a new species is offered 2 on its form. It is not a withdrawal input: it is edited freely.
-  **A cleaner fish's default is no check** (the owner, 2026-11-10: lumpfish and wrasses are topped up with fish of
-  other sizes): a new species with a cleaner-fish type, chosen or filled in from the catalogue, that is left at the
-  offered 2 is saved with the limit empty and the person is told so after saving; a limit typed for it is kept, and
-  it stays editable like any other (`farm.forms.species.offered_weight_ratio`). A top-up of such a species then asks
-  nothing and its cage shows no "Mixed sizes" chip; salmon is unchanged. Migration
-  `farm/0038_cleaner_fish_no_size_check` emptied the limit of the cleaner species that still held the untouched
-  default (2, and no person's change of the limit in the activity log), deleted ones too, one activity-log row each
-  (by `system`); a limit a person set stays, a 2 they chose too; going back gives 2 back only where it took it and
-  nobody chose since.
+  owner's default 2. It is not a withdrawal input: it is edited freely.
+  **A new species' box is empty, and empty takes the default of the species' kind** (`farm.forms.species.
+  offered_weight_ratio`): 2 for a production species, **no check for a cleaner fish** (the owner, 2026-11-10: lumpfish
+  and wrasses are topped up with fish of other sizes), also when the catalogue fills the cleaner-fish type in. The
+  person is told after saving which was applied. Whatever is typed is kept, a 2 for a cleaner fish too: the box is
+  never filled in beforehand, because a value standing in it could not be told from a typed one. On an edit, empty
+  means no check, as before. A top-up of a cleaner species without a limit asks nothing and its cage shows no
+  "Mixed sizes" chip; salmon is unchanged. Migration `farm/0038_cleaner_fish_no_size_check` emptied the limit of the
+  cleaner species that still held 0034's untouched default (2, and no person's word about the limit in the activity
+  log), deleted ones too, one activity-log row each (by `system`). A limit a person changed stays; a cleaner species
+  whose 2 came with its own creation through the form is left as it is and named in the migration's output (the 2 may
+  have been typed); going back gives 2 back only where it took it and nobody chose since.
 - **Status and notes**: active, experimental, inactive or discontinued; notes. Active and
   experimental species are the ones a new batch can take (Production units).
 
@@ -2098,8 +2100,12 @@ optionally a due time, and:
   tab until the first line is ticked; then each tick is the only change, with who and when.
 - **notes**: anyone who can read Tasks adds one in the drawer; a note is never edited or removed there (task
   notes are part of the work record; Messages are not, see below). The activity log says that a note was added,
-  by whom and when, never its words; a completion note and a reason for cancelling are logged the same way (a
-  person's free text is private in the log, which nobody can erase from: Security in the pages, Personal data).
+  by whom and when, never its words; a description (a task's and a recurring task's), a completion note and a
+  reason for cancelling are logged the same way (a person's free text is private in the log, which nobody can
+  erase from: Security in the pages, Personal data). The words live on the task. **Reopening loses none of them:**
+  it clears the completion note and the reason on the task (it is open again) and keeps each as a note by the
+  person who wrote it, marked as what it was (`TaskNote.kind`, `tasks.services.reopen`); the drawer says
+  "Completion note, kept when the task was reopened". Only the erasure procedure removes a person's words.
 
 **Statuses**: open, **in progress** (who started it and when), **done** (who completed it, when, and a
 note), **cancelled** (who, when and why). Start, Complete and a tick: a person the task is for, or whoever
@@ -3157,8 +3163,9 @@ labelled defaults on the page, **not the law**: none of the statutory figures is
 constraint (a rest of 60 minutes can be stored); the settings may only be set stricter than the statute, and the owner
 confirms them. Sanity checks only: ranges and the enumerations. The forgotten clock-out limit is 1 to 168 hours (a
 database check); a blank or an out-of-range value is refused with its reason, and so is one shorter than the longest
-active shift (a person on that shift would count as forgotten before it ends and could not clock out), as the shift
-form refuses an active shift longer than the limit.
+active shift with the punch window before it (a stretch begins at the clock-in, which may come the whole window before
+the shift: a person on that shift would count as forgotten before it ends and could not clock out; a wider window alone
+is held to it too), as the shift form refuses an active shift that, with the window, is longer than the limit.
 
 **Shifts** (`/hr/settings/shifts/`, no menu line, reached from the settings page; Shifts is its own matrix area): a name,
 a code (capital letters, digits, hyphens, underscores; unique among live shifts, free again after a delete), the start
@@ -3294,15 +3301,24 @@ left, so nothing is assumed in either direction and no hours are invented:
   up to Planned today; one not planned is listed and said under that tile, in no other figure.
 - **The emergency count** (On site now) keeps every open clock-in, the forgotten ones too, and says how many of them are that old:
   an overcount is checked, a person missed is not, and a forgotten stretch may be the only trace of someone who came back to work.
-- **The person** is told in words on Today instead of the two buttons ("Your clock-in of … was never closed: … Ask your lead to
-  close it on the Attendance page with the time you really left; then you can clock in again."), and a clock-in or clock-out sent
+- **The person** is told in words on Today instead of the two buttons ("Your clock-in of … was never closed: … Ask your lead,
+  or whoever keeps attendance for you, to close it on the Attendance page with the time you really left; then you can clock in
+  again.": a lead and a person without one are told something they can do), and a clock-in or clock-out sent
   all the same is refused with the same sentence and writes nothing (`hr.services.forgotten_refusal`). A clock-out now would store
   the days since as worked; a second clock-in cannot stand beside an open stretch (the table's exclusion constraint), and closing
   the old one for them would invent the time they left.
-- **The lead closes it** on the Attendance page: whoever may correct that person's attendance under the existing scope (Edit on
-  Attendance, the person in their team on the stretch's day, never one's own stretch without Everyone) types the real clock-out
-  and the reason. The stretch becomes an entered one (`via`), and the log row says who closed it, the clock-out, that it was
-  entered by hand and that a reason was given (never its words). Then the person clocks in again.
+- **The lead closes it** on the Attendance page: whoever may correct that person's attendance (Edit on Attendance, never
+  one's own stretch without Everyone) types the real clock-out and the reason. **An open stretch is reached by whoever
+  reaches the person today as well as on its first day** (`hr.scope.stretches`, the one rule of who reaches a stretch): a
+  person who moved department since they clocked in is closed by their lead of today, not sent to a lead they no longer
+  have; once closed, the stretch is history of its day and its day's manager's. The stretch becomes an entered one (`via`),
+  and the log row says who closed it, the clock-out, that it was entered by hand and that a reason was given (never its
+  words). Then the person clocks in again.
+- **Never ahead of now** (`hr.services.check_times`, the one rule of a stretch's two typed times, on the form and in
+  `enter_presence`): the clock-out after the clock-in, and neither later than the server's now, each refused with its
+  sentence on the field. A clock-out typed days ahead would close the stretch with hours nobody has worked, keep the person
+  from clocking in and take them out of the emergency count while the record says they are in.
+- **The limit counts elapsed hours** (`hr.rules.forgotten_before` works in UTC), also on the night the clocks change.
 - **Totals.** Nothing in the code sums worked time yet (state is read, not stored); the rule for whatever does is the same: a
   forgotten stretch has no end and counts for nothing until it is closed.
 
@@ -3569,13 +3585,14 @@ only one who manages roles and users; everyone else gets exactly what their role
   **What an area's Read also reaches is said under it** (`Area.note`, printed below the area's row in the matrix, in
   every language): Experiments and Regulatory reports show farm figures to a person without Read on the farm areas they
   come from (an experiment's read page the batches, fish, biomass, survival and feed conversion of its own tanks; a
-  report, on its page and in its exports, the stock, slaughter, smolt, cleaner-fish and sea-lice figures it is computed
-  from). That is kept on purpose (a trial needs its own tanks' figures and a regulatory filing its numbers; owner
+  report, on its page and in its exports, everything it is computed from: stock and biomass, the feed given, slaughter
+  and harvest plans, smolt, cleaner fish, sea-lice counts and treatments with their medicines, health events with
+  diagnosis and deaths, escapes and the sea temperature; the note names them all, the most sensitive among them). That is kept on purpose (a trial needs its own tanks' figures and a regulatory filing its numbers; owner
   decision F-168 / F-173, 2026-11-10), so whoever grants either area is told what comes with it
   (`core/tests_matrix_notes.py`).
 - **Roles** (`/roles/`, Django `Group`): a table with each role's users and what it allows; the
   dialog has the name and a permission matrix (areas by group, columns Read / Create / Edit /
-  Delete, and Crew, All production and Everyone where an area offers them: see Row scope). Create, Edit and Delete include Read: the form adds it and the browser ticks it. Crew, All production and Everyone include nothing: they widen whose rows the role's other rights reach, so a role saved in the matrix keeps exactly what it had (the Production manager preset has All production without the Team list, `hr/roles.py`). **Deploying this rule:** a role saved before it kept the Read the old rule added; migration `hr/0010_restore_preset_rights` puts the two presets back to exactly their rights, and `manage.py check --database default` lists any other role whose Read on an area may come only from it (core.W003: Read and a widening column, no Create, Edit or Delete there) for the administrator to review in Roles. Saving
+  Delete, and Crew, All production and Everyone where an area offers them: see Row scope). Create, Edit and Delete include Read: the form adds it and the browser ticks it. Crew, All production and Everyone include nothing: they widen whose rows the role's other rights reach, so a role saved in the matrix keeps exactly what it had (the Production manager preset has All production without the Team list, `hr/roles.py`). **Deploying this rule:** a role saved before it kept the Read the old rule added; migration `hr/0010_restore_preset_rights` puts the two presets back to exactly their rights, and `manage.py check --database default` lists any other role whose Read on an area may come only from it (core.W003: Read and All production or Everyone, no Create, Edit or Delete there) for the administrator to review in Roles. Crew is not such a column: it is drawn only on the Shift schedule's own page, which needs Read on that area, so Read beside Crew is how it works at all (the Production worker preset) and the check leaves it alone (`core.access.OWN_PAGE`). Saving
   sets exactly the ticked boxes (the model's standard view/add/change/delete permissions). The
   activity log shows permission changes as "Sites: read, create; Activity log: read". Deleting a
   role removes it from its people.
@@ -3613,18 +3630,40 @@ only one who manages roles and users; everyone else gets exactly what their role
 - **The fonts are the project's own** (`static/fonts`, declared in `static/css/fonts.css`: Atkinson Hyperlegible Next and
   Bricolage Grotesque under the SIL Open Font License 1.1, one entry each in `THIRD_PARTY.md`): no page asks Google or any
   other site for anything, so no reader's address leaves the farm with a page, and the farm's own network shows them.
-- **Personal data is private in the activity log** (owner decision F-059 / F-061 / F-179 / F-050, 2026-11-10). The log
-  is append-only (a trigger), so whatever is written into it can never be erased. A contact person's e-mail and phone
-  (a site's and a supplier's contact list, `ContactList.describe`; a site's and a report's own contact e-mail and
-  phone, the tabs' `private_fields`) and a task's free text (a note, a completion note, a reason for cancelling:
-  `tasks.services.PRIVATE`, `add_note`) are logged as private values by the one mechanism, `core.audit.private` /
-  `core.audit.digest`: "Private text" with eight hex digits of an HMAC-SHA256 under the server's `SECRET_KEY`. The log
-  still shows that the value changed and whether two values were equal (a contact list reads `Kari (Vet, email
-  #1a2b3c4d, primary)`), never the value; HR's leave reasons and notes were kept so already. Migration
-  `core/0011_private_log_values` converted the rows written before in the same way (the trigger set aside for those
-  updates inside its transaction, and back; only `changes` is written; it prints the count and says it in the log).
-  The log stays readable only with the Activity log right. What is erased where on a person's request, what remains
-  (names, who did what, the digests) and who may do it: [docs/erasure.md](docs/erasure.md).
+- **Personal data is private in the activity log** (owner decision F-059 / F-061 / F-179 / F-050, 2026-11-10; review
+  R1 to R7). The log is append-only (a trigger), so whatever is written into it can never be erased.
+  - **What is private**, in the code (the tabs' `private_fields`, `ContactList.PRIVATE`, `tasks.services.PRIVATE`,
+    `SERIES_PRIVATE`, `add_note`) and in the conversion's list, which a test holds together: a contact person's e-mail
+    and phone (a site's and a supplier's contact list); a site's, a supplier's and a report's own contact e-mail and
+    phone; a task's and a recurring task's description, a task's notes, completion note and reason for cancelling; HR's
+    leave reasons and notes (as before). **Plain, by decision**, with the reason in
+    [docs/erasure.md](docs/erasure.md): a contact's name, role and primary flag, a site manager, a report's contact
+    person, a supplier's name, number and address, a user account's address, name and roles, a task's title and checklist.
+  - **How.** One mechanism, `core.audit.private` / `core.audit.digest`: the enumerated "Private text" with eight hex
+    digits of an HMAC-SHA256 under the digests' own key (`settings.AUDIT_DIGEST_KEY`, `DJANGO_AUDIT_DIGEST_KEY`; the
+    secret key when it is not set, so the two are rotated apart). A contact list is logged as parts: who the contact
+    is in plain text, then the e-mail and the phone as private values that say which they are; the page shows
+    `Kari (Vet, primary), Email: Private text, Phone: Private text`. This is **pseudonymisation**: the log still shows
+    that a value changed, and two equal digests mean "probably the same value"; whoever holds the key and the log can
+    recover a short value (a phone number) by trying them all.
+  - **The digest is stored, never shown.** `AuditLog.shown_changes` is the one place a stored value becomes text (the
+    activity log, and a record's History tab, which whoever may edit the record reads without the Activity log right),
+    and it never prints a digest: nobody types a guess, saves and compares it with a removed contact's.
+  - **The rows written before** were converted by migration `core/0011_private_log_values`
+    (`core/migrations/_private.py`, one place the migration, the command and the check call). An old contact-list
+    sentence is taken apart and becomes exactly what the code writes now, so the name, the role, the primary flag and
+    who was added or taken off stay; a role and a phone that cannot be told apart become one private part beside the
+    name; a sentence that cannot be taken apart becomes one private value, counted, its entries named by id in the
+    log's own row. The table is locked against writers before it is read; the append-only trigger is set aside for the
+    updates only, inside the transaction, and set back; only `changes` is written. **One-way:** going back is refused
+    once a row was converted. It refuses to convert real data under a key printed in the repository (DEBUG off and a
+    `django-insecure-` key).
+  - **Before and after it runs.** `manage.py private_log_values --dry-run` writes nothing and says how many values
+    would be converted and which entries' contact lists cannot be taken apart: run it on a copy of the database first.
+    Stop every server running the old code before `migrate` (it would write plain values behind the conversion);
+    afterwards `manage.py check --database default` (core.W004) counts plain values under private labels, and
+    `manage.py private_log_values` converts what an old server left.
+  What is erased where on a person's request, what remains and who may do it: [docs/erasure.md](docs/erasure.md).
 
 ## Database viewer
 

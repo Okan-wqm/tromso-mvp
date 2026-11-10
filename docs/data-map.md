@@ -2275,7 +2275,7 @@ Where each person works from a day: one department, production or office, and th
 - **how it works**: One placement covers any day (exclusion constraint); a move closes the open one the day before.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › postings
 - **constraints**: chk_postings_one_department (check); chk_postings_period (check); excl_postings_employee_period (exclusion: employee, valid_from, valid_until)
-- **tests that mention it**: `farm/tests/test_systems.py`, `hr/tests/helpers_people.py`, `hr/tests/test_attendance.py` and 9 more
+- **tests that mention it**: `farm/tests/test_systems.py`, `hr/tests/helpers_people.py`, `hr/tests/test_attendance.py` and 10 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2373,7 +2373,7 @@ The shift patterns of the roster: a start and an end on the wall clock of the si
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › shifts
 - **forms**: `ShiftForm`
 - **constraints**: uq_shifts_code_live (unique: code); chk_shifts_code (check); chk_shifts_span (check); chk_shifts_break (check); chk_shifts_grace (check); chk_shifts_tone (check); chk_shifts_status (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 17 more
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 18 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

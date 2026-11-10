@@ -146,8 +146,31 @@ The four questions above are decided and built, each with its `Test:` commit fir
 | F-095 | A clock-in open longer than a limit is a forgotten clock-out; the lead closes it | `SchedulingSettings.forgotten_after_hours` (16, HR edits it; hr/0013), one rule `hr.rules.forgotten`: its own state on the board, kept in the emergency count and said apart, the person told in words and neither clocked in nor out, closed on the Attendance page with the real time and a reason (README › Today & attendance). `hr.tests.test_forgotten` |
 | F-203 | The Production manager preset clears a planned day and enters and corrects attendance | `hr/roles.py`; `hr/0012_production_manager_rights` gives an existing role the three rights, logged. 0010's restore is left as it was made: with 0012 it is the preset today, and F-046's test stays green. `hr.tests.test_manager_rights`, `test_roles`, `test_preset_restore` |
 | F-168 / F-173 | Kept; said in the role matrix | `core.access.Area.note`, printed under Experiments and Regulatory reports in EN/NB/TR. `core.tests_matrix_notes` |
-| F-059 / F-061 / F-179 / F-050 | Contact e-mail and phone and task free text are private in the log; the log's audience stays `core.view_auditlog` | `core.audit.private` / `digest` (the existing mechanism, named); contacts, a site's and a report's contact fields, task notes; `core/0011_private_log_values` converts the old rows; [docs/erasure.md](../erasure.md). `core.tests_private_log`, `farm.tests.test_private_contacts`, `tasks.tests.test_pages`, `reports.tests.test_pages` |
+| F-059 / F-061 / F-179 / F-050 | Contact e-mail and phone and task free text are private in the log; the activity log page stays `core.view_auditlog` (a record's History tab is read by its editors: no digest is printed on either) | `core.audit.private` / `digest` (the existing mechanism, named); contacts, a site's, a supplier's and a report's contact fields, task free text; `core/0011_private_log_values` converts the old rows; [docs/erasure.md](../erasure.md). `core.tests_private_log`, `farm.tests.test_private_contacts`, `tasks.tests.test_pages`, `reports.tests.test_pages` |
 
-Still open from this group (said in docs/erasure.md): names in the log (a contact's, a site manager's, a report's contact
-person), a user account's own e-mail in the Users rows (F-050), a supplier's company e-mail and phone, and a logged page
-for erasing a task note (today a database administrator's write on the DPO's instruction).
+## Review of the branch (independent, 2026-11-10: 1 blocker, 5 major, 8 minor, 4 notes), fixed on it
+
+| Finding | What was wrong | Fix |
+|---|---|---|
+| R1 blocker | core/0011 made each old contact-list sentence one private value: names, roles, primary and who was added or removed were lost, one-way | The sentence is taken apart (`core/migrations/_private.py`); only e-mail and phone become private; a role and a phone that cannot be told apart become one private part, an unparseable sentence one private value, counted and named by id; `manage.py private_log_values --dry-run`; going back refused once a row was converted |
+| R2 | A contact's digest was printed on the History tab to anyone with Edit, who could save a guess and compare | A contact list is logged as parts with private values; `AuditLog.shown_changes` never prints a digest |
+| R3 | The digests took whatever key the migrating process had, the repository's fallback included | `AUDIT_DIGEST_KEY` (its own key); the conversion refuses a `django-insecure-` key when DEBUG is off; the docs say pseudonymisation, "probably the same", recoverable with the key |
+| R4 | A server still running old code wrote plain values behind the conversion, unseen | The conversion locks the table before it reads; check core.W004; the command converts leftovers; CLAUDE.md stops the server before `migrate` |
+| R5 | Reopening a task cleared the completion note and the reason, which then existed nowhere | `tasks.services.reopen` keeps each as a note by its writer (`TaskNote.kind`, tasks/0003) |
+| R6 | A forgotten stretch could be closed with a time ahead | `hr.services.check_times`: nothing later than now, on the form and in the service |
+| R7 | Fields of the same kind left plain | Private too: supplier e-mail and phone, a task's and a recurring task's description. Plain by decision, with reasons in docs/erasure.md (this closes F-050: the account's address is kept) |
+| R8 | The limit was held against the shift, not the shift and the punch window | Both forms add `punch_window_minutes` |
+| R9 | A person who moved: the new lead got a dead link | `hr.scope.stretches`: an open stretch is reached by whoever reaches the person today as well |
+| R10 | The conversion's log row showed in English | Its words marked (`core.audit.MIGRATION_WORDS`) and translated |
+| R11 | A deliberate 2 for a cleaner species was lost | The create box is empty and takes the offer of the kind; farm/0038 leaves and reports a 2 that came with the species' creation |
+| R12 | Two Turkish strings | Corrected |
+| R13 | core.W003 listed Read beside Crew | `core.access.OWN_PAGE`; the check skips it |
+| R14 | Two writers of a migration's log row | alarms' migrations call `core/migrations/_log.system_entry`; `_log.py` says it is frozen |
+| R15 | docs/erasure.md: three untrue sentences, records in the bin, backups, the unlogged step, who may run it | Rewritten |
+| R16 | hr/0012's way back had an untested branch | The case added to `hr.tests.test_manager_rights` |
+| R17 | The reports note named less than a report shows | Feed, harvest plans, treatments with medicines, health events, escapes, sea temperature named, three languages |
+| R18 | Elapsed hours across a clock change; "ask your lead" for a lead; the wrong sentence for a clock-out before the clock-in | `forgotten_before` in UTC; "your lead, or whoever keeps attendance for you"; the times' rule runs before the overlap check |
+
+Still open (said in docs/erasure.md): how long a database dump is kept and who deletes it (the dump taken before
+core/0011 holds the whole log in plain text); names in the log, if the DPO wants them out; a logged page for erasing a
+task note (today a database administrator's statement, which writes its own log row).

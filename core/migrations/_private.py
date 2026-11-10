@@ -170,6 +170,11 @@ def convert(schema_editor):
     was done is said in the log itself (one row by 'system') with the entries whose contact list could not be taken
     apart."""
     with schema_editor.connection.cursor() as cursor:
+        # Before anything is read: writers wait from here to the commit, and this waits for the writers under way, so
+        # no row is written between the read and the updates (a session that began before would be missed otherwise;
+        # review R4). Readers go on. What a server still running the old code writes after the commit is not this
+        # function's to stop: stop that server first; the check core.W004 finds what it left.
+        cursor.execute('LOCK TABLE audit_log IN SHARE ROW EXCLUSIVE MODE')
         found, counts = plan(cursor)
         if found and key_refusal():
             raise RuntimeError(key_refusal())

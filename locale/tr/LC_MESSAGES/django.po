@@ -13033,6 +13033,9 @@ msgstr "İlacın varsa ruhsat (MT) numarası."
 msgid "The abstract or summary, as the document gives it."
 msgstr "Belgenin verdiği haliyle özet."
 
+msgid "The account changed before the mail was sent."
+msgstr "E-posta gönderilmeden önce hesap değişti."
+
 msgid ""
 "The account the person signs in with. Their name is then the account’s; leave it empty for "
 "someone who never signs in (a student, a visiting researcher)."
@@ -13794,6 +13797,12 @@ msgstr "Elipsin en uzun çapı."
 msgid "The lower weight must be below the upper weight."
 msgstr "Alt ağırlık üst ağırlıktan küçük olmalı."
 
+msgid "The mail server did not finish in time."
+msgstr "E-posta sunucusu zamanında bitirmedi."
+
+msgid "The mail server took no message."
+msgstr "E-posta sunucusu iletiyi almadı."
+
 msgid "The medicines and vaccines the farm uses, with their withdrawal before harvest."
 msgstr "Çiftliğin kullandığı ilaçlar ve aşılar, hasattan önceki bekleme süreleriyle."
 
@@ -14109,6 +14118,9 @@ msgstr ""
 "Protokol atanmış, bu yüzden tablosu kilitli: yemlediği günlerin rasyonları ondan okunur. "
 "Değiştirmek için protokolü kopyalayın, kopyayı değiştirin ve bir tarihten itibaren atayın."
 
+msgid "The public address of this server is not set (PUBLIC_BASE_URL): the link would lead nowhere."
+msgstr "Bu sunucunun genel adresi ayarlanmamış (PUBLIC_BASE_URL): bağlantı hiçbir yere götürmezdi."
+
 msgid ""
 "The question is in the register of questions for the authority. Recording the filing is refused "
 "until you confirm it, and your confirmation is logged."
@@ -14239,6 +14251,9 @@ msgstr "Gizli anahtar değiştirildi."
 #, python-format
 msgid "The seed is a whole number from 0 to %(top)d."
 msgstr "Tohum, 0 ile %(top)d arasında bir tam sayıdır."
+
+msgid "The sending was interrupted: the server stopped, or the mail server never answered."
+msgstr "Gönderim yarıda kesildi: sunucu durdu ya da e-posta sunucusu hiç yanıt vermedi."
 
 msgid "The sensor rule no longer holds"
 msgstr "Sensör kuralı artık geçerli değil"
@@ -15230,6 +15245,9 @@ msgstr "Bugünkü rasyon"
 
 msgid "Tone"
 msgstr "Ton"
+
+msgid "Too many mails are waiting to be sent."
+msgstr "Gönderilmeyi bekleyen çok fazla e-posta var."
 
 msgid "Topic"
 msgstr "Konu"

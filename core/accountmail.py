@@ -50,12 +50,16 @@ INVITATION, RESET = AccountMail.Kind.INVITATION, AccountMail.Kind.RESET
 REASON_LENGTH = AccountMail._meta.get_field('error').max_length
 
 # Why a mail did not go out, in the platform's own words (a mail server's own are kept as it said them).
-TOOK_NOTHING = 'The mail server took no message.'
-NO_PUBLIC_ADDRESS = 'The public address of this server is not set (PUBLIC_BASE_URL): the link would lead nowhere.'
-TOO_SLOW = 'The mail server did not finish in time.'
-BUSY = 'Too many mails are waiting to be sent.'
-CHANGED = 'The account changed before the mail was sent.'
-INTERRUPTED = 'The sending was interrupted: the server stopped, or the mail server never answered.'
+# Stored as these msgids, English at rest like the activity log, and shown in the reader's language (`shown_reason`).
+TOOK_NOTHING = gettext_noop('The mail server took no message.')
+NO_PUBLIC_ADDRESS = gettext_noop(
+    'The public address of this server is not set (PUBLIC_BASE_URL): the link would lead nowhere.')
+TOO_SLOW = gettext_noop('The mail server did not finish in time.')
+BUSY = gettext_noop('Too many mails are waiting to be sent.')
+CHANGED = gettext_noop('The account changed before the mail was sent.')
+OWN_WORDS = (TOOK_NOTHING, NO_PUBLIC_ADDRESS, TOO_SLOW, BUSY, CHANGED)
+# Never stored: what a page says of a row that is still waiting long after a mail's time (`state`).
+INTERRUPTED = gettext_noop('The sending was interrupted: the server stopped, or the mail server never answered.')
 
 # An invitation in the activity log: the labels and the outcome the platform writes, stored as msgids (the admin's own
 # row is core.resources.UserResource.invite's).
@@ -368,8 +372,11 @@ def state(mail):
 
 
 def shown_reason(mail):
-    """Why a mail did not go out, for a page: its row's reason, or that it never finished."""
-    return mail.error or INTERRUPTED
+    """Why a mail did not go out, for a page: the platform's own sentences in the reader's language, a mail server's
+    words as it said them, and for a row with no reason that it never finished."""
+    if not mail.error:
+        return _(INTERRUPTED)
+    return _(mail.error) if mail.error in OWN_WORDS else mail.error
 
 
 def being_sent(user):

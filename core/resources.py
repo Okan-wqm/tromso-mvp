@@ -136,7 +136,7 @@ class UserResource(Resource):
                                         'it went out.') % {'address': mail.address})
         else:
             messages.error(request, _('The invitation to %(address)s was not sent: %(reason)s')
-                           % {'address': mail.address, 'reason': accountmail.BUSY})
+                           % {'address': mail.address, 'reason': _(accountmail.BUSY)})
 
 
 class PlatformSettingsResource(Resource):

@@ -13005,6 +13005,9 @@ msgstr "MT-nummeret, når legemiddelet har et."
 msgid "The abstract or summary, as the document gives it."
 msgstr "Sammendraget slik dokumentet gir det."
 
+msgid "The account changed before the mail was sent."
+msgstr "Kontoen ble endret før e-posten ble sendt."
+
 msgid ""
 "The account the person signs in with. Their name is then the account’s; leave it empty for "
 "someone who never signs in (a student, a visiting researcher)."
@@ -13768,6 +13771,12 @@ msgstr "Den lengste avstanden over ellipsen."
 msgid "The lower weight must be below the upper weight."
 msgstr "Den nedre vekten må være under den øvre vekten."
 
+msgid "The mail server did not finish in time."
+msgstr "E-postserveren ble ikke ferdig i tide."
+
+msgid "The mail server took no message."
+msgstr "E-postserveren tok ikke imot meldingen."
+
 msgid "The medicines and vaccines the farm uses, with their withdrawal before harvest."
 msgstr "Legemidlene og vaksinene anlegget bruker, med tilbakeholdelsestiden før høsting."
 
@@ -14081,6 +14090,9 @@ msgstr ""
 "Protokollen er tildelt, så tabellen er låst: rasjonene for dagene den fôret, leses fra den. For å"
 " endre den: dupliser protokollen, endre kopien og tildel den fra en dato."
 
+msgid "The public address of this server is not set (PUBLIC_BASE_URL): the link would lead nowhere."
+msgstr "Serverens offentlige adresse er ikke satt (PUBLIC_BASE_URL): lenken ville ikke føre noe sted."
+
 msgid ""
 "The question is in the register of questions for the authority. Recording the filing is refused "
 "until you confirm it, and your confirmation is logged."
@@ -14213,6 +14225,9 @@ msgstr "Hemmeligheten ble byttet."
 #, python-format
 msgid "The seed is a whole number from 0 to %(top)d."
 msgstr "Frøet er et helt tall fra 0 til %(top)d."
+
+msgid "The sending was interrupted: the server stopped, or the mail server never answered."
+msgstr "Sendingen ble avbrutt: serveren stoppet, eller e-postserveren svarte aldri."
 
 msgid "The sensor rule no longer holds"
 msgstr "Sensorregelen slår ikke lenger til"
@@ -15199,6 +15214,9 @@ msgstr "Dagens rasjon"
 
 msgid "Tone"
 msgstr "Farge"
+
+msgid "Too many mails are waiting to be sent."
+msgstr "For mange e-poster venter på å bli sendt."
 
 msgid "Topic"
 msgstr "Emne"

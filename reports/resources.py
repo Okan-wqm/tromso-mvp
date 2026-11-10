@@ -119,6 +119,8 @@ class ReportResource(Resource):
     icon = 'file-text'
     page_size = 50
     row_lists = (TreatmentAnswers, ResistanceSuspicions, SensitivityTests, UnitAnswers)
+    # The contact person's address and number: private in the activity log (F-059); the filed report keeps them.
+    private_fields = ('contact_email', 'contact_phone')
 
     @classmethod
     def queryset(cls):

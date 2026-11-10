@@ -23,3 +23,5 @@ class SiteResource(Resource):
     form_template = 'farm/site_form.html'
     icon = 'building'
     row_lists = (SiteContacts,)
+    # A person's address and number: private in the activity log like a contact's (ContactList.describe, F-059).
+    private_fields = ('contact_email', 'contact_phone')

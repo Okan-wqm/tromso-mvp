@@ -479,7 +479,7 @@ class TaskChecklistItem(models.Model):
 
 class TaskNote(models.Model):
     """A note on a task by a person who can read it: part of the task's record, never edited or removed
-    (tasks.services.add_note is its only writer), and in the activity log."""
+    (tasks.services.add_note is its only writer). The activity log says that it was added, never its words."""
 
     MAX_LENGTH = 4000
 

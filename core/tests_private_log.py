@@ -2,7 +2,7 @@
 e-mail and phone and a task's free-text notes are logged as private values with the one keyed digest of core.audit: the
 log shows that the value changed and whether two values were equal, never the value. The rows written before are
 converted by migration core/0011 in the same way (the append-only trigger set aside inside its transaction, and back),
-counted and said in the log. The log stays readable only with core.view_auditlog (core.tests.ActivityLogTests)."""
+counted and said in the log. The log stays readable only with core.view_auditlog (core.tests.AuditLogTests)."""
 import hashlib
 import hmac
 from importlib import import_module

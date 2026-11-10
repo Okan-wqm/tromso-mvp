@@ -1,5 +1,6 @@
 from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
 
+from core import audit
 from core.crud import RowList
 
 
@@ -12,8 +13,14 @@ class ContactList(RowList):
 
     @classmethod
     def describe(cls, contact):
-        """e.g. "Kari (Manager, kari@x.no, primary)"; the word "primary" is stored in English."""
-        details = [value for value in (contact.role, contact.email, contact.phone) if value]
+        """e.g. "Kari (Manager, email #1a2b3c4d, primary)"; the words are stored in English. The log names the contact
+        (name, role) and keeps the e-mail and the phone private: each is said by the log's keyed digest
+        (core.audit.digest), so a changed address is a change the log shows and two contacts with one address read as
+        equal, and the address itself is never written into the log, which nobody can erase from (owner decision
+        F-059, 2026-11-10; docs/erasure.md)."""
+        details = [contact.role] if contact.role else []
+        details += [f'{word} #{audit.digest(value)}' for word, value in (('email', contact.email), ('phone', contact.phone))
+                    if value]
         if contact.is_primary:
             details.append(gettext('primary'))
         return f'{contact.name} ({", ".join(details)})' if details else contact.name

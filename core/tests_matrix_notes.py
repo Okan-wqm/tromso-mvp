@@ -12,25 +12,19 @@ from .models import Profile
 
 SAID = {
     'en': {
-        'Experiments': 'Read also shows the farm figures of an experiment’s own tanks (batches, fish, biomass, survival, '
-                       'feed conversion) to a person without Read on the farm areas they come from.',
-        'Regulatory reports': 'Read also shows and exports the farm figures a report is computed from (stock and '
-                              'biomass, slaughter, smolt, cleaner fish, sea-lice counts) to a person without Read on '
-                              'the farm areas they come from.',
+        'Experiments': ('Read also shows the farm figures of an experiment’s own tanks (batches, fish, biomass, survival, '
+                        'feed conversion) to a person without Read on the farm areas they come from.'),
+        'Regulatory reports': 'Read also shows and exports the farm figures a report is computed from (stock and biomass, feed given, slaughter and harvest plans, smolt, cleaner fish, sea-lice counts and treatments with their medicines, health events with diagnosis and deaths, escapes, sea temperature) to a person without Read on the farm areas they come from.',
     },
     'nb': {
-        'Forsøk': 'Les viser også driftstallene for forsøkets egne kar (fiskegrupper, fisk, biomasse, overlevelse, '
-                  'fôrfaktor) til en person uten Les på driftsområdene de kommer fra.',
-        'Lovpålagte rapporter': 'Les viser og eksporterer også driftstallene en rapport beregnes fra (beholdning og '
-                                'biomasse, slakt, smolt, rensefisk, lusetellinger) til en person uten Les på '
-                                'driftsområdene de kommer fra.',
+        'Forsøk': ('Les viser også driftstallene for forsøkets egne kar (fiskegrupper, fisk, biomasse, overlevelse, '
+                   'fôrfaktor) til en person uten Les på driftsområdene de kommer fra.'),
+        'Lovpålagte rapporter': 'Les viser og eksporterer også driftstallene en rapport beregnes fra (beholdning og biomasse, utfôring, slakt og slakteplaner, smolt, rensefisk, lusetellinger og behandlinger med legemidlene, helsehendelser med diagnose og dødelighet, rømminger, sjøtemperatur) til en person uten Les på driftsområdene de kommer fra.',
     },
     'tr': {
-        'Deneyler': 'Görüntüle, bir deneyin kendi tanklarının çiftlik rakamlarını da (partiler, balık, biyokütle, hayatta '
-                    'kalma, yem dönüşümü) geldikleri çiftlik alanlarında Görüntüle yetkisi olmayan kişiye gösterir.',
-        'Yasal raporlar': 'Görüntüle, bir raporun hesaplandığı çiftlik rakamlarını da (stok ve biyokütle, kesim, smolt, '
-                          'temizleyici balık, deniz biti sayımları) geldikleri çiftlik alanlarında Görüntüle yetkisi '
-                          'olmayan kişiye gösterir ve dışa aktarır.',
+        'Deneyler': ('Görüntüle, bir deneyin kendi tanklarının çiftlik rakamlarını da (partiler, balık, biyokütle, hayatta '
+                     'kalma, yem dönüşümü) geldikleri çiftlik alanlarında Görüntüle yetkisi olmayan kişiye gösterir.'),
+        'Yasal raporlar': 'Görüntüle, bir raporun hesaplandığı çiftlik rakamlarını da (stok ve biyokütle, verilen yem, kesim ve hasat planları, smolt, temizleyici balık, deniz biti sayımları ve ilaçlarıyla tedaviler, tanı ve ölümleriyle sağlık olayları, kaçışlar, deniz suyu sıcaklığı) geldikleri çiftlik alanlarında Görüntüle yetkisi olmayan kişiye gösterir ve dışa aktarır.',
     },
 }
 ROW = re.compile(r'<th scope="row">(?P<area>[^<]+)</th>.*?</tr>\s*(?P<note><tr class="matrix-note">.*?</tr>)?', re.S)

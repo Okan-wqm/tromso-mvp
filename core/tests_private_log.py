@@ -9,6 +9,8 @@ import hashlib
 import hmac
 from importlib import import_module
 from io import StringIO
+from pathlib import Path
+from unittest import mock
 
 from django.apps import apps
 from django.conf import settings
@@ -17,6 +19,7 @@ from django.contrib.auth.models import Group, Permission
 from django.core.management import CommandError, call_command
 from django.db import DatabaseError, connection, transaction
 from django.test import TestCase, override_settings
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from . import audit
@@ -381,3 +384,43 @@ class DigestKeyTests(TestCase):
         old('task', {'Note': [None, 'Ola was ill today']})
         with override_settings(AUDIT_DIGEST_KEY='', SECRET_KEY='a-long-random-production-key', DEBUG=False):
             self.assertEqual(self.convert()['rows'], 1)
+
+
+@override_settings(AUDIT_DIGEST_KEY=KEY)
+class LeftoverTests(TestCase):
+    """Review R4: a server still running the code from before writes plain values after the conversion, and the
+    migration cannot know. The conversion takes the table's lock before it reads, so no writer slips between its read
+    and its updates; a check finds what an old server wrote afterwards; the command converts it."""
+
+    def test_the_conversion_locks_the_log_against_writers_before_it_reads_it(self):
+        old('task', {'Note': [None, 'Ola was ill today']})
+        with CaptureQueriesContext(connection) as queries, connection.schema_editor() as editor:
+            migration().convert(apps, editor)
+        statements = [query['sql'] for query in queries if 'audit_log' in query['sql']]
+        self.assertEqual(statements[0], 'LOCK TABLE audit_log IN SHARE ROW EXCLUSIVE MODE')
+        self.assertTrue(statements[1].startswith('SELECT'), statements[1])
+
+    def test_the_check_finds_a_plain_value_written_after_the_conversion_and_the_command_converts_it(self):
+        from core import checks
+        self.assertEqual(checks.plain_private_values(None), [])
+        old('task', {'Note': [None, 'written by a server that still ran the old code']})
+        old('site', {'Contacts': [None, 'Kari (Vet, kari@example.com)']})
+        old('user', {'Email address': [None, 'kari@example.com']})          # not decided private: not counted
+        found = checks.plain_private_values(None)
+        self.assertEqual([warning.id for warning in found], ['core.W004'])
+        self.assertIn('2 activity-log row(s)', found[0].msg)
+        self.assertIn('private_log_values', found[0].hint)
+        self.assertNotIn('kari@example.com', found[0].msg + found[0].hint)
+        call_command('private_log_values', stdout=StringIO())
+        self.assertEqual(checks.plain_private_values(None), [])
+
+    def test_the_check_waits_for_the_migration_and_is_quiet_before_it_has_run(self):
+        from core import checks
+        old('task', {'Note': [None, 'Ola was ill today']})
+        with mock.patch.object(checks, 'conversion_applied', return_value=False):
+            self.assertEqual(checks.plain_private_values(None), [])
+
+    def test_the_landing_recipe_stops_the_server_before_it_migrates(self):
+        recipe = (Path(settings.BASE_DIR) / 'CLAUDE.md').read_text(encoding='utf-8')
+        step = next(line for line in recipe.splitlines() if line.startswith('5. '))
+        self.assertLess(step.index('stop the dev server'), step.index('`migrate`'))

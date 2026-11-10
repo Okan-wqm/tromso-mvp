@@ -622,3 +622,38 @@ class ViewerTests(TestCase):
         self.assertIn('Kari (Vet), Email: Private text, Phone: Private text', page)
         for digest in self.digests:
             self.assertNotIn(digest, page)
+
+
+@override_settings(AUDIT_DIGEST_KEY=KEY)
+class ErasureRowTests(TestCase):
+    """Review R22: the erasure procedure (docs/erasure.md, step 6) writes its own row on the task. It must not read as a
+    leftover plain value: the check beside it would report it, and the command the check names would turn the record
+    of the erasure into "Private text"."""
+
+    def statement(self):
+        text = (Path(settings.BASE_DIR) / 'docs' / 'erasure.md').read_text(encoding='utf-8')
+        return text[text.index('```sql'):text.index('COMMIT;')]
+
+    def test_the_documented_row_is_not_under_a_private_label(self):
+        import json
+        import re
+        statement = self.statement()
+        changes = json.loads(re.search(r"'(\{.*\})'::jsonb", statement).group(1))
+        self.assertEqual(list(changes), ['Erased on request'])
+        self.assertNotIn(('task', 'Erased on request'), _private.PRIVATE)
+        self.assertIn("'task'", statement)
+
+    def test_the_check_is_quiet_about_it_and_the_command_leaves_it_as_it_is(self):
+        from core import checks
+        row = old('task', {'Erased on request': [None, 'Free text erased on request (DPO instruction of 2026-11-10); '
+                                                       'carried out by Kari Nordmann.']})
+        self.assertEqual(checks.plain_private_values(None), [])
+        call_command('private_log_values', stdout=StringIO())
+        self.assertEqual(AuditLog.objects.get(pk=row.pk).changes, row.changes)
+
+    def test_its_label_is_shown_translated(self):
+        from django.utils import translation
+        self.assertIn('Erased on request', audit.MIGRATION_WORDS)
+        for language in ('nb', 'tr'):
+            with translation.override(language):
+                self.assertNotEqual(translation.gettext('Erased on request'), 'Erased on request')

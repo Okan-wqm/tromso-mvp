@@ -145,6 +145,7 @@ class AfterTheRequestTests(WorkerCase):
         # two mails would go out.
         User.objects.create_user('ali', 'ali@example.com', 'eski-sifre-123')
         WaitingBackend.release.set()
+        accountmail.held_told.clear()
 
         def job():
             try:

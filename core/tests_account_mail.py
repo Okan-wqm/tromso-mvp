@@ -693,6 +693,7 @@ class ForgotPasswordTests(AccountMailCase):
         self.assertEqual(mail.outbox, [])
 
     def test_a_full_queue_answers_the_same_and_says_so_in_the_servers_log(self):
+        accountmail.dropped_told.clear()                                         # said once a minute
         known = self.answer('ali@example.com')
         with mock.patch.object(accountmail, 'background', return_value=False), \
                 self.assertLogs('core.accountmail', 'ERROR') as logged:
@@ -734,21 +735,30 @@ class ForgotPasswordTests(AccountMailCase):
         self.ask('ali@example.com')
         self.assertEqual([sent.to for sent in mail.outbox].count(['ali@example.com']), 4)
 
-    def test_a_request_held_back_is_written_to_the_servers_log(self):
+    def test_a_request_held_back_is_written_to_the_servers_log_once(self):
+        # (review R8) once for an account in an hour: not a line for every request anybody sends
+        accountmail.held_told.clear()
         with self.assertLogs('core.accountmail', 'WARNING') as logged:
-            for _ in range(4):
+            for _ in range(9):
                 self.ask('ali@example.com')
         self.assertEqual(len(logged.records), 1)
         self.assertIn(f'user {self.ali.pk}', logged.output[0])
         self.assertNotIn('ali@example.com', logged.output[0])
 
     @override_settings(PASSWORD_RESET_MAILS_PER_HOUR=1)
-    def test_the_limit_is_a_setting_and_a_failed_send_counts(self):
+    def test_the_limit_is_a_setting_and_a_failed_send_counts_for_five_minutes(self):
         with override_settings(MAILERS=REFUSING), self.assertLogs('core.accountmail', 'ERROR'):
             failed = self.answer('ali@example.com')
         self.assertEqual(stored('kind', 'error'), [('reset', REFUSED)])
         self.assertEqual(self.answer('ali@example.com'), failed)                 # the same answer, sent or not
-        self.assertEqual((mail.outbox, AccountMail.objects.count()), ([], 1))
+        self.assertEqual((mail.outbox, AccountMail.objects.count()), ([], 1))    # held back: it was tried just now
+        # (review R8) no mail reached the inbox, so the person is not kept out for the hour once the mail server is
+        # back: a failed attempt counts for five minutes
+        AccountMail.objects.update(created_at=timezone.now() - timedelta(minutes=6))
+        self.assertEqual(self.answer('ali@example.com'), failed)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(self.answer('ali@example.com'), failed)                 # and the one that went out counts
+        self.assertEqual(len(mail.outbox), 1)
 
     def test_invitations_do_not_count_and_the_admins_resend_is_not_held_back(self):
         self.client.force_login(self.admin)

@@ -78,6 +78,19 @@ class MailSettingsTests(SimpleTestCase):
         # the tests run the worker's jobs in the request (config.test_runner); core.tests_account_mail_worker runs it
         self.assertIs(settings.MAIL_IN_BACKGROUND, False)
 
+    def test_the_account_mails_log_lines_have_a_handler_with_the_time_and_the_level(self):
+        # (review R11) a failed or a held-back reset shows nowhere but in the server's log: its lines must not
+        # depend on Python's last-resort handler (no time, no level, warnings only)
+        logging = computed('s.LOGGING')
+        logger = logging['loggers']['core.accountmail']
+        self.assertEqual((logger['level'], logger['propagate'], logging['disable_existing_loggers']),
+                         ('INFO', False, False))
+        handler = logging['handlers'][logger['handlers'][0]]
+        self.assertEqual(handler['class'], 'logging.StreamHandler')
+        layout = logging['formatters'][handler['formatter']]['format']
+        for part in ('%(asctime)s', '%(levelname)s', '%(name)s', '%(message)s'):
+            self.assertIn(part, layout)
+
     def test_an_encryption_it_does_not_know_stops_the_settings_with_its_name(self):
         done = run(['-c', 'import config.settings'], EMAIL_HOST='smtp.example.net', EMAIL_TLS='yes')
         self.assertNotEqual(done.returncode, 0)

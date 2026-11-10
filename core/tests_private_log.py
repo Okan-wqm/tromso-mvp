@@ -578,3 +578,47 @@ class LogWordsTests(TestCase):
                    for path in Path(settings.BASE_DIR).glob('*/migrations/*.py')
                    if 'INSERT INTO audit_log' in path.read_text(encoding='utf-8')]
         self.assertEqual(writers, ['core/migrations/_log.py'])
+
+
+class ViewerTests(TestCase):
+    """Review R21: the database viewer shows tables as they are stored, and whoever browses it can also edit a
+    contact, so a digest printed there could be compared with a typed guess. The log's `changes` is a masked column
+    of the viewer (its cells say so, it is not searched, sorted or filtered, and the CSV leaves it out): what changed
+    is read on the activity log page, in words."""
+
+    def setUp(self):
+        self.admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
+        self.client.force_login(self.admin)
+        self.entry = old('site', {'Contacts': [None, [['Kari (Vet)', E('kari@example.com'), P('+47 98989898')]]],
+                                  'Site name': ['Bergen', 'Bergen havn']})
+        self.digests = [audit.digest('kari@example.com'), audit.digest('+47 98989898')]
+
+    def test_the_viewer_and_its_export_show_no_digest(self):
+        page = self.client.get(reverse('core:database_table', args=['audit_log']))
+        self.assertEqual(page.status_code, 200)
+        grid = page.context['grid']
+        index = [column.name for column in grid.columns].index('changes')
+        self.assertEqual({row.cells[index].kind for row in grid.rows}, {'masked'})
+        export = self.client.get(reverse('core:database_export', args=['audit_log']))
+        text = (export.content if not export.streaming else b''.join(export.streaming_content)).decode()
+        self.assertNotIn('changes', text.splitlines()[0])
+        self.assertIn('Bergen', page.content.decode() + text)                # the record's label is still there
+        for digest in self.digests:
+            self.assertNotIn(digest, page.content.decode())
+            self.assertNotIn(digest, text)
+
+    def test_a_digest_cannot_be_searched_or_filtered_for(self):
+        """Typing a digest (or a guess's) finds nothing: a masked column is not among the places the box looks, and a
+        filter or a sort on it is ignored."""
+        url = reverse('core:database_table', args=['audit_log'])
+        self.assertEqual(len(self.client.get(url).context['grid'].rows), 1)
+        self.assertEqual(len(self.client.get(url, {'q': self.digests[0]}).context['grid'].rows), 0)
+        self.assertEqual(len(self.client.get(url, {'q': 'Private text'}).context['grid'].rows), 0)
+        for query in ({'f_changes': self.digests[0]}, {'f_changes': 'no such digest'}, {'sort': 'changes'}):
+            self.assertEqual(len(self.client.get(url, query).context['grid'].rows), 1, query)       # ignored
+
+    def test_the_activity_log_page_is_where_the_change_is_read(self):
+        page = self.client.get(reverse('core:activity_log')).content.decode()
+        self.assertIn('Kari (Vet), Email: Private text, Phone: Private text', page)
+        for digest in self.digests:
+            self.assertNotIn(digest, page)

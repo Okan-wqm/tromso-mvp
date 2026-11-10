@@ -301,6 +301,15 @@ code, filters by category, water environment, cleaner fish (any, lumpfish, wrass
   acknowledgement first, and a unit holding such a mix says so (see Production units). Empty means no check, and the
   list says "No check"; the list's **Size limit** column shows it (2×). Migration 0034 gave every species there the
   owner's default 2; a new species is offered 2 on its form. It is not a withdrawal input: it is edited freely.
+  **A cleaner fish's default is no check** (the owner, 2026-11-10: lumpfish and wrasses are topped up with fish of
+  other sizes): a new species with a cleaner-fish type, chosen or filled in from the catalogue, that is left at the
+  offered 2 is saved with the limit empty and the person is told so after saving; a limit typed for it is kept, and
+  it stays editable like any other (`farm.forms.species.offered_weight_ratio`). A top-up of such a species then asks
+  nothing and its cage shows no "Mixed sizes" chip; salmon is unchanged. Migration
+  `farm/0038_cleaner_fish_no_size_check` emptied the limit of the cleaner species that still held the untouched
+  default (2, and no person's change of the limit in the activity log), deleted ones too, one activity-log row each
+  (by `system`); a limit a person set stays, a 2 they chose too; going back gives 2 back only where it took it and
+  nobody chose since.
 - **Status and notes**: active, experimental, inactive or discontinued; notes. Active and
   experimental species are the ones a new batch can take (Production units).
 
@@ -3521,6 +3530,13 @@ only one who manages roles and users; everyone else gets exactly what their role
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
   users are not areas, so no role can grant them.
+  **What an area's Read also reaches is said under it** (`Area.note`, printed below the area's row in the matrix, in
+  every language): Experiments and Regulatory reports show farm figures to a person without Read on the farm areas they
+  come from (an experiment's read page the batches, fish, biomass, survival and feed conversion of its own tanks; a
+  report, on its page and in its exports, the stock, slaughter, smolt, cleaner-fish and sea-lice figures it is computed
+  from). That is kept on purpose (a trial needs its own tanks' figures and a regulatory filing its numbers; owner
+  decision F-168 / F-173, 2026-11-10), so whoever grants either area is told what comes with it
+  (`core/tests_matrix_notes.py`).
 - **Roles** (`/roles/`, Django `Group`): a table with each role's users and what it allows; the
   dialog has the name and a permission matrix (areas by group, columns Read / Create / Edit /
   Delete, and Crew, All production and Everyone where an area offers them: see Row scope). Create, Edit and Delete include Read: the form adds it and the browser ticks it. Crew, All production and Everyone include nothing: they widen whose rows the role's other rights reach, so a role saved in the matrix keeps exactly what it had (the Production manager preset has All production without the Team list, `hr/roles.py`). **Deploying this rule:** a role saved before it kept the Read the old rule added; migration `hr/0010_restore_preset_rights` puts the two presets back to exactly their rights, and `manage.py check --database default` lists any other role whose Read on an area may come only from it (core.W003: Read and a widening column, no Create, Edit or Delete there) for the administrator to review in Roles. Saving

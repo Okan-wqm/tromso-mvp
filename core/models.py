@@ -204,7 +204,8 @@ class AuditLog(models.Model):
     entity_label = models.CharField(max_length=255)
     # {field label: [old, new]}; on create old is None, on delete new is None. Labels are msgids; a value
     # is None, a person's text as written, {'msgid': ...} for an enumeration, or a list of those for several
-    # choices (see core.audit).
+    # choices, a private value ({'msgid': 'Private text', 'rev': digest, 'of': what it is}) or a list of lists (a
+    # contact list: the parts of each contact) (see core.audit).
     changes = models.JSONField(default=dict, blank=True)
     severity = models.CharField(max_length=10, choices=Severity.choices, default=Severity.NORMAL)
 
@@ -233,13 +234,17 @@ class AuditLog(models.Model):
         return gettext(self.entity_type)
 
     def shown_changes(self):
-        """[(label, old, new)] in the active language. The stored rows stay in English."""
+        """[(label, old, new)] in the active language. The stored rows stay in English. A private value is shown as
+        its words ("Private text", "Email: Private text" when it says what it is), never with its digest: this is the
+        one place a stored value becomes text on a page (the activity log and a record's History tab), so no page
+        prints a digest. A list of lists (a contact list: the parts of each contact) is joined by "; "."""
         def shown(value):
             if isinstance(value, list):
-                return ', '.join(shown(item) for item in value)
+                nested = bool(value) and all(isinstance(item, list) for item in value)
+                return ('; ' if nested else ', ').join(shown(item) for item in value)
             if isinstance(value, dict):
-                msgid = value['msgid']
-                return gettext(msgid)
+                words = gettext(value['msgid'])
+                return f'{gettext(value["of"])}: {words}' if value.get('of') else words
             return value
         return [(gettext(label), shown(old), shown(new)) for label, (old, new) in self.changes.items()]
 

@@ -90,11 +90,15 @@ def digest(text):
     return hmac.new(settings.SECRET_KEY.encode(), str(text).encode(), hashlib.sha256).hexdigest()[:8]
 
 
-def private(text):
+def private(text, of=None):
     """How the log keeps a private value (a person's own words, a contact's e-mail or phone): the enumerated value
     "Private text" with its `digest`, never the text. A page shows "Private text"; replacing one value by another is
-    still a change the log shows ("Private text" to "Private text") without saying anything about what they say."""
-    return {**message(_('Private text')), 'rev': digest(text)}
+    still a change the log shows ("Private text" to "Private text") without saying anything about what they say.
+    `of` names what the value is when it stands among others (a contact's "Email" in the contact list): a msgid, shown
+    as "Email: Private text". The digest is stored for comparing rows and is printed on no page
+    (AuditLog.shown_changes): whoever could read it beside a value they typed themselves could test a guess."""
+    value = {**message(_('Private text')), 'rev': digest(text)}
+    return {**value, 'of': english(of)} if of else value
 
 
 _kept_private = private       # `snapshot` takes the private field names under the function's own name

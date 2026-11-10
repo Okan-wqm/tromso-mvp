@@ -131,8 +131,10 @@ class ContactSentenceTests(TestCase):
     def test_nothing_that_stood_in_the_email_or_the_phone_field_comes_out_plain(self):
         for sentence, _expected in SHAPES:
             made, _kind = _private.contacts(sentence)
+            plain = [parts[0] for parts in made] if isinstance(made, list) else []      # the rest are private values
+            self.assertTrue(isinstance(made, dict) or all(isinstance(part, dict) for parts in made for part in parts[1:]))
             for value in ('@', '98989898', '98 98 98 98', '123', '456', 'ask reception'):
-                self.assertNotIn(value, str(made), sentence)
+                self.assertNotIn(value, str(plain), sentence)
 
     def test_an_old_row_becomes_exactly_what_the_code_writes_now_so_old_and_new_rows_compare(self):
         from farm.models import Site

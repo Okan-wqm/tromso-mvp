@@ -28,14 +28,14 @@ VALUES ('00000000-0000-0000-0002-000000000000', now(), now(), 1, false, 'KILL-0'
   '', '', '', true, '00000000-0000-0000-0000-0000000c0b0b', '00000000-0000-0000-0000-00000000b0b1',
   '00000000-0000-0000-0000-0000000f0b0b', false);
 INSERT INTO sensors_channel (id, created_at, updated_at, version, is_deleted, code, name, quantity, unit, unit_factor,
-  unit_offset, value_path, item_name, address_protocol, address, reduction, deadband, heartbeat_s, range_min, range_max,
-  state, note, device_id)
+  unit_offset, value_path, item_name, address_protocol, address, reduction, deadband, heartbeat_s, fresh_heartbeats,
+  range_min, range_max, state, note, device_id)
 SELECT gen_random_uuid(), now(), now(), 1, false, 'C' || k, 'c' || k, 'temperature_c', 'C', 1, 0, '/v/c' || k, '',
-  'mqtt', '{}', 'deadband', 0.05, 60, -50, 100, 'active', '', ('00000000-0000-0000-0001-' || lpad(to_hex(d), 12, '0'))::uuid
+  'mqtt', '{}', 'deadband', 0.05, 60, 3, -50, 100, 'active', '', ('00000000-0000-0000-0001-' || lpad(to_hex(d), 12, '0'))::uuid
 FROM generate_series(0, 99) d, generate_series(0, 4) k;
 INSERT INTO sensors_channel (id, created_at, updated_at, version, is_deleted, code, name, quantity, unit, unit_factor,
-  unit_offset, value_path, item_name, address_protocol, address, reduction, deadband, heartbeat_s, range_min, range_max,
-  state, note, device_id)
+  unit_offset, value_path, item_name, address_protocol, address, reduction, deadband, heartbeat_s, fresh_heartbeats,
+  range_min, range_max, state, note, device_id)
 VALUES (gen_random_uuid(), now(), now(), 1, false, 'K0', 'k0', 'oxygen_mg_l', 'mg/L', 1, 0, '/v/c0', '', 'mqtt', '{}',
-  'all', 0, 60, NULL, NULL, 'active', '', '00000000-0000-0000-0002-000000000000');
+  'all', 0, 60, 3, NULL, NULL, 'active', '', '00000000-0000-0000-0002-000000000000');
 COMMIT;

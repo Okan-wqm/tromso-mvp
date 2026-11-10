@@ -138,28 +138,43 @@ class AfterTheRequestTests(WorkerCase):
         self.assertEqual(outcomes(), ['sent'])
 
     @override_settings(PASSWORD_RESET_MAILS_PER_HOUR=1)
-    def test_requests_that_arrive_together_take_turns_on_the_accounts_row(self):
-        # both are made to arrive while the account's row is held: with the count taken under the row's lock the
-        # second sees the first one's mail; without it both would read "none yet" and two mails would go out
+    def test_two_server_processes_asked_at_once_take_turns_on_the_accounts_row(self):
+        # One process has one worker, which takes its jobs in turn; two processes (two workers) can be at one account
+        # together, and are two threads here. Both are made to arrive while the account's row is held: with the count
+        # taken under the row's lock the second sees the first one's mail; without it both would read "none yet" and
+        # two mails would go out.
         User.objects.create_user('ali', 'ali@example.com', 'eski-sifre-123')
+        WaitingBackend.release.set()
 
-        def ask():
+        def job():
             try:
-                Client().post(reverse('password_reset'), {'email': 'ali@example.com'})
+                accountmail.reset_now('ali@example.com', 'en')
             finally:
                 connection.close()
 
-        askers = [threading.Thread(target=ask), threading.Thread(target=ask)]
+        workers = [threading.Thread(target=job), threading.Thread(target=job)]
         with self.assertLogs('core.accountmail', 'WARNING'):
             with transaction.atomic():
                 User.objects.select_for_update().get(username='ali')
-                for asker in askers:
-                    asker.start()
+                for one in workers:
+                    one.start()
                 time.sleep(1)                                                        # both are at the row by now
-            for asker in askers:
-                asker.join(timeout=20)
-            self.finish()
+            for one in workers:
+                one.join(timeout=20)
         self.assertEqual((outcomes(), len(WaitingBackend.sent)), (['sent'], 1))
+
+    def test_the_form_answers_before_the_address_is_even_looked_up(self):
+        # the worker is busy with another mail: the request for a known address is answered all the same, and the
+        # account's mail is written only when the worker gets to it
+        User.objects.create_user('ali', 'ali@example.com', 'eski-sifre-123')
+        self.client.post(reverse('core:user_create'), user_data())                # kari's invitation holds the worker
+        self.at_the_mail_server()
+        asked = Client().post(reverse('password_reset'), {'email': 'ali@example.com'})
+        self.assertEqual((asked.status_code, asked['Location']), (302, reverse('password_reset_done')))
+        self.assertEqual(list(AccountMail.objects.values_list('kind', flat=True)), ['invitation'])
+        self.finish()
+        self.assertEqual(sorted(AccountMail.objects.filter(sent_at__isnull=False).values_list('kind', flat=True)),
+                         ['invitation', 'reset'])
 
 
 class WorkerTests(WorkerCase):

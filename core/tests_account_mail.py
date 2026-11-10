@@ -16,11 +16,13 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
 from django.core.mail.backends.base import BaseEmailBackend
 from django.core.management import call_command
+from django.db import connection
 from django.test import TestCase, override_settings
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 
-from . import access
+from . import access, accountmail
 from .models import AccountMail, AuditLog, Profile
 from .tests import user_data
 
@@ -626,6 +628,34 @@ class ForgotPasswordTests(AccountMailCase):
         response = self.ask(address, follow=True)
         page = re.sub(r'name="csrfmiddlewaretoken" value="[^"]+"|nonce="[^"]+"', '', response.content.decode())
         return response.redirect_chain, response.status_code, page
+
+    def test_the_request_only_hands_the_address_over_whoever_it_belongs_to(self):
+        # Nothing in the request looks the address up: the lookup, the limit, the mail and its row are the worker's,
+        # after the answer. So the request does the same work, query for query, for an address with an account, one
+        # nobody has, an inactive account's and one that has had its share.
+        get_user_model().objects.create_user('ola', 'ola@example.com', 'x', is_active=False)
+        held = get_user_model().objects.create_user('per', 'per@example.com', 'x')
+        for _ in range(settings.PASSWORD_RESET_MAILS_PER_HOUR):
+            AccountMail.objects.create(user=held, kind='reset', address=held.email, sent_at=timezone.now())
+        seen = {}
+        for address in ('ali@example.com', 'nobody@example.com', 'ola@example.com', 'per@example.com'):
+            with mock.patch.object(accountmail, 'background', return_value=True) as handed, \
+                    CaptureQueriesContext(connection) as queries:
+                response = self.ask(address)
+            self.assertEqual((response.status_code, response['Location']), (302, reverse('password_reset_done')))
+            self.assertEqual(handed.call_args_list, [mock.call(accountmail.reset_now, address, 'en')])
+            seen[address] = [query['sql'] for query in queries]
+        self.assertEqual(len({len(sql) for sql in seen.values()}), 1, seen)
+        self.assertFalse([sql for found in seen.values() for sql in found if 'auth_user' in sql or 'account_mails' in sql])
+        self.assertEqual(mail.outbox, [])
+
+    def test_a_full_queue_answers_the_same_and_says_so_in_the_servers_log(self):
+        known = self.answer('ali@example.com')
+        with mock.patch.object(accountmail, 'background', return_value=False), \
+                self.assertLogs('core.accountmail', 'ERROR') as logged:
+            self.assertEqual(self.answer('ali@example.com'), known)
+        self.assertNotIn('ali@example.com', logged.output[0])
+        self.assertEqual(len(mail.outbox), 1)
 
     def test_an_unknown_address_is_answered_like_a_known_one_and_gets_nothing(self):
         known = self.answer('ali@example.com')

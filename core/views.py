@@ -35,12 +35,14 @@ class SetPasswordView(auth_views.PasswordResetConfirmView):
                          entity_type=audit.entity_type_of(type(self.user)))
         return response
 
-    def get_context_data(self, **kwargs):
+    def get_form(self, form_class=None):
+        """The form of a link that works, in the person's saved language from here on: before the form is checked,
+        so the reasons a password is refused for are in it too, and before the page is drawn."""
         language = account_language(self.user) if self.validlink else None
         if language:
             translation.activate(language)
             self.request.LANGUAGE_CODE = language
-        return super().get_context_data(**kwargs)
+        return super().get_form(form_class)
 
 
 @login_not_required

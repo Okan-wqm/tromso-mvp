@@ -39,16 +39,18 @@ class ShiftForm(CodedFormMixin, TabbedForm):
         }
 
     def clean(self):
-        """An active shift is never longer than the hours after which a clock-in counts as forgotten (Scheduling
-        settings): a person on it could not clock out at its end. The settings form holds the other side."""
+        """An active shift, with the punch window a person may clock in before it, is never longer than the hours after
+        which a clock-in counts as forgotten (Scheduling settings): a person on it could not clock out at its end. The
+        settings form holds the other side."""
         cleaned = super().clean()
         start, end = cleaned.get('starts_at'), cleaned.get('ends_at')
         if start and end and start != end and cleaned.get('status') == Shift.Status.ACTIVE:
-            hours = SchedulingSettings.get().forgotten_after_hours
-            if span_minutes(start, end) > hours * 60:
-                self.add_error('ends_at', _('This shift is longer than the %(hours)s hours after which a clock-in '
-                                            'counts as forgotten (Scheduling settings): raise that limit first.')
-                               % {'hours': hours})
+            settings = SchedulingSettings.get()
+            if span_minutes(start, end) + settings.punch_window_minutes > settings.forgotten_after_hours * 60:
+                self.add_error('ends_at', _(
+                    'This shift and the %(window)s minutes a person may clock in before it are longer than the '
+                    '%(hours)s hours after which a clock-in counts as forgotten (Scheduling settings): raise that '
+                    'limit first.') % {'window': settings.punch_window_minutes, 'hours': settings.forgotten_after_hours})
         return cleaned
 
 
@@ -82,7 +84,7 @@ class SchedulingSettingsForm(TabbedForm):
         help_text=_('A clock-in still open after this many hours counts as a forgotten clock-out: the board says so '
                     'instead of present, the person is told to ask their lead, and the lead closes it on the '
                     'Attendance page with the real time and a reason. Default 16 hours; 1 to 168, and not shorter '
-                    'than the longest active shift.'),
+                    'than the longest active shift with the punch window before it.'),
         error_messages={'required': _('Say after how many hours an open clock-in counts as a forgotten clock-out.')})
 
     class Meta:
@@ -109,15 +111,25 @@ class SchedulingSettingsForm(TabbedForm):
         return days
 
     def clean_forgotten_after_hours(self):
-        """1 to 168 hours, and never shorter than an active shift: a person on it would count as forgotten before it
-        ends and could not clock out (the shift form holds the other side: `ShiftForm.clean`)."""
         hours = self.cleaned_data['forgotten_after_hours']
         if not MIN_FORGOTTEN_HOURS <= hours <= MAX_FORGOTTEN_HOURS:
             raise forms.ValidationError(FORGOTTEN_RANGE)
+        return hours
+
+    def clean(self):
+        """The limit is never shorter than an active shift and the punch window before it: a stretch begins at the
+        clock-in, which may come the whole window before the shift, so a person on the shift would count as forgotten
+        before it ends and could not clock out (the shift form holds the other side: `ShiftForm.clean`). Both values
+        are this form's, so a wider window alone is held to it too."""
+        cleaned = super().clean()
+        hours, window = cleaned.get('forgotten_after_hours'), cleaned.get('punch_window_minutes')
+        if hours is None or window is None:
+            return cleaned
         longest = max(Shift.objects.filter(status=Shift.Status.ACTIVE), key=lambda shift: shift.span_minutes,
                       default=None)
-        if longest is not None and longest.span_minutes > hours * 60:
-            raise forms.ValidationError(
-                _('The shift %(shift)s is longer than %(hours)s hours: a person on it would count as forgotten before '
-                  'it ends.') % {'shift': longest, 'hours': hours})
-        return hours
+        if longest is not None and longest.span_minutes + window > hours * 60:
+            self.add_error('forgotten_after_hours', _(
+                'The shift %(shift)s and the %(window)s minutes a person may clock in before it are longer than '
+                '%(hours)s hours: a person on it would count as forgotten before it ends.')
+                % {'shift': longest, 'window': window, 'hours': hours})
+        return cleaned

@@ -98,7 +98,8 @@ class MailSettingsTests(SimpleTestCase):
 
     def test_a_lifetime_or_a_limit_under_one_stops_the_settings(self):
         # no link would ever work, no reset mail ever be sent: said when the server starts, not found out by a person
-        for name in ('ACCOUNT_LINK_HOURS', 'PASSWORD_RESET_MAILS_PER_HOUR'):
+        # nor could a mail be sent in no time at all (review R7: every send failed, and the check passed)
+        for name in ('ACCOUNT_LINK_HOURS', 'PASSWORD_RESET_MAILS_PER_HOUR', 'EMAIL_TIMEOUT'):
             for value in ('0', '-1'):
                 with self.subTest(name=name, value=value):
                     done = run(['-c', 'import config.settings'], **{name: value})

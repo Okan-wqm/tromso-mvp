@@ -927,6 +927,22 @@ msgstr "%(name)s (kopya %(number)d)"
 msgid "%(name)s (copy)"
 msgstr "%(name)s (kopya)"
 
+#, python-format
+msgid ""
+"%(name)s has already set a password: they sign in with it, or ask for a new link with “Forgot "
+"your password?”."
+msgstr ""
+"%(name)s parolasını zaten belirledi: onunla giriş yapar veya “Parolanızı mı unuttunuz?” ile yeni "
+"bir bağlantı ister."
+
+#, python-format
+msgid "%(name)s has no email address: add one first."
+msgstr "%(name)s için e-posta adresi yok: önce bir adres ekleyin."
+
+#, python-format
+msgid "%(name)s is inactive: an inactive person cannot sign in."
+msgstr "%(name)s pasif: pasif bir kişi giriş yapamaz."
+
 #. Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the
 #. record; %(reasons)s are sentences saying what is in the way.
 #, python-format
@@ -1556,6 +1572,10 @@ msgstr "%(when)s, %(who)s"
 #, python-format
 msgid "%(when)s through %(how)s, recorded by %(who)s"
 msgstr "%(when)s, %(how)s yoluyla, kaydeden: %(who)s"
+
+#, python-format
+msgid "%(when)s, to %(address)s: %(reason)s"
+msgstr "%(when)s, %(address)s adresine: %(reason)s"
 
 #, python-format
 msgid "(%(dose)s g/m³)"
@@ -7536,6 +7556,35 @@ msgstr "Tek bir kanal yerine: bu parametrenin tüm aktif kanalları."
 msgid "Instrument unit"
 msgstr "Cihaz birimi"
 
+msgid "Invitation"
+msgstr "Davet"
+
+msgid "Invitation not sent"
+msgstr "Davet gönderilemedi"
+
+#, python-format
+msgid "Invitation sent %(when)s to %(address)s. Password not set yet."
+msgstr "Davet gönderildi: %(when)s, %(address)s. Parola henüz belirlenmedi."
+
+#, python-format
+msgid "Invitation sent %(when)s to %(address)s; its link has expired."
+msgstr "Davet gönderildi: %(when)s, %(address)s; bağlantının süresi doldu."
+
+#, python-format
+msgid ""
+"Invitation sent %(when)s to %(address)s; the address has changed since, so its link no longer "
+"works."
+msgstr ""
+"Davet gönderildi: %(when)s, %(address)s; adres o zamandan beri değişti, bu yüzden bağlantı artık "
+"çalışmıyor."
+
+#, python-format
+msgid "Invitation sent to %(address)s."
+msgstr "Davet %(address)s adresine gönderildi."
+
+msgid "Invited"
+msgstr "Davet edildi"
+
 msgid "Is the diagnosis suspected or confirmed?"
 msgstr "Tanı şüpheli mi, doğrulanmış mı?"
 
@@ -8963,6 +9012,14 @@ msgstr ""
 "Bu günü kapsayan yemle tedavi yok: Sağlık › Tedaviler altında kaydedin, yoksa balıkların bekleme "
 "süresi bilinmez kalır."
 
+#, python-format
+msgid ""
+"No invitation was sent: %(name)s has no email address. They cannot sign in until an address is "
+"added and the invitation sent."
+msgstr ""
+"Davet gönderilmedi: %(name)s için e-posta adresi yok. Bir adres eklenip davet gönderilene kadar "
+"giriş yapamaz."
+
 msgid "No item name: the device’s payload format is one object."
 msgstr "Öğe adı yok: cihazın mesaj biçimi tek bir nesnedir."
 
@@ -9376,6 +9433,15 @@ msgstr "PDF’in metninde yok: sözcükler künyede ya da özette geçiyor."
 msgid "Not in yet"
 msgstr "Henüz gelmedi"
 
+msgid "Not invited yet."
+msgstr "Henüz davet edilmedi."
+
+msgid "Not invited: no email address. Add one, then send the invitation."
+msgstr "Davet edilmedi: e-posta adresi yok. Bir adres ekleyin, sonra daveti gönderin."
+
+msgid "Not invited: the account is inactive."
+msgstr "Davet edilmedi: hesap pasif."
+
 msgid "Not linked to any system"
 msgstr "Hiçbir sisteme bağlı değil"
 
@@ -9424,6 +9490,9 @@ msgstr "Henüz incelenmedi. Yapay zekâ ajanları yalnızca incelenmiş kayıtla
 
 msgid "Not saved; unverified"
 msgstr "Kaydedilmedi; doğrulanmadı"
+
+msgid "Not sent"
+msgstr "Gönderilmedi"
 
 msgid "Not set"
 msgstr "Girilmedi"
@@ -10254,8 +10323,14 @@ msgstr "Parçalar"
 msgid "Password hash"
 msgstr "Parola özeti"
 
+msgid "Password reset"
+msgstr "Parola sıfırlama"
+
 msgid "Password saved"
 msgstr "Parola kaydedildi"
+
+msgid "Password set"
+msgstr "Parola belirlendi"
 
 msgid "Past the limit"
 msgstr "Sınırın ötesinde"
@@ -11871,6 +11946,12 @@ msgstr "Yarı otomatik yemleme makinesi"
 msgid "Send"
 msgstr "Gönder"
 
+msgid "Send invitation"
+msgstr "Davet gönder"
+
+msgid "Send invitation again"
+msgstr "Daveti yeniden gönder"
+
 msgid "Send reset link"
 msgstr "Sıfırlama bağlantısı gönder"
 
@@ -11915,6 +11996,9 @@ msgstr "Gönderildi"
 
 msgid "Sent at"
 msgstr "Gönderilme zamanı"
+
+msgid "Sent to"
+msgstr "Gönderilen adres"
 
 msgid ""
 "Separated by spaces. A temperature between two columns is read in between them; outside the first"
@@ -13436,8 +13520,16 @@ msgstr ""
 msgid "The ingest service’s own user name at the broker."
 msgstr "Veri alım servisinin broker’daki kendi kullanıcı adı."
 
-msgid "The invitation to set a password is sent here."
-msgstr "Parola belirleme daveti buraya gönderilir."
+#, python-format
+msgid "The invitation to %(address)s was not sent: %(reason)s"
+msgstr "%(address)s adresine davet gönderilemedi: %(reason)s"
+
+msgid ""
+"The invitation to set a password is sent here. Without an address the person cannot be invited, "
+"and cannot sign in until one is added."
+msgstr ""
+"Parola belirleme daveti buraya gönderilir. Adres olmadan kişi davet edilemez ve bir adres "
+"eklenene kadar giriş yapamaz."
 
 msgid "The item's day-by-day book"
 msgstr "Kalemin günlük kaydı"

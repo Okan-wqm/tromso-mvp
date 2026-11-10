@@ -424,11 +424,14 @@ class UserTests(AdminTestCase):
         self.client.post(reverse('core:user_create'), user_data(groups=[self.feeder.pk]))
         kari = get_user_model().objects.get(username='kari')
         self.client.post(reverse('core:user_edit', args=[kari.pk]), user_data(is_active='', groups=[self.vet.pk]))
-        created, edited = AuditLog.objects.order_by('created_at').values_list('action', 'entity_type', 'changes')
+        created, invited, edited = AuditLog.objects.order_by('created_at').values_list('action', 'entity_type', 'changes')
         self.assertEqual(created, ('create', 'user', {
             'Username': [None, 'kari'], 'First name': [None, 'Kari'], 'Last name': [None, 'Nordmann'],
             'Email': [None, 'kari@example.com'], 'Active': [None, message('Yes')], 'Roles': [None, 'Feeder'],
         }))
+        # the invitation the new person was sent (core.tests_account_mail)
+        self.assertEqual(invited, ('invite', 'user', {
+            'Invitation': [None, message('Sent')], 'Sent to': [None, 'kari@example.com']}))
         self.assertEqual(edited, ('update', 'user', {'Active': [message('Yes'), message('No')], 'Roles': ['Feeder', 'Vet']}))
 
 

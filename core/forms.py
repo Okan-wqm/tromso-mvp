@@ -94,7 +94,8 @@ class UserForm(TabbedForm):
                   'email': _('Email'), 'is_active': _('Active'), 'groups': _('Roles')}
         help_texts = {
             'username': _('Used to sign in. Letters, digits and @ . + - _ only.'),
-            'email': _('The invitation to set a password is sent here.'),
+            'email': _('The invitation to set a password is sent here. Without an address the person cannot be '
+                       'invited, and cannot sign in until one is added.'),
             'is_active': _('Inactive people cannot sign in.'),
             'groups': _('What the person can open and change. Without a role they see only the overview.'),
         }
@@ -107,7 +108,6 @@ class UserForm(TabbedForm):
     def __init__(self, *args, editor, **kwargs):
         super().__init__(*args, **kwargs)
         self.editor = editor
-        self.fields['email'].required = True
         self.initial['language'] = account_language(self.instance) or ''
         self.fields['groups'].queryset = Group.objects.order_by('name')
         if self.instance._state.adding:
@@ -119,8 +119,9 @@ class UserForm(TabbedForm):
         save_account_language(self.instance, self.cleaned_data['language'])
 
     def clean_email(self):
+        """An address belongs to one person; it may be left out (the person then cannot be invited: accountmail)."""
         email = self.cleaned_data['email']
-        if User.objects.exclude(pk=self.instance.pk).filter(email__iexact=email).exists():
+        if email and User.objects.exclude(pk=self.instance.pk).filter(email__iexact=email).exists():
             raise ValidationError(_('Another user already uses this email.'))
         return email
 

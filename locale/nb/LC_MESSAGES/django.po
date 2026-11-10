@@ -923,6 +923,22 @@ msgstr "%(name)s (kopi %(number)d)"
 msgid "%(name)s (copy)"
 msgstr "%(name)s (kopi)"
 
+#, python-format
+msgid ""
+"%(name)s has already set a password: they sign in with it, or ask for a new link with “Forgot "
+"your password?”."
+msgstr ""
+"%(name)s har allerede valgt passord: de logger inn med det, eller ber om en ny lenke med «Glemt "
+"passordet?»."
+
+#, python-format
+msgid "%(name)s has no email address: add one first."
+msgstr "%(name)s har ingen e-postadresse: legg til en først."
+
+#, python-format
+msgid "%(name)s is inactive: an inactive person cannot sign in."
+msgstr "%(name)s er inaktiv: en inaktiv person kan ikke logge inn."
+
 #. Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the
 #. record; %(reasons)s are sentences saying what is in the way.
 #, python-format
@@ -1548,6 +1564,10 @@ msgstr "%(when)s av %(who)s"
 #, python-format
 msgid "%(when)s through %(how)s, recorded by %(who)s"
 msgstr "%(when)s via %(how)s, registrert av %(who)s"
+
+#, python-format
+msgid "%(when)s, to %(address)s: %(reason)s"
+msgstr "%(when)s, til %(address)s: %(reason)s"
 
 #, python-format
 msgid "(%(dose)s g/m³)"
@@ -7512,6 +7532,33 @@ msgstr "I stedet for én kanal: hver aktive kanal for denne parameteren."
 msgid "Instrument unit"
 msgstr "Instrumentets enhet"
 
+msgid "Invitation"
+msgstr "Invitasjon"
+
+msgid "Invitation not sent"
+msgstr "Invitasjonen ble ikke sendt"
+
+#, python-format
+msgid "Invitation sent %(when)s to %(address)s. Password not set yet."
+msgstr "Invitasjon sendt %(when)s til %(address)s. Passordet er ikke valgt ennå."
+
+#, python-format
+msgid "Invitation sent %(when)s to %(address)s; its link has expired."
+msgstr "Invitasjon sendt %(when)s til %(address)s; lenken har utløpt."
+
+#, python-format
+msgid ""
+"Invitation sent %(when)s to %(address)s; the address has changed since, so its link no longer "
+"works."
+msgstr "Invitasjon sendt %(when)s til %(address)s; adressen er endret siden, så lenken virker ikke lenger."
+
+#, python-format
+msgid "Invitation sent to %(address)s."
+msgstr "Invitasjon sendt til %(address)s."
+
+msgid "Invited"
+msgstr "Invitert"
+
 msgid "Is the diagnosis suspected or confirmed?"
 msgstr "Er diagnosen mistenkt eller bekreftet?"
 
@@ -8945,6 +8992,14 @@ msgstr ""
 "Ingen fôrbehandling dekker denne dagen: registrer den under Helse › Behandlinger, ellers forblir "
 "fiskens tilbakeholdelsestid ukjent."
 
+#, python-format
+msgid ""
+"No invitation was sent: %(name)s has no email address. They cannot sign in until an address is "
+"added and the invitation sent."
+msgstr ""
+"Ingen invitasjon ble sendt: %(name)s har ingen e-postadresse. De kan ikke logge inn før en "
+"adresse er lagt til og invitasjonen sendt."
+
 msgid "No item name: the device’s payload format is one object."
 msgstr "Ingen elementnavn: apparatets meldingsformat er ett objekt."
 
@@ -9358,6 +9413,15 @@ msgstr "Ikke i PDF-ens tekst: ordene står i referansen eller sammendraget."
 msgid "Not in yet"
 msgstr "Ikke kommet ennå"
 
+msgid "Not invited yet."
+msgstr "Ikke invitert ennå."
+
+msgid "Not invited: no email address. Add one, then send the invitation."
+msgstr "Ikke invitert: ingen e-postadresse. Legg til en, og send deretter invitasjonen."
+
+msgid "Not invited: the account is inactive."
+msgstr "Ikke invitert: kontoen er inaktiv."
+
 msgid "Not linked to any system"
 msgstr "Ikke knyttet til noe system"
 
@@ -9406,6 +9470,9 @@ msgstr "Ikke gjennomgått ennå. KI-agentene vil bare handle på gjennomgåtte o
 
 msgid "Not saved; unverified"
 msgstr "Ikke lagret; ikke bekreftet"
+
+msgid "Not sent"
+msgstr "Ikke sendt"
 
 msgid "Not set"
 msgstr "Ikke satt"
@@ -10233,8 +10300,14 @@ msgstr "Deler"
 msgid "Password hash"
 msgstr "Passordhash"
 
+msgid "Password reset"
+msgstr "Tilbakestilling av passord"
+
 msgid "Password saved"
 msgstr "Passordet er lagret"
+
+msgid "Password set"
+msgstr "Passord valgt"
 
 msgid "Past the limit"
 msgstr "Over grensen"
@@ -11851,6 +11924,12 @@ msgstr "Halvautomatisk fôrautomat"
 msgid "Send"
 msgstr "Send"
 
+msgid "Send invitation"
+msgstr "Send invitasjon"
+
+msgid "Send invitation again"
+msgstr "Send invitasjonen på nytt"
+
 msgid "Send reset link"
 msgstr "Send tilbakestillingslenke"
 
@@ -11895,6 +11974,9 @@ msgstr "Sendt"
 
 msgid "Sent at"
 msgstr "Sendt"
+
+msgid "Sent to"
+msgstr "Sendt til"
 
 msgid ""
 "Separated by spaces. A temperature between two columns is read in between them; outside the first"
@@ -13413,8 +13495,16 @@ msgstr ""
 msgid "The ingest service’s own user name at the broker."
 msgstr "Innhentingstjenestens eget brukernavn på brokeren."
 
-msgid "The invitation to set a password is sent here."
-msgstr "Invitasjonen til å velge passord sendes hit."
+#, python-format
+msgid "The invitation to %(address)s was not sent: %(reason)s"
+msgstr "Invitasjonen til %(address)s ble ikke sendt: %(reason)s"
+
+msgid ""
+"The invitation to set a password is sent here. Without an address the person cannot be invited, "
+"and cannot sign in until one is added."
+msgstr ""
+"Invitasjonen til å velge passord sendes hit. Uten adresse kan ikke personen inviteres, og kan "
+"ikke logge inn før en adresse er lagt til."
 
 msgid "The item's day-by-day book"
 msgstr "Varens register dag for dag"

@@ -343,6 +343,7 @@
   background: var(--surface-sheet);
 }
 .flash-error { border-left-color: var(--crit); background: var(--crit-tint); color: var(--crit-text); }
+.flash-warning { border-left-color: var(--warn); background: var(--warn-tint); color: var(--warn-text); }
 
 .scrim { display: none; }
 

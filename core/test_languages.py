@@ -502,7 +502,8 @@ class UserLanguageFieldTests(TestCase):
         self.client.post(reverse('core:user_edit', args=[kari.pk]), user_data(language='nb'))
         kari.refresh_from_db()
         self.assertEqual(Profile.objects.get(user=kari).language, 'nb')
-        created, edited = AuditLog.objects.order_by('created_at')
+        # (the new person's invitation is a row of its own between them: core.tests_account_mail)
+        created, edited = AuditLog.objects.exclude(action='invite').order_by('created_at')
         self.assertEqual(created.changes['Language'], [None, 'Türkçe'])
         self.assertEqual(edited.changes, {'Language': ['Türkçe', 'Norsk bokmål']})
 
@@ -512,4 +513,4 @@ class UserLanguageFieldTests(TestCase):
         self.assertFalse(get_user_model().objects.filter(username='kari').exists())
         self.client.post(reverse('core:user_create'), user_data(language=''))
         self.assertEqual(Profile.objects.get(user__username='kari').language, '')
-        self.assertEqual(AuditLog.objects.get().changes.get('Language'), None)
+        self.assertEqual(AuditLog.objects.get(action='create').changes.get('Language'), None)

@@ -185,6 +185,9 @@ class AuditLog(models.Model):
         RESTORE = 'restore', _('Restored')
         # An operation that stops counting, with its reason (farm stock operations): history keeps it.
         VOID = 'void', _('Voided')
+        # A person sent their invitation, at first and each time again (core.resources.UserResource.invite): an
+        # event with what became of it, not a change of a value.
+        INVITE = 'invite', _('Invited')
 
     # Defined outside the class so that its Meta can name their values in the constraint.
     Severity = AuditSeverity
@@ -257,6 +260,39 @@ class Profile(models.Model):
 
     def __str__(self):
         return str(self.user)
+
+
+class AccountMail(models.Model):
+    """The account e-mails the platform sent, or tried to: the invitation a new person gets, each time the admin sends
+    it again, and every password reset. One row per mail, written by core.accountmail when it is sent: who it is for,
+    the address it went to, who asked for it and, when it did not go out, why. Never the link or its token. The users
+    tab shows what became of a person's last invitation, and the reset form counts an account's mails of the last hour."""
+
+    class Kind(models.TextChoices):
+        INVITATION = 'invitation', _('Invitation')
+        RESET = 'reset', _('Password reset')
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='account_mails')
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    # The account's address when the mail was written: the link holds it, so a later change of address ends the link.
+    address = models.EmailField()
+    # The admin who invited the person; empty for a reset, which the person asks for themselves (signed out).
+    requested_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+                                     related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+    # Why the mail did not go out (the mail server's or the settings' own words); empty when the server took it.
+    error = models.CharField(max_length=500, blank=True)
+
+    class Meta:
+        db_table = 'account_mails'
+        ordering = ['-created_at', '-id']
+        indexes = [models.Index(fields=['user', 'kind', '-created_at'], name='account_mails_recent_idx')]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(kind__in=['invitation', 'reset']), name='chk_account_mails_kind'),
+        ]
+
+    def __str__(self):
+        return f'{self.get_kind_display()}: {self.address}'
 
 
 # The bounds of the platform owner's settings: the database holds them (PlatformSettings' checks) and the form says them.

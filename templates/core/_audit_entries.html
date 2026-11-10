@@ -13,7 +13,7 @@
       {% for label, old, new in entry.shown_changes %}
       <div>
         <dt>{{ label }}</dt>
-        <dd>{% if entry.action == "create" or entry.action == "void" %}{{ new }}{% else %}<del>{{ old|default:_("empty") }}</del> → <ins>{{ new|default:_("empty") }}</ins>{% endif %}</dd>
+        <dd>{% if entry.action == "create" or entry.action == "void" or entry.action == "invite" %}{{ new }}{% else %}<del>{{ old|default:_("empty") }}</del> → <ins>{{ new|default:_("empty") }}</ins>{% endif %}</dd>
       </div>
       {% endfor %}
     </dl>

@@ -2160,6 +2160,192 @@
     },
     {
       "app": "core",
+      "model": "AccountMail",
+      "table": "account_mails",
+      "description": "The account e-mails the platform sent, or tried to: the invitation a new person gets, each time the admin sends it again, and every password reset.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "user_id",
+          "field": "user",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.accountmail when the mail is sent"
+        },
+        {
+          "name": "kind",
+          "field": "kind",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "invitation",
+            "reset"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.accountmail when the mail is sent"
+        },
+        {
+          "name": "address",
+          "field": "address",
+          "type": "varchar(254)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.accountmail when the mail is sent"
+        },
+        {
+          "name": "requested_by_id",
+          "field": "requested_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.accountmail when the mail is sent"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "error",
+          "field": "error",
+          "type": "varchar(500)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.accountmail when the mail is sent"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_account_mails_kind",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "users tab",
+              "url_names": [
+                "core:user_create"
+              ],
+              "routes": [
+                "/users/new/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "core:user_invite",
+              "url_names": [
+                "core:user_invite"
+              ],
+              "routes": [
+                "/users/<int:pk>/invite/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "password_reset",
+              "url_names": [
+                "password_reset"
+              ],
+              "routes": [
+                "/accounts/password_reset/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "a row is what became of one mail"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "kept: the users tab shows what became of the last invitation, and the reset form counts an account's mails of the last hour"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "users tab",
+              "url_names": [
+                "core:user_list",
+                "core:user_edit"
+              ],
+              "routes": [
+                "/users/",
+                "/users/<int:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "Written when a mail is sent: creating a user and \"Send invitation\" on the users tab send an invitation, \"Forgot your password?\" a reset. Never the link or its token.",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Administration",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_account_mail.py"
+      ]
+    },
+    {
+      "app": "core",
       "model": "AuditLog",
       "table": "audit_log",
       "description": "Who did what to which record, with old and new values.",
@@ -2222,7 +2408,8 @@
             "update",
             "delete",
             "restore",
-            "void"
+            "void",
+            "invite"
           ],
           "link": null,
           "on_form": [],
@@ -2346,6 +2533,7 @@
         "core/test_database.py",
         "core/test_languages.py",
         "core/tests.py",
+        "core/tests_account_mail.py",
         "core/tests_crud_mount.py",
         "core/tests_entry_key.py",
         "core/tests_platform.py",
@@ -2959,6 +3147,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_account_mail.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_ration.py",
         "farm/tests/test_deffeyes.py",
@@ -37174,6 +37363,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_account_mail.py",
         "core/tests_workspaces.py",
         "sensors/tests/__init__.py",
         "sensors/tests/test_demo.py",

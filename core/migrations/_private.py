@@ -54,9 +54,27 @@ EMAIL = re.compile(r'^[^@\s,;()]+@[^@\s,;()]+\.[^@\s,;()]+$')
 PHONE = re.compile(r'^\+?\d[\d\s./-]{3,}$')
 
 
+def key():
+    """core.audit.digest_key, as it is when this is made: the digests' own key, the secret key when it has none."""
+    return getattr(settings, 'AUDIT_DIGEST_KEY', '') or settings.SECRET_KEY
+
+
+def key_refusal():
+    """Why real data is not converted under this key, or None. The conversion is one-way: the key in force when it runs
+    is the key of every converted value for good, and whoever holds it can recover a short value (a phone number) from
+    its digest by trying them all. So a key printed in the repository (the settings' fallback, anything Django marks
+    insecure) is refused when DEBUG is off; a developer's own machine (DEBUG on) is let through."""
+    if settings.DEBUG or not key().startswith('django-insecure-'):
+        return None
+    return ('core 0011 will not convert: the key of the digests is the fallback printed in the repository (or another '
+            '"django-insecure-" key), and the conversion is one-way, so every converted value would keep it for good. '
+            'Set DJANGO_AUDIT_DIGEST_KEY (or DJANGO_SECRET_KEY) to a secret of this server, the one the server runs '
+            'with, and run it again.')
+
+
 def private(text, of=None):
     """core.audit.private, as it is when this is made."""
-    rev = hmac.new(settings.SECRET_KEY.encode(), str(text).encode(), hashlib.sha256).hexdigest()[:8]
+    rev = hmac.new(key().encode(), str(text).encode(), hashlib.sha256).hexdigest()[:8]
     return {'msgid': 'Private text', 'rev': rev, **({'of': of} if of else {})}
 
 
@@ -153,6 +171,8 @@ def convert(schema_editor):
     apart."""
     with schema_editor.connection.cursor() as cursor:
         found, counts = plan(cursor)
+        if found and key_refusal():
+            raise RuntimeError(key_refusal())
         if found:
             cursor.execute('ALTER TABLE audit_log DISABLE TRIGGER trg_audit_log_append_only')
             for pk, _type, _label, _created, changes in found:

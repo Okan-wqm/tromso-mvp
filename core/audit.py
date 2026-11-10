@@ -82,12 +82,23 @@ def _display(instance, field):
     return str(value)
 
 
+def digest_key():
+    """The key of the log's digests: its own (settings.AUDIT_DIGEST_KEY, DJANGO_AUDIT_DIGEST_KEY in the environment),
+    the server's secret key when it has none. Its own, so that the secret key can be rotated (everyone is signed out)
+    without the digests changing, and the digests' key rotated (every digest written before stops comparing with
+    anything: the link to the old values is cut) without signing anyone out."""
+    return settings.AUDIT_DIGEST_KEY or settings.SECRET_KEY
+
+
 def digest(text):
     """The short keyed digest the log keeps of a private value instead of the value: eight hex digits of an HMAC-SHA256
-    under the server's SECRET_KEY. Equal values give equal digests, so the log shows that a value changed and whether
-    two were the same; the value cannot be read back from it, and without the key a guess cannot be checked against
-    it. The one digest of the log: whatever keeps a private value out of it calls this."""
-    return hmac.new(settings.SECRET_KEY.encode(), str(text).encode(), hashlib.sha256).hexdigest()[:8]
+    under `digest_key`. This is pseudonymisation, not erasure. Equal values give equal digests, so the log shows that
+    a value changed; two equal digests say "probably the same value" (32 bits: sure enough for one change, not across
+    a whole log). Whoever holds the key and the log can test a guess, and so recover a short value such as a phone
+    number by trying them all; without the key that cannot be done from the stored rows, and no page prints a digest
+    (AuditLog.shown_changes), so nobody tests a guess through the application either. The one digest of the log:
+    whatever keeps a private value out of it calls this."""
+    return hmac.new(digest_key().encode(), str(text).encode(), hashlib.sha256).hexdigest()[:8]
 
 
 def private(text, of=None):

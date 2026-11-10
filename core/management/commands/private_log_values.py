@@ -1,4 +1,4 @@
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import connection, transaction
 
 from core.migrations import _private
@@ -23,11 +23,16 @@ class Command(BaseCommand):
             if counts['rows']:
                 self.stdout.write(f'{counts["rows"]} activity-log row(s) hold plain values that were decided private:')
             self.stdout.write('\n'.join(_private.report(found, counts)))
+            if counts['rows'] and _private.key_refusal():
+                self.stdout.write(f'The conversion would be refused here: {_private.key_refusal()}')
             return
-        with transaction.atomic(), connection.cursor() as cursor:
-            found, _counts = _private.plan(cursor)                # for the entries' names; convert plans again itself
-            with connection.schema_editor() as editor:
-                counts = _private.convert(editor)
+        try:
+            with transaction.atomic(), connection.cursor() as cursor:
+                found, _counts = _private.plan(cursor)            # for the entries' names; convert plans again itself
+                with connection.schema_editor() as editor:
+                    counts = _private.convert(editor)
+        except RuntimeError as refusal:
+            raise CommandError(str(refusal)) from refusal
         if counts['rows']:
             self.stdout.write(f'{counts["rows"]} activity-log row(s) converted:')
         self.stdout.write('\n'.join(_private.report(found, counts)))

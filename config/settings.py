@@ -231,11 +231,58 @@ KNOWLEDGE_MAX_FILE_BYTES = 20 * 1024 * 1024
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+# The account e-mails (core.accountmail): the invitation a new person gets and the password reset. Where they go comes
+# from the environment alone, so no address, user or password is in the repository (README, Email):
+#   EMAIL_HOST            the SMTP server; without it a development server prints the mail in its terminal
+#   EMAIL_PORT            its port; left out, the encryption's own (587 starttls, 465 ssl, 25 off)
+#   EMAIL_HOST_USER, EMAIL_HOST_PASSWORD   the account to sign in to it with; left out, no sign-in
+#   EMAIL_TLS             starttls (the default), ssl, or off
+#   EMAIL_TIMEOUT         seconds a send may wait for the server (10): a save never hangs on a dead mail server
+#   DEFAULT_FROM_EMAIL    the sender address
+# With DEBUG off there is no console to fall back on: the mailer is SMTP whatever the environment holds, the server does
+# not start without EMAIL_HOST (core.checks.mail_is_configured, core.E002) and a send without one fails where the admin
+# sees it. MAIL_MUST_SEND is what that check reads: DEBUG as it was read here (the test runner turns DEBUG off).
+MAIL_MUST_SEND = not DEBUG
+_mail_encryption = os.environ.get('EMAIL_TLS', 'starttls')
+if _mail_encryption not in ('starttls', 'ssl', 'off'):
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(f'EMAIL_TLS must be starttls, ssl or off, not {_mail_encryption!r}.')
+if os.environ.get('EMAIL_HOST') or MAIL_MUST_SEND:
+    MAILERS = {
+        'default': {
+            'BACKEND': 'django.core.mail.backends.smtp.EmailBackend',
+            'OPTIONS': {
+                'host': os.environ.get('EMAIL_HOST') or None,
+                'port': int(os.environ['EMAIL_PORT']) if os.environ.get('EMAIL_PORT') else None,
+                'username': os.environ.get('EMAIL_HOST_USER') or None,
+                'password': os.environ.get('EMAIL_HOST_PASSWORD') or None,
+                'use_tls': _mail_encryption == 'starttls',
+                'use_ssl': _mail_encryption == 'ssl',
+                'timeout': int(os.environ.get('EMAIL_TIMEOUT', '10')),
+            },
+        },
+    }
+else:
+    MAILERS = {
+        'default': {
+            'BACKEND': 'django.core.mail.backends.console.EmailBackend',
+        },
+    }
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'webmaster@localhost')
+
+# The address people reach this server at, scheme and host (https://farm.example.no): every link in an e-mail starts
+# with it, never with the Host header of the request that caused the mail. A development server's is its own.
+PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL', 'http://127.0.0.1:8047' if DEBUG else '').rstrip('/')
+
+# How long the link of an invitation or a password reset works, in hours (Django's PASSWORD_RESET_TIMEOUT holds it in
+# seconds: one lifetime for both, as both are the same token). A day: long enough to open a mail the next morning,
+# and a person whose link has expired asks for a new one themselves ("Forgot your password?") or the admin sends the
+# invitation again.
+PASSWORD_RESET_TIMEOUT = int(os.environ.get('ACCOUNT_LINK_HOURS', '24')) * 3600
+
+# How many password reset mails one account is sent in an hour, whoever asks: more requests are answered like every
+# other and send nothing (core.accountmail.reset), so nobody's inbox is flooded through the form.
+PASSWORD_RESET_MAILS_PER_HOUR = int(os.environ.get('PASSWORD_RESET_MAILS_PER_HOUR', '3'))
 
 
 # Auth

@@ -1,5 +1,13 @@
+from urllib.parse import urlsplit
+
+from django.conf import settings
 from django.contrib.staticfiles import finders
 from django.core.checks import Error, Tags, Warning, register
+from django.core.checks.mail import NON_PRODUCTION_EMAIL_BACKENDS
+from django.core.exceptions import ValidationError
+from django.core.mail import DEFAULT_MAILER_ALIAS
+from django.core.validators import validate_email
+from django.http.request import validate_host
 
 from . import catalogs
 
@@ -44,6 +52,77 @@ def chemcore_matches(app_configs, **kwargs):
               id='core.E001')
         for problem in native.handshake_problems()
     ]
+
+
+SMTP_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+
+def _public_address_problem(must_send):
+    """Why PUBLIC_BASE_URL cannot start an e-mail's link; None when it can. A server that must send is reached over
+    https, at a host it answers to (ALLOWED_HOSTS)."""
+    address = settings.PUBLIC_BASE_URL
+    if not address:
+        return 'it is not set'
+    parts = urlsplit(address)
+    if parts.scheme not in ('http', 'https') or not parts.hostname:
+        return f'{address!r} is not an address like https://farm.example.no'
+    if parts.path or parts.query or parts.fragment:
+        return f'{address!r} holds more than the scheme and the host'
+    if must_send and parts.scheme != 'https':
+        return f'{address!r} is not https: the link in the mail is the key to the account'
+    if must_send and not validate_host(parts.hostname, settings.ALLOWED_HOSTS):
+        return f'this server does not answer to {parts.hostname!r} (DJANGO_ALLOWED_HOSTS)'
+    return None
+
+
+@register()
+def mail_is_configured(app_configs, **kwargs):
+    """The account e-mails (the invitation, the password reset) must really go out: with DEBUG off (MAIL_MUST_SEND) the
+    server does not start without an SMTP server, and a server that sends by SMTP, a development one too, needs a sender
+    address, a public address for the links and an encrypted connection for its password. Errors, so `runserver`,
+    `migrate` and `check` stop on them (README, Email)."""
+    must_send = settings.MAIL_MUST_SEND
+    mailer = settings.MAILERS.get(DEFAULT_MAILER_ALIAS, {})
+    backend = mailer.get('BACKEND', SMTP_BACKEND)
+    options = mailer.get('OPTIONS', {})
+    sends = bool(mailer) and backend not in NON_PRODUCTION_EMAIL_BACKENDS
+    found = []
+    if must_send and not (sends and (backend != SMTP_BACKEND or options.get('host'))):
+        found.append(Error(
+            'DEBUG is off and no SMTP server is configured (EMAIL_HOST): invitations and password resets would not be '
+            'sent.',
+            hint='Set EMAIL_HOST (and EMAIL_PORT, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, EMAIL_TLS as the server needs) '
+                 'in the environment.', id='core.E002'))
+    if not (sends or must_send):
+        return found
+    if sends:
+        try:
+            validate_email(settings.DEFAULT_FROM_EMAIL.rpartition('<')[2].rstrip('>').strip())
+            unset = settings.DEFAULT_FROM_EMAIL == 'webmaster@localhost'
+        except ValidationError:
+            unset = True
+        if unset:
+            found.append(Error(
+                'The sender address of the e-mails is not set, or is not an address.',
+                hint='Set DEFAULT_FROM_EMAIL in the environment to an address the SMTP server may send as.',
+                id='core.E003'))
+    problem = _public_address_problem(must_send)
+    if problem:
+        found.append(Error(
+            f'The public address the links in the e-mails start with (PUBLIC_BASE_URL) cannot be used: {problem}.',
+            hint='Set PUBLIC_BASE_URL in the environment to the address people open the console at, scheme and host '
+                 'only (https://farm.example.no).', id='core.E004'))
+    if backend == SMTP_BACKEND:
+        user, password = options.get('username'), options.get('password')
+        if bool(user) != bool(password):
+            found.append(Error(
+                'The SMTP sign-in is half set: a user without a password, or a password without a user.',
+                hint='Set both EMAIL_HOST_USER and EMAIL_HOST_PASSWORD, or neither.', id='core.E005'))
+        elif user and not (options.get('use_tls') or options.get('use_ssl')):
+            found.append(Error(
+                'The SMTP password would be sent to the mail server unencrypted (EMAIL_TLS is off).',
+                hint='Set EMAIL_TLS to starttls or ssl, or leave the user and the password out.', id='core.E005'))
+    return found
 
 
 @register(Tags.database)

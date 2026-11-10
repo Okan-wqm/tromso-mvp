@@ -4,8 +4,8 @@
 # runner starts); once the tests start, config.test_runner.strict_warnings adds naive datetimes and the third-party list.
 # With CHECKS=1 (CI does it) the project checks run first:
 #   check                  every system check; a warning fails too
-#   check --deploy         the deployment checks, with production-like settings (DEBUG off, a random key, a host): an
-#                          issue not in DEPLOY_OPEN below fails
+#   check --deploy         the deployment checks, with production-like settings (DEBUG off, a random key, a host, an
+#                          SMTP server, a sender and an https public address): an issue not in DEPLOY_OPEN below fails
 #   makemigrations --check no model change without its migration
 #   data_map --check       docs/data-map.* match the code
 #   update_catalogs        brings locale/*/django.po up to date; CI then fails when that changed a file (git diff)
@@ -17,7 +17,6 @@ py() { python -W error::DeprecationWarning -W error::PendingDeprecationWarning "
 # The deployment issues still open, each until the production settings exist (README, CI and dependency updates).
 # They are about the server's own settings, not the code; anything else check --deploy finds fails the run.
 DEPLOY_OPEN="
-mail.E001       the console mail backend: production sets an SMTP mailer (README, Email)
 security.W004   SECURE_HSTS_SECONDS: to be set with HTTPS in production (irreversible for browsers, chosen then)
 security.W008   SECURE_SSL_REDIRECT: HTTPS is ended at the reverse proxy in production
 security.W012   SESSION_COOKIE_SECURE: set with HTTPS in production
@@ -31,7 +30,10 @@ if [ "${CHECKS:-0}" = 1 ]; then (
   # The .mo files are built, never committed: a fresh checkout (CI) has none, and core.W002 would fail the check.
   py manage.py compile_catalogs >/dev/null
   py manage.py check --fail-level WARNING
+  # The mail settings are the environment's (README, Email): with them Django's mail.E001 and the project's own
+  # core.E002 to E005 are closed; without them the server does not start (core.tests_mail_settings).
   found=$(DJANGO_DEBUG=0 DJANGO_ALLOWED_HOSTS=farm.invalid \
+    EMAIL_HOST=smtp.farm.invalid DEFAULT_FROM_EMAIL=console@farm.invalid PUBLIC_BASE_URL=https://farm.invalid \
     DJANGO_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(50))')" \
     py manage.py check --deploy --fail-level CRITICAL 2>&1) || { echo "$found"; exit 1; }
   echo "$found"

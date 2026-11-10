@@ -151,3 +151,23 @@ class DigestIsNeverShownTests(SiteTestCase):
                                'tr': 'Kari (Vet, primary), E-posta: Özel metin, Telefon: Özel metin'}.items():
             Profile.objects.update_or_create(user=self.user, defaults={'language': language})
             self.assertContains(self.client.get(reverse('core:activity_log')), said)
+
+
+class SupplierAddressTests(SiteTestCase):
+    """Review R7: a supplier may be one person (a vet, a diver), and the form cannot know: its own e-mail and phone are
+    private in the log like a site's contact e-mail. Its name, organisation number and address stay."""
+
+    def test_a_suppliers_own_email_and_phone_are_private_in_the_log(self):
+        from .test_suppliers import supplier_data
+        self.user.groups.add(role('Supplier manager', 'view_supplier', 'add_supplier', 'change_supplier'))
+        self.client.post(reverse('farm:supplier_create'), supplier_data(
+            email='orders@fjordfeed.no', phone='+47 2', city='Bergen'))
+        supplier = Supplier.objects.get()
+        self.assertEqual((supplier.email, supplier.phone), ('orders@fjordfeed.no', '+47 2'))
+        created = AuditLog.objects.get(entity_id=str(supplier.pk), action='create').changes
+        self.assertEqual((created['Email'], created['Phone'], created['City'], created['Name']),
+                         ([None, audit.private('orders@fjordfeed.no')], [None, audit.private('+47 2')],
+                          [None, 'Bergen'], [None, 'Fjord Feed AS']))
+        everything = str(list(AuditLog.objects.values_list('changes', flat=True)))
+        self.assertNotIn('orders@fjordfeed.no', everything)
+        self.assertNotIn('+47 2', everything)

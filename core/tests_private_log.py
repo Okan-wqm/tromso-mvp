@@ -292,3 +292,49 @@ class ConversionTests(TestCase):
                 *((audit.entity_type_of(Task), label(Task, name)) for name in tasks.PRIVATE),
             }
         self.assertEqual(set(_private.PRIVATE), expected)
+
+
+class MoreDecidedPrivateTests(TestCase):
+    """Review R7, decided with the conversion so that no second one is ever needed: a supplier's own e-mail and phone
+    (a supplier may be one person) and the description of a task and of a recurring task (a person's free text) are
+    private too. What stays plain, and why, is in docs/erasure.md."""
+
+    def test_they_are_converted_and_the_plain_ones_beside_them_stay(self):
+        p = audit.private
+        supplier = old('supplier', {'Email': [None, 'per@example.com'], 'Phone': ['+47 1', '+47 2'],
+                                    'Name': [None, 'Per Dykker'], 'City': [None, 'Bergen']})
+        task = old('task', {'Description': [None, 'Call Kari on 98989898'], 'Title': [None, 'Feed'],
+                            'Checklist': [None, 'Brush the screens']}, action='create')
+        series = old('recurring task', {'Description': ['Call Kari', 'Call Ola'], 'Title': ['Round', 'Oxygen round']})
+        account = old('user', {'Email address': ['kari@example.com', 'kari@new.example'], 'Username': [None, 'kari']})
+        with connection.schema_editor() as editor:
+            counts = migration().convert(apps, editor)
+        changes = lambda entry: AuditLog.objects.get(pk=entry.pk).changes
+        self.assertEqual(changes(supplier), {'Email': [None, p('per@example.com')], 'Phone': [p('+47 1'), p('+47 2')],
+                                             'Name': [None, 'Per Dykker'], 'City': [None, 'Bergen']})
+        self.assertEqual(changes(task), {'Description': [None, p('Call Kari on 98989898')], 'Title': [None, 'Feed'],
+                                         'Checklist': [None, 'Brush the screens']})
+        self.assertEqual(changes(series), {'Description': [p('Call Kari'), p('Call Ola')],
+                                           'Title': ['Round', 'Oxygen round']})
+        self.assertEqual(changes(account), account.changes)       # an account's address is kept, by decision (F-050)
+        self.assertEqual((counts['rows'], counts['values']), (3, 6))
+
+    def test_the_conversions_list_is_every_private_field_of_the_code(self):
+        from farm.resources.site import SiteResource
+        from farm.resources.supplier import SupplierResource
+        from reports.resources import ReportResource
+        from tasks import services as tasks
+        from tasks.models import Task, TaskSeries
+        label = lambda model, name: str(model._meta.get_field(name).verbose_name)
+        with audit.source_language():
+            expected = {
+                *((resource.entity_type(), label(resource.model, name))
+                  for resource in (SiteResource, SupplierResource, ReportResource) for name in resource.private_fields),
+                (audit.entity_type_of(Task), str(tasks.NOTE)),
+                *((audit.entity_type_of(Task), label(Task, name)) for name in tasks.PRIVATE),
+                *((audit.entity_type_of(TaskSeries), label(TaskSeries, name)) for name in tasks.SERIES_PRIVATE),
+            }
+        self.assertEqual(SupplierResource.private_fields, ('email', 'phone'))
+        self.assertEqual((tasks.PRIVATE, tasks.SERIES_PRIVATE),
+                         (('description', 'completion_note', 'cancel_reason'), ('description',)))
+        self.assertEqual(set(_private.PRIVATE), expected)

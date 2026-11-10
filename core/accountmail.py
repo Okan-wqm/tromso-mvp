@@ -26,6 +26,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import _unicode_ci_compare
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import DEFAULT_MAILER_ALIAS, EmailMessage, mailers
 from django.db import connections, transaction
@@ -262,24 +263,37 @@ def _close(mail, error):
 
 
 
-def reset(user):
-    """Queues `user` a password reset mail and hands it over, unless the account has had its share for the hour
-    (settings.PASSWORD_RESET_MAILS_PER_HOUR; a mail that was tried counts). The account's row is locked only while
-    its mails are counted and the new one is written, so requests that arrive together take turns and cannot all
-    read "none yet"; the mail server is talked to after the lock is gone. Returns the row, or None when the request
-    was held back: the person asking is answered the same either way, and the server's log says it."""
-    with transaction.atomic():
-        user = get_user_model().objects.select_for_update().filter(pk=user.pk, is_active=True).first()
-        if user is None:                 # deactivated since the form looked the address up
-            return None
-        since = timezone.now() - timedelta(hours=1)
-        recent = AccountMail.objects.filter(user=user, kind=RESET, created_at__gte=since).count()
-        if recent >= settings.PASSWORD_RESET_MAILS_PER_HOUR:
-            logger.warning('A password reset mail for user %s was held back: %s in the last hour.', user.pk, recent)
-            return None
-        mail = queue(user, RESET)
-    hand_over(mail)
-    return mail
+def reset_later(address):
+    """What "Forgot your password?" does with an address, and all it does in the request: it hands the address (and
+    the language it was asked in) to the worker. Whether the address has an account, whether that account has had its
+    share, whether the mail goes out: none of it happens before the answer, so the answer takes the same time and the
+    same work for every address."""
+    if not background(reset_now, address, translation.get_language()):
+        logger.error('A password reset request was dropped: too many mails are waiting to be sent.')
+
+
+def accounts_on(address):
+    """The accounts a reset mail for `address` goes to: the active ones whose address it is, whatever its case."""
+    users = get_user_model().objects.filter(email__iexact=address, is_active=True)
+    return [user for user in users if _unicode_ci_compare(address, user.email)]
+
+
+def reset_now(address, language):
+    """The worker's job for a reset: each account on `address` is sent a reset mail, unless it has had its share for
+    the hour (settings.PASSWORD_RESET_MAILS_PER_HOUR; a mail that was tried counts), which the server's log then says.
+    The account's row is locked only while its mails are counted and the new one is written as waiting, so two server
+    processes at one account take turns and cannot both read "none yet"; the mail server is talked to after the lock
+    is gone."""
+    for user in accounts_on(address):
+        with transaction.atomic():
+            get_user_model().objects.select_for_update().get(pk=user.pk)
+            since = timezone.now() - timedelta(hours=1)
+            recent = AccountMail.objects.filter(user=user, kind=RESET, created_at__gte=since).count()
+            if recent >= settings.PASSWORD_RESET_MAILS_PER_HOUR:
+                logger.warning('A password reset mail for user %s was held back: %s in the last hour.', user.pk, recent)
+                continue
+            mail = queue(user, RESET)
+        deliver(mail.pk, language)
 
 
 # --- where a person stands, for the users tab -----------------------------------------------------------------

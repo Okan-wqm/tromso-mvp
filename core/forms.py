@@ -138,17 +138,13 @@ class PasswordResetForm(auth_forms.PasswordResetForm):
     admin creates start without one, so this is how an invited person whose link has expired gets a new one
     themselves. The mail takes the one path every account e-mail takes (core.accountmail)."""
 
-    def get_users(self, email):
-        users = User._default_manager.filter(email__iexact=email, is_active=True)
-        return (user for user in users if auth_forms._unicode_ci_compare(email, user.email))
-
     def save(self, **kwargs):
-        """Sends each active account on the address its reset mail, unless it has had its share for the hour
-        (accountmail.reset). Nothing here tells the page what happened: an address without an account, a request
-        held back and a mail that failed are answered like one that went out. What Django's view hands over (the
-        request, the templates' names) is not used: the link starts with the configured public address."""
-        for user in self.get_users(self.cleaned_data['email']):
-            accountmail.reset(user)
+        """Hands the address over and nothing else (accountmail.reset_later): no account is looked up here, so the
+        request does the same work and takes the same time for every address, and the page is told nothing: an
+        address without an account, a request held back and a mail that failed are answered like one that went
+        out. What Django's view hands over (the request, the templates' names) is not used: the link starts with the
+        configured public address."""
+        accountmail.reset_later(self.cleaned_data['email'])
 
 
 PLATFORM_TABS = [

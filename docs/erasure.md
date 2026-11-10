@@ -128,6 +128,7 @@ Decided with the conversion (the owner, 2026-11-10), so that the log still says 
 | A supplier's name, organisation number and address | A company's data, public register data also for a sole trader; the name is the record's label. |
 | A user account's e-mail address | Kept, with the reason (this closes F-050): a changed account address is how an account is taken over by a password link, and the new address is the evidence. The account is never deleted, so `auth_user` keeps the address in any case; hiding it in the log would erase nothing. |
 | A user account's name, username and roles | `user_name` is the log. |
+| The address an invitation or a password link went to: the log's "Invited" rows (`Sent to`) and "Password set" rows (`Link sent to`), and the table `account_mails` (`address`, one row per mail the platform sent or tried to) | The same decision as the account's address, which it is at that moment: a link used before a mistyped address was put right is found by exactly this value, in the log and on the users row. `account_mails` is no log of the person's words: who the mail was for, the address, who asked, when it went out or why not (a mail server's reply can repeat the address). It holds no link and no token, so no column of it is masked in the database viewer, which the platform admin alone opens; the activity log, which a role can be given, never gets the mail server's words. A mistyped address of a stranger stays in both: it is not erased by correcting the account (the log is append-only; an `account_mails` row would be changed by the platform's database administrator on the DPO's written instruction, as step 6). |
 | A task's title and checklist items | The title is the record's label in every row of the task; checklist items are short work steps. |
 
 Also outside this procedure: **a filed report** (`regulatory_report_snapshots`), a copy of what was told to the
@@ -140,4 +141,5 @@ decides for how long); and the **database viewer**, which shows the tables as th
 check, the trigger back in place, no way back), `farm/tests/test_private_contacts.py` (contact lists, a site's and a
 supplier's own fields, no digest on the History tab or the log page), `tasks/tests/test_private_text.py`,
 `tasks/tests/test_reopen_keeps.py`, `tasks/tests/test_pages.py` and `reports/tests/test_pages.py`: each asserts that
-the value is nowhere in the log.
+the value is nowhere in the log. `core/tests_account_mail.py` asserts the other side for the account e-mails: none of their
+log labels is a private one, the address is in the log and in `account_mails`, and no link or token is in either.

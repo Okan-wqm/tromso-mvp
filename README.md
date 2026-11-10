@@ -3598,15 +3598,20 @@ only one who manages roles and users; everyone else gets exactly what their role
   activity log shows permission changes as "Sites: read, create; Activity log: read". Deleting a
   role removes it from its people.
 - **Users** (`/users/`): username, name, email, roles, active, invitation, last sign-in, and a Platform admin
-  badge. A new user has no password and cannot sign in until they set one: creating them sends the
-  **invitation**, a mail with a one-time link that sets their first password (see Email). The Invitation column
-  says where each person stands: "Invitation sent 10.11.2026 14:05 to kari@example.com. Password not set yet.",
-  its link has expired, the address has changed since (so that link no longer works), "Invitation not sent" with
-  the mail server's reason, "Not invited yet", or "Password set"; while the password is not set, the row has
-  **Send invitation (again)** (POST `/users/<id>/invite/`, the platform admin only, never to someone who has
-  set a password, is inactive or has no address). Every invitation, the first and each one sent again, is a
-  line in the activity log and on the person's History tab (Invited: by whom, when, to which address, sent or
-  not and why), never its link. An edit sends nothing.
+  badge. A new user has no password and cannot sign in until they set one: creating them queues the
+  **invitation**, a mail with a one-time link that sets their first password, which is sent right after the save
+  (see Email: a mail leaves after the request). The Invitation column says where each person stands: "The
+  invitation to kari@example.com is being sent", "Invitation sent 10.11.2026 14:05 to kari@example.com. Password
+  not set yet.", its link has expired, the address has changed since (so that link no longer works), "Invitation
+  not sent" with the reason (the mail server's own words, or that the sending was interrupted), "Not invited yet",
+  or "Password set", with when and through which link when it was set through one ("through the link sent to
+  wrong@…, which is not this account's address now" tells a link used before a mistyped address was put right).
+  While the password is not set, the row has **Send invitation (again)** (POST `/users/<id>/invite/`, the platform
+  admin only, never to someone who has set a password, is inactive, has no address or has an invitation under way).
+  The activity log and the person's History tab have a row for every invitation (Invited: by whom, when, to which
+  address), the platform's own row when one did not go out (Not sent, the kind of failure) and a row when a password
+  is set through a link (Password set: by the person, the address the link went to); never a link. An edit sends
+  nothing. Deactivating a person ends every link sent to them.
   Email is unique and may be left out: the person is created, the admin is told that no invitation was sent,
   the row says "Not invited: no email address", and the person cannot sign in until an address is added and
   the invitation sent from the row (nobody hands out a password here). An inactive person is not invited.
@@ -4368,32 +4373,83 @@ new person gets when the platform admin creates their account (and each time the
 **password reset** ("Forgot your password?" on the sign-in page). Nothing else sends mail (the alarms' transports are
 their own, see Alarms).
 
-- **The link** is Django's own one-time link (`default_token_generator`; the page behind it is Django's
-  `PasswordResetConfirmView`, served as `core.views.SetPasswordView`): no token is stored and none is written by this
-  project. It stops working when the password is set (so it works once), when the account's address changes, and
-  after `ACCOUNT_LINK_HOURS` (24): a day is long enough to open a mail the next morning, and a person whose link has
-  expired asks for a new one themselves or the admin sends the invitation again. Sending again does not end an earlier
-  link that is still in time; setting the password ends them all. A link that no longer works says so ("The link was
-  already used or has expired") and offers "Request a new link" and the sign-in page. Setting the password does not
-  sign in: the person signs in with it.
+- **The link** is Django's one-time link (`PasswordResetTokenGenerator`; the page behind it is Django's
+  `PasswordResetConfirmView`, served as `core.views.SetPasswordView`): no token is stored and no token scheme is
+  written here. The project's generator (`accountmail.tokens`) adds one thing to what Django signs, the account's
+  `is_active`. A link stops working when the password is set (so it works once), when the person signs in, when the
+  account's address changes, when the account is deactivated (an opened page too), and after `ACCOUNT_LINK_HOURS`
+  (24): a day is long enough to open a mail the next morning, and a person whose link has expired asks for a new one
+  themselves or the admin sends the invitation again. Sending again does not end an earlier link that is still in
+  time; setting the password ends them all. An account made active again within a link's lifetime has that link back.
+  A link that no longer works says so ("The link was already used or has expired") and offers "Request a new link"
+  and the sign-in page. Setting the password does not sign in. Between opening the link and saving the password the
+  token is in the person's session row, and the link's address is in the access log of whatever stands in front of
+  Django: Django's design; the secure-cookie settings are still on the open deploy list for it.
 - **The link starts with `PUBLIC_BASE_URL`**, never with the Host header of the request that caused the mail.
 - **The text** is plain text (`templates/mail/`), in English, Norwegian bokmål and Turkish: in the language saved on
   the recipient's account (the admin chooses it on the user form), otherwise the language of whoever caused the mail.
-  The invitation says who created the account, the username, how long the link lives and where to ask for a new one.
-  The set-password page is shown in the same saved language once the link has proved who it is for.
-- **Every mail is recorded** (`core.AccountMail`, table `account_mails`): who it is for, the address, who asked for it
-  and, when it did not go out, why (the mail server's or the settings' own words, cut to 500 characters, the link's
-  token taken out). Never the link. A mail that cannot be sent never fails the page that caused it and never undoes
-  the user just created: the admin is told, the person's row on Users says "Invitation not sent" with the reason and
-  offers "Send invitation again", and the server's log has the line. An invitation is also a line in the activity log
-  (Invited: who invited whom, when, to which address, sent or not and why); a reset is not (anyone can ask for one).
-- **Forgot your password** answers every address the same way (the same page, whether the address has an account, is
-  inactive, or has had its share), and one account is sent at most `PASSWORD_RESET_MAILS_PER_HOUR` (3) reset mails an
-  hour, a failed attempt counted; a request held back is a warning in the server's log. The admin's "Send invitation
-  again" is not limited (it is the admin's, and logged). An invited person who has not set a password yet can ask for
-  a link here too.
+  The invitation says who created the account; both say the username (it is what signs in), how long the link lives
+  and, the invitation, where to ask for a new one. The set-password page, and the reasons it refuses a password for,
+  are shown in the same saved language once the link has proved who it is for.
+- **A password set through a link is logged** (activity log, action "Password set": by the person, when, the address
+  the link went to) and shows on the person's row on Users: "Password set 10.11.2026 14:05 through an emailed link",
+  and, when the account's address has been changed since, "through the link sent to wrong@…, which is not this
+  account's address now". An invitation that went to a mistyped address and was used before the address was put
+  right is seen there. There is no "take the password back" action: the right person uses "Forgot your password?"
+  (the owner's decision if more is wanted).
 
-**Where the mail goes** is the environment's alone; no address, user or password is in the repository:
+### A mail leaves after the request, never in it
+
+`core.AccountMail` (table `account_mails`) is the **outbox**. What causes a mail writes its row as waiting, inside
+its own transaction (creating a user writes the user, the log row "Invited" and the mail's row together); the request
+is answered; once that transaction has committed, the row is handed to **one worker thread per server process**
+(`accountmail.worker`), which talks to the mail server outside any transaction and any lock and then writes on the
+row when the mail went out (`sent_at`) or why it did not (`error`). The shared tab layer has the hook for it
+(`Resource.after_commit`, called after a save's transaction, before the page is answered). So:
+
+- no request waits for a mail server, and "Forgot your password?" does the same work and takes the same time for
+  every address: the form hands the address over and nothing else; whether it has an account, the hourly limit, the
+  row and the send are the worker's (measured with a mail server taking 0.6 s a mail: answers of 2 to 5 ms for an
+  address nobody has and for one with an account; 610 to 690 ms for the latter before);
+- a person's row is never locked while a mail server is talked to (a reset under way does not hold up their sign-in);
+- a save that fails sends nothing, and no mail is out for a user that does not exist.
+
+**One mail gets `EMAIL_TIMEOUT` seconds in all** (30), not for each step: the SMTP library's timeout is per step of
+the conversation (connect, greeting, sender, recipient, data, ...), so the worker cuts the conversation off itself at
+that limit and the mail counts as not sent ("The mail server did not finish in time"). Only the opening of the
+connection can add its own timeout once more.
+
+**What the admin sees.** The answer to creating a user or to "Send invitation" says that the invitation is being
+sent and that the person's row says whether it went out; the row says "is being sent" (no second send meanwhile),
+then "Invitation sent …" or "Invitation not sent" with the reason and "Send invitation again". The mail server's own
+words are on that row and in the database viewer (`account_mails`: the address, who asked, when, the reason; no
+token, nothing masked), which only the platform admin opens; the activity log, which a role can be given, gets the
+platform's own line after the admin's "Invited": "Not sent" with the kind of failure only (the error's class, or the
+platform's own sentence). The platform's own sentences are shown in the reader's language. The server's log has a
+line for every mail that did not go out (the kind and the row's id), with time and level (`LOGGING`,
+`core.accountmail`, to stderr).
+
+**At a restart.** The queue is in memory. A server that stops in order gives the mails under way their time
+(`atexit`, at most `EMAIL_TIMEOUT`). One that is killed loses what was queued: those rows stay waiting, with
+neither `sent_at` nor a reason, and nothing sends them later. A row still waiting after twice `EMAIL_TIMEOUT` is
+shown as **not sent** ("The sending was interrupted: the server stopped, or the mail server never answered"), never
+as sent, and the admin sends the invitation again from the row; a reset that was lost is asked for again by the
+person. The queue holds 200 jobs; more are refused (an invitation is marked not sent with "Too many mails are
+waiting to be sent"; reset requests are dropped, said in the log once a minute, and answered like every other).
+
+**Forgot your password** answers every address the same way (the same page, the same work in the request). One
+account is sent at most `PASSWORD_RESET_MAILS_PER_HOUR` (3) reset mails an hour: the mails that went out or are
+waiting count for the hour, one that failed for five minutes (a mail server that was down keeps nobody out for the
+hour); the account's row is locked while its mails are counted, so two server processes cannot both read "none
+yet". An account held back is one warning in the server's log an hour. The admin's "Send invitation again" is not
+limited (it is the admin's, and logged). An invited person who has not set a password yet can ask for a link here
+too. **There is no limit per client**: the reverse proxy in front of the server must limit
+`/accounts/password_reset/` (for nginx, `limit_req`), or one script can send three mails an hour to every account.
+A reset is not in the activity log (anyone can ask for one); its row is in `account_mails`.
+
+**Where the mail goes** is the environment's alone; no address, user or password is in the repository. They are
+deployment settings, not the platform owner's (a farm does not change its mail server or its link lifetime on a
+page):
 
 | Variable | What | Default |
 |---|---|---|
@@ -4401,11 +4457,11 @@ their own, see Alarms).
 | `EMAIL_PORT` | its port | the encryption's own: 587 (starttls), 465 (ssl), 25 (off) |
 | `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | the account to sign in to the SMTP server with (both or neither) | no sign-in |
 | `EMAIL_TLS` | `starttls`, `ssl` or `off` | `starttls` |
-| `EMAIL_TIMEOUT` | seconds a send may wait for the server | 10 |
+| `EMAIL_TIMEOUT` | seconds one mail may take in all (1 or more) | 30 |
 | `DEFAULT_FROM_EMAIL` | the sender address | none (a development server: `webmaster@localhost`) |
 | `PUBLIC_BASE_URL` | the address people open the console at, scheme and host only (`https://farm.example.no`) | a development server: `http://127.0.0.1:8047` |
-| `ACCOUNT_LINK_HOURS` | how long an invitation's or a reset's link works | 24 |
-| `PASSWORD_RESET_MAILS_PER_HOUR` | reset mails one account is sent in an hour | 3 |
+| `ACCOUNT_LINK_HOURS` | how long an invitation's or a reset's link works (1 or more) | 24 |
+| `PASSWORD_RESET_MAILS_PER_HOUR` | reset mails one account is sent in an hour (1 or more) | 3 |
 
 A development server (`DJANGO_DEBUG` on, the default) without `EMAIL_HOST` uses Django's console backend: the mail is
 printed in the `runserver` terminal, link and all. **With `DJANGO_DEBUG=0` there is no console to fall back on**: the
@@ -4414,20 +4470,33 @@ mailer is SMTP whatever the environment holds, and the system check `core.checks
 
 - `core.E002`: no SMTP server (`EMAIL_HOST`);
 - `core.E003`: no sender address (`DEFAULT_FROM_EMAIL`), or not an address;
-- `core.E004`: `PUBLIC_BASE_URL` not set, not `https://host[:port]` alone, or a host this server does not answer to
-  (`DJANGO_ALLOWED_HOSTS`);
+- `core.E004`: `PUBLIC_BASE_URL` not set, not `https://host[:port]` alone (a user part before the host is refused
+  too), or a host this server does not answer to (`DJANGO_ALLOWED_HOSTS`; with `*` there every host passes);
 - `core.E005`: an SMTP user without a password (or the other way round), or a password with `EMAIL_TLS=off`.
 
 A development server pointed at a real SMTP server is held to E003 to E005 too. The deploy check
 (`CHECKS=1 scripts/test.sh`) runs with an SMTP server, a sender and a public address in its production-like settings,
 so Django's `mail.E001` (a development-only mail backend) is closed and no longer in the list of open deploy issues.
-A WSGI server does not run the system checks by itself: run `manage.py check --deploy` (or `migrate`) in the
-deployment before it starts, as for the water-chemistry core's check. Should it start without them all the same, a
-send fails and shows on the person's row as any failed send.
 
-The mail is sent inside the request that causes it (there is no queue): a dead mail server costs that request at most
-`EMAIL_TIMEOUT` seconds, and the answer to "Forgot your password?" takes longer for an address with an account than
-for one without.
+### Starting a production server
+
+Nothing in the repository starts a production server yet (no image, no entry point, no WSGI server in
+`requirements.txt`), and a WSGI server does not run Django's system checks by itself. Whatever starts it must run,
+in this order and stopping at the first failure:
+
+```
+python manage.py check --deploy --fail-level ERROR   # exits 1 on core.E001 (chemistry core), farm.E001, core.E002 to E005 (mail)
+python manage.py migrate                             # runs the same checks first
+python manage.py compile_catalogs
+<the WSGI server> config.wsgi:application
+```
+
+with `DJANGO_DEBUG=0`, `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, the database variables and the mail variables
+above in the environment. Should the server be started without the checks all the same and without its mail
+settings, no mail is lost silently: every send fails ("The public address of this server is not set", or the mailer's
+own refusal of a missing host) and shows on the person's row as any failed send. One worker thread per server
+process sends the mails, so a server run as several processes sends several at a time; a process
+that ends in order drains its queue first (see "At a restart").
 
 ## Pages
 
@@ -4533,7 +4602,7 @@ for one without.
 | `core/` | TimescaleDB extension, audit log (model, append-only trigger, `audit.py` helpers, activity page), roles and users (`resources.py`, `forms.py`), tests |
 | `core/language.py`, `core/catalogs.py`, `locale/`, `config/formats/`, `docs/i18n.md` | Languages: which one a request gets, the catalogs without GNU gettext, the English date look, the guide and glossary |
 | `core/access.py`, `config/access.py` | Access areas: what a role can be given (the permission matrix) |
-| `core/accountmail.py`, `templates/mail/`, `core/checks.py` | The account e-mails, one path: the invitation and the password reset, their record (`account_mails`), the reset limit, a person's standing on the users tab; the check that stops a server that could not send them (Email) |
+| `core/accountmail.py`, `templates/mail/`, `core/checks.py` | The account e-mails, one path: the invitation and the password reset, the outbox they are sent from after the request (`account_mails`, the worker thread, the whole-mail time limit), the link's token, the reset limit, a person's standing on the users tab; the check that stops a server that could not send them (Email) |
 | `farm/` | Farm module, one module per tab under `models/`, `forms/`, `resources/`; tests |
 | `core/widgets.py`, `core/links.py` | `DependentSelect`: a choice that belongs to another field's value (a production department to its site); `Output`: a value shown, not typed; `LinkList`: check boxes for a record's links, with their details |
 | `core/fields.py` | Model fields the tabs share: `ChoiceArrayField`, several choices stored as an array |

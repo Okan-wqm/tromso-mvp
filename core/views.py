@@ -1,17 +1,31 @@
 from datetime import datetime, time
 
 from django.conf import settings
+from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_not_required, permission_required
 from django.core.paginator import Paginator
 from django.shortcuts import render
-from django.utils import timezone
+from django.utils import timezone, translation
 from django.utils.translation import gettext
 from django.views import i18n
 
 from .dates import company_zone, read_day
 from . import audit
-from .language import is_supported, save_account_language
+from .language import account_language, is_supported, save_account_language
 from .models import AuditLog
+
+
+class SetPasswordView(auth_views.PasswordResetConfirmView):
+    """Django's page behind the link of an account e-mail (core.accountmail), shown in the language saved on the
+    account the link is for: the admin chose it with the invitation, and the mail was written in it. Only a link
+    that works says whose it is; one that does not follows the browser like every page before sign-in."""
+
+    def get_context_data(self, **kwargs):
+        language = account_language(self.user) if self.validlink else None
+        if language:
+            translation.activate(language)
+            self.request.LANGUAGE_CODE = language
+        return super().get_context_data(**kwargs)
 
 
 @login_not_required

@@ -4,9 +4,9 @@ from django.conf import settings
 from django.contrib.auth.models import Group
 from django.utils.translation import gettext_lazy as _
 
-from . import access, audit
+from . import access, accountmail, audit
 from .crud import Resource, tab_fields
-from .forms import PasswordResetForm, PlatformSettingsForm, RoleForm, User, UserForm
+from .forms import PlatformSettingsForm, RoleForm, User, UserForm
 from .language import account_language
 from .models import PlatformSettings
 
@@ -63,11 +63,9 @@ class UserResource(Resource):
 
     @classmethod
     def after_save(cls, request, user, created):
-        """A new person is invited with the password reset email: its link sets their first password."""
+        """A new person is invited: the link in the mail sets their first password (core.accountmail)."""
         if created:
-            invitation = PasswordResetForm({'email': user.email})
-            invitation.is_valid()
-            invitation.save(request=request, use_https=request.is_secure())
+            accountmail.send(user, accountmail.INVITATION, by=request.user)
 
 
 class PlatformSettingsResource(Resource):

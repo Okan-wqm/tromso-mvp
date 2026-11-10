@@ -3,10 +3,9 @@ from django.conf import settings
 from django.contrib.auth import forms as auth_forms, get_user_model
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
-from django.utils import translation
 from django.utils.translation import gettext_lazy as _
 
-from . import access, navigation
+from . import access, accountmail, navigation
 from .crud import TabbedForm, tab_fields
 from .language import account_language, save_account_language
 from .models import PlatformSettings
@@ -133,21 +132,19 @@ class UserForm(TabbedForm):
 
 
 class PasswordResetForm(auth_forms.PasswordResetForm):
-    """Django's reset form, also for people who have not set a password yet: users the platform admin
-    creates start without one, and this email is their invitation (and its replacement once the
-    link has expired)."""
-
-    def send_mail(self, subject_template_name, email_template_name, context, from_email, to_email,
-                  html_email_template_name=None):
-        """Written in the recipient's saved language, not the language of whoever triggered it (an
-        invitation is sent while the admin who created the account is signed in)."""
-        with translation.override(account_language(context['user']) or translation.get_language()):
-            super().send_mail(subject_template_name, email_template_name, context, from_email, to_email,
-                              html_email_template_name)
+    """Django's "Forgot your password?" form, also for people who have not set a password yet: users the platform
+    admin creates start without one, so this is how an invited person whose link has expired gets a new one
+    themselves. The mail takes the one path every account e-mail takes (core.accountmail)."""
 
     def get_users(self, email):
         users = User._default_manager.filter(email__iexact=email, is_active=True)
         return (user for user in users if auth_forms._unicode_ci_compare(email, user.email))
+
+    def save(self, **kwargs):
+        """Sends each active account on the address its reset mail. What Django's view hands over (the request, the
+        templates' names) is not used: the link starts with the configured public address, not with the request's."""
+        for user in self.get_users(self.cleaned_data['email']):
+            accountmail.send(user, accountmail.RESET)
 
 
 PLATFORM_TABS = [

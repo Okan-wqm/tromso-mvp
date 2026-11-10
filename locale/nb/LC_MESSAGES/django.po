@@ -708,6 +708,14 @@ msgid "%(hours)s h"
 msgstr "%(hours)s t"
 
 #, python-format
+msgid "%(inviter)s has created an account for you in the farm console of %(company)s."
+msgstr "%(inviter)s har opprettet en konto til deg i driftskonsollen til %(company)s."
+
+#, python-format
+msgid "%(inviter)s has created an account for you in the farm console."
+msgstr "%(inviter)s har opprettet en konto til deg i driftskonsollen."
+
+#, python-format
 msgid "%(item)s in %(location)s (%(site)s): %(held)s, below the reorder level of %(level)s."
 msgstr "%(item)s i %(location)s (%(site)s): %(held)s, under bestillingspunktet på %(level)s."
 
@@ -7399,11 +7407,17 @@ msgstr ""
 "Hvis en konto bruker denne adressen, er en tilbakestillingslenke på vei. Hvis den ikke har kommet"
 " om noen minutter, sjekk søppelpostmappen."
 
+msgid "If it has expired, ask for a new one here:"
+msgstr "Hvis den har utløpt, kan du be om en ny her:"
+
 msgid "If the fish were harvested today:"
 msgstr "Hvis fisken ble høstet i dag:"
 
 msgid "If you did not ask for this, you can ignore this email."
 msgstr "Hvis du ikke ba om dette, kan du se bort fra denne e-posten."
+
+msgid "If you did not expect this email, you can ignore it."
+msgstr "Hvis du ikke ventet denne e-posten, kan du se bort fra den."
 
 msgid "Ignored"
 msgstr "Ignorert"
@@ -9858,6 +9872,9 @@ msgstr "Åpne utkastet"
 
 msgid "Open this link to set a new password:"
 msgstr "Åpne denne lenken for å velge nytt passord:"
+
+msgid "Open this link to set your password; then you can sign in:"
+msgstr "Åpne denne lenken for å velge passord; deretter kan du logge inn:"
 
 msgid "Opened"
 msgstr "Åpnet"
@@ -13512,6 +13529,12 @@ msgstr "Nivået %(label)s av %(factor)s har to ulike verdier."
 msgid "The link was already used or has expired. Request a new one."
 msgstr "Lenken er allerede brukt eller har utløpt. Be om en ny."
 
+#, python-format
+msgid "The link works once and expires after %(hours)s hour."
+msgid_plural "The link works once and expires after %(hours)s hours."
+msgstr[0] "Lenken virker én gang og utløper etter %(hours)s time."
+msgstr[1] "Lenken virker én gang og utløper etter %(hours)s timer."
+
 msgid "The live sensor values could not be read: the values below come from the water samples only."
 msgstr "Sanntidsverdiene fra sensorene kunne ikke leses: verdiene nedenfor kommer bare fra vannprøvene."
 
@@ -16155,6 +16178,9 @@ msgstr ""
 "Du ser ikke lenger meldingene. Meldingene dine blir stående med navnet ditt; en eier kan legge "
 "deg til igjen."
 
+msgid "Your farm console account: set your password"
+msgstr "Kontoen din i driftskonsollen: velg passord"
+
 msgid "Your new password is saved. Use it the next time you sign in."
 msgstr "Det nye passordet ditt er lagret. Bruk det neste gang du logger inn."
 
@@ -16169,6 +16195,10 @@ msgstr "Rollen din gir deg ikke denne siden. Spør en administrator hvis du tren
 
 msgid "Your role opens none of the production figures yet."
 msgstr "Rollen din gir ennå ikke tilgang til noen av produksjonstallene."
+
+#, python-format
+msgid "Your username is %(username)s."
+msgstr "Brukernavnet ditt er %(username)s."
 
 msgid "a correction"
 msgstr "en korrigering"

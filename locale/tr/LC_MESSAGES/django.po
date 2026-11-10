@@ -711,6 +711,14 @@ msgid "%(hours)s h"
 msgstr "%(hours)s sa"
 
 #, python-format
+msgid "%(inviter)s has created an account for you in the farm console of %(company)s."
+msgstr "%(inviter)s, %(company)s çiftlik konsolunda sizin için bir hesap oluşturdu."
+
+#, python-format
+msgid "%(inviter)s has created an account for you in the farm console."
+msgstr "%(inviter)s, çiftlik konsolunda sizin için bir hesap oluşturdu."
+
+#, python-format
 msgid "%(item)s in %(location)s (%(site)s): %(held)s, below the reorder level of %(level)s."
 msgstr "%(location)s (%(site)s) içinde %(item)s: %(held)s, %(level)s yeniden sipariş seviyesinin altında."
 
@@ -7423,11 +7431,17 @@ msgstr ""
 "Bu adresi kullanan bir hesap varsa, sıfırlama bağlantısı yolda. Birkaç dakika içinde gelmezse "
 "spam klasörünüzü kontrol edin."
 
+msgid "If it has expired, ask for a new one here:"
+msgstr "Süresi dolduysa buradan yenisini isteyin:"
+
 msgid "If the fish were harvested today:"
 msgstr "Balıklar bugün hasat edilseydi:"
 
 msgid "If you did not ask for this, you can ignore this email."
 msgstr "Bunu siz istemediyseniz bu e-postayı yok sayabilirsiniz."
+
+msgid "If you did not expect this email, you can ignore it."
+msgstr "Bu e-postayı beklemiyorduysanız dikkate almayabilirsiniz."
 
 msgid "Ignored"
 msgstr "Yok sayıldı"
@@ -9879,6 +9893,9 @@ msgstr "Taslağı aç"
 
 msgid "Open this link to set a new password:"
 msgstr "Yeni parola belirlemek için bu bağlantıyı açın:"
+
+msgid "Open this link to set your password; then you can sign in:"
+msgstr "Parolanızı belirlemek için bu bağlantıyı açın; ardından giriş yapabilirsiniz:"
 
 msgid "Opened"
 msgstr "Açıldı"
@@ -13533,6 +13550,12 @@ msgstr "%(factor)s faktörünün %(label)s düzeyinin iki farklı değeri var."
 msgid "The link was already used or has expired. Request a new one."
 msgstr "Bağlantı daha önce kullanılmış veya süresi dolmuş. Yeni bir tane isteyin."
 
+#, python-format
+msgid "The link works once and expires after %(hours)s hour."
+msgid_plural "The link works once and expires after %(hours)s hours."
+msgstr[0] "Bağlantı bir kez kullanılabilir ve %(hours)s saat sonra geçerliliğini yitirir."
+msgstr[1] "Bağlantı bir kez kullanılabilir ve %(hours)s saat sonra geçerliliğini yitirir."
+
 msgid "The live sensor values could not be read: the values below come from the water samples only."
 msgstr "Canlı sensör değerleri okunamadı: aşağıdaki değerler yalnızca su numunelerinden gelir."
 
@@ -16177,6 +16200,9 @@ msgstr "Bu sayfayı açamazsınız"
 msgid "You stop seeing its messages. Your messages stay, with your name; an owner can add you again."
 msgstr "Artık mesajlarını görmezsiniz. Mesajlarınız adınızla kalır; bir sahip sizi yeniden ekleyebilir."
 
+msgid "Your farm console account: set your password"
+msgstr "Çiftlik konsolu hesabınız: parolanızı belirleyin"
+
 msgid "Your new password is saved. Use it the next time you sign in."
 msgstr "Yeni parolanız kaydedildi. Bir sonraki girişinizde kullanın."
 
@@ -16191,6 +16217,10 @@ msgstr "Rolünüz bu sayfayı kapsamıyor. Gerekirse bir yöneticiye sorun."
 
 msgid "Your role opens none of the production figures yet."
 msgstr "Rolünüz henüz üretim rakamlarından hiçbirini açmıyor."
+
+#, python-format
+msgid "Your username is %(username)s."
+msgstr "Kullanıcı adınız: %(username)s."
 
 msgid "a correction"
 msgstr "bir düzeltme"

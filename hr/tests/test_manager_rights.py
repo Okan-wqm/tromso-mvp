@@ -102,3 +102,16 @@ class ManagerRightsMigrationTests(PeopleTestCase):
         for right, said in migration().RIGHTS.items():
             self.assertIn(right, offered)
             self.assertEqual(access.summary([permission(right)]), said)
+
+    def test_a_right_given_by_hand_after_a_way_back_is_not_taken_by_a_second_way_back(self):
+        """Review R16: given, taken away again, then an administrator gives Create on Attendance by hand; going back a
+        second time finds nothing of its own to take (given minus taken away again is nothing), and the right stays."""
+        group = role()
+        run()
+        run('withdraw')
+        self.assertEqual(codenames(group), set(OLD))
+        group.permissions.add(permission('hr.add_attendancerecord'))                    # the administrator, by hand
+        before = AuditLog.objects.filter(entity_id=str(group.pk)).count()
+        run('withdraw')
+        self.assertEqual(codenames(group), {*OLD, 'hr.add_attendancerecord'})
+        self.assertEqual(AuditLog.objects.filter(entity_id=str(group.pk)).count(), before)

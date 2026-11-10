@@ -33,6 +33,13 @@ SPECIES_FORM_TABS = [
 OFFERED_WEIGHT_RATIO = Decimal(2)
 
 
+def offered_weight_ratio(cleaner_fish_type):
+    """The size limit a new species is offered: the default, and none for a cleaner fish (the owner, 2026-11-10: lumpfish
+    and wrasses are topped up with fish of other sizes, so they are not checked unless the farm gives them a limit;
+    migration 0038 did the same for the cleaner species still at the default)."""
+    return None if cleaner_fish_type else OFFERED_WEIGHT_RATIO
+
+
 class SpeciesForm(CodedFormMixin, TabbedForm):
     """The species dialog. For a species the catalogue knows (farm/species_catalog.py), the fields left
     blank are filled in from it when the species is created or its scientific name changes; a typed
@@ -61,7 +68,9 @@ class SpeciesForm(CodedFormMixin, TabbedForm):
                                           'conservative choice. Empty: such a day counts as 0 °C. 0 to 40 °C.'),
             'max_weight_ratio': _('How many times heavier, on average, one batch of this species may be than another '
                                   'in the same unit, e.g. 2: fish of 100 g and of 200 g may share a unit. A stocking, '
-                                  'transfer or grading beyond it asks for an acknowledgement first. Empty: no check.'),
+                                  'transfer or grading beyond it asks for an acknowledgement first. Empty: no check. '
+                                  'A new cleaner fish (lumpfish, wrasse) left at the offered value is saved with no '
+                                  'check: its cages are topped up with fish of other sizes.'),
             'status': _('Active: farmed now. Experimental: on trial. Inactive: not farmed at the moment. '
                         'Discontinued: no longer farmed.'),
         }
@@ -99,6 +108,11 @@ class SpeciesForm(CodedFormMixin, TabbedForm):
         # The stored record still has its stored values here: the form fills it after clean().
         if name and (self.instance._state.adding or name != self.instance.scientific_name):
             self.instance.catalogue_filled = self._fill_from_catalogue(cleaned)
+        # A new species left at what the form offered gets the offer of its kind, which is known only now (the type
+        # may come from the catalogue): no check for a cleaner fish. A typed limit and every edit are left as they are.
+        if self.instance._state.adding and 'max_weight_ratio' in cleaned and 'max_weight_ratio' not in self.changed_data:
+            cleaned['max_weight_ratio'] = offered_weight_ratio(cleaned.get('cleaner_fish_type'))
+            self.instance.size_check_left_out = cleaned['max_weight_ratio'] is None
         return cleaned
 
     def _fill_from_catalogue(self, cleaned):

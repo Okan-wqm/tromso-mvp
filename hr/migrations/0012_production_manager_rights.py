@@ -9,7 +9,7 @@ Going back takes away exactly what this gave and is still held (read from its ow
 renamed since is found), each logged: a right an administrator gave before or took away since is left as it is."""
 from django.db import migrations
 
-from core.migrations._log import system_entries, system_entry
+from core.migrations._log import SYSTEM, entries, system_entry
 
 ROLE = 'Production manager'
 # The right, and how the activity log says it (core.access.summary: 'Area: action').
@@ -44,8 +44,8 @@ def grant(apps, schema_editor):
 def withdraw(apps, schema_editor):
     Group = apps.get_model('auth', 'Group')
     owed = {}                                    # {(role id, how the log says the right): given minus taken away again}
-    for role_id, changes in system_entries(schema_editor, 'role'):
-        note = (changes.get('Note') or [None, None])[1]
+    for role_id, who, _action, changes in entries(schema_editor, 'role'):
+        note = (changes.get('Note') or [None, None])[1] if who == SYSTEM else None
         old, new = changes.get('Permissions') or [None, None]
         if note == GIVEN:
             owed[(role_id, new)] = owed.get((role_id, new), 0) + 1

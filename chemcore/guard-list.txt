@@ -80,6 +80,8 @@ name k_nh4_sws
 name kb_total
 name ksp_aragonite
 name ksp_calcite
+name kw_free
+name kw_sws
 name kw_total
 name limits_basis
 name limits_equilibria
@@ -112,6 +114,7 @@ name safe_zone
 name safe_zone_gaps
 name saturation_index
 name saturation_plot
+name sea_equilibria
 name sea_weight
 name sws_to_nbs
 name total_boron
@@ -170,8 +173,14 @@ number 11.8571
 number 12.0107
 number 12.641
 number 13.4191
+number 13.9946
+number 13.995
+number 13.9965
+number 14.0012
 number 14.0941
 number 14.613358
+number 14.9412
+number 14.9435
 number 15.9994
 number 16.945176
 number 18.998
@@ -188,6 +197,8 @@ number 23.6521
 number 24.4344
 number 25.085
 number 25.3851
+number 30.419
+number 30.434
 number 32.065
 number 34.08088
 number 34.6435
@@ -221,6 +232,7 @@ number 139.34411
 number 141.328
 number 148.0248
 number 148.9652
+number 148.9802
 number 171.9065
 number 171.945
 number 178.34

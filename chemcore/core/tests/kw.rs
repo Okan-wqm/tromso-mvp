@@ -66,9 +66,15 @@ fn it_agrees_with_an_independent_implementation_of_millero_1995() {
         (40.0, 40.0, 2.378816964913356e-13, 1.5745841610347962e-13),
     ] {
         let found = c::kw_sws(temp_c, salinity).unwrap_or(f64::NAN);
-        assert!(((found - sws) / sws).abs() < 1e-12, "{temp_c} °C, S {salinity}: {found} against {sws}");
+        assert!(
+            ((found - sws) / sws).abs() < 1e-12,
+            "{temp_c} °C, S {salinity}: {found} against {sws}"
+        );
         let found = c::kw_free(temp_c, salinity).unwrap_or(f64::NAN);
-        assert!(((found - free) / free).abs() < 1e-12, "{temp_c} °C, S {salinity}: {found} against {free}");
+        assert!(
+            ((found - free) / free).abs() < 1e-12,
+            "{temp_c} °C, S {salinity}: {found} against {free}"
+        );
     }
 }
 
@@ -148,7 +154,9 @@ fn the_basis_the_limits_were_set_on_keeps_formula_1s_kw() {
         assert!(matches!((sea.map(|eq| eq.limits_basis), one), (Ok(Some(basis)), Ok(one)) if basis.kw == one));
         let band = f::equilibria_v3(temp_c, 3.0, Some(115.0), Ions::default());
         let blended = total_over_free(temp_c, 3.0).map(|sea| libm::exp(0.5 * libm::log(sea)));
-        assert!(matches!((band.map(|eq| eq.limits_basis), ideal, blended), (Ok(Some(basis)), Ok(ideal), Ok(blended))
-            if ((basis.kw - libm::exp(0.5 * libm::log(ideal)) * blended) / basis.kw).abs() < 1e-12));
+        assert!(
+            matches!((band.map(|eq| eq.limits_basis), ideal, blended), (Ok(Some(basis)), Ok(ideal), Ok(blended))
+            if ((basis.kw - libm::exp(0.5 * libm::log(ideal)) * blended) / basis.kw).abs() < 1e-12)
+        );
     }
 }

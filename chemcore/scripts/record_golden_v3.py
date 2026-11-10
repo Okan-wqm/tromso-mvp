@@ -13,7 +13,16 @@ the NH3 share of the TAN (the judged one, the larger of the limits' basis and th
 and the corrected one), with the pH offset (free - NBS) among the constants. Block `analyses`: the whole analysis
 (native.analyse: CO2 and its border, NH3-N and its border, each judged with its corrected value and basis, H2S, the oxygen) of every water at pH 7.0 with a TAN, a
 sulfide, the default limits and a target, by formula 1 and by formula 3. The values are the core's (bit for bit on every platform, `libm`), so
-farm/tests/test_golden_v3.py holds the core to them exactly. Standard library and farm.water.native only."""
+farm/tests/test_golden_v3.py holds the core to them exactly. Standard library and farm.water.native only.
+
+Recorded again, each time by this script and with its reason (formula 3 had not left its branch: the corrections went
+into formula 3 itself, formula 1's values in these files never moved; chemcore/findings/I2-comparison.md, the part of
+2026-11-10, has the numbers that moved):
+- 2026-11-10, Kw: formula 3's ion product of water is Millero's (1995) on his seawater scale over [H+]SWS/[H+]free
+  (pure water's at S 0), no longer the 2007 Guide's approximate total-scale value (owner-approved after the independent
+  check of 2026-11-09 against PyCO2SYS and seacarb). The constant `kw` moves by -0.8 to +1.5 % in the corpus; the CO2
+  worked out from it by at most +0.085 % (30 °C, S 35, 20 mg/L, pH 8.5), a median of 0.0002 %. The judged CO2 moves only
+  where the water's own value judges (1 440 of 9 900): the basis the limits were set on keeps formula 1's Kw."""
 import gzip
 import hashlib
 import io

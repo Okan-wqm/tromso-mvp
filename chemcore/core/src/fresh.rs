@@ -6,7 +6,8 @@
 //! strength near 0.01, where a monovalent ion's activity coefficient is about 0.9. Up to a salinity of `FRESH_UP_TO`
 //! the v3 water takes its ionic strength from what is measured, and its constants are the fresh-water (thermodynamic,
 //! infinite dilution) ones made concentration constants with Davies activity coefficients (`fresh_equilibria`); from
-//! `SEA_FROM` on they are v1's seawater constants, the NBS pH converted with the temperature's A (I1, below); between
+//! `SEA_FROM` on they are v1's seawater constants, the NBS pH converted with the temperature's A (I1, below) and the ion
+//! product of water Millero's (1995) on his seawater scale (`sea_equilibria`; v1 keeps the 2007 Guide's); between
 //! the two, each constant is the geometric blend of the two paths, the sea path's weight going linearly from 0 at
 //! `FRESH_UP_TO` to 1 at `SEA_FROM` (`sea_weight`), so nothing jumps at either end. Why 1 and 5 ‰: Millero et al.
 //! (2006) measured their K1 and K2 from S 1 to 50 (below 1 ‰ a fresh water's ions are not sea water's in proportion);
@@ -34,12 +35,13 @@
 //! formula 4: Takahashi's fH from 20 to 40 ‰).
 //! The concentration constants (Stumm & Morgan 1996,
 //! Aquatic Chemistry, 3rd ed., section 3.4; Plummer & Busenberg 1982), with γ₀ = 1 for CO₂, NH₃, H₂S, B(OH)₃:
-//! pH free = pH NBS + log γ₁ (a meter reads the activity of H⁺); K1 = K1° / γ₁²; K2 = K2° / γ₂; Kw = Kw° / γ₁²;
+//! pH free = pH NBS + log γ₁ (a meter reads the activity of H⁺); K1 = K1° / γ₁²; K2 = K2° / γ₂; Kw = Kw° / γ₁² (Kw°
+//! pure water's: Millero's 1995 expression at S 0, `chemistry::kw_sws`);
 //! KB = KB° / γ₁²; KH2S = KH2S° / γ₁²; KNH4 = KNH4° (H⁺ and NH₄⁺ both monovalent); Ksp as v1 (Ω is drawn only from 5 ‰).
 pub use crate::chemistry::Source;
 use crate::chemistry::{
     self as c, Equilibria, KELVIN, LimitsBasis, MG_CACO3_PER_MEQ, Origin, k_h2s_total, k_nh4_sws, k1_sws, k2_sws,
-    kb_total, kw_total, total_boron,
+    kb_total, kw_sws, kw_total, total_boron,
 };
 use crate::num::{ChemError, R, div, exp, finite, ln, pow, sqrt};
 
@@ -329,14 +331,20 @@ pub fn fresh_equilibria(
     let (strength, source) = fresh_ionic_strength(salinity, alkalinity_mg_l, ions)?;
     let eq = fresh_at(temp_c, salinity, strength, source, ions.origin)?;
     Ok(Equilibria {
-        limits_basis: Some(LimitsBasis::of(&fresh_at(
-            temp_c,
-            salinity,
-            0.0,
-            Source::Nothing,
-            ions.origin,
-        )?)),
+        limits_basis: Some(LimitsBasis::of(&ideal_water(temp_c, salinity, ions.origin)?)),
         ..eq
+    })
+}
+
+/// The ideal water the limits were set on (`limits_basis`): the fresh path at an ionic strength of 0 with formula 1's ion
+/// product of water (`chemistry::kw_total` at S 0, the 2007 Guide's), so that it stays formula 1's fresh water at S 0
+/// bit for bit and a judged CO₂, the larger of the basis's and the water's own, never falls below formula 1's. The water's
+/// own constants take Millero's Kw (`fresh_at`).
+fn ideal_water(temp_c: f64, salinity: f64, origin: Origin) -> Result<Equilibria, ChemError> {
+    let ideal = fresh_at(temp_c, salinity, 0.0, Source::Nothing, origin)?;
+    checked(Equilibria {
+        kw: kw_total(temp_c, 0.0)?,
+        ..ideal
     })
 }
 
@@ -359,7 +367,9 @@ fn fresh_at(
         ph_offset: one,
         k1: div(k1_sws(temp_c, 0.0)?, gamma_one_squared)?,
         k2: div(k2_sws(temp_c, 0.0)?, gamma_two)?,
-        kw: div(kw_total(temp_c, 0.0)?, gamma_one_squared)?,
+        // Kw° is pure water's: Millero's (1995) seawater-scale expression at S 0, where every pH scale is the free one
+        // (pKw 13.995 at 25 °C; the Guide's total-scale constant of formula 1 leaves 14.0012 there).
+        kw: div(kw_sws(temp_c, 0.0)?, gamma_one_squared)?,
         kb: div(kb_total(temp_c, 0.0)?, gamma_one_squared)?,
         boron: if origin == Origin::SaltAdded {
             0.0
@@ -395,7 +405,7 @@ fn fresh_at(
 /// (its constants jump there, S 28.39 ‰ as NaCl, its judged NH₃ and CO₂ never drop). Judgements take the larger of this
 /// and the activity-corrected value.
 pub fn limits_basis(temp_c: f64, salinity: f64, weight: f64, origin: Origin) -> Result<LimitsBasis, ChemError> {
-    let ideal = fresh_at(temp_c, salinity, 0.0, Source::Nothing, origin)?;
+    let ideal = ideal_water(temp_c, salinity, origin)?;
     if weight <= 0.0 || origin == Origin::SaltAdded {
         return Ok(LimitsBasis::of(&ideal));
     }
@@ -454,6 +464,18 @@ fn checked(eq: Equilibria) -> Result<Equilibria, ChemError> {
     Ok(eq)
 }
 
+/// The sea path's equilibria of formula 3: formula 1's seawater constants with two differences, the NBS pH converted by
+/// the temperature's A (I1) and the ion product of water Millero's (1995) on his seawater scale over [H⁺]SWS / [H⁺]free,
+/// as K1, K2 and KNH4 are converted (`chemistry::kw_free`; the correction of 2026-11-10 after the independent check:
+/// formula 1 keeps the 2007 Guide's approximate total-scale value, `chemistry::kw_total`).
+pub fn sea_equilibria(temp_c: f64, salinity: f64) -> Result<Equilibria, ChemError> {
+    let sea = c::equilibria_with(temp_c, salinity, &debye_huckel_a)?;
+    checked(Equilibria {
+        kw: c::kw_free(temp_c, salinity)?,
+        ..sea
+    })
+}
+
 /// A constant of the band: the geometric blend of the fresh and the sea path's, `weight` the sea's.
 fn blend(fresh: f64, sea: f64, weight: f64) -> R {
     exp((1.0 - weight) * ln(fresh)? + weight * ln(sea)?)
@@ -488,7 +510,7 @@ fn constants_v3(temp_c: f64, salinity: f64, alkalinity_mg_l: Option<f64>, ions: 
     };
     if weight >= 1.0 {
         let (strength, source) = ionic_strength(salinity, alkalinity_mg_l, ions)?;
-        let sea = c::equilibria_with(temp_c, salinity, &debye_huckel_a)?;
+        let sea = sea_equilibria(temp_c, salinity)?;
         return Ok(Equilibria {
             formula: 3,
             ionic_strength: strength,
@@ -502,7 +524,7 @@ fn constants_v3(temp_c: f64, salinity: f64, alkalinity_mg_l: Option<f64>, ions: 
     if weight <= 0.0 {
         return Ok(fresh);
     }
-    let sea = c::equilibria_with(temp_c, salinity, &debye_huckel_a)?;
+    let sea = sea_equilibria(temp_c, salinity)?;
     let eq = Equilibria {
         ph_offset: (1.0 - weight) * fresh.ph_offset + weight * sea.ph_offset,
         k1: blend(fresh.k1, sea.k1, weight)?,

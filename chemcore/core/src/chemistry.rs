@@ -155,14 +155,43 @@ pub fn k2_sws(temp_c: f64, salinity: f64) -> R {
     pow(10.0, -pk)
 }
 
-/// Ion product of water, total scale, (mol/kg)²: Millero (1995), Geochim. Cosmochim. Acta 59: 661. S 0–45, t 0–45 °C.
-pub fn kw_total(temp_c: f64, salinity: f64) -> R {
+/// Millero's (1995) ion product of water with the constant term of its ln given: 148.9802 on his seawater scale
+/// (`kw_sws`), 148.9652 as the 2007 Guide shifts it to the total scale (`kw_total`).
+fn kw_millero(constant: f64, temp_c: f64, salinity: f64) -> R {
     let t = temp_c + KELVIN;
     let root = sqrt(salinity)?;
     exp(
-        148.9652 - div(13847.26, t)? - 23.6521 * ln(t)? + (-5.977 + div(118.67, t)? + 1.0495 * ln(t)?) * root
+        constant - div(13847.26, t)? - 23.6521 * ln(t)? + (-5.977 + div(118.67, t)? + 1.0495 * ln(t)?) * root
             - 0.01615 * salinity,
     )
+}
+
+/// Ion product of water, (mol/kg)², as the 2007 Guide gives it for the total scale: Dickson, Sabine & Christian (eds.)
+/// 2007, Guide to Best Practices for Ocean CO₂ Measurements (PICES Spec. Publ. 3), ch. 5, eq. (62), which is Millero's
+/// (1995) seawater-scale expression (`kw_sws`) with 0.015 subtracted from its constant term (148.9802 − 0.015; the
+/// Guide's footnote 5: "to convert—approximately—from the SWS pH scale (including HF) used by Millero (1995) to the
+/// 'total' hydrogen ion scale"). Its check value: ln Kw = −30.434 at S 35, 25 °C. The fixed shift is a sea-water
+/// approximation: at S 0 it leaves pKw at 14.0012 at 25 °C, where pure water's is 13.995 (−1.49 % in Kw). Formula 1
+/// only (golden v1), kept by name; formula 3 takes `kw_sws` (`kw_free`). S 0–45, t 0–45 °C.
+pub fn kw_total(temp_c: f64, salinity: f64) -> R {
+    kw_millero(148.9652, temp_c, salinity)
+}
+
+/// Ion product of water, seawater scale, (mol/kg)²: Millero (1995), Geochim. Cosmochim. Acta 59: 661, ln Kw =
+/// 148.9802 − 13847.26/T − 23.6521 ln T + (−5.977 + 118.67/T + 1.0495 ln T) S^½ − 0.01615 S (the paper itself was not
+/// opened: the constant term is the 2007 Guide's 148.9652 with the 0.015 its footnote 5 says it took from Millero's, the
+/// value PyCO2SYS and seacarb take). Check values: ln Kw = −30.419 at S 35, 25 °C (the Guide's −30.434 + 0.015); at S 0
+/// pure water's, pKw 13.9946 at 25 °C and 14.9412 at 0 °C (Harned & Owen 1958: 13.9965 and 14.9435). S 0–45, t 0–45 °C.
+/// Formula 3's (`kw_free`).
+pub fn kw_sws(temp_c: f64, salinity: f64) -> R {
+    kw_millero(148.9802, temp_c, salinity)
+}
+
+/// Kw on the free scale as formula 3 takes it: Millero's seawater-scale value over [H⁺]SWS / [H⁺]free, as K1, K2 and KNH4
+/// are converted (`equilibria_with`); in fresh water (S ≤ 0) the factor is 1. Formula 1 divides the Guide's total-scale
+/// value by [H⁺]total / [H⁺]free (`equilibria_with`): −0.97 to +1.12 % apart from S 5 to 40, −1.49 % at S 0.
+pub fn kw_free(temp_c: f64, salinity: f64) -> R {
+    div(kw_sws(temp_c, salinity)?, free_to_sws(temp_c, salinity)?)
 }
 
 /// Boric acid dissociation constant, total scale, mol/kg: Dickson (1990), Deep-Sea Res. 37: 755. S 5–45, t 0–45 °C.
@@ -446,7 +475,9 @@ pub fn equilibria(temp_c: f64, salinity: f64) -> Result<Equilibria, ChemError> {
 }
 
 /// The seawater equilibria of `equilibria` with the NBS pH converted by the Debye–Hückel A of `a_of` (formula 3
-/// passes the A of the temperature's dielectric constant, `fresh::debye_huckel_a`). Non-finite inputs are refused.
+/// passes the A of the temperature's dielectric constant, `fresh::debye_huckel_a`, and then takes its own Kw:
+/// `fresh::sea_equilibria`). Kw here is formula 1's (`kw_total` over [H⁺]total / [H⁺]free). Non-finite inputs are
+/// refused.
 pub fn equilibria_with(temp_c: f64, salinity: f64, a_of: &dyn Fn(f64) -> R) -> Result<Equilibria, ChemError> {
     let temp_c = finite(temp_c)?;
     let salinity = finite(salinity)?;

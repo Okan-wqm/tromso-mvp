@@ -293,6 +293,17 @@ class LanguageTests(AccountMailCase):
                 self.assertContains(page, f'<h1>{heading}</h1>', html=True)
                 self.assertContains(page, f'<html lang="{language}"')
 
+    def test_a_refused_password_is_said_in_the_persons_saved_language_too(self):
+        # (review R6) the reasons are made while the form is checked: the language is the person's by then
+        _kari, sent = self.invite(language='tr')
+        opened = self.client.get(link_in(sent), follow=True, headers={'Accept-Language': 'en'})
+        refused = self.client.post(opened.redirect_chain[-1][0], {'new_password1': '123', 'new_password2': '123'},
+                                   headers={'Accept-Language': 'en'})
+        self.assertContains(refused, '<h1>Yeni parola belirleyin</h1>', html=True)
+        self.assertContains(refused, 'Bu parola çok kısa.')
+        self.assertNotContains(refused, 'This password is too short')
+        self.assertNotContains(refused, 'This password is too common')
+
     def test_without_a_saved_language_the_page_follows_the_browser_and_so_does_a_dead_link(self):
         _kari, sent = self.invite()
         page = self.client.get(link_in(sent), follow=True, headers={'Accept-Language': 'nb'})

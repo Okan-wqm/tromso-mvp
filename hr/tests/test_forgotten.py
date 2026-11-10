@@ -436,3 +436,53 @@ class NoTimeAheadTests(ForgottenTestCase):
             self.assertFalse(AttendanceRecord.objects.exists())
             record = services.enter_presence(self.lead, self.in_a, at(7), at(10), 'Phone was flat')
         self.assertEqual(record.clock_out, at(10))
+
+
+class MovedPersonTests(ForgottenTestCase):
+    """Review R9: Ann moved from department A to B on 1 March; her stretch has been open since 27 February. She is told
+    to ask her lead, so her lead of today closes it: an open stretch is reached by whoever reaches the person today,
+    as well as by whoever reached them on its first day. A closed stretch stays with the manager of its day."""
+
+    def setUp(self):
+        super().setUp()
+        from ..models import Posting
+        Posting.objects.filter(employee=self.in_a).update(valid_until=date(2026, 2, 28))
+        place(self.in_a, self.dept_b, start=date(2026, 3, 1))
+        self.new_lead = user('newlead', *ENTER_PERMS, group='New lead role')
+        ProductionDepartment.objects.filter(pk=self.dept_b.pk).update(manager=self.new_lead)
+        self.closed = punch(self.in_a, at(6, day=ago(4)), at(14, day=ago(4)))       # 26 February, closed: history
+        self.edit = reverse('hr:production_attendancerecord_edit', args=[self.open.pk])
+
+    def sees(self, actor):
+        self.client.force_login(actor)
+        with now(at(10)):
+            board = self.client.get(reverse('hr:production_today_board')).content.decode()
+            listed = [record.pk for record in self.client.get(
+                reverse('hr:production_attendancerecord_list')).context['objects']]
+            return ('Clock-out forgotten' in board, self.edit in board, self.client.get(self.edit).status_code,
+                    self.open.pk in listed, self.closed.pk in listed)
+
+    def test_the_lead_of_today_and_the_lead_of_its_first_day_both_reach_the_open_stretch(self):
+        #                                   row    link   opens  listed  the closed one listed
+        self.assertEqual(self.sees(self.new_lead), (True, True, 200, True, False))
+        self.assertEqual(self.sees(self.lead), (False, False, 200, True, True))     # not on their board: not their person today
+
+    def test_the_lead_of_today_closes_it_and_it_is_logged_as_theirs(self):
+        self.client.force_login(self.new_lead)
+        with now(at(10)):
+            response = self.client.post(self.edit, {'clock_in': '2026-02-27T07:00', 'clock_out': '2026-02-27T15:30',
+                                                    'note': 'Left at half past three', 'version': '1'})
+        self.assertEqual(response.status_code, 302, response.context and response.context['form'].errors)
+        self.open.refresh_from_db()
+        self.assertEqual((self.open.clock_out, self.open.via, self.open.updated_by),
+                         (at(15, 30, day=ago(3)), 'entered', self.new_lead))
+        self.assertEqual(AuditLog.objects.get(entity_id=str(self.open.pk), action='update').user, self.new_lead)
+        # closed, it is history of its day: the old lead's, no longer the new one's
+        self.assertEqual(self.client.get(self.edit).status_code, 404)
+
+    def test_a_closed_stretch_of_before_the_move_is_not_the_new_leads(self):
+        self.client.force_login(self.new_lead)
+        url = reverse('hr:production_attendancerecord_edit', args=[self.closed.pk])
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.assertEqual(self.client.post(url, {'clock_in': '2026-02-26T06:00', 'clock_out': '2026-02-26T15:00',
+                                                'note': 'x', 'version': '1'}).status_code, 404)

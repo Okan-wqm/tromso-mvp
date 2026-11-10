@@ -62,6 +62,9 @@ def handshake_problems():
 
 # ---- the chemistry (chemcore/core/src/chemistry.rs), under the names farm/water/chemistry.py gives them ----------
 NonFiniteError = chemcore.NonFiniteError
+# A water that cannot be (its alkalinity at or below the floor of its pH, or a DIC below 0): formula 3 refuses it at every
+# door, never a negative concentration; a ValueError. The pages say the reason first (deffeyes.why_impossible, the same rule).
+ImpossibleWaterError = chemcore.ImpossibleWaterError
 Equilibria = chemcore.Equilibria
 KELVIN = chemcore.KELVIN
 MG_CACO3_PER_MEQ = chemcore.MG_CACO3_PER_MEQ

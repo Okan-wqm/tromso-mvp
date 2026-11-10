@@ -13,12 +13,12 @@
     }
   },
   "core": {
-    "core_hash": "263e1ffffc54ae57",
+    "core_hash": "c51e9656c2250ddb",
     "formula_version": 3,
     "version": "0.1.0"
   },
   "format": 2,
   "golden_version": "v3",
-  "recorder_sha256": "5195c2293ab6d561fb469166aa872e42273f089b917cfcd8e57c8d799f1795ff",
+  "recorder_sha256": "1e36319f33ae60d925ebec10c8a354d42faf7ad9279f54fcd1b285fe994e3960",
   "what": "Formula 3 (the application\u2019s): I1, the Debye-H\u00fcckel A of the temperature; I2, fresh water ionic strength (the conductivity at 25 \u00b0C or the salinity, not below the hardness and alkalinity or the alkalinity) with Davies activities up to 1 permil, the seawater constants from 5, blended between. Beside formula 1 (golden v1)."
 }

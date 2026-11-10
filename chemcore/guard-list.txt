@@ -111,6 +111,7 @@ name pk_nh4_seawater
 name practical_salinity
 name pressure_atm
 name region_names
+name require_water
 name safe_zone
 name safe_zone_gaps
 name saturation_index

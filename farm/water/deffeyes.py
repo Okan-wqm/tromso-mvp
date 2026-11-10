@@ -181,7 +181,9 @@ class Analysis:
 def analyse(water, limits=Limits(), target=None, pressure=1.0):
     """The values of a water against the limits (the core's analysis, chemcore/core/src/analysis.rs): DIC and CO₂ from
     the alkalinity and the pH, NH₃-N from the TAN, H₂S from the total sulfide, each limit as a pH border, the oxygen
-    saturation at `pressure` (atm)."""
+    saturation at `pressure` (atm). A water or a target whose pH and alkalinity cannot go together is refused by the core
+    (native.ImpossibleWaterError; formula 1 works it out, as golden v1 holds it): ask `why_impossible` first, as the
+    calculator's form, a unit's chart and a replay frame do, and say its reason."""
     found = native.analyse(
         **asdict(water), **asdict(limits), target_ph=None if target is None else target.ph,
         target_alkalinity_mg_l=None if target is None else target.alkalinity_mg_l, pressure=pressure)
@@ -199,8 +201,10 @@ def alkalinity_floor(temperature_c, salinity_ppt, ph, **medium):
 
 def why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l, **ions):
     """Why a water of this pH and alkalinity cannot be (its alkalinity at or below the floor of `alkalinity_floor`),
-    in the active language; '' when it can. The calculator's form and a unit's chart ask here. `ions`: its
-    conductivity_25_us_cm and hardness_mg_l, and the formula."""
+    in the active language; '' when it can. The calculator's form, a unit's chart and a replay frame ask here; the
+    decision is the core's one rule, by which the core itself refuses such a water (native.ImpossibleWaterError), so a
+    water with no reason here is never refused there. `ions`: its conductivity_25_us_cm and hardness_mg_l, and the
+    formula."""
     floor = native.why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l, **ions)
     if floor is None:
         return ''

@@ -569,9 +569,51 @@ impl Equilibria {
         Ok((bicarbonate + 2.0 * carbonate, (div(self.kw, h)? - h + borate) * 1000.0))
     }
 
+    /// Whether a water of this pH (NBS) can have this alkalinity (meq/L): above the floor, the pH line's intercept (the
+    /// hydroxide and the borate less the hydrogen ion, `isoline`), where its DIC is 0. THE rule of a water that cannot
+    /// be: `dic`, `co2_corrected`, the analysis, the simulator's start and `analysis::why_impossible` all ask here, each
+    /// with the alkalinity in meq/L as mg/L ÷ `MG_CACO3_PER_MEQ`, so the reason a page says and the core's refusal are
+    /// one decision.
+    pub fn possible(&self, alkalinity: f64, ph: f64) -> Result<bool, ChemError> {
+        Ok(alkalinity > self.isoline(ph)?.1)
+    }
+
+    /// Refuses (`ChemError::ImpossibleWater`) a pH and an alkalinity no water has (`possible`): never a negative DIC,
+    /// CO₂ or carbonate. Formula 1 refuses nothing, by name: golden v1 holds what it returned below the floor.
+    pub fn require_water(&self, alkalinity: f64, ph: f64) -> Result<(), ChemError> {
+        if self.formula == 1 || self.possible(alkalinity, ph)? {
+            Ok(())
+        } else {
+            Err(ChemError::ImpossibleWater)
+        }
+    }
+
+    /// Refuses a DIC below 0, which no water has (formula 1 refuses nothing, as `require_water`).
+    fn require_dic(&self, dic: f64) -> Result<(), ChemError> {
+        if self.formula == 1 || dic >= 0.0 {
+            Ok(())
+        } else {
+            Err(ChemError::ImpossibleWater)
+        }
+    }
+
+    /// The DIC (mmol/L) of a water of this alkalinity (meq/L) and pH; refused when no water has them (`require_water`).
     pub fn dic(&self, alkalinity: f64, ph: f64) -> R {
+        self.require_water(alkalinity, ph)?;
+        self.dic_on_line(alkalinity, ph)
+    }
+
+    /// The DIC where an alkalinity meets a pH's line, at or below the floor too (0 or less there): the chart's geometry
+    /// and the solvers follow the line; a water's DIC is `dic`.
+    pub(crate) fn dic_on_line(&self, alkalinity: f64, ph: f64) -> R {
         let (slope, intercept) = self.isoline(ph)?;
         div(alkalinity - intercept, slope)
+    }
+
+    /// The CO₂ (mmol/L) where an alkalinity meets a pH's line (`dic_on_line`), 0 or less at or below the floor: what the
+    /// solver of a CO₂ border follows, and what the limits' basis gives for a water its own constants could not hold.
+    fn co2_on_line(&self, alkalinity: f64, ph: f64) -> R {
+        Ok(self.dic_on_line(alkalinity, ph)? * self.fractions(ph)?.0)
     }
 
     pub fn alkalinity(&self, dic: f64, ph: f64) -> R {
@@ -591,11 +633,15 @@ impl Equilibria {
         )
     }
 
+    /// The CO₂ (mmol/L) of a DIC at a pH; a DIC below 0 is refused (`ChemError::ImpossibleWater`; formula 1 never did).
     pub fn co2(&self, dic: f64, ph: f64) -> R {
+        self.require_dic(dic)?;
         Ok(dic * self.fractions(ph)?.0)
     }
 
+    /// The carbonate (mmol/L) of a DIC at a pH; a DIC below 0 is refused, as `co2`.
     pub fn carbonate(&self, dic: f64, ph: f64) -> R {
+        self.require_dic(dic)?;
         Ok(dic * self.fractions(ph)?.2)
     }
 
@@ -714,7 +760,7 @@ impl Equilibria {
     /// when not in range.
     pub fn ph_where_co2_corrected(&self, alkalinity: f64, co2: f64) -> Result<Option<f64>, ChemError> {
         solve(
-            &mut |ph| Ok(self.co2(self.dic(alkalinity, ph)?, ph)? - co2),
+            &mut |ph| Ok(self.co2_on_line(alkalinity, ph)? - co2),
             SOLVER_PH.0,
             SOLVER_PH.1,
         )
@@ -730,18 +776,22 @@ impl Equilibria {
         }
     }
 
-    /// The CO₂ (mmol/L) of a water of this alkalinity (meq/L) and pH (NBS) as these constants give it.
+    /// The CO₂ (mmol/L) of a water of this alkalinity (meq/L) and pH (NBS) as these constants give it; refused when no
+    /// water has them (`require_water`).
     pub fn co2_corrected(&self, alkalinity: f64, ph: f64) -> R {
-        self.co2(self.dic(alkalinity, ph)?, ph)
+        self.require_water(alkalinity, ph)?;
+        self.co2_on_line(alkalinity, ph)
     }
 
     /// The CO₂ (mmol/L) every CO₂ judgement takes, of a water of this alkalinity (meq/L) and pH, and its basis: the
     /// larger of the limits' basis and the activity-corrected CO₂ (cross review F1, as `nh3_share`); `own` is this
     /// water's own CO₂ as these constants give it (a state's `co2(dic, ph)`, passed so a simulator step keeps its own).
+    /// The basis's constants differ, so its pH line may put this water at or below its own floor: its CO₂ is then 0 or
+    /// less (`co2_on_line`) and the water's own, which `co2` never gives below 0, judges.
     pub fn co2_judged(&self, alkalinity: f64, ph: f64, own: f64) -> Result<(f64, Basis), ChemError> {
         match self.limits_equilibria() {
             Some(basis) => {
-                let limits = basis.co2_corrected(alkalinity, ph)?;
+                let limits = basis.co2_on_line(alkalinity, ph)?;
                 Ok(if own > limits {
                     (own, Basis::Corrected)
                 } else {

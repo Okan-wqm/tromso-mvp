@@ -26,7 +26,10 @@ into formula 3 itself, formula 1's values in these files never moved; chemcore/f
 - 2026-11-10, Ω: each pH of a water from 5 permil also holds `log_omega`, log10 Ω of calcite and of aragonite with 400
   mg/L of calcium (no Ω was recorded before). Formula 3's takes the Ksp per litre, Mucci's per-kg2 Ksp times the square
   of the sea water's density (EOS-80; owner-approved after the same check, claim 12b: Ω was ρ2 too high); formula 1's
-  keeps the per-kg Ksp, as golden v1 holds it. FORMAT 2: a key was added."""
+  keeps the per-kg Ksp, as golden v1 holds it. FORMAT 2: a key was added.
+- 2026-11-10, the refusal of a water that cannot be (ImpossibleWaterError; the same check, claim 9): every water of the
+  corpus is possible, so no value moved (both blocks have the bytes of the recording before); the manifest names the
+  new core."""
 import gzip
 import hashlib
 import io

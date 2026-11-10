@@ -18,9 +18,13 @@ with its carbonate system on the Deffeyes chart (`Equilibria`:
 fractions, isoline, DIC, CO2, the borders of a limit), the solver (`solve`), the oxygen solubility of Benson & Krause
 1984 at a pressure (`oxygen_solubility`, `pressure_atm`, `vapour_pressure_atm`) and the CO2 of a water in equilibrium
 with the air (`k0_co2`, `co2_from_air`, Weiss 1974). An input that is not a finite number, or one where the mathematics
-fails, raises (ValueError, ZeroDivisionError, OverflowError; native.NonFiniteError for a non-finite one)."""
+fails, raises (ValueError, ZeroDivisionError, OverflowError; native.NonFiniteError for a non-finite one); a pH and an
+alkalinity no water has (the alkalinity at or below the floor of the pH), or a DIC below 0, raises ImpossibleWaterError
+(a ValueError; formula 3), never a concentration below 0. Kw is Millero's (1995) on his seawater scale (formula 1: the
+2007 Guide's total-scale value, `kw_total`)."""
 from .native import (  # noqa: F401  the names the code has always used
-    FORMULA_VERSION, H2S_PER_S, MG_CACO3_PER_MEQ, MG_CALCIUM_PER_MOL, MG_CO2_PER_MMOL, Equilibria, water_equilibria,
+    FORMULA_VERSION, H2S_PER_S, MG_CACO3_PER_MEQ, MG_CALCIUM_PER_MOL, MG_CO2_PER_MMOL, Equilibria, ImpossibleWaterError,
+    water_equilibria,
     co2_from_air, equilibria, k0_co2, k1_sws, k2_sws, k_h2s_total, k_nh4_sws, kb_total, ksp_aragonite, ksp_calcite,
     kw_total, nh3_fraction, oxygen_solubility, ph_free, pk_nh4, pressure_atm, solve, vapour_pressure_atm)
 from .native import activity_coefficient_h as _activity_coefficient_h  # noqa: F401

@@ -396,7 +396,9 @@ pub struct Step {
 }
 
 /// The water after each amount (grams by reagent key) added in turn to `volume` m³, in the reagents' order, from
-/// `start` at `ph`; a stripping step that takes the CO₂ below `air_co2_mg_l` is flagged; [] without an amount.
+/// `start` at `ph`; a stripping step that takes the CO₂ below `air_co2_mg_l` is flagged; [] without an amount. A start
+/// that is no water (its pH and alkalinity cannot go together, or its DIC is below 0) is refused
+/// (`ChemError::ImpossibleWater`; formula 1 never did); a dose that takes more than there is gives a step without a pH.
 pub fn simulate(
     eq: &Equilibria,
     start: (f64, f64),
@@ -419,6 +421,7 @@ pub fn simulate(
         return Ok(Vec::new());
     }
     let (mut dic, mut alkalinity) = start;
+    eq.require_water(alkalinity, ph)?;
     let mut steps = vec![Step {
         reagent: None,
         grams: 0.0,

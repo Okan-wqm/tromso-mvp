@@ -19,6 +19,12 @@ create_exception!(
     PyValueError,
     "A non-finite input or result: never shown as a number."
 );
+create_exception!(
+    chemcore,
+    ImpossibleWaterError,
+    PyValueError,
+    "A water that cannot be: its alkalinity at or below the floor of its pH, or a DIC below 0. Never worked out."
+);
 
 fn err(error: ChemError) -> PyErr {
     match error {
@@ -27,6 +33,10 @@ fn err(error: ChemError) -> PyErr {
         ChemError::Overflow => PyOverflowError::new_err("math range error"),
         ChemError::NonFinite => NonFiniteError::new_err("not a finite number"),
         ChemError::UnknownFormula => PyValueError::new_err("unknown formula version (the core has 1 and 3)"),
+        ChemError::ImpossibleWater => ImpossibleWaterError::new_err(
+            "no water has this pH and alkalinity: the hydroxide and the borate of the pH alone are at least the \
+             alkalinity (or a DIC below 0 was given)",
+        ),
         ChemError::OutOfRange => PyValueError::new_err(
             "ionic strength above 0.5: outside the range of the Davies equation (a conductivity in mS/cm, or a sea \
              water without its salinity?)",
@@ -259,6 +269,12 @@ impl Equilibria {
         let (slope, intercept) = self.0.isoline(ph).map_err(err)?;
         Ok((ok(Ok(slope))?, ok(Ok(intercept))?))
     }
+    /// Whether a water of this pH can have this alkalinity (meq/L): the one rule of a water that cannot be.
+    fn possible(&self, alkalinity: f64, ph: f64) -> PyResult<bool> {
+        inputs(&[alkalinity, ph])?;
+        self.0.possible(alkalinity, ph).map_err(err)
+    }
+    /// The DIC of a water; chemcore.ImpossibleWaterError when no water has this pH and alkalinity (formula 3).
     fn dic(&self, alkalinity: f64, ph: f64) -> PyResult<f64> {
         inputs(&[alkalinity, ph])?;
         ok(self.0.dic(alkalinity, ph))
@@ -1213,6 +1229,7 @@ fn saturation_index(
 #[pymodule]
 fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("NonFiniteError", module.py().get_type::<NonFiniteError>())?;
+    module.add("ImpossibleWaterError", module.py().get_type::<ImpossibleWaterError>())?;
     module.add("ChartTooLargeError", module.py().get_type::<ChartTooLargeError>())?;
     module.add("PH_RANGE", a::PH_RANGE)?;
     module.add("ALERT_PH", a::ALERT_PH)?;

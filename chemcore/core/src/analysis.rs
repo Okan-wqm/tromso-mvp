@@ -222,7 +222,10 @@ fn finite_option(value: Option<f64>) -> Result<Option<f64>, ChemError> {
     value.map(finite).transpose()
 }
 
-/// The values of a water against the limits at a pressure (atm). Every input must be finite.
+/// The values of a water against the limits at a pressure (atm). Every input must be finite. A water, or a target,
+/// whose pH and alkalinity cannot go together is refused (`ChemError::ImpossibleWater`, by `Equilibria::dic`: the rule
+/// `why_impossible` asks too), never worked out with a DIC or a CO₂ below 0; formula 1 works it out as golden v1 holds
+/// it.
 pub fn analyse(water: &Water, limits: &Limits, target: Option<&Target>, pressure: f64) -> Result<Analysis, ChemError> {
     for value in [water.ph, water.alkalinity_mg_l, pressure] {
         finite(value)?;
@@ -386,7 +389,11 @@ pub fn alkalinity_floor(temperature_c: f64, salinity_ppt: f64, ph: f64, medium: 
     Ok(eq.isoline(ph)?.1 * c::MG_CACO3_PER_MEQ)
 }
 
-/// The floor when a water of this pH and alkalinity cannot be (its alkalinity at or below the floor), else None.
+/// The floor (mg/L as CaCO₃) when a water of this pH and alkalinity cannot be (its alkalinity at or below the floor),
+/// else None: the reason the pages say. The decision is the core's one rule, `Equilibria::possible`, with the
+/// alkalinity in meq/L as the analysis takes it, so it has a reason exactly where the analysis and the equilibria refuse.
+/// Formula 1 refuses nothing, and its decision here stays golden v1's comparison in mg/L, bit for bit (its ties on the
+/// floor are listed by farm/tests/test_native_analysis.py).
 pub fn why_impossible(
     temperature_c: f64,
     salinity_ppt: f64,
@@ -396,13 +403,15 @@ pub fn why_impossible(
     ions: Ions,
 ) -> Result<Option<f64>, ChemError> {
     finite(alkalinity_mg_l)?;
-    let medium = Medium {
-        formula,
-        alkalinity_mg_l: Some(alkalinity_mg_l),
-        ions,
+    finite(ph)?;
+    let eq = water_equilibria(formula, temperature_c, salinity_ppt, Some(alkalinity_mg_l), ions)?;
+    let floor = eq.isoline(ph)?.1 * c::MG_CACO3_PER_MEQ;
+    let possible = if formula == 1 {
+        alkalinity_mg_l > floor
+    } else {
+        eq.possible(div(alkalinity_mg_l, c::MG_CACO3_PER_MEQ)?, ph)?
     };
-    let floor = alkalinity_floor(temperature_c, salinity_ppt, ph, &medium)?;
-    Ok(if alkalinity_mg_l > floor { None } else { Some(floor) })
+    Ok(if possible { None } else { Some(floor) })
 }
 
 /// The axes' ends and their tick steps.

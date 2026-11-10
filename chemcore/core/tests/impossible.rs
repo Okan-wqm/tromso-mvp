@@ -71,11 +71,9 @@ fn the_analysis_refuses_an_impossible_target() {
         ph: 7.5,
         alkalinity_mg_l: 100.0,
     };
-    assert!(
-        a::analyse(&fine, &limits(), Some(&reachable), 1.0)
-            .is_ok_and(|found| found.target_dic.is_some_and(|dic| dic > 0.0)
-                && found.target_co2_mg_l.is_some_and(|co2| co2 > 0.0))
-    );
+    assert!(a::analyse(&fine, &limits(), Some(&reachable), 1.0).is_ok_and(|found| {
+        found.target_dic.is_some_and(|dic| dic > 0.0) && found.target_co2_mg_l.is_some_and(|co2| co2 > 0.0)
+    }));
 }
 
 #[test]
@@ -127,9 +125,15 @@ fn a_dose_that_takes_more_than_there_is_stays_a_step_without_a_water() {
     let alkalinity = 80.0 / c::MG_CACO3_PER_MEQ;
     let dic = eq.dic(alkalinity, 7.0).unwrap_or(f64::NAN);
     let steps = dosing::simulate(&eq, (dic, alkalinity), 7.0, &[("degas", 500.0)], 1.0, None);
-    assert!(steps.is_ok_and(|steps| steps.len() == 2
-        && steps.first().is_some_and(|step| step.co2_mg_l.is_some_and(|co2| co2 > 0.0))
-        && steps.last().is_some_and(|step| step.ph.is_none() && step.co2_mg_l.is_none())));
+    assert!(steps.is_ok_and(|steps| {
+        steps.len() == 2
+            && steps
+                .first()
+                .is_some_and(|step| step.co2_mg_l.is_some_and(|co2| co2 > 0.0))
+            && steps
+                .last()
+                .is_some_and(|step| step.ph.is_none() && step.co2_mg_l.is_none())
+    }));
 }
 
 #[test]
@@ -162,7 +166,10 @@ fn one_rule_decides_for_the_reason_the_analysis_and_the_equilibria() {
         }
     }
     assert_eq!(apart, 0);
-    assert!(refused > 100 && answered > 400, "{refused} refused, {answered} answered");
+    assert!(
+        refused > 100 && answered > 400,
+        "{refused} refused, {answered} answered"
+    );
 }
 
 #[test]
@@ -174,7 +181,12 @@ fn on_the_floor_and_one_step_either_side_the_three_agree() {
         alkalinity_mg_l: None,
         ions: Ions::default(),
     };
-    for (temp_c, salinity, ph) in [(25.0, 35.0, 9.0), (10.0, 5.0, 10.0), (40.0, 40.0, 9.0), (30.0, 15.0, 11.5)] {
+    for (temp_c, salinity, ph) in [
+        (25.0, 35.0, 9.0),
+        (10.0, 5.0, 10.0),
+        (40.0, 40.0, 9.0),
+        (30.0, 15.0, 11.5),
+    ] {
         let floor = a::alkalinity_floor(temp_c, salinity, ph, &sea).unwrap_or(f64::NAN);
         assert!(floor > 0.0);
         let mut decided = [false; 6];
@@ -199,7 +211,11 @@ fn on_the_floor_and_one_step_either_side_the_three_agree() {
         }
         // Far enough below it is refused, far enough above it is answered, and once possible it stays so going up.
         assert!(!decided.first().copied().unwrap_or(true) && decided.last().copied().unwrap_or(false));
-        assert!(decided.windows(2).all(|pair| matches!(pair, [below, above] if !*below || *above)));
+        assert!(
+            decided
+                .windows(2)
+                .all(|pair| matches!(pair, [below, above] if !*below || *above))
+        );
     }
 }
 
@@ -234,8 +250,10 @@ fn the_safe_zone_is_still_drawn_where_its_edge_runs_along_a_ph_the_band_cannot_h
         ..Layers::default()
     };
     let shape = g::geometry(&calm, &limits(), None, 1.0, layers, None, &[], &[]);
-    assert!(shape.is_ok_and(|shape| shape
-        .regions
-        .iter()
-        .any(|(key, polygon)| *key == "safe" && polygon.len() >= 3)));
+    assert!(shape.is_ok_and(|shape| {
+        shape
+            .regions
+            .iter()
+            .any(|(key, polygon)| *key == "safe" && polygon.len() >= 3)
+    }));
 }

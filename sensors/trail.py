@@ -3,7 +3,9 @@ hour over a range. Each hour takes, per input, by owner rule A9 (`farm.water.rea
 fresh value of the owner's own places (the hour's mean of the sensors bound there, from the hour rollup, or a manual or
 lab sample fresh at the hour's end), else of its system's, else (salinity only) the assumption for fresh water. An hour
 without one of the four inputs is listed as
-missing, never filled. The point is the diagram's: the dissolved inorganic carbon and the alkalinity
+missing, never filled; an hour whose pH and alkalinity cannot go together (the pH's hydroxide alone is more alkalinity
+than the water has: the core refuses such a water, chemistry.ImpossibleWaterError) is listed as impossible, never drawn.
+The point is the diagram's: the dissolved inorganic carbon and the alkalinity
 (farm/water/chemistry.py, the chart's own equilibria: formula 3, with the conductivity at 25 °C and the hardness of the
 hour when there, IONS)."""
 from dataclasses import dataclass, field
@@ -37,6 +39,7 @@ class Trail:
     end: object
     points: list = field(default_factory=list)
     missing: list = field(default_factory=list)        # the hours without every input
+    impossible: list = field(default_factory=list)     # the hours whose pH and alkalinity cannot go together
 
 
 def _hourly(owner, conditions, code, start, end):
@@ -103,7 +106,11 @@ def trail(owner, start, end):
                                                 values['alkalinity_mg_l'], *(values.get(code) for code in IONS),
                                                 water_origin=origin)
         alkalinity = values['alkalinity_mg_l'] / chemistry.MG_CACO3_PER_MEQ
+        try:
+            dic = equilibria.dic(alkalinity, values[parameters.PH])
+        except chemistry.ImpossibleWaterError:      # the core's one rule, the one deffeyes.why_impossible asks
+            found.impossible.append(at)
+            continue
         found.points.append(TrailPoint(at, values[parameters.TEMPERATURE], values[parameters.PH],
-                                       values['alkalinity_mg_l'], values[parameters.SALINITY],
-                                       equilibria.dic(alkalinity, values[parameters.PH]), alkalinity))
+                                       values['alkalinity_mg_l'], values[parameters.SALINITY], dic, alkalinity))
     return found

@@ -299,13 +299,15 @@ pub fn safe_zone(analysis: &a::Analysis, limits: &a::Limits, chart: &ChartBox) -
     if kept.len() < 2 {
         return Ok(Vec::new());
     }
+    // The zone's corners lie where the band's alkalinities meet the pH lines of its edges: geometry, not waters. A
+    // line may put a row at or below its floor (the chart's top pH above a low band: a DIC below 0), which the box cuts.
     let mut polygon = Vec::with_capacity(2 * kept.len());
     for &row in &kept {
-        polygon.push((eq.dic(row, top)?, row));
+        polygon.push((eq.dic_on_line(row, top)?, row));
     }
     for &row in kept.iter().rev() {
         let ph = if row == closes { top } else { floor(row)? };
-        polygon.push((eq.dic(row, ph)?, row));
+        polygon.push((eq.dic_on_line(row, ph)?, row));
     }
     Ok(clip_to_box(&polygon, chart))
 }

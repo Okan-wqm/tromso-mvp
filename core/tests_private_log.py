@@ -245,7 +245,8 @@ class ConversionTests(TestCase):
         said = out.getvalue()
         for line in ('Dry run: nothing is written.',
                      '9 activity-log row(s) hold plain values that were decided private:',
-                     '  9 value(s) made private (a contact e-mail or phone of a site, a supplier or a report; a note)',
+                     "  9 value(s) made private (a site's, a supplier's or a report's own e-mail or phone; a person's "
+                     "free text on a task)",
                      '  4 contact e-mail(s) and phone(s) made private, the contact (name, role, primary) kept',
                      '  1 role(s) made private together with a phone they could not be told apart from, the name kept',
                      '  1 contact list(s) made private whole: they could not be taken apart',
@@ -274,24 +275,13 @@ class ConversionTests(TestCase):
         the code's here."""
         from farm.models import SiteContact
         from farm.resources.contact import ContactList
-        from farm.resources.site import SiteResource
-        from reports.resources import ReportResource
-        from tasks import services as tasks
-        from tasks.models import Task
         self.assertEqual(_private.private('Words'), audit.private('Words'))
         self.assertEqual(_private.private('Words', 'Email'), audit.private('Words', 'Email'))
         label = lambda model, name: str(model._meta.get_field(name).verbose_name)
         with audit.source_language():
             self.assertEqual(set(_private.CONTACTS), {('site', str(ContactList.label)), ('supplier', str(ContactList.label))})
             self.assertEqual(_private.CONTACT_FIELDS, tuple(label(SiteContact, name) for name in ContactList.PRIVATE))
-            expected = {
-                *((SiteResource.entity_type(), label(SiteResource.model, name)) for name in SiteResource.private_fields),
-                *((ReportResource.entity_type(), label(ReportResource.model, name))
-                  for name in ReportResource.private_fields),
-                (audit.entity_type_of(Task), str(tasks.NOTE)),
-                *((audit.entity_type_of(Task), label(Task, name)) for name in tasks.PRIVATE),
-            }
-        self.assertEqual(set(_private.PRIVATE), expected)
+        # the fields: MoreDecidedPrivateTests.test_the_conversions_list_is_every_private_field_of_the_code
 
 
 class MoreDecidedPrivateTests(TestCase):

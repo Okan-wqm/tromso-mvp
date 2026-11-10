@@ -38,7 +38,8 @@ LOGGED_AFTER = ['batch', 'assignees', 'started_by', 'completed_by', 'completion_
 # A person's free text on a task: the log says that it was given, replaced or cleared, never its words (it may name a
 # person, and nobody can erase from the log; owner decision F-061, 2026-11-10). A task's note (`add_note`) is kept the
 # same way. The words stay on the task, for who reads it.
-PRIVATE = ('completion_note', 'cancel_reason')
+PRIVATE = ('description', 'completion_note', 'cancel_reason')
+SERIES_PRIVATE = ('description',)     # a recurring task's description is the same free text
 SERIES_LOGGED = ['title', 'description', 'category', 'priority']
 SERIES_LOGGED_AFTER = ['assignees', 'frequency', 'interval', 'weekdays', 'day_of_month', 'due_time', 'starts_on',
                        'ends_on', 'is_active']
@@ -54,7 +55,7 @@ def place_text(place):
 
 def snapshot(task):
     """What the activity log compares for a task; build it inside audit.source_language()."""
-    values = audit.snapshot(task, LOGGED)
+    values = audit.snapshot(task, LOGGED, private=PRIVATE)
     values[str(LOCATION)] = place_text(task.place)
     values.update(audit.snapshot(task, LOGGED_AFTER, private=PRIVATE))
     return values
@@ -62,7 +63,7 @@ def snapshot(task):
 
 def series_snapshot(series):
     """What the activity log compares for a recurring task; build it inside audit.source_language()."""
-    values = audit.snapshot(series, SERIES_LOGGED)
+    values = audit.snapshot(series, SERIES_LOGGED, private=SERIES_PRIVATE)
     values[str(LOCATION)] = place_text(series.place)
     values.update(audit.snapshot(series, SERIES_LOGGED_AFTER))
     return values

@@ -32,6 +32,8 @@ UNSURE = 'Role or phone'
 PRIVATE = (
     ('site', 'Contact email'), ('site', 'Contact phone'),
     ('regulatory report', 'Contact e-mail'), ('regulatory report', 'Contact telephone'),
+    ('supplier', 'Email'), ('supplier', 'Phone'),
+    ('task', 'Description'), ('recurring task', 'Description'),
     ('task', 'Note'), ('task', 'Completion note'), ('task', 'Reason for cancelling'),
 )
 RECORD = ('activity log', 'core.0011', 'Private values')      # the log's own row: record type, id, label
@@ -176,8 +178,8 @@ def report(found, counts):
     taken apart by id, record type and record, never by their words."""
     if not counts['rows']:
         return ['No plain value under a private label: nothing to convert.']
-    lines = [f'  {counts["values"]} value(s) made private (a contact e-mail or phone of a site, a supplier or a report; '
-             f'a note)',
+    lines = [f"  {counts['values']} value(s) made private (a site's, a supplier's or a report's own e-mail or phone; "
+             f"a person's free text on a task)",
              f'  {counts["contact_values"]} contact e-mail(s) and phone(s) made private, the contact (name, role, '
              f'primary) kept',
              f'  {counts["parts"]} role(s) made private together with a phone they could not be told apart from, the '

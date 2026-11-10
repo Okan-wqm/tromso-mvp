@@ -82,6 +82,24 @@ def _display(instance, field):
     return str(value)
 
 
+def digest(text):
+    """The short keyed digest the log keeps of a private value instead of the value: eight hex digits of an HMAC-SHA256
+    under the server's SECRET_KEY. Equal values give equal digests, so the log shows that a value changed and whether
+    two were the same; the value cannot be read back from it, and without the key a guess cannot be checked against
+    it. The one digest of the log: whatever keeps a private value out of it calls this."""
+    return hmac.new(settings.SECRET_KEY.encode(), str(text).encode(), hashlib.sha256).hexdigest()[:8]
+
+
+def private(text):
+    """How the log keeps a private value (a person's own words, a contact's e-mail or phone): the enumerated value
+    "Private text" with its `digest`, never the text. A page shows "Private text"; replacing one value by another is
+    still a change the log shows ("Private text" to "Private text") without saying anything about what they say."""
+    return {**message(_('Private text')), 'rev': digest(text)}
+
+
+_kept_private = private       # `snapshot` takes the private field names under the function's own name
+
+
 def snapshot(instance, field_names, labels=None, private=()):
     """{field label: display value} for the given fields, None for empty values. Labels come from
     `labels` (e.g. a form's Meta.labels) and default to the model field's verbose name. A `private` field
@@ -93,10 +111,7 @@ def snapshot(instance, field_names, labels=None, private=()):
         field = instance._meta.get_field(name)
         value = _display(instance, field)
         if name in private and value is not None:
-            # The words are never stored. A short keyed digest is, so that replacing one text by another is a change the log
-            # shows ("Private text" to "Private text") without saying anything about what they say.
-            value = {**message(_('Private text')), 'rev': hmac.new(
-                settings.SECRET_KEY.encode(), str(value).encode(), hashlib.sha256).hexdigest()[:8]}
+            value = _kept_private(value)
         result[str(labels.get(name, capfirst(field.verbose_name)))] = value
     return result
 

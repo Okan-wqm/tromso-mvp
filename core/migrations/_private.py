@@ -26,6 +26,8 @@ import json
 import re
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 
 from ._log import system_entry
 
@@ -53,7 +55,6 @@ COUNTS = {
 }
 WHOLE_IDS = 'Entries whose contact list was made private whole'
 
-EMAIL = re.compile(r'^[^@\s,;()]+@[^@\s,;()]+\.[^@\s,;()]+$')
 PHONE = re.compile(r'^[+(]?\d[\d\s()./+-]*$')
 NUMBER = 5            # this many digits make a number: a phone has them, a role ("24/7", "Shift 2") has fewer
 
@@ -95,6 +96,17 @@ def _telling(text):
 def _phone(text):
     """Whether `text` has the form of a phone number: digits with spaces and + ( ) . / -, five digits or more."""
     return bool(PHONE.match(text)) and _digits(text) >= NUMBER
+
+
+def is_email(text):
+    """Whether `text` has the form of an e-mail address: the definition of the contact form's own e-mail field
+    (Django's validate_email, which the model's EmailField and its form field call), so what the form accepted as an
+    address is what is read as one here (`kari@localhost`, `"a,b"@example.com`), and nothing else is (review R20)."""
+    try:
+        validate_email(text)
+    except ValidationError:
+        return False
+    return True
 
 
 def _split(text, separator):
@@ -159,7 +171,7 @@ def _contact(item):
         details = ([role] if role else []) + (['primary'] if primary else [])
         return f'{name} ({", ".join(details)})' if details else name
 
-    mails = [index for index, token in enumerate(tokens) if EMAIL.match(token)]
+    mails = [index for index, token in enumerate(tokens) if is_email(token)]
     if len(mails) == 1:
         role, phone = ', '.join(tokens[:mails[0]]), ', '.join(tokens[mails[0] + 1:])
         hidden = [private(tokens[mails[0]], CONTACT_FIELDS[0])] + ([private(phone, CONTACT_FIELDS[1])] if phone else [])

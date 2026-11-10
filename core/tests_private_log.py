@@ -424,3 +424,31 @@ class LeftoverTests(TestCase):
         recipe = (Path(settings.BASE_DIR) / 'CLAUDE.md').read_text(encoding='utf-8')
         step = next(line for line in recipe.splitlines() if line.startswith('5. '))
         self.assertLess(step.index('stop the dev server'), step.index('`migrate`'))
+
+
+class LogWordsTests(TestCase):
+    """Review R10 and R14: what a data migration writes into the log is shown translated like every other row, and
+    one function writes a migration's log row."""
+
+    def test_the_words_the_conversion_writes_are_in_both_catalogs(self):
+        from django.utils import translation
+        words = [_private.RECORD[0], *_private.COUNTS.values(), _private.WHOLE_IDS, _private.UNSURE, 'Note']
+        for word in words:
+            self.assertIn(word, [*audit.MIGRATION_WORDS, 'Note'], word)
+            for language in ('nb', 'tr'):
+                with translation.override(language):
+                    self.assertNotEqual(translation.gettext(word), word, (language, word))
+
+    def test_the_conversions_row_reads_in_the_readers_language(self):
+        from django.utils import translation
+        entry = AuditLog(user_name='system', action='update', entity_type=_private.RECORD[0], entity_id='core.0011',
+                         entity_label='Private values', changes={_private.COUNTS['rows']: [None, '9']})
+        with translation.override('nb'):
+            self.assertEqual((entry.shown_type(), entry.shown_changes()),
+                             ('aktivitetslogg', [('Oppføringer konvertert', None, '9')]))
+
+    def test_one_function_writes_a_migrations_log_row(self):
+        writers = [path.relative_to(settings.BASE_DIR).as_posix()
+                   for path in Path(settings.BASE_DIR).glob('*/migrations/*.py')
+                   if 'INSERT INTO audit_log' in path.read_text(encoding='utf-8')]
+        self.assertEqual(writers, ['core/migrations/_log.py'])

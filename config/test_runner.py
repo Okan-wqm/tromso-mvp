@@ -73,7 +73,11 @@ class FastPasswordRunner(DiscoverRunner):
     def setup_test_environment(self, **kwargs):
         super().setup_test_environment(**kwargs)
         strict_warnings()
-        self._fast_hasher = override_settings(PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'])
+        # The account e-mails' jobs run in the request, not on the worker thread (core.accountmail.background): a
+        # TestCase's rows are never committed, so no other thread could read them. core.tests_account_mail_worker runs
+        # the worker itself.
+        self._fast_hasher = override_settings(PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'],
+                                              MAIL_IN_BACKGROUND=False)
         self._fast_hasher.enable()
 
     def teardown_test_environment(self, **kwargs):

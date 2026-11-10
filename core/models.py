@@ -268,10 +268,12 @@ class Profile(models.Model):
 
 
 class AccountMail(models.Model):
-    """The account e-mails the platform sent, or tried to: the invitation a new person gets, each time the admin sends
-    it again, and every password reset. One row per mail, written by core.accountmail when it is sent: who it is for,
-    the address it went to, who asked for it and, when it did not go out, why. Never the link or its token. The users
-    tab shows what became of a person's last invitation, and the reset form counts an account's mails of the last hour."""
+    """The account e-mails the platform sends: the invitation a new person gets, each time the admin sends it again,
+    and every password reset. One row per mail, and the outbox core.accountmail works from: what causes a mail writes
+    its row as waiting, in its own transaction; the mail is sent after that has committed, and the row then says when
+    it went out (`sent_at`) or why it did not (`error`). A row with neither is waiting, or never finished. Who it is
+    for, the address, who asked for it; never the link or its token. The users tab shows what became of a person's
+    last invitation, and the reset form counts an account's mails of the last hour."""
 
     class Kind(models.TextChoices):
         INVITATION = 'invitation', _('Invitation')
@@ -285,7 +287,9 @@ class AccountMail(models.Model):
     requested_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
                                      related_name='+')
     created_at = models.DateTimeField(auto_now_add=True)
-    # Why the mail did not go out (the mail server's or the settings' own words); empty when the server took it.
+    # When the mail server took it; empty while the mail waits to be sent, and for one that did not go out.
+    sent_at = models.DateTimeField(null=True, blank=True)
+    # Why the mail did not go out (the mail server's words, or the platform's own); empty otherwise.
     error = models.CharField(max_length=500, blank=True)
 
     class Meta:

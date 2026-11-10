@@ -280,7 +280,7 @@ One time a condition held: a sensor rule's event (mirrored from sensors.AlarmEve
 <a id="coreaccountmail"></a>
 ### core.AccountMail (`account_mails`)
 
-The account e-mails the platform sent, or tried to: the invitation a new person gets, each time the admin sends it again, and every password reset.
+The account e-mails the platform sends: the invitation a new person gets, each time the admin sends it again, and every password reset.
 
 - **create**: users tab (`/users/new/`); core:user_invite (`/users/<int:pk>/invite/`); password_reset (`/accounts/password_reset/`)
 - **edit**: none, by design: a row is what became of one mail
@@ -289,7 +289,7 @@ The account e-mails the platform sent, or tried to: the invitation a new person 
 - **how it works**: Written when a mail is sent: creating a user and "Send invitation" on the users tab send an invitation, "Forgot your password?" a reset. Never the link or its token.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › account_mails
 - **constraints**: chk_account_mails_kind (check)
-- **tests that mention it**: `core/tests_account_mail.py`, `core/tests_account_mail_worker.py`
+- **tests that mention it**: `core/tests_account_mail.py`, `core/tests_account_mail_timing.py`, `core/tests_account_mail_worker.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -299,6 +299,7 @@ The account e-mails the platform sent, or tried to: the invitation a new person 
 | address | varchar(254) |  |  | system: written by core.accountmail when the mail is sent |
 | requested_by_id | integer | yes | auth_user (SET_NULL) | system: written by core.accountmail when the mail is sent |
 | created_at | timestamp with time zone |  |  | system: author, time, version or delete mark |
+| sent_at | timestamp with time zone | yes |  | system: written by core.accountmail when the mail is sent |
 | error | varchar(500) |  |  | system: written by core.accountmail when the mail is sent |
 
 <a id="coreauditlog"></a>

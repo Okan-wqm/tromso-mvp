@@ -6,28 +6,39 @@ The link starts with settings.PUBLIC_BASE_URL, never with the Host header of the
 mail is written in the recipient's saved language (otherwise in the language of whoever caused it). It goes out through
 the default mailer (settings.MAILERS).
 
-Every mail is recorded (`AccountMail`: who, which kind, to which address, by whom, and why not when it did not go out;
-never the link). A mail that cannot be sent is not an error of the page that caused it: the record a person just
-created stays, and the row says what happened."""
+**A mail leaves after the request, never in it.** `AccountMail` is the outbox: what causes a mail writes its row as
+waiting (`queue`), inside its own transaction, so a save that fails leaves no row and sends nothing. Once that
+transaction has committed, the row is handed to the worker (`hand_over`): one background thread per process, which
+talks to the mail server outside any transaction and any lock and then writes what became of the mail on its row,
+sent or why not. So a request never waits for a mail server, a person's row is never locked while one is talked to,
+and a mail is never out for a record that does not exist. A mail gets settings.MAIL_SEND_SECONDS in all (`_send`). A
+row still waiting long after that never finished (the server stopped with the mail in its queue): it counts as not
+sent, never as sent (`state`). Nothing is raised to the page that caused a mail: the person's row on the users tab says
+what happened, and the server's log has the line."""
+import atexit
 import logging
+import queue as queues
+import socket
+import threading
+import time
 from dataclasses import dataclass
 from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
-from django.core.exceptions import ImproperlyConfigured
-from django.core.mail import DEFAULT_MAILER_ALIAS, EmailMessage
-from django.db import transaction
+from django.core.mail import DEFAULT_MAILER_ALIAS, EmailMessage, mailers
+from django.db import connections, transaction
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone, translation
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext as _, gettext_noop
 
+from . import audit
 from .language import account_language
-from .models import AccountMail
+from .models import AccountMail, AuditLog
 from .people import person_name
 
 logger = logging.getLogger(__name__)
@@ -35,11 +46,96 @@ logger = logging.getLogger(__name__)
 INVITATION, RESET = AccountMail.Kind.INVITATION, AccountMail.Kind.RESET
 REASON_LENGTH = AccountMail._meta.get_field('error').max_length
 
+# Why a mail did not go out, in the platform's own words (a mail server's own are kept as it said them).
+TOOK_NOTHING = 'The mail server took no message.'
+NO_PUBLIC_ADDRESS = 'The public address of this server is not set (PUBLIC_BASE_URL): the link would lead nowhere.'
+TOO_SLOW = 'The mail server did not finish in time.'
+BUSY = 'Too many mails are waiting to be sent.'
+CHANGED = 'The account changed before the mail was sent.'
+INTERRUPTED = 'The sending was interrupted: the server stopped, or the mail server never answered.'
+
+# An invitation in the activity log: the labels and the outcome the platform writes, stored as msgids (the admin's own
+# row is core.resources.UserResource.invite's).
+INVITATION_LABEL, SENT_TO_LABEL = gettext_noop('Invitation'), gettext_noop('Sent to')
+REASON_LABEL, NOT_SENT = gettext_noop('Reason'), gettext_noop('Not sent')
+
+
+class NotSent(Exception):
+    """A mail the platform itself could not send; its text is one of the sentences above."""
+
+
+# --- the worker ---------------------------------------------------------------------------------------------
+
+QUEUE_SIZE = 200          # jobs that may wait; more are refused (`background` says so), never piled up without end
+
+
+class Worker:
+    """One background thread of this process that runs the jobs handed to it, one after the other. It starts with the
+    first job (never at import: a server that forks its processes gives each its own). A job's fault is logged and the
+    worker goes on; its database connection is closed after every job, so none stays open between mails."""
+
+    def __init__(self):
+        self.jobs = queues.Queue(maxsize=QUEUE_SIZE)
+        self.thread = None
+        self.starting = threading.Lock()
+
+    def put(self, job, *args):
+        """Queues `job(*args)`; False when the queue is full."""
+        with self.starting:
+            if self.thread is None or not self.thread.is_alive():
+                self.thread = threading.Thread(target=self.run, name='account-mail', daemon=True)
+                self.thread.start()
+        try:
+            self.jobs.put_nowait((job, args))
+        except queues.Full:
+            return False
+        return True
+
+    def run(self):
+        while True:
+            job, args = self.jobs.get()
+            try:
+                job(*args)
+            except Exception as fault:
+                # the fault's kind and words: a job's own failures are recorded by the job (`deliver`)
+                logger.error('A background job of the account e-mails failed: %s: %s', type(fault).__name__, fault)
+            finally:
+                connections.close_all()
+                self.jobs.task_done()
+
+    def drain(self, seconds):
+        """Waits until every job handed over is done, at most `seconds`; whether they all are."""
+        deadline = time.monotonic() + seconds
+        with self.jobs.all_tasks_done:
+            while self.jobs.unfinished_tasks:
+                left = deadline - time.monotonic()
+                if left <= 0:
+                    return False
+                self.jobs.all_tasks_done.wait(left)
+        return True
+
+
+worker = Worker()
+# A server that stops in order gives the mails under way their time; one that is killed leaves their rows waiting,
+# which the users tab shows as not sent.
+atexit.register(lambda: worker.drain(settings.MAIL_SEND_SECONDS))
+
+
+def background(job, *args):
+    """Runs `job(*args)` after the request: on the worker, or at once where settings.MAIL_IN_BACKGROUND is off (the
+    tests, whose uncommitted rows no other thread could read). False when the worker's queue is full."""
+    if settings.MAIL_IN_BACKGROUND:
+        return worker.put(job, *args)
+    job(*args)
+    return True
+
+
+# --- the mail -----------------------------------------------------------------------------------------------
 
 def public_url(path):
     """`path` of this server as people reach it from outside."""
     if not settings.PUBLIC_BASE_URL:
-        raise ImproperlyConfigured('PUBLIC_BASE_URL is not set: the link in the mail would lead nowhere.')
+        raise NotSent(NO_PUBLIC_ADDRESS)
     return settings.PUBLIC_BASE_URL + path
 
 
@@ -64,37 +160,114 @@ def message(user, kind, by, language, uid, token):
 
 
 def reason(failure, token):
-    """Why a mail did not go out, as the users tab shows it: the error's kind and its words on one line, cut to the
-    column, and never the link (an error that quotes the mail would otherwise put its token in the table)."""
+    """Why a mail did not go out, as the users tab shows it: the platform's own sentence, or the error's kind and its
+    words on one line, cut to the column, and never the link (an error that quotes the mail would otherwise put its
+    token in the table)."""
+    if isinstance(failure, NotSent):
+        return str(failure)
     text = ' '.join(f'{type(failure).__name__}: {failure}'.split())
     text = text.replace(token, '…')
     return text if len(text) <= REASON_LENGTH else text[:REASON_LENGTH - 1] + '…'
 
 
-def send(user, kind, by=None):
-    """Sends `user` the mail of `kind` and records it; returns the record (`error` says why when it did not go out).
-    Whatever stops a mail (no server, a refusal, a missing setting) is recorded and logged, never raised: the caller's
-    own work stands."""
-    language = account_language(user) or translation.get_language()
-    uid, token = link_parts(user)
-    error = ''
+def _cut(mailer):
+    """Ends the SMTP conversation `mailer` is in, whatever step it waits at (Django's SMTP backend keeps its
+    connection in these two attributes; another backend has none, and nothing to cut)."""
+    for name in ('connection', '_partial_connection'):
+        sock = getattr(getattr(mailer, name, None), 'sock', None)
+        if sock is not None:
+            try:
+                sock.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+
+
+def _send(mail):
+    """Hands `mail` to the default mailer, with settings.MAIL_SEND_SECONDS for the whole conversation: the mailer's
+    own timeout is for each step of it (connect, greeting, sender, recipient, data, ...), so a server answering every
+    step just in time would otherwise hold a mail many times that. Past the limit the conversation is cut off, and
+    again until the send has returned (a connection still being opened has no socket to cut yet)."""
+    mailer = mailers[DEFAULT_MAILER_ALIAS]
+    done, late = threading.Event(), threading.Event()
+
+    def watch():
+        if not done.wait(settings.MAIL_SEND_SECONDS):
+            late.set()
+            while not done.wait(0.1):
+                _cut(mailer)
+
+    threading.Thread(target=watch, name='account-mail-limit', daemon=True).start()
     try:
-        if message(user, kind, by, language, uid, token).send(using=DEFAULT_MAILER_ALIAS) != 1:
-            error = 'The mail server took no message.'
+        taken = mailer.send_messages([mail])
+    except Exception:
+        if late.is_set():
+            raise NotSent(TOO_SLOW) from None
+        raise
+    finally:
+        done.set()
+    if taken != 1:
+        raise NotSent(TOO_SLOW if late.is_set() else TOOK_NOTHING)
+
+
+# --- the outbox ---------------------------------------------------------------------------------------------
+
+def queue(user, kind, by=None):
+    """Writes the mail of `kind` for `user` as waiting and returns its row. Call it inside the transaction of what
+    causes the mail, and `hand_over` the row once that has committed."""
+    return AccountMail.objects.create(user=user, kind=kind, address=user.email, requested_by=by)
+
+
+def hand_over(mail):
+    """Gives a waiting mail to the worker, after the transaction that wrote it has committed and outside any lock.
+    The language of whoever caused it goes along, for a recipient who has saved none. A mail the worker cannot take
+    (its queue is full) is marked not sent here; whether it was taken."""
+    if background(deliver, mail.pk, translation.get_language()):
+        return True
+    _close(mail, BUSY)
+    return False
+
+
+def deliver(mail_id, language):
+    """The worker's job: sends a waiting mail and writes what became of it. Whatever stops the mail (no server, a
+    refusal, a missing setting, the time limit) is its row's reason, never raised."""
+    mail = (AccountMail.objects.select_related('user', 'requested_by')
+            .filter(pk=mail_id, sent_at=None, error='').first())
+    if mail is None:
+        return
+    user = mail.user
+    uid, token = link_parts(user)
+    try:
+        if user.email != mail.address or not user.is_active:
+            raise NotSent(CHANGED)
+        _send(message(user, mail.kind, mail.requested_by, account_language(user) or language, uid, token))
     except Exception as failure:
-        error = reason(failure, token)
-    if error:
-        # the reason alone, not the exception: its own words may quote the mail, link and all
-        logger.error('The %s mail for user %s was not sent: %s', kind, user.pk, error)
-    return AccountMail.objects.create(user=user, kind=kind, address=user.email, requested_by=by, error=error)
+        _close(mail, reason(failure, token))
+    else:
+        AccountMail.objects.filter(pk=mail.pk, sent_at=None, error='').update(sent_at=timezone.now())
+
+
+def _close(mail, error):
+    """Marks a waiting mail as not sent, with why: on its row, in the server's log and, for an invitation, in the
+    activity log (the platform's own line after the admin's "Invited")."""
+    if not AccountMail.objects.filter(pk=mail.pk, sent_at=None, error='').update(error=error):
+        return
+    # the reason alone, not the exception: its own words may quote the mail, link and all
+    logger.error('The %s mail %s for user %s was not sent: %s', mail.kind, mail.pk, mail.user_id, error)
+    if mail.kind == INVITATION:
+        with audit.source_language():
+            changes = {str(INVITATION_LABEL): [None, audit.message(NOT_SENT)],
+                       str(SENT_TO_LABEL): [None, mail.address], str(REASON_LABEL): [None, error]}
+        audit.record(None, AuditLog.Action.INVITE, mail.user, changes,
+                     entity_type=audit.entity_type_of(get_user_model()))
+
 
 
 def reset(user):
-    """Sends `user` a password reset mail, unless the account has had its share for the hour
-    (settings.PASSWORD_RESET_MAILS_PER_HOUR; a mail that was tried counts). Returns the record, or None when the
-    request was held back: the person asking is answered the same either way, and the server's log says it. The
-    account's row is locked while its mails are counted and the mail is sent, so requests that arrive together take
-    turns and cannot all read "none sent yet"."""
+    """Queues `user` a password reset mail and hands it over, unless the account has had its share for the hour
+    (settings.PASSWORD_RESET_MAILS_PER_HOUR; a mail that was tried counts). The account's row is locked only while
+    its mails are counted and the new one is written, so requests that arrive together take turns and cannot all
+    read "none yet"; the mail server is talked to after the lock is gone. Returns the row, or None when the request
+    was held back: the person asking is answered the same either way, and the server's log says it."""
     with transaction.atomic():
         user = get_user_model().objects.select_for_update().filter(pk=user.pk, is_active=True).first()
         if user is None:                 # deactivated since the form looked the address up
@@ -104,7 +277,36 @@ def reset(user):
         if recent >= settings.PASSWORD_RESET_MAILS_PER_HOUR:
             logger.warning('A password reset mail for user %s was held back: %s in the last hour.', user.pk, recent)
             return None
-        return send(user, RESET)
+        mail = queue(user, RESET)
+    hand_over(mail)
+    return mail
+
+
+# --- where a person stands, for the users tab -----------------------------------------------------------------
+
+WAITING, SENT, FAILED = 'waiting', 'sent', 'failed'
+
+
+def state(mail):
+    """What became of a mail: SENT, FAILED, or WAITING while the worker may still have it. A row waiting longer than
+    a mail can take (twice the limit: the worker may have been at another mail) never finished, and is FAILED."""
+    if mail.error:
+        return FAILED
+    if mail.sent_at:
+        return SENT
+    over = mail.created_at + timedelta(seconds=2 * settings.MAIL_SEND_SECONDS) < timezone.now()
+    return FAILED if over else WAITING
+
+
+def shown_reason(mail):
+    """Why a mail did not go out, for a page: its row's reason, or that it never finished."""
+    return mail.error or INTERRUPTED
+
+
+def being_sent(user):
+    """Whether an invitation for `user` is waiting with the worker right now."""
+    last = AccountMail.objects.filter(user=user, kind=INVITATION).order_by('-created_at', '-id').first()
+    return last is not None and state(last) == WAITING
 
 
 def cannot_invite(user):
@@ -117,6 +319,8 @@ def cannot_invite(user):
         return _('%(name)s is inactive: an inactive person cannot sign in.') % name
     if not user.email:
         return _('%(name)s has no email address: add one first.') % name
+    if being_sent(user):
+        return _('An invitation to %(name)s is being sent right now: wait for it, the row says what became of it.') % name
     return None
 
 
@@ -126,9 +330,10 @@ class Standing:
     state: str            # one of the states below
     mail: object = None   # the last invitation's record, when there is one
     can_send: bool = False
+    reason: str = ''      # why it was not sent, for NOT_SENT
 
     PASSWORD_SET, INACTIVE, NO_ADDRESS, NOT_INVITED = 'password_set', 'inactive', 'no_address', 'not_invited'
-    NOT_SENT, ADDRESS_CHANGED, EXPIRED, SENT = 'not_sent', 'address_changed', 'expired', 'sent'
+    SENDING, NOT_SENT, ADDRESS_CHANGED, EXPIRED, SENT = 'sending', 'not_sent', 'address_changed', 'expired', 'sent'
 
 
 def standing(user):
@@ -146,12 +351,15 @@ def standing(user):
     last = next(iter(mails), None)
     if last is None:
         return Standing(Standing.NOT_INVITED, can_send=True)
-    if last.error:
-        state = Standing.NOT_SENT
-    elif last.address != user.email:
-        state = Standing.ADDRESS_CHANGED            # the token holds the address: that link died with the change
-    elif last.created_at + timedelta(seconds=settings.PASSWORD_RESET_TIMEOUT) < timezone.now():
-        state = Standing.EXPIRED
+    became = state(last)
+    if became == WAITING:
+        return Standing(Standing.SENDING, last)
+    if became == FAILED:
+        return Standing(Standing.NOT_SENT, last, can_send=True, reason=shown_reason(last))
+    if last.address != user.email:
+        found = Standing.ADDRESS_CHANGED            # the token holds the address: that link died with the change
+    elif last.sent_at + timedelta(seconds=settings.PASSWORD_RESET_TIMEOUT) < timezone.now():
+        found = Standing.EXPIRED
     else:
-        state = Standing.SENT
-    return Standing(state, last, can_send=True)
+        found = Standing.SENT
+    return Standing(found, last, can_send=True)

@@ -3289,6 +3289,10 @@ msgstr "Pasif bir bağlantı dinlenmez: cihazlarının gönderdikleri kimseye ul
 msgid "An inactive location takes no new stock; what it holds still shows and can leave."
 msgstr "Pasif bir yer yeni stok almaz; tuttuğu görünmeye devam eder ve çıkabilir."
 
+#, python-format
+msgid "An invitation to %(name)s is being sent right now: wait for it, the row says what became of it."
+msgstr "%(name)s için bir davet şu anda gönderiliyor: bekleyin, satır ne olduğunu gösterir."
+
 msgid ""
 "An older value is shown stale with its age, never OK, and never clears an alarm. 1 to 8760 hours "
 "(a year)."
@@ -7634,10 +7638,6 @@ msgid ""
 msgstr ""
 "Davet gönderildi: %(when)s, %(address)s; adres o zamandan beri değişti, bu yüzden bağlantı artık "
 "çalışmıyor."
-
-#, python-format
-msgid "Invitation sent to %(address)s."
-msgstr "Davet %(address)s adresine gönderildi."
 
 msgid "Invited"
 msgstr "Davet edildi"
@@ -13620,6 +13620,14 @@ msgstr ""
 
 msgid "The ingest service’s own user name at the broker."
 msgstr "Veri alım servisinin broker’daki kendi kullanıcı adı."
+
+#, python-format
+msgid "The invitation to %(address)s is being sent (%(when)s)."
+msgstr "%(address)s adresine davet gönderiliyor (%(when)s)."
+
+#, python-format
+msgid "The invitation to %(address)s is being sent: this person’s row says whether it went out."
+msgstr "%(address)s adresine davet gönderiliyor: gönderilip gönderilmediğini bu kişinin satırı gösterir."
 
 #, python-format
 msgid "The invitation to %(address)s was not sent: %(reason)s"

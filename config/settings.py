@@ -241,12 +241,17 @@ KNOWLEDGE_MAX_FILE_BYTES = 20 * 1024 * 1024
 #   EMAIL_PORT            its port; left out, the encryption's own (587 starttls, 465 ssl, 25 off)
 #   EMAIL_HOST_USER, EMAIL_HOST_PASSWORD   the account to sign in to it with; left out, no sign-in
 #   EMAIL_TLS             starttls (the default), ssl, or off
-#   EMAIL_TIMEOUT         seconds a send may wait for the server (10): a save never hangs on a dead mail server
+#   EMAIL_TIMEOUT         seconds one mail may take in all (30): core.accountmail cuts the conversation off there
 #   DEFAULT_FROM_EMAIL    the sender address
 # With DEBUG off there is no console to fall back on: the mailer is SMTP whatever the environment holds, the server does
 # not start without EMAIL_HOST (core.checks.mail_is_configured, core.E002) and a send without one fails where the admin
 # sees it. MAIL_MUST_SEND is what that check reads: DEBUG as it was read here (the test runner turns DEBUG off).
 MAIL_MUST_SEND = not DEBUG
+# The mailer's own timeout is for each step of the SMTP conversation; core.accountmail holds the whole mail to it.
+MAIL_SEND_SECONDS = int(os.environ.get('EMAIL_TIMEOUT', '30'))
+# The account e-mails leave after the request that causes them, on a worker thread (core.accountmail). The tests run
+# the worker's jobs in the request instead (config.test_runner): their uncommitted rows are not another thread's to read.
+MAIL_IN_BACKGROUND = True
 _mail_encryption = os.environ.get('EMAIL_TLS', 'starttls')
 if _mail_encryption not in ('starttls', 'ssl', 'off'):
     from django.core.exceptions import ImproperlyConfigured
@@ -262,7 +267,7 @@ if os.environ.get('EMAIL_HOST') or MAIL_MUST_SEND:
                 'password': os.environ.get('EMAIL_HOST_PASSWORD') or None,
                 'use_tls': _mail_encryption == 'starttls',
                 'use_ssl': _mail_encryption == 'ssl',
-                'timeout': int(os.environ.get('EMAIL_TIMEOUT', '10')),
+                'timeout': MAIL_SEND_SECONDS,
             },
         },
     }

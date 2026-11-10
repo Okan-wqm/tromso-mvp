@@ -2162,7 +2162,7 @@
       "app": "core",
       "model": "AccountMail",
       "table": "account_mails",
-      "description": "The account e-mails the platform sent, or tried to: the invitation a new person gets, each time the admin sends it again, and every password reset.",
+      "description": "The account e-mails the platform sends: the invitation a new person gets, each time the admin sends it again, and every password reset.",
       "columns": [
         {
           "name": "id",
@@ -2240,6 +2240,17 @@
           "on_form": [],
           "how": "system",
           "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "sent_at",
+          "field": "sent_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.accountmail when the mail is sent"
         },
         {
           "name": "error",
@@ -2342,6 +2353,7 @@
       },
       "tests": [
         "core/tests_account_mail.py",
+        "core/tests_account_mail_timing.py",
         "core/tests_account_mail_worker.py"
       ]
     },

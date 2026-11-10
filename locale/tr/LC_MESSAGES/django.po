@@ -13082,8 +13082,14 @@ msgstr "Her değer doğru olduğunda çizelgeler ve değerler yeniden görünür
 msgid "The checklist has been started: its lines can no longer be changed. Add a note instead."
 msgstr "Kontrol listesine başlandı: satırları artık değiştirilemez. Bunun yerine bir not ekleyin."
 
+msgid "The clock-in cannot be later than now."
+msgstr "Giriş, şu andan sonra olamaz."
+
 msgid "The clock-ins of your team in these days appear here."
 msgstr "Ekibinizin bu günlerdeki girişleri burada görünür."
+
+msgid "The clock-out cannot be later than now: give the time the person really left."
+msgstr "Çıkış, şu andan sonra olamaz: kişinin gerçekten ayrıldığı saati girin."
 
 msgid ""
 "The companies the farm buys from: feed, live fish and eggs, equipment, medicines and services "

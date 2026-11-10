@@ -13057,8 +13057,14 @@ msgstr "Diagrammene og verdiene vises igjen når alle verdiene er riktige."
 msgid "The checklist has been started: its lines can no longer be changed. Add a note instead."
 msgstr "Sjekklisten er påbegynt: linjene kan ikke lenger endres. Legg til et notat i stedet."
 
+msgid "The clock-in cannot be later than now."
+msgstr "Innstemplingen kan ikke være senere enn nå."
+
 msgid "The clock-ins of your team in these days appear here."
 msgstr "Teamets innstemplinger i disse dagene vises her."
+
+msgid "The clock-out cannot be later than now: give the time the person really left."
+msgstr "Utstemplingen kan ikke være senere enn nå: oppgi tidspunktet personen faktisk gikk."
 
 msgid ""
 "The companies the farm buys from: feed, live fish and eggs, equipment, medicines and services "

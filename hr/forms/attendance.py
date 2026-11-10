@@ -85,6 +85,14 @@ class AttendanceRecordForm(TabbedForm):
 
     def clean(self):
         placed = self.instants(self.cleaned_data)
+        if placed is not None:
+            # The rule of the two times themselves (the out after the in, neither later than now), before the table's
+            # overlap check answers in its place: a clock-out typed before the clock-in is told as that (review R18).
+            try:
+                services.check_times(placed[2], placed[3])
+            except ValidationError as error:
+                for field, messages in error.message_dict.items():
+                    self.add_error(field, messages)       # which also takes the time out of what is checked next
         cleaned = super().clean()
         if self.errors:
             return cleaned
@@ -94,9 +102,6 @@ class AttendanceRecordForm(TabbedForm):
             raise ValidationError(_('You do not see this person on this day.'))
         if services.own_record(self.user, employee):
             raise ValidationError(_('You do not enter or correct your own attendance.'))
-        if ended is not None and ended <= started:
-            self.add_error('clock_out', _('The person cannot clock out before they clocked in.'))
-            return cleaned
         services.check_employed(employee, started.astimezone(zone).date(),
                                 ended.astimezone(zone).date() if ended is not None else None)
         # A time typed by hand is an entered time, whoever clocked in: a new stretch, and a stretch whose clock-in or

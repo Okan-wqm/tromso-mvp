@@ -579,6 +579,21 @@ def clock_out(user):
         return record
 
 
+def check_times(clock_in_at, clock_out_at, now=None):
+    """The rule of a stretch's two times when a person types them, on the form and in the service: the clock-out after
+    the clock-in, and neither later than the server's now. A time typed by hand is a time that has been: a clock-out
+    ahead would close a stretch with hours nobody has worked yet, keep the person from clocking in and take them out
+    of the emergency count while the record says they are in (review R6). Raises a ValidationError by field."""
+    now = now or timezone.now()
+    if clock_out_at is not None and clock_out_at <= clock_in_at:
+        raise ValidationError({'clock_out': _('The person cannot clock out before they clocked in.')})
+    if clock_in_at > now:
+        raise ValidationError({'clock_in': _('The clock-in cannot be later than now.')})
+    if clock_out_at is not None and clock_out_at > now:
+        raise ValidationError({'clock_out': _('The clock-out cannot be later than now: give the time the person really '
+                                              'left.')})
+
+
 def enter_presence(user, employee, clock_in_at, clock_out_at, note):
     """A lead records presence for a person of their team: times already on the site's clock as instants, and a reason
     (required: the CHECK on the table says so too). Needs Create on Attendance and the person in the user's team."""
@@ -588,8 +603,7 @@ def enter_presence(user, employee, clock_in_at, clock_out_at, note):
     note = (note or '').strip()
     if not note:
         raise ValidationError(_('Say why the time was entered by hand.'))
-    if clock_out_at is not None and clock_out_at <= clock_in_at:
-        raise ValidationError(_('The person cannot clock out before they clocked in.'))
+    check_times(clock_in_at, clock_out_at)
     with transaction.atomic():
         employee = lock_employed(employee, punch_day(employee, clock_in_at),
                                  punch_day(employee, clock_out_at) if clock_out_at is not None else None)

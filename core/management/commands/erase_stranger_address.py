@@ -5,7 +5,8 @@ officer's written instruction; no page does this.
 Without `--apply` it changes nothing: it says exactly which `account_mails` rows and which activity-log rows and
 labels would change, and where else the text of the address stands (left as it is). That is the default because the
 erasure cannot be undone and sets the log's append-only trigger aside: the operator reads what will change, then
-runs it again with `--apply`, the instruction and their name.
+runs it again with `--apply`, the instruction and their name. With `--apply` the log is locked against writers for
+the moment of the change; the command waits for that lock at most `--lock-wait` seconds and gives up otherwise.
 
     python manage.py erase_stranger_address stranger@example.com
     python manage.py erase_stranger_address stranger@example.com --apply \\
@@ -30,8 +31,11 @@ class Command(BaseCommand):
                             help='The instruction it is done on: its reference and date, never the address itself '
                                  '(written in the log\'s row).')
         parser.add_argument('--carried-out-by', default='', help='Who carries it out (written in the log\'s row).')
+        parser.add_argument('--lock-wait', type=float, default=erasure.LOCK_WAIT_SECONDS, metavar='SECONDS',
+                            help='How long to wait for the lock on the activity log before giving up (default '
+                                 '%(default)s): every writer of the log, the alarms among them, waits meanwhile.')
 
-    def handle(self, *args, address, apply=False, instruction='', carried_out_by='', **options):
+    def handle(self, *args, address, apply=False, instruction='', carried_out_by='', lock_wait=None, **options):
         address = address.strip()
         try:
             validate_email(address)
@@ -46,7 +50,8 @@ class Command(BaseCommand):
                                'and date) and --carried-out-by (your name): both are written in the log\'s row, so '
                                'neither may hold the address itself.')
         try:
-            found = erasure.erase(address, instruction, by)
+            found = erasure.erase(address, instruction, by,
+                                  lock_wait=erasure.LOCK_WAIT_SECONDS if lock_wait is None else lock_wait)
         except erasure.Refused as refusal:
             raise CommandError(str(refusal)) from refusal
         self.said(found, applied=True)

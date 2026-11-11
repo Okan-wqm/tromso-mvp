@@ -29,6 +29,11 @@ What it is and is not:
 - **Nothing it writes holds the address.** The instruction and the name of who carries it out are refused when they
   hold it (they would put it back into the log, where this command would not find it again), and its own rows are
   written under the account's number when the account's username holds it.
+- **It does not hold up the log for long.** Everything is read before any lock is taken. The log is then locked
+  against writers with a bounded wait (`LOCK_WAIT_SECONDS`): when the lock cannot be had in that time the erasure is
+  refused, and no writer has waited behind it for longer. Under the lock it reads again only what must not have
+  changed (the refusals, the rows to rewrite, that no row of a user account and no mail was added) and writes. Every
+  writer of the log, the alarms among them, waits for that short moment.
 - **Not undone, and not complete beyond the database**: backups hold the address as they hold everything else.
 
 `plan` reads only; `erase` writes. The command `manage.py erase_stranger_address` is the only caller: no page does
@@ -39,7 +44,7 @@ import unicodedata
 from dataclasses import dataclass, field
 
 from django.contrib.auth import get_user_model
-from django.db import connection, transaction
+from django.db import OperationalError, connection, transaction
 
 from . import accountmail, audit
 from .models import AccountMail, AuditLog
@@ -49,6 +54,9 @@ ERASED_ADDRESS = accountmail.ERASED_ADDRESS
 ERASED = accountmail.ERASED
 ERASED_LABEL = 'Erased on request'                    # the label of the erasure's own row (audit.MIGRATION_WORDS)
 SAID = 'The address of a mis-sent invitation erased on request ({instruction}); carried out by {by}.'
+# How long the erasure waits for the lock on the log (and for a row of account_mails) before it is refused: every
+# writer of the log queues behind a session that waits for this lock, so the wait is bounded.
+LOCK_WAIT_SECONDS = 5
 
 
 def labels():
@@ -115,6 +123,8 @@ class Plan:
     elsewhere: list = field(default_factory=list)   # [words]: where else the text stands, left as it is
     held_by: list = field(default_factory=list)     # the accounts whose own address it is: the erasure is refused
     waiting: list = field(default_factory=list)     # mails to it still with the mail worker: the erasure waits
+    user_rows: int = 0                              # how many rows of user accounts the log held when this was read
+    mail_rows: int = 0                              # ... and how many rows account_mails held
 
     @property
     def accounts(self):
@@ -129,17 +139,21 @@ class Plan:
 
 
 def plan(address):
-    """The Plan for `address`. Reads only."""
+    """The Plan for `address`. Reads only, and takes no lock."""
     found = Plan(address.strip(), held_by=holders(address))
     pattern, own = inside(address), labels()
-    for mail in AccountMail.objects.select_related('user').order_by('pk'):
+    mails = list(AccountMail.objects.select_related('user').order_by('pk'))
+    found.mail_rows = len(mails)
+    for mail in mails:
         mine = same(mail.address, address)
         error = _without(pattern, mail.error) if mail.error and pattern.search(mail.error) else None
         if mine or error is not None:
             found.mails.append((mail, mine, error))
         if mine and accountmail.state(mail) == accountmail.WAITING:
             found.waiting.append(mail)
-    for entry in AuditLog.objects.filter(entity_type=user_type()).order_by('created_at', 'id'):
+    rows = list(AuditLog.objects.filter(entity_type=user_type()).order_by('created_at', 'id'))
+    found.user_rows = len(rows)
+    for entry in rows:
         changes, changed = dict(entry.changes or {}), []
         for label, pair in changes.items():
             if not isinstance(pair, list):
@@ -195,42 +209,91 @@ def refuse_words(address, instruction, by):
                           f'reference and date (and your name) without the address.')
 
 
-def erase(address, instruction, by):
-    """Erases `address` and returns the Plan that was carried out (empty: nothing was found, nothing was touched and
-    the trigger was never set aside). `instruction` is the data-protection officer's instruction (its reference and
-    date), `by` who carries it out: both are written in the log's row of the erasure, and neither may hold the address
-    (`refuse_words`).
+def _refuse(found):
+    if found.held_by:
+        names = ', '.join(user.get_username() for user in found.held_by)
+        raise Refused(f'{found.address} is the address of an account now ({names}): this erases a stranger’s '
+                      f'address only. An account’s own address is kept (docs/erasure.md, What remains in plain '
+                      f'text).')
+    if found.waiting:
+        raise Refused(f'A mail to {found.address} is being sent right now (account_mails '
+                      f'{", ".join(str(mail.pk) for mail in found.waiting)}): its row is about to say what became '
+                      f'of it. Run this again when it has.')
 
-    One transaction. Writers of the log wait from the lock to the commit, so no row is written between the read and
-    the updates; the append-only trigger is set aside after the read, for the updates of `changes` only, and set back
-    before the erasure's own rows are appended. PostgreSQL undoes the setting aside with everything else when the
-    transaction fails, and the function checks that the trigger is in force before it returns."""
+
+CHANGED_MEANWHILE = ('The rows this would change were changed, or new ones were written, while it was being prepared: '
+                     'nothing was changed. Run it again.')
+
+
+def _still(found, cursor):
+    """Under the lock: what was read before it is still so. Only what must not have changed is read again: that no
+    account has the address now, that the rows to rewrite are as they were read, and that neither the log's rows of
+    user accounts nor account_mails got a row meanwhile (one that could hold the address). Short: a few indexed reads."""
+    held_by = holders(found.address)
+    if held_by:
+        found.held_by = held_by
+        _refuse(found)
+    cursor.execute('SELECT count(*) FROM audit_log WHERE entity_type = %s', [user_type()])
+    if cursor.fetchone()[0] != found.user_rows:
+        raise Refused(CHANGED_MEANWHILE)
+    as_read = {entry.pk: entry.changes for entry, _labels, _changes in found.entries}
+    if as_read and dict(AuditLog.objects.filter(pk__in=as_read).values_list('pk', 'changes')) != as_read:
+        raise Refused(CHANGED_MEANWHILE)
+    mails = {mail.pk: (mail.address, mail.error, mail.sent_at) for mail, _mine, _error in found.mails}
+    now = {pk: (address, error, sent_at) for pk, address, error, sent_at in AccountMail.objects.select_for_update()
+           .filter(pk__in=mails).values_list('pk', 'address', 'error', 'sent_at')}
+    if now != mails or AccountMail.objects.count() != found.mail_rows:
+        raise Refused(CHANGED_MEANWHILE)
+
+
+def _lock_timed_out(fault):
+    """Whether a statement gave up waiting for a lock (PostgreSQL's lock_not_available, 55P03)."""
+    return getattr(fault.__cause__, 'sqlstate', None) == '55P03'
+
+
+def erase(address, instruction, by, lock_wait=LOCK_WAIT_SECONDS):
+    """Erases `address` and returns the Plan that was carried out (empty: nothing was found, nothing was touched, no
+    lock was taken and the trigger was never set aside). `instruction` is the data-protection officer's instruction (its
+    reference and date), `by` who carries it out: both are written in the log's row of the erasure, and neither may
+    hold the address (`refuse_words`).
+
+    Everything is read first, with no lock (`plan`). Then one transaction: the log is locked against writers, waiting
+    at most `lock_wait` seconds for it (Refused when it cannot be had: nobody has waited behind this for longer); what
+    must not have changed is read again (`_still`); the append-only trigger is set aside for the updates of `changes`
+    only and set back before the erasure's own rows are appended. PostgreSQL undoes the setting aside with everything
+    else when the transaction fails, and the function checks that the trigger is in force before it returns."""
     refuse_words(address, instruction, by)
-    with transaction.atomic(), connection.cursor() as cursor:
-        cursor.execute('LOCK TABLE audit_log IN SHARE ROW EXCLUSIVE MODE')
-        found = plan(address)
-        if found.held_by:
-            names = ', '.join(user.get_username() for user in found.held_by)
-            raise Refused(f'{found.address} is the address of an account now ({names}): this erases a stranger’s '
-                          f'address only. An account’s own address is kept (docs/erasure.md, What remains in plain '
-                          f'text).')
-        if found.waiting:
-            raise Refused(f'A mail to {found.address} is being sent right now (account_mails '
-                          f'{", ".join(str(mail.pk) for mail in found.waiting)}): its row is about to say what became '
-                          f'of it. Run this again when it has.')
-        if found.empty:
-            return found
-        for mail, mine, error in found.mails:
-            values = {**({'address': ERASED_ADDRESS} if mine else {}), **({'error': error} if error is not None else {})}
-            AccountMail.objects.filter(pk=mail.pk).update(**values)
-        if found.entries:
-            cursor.execute(f'ALTER TABLE audit_log DISABLE TRIGGER {TRIGGER}')
-            for entry, _labels, changes in found.entries:
-                _rewrite(cursor, entry, changes)
-            cursor.execute(f'ALTER TABLE audit_log ENABLE TRIGGER {TRIGGER}')
-        _say(found, instruction, by)
-        if not trigger_in_force(cursor):
-            raise RuntimeError(f'The activity log’s append-only trigger ({TRIGGER}) is not in force: nothing is kept.')
+    found = plan(address)
+    _refuse(found)
+    if found.empty:
+        return found
+    try:
+        with transaction.atomic(), connection.cursor() as cursor:
+            cursor.execute("SELECT current_setting('lock_timeout')")
+            before = cursor.fetchone()[0]
+            cursor.execute("SELECT set_config('lock_timeout', %s, true)", [f'{max(int(lock_wait * 1000), 1)}ms'])
+            cursor.execute('LOCK TABLE audit_log IN SHARE ROW EXCLUSIVE MODE')
+            _still(found, cursor)
+            for mail, mine, error in found.mails:
+                values = {**({'address': ERASED_ADDRESS} if mine else {}),
+                          **({'error': error} if error is not None else {})}
+                AccountMail.objects.filter(pk=mail.pk).update(**values)
+            if found.entries:
+                cursor.execute(f'ALTER TABLE audit_log DISABLE TRIGGER {TRIGGER}')
+                for entry, _labels, changes in found.entries:
+                    _rewrite(cursor, entry, changes)
+                cursor.execute(f'ALTER TABLE audit_log ENABLE TRIGGER {TRIGGER}')
+            _say(found, instruction, by)
+            if not trigger_in_force(cursor):
+                raise RuntimeError(f'The activity log’s append-only trigger ({TRIGGER}) is not in force: nothing is '
+                                   f'kept.')
+            cursor.execute("SELECT set_config('lock_timeout', %s, true)", [before])     # a caller's transaction goes on
+    except OperationalError as fault:
+        if not _lock_timed_out(fault):
+            raise
+        raise Refused(f'The activity log is being written to and could not be locked within {lock_wait:g} second(s): '
+                      f'nothing was changed. Run it again. (While this command waits for the lock, every writer of '
+                      f'the log, the alarms among them, waits behind it: so it does not wait for longer.)') from None
     return found
 
 

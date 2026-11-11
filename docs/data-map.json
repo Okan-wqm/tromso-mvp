@@ -2374,6 +2374,7 @@
         "left_out": false
       },
       "tests": [
+        "core/testing.py",
         "core/tests_account_mail.py",
         "core/tests_account_mail_timing.py",
         "core/tests_account_mail_worker.py"

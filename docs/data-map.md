@@ -289,7 +289,7 @@ The account e-mails the platform sends: the invitation a new person gets, each t
 - **how it works**: Written when a mail is sent: creating a user and "Send invitation" on the users tab send an invitation, "Forgot your password?" a reset. Never the link or its token.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › account_mails
 - **constraints**: chk_account_mails_kind (check)
-- **tests that mention it**: `core/tests_account_mail.py`, `core/tests_account_mail_timing.py`, `core/tests_account_mail_worker.py`
+- **tests that mention it**: `core/testing.py`, `core/tests_account_mail.py`, `core/tests_account_mail_timing.py` and 1 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

@@ -170,7 +170,8 @@ class DryRunTests(ErasureCase):
                              for query in queries))
         self.assertIn('Dry run: nothing is changed.', said)
         self.assertIn('3 account_mails row(s) would change:', said)
-        for user, what in ((self.kari, 'address'), (self.ola, 'address and error'), (self.liv, 'address')):
+        for user, what in ((self.kari, 'address'), (self.ola, 'address and error \\(stored as “Strangr@example.com”\\)'),
+                           (self.liv, 'address')):
             row = AccountMail.objects.get(user=user)
             self.assertRegex(said, rf'account_mails {row.pk}: invitation of [0-9: -]+ UTC for account {user.pk} '
                                    rf'\({user.username}\): {what}\n')
@@ -220,9 +221,9 @@ class EraseTests(ErasureCase):
         times = dict(AuditLog.objects.values_list('pk', 'created_at'))
         self.assertEqual({pk: times[pk] for pk in self.times}, self.times)
         # one new row on each account touched, by nobody signed in, with the instruction and who carried it out
-        self.assertEqual(sorted((who, action, kind, pk, label, json.dumps(changes))
+        self.assertEqual(sorted((who, action, kind, pk, label, json.dumps(changes, sort_keys=True))
                                 for _id, who, action, kind, pk, label, changes in added), sorted(
-            ('system', 'update', 'user', str(user.pk), user.username, json.dumps(SAID))
+            ('system', 'update', 'user', str(user.pk), user.username, json.dumps(SAID, sort_keys=True))
             for user in (self.kari, self.ola, self.liv)))
         # nothing of anybody else, of another kind of record or of a contact list
         self.assertEqual(sorted(holding(STRANGER)), ['update of site Bergen', 'update of user per'])
@@ -726,7 +727,8 @@ class LockTests(RealCase):
 
     def locks_on_the_log(self):
         return sorted(row[0] for row in self.elsewhere(
-            "SELECT mode FROM pg_locks WHERE relation = 'audit_log'::regclass AND granted AND pid <> pg_backend_pid()"))
+            "SELECT mode FROM pg_locks WHERE relation = 'audit_log'::regclass AND granted AND pid <> pg_backend_pid() "
+            "AND database = (SELECT oid FROM pg_database WHERE datname = current_database())"))
 
     def test_everything_is_read_before_the_lock_is_taken(self):
         plan, seen = erasure.plan, []

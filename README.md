@@ -1923,12 +1923,18 @@ day. The list filters by site, unit, batch, method, medicine, dates, "under with
 "vaccinations", shows every batch a treatment reached with the withdrawal it puts on it, and offers **Last day**
 (the course ended earlier or goes on: Edit, logged with the old and new day) and **Void** (with a reason, the
 farm's window; it lifts the withdrawal). Nothing else is edited: a correction is a void and a new record.
-**Each treatment is read on its own site's today** (the earliest today among its units' sites,
-`farm.stock.dates.earliest_today`, the one day the withdrawal guard of a write and the pages share; a unit's own
-withdrawal line reads the same way, `withdrawal.of_units`), never on the company's day for a site on another clock: on
-the company's day the list freed the fish of a site behind it a day early in the hours the two days differ, counted
-that site's running day as a past day without a temperature, and went on holding fish already free on a site ahead of
-it (`farm.tests.test_health.TreatmentPageSiteBehindTests`, `...SiteAheadTests`).
+**The list reads each treatment on the earliest day its fish are on** (`farm.health.withdrawal.read_days`): the
+earliest of the company's today and today on every unit the fish of its units have been in, the one they are in now
+among them (`withdrawal.reach`, the one way to find that day, which the write guards read too; `earliest_today` in
+`farm/stock/dates.py`). So the list is never laxer than a write guard, than the fish's own unit line or than the
+company's day: fish moved to a site on an earlier day are held on the list as long as their own unit holds them
+(`farm.tests.test_health.TreatmentPageMovedBatchTests`: the list, "Under withdrawal today", the unit's line, the harvest
+check and the guard's day agree), and a site behind the company no longer has its running day counted as a past day
+without a temperature (`TreatmentPageSiteBehindTests`). **Known, and the strict side:** for a site ahead of the
+company whose fish never left it, the list still holds them for the hours until the company's day has turned, while
+that unit's own line and the harvest check read the site's day and free them (`TreatmentPageSiteAheadTests`). The
+list never frees first.
+`...SiteAheadTests`).
 
 **The medicine withdrawal** is worked out on read, never stored (`farm/health/withdrawal.py`), so a void, a
 corrected temperature or a backdated transfer changes it at once:
@@ -3696,17 +3702,24 @@ only one who manages roles and users; everyone else gets exactly what their role
     `manage.py private_log_values` converts what an old server left.
   - **A stranger's address is erased from the log on request** (the owner's decision of 2026-11-11). An invitation
     sent to a mistyped address leaves that address in `account_mails` and in the account's log rows (`Email`,
-    `Sent to`, `Link sent to`). `manage.py erase_stranger_address ADDRESS` lists what would change;
-    with `--apply --instruction ... --carried-out-by ...` it replaces the address, in one transaction, by
-    `erased@invalid` in `account_mails` (also inside a mail server's reply) and by the value "Erased on request" in
-    the log, and adds one "Erased on request" row on each account touched (`core/erasure.py`). **Who:** the platform's
-    database administrator, on the data-protection officer's written instruction for that address; the DPO decides
-    each case, since it removes the evidence of where a link went. **What it will not do:** an address that is an
-    account's own now, an address that only contains it, any other label or record (it names where else the text
-    stands). **What remains:** the rows themselves (who invited whom, that a link was used, that the address changed),
-    the placeholder, and the address in every backup taken before. A placeholder, not a digest: this is erasure, not
-    the pseudonymisation above. The users tab, the History tab and the log read an erased row in every language
-    (`core/tests_erasure.py`).
+    `Sent to`, `Link sent to`). `manage.py erase_stranger_address ADDRESS` lists what would change and, for each
+    account, what the log says of the address; with `--apply --instruction ... --carried-out-by ...` it replaces the
+    address, in one transaction, by `erased@invalid` in `account_mails` (also inside a mail server's reply) and by the
+    value "Erased on request" in the log, and adds one "Erased on request" row on each account touched
+    (`core/erasure.py`). **Who:** the platform's database administrator, on the data-protection officer's written
+    instruction for that address. **What it checks:** only that no account has the address now. It cannot tell a
+    stranger's address from a person's own former one, so the dry run shows when the address was the account's own,
+    whether a password was set through a link sent to it and whether the account was used meanwhile, and warns when
+    it does not look like a stranger's; the DPO judges, the command obeys. **What it will not do:** an address that is
+    an account's own now, an address that only contains it, any other label, shape or record (it names where else
+    the text stands; nothing covers an account's username or the name on the log's old rows), an instruction or a name
+    that holds the address (nothing it writes may hold it). **The log's writers, the alarms among them, wait while it
+    holds the lock**: it reads everything first, waits for the lock at most `--lock-wait` seconds (5) and gives up
+    otherwise. **What remains:** the rows themselves (who invited whom, that a link was used, that the address
+    changed), the placeholder, and the address in every backup taken before. A placeholder, not a digest: this is
+    erasure, not the pseudonymisation above. The users tab, the History tab and the log read an erased row in every
+    language (`core/tests_erasure.py`).
+  What is erased where on a person's request, what remains and who may do it: [docs/erasure.md](docs/erasure.md).
   What is erased where on a person's request, what remains and who may do it: [docs/erasure.md](docs/erasure.md).
 
 ## Database viewer
@@ -4761,7 +4774,9 @@ under the wrong kind, fails.
 - **dev**: made-up or development-only data: a demonstration seeder, a benchmark, a repair of the development seed.
   Each is built on `core.management.devtool.DevCommand`: **with `DEBUG` off it refuses to run** unless `--force` is
   given too (`seed_hr_demo` never runs with `DEBUG` off: it makes accounts with a known password). A developer's
-  machine and the scripts' throwaway databases run with `DEBUG` on (the default) and are not asked.
+  machine and the scripts' throwaway databases run with `DEBUG` on (the default) and are not asked. **The guard judges
+  the process, not the database**: a process started with `DEBUG` on and pointed at a farm's database is not stopped by
+  it (each of these commands still has its own check: a confirmed database name, a flag, the seed's marker).
 
 | Command | App | Kind | What it does | Who runs it |
 |---|---|---|---|---|
@@ -4773,7 +4788,7 @@ under the wrong kind, fails.
 | `sensors_ingest_role` | sensors | product | Lets the ingest's database role sign in with the password in a file, or stops it | An operator, at set-up |
 | `hr_roles` | hr | product | Creates the Production manager and Production worker roles when missing | An operator, at set-up |
 | `private_log_values` | core | product | The conversion of migration `core/0011` again: plain values under private labels in the activity log made private (`--dry-run`) | The database administrator (docs/erasure.md) |
-| `erase_stranger_address` | core | product | Erases, on the data-protection officer's instruction, the address of a stranger an invitation was mis-sent to: in `account_mails` and in the activity log's rows of the account (a dry run unless `--apply`) | The database administrator (docs/erasure.md, step 8) |
+| `erase_stranger_address` | core | product | Erases, on the data-protection officer's instruction, an address an invitation was mis-sent to: in `account_mails` and in the activity log's rows of the account (a dry run unless `--apply`; it checks only that no account has the address now) | The database administrator (docs/erasure.md, step 8) |
 | `check_stock` | farm | product | Folds the stock ledger from its first line and reports every broken rule; changes nothing | An operator |
 | `check_withdrawal` | farm | product | The withdrawals holding fish today, and harvests recorded inside one; changes nothing | An operator |
 | `check_inventory` | inventory | product | Every rule of the store from scratch; changes nothing | An operator |
@@ -4904,7 +4919,13 @@ every treatment on the company's day (Operations › Health). What holds the cla
   (`core.tests_testing`, the test that runs `makemigrations`, the account mails' lease); it is a search, not a way to
   run the suite. Run on 11.11.2026 over the 150 test modules that name a clock or a date (3,106 tests) with the clock
   started at `2027-12-31T23:30:00+00:00`: ten failures, three of them the tests above, six of the run's own making and
-  one a data map that the branch's own test commits had left stale.
+  one a data map that the branch's own test commits had left stale. **A sweep is run by hand**: nothing runs one on a
+  schedule, and the reports' and leave tests stand at 11.11.2026 until someone moves them.
+- **One test pins a rule that is the owner's to decide**: `farm.tests.test_feeding` `test_the_overview_shows_the_feed`
+  expects "Feed today" of `0.00 kg` when the company's day is ahead of the site's, because the overview's day is the
+  company's as the code has it. Feed recorded on the today of a site on another clock is then not in the tile until
+  the company's day matches. The test follows the code, not a decision; when the owner decides the rule, the test
+  changes with it.
 - In a test, today is asked of the clock the code under test reads: `farm.stock.dates.site_today(site)` or
   `local_today(unit)` for a site's records, `core.dates.company_today()` for what has no site; never
   `timezone.localdate()`, `date.today()` or `timezone.now().date()` (`core/tests_company_clock.py` refuses them in the

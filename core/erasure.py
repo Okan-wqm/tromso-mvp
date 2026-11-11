@@ -6,7 +6,7 @@ then stays in two places after the account's own address has been put right: the
 mail sent or tried: `address`, and `error` where a mail server's reply repeats it) and the activity log's rows of that
 account (Created and Changed: `Email`; Invited: `Sent to`; Password set: `Link sent to`). `erase` replaces it in both,
 in one transaction, and writes one new log row on each account it touched: "Erased on request", with the instruction
-it was done on and who carried it out. It is the one writer that changes rows of the log after core/0011: the log is
+it was done on and who carried it out (in the log's own shape, so it reads in the reader's language). It is the one writer that changes rows of the log after core/0011: the log is
 append-only by a trigger, which is set aside for these updates only, inside the transaction, and is back in force
 when it ends, however it ends.
 
@@ -53,6 +53,7 @@ from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.db import OperationalError, connection, transaction
+from django.utils.translation import gettext_noop
 
 from . import accountmail, audit
 from .models import AccountMail, AuditLog
@@ -60,8 +61,13 @@ from .models import AccountMail, AuditLog
 TRIGGER = 'trg_audit_log_append_only'
 ERASED_ADDRESS = accountmail.ERASED_ADDRESS
 ERASED = accountmail.ERASED
-ERASED_LABEL = 'Erased on request'                    # the label of the erasure's own row (audit.MIGRATION_WORDS)
-SAID = 'The address of a mis-sent invitation erased on request ({instruction}); carried out by {by}.'
+# The erasure's own row, in the log's own shape: a label with an enumerated value, both shown in the reader's language
+# (AuditLog.shown_changes), then the two things a person typed, each under a label of its own. The log has no
+# translated sentence with parameters, and none is invented for this: the row reads "Erased on request: The address
+# of a mis-sent invitation; Instruction: ...; Carried out by: ...".
+ERASED_LABEL = gettext_noop('Erased on request')
+WHAT = gettext_noop('The address of a mis-sent invitation')
+INSTRUCTION_LABEL, BY_LABEL = gettext_noop('Instruction'), gettext_noop('Carried out by')
 # How long the erasure waits for the lock on the log (and for a row of account_mails) before it is refused: every
 # writer of the log queues behind a session that waits for this lock, so the wait is bounded.
 LOCK_WAIT_SECONDS = 5
@@ -407,14 +413,15 @@ def _label(user, fallback, address):
 
 def _say(found, instruction, by):
     """The erasure's own row, on each account touched: that it was done, on which instruction and by whom; never the
-    address."""
+    address. The label and what was erased are msgids, shown translated; the instruction and the name are a person's
+    words and stay as typed."""
     users = get_user_model().objects.in_bulk(found.accounts)
     names = {int(entry.entity_id): entry.entity_label for entry, _labels, _changes in found.entries
              if entry.entity_id.isdigit()}
-    said = SAID.format(instruction=instruction, by=by)
+    changes = {ERASED_LABEL: [None, audit.message(WHAT)], INSTRUCTION_LABEL: [None, instruction], BY_LABEL: [None, by]}
     for pk in found.accounts:
         user = users.get(pk)
         AuditLog.objects.create(
             user=None, user_name='system', action=AuditLog.Action.UPDATE, entity_type=user_type(), entity_id=str(pk),
             entity_label=_label(user, names.get(pk), found.address) or f'account {pk}',
-            changes={ERASED_LABEL: [None, said]})
+            changes=changes)

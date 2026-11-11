@@ -4261,6 +4261,9 @@ msgstr "Kartların şablonu"
 msgid "Cards can be added once the board is created."
 msgstr "Kartlar, pano oluşturulduktan sonra eklenebilir."
 
+msgid "Carried out by"
+msgstr "Uygulayan"
+
 msgid "Category"
 msgstr "Kategori"
 
@@ -7619,6 +7622,9 @@ msgstr "Kurulum tarihi"
 
 msgid "Instead of one channel: every active channel of this quantity."
 msgstr "Tek bir kanal yerine: bu parametrenin tüm aktif kanalları."
+
+msgid "Instruction"
+msgstr "Talimat"
 
 msgid "Instrument unit"
 msgstr "Cihaz birimi"
@@ -13077,6 +13083,9 @@ msgstr "Adres yanlış ya da gösterdiği kayıt silinmiş."
 
 msgid "The address lacks a key its protocol needs."
 msgstr "Adreste, protokolünün gerektirdiği bir anahtar eksik."
+
+msgid "The address of a mis-sent invitation"
+msgstr "Yanlış gönderilen bir davetin adresi"
 
 #, python-format
 msgid ""

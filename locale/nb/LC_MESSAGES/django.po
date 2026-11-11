@@ -4252,6 +4252,9 @@ msgstr "Kortene tegnes med"
 msgid "Cards can be added once the board is created."
 msgstr "Kort kan legges til når panelet er opprettet."
 
+msgid "Carried out by"
+msgstr "Utført av"
+
 msgid "Category"
 msgstr "Kategori"
 
@@ -7595,6 +7598,9 @@ msgstr "Installasjonsdato"
 
 msgid "Instead of one channel: every active channel of this quantity."
 msgstr "I stedet for én kanal: hver aktive kanal for denne parameteren."
+
+msgid "Instruction"
+msgstr "Instruks"
 
 msgid "Instrument unit"
 msgstr "Instrumentets enhet"
@@ -13049,6 +13055,9 @@ msgstr "Adressen er feil, eller det den viste er slettet."
 
 msgid "The address lacks a key its protocol needs."
 msgstr "Adressen mangler en nøkkel protokollen trenger."
+
+msgid "The address of a mis-sent invitation"
+msgstr "Adressen til en feilsendt invitasjon"
 
 #, python-format
 msgid ""

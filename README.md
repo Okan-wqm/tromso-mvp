@@ -4859,7 +4859,13 @@ reads, stands at that moment for the class's data and every test of it). Otherwi
 record dated at most the correction window back, nothing in the future, a freshness) fail the test by the calendar:
 `sensors/tests/test_replay.py`, dated 10.10.2026 with a sample of the day before, failed from 10.11.2026 on (31 days).
 The dates stay as written and the clock is held, rather than the dates moved with the run's day, wherever the data is
-tied to its dates (seeded readings, whole hours, an address's `2026-10-10T00:05`). The database's own `now()` is not held.
+tied to its dates (seeded readings, whole hours, an address's `2026-10-10T00:05`). The database's own `now()` is not held,
+nor a model field's `default=timezone.now` (it keeps the real function it was given). Where the records must be made
+one after the other (the newest report, a history in order), `core.testing.StartedClock` starts the clock at `NOW` and
+lets it run on. Held so since the sweep below: the reports' tests (`reports.tests.helpers.ReportTestCase`, dated in
+October and November 2026: the deadline of a week's planned slaughter is expected from the day its plans' rows are
+made, and failed from 12.11.2026 on; the overdue driftsplan of 2026 failed once a later year's is owed) and HR's leave
+tests (a request of 01.06.2027 stands for "not begun yet").
 
 **Nor the hour it runs at.** The server's day is UTC's, the company's is Oslo's (`COMPANY_TIME_ZONE`) and a site's is
 its own. From 23:00 to 24:00 UTC in winter (from 22:00 in summer) Oslo is a day ahead of the server, and a test that
@@ -4877,7 +4883,10 @@ every treatment on the company's day (Operations › Health). What holds the cla
 - `TEST_CLOCK=2026-11-10T23:30:00+00:00 scripts/test.sh <labels>` starts the whole run's clock at that moment and lets
   it run on (`core.testing.run_clock`, in every worker): the way to look for more, at any hour, day or year. The
   database's clock stays the real one, so in such a run the tests that compare the two clocks fail by design
-  (`core.tests_testing` among them); it is a search, not a way to run the suite.
+  (`core.tests_testing`, the test that runs `makemigrations`, the account mails' lease); it is a search, not a way to
+  run the suite. Run on 11.11.2026 over the 150 test modules that name a clock or a date (3,106 tests) with the clock
+  started at `2027-12-31T23:30:00+00:00`: ten failures, three of them the tests above, six of the run's own making and
+  one a data map that the branch's own test commits had left stale.
 - In a test, today is asked of the clock the code under test reads: `farm.stock.dates.site_today(site)` or
   `local_today(unit)` for a site's records, `core.dates.company_today()` for what has no site; never
   `timezone.localdate()`, `date.today()` or `timezone.now().date()` (`core/tests_company_clock.py` refuses them in the

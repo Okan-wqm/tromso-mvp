@@ -17,11 +17,12 @@ sent, never as sent (`state`). Nothing is raised to the page that caused a mail:
 what happened, and the server's log has the line."""
 import atexit
 import logging
-import queue as queues
+import os
 import re
 import socket
 import threading
 import time
+from collections import deque
 from dataclasses import dataclass
 from datetime import timedelta
 
@@ -76,66 +77,124 @@ class NotSent(Exception):
 
 # --- the worker ---------------------------------------------------------------------------------------------
 
-QUEUE_SIZE = 200          # jobs that may wait; more are refused (`background` says so), never piled up without end
+QUEUE_SIZE = 200          # jobs that may wait in each of the worker's two lines; more are refused, never piled up
+KEEP_CONNECTION = 60      # seconds the worker keeps one database connection while jobs keep coming, at most
 
 
 class Worker:
     """One background thread of this process that runs the jobs handed to it, one after the other. It starts with the
-    first job (never at import: a server that forks its processes gives each its own). A job's fault is logged and the
-    worker goes on; its database connection is closed after every job, so none stays open between mails."""
+    first job (never at import: a server that forks its processes gives each its own) and is started again by the
+    next job should it ever have ended. A job's fault is logged and the worker goes on.
+
+    Two lines wait for it: the mails the platform admin causes (invitations) and the requests anybody can send (the
+    "Forgot your password?" form). It takes the admin's first, and each line has its own room, so requests from
+    outside can neither crowd an invitation out nor make it wait behind them.
+
+    It keeps its database connection from one job to the next while jobs are waiting, and closes it when none is (or
+    after KEEP_CONNECTION seconds, or after a job's fault): a connection opened for every job made a lookup forty
+    times dearer than the lookup itself, and none stays open between mails."""
 
     def __init__(self):
-        self.jobs = queues.Queue(maxsize=QUEUE_SIZE)
+        self.changed = threading.Condition()
+        self.mails, self.requests = deque(), deque()
+        self.unfinished = 0              # jobs waiting or under way
+        self.resting = True              # none under way, and no connection kept
         self.thread = None
-        self.starting = threading.Lock()
+        self.dropped = 0                 # requests refused since the process started (`reset_later` counts them)
+        self.unsaid = 0                  # ... and since the server's log last said so
 
-    def put(self, job, *args):
-        """Queues `job(*args)`; False when the queue is full."""
-        with self.starting:
+    def put(self, job, *args, anonymous=False):
+        """Queues `job(*args)`, among the requests of anybody when `anonymous`; False when that line is full."""
+        with self.changed:
+            line = self.requests if anonymous else self.mails
+            if len(line) >= QUEUE_SIZE:
+                return False
+            line.append((job, args))
+            self.unfinished += 1
+            self.resting = False
             if self.thread is None or not self.thread.is_alive():
                 self.thread = threading.Thread(target=self.run, name='account-mail', daemon=True)
                 self.thread.start()
-        try:
-            self.jobs.put_nowait((job, args))
-        except queues.Full:
-            return False
+            self.changed.notify_all()
         return True
 
     def run(self):
+        kept_since = None
         while True:
-            job, args = self.jobs.get()
+            with self.changed:
+                while not (self.mails or self.requests):
+                    self.changed.wait()
+                job, args = (self.mails or self.requests).popleft()
+            failed = False
             try:
                 job(*args)
             except Exception as fault:
-                # the fault's kind and words: a job's own failures are recorded by the job (`deliver`)
+                failed = True
+                # the fault's kind and words: a mail's own failures are recorded by its job (`deliver`)
                 logger.error('A background job of the account e-mails failed: %s: %s', type(fault).__name__, fault)
             finally:
+                # counted as done first: a connection that will not close must not leave `drain` waiting for good
+                with self.changed:
+                    self.unfinished -= 1
+                    idle = not (self.mails or self.requests)
+                    self.changed.notify_all()
+                kept_since = self.rest(idle, failed, kept_since)
+
+    def rest(self, idle, failed, kept_since):
+        """After a job: the connection is kept for the next one while jobs wait, closed otherwise. Returns since when
+        it is kept (None: closed)."""
+        now = time.monotonic()
+        kept_since = now if kept_since is None else kept_since
+        if idle or failed or now - kept_since >= KEEP_CONNECTION:
+            try:
                 connections.close_all()
-                self.jobs.task_done()
+            except Exception as fault:
+                logger.error('The mail worker could not close its database connection: %s: %s',
+                             type(fault).__name__, fault)
+            kept_since = None
+        if idle:
+            with self.changed:
+                self.resting = not (self.mails or self.requests)
+                self.changed.notify_all()
+        return kept_since
 
     def drain(self, seconds):
-        """Waits until every job handed over is done, at most `seconds`; whether they all are."""
+        """Waits until every job handed over is done and the worker is at rest, at most `seconds`; whether it is."""
         deadline = time.monotonic() + seconds
-        with self.jobs.all_tasks_done:
-            while self.jobs.unfinished_tasks:
+        with self.changed:
+            while self.unfinished or not self.resting:
                 left = deadline - time.monotonic()
                 if left <= 0:
                     return False
-                self.jobs.all_tasks_done.wait(left)
+                self.changed.wait(left)
         return True
 
 
 worker = Worker()
+
+
+def _in_a_forked_process():
+    """A server that forks its processes after loading the code: the child is another owner, with a worker and lines
+    of its own (the parent's thread does not live in it)."""
+    global worker
+    worker = Worker()
+
+
+if hasattr(os, 'register_at_fork'):
+    os.register_at_fork(after_in_child=_in_a_forked_process)
+
+
 # A server that stops in order gives the mails under way their time; one that is killed leaves their rows waiting,
 # which the users tab shows as not sent.
 atexit.register(lambda: worker.drain(settings.MAIL_SEND_SECONDS))
 
 
-def background(job, *args):
-    """Runs `job(*args)` after the request: on the worker, or at once where settings.MAIL_IN_BACKGROUND is off (the
-    tests, whose uncommitted rows no other thread could read). False when the worker's queue is full."""
+def background(job, *args, anonymous=False):
+    """Runs `job(*args)` after the request: on the worker (among anybody's requests when `anonymous`), or at once where
+    settings.MAIL_IN_BACKGROUND is off (the tests, whose uncommitted rows no other thread could read). False when the
+    worker's line for it is full."""
     if settings.MAIL_IN_BACKGROUND:
-        return worker.put(job, *args)
+        return worker.put(job, *args, anonymous=anonymous)
     job(*args)
     return True
 
@@ -307,8 +366,16 @@ def reset_later(address):
     the language it was asked in) to the worker. Whether the address has an account, whether that account has had its
     share, whether the mail goes out: none of it happens before the answer, so the answer takes the same time and the
     same work for every address."""
-    if not background(reset_now, address, translation.get_language()) and _tell(dropped_told, 'requests', 60):
-        logger.error('Password reset requests are being dropped: too many mails are waiting to be sent.')
+    if background(reset_now, address, translation.get_language(), anonymous=True):
+        return
+    # Never silent on the server's side, though the person asking is answered as always: counted, and said in the
+    # log once a minute with the counts.
+    worker.dropped += 1
+    worker.unsaid += 1
+    if _tell(dropped_told, 'requests', 60):
+        logger.error('Password reset requests are being dropped, the line of waiting requests is full: %s since the '
+                     'last line, %s since this process started.', worker.unsaid, worker.dropped)
+        worker.unsaid = 0
 
 
 def accounts_on(address):

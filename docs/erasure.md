@@ -59,8 +59,17 @@ primary flag and who was added or taken off stayed. It is read with matched brac
 (24 h line)" or a phone such as "(0532) 123 45 67" is read as what it is) and from the right-hand end: the e-mail is
 what the contact form itself accepts as an address, the phone is digits in a phone's form. No address and no number of
 five digits or more is left in plain text unless it stood in the role, left of the e-mail. Where a role and a phone
-could not be told apart (a number written with words, an address typed into the role, a number typed in pieces such as
-"55 12, 34 56": the pieces are judged together, review R24), both became one private part beside the name; a sentence whose brackets do not balance, or with a name that holds an address or a number, became one
+could not be told apart (a number written with words, an address typed into the role), both became one private part
+beside the name. **A number typed in pieces** (review R24): with no e-mail in the contact, the details at the end that
+each have a phone's form (five digits or more) are the phone, and what stands before them is the role, whose pieces
+are judged **together**: when they hold five digits or more between them ("55 12, 34 56", "0532, 123, 4567") they are
+not a role, and all the details become one private part beside the name. Two edges of that rule, as they are: a short
+piece that stands before a piece which is itself a phone is judged without it and stays plain as the role
+("Kari (0532, 1234567)" keeps "0532" beside a private phone: fewer than five digits is no number); and an innocent role
+with five digits or more across its commas ("Ward 12, Building 345") goes private, the name kept, one-way. A database
+converted before 2026-11-11 is not read again for either: a converted contact list is no longer a sentence, so neither
+the command nor the check core.W004 can find such a row there (the development database, the only one converted
+before, held none by the reviewer's scan); a sentence whose brackets do not balance, or with a name that holds an address or a number, became one
 private value. Words without a number typed into the phone box ("ask reception") stay in plain text as a role. Both are
 counted in the migration's output and in its own log row (record type "activity log"), which lists the entries of the
 second kind. **The conversion is one-way**: nothing restores the words but a backup taken before it (see Backups).
@@ -86,7 +95,7 @@ company keeps its data-protection records, with the date and who carried it out.
 | 5 | A task's description | The task's (or the recurring task's) form | Anyone with Edit on Tasks | The column is changed; the log shows "Private text" changed. |
 | 6 | A task's note, completion note or reason for cancelling | No page changes them: they are part of the work record | The platform's database administrator, on the DPO's written instruction | The statement below: the text is replaced, and one log row says that it was, with no words. |
 | 7 | Backups | See Backups | Whoever keeps them | A restore brings erased values back: steps 1 to 6 are repeated after a restore from a dump older than the erasure. |
-| 8 | The address of a stranger an invitation was mis-sent to | No page changes it: it is the evidence of where a link went. `manage.py erase_stranger_address` | The platform's database administrator, on the DPO's written instruction for that address | See "A stranger's address" below: the address is replaced by a placeholder in `account_mails` and in the activity log's rows of the account, in one transaction, and one "Erased on request" row is added on each account touched. |
+| 8 | The address of a stranger an invitation was mis-sent to | No page changes it: it is the evidence of where a link went. `manage.py erase_stranger_address` | The platform's database administrator, on the DPO's written instruction for that address | See "A stranger's address" below: the address is replaced by a placeholder in `account_mails` and in the activity log's rows of the account, in one transaction, and one "Erased on request" row is added on each account touched. The command checks only that no account has the address now; whether it was a stranger's is the DPO's judgement, on what the dry run shows. |
 
 **A reopened task.** Reopening clears the completion note and the reason for cancelling on the task and keeps each as a
 note by the person who wrote it (`task_notes`, `kind` `completion_note` or `cancel_reason`), so that nothing a person
@@ -143,8 +152,7 @@ invited whom and when, that a link was used, that the address was changed.
 **On the stranger's request** (step 8 of the procedure). **The owner decided on 2026-11-11 that the address is erased
 from the activity log too.** The data-protection officer still decides each case, because the erasure removes the
 evidence of where a link went: after it, nobody can tell from the system which address a password link reached. The
-DPO's written instruction names the address; the platform's database administrator carries it out with the command,
-never with a statement written by hand:
+platform's database administrator carries the decision out with the command, never with a statement written by hand:
 
 ```
 python manage.py erase_stranger_address stranger@example.com
@@ -152,32 +160,61 @@ python manage.py erase_stranger_address stranger@example.com --apply \
     --instruction "DPO instruction of 2026-11-11, ref. DP-17" --carried-out-by "Kari Nordmann"
 ```
 
-- **Without `--apply` it changes nothing.** It lists every `account_mails` row and every activity-log row that would
-  change, with the labels, the accounts that would get the erasure's row, and where else the text of the address
-  stands (below). Read that list against the instruction, then run it with `--apply`.
-- **It refuses** an address that is the address of any account now, whatever its case or the spaces around it, the
-  account active or not: this is for a stranger's address; an account's own address is kept (What remains in plain
-  text). It also refuses while a mail to that address is still being sent.
+- **What the command checks, and what it cannot.** It refuses an address that is the address of any account **now**
+  (whatever its case or the spaces around it, the account active or not), and it waits while a mail to that address is
+  still being sent. **That is all it checks.** It cannot tell a stranger's address from an address that was a person's
+  own for a year, or from one an intruder put on an account and took off again (the evidence the decision F-050
+  keeps): to the code all three are "an address an account once had". Telling them apart is the DPO's judgement.
+- **What the dry run shows for that judgement.** Without `--apply` nothing is changed. It lists every `account_mails`
+  row and every activity-log row that would change, with the labels (and the value as it is stored, when that is not
+  how it was typed: another case, another Unicode form); then, for each account touched, what the log says: from when
+  to when the address was the account's own (its Created and Changed `Email` rows, and by whom), every invitation
+  sent or tried to it, whether a password was set through a link sent to it, when and by which account, and how many
+  other log rows the account wrote itself meanwhile. It adds a **warning** when this does not look like a stranger's
+  address: the address was the account's own for a day or more, the log has no row that ends it, the account was
+  used while it had it, or more than one password was set through it. The warning informs; with `--apply` the
+  command obeys the DPO's decision all the same.
+- **The instruction and the name are written into the log, so they must not hold the address.** `--instruction` takes
+  the instruction's reference and date, `--carried-out-by` the operator's name. The command refuses either when it
+  holds the address (in any case or Unicode form): it would stand in the log again, in a row this command would
+  not find. For the same reason its own row is written under `account <id>` when the account's username holds the
+  address.
 - **What it changes, in one transaction** (`core/erasure.py`):
   - `account_mails.address` of the rows of that address becomes `erased@invalid`, and where a mail server's reply in
-    `error` repeats the address (in any row), that address inside it becomes `erased@invalid`; the rest of the reply
-    stays;
+    `error` names the address (in any row, in any case or Unicode form, as a whole address), that address inside it
+    becomes `erased@invalid`; the rest of the reply stays;
   - in the activity log, on the rows of user accounts, a value that is that address under `Email`, `Sent to` or
     `Link sent to` becomes the value "Erased on request". Only `changes` is written: who, when, which record and
-    every other value stay. The append-only trigger is set aside for these updates only and is back in force before
-    the transaction ends; when anything fails, nothing is kept and the trigger is in force (PostgreSQL undoes the
-    setting aside with the rest, and the command checks it before it commits);
-  - one new row "Erased on request" on each account touched, by `system`: "The address of a mis-sent invitation
-    erased on request (*the instruction*); carried out by *the name*." Never the address.
+    every other value stay;
+  - one new row on each account touched, by `system`: "Erased on request: The address of a mis-sent invitation", with
+    the instruction and who carried it out under labels of their own (the labels and that sentence are shown in the
+    reader's language; the instruction and the name are as typed). Never the address.
+- **The log's writers wait for a short moment, the alarms among them.** Everything is read before any lock is taken.
+  The command then locks the log against writers, waiting for that lock at most `--lock-wait` seconds (5): when the
+  log is being written and the lock cannot be had in that time, the command gives up, says so and has changed
+  nothing (a session that waits for this lock makes every later writer queue behind it, so the wait is bounded). Under
+  the lock it reads again only what must not have changed (that no account has the address now, that the rows to
+  rewrite are as they were read, that no row of a user account and no mail was added meanwhile: otherwise it stops
+  and asks to be run again) and writes. The append-only trigger is set aside for the updates of `changes` only and is
+  back in force before the transaction ends; when anything fails, nothing is kept and the trigger is in force
+  (PostgreSQL undoes the setting aside with the rest, and the command checks it before it commits).
 - **A placeholder, not a digest.** Nothing of the address is kept: no keyed digest, unlike the private values of
   `core/0011`. Two erased addresses cannot be told apart or compared with anything afterwards.
-- **Only that address, only there.** An address that merely contains it (`xstranger@example.com`) is another person's
-  and is not touched. Where the same text stands elsewhere (an account's username, a record's name, a field of
-  another kind of record, another label of an account's row) the command names the place and leaves it: those are
-  not where an invitation's address is kept, and each is erased, if at all, by the step of this procedure it belongs
-  to.
-- **Run again** it finds nothing and touches nothing. An address nobody has seen is reported as not found, and the
-  trigger is never set aside for it.
+- **Only that address, only there, and what is left.** An address that merely contains it (`xstranger@example.com`) is
+  another person's and is not touched. The command names every other place it finds the text and leaves it:
+  - on a user's row, under another label or in another shape of value than a plain pair (a list inside, an address
+    with a name around it): left, and no step of this procedure changes it; if it must go, it is a new decision;
+  - in a row of another kind of record: erased, if at all, by the step that kind belongs to (steps 1 to 6);
+  - **an account's username, and the name a log row is under (`entity_label`) or was written by (`user_name`):
+    nothing in this procedure covers them.** A username that is an address can be changed on the users tab for the
+    future; the log's old rows keep the old name, and no tool changes them. The command says how many such rows there
+    are.
+  What the command cannot see, and so does not list: the address inside a mail server's reply in another form: cut
+  off by the column's 500 characters, rewritten by a mailing system (`name=domain@bounce.example`), or in another
+  Unicode form when the part before the `@` holds a character other than letters, digits and `. + % -`. Read the
+  `error` of the rows it lists.
+- **Run again** it finds nothing and touches nothing. An address nobody has seen is reported as not found, and neither
+  the lock nor the trigger is touched for it.
 - **Backups hold it** as they hold everything else (below): a restore from a dump older than the erasure brings the
   address back, and the erasure is repeated after it.
 
@@ -202,7 +239,7 @@ Decided with the conversion (the owner, 2026-11-10), so that the log still says 
 | A supplier's name, organisation number and address | A company's data, public register data also for a sole trader; the name is the record's label. |
 | A user account's e-mail address | Kept, with the reason (this closes F-050): a changed account address is how an account is taken over by a password link, and the new address is the evidence. The account is never deleted, so `auth_user` keeps the address in any case; hiding it in the log would erase nothing. |
 | A user account's name, username and roles | `user_name` is the log. |
-| The address an invitation or a password link went to: the log's "Invited" rows (`Sent to`) and "Password set" rows (`Link sent to`), and the table `account_mails` (`address`, one row per mail the platform sent or tried to) | The same decision as the account's address, which it is at that moment: a link used before a mistyped address was put right is found by exactly this value, in the log and on the users row. `account_mails` is no log of the person's words: who the mail was for, the address, who asked, when it went out or why not (a mail server's reply can repeat the address). It holds no link and no token, so no column of it is masked in the database viewer, which the platform admin alone opens; the activity log, which a role can be given, never gets the mail server's words. A mistyped address of a stranger stays in both until it is asked for: correcting the account does not erase it, and **on the stranger's request it is erased from both** (the owner, 2026-11-11; step 8, `manage.py erase_stranger_address`, on the DPO's instruction). |
+| The address an invitation or a password link went to: the log's "Invited" rows (`Sent to`) and "Password set" rows (`Link sent to`), and the table `account_mails` (`address`, one row per mail the platform sent or tried to) | The same decision as the account's address, which it is at that moment: a link used before a mistyped address was put right is found by exactly this value, in the log and on the users row. `account_mails` is no log of the person's words: who the mail was for, the address, who asked, when it went out or why not (a mail server's reply can repeat the address). It holds no link and no token, so no column of it is masked in the database viewer, which the platform admin alone opens; the activity log, which a role can be given, never gets the mail server's words. A mistyped address of a stranger stays in both until it is asked for: correcting the account does not erase it, and **on the stranger's request it is erased from both** (the owner, 2026-11-11; step 8, `manage.py erase_stranger_address`, on the DPO's instruction). The command erases any address no account has now; that it is a stranger's and not a person's own former address is the DPO's judgement. |
 | A task's title and checklist items | The title is the record's label in every row of the task; checklist items are short work steps. |
 
 Also outside this procedure: **a filed report** (`regulatory_report_snapshots`), a copy of what was told to the
@@ -219,5 +256,8 @@ the value is nowhere in the log. `core/tests_account_mail.py` asserts the other 
 log labels is a private one, the address is in the log and in `account_mails`, and no link or token is in either.
 `core/tests_erasure.py` holds the erasure of a stranger's address: the rows as the pages write them, the dry run, every
 row and label changed and nothing else (other addresses, an address that contains it, other users' rows, other labels,
-other kinds of record, a contact list), the refusals, a second run, the trigger back in force after it and after a
-fault half-way, and the users tab, the log and the History tab in three languages on the erased rows.
+other kinds of record, a contact list, other shapes of value), the refusals (an instruction or a name that holds the
+address among them), what the dry run says is checked and shows of each account, a second run, the bounded wait for the
+lock and the read before it, the trigger with real commits and a second session (a commit, a rollback, a fault and an
+interrupt while it is set aside, a lost connection, a caller's transaction, autocommit off), and the users tab, the log
+and the History tab in three languages on the erased rows.

@@ -11,6 +11,9 @@ cd "$(dirname "$0")/../.."
 export MSYS_NO_PATHCONV=1
 win() { cygpath -w "$1" 2>/dev/null || echo "$1"; }
 REPO=$(win "$PWD")
+# The Django image that migrates the schema: the test runner's, as scripts/testrunner/image.sh names it (the one name,
+# tests/run.sh's and CI's too), built when missing; no server starts without the water-chemistry core in it.
+DJANGO_IMAGE=${DJANGO_IMAGE:-$(sh scripts/testrunner/image.sh build)}
 SECS=${1:-60}
 export E2E_STATE=./sensors-ingest/simulator/.farmcheck E2E_DB=sensors_farm
 ST=sensors-ingest/simulator/.farmcheck
@@ -41,13 +44,13 @@ HASH="docker run --rm -v $(win "$PWD/sensors-ingest/spikes"):/s python:3.12-slim
 docker run --rm --network balik-ciftligi_default -e PGPASSWORD=balik "$PG_IMAGE" psql -h db -U balik -d postgres -q \
   -c "DROP DATABASE IF EXISTS $E2E_DB WITH (FORCE)" -c "CREATE DATABASE $E2E_DB" >/dev/null
 docker run --rm --network balik-ciftligi_default -v "$REPO:/app" -w /app -e DB_HOST=db -e DB_PORT=5432 -e DB_NAME=$E2E_DB \
-  balik-testrunner:latest python manage.py migrate --no-input >/dev/null 2>&1 || { echo "migrate failed"; exit 1; }
+  "$DJANGO_IMAGE" python manage.py migrate --no-input >/dev/null 2>&1 || { echo "migrate failed"; exit 1; }
 sql "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'sensors_ingest_e2e') THEN
   CREATE ROLE sensors_ingest_e2e LOGIN IN ROLE sensors_ingest; END IF; END \$\$;
   ALTER ROLE sensors_ingest_e2e PASSWORD '$DBPW'" >/dev/null
 # the farm and its demo sensors, as the live run makes them: tanks and systems, then Django's own setup and broker sync
 DJ=(docker run --rm --network balik-ciftligi_default -v "$REPO:/app" -w /app -e DB_HOST=db -e DB_PORT=5432
-  -e DB_NAME=$E2E_DB -e SENSORS_BROKER_AUTH_DIR=/app/$ST/broker-auth balik-testrunner:latest)
+  -e DB_NAME=$E2E_DB -e SENSORS_BROKER_AUTH_DIR=/app/$ST/broker-auth "$DJANGO_IMAGE")
 "${DJ[@]}" python manage.py shell -c "exec(open('sensors-ingest/simulator/farm_fixture.py').read())" || exit 1
 "${DJ[@]}" python manage.py sensors_demo_setup --confirm --secret-file /app/$ST/secrets/sim_farm.django || exit 1
 "${DJ[@]}" python manage.py sensor_broker_sync --extra /app/$ST/extra_passwd || exit 1

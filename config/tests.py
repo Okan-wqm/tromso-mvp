@@ -67,3 +67,26 @@ class StrictWarningsTests(SimpleTestCase):
             test_runner.strict_warnings_in_worker()
             with self.assertRaises(PendingDeprecationWarning):
                 warnings.warn('old', PendingDeprecationWarning)
+
+
+class TestRunnerImageNameTests(SimpleTestCase):
+    """The test runner's image has one name, scripts/testrunner/image.sh's (a tag hashed from what it is built from):
+    scripts/test.sh, CI and every script of sensors-ingest/ that migrates a database ask that script. A script that
+    wrote a name of its own (`balik-testrunner:latest`, built by nothing) failed at its migrate step."""
+
+    def test_no_script_or_workflow_names_the_image_itself(self):
+        from pathlib import Path
+
+        from django.conf import settings
+        root = Path(settings.BASE_DIR)
+        named = []
+        for pattern in ('scripts/**/*.sh', 'sensors-ingest/**/*.sh', 'chemcore/scripts/*.sh', '.github/**/*.yml',
+                        'docker-compose.yml'):
+            for path in root.glob(pattern):
+                relative = path.relative_to(root).as_posix()
+                if relative != 'scripts/testrunner/image.sh' and 'node_modules' not in relative \
+                        and '/target/' not in relative and 'balik-testrunner' in path.read_text(encoding='utf-8'):
+                    named.append(relative)
+        self.assertEqual(named, [])
+        self.assertIn('tag=balik-testrunner-chemcore:req-$hash',
+                      (root / 'scripts' / 'testrunner' / 'image.sh').read_text(encoding='utf-8'))

@@ -4444,7 +4444,9 @@ line for every mail that did not go out (the kind and the row's id), with time a
 (invitations) and the requests anybody can send (the forgot-password form). It takes the admin's first, so requests
 from outside can neither crowd an invitation out nor make it wait behind them. It keeps its database connection from
 one job to the next while jobs wait and closes it when none does: 200 lookups of addresses nobody has are emptied
-in 0.2 s (about 900 a second; 42 a second while it opened a connection for each). **A full line is never silent.**
+in 0.2 s (about 900 a second; 42 a second while it opened a connection for each). It tries the kept connection before
+each job and opens a new one when the database has dropped it meanwhile, so the job after a database restart is not
+lost. **A full line is never silent.**
 An invitation that finds its line full is marked not sent ("Too many mails are waiting to be sent") and the admin is
 told. A reset request that finds the requests' line full is dropped: the person is answered like every other, and
 the server's log says so once a minute with how many were dropped since the last line and since the process started
@@ -4452,19 +4454,28 @@ the server's log says so once a minute with how many were dropped since the last
 
 **Whose a waiting mail is, and what happens at a restart.** The lines are in memory, so a waiting mail can be sent
 only by the server process that queued it. Its row names that process (`owner`), and the process keeps saying that
-it still has the mail (`alive_at`, renewed at every job its worker starts). A mail is called not sent only when that
-is known, and it is then **written down**, once, on the row and in the logs ("The sending was interrupted: the server
+it still has the mail (`alive_at`, renewed at every job its worker starts, **for the mails the worker holds**: the
+ones handed to it and not yet done, never everything that carries the process's name). A mail is called not sent only
+when that is known, and it is then **written down**, once, on the row and in the logs ("The sending was interrupted: the server
 stopped, or the mail server never answered", stored like any other reason):
 
 - by the process itself, when it stops in order with mails still queued (`atexit`: the mails under way get
   `EMAIL_TIMEOUT`, what is left is closed);
 - for a process that was killed, by the next look at the row once its owner has been silent for three times
   `EMAIL_TIMEOUT`: before the users tab is drawn, before an invitation is sent again or a reset is counted, and when
-  a worker starts (a restart).
+  a worker starts (a restart);
+- the same way for **a mail whose job was lost while its process lives on** (the database failed when the job
+  started, or when the outcome was to be written after the mail server had answered): the worker no longer holds
+  it, so nobody renews it, and the next look after three times `EMAIL_TIMEOUT` closes it as interrupted. Such a mail
+  **may have gone out**: the row cannot say, since writing it down is what failed.
 
 Never by the row's age: a mail behind a slow mail server or a long line is "being sent" for as long as its owner has
-it, and sending it again is refused meanwhile, so it cannot go out twice; a row closed as interrupted is not sent
-late by an owner that gets to it after all. Nothing sends a lost mail again by itself: the admin sends the
+it, and sending it again is refused meanwhile. **A mail can go out twice in two cases, both to the same person at
+the same address**, and in both the first row stays "interrupted" though the mail went: the mail under way of an
+owner that was silent past the lease without having stopped (a hung process, a paused machine), when the admin sends
+again and the first send then completes after all; and a mail whose outcome could not be written (above), sent again
+by the admin. Neither can be closed without the mail server's help. A mail still waiting in a line cannot: a row
+closed as interrupted is skipped by an owner that gets to it after all. Nothing sends a lost mail again by itself: the admin sends the
 invitation again from the row, and a person asks for their reset again (a lost reset does not count against their
 hour). Two server processes each have their own worker and their own rows; neither closes the other's while it lives.
 

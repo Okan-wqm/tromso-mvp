@@ -507,7 +507,7 @@ class TodayPageTests(PeopleTestCase):
         ProductionDepartment.objects.filter(pk=self.dept_a.pk).update(manager=self.lead)
 
     def test_the_page_the_fragment_and_the_numbers_for_the_viewers_team_only(self):
-        today = site_today(None)
+        today = site_today(self.site)                 # the people's own site's day (the board reads each on their site's clock)
         for person in (self.in_a, self.in_b):
             ShiftAssignment.objects.create(employee=person, day=today, shift=self.early)
         self.client.force_login(self.lead)

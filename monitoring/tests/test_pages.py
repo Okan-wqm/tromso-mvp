@@ -7,9 +7,9 @@ from django.contrib.sessions.models import Session
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
-from django.utils import timezone
 
 from core import access, navigation
+from core.dates import company_today
 from core.models import AuditLog, Profile
 from farm.models import FeedingRecord, StockOperation, WaterMeasurement
 
@@ -220,7 +220,7 @@ class WallTests(MonitoringCase):
         self.assertIn('data-fullscreen', html)                           # the wall keeps its Full screen button ...
         self.assertIn('Leave the wall', html)                            # ... and a way out
         self.assertIn('wall=1', re.search(r'data-poll="([^"]+)"', html).group(1))
-        self.assertEqual(self.client.session['monitoring_wall_day'], timezone.localdate().isoformat())
+        self.assertEqual(self.client.session['monitoring_wall_day'], company_today().isoformat())   # the company's day
         key = self.client.session.session_key
         first = Session.objects.get(pk=key).expire_date
         self.client.get(PAGE, {'wall': '1'})                        # the same day: no write
@@ -229,7 +229,7 @@ class WallTests(MonitoringCase):
         session['monitoring_wall_day'] = '2026-01-01'               # a day ago: extended again
         session.save()
         self.client.get(f'{CARDS}?wall=1')
-        self.assertEqual(self.client.session['monitoring_wall_day'], timezone.localdate().isoformat())
+        self.assertEqual(self.client.session['monitoring_wall_day'], company_today().isoformat())   # the company's day
 
     def test_a_page_that_is_not_a_wall_does_not_touch_the_session(self):
         self.client.get(PAGE)

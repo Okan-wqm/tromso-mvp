@@ -16,6 +16,7 @@ from django.urls import reverse
 from django.utils import translation
 
 from core import access, database, navigation
+from core.dates import company_today
 from core.models import AuditLog, Profile
 
 from ..feeding import read, services, views as feeding_views
@@ -523,9 +524,13 @@ class FiguresTests(FeedingTestCase):
         self.assertContains(response, 'title="Not weighed since the fish came in."', count=1)
 
     def test_the_overview_shows_the_feed(self):
+        """The overview's day is the company's (overview_tiles: the whole farm, sites of several clocks), T-01's site
+        reads UTC: its 10 kg of today are the company's today's too, except in the hours when Oslo's day has turned and
+        UTC's has not (core/tests_day_boundary.py holds the clock there). The week holds them either way."""
         tiles = self.client.get(reverse('production_home')).context['feeding_tiles']
+        today = '10 kg' if company_today() == self.today else '0.00 kg'
         self.assertEqual([(str(tile['label']), tile['count']) for tile in tiles],
-                         [('Feed today', '10 kg'), ('Feed, last 7 days', '10 kg')])
+                         [('Feed today', today), ('Feed, last 7 days', '10 kg')])
 
 class WindowsInTests(FeedingTestCase):
     """The windows of the units over days (read.windows_in), against the figures of the same worked example."""

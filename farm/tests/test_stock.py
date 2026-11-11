@@ -16,6 +16,7 @@ from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
 from core import access, database, navigation
+from core.dates import company_today
 from core.audit import message
 from core.models import AuditLog, Profile
 
@@ -247,7 +248,8 @@ class InputTests(StockTestCase):
         from django.utils import timezone
         from zoneinfo import ZoneInfo
         self.assertEqual(services.local_today(self.t1), timezone.localdate(timezone=ZoneInfo('Asia/Tokyo')))
-        self.assertEqual(services.local_today(self.p1), timezone.localdate())   # no zone: the company's (UTC)
+        self.assertEqual(services.local_today(self.p1), timezone.localdate(timezone=ZoneInfo('UTC')))    # its site's
+        self.assertEqual(services.local_today(), company_today())           # no unit: the company's clock
 
     def test_only_units_that_take_fish_are_stocked(self):
         for status in (Status.HARVESTING, Status.CLEANING, Status.MAINTENANCE, Status.QUARANTINE, Status.INACTIVE):

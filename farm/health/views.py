@@ -29,7 +29,7 @@ from ..forms.stock import VoidForm
 from ..models import Batch, HealthEvent, LiceCount, Medicine, Site, Tank, Treatment
 from ..models.health import MedicineKind
 from ..stock import read as stock_read, views as stock_views
-from ..stock.dates import earliest_today, shown_date
+from ..stock.dates import shown_date
 from ..stock.read import Presence
 from ..stock.services import AlreadyRecorded
 from . import notices, read, services, withdrawal
@@ -86,13 +86,15 @@ TREATMENT_FILTERS = ('site', 'unit', 'batch', 'method', 'medicine', 'from', 'to'
 def treated_batches(treatments):
     """{treatment id: (its today, [(batch, Withdrawal or None)])}: the batches each treatment reached (from the stock
     ledger) and, for a live treatment with a medicine, the withdrawal it puts on each as it stands on the treatment's
-    today: the earliest today among its units' sites (farm.stock.dates.earliest_today), as a unit's own withdrawal line
-    is read (withdrawal.of_units), never the company's day for a site on another clock: that day counted a site's
-    running day as a past one without a temperature, or held its fish a day short, in the hours the two days differ.
-    One reader per such day (one on a farm whose sites share a clock)."""
+    today (withdrawal.read_days): the earliest of the company's day and today on every unit its fish have been in, the
+    one they are in now among them. Never a later day than where the fish are: the company's day alone counted a
+    site's running day as a past one without a temperature and freed its fish a day early for a site behind the
+    company, and the day of the unit the course was given in showed fish moved to a site on an earlier day as free
+    while their own unit still held them. One reader per such day (one on a farm whose sites share a clock)."""
+    days = withdrawal.read_days(treatments)
     by_today = defaultdict(list)
     for treatment in treatments:
-        by_today[earliest_today(treatment.units.all())].append(treatment)
+        by_today[days[treatment.pk]].append(treatment)
     found = {}
     for today, members in by_today.items():
         unit_ids = {unit.pk for treatment in members for unit in treatment.units.all()}

@@ -37,7 +37,7 @@ from farm.health import lice, read as health_read, withdrawal
 from farm.models import HealthEvent, LiceCount, Medicine, StockOperation, Tank, Treatment
 from farm.models.handling import HandlingKind
 from farm.models.health import MEDICINAL, PLANNED_DAYS, TreatmentMethod, TreatmentReason
-from farm.stock.dates import check_date, earliest, local_today, shown_date, sites_of
+from farm.stock.dates import check_date, earliest, earliest_today, shown_date, sites_of
 from farm.stock.services import AlreadyRecorded, lock_fish, locked, voided
 
 # The fields the activity log shows for a new treatment and a new lice count.
@@ -88,7 +88,7 @@ def _no_fish(unit, day):
 def _check_last_day(start_date, end_date, units):
     if end_date < start_date:
         raise ValidationError({'end_date': _('The last day cannot be before the first.')})
-    latest = min(local_today(unit) for unit in units) + timedelta(days=PLANNED_DAYS)
+    latest = earliest_today(units) + timedelta(days=PLANNED_DAYS)
     if end_date > latest:
         raise ValidationError({'end_date': _('The last day can be planned at most %(days)d days ahead.') % {
             'days': PLANNED_DAYS}})
@@ -203,7 +203,7 @@ def _lock_fish(unit_ids, first):
 
 
 def _today(units):
-    return min(local_today(unit) for unit in units)
+    return earliest_today(units)
 
 
 def record_treatment(user, *, units, method, reason, start_date, end_date, medicine=None, dose_value=None,

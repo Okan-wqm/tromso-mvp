@@ -296,20 +296,54 @@ def holding(batch_ids, today, day=None):
     return found
 
 
+def reach(unit_sets):
+    """{key: (the batches ever in the units of `unit_sets[key]`, the farm's earliest today among EVERY unit those
+    batches were ever in; None when the units never held fish)}, for several sets of units at once.
+
+    THE one way to say on which day the withdrawals of fish are read when they have been on sites of several clocks:
+    a withdrawal follows the fish, so the day is asked of every unit they were in, the one they are in now among them,
+    and the earliest wins (the fish are held the longest so, and never freed on a day that has not begun where they
+    are). The write guards read it (`_reached`) and the Treatments list (`read_days`). Three queries whatever the
+    number of keys."""
+    every = {unit_id for unit_ids in unit_sets.values() for unit_id in unit_ids}
+    in_units = Presence.of_units(every).batches if every else {}
+    return earliest_days({key: {batch_id for unit_id in unit_ids for batch_id in in_units.get(unit_id, ())}
+                          for key, unit_ids in unit_sets.items()})
+
+
+def earliest_days(batch_sets):
+    """{key: (the batches of `batch_sets[key]`, the farm's earliest today among every unit they were ever in; None for
+    no batches)}: `reach` for fish that are known already."""
+    every = {batch_id for batch_ids in batch_sets.values() for batch_id in batch_ids}
+    units_of = Presence.of_batches(every).units if every else {}
+    units = Tank.all_objects.select_related('production_department__site').in_bulk(
+        {unit_id for unit_ids in units_of.values() for unit_id in unit_ids})
+    return {key: (set(batch_ids), earliest_today(
+        units[unit_id] for batch_id in batch_ids for unit_id in units_of.get(batch_id, ()) if unit_id in units)
+        if batch_ids else None) for key, batch_ids in batch_sets.items()}
+
+
 def _reached(unit_ids=(), species=None):
     """(the batches ever in `unit_ids` or of `species`, the farm's earliest today among the units they were in: the
-    longest held)."""
-    batch_ids = set()
-    if unit_ids:
-        batch_ids.update(batch_id for batches in Presence.of_units(set(unit_ids)).batches.values()
-                         for batch_id in batches)
+    longest held; `reach`)."""
+    batch_ids = set(reach({None: set(unit_ids)})[None][0]) if unit_ids else set()
     if species is not None:
         batch_ids.update(Batch.all_objects.filter(species=species).values_list('pk', flat=True))
-    if not batch_ids:
-        return batch_ids, None
-    units = Tank.all_objects.filter(pk__in={unit_id for units in Presence.of_batches(batch_ids).units.values()
-                                            for unit_id in units}).select_related('production_department__site')
-    return batch_ids, earliest_today(units)
+    return earliest_days({None: batch_ids})[None]
+
+
+def read_days(treatments):
+    """{treatment id: the day its withdrawals are read on in a list over the whole farm} (Operations › Treatments; the
+    treatments' units prefetched): the earliest of
+    - today on every unit the fish of its units have been in (`reach`: the day the write guards read, so the list and
+      a guard never disagree, and fish moved to a site on an earlier day are not shown as free while their own unit
+      still holds them), and
+    - the company's today (the list is over sites of several clocks, and never read a later day than the company's:
+      for a site ahead of the company it is the stricter of the two beside that unit's own line, never the laxer).
+    A treatment whose units never held fish is read on the company's day."""
+    company = local_today()
+    reached = reach({treatment.pk: {unit.pk for unit in treatment.units.all()} for treatment in treatments})
+    return {pk: company if day is None else min(day, company) for pk, (_batches, day) in reached.items()}
 
 
 def held_reached(unit_ids=(), species=None):

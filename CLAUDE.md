@@ -102,7 +102,8 @@ when `chemcore/` or `requirements.txt` changed.
 `main` is the only long-lived branch; there are no pull requests in daily work (CI runs the whole suite on every
 push to `main`). Work happens on a `wip/<name>` branch in a worktree under `F:\dev\balik-wt\`, in small logical
 commits with the test commit beside the code commit. Commit subjects start with the date and time:
-`[YYYY-MM-DD HH:MM +zzzz] Subject` (from `date '+%Y-%m-%d %H:%M %z'`).
+`[YYYY-MM-DD HH:MM +zzzz] Subject` (from `date '+%Y-%m-%d %H:%M %z'`). The subject after the date is at most about
+72 characters; the details go in the commit's body.
 
 Landing a branch, one at a time, in the agreed order:
 

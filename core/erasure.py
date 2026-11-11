@@ -1,5 +1,5 @@
-"""Erasing, on request, the address of a stranger an invitation was mis-sent to (docs/erasure.md, step 8; the owner's
-decision of 2026-11-11: yes, the activity log is changed for this).
+"""Erasing, on request, an address an invitation was mis-sent to (docs/erasure.md, step 8; the owner's decision of
+2026-11-11: yes, the activity log is changed for this).
 
 The platform admin mistypes a new person's address; the invitation goes to whoever has that address, and the address
 then stays in two places after the account's own address has been put right: the table `account_mails` (one row per
@@ -18,14 +18,21 @@ What it is and is not:
 - **The log stays honest.** The rows stay, with who did what and when: an invitation went out, a link was used, an
   address was changed. Only to which address is gone. The users tab says so in its own words
   (core.accountmail.Standing: `link_erased`, `mail_erased`).
-- **A stranger's address only.** It refuses an address that is the address of any account now (whatever its case, the
-  spaces around it, the account active or not): an account's own address is kept, with its reason, in docs/erasure.md.
-  It also waits for a mail to that address that is still with the mail worker: its row is about to say what became
-  of it.
+- **What it checks, and what it cannot.** It refuses an address that is the address of any account NOW (whatever its
+  case, the spaces around it, the account active or not), and waits for a mail to it that is still with the mail
+  worker. That is all it checks. It cannot tell a stranger's address from an address that was a person's own for a
+  year, or from one an intruder put on an account and took off again: all three are "an address an account once had".
+  So `plan` gathers what the log says of each account touched (`History`: from when to when the address was the
+  account's own, whether a password was set through a link sent to it, whether the account was used meanwhile) and
+  says plainly when it does not look like a stranger's. The data-protection officer decides; the command informs and
+  obeys.
 - **Only that address.** A value is replaced when it is that address and nothing else, under those labels, on rows of
   user accounts; inside a mail server's reply (`account_mails.error`) the address is replaced where it stands as a
-  whole address, never as a part of a longer one. Whatever else holds the text (an account's username, a record's
-  name, another record's field) is listed for the operator and left as it is.
+  whole address, in any case and Unicode form, never as a part of a longer one. Whatever else holds the text is listed
+  for the operator and left as it is: another label or another shape of value on a user's row, another kind of record,
+  an account's username, the name a log row is under or was written by. No step of the procedure changes those last
+  three. What the list cannot see: a reply that names the address in another form (cut off by the column's length,
+  rewritten by a mailing system as `name=domain@bounce...`).
 - **Nothing it writes holds the address.** The instruction and the name of who carries it out are refused when they
   hold it (they would put it back into the log, where this command would not find it again), and its own rows are
   written under the account's number when the account's username holds it.
@@ -42,6 +49,7 @@ import json
 import re
 import unicodedata
 from dataclasses import dataclass, field
+from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.db import OperationalError, connection, transaction
@@ -57,6 +65,9 @@ SAID = 'The address of a mis-sent invitation erased on request ({instruction}); 
 # How long the erasure waits for the lock on the log (and for a row of account_mails) before it is refused: every
 # writer of the log queues behind a session that waits for this lock, so the wait is bounded.
 LOCK_WAIT_SECONDS = 5
+# A mistyped address is put right soon: one that was an account's own for at least this long is said to look like a
+# person's own former address.
+OWN_FOR_LONG = timedelta(days=1)
 
 
 def labels():
@@ -88,10 +99,28 @@ def inside(address):
     return re.compile(r'(?<![\w.+%-])' + re.escape(address.strip()) + r'(?![\w-]|\.\w)', re.IGNORECASE)
 
 
-def _without(pattern, error):
-    """A mail server's reply with the address replaced, cut to the column as a reason is (the placeholder can be longer
-    than the address it stands for)."""
-    text = pattern.sub(ERASED_ADDRESS, error)
+def _leaves(value):
+    """Every text inside a stored value, whatever its shape (a pair, a list in a list, an enumerated value)."""
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for inner in value.values():
+            yield from _leaves(inner)
+    elif isinstance(value, (list, tuple)):
+        for inner in value:
+            yield from _leaves(inner)
+
+
+def _without(address, error):
+    """A mail server's reply with the address replaced wherever `holds` finds it (as written, and every address-like
+    run that is the address in another case or Unicode form; a closing full stop stays), cut to the column as a reason
+    is (the placeholder can be longer than the address it stands for)."""
+    def other_form(found):
+        token = found.group()
+        core = token.rstrip('.')
+        return ERASED_ADDRESS + token[len(core):] if same(core, address) else token
+
+    text = TOKEN.sub(other_form, inside(address).sub(ERASED_ADDRESS, error))
     return text if len(text) <= accountmail.REASON_LENGTH else text[:accountmail.REASON_LENGTH - 1] + '…'
 
 
@@ -115,6 +144,35 @@ def holders(address):
 
 
 @dataclass
+class History:
+    """What the log says of one account and the address: for the data-protection officer to judge the case by."""
+    account: int
+    name: str
+    own: list = field(default_factory=list)          # [(from, how, until or None, how)]: when it was the account's own
+    passwords: list = field(default_factory=list)    # [(when, who)]: a password set through a link sent to it
+    invitations: list = field(default_factory=list)  # [(when, who)]: an invitation sent, or tried, to it
+    used: int = 0                                    # other log rows the account itself wrote while it was its address
+
+    @property
+    def longest(self):
+        return max((until - start for start, _how, until, _end in self.own if until is not None), default=None)
+
+    @property
+    def warnings(self):
+        """Why this does not look like a stranger's address; [] when nothing in the log says so."""
+        found = []
+        if self.longest is not None and self.longest >= OWN_FOR_LONG:
+            found.append(f'it was the account’s own address for {self.longest.days} day(s)')
+        if any(until is None for _start, _how, until, _end in self.own):
+            found.append('the log does not say when it stopped being the account’s own address')
+        if self.used:
+            found.append(f'the account wrote {self.used} other log row(s) itself while it was its address')
+        if len(self.passwords) > 1:
+            found.append(f'{len(self.passwords)} passwords were set through links sent to it')
+        return found
+
+
+@dataclass
 class Plan:
     """What an erasure of `address` would change, and what else holds its text."""
     address: str
@@ -123,6 +181,8 @@ class Plan:
     elsewhere: list = field(default_factory=list)   # [words]: where else the text stands, left as it is
     held_by: list = field(default_factory=list)     # the accounts whose own address it is: the erasure is refused
     waiting: list = field(default_factory=list)     # mails to it still with the mail worker: the erasure waits
+    stored: dict = field(default_factory=dict)      # {(kind, row id): the value as stored}, where not as typed
+    histories: list = field(default_factory=list)   # a History per account touched
     user_rows: int = 0                              # how many rows of user accounts the log held when this was read
     mail_rows: int = 0                              # ... and how many rows account_mails held
 
@@ -146,9 +206,11 @@ def plan(address):
     found.mail_rows = len(mails)
     for mail in mails:
         mine = same(mail.address, address)
-        error = _without(pattern, mail.error) if mail.error and pattern.search(mail.error) else None
+        error = _without(address, mail.error) if holds(mail.error, address) else None
         if mine or error is not None:
             found.mails.append((mail, mine, error))
+        if mine and mail.address != found.address:
+            found.stored[('mail', mail.pk)] = mail.address
         if mine and accountmail.state(mail) == accountmail.WAITING:
             found.waiting.append(mail)
     rows = list(AuditLog.objects.filter(entity_type=user_type()).order_by('created_at', 'id'))
@@ -156,18 +218,52 @@ def plan(address):
     for entry in rows:
         changes, changed = dict(entry.changes or {}), []
         for label, pair in changes.items():
-            if not isinstance(pair, list):
-                continue
-            if label in own and any(same(value, address) for value in pair):
+            if label in own and isinstance(pair, list) and any(same(value, address) for value in pair):
+                as_stored = sorted({value for value in pair if same(value, address) and value != found.address})
+                if as_stored:
+                    found.stored[('entry', entry.pk)] = ', '.join(as_stored)
                 changes[label] = [ERASED if same(value, address) else value for value in pair]
                 changed.append(label)
-            elif any(isinstance(value, str) and pattern.search(value) for value in pair):
-                found.elsewhere.append(f'activity log {entry.pk} ({entry.action} of user {entry.entity_label}): under '
-                                       f'“{label}”')
+        left = [label for label, value in changes.items() if any(holds(leaf, address) for leaf in _leaves(value))]
+        if left:                      # whatever of it is left on the row once the pairs above are replaced
+            found.elsewhere.append(f'activity log {entry.pk} ({entry.action} of user {entry.entity_label}): under '
+                                   + ', '.join(f'“{label}”' for label in left)
+                                   + ' (another label, or a shape of value this command does not change)')
         if changed:
             found.entries.append((entry, changed, changes))
     found.elsewhere += _elsewhere(address, pattern)
+    found.histories = _histories(found, rows, address, own)
     return found
+
+
+def _histories(found, rows, address, own):
+    """What the log says of each account touched (History), read from the rows of user accounts already in hand, and
+    one count per time the address was the account's own."""
+    email, sent_to, link_to = own
+    touched = {str(pk) for pk in found.accounts}
+    histories = {}
+    for entry in rows:
+        if entry.entity_id not in touched:
+            continue
+        history = histories.setdefault(entry.entity_id, History(int(entry.entity_id), entry.entity_label))
+        history.name = entry.entity_label
+        changes, how = entry.changes or {}, f'{entry.action} by {entry.user_name}'
+        pair = changes.get(email)
+        if isinstance(pair, list) and len(pair) == 2:
+            if same(pair[1], address):
+                history.own.append((entry.created_at, how, None, None))
+            elif same(pair[0], address) and history.own and history.own[-1][2] is None:
+                history.own[-1] = (*history.own[-1][:2], entry.created_at, how)
+        if isinstance(changes.get(link_to), list) and any(same(value, address) for value in changes[link_to]):
+            history.passwords.append((entry.created_at, entry.user_name))
+        if isinstance(changes.get(sent_to), list) and any(same(value, address) for value in changes[sent_to]):
+            history.invitations.append((entry.created_at, entry.user_name))
+    for history in histories.values():
+        for start, _how, until, _end in history.own:
+            written = AuditLog.objects.filter(user_name=history.name, created_at__gte=start).exclude(
+                action=AuditLog.Action.PASSWORD, entity_type=user_type(), entity_id=str(history.account))
+            history.used += (written.filter(created_at__lt=until) if until is not None else written).count()
+    return [histories[key] for key in sorted(histories, key=int)]
 
 
 def _elsewhere(address, pattern):
@@ -212,9 +308,9 @@ def refuse_words(address, instruction, by):
 def _refuse(found):
     if found.held_by:
         names = ', '.join(user.get_username() for user in found.held_by)
-        raise Refused(f'{found.address} is the address of an account now ({names}): this erases a stranger’s '
-                      f'address only. An account’s own address is kept (docs/erasure.md, What remains in plain '
-                      f'text).')
+        raise Refused(f'{found.address} is the address of an account now ({names}). This command erases only an '
+                      f'address that no account has now; an account’s own address is kept (docs/erasure.md, What '
+                      f'remains in plain text).')
     if found.waiting:
         raise Refused(f'A mail to {found.address} is being sent right now (account_mails '
                       f'{", ".join(str(mail.pk) for mail in found.waiting)}): its row is about to say what became '

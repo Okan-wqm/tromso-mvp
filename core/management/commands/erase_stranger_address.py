@@ -1,6 +1,12 @@
-"""`manage.py erase_stranger_address ADDRESS`: erases, on request, the address of a stranger an invitation was mis-sent
-to (core/erasure.py; docs/erasure.md, step 8). Run by the platform's database administrator on the data-protection
+"""`manage.py erase_stranger_address ADDRESS`: erases, on request, an address an invitation was mis-sent to
+(core/erasure.py; docs/erasure.md, step 8). Run by the platform's database administrator on the data-protection
 officer's written instruction; no page does this.
+
+It checks only that no account has the address now. It cannot tell a stranger's address from a person's own former
+one, or from one an intruder put on an account: so the dry run shows, for each account touched, what the activity log
+says (from when to when the address was the account's own, whether a password was set through a link sent to it,
+whether the account was used meanwhile) and says so plainly when it does not look like a stranger's. The
+data-protection officer judges; the command obeys.
 
 Without `--apply` it changes nothing: it says exactly which `account_mails` rows and which activity-log rows and
 labels would change, and where else the text of the address stands (left as it is). That is the default because the
@@ -19,10 +25,12 @@ from core import erasure
 
 
 class Command(BaseCommand):
-    help = ('Erases the address of a stranger an invitation was mis-sent to, on the data-protection officer\'s '
-            'instruction: in account_mails and in the activity log\'s rows of the account (the address replaced by a '
-            'placeholder, one "Erased on request" row added on each account touched). Without --apply nothing is '
-            'changed: it lists what would be. Refuses an address that is an account\'s own now. Cannot be undone.')
+    help = ('Erases an address an invitation was mis-sent to, on the data-protection officer\'s instruction: in '
+            'account_mails and in the activity log\'s rows of the account (the address replaced by a placeholder, one '
+            '"Erased on request" row added on each account touched). Without --apply nothing is changed: it lists '
+            'what would be, and what the log says of each account. It checks only that no account has the address now: '
+            'it cannot tell a stranger’s address from a person’s own former one, which is the data-protection '
+            'officer\'s to judge. Cannot be undone.')
 
     def add_arguments(self, parser):
         parser.add_argument('address', help='The address to erase, as it was typed (case and outer spaces do not matter).')
@@ -62,8 +70,8 @@ class Command(BaseCommand):
             write('Dry run: nothing is changed. Run again with --apply, --instruction and --carried-out-by to carry it out.')
         if found.held_by:
             names = ', '.join(user.get_username() for user in found.held_by)
-            write(f'REFUSED: {found.address} is the address of an account now ({names}). This erases a stranger\'s '
-                  f'address only; with --apply nothing would be changed.')
+            write(f'REFUSED: {found.address} is the address of an account now ({names}). This command erases only an '
+                  f'address that no account has now; with --apply nothing would be changed.')
         if found.waiting:
             write(f'REFUSED for now: a mail to {found.address} is being sent right now (account_mails '
                   f'{", ".join(str(mail.pk) for mail in found.waiting)}). Run this again when its row says what became '
@@ -76,17 +84,52 @@ class Command(BaseCommand):
             for mail, mine, error in found.mails:
                 what = ' and '.join(filter(None, ['address' if mine else '', 'error' if error is not None else '']))
                 write(f'  account_mails {mail.pk}: {mail.kind} of {mail.created_at:%Y-%m-%d %H:%M} UTC for account '
-                      f'{mail.user_id} ({mail.user.get_username()}): {what}')
+                      f'{mail.user_id} ({mail.user.get_username()}): {what}{self.as_stored(found, "mail", mail.pk)}')
             write(f'{len(found.entries)} activity-log row(s) {done}:')
             for entry, labels, _changes in found.entries:
                 write(f'  audit_log {entry.pk}: {entry.action} of {entry.created_at:%Y-%m-%d %H:%M} UTC on account '
-                      f'{entry.entity_id} ({entry.entity_label}): {", ".join(labels)}')
+                      f'{entry.entity_id} ({entry.entity_label}): {", ".join(labels)}'
+                      f'{self.as_stored(found, "entry", entry.pk)}')
             accounts = ', '.join(str(pk) for pk in found.accounts)
             write(f'One “Erased on request” row {"added" if applied else "would be added"} on each account touched: '
                   f'{accounts}.')
+            if not applied:
+                self.judged(found)
         if found.elsewhere:
             write('The text also stands here, left as it is (not this command\'s to change):')
             for where in found.elsewhere:
                 write(f'  {where}')
         if applied and not found.empty:
             write('The activity log\'s append-only trigger is in force. Backups taken before this still hold the address.')
+
+    @staticmethod
+    def as_stored(found, kind, pk):
+        """The value as the row holds it, when that is not how it was typed (another case, another Unicode form)."""
+        stored = found.stored.get((kind, pk))
+        return f' (stored as “{stored}”)' if stored else ''
+
+    def judged(self, found):
+        """What is checked, and what the log says of each account: what the data-protection officer judges the case by."""
+        write, stamp = self.stdout.write, '%Y-%m-%d %H:%M'
+        write('Checked: no account has this address now. Not checked: whose address it was. This command cannot tell a '
+              'stranger\'s address from a person\'s own former one, or from one an intruder put on an account and took '
+              'off again. What the activity log says of each account:')
+        for history in found.histories:
+            write(f'Account {history.account} ({history.name}):')
+            for start, how, until, end in history.own:
+                closed = f'to {until:{stamp}} UTC ({end})' if until is not None else 'with no row that ends it'
+                write(f'  its own address from {start:{stamp}} UTC ({how}) {closed}')
+            if not history.own:
+                write('  the log has no row that made it the account\'s own address')
+            for when, who in history.invitations:
+                write(f'  an invitation was sent, or tried, to it: {when:{stamp}} UTC, by {who}')
+            for when, who in history.passwords:
+                write(f'  a password was set through a link sent to it: {when:{stamp}} UTC, by {who}')
+            if not history.passwords:
+                write('  no password was set through a link sent to it')
+            if history.used:
+                write(f'  the account wrote {history.used} other log row(s) itself while it was its address')
+            if history.warnings:
+                write(f'  WARNING: this does not look like a stranger’s address: {"; ".join(history.warnings)}. '
+                      f'Erasing it removes the evidence of where this account\'s links went. The data-protection '
+                      f'officer decides.')

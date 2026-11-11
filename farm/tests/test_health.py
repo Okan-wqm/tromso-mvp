@@ -6,7 +6,7 @@ registry the harvest side reads, the statutory sea-lice limits, the write paths,
 import io
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone as dt_timezone
 from decimal import Decimal
 from unittest import mock
 
@@ -23,6 +23,7 @@ from django.utils import translation
 from core import access, database, navigation, softdelete
 from core.models import AuditLog, Profile
 from core.softdelete import plan_delete
+from core.testing import BAD_HOURS, FrozenClock
 
 from ..handling import check as handling_check, withdrawal as registry
 from ..handling.withdrawal import WithdrawalBlock
@@ -31,8 +32,8 @@ from ..health import diseases, lice, notices, services, withdrawal
 from ..health import read
 from ..health.read import LiceWeek, lice_weeks
 from ..models import (
-    Batch, Feed, HandlingAcknowledgement, HandlingRule, HealthEvent, LiceCount, Medicine, MedicineWithdrawal, Site,
-    Species, StockOperation, Supplier, System, Tank, Treatment, WaterMeasurement,
+    Batch, Feed, HandlingAcknowledgement, HandlingRule, HealthEvent, LiceCount, Medicine, MedicineWithdrawal,
+    ProductionDepartment, Site, Species, StockOperation, Supplier, System, Tank, Treatment, WaterMeasurement,
 )
 from ..models.site import zone_of
 from ..stock import integrity, services as stock_services
@@ -1445,6 +1446,60 @@ class TreatmentPageTests(HealthTestCase):
         self.assertEqual(page(medicine=str(bath.pk)), [lice_bath])
         self.assertEqual(page(method='injection'), [vaccination])
         self.assertEqual(page(**{'from': self.day(3).isoformat()}), [lice_bath])
+
+
+class TreatmentPageSiteBehindTests(FrozenClock, HealthTestCase):
+    """The Treatments page reads each treatment on its own site's today, as the unit's own withdrawal line does
+    (withdrawal.of_units), not on the company's: at 23:30 UTC on the 10th it is the 10th on T-01's site (UTC) and already
+    the 11th in Oslo. On the company's day the page freed the fish a day early and counted the site's running day as a
+    past one without a temperature."""
+    NOW = BAD_HOURS['WinterNight']
+
+    def rows(self, **query):
+        return self.client.get(reverse('farm:treatments'), query).context['rows']
+
+    def test_fish_on_their_last_held_day_are_under_withdrawal_as_the_units_own_line_says(self):
+        treatment = self.treat(self.medicine(days=1), 1, 1)        # given yesterday, 1 day: free tomorrow, held today
+        [line] = self.held()
+        self.assertEqual((self.today, line.until), (BAD_HOURS['WinterNight'].date(), self.day(-1)))
+        [row] = self.rows(show='withdrawal')                       # "Under withdrawal today": the site's today
+        self.assertEqual((row['treatment'], row['today']), (treatment, self.today))
+        [(batch, held)] = row['batches']
+        self.assertEqual((batch, held.until, held.holds_on(row['today'])), (self.batch, line.until, True))
+        self.assertContains(self.client.get(reverse('farm:treatments')), '<span class="over-text" title="')
+
+    def test_the_sites_running_day_is_not_counted_as_a_past_day_without_a_temperature(self):
+        self.treat(self.medicine(degree_days=50), 6, 6)            # five past days, none measured
+        [line] = self.held()
+        [row] = self.rows()
+        [(_batch, held)] = row['batches']
+        self.assertEqual((held.days_without_temperature, held.until), (5, line.until))
+        self.assertEqual(line.days_without_temperature, 5)
+
+
+class TreatmentPageSiteAheadTests(FrozenClock, HealthTestCase):
+    """And a site ahead of the company: at 16:00 UTC on the 10th it is 17:00 on the 10th in Oslo and 01:00 on the 11th in
+    Tokyo. Fish free on their site's today are not listed as under withdrawal today because the company's day is still
+    yesterday there."""
+    NOW = datetime(2026, 11, 10, 16, 0, tzinfo=dt_timezone.utc)
+
+    def test_fish_free_on_their_sites_today_are_not_under_withdrawal(self):
+        tokyo = Site.objects.create(name='Tokyo', code='TK', timezone='Asia/Tokyo')
+        hall = ProductionDepartment.objects.create(site=tokyo, name='Hall T', code='HT')
+        unit = make_unit('K-01', hall)
+        today = local_today(unit)
+        self.assertEqual((today, local_today()), (date(2026, 11, 11), date(2026, 11, 10)))    # the site's, the company's
+        batch = self.stock(unit, count=1000, weight='100', days_ago=10)
+        treatment = services.record_treatment(self.user, units=[unit], method='bath', reason='sea_lice',
+                                              start_date=today - timedelta(days=1), end_date=today - timedelta(days=1),
+                                              medicine=self.medicine(days=0))       # given yesterday, no days: free today
+        self.assertEqual(withdrawal.of_units([unit]), {})                       # the unit's own line: not held
+        rows = self.client.get(reverse('farm:treatments')).context['rows']
+        [row] = rows
+        [(found, held)] = row['batches']
+        self.assertEqual((row['treatment'], row['today'], found, held.until, held.holds_on(row['today'])),
+                         (treatment, today, batch, today, False))
+        self.assertEqual(self.client.get(reverse('farm:treatments'), {'show': 'withdrawal'}).context['rows'], [])
 
 
 class LicePageTests(HealthTestCase):

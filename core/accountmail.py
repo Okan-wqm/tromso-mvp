@@ -19,6 +19,7 @@ import atexit
 import logging
 import os
 import re
+import secrets
 import socket
 import threading
 import time
@@ -59,9 +60,9 @@ NO_PUBLIC_ADDRESS = gettext_noop(
 TOO_SLOW = gettext_noop('The mail server did not finish in time.')
 BUSY = gettext_noop('Too many mails are waiting to be sent.')
 CHANGED = gettext_noop('The account changed before the mail was sent.')
-OWN_WORDS = (TOOK_NOTHING, NO_PUBLIC_ADDRESS, TOO_SLOW, BUSY, CHANGED)
-# Never stored: what a page says of a row that is still waiting long after a mail's time (`state`).
+# A mail whose owner stopped before sending it (`sweep`, `shut_down`).
 INTERRUPTED = gettext_noop('The sending was interrupted: the server stopped, or the mail server never answered.')
+OWN_WORDS = (TOOK_NOTHING, NO_PUBLIC_ADDRESS, TOO_SLOW, BUSY, CHANGED, INTERRUPTED)
 
 # An invitation in the activity log: the labels and the outcome the platform writes, stored as msgids (the admin's own
 # row is core.resources.UserResource.invite's).
@@ -79,6 +80,15 @@ class NotSent(Exception):
 
 QUEUE_SIZE = 200          # jobs that may wait in each of the worker's two lines; more are refused, never piled up
 KEEP_CONNECTION = 60      # seconds the worker keeps one database connection while jobs keep coming, at most
+RENEW_EVERY = 1           # seconds between two renewals of what the worker still has (`renew`)
+
+
+def _identity():
+    """This server process as the owner of the mails it queues: the host, the process and a mark of its own."""
+    return f'{socket.gethostname()[:40]}:{os.getpid()}:{secrets.token_hex(4)}'
+
+
+WORKER = _identity()
 
 
 class Worker:
@@ -120,6 +130,10 @@ class Worker:
 
     def run(self):
         kept_since = None
+        try:
+            sweep()                      # a worker that starts (a new process) closes what a stopped one left waiting
+        except Exception as fault:
+            logger.error('The mail worker could not look for mails left waiting: %s: %s', type(fault).__name__, fault)
         while True:
             with self.changed:
                 while not (self.mails or self.requests):
@@ -127,6 +141,7 @@ class Worker:
                 job, args = (self.mails or self.requests).popleft()
             failed = False
             try:
+                renew()
                 job(*args)
             except Exception as fault:
                 failed = True
@@ -176,17 +191,34 @@ worker = Worker()
 def _in_a_forked_process():
     """A server that forks its processes after loading the code: the child is another owner, with a worker and lines
     of its own (the parent's thread does not live in it)."""
-    global worker
-    worker = Worker()
+    global WORKER, worker
+    WORKER, worker = _identity(), Worker()
 
 
 if hasattr(os, 'register_at_fork'):
     os.register_at_fork(after_in_child=_in_a_forked_process)
 
 
-# A server that stops in order gives the mails under way their time; one that is killed leaves their rows waiting,
-# which the users tab shows as not sent.
-atexit.register(lambda: worker.drain(settings.MAIL_SEND_SECONDS))
+def shut_down(seconds):
+    """The process's orderly end: the mails under way get `seconds`; what this process then still has waiting it
+    closes itself as interrupted (nobody else can send them), on the row and in the logs. Whether all went out."""
+    if worker.drain(seconds):
+        return True
+    for mail in AccountMail.objects.filter(owner=WORKER, sent_at=None, error='').select_related('user'):
+        _close(mail, INTERRUPTED, audit.message(INTERRUPTED))
+    return False
+
+
+def _at_exit():
+    try:
+        shut_down(settings.MAIL_SEND_SECONDS)
+    except Exception as fault:           # the process is ending: nothing to raise to
+        logger.error('The mail worker could not finish at exit: %s: %s', type(fault).__name__, fault)
+
+
+# A server that stops in order gives the mails under way their time and writes down what it could not send; one that
+# is killed leaves its rows waiting, which the next look at them closes (`sweep`).
+atexit.register(_at_exit)
 
 
 def background(job, *args, anonymous=False):
@@ -197,6 +229,41 @@ def background(job, *args, anonymous=False):
         return worker.put(job, *args, anonymous=anonymous)
     job(*args)
     return True
+
+
+# --- whose a waiting mail is ------------------------------------------------------------------------------------
+
+def lease():
+    """How long a waiting mail is its owner's without the owner saying so again: three times a mail's own time (the
+    owner says so at every job it starts, and a job is a mail at most, cut off at its limit)."""
+    return timedelta(seconds=3 * settings.MAIL_SEND_SECONDS)
+
+
+_renewed = 0.0
+
+
+def renew():
+    """The owner's "I still have them", at the start of each of the worker's jobs (at most every RENEW_EVERY
+    seconds): the mails this process has waiting are its own for another lease."""
+    global _renewed
+    now = time.monotonic()
+    if now - _renewed < RENEW_EVERY:
+        return
+    _renewed = now
+    AccountMail.objects.filter(owner=WORKER, sent_at=None, error='').update(alive_at=timezone.now())
+
+
+def sweep(user=None):
+    """Closes the waiting mails (of `user`, or everybody's) that nobody is sending any more: their owner has not
+    renewed them for a whole lease, so it has stopped (a server killed with mails in its queue). Written down once, as
+    interrupted, on the row and in the logs; a mail is never called not sent for its age alone. Called where it
+    matters: before the users tab is drawn, under the account's row lock before an invitation is sent again or a
+    reset is counted, and when a worker starts."""
+    lapsed = AccountMail.objects.filter(sent_at=None, error='', alive_at__lt=timezone.now() - lease())
+    if user is not None:
+        lapsed = lapsed.filter(user=user)
+    for mail in lapsed.select_related('user'):
+        _close(mail, INTERRUPTED, audit.message(INTERRUPTED))
 
 
 # --- the mail -----------------------------------------------------------------------------------------------
@@ -301,8 +368,9 @@ def _send(mail):
 
 def queue(user, kind, by=None):
     """Writes the mail of `kind` for `user` as waiting and returns its row. Call it inside the transaction of what
-    causes the mail, and `hand_over` the row once that has committed."""
-    return AccountMail.objects.create(user=user, kind=kind, address=user.email, requested_by=by)
+    causes the mail, and `hand_over` the row once that has committed. The row is this process's (`owner`): only its
+    worker can send it."""
+    return AccountMail.objects.create(user=user, kind=kind, address=user.email, requested_by=by, owner=WORKER)
 
 
 def hand_over(mail):
@@ -318,10 +386,10 @@ def hand_over(mail):
 def deliver(mail_id, language):
     """The worker's job: sends a waiting mail and writes what became of it. Whatever stops the mail (no server, a
     refusal, a missing setting, the time limit) is its row's reason, never raised."""
-    mail = (AccountMail.objects.select_related('user', 'requested_by')
-            .filter(pk=mail_id, sent_at=None, error='').first())
-    if mail is None:
+    # the mail is this worker's from here: said on the row, and a row closed meanwhile (`sweep`) is not sent
+    if not AccountMail.objects.filter(pk=mail_id, sent_at=None, error='').update(alive_at=timezone.now()):
         return
+    mail = AccountMail.objects.select_related('user', 'requested_by').get(pk=mail_id)
     user = mail.user
     uid, token = link_parts(user)
     try:
@@ -424,6 +492,7 @@ def reset_now(address, language):
     for user in accounts_on(address):
         with transaction.atomic():
             get_user_model().objects.select_for_update().get(pk=user.pk)
+            sweep(user)                  # a reset a stopped server left waiting does not count as one under way
             if held_back(user):
                 continue
             mail = queue(user, RESET)
@@ -436,21 +505,17 @@ WAITING, SENT, FAILED = 'waiting', 'sent', 'failed'
 
 
 def state(mail):
-    """What became of a mail: SENT, FAILED, or WAITING while the worker may still have it. A row waiting longer than
-    a mail can take (twice the limit: the worker may have been at another mail) never finished, and is FAILED."""
+    """What became of a mail, as its row says: SENT, FAILED (with why), or WAITING while its owner has it. Nothing is
+    worked out from its age: a mail nobody is sending any more is closed as interrupted where that is known
+    (`sweep`, `shut_down`)."""
     if mail.error:
         return FAILED
-    if mail.sent_at:
-        return SENT
-    over = mail.created_at + timedelta(seconds=2 * settings.MAIL_SEND_SECONDS) < timezone.now()
-    return FAILED if over else WAITING
+    return SENT if mail.sent_at else WAITING
 
 
 def shown_reason(mail):
     """Why a mail did not go out, for a page: the platform's own sentences in the reader's language, a mail server's
-    words as it said them, and for a row with no reason that it never finished."""
-    if not mail.error:
-        return _(INTERRUPTED)
+    words as it said them."""
     return _(mail.error) if mail.error in OWN_WORDS else mail.error
 
 

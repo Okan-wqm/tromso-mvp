@@ -2242,6 +2242,28 @@
           "why": "author, time, version or delete mark"
         },
         {
+          "name": "owner",
+          "field": "owner",
+          "type": "varchar(64)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.accountmail when the mail is sent"
+        },
+        {
+          "name": "alive_at",
+          "field": "alive_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.accountmail when the mail is sent"
+        },
+        {
           "name": "sent_at",
           "field": "sent_at",
           "type": "timestamp with time zone",

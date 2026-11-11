@@ -290,6 +290,11 @@ class AccountMail(models.Model):
     requested_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
                                      related_name='+')
     created_at = models.DateTimeField(auto_now_add=True)
+    # The server process that queued the mail (core.accountmail.WORKER): its queue is in that process's memory, so
+    # only it can send the mail. While the mail waits, the owner keeps saying that it still has it (`alive_at`); a
+    # waiting mail whose owner has stopped saying so is closed as interrupted (accountmail.sweep).
+    owner = models.CharField(max_length=64, blank=True)
+    alive_at = models.DateTimeField(default=timezone.now)
     # When the mail server took it; empty while the mail waits to be sent, and for one that did not go out.
     sent_at = models.DateTimeField(null=True, blank=True)
     # Why the mail did not go out (the mail server's words, or the platform's own); empty otherwise.
@@ -298,7 +303,12 @@ class AccountMail(models.Model):
     class Meta:
         db_table = 'account_mails'
         ordering = ['-created_at', '-id']
-        indexes = [models.Index(fields=['user', 'kind', '-created_at'], name='account_mails_recent_idx')]
+        indexes = [
+            models.Index(fields=['user', 'kind', '-created_at'], name='account_mails_recent_idx'),
+            # the few that wait, by when their owner last had them (accountmail.sweep, on every look at the users tab)
+            models.Index(fields=['alive_at'], condition=models.Q(sent_at__isnull=True, error=''),
+                         name='account_mails_waiting_idx'),
+        ]
         constraints = [
             models.CheckConstraint(condition=models.Q(kind__in=['invitation', 'reset']), name='chk_account_mails_kind'),
         ]

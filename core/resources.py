@@ -49,6 +49,7 @@ class InviteView(ResourceView):
         mail = None
         with transaction.atomic():
             user = self.locked_object(pk)
+            accountmail.sweep(user)      # an invitation a stopped server left waiting is closed, not waited for
             refusal = accountmail.cannot_invite(user)
             if refusal:
                 messages.error(request, refusal)
@@ -78,6 +79,13 @@ class UserResource(Resource):
         # and when each last set a password through a link (the activity log's own row of it)
         return accountmail.with_password_set(User.objects.order_by('username')).prefetch_related(
             'groups', Prefetch('account_mails', queryset=invitations, to_attr='invitations'))
+
+    @classmethod
+    def list_queryset(cls, request):
+        """Before the list is drawn, the mails nobody is sending any more are closed (accountmail.sweep), so a row
+        says "not sent" only of a mail that is written down as such."""
+        accountmail.sweep()
+        return super().list_queryset(request)
 
     @classmethod
     def routes(cls, mount=None):

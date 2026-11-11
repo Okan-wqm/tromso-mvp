@@ -299,6 +299,8 @@ The account e-mails the platform sends: the invitation a new person gets, each t
 | address | varchar(254) |  |  | system: written by core.accountmail when the mail is sent |
 | requested_by_id | integer | yes | auth_user (SET_NULL) | system: written by core.accountmail when the mail is sent |
 | created_at | timestamp with time zone |  |  | system: author, time, version or delete mark |
+| owner | varchar(64) |  |  | system: written by core.accountmail when the mail is sent |
+| alive_at | timestamp with time zone |  |  | system: written by core.accountmail when the mail is sent |
 | sent_at | timestamp with time zone | yes |  | system: written by core.accountmail when the mail is sent |
 | error | varchar(500) |  |  | system: written by core.accountmail when the mail is sent |
 

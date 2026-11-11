@@ -138,6 +138,18 @@ SHAPES = [
     ('Kari (Vet, mob 98989898); Ola (tlf 55123456)', [['Kari', U('Vet, mob 98989898')], ['Ola', U('tlf 55123456')]]),
     ('Kari (see post@firma.no, +47 98989898)', [['Kari', U('see post@firma.no, +47 98989898')]]),
     ('Kari (a@example.com, b@example.com, primary)', [['Kari (primary)', U('a@example.com, b@example.com')]]),
+    # a number typed in pieces of fewer than five digits, no e-mail beside it (review R24): no piece is a phone by its
+    # form, and together they are a number, so the details are private and the name stays
+    ('Kari (55 12, 34 56)', [['Kari', U('55 12, 34 56')]]),
+    ('Kari (Vet, 0532, 123, 4567)', [['Kari', U('Vet, 0532, 123, 4567')]]),
+    ('Kari (55 12, 34 56, primary); Ola (Diver)', [['Kari (primary)', U('55 12, 34 56')], ['Ola (Diver)']]),
+    ('Kari (Shift 2, 0532, 123, 4567 890)', [['Kari', U('Shift 2, 0532, 123, 4567 890')]]),
+    # fewer than five digits in all is no number: a short extension, a shift and a room stay as the role
+    ('Kari (Vet, ext 12)', [['Kari (Vet, ext 12)']]),
+    ('Kari (4321)', [['Kari (4321)']]),
+    ('Kari (Shift 2, room 14)', [['Kari (Shift 2, room 14)']]),
+    # with an e-mail the role is proved by its place, whatever it looks like, and the pieces right of it are the phone
+    ('Kari (55 12, kari@example.com, 34 56)', [['Kari (55 12)', E('kari@example.com'), P('34 56')]]),
     # cannot be taken apart safely: the brackets do not balance, a name that holds an address or a number, no name
     ('Kari (Vet, 98 work); 99123456 (home)', WHOLE),      # a phone "98 work); 99123456 (home" reads like two contacts
     ('Kari (Vet, kari@example.com', WHOLE),
@@ -224,11 +236,12 @@ class ContactSentenceTests(TestCase):
 
     def test_no_address_and_no_number_comes_out_plain_on_a_grid_of_every_field_shape(self):
         """The reviewer's grid (review/p2_parser.py), built with main's own describe: 5 names x 8 roles x 5 addresses x
-        13 phones x primary or not = 5,200 sentences, with commas, brackets, digits and an address inside a role,
-        addresses the form accepts in odd forms, phones with brackets, words, two numbers, a "; " and unbalanced
-        brackets. No e-mail address and no number of five digits or more is left in plain text; the only sentences made
-        private whole are those whose phone holds an unbalanced bracket that reads like a second contact; everywhere
-        else the name stays."""
+        15 phones x primary or not = 6,000 sentences, with commas, brackets, digits and an address inside a role,
+        addresses the form accepts in odd forms, phones with brackets, words, two numbers, a "; ", unbalanced
+        brackets and a number typed in pieces of fewer than five digits (review R24). No e-mail address and no number
+        of five digits or more is left in plain text, and no phone of five digits or more stands in plain text as it
+        was typed; the only sentences made private whole are those whose phone holds an unbalanced bracket that reads
+        like a second contact; everywhere else the name stays."""
         import itertools
         import re
         names = ['Kari', 'Nordmann, Kari', 'Åse Ødegård', 'Kari (vet) Nordmann', 'Feed barge Nordhav I']
@@ -237,7 +250,8 @@ class ContactSentenceTests(TestCase):
         emails = ['', 'kari@example.com', 'kari@localhost', '"a,b"@example.com', 'kari@bedrift-æøå.no']
         phones = ['', '+47 98989898', '989 89 898', '(0532) 123 45 67', '+90 (532) 123 45 67', 'mob 98989898',
                   '55 12 34 56, 90 00 00 00', '55 12 34 56; 90 00 00 00', 'ask reception', '98989898 (work)',
-                  'mob 98989898, 55 12 34 56', '98 work); 99123456 (home', '98989898); Ola (Diver']
+                  'mob 98989898, 55 12 34 56', '98 work); 99123456 (home', '98989898); Ola (Diver',
+                  '55 12, 34 56', '0532, 123, 4567']
         kinds, leaks, lost = {}, [], []
         for name, role, email, phone, primary in itertools.product(names, roles, emails, phones, (False, True)):
             sentence = old_describe(name, role, email, phone, primary)
@@ -245,14 +259,15 @@ class ContactSentenceTests(TestCase):
             kinds[kind] = kinds.get(kind, 0) + 1
             text = ' | '.join(plain_of(made))
             numbers = [found for found in re.findall(r'\d[\d ]{3,}\d', phone) if digits(found) >= 5]
-            if (email and email in text) or any(number in text for number in numbers):
+            if (email and email in text) or any(number in text for number in numbers) or (
+                    digits(phone) >= 5 and phone in text):
                 leaks.append((sentence, text))
             if kind == 'whole':
                 if phone != '98 work); 99123456 (home':
                     lost.append(sentence)
             elif name not in text:
                 lost.append(sentence)
-        self.assertEqual(sum(kinds.values()), 5200)
+        self.assertEqual(sum(kinds.values()), 6000)
         self.assertEqual(leaks, [])
         self.assertEqual(lost, [])
         self.assertEqual(kinds['whole'], 400)                               # 5 names x 8 roles x 5 addresses x 2
@@ -263,7 +278,7 @@ class ContactSentenceTests(TestCase):
             self.assertTrue(isinstance(made, dict) or all(isinstance(part, dict) for parts in made for part in parts[1:]))
             for text in plain_of(made):
                 self.assertNotIn('@', text, sentence)
-                self.assertLess(max((digits(run) for run in text.split(',')), default=0), 5, sentence)
+                self.assertLess(digits(text), 5, sentence)         # of the whole contact, not piece by piece (R24)
 
     def test_an_old_row_becomes_exactly_what_the_code_writes_now_so_old_and_new_rows_compare(self):
         from farm.models import Site

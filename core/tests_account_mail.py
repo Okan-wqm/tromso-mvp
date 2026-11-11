@@ -472,7 +472,7 @@ class InvitationRecordTests(AccountMailCase):
                                       headers={'Accept-Language': language})
                 self.assertContains(log, words)
         # a mail that never finished has no stored reason: the page's own sentence, in the reader's language too
-        AccountMail.objects.update(error='', created_at=timezone.now() - timedelta(days=1))
+        AccountMail.objects.update(error='', alive_at=timezone.now() - timedelta(days=1))
         users = self.client.get(reverse('core:user_list'), headers={'Accept-Language': 'nb'})
         self.assertIn('Sendingen ble avbrutt', row_of(users, 'kari'))
 
@@ -587,30 +587,44 @@ class InvitationRecordTests(AccountMailCase):
         self.assertNotIn('Send invitation', row)
         self.assertIn('Password set', row_of(self.users(), 'root'))
 
-    def test_a_mail_under_way_says_so_and_one_that_never_finished_is_not_sent(self):
-        # the row as the request writes it, before the worker has it: waiting
+    def test_a_mail_under_way_says_so_and_only_one_nobody_is_sending_becomes_not_sent(self):
+        # (review S3) the row as the request writes it, in another server process's queue: waiting. Written long ago,
+        # but its owner still renews it (a slow mail server, a long queue): it is being sent, whatever its age.
         kari = get_user_model().objects.create_user('kari', 'kari@example.com')
         waiting = AccountMail.objects.create(user=kari, kind='invitation', address='kari@example.com',
-                                             requested_by=self.admin)
+                                             requested_by=self.admin, owner='another-process')
+        AccountMail.objects.filter(pk=waiting.pk).update(created_at=timezone.now() - timedelta(hours=1))
         row = row_of(self.users(), 'kari')
         self.assertIn('The invitation to kari@example.com is being sent', row)
         self.assertNotIn('Send invitation', row)                                 # not twice at once
         response = self.client.post(reverse('core:user_invite', args=[kari.pk]), follow=True)
         self.assertEqual(flashes(response), [
             ('An invitation to kari is being sent right now: wait for it, the row says what became of it.', 'error')])
-        self.assertEqual((mail.outbox, AccountMail.objects.count()), ([], 1))
-        # the server stopped before it was sent (or the mail server never answered): it shows as not sent, never as
-        # sent, and can be sent again
+        self.assertEqual((mail.outbox, outcomes()), ([], ['waiting']))
+        # Its owner has not renewed it for longer than a mail and the one before it can take: nobody is sending it
+        # (the server stopped). That is written down, once, on the row and in the log; it is never shown as sent.
         AccountMail.objects.filter(pk=waiting.pk).update(
-            created_at=timezone.now() - timedelta(seconds=2 * settings.MAIL_SEND_SECONDS + 1))
-        row = row_of(self.users(), 'kari')
+            alive_at=timezone.now() - timedelta(seconds=3 * settings.MAIL_SEND_SECONDS + 1))
+        with self.assertLogs('core.accountmail', 'ERROR') as logged:
+            row = row_of(self.users(), 'kari')
+        self.assertEqual(len(logged.records), 1)
         self.assertIn('Invitation not sent', row)
         self.assertIn('The sending was interrupted', row)
         self.assertNotIn('Invitation sent', row)
         self.assertIn('Send invitation again', row)
+        interrupted = 'The sending was interrupted: the server stopped, or the mail server never answered.'
+        self.assertEqual(outcomes(), [interrupted])
+        self.assertEqual(invite_rows(), [not_sent({'msgid': interrupted})])
+        with self.assertNoLogs('core.accountmail', 'ERROR'):
+            self.assertIn('Invitation not sent', row_of(self.users(), 'kari'))   # said once
+        self.assertEqual(len(invite_rows()), 1)
+        # should its owner get to it after all, it finds the row closed and sends nothing; the admin's resend goes
+        # out, once
+        accountmail.deliver(waiting.pk, 'en')
+        self.assertEqual(mail.outbox, [])
         self.client.post(reverse('core:user_invite', args=[kari.pk]))
         self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(outcomes(), ['waiting', 'sent'])
+        self.assertEqual(outcomes(), [interrupted, 'sent'])
         self.assertIn('Invitation sent', row_of(self.users(), 'kari'))
 
     def test_the_row_in_norwegian_and_turkish(self):
@@ -830,6 +844,24 @@ class ForgotPasswordTests(AccountMailCase):
         self.assertEqual(self.answer('ali@example.com'), failed)
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(self.answer('ali@example.com'), failed)                 # and the one that went out counts
+        self.assertEqual(len(mail.outbox), 1)
+
+    @override_settings(PASSWORD_RESET_MAILS_PER_HOUR=1)
+    def test_a_reset_that_never_finished_does_not_keep_its_person_waiting_for_the_hour(self):
+        # (review S3) a server stopped with ali's reset in its queue ten minutes ago: closed as not sent when ali asks
+        # again, and a mail that did not go out counts for five minutes
+        lost = AccountMail.objects.create(user=self.ali, kind='reset', address='ali@example.com', owner='gone')
+        AccountMail.objects.filter(pk=lost.pk).update(created_at=timezone.now() - timedelta(minutes=10),
+                                                      alive_at=timezone.now() - timedelta(minutes=10))
+        with self.assertLogs('core.accountmail', 'ERROR'):
+            self.ask('ali@example.com')
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(outcomes()[0], 'The sending was interrupted: the server stopped, or the mail server never answered.')
+        # one that is still being sent counts, as before
+        get_user_model().objects.create_user('per', 'per@example.com', 'x')
+        AccountMail.objects.create(user=get_user_model().objects.get(username='per'), kind='reset',
+                                   address='per@example.com', owner='another-process')
+        self.ask('per@example.com')
         self.assertEqual(len(mail.outbox), 1)
 
     def test_invitations_do_not_count_and_the_admins_resend_is_not_held_back(self):

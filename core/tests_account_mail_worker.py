@@ -2,15 +2,19 @@
 waiting in its own transaction and answers; the mail server is talked to afterwards, by the worker thread, outside any
 transaction and any lock. These tests run the real worker (the other tests run its jobs at once, in the request), so
 each commits for real: what a second connection sees while a mail is at the mail server is what is asked."""
+import sys
 import threading
 import time
+from datetime import timedelta
 from unittest import mock
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail.backends.base import BaseEmailBackend
 from django.db import connection, transaction
 from django.test import Client, TransactionTestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
 from . import accountmail
 from .models import AccountMail, AuditLog
@@ -287,3 +291,82 @@ class WorkerTests(WorkerCase):
         WaitingBackend.release.set()
         self.assertTrue(accountmail.worker.drain(30))
         self.assertEqual(outcomes(), ['sent'])
+
+
+class OwnedMailsTests(WorkerCase):
+    """A waiting mail belongs to the server process that queued it (review S3): only that process can send it, so it
+    is the one that keeps saying "I still have it", and a mail is called not sent when its owner has stopped saying
+    so, never by its age."""
+
+    def test_a_send_still_under_way_long_after_is_being_sent_and_cannot_be_sent_twice(self):
+        self.client.post(reverse('core:user_create'), user_data())
+        self.at_the_mail_server()
+        kari = User.objects.get(username='kari')
+        mine = AccountMail.objects.get()
+        self.assertEqual(mine.owner, accountmail.WORKER)
+        AccountMail.objects.update(created_at=mine.created_at - timedelta(hours=1))   # an hour on, the send still going
+        page = self.client.get(reverse('core:user_list'))
+        self.assertContains(page, 'The invitation to kari@example.com is being sent')
+        self.assertNotContains(page, 'Invitation not sent')
+        refused = self.client.post(reverse('core:user_invite', args=[kari.pk]), follow=True)
+        self.assertContains(refused, 'An invitation to kari is being sent right now')
+        self.finish()
+        self.assertEqual((outcomes(), [sent.to for sent in WaitingBackend.sent]), (['sent'], [['kari@example.com']]))
+
+    def test_the_owner_renews_what_waits_behind_the_job_it_is_at(self):
+        blocker, gate = threading.Event(), threading.Event()
+
+        def wait():
+            blocker.set()
+            gate.wait(timeout=30)
+
+        self.addCleanup(gate.set)
+        self.client.post(reverse('core:user_create'), user_data())                # at the mail server
+        self.at_the_mail_server()
+        self.assertTrue(accountmail.background(wait))                             # the next job
+        self.client.post(reverse('core:user_create'), user_data(username='ola', email='ola@example.com'))   # behind it
+        long_ago = timezone.now() - timedelta(hours=1)
+        AccountMail.objects.update(alive_at=long_ago)
+        with mock.patch.object(accountmail, 'RENEW_EVERY', 0):
+            WaitingBackend.release.set()                                          # kari's goes; the worker starts `wait`
+            self.assertTrue(blocker.wait(timeout=20))
+            behind = AccountMail.objects.get(user__username='ola')
+            self.assertEqual((behind.sent_at, behind.error), (None, ''))          # still waiting,
+            self.assertGreater(behind.alive_at, long_ago)                         # and its owner has just said so
+            gate.set()
+            self.assertTrue(accountmail.worker.drain(30))
+        self.assertEqual(outcomes(), ['sent', 'sent'])
+
+    def test_a_restart_closes_what_a_stopped_process_left_and_leaves_a_living_ones_alone(self):
+        kari = User.objects.create_user('kari', 'kari@example.com')
+        late = timezone.now() - timedelta(seconds=3 * settings.MAIL_SEND_SECONDS + 5)
+        left = AccountMail.objects.create(user=kari, kind='invitation', address='kari@example.com', owner='stopped')
+        AccountMail.objects.filter(pk=left.pk).update(alive_at=late)
+        alive = AccountMail.objects.create(user=kari, kind='reset', address='kari@example.com', owner='the-other-process')
+        # this process's worker thread ends and starts anew, as after a restart: its first job
+        self.assertTrue(accountmail.worker.drain(30))
+        ended = accountmail.worker.thread
+        accountmail.background(sys.exit)
+        if ended is not None:
+            ended.join(timeout=20)
+        with self.assertLogs('core.accountmail', 'ERROR'):
+            self.assertTrue(accountmail.background(int))
+            self.assertTrue(accountmail.worker.drain(30))
+        self.assertEqual(outcomes(), ['The sending was interrupted: the server stopped, or the mail server never answered.',
+                                      'waiting'])
+        self.assertEqual(list(AuditLog.objects.filter(action='invite').values_list('user_name', flat=True)), ['system'])
+        self.assertEqual(AccountMail.objects.get(pk=alive.pk).error, '')
+
+    def test_a_process_that_stops_with_mails_still_queued_says_so_itself(self):
+        self.client.post(reverse('core:user_create'), user_data())
+        self.at_the_mail_server()
+        self.client.post(reverse('core:user_create'), user_data(username='ola', email='ola@example.com'))
+        other = AccountMail.objects.create(user=self.admin, kind='reset', address='root@example.com', owner='another')
+        with self.assertLogs('core.accountmail', 'ERROR') as logged:
+            self.assertFalse(accountmail.shut_down(0.3))                          # the exit hook, its time up
+        interrupted = 'The sending was interrupted: the server stopped, or the mail server never answered.'
+        self.assertEqual(outcomes(), [interrupted, interrupted, 'waiting'])       # its own two; not another process's
+        self.assertEqual(len(logged.records), 2)
+        self.assertEqual(AccountMail.objects.get(pk=other.pk).error, '')
+        self.finish()
+        self.assertEqual(outcomes(), [interrupted, interrupted, 'waiting'])       # a closed row is not sent late

@@ -4892,7 +4892,7 @@ so run `scripts/test.sh` on the branch before asking for a merge.
 
 | Job | What it runs | The same on a developer's machine |
 |---|---|---|
-| `python` | the browser build first (`npm ci`, `npm run build`: `check` fails on core.W001 without `static/js`), then `CHECKS=1 scripts/test.sh` (`SUITE=0` on a pull request) with 4 workers, in the test runner's image (`scripts/testrunner/image.sh`, built with its layers cached): `compile_catalogs` (a fresh checkout has no `.mo`, and core.W002 would fail the check); `manage.py check --fail-level WARNING`; `check --deploy` with production-like settings (DEBUG off, a random key, a host, an SMTP server, a sender and an https public address: Email), where any issue but the four still open fails (`DEPLOY_OPEN` in `scripts/testrunner/in-container.sh`: the four HTTPS settings, until the production settings exist); `makemigrations --check`; `data_map --check`; `update_catalogs`, then `git diff --exit-code -- locale` (the catalogs were up to date); `compile_catalogs`; then, except on a pull request, the whole suite with warnings as errors | `CHECKS=1 SUITE=0 scripts/test.sh` (the checks only) or `CHECKS=1 scripts/test.sh`, then `git diff -- locale` |
+| `python` | the browser build first (`npm ci`, `npm run build`: `check` fails on core.W001 without `static/js`), then `CHECKS=1 scripts/test.sh` (`SUITE=0` on a pull request) with 4 workers, in the test runner's image (`scripts/testrunner/image.sh`, built with its layers cached): `ruff check` (the linter, below); `compile_catalogs` (a fresh checkout has no `.mo`, and core.W002 would fail the check); `manage.py check --fail-level WARNING`; `check --deploy` with production-like settings (DEBUG off, a random key, a host, an SMTP server, a sender and an https public address: Email), where any issue but the four still open fails (`DEPLOY_OPEN` in `scripts/testrunner/in-container.sh`: the four HTTPS settings, until the production settings exist); `makemigrations --check`; `data_map --check`; `update_catalogs`, then `git diff --exit-code -- locale` (the catalogs were up to date); `compile_catalogs`; then, except on a pull request, the whole suite with warnings as errors | `CHECKS=1 SUITE=0 scripts/test.sh` (the checks only) or `CHECKS=1 scripts/test.sh`, then `git diff -- locale` |
 | `frontend` | `npm ci`, `npm run check:css` (the committed `static/css/tw.css` is what `frontend/tailwind.css` and the templates build now), `npm run build` (tsc, `tsconfig.json`, then the Tailwind build), `npm test` (the TypeScript tests, the designer's and the layout's browser tests on the runner's Chrome) | the same four |
 | `rust` | in `sensors-ingest/`, on the toolchain of `rust-toolchain.toml` (1.88.0, the release image's and the crate's `rust-version`): `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked --all-targets` against a TimescaleDB service migrated by Django (`manage.py migrate` in the test runner's image, the server's own packages) and a Mosquitto broker (`REQUIRE_DB=1`: the database and broker tests run, never skip), `cargo deny --locked check` (licences, bans, sources, RustSec advisories), `THIRD_PARTY` equal to what `Cargo.lock` says | `sensors-ingest/tests/run.sh` |
 | `chemcore` | `chemcore/scripts/test.sh` in the `chemcore-tools` stage of `docker/testrunner.Dockerfile` (its layers cached): rustfmt, clippy, `cargo test`, libm the chemistry's only dependency, no WebAssembly, `cargo deny` with advisories, `chemcore/THIRD_PARTY`, `docker/requirements.lock` naming the pins of `requirements.txt`; the built module's handshake with `chemcore/EXPECTED` (core.E001) is the python job's `check`. | the same `docker run` as the script's header |
@@ -4906,6 +4906,15 @@ Two things hold it: `sensors.tests.test_contract.IngestSqlTests`, in the Python 
 (columns)` under `sensors-ingest/` against the schema (a column the database does not fill left out, a column that is
 gone), and a branch with a migration runs `sensors-ingest/tests/run.sh` before it lands (CLAUDE.md, How work lands).
 
+**The linter** is ruff (MIT), pinned exactly in `scripts/testrunner/requirements.txt`, so it is in the image the tests
+run in and never in a server's (the `runner` stage installs `docker/requirements.lock` only). It finds mistakes, not
+taste (`ruff.toml`): pyflakes (`F`: an undefined name, an unused import or variable, a key written twice, a format
+string with no field) and `E9` (what stops a file from being read); no formatter, no style rule, no import sorting, and
+it changes no file. It runs first among the project checks, reading the files without importing them. An import that is
+there for what importing it does (a registration, a re-export) says so on its line (`# noqa: F401  why`); an applied
+migration is not edited for it (one is listed in `ruff.toml`). By hand, without the checks:
+`docker run --rm -v "$PWD:/app" -w /app "$(sh scripts/testrunner/image.sh build)" ruff check --no-cache .`
+
 The security job by hand (Docker, nothing installed on the machine):
 
 ```
@@ -4913,7 +4922,7 @@ docker run --rm -v "$PWD:/w:ro" -w /w python:3.12-slim sh -c '
   python -m venv /tools && /tools/bin/pip install -q pip-audit==2.10.1 pip-licenses==5.5.5 &&
   /tools/bin/pip-audit --strict -r requirements.txt -r scripts/testrunner/requirements.txt &&
   python -m venv /app && /app/bin/pip install -q -r requirements.txt -r scripts/testrunner/requirements.txt &&
-  /tools/bin/pip-licenses --python /app/bin/python --from=mixed --allow-only="Apache-2.0;Apache-2.0 OR BSD-3-Clause;BSD-2-Clause;BSD-3-Clause;BSD License;LGPL-3.0-only;MIT-0;PSF-2.0"'
+  /tools/bin/pip-licenses --python /app/bin/python --from=mixed --allow-only="Apache-2.0;Apache-2.0 OR BSD-3-Clause;BSD-2-Clause;BSD-3-Clause;BSD License;LGPL-3.0-only;MIT;MIT-0;PSF-2.0"'
 npm audit --omit=dev --audit-level=high
 ```
 

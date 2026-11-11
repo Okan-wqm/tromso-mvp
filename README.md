@@ -1923,6 +1923,12 @@ day. The list filters by site, unit, batch, method, medicine, dates, "under with
 "vaccinations", shows every batch a treatment reached with the withdrawal it puts on it, and offers **Last day**
 (the course ended earlier or goes on: Edit, logged with the old and new day) and **Void** (with a reason, the
 farm's window; it lifts the withdrawal). Nothing else is edited: a correction is a void and a new record.
+**Each treatment is read on its own site's today** (the earliest today among its units' sites,
+`farm.stock.dates.earliest_today`, the one day the withdrawal guard of a write and the pages share; a unit's own
+withdrawal line reads the same way, `withdrawal.of_units`), never on the company's day for a site on another clock: on
+the company's day the list freed the fish of a site behind it a day early in the hours the two days differ, counted
+that site's running day as a past day without a temperature, and went on holding fish already free on a site ahead of
+it (`farm.tests.test_health.TreatmentPageSiteBehindTests`, `...SiteAheadTests`).
 
 **The medicine withdrawal** is worked out on read, never stored (`farm/health/withdrawal.py`), so a void, a
 corrected temperature or a backdated transfer changes it at once:
@@ -4791,6 +4797,28 @@ record dated at most the correction window back, nothing in the future, a freshn
 `sensors/tests/test_replay.py`, dated 10.10.2026 with a sample of the day before, failed from 10.11.2026 on (31 days).
 The dates stay as written and the clock is held, rather than the dates moved with the run's day, wherever the data is
 tied to its dates (seeded readings, whole hours, an address's `2026-10-10T00:05`). The database's own `now()` is not held.
+
+**Nor the hour it runs at.** The server's day is UTC's, the company's is Oslo's (`COMPANY_TIME_ZONE`) and a site's is
+its own. From 23:00 to 24:00 UTC in winter (from 22:00 in summer) Oslo is a day ahead of the server, and a test that
+says "today" on one clock while the code reads another passes all day and fails there. Five did, in CI run 42921917659
+(23:17 to 23:57 UTC on 10.11.2026). Four were the tests' own: the wall's session day asked of the server's clock
+(`timezone.localdate()`) where the code reads the company's; the cleaner-fish cage's site left on the company's zone
+beside fixtures that count on UTC; the overview's "Feed today", which is the company's day, expected of a UTC site's
+day; a plan dated the company's today for people placed on a UTC site. One was the product's: the Treatments list read
+every treatment on the company's day (Operations › Health). What holds the class now:
+
+- `core/tests_day_boundary.py` runs the classes that count days again with the clock held at each moment of
+  `core.testing.BAD_HOURS` (23:30 UTC on a winter night, 22:30 UTC on a summer night, the second before and the second
+  after Oslo's midnight, New Year's Eve at 23:30 UTC), in every run of the suite: `at_bad_hours(globals(), ...)` makes
+  `<Class>At<Moment>` for each. A class that says "today" belongs in that list.
+- `TEST_CLOCK=2026-11-10T23:30:00+00:00 scripts/test.sh <labels>` starts the whole run's clock at that moment and lets
+  it run on (`core.testing.run_clock`, in every worker): the way to look for more, at any hour, day or year. The
+  database's clock stays the real one, so in such a run the tests that compare the two clocks fail by design
+  (`core.tests_testing` among them); it is a search, not a way to run the suite.
+- In a test, today is asked of the clock the code under test reads: `farm.stock.dates.site_today(site)` or
+  `local_today(unit)` for a site's records, `core.dates.company_today()` for what has no site; never
+  `timezone.localdate()`, `date.today()` or `timezone.now().date()` (`core/tests_company_clock.py` refuses them in the
+  code and, since this change, in the tests).
 
 ## CI and dependency updates
 

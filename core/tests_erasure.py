@@ -6,6 +6,9 @@ database."""
 import io
 import json
 import re
+import threading
+import time
+from datetime import datetime, timedelta, timezone as dt_timezone
 from smtplib import SMTPRecipientsRefused
 from unittest import mock
 
@@ -14,10 +17,11 @@ from django.core import mail
 from django.core.mail.backends.base import BaseEmailBackend
 from django.core.management import call_command
 from django.core.management.base import CommandError
-from django.db import DatabaseError, connection, transaction
-from django.test import TestCase, override_settings
+from django.db import DatabaseError, connection, connections, transaction
+from django.test import TestCase, TransactionTestCase, override_settings
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
+from django.utils import timezone
 
 from . import accountmail, erasure
 from .models import AccountMail, AuditLog
@@ -29,8 +33,9 @@ STRANGER = 'strangr@example.com'
 LONGER = 'xstrangr@example.com'               # another person's: the stranger's address is the tail of it
 ERASED = {'msgid': 'Erased on request'}
 INSTRUCTION = 'DPO instruction of 2026-11-11, ref. DP-17'
-SAID = ('The address of a mis-sent invitation erased on request (DPO instruction of 2026-11-11, ref. DP-17); carried '
-        'out by Kari Nordmann.')
+# the erasure's own row: a label with an enumerated value (both shown translated), then what a person typed
+SAID = {'Erased on request': [None, {'msgid': 'The address of a mis-sent invitation'}],
+        'Instruction': [None, INSTRUCTION], 'Carried out by': [None, 'Kari Nordmann']}
 
 
 class NoSuchUser(BaseEmailBackend):
@@ -217,7 +222,7 @@ class EraseTests(ErasureCase):
         # one new row on each account touched, by nobody signed in, with the instruction and who carried it out
         self.assertEqual(sorted((who, action, kind, pk, label, json.dumps(changes))
                                 for _id, who, action, kind, pk, label, changes in added), sorted(
-            ('system', 'update', 'user', str(user.pk), user.username, json.dumps({'Erased on request': [None, SAID]}))
+            ('system', 'update', 'user', str(user.pk), user.username, json.dumps(SAID))
             for user in (self.kari, self.ola, self.liv)))
         # nothing of anybody else, of another kind of record or of a contact list
         self.assertEqual(sorted(holding(STRANGER)), ['update of site Bergen', 'update of user per'])
@@ -413,3 +418,380 @@ class PagesTests(ErasureCase):
         self.client.post(reverse('core:user_invite', args=[self.liv.pk]))
         self.assertEqual(mail.outbox[-1].to, ['liv@example.com'])
         self.assertIn('Invitation sent', row_of(self.client.get(reverse('core:user_list')), 'liv'))
+
+
+def own_rows():
+    """The rows the erasure itself wrote."""
+    return list(AuditLog.objects.filter(changes__has_key='Erased on request').order_by('created_at', 'id'))
+
+
+class NothingWrittenHoldsTheAddressTests(ErasureCase):
+    """Review Q1: the erasure wrote the address back into the append-only log, in the sentence built from the
+    instruction and the name, and as the label of its own row when the account's username was the address; a second
+    run then found nothing it could change."""
+
+    def test_an_instruction_or_a_name_that_holds_the_address_is_refused_and_nothing_is_changed(self):
+        for instruction, by in ((f'DPO: erase {STRANGER} (ref. DP-17)', 'Kari Nordmann'),
+                                (INSTRUCTION, f'Kari Nordmann <{STRANGER}>'),
+                                ('Erase STRANGR@EXAMPLE.COM, ref. DP-17', 'Kari Nordmann'),          # another case
+                                ('Erase ｓｔｒａｎｇｒ@example.com, ref. DP-17', 'Kari Nordmann')):     # another Unicode form
+            with self.subTest(instruction=instruction, by=by), \
+                    self.assertRaisesMessage(CommandError, 'holds the address itself'):
+                run(STRANGER, '--apply', '--instruction', instruction, '--carried-out-by', by)
+        self.assertEqual(stored(), self.before)
+        # an address that only contains it is another address: the instruction may name that one
+        run(STRANGER, '--apply', '--instruction', f'DP-17, not {LONGER}', '--carried-out-by', 'Kari Nordmann')
+        self.assertEqual(len(own_rows()), 3)
+
+    def test_the_erasures_row_is_not_under_a_username_that_is_the_address(self):
+        User.objects.filter(pk=self.liv.pk).update(username='Strangr@EXAMPLE.com')       # a username may be an address
+        apply()
+        written = {row.entity_id: row for row in own_rows()}
+        self.assertEqual({pk: row.entity_label for pk, row in written.items()},
+                         {str(self.kari.pk): 'kari', str(self.ola.pk): 'ola', str(self.liv.pk): f'account {self.liv.pk}'})
+        for row in written.values():                                   # nothing the erasure wrote holds the address
+            kept = json.dumps([row.user_name, row.entity_label, row.changes], ensure_ascii=False).lower()
+            self.assertNotIn('strangr', kept)
+        again = run(STRANGER)                                          # and a second run finds nothing it wrote
+        self.assertIn('Nothing found', again)
+        self.assertNotIn('Erased on request', again)
+        for row in written.values():
+            self.assertNotIn(str(row.pk), again)
+
+
+class WhatIsCheckedTests(ErasureCase):
+    """Review Q4: the command checks that the address is no account's address now, and nothing else. It cannot tell a
+    stranger's address from a person's own former one, so it says what it checks and shows what the log says of each
+    account, for the data-protection officer to judge by; it warns, and still obeys."""
+
+    def test_the_dry_run_says_what_is_checked_and_what_the_log_says_of_each_account(self):
+        said = run(STRANGER)
+        self.assertIn('Checked: no account has this address now. Not checked: whose address it was', said)
+        kari = said[said.index(f'Account {self.kari.pk} (kari):'):said.index(f'Account {self.ola.pk} (ola):')]
+        self.assertRegex(kari, r'its own address from [0-9: -]+ UTC \(create by root\) to [0-9: -]+ UTC \(update by root\)')
+        self.assertRegex(kari, r'a password was set through a link sent to it: [0-9: -]+ UTC, by kari')
+        self.assertRegex(kari, r'an invitation was sent, or tried, to it: [0-9: -]+ UTC, by root')
+        ola = said[said.index(f'Account {self.ola.pk} (ola):'):said.index(f'Account {self.liv.pk} (liv):')]
+        self.assertIn('no password was set through a link sent to it', ola)
+        self.assertNotIn('WARNING', said)               # put right within the hour, the accounts not used meanwhile
+
+    def test_a_persons_own_former_address_is_said_to_look_like_one_and_the_command_still_obeys(self):
+        """The review's case: per had per.old@ for a year, set his own password through his own link, worked, then
+        changed his address. Nothing in the code can tell this from a stranger's address."""
+        per = User.objects.create_user('per2', 'per.new@example.com', 'x')
+        then = datetime(2025, 11, 1, 9, 0, tzinfo=dt_timezone.utc)
+
+        def row(when, who, action, kind, pk, label, changes):
+            with mock.patch('django.utils.timezone.now', return_value=when):
+                return AuditLog.objects.create(user_name=who, action=action, entity_type=kind, entity_id=str(pk),
+                                               entity_label=label, changes=changes)
+
+        row(then, 'root', 'create', 'user', per.pk, 'per2', {'Email': [None, 'per.old@example.com']})
+        row(then + timedelta(hours=1), 'per2', 'password', 'user', per.pk, 'per2', {'Link sent to': [None, 'per.old@example.com']})
+        row(then + timedelta(days=30), 'per2', 'update', 'site', 1, 'Bergen', {'Site name': ['Bergen', 'Bergen havn']})
+        row(then + timedelta(days=60), 'per2', 'create', 'task', 7, 'Clean filter', {})
+        row(then + timedelta(days=365), 'root', 'update', 'user', per.pk, 'per2',
+            {'Email': ['per.old@example.com', 'per.new@example.com']})
+        said = run('per.old@example.com')
+        self.assertIn('WARNING: this does not look like a stranger’s address', said)
+        self.assertIn('it was the account’s own address for 365 day(s)', said)
+        self.assertIn('the account wrote 2 other log row(s) itself while it was its address', said)
+        self.assertIn('The data-protection officer decides', said)
+        apply('per.old@example.com')                      # it informs; it does not judge
+        self.assertEqual(AuditLog.objects.filter(entity_id=str(per.pk), changes__has_key='Erased on request').count(), 1)
+
+    def test_the_refusal_and_the_help_say_what_is_checked(self):
+        from core.management.commands.erase_stranger_address import Command
+        with self.assertRaisesMessage(CommandError, 'This command erases only an address that no account has now'):
+            apply('kari@example.com')
+        self.assertIn('It checks only that no account has the address now', Command.help)
+        self.assertIn('cannot tell a stranger’s address from a person’s own former one', Command.help)
+
+
+class OtherShapesTests(ErasureCase):
+    """Review Q5: a value of another shape or under another label on a user's row is neither changed nor passed over
+    in silence, and the dry run shows a value that is stored otherwise than it was typed."""
+
+    def test_what_is_not_changed_on_a_users_row_is_listed(self):
+        pk = str(self.per.pk)
+        made = {name: AuditLog.objects.create(user_name='root', action='update', entity_type='user', entity_id=pk,
+                                              entity_label='per', changes=changes)
+                for name, changes in (('with a name', {'Email': [None, f'Stranger <{STRANGER}>']}),
+                                      ('a list inside', {'Sent to': [None, [STRANGER]]}),
+                                      ('an enumerated value', {'Sent to': [None, {'msgid': STRANGER}]}),
+                                      ('the label in small letters', {'email': [None, STRANGER]}),
+                                      ('not a pair', {'Email': STRANGER}))}
+        three = AuditLog.objects.create(user_name='root', action='update', entity_type='user', entity_id=pk,
+                                        entity_label='per', changes={'Email': [None, STRANGER, f' {STRANGER} ']})
+        said = run(STRANGER)
+        for name, entry in made.items():
+            with self.subTest(shape=name):
+                self.assertRegex(said, rf'activity log {entry.pk} \(update of user per\): under “[A-Za-z ]+” \(another')
+        apply()
+        for name, entry in made.items():
+            with self.subTest(shape=name):
+                self.assertEqual(AuditLog.objects.get(pk=entry.pk).changes, entry.changes)       # left as it is
+        self.assertEqual(AuditLog.objects.get(pk=three.pk).changes, {'Email': [None, ERASED, ERASED]})
+
+    def test_a_value_stored_otherwise_than_it_was_typed_is_shown(self):
+        said = run(STRANGER)
+        ola = AccountMail.objects.get(user=self.ola)
+        self.assertRegex(said, rf'account_mails {ola.pk}: .*: address and error \(stored as “Strangr@example.com”\)\n')
+        created = AuditLog.objects.get(entity_type='user', entity_label='ola', action='create')
+        self.assertRegex(said, rf'audit_log {created.pk}: .*: Email \(stored as “Strangr@example.com”\)\n')
+        kari = AuditLog.objects.get(entity_type='user', entity_label='kari', action='create')
+        self.assertRegex(said, rf'audit_log {kari.pk}: .*: Email\n')                             # as typed: not repeated
+
+    def test_the_address_in_another_unicode_form_inside_a_reply_is_replaced_and_what_is_not_is_left(self):
+        AccountMail.objects.filter(user=self.per).update(
+            error=f'refused ＳＴＲＡＮＧＲ@example.com; bounce to strangr=example.com@bounce.example; {STRANGER[:12]}…')
+        apply()
+        self.assertEqual(AccountMail.objects.get(user=self.per).error,
+                         'refused erased@invalid; bounce to strangr=example.com@bounce.example; strangr@exam…')
+
+
+class ErasuresRowTests(ErasureCase):
+    """Review Q9: the erasure's own row is in the log's own shape, so its label and what was erased are shown in the
+    reader's language; the instruction and the name are a person's words and stay as typed."""
+
+    WORDS = {'en': ('Erased on request', 'The address of a mis-sent invitation', 'Instruction', 'Carried out by'),
+             'nb': ('Slettet på forespørsel', 'Adressen til en feilsendt invitasjon', 'Instruks', 'Utført av'),
+             'tr': ('Talep üzerine silindi', 'Yanlış gönderilen bir davetin adresi', 'Talimat', 'Uygulayan')}
+
+    def test_its_row_reads_in_every_language_on_the_history_tab(self):
+        apply()
+        [row] = [row for row in own_rows() if row.entity_id == str(self.kari.pk)]
+        self.assertEqual(row.changes, SAID)
+        for language, words in self.WORDS.items():
+            with self.subTest(language=language):
+                history = self.client.get(reverse('core:user_edit', args=[self.kari.pk]),
+                                          headers={'Accept-Language': language})
+                for word in (*words, INSTRUCTION, 'Kari Nordmann'):
+                    self.assertContains(history, word)
+
+
+class RealCase(TransactionTestCase):
+    """The erasure with real commits and a second session (the review's experiments, kept as tests): what another
+    session sees of the trigger and of the rows, before, during and after."""
+    serialized_rollback = True            # the next test finds the rows the migrations made
+
+    def setUp(self):
+        self.kari = User.objects.create_user('kari', 'kari@example.com', 'x')
+        for action, changes in (('create', {'Email': [None, STRANGER], 'Username': [None, 'kari']}),
+                                ('invite', {'Sent to': [None, STRANGER]}),
+                                ('password', {'Link sent to': [None, STRANGER]}),
+                                ('update', {'Email': [STRANGER, 'kari@example.com']})):
+            AuditLog.objects.create(user_name='root', action=action, entity_type='user', entity_id=str(self.kari.pk),
+                                    entity_label='kari', changes=changes)
+        self.bergen = AuditLog.objects.create(user_name='root', action='update', entity_type='site', entity_id='1',
+                                              entity_label='Bergen', changes={'Site name': ['a', 'b']})
+        AccountMail.objects.create(user=self.kari, kind='invitation', address=STRANGER, sent_at=timezone.now())
+        self.other = connections['default'].copy()
+        self.addCleanup(self.other.close)
+
+    def elsewhere(self, sql, params=None, connection=None):
+        """Runs on the second session (autocommit) and returns its rows."""
+        with (connection or self.other).cursor() as cursor:
+            cursor.execute(sql, params or [])
+            return cursor.fetchall() if cursor.description else None
+
+    def seen_elsewhere(self):
+        """(the trigger's state, how many log rows hold the address, the mails' addresses) as the second session sees them."""
+        enabled = self.elsewhere("SELECT tgenabled FROM pg_trigger WHERE tgname = 'trg_audit_log_append_only' "
+                                 "AND tgrelid = 'audit_log'::regclass")
+        holding = self.elsewhere('SELECT count(*) FROM audit_log WHERE changes::text ILIKE %s', [f'%{STRANGER}%'])
+        return [row[0] for row in enabled], holding[0][0], [row[0] for row in self.elsewhere(
+            'SELECT address FROM account_mails ORDER BY id')]
+
+    UNTOUCHED, ERASED_STATE = (['O'], 4, [STRANGER]), (['O'], 0, ['erased@invalid'])
+    INSERT = ("INSERT INTO audit_log (id, created_at, user_name, action, entity_type, entity_id, entity_label, changes, "
+              "severity) VALUES (gen_random_uuid(), now(), 'x', 'update', 'site', '1', 'x', '{}'::jsonb, 'normal')")
+
+    def assert_the_log_is_append_only_elsewhere(self):
+        for change in ("UPDATE audit_log SET entity_label = 'x' WHERE id = %s", 'DELETE FROM audit_log WHERE id = %s'):
+            with self.assertRaisesMessage(DatabaseError, 'append-only'):
+                self.elsewhere(change, [self.bergen.pk])
+
+
+class TriggerTests(RealCase):
+    """Every guarantee about the trigger, with real transactions."""
+
+    def test_a_real_commit(self):
+        self.assertTrue(connection.get_autocommit())
+        self.assertEqual(self.seen_elsewhere(), self.UNTOUCHED)
+        apply()
+        self.assertFalse(connection.in_atomic_block)
+        self.assertEqual(self.seen_elsewhere(), self.ERASED_STATE)
+        self.assert_the_log_is_append_only_elsewhere()
+        self.assertEqual(len(own_rows()), 1)
+
+    def test_a_real_rollback_when_the_erasures_own_row_fails(self):
+        with mock.patch.object(erasure, '_say', side_effect=RuntimeError('half-way')), \
+                self.assertRaisesMessage(RuntimeError, 'half-way'):
+            apply()
+        self.assertFalse(connection.in_atomic_block)
+        self.assertEqual(self.seen_elsewhere(), self.UNTOUCHED)
+        self.assert_the_log_is_append_only_elsewhere()
+
+    def test_a_fault_and_an_interrupt_while_the_trigger_is_set_aside(self):
+        for fault in (RuntimeError('boom'), KeyboardInterrupt()):
+            with self.subTest(fault=type(fault).__name__):
+                seen = []
+
+                def fails(cursor, entry, changes, fault=fault, seen=seen):
+                    cursor.execute("SELECT tgenabled FROM pg_trigger WHERE tgname = 'trg_audit_log_append_only'")
+                    seen.append(cursor.fetchone()[0])
+                    raise fault
+
+                with mock.patch.object(erasure, '_rewrite', side_effect=fails), self.assertRaises(type(fault)):
+                    apply()
+                self.assertEqual(seen, ['D'])                              # it really was set aside in that transaction
+                self.assertFalse(connection.in_atomic_block)
+                self.assertEqual(self.seen_elsewhere(), self.UNTOUCHED)
+                self.assert_the_log_is_append_only_elsewhere()
+                with connection.cursor() as cursor:
+                    self.assertTrue(erasure.trigger_in_force(cursor))
+
+    def test_another_session_sees_the_trigger_in_force_and_cannot_write_while_it_is_set_aside(self):
+        rewrite, seen = erasure._rewrite, {}
+
+        def look(cursor, entry, changes):
+            if not seen:
+                self.elsewhere("SET lock_timeout = '700ms'")
+                seen['catalog'] = self.elsewhere(
+                    "SELECT tgenabled FROM pg_trigger WHERE tgname = 'trg_audit_log_append_only'")[0][0]
+                seen['read'] = self.elsewhere('SELECT count(*) FROM audit_log')[0][0]
+                for name, sql, params in (('update', "UPDATE audit_log SET entity_label = 'x' WHERE id = %s",
+                                           [self.bergen.pk]),
+                                          ('delete', 'DELETE FROM audit_log WHERE id = %s', [self.bergen.pk]),
+                                          ('insert', self.INSERT, [])):
+                    try:
+                        self.elsewhere(sql, params)
+                        seen[name] = 'done'
+                    except DatabaseError as refusal:
+                        seen[name] = ' '.join(str(refusal).split())[:40]
+                self.elsewhere('SET lock_timeout = 0')
+            rewrite(cursor, entry, changes)
+
+        with mock.patch.object(erasure, '_rewrite', side_effect=look):
+            apply()
+        self.assertEqual((seen['catalog'], seen['read']), ('O', 5))        # readers go on; the catalog is not theirs to see
+        for name in ('update', 'delete', 'insert'):
+            self.assertIn('lock timeout', seen[name])                      # writers wait: nothing slips past the trigger
+        self.assertEqual(self.seen_elsewhere(), self.ERASED_STATE)
+        self.assertEqual(AuditLog.objects.get(pk=self.bergen.pk).entity_label, 'Bergen')
+
+    def test_the_connection_is_lost_while_the_trigger_is_set_aside(self):
+        def killed(cursor, entry, changes):
+            cursor.execute('SELECT pg_backend_pid()')
+            self.elsewhere('SELECT pg_terminate_backend(%s)', [cursor.fetchone()[0]])
+            cursor.execute('SELECT 1')
+
+        with mock.patch.object(erasure, '_rewrite', side_effect=killed), self.assertRaises(DatabaseError):
+            apply()
+        connection.close()
+        self.assertEqual(self.seen_elsewhere(), self.UNTOUCHED)
+        self.assert_the_log_is_append_only_elsewhere()
+
+    def test_inside_a_callers_transaction_that_catches_the_fault_and_commits(self):
+        with transaction.atomic():
+            with mock.patch.object(erasure, '_rewrite', side_effect=RuntimeError('boom')), \
+                    self.assertRaisesMessage(RuntimeError, 'boom'):
+                erasure.erase(STRANGER, INSTRUCTION, 'Kari Nordmann')
+            with connection.cursor() as cursor:
+                self.assertTrue(erasure.trigger_in_force(cursor))
+                cursor.execute("SELECT current_setting('lock_timeout')")
+                self.assertEqual(cursor.fetchone()[0], '0')                # the caller's own waits are as they were
+        self.assertEqual(self.seen_elsewhere(), self.UNTOUCHED)
+        self.assert_the_log_is_append_only_elsewhere()
+
+    def test_with_autocommit_off(self):
+        transaction.set_autocommit(False)
+        try:
+            with mock.patch.object(erasure, '_rewrite', side_effect=RuntimeError('boom')), \
+                    self.assertRaisesMessage(RuntimeError, 'boom'):
+                erasure.erase(STRANGER, INSTRUCTION, 'Kari Nordmann')
+            with connection.cursor() as cursor:
+                self.assertTrue(erasure.trigger_in_force(cursor))
+            transaction.commit()
+        finally:
+            transaction.set_autocommit(True)
+        self.assertEqual(self.seen_elsewhere(), self.UNTOUCHED)
+        self.assert_the_log_is_append_only_elsewhere()
+
+
+class LockTests(RealCase):
+    """Review Q3: the command took the lock on the log first and read everything under it, with no limit to its wait:
+    every writer of the log, the alarms among them, queued behind it for as long as it waited and read."""
+
+    def locks_on_the_log(self):
+        return sorted(row[0] for row in self.elsewhere(
+            "SELECT mode FROM pg_locks WHERE relation = 'audit_log'::regclass AND granted AND pid <> pg_backend_pid()"))
+
+    def test_everything_is_read_before_the_lock_is_taken(self):
+        plan, seen = erasure.plan, []
+
+        def watched(address):
+            found = plan(address)
+            seen.append(self.locks_on_the_log())            # what the reading session holds on the log, the read done
+            return found
+
+        with mock.patch.object(erasure, 'plan', side_effect=watched):
+            apply()
+        self.assertEqual(seen, [[]])                        # nothing: no writer waited while it read
+        self.assertEqual(self.seen_elsewhere(), self.ERASED_STATE)
+
+    def test_a_log_that_is_being_written_is_waited_for_a_bounded_time_and_then_refused(self):
+        holder = connections['default'].copy()
+        self.addCleanup(holder.close)
+        holder.set_autocommit(False)
+        self.elsewhere(self.INSERT, connection=holder)       # a transaction that wrote the log and stays open
+        outcome = {}
+
+        def command():
+            began = time.monotonic()
+            try:
+                run(STRANGER, '--apply', '--instruction', INSTRUCTION, '--carried-out-by', 'Kari Nordmann',
+                    '--lock-wait', '1')
+                outcome['said'] = 'done'
+            except CommandError as refusal:
+                outcome['said'] = str(refusal)
+            finally:
+                outcome['took'] = time.monotonic() - began
+                connection.close()
+
+        thread = threading.Thread(target=command)
+        thread.start()
+        thread.join(8)
+        waiting = thread.is_alive()
+        if waiting:                                           # the old way: it waits for as long as the writer does
+            holder.rollback()
+            thread.join(30)
+        self.assertFalse(waiting, 'the command was still waiting for the lock after 8 seconds')
+        self.assertIn('could not be locked within 1 second(s): nothing was changed', outcome['said'])
+        self.assertLess(outcome['took'], 6)
+        self.elsewhere("SET lock_timeout = '2s'")
+        self.elsewhere(self.INSERT)                           # no writer is held up once it has given up
+        self.elsewhere('SET lock_timeout = 0')
+        holder.rollback()
+        self.assertEqual(self.seen_elsewhere(), self.UNTOUCHED)
+        self.assert_the_log_is_append_only_elsewhere()
+
+    def test_a_row_of_a_user_written_between_the_read_and_the_lock_refuses_it(self):
+        plan = erasure.plan
+
+        def then_a_row_is_written(address):
+            found = plan(address)
+            self.elsewhere("SET lock_timeout = '700ms'")
+            try:                                              # another server process logs a change of a user meanwhile
+                self.elsewhere(self.INSERT.replace("'site'", "'user'"))
+            except DatabaseError:
+                pass                                          # the old way: the log was locked already
+            self.elsewhere('SET lock_timeout = 0')
+            return found
+
+        with mock.patch.object(erasure, 'plan', side_effect=then_a_row_is_written), \
+                self.assertRaisesMessage(CommandError, 'while it was being prepared: nothing was changed'):
+            apply()
+        self.assertEqual(self.seen_elsewhere(), self.UNTOUCHED)
+        self.assert_the_log_is_append_only_elsewhere()

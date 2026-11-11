@@ -337,6 +337,71 @@ class OwnedMailsTests(WorkerCase):
             self.assertTrue(accountmail.worker.drain(30))
         self.assertEqual(outcomes(), ['sent', 'sent'])
 
+    def test_a_mail_whose_job_was_lost_is_not_vouched_for_and_can_be_sent_again(self):
+        """Review T1: a job lost to a database fault left its row waiting under the living process's name, and the
+        process renewed everything with its name at every other job, so the row said "being sent" for good and the
+        invitation could not be sent again."""
+        from django.db import OperationalError
+        WaitingBackend.release.set()
+        lost = OperationalError('server closed the connection unexpectedly')
+        with mock.patch.object(accountmail, 'deliver', side_effect=lost),                 self.assertLogs('core.accountmail', 'ERROR') as logged:
+            self.client.post(reverse('core:user_create'), user_data())            # its job fails on the database
+            self.assertTrue(accountmail.worker.drain(30))
+        self.assertIn('A background job of the account e-mails failed: OperationalError', logged.output[0])
+        kari = User.objects.get(username='kari')
+        row = AccountMail.objects.get()
+        self.assertEqual((outcomes(), row.owner), (['waiting'], accountmail.WORKER))     # this process's, by name
+        # the process lives on and has other work, long after: it does not say "I still have it" of that row
+        long_ago = timezone.now() - accountmail.lease() - timedelta(seconds=1)
+        AccountMail.objects.update(alive_at=long_ago)
+        with mock.patch.object(accountmail, 'RENEW_EVERY', 0):
+            self.client.post(reverse('password_reset'), {'email': 'nobody@example.com'})   # anybody's request: a job
+            self.assertTrue(accountmail.background(int))
+            self.assertTrue(accountmail.worker.drain(30))
+        self.assertEqual(AccountMail.objects.get().alive_at, long_ago)
+        with self.assertLogs('core.accountmail', 'ERROR'):                         # the next look closes it, once
+            page = self.client.get(reverse('core:user_list'))
+        self.assertContains(page, 'Invitation not sent')
+        self.assertContains(page, 'Send invitation again')
+        interrupted = 'The sending was interrupted: the server stopped, or the mail server never answered.'
+        self.assertEqual(outcomes(), [interrupted])
+        self.client.post(reverse('core:user_invite', args=[kari.pk]))             # and it can be sent again
+        self.assertTrue(accountmail.worker.drain(30))
+        self.assertEqual((outcomes(), [sent.to for sent in WaitingBackend.sent]),
+                         ([interrupted, 'sent'], [['kari@example.com']]))
+        self.assertEqual(accountmail.worker.held, set())                          # nothing is held once its job is done
+
+    def test_the_job_after_the_database_dropped_the_kept_connection_is_not_lost(self):
+        """Review T1: the worker keeps its connection while jobs wait; the first job after the database dropped it
+        failed on the dead connection, and its mail was lost."""
+        first, second, go_on, finish = threading.Event(), threading.Event(), threading.Event(), threading.Event()
+
+        def wait(reached, gate):
+            reached.set()
+            gate.wait(timeout=30)
+
+        self.addCleanup(go_on.set)
+        self.addCleanup(finish.set)
+        WaitingBackend.release.set()
+        self.assertTrue(accountmail.worker.drain(30))
+        self.assertTrue(accountmail.background(wait, first, go_on))
+        self.assertTrue(first.wait(timeout=20))
+        # behind it, in the same line: a lookup, which opens the worker's connection, and a job that keeps the worker
+        # busy with that connection kept
+        self.assertTrue(accountmail.background(accountmail.reset_now, 'nobody@example.com', 'en'))
+        self.assertTrue(accountmail.background(wait, second, finish))
+        go_on.set()
+        self.assertTrue(second.wait(timeout=20))
+        with connection.cursor() as cursor:                                       # the database drops every other connection
+            cursor.execute('SELECT count(pg_terminate_backend(pid)) FROM pg_stat_activity '
+                           'WHERE datname = current_database() AND pid <> pg_backend_pid()')
+            self.assertEqual(cursor.fetchone()[0], 1)                             # the worker's kept one
+        with self.assertNoLogs('core.accountmail', 'ERROR'):
+            self.client.post(reverse('core:user_create'), user_data())            # the next job: an invitation
+            finish.set()
+            self.assertTrue(accountmail.worker.drain(30))
+        self.assertEqual((outcomes(), [sent.to for sent in WaitingBackend.sent]), (['sent'], [['kari@example.com']]))
+
     def test_a_restart_closes_what_a_stopped_process_left_and_leaves_a_living_ones_alone(self):
         kari = User.objects.create_user('kari', 'kari@example.com')
         late = timezone.now() - timedelta(seconds=3 * settings.MAIL_SEND_SECONDS + 5)
@@ -370,6 +435,43 @@ class OwnedMailsTests(WorkerCase):
         self.assertEqual(AccountMail.objects.get(pk=other.pk).error, '')
         self.finish()
         self.assertEqual(outcomes(), [interrupted, interrupted, 'waiting'])       # a closed row is not sent late
+
+
+class UsersTabTests(WorkerCase):
+    """The users tab closes the mails nobody is sending any more before it lists the people (review T3): a list page
+    does not fail because that housekeeping could not be written."""
+
+    def lapsed(self):
+        kari = User.objects.create_user('kari', 'kari@example.com')
+        return AccountMail.objects.create(user=kari, kind='invitation', address=kari.email, requested_by=self.admin,
+                                          owner='gone:1:00000000', alive_at=timezone.now() - timedelta(hours=1))
+
+    def test_the_list_is_drawn_and_the_fault_logged_when_the_database_takes_no_writes(self):
+        self.client.get(reverse('core:user_list'))                      # signed in, the session read: no write is left
+        self.lapsed()
+        with connection.cursor() as cursor:                             # the database takes no writes from here
+            cursor.execute('SET default_transaction_read_only = on')
+        self.addCleanup(self.writable)
+        with self.assertLogs('core.accountmail', 'ERROR') as logged:
+            page = self.client.get(reverse('core:user_list'))
+        self.writable()
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'The invitation to kari@example.com is being sent')     # not closed: it could not be
+        self.assertEqual(len(logged.records), 1)
+        self.assertIn('could not be closed before the users were listed (InternalError: cannot execute UPDATE '
+                      'in a read-only transaction)', logged.output[0])
+        self.assertEqual(outcomes(), ['waiting'])
+        with self.assertLogs('core.accountmail', 'ERROR'):              # the next look, the database writable again
+            self.assertContains(self.client.get(reverse('core:user_list')), 'Invitation not sent')
+
+    def writable(self):
+        with connection.cursor() as cursor:
+            cursor.execute('SET default_transaction_read_only = off')
+
+    def test_a_fault_of_the_code_is_not_swallowed(self):
+        self.lapsed()
+        with mock.patch.object(accountmail, 'sweep', side_effect=RuntimeError('a fault in the code')),                 self.assertRaisesMessage(RuntimeError, 'a fault in the code'):
+            self.client.get(reverse('core:user_list'))
 
 
 class HandOverTests(WorkerCase):

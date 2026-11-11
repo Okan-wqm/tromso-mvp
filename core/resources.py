@@ -83,8 +83,10 @@ class UserResource(Resource):
     @classmethod
     def list_queryset(cls, request):
         """Before the list is drawn, the mails nobody is sending any more are closed (accountmail.sweep), so a row
-        says "not sent" only of a mail that is written down as such."""
-        accountmail.sweep()
+        says "not sent" only of a mail that is written down as such. The list is drawn all the same when that cannot
+        be written (a database that takes no writes just now): it is logged, and those rows still read "being sent"
+        (accountmail.sweep_before_reading, review T3)."""
+        accountmail.sweep_before_reading()
         return super().list_queryset(request)
 
     @classmethod

@@ -12,9 +12,10 @@ transaction has committed, the row is handed to the worker (`hand_over`): one ba
 talks to the mail server outside any transaction and any lock and then writes what became of the mail on its row,
 sent or why not. So a request never waits for a mail server, a person's row is never locked while one is talked to,
 and a mail is never out for a record that does not exist. A mail gets settings.MAIL_SEND_SECONDS in all (`_send`). A
-row still waiting long after that never finished (the server stopped with the mail in its queue): it counts as not
-sent, never as sent (`state`). Nothing is raised to the page that caused a mail: the person's row on the users tab says
-what happened, and the server's log has the line."""
+row whose owner no longer vouches for it never finished (the server stopped with the mail in its queue, or the
+mail's job was lost to a database fault): it is closed as interrupted (`sweep`), never called sent. Nothing is
+raised to the page that caused a mail: the person's row on the users tab says what happened, and the server's log has
+the line."""
 import atexit
 import logging
 import os
@@ -32,7 +33,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import _unicode_ci_compare
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.mail import DEFAULT_MAILER_ALIAS, EmailMessage, mailers
-from django.db import connections, transaction
+from django.db import DatabaseError, connections, transaction
 from django.db.models import CharField, OuterRef, Q, Subquery
 from django.db.models.functions import Cast
 from django.template.loader import render_to_string
@@ -103,24 +104,34 @@ class Worker:
 
     It keeps its database connection from one job to the next while jobs are waiting, and closes it when none is (or
     after KEEP_CONNECTION seconds, or after a job's fault): a connection opened for every job made a lookup forty
-    times dearer than the lookup itself, and none stays open between mails."""
+    times dearer than the lookup itself, and none stays open between mails. A kept connection is tried before each
+    job (`fresh_connection`): one the database has dropped meanwhile is closed, so the job opens a new one instead
+    of being lost to it.
+
+    It knows which mails it holds (`held`): the ones handed to it and not yet done, waiting in its line or under way.
+    Those are the mails the process vouches for (`renew`); a mail whose job is gone, done or lost to a fault, is not
+    among them any more."""
 
     def __init__(self):
         self.changed = threading.Condition()
         self.mails, self.requests = deque(), deque()
+        self.held = set()                # the ids of the mails handed over and not yet done
         self.unfinished = 0              # jobs waiting or under way
         self.resting = True              # none under way, and no connection kept
         self.thread = None
         self.dropped = 0                 # requests refused since the process started (`reset_later` counts them)
         self.unsaid = 0                  # ... and since the server's log last said so
 
-    def put(self, job, *args, anonymous=False):
-        """Queues `job(*args)`, among the requests of anybody when `anonymous`; False when that line is full."""
+    def put(self, job, *args, anonymous=False, mail=None):
+        """Queues `job(*args)`, among the requests of anybody when `anonymous`; False when that line is full. `mail`
+        is the id of the mail the job sends: held from here until the job is done, however it ends."""
         with self.changed:
             line = self.requests if anonymous else self.mails
             if len(line) >= QUEUE_SIZE:
                 return False
-            line.append((job, args))
+            line.append((job, args, mail))
+            if mail is not None:
+                self.held.add(mail)
             self.unfinished += 1
             self.resting = False
             if self.thread is None or not self.thread.is_alive():
@@ -139,9 +150,10 @@ class Worker:
             with self.changed:
                 while not (self.mails or self.requests):
                     self.changed.wait()
-                job, args = (self.mails or self.requests).popleft()
+                job, args, mail = (self.mails or self.requests).popleft()
             failed = False
             try:
+                fresh_connection()
                 renew()
                 job(*args)
             except Exception as fault:
@@ -151,6 +163,7 @@ class Worker:
             finally:
                 # counted as done first: a connection that will not close must not leave `drain` waiting for good
                 with self.changed:
+                    self.held.discard(mail)      # done or lost: no longer vouched for (a lost one lapses, `sweep`)
                     self.unfinished -= 1
                     idle = not (self.mails or self.requests)
                     self.changed.notify_all()
@@ -222,12 +235,12 @@ def _at_exit():
 atexit.register(_at_exit)
 
 
-def background(job, *args, anonymous=False):
-    """Runs `job(*args)` after the request: on the worker (among anybody's requests when `anonymous`), or at once where
-    settings.MAIL_IN_BACKGROUND is off (the tests, whose uncommitted rows no other thread could read). False when the
-    worker's line for it is full."""
+def background(job, *args, anonymous=False, mail=None):
+    """Runs `job(*args)` after the request: on the worker (among anybody's requests when `anonymous`; `mail` is the id
+    of the mail it sends, which the worker holds meanwhile), or at once where settings.MAIL_IN_BACKGROUND is off (the
+    tests, whose uncommitted rows no other thread could read). False when the worker's line for it is full."""
     if settings.MAIL_IN_BACKGROUND:
-        return worker.put(job, *args, anonymous=anonymous)
+        return worker.put(job, *args, anonymous=anonymous, mail=mail)
     job(*args)
     return True
 
@@ -245,26 +258,58 @@ _renewed = 0.0
 
 def renew():
     """The owner's "I still have them", at the start of each of the worker's jobs (at most every RENEW_EVERY
-    seconds): the mails this process has waiting are its own for another lease."""
+    seconds): the mails its worker holds (handed over and not yet done) are its own for another lease. Only those: a
+    row that carries this process's name but whose job is gone (lost to a database fault before or after the mail
+    server was talked to) is not vouched for, so it lapses and the next look closes it as interrupted (`sweep`)
+    instead of staying "being sent" for as long as the process has any other work (review T1)."""
     global _renewed
     now = time.monotonic()
     if now - _renewed < RENEW_EVERY:
         return
     _renewed = now
-    AccountMail.objects.filter(owner=WORKER, sent_at=None, error='').update(alive_at=timezone.now())
+    with worker.changed:
+        held = list(worker.held)
+    if held:
+        AccountMail.objects.filter(pk__in=held, owner=WORKER, sent_at=None, error='').update(alive_at=timezone.now())
+
+
+def fresh_connection():
+    """Before a job of the worker: a kept connection the database has dropped meanwhile (a restart, an administrator)
+    is closed, so the job opens a new one. Without this the first job after the drop failed on the dead connection
+    and its mail was lost (review T1)."""
+    for kept in connections.all(initialized_only=True):
+        if kept.connection is not None and not kept.is_usable():
+            kept.close()
 
 
 def sweep(user=None):
     """Closes the waiting mails (of `user`, or everybody's) that nobody is sending any more: their owner has not
     renewed them for a whole lease, so it has stopped (a server killed with mails in its queue). Written down once, as
     interrupted, on the row and in the logs; a mail is never called not sent for its age alone. Called where it
-    matters: before the users tab is drawn, under the account's row lock before an invitation is sent again or a
-    reset is counted, and when a worker starts."""
+    matters: before the users tab is drawn (`sweep_before_reading`: that page is drawn whether or not this could be
+    written), under the account's row lock before an invitation is sent again or a reset is counted, and when a worker
+    starts."""
     lapsed = AccountMail.objects.filter(sent_at=None, error='', alive_at__lt=timezone.now() - lease())
     if user is not None:
         lapsed = lapsed.filter(user=user)
     for mail in lapsed.select_related('user'):
         _close(mail, INTERRUPTED, audit.message(INTERRUPTED))
+
+
+def sweep_before_reading():
+    """`sweep` before a page that only reads (the users tab). Closing a mail is housekeeping, and a page that lists
+    people must not fail because it could not be done: when the database refuses the write (it takes none just now,
+    or a fault), the server's log says so and the page is drawn; the mails that could not be closed still read
+    "being sent" until a later look closes them. Whether the sweep was done. Only the database's refusal is caught:
+    anything else is a fault of the code and is raised."""
+    try:
+        sweep()
+    except DatabaseError as fault:
+        logger.error('The mails nobody is sending any more could not be closed before the users were listed (%s: %s): '
+                     'they read as being sent until a later look closes them.', type(fault).__name__,
+                     ' '.join(str(fault).split()))
+        return False
+    return True
 
 
 # --- the mail -----------------------------------------------------------------------------------------------
@@ -378,7 +423,7 @@ def hand_over(mail):
     """Gives a waiting mail to the worker, after the transaction that wrote it has committed and outside any lock.
     The language of whoever caused it goes along, for a recipient who has saved none. A mail the worker cannot take
     (its queue is full) is marked not sent here; whether it was taken."""
-    if background(deliver, mail.pk, translation.get_language()):
+    if background(deliver, mail.pk, translation.get_language(), mail=mail.pk):
         return True
     _close(mail, BUSY, audit.message(BUSY))
     return False

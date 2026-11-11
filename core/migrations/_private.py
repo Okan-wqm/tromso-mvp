@@ -4,6 +4,12 @@ F-050, 2026-11-10; review R1 to R4). Written here once, as it is when the migrat
 and the check all call this, so there is one conversion. It must never change with the table or with the code's idea
 of a private value: an old database migrating later runs exactly this. Not a migration (the underscore).
 
+Changed once since core/0011 was first applied (2026-11-11, review R24): a role typed as pieces of a number is judged as
+a whole (`_contact`). A database converted before that change kept such a contact list as plain text inside its
+converted parts, and nothing here finds it again (a converted list is not a string any more); the one database
+converted before it, the development one, held no such row (the review's scan of its 6,755 rows). Every database that
+runs core/0011 or the command from now on gets the rule as it is here.
+
 - A plain value under one of the labels of PRIVATE becomes its private value (core.audit.private: the enumerated
   "Private text" with the short keyed digest).
 - A contact list (CONTACTS) was one composed sentence, main's ContactList.describe: per contact `name` or
@@ -156,8 +162,10 @@ def _contact(item):
       only field before the e-mail, so that is proved whatever the role looks like) and everything right of it is the
       phone, whatever its form;
     - no e-mail: the trailing details in the form of a phone number are the phone, and what stands left of them is the
-      role, unless a detail of it holds an address or a number (`_telling`): then role and phone cannot be told apart
-      and the details become one private part beside the name;
+      role, unless it holds an address or a number (`_telling`, of all of it together: a number typed in pieces,
+      "55 12, 34 56" or "0532, 123, 4567", is split on its commas into details of fewer than five digits each, and
+      judged one by one every piece passed as a role; review R24): then role and phone cannot be told apart and the
+      details become one private part beside the name;
     - more than one detail in the form of an e-mail: the details become one private part beside the name.
     A name is never kept when it holds an address or a number, and a contact is never kept without a name."""
     name, inside = _name_and_details(item)
@@ -180,7 +188,7 @@ def _contact(item):
         cut = len(tokens)
         while cut and _phone(tokens[cut - 1]):
             cut -= 1
-        if not any(_telling(token) for token in tokens[:cut]):
+        if not _telling(', '.join(tokens[:cut])):
             phone = ', '.join(tokens[cut:])
             return [who(', '.join(tokens[:cut])), *([private(phone, CONTACT_FIELDS[1])] if phone else [])], False
     return [who(), private(', '.join(tokens), UNSURE)], True

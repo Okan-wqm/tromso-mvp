@@ -252,12 +252,19 @@ class ContactSentenceTests(TestCase):
                   '55 12 34 56, 90 00 00 00', '55 12 34 56; 90 00 00 00', 'ask reception', '98989898 (work)',
                   'mob 98989898, 55 12 34 56', '98 work); 99123456 (home', '98989898); Ola (Diver',
                   '55 12, 34 56', '0532, 123, 4567']
-        kinds, leaks, lost = {}, [], []
+        # a phone in a phone's form as a whole (digits, spaces and + ( ) only): the parser reads it as the phone
+        plain_phones = {'', '+47 98989898', '989 89 898', '(0532) 123 45 67', '+90 (532) 123 45 67'}
+        kinds, leaks, lost, lost_roles = {}, [], [], []
         for name, role, email, phone, primary in itertools.product(names, roles, emails, phones, (False, True)):
             sentence = old_describe(name, role, email, phone, primary)
             made, kind = _private.contacts(sentence)
             kinds[kind] = kinds.get(kind, 0) + 1
             text = ' | '.join(plain_of(made))
+            # the role is kept wherever it is proved to be one: left of an e-mail, or beside a phone in a phone's own
+            # form when the role itself holds no address and no number (review Q7: the grid held the names only)
+            proved = email or (phone in plain_phones and '@' not in role and digits(role) < 5)
+            if role and proved and kind != 'whole' and role not in text:
+                lost_roles.append(sentence)
             numbers = [found for found in re.findall(r'\d[\d ]{3,}\d', phone) if digits(found) >= 5]
             if (email and email in text) or any(number in text for number in numbers) or (
                     digits(phone) >= 5 and phone in text):
@@ -270,7 +277,21 @@ class ContactSentenceTests(TestCase):
         self.assertEqual(sum(kinds.values()), 6000)
         self.assertEqual(leaks, [])
         self.assertEqual(lost, [])
+        self.assertEqual(lost_roles, [])
         self.assertEqual(kinds['whole'], 400)                               # 5 names x 8 roles x 5 addresses x 2
+
+    def test_what_the_rule_for_pieces_keeps_and_what_it_costs(self):
+        """Review Q7, the two edges of R24's rule, held as they are and said in docs/erasure.md: a short piece before a
+        piece that is itself a phone is judged without it and stays plain as the role; a role with five digits or more
+        across its commas goes private with the name kept."""
+        for sentence, expected in (
+                ('Kari (0532, 1234567)', [['Kari (0532)', P('1234567')]]),              # the residue
+                ('Kari (Vet, 0532, 1234567)', [['Kari (Vet, 0532)', P('1234567')]]),
+                ('Kari (Ward 12, Building 345)', [['Kari', U('Ward 12, Building 345')]]),   # the collateral
+                ('Kari (Shift 2, Ward 12, Room 34)', [['Kari', U('Shift 2, Ward 12, Room 34')]]),
+                ('Kari (Ward 12, Room 34)', [['Kari (Ward 12, Room 34)']])):            # four digits: kept
+            with self.subTest(sentence=sentence):
+                self.assertEqual(_private.contacts(sentence)[0], expected)
 
     def test_nothing_that_looks_like_an_address_or_a_number_is_kept_in_any_shape(self):
         for sentence, _expected in SHAPES:

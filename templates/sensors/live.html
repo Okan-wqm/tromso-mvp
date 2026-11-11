@@ -8,7 +8,7 @@
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
-<p class="panel-help">{% trans "A value is fresh for its channel’s own number of heartbeats (3 unless the channel is set otherwise). A stale value is not used for a unit’s water: the next source counts (its system’s sensor, then the latest sample)." %}</p>
+<p class="panel-help">{% trans "A value is fresh while both its own time on the device and its arrival here are no older than its channel’s own number of heartbeats (3 unless the channel is set otherwise). A stale value is not used for a unit’s water: the next source counts (its system’s sensor, then the latest sample)." %}</p>
 {% if rows %}
 <div class="table-wrap">
   <table class="data-table">

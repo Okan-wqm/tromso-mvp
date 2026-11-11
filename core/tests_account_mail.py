@@ -740,7 +740,8 @@ class ForgotPasswordTests(AccountMailCase):
                     CaptureQueriesContext(connection) as queries:
                 response = self.ask(address)
             self.assertEqual((response.status_code, response['Location']), (302, reverse('password_reset_done')))
-            self.assertEqual(handed.call_args_list, [mock.call(accountmail.reset_now, address, 'en')])
+            # among the requests of anybody, which wait in a line of their own (review S2)
+            self.assertEqual(handed.call_args_list, [mock.call(accountmail.reset_now, address, 'en', anonymous=True)])
             seen[address] = [query['sql'] for query in queries]
         self.assertEqual(len({len(sql) for sql in seen.values()}), 1, seen)
         self.assertFalse([sql for found in seen.values() for sql in found if 'auth_user' in sql or 'account_mails' in sql])
@@ -754,6 +755,23 @@ class ForgotPasswordTests(AccountMailCase):
             self.assertEqual(self.answer('ali@example.com'), known)
         self.assertNotIn('ali@example.com', logged.output[0])
         self.assertEqual(len(mail.outbox), 1)
+
+    def test_requests_that_could_not_be_queued_are_counted_where_an_operator_reads_it(self):
+        # (review S2) the person asking is answered as always, so the trace is the server's: a line a minute with how
+        # many were dropped since the last one and since the process started
+        accountmail.dropped_told.clear()
+        before = accountmail.worker.dropped
+        with mock.patch.object(accountmail.worker, 'put', return_value=False), \
+                override_settings(MAIL_IN_BACKGROUND=True), self.assertLogs('core.accountmail', 'ERROR') as logged:
+            for _ in range(3):
+                self.ask('ali@example.com')
+            accountmail.dropped_told.clear()                                     # a minute later
+            self.ask('nobody@example.com')
+        self.assertEqual(accountmail.worker.dropped, before + 4)
+        self.assertEqual(len(logged.records), 2)
+        self.assertIn(f'1 since the last line, {before + 1} since this process started', logged.output[0])
+        self.assertIn(f'3 since the last line, {before + 4} since this process started', logged.output[1])
+        self.assertNotIn('example.com', ''.join(logged.output))
 
     def test_an_unknown_address_is_answered_like_a_known_one_and_gets_nothing(self):
         known = self.answer('ali@example.com')

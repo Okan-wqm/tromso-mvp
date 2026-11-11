@@ -201,6 +201,69 @@ class WorkerTests(WorkerCase):
         self.assertFalse(WaitingBackend.started.is_set())
         self.assertContains(response, 'The invitation to kari@example.com was not sent: Too many mails are waiting to be sent.')
 
+    def test_requests_from_outside_cannot_crowd_out_the_admins_mails(self):
+        # (review S2) two lines: the admin's mails and anybody's requests. With the requests' line full a request is
+        # refused, an invitation is still taken, and it is sent before the requests that were waiting.
+        blocker, gate, order = threading.Event(), threading.Event(), []
+
+        def wait():
+            blocker.set()
+            gate.wait(timeout=30)
+
+        self.addCleanup(gate.set)
+        self.assertTrue(accountmail.background(wait))
+        self.assertTrue(blocker.wait(timeout=20))
+        asked = [accountmail.background(order.append, 'request', anonymous=True) for _ in range(accountmail.QUEUE_SIZE + 3)]
+        self.assertEqual((asked.count(True), asked.count(False)), (accountmail.QUEUE_SIZE, 3))
+        self.assertTrue(accountmail.background(order.append, 'mail'))
+        gate.set()
+        self.assertTrue(accountmail.worker.drain(30))
+        self.assertEqual(order, ['mail'] + ['request'] * accountmail.QUEUE_SIZE)
+
+    def test_the_worker_keeps_its_database_connection_while_jobs_wait_and_closes_it_when_none_does(self):
+        # (review S2) a connection opened for every job made the worker seven times slower than requests arrive
+        from django.db.backends.base.base import BaseDatabaseWrapper
+        connects, opened = [], BaseDatabaseWrapper.connect
+
+        def counted(wrapper):
+            if threading.current_thread().name == 'account-mail':
+                connects.append(1)
+            return opened(wrapper)
+
+        def open_connections():
+            with connection.cursor() as cursor:
+                cursor.execute('SELECT count(*) FROM pg_stat_activity WHERE datname = current_database()')
+                return cursor.fetchone()[0]
+
+        self.assertTrue(accountmail.worker.drain(30))
+        before = open_connections()
+        blocker, gate = threading.Event(), threading.Event()
+
+        def wait():
+            blocker.set()
+            gate.wait(timeout=30)
+
+        self.addCleanup(gate.set)
+        with mock.patch.object(BaseDatabaseWrapper, 'connect', counted):
+            self.assertTrue(accountmail.background(wait))
+            self.assertTrue(blocker.wait(timeout=20))
+            for n in range(40):
+                self.assertTrue(accountmail.background(accountmail.reset_now, f'nobody{n}@example.com', 'en',
+                                                       anonymous=True))
+            gate.set()
+            self.assertTrue(accountmail.worker.drain(30))
+        self.assertEqual(len(connects), 1)                                        # forty lookups, one connection
+        self.assertEqual(open_connections(), before)                              # and none left open afterwards
+
+    def test_two_hundred_lookups_of_addresses_nobody_has_are_emptied_in_a_moment(self):
+        # measured before: 4.8 s for 200 (42 a second); the connection kept: well under a second
+        start = time.perf_counter()
+        for n in range(accountmail.QUEUE_SIZE):
+            accountmail.background(accountmail.reset_now, f'nobody{n}@example.com', 'en', anonymous=True)
+        self.assertTrue(accountmail.worker.drain(30))
+        self.assertLess(time.perf_counter() - start, 2.5)
+        self.assertEqual(AccountMail.objects.count(), 0)
+
     def test_the_queue_is_bounded(self):
         blocker, gate = threading.Event(), threading.Event()
 

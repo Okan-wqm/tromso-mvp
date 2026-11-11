@@ -370,3 +370,46 @@ class OwnedMailsTests(WorkerCase):
         self.assertEqual(AccountMail.objects.get(pk=other.pk).error, '')
         self.finish()
         self.assertEqual(outcomes(), [interrupted, interrupted, 'waiting'])       # a closed row is not sent late
+
+
+class HandOverTests(WorkerCase):
+    """What the after-commit hook is for (second pass, N4): the mail is handed to the worker only once the save is
+    committed, never from inside its transaction."""
+
+    def test_the_invitation_is_handed_over_outside_any_transaction(self):
+        seen = []
+        handed = accountmail.hand_over
+
+        def watched(mail):
+            visible = []
+            # asked from another connection: is the row there for anybody but the request that wrote it?
+            reader = threading.Thread(target=lambda: (visible.append(AccountMail.objects.filter(pk=mail.pk).exists()),
+                                                      connection.close()))
+            reader.start()
+            reader.join(timeout=20)
+            seen.append((connection.in_atomic_block, visible))
+            return handed(mail)
+
+        with mock.patch.object(accountmail, 'hand_over', watched):
+            self.client.post(reverse('core:user_create'), user_data())
+            kari = User.objects.get(username='kari')
+            self.finish()
+            WaitingBackend.release.clear()
+            AccountMail.objects.all().delete()
+            self.client.post(reverse('core:user_invite', args=[kari.pk]))
+        self.assertEqual(seen, [(False, [True]), (False, [True])])                # the create, then the resend
+
+    def test_a_worker_thread_that_died_is_started_again_by_the_next_job(self):
+        # (N21) whatever ended it: the mails queued afterwards are not left waiting
+        self.assertTrue(accountmail.background(int))
+        self.assertTrue(accountmail.worker.drain(30))
+        dead = accountmail.worker.thread
+        accountmail.background(sys.exit)                                          # ends the thread, as a fault outside a job would
+        dead.join(timeout=20)
+        self.assertFalse(dead.is_alive())
+        done = threading.Event()
+        self.assertTrue(accountmail.background(done.set))
+        self.assertTrue(done.wait(timeout=20))
+        self.assertIsNot(accountmail.worker.thread, dead)
+        self.assertTrue(accountmail.worker.thread.is_alive())
+        self.assertTrue(accountmail.worker.drain(30))

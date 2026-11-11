@@ -4416,7 +4416,8 @@ row when the mail went out (`sent_at`) or why it did not (`error`). The shared t
 
 **One mail gets `EMAIL_TIMEOUT` seconds in all** (30), not for each step: the SMTP library's timeout is per step of
 the conversation (connect, greeting, sender, recipient, data, ...), so the worker cuts the conversation off itself at
-that limit and the mail counts as not sent ("The mail server did not finish in time"). Only the opening of the
+that limit and the mail counts as not sent ("The mail server did not finish in time: the mail may have gone out all
+the same"). Only the opening of the
 connection can add its own timeout once more.
 
 **What the admin sees.** The answer to creating a user or to "Send invitation" says that the invitation is being
@@ -4429,13 +4430,33 @@ platform's own sentence). The platform's own sentences are shown in the reader's
 line for every mail that did not go out (the kind and the row's id), with time and level (`LOGGING`,
 `core.accountmail`, to stderr).
 
-**At a restart.** The queue is in memory. A server that stops in order gives the mails under way their time
-(`atexit`, at most `EMAIL_TIMEOUT`). One that is killed loses what was queued: those rows stay waiting, with
-neither `sent_at` nor a reason, and nothing sends them later. A row still waiting after twice `EMAIL_TIMEOUT` is
-shown as **not sent** ("The sending was interrupted: the server stopped, or the mail server never answered"), never
-as sent, and the admin sends the invitation again from the row; a reset that was lost is asked for again by the
-person. The queue holds 200 jobs; more are refused (an invitation is marked not sent with "Too many mails are
-waiting to be sent"; reset requests are dropped, said in the log once a minute, and answered like every other).
+**The worker.** Two lines wait for it, each with room for 200 jobs: the mails the platform admin causes
+(invitations) and the requests anybody can send (the forgot-password form). It takes the admin's first, so requests
+from outside can neither crowd an invitation out nor make it wait behind them. It keeps its database connection from
+one job to the next while jobs wait and closes it when none does: 200 lookups of addresses nobody has are emptied
+in 0.2 s (about 900 a second; 42 a second while it opened a connection for each). **A full line is never silent.**
+An invitation that finds its line full is marked not sent ("Too many mails are waiting to be sent") and the admin is
+told. A reset request that finds the requests' line full is dropped: the person is answered like every other, and
+the server's log says so once a minute with how many were dropped since the last line and since the process started
+(the count an operator reads; `accountmail.worker.dropped`).
+
+**Whose a waiting mail is, and what happens at a restart.** The lines are in memory, so a waiting mail can be sent
+only by the server process that queued it. Its row names that process (`owner`), and the process keeps saying that
+it still has the mail (`alive_at`, renewed at every job its worker starts). A mail is called not sent only when that
+is known, and it is then **written down**, once, on the row and in the logs ("The sending was interrupted: the server
+stopped, or the mail server never answered", stored like any other reason):
+
+- by the process itself, when it stops in order with mails still queued (`atexit`: the mails under way get
+  `EMAIL_TIMEOUT`, what is left is closed);
+- for a process that was killed, by the next look at the row once its owner has been silent for three times
+  `EMAIL_TIMEOUT`: before the users tab is drawn, before an invitation is sent again or a reset is counted, and when
+  a worker starts (a restart).
+
+Never by the row's age: a mail behind a slow mail server or a long line is "being sent" for as long as its owner has
+it, and sending it again is refused meanwhile, so it cannot go out twice; a row closed as interrupted is not sent
+late by an owner that gets to it after all. Nothing sends a lost mail again by itself: the admin sends the
+invitation again from the row, and a person asks for their reset again (a lost reset does not count against their
+hour). Two server processes each have their own worker and their own rows; neither closes the other's while it lives.
 
 **Forgot your password** answers every address the same way (the same page, the same work in the request). One
 account is sent at most `PASSWORD_RESET_MAILS_PER_HOUR` (3) reset mails an hour: the mails that went out or are
@@ -4472,9 +4493,11 @@ mailer is SMTP whatever the environment holds, and the system check `core.checks
 - `core.E003`: no sender address (`DEFAULT_FROM_EMAIL`), or not an address;
 - `core.E004`: `PUBLIC_BASE_URL` not set, not `https://host[:port]` alone (a user part before the host is refused
   too), or a host this server does not answer to (`DJANGO_ALLOWED_HOSTS`; with `*` there every host passes);
-- `core.E005`: an SMTP user without a password (or the other way round), or a password with `EMAIL_TLS=off`.
+- `core.E005`: an SMTP user without a password (or the other way round), or a password with `EMAIL_TLS=off`;
+- `core.E006`: `ATOMIC_REQUESTS` on a database (whatever the mail settings): a mail would be handed to the worker
+  inside the request's transaction, before the save that causes it is committed.
 
-A development server pointed at a real SMTP server is held to E003 to E005 too. The deploy check
+A development server pointed at a real SMTP server is held to E003 to E005 too, and every server to E006. The deploy check
 (`CHECKS=1 scripts/test.sh`) runs with an SMTP server, a sender and a public address in its production-like settings,
 so Django's `mail.E001` (a development-only mail backend) is closed and no longer in the list of open deploy issues.
 
@@ -4495,8 +4518,33 @@ with `DJANGO_DEBUG=0`, `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, the database
 above in the environment. Should the server be started without the checks all the same and without its mail
 settings, no mail is lost silently: every send fails ("The public address of this server is not set", or the mailer's
 own refusal of a missing host) and shows on the person's row as any failed send. One worker thread per server
-process sends the mails, so a server run as several processes sends several at a time; a process
-that ends in order drains its queue first (see "At a restart").
+process sends the mails, so a server run as several processes sends several at a time. Two conditions on whatever
+runs the server:
+
+- **It must run Python threads.** The worker is a thread: a server that runs none (uWSGI without `enable-threads`)
+  would queue every mail and send none; the rows would be closed as interrupted and nothing would ever arrive.
+- **It should end its processes in order.** A process that exits normally sends what is under way and closes the
+  rest itself (`atexit`). gunicorn turns SIGTERM into such an exit; a bare `runserver --noreload` in a container does
+  not (SIGTERM kills it, as SIGKILL kills anything): what was queued is then lost, and its rows are closed as
+  interrupted at the next look (see "Whose a waiting mail is").
+
+### Known and accepted
+
+- **A person who has an account can still learn, slowly, whether another address has one.** The one worker takes the
+  requests in turn, so their own reset mail is built later when the request before it had a mail to send, and a mail
+  says when it was built (`Date`, `Message-ID`). It needs an account of one's own, costs one of that account's three
+  mails an hour for each address tried, and stops working for an address once it is held back. An outsider learns
+  nothing: the answer and its time are the same for every address.
+- **A mail the mail server took but acknowledged after the limit** is recorded as not sent ("The mail server did not
+  finish in time: the mail may have gone out all the same"); sending it again can put a second one in the inbox.
+- **The time limit reaches into Django's SMTP backend** (its `connection` and `_partial_connection` attributes) to
+  cut a conversation. A Django that renames them, or another mail backend, is held by the per-step timeout only;
+  `core.tests_account_mail.SendTimeTests` fails then, which is the alarm.
+- **An account made active again within a link's lifetime has that link back** (the token is stateless; putting a
+  wrong address right ends the link for good).
+- **No limit per client** on "Forgot your password?": the reverse proxy's (above).
+- **A stranger's address** an invitation was mis-sent to stays in `account_mails` and in the log, as the evidence
+  of where a link went: `docs/erasure.md` says what is kept and how it is erased on request.
 
 ## Pages
 

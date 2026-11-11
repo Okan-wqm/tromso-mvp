@@ -81,6 +81,7 @@ company keeps its data-protection records, with the date and who carried it out.
 | 5 | A task's description | The task's (or the recurring task's) form | Anyone with Edit on Tasks | The column is changed; the log shows "Private text" changed. |
 | 6 | A task's note, completion note or reason for cancelling | No page changes them: they are part of the work record | The platform's database administrator, on the DPO's written instruction | The statement below: the text is replaced, and one log row says that it was, with no words. |
 | 7 | Backups | See Backups | Whoever keeps them | A restore brings erased values back: steps 1 to 6 are repeated after a restore from a dump older than the erasure. |
+| 8 | The address of a stranger an invitation was mis-sent to | No page changes it: it is the evidence of where a link went | The platform's database administrator, on the DPO's written instruction | See "A stranger's address" below: `account_mails` by the statement there; the log's own rows only if the owner and the DPO decide so. |
 
 **A reopened task.** Reopening clears the completion note and the reason for cancelling on the task and keeps each as a
 note by the person who wrote it (`task_notes`, `kind` `completion_note` or `cancel_reason`), so that nothing a person
@@ -106,6 +107,48 @@ COMMIT;
 ```
 
 (Erasing a note through a page is not built: it needs the owner's word on who may do it.)
+
+## A stranger's address: an invitation sent to a mistyped address
+
+**For the owner, plainly.** When the platform admin mistypes a new person's address, the invitation goes to whoever
+has that address: a stranger, who never agreed to anything. Their address then stays in the system after the admin
+has put the account's address right:
+
+| Where | What is kept |
+|---|---|
+| `account_mails` (the platform admin reads it in the database viewer and on the users tab) | one row per invitation that went, or was tried, to that address: `address`, and `error` when a mail server's reply repeated it |
+| the activity log, on that user's rows (read by every role with Activity log) | Created and Changed: the account's `Email` then and after (main's decision, F-050); Invited: `Sent to`; Password set: `Link sent to`, when the stranger used the link |
+
+It is kept on purpose: it is the evidence of where a link to an account went, and the only trace when a stranger used
+that link before the address was put right (the users row then says "through the link sent to …, which is not this
+account's address now"). Correcting the account does not remove it, and no page does.
+
+**On the stranger's request** (step 8 of the procedure; the DPO decides, since erasing it removes that evidence):
+
+- `account_mails`: the platform's database administrator, on the DPO's written instruction, replaces the address (and
+  the reason, where it repeats it) in the rows named, and writes the log's row of it, in one transaction:
+
+```sql
+BEGIN;
+UPDATE account_mails SET address = 'erased@invalid', error = CASE WHEN error = '' THEN '' ELSE '[Erased on request, 2026-11-11]' END
+WHERE id IN (...);
+INSERT INTO audit_log (id, created_at, user_name, action, entity_type, entity_id, entity_label, changes, severity)
+SELECT gen_random_uuid(), clock_timestamp(), 'system', 'update', 'user', id::text, left(username, 255),
+       '{"Erased on request": [null, "The address of a mis-sent invitation erased on request (DPO instruction of 2026-11-11); carried out by <name>."]}'::jsonb,
+       'normal'
+FROM auth_user WHERE id IN (...);    -- the accounts whose mails were touched above
+COMMIT;
+```
+
+- the activity log's own rows: the log is append-only (a trigger refuses UPDATE and DELETE, for the platform admin
+  too), so the address in them cannot be changed through any page or by an ordinary statement. It can be replaced only
+  by the database administrator with the trigger lifted for that one transaction, the way the conversion
+  `core/0011` did it (`core/migrations/_private.py`: `ALTER TABLE audit_log DISABLE TRIGGER trg_audit_log_append_only`,
+  the change, `ENABLE TRIGGER`), replacing the address in the `changes` of the rows named by the same placeholder and
+  adding the "Erased on request" row above. **Open, for the owner and the DPO:** whether the log is ever changed for
+  this, or the request is answered with the ground for keeping it (the security of the account). Nothing is built for
+  it, and nothing should be until that is decided.
+- backups hold it as they hold everything else (below).
 
 ## Backups
 

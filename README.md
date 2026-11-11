@@ -4010,7 +4010,11 @@ pages are drawn in it: the Overview, Meal board, Production units and Water chem
 without a redesign yet, and are redesigned one page at a time.
 
 - **Tokens.** `static/css/tokens.css` is the design system's `tokens.css` plus a short block of the app's own (the
-  rail's overlays), loaded first. No stylesheet writes a colour of its own: `core/tests_design_shell.py` fails on a
+  rail's overlays), loaded first. **The design system's file is the source** (`docs/design/system/tokens.css`, made from
+  its `tokens.json`; its previews load it): a token is changed there and the file copied, never in one of the two, and
+  `core.tests_design_shell.TokenSourceTests` fails when the served file is not that file with only the app's block
+  after it, or when the app's block sets a name the design system sets. `static/css/tw.css` does not hold the tokens (it
+  names the variables), so it is built from neither. No stylesheet writes a colour of its own: `core/tests_design_shell.py` fails on a
   hex, `rgb()` or `rgba()` outside `tokens.css`. The old variables (`--mist`, `--olive`, `--stripe` and the rest) are
   gone; every sheet reads the role tokens (`--surface-*`, `--text-1` to `-3`, `--line-*`, `--primary`, `--action`,
   `--ok`, `--warn`, `--crit` with their `-text` and `-tint`).

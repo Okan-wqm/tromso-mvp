@@ -114,6 +114,30 @@ class SelfHostedFontsTests(SimpleTestCase):
         self.assertIn('Bricolage Grotesque', third_party)
 
 
+class TokenSourceTests(SimpleTestCase):
+    """One source for the tokens: the design system's `docs/design/system/tokens.css` (made from its tokens.json, the
+    hand-off's own file, which its previews load). The stylesheet the pages load, `static/css/tokens.css`, is that file
+    unchanged with the app's own block after it, so a colour or a size changed in one and not in the other fails here
+    instead of drifting unseen."""
+    APP = '/* App additions (not in tokens.json yet)'
+
+    def test_the_apps_tokens_are_the_design_systems_with_the_apps_own_block_after_them(self):
+        def read(path):
+            return path.read_text(encoding='utf-8').replace(chr(13), '')
+        system = read(ROOT / 'docs' / 'design' / 'system' / 'tokens.css')
+        served = read(ROOT / 'static' / 'css' / 'tokens.css')
+        self.assertTrue(served.startswith(system), 'static/css/tokens.css no longer starts with docs/design/system/'
+                        'tokens.css: change the design system’s file and copy it, never one of the two')
+        own = served[len(system):]
+        self.assertTrue(own.strip().startswith(self.APP))
+        blocks = re.findall(r'([^{}]+)\{([^{}]*)\}', re.sub(r'/\*.*?\*/', '', own, flags=re.S))
+        self.assertEqual([selector.strip() for selector, _body in blocks], [':root'])       # one block, no theme's
+        names = re.findall(r'(--[a-z0-9-]+)\s*:', blocks[0][1])
+        self.assertEqual(sorted(names), sorted(set(names)))
+        # the app's block adds names; it never sets one the design system sets (that would be a second source)
+        self.assertEqual(set(names) & set(re.findall(r'(--[a-z0-9-]+)\s*:', system)), set())
+
+
 class ColourLiteralTests(SimpleTestCase):
     def test_no_colour_is_written_outside_the_tokens(self):
         literal = re.compile(r'#[0-9A-Fa-f]{3,8}\b|rgba?\(')

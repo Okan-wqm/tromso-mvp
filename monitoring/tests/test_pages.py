@@ -15,7 +15,7 @@ from farm.models import FeedingRecord, StockOperation, WaterMeasurement
 
 from .. import read
 from ..cards import builtin
-from . import ALL_RIGHTS, MonitoringCase
+from . import MonitoringCase
 
 PAGE, CARDS = reverse('monitoring:monitor'), reverse('monitoring:cards')
 DETAILED_CARD = f'data-template="{builtin.DETAILED}"'

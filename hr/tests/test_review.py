@@ -3,15 +3,14 @@ of the day, a lead does not write their own attendance or plan, the Manager and 
 private text edits are logged, and the database holds two rules that were only Python."""
 from datetime import date, datetime, time, timedelta, timezone as utc
 
-from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError, connection, transaction
+from django.db import IntegrityError, transaction
 from django.urls import reverse
 
 from core.models import AuditLog
 from farm.models import ProductionDepartment
 
-from .. import read, rules, services
+from .. import read, services
 from ..models import AttendanceRecord, Employee, LeaveRequest, LeaveType, Shift, ShiftAssignment
 from ..units import token
 from .helpers import user

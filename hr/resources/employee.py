@@ -6,7 +6,7 @@ from core import audit
 from core.crud import Mount, Resource, tab_fields
 from farm.stock.dates import site_today
 
-from .. import read, scope, services, units
+from .. import scope, services, units
 from ..forms import EmployeeForm
 from ..forms.employee import PLACEMENT_FIELDS
 from ..models import Employee, EmploymentType, Posting

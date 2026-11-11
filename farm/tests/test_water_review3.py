@@ -10,7 +10,6 @@
 5. A11: with every temperature stale, the ration takes the most recently entered one across all tiers (B7b);
 7. a probe on the loop point is a "system sensor";
 8. a point's own old critical stays in its point_status when another point's value is shown."""
-from datetime import timedelta
 from decimal import Decimal
 
 from django.urls import reverse

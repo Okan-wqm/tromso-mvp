@@ -2,7 +2,6 @@
 diet's assignment row ended and written through the farm's own assignments, the figures bounded by the days; the farm's
 `assignments.end`; and the two dialogs."""
 from datetime import timedelta
-from decimal import Decimal
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import IntegrityError, transaction
@@ -11,8 +10,8 @@ from django.urls import reverse
 from django.utils import translation
 
 from core.models import AuditLog, Profile
-from farm.feeding import assignments, services as feeding_services
-from farm.models import FeedingProtocol, ProtocolAssignment, ProtocolBand, ProtocolRate
+from farm.feeding import assignments
+from farm.models import FeedingProtocol, ProtocolAssignment
 from farm.stock import services as stock_services
 from farm.tests.test_protocols import ProtocolTestCase
 
@@ -20,8 +19,7 @@ from .. import read, services
 from ..models import Experiment, ReplicateUnit
 from . import D
 from .test_overview import RanTrialCase
-from .test_pages import RESEARCHER, person
-from farm.tests.helpers import role
+from .test_pages import person
 
 
 def message_of(error):
@@ -289,7 +287,7 @@ class AmendPageTests(AmendTestCase):
 
     def test_the_dialogs_show_the_tank_and_the_days_and_ask_for_the_reason(self):
         page = self.client.get(self.release_url, headers={'X-Modal': '1'})
-        self.assertContains(page, f'T-02 is in Control R2 from')
+        self.assertContains(page, 'T-02 is in Control R2 from')
         self.assertEqual(page.context['form']['last_day'].value(), self.today)
         self.assertContains(page, 'name="reason"')
         replace = self.client.get(self.replace_url, headers={'X-Modal': '1'})

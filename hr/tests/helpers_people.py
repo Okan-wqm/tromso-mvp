@@ -2,7 +2,6 @@
 manage them."""
 from datetime import date
 
-from django.contrib.auth import get_user_model
 
 from farm.models import ProductionDepartment, Site
 

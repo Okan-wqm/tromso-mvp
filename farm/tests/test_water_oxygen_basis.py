@@ -7,7 +7,6 @@ one resolver (owner rule A9): the point's latest temperature and salinity fresh 
 backdated entry never takes a value measured after it (P4), and another point's values never land on the point chosen
 (P5); a temperature typed alone is a measurement and is stored (P6)."""
 import uuid
-from datetime import timedelta
 from decimal import Decimal
 
 from django.db import IntegrityError, transaction
@@ -17,7 +16,7 @@ from django.utils import timezone
 from .. import withdrawal_gate
 from ..feeding.temperature import temperature_for
 from ..models import Tank, WaterMeasurement
-from ..water import parameters, read, services
+from ..water import parameters, read
 from .helpers import point_of
 from .test_water_sources import SourcesCase
 

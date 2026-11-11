@@ -7,7 +7,6 @@ or logged; the menu panel, the role matrix and the rights of each area."""
 import base64
 import hashlib
 import hmac
-from datetime import datetime, timezone as tz
 
 from django.contrib.auth import get_user_model
 from django.urls import reverse

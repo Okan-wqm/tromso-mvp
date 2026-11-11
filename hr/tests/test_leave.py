@@ -2,7 +2,6 @@ from datetime import date, datetime, timezone as utc
 from decimal import Decimal
 from unittest import mock
 
-from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, connection, transaction
 from django.test.utils import CaptureQueriesContext
@@ -12,8 +11,7 @@ from core.models import AuditLog
 from farm.models import ProductionDepartment, Site
 
 from .. import leave, read, services
-from ..models import Employee, Holiday, LeaveRequest, LeaveType, Posting, SchedulingSettings, Shift, ShiftAssignment
-from ..units import token
+from ..models import Employee, Holiday, LeaveRequest, LeaveType, SchedulingSettings, Shift, ShiftAssignment
 from .helpers import PRIVATE, fields_of, user
 from .helpers_people import PeopleTestCase, TOP, employee, place
 
@@ -171,7 +169,7 @@ class LeaveRequestModelTests(LeaveTestCase):
 
 class FilingTests(LeaveTestCase):
     def test_a_person_files_for_themselves_pending_and_the_reason_is_theirs(self):
-        response = self.file(self.ann_user, self.in_a, MONDAY, TUESDAY, reason='Family matter')
+        self.file(self.ann_user, self.in_a, MONDAY, TUESDAY, reason='Family matter')
         request = LeaveRequest.objects.get()
         self.assertEqual({name: getattr(request, name) for name in fields_of(LeaveRequest)},
                          {'employee': self.in_a, 'leave_type': self.annual, 'first_day': MONDAY, 'last_day': TUESDAY,

@@ -8,7 +8,6 @@ from django.core.management import call_command
 
 from ..feeding import services as feeding_services
 from ..handling import check
-from ..health import withdrawal
 from ..models import Feed
 from ..stock import services as stock_services
 from .helpers import going_on

@@ -266,7 +266,7 @@ class DeletedPlaceTests(TasksTestCase):
 
 class ViewsAndFiltersTests(TasksTestCase):
     def test_today_lists_the_overdue_first_then_due_today_then_done_today(self):
-        late = self.make_task(title='Late', due_date=self.day(-2))
+        self.make_task(title='Late', due_date=self.day(-2))
         today = self.make_task(title='Today', due_date=self.today, due_time=time(23, 59))
         done = self.make_task(title='Done', due_date=self.day(-5))
         services.complete(self.ali, done)

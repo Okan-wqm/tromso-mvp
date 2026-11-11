@@ -15,7 +15,7 @@ from sensors import alarms as sensor_alarms
 from sensors.models import AlarmEvent, AlarmRule
 from sensors.tests import make_channel, make_connection, make_device, make_format
 
-from .. import engine, read, routing, services
+from .. import read, routing, services
 from ..models import (APPEND_ONLY, Acknowledgement, Alarm, AlarmClearance, DeliveryAttempt, Escalation, Notification,
                       RecipientRule, SeverityPolicy)
 from . import AlarmsCase

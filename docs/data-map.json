@@ -2636,7 +2636,6 @@
         "tasks/tests/test_series.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_departments.py",
-        "hr/tests/test_employees.py",
         "hr/tests/test_employment_bounds.py",
         "hr/tests/test_forgotten.py",
         "hr/tests/test_leave.py",
@@ -3566,7 +3565,6 @@
       },
       "tests": [
         "experiments/tests/__init__.py",
-        "experiments/tests/test_constraints.py",
         "experiments/tests/test_copy.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_pages.py",
@@ -4061,7 +4059,6 @@
       },
       "tests": [
         "experiments/tests/__init__.py",
-        "experiments/tests/test_constraints.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_overview.py",
         "experiments/tests/test_pages.py",
@@ -5205,7 +5202,6 @@
       "tests": [
         "experiments/tests/__init__.py",
         "experiments/tests/test_amend.py",
-        "experiments/tests/test_constraints.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_overview.py",
         "experiments/tests/test_pages.py",
@@ -8257,7 +8253,6 @@
         "farm/tests/test_protocols.py",
         "reports/tests/test_compute.py",
         "experiments/tests/__init__.py",
-        "experiments/tests/test_amend.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_start.py"
       ]
@@ -8435,7 +8430,6 @@
       "tests": [
         "farm/tests/test_protocols.py",
         "experiments/tests/__init__.py",
-        "experiments/tests/test_amend.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_start.py"
       ]
@@ -13473,6 +13467,7 @@
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_fix_seed_size_mix.py",
+        "farm/tests/test_health.py",
         "farm/tests/test_lock_order.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_production_departments.py",
@@ -15213,7 +15208,6 @@
         "hr/tests/test_forgotten.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
-        "hr/tests/test_overview_chart.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scheduling_settings.py",
         "experiments/tests/test_amend.py",
@@ -16332,7 +16326,6 @@
         "reports/tests/test_compute.py",
         "reports/tests/test_labels.py",
         "hr/tests/test_production_permissions.py",
-        "experiments/tests/test_overview.py",
         "experiments/tests/test_pages.py",
         "monitoring/tests/test_templates_db.py"
       ]
@@ -19774,7 +19767,6 @@
         "monitoring/tests/__init__.py",
         "monitoring/tests/test_boards.py",
         "monitoring/tests/test_golden.py",
-        "monitoring/tests/test_templates_db.py",
         "monitoring/tests/test_token.py",
         "sensors/tests/test_pages.py",
         "sensors/tests/test_portable.py",
@@ -22271,7 +22263,6 @@
         "farm/tests/test_water_followups.py",
         "farm/tests/test_water_points.py",
         "farm/tests/test_water_review3.py",
-        "farm/tests/test_water_sources.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
         "reports/tests/test_lice.py",
@@ -25045,10 +25036,8 @@
         "hr/tests/test_employees.py",
         "hr/tests/test_forgotten.py",
         "hr/tests/test_hardening.py",
-        "hr/tests/test_leave.py",
         "hr/tests/test_own_record.py",
         "hr/tests/test_realm.py",
-        "hr/tests/test_roster.py",
         "hr/tests/test_scope.py",
         "hr/tests/test_services.py"
       ]

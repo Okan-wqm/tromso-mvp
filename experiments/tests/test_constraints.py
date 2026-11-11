@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from django.db import connection, transaction
 
 from ..models import (
-    Experiment, ExperimentGroup, Factor, GroupLevel, Level, Member, Replicate, ReplicateUnit,
+    Experiment, GroupLevel, Level, Member, ReplicateUnit,
 )
 from . import D, ExperimentTestCase
 

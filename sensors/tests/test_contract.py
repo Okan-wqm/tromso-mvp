@@ -4,7 +4,6 @@ tables and the role the service signs in with. Any change here is a change of th
 import hashlib
 import os
 import re
-import select
 from datetime import datetime, timedelta, timezone as tz
 from pathlib import Path
 

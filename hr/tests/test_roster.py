@@ -1,9 +1,7 @@
 from datetime import date, time
 
-from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import ProtectedError
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
@@ -12,7 +10,7 @@ from core.models import AuditLog
 from farm.models import ProductionDepartment, Site
 
 from .. import read, services
-from ..models import Employee, Holiday, Posting, SchedulingSettings, Shift, ShiftAssignment
+from ..models import Employee, Holiday, SchedulingSettings, Shift, ShiftAssignment
 from ..units import token
 from .helpers import PRIVATE, fields_of, user
 from .helpers_people import PeopleTestCase, TOP, employee, place

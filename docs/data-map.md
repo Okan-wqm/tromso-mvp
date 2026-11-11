@@ -316,7 +316,7 @@ Who did what to which record, with old and new values.
 - **how it works**: A record's own rows are also shown on the History tab of its edit page.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log (never shown: changes)
 - **constraints**: chk_audit_log_severity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 101 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 100 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -417,7 +417,7 @@ A thing the groups differ in: the diet (each of its levels names a feeding proto
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Research › experiment_factors
 - **forms**: `FactorRowForm`
 - **constraints**: uq_experiment_factors_name_live (unique: name, experiment); uq_experiment_factors_diet (unique: experiment); uq_experiment_factors_id_experiment (unique: id, experiment); uq_experiment_factors_id_kind (unique: id, kind); chk_experiment_factors_kind (check); chk_experiment_factors_diet_unit (check)
-- **tests that mention it**: `experiments/tests/__init__.py`, `experiments/tests/test_constraints.py`, `experiments/tests/test_copy.py` and 3 more
+- **tests that mention it**: `experiments/tests/__init__.py`, `experiments/tests/test_copy.py`, `experiments/tests/test_design.py` and 2 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -471,7 +471,7 @@ A group of replicates that get the same level of every factor.
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Research › experiment_groups
 - **forms**: `GroupRowForm`
 - **constraints**: uq_experiment_groups_name_live (unique: name, experiment); uq_experiment_groups_id_experiment (unique: id, experiment); chk_experiment_groups_role (check)
-- **tests that mention it**: `experiments/tests/__init__.py`, `experiments/tests/test_constraints.py`, `experiments/tests/test_design.py` and 3 more
+- **tests that mention it**: `experiments/tests/__init__.py`, `experiments/tests/test_design.py`, `experiments/tests/test_overview.py` and 2 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -587,7 +587,7 @@ One experimental unit of a group, numbered within it.
 - **how it works**: One slot for each of the group's replicates; a slot holding tanks is never removed. Saved with the experiment's design on the Design tab (services.save_design), logged as one "Design" entry of the experiment; a row the design no longer has is deleted with the delete plan, and a started design cannot change.
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Research › experiment_replicates
 - **constraints**: uq_experiment_replicates_number_live (unique: group, number); chk_experiment_replicates_number (check)
-- **tests that mention it**: `experiments/tests/__init__.py`, `experiments/tests/test_amend.py`, `experiments/tests/test_constraints.py` and 5 more
+- **tests that mention it**: `experiments/tests/__init__.py`, `experiments/tests/test_amend.py`, `experiments/tests/test_design.py` and 4 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -884,7 +884,7 @@ A weight band of a protocol's feeding table: fish from the lower weight up to, n
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › feeding_protocol_bands
 - **forms**: `BandRowForm`
 - **constraints**: chk_feeding_protocol_bands_min_weight (check); chk_feeding_protocol_bands_band (check); chk_feeding_protocol_bands_meals (check); chk_feeding_protocol_bands_expected_fcr (check); uq_feeding_protocol_bands_start (unique: protocol, min_weight_g); excl_feeding_protocol_bands_overlap (exclusion: protocol, min_weight_g, max_weight_g)
-- **tests that mention it**: `farm/tests/test_protocols.py`, `reports/tests/test_compute.py`, `experiments/tests/__init__.py` and 3 more
+- **tests that mention it**: `farm/tests/test_protocols.py`, `reports/tests/test_compute.py`, `experiments/tests/__init__.py` and 2 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -908,7 +908,7 @@ One cell of a feeding table: the SFR (% of the body weight a day) of a band at a
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › feeding_protocol_rates
 - **forms**: `ProtocolTableForm`
 - **constraints**: chk_feeding_protocol_rates_temperature (check); chk_feeding_protocol_rates_sfr (check); uq_feeding_protocol_rates_cell (unique: band, temperature_c)
-- **tests that mention it**: `farm/tests/test_protocols.py`, `experiments/tests/__init__.py`, `experiments/tests/test_amend.py` and 2 more
+- **tests that mention it**: `farm/tests/test_protocols.py`, `experiments/tests/__init__.py`, `experiments/tests/test_design.py` and 1 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1342,7 +1342,7 @@ A production unit within a site: a hatchery hall, a nursery, a grow-out unit.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › production_departments
 - **forms**: `ProductionDepartmentForm`
 - **constraints**: uq_production_departments_code_live (unique: code); uq_production_departments_site_name_live (unique: site, name); chk_production_departments_capacity (check); chk_production_departments_live_on_a_site (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_design_shell.py` and 53 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_design_shell.py` and 54 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1465,7 +1465,7 @@ A physical facility (locality).
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › sites
 - **forms**: `SiteForm`
 - **constraints**: uq_sites_code_live (unique: code); uq_sites_name_live (unique: name); uq_sites_lokalitetsnummer_live (unique: lokalitetsnummer); chk_sites_lokalitetsnummer_range (check); chk_sites_organisation_number (check); chk_sites_production_form (check); chk_sites_latitude_range (check); chk_sites_longitude_range (check); chk_sites_altitude_range (check); chk_sites_coordinates_paired (check); chk_sites_sea_cage_location (check); chk_sites_timezone_given (check); chk_sites_lice_area (check)
-- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 73 more
+- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 72 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1577,7 +1577,7 @@ A species the farm grows or stocks, with its names, codes and the water it lives
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › species
 - **forms**: `SpeciesForm`
 - **constraints**: uq_species_code_live (unique: code); uq_species_scientific_name_live (unique: scientific_name); chk_species_scientific_name (check); chk_species_code (check); chk_species_official_code (check); chk_species_category (check); chk_species_status (check); chk_species_cleaner_fish_type (check); chk_species_withdrawal_temperature (check); chk_species_max_weight_ratio (check); chk_species_water (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_scope.py`, `core/tests_workspaces.py` and 23 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_scope.py`, `core/tests_workspaces.py` and 22 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1802,7 +1802,7 @@ A unit fish are held in: a tank, a pond or a cage.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › tanks
 - **forms**: `TankForm`
 - **constraints**: uq_tanks_code_live (unique: code); uq_tanks_regulatory_unit_id_live (unique: production_department, regulatory_unit_id); chk_tanks_kind (check); chk_tanks_status (check); chk_tanks_water_type (check); chk_tanks_shape_by_kind (check); chk_tanks_material_by_kind (check); chk_tanks_pond_type_by_kind (check); chk_tanks_liner_type_by_kind (check); chk_tanks_water_source_by_kind (check); chk_tanks_cage_type_by_kind (check); chk_tanks_frame_type_by_kind (check); chk_tanks_net_material_by_kind (check); chk_tanks_tank_required (check); chk_tanks_pond_required (check); chk_tanks_cage_required (check); chk_tanks_diameter_by_shape (check); chk_tanks_length_by_shape (check); chk_tanks_stated_volume_m3_by_shape (check); chk_tanks_width_by_shape (check); chk_tanks_square_sides (check); chk_tanks_long_side_first (check); chk_tanks_water_depth (check); chk_tanks_max_depth (check); chk_tanks_liner_by_pond_type (check); chk_tanks_liner_thickness (check); chk_tanks_submersion (check); chk_tanks_diameter_range (check); chk_tanks_length_range (check); chk_tanks_width_range (check); chk_tanks_stated_volume_m3_range (check); chk_tanks_depth_range (check); chk_tanks_surface_area_m2_range (check); chk_tanks_max_depth_range (check); chk_tanks_mesh_size_mm_range (check); chk_tanks_max_submersion_depth_range (check); chk_tanks_max_density_kg_m3_range (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_workspaces.py` and 33 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_workspaces.py` and 32 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2039,7 +2039,7 @@ Where a water sample is taken: a named place on one unit, one system’s loop or
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › water_sampling_points
 - **forms**: `SamplingPointForm`
 - **constraints**: chk_water_sampling_points_one_owner (check); chk_water_sampling_points_kind (check); chk_water_sampling_points_name (check); chk_water_sampling_points_depth (check); chk_water_sampling_points_flow (check); chk_water_sampling_points_share (check); uq_water_sampling_points_unit_name (unique: unit, name); uq_water_sampling_points_unit_middle (unique: unit); uq_water_sampling_points_system_name (unique: system, name); uq_water_sampling_points_system_middle (unique: system); uq_water_sampling_points_equipment_name (unique: equipment, name); uq_water_sampling_points_equipment_middle (unique: equipment)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/helpers.py`, `farm/tests/test_calculator.py` and 14 more
+- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/helpers.py`, `farm/tests/test_calculator.py` and 13 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2302,7 +2302,7 @@ Where each person works from a day: one department, production or office, and th
 - **how it works**: One placement covers any day (exclusion constraint); a move closes the open one the day before.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › postings
 - **constraints**: chk_postings_one_department (check); chk_postings_period (check); excl_postings_employee_period (exclusion: employee, valid_from, valid_until)
-- **tests that mention it**: `farm/tests/test_systems.py`, `hr/tests/helpers_people.py`, `hr/tests/test_attendance.py` and 10 more
+- **tests that mention it**: `farm/tests/test_systems.py`, `hr/tests/helpers_people.py`, `hr/tests/test_attendance.py` and 8 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

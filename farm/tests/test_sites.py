@@ -2,7 +2,6 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group, Permission
 from django.db import IntegrityError, transaction
 from django.test import TestCase, override_settings
 from django.urls import reverse

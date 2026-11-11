@@ -911,7 +911,7 @@ class BulkFiguresTests(WorkedExampleTestCase):
     def test_the_meal_boards_lines_are_meal_lines(self):
         response = self.client.get(reverse('farm:meal_board'))
         for row in response.context['rows']:
-            unit, today = row['unit'], local_today(row['unit'])
+            today = local_today(row['unit'])
             batches = {share.batch.pk: share.batch for share in row['stock'].shares}
             again = read.meal_lines(row['day'], batches, today)
             self.assertEqual([(line['batch'], line['why'], line['drift'], line['estimate_days'])

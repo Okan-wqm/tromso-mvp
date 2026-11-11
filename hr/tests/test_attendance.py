@@ -1,10 +1,7 @@
 import re
 from datetime import date, datetime, time, timedelta, timezone as utc
-from decimal import Decimal
-from types import SimpleNamespace
 from unittest import mock
 
-from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, connection, transaction
 from django.test import SimpleTestCase
@@ -19,7 +16,7 @@ from .. import read, rules, services
 from ..models import (AttendanceRecord, Employee, LeaveRequest, LeaveType, Posting, SchedulingSettings, Shift,
                       ShiftAssignment)
 from .helpers import fields_of, user
-from .helpers_people import PeopleTestCase, TOP, employee, place
+from .helpers_people import PeopleTestCase, employee, place
 
 UTC = utc.utc
 DAY = date(2026, 3, 2)

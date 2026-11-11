@@ -36,7 +36,6 @@ import hashlib
 import logging
 from dataclasses import dataclass
 from functools import cached_property
-from datetime import timedelta
 from urllib.parse import urlencode
 from uuid import UUID
 
@@ -53,7 +52,7 @@ from farm.models import Tank
 from farm.stock import read as stock_read, views as stock_views
 from farm.stock.dates import local_today
 from farm.water import parameters, read as water_read, views as water_views
-from farm.water.evaluate import ALERTS, Status
+from farm.water.evaluate import Status
 from tasks import read as tasks_read, views as tasks_views
 
 from .cards import catalogue, render, resolve

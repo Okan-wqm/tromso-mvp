@@ -5,7 +5,6 @@ unchanged). Every disagreement above its declared noise floor (chemcore/golden/b
 chemcore/findings/B1.md, listed in chemcore/findings/b1-registry.json; nothing is tolerated silently, and a finding
 whose disagreement has gone fails too (the record must follow). Each finding's stated cause is tested: with that cause
 taken out, the two sides agree within the floor."""
-import gzip
 import hashlib
 import importlib.util
 import json

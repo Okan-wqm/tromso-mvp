@@ -14,7 +14,6 @@ from django.urls import reverse
 
 from farm.handling.withdrawal import WithdrawalBlock
 
-from ..cards import builtin
 from ..models import CardTemplate, CardTemplateAssignment
 from . import MonitoringCase
 from .golden import Tree

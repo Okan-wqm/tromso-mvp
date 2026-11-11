@@ -296,7 +296,7 @@ class DeleteTests(PageTestCase):
     def design(self, trial):
         """A design of every part: a diet factor, two groups, replicates, a placement."""
         diet = self.factor(trial, 'Diet')
-        high, low = self.level(diet), self.level(diet)
+        high, _low = self.level(diet), self.level(diet)
         group = self.group(trial, 'A')
         self.group_level(group, high)
         replicate = self.replicate(group, 1)

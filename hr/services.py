@@ -5,7 +5,6 @@ from datetime import timedelta
 
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import Q
 from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.translation import gettext as _
@@ -16,7 +15,7 @@ from farm.models.site import zone_of
 from farm.stock.dates import site_today
 
 from . import clock, leave, read, rules, scope, units
-from .models import (AttendanceRecord, Employee, Holiday, LeaveRequest, Posting, SchedulingSettings,
+from .models import (AttendanceRecord, Employee, LeaveRequest, Posting, SchedulingSettings,
                      ShiftAssignment)
 from .models.leave import LeaveStatus
 

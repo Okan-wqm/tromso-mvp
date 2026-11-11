@@ -14,7 +14,7 @@ from core.models import AuditLog, Profile
 
 from ..models import Species
 from .helpers import stock_fish
-from .test_species import SpeciesTestCase, species_data, stored
+from .test_species import SpeciesTestCase, stored
 
 D = Decimal
 BEFORE = [('farm', '0033_oxygen_basis')]

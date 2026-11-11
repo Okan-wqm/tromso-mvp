@@ -16,7 +16,6 @@ from django.utils import translation
 from core import access, database, navigation, softdelete
 from core.models import AuditLog, Profile
 
-from ..feeding import services as feeding_services
 from ..handling import check, fasting, withdrawal
 from ..handling.withdrawal import WithdrawalBlock
 from ..models import (
@@ -28,7 +27,6 @@ from ..stock import integrity, services
 from .helpers import correction_window, make_facility, point_of, role
 from .test_feeding import FeedingTestCase
 from .test_protocols import ProtocolTestCase
-from .test_stock import make_unit
 from farm import withdrawal_gate
 
 HARVEST_KEEPER = ('view_harvestrecord', 'view_handlingplanitem', 'add_handlingplanitem', 'change_handlingplanitem',

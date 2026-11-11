@@ -26,7 +26,7 @@ from core.softdelete import plan_delete, restore
 from ..models import ProductionDepartment, SamplingPoint, Site, System, Tank, WaterLimit, WaterMeasurement
 from ..stock.dates import local_today
 from ..stock.services import AlreadyRecorded
-from ..water import chemistry, parameters, read, services, views as water_views
+from ..water import chemistry, parameters, read, services
 from ..water.evaluate import Limits, Status, judge, worst
 from .helpers import correction_window, make_species, point_of, role, stock_fish
 from .test_stock import make_unit

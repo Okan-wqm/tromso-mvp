@@ -7,8 +7,6 @@ fix:
 - F5: the weights compared and shown are the board's estimates where the feed since was credited, else the measured
   weights with the day they were measured;
 - F6: the ratio is printed so that it never reads as the limit itself."""
-import uuid
-from datetime import timedelta
 from decimal import Decimal
 
 from django.test import SimpleTestCase

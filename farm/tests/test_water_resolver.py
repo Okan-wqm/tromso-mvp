@@ -13,7 +13,6 @@ from ..water import read
 from ..water.evaluate import Status
 from .helpers import make_species, point_of
 
-from ..water import evaluate
 from ..water.evaluate import is_fresh
 from ..water.parameters import get
 from .test_water_sources import SourcesCase

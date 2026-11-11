@@ -2,8 +2,10 @@
 from today (a record dated at most the correction window back, nothing in the future, a value's freshness) would fail
 it, or pass it, by the calendar. `FrozenClock` holds the clock the code reads at one moment for a test class's whole
 life, its class data included. That clock is `django.utils.timezone.now`: the code's days and moments come from it
-(core.dates, farm.stock.dates; core/tests_company_clock.py refuses `date.today()` and the like). The database's own
-clock (`now()` in SQL) is not held.
+(core.dates, farm.stock.dates; core/tests_company_clock.py refuses `date.today()` and the like). Not held: the
+database's own clock (`now()` in SQL), and a model field's `default=timezone.now`, which keeps the real function it was
+given when the model was read (core.AccountMail.alive_at, messaging's created_at): a row made without a value for it
+carries the real moment.
 
 Nor must a test read the hour it runs at. The server's day (UTC) and the company's (settings.COMPANY_TIME_ZONE, Oslo)
 differ for an hour or two before every UTC midnight, and a site on a third zone differs for longer: a test that says
@@ -31,15 +33,27 @@ class FrozenClock:
     """Mixed in before the TestCase: `timezone.now()` is NOW (an aware datetime) while the class's data is made
     (setUpTestData) and in every test of it, and the real clock again afterwards, also when the set-up fails."""
     NOW = None
+    RUNS_ON = False             # StartedClock: the clock starts at NOW and runs on
 
     @classmethod
     def setUpClass(cls):
         if cls.NOW is None or cls.NOW.tzinfo is None:
             raise TypeError(f'{cls.__name__}.NOW is the moment its clock stands at: an aware datetime.')
-        clock = mock.patch(CLOCK, return_value=cls.NOW)
+        if cls.RUNS_ON:
+            began = datetime.now(dt_timezone.utc)
+            clock = mock.patch(CLOCK, side_effect=lambda: cls.NOW + (datetime.now(dt_timezone.utc) - began))
+        else:
+            clock = mock.patch(CLOCK, return_value=cls.NOW)
         clock.start()
         cls.addClassCleanup(clock.stop)
         super().setUpClass()
+
+
+class StartedClock(FrozenClock):
+    """As FrozenClock, but the clock starts at NOW when the class's data is made and runs on from there: for tests
+    whose records must be made one after the other (the newest by `created_at`, a history in order), which a clock
+    that stands gives the same moment. The day and the year are NOW's all the same (a class runs for seconds)."""
+    RUNS_ON = True
 
 
 def at_bad_hours(namespace, *cases, moments=BAD_HOURS):
@@ -59,7 +73,11 @@ def run_clock(text=None):
     running on from there, or None without one (TEST_CLOCK in the environment unless given): started by the test runner
     before any test or class data (config/test_runner.py), in every worker. A class's FrozenClock still holds its own.
     The database's clock stays the real one, so a test that compares the two fails in such a run: it is a way to look
-    for tests that read the hour, the day or the year they run in, not a way to run the suite."""
+    for tests that read the hour, the day or the year they run in, not a way to run the suite. What fails by the run's
+    own making, and says nothing of the code: the tests of this module (they compare with the real clock), a test that
+    runs makemigrations (the clock is a mock where a migration names `timezone.now`), and the account mails' lease,
+    whose rows carry the real moment from their field's default (the module's docstring) while the sweep reads the
+    run's."""
     text = os.environ.get('TEST_CLOCK', '') if text is None else text
     if not text:
         return None

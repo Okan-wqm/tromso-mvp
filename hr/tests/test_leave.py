@@ -8,6 +8,7 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from core.models import AuditLog
+from core.testing import FrozenClock
 from farm.models import ProductionDepartment, Site
 
 from .. import leave, read, services
@@ -27,7 +28,12 @@ def request_for(person, first, last, kind, status='pending', **fields):
                                        **fields)
 
 
-class LeaveTestCase(PeopleTestCase):
+# The requests are dated on fixed days (March 2026, one in June 2027 as "not begun yet"), and a request can be cancelled
+# only before its first day: the clock is held (README, Tests), or the June 2027 one has begun from 01.06.2027 on
+# (found with TEST_CLOCK=2027-12-31T23:30:00+00:00). The moment is the day these tests last ran on the real clock.
+class LeaveTestCase(FrozenClock, PeopleTestCase):
+    NOW = datetime(2026, 11, 11, 12, 0, tzinfo=utc.utc)
+
     def setUp(self):
         super().setUp()
         self.annual = LeaveType.objects.create(name='Annual leave', code='ANNUAL')

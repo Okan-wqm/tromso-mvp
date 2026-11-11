@@ -40,6 +40,28 @@ class FrozenClockTests(SimpleTestCase):
         self.assertEqual(seen, {'class data': THEN, 'test': (THEN, THEN.date()), 'later test': THEN})
         self.assertLess(abs(timezone.now() - datetime.now(utc.utc)), timedelta(minutes=1))
 
+    def test_a_started_clock_starts_at_now_runs_on_and_is_given_back(self):
+        import time
+
+        from core.testing import StartedClock
+        seen = []
+
+        class Running(StartedClock, unittest.TestCase):
+            NOW = THEN
+
+            def test_one(self):
+                seen.append(timezone.now())
+                time.sleep(0.02)
+                seen.append(timezone.now())
+
+        result = run(Running)
+        self.assertEqual((result.testsRun, result.errors, result.failures), (1, [], []))
+        first, second = seen
+        self.assertLessEqual(THEN, first)
+        self.assertLess(first, second)                                   # two records are told apart by their time
+        self.assertLess(second - THEN, timedelta(seconds=30))            # and the day is still NOW's
+        self.assertLess(abs(timezone.now() - datetime.now(utc.utc)), timedelta(minutes=1))
+
     def test_a_failing_set_up_gives_the_real_clock_back(self):
         class Broken(FrozenClock, unittest.TestCase):
             NOW = THEN

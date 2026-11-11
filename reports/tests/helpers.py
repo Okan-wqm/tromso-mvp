@@ -1,11 +1,12 @@
 """A farm with a hatchery and a sea site, their units, and the stock of October 2026, recorded through the stock
 service (farm/stock/services.py) as people record it: the reports read it back."""
-from datetime import date
+from datetime import date, datetime, timezone as dt_timezone
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
+from core.testing import StartedClock
 from farm.models import ProductionDepartment, Site
 from farm.stock import services
 from farm.tests.helpers import correction_window, make_facility, make_species, role
@@ -30,7 +31,15 @@ def previewed(report):
 
 
 # The records are dated in October 2026: far enough back for the platform owner's correction window to need widening.
-class ReportTestCase(TestCase):
+# And the clock is held (README, Tests: a test dated on fixed days does not read the day it runs on): the pages and the
+# deadlines read today, and a plan's "day it was agreed" is the day its row was made. On the real clock
+# PlannedSlaughterTests' deadline of week 47 (Thursday 12.11.2026, a fast from Wednesday 11) failed from 12.11.2026 on,
+# and the overdue driftsplan of 2026 from the day 2027's is owed (found with TEST_CLOCK=2027-12-31T23:30:00+00:00).
+# The moment is the day these tests last ran on the real clock; from there the clock runs on, as the reports and their
+# log rows are told apart by when they were made.
+class ReportTestCase(StartedClock, TestCase):
+    NOW = datetime(2026, 11, 11, 12, 0, tzinfo=dt_timezone.utc)
+
     def setUp(self):
         correction_window(3650).__enter__()             # the test's transaction puts the row back
         self.user = get_user_model().objects.create_user('kari', 'kari@example.com', 'x', first_name='Kari',

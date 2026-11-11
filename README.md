@@ -4564,6 +4564,9 @@ runs the server:
 - **An account made active again within a link's lifetime has that link back** (the token is stateless; putting a
   wrong address right ends the link for good).
 - **No limit per client** on "Forgot your password?": the reverse proxy's (above).
+- **A mail can reach the same person twice**, at the same address, in the two cases of "Whose a waiting mail is" (the
+  mail under way of an owner silent past the lease that completes after all; a mail whose outcome could not be
+  written), when the admin sends again. The first row stays "interrupted" though the mail went.
 - **A stranger's address** an invitation was mis-sent to stays in `account_mails` and in the log, as the evidence
   of where a link went: `docs/erasure.md` says what is kept and how it is erased on request.
 

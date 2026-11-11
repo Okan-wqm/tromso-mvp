@@ -5,16 +5,18 @@ rollup rows, the time of a chart of one channel over the whole span (local days 
 over seven days in 15-minute buckets of the readings themselves, of the Deffeyes replay (seven days hourly; a page of
 `--frames` frames at one minute, its readings and its diagrams), and of the latest values. It refuses a range that already
 holds rows (TimescaleDB 2.17.2 loses rows of a multi-row insert that meets a row in a compressed chunk). It writes into
-the database it is pointed at: it refuses to run unless `--confirm-database` names that database. Never run it on a
+the database it is pointed at: it refuses to run unless `--confirm-database` names that database, and with DEBUG off
+unless `--force` is given too (core/management/devtool.py). Never run it on a
 farm's database; use a copy or a test database, and drop the rows after (`--drop`)."""
 import json
 import time
 from datetime import timedelta
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 from django.db import connection
 from django.utils import timezone
 
+from core.management.devtool import DevCommand
 from farm.water.read import as_parameter
 from sensors import read
 
@@ -24,7 +26,7 @@ LIMITS = {'nh3_n_limit_mg_l': 0.0125, 'co2_limit_mg_l': 15.0,
           'alkalinity_low_mg_l': 50.0, 'alkalinity_high_mg_l': 150.0}
 
 
-class Command(BaseCommand):
+class Command(DevCommand):
     help = 'Writes synthetic sensor readings into a confirmed database and prints storage and read figures.'
 
     def add_arguments(self, parser):

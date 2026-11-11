@@ -73,7 +73,7 @@ class SeedCagesTestCase(FeedingTestCase):
 
     def command(self, *extra, **options):
         out = io.StringIO()
-        call_command('fix_seed_size_mix', '--user', self.user.username, '--keep', self.grow.code,
+        call_command('fix_seed_size_mix', '--force', '--user', self.user.username, '--keep', self.grow.code,
                      '--move', f'{self.post.code}:TG-M03:Cage 3', '--move', f'{self.smolt.code}:TG-M04:Cage 4',
                      *extra, stdout=out, **options)
         return out.getvalue()
@@ -213,7 +213,7 @@ class RefusalTests(SeedCagesTestCase):
             self.command()
         self.assertEqual(self.state(), state)
         with self.assertRaisesMessage(CommandError, "No active user 'nobody'"):
-            call_command('fix_seed_size_mix', '--user', 'nobody', stdout=io.StringIO())
+            call_command('fix_seed_size_mix', '--force', '--user', 'nobody', stdout=io.StringIO())
 
     def test_a_refusal_of_the_stock_rolls_back_the_cages_made_before_it(self):
         with mock.patch.object(services, 'record_transfer', side_effect=services.ValidationError('Refused here.')):
@@ -272,7 +272,7 @@ class UnmigratedDryRunTests(TransactionTestCase):
         site = Site.objects.create(name='Tromsø', code='TG-02', type='sea_cage', timezone='UTC',
                                    latitude=D('69.6'), longitude=D('18.9'))
         north = ProductionDepartment.objects.create(site=site, name='North', code='N')
-        m01, m02 = make_cage('TG-M01', 'Cage 1', north), make_cage('TG-M02', 'Cage 2', north)
+        m01, _m02 = make_cage('TG-M01', 'Cage 1', north), make_cage('TG-M02', 'Cage 2', north)
         salmon = make_species()
         today = services.local_today(m01)
 
@@ -284,10 +284,10 @@ class UnmigratedDryRunTests(TransactionTestCase):
         self.addCleanup(lambda: self.migrate(MigrationExecutor(connection).loader.graph.leaf_nodes()))
         self.migrate([('farm', '0033_oxygen_basis')])
         out = io.StringIO()
-        call_command('fix_seed_size_mix', '--user', 'seed', '--keep', keep.code, '--move', f'{post.code}:TG-M03:Cage 3',
+        call_command('fix_seed_size_mix', '--force', '--user', 'seed', '--keep', keep.code, '--move', f'{post.code}:TG-M03:Cage 3',
                      '--move-cleaner', '', '--dry-run', stdout=out)
         self.assertIn('lacks farm.0034_species_max_weight_ratio, farm.0035_stock_operation_size_mix_ack', out.getvalue())
         self.assertIn(f'Transfer 100 fish of {post.code} (500.0 g) from TG-M01 to TG-M03', out.getvalue())
         with self.assertRaisesMessage(CommandError, 'Migrate first'):
-            call_command('fix_seed_size_mix', '--user', 'seed', '--keep', keep.code, '--move',
+            call_command('fix_seed_size_mix', '--force', '--user', 'seed', '--keep', keep.code, '--move',
                          f'{post.code}:TG-M03:Cage 3', '--move-cleaner', '', stdout=io.StringIO())

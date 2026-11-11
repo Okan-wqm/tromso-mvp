@@ -4716,6 +4716,51 @@ runs the server:
 | `core/testing.py` | The tests' clock: `FrozenClock` holds `timezone.now()` at a class's `NOW`, so a test dated on fixed days does not read the day it runs on (Tests) |
 | `.github/workflows/ci.yml`, `.github/dependabot.yml`, `sensors-ingest/rust-toolchain.toml`, `scripts/testrunner/image.sh` | CI, dependency updates and the ingest's pinned toolchain (CI and dependency updates) |
 
+### Management commands
+
+Every `manage.py` command of the project, and what kind it is. The product's commands and the developer's tools live in
+the same folders (each app's `management/commands/`, beside its tests and the scripts that call them by name); this
+table tells them apart, and `core/tests_commands.py` holds it against the code: a command missing here, or listed
+under the wrong kind, fails.
+
+- **product**: part of running a farm's server (a scheduled job, a set-up step, an operator's check). Changes nothing
+  it should not; safe on a farm's database.
+- **build**: makes or checks files of the repository (catalogs, the data map, generated CSS, the layout test's pages);
+  no farm's data is read or written. Run by a developer and by CI.
+- **dev**: made-up or development-only data: a demonstration seeder, a benchmark, a repair of the development seed.
+  Each is built on `core.management.devtool.DevCommand`: **with `DEBUG` off it refuses to run** unless `--force` is
+  given too (`seed_hr_demo` never runs with `DEBUG` off: it makes accounts with a known password). A developer's
+  machine and the scripts' throwaway databases run with `DEBUG` on (the default) and are not asked.
+
+| Command | App | Kind | What it does | Who runs it |
+|---|---|---|---|---|
+| `run_alarms` | alarms | product | One pass of the alarms, or one every `--loop` seconds: opens, clears, notifies, escalates, sends | The deployment, as its loop (Alarms) |
+| `check_sensors` | sensors | product | The sensor alarm rules once, or every `--loop` seconds | An operator; the deployment runs `run_alarms` instead, which checks these too |
+| `generate_tasks` | tasks | product | Makes the planned tasks of every active recurring task | A cron job (the Tasks pages do the same before they read) |
+| `sensors_housekeeping` | sensors | product | Deletes the dead letters last seen more than 90 days ago | A daily job |
+| `sensor_broker_sync` | sensors | product | Writes the MQTT broker's passwd and acl files from the sensors configuration | An operator, after the sensors configuration changed (the broker reloads the files) |
+| `sensors_ingest_role` | sensors | product | Lets the ingest's database role sign in with the password in a file, or stops it | An operator, at set-up |
+| `hr_roles` | hr | product | Creates the Production manager and Production worker roles when missing | An operator, at set-up |
+| `private_log_values` | core | product | The conversion of migration `core/0011` again: plain values under private labels in the activity log made private (`--dry-run`) | The database administrator (docs/erasure.md) |
+| `check_stock` | farm | product | Folds the stock ledger from its first line and reports every broken rule; changes nothing | An operator |
+| `check_withdrawal` | farm | product | The withdrawals holding fish today, and harvests recorded inside one; changes nothing | An operator |
+| `check_inventory` | inventory | product | Every rule of the store from scratch; changes nothing | An operator |
+| `check_reports` | reports | product | Every report against its frozen content and its key; changes nothing | An operator |
+| `check_experiments` | experiments | product | Every started experiment against the rules the database cannot hold; changes nothing | An operator |
+| `check_hr` | hr | product | What disagrees in the HR records; changes nothing | An operator |
+| `compile_catalogs` | core | build | Builds the `.mo` files from the `.po` files (Babel) | Landing, CI, the tests |
+| `update_catalogs` | core | build | Updates `locale/*/django.po` from the code and the templates | A developer after changing text; CI checks it changed nothing |
+| `data_map` | core | build | Writes `docs/data-map.md` and `.json` (`--check`) | A developer after changing models; CI |
+| `layout_pages` | core | build | Writes `frontend/test/pages` from the real templates (`--check`) | A developer after changing those templates; the suite checks |
+| `card_grid_css` | monitoring | build | Writes `static/css/card-grid.css` from the widget catalogue (`--check`) | A developer after changing the catalogue; the suite checks |
+| `seed_hr_demo` | hr | dev | A small demonstration company in the HR area, with sign-ins of a known password | A developer, for a walk-through (never with `DEBUG` off) |
+| `sensors_demo_setup` | sensors | dev | Makes (`--confirm`) or removes (`--remove`) the live demo's sensors for the tanks and systems a database has | A developer; `sensors-ingest/simulator/farm-check.sh` |
+| `bench_sensors` | sensors | dev | Writes synthetic readings into a database named on the command line and prints storage and read figures | A developer, on a copy or a test database (Sensors, Measured figures) |
+| `fix_seed_size_mix` | farm | dev | Separates the batches of very different sizes the development seed stocked together (Production, the development seed's mixed cages) | A developer, once per database restored from a dump older than it |
+
+`fix_seed_size_mix` is a finished one-off on a database it has run on (run again it does nothing), and is kept: every
+development dump taken before it holds the mixed cages, and a restore of one needs it again.
+
 ## Tests
 
 The whole suite, as every agent and developer runs it (Git Bash, or any POSIX shell with Docker):

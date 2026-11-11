@@ -3653,7 +3653,10 @@ only one who manages roles and users; everyone else gets exactly what their role
   Bricolage Grotesque under the SIL Open Font License 1.1, one entry each in `THIRD_PARTY.md`): no page asks Google or any
   other site for anything, so no reader's address leaves the farm with a page, and the farm's own network shows them.
 - **Personal data is private in the activity log** (owner decision F-059 / F-061 / F-179 / F-050, 2026-11-10; review
-  R1 to R7). The log is append-only (a trigger), so whatever is written into it can never be erased.
+  R1 to R7). The log is append-only (a trigger): no page and no ordinary statement changes or removes a row, so what
+  is written into it stays. Two pieces of code set the trigger aside, each inside its own transaction and for its own
+  updates only: the conversion below (`core/0011`), and the erasure of a stranger's address on request
+  (`manage.py erase_stranger_address`, at the end of this list).
   - **What is private**, in the code (the tabs' `private_fields`, `ContactList.PRIVATE`, `tasks.services.PRIVATE`,
     `SERIES_PRIVATE`, `add_note`) and in the conversion's list, which a test holds together: a contact person's e-mail
     and phone (a site's and a supplier's contact list); a site's, a supplier's and a report's own contact e-mail and
@@ -3691,6 +3694,19 @@ only one who manages roles and users; everyone else gets exactly what their role
     Stop every server running the old code before `migrate` (it would write plain values behind the conversion);
     afterwards `manage.py check --database default` (core.W004) counts plain values under private labels, and
     `manage.py private_log_values` converts what an old server left.
+  - **A stranger's address is erased from the log on request** (the owner's decision of 2026-11-11). An invitation
+    sent to a mistyped address leaves that address in `account_mails` and in the account's log rows (`Email`,
+    `Sent to`, `Link sent to`). `manage.py erase_stranger_address ADDRESS` lists what would change;
+    with `--apply --instruction ... --carried-out-by ...` it replaces the address, in one transaction, by
+    `erased@invalid` in `account_mails` (also inside a mail server's reply) and by the value "Erased on request" in
+    the log, and adds one "Erased on request" row on each account touched (`core/erasure.py`). **Who:** the platform's
+    database administrator, on the data-protection officer's written instruction for that address; the DPO decides
+    each case, since it removes the evidence of where a link went. **What it will not do:** an address that is an
+    account's own now, an address that only contains it, any other label or record (it names where else the text
+    stands). **What remains:** the rows themselves (who invited whom, that a link was used, that the address changed),
+    the placeholder, and the address in every backup taken before. A placeholder, not a digest: this is erasure, not
+    the pseudonymisation above. The users tab, the History tab and the log read an erased row in every language
+    (`core/tests_erasure.py`).
   What is erased where on a person's request, what remains and who may do it: [docs/erasure.md](docs/erasure.md).
 
 ## Database viewer
@@ -4568,7 +4584,8 @@ runs the server:
   mail under way of an owner silent past the lease that completes after all; a mail whose outcome could not be
   written), when the admin sends again. The first row stays "interrupted" though the mail went.
 - **A stranger's address** an invitation was mis-sent to stays in `account_mails` and in the log, as the evidence
-  of where a link went: `docs/erasure.md` says what is kept and how it is erased on request.
+  of where a link went, until the stranger asks: it is then erased from both by `manage.py erase_stranger_address`,
+  on the data-protection officer's instruction (`docs/erasure.md`, step 8).
 
 ## Pages
 
@@ -4756,6 +4773,7 @@ under the wrong kind, fails.
 | `sensors_ingest_role` | sensors | product | Lets the ingest's database role sign in with the password in a file, or stops it | An operator, at set-up |
 | `hr_roles` | hr | product | Creates the Production manager and Production worker roles when missing | An operator, at set-up |
 | `private_log_values` | core | product | The conversion of migration `core/0011` again: plain values under private labels in the activity log made private (`--dry-run`) | The database administrator (docs/erasure.md) |
+| `erase_stranger_address` | core | product | Erases, on the data-protection officer's instruction, the address of a stranger an invitation was mis-sent to: in `account_mails` and in the activity log's rows of the account (a dry run unless `--apply`) | The database administrator (docs/erasure.md, step 8) |
 | `check_stock` | farm | product | Folds the stock ledger from its first line and reports every broken rule; changes nothing | An operator |
 | `check_withdrawal` | farm | product | The withdrawals holding fish today, and harvests recorded inside one; changes nothing | An operator |
 | `check_inventory` | inventory | product | Every rule of the store from scratch; changes nothing | An operator |

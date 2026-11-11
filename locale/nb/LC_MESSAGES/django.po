@@ -1576,6 +1576,10 @@ msgid "%(when)s, to %(address)s: %(reason)s"
 msgstr "%(when)s, til %(address)s: %(reason)s"
 
 #, python-format
+msgid "%(when)s, to an address that was erased on request: %(reason)s"
+msgstr "%(when)s, til en adresse som er slettet på forespørsel: %(reason)s"
+
+#, python-format
 msgid "(%(dose)s g/m³)"
 msgstr "(%(dose)s g/m³)"
 
@@ -7615,6 +7619,14 @@ msgid ""
 "works."
 msgstr "Invitasjon sendt %(when)s til %(address)s; adressen er endret siden, så lenken virker ikke lenger."
 
+#, python-format
+msgid ""
+"Invitation sent %(when)s to an address that was erased on request; the address has changed since,"
+" so its link no longer works."
+msgstr ""
+"Invitasjon sendt %(when)s til en adresse som er slettet på forespørsel; adressen er endret siden,"
+" så lenken virker ikke lenger."
+
 msgid "Invited"
 msgstr "Invitert"
 
@@ -10387,6 +10399,14 @@ msgid ""
 "Password set %(when)s through the link sent to %(address)s, which is not this account’s address "
 "now."
 msgstr "Passord valgt %(when)s via lenken sendt til %(address)s, som ikke er denne kontoens adresse nå."
+
+#, python-format
+msgid ""
+"Password set %(when)s through the link sent to an address that was erased on request, which is "
+"not this account’s address now."
+msgstr ""
+"Passord valgt %(when)s via lenken sendt til en adresse som er slettet på forespørsel, som ikke er"
+" denne kontoens adresse nå."
 
 msgid "Past the limit"
 msgstr "Over grensen"

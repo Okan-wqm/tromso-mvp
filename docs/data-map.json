@@ -2377,7 +2377,8 @@
         "core/testing.py",
         "core/tests_account_mail.py",
         "core/tests_account_mail_timing.py",
-        "core/tests_account_mail_worker.py"
+        "core/tests_account_mail_worker.py",
+        "core/tests_erasure.py"
       ]
     },
     {
@@ -2576,6 +2577,7 @@
         "core/tests_account_mail_worker.py",
         "core/tests_crud_mount.py",
         "core/tests_entry_key.py",
+        "core/tests_erasure.py",
         "core/tests_platform.py",
         "core/tests_private_log.py",
         "core/tests_scope.py",
@@ -15160,6 +15162,7 @@
         "core/tests_crud_mount.py",
         "core/tests_design_shell.py",
         "core/tests_entry_key.py",
+        "core/tests_erasure.py",
         "core/tests_private_log.py",
         "core/tests_query_pages.py",
         "core/tests_schema.py",

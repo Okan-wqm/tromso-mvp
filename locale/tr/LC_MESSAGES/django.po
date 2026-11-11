@@ -1584,6 +1584,10 @@ msgid "%(when)s, to %(address)s: %(reason)s"
 msgstr "%(when)s, %(address)s adresine: %(reason)s"
 
 #, python-format
+msgid "%(when)s, to an address that was erased on request: %(reason)s"
+msgstr "%(when)s, talep üzerine silinmiş bir adrese: %(reason)s"
+
+#, python-format
 msgid "(%(dose)s g/m³)"
 msgstr "(%(dose)s g/m³)"
 
@@ -7641,6 +7645,14 @@ msgstr ""
 "Davet gönderildi: %(when)s, %(address)s; adres o zamandan beri değişti, bu yüzden bağlantı artık "
 "çalışmıyor."
 
+#, python-format
+msgid ""
+"Invitation sent %(when)s to an address that was erased on request; the address has changed since,"
+" so its link no longer works."
+msgstr ""
+"Davet gönderildi: %(when)s, talep üzerine silinmiş bir adrese; adres o zamandan beri değişti, bu "
+"yüzden bağlantı artık çalışmıyor."
+
 msgid "Invited"
 msgstr "Davet edildi"
 
@@ -10412,6 +10424,14 @@ msgid ""
 msgstr ""
 "Parola %(when)s tarihinde %(address)s adresine gönderilen bağlantıyla belirlendi; bu adres artık "
 "bu hesabın adresi değil."
+
+#, python-format
+msgid ""
+"Password set %(when)s through the link sent to an address that was erased on request, which is "
+"not this account’s address now."
+msgstr ""
+"Parola %(when)s tarihinde talep üzerine silinmiş bir adrese gönderilen bağlantıyla belirlendi; bu"
+" adres artık bu hesabın adresi değil."
 
 msgid "Past the limit"
 msgstr "Sınırın ötesinde"

@@ -72,6 +72,10 @@ INVITATION_LABEL, SENT_TO_LABEL = gettext_noop('Invitation'), gettext_noop('Sent
 REASON_LABEL, NOT_SENT = gettext_noop('Reason'), gettext_noop('Not sent')
 # A password set through a link, in the activity log (core.views.SetPasswordView): the address the link went to.
 LINK_SENT_TO_LABEL = gettext_noop('Link sent to')
+# What stands where an address was erased on request (core/erasure.py; docs/erasure.md, step 8): in the mail's row an
+# address that can never be one (the column holds an address), in the log the enumerated value, shown translated.
+ERASED_ADDRESS = 'erased@invalid'
+ERASED = {'msgid': gettext_noop('Erased on request')}
 
 
 class NotSent(Exception):
@@ -602,14 +606,16 @@ def with_password_set(users):
 
 def password_set(user):
     """(when, the address the link went to) of the last password `user` set through a link; (None, '') when the
-    password was not set through one. Read from what `with_password_set` put on the user, else asked."""
+    password was not set through one. The address is ERASED when it was erased on request (the log then holds that
+    value, not a text). Read from what `with_password_set` put on the user, else asked."""
     if hasattr(user, 'password_set_at'):
         when, changes = user.password_set_at, user.password_set_changes
     else:
         when, changes = (AuditLog.objects.filter(
             action=AuditLog.Action.PASSWORD, entity_type=audit.entity_type_of(get_user_model()),
             entity_id=str(user.pk)).values_list('created_at', 'changes').first() or (None, None))
-    return when, ((changes or {}).get(LINK_SENT_TO_LABEL) or [None, ''])[1] or ''
+    found = ((changes or {}).get(LINK_SENT_TO_LABEL) or [None, ''])[1] or ''
+    return when, found if isinstance(found, str) else ERASED      # the log's value where an address was: erased
 
 
 @dataclass(frozen=True)
@@ -621,6 +627,12 @@ class Standing:
     reason: str = ''      # why it was not sent, for NOT_SENT
     set_at: object = None  # for PASSWORD_SET: when it was set through a link (None: not through one)
     link_address: str = ''  # and the address that link went to, when the account's is another now
+    link_erased: bool = False  # ... or that this address was erased on request since (core/erasure.py)
+
+    @property
+    def mail_erased(self):
+        """Whether the address the last invitation went to was erased on request since."""
+        return self.mail is not None and self.mail.address == ERASED_ADDRESS
 
     PASSWORD_SET, INACTIVE, NO_ADDRESS, NOT_INVITED = 'password_set', 'inactive', 'no_address', 'not_invited'
     SENDING, NOT_SENT, ADDRESS_CHANGED, EXPIRED, SENT = 'sending', 'not_sent', 'address_changed', 'expired', 'sent'
@@ -631,6 +643,8 @@ def standing(user):
     the user as `invitations` (newest first) when the list did that, else asks."""
     if user.has_usable_password():
         set_at, address = password_set(user)
+        if address == ERASED:
+            return Standing(Standing.PASSWORD_SET, set_at=set_at, link_erased=True)
         return Standing(Standing.PASSWORD_SET, set_at=set_at, link_address='' if address == user.email else address)
     if not user.is_active:
         return Standing(Standing.INACTIVE)

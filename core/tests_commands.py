@@ -43,7 +43,7 @@ class CommandTableTests(SimpleTestCase):
         table, found = listed(), ours()
         self.assertEqual({name: app for name, (app, _kind) in table.items()}, found)
         self.assertEqual({kind for _app, kind in table.values()} - set(KINDS), set())
-        self.assertGreaterEqual(len(found), 23)
+        self.assertGreaterEqual(len(found), 24)
 
     def test_a_dev_command_is_built_on_the_guard_and_no_other_command_is(self):
         for name, (app, kind) in listed().items():

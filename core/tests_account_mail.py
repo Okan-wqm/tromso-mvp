@@ -636,6 +636,54 @@ class InvitationRecordTests(AccountMailCase):
                 self.assertIn(words, row_of(response, 'kari'))
 
 
+class UsersTabHousekeepingTests(AccountMailCase):
+    """Review Q6. The users tab closes lapsed mails before it lists people, and is drawn when the database refuses that
+    write: only then. A fault of the code is raised. And a mail is closed with its log row or not at all."""
+
+    def setUp(self):
+        super().setUp()
+        kari = get_user_model().objects.create_user('kari', 'kari@example.com')
+        self.lapsed = AccountMail.objects.create(user=kari, kind='invitation', address=kari.email,
+                                                 requested_by=self.admin, owner='gone:1:00000000',
+                                                 alive_at=timezone.now() - timedelta(hours=1))
+
+    def test_a_database_that_cannot_be_reached_is_logged_and_the_list_is_drawn(self):
+        from django.db import OperationalError
+        with mock.patch.object(accountmail, 'sweep', side_effect=OperationalError('server closed the connection')), \
+                self.assertLogs('core.accountmail', 'ERROR') as logged:
+            page = self.client.get(reverse('core:user_list'))
+        self.assertEqual((page.status_code, len(logged.records)), (200, 1))
+        self.assertIn('could not be closed before the users were listed (OperationalError: server closed', logged.output[0])
+
+    def test_a_fault_of_the_code_is_raised_not_drawn_over(self):
+        from django.db import DataError, IntegrityError, InternalError, ProgrammingError
+        for fault in (ProgrammingError('column account_mails.alive_at does not exist'),
+                      IntegrityError('null value in column "entity_label"'), DataError('value too long'),
+                      InternalError('current transaction is aborted')):
+            with self.subTest(fault=type(fault).__name__), mock.patch.object(accountmail, 'sweep', side_effect=fault), \
+                    self.assertRaises(type(fault)):
+                self.client.get(reverse('core:user_list'))
+
+    def test_a_mail_is_closed_with_its_log_row_or_not_at_all(self):
+        from django.db import OperationalError
+        with mock.patch.object(accountmail.audit, 'record', side_effect=OperationalError('server closed the connection')), \
+                self.assertLogs('core.accountmail', 'ERROR') as logged:
+            page = self.client.get(reverse('core:user_list'))
+        self.lapsed.refresh_from_db()
+        self.assertEqual((page.status_code, self.lapsed.error, AuditLog.objects.filter(action='invite').count()),
+                         (200, '', 0))                                   # not half closed: still waiting, no row
+        self.assertEqual(len(logged.records), 1)                        # and the one line says what is true
+        self.assertIn('they read as being sent until a later look closes them', logged.output[0])
+        self.assertContains(page, 'The invitation to kari@example.com is being sent')
+        with self.assertLogs('core.accountmail', 'ERROR') as logged:    # a later look: closed, with its row
+            page = self.client.get(reverse('core:user_list'))
+        self.lapsed.refresh_from_db()
+        self.assertEqual((self.lapsed.error, AuditLog.objects.filter(action='invite').count()),
+                         ('The sending was interrupted: the server stopped, or the mail server never answered.', 1))
+        self.assertContains(page, 'Invitation not sent')
+        self.assertIn('was not sent', logged.output[0])
+
+
 class ResendTests(AccountMailCase):
     """The platform admin sends the invitation again from the person's row."""
 

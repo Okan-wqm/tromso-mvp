@@ -1,10 +1,15 @@
+import os
 import warnings
+from unittest import mock
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connections
 from django.test import TestCase, TransactionTestCase
 from django.test.runner import DiscoverRunner, ParallelTestSuite
 from django.test.utils import override_settings
+from django.utils import timezone
+
+from core.testing import run_clock
 
 # Third-party code's own warnings that the strict filters below would otherwise turn into errors: reported (once per
 # place) but not failing the run. Each is (category, module regex, message regex, reason). Only a warning raised inside
@@ -28,8 +33,11 @@ def strict_warnings():
 
 
 def strict_warnings_in_worker(*args):
-    """A parallel worker started by spawn or forkserver gets the filters too (a forked one inherits them)."""
+    """A parallel worker started by spawn or forkserver gets the filters too (a forked one inherits them), and the run's
+    clock when the run was given one (core.testing.run_clock: a forked worker inherits the parent's, started once)."""
     strict_warnings()
+    if os.environ.get('TEST_CLOCK') and not isinstance(timezone.now, mock.NonCallableMock):
+        run_clock()
 
 
 def runs_the_scheduler(connection):
@@ -73,6 +81,8 @@ class FastPasswordRunner(DiscoverRunner):
     def setup_test_environment(self, **kwargs):
         super().setup_test_environment(**kwargs)
         strict_warnings()
+        # TEST_CLOCK: the whole run's clock starts at that moment (core.testing.run_clock; README, Tests).
+        self._clock = run_clock()
         # The account e-mails' jobs run in the request, not on the worker thread (core.accountmail.background): a
         # TestCase's rows are never committed, so no other thread could read them. core.tests_account_mail_worker runs
         # the worker itself.
@@ -82,6 +92,8 @@ class FastPasswordRunner(DiscoverRunner):
 
     def teardown_test_environment(self, **kwargs):
         self._fast_hasher.disable()
+        if self._clock is not None:
+            self._clock.stop()
         super().teardown_test_environment(**kwargs)
 
     def setup_databases(self, **kwargs):

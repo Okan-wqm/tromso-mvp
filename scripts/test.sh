@@ -7,6 +7,7 @@
 #   KEEP_DB=1 scripts/test.sh ...                     leave the database server running afterwards (for a look inside)
 #   CHECKS=1 scripts/test.sh                          the project checks first, as CI runs them (in-container.sh)
 #   CHECKS=1 SUITE=0 scripts/test.sh                  the project checks only, no tests (CI on a pull request)
+#   TEST_CLOCK=2026-11-10T23:30:00+00:00 scripts/test.sh hr   the run's clock starts at that moment (core/testing.py)
 #
 # Deprecation warnings and naive datetimes are errors (scripts/testrunner/in-container.sh, config/test_runner.py).
 # Each run starts its own database server (the development database's image, timescale/timescaledb:2.17.2-pg17) in a
@@ -72,7 +73,7 @@ start=$(date +%s)
 status=0
 docker run --rm --name "$TESTS" --network "$NET" -v "$REPO:/app" -w /app \
   -e DB_HOST="$DB" -e DB_PORT=5432 -e DB_NAME=balik -e DB_USER=balik -e DB_PASSWORD="$DB_PASSWORD" \
-  -e DB_TEST_NAME=test_balik -e CHECKS="$CHECKS" -e SUITE="$SUITE" \
+  -e DB_TEST_NAME=test_balik -e CHECKS="$CHECKS" -e SUITE="$SUITE" -e TEST_CLOCK="${TEST_CLOCK:-}" \
   "$IMAGE" sh scripts/testrunner/in-container.sh "${parallel[@]}" "$@" || status=$?
 echo "scripts/test.sh: workers $WORKERS, checks $CHECKS, suite $SUITE, $(( $(date +%s) - start )) s, exit $status"
 exit $status

@@ -13797,8 +13797,8 @@ msgstr "Elipsin en uzun çapı."
 msgid "The lower weight must be below the upper weight."
 msgstr "Alt ağırlık üst ağırlıktan küçük olmalı."
 
-msgid "The mail server did not finish in time."
-msgstr "E-posta sunucusu zamanında bitirmedi."
+msgid "The mail server did not finish in time: the mail may have gone out all the same."
+msgstr "E-posta sunucusu zamanında bitirmedi: e-posta yine de gitmiş olabilir."
 
 msgid "The mail server took no message."
 msgstr "E-posta sunucusu iletiyi almadı."

@@ -537,7 +537,8 @@ class Resource:
     def after_commit(cls, request, obj, created):
         """Runs once the save's transaction has committed, before the page is answered: for what must not happen
         inside it, or for a record that might still be rolled back (handing a new user's invitation to the mail
-        worker). Not called for a save that failed. It cannot undo the save."""
+        worker). Not called for a save that failed. It cannot undo the save. "After the commit" holds while no
+        transaction wraps the whole request: ATOMIC_REQUESTS is refused for that (core.E006)."""
 
     # When a save may ask something first (`edited`, below): the template the edit page shows the question with, and the
     # name of the box that answers it.

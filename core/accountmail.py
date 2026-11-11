@@ -57,7 +57,8 @@ REASON_LENGTH = AccountMail._meta.get_field('error').max_length
 TOOK_NOTHING = gettext_noop('The mail server took no message.')
 NO_PUBLIC_ADDRESS = gettext_noop(
     'The public address of this server is not set (PUBLIC_BASE_URL): the link would lead nowhere.')
-TOO_SLOW = gettext_noop('The mail server did not finish in time.')
+# (the server may have taken the mail and only its answer came late: the words do not say it was not sent)
+TOO_SLOW = gettext_noop('The mail server did not finish in time: the mail may have gone out all the same.')
 BUSY = gettext_noop('Too many mails are waiting to be sent.')
 CHANGED = gettext_noop('The account changed before the mail was sent.')
 # A mail whose owner stopped before sending it (`sweep`, `shut_down`).

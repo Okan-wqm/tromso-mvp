@@ -13771,8 +13771,8 @@ msgstr "Den lengste avstanden over ellipsen."
 msgid "The lower weight must be below the upper weight."
 msgstr "Den nedre vekten må være under den øvre vekten."
 
-msgid "The mail server did not finish in time."
-msgstr "E-postserveren ble ikke ferdig i tide."
+msgid "The mail server did not finish in time: the mail may have gone out all the same."
+msgstr "E-postserveren ble ikke ferdig i tide: e-posten kan likevel ha gått ut."
 
 msgid "The mail server took no message."
 msgstr "E-postserveren tok ikke imot meldingen."

@@ -86,6 +86,13 @@ def mail_is_configured(app_configs, **kwargs):
     `migrate` and `check` stop on them (README, Email)."""
     must_send = settings.MAIL_MUST_SEND
     mailer = settings.MAILERS.get(DEFAULT_MAILER_ALIAS, {})
+    wrapped = [alias for alias, database in settings.DATABASES.items() if database.get('ATOMIC_REQUESTS')]
+    if wrapped:
+        # whatever else is set: the hand-over would happen inside the request's transaction
+        return [Error(
+            'ATOMIC_REQUESTS is on: a mail would be handed to the worker before the save that causes it is committed.',
+            hint='Leave ATOMIC_REQUESTS off: the tabs commit their own saves, and Resource.after_commit (core.crud) '
+                 'hands a mail over only after that.', id='core.E006')]
     backend = mailer.get('BACKEND', SMTP_BACKEND)
     options = mailer.get('OPTIONS', {})
     sends = bool(mailer) and backend not in NON_PRODUCTION_EMAIL_BACKENDS

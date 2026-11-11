@@ -413,3 +413,18 @@ class HandOverTests(WorkerCase):
         self.assertIsNot(accountmail.worker.thread, dead)
         self.assertTrue(accountmail.worker.thread.is_alive())
         self.assertTrue(accountmail.worker.drain(30))
+
+
+class SmallerThingsTests(WorkerCase):
+    def test_a_connection_that_will_not_close_does_not_leave_the_worker_counting_a_job_for_good(self):
+        # (S5) the job is counted as done before the connections are closed: drain() is true again, the worker goes on
+        done = threading.Event()
+        with mock.patch.object(accountmail.connections, 'close_all', side_effect=[RuntimeError('will not close'), None,
+                                                                                  None, None]), \
+                self.assertLogs('core.accountmail', 'ERROR') as logged:
+            self.assertTrue(accountmail.background(int))
+            self.assertTrue(accountmail.worker.drain(30))
+            self.assertTrue(accountmail.background(done.set))
+            self.assertTrue(accountmail.worker.drain(30))
+        self.assertTrue(done.is_set())
+        self.assertIn('will not close', logged.output[0])

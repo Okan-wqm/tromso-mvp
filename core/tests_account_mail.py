@@ -1145,5 +1145,7 @@ class SendTimeTests(AccountMailCase):
             took = time.perf_counter() - start
         # seven steps of 0.6 s would be over four seconds; the limit is one
         self.assertLess(took, 2.5)
-        self.assertEqual(outcomes(), ['The mail server did not finish in time.'])
-        self.assertIn('The mail server did not finish in time', row_of(self.client.get(reverse('core:user_list')), 'kari'))
+        # (S4) a server may have taken the mail and only its answer came late: the words do not say it was not sent
+        late = 'The mail server did not finish in time: the mail may have gone out all the same.'
+        self.assertEqual(outcomes(), [late])
+        self.assertIn(late, row_of(self.client.get(reverse('core:user_list')), 'kari'))

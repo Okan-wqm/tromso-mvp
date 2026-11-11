@@ -180,6 +180,14 @@ class MailCheckTests(SimpleTestCase):
         self.assertEqual(ids(PUBLIC_BASE_URL='https://farm.invalid:8443'), [])
         self.assertIn('PUBLIC_BASE_URL', found(PUBLIC_BASE_URL='')[0][1])
 
+    def test_a_request_wide_transaction_is_refused_the_mails_are_handed_over_after_the_save(self):
+        # (S8) Resource.after_commit is "after the commit" only while no transaction wraps the whole request
+        databases = {'default': {**settings.DATABASES['default'], 'ATOMIC_REQUESTS': True}}
+        self.assertEqual(ids(DATABASES=databases), ['core.E006'])
+        self.assertEqual(ids(DATABASES=databases, MAIL_MUST_SEND=False, MAILERS={'default': {'BACKEND': CONSOLE}}),
+                         ['core.E006'])
+        self.assertIn('ATOMIC_REQUESTS', found(DATABASES=databases)[0][1])
+
     def test_a_password_is_never_sent_to_the_mail_server_in_the_clear(self):
         self.assertEqual(ids(MAILERS=smtp(username='farm', password='s3cret', use_tls=False)), ['core.E005'])
         self.assertEqual(ids(MAILERS=smtp(username='farm')), ['core.E005'])

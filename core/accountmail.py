@@ -33,7 +33,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import _unicode_ci_compare
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.mail import DEFAULT_MAILER_ALIAS, EmailMessage, mailers
-from django.db import DatabaseError, connections, transaction
+from django.db import DatabaseError, InternalError, OperationalError, connections, transaction
 from django.db.models import CharField, OuterRef, Q, Subquery
 from django.db.models.functions import Cast
 from django.template.loader import render_to_string
@@ -300,15 +300,30 @@ def sweep(user=None):
         _close(mail, INTERRUPTED, audit.message(INTERRUPTED))
 
 
+READ_ONLY = '25006'        # PostgreSQL's read_only_sql_transaction: a write on a database that takes none just now
+
+
+def write_refused(fault):
+    """Whether the database refused a write for a reason that is its own state, not the code's: it could not be
+    reached, went away or gave up waiting (OperationalError), or it takes no writes just now (InternalError with
+    PostgreSQL's read_only_sql_transaction). A statement that is wrong (ProgrammingError), a value that does not fit
+    or breaks a rule (DataError, IntegrityError), a transaction already failed (another InternalError): the code's."""
+    return isinstance(fault, OperationalError) or (
+        isinstance(fault, InternalError) and getattr(fault.__cause__, 'sqlstate', None) == READ_ONLY)
+
+
 def sweep_before_reading():
     """`sweep` before a page that only reads (the users tab). Closing a mail is housekeeping, and a page that lists
-    people must not fail because it could not be done: when the database refuses the write (it takes none just now,
-    or a fault), the server's log says so and the page is drawn; the mails that could not be closed still read
-    "being sent" until a later look closes them. Whether the sweep was done. Only the database's refusal is caught:
-    anything else is a fault of the code and is raised."""
+    people must not fail because the database could not take that write just now (`write_refused`: it cannot be
+    reached, or it takes no writes): the server's log says so and the page is drawn; the mails that could not be
+    closed still read "being sent" until a later look closes them, which is true of each of them, since a mail is
+    closed with its log row or not at all (`_close`). Whether the sweep was done. Nothing else is caught: a fault of
+    the code (a wrong statement, a value that does not fit, a broken rule) is raised, and the page fails with it."""
     try:
         sweep()
     except DatabaseError as fault:
+        if not write_refused(fault):
+            raise
         logger.error('The mails nobody is sending any more could not be closed before the users were listed (%s: %s): '
                      'they read as being sent until a later look closes them.', type(fault).__name__,
                      ' '.join(str(fault).split()))
@@ -463,19 +478,22 @@ def kind(failure):
 def _close(mail, error, what):
     """Marks a waiting mail as not sent: `error` on its row and in the server's log and, for an invitation, the
     platform's own line in the activity log after the admin's "Invited", with `what` kind of failure it was
-    (`kind`)."""
-    if not AccountMail.objects.filter(pk=mail.pk, sent_at=None, error='').update(error=error):
-        return
+    (`kind`). The row and the log's line are written together or not at all: a mail that read "not sent" with no
+    "Not sent" row in the log would never get one (the next look finds it closed already). The server's log is
+    written after both, so it says what the row and the log now say."""
+    with transaction.atomic():
+        if not AccountMail.objects.filter(pk=mail.pk, sent_at=None, error='').update(error=error):
+            return
+        if mail.kind == INVITATION:
+            with audit.source_language():
+                changes = {str(INVITATION_LABEL): [None, audit.message(NOT_SENT)],
+                           str(SENT_TO_LABEL): [None, mail.address], str(REASON_LABEL): [None, what]}
+            audit.record(None, AuditLog.Action.INVITE, mail.user, changes,
+                         entity_type=audit.entity_type_of(get_user_model()))
     # the kind of failure and where its words are: a mail server's reply can name the recipient, and an exception's
     # own text may quote the mail, link and all
     logger.error('The %s mail for user %s was not sent (%s): the reason is on account_mails %s.', mail.kind,
                  mail.user_id, what['msgid'] if isinstance(what, dict) else what, mail.pk)
-    if mail.kind == INVITATION:
-        with audit.source_language():
-            changes = {str(INVITATION_LABEL): [None, audit.message(NOT_SENT)],
-                       str(SENT_TO_LABEL): [None, mail.address], str(REASON_LABEL): [None, what]}
-        audit.record(None, AuditLog.Action.INVITE, mail.user, changes,
-                     entity_type=audit.entity_type_of(get_user_model()))
 
 
 

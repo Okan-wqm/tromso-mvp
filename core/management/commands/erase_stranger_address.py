@@ -27,7 +27,8 @@ class Command(BaseCommand):
         parser.add_argument('address', help='The address to erase, as it was typed (case and outer spaces do not matter).')
         parser.add_argument('--apply', action='store_true', help='Carry it out. Without it nothing is changed.')
         parser.add_argument('--instruction', default='',
-                            help='The instruction it is done on: its reference and date (written in the log\'s row).')
+                            help='The instruction it is done on: its reference and date, never the address itself '
+                                 '(written in the log\'s row).')
         parser.add_argument('--carried-out-by', default='', help='Who carries it out (written in the log\'s row).')
 
     def handle(self, *args, address, apply=False, instruction='', carried_out_by='', **options):
@@ -42,7 +43,8 @@ class Command(BaseCommand):
         instruction, by = ' '.join(instruction.split()), ' '.join(carried_out_by.split())
         if not instruction or not by:
             raise CommandError('--apply needs --instruction (the data-protection officer\'s instruction: its reference '
-                               'and date) and --carried-out-by (your name): both are written in the log\'s row.')
+                               'and date) and --carried-out-by (your name): both are written in the log\'s row, so '
+                               'neither may hold the address itself.')
         try:
             found = erasure.erase(address, instruction, by)
         except erasure.Refused as refusal:

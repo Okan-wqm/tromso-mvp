@@ -26,6 +26,9 @@ What it is and is not:
   user accounts; inside a mail server's reply (`account_mails.error`) the address is replaced where it stands as a
   whole address, never as a part of a longer one. Whatever else holds the text (an account's username, a record's
   name, another record's field) is listed for the operator and left as it is.
+- **Nothing it writes holds the address.** The instruction and the name of who carries it out are refused when they
+  hold it (they would put it back into the log, where this command would not find it again), and its own rows are
+  written under the account's number when the account's username holds it.
 - **Not undone, and not complete beyond the database**: backups hold the address as they hold everything else.
 
 `plan` reads only; `erase` writes. The command `manage.py erase_stranger_address` is the only caller: no page does
@@ -82,6 +85,20 @@ def _without(pattern, error):
     than the address it stands for)."""
     text = pattern.sub(ERASED_ADDRESS, error)
     return text if len(text) <= accountmail.REASON_LENGTH else text[:accountmail.REASON_LENGTH - 1] + '…'
+
+
+# A run of the characters an address is usually made of, around an "@": what `holds` reads as one address in a text.
+TOKEN = re.compile(r'[\w.+%-]+@[\w.-]+')
+
+
+def holds(text, address):
+    """Whether `text` holds `address` as a whole address, compared as addresses are compared here: in any case and
+    Unicode form (`_folded`), and inside a longer text (`inside`, and every address-like run of the text by itself,
+    its closing full stops aside)."""
+    if not isinstance(text, str):
+        return False
+    return bool(inside(_folded(address)).search(_folded(text))) or any(
+        same(found.group().rstrip('.'), address) for found in TOKEN.finditer(text))
 
 
 def holders(address):
@@ -169,15 +186,26 @@ def trigger_in_force(cursor):
     return [row[0] for row in cursor.fetchall()] == ['O']
 
 
+def refuse_words(address, instruction, by):
+    """Nothing this command writes may hold the address: the instruction and the name are written in its own row."""
+    for what, text in (('--instruction', instruction), ('--carried-out-by', by)):
+        if holds(text, address):
+            raise Refused(f'{what} holds the address itself. It is written into the activity log, where the address '
+                          f'would then stand again and this command would not find it: give the instruction’s '
+                          f'reference and date (and your name) without the address.')
+
+
 def erase(address, instruction, by):
     """Erases `address` and returns the Plan that was carried out (empty: nothing was found, nothing was touched and
     the trigger was never set aside). `instruction` is the data-protection officer's instruction (its reference and
-    date), `by` who carries it out: both are written in the log's row of the erasure.
+    date), `by` who carries it out: both are written in the log's row of the erasure, and neither may hold the address
+    (`refuse_words`).
 
     One transaction. Writers of the log wait from the lock to the commit, so no row is written between the read and
     the updates; the append-only trigger is set aside after the read, for the updates of `changes` only, and set back
     before the erasure's own rows are appended. PostgreSQL undoes the setting aside with everything else when the
     transaction fails, and the function checks that the trigger is in force before it returns."""
+    refuse_words(address, instruction, by)
     with transaction.atomic(), connection.cursor() as cursor:
         cursor.execute('LOCK TABLE audit_log IN SHARE ROW EXCLUSIVE MODE')
         found = plan(address)
@@ -211,6 +239,13 @@ def _rewrite(cursor, entry, changes):
     cursor.execute('UPDATE audit_log SET changes = %s::jsonb WHERE id = %s', [json.dumps(changes), entry.pk])
 
 
+def _label(user, fallback, address):
+    """The name the erasure's row is under: the account's, or None when that name holds the address (a username may be
+    an address, and the row must not hold what it says was erased)."""
+    name = audit.english(user) if user is not None else fallback
+    return audit.bounded(name) if name and not holds(name, address) else None
+
+
 def _say(found, instruction, by):
     """The erasure's own row, on each account touched: that it was done, on which instruction and by whom; never the
     address."""
@@ -222,5 +257,5 @@ def _say(found, instruction, by):
         user = users.get(pk)
         AuditLog.objects.create(
             user=None, user_name='system', action=AuditLog.Action.UPDATE, entity_type=user_type(), entity_id=str(pk),
-            entity_label=audit.bounded(audit.english(user) if user is not None else names.get(pk, str(pk))),
+            entity_label=_label(user, names.get(pk), found.address) or f'account {pk}',
             changes={ERASED_LABEL: [None, said]})

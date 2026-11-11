@@ -7,7 +7,7 @@ from ..forms.health import MedicineForm, MedicineWithdrawalFormSet
 from ..health import withdrawal
 from ..health.withdrawal import Rule
 from ..models import Medicine, Treatment
-from ..stock.dates import local_today
+from ..stock.dates import earliest_today
 from ..stock.services import lock_fish
 
 
@@ -37,7 +37,7 @@ class MedicineWithdrawalList(RowList):
         unit_ids = {unit.pk for treatment in treatments for unit in treatment.units.all()}
         first = min((treatment.start_date for treatment in treatments), default=None)
         units, batch_ids = lock_fish(unit_ids, first) if first else ({}, set())
-        today = min((local_today(unit) for unit in units.values()), default=local_today())
+        today = earliest_today(units.values())
         withdrawal.guarded(user, batch_ids, today, lambda: super(MedicineWithdrawalList, cls).save(
             user, medicine, rows, entity_type) or medicine, record_of=lambda _result: medicine, seen=seen)
 

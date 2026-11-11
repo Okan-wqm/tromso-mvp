@@ -260,4 +260,4 @@ def _fish_of(points, measured_at):
         elif point.system_id:
             unit_ids.update(Tank.all_objects.filter(system_id=point.system_id).values_list('pk', flat=True))
     units, batch_ids = lock_fish(unit_ids, local_time(measured_at, points[0]).date())
-    return batch_ids, min((dates.local_today(unit) for unit in units.values()), default=dates.local_today())
+    return batch_ids, dates.earliest_today(units.values())

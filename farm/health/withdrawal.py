@@ -58,7 +58,7 @@ from farm.models.feed import FeedType
 from farm.models.handling import WithdrawalWarning
 from farm.models.health import TreatmentMethod
 from farm.models.stock import MovementKind
-from farm.stock.dates import local_today, shown_date
+from farm.stock.dates import earliest_today, local_today, shown_date
 from farm.stock.read import Presence
 from farm.water.degree_days import (DAY, LOOKBACK_DAYS, PENDING, ZERO, BatchWater, degree_days_text,
                                     missing_sentence, projected_sentence)
@@ -309,7 +309,7 @@ def _reached(unit_ids=(), species=None):
         return batch_ids, None
     units = Tank.all_objects.filter(pk__in={unit_id for units in Presence.of_batches(batch_ids).units.values()
                                             for unit_id in units}).select_related('production_department__site')
-    return batch_ids, min((local_today(unit) for unit in units), default=local_today())
+    return batch_ids, earliest_today(units)
 
 
 def held_reached(unit_ids=(), species=None):
@@ -740,5 +740,5 @@ def guarded_units(user, unit_ids, first, write, seen=None):
     locks them, and the write goes through the guard."""
     from farm.stock.services import lock_fish
     units, batch_ids = lock_fish(set(unit_ids), first) if unit_ids else ({}, set())
-    today = min((local_today(unit) for unit in units.values()), default=local_today())
+    today = earliest_today(units.values())
     return guarded(user, batch_ids, today, write, seen=seen)

@@ -4937,7 +4937,11 @@ one after the other (the newest report, a history in order), `core.testing.Start
 lets it run on. Held so since the sweep below: the reports' tests (`reports.tests.helpers.ReportTestCase`, dated in
 October and November 2026: the deadline of a week's planned slaughter is expected from the day its plans' rows are
 made, and failed from 12.11.2026 on; the overdue driftsplan of 2026 failed once a later year's is owed) and HR's leave
-tests (a request of 01.06.2027 stands for "not begun yet").
+tests (a request of 01.06.2027 stands for "not begun yet"). **A date can also spell a value**, and no sweep by
+clock looks for that: `monitoring.tests.test_pages` asserted that the oxygen value "8.10" was nowhere on a page that
+also says when the fish were last weighed, 15 days back, and failed on 12.11.2026 for "28.10.2026" alone (it would
+again on every day whose date 15 days back ends in 8.10). A test that asserts a number is absent from a whole page
+uses a number no date can spell, and first shows that the page prints it for someone who may see it.
 
 **Nor the hour it runs at.** The server's day is UTC's, the company's is Oslo's (`COMPANY_TIME_ZONE`) and a site's is
 its own. From 23:00 to 24:00 UTC in winter (from 22:00 in summer) Oslo is a day ahead of the server, and a test that

@@ -81,13 +81,18 @@ class PageTests(MonitoringCase):
         self.assertEqual(html.count('<svg'), html.count('class="icon"') + html.count('<svg class="capacity-bar'))
 
     def test_a_card_that_may_not_see_a_section_says_so_and_prints_no_value_of_it(self):
-        self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='8.1')
+        # Values that no date on the page can spell: the oxygen was 8.1, printed "8.10", and the page says when the
+        # fish were last weighed, 15 days back: "28.10.2026" on 12.11.2026, when this test failed for that alone.
+        self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='8.47')
+        shown = self.client.get(PAGE, {'mode': 'detailed'}).content.decode()
+        for text in ('13.2', '8.47'):
+            self.assertIn(text, shown)                               # as the page prints them for who may see the water
         self.as_person('stock-only', 'view_stockoperation')
         html = self.client.get(PAGE, {'mode': 'detailed'}).content.decode()
         for text in ('Feeding: not shown to you', 'Water: not shown to you', 'Health: not shown to you',
                      'Tasks: not shown to you', 'State from: Fish'):
             self.assertIn(text, html)
-        for text in ('13.2', '8.10', 'Deffeyes chart', 'Ration'):
+        for text in ('13.2', '8.47', 'Deffeyes chart', 'Ration'):
             self.assertNotIn(text, html)
         self.assertIn('12,000', html)                                # the fish are the stock right's
 

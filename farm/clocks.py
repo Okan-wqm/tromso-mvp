@@ -48,7 +48,9 @@ def own_days(now, field, days=1, date='date'):
     """The rows dated (`date`) on one of the last `days` days of their OWN site's clock, today among them: a Q. `now` is
     `clocks()`, `field` the path to the row's site. THE way a figure over the whole farm says "today" or "the last 7
     days": what is recorded on a site's today counts at once, whatever the company's clock says, and a figure over sites
-    on different clocks is the sum of each site's own day."""
+    on different clocks is the sum of each site's own day. A row with no site counts on the company's clock, which
+    `clocks()` gives last. The days are conditions only: a caller that sums over a large table bounds its query by the
+    earliest and the latest day among the clocks as well (farm.feeding.views.overview_tiles)."""
     found = Q(pk__in=[])
     for clock in now:
         found |= clock.on(field) & Q(**{f'{date}__range': (clock.today - timedelta(days=days - 1), clock.today)})

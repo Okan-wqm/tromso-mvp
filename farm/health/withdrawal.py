@@ -164,9 +164,24 @@ class Withdrawal:
         """From its first day (fish under treatment are held too) to the day before `until`."""
         return day >= self.start and (self.until is None or day < self.until)
 
+    def holds_between(self, first, last):
+        """Whether it holds on some day from `first` to `last`: it has begun by `last` and has not ended on `first`."""
+        return last >= self.start and (self.until is None or first < self.until)
+
 
 class Reader:
-    """The withdrawals of a set of batches, as they stand on `today` (the farm's today)."""
+    """The withdrawals of a set of batches, read on `today`.
+
+    **Whose today** (the owner's decision of 12.11.2026: everything is read on the site's own day). Fish are read on
+    today of the site they are on NOW: a unit's own withdrawal line, the harvest check and the Treatments list all make
+    their reader with that day (`of_units`, `of_treatments`: one reader per site's day), so they are one answer. The
+    company's day plays no part in whether fish are held. A write guard is not a page of one site: its day stays the
+    earliest today among every unit the fish were in (`reach`), the caller's to give.
+
+    **What has begun where it was given has begun** (`there`): which fish a course reached is read up to the day it is
+    in the units the course was given in, not only up to `today`. For a reader on its own site's day that changes
+    nothing where the course was given on that site; it makes a guard, whose day can be an earlier one, see a course
+    begun today on the later clock (`holds`), which it did not."""
 
     def __init__(self, batch_ids, today):
         self.batch_ids, self.today = set(batch_ids), today
@@ -190,13 +205,30 @@ class Reader:
         for row in MedicineWithdrawal.objects.filter(medicine__in=new):
             self.rows[row.medicine_id].append(row)
 
+    # ---- what has begun where it was given ------------------------------------------------------
+    def there(self, unit_ids):
+        """The day it is where a course (or a medicated feeding) was given: the latest today among `unit_ids`, its
+        units, never before this reader's `today`. Units none of this reader's batches were in are not asked: no fish
+        of these batches were treated there."""
+        return max([self.today, *(local_today(self.units[unit_id]) for unit_id in unit_ids if unit_id in self.units)])
+
+    def holds(self, withdrawal):
+        """For a reader whose `today` is not one site's own (a write guard, what blocks a deletion: the earliest day
+        among several units): whether the withdrawal holds its batch now. It has begun where it was given (`there`)
+        and has not ended on `today`: held on some day from the one to the other. A reader on its own site's day asks
+        that day itself (`holds_on(today)`)."""
+        given_in = ([unit.pk for unit in withdrawal.treatment.units.all()] if withdrawal.treatment is not None
+                    else [withdrawal.feeding.unit_id])
+        return withdrawal.holds_between(self.today, self.there(given_in))
+
     # ---- which fish a treatment reached ---------------------------------------------------------
     def treated(self, treatment, unit_ids=None):
-        """The batches of this reader that had fish in one of the treatment's units on one of its days (up
-        to today: what happens later is not recorded yet). `unit_ids`: the units of a treatment not saved yet."""
-        last = min(treatment.end_date, self.today)
+        """The batches of this reader that had fish in one of the treatment's units on one of its days, up to the day
+        it is in those units (`there`: what happens later is not recorded yet, and what has happened there has
+        happened, whatever day this reader's `today` is). `unit_ids`: the units of a treatment not saved yet."""
         if unit_ids is None:
             unit_ids = [unit.pk for unit in treatment.units.all()]
+        last = min(treatment.end_date, self.there(unit_ids))
         return {batch_id for batch_id in self.batch_ids
                 if any(self.presence.present_between(unit_id, batch_id, treatment.start_date, last)
                        for unit_id in unit_ids)}
@@ -286,12 +318,14 @@ def covered(record):
 
 # ---- what the pages and the handling check read --------------------------------------------------------
 def holding(batch_ids, today, day=None):
-    """{batch id: [Withdrawal]} of the withdrawals that hold the batches on `day` (default today)."""
-    day = today if day is None else day
+    """{batch id: [Withdrawal]} of the withdrawals that hold the batches on `day`, read on `today`. Without a day (a
+    question that is not one site's own: what blocks a deletion, on the earliest day among several units), those that
+    hold them now by Reader.holds."""
     found = defaultdict(list)
     if batch_ids:
-        for withdrawal in Reader(batch_ids, today).withdrawals():
-            if withdrawal.holds_on(day):
+        reader = Reader(batch_ids, today)
+        for withdrawal in reader.withdrawals():
+            if reader.holds(withdrawal) if day is None else withdrawal.holds_on(day):
                 found[withdrawal.batch_id].append(withdrawal)
     return found
 
@@ -300,11 +334,10 @@ def reach(unit_sets):
     """{key: (the batches ever in the units of `unit_sets[key]`, the farm's earliest today among EVERY unit those
     batches were ever in; None when the units never held fish)}, for several sets of units at once.
 
-    THE one way to say on which day the withdrawals of fish are read when they have been on sites of several clocks:
-    a withdrawal follows the fish, so the day is asked of every unit they were in, the one they are in now among them,
-    and the earliest wins (the fish are held the longest so, and never freed on a day that has not begun where they
-    are). The write guards read it (`_reached`) and the Treatments list (`read_days`). Three queries whatever the
-    number of keys."""
+    The day a WRITE GUARD reads the withdrawals of fish on (`_reached`), as it always was: a withdrawal follows the
+    fish, so the day is asked of every unit they were in, the one they are in now among them, and the earliest wins
+    (the guard asks before the write stands, and asks rather once too often). The pages do not read this day: they
+    read the site's own (`of_units`, `of_treatments`). Three queries whatever the number of keys."""
     every = {unit_id for unit_ids in unit_sets.values() for unit_id in unit_ids}
     in_units = Presence.of_units(every).batches if every else {}
     return earliest_days({key: {batch_id for unit_id in unit_ids for batch_id in in_units.get(unit_id, ())}
@@ -330,20 +363,6 @@ def _reached(unit_ids=(), species=None):
     if species is not None:
         batch_ids.update(Batch.all_objects.filter(species=species).values_list('pk', flat=True))
     return earliest_days({None: batch_ids})[None]
-
-
-def read_days(treatments):
-    """{treatment id: the day its withdrawals are read on in a list over the whole farm} (Operations › Treatments; the
-    treatments' units prefetched): the earliest of
-    - today on every unit the fish of its units have been in (`reach`: the day the write guards read, so the list and
-      a guard never disagree, and fish moved to a site on an earlier day are not shown as free while their own unit
-      still holds them), and
-    - the company's today (the list is over sites of several clocks, and never read a later day than the company's:
-      for a site ahead of the company it is the stricter of the two beside that unit's own line, never the laxer).
-    A treatment whose units never held fish is read on the company's day."""
-    company = local_today()
-    reached = reach({treatment.pk: {unit.pk for unit in treatment.units.all()} for treatment in treatments})
-    return {pk: company if day is None else min(day, company) for pk, (_batches, day) in reached.items()}
 
 
 def held_reached(unit_ids=(), species=None):
@@ -391,22 +410,87 @@ def blockers_while_live(record):
     return reasons
 
 
-def of_units(units, day=None):
-    """{unit id: [Withdrawal]} of the batches in each unit on `day` (default each unit's today) that a
-    withdrawal holds then; one reader per farm-local today (sites in different time zones)."""
+def site_days(units):
+    """{today: [unit]}: the units by today on their own site's clock. THE day fish are read on is the day of the site
+    they are on now (the owner's decision of 12.11.2026); every page that reads a withdrawal groups its units here."""
     by_today = defaultdict(list)
     for unit in units:
         by_today[local_today(unit)].append(unit)
+    return by_today
+
+
+def of_units(units, day=None):
+    """{unit id: [Withdrawal]} of the batches in each unit on `day` (default each unit's today) that a withdrawal
+    holds then: the unit's own withdrawal line, and what the harvest check reads. One reader per site's day
+    (`site_days`), asked that day itself."""
     found = {}
-    for today, members in by_today.items():
+    for today, members in site_days(units).items():
         presence = Presence.of_units([unit.pk for unit in members])
         present = {unit.pk: presence.batches_in(unit.pk, day or today) for unit in members}
-        held = holding({batch_id for batches in present.values() for batch_id in batches}, today, day)
+        held = holding({batch_id for batches in present.values() for batch_id in batches}, today, day or today)
         for unit in members:
             withdrawals = [withdrawal for batch_id in sorted(present[unit.pk], key=str)
                            for withdrawal in held.get(batch_id, [])]
             if withdrawals:
                 found[unit.pk] = withdrawals
+    return found
+
+
+@dataclass(frozen=True)
+class Reached:
+    """A batch a treatment reached, as the Treatments list shows it: read on today of the site its fish are on now."""
+    batch: Batch
+    withdrawal: Withdrawal          # None: the treatment has no medicine, or is voided
+    held: bool                      # the withdrawal holds the fish on `today`
+    today: object                   # today on the site these fish are on
+    units: tuple = ()               # the codes of the units of this part, when the batch is on sites of different days
+
+
+def of_treatments(treatments):
+    """{treatment id: [Reached]} for the Treatments list (the treatments' units prefetched): each batch a treatment
+    reached with the withdrawal it puts on it, read as the unit's own line reads it (`of_units`): on today of the site
+    the fish are on now, by the same reader, asked that same day. So the list, "Under withdrawal today", the day counts
+    and the unit's line are one answer, for a site ahead of the company or behind it, a batch moved between clocks
+    (the day of where it is now, with the course history it carries), a course begun today on its site, a batch that
+    arrived today. A batch whose fish are on sites of different days is shown once per day, each part with its units
+    and its own answer. Fish that are nowhere any more (harvested out) are read on the day of the units the course
+    was given in. One reader per site's day."""
+    given = {treatment.pk: {unit.pk for unit in treatment.units.all()} for treatment in treatments}
+    every = {unit_id for unit_ids in given.values() for unit_id in unit_ids}
+    in_units = Presence.of_units(every).batches if every else {}
+    candidates = {pk: {batch_id for unit_id in unit_ids for batch_id in in_units.get(unit_id, ())}
+                  for pk, unit_ids in given.items()}
+    presence = Presence.of_batches({batch_id for batch_ids in candidates.values() for batch_id in batch_ids})
+    units = Tank.all_objects.select_related('production_department__site').in_bulk(
+        {unit_id for unit_ids in presence.units.values() for unit_id in unit_ids})
+    today_of = {pk: local_today(unit) for pk, unit in units.items()}
+    where, wanted = {}, defaultdict(set)
+    for batch_id, unit_ids in presence.units.items():            # where each batch is now, by its site's day
+        now = [units[unit_id] for unit_id in unit_ids
+               if unit_id in units and presence.present(unit_id, batch_id, today_of[unit_id])]
+        where[batch_id] = site_days(now)
+    gone = {pk: earliest_today(units[unit_id] for unit_id in unit_ids if unit_id in units)
+            for pk, unit_ids in given.items()}                   # the day of fish that are nowhere any more
+    for pk, batch_ids in candidates.items():
+        for batch_id in batch_ids:
+            for today in where.get(batch_id) or {gone[pk]: []}:
+                wanted[today].add(batch_id)
+    readers = {today: Reader(batch_ids, today) for today, batch_ids in wanted.items()}
+    batches = Batch.all_objects.in_bulk({batch_id for batch_ids in candidates.values() for batch_id in batch_ids})
+    found = {}
+    for treatment in treatments:
+        treated = {today: reader.treated(treatment) for today, reader in readers.items()}
+        rows = []
+        for batch_id in candidates[treatment.pk]:
+            days = where.get(batch_id) or {gone[treatment.pk]: []}
+            for today, members in days.items():
+                if batch_id not in treated[today]:
+                    continue
+                held = (readers[today].of_treatment(treatment, batch_id)
+                        if treatment.medicine_id and not treatment.is_deleted else None)
+                rows.append(Reached(batches[batch_id], held, held is not None and held.holds_on(today), today,
+                                    tuple(sorted(unit.code for unit in members)) if len(days) > 1 else ()))
+        found[treatment.pk] = sorted(rows, key=lambda each: (each.batch.code, each.units))
     return found
 
 
@@ -588,7 +672,7 @@ def snapshot(batch_ids, today):
     found = reader.withdrawals()
     held = defaultdict(list)
     for each in found:
-        if each.holds_on(today):
+        if reader.holds(each):            # held now, by the reader's rule for several clocks: the guards read it too
             held[each.batch_id].append(each)
     return Snapshot({each.identity(): each for each in _inside(found, _harvest_lines(batch_ids))}, dict(held))
 

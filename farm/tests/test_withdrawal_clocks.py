@@ -147,6 +147,22 @@ class AfternoonTests(FrozenClock, ClocksCase):
         self.assertContains(page, f'<strong>{batch.code}</strong> (K-01) · ')
         self.assertContains(page, f'<strong>{batch.code}</strong> (T-02) · <span class="over-text"')
 
+    def test_a_course_given_today_on_the_later_clock_holds_the_other_part_from_its_own_first_day(self):
+        """Known and accepted (README, Health): the whole batch is held by a course given to a part of it, each part by
+        its own site's calendar. The part in Bergen is held from the 11th, the course's first day, and it is the 10th
+        there: the list shows its withdrawal and does not mark it held yet, as its unit's line and the harvest check
+        say. A write guard sees the course already (GuardsOnTwoClocksTests)."""
+        batch = self.stock(self.k1, count=1000, weight='100', days_ago=10)
+        self.move(batch, self.k1, self.t2, self.here - 5 * DAY, count=400)
+        treatment = self.course(self.k1, self.there, self.there, days=5)
+        self.assertEqual(self.assert_the_list_says_what_the_units_own_line_says(treatment, [self.k1, self.t2]),
+                         {(batch.code, ('K-01',)): True, (batch.code, ('T-02',)): False})
+        self.assertEqual({part.units: part.withdrawal.until for part in self.parts(treatment)},
+                         {('K-01',): self.there + 6 * DAY, ('T-02',): self.there + 6 * DAY})
+        self.assertEqual((self.harvest_warned(self.k1), self.harvest_warned(self.t2)), (['withdrawal'], []))
+        self.assertEqual(withdrawal._reached([self.t2.pk])[1], self.here)             # the guard's day, the 10th,
+        self.assertIn(batch.code, withdrawal.held_reached([self.t2.pk])[0])           # and it sees the course
+
 
 class NightTests(FrozenClock, ClocksCase):
     """23:30 UTC on the 10th: the 10th in Bergen, the 11th in Oslo (the company and Oslofjord) and in Tokyo."""

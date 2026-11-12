@@ -7,7 +7,6 @@ server's reasons on their fields (422) and goes back where it was opened (`next`
 Who may do what (config/access.py): reading a page needs view on its records, recording add, voiding delete;
 a treatment's last day is changed with change. The buttons a person cannot use are not shown, and the views
 refuse them too. The withdrawal line is shown to everyone who sees the units: it is food safety."""
-from collections import defaultdict
 from datetime import timedelta
 from urllib.parse import urlencode
 
@@ -30,7 +29,6 @@ from ..models import Batch, HealthEvent, LiceCount, Medicine, Site, Tank, Treatm
 from ..models.health import MedicineKind
 from ..stock import read as stock_read, views as stock_views
 from ..stock.dates import shown_date
-from ..stock.read import Presence
 from ..stock.services import AlreadyRecorded
 from . import notices, read, services, withdrawal
 
@@ -83,33 +81,6 @@ def _chosen_unit(request):
 TREATMENT_FILTERS = ('site', 'unit', 'batch', 'method', 'medicine', 'from', 'to', 'show', 'voided')
 
 
-def treated_batches(treatments):
-    """{treatment id: (its today, [(batch, Withdrawal or None)])}: the batches each treatment reached (from the stock
-    ledger) and, for a live treatment with a medicine, the withdrawal it puts on each as it stands on the treatment's
-    today (withdrawal.read_days): the earliest of the company's day and today on every unit its fish have been in, the
-    one they are in now among them. Never a later day than where the fish are: the company's day alone counted a
-    site's running day as a past one without a temperature and freed its fish a day early for a site behind the
-    company, and the day of the unit the course was given in showed fish moved to a site on an earlier day as free
-    while their own unit still held them. One reader per such day (one on a farm whose sites share a clock)."""
-    days = withdrawal.read_days(treatments)
-    by_today = defaultdict(list)
-    for treatment in treatments:
-        by_today[days[treatment.pk]].append(treatment)
-    found = {}
-    for today, members in by_today.items():
-        unit_ids = {unit.pk for treatment in members for unit in treatment.units.all()}
-        presence = Presence.of_units(unit_ids)
-        batch_ids = {batch_id for unit_id in unit_ids for batch_id in presence.batches.get(unit_id, ())}
-        reader = withdrawal.Reader(batch_ids, today)
-        batches = Batch.all_objects.in_bulk(batch_ids)
-        for treatment in members:
-            treated = sorted((batches[batch_id] for batch_id in reader.treated(treatment)), key=lambda batch: batch.code)
-            found[treatment.pk] = (today, [
-                (batch, reader.of_treatment(treatment, batch.pk) if treatment.medicine_id and not treatment.is_deleted
-                 else None) for batch in treated])
-    return found
-
-
 def _filtered_treatments(params, request):
     treatments = Treatment.all_objects.select_related('medicine', 'vet', 'health_event', 'created_by', 'deleted_by')\
         .prefetch_related('units__production_department__site', 'acknowledgements')
@@ -146,12 +117,11 @@ def _filtered_treatments(params, request):
     params['batch'] = str(batch.pk) if batch else ''
     if batch is not None or params['show'] == UNDER_WITHDRAWAL:
         candidates = list(treatments)
-        rows = treated_batches(candidates)
+        rows = withdrawal.of_treatments(candidates)
         keep = [treatment.pk for treatment in candidates
-                if (batch is None or any(each.pk == batch.pk for each, _w in rows[treatment.pk][1]))
-                and (params['show'] != UNDER_WITHDRAWAL                     # held today, on the treatment's own today
-                     or any(found is not None and found.holds_on(rows[treatment.pk][0])
-                            for _b, found in rows[treatment.pk][1]))]
+                if (batch is None or any(part.batch.pk == batch.pk for part in rows[treatment.pk]))
+                # held today: on today of the site the fish are on (withdrawal.of_treatments)
+                and (params['show'] != UNDER_WITHDRAWAL or any(part.held for part in rows[treatment.pk]))]
         treatments = treatments.filter(pk__in=keep)
     return treatments, choices
 
@@ -164,13 +134,13 @@ def treatments(request):
     found, choices = _filtered_treatments(params, request)
     page = Paginator(found, PAGE_SIZE).get_page(request.GET.get('page'))
     rows = list(page.object_list)
-    batches = treated_batches(rows)
+    batches = withdrawal.of_treatments(rows)
     here = request.get_full_path()
     can_void, can_change = request.user.has_perm(TREATMENTS['delete']), request.user.has_perm(TREATMENTS['change'])
     kept = {key: value for key, value in params.items() if value}
     return render_page(request, 'farm/treatment_list.html', _context(
         TREATMENTS['view'],
-        rows=[{'treatment': treatment, 'today': batches[treatment.pk][0], 'batches': batches[treatment.pk][1],
+        rows=[{'treatment': treatment, 'batches': batches[treatment.pk],
                'void_url': dialog_url('farm:treatment_void', here, args=[treatment.pk]) if can_void else '',
                'last_day_url': dialog_url('farm:treatment_last_day', here, args=[treatment.pk])
                if can_change and not treatment.is_deleted else ''}

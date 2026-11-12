@@ -1071,3 +1071,38 @@ class MailsUnderTheLockTests(RealCase):
             apply()
         self.assertIn('lock timeout', seen['update'])
         self.assertEqual(AccountMail.objects.get(pk=self.reset.pk).error, 'The mail server refused it.')
+
+    def test_a_lock_on_the_mails_held_for_an_instant_is_waited_for(self):
+        """Taking the mails' locks at once or not at all refused the run whenever anything held the table for an
+        instant: the database's own vacuum or analyze (the lock held here), the mail worker saying that it still has a
+        mail. It showed as a failure of another test of this module in a run of 12.11.2026 (19:06 UTC). The command
+        waits a moment, shorter than the server's deadlock timeout; the other session lets go once it is waited for."""
+        holder = self.held_elsewhere('LOCK TABLE account_mails IN SHARE UPDATE EXCLUSIVE MODE', None)
+        holder.inc_thread_sharing()
+        self.addCleanup(holder.dec_thread_sharing)
+        seen = []
+
+        def let_go_when_waited_for():
+            watcher = connections['default'].copy()
+            try:
+                for _ in range(250):
+                    with watcher.cursor() as cursor:
+                        cursor.execute("SELECT count(*) FROM pg_locks WHERE NOT granted AND relation = "
+                                       "'account_mails'::regclass AND database = (SELECT oid FROM pg_database "
+                                       "WHERE datname = current_database())")
+                        if cursor.fetchone()[0]:
+                            seen.append('waited for')
+                            break
+                    time.sleep(0.02)
+            finally:
+                holder.rollback()
+                watcher.close()
+
+        thread = threading.Thread(target=let_go_when_waited_for)
+        thread.start()
+        try:
+            apply()
+        finally:
+            thread.join(15)
+        self.assertEqual(seen, ['waited for'])
+        self.assertEqual(self.seen_elsewhere()[:2], (['O'], 0))

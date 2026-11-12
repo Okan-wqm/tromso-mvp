@@ -53,8 +53,10 @@ STRENGTH_SOURCES = {
 }
 
 
-# The plausibility warnings of a water's ionic inputs (cross review F5; chemcore/core/src/fresh.rs plausibility): said
-# beside the value, never a refusal.
+# The plausibility warnings of a water's inputs (cross review F5; chemcore/core/src/fresh.rs plausibility): said beside
+# the value, never a refusal. 'nh3_past_guard' is the K_NH4 panel's (2026-11-10, row 3): the numbers in its words are
+# the core's NH3_GUARD_MAX_TEMP_C and NH3_GUARD_MAX_SALINITY and the guard test's (chemcore/core/tests/nh3_guard.rs:
+# −1.3 % at 35 °C, −5.6 % at 40 °C, S 35), which farm/tests/test_plausibility.py holds them to.
 WARNINGS = {
     'conductivity_salinity': _('Check the conductivity and the salinity: they disagree beyond what any water from NaCl '
                                'brine to a hard fresh water allows (one of them mistyped, uncompensated, or from '
@@ -65,6 +67,10 @@ WARNINGS = {
                                  '(not compensated to 25 °C, or in the wrong unit?); theirs is used.'),
     'seawater_conductivity': _('Check the salinity: the conductivity is that of sea water of 5 ‰ or more (PSS-78) on '
                                'a water without a salinity; give the salinity, or the unit’s water origin.'),
+    'nh3_past_guard': _('NH₃: above 30 °C or a salinity of 35 ‰ the water is outside the range the NH₃ judgement was '
+                        'checked over (0 to 30 °C, up to 35 ‰); the NH₃ shown may read low against Clegg & Whitfield '
+                        '(1995), by about 1 % at 35 °C and 6 % at 40 °C in sea water of 35 ‰. Keep a margin to the '
+                        'limit.'),
 }
 
 

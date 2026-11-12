@@ -165,8 +165,9 @@ impl Equilibria {
     fn water_origin(&self) -> &'static str {
         self.0.origin.code()
     }
-    /// The plausibility warnings of its ionic inputs, as codes (cross review F5): 'conductivity_salinity',
-    /// 'conductivity_above_ions', 'conductivity_below_ions', 'seawater_conductivity'.
+    /// The plausibility warnings of its inputs, as codes (cross review F5): 'conductivity_salinity',
+    /// 'conductivity_above_ions', 'conductivity_below_ions', 'seawater_conductivity'; and 'nh3_past_guard', the water
+    /// above 30 °C or 35 ‰, past the range the NH₃ judgement's guard holds over (the K_NH4 panel, 2026-11-10).
     #[getter]
     fn warnings(&self) -> Vec<&'static str> {
         [
@@ -174,6 +175,7 @@ impl Equilibria {
             (f::CONDUCTIVITY_ABOVE_IONS, "conductivity_above_ions"),
             (f::CONDUCTIVITY_BELOW_IONS, "conductivity_below_ions"),
             (f::SEAWATER_CONDUCTIVITY, "seawater_conductivity"),
+            (f::NH3_PAST_GUARD, "nh3_past_guard"),
         ]
         .into_iter()
         .filter(|(bit, _code)| self.0.warnings & bit != 0)

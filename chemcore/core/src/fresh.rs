@@ -162,7 +162,7 @@ pub fn fresh_ionic_strength(
     Ok((strength, source))
 }
 
-// ---- plausibility of the ionic inputs (cross review F5): warnings said with the value, never a refusal ----------------
+// ---- plausibility of a water's inputs (cross review F5; the NH₃ guard): warnings said with the value, never a refusal --
 
 /// The salinity's ionic strength outside what the conductivity allows (`PLAUSIBLE_PER_MICROSIEMENS`).
 pub const CONDUCTIVITY_SALINITY: u8 = 1;
@@ -174,6 +174,28 @@ pub const CONDUCTIVITY_BELOW_IONS: u8 = 4;
 /// A salinity under `FRESH_UP_TO` with a conductivity PSS-78 reads as `SEA_FROM` or more (`practical_salinity`): past the
 /// band, about 8 950 µS/cm, so a hard fresh RAS at 2000 to 3000 µS/cm (PSS-78 1 to 1.6) stays quiet (cross review round 2).
 pub const SEAWATER_CONDUCTIVITY: u8 = 8;
+/// The water is past the range the NH₃ judgement's guard holds over (`NH3_GUARD_MAX_TEMP_C`, `NH3_GUARD_MAX_SALINITY`):
+/// its judged NH₃ may read below a Clegg & Whitfield (1995) based value. Said with every value worked out from the
+/// water, never a refusal (the K_NH4 panel's decision of 2026-11-10, row 3).
+pub const NH3_PAST_GUARD: u8 = 16;
+/// The warmest water (°C) the NH₃ judgement's guard holds for; `NH3_GUARD_MAX_SALINITY` (‰) is the saltiest. Up to both,
+/// the judged NH₃ (the larger of the limits' basis and the activity-corrected value, `Equilibria::nh3_share`) is never
+/// below the core's own corrected value nor below one worked out with Clegg & Whitfield's (1995, Geochim. Cosmochim.
+/// Acta 59: 2403, eq. 18) pK: tolerance 0 over 0 to 30 °C by S 0.5 to 35 (within 0.5 % at S 0), the smallest margin
+/// +2.9 % at this very corner (chemcore/core/tests/nh3_guard.rs, where the equation is typed from Xu, Pierrot & Cai
+/// 2017, Marine Chemistry, eq. 10; Clegg & Whitfield's paper itself was not read). Past either bound the judged value
+/// does fall below it: from 33.55 °C at S 35 and from 30.10 °C at S 40; −1.3 % at 35 °C and −5.6 % at 40 °C, S 35 (the
+/// panel's three independent computations; the guard's own tests). So `plausibility` says `NH3_PAST_GUARD` above 30 °C
+/// or above 35 ‰, the bounds themselves quiet. No species in scope lives there (salmon's CTmax 28.5 °C, lumpfish
+/// 20.6 °C, ballan wrasse 22.8 °C: second-hand, in the panel's report).
+///
+/// The two are validity bounds of cited constants, where what was checked against the sources ends, not limits a farm
+/// sets: they are code on purpose, not user-editable reference data (the house rule "never hard-code a limit a farm
+/// would want to change" is about a farm's own thresholds; editing these would only hide, or invent, a warning about
+/// the chemistry). They move only with a guard held over a wider range.
+pub const NH3_GUARD_MAX_TEMP_C: f64 = 30.0;
+/// See `NH3_GUARD_MAX_TEMP_C`.
+pub const NH3_GUARD_MAX_SALINITY: f64 = 35.0;
 /// The ionic strength per µS/cm a water may have: NaCl's `IONIC_PER_MICROSIEMENS_NACL` to Russell's
 /// `IONIC_PER_MICROSIEMENS`, each widened by Russell's scatter of about ±30 % (as the cross review quotes it; the paper
 /// itself was not read): 0.7 × 8.4e-6 and 1.3 × 1.6e-5.
@@ -216,14 +238,18 @@ pub fn practical_salinity(conductivity_25_us_cm: f64) -> R {
     Ok(s + f_t * delta - hill)
 }
 
-/// The warnings of a water's ionic inputs (the constants above, or-ed): never a refusal, said beside every value worked
-/// out from it (`Equilibria::warnings`). Only a conductivity can disagree; without one, none.
-pub fn plausibility(salinity: f64, alkalinity_mg_l: Option<f64>, ions: Ions) -> Result<u8, ChemError> {
+/// The warnings of a water's inputs (the constants above, or-ed): never a refusal, said beside every value worked out
+/// from it (`Equilibria::warnings`). A water above `NH3_GUARD_MAX_TEMP_C` or `NH3_GUARD_MAX_SALINITY` is past the NH₃
+/// guard (`NH3_PAST_GUARD`); of the ionic inputs only a conductivity can disagree, so without one none of theirs.
+pub fn plausibility(temp_c: f64, salinity: f64, alkalinity_mg_l: Option<f64>, ions: Ions) -> Result<u8, ChemError> {
     let salinity = finite(salinity)?;
-    let Some(kappa) = present(ions.conductivity_25_us_cm)? else {
-        return Ok(0);
-    };
     let mut warnings = 0;
+    if finite(temp_c)? > NH3_GUARD_MAX_TEMP_C || salinity > NH3_GUARD_MAX_SALINITY {
+        warnings |= NH3_PAST_GUARD;
+    }
+    let Some(kappa) = present(ions.conductivity_25_us_cm)? else {
+        return Ok(warnings);
+    };
     if salinity > 0.0 {
         let from_salinity = if ions.origin == Origin::SaltAdded {
             div(salinity / NACL_G_PER_MOL, 1.0 - salinity / 1000.0)?
@@ -493,7 +519,7 @@ pub fn equilibria_v3(
 ) -> Result<Equilibria, ChemError> {
     let eq = constants_v3(temp_c, salinity, alkalinity_mg_l, ions)?;
     Ok(Equilibria {
-        warnings: plausibility(salinity, alkalinity_mg_l, ions)?,
+        warnings: plausibility(temp_c, salinity, alkalinity_mg_l, ions)?,
         ..eq
     })
 }

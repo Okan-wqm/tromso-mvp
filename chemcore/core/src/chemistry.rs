@@ -375,8 +375,8 @@ pub struct Equilibria {
     pub limits_basis: Option<LimitsBasis>,
     /// Where its salt came from, as said (formula 1: `Origin::Unknown`).
     pub origin: Origin,
-    /// The plausibility warnings of its ionic inputs (`crate::fresh::plausibility`, bits; 0 for formula 1): said beside
-    /// every value worked out from it, never a refusal (cross review F5).
+    /// The plausibility warnings of its inputs (`crate::fresh::plausibility`, bits; 0 for formula 1): said beside every
+    /// value worked out from it, never a refusal (cross review F5; the NH₃ guard's range, `crate::fresh::NH3_PAST_GUARD`).
     pub warnings: u8,
 }
 

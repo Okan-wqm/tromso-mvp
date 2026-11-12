@@ -8664,6 +8664,16 @@ msgstr "NH₃-N-grense"
 msgid "NH₃-N limit (mg/L as N)"
 msgstr "NH₃-N-grense (mg/L som N)"
 
+msgid ""
+"NH₃: above 30 °C or a salinity of 35 ‰ the water is outside the range the NH₃ judgement was "
+"checked over (0 to 30 °C, up to 35 ‰); the NH₃ shown may read low against Clegg & Whitfield "
+"(1995), by about 1 % at 35 °C and 6 % at 40 °C in sea water of 35 ‰. Keep a margin to the limit."
+msgstr ""
+"NH₃: over 30 °C eller en salinitet på 35 ‰ er vannet utenfor området NH₃-vurderingen er "
+"kontrollert for (0 til 30 °C, opptil 35 ‰); vist NH₃ kan være for lav sammenlignet med Clegg & "
+"Whitfield (1995), med omtrent 1 % ved 35 °C og 6 % ved 40 °C i sjøvann på 35 ‰. Hold margin til "
+"grensen."
+
 msgid "NH₃: give the TAN."
 msgstr "NH₃: oppgi TAN."
 

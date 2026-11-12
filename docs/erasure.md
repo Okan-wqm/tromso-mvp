@@ -161,24 +161,46 @@ python manage.py erase_stranger_address stranger@example.com --apply \
 ```
 
 - **What the command checks, and what it cannot.** It refuses an address that is the address of any account **now**
-  (whatever its case or the spaces around it, the account active or not), and it waits while a mail to that address is
-  still being sent. **That is all it checks.** It cannot tell a stranger's address from an address that was a person's
+  (whatever its case or the spaces around it, the account active or not), and it **refuses** while a mail to that
+  address is still being sent: it does not wait for it; run it again when the mail's row says what became of it.
+  **That is all it checks.** It cannot tell a stranger's address from an address that was a person's
   own for a year, or from one an intruder put on an account and took off again (the evidence the decision F-050
   keeps): to the code all three are "an address an account once had". Telling them apart is the DPO's judgement.
 - **What the dry run shows for that judgement.** Without `--apply` nothing is changed. It lists every `account_mails`
   row and every activity-log row that would change, with the labels (and the value as it is stored, when that is not
   how it was typed: another case, another Unicode form); then, for each account touched, what the log says: from when
-  to when the address was the account's own (its Created and Changed `Email` rows, and by whom), every invitation
-  sent or tried to it, whether a password was set through a link sent to it, when and by which account, and how many
-  other log rows the account wrote itself meanwhile. It adds a **warning** when this does not look like a stranger's
-  address: the address was the account's own for a day or more, the log has no row that ends it, the account was
-  used while it had it, or more than one password was set through it. The warning informs; with `--apply` the
-  command obeys the DPO's decision all the same.
+  to when the address was the account's own (its Created and Changed `Email` rows, and by whom), whether it
+  **replaced an earlier address** of the account (a Changed row with a former `Email`), every invitation sent or
+  tried to it, whether a password was set through a link sent to it, when and by which account, and how many other
+  log rows the account wrote itself meanwhile (counted by the row's key of who wrote it, so an account renamed since
+  loses none; a row without that key counts under any name the account's rows carry). It adds a **warning** when
+  this does not look like a stranger's address:
+  - **the address replaced an earlier address of the account and a password was set through a link sent to it**:
+    this is how an account is taken over through a changed address, and the warning comes whatever the durations (a
+    takeover needs minutes: the address changed, the link used, the old address put back);
+  - the address was the account's own for a day or more; the log has no row that ends it; the account was used
+    while it had it; more than one password was set through it.
+
+  The warning informs; with `--apply` the command obeys the DPO's decision all the same.
 - **The instruction and the name are written into the log, so they must not hold the address.** `--instruction` takes
-  the instruction's reference and date, `--carried-out-by` the operator's name. The command refuses either when it
-  holds the address (in any case or Unicode form): it would stand in the log again, in a row this command would
-  not find. For the same reason its own row is written under `account <id>` when the account's username holds the
-  address.
+  the instruction's reference and date, `--carried-out-by` the operator's name. The command refuses either when the
+  address stands **anywhere** in it, in any case or Unicode form, as a part of a longer word or of a longer address
+  too (`stranger@example.com.Confirmed`, `stranger@example.com-DP17`, `ref.stranger@example.com`, and
+  `xstranger@example.com` as well): it would stand in the log again, in a row this command would not find. This
+  refusal refuses rather once too often; reword the instruction. For the same reason its own row is written under
+  `account <id>` when the account's username holds the address in any such way.
+- **The Turkish capital İ and the dotless ı** (decided with the second review, 12.11.2026). An address is compared
+  as the platform compares addresses everywhere: case folded, in one Unicode form. By that comparison
+  `İNFO@EXAMPLE.COM` and `info@example.com` are **two addresses** (the capital İ is not the capital of i, and ı is a
+  letter of its own), and what is replaced is decided by that comparison alone: asked for `info@example.com`, the
+  command does not erase a row that holds `İNFO@example.com`, because it cannot know that they are one mailbox.
+  Nothing passes in silence, though. The dry run (and the run) **names** every `account_mails` row and every log row of
+  a user account that holds the address only when İ and ı are read as i, with the value as stored, under "NOT
+  changed, and to be looked at": when it is the same address, run the command again with the address written as it
+  is stored. And the two refusals read the letters as one, since refusing once too often costs nothing there: an
+  instruction or a name that holds the address read so is refused, and so is an address that an account has now when
+  read so (it names the account and its address as stored). Not covered by the naming: other kinds of record, a
+  username, the names on old log rows (the list "The text also stands here" searches the text as typed).
 - **What it changes, in one transaction** (`core/erasure.py`):
   - `account_mails.address` of the rows of that address becomes `erased@invalid`, and where a mail server's reply in
     `error` names the address (in any row, in any case or Unicode form, as a whole address), that address inside it
@@ -190,12 +212,17 @@ python manage.py erase_stranger_address stranger@example.com --apply \
     the instruction and who carried it out under labels of their own (the labels and that sentence are shown in the
     reader's language; the instruction and the name are as typed). Never the address.
 - **The log's writers wait for a short moment, the alarms among them.** Everything is read before any lock is taken.
-  The command then locks the log against writers, waiting for that lock at most `--lock-wait` seconds (5): when the
-  log is being written and the lock cannot be had in that time, the command gives up, says so and has changed
-  nothing (a session that waits for this lock makes every later writer queue behind it, so the wait is bounded). Under
-  the lock it reads again only what must not have changed (that no account has the address now, that the rows to
-  rewrite are as they were read, that no row of a user account and no mail was added meanwhile: otherwise it stops
-  and asks to be run again) and writes. The append-only trigger is set aside for the updates of `changes` only and is
+  The command then locks the log against writers, waiting for that lock at most `--lock-wait` seconds (5; a positive
+  number, anything else is refused): when the log is being written and the lock cannot be had in that time, the
+  command gives up, says so and has changed nothing (a session that waits for this lock makes every later writer
+  queue behind it, so the wait is bounded). **Holding the log, it waits for nothing more**: it locks `account_mails`
+  against writers and the mail rows it will rewrite at once, or gives up saying that a row of `account_mails` is
+  being written (the mail worker writes a mail's row and then the log; waiting for it with the log locked would be a
+  deadlock, with every writer of the log waiting meanwhile). Under the locks it reads again what must not have
+  changed: that no account has the address now, that the log rows to rewrite are as they were read, that no row of a
+  user account was added, and **every mail again**: the same rows hold the address, with the same values, and no
+  other row has come to hold it (a mail server's reply recorded meanwhile, a new mail). Otherwise it stops, has
+  changed nothing and asks to be run again. Then it writes. The append-only trigger is set aside for the updates of `changes` only and is
   back in force before the transaction ends; when anything fails, nothing is kept and the trigger is in force
   (PostgreSQL undoes the setting aside with the rest, and the command checks it before it commits).
 - **A placeholder, not a digest.** Nothing of the address is kept: no keyed digest, unlike the private values of
@@ -257,7 +284,9 @@ log labels is a private one, the address is in the log and in `account_mails`, a
 `core/tests_erasure.py` holds the erasure of a stranger's address: the rows as the pages write them, the dry run, every
 row and label changed and nothing else (other addresses, an address that contains it, other users' rows, other labels,
 other kinds of record, a contact list, other shapes of value), the refusals (an instruction or a name that holds the
-address among them), what the dry run says is checked and shows of each account, a second run, the bounded wait for the
+address in any way among them, the Turkish capitals), what the dry run says is checked and shows of each account (the
+takeover pattern, the count that survives a rename), a second run, the mails read again under the locks and a mail
+being written said to be a mail and not waited for, the bounded and positive wait for the
 lock and the read before it, the trigger with real commits and a second session (a commit, a rollback, a fault and an
 interrupt while it is set aside, a lost connection, a caller's transaction, autocommit off), and the users tab, the log
 and the History tab in three languages on the erased rows.

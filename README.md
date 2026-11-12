@@ -3733,17 +3733,23 @@ only one who manages roles and users; everyone else gets exactly what their role
     (`core/erasure.py`). **Who:** the platform's database administrator, on the data-protection officer's written
     instruction for that address. **What it checks:** only that no account has the address now. It cannot tell a
     stranger's address from a person's own former one, so the dry run shows when the address was the account's own,
-    whether a password was set through a link sent to it and whether the account was used meanwhile, and warns when
-    it does not look like a stranger's; the DPO judges, the command obeys. **What it will not do:** an address that is
-    an account's own now, an address that only contains it, any other label, shape or record (it names where else
-    the text stands; nothing covers an account's username or the name on the log's old rows), an instruction or a name
-    that holds the address (nothing it writes may hold it). **The log's writers, the alarms among them, wait while it
-    holds the lock**: it reads everything first, waits for the lock at most `--lock-wait` seconds (5) and gives up
-    otherwise. **What remains:** the rows themselves (who invited whom, that a link was used, that the address
+    whether it replaced an earlier address, whether a password was set through a link sent to it and what the
+    account wrote meanwhile (by the account's key, whatever its name), and warns when it does not look like a
+    stranger's: always when it replaced an earlier address and a password was set through a link sent to it, the way
+    an account is taken over. The DPO judges, the command obeys. **What it will not do:** an address that is an
+    account's own now, a mail to it still being sent (refused, not waited for), an address that only contains it, any
+    other label, shape or record (it names where else the text stands; nothing covers an account's username or the
+    name on the log's old rows), an instruction or a name that holds the address anywhere in it (nothing it writes
+    may hold it; this refusal refuses rather once too often). **The Turkish capital İ and the dotless ı** are other
+    letters than i to the comparison that decides what is replaced, so `İNFO@EXAMPLE.COM` is not erased for
+    `info@example.com`; the dry run names the rows that hold the address only when they are read as i, and the
+    refusals read them as i. **The log's writers, the alarms among them, wait while it holds the lock**: it reads
+    everything first, waits for the lock on the log at most `--lock-wait` seconds (5, a positive number) and gives
+    up otherwise; holding it, it waits for nothing more (a mail being written just then refuses the run, said as
+    such), and reads every mail again under the locks. **What remains:** the rows themselves (who invited whom, that a link was used, that the address
     changed), the placeholder, and the address in every backup taken before. A placeholder, not a digest: this is
     erasure, not the pseudonymisation above. The users tab, the History tab and the log read an erased row in every
     language (`core/tests_erasure.py`).
-  What is erased where on a person's request, what remains and who may do it: [docs/erasure.md](docs/erasure.md).
   What is erased where on a person's request, what remains and who may do it: [docs/erasure.md](docs/erasure.md).
 
 ## Database viewer

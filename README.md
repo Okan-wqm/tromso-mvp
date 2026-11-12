@@ -1129,7 +1129,20 @@ notes, and **Void** while allowed.
   both cards say "Each site on its own day". The filter is `farm.clocks.own_days`, beside the clocks the tasks read.
   Each card opens the feeding records from the earliest to the latest of those days among the sites, so in the hours
   when two sites are on different days that list holds one day more of one site than the figure
-  (`farm.tests.test_feeding.OverviewFeedOnSeveralClocksTests`).
+  (`farm.tests.test_feeding.OverviewFeedOnSeveralClocksTests`). A unit whose department has no site (a row a deleted
+  site left) counts on the company's day, as everywhere. The query reads only the records of the days some clock
+  counts, never the whole table (`FourClocks*Tests`: four clocks, a site ahead, a site behind, the two nights the
+  clocks change).
+- **What still reads the company's day over sites of several clocks** (found while the two figures above were
+  changed; none changed here). The owner decided on 12.11.2026 that the first three go to the site's own day on a
+  branch of their own: Feeding › Records › By unit and day (its last day and its default seven days,
+  `farm/feeding/views.py` `_by_day`); the water history's date filter; the default date of a form opened without a
+  unit (a harvest, a feeding protocol's first day). Not decided: the feeding protocols' "in force today" count and
+  filter and the check that refuses to retire a protocol assigned "for today or later"
+  (`farm/resources/feeding_protocol.py`, `farm/models/feeding_protocol.py`); HR's head counts, organisation chart,
+  the attendance list's default days, the roster's default week and who is in a person's scope today (`hr/read.py`,
+  `hr/resources/attendance.py`, `hr/resources/roster.py`, `hr/scope.py`). The reports' deadlines read Oslo's day on
+  purpose: they are the authority's.
 
 **Who may do what:** the area Feeding records in the role matrix (Production · Operations · Feeding): Read
 the Meal board, Records and the feeding part of a unit's drawer, Create records a feeding or a meal, Delete voids
@@ -1952,7 +1965,14 @@ the unit's own line are one answer:
 batch counts in a unit on the day it leaves), so that day the list shows them as two parts, as the two units' lines
 do. And a course given today to the part of a batch on the later clock holds the whole batch, each part by its own
 site's calendar: the part on the earlier clock shows the withdrawal at once and is marked held when its own day
-reaches the course's first day, hours later.
+reaches the course's first day, hours later. **The hard edge of the same rule** (the third review's case K; as on
+main, and the owner's rule applied as decided): the course is given today on a site whose clock is ahead (its first
+day is that site's today, say the 11th), and some of those very fish are moved the same day to a site whose clock is
+behind, where it is still the 10th. Exactly then, for the hours until the second site's own day reaches the course's
+first day, that site's unit line and harvest check say nothing of the withdrawal for fish that were in the bath: on
+their site's calendar the course begins tomorrow. The Treatments list shows that part with the withdrawal's end and
+not as held; a write guard sees the course at once. Closing it would mean reading those fish on another day than
+their site's own, which is the owner's to decide.
 
 **The write guards keep their day**, the earliest today among every unit the fish were in (`withdrawal.reach`,
 `earliest_today` in `farm/stock/dates.py`): a guard asks before a write stands, of fish that can be on several sites.

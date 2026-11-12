@@ -4873,7 +4873,10 @@ WORKERS=1 scripts/test.sh                # one process, without --parallel
 memory), runs `manage.py compile_catalogs` and `manage.py test --noinput --parallel $WORKERS` in the test runner's
 image, stage `tests` of `docker/testrunner.Dockerfile` (the hashed requirements, the water-chemistry core built from the
 checkout and `tblib`; `scripts/testrunner/image.sh` defines it, its Dockerfile, stage, context and a tag hashed from
-everything it is built from, and builds it when missing; CI builds it by the same script), and removes the
+everything it is built from, and builds it when missing; CI builds it by the same script. Of `docker/` and `chemcore/`
+the tag is hashed from the files git tracks, so what a run leaves in a tree, a `__pycache__` beside chemcore's scripts
+or `chemcore/target/`, is not in the image's name, and a worktree that has run its tests asks for the same tag as a
+clean checkout), and removes the
 server and the network at the end (`KEEP_DB=1` keeps them): on every way out of the script, a pass, a failure, a step
 that could not start, Ctrl-C, a TERM or HUP signal (the tests' container runs behind a `wait`, so a signal is answered at
 once), with any anonymous volume of the containers (`docker rm -f -v`; the server's data is a tmpfs in the place of the

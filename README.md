@@ -1923,18 +1923,35 @@ day. The list filters by site, unit, batch, method, medicine, dates, "under with
 "vaccinations", shows every batch a treatment reached with the withdrawal it puts on it, and offers **Last day**
 (the course ended earlier or goes on: Edit, logged with the old and new day) and **Void** (with a reason, the
 farm's window; it lifts the withdrawal). Nothing else is edited: a correction is a void and a new record.
-**The list reads each treatment on the earliest day its fish are on** (`farm.health.withdrawal.read_days`): the
-earliest of the company's today and today on every unit the fish of its units have been in, the one they are in now
-among them (`withdrawal.reach`, the one way to find that day, which the write guards read too; `earliest_today` in
-`farm/stock/dates.py`). So the list is never laxer than a write guard, than the fish's own unit line or than the
-company's day: fish moved to a site on an earlier day are held on the list as long as their own unit holds them
-(`farm.tests.test_health.TreatmentPageMovedBatchTests`: the list, "Under withdrawal today", the unit's line, the harvest
-check and the guard's day agree), and a site behind the company no longer has its running day counted as a past day
-without a temperature (`TreatmentPageSiteBehindTests`). **Known, and the strict side:** for a site ahead of the
-company whose fish never left it, the list still holds them for the hours until the company's day has turned, while
-that unit's own line and the harvest check read the site's day and free them (`TreatmentPageSiteAheadTests`). The
-list never frees first.
-`...SiteAheadTests`).
+**The list reads the fish on the day of the site they are on now** (the owner's decision of 12.11.2026: everything
+is read on the site's own day, by the site's own clock; the company's day plays no part in whether fish are held).
+`farm.health.withdrawal.of_treatments` reads each batch a treatment reached on today of the site its fish are on now,
+with the reader the unit's own withdrawal line and the harvest check use (`of_units`), asked that same day; which
+units share a day is said in one place (`site_days`). So the list's row, "Under withdrawal today", the day counts and
+the unit's own line are one answer:
+
+- a site ahead of the company: a course given today there has begun and holds the fish, and fish free on the site's
+  day are free on the list, though the company's day has not come;
+- a site behind the company: its running day is not counted as a past day without a temperature, and its fish are
+  not freed a day early;
+- a batch moved between clocks is read on the day of where it is now, with every course it carries;
+- a batch that arrived today in a unit under a running course is in the course;
+- a batch whose fish are on sites of different days is shown once for each day, each part with its units and its own
+  answer (`B-001 (K-01) · … `, `B-001 (T-02) · …`);
+- fish that are nowhere any more (harvested out) are read on the day of the units the course was given in.
+
+`farm/tests/test_withdrawal_clocks.py` asserts for each of these that the list says what the unit's own line says.
+**Known and accepted:** on the day fish move between clocks, the unit they left still names them on its own day (a
+batch counts in a unit on the day it leaves), so that day the list shows them as two parts, as the two units' lines
+do. And a course given today to the part of a batch on the later clock holds the whole batch, each part by its own
+site's calendar: the part on the earlier clock shows the withdrawal at once and is marked held when its own day
+reaches the course's first day, hours later.
+
+**The write guards keep their day**, the earliest today among every unit the fish were in (`withdrawal.reach`,
+`earliest_today` in `farm/stock/dates.py`): a guard asks before a write stands, of fish that can be on several sites.
+One thing changed for them: a course that has begun where it was given has begun (`Reader.there`, `Reader.holds`).
+Before, a course given today on the later clock began "tomorrow" on the guard's day and was not seen: a unit of such
+fish could be deleted and a medicine's withdrawal made shorter without the question (`GuardsOnTwoClocksTests`).
 
 **The medicine withdrawal** is worked out on read, never stored (`farm/health/withdrawal.py`), so a void, a
 corrected temperature or a backdated transfer changes it at once:

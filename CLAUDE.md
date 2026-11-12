@@ -132,6 +132,12 @@ the mobile app. New features wait while in-flight branches are being landed.
 - Analysis agents read the code, not the Markdown notes; implementation agents get their own worktree; the
   coordinator reviews. Expert panels are evidence-only and re-check each other's claims.
 - Notes, registers and memory rows are hints: verify against the code, the tests and the latest run before acting.
+- Clean up what you made. Docker's disk and the temp folder are on drive C, which is nearly full. When its work ends,
+  every agent removes the containers, networks, volumes, image tags, tree copies and temp files it made (look at
+  `docker ps -a`, `docker network ls`, `docker volume ls`), and never prunes what it did not make: no
+  `docker system prune`, no `docker volume prune`, no named volume, nothing of the compose project or of another
+  agent. `scripts/testrunner/prune.sh` (`--dry-run` first) removes the test runner's old image tags; `scripts/test.sh`
+  removes its own containers and network on every way out.
 - Report to the owner in Turkish, plainly, with a "weak points" part (what was not verified, what repeated, what
   was lost). The owner checks the UI, not the code: show visible progress and say what to click.
 

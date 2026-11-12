@@ -5,7 +5,8 @@
 #   scripts/testrunner/prune.sh --dry-run   removes nothing: says what it would remove
 #
 # scripts/testrunner/image.sh names the test runner's image by a hash of everything it is built from, so every change
-# to the requirements, to docker/ or to chemcore/ builds a new tag (balik-testrunner-chemcore:req-<hash>, some 400 MB)
+# to the requirements, to docker/ or to chemcore/ builds a new tag (<its repository>:req-<hash>, some 400 MB; the
+# repository's name is image.sh's alone and is asked of it here, config.tests.TestRunnerImageNameTests)
 # and nothing removed the old ones: they filled the disk Docker lives on. This removes every req-* tag of that
 # repository except:
 #   (a) the tag of every live git worktree of this repository (`git worktree list`; that tree's own

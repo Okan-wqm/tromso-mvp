@@ -1398,8 +1398,9 @@ class TreatmentPageTests(HealthTestCase):
                          ([self.t1], medicine, Decimal('0.200'), 'mg_l', Decimal('1.500'), 45, self.vet, 'Calm'))
         page = self.client.get(back)
         self.assertEqual([row['treatment'] for row in page.context['rows']], [treatment])
-        [(batch, held)] = page.context['rows'][0]['batches']
-        self.assertEqual((batch, held.until), (self.batch, self.day(-7)))     # the last day + 7 + 1
+        [part] = page.context['rows'][0]['batches']
+        self.assertEqual((part.batch, part.withdrawal.until, part.held, part.units),
+                         (self.batch, self.day(-7), True, ()))                # the last day + 7 + 1
         self.assertContains(page, self.batch.code)
         # The last day, changed through its dialog.
         self.client.post(reverse('farm:treatment_last_day', args=[treatment.pk]),
@@ -1463,23 +1464,24 @@ class TreatmentPageSiteBehindTests(FrozenClock, HealthTestCase):
         [line] = self.held()
         self.assertEqual((self.today, line.until), (BAD_HOURS['WinterNight'].date(), self.day(-1)))
         [row] = self.rows(show='withdrawal')                       # "Under withdrawal today": the site's today
-        self.assertEqual((row['treatment'], row['today']), (treatment, self.today))
-        [(batch, held)] = row['batches']
-        self.assertEqual((batch, held.until, held.holds_on(row['today'])), (self.batch, line.until, True))
+        [part] = row['batches']
+        self.assertEqual((row['treatment'], part.today, part.batch, part.withdrawal.until, part.held),
+                         (treatment, self.today, self.batch, line.until, True))
         self.assertContains(self.client.get(reverse('farm:treatments')), '<span class="over-text" title="')
 
     def test_the_sites_running_day_is_not_counted_as_a_past_day_without_a_temperature(self):
         self.treat(self.medicine(degree_days=50), 6, 6)            # five past days, none measured
         [line] = self.held()
         [row] = self.rows()
-        [(_batch, held)] = row['batches']
-        self.assertEqual((held.days_without_temperature, held.until), (5, line.until))
+        [part] = row['batches']
+        self.assertEqual((part.withdrawal.days_without_temperature, part.withdrawal.until), (5, line.until))
         self.assertEqual(line.days_without_temperature, 5)
 
 
 class TokyoCase(HealthTestCase):
     """A second site on Tokyo's clock beside the fixtures' Bergen (UTC), with a unit K-01; the company's clock is
-    Oslo's. `treated_there` stocks K-01 and treats its fish; `moved_here` moves them to Bergen's T-02."""
+    Oslo's. `treated_there` stocks K-01 and treats its fish; `moved_here` moves them to Bergen's T-02. What the
+    Treatments list says of fish on several clocks is in test_withdrawal_clocks.py."""
 
     def setUp(self):
         super().setUp()
@@ -1500,10 +1502,6 @@ class TokyoCase(HealthTestCase):
     def moved_here(self, batch):
         self.going_on(stock_services.record_transfer, self.user, source=self.k1, batch=batch,
                       day=local_today(self.t2), legs=[(self.t2, 1000)], reason='density')
-
-    def row_of(self, treatment, **query):
-        rows = self.client.get(reverse('farm:treatments'), query).context['rows']
-        return next((row for row in rows if row['treatment'] == treatment), None)
 
 
 class EarliestTodayTests(FrozenClock, TokyoCase):
@@ -1526,68 +1524,6 @@ class EarliestTodayTests(FrozenClock, TokyoCase):
         self.moved_here(batch)
         self.assertEqual(withdrawal._reached([self.k1.pk])[1], date(2026, 11, 10))               # Bergen's, the earlier
         self.assertEqual(withdrawal._reached([self.t2.pk])[1], date(2026, 11, 10))
-
-
-class TreatmentPageMovedBatchTests(FrozenClock, TokyoCase):
-    """Fish treated on a site ahead and moved to a site behind (the review's case, Q2): the Treatments list, "Under
-    withdrawal today", the unit's own withdrawal line, the harvest check and the write guards read the same day and say
-    the same of them. The list read the treatment on the day of the unit it was given in (Tokyo's 11th) and showed the
-    fish as free while their own unit, in Bergen on the 10th, still held them."""
-    NOW = datetime(2026, 11, 10, 16, 0, tzinfo=dt_timezone.utc)
-
-    def test_every_reader_holds_the_moved_fish_on_their_last_held_day(self):
-        batch, treatment, until = self.treated_there(2, 1)        # last day the 9th, 1 day: free from the 11th
-        self.assertEqual(until, date(2026, 11, 11))
-        self.moved_here(batch)
-        here = local_today(self.t2)                               # the 10th: their last held day where they are now
-        [line] = withdrawal.of_units([self.t2])[self.t2.pk]       # the unit's own line
-        self.assertEqual((line.until, line.holds_on(here)), (until, True))
-        self.assertEqual([warning.warning for warning in handling_check.check('harvest', self.t2, here)], ['withdrawal'])
-        self.assertEqual(withdrawal._reached([self.k1.pk])[1], here)                       # the write guards' day
-        row = self.row_of(treatment)                              # the Treatments list
-        [(found, held)] = row['batches']
-        self.assertEqual((row['today'], found, held.until, held.holds_on(row['today'])), (here, batch, until, True))
-        self.assertIsNotNone(self.row_of(treatment, show='withdrawal'))                    # "Under withdrawal today"
-        self.assertContains(self.client.get(reverse('farm:treatments')), '<span class="over-text" title="')
-
-
-class TreatmentPageMovedBatchAtNightTests(FrozenClock, TokyoCase):
-    """The same fish when the company's day has turned too: 23:30 UTC on the 10th is the 10th in Bergen and already the
-    11th in Oslo and in Tokyo. The list reads the earliest of them, Bergen's, where the fish are."""
-    NOW = BAD_HOURS['WinterNight']
-
-    def test_the_list_reads_the_day_of_the_unit_the_fish_are_in_not_the_later_ones(self):
-        self.assertEqual((local_today(self.k1), local_today(self.t2), local_today()),
-                         (date(2026, 11, 11), date(2026, 11, 10), date(2026, 11, 11)))
-        batch, treatment, until = self.treated_there(2, 1)
-        self.moved_here(batch)
-        [line] = withdrawal.of_units([self.t2])[self.t2.pk]
-        row = self.row_of(treatment)
-        [(_found, held)] = row['batches']
-        self.assertEqual((row['today'], held.until, held.holds_on(row['today']), line.holds_on(local_today(self.t2))),
-                         (date(2026, 11, 10), until, True, True))
-        self.assertIsNotNone(self.row_of(treatment, show='withdrawal'))
-
-
-class TreatmentPageSiteAheadTests(FrozenClock, TokyoCase):
-    """A site ahead of the company whose fish never left it: at 16:00 UTC on the 10th it is 17:00 on the 10th in Oslo and
-    01:00 on the 11th in Tokyo. The list is over the whole farm and never reads a day later than the company's (it
-    never did): fish free on their own site's today are still listed as held until the company's day has turned too,
-    while the unit's own line and the harvest check, which are that site's alone, read its own day. The list is the
-    stricter of the two, never the laxer."""
-    NOW = datetime(2026, 11, 10, 16, 0, tzinfo=dt_timezone.utc)
-
-    def test_the_list_is_never_laxer_than_the_companys_day_and_the_units_own_line_reads_its_own(self):
-        batch, treatment, until = self.treated_there(1, 0)        # given yesterday there, no days: free today there
-        there = local_today(self.k1)
-        self.assertEqual((there, local_today(), until), (date(2026, 11, 11), date(2026, 11, 10), date(2026, 11, 11)))
-        self.assertEqual(withdrawal.of_units([self.k1]), {})                    # the unit's own line: free on its 11th
-        self.assertEqual(handling_check.check('harvest', self.k1, there), [])
-        row = self.row_of(treatment)
-        [(found, held)] = row['batches']
-        self.assertEqual((row['today'], found, held.until, held.holds_on(row['today'])),
-                         (date(2026, 11, 10), batch, until, True))              # the company's 10th: still listed
-        self.assertIsNotNone(self.row_of(treatment, show='withdrawal'))
 
 
 class LicePageTests(HealthTestCase):

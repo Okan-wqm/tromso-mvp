@@ -26,6 +26,7 @@ from core.crud import done, render_page
 from core.dates import read_day
 
 from .. import placements
+from ..clocks import clocks, own_days
 from ..forms.feeding import FeedingForm, feed_label
 from ..forms.stock import VoidForm
 from ..handling.fasting import fasting_on
@@ -415,19 +416,28 @@ def drawer(request, unit, stock, feeding, query):
 
 
 def overview_tiles(user):
-    """The production overview's feed figures: fed today and over the last 7 days on the whole farm (the
-    company's today), for people who may read the feeding records."""
+    """The production overview's feed figures: fed today and over the last 7 days on the whole farm, **each site on its
+    own day** (the owner's decision of 12.11.2026; farm.clocks.own_days). Feed recorded on a site's today is in "Feed
+    today" at once, whatever the company's clock says; the 7 days are each site's own last 7; a figure over sites on
+    different clocks is the sum of each site's own day, and the cards of a farm with more than one clock say so
+    (`sub`). Each card opens the records of its days, from the earliest to the latest among the sites (on a farm whose
+    sites are on different days just then, that list holds a day more of one site than the figure). For people who may
+    read the feeding records."""
     if not user.has_perm(VIEW):
         return []
-    today = local_today()
-    first = today - timedelta(days=read.WEEK - 1)
-    kilos = FeedingRecord.objects.filter(date__range=(first, today)).aggregate(
-        today=Sum('amount_kg', filter=Q(date=today)), week=Sum('amount_kg'))
+    now = [clock for clock in clocks() if clock.sites is not None]         # a feeding has a unit, and a unit a site
+    site = 'unit__production_department__site'
+    kilos = FeedingRecord.objects.aggregate(today=Sum('amount_kg', filter=own_days(now, site)),
+                                            week=Sum('amount_kg', filter=own_days(now, site, read.WEEK))) if now else {}
+    days = [clock.today for clock in now] or [local_today()]
+    earliest_day, latest_day = min(days), max(days)
+    first = earliest_day - timedelta(days=read.WEEK - 1)
+    sub = _('Each site on its own day') if len(now) > 1 else ''
     url = reverse('farm:feeding_records')
     return [
-        {'key': 'today', 'label': _('Feed today'), 'count': tonnes(kilos['today'] or 0),
-         'url': f'{url}?{urlencode({"from": today.isoformat(), "to": today.isoformat()})}'},
-        {'key': 'week', 'label': _('Feed, last 7 days'), 'count': tonnes(kilos['week'] or 0),
-         'url': f'{url}?{urlencode({"from": first.isoformat(), "to": today.isoformat()})}'},
+        {'key': 'today', 'label': _('Feed today'), 'count': tonnes(kilos.get('today') or 0), 'sub': sub,
+         'url': f'{url}?{urlencode({"from": earliest_day.isoformat(), "to": latest_day.isoformat()})}'},
+        {'key': 'week', 'label': _('Feed, last 7 days'), 'count': tonnes(kilos.get('week') or 0), 'sub': sub,
+         'url': f'{url}?{urlencode({"from": first.isoformat(), "to": latest_day.isoformat()})}'},
     ]
 

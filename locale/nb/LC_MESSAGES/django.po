@@ -5631,6 +5631,9 @@ msgstr "Hvert punkt kan bare listes én gang."
 msgid "Each point is the mean of its time; the band is its lowest and highest value."
 msgstr "Hvert punkt er gjennomsnittet for sitt tidsrom; båndet er dets laveste og høyeste verdi."
 
+msgid "Each site on its own day"
+msgstr "Hver lokalitet på sin egen dag"
+
 msgid "Each temperature is a column once."
 msgstr "Hver temperatur kan bare være én kolonne."
 

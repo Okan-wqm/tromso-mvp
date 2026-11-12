@@ -5640,6 +5640,9 @@ msgstr "Her nokta bir kez listelenebilir."
 msgid "Each point is the mean of its time; the band is its lowest and highest value."
 msgstr "Her nokta kendi zaman aralığının ortalamasıdır; bant, o aralığın en düşük ve en yüksek değeridir."
 
+msgid "Each site on its own day"
+msgstr "Her saha kendi gününde"
+
 msgid "Each temperature is a column once."
 msgstr "Her sıcaklık yalnızca bir sütun olabilir."
 

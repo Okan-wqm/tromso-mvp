@@ -305,7 +305,7 @@ class RefusalTests(ErasureCase):
             apply()
         self.assertEqual(stored(), before)
 
-    def test_a_mail_to_the_address_still_being_sent_is_waited_for(self):
+    def test_a_mail_to_the_address_still_being_sent_refuses_it(self):
         AccountMail.objects.filter(user=self.liv).update(sent_at=None, error='')
         with self.assertRaisesMessage(CommandError, 'is being sent right now'):
             apply()
@@ -440,9 +440,26 @@ class NothingWrittenHoldsTheAddressTests(ErasureCase):
                     self.assertRaisesMessage(CommandError, 'holds the address itself'):
                 run(STRANGER, '--apply', '--instruction', instruction, '--carried-out-by', by)
         self.assertEqual(stored(), self.before)
-        # an address that only contains it is another address: the instruction may name that one
-        run(STRANGER, '--apply', '--instruction', f'DP-17, not {LONGER}', '--carried-out-by', 'Kari Nordmann')
+
+    def test_any_occurrence_of_the_address_in_what_the_command_writes_is_refused(self):
+        """Review S3: the refusal read the address as a whole address only, so `strangr@example.com.Confirmed by DPO`
+        went into the log end to end. What the command itself writes is refused on any occurrence, as a part of a
+        longer word or of a longer address too: once too often costs a rewording."""
+        for instruction in (f'{STRANGER}.Confirmed by DPO', f'ref {STRANGER}-DP17', f'{STRANGER}_ref', f'ref.{STRANGER}',
+                            f'DP-17, not {LONGER}', f'DP-17{STRANGER.upper()}x', f'mailto:{STRANGER}?subject=DP-17',
+                            'strangr@example.comstrangr@example.com'):
+            for words in ((instruction, 'Kari Nordmann'), (INSTRUCTION, instruction)):
+                with self.subTest(instruction=words[0], by=words[1]), \
+                        self.assertRaisesMessage(CommandError, 'holds the address itself'):
+                    run(STRANGER, '--apply', '--instruction', words[0], '--carried-out-by', words[1])
+        self.assertEqual(stored(), self.before)
+        apply()                                   # and a text that only looks like it is not refused
         self.assertEqual(len(own_rows()), 3)
+
+    def test_the_erasures_row_is_not_under_a_username_that_holds_the_address_in_any_way(self):
+        User.objects.filter(pk=self.liv.pk).update(username=f'x{STRANGER}.old')
+        apply()
+        self.assertEqual({row.entity_label for row in own_rows()}, {'kari', 'ola', f'account {self.liv.pk}'})
 
     def test_the_erasures_row_is_not_under_a_username_that_is_the_address(self):
         User.objects.filter(pk=self.liv.pk).update(username='Strangr@EXAMPLE.com')       # a username may be an address
@@ -797,3 +814,240 @@ class LockTests(RealCase):
             apply()
         self.assertEqual(self.seen_elsewhere(), self.UNTOUCHED)
         self.assert_the_log_is_append_only_elsewhere()
+
+
+def log_row(when, who, action, pk, label, changes, user=None, kind='user'):
+    """A row of the log written at `when`, as the pages write it (`user`: the key of who wrote it)."""
+    with mock.patch('django.utils.timezone.now', return_value=when):
+        return AuditLog.objects.create(user=user, user_name=who, action=action, entity_type=kind, entity_id=str(pk),
+                                       entity_label=label, changes=changes)
+
+
+class TakeoverPatternTests(ErasureCase):
+    """Review S2: the warning was silent for the very pattern the log keeps the address for (an account's address
+    changed, a password set through the link sent to the new one, the old address put back within minutes), and what
+    the account wrote meanwhile was counted by its latest name, so a rename lost it."""
+    THEN = datetime(2026, 10, 1, 9, 0, tzinfo=dt_timezone.utc)
+
+    def test_an_address_that_replaced_an_earlier_one_and_took_a_password_link_is_warned_of_whatever_the_durations(self):
+        nils = User.objects.create_user('nils', 'nils@example.com', 'x')
+        changed = self.THEN + timedelta(days=30)
+        log_row(self.THEN, 'root', 'create', nils.pk, 'nils', {'Email': [None, 'nils@example.com']})
+        log_row(changed, 'root', 'update', nils.pk, 'nils', {'Email': ['nils@example.com', 'taker@example.com']})
+        log_row(changed + timedelta(minutes=5), 'nils', 'password', nils.pk, 'nils',
+                {'Link sent to': [None, 'taker@example.com']}, user=nils)
+        log_row(changed + timedelta(minutes=20), 'root', 'update', nils.pk, 'nils',
+                {'Email': ['taker@example.com', 'nils@example.com']})
+        said = run('taker@example.com')
+        self.assertRegex(said, r'it replaced an earlier address of the account: 2026-10-31 09:00 UTC \(update by root\)')
+        self.assertIn('WARNING: this does not look like a stranger’s address: it replaced an earlier address of the '
+                      'account and a password was set through a link sent to it, which is how an account is taken over '
+                      'through a changed address', said)
+        apply('taker@example.com')                        # it informs; the data-protection officer decides
+        self.assertEqual(AuditLog.objects.filter(entity_id=str(nils.pk), changes__has_key='Erased on request').count(), 1)
+
+    def test_a_mistyped_correction_without_a_password_and_a_first_address_with_one_are_not_that_pattern(self):
+        """It replaced an earlier address but no link to it was used (a typo put right); and the fixture's kari, whose
+        first address it was (nothing replaced) and whose link was used: facts, no warning."""
+        nils = User.objects.create_user('nils', 'nils@example.com', 'x')
+        log_row(self.THEN, 'root', 'create', nils.pk, 'nils', {'Email': [None, 'nils@example.com']})
+        log_row(self.THEN + timedelta(days=30), 'root', 'update', nils.pk, 'nils',
+                {'Email': ['nils@example.com', 'typo@example.com']})
+        log_row(self.THEN + timedelta(days=30, minutes=3), 'root', 'update', nils.pk, 'nils',
+                {'Email': ['typo@example.com', 'nils.hansen@example.com']})
+        said = run('typo@example.com')
+        self.assertIn('it replaced an earlier address of the account: 2026-10-31 09:00 UTC', said)
+        self.assertNotIn('WARNING', said)
+        self.assertNotIn('WARNING', run(STRANGER))
+        self.assertNotIn('it replaced an earlier address', run(STRANGER))
+
+    def test_what_the_account_wrote_meanwhile_is_counted_by_its_key_whatever_its_name_then_or_now(self):
+        mona = User.objects.create_user('mona.lie', 'mona@example.com', 'x')              # renamed since: she was "mona"
+        other = User.objects.create_user('mona', 'other@example.com', 'x')                # and the name was given again
+        hour = timedelta(hours=1)
+        log_row(self.THEN, 'root', 'create', mona.pk, 'mona', {'Email': [None, 'old@example.com']})
+        log_row(self.THEN + hour, 'mona', 'update', 1, 'Bergen', {'Site name': ['a', 'b']}, user=mona, kind='site')
+        log_row(self.THEN + 2 * hour, 'mona', 'create', 7, 'Clean filter', {}, kind='task')       # a row without the key
+        log_row(self.THEN + 3 * hour, 'root', 'update', mona.pk, 'mona.lie', {'Username': ['mona', 'mona.lie']})
+        log_row(self.THEN + 4 * hour, 'mona.lie', 'create', 8, 'Feed', {}, user=mona, kind='task')
+        log_row(self.THEN + 5 * hour, 'mona', 'create', 9, 'Not hers', {}, user=other, kind='task')   # the other mona
+        log_row(self.THEN + 6 * hour, 'root', 'update', mona.pk, 'mona.lie',
+                {'Email': ['old@example.com', 'mona@example.com']})
+        log_row(self.THEN + 7 * hour, 'mona.lie', 'create', 10, 'Later', {}, user=mona, kind='task')  # after it ended
+        said = run('old@example.com')
+        self.assertIn('the account wrote 3 other log row(s) itself while it was its address', said)
+        self.assertIn('WARNING: this does not look like a stranger’s address', said)
+
+
+class TurkishCapitalsTests(ErasureCase):
+    """Review S3, the decision on the Turkish capitals. `İNFO@EXAMPLE.COM` and `info@example.com` are two addresses to
+    the comparison that decides what is replaced (a capital İ folds to an i with a dot above it; the dotless ı is a
+    letter of its own), so neither run erases the other. But nothing passes in silence: the dry run names the rows
+    that hold the address only when the two are read as i, what the command writes is refused when it holds the
+    address read so, and so is an address an account has now when read so."""
+    DOTTED, PLAIN, DOTLESS = 'İNFO@example.com', 'info@example.com', 'ınfo@example.com'
+
+    def setUp(self):
+        super().setUp()
+        self.ilkay = User.objects.create_user('ilkay', 'ilkay@example.com', 'x')
+        then = datetime(2026, 10, 1, 9, 0, tzinfo=dt_timezone.utc)
+        self.created = log_row(then, 'root', 'create', self.ilkay.pk, 'ilkay', {'Email': [None, self.DOTTED]})
+        self.invited = log_row(then, 'root', 'invite', self.ilkay.pk, 'ilkay', {'Sent to': [None, self.DOTTED]})
+        log_row(then + timedelta(minutes=9), 'root', 'update', self.ilkay.pk, 'ilkay',
+                {'Email': [self.DOTTED, 'ilkay@example.com']})
+        self.mail = AccountMail.objects.create(user=self.ilkay, kind='invitation', address=self.DOTTED,
+                                               sent_at=timezone.now())
+        self.before = stored()
+
+    def test_the_dry_run_names_the_rows_that_hold_it_only_with_the_turkish_letters_read_as_i(self):
+        for asked in (self.PLAIN, 'INFO@EXAMPLE.COM', self.DOTLESS):
+            with self.subTest(asked=asked):
+                said = run(asked)
+                self.assertIn('Nothing found', said)
+                self.assertIn('NOT changed, and to be looked at', said)
+                self.assertIn('run the command again with the address written as it is stored', said)
+                self.assertIn(f'account_mails {self.mail.pk} (invitation for account {self.ilkay.pk}): address '
+                              f'(“{self.DOTTED}”)', said)
+                self.assertIn(f'audit_log {self.created.pk} (create of user ilkay): under “Email” (“{self.DOTTED}”)', said)
+                self.assertIn(f'audit_log {self.invited.pk} (invite of user ilkay): under “Sent to” (“{self.DOTTED}”)',
+                              said)
+        self.assertNotIn('NOT changed, and to be looked at', run(STRANGER))       # an address without those letters
+
+    def test_neither_form_erases_the_other_and_the_stored_form_erases_its_own(self):
+        said = apply(self.PLAIN)
+        self.assertIn('NOT changed, and to be looked at', said)
+        self.assertEqual(stored(), self.before)
+        apply(self.DOTTED)
+        self.assertEqual(AccountMail.objects.get(pk=self.mail.pk).address, 'erased@invalid')
+        self.assertEqual(AuditLog.objects.get(pk=self.created.pk).changes, {'Email': [None, ERASED]})
+        self.assertEqual(AuditLog.objects.get(pk=self.invited.pk).changes, {'Sent to': [None, ERASED]})
+        self.assertNotIn('NOT changed, and to be looked at', run(self.PLAIN))
+
+    def test_what_the_command_writes_is_refused_when_it_holds_the_address_read_so(self):
+        for asked, written in ((self.DOTTED, 'DP-17 for info@example.com'), (self.DOTTED, 'DP-17 for ınfo@EXAMPLE.com'),
+                               (self.DOTTED, 'DP-17 for INFO@EXAMPLE.COM'), (self.PLAIN, f'DP-17 for {self.DOTTED}'),
+                               (self.PLAIN, 'DP-17 for İnfo@Example.Com.')):
+            with self.subTest(asked=asked, written=written), \
+                    self.assertRaisesMessage(CommandError, 'holds the address itself'):
+                run(asked, '--apply', '--instruction', written, '--carried-out-by', 'Kari Nordmann')
+        self.assertEqual(stored(), self.before)
+
+    def test_an_address_an_account_has_now_when_read_so_is_refused(self):
+        User.objects.create_user('info', self.PLAIN, 'x')
+        before = stored()
+        with self.assertRaisesMessage(CommandError, f'{self.DOTTED} is the address of an account now (info, as '
+                                                    f'“{self.PLAIN}”)'):
+            apply(self.DOTTED)
+        self.assertIn(f'REFUSED: {self.DOTTED} is the address of an account now (info, as “{self.PLAIN}”)',
+                      run(self.DOTTED))
+        self.assertEqual(stored(), before)
+
+
+class LockWaitTests(ErasureCase):
+    """Review S5: `--lock-wait -3` was accepted."""
+
+    def test_the_wait_for_the_lock_is_a_positive_number_of_seconds(self):
+        for wait in ('0', '-3', 'nan', 'inf', '-inf', 'soon', ''):
+            with self.subTest(wait=wait), self.assertRaisesMessage(CommandError, 'is not a positive number of seconds'):
+                run(STRANGER, '--apply', '--instruction', INSTRUCTION, '--carried-out-by', 'Kari Nordmann',
+                    f'--lock-wait={wait}')
+        for wait in (0, -3, float('nan'), float('inf'), True, '5', None):
+            with self.subTest(wait=wait), self.assertRaisesMessage(ValueError, 'a positive number of seconds'):
+                erasure.erase(STRANGER, INSTRUCTION, 'Kari Nordmann', lock_wait=wait)
+        self.assertEqual(stored(), self.before)
+        run(STRANGER, '--apply', '--instruction', INSTRUCTION, '--carried-out-by', 'Kari Nordmann', '--lock-wait=0.5')
+        self.assertEqual(len(own_rows()), 3)
+
+
+class MailsUnderTheLockTests(RealCase):
+    """Review S4 and S5, with a second session: the mails are read again under the locks, and a mail that is being
+    written is said to be a mail."""
+
+    def setUp(self):
+        super().setUp()
+        self.reset = AccountMail.objects.create(user=self.kari, kind='reset', address='kari@example.com',
+                                                error='The mail server refused it.')
+
+    def assert_nothing_changed(self):
+        self.assertEqual(self.seen_elsewhere()[:2], (['O'], 4))
+        self.assertEqual(sorted(self.elsewhere('SELECT address FROM account_mails')), [('kari@example.com',), (STRANGER,)])
+        self.assert_the_log_is_append_only_elsewhere()
+        self.assertEqual(own_rows(), [])
+
+    def test_a_mail_outside_the_plan_that_came_to_hold_the_address_between_the_read_and_the_lock_refuses_it(self):
+        """The review's probe 33: success was reported and the address stayed, in a row the run never looked at again."""
+        plan = erasure.plan
+
+        def then_a_reply_names_it(address):
+            found = plan(address)
+            self.elsewhere('UPDATE account_mails SET error = %s WHERE id = %s',
+                           [f'550 5.1.1 <{STRANGER}> no such user', self.reset.pk])
+            return found
+
+        with mock.patch.object(erasure, 'plan', side_effect=then_a_reply_names_it), \
+                self.assertRaisesMessage(CommandError, 'while it was being prepared: nothing was changed'):
+            apply()
+        self.assert_nothing_changed()
+        said = apply()                                            # run again, it finds that row too
+        self.assertIn(f'account_mails {self.reset.pk}: reset', said)
+        self.assertEqual(self.elsewhere('SELECT count(*) FROM account_mails WHERE address ILIKE %s OR error ILIKE %s',
+                                        [f'%{STRANGER}%', f'%{STRANGER}%']), [(0,)])
+
+    def held_elsewhere(self, sql, params):
+        """A second session that ran `sql` in a transaction it keeps open."""
+        holder = connections['default'].copy()
+        self.addCleanup(holder.close)
+        holder.set_autocommit(False)
+        self.elsewhere(sql, params, connection=holder)
+        return holder
+
+    def refused_at_once(self):
+        began = time.monotonic()
+        with self.assertRaises(CommandError) as refused:
+            run(STRANGER, '--apply', '--instruction', INSTRUCTION, '--carried-out-by', 'Kari Nordmann', '--lock-wait', '4')
+        self.assertLess(time.monotonic() - began, 3)              # it did not wait, the log's lock in its hand
+        self.assertIn('A row of account_mails is being written by another session right now', str(refused.exception))
+        self.assertIn('nothing was changed', str(refused.exception))
+        self.assertNotIn('The activity log is being written to', str(refused.exception))
+
+    def test_a_row_of_the_plan_that_another_session_holds_is_said_to_be_a_mail_and_not_waited_for(self):
+        mail = AccountMail.objects.get(address=STRANGER)
+        holder = self.held_elsewhere('SELECT id FROM account_mails WHERE id = %s FOR UPDATE', [mail.pk])
+        self.refused_at_once()
+        self.elsewhere("SET lock_timeout = '2s'")
+        self.elsewhere(self.INSERT)                               # and no writer of the log is held up after it
+        self.elsewhere('SET lock_timeout = 0')
+        holder.rollback()
+        self.assert_nothing_changed()
+
+    def test_a_mail_being_written_by_another_session_is_said_to_be_a_mail_and_not_waited_for(self):
+        """What the mail worker does when it closes a mail: it writes the mail's row, then the log. A command that
+        waited for that row with the log locked would stand in a deadlock with it."""
+        holder = self.held_elsewhere('UPDATE account_mails SET error = %s WHERE id = %s', ['Sending interrupted.',
+                                                                                       self.reset.pk])
+        self.refused_at_once()
+        self.elsewhere("SET lock_timeout = '2s'", connection=holder)
+        self.elsewhere(self.INSERT, connection=holder)            # the other session goes on to write the log
+        holder.commit()
+        self.assertEqual(self.seen_elsewhere()[:2], (['O'], 4))
+        apply()                                                   # and the erasure, run again, is done
+        self.assertEqual(self.seen_elsewhere()[:2], (['O'], 0))
+
+    def test_the_mails_cannot_be_written_while_the_erasure_writes(self):
+        rewrite, seen = erasure._rewrite, {}
+
+        def look(cursor, entry, changes):
+            if not seen:
+                self.elsewhere("SET lock_timeout = '700ms'")
+                try:
+                    self.elsewhere('UPDATE account_mails SET error = %s WHERE id = %s', [STRANGER, self.reset.pk])
+                    seen['update'] = 'done'
+                except DatabaseError as refusal:
+                    seen['update'] = ' '.join(str(refusal).split())[:40]
+                self.elsewhere('SET lock_timeout = 0')
+            rewrite(cursor, entry, changes)
+
+        with mock.patch.object(erasure, '_rewrite', side_effect=look):
+            apply()
+        self.assertIn('lock timeout', seen['update'])
+        self.assertEqual(AccountMail.objects.get(pk=self.reset.pk).error, 'The mail server refused it.')

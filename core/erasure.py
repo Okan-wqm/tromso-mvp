@@ -123,7 +123,12 @@ def inside(address):
     """The pattern of `address` standing as a whole address inside a longer text (a mail server's reply), whatever
     its case: not as the tail of a longer local part (`anna@x.no` when `a@x.no` is asked for) nor the head of a
     longer domain (`a@x.no.example`). A quotation mark before it is the reply's own (`{'a@x.no': (550, ...)}`, as
-    Python writes a refused recipient), not a part of the address."""
+    Python writes a refused recipient), not a part of the address.
+
+    **It finds candidates, it does not decide.** Ignoring case, Python reads more letters as one than the comparison
+    of addresses does: the Turkish capital İ and the dotless ı match `i` (and ſ `s`, the Kelvin sign `k`). So what it
+    finds is compared as addresses are (`same`, or the caller's fold) before it is replaced or said to hold the
+    address: `_without` and `holds` do, and nothing else reads this pattern."""
     return re.compile(r'(?<![\w.+%-])' + re.escape(address.strip()) + r'(?![\w-]|\.\w)', re.IGNORECASE)
 
 
@@ -148,7 +153,10 @@ def _without(address, error):
         core = token.rstrip('.')
         return ERASED_ADDRESS + token[len(core):] if same(core, address) else token
 
-    text = TOKEN.sub(other_form, inside(address).sub(ERASED_ADDRESS, error))
+    def as_compared(found):                  # the pattern's candidate, replaced only when it is the address (`inside`)
+        return ERASED_ADDRESS if same(found.group(), address) else found.group()
+
+    text = TOKEN.sub(other_form, inside(address).sub(as_compared, error))
     return text if len(text) <= accountmail.REASON_LENGTH else text[:accountmail.REASON_LENGTH - 1] + '…'
 
 
@@ -163,7 +171,7 @@ def holds(text, address, fold=_folded):
     if not isinstance(text, str):
         return False
     wanted = fold(address)
-    return bool(inside(wanted).search(fold(text))) or any(
+    return any(fold(found.group()) == wanted for found in inside(wanted).finditer(fold(text))) or any(
         fold(found.group().rstrip('.')) == wanted for found in TOKEN.finditer(text))
 
 
@@ -276,7 +284,7 @@ def _mails_as_read(found):
 def plan(address):
     """The Plan for `address`. Reads only, and takes no lock."""
     found = _mails(Plan(address.strip(), held_by=holders(address)))
-    pattern, own = inside(address), labels()
+    own = labels()
     rows = list(AuditLog.objects.filter(entity_type=user_type()).order_by('created_at', 'id'))
     found.user_rows = len(rows)
     for entry in rows:
@@ -302,7 +310,7 @@ def plan(address):
                                           for label, stored in near.items()))
         if changed:
             found.entries.append((entry, changed, changes))
-    found.elsewhere += _elsewhere(address, pattern)
+    found.elsewhere += _elsewhere(address)
     found.histories = _histories(found, rows, address, own)
     return found
 
@@ -343,22 +351,23 @@ def _histories(found, rows, address, own):
     return [histories[key] for key in sorted(histories, key=int)]
 
 
-def _elsewhere(address, pattern):
+def _elsewhere(address):
     """Where else the text of the address stands, for the operator to see: the name a log row is under or was written
-    by, a row of another kind of record, an account's username. A search of the text as stored: an address holding a
-    quotation mark or a backslash is written otherwise in the log's JSON and is not found by it."""
+    by, a row of another kind of record, an account's username. A search of the text as stored (then read as `holds`
+    reads it): an address holding a quotation mark or a backslash is written otherwise in the log's JSON and is not
+    found by it."""
     text, found = address.strip(), []
     for user in get_user_model().objects.filter(username__icontains=text).order_by('pk'):
-        if pattern.search(user.username):
+        if holds(user.username, address):
             found.append(f'the username of account {user.pk} ({user.username})')
     named = AuditLog.objects.filter(entity_label__icontains=text) | AuditLog.objects.filter(user_name__icontains=text)
     count = sum(1 for entry in named.only('entity_label', 'user_name')
-                if pattern.search(entry.entity_label) or pattern.search(entry.user_name))
+                if holds(entry.entity_label, address) or holds(entry.user_name, address))
     if count:
         found.append(f'{count} activity-log row(s) written under or by that name (the record’s label, the user’s name)')
     others = AuditLog.objects.exclude(entity_type=user_type()).filter(changes__icontains=text).order_by('created_at', 'id')
     for entry in others.only('entity_type', 'entity_label', 'action', 'changes'):
-        if pattern.search(json.dumps(entry.changes, ensure_ascii=False)):
+        if holds(json.dumps(entry.changes, ensure_ascii=False), address):
             found.append(f'activity log {entry.pk} ({entry.action} of {entry.entity_type} {entry.entity_label})')
     return found
 

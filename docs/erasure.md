@@ -194,6 +194,10 @@ python manage.py erase_stranger_address stranger@example.com --apply \
   `İNFO@EXAMPLE.COM` and `info@example.com` are **two addresses** (the capital İ is not the capital of i, and ı is a
   letter of its own), and what is replaced is decided by that comparison alone: asked for `info@example.com`, the
   command does not erase a row that holds `İNFO@example.com`, because it cannot know that they are one mailbox.
+  The same holds inside a mail server's reply: of `550 <İNFO@example.com> and <info@example.com>` only the second is
+  replaced, and the row is named for the first. (The pattern that finds an address inside a longer text ignores case,
+  and Python reads İ and ı as i there; what it finds is therefore compared as addresses are before anything is
+  replaced.)
   Nothing passes in silence, though. The dry run (and the run) **names** every `account_mails` row and every log row of
   a user account that holds the address only when İ and ı are read as i, with the value as stored, under "NOT
   changed, and to be looked at": when it is the same address, run the command again with the address written as it

@@ -16,6 +16,7 @@ saltier point, a conductivity that disagrees with the salinity. Each is now said
   fresh RAS at 2000 to 3000 µS/cm stays quiet)."""
 from django.test import SimpleTestCase
 from django.urls import reverse
+from django.utils import translation
 
 from ..water import messages, native, read
 from .test_water import WaterTestCase
@@ -72,6 +73,44 @@ class WarningTests(SimpleTestCase):
         self.assertEqual(native.equilibria(12.0, 0.0).warnings, [])       # formula 1 has none
 
 
+class NH3PastGuardTests(SimpleTestCase):
+    """The K_NH4 panel's decision of 2026-11-10, row 3: above 30 °C or a salinity of 35 ‰ the judged NH₃ is outside what
+    its guard holds (chemcore/core/tests/nh3_guard.rs) and may read below a Clegg & Whitfield (1995) based value (1.3 %
+    at 35 °C, 5.6 % at 40 °C, S 35): a warning said with every value worked out from that water, never a refusal."""
+
+    def warnings(self, temp_c, salinity, **more):
+        return native.water_equilibria(temp_c, salinity, 115.0, **more).warnings
+
+    def test_above_30_degrees_or_a_salinity_of_35_only(self):
+        for temp_c, salinity in ((0.0, 0.0), (12.0, 0.0), (30.0, 0.0), (0.0, 35.0), (30.0, 35.0)):
+            with self.subTest(temp_c=temp_c, salinity=salinity):
+                self.assertEqual(self.warnings(temp_c, salinity), [])
+        for temp_c, salinity in ((30.5, 0.0), (31.0, 35.0), (12.0, 35.5), (40.0, 40.0)):
+            with self.subTest(temp_c=temp_c, salinity=salinity):
+                self.assertEqual(self.warnings(temp_c, salinity), ['nh3_past_guard'])
+        self.assertEqual(self.warnings(32.0, 10.0, water_origin='salt_added'), ['nh3_past_guard'])
+        self.assertEqual(native.water_equilibria(32.0, 3.0, 80.0, conductivity_25_us_cm=500.0).warnings,
+                         ['conductivity_salinity', 'nh3_past_guard'])
+        self.assertEqual(native.water_equilibria(35.0, 40.0, formula=1).warnings, [])      # formula 1 has none
+
+    def test_said_with_the_value_in_three_languages_and_never_refused(self):
+        eq = native.water_equilibria(35.0, 35.0, 115.0)
+        self.assertGreater(eq.nh3_share(8.0), 0)                           # the NH₃ is still worked out and judged
+        said = messages.provenance(eq)
+        self.assertIn('NH₃: above 30 °C or a salinity of 35 ‰', said)
+        self.assertIn('may read low', said)
+        self.assertNotIn('NH₃: above 30 °C', messages.provenance(native.water_equilibria(30.0, 35.0, 115.0)))
+        english = str(messages.WARNINGS['nh3_past_guard'])
+        for language in ('nb', 'tr'):
+            with self.subTest(language=language), translation.override(language):
+                words = str(messages.WARNINGS['nh3_past_guard'])
+                self.assertNotEqual(words, english)
+                self.assertIn('NH₃', words)
+                self.assertIn('30 °C', words)
+                self.assertIn('35 ‰', words)
+                self.assertIn(words, messages.provenance(eq))
+
+
 class ReadTests(WaterTestCase):
     def test_a_samples_nh3_says_the_warning_in_its_title(self):
         self.sample(hours=2, tan_mg_l='2', ph='7.5', temperature_c='12', alkalinity_mg_l='80',
@@ -79,6 +118,12 @@ class ReadTests(WaterTestCase):
         nh3 = read.latest([self.mid1])[self.mid1.pk].get('nh3_n_mg_l')
         self.assertIsNotNone(nh3.value)
         self.assertIn('sea water of', nh3.provenance)
+
+    def test_a_warm_samples_nh3_says_it_is_past_the_guard(self):
+        self.sample(hours=2, tan_mg_l='2', ph='7.5', temperature_c='31', alkalinity_mg_l='80')
+        nh3 = read.latest([self.mid1])[self.mid1.pk].get('nh3_n_mg_l')
+        self.assertIsNotNone(nh3.value)                                    # judged all the same
+        self.assertIn('NH₃: above 30 °C or a salinity of 35 ‰', nh3.provenance)
 
 
 class ReportTests(WaterTestCase):
@@ -90,3 +135,14 @@ class ReportTests(WaterTestCase):
         self.assertContains(page, 'Formula 3: ionic strength 0.3200')
         self.assertContains(page, 'Check the salinity')
         self.assertContains(page, 'CO₂ judged on the basis its limits were set on')
+
+    def test_the_calculator_and_its_report_say_the_nh3_guard_warning(self):
+        water = {'temperature_c': '32', 'ph': '7', 'salinity_ppt': '0', 'alkalinity_mg_l': '80', 'tan_mg_l': '1',
+                 'drawn': '1'}
+        for name in ('farm:water_calculator', 'farm:water_calculator_report'):
+            with self.subTest(page=name):
+                page = self.client.get(reverse(name), water)
+                self.assertEqual(page.status_code, 200)
+                self.assertContains(page, 'NH₃: above 30 °C or a salinity of 35 ‰')
+                cool = self.client.get(reverse(name), {**water, 'temperature_c': '30'})
+                self.assertNotContains(cool, 'NH₃: above 30 °C or a salinity of 35 ‰')

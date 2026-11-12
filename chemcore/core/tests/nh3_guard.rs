@@ -199,3 +199,32 @@ fn past_30_degrees_or_s_35_the_judged_nh3_can_fall_below_it() {
     assert!((below(40.0, 35.0) - -5.6).abs() < 0.15, "{}", below(40.0, 35.0));
     assert!(below(31.0, 40.0) < 0.0 && below(30.0, 40.0) > 0.0);
 }
+
+#[test]
+fn every_water_whose_judged_nh3_falls_below_it_is_warned_and_none_on_the_guards_grid() {
+    // The warning's bounds (`fresh::NH3_GUARD_MAX_TEMP_C`, `fresh::NH3_GUARD_MAX_SALINITY`) are the guard's: over 0 to
+    // 40 °C by S 0.5 to 40 (every °C, every 0.5 ‰, the four waters), a water whose judged NH₃ is below the Clegg &
+    // Whitfield based value carries `fresh::NH3_PAST_GUARD`, and no water of the guard's own grid carries it.
+    let (mut below, mut quiet) = (0, 0);
+    for degree in 0..=40_u32 {
+        for half in 1..=80_u32 {
+            let (temp_c, salinity) = (f64::from(degree), 0.5 * f64::from(half));
+            for (alkalinity, ions) in waters() {
+                let warned = f::equilibria_v3(temp_c, salinity, alkalinity, ions)
+                    .is_ok_and(|eq| eq.warnings & f::NH3_PAST_GUARD != 0);
+                let on_grid = temp_c <= 30.0 && salinity <= 35.0;
+                assert_eq!(warned, !on_grid, "{temp_c} °C, S {salinity}");
+                let found = margins(temp_c, salinity, alkalinity, ions);
+                assert!(found.is_ok(), "{temp_c} °C, S {salinity}: {found:?}");
+                if found.is_ok_and(|(_, over_cw95)| over_cw95 < 0.0) {
+                    assert!(warned, "{temp_c} °C, S {salinity}: below Clegg & Whitfield, no warning");
+                    below += 1;
+                } else if on_grid {
+                    quiet += 1;
+                }
+            }
+        }
+    }
+    assert_eq!(quiet, 31 * 70 * 4);
+    assert!(below > 0, "no water fell below: the test would prove nothing");
+}

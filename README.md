@@ -4884,9 +4884,11 @@ image's volume, so a run leaves no volume). Only a script killed outright (SIGKI
 remove its `balik-test-db-<run>`, `balik-test-run-<run>` and network `balik-test-<run>` by name. **The old images are
 `scripts/testrunner/prune.sh`'s**: every change to the requirements, `docker/` or `chemcore/` builds a new
 `balik-testrunner-chemcore:req-<hash>` tag (some 400 MB), and nothing removed the old ones. The script removes every
-`req-*` tag except the tag of every live git worktree of the repository (each tree's own `image.sh` says it), a tag
-whose image a container uses, and a tag made within the last 24 hours; it says what it removed and what it kept and
-why, `--dry-run` removes nothing, and it touches no other image, no container, no volume and no network. So a run never touches the development database `balik`, its
+`req-*` tag except the tag of its own tree (always) and of every live git worktree of the repository (each tree's own
+`image.sh` says it), a tag whose image a container uses, and a tag made within the last 24 hours; it says what it
+removed and what it kept and why, `--dry-run` removes nothing, and it touches no other image, no container, no volume
+and no network. Where git cannot list the worktrees (a copy that is no checkout) it stops with a message and removes
+nothing: it cannot know there which tags the worktrees ask for. So a run never touches the development database `balik`, its
 server or its volume, never shares test databases, roles or the shared server's 100 connections with another run, and needs
 no `DB_TEST_NAME`. There is no serial-only group: every test runs in the parallel run. Why the run is shaped so:
 

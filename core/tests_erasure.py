@@ -932,6 +932,26 @@ class TurkishCapitalsTests(ErasureCase):
                 run(asked, '--apply', '--instruction', written, '--carried-out-by', 'Kari Nordmann')
         self.assertEqual(stored(), self.before)
 
+    def test_inside_a_reply_too_only_the_address_as_it_is_compared_is_replaced(self):
+        """Review T5: the pattern that finds the address inside a longer text ignores case, and Python reads İ and ı
+        as i there: asked for `info@...`, the reply's `<İNFO@...>` was replaced too, against the rule the doc states
+        (what is replaced is decided by the comparison of addresses alone), and a row holding `ınfo@...` was listed as
+        "another label or shape" in place of the near matches."""
+        then = datetime(2026, 10, 2, 9, 0, tzinfo=dt_timezone.utc)
+        reply = AccountMail.objects.create(user=self.ilkay, kind='invitation', address=self.PLAIN, sent_at=timezone.now(),
+                                           error=f'550 <{self.DOTTED}> and <{self.PLAIN}>')
+        dotless = log_row(then, 'root', 'invite', self.ilkay.pk, 'ilkay', {'Sent to': [None, self.DOTLESS]})
+        said = run(self.PLAIN)
+        self.assertIn(f'account_mails {reply.pk}: invitation', said)                       # it would change: its address
+        self.assertIn(f'account_mails {reply.pk} (invitation for account {self.ilkay.pk}): error', said)   # and is named
+        self.assertIn(f'audit_log {dotless.pk} (invite of user ilkay): under “Sent to” (“{self.DOTLESS}”)', said)
+        self.assertNotIn(f'activity log {dotless.pk}', said)          # a near match, not "another label or shape"
+        apply(self.PLAIN)
+        reply.refresh_from_db()
+        self.assertEqual((reply.address, reply.error), ('erased@invalid', f'550 <{self.DOTTED}> and <erased@invalid>'))
+        self.assertEqual(AuditLog.objects.get(pk=dotless.pk).changes, {'Sent to': [None, self.DOTLESS]})
+        self.assertEqual(AccountMail.objects.get(pk=self.mail.pk).address, self.DOTTED)
+
     def test_an_address_an_account_has_now_when_read_so_is_refused(self):
         User.objects.create_user('info', self.PLAIN, 'x')
         before = stored()

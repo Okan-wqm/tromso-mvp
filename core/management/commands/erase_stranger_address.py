@@ -14,8 +14,8 @@ labels would change, and where else the text of the address stands (left as it i
 erasure cannot be undone and sets the log's append-only trigger aside: the operator reads what will change, then
 runs it again with `--apply`, the instruction and their name. With `--apply` the log is locked against writers for
 the moment of the change; the command waits for that lock at most `--lock-wait` seconds (a positive number) and gives
-up otherwise, and it does not wait at all for `account_mails` once it holds the log: when a mail is being written
-just then it gives up and says so.
+up otherwise, and once it holds the log it waits for `account_mails` for a moment only (a quarter of the database's
+deadlock timeout): when a mail is being written just then it gives up and says so.
 
     python manage.py erase_stranger_address stranger@example.com
     python manage.py erase_stranger_address stranger@example.com --apply \\

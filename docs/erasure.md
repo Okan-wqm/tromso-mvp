@@ -219,10 +219,13 @@ python manage.py erase_stranger_address stranger@example.com --apply \
   The command then locks the log against writers, waiting for that lock at most `--lock-wait` seconds (5; a positive
   number, anything else is refused): when the log is being written and the lock cannot be had in that time, the
   command gives up, says so and has changed nothing (a session that waits for this lock makes every later writer
-  queue behind it, so the wait is bounded). **Holding the log, it waits for nothing more**: it locks `account_mails`
-  against writers and the mail rows it will rewrite at once, or gives up saying that a row of `account_mails` is
-  being written (the mail worker writes a mail's row and then the log; waiting for it with the log locked would be a
-  deadlock, with every writer of the log waiting meanwhile). Under the locks it reads again what must not have
+  queue behind it, so the wait is bounded). **Holding the log, it waits for the mails for a moment only**: it locks
+  `account_mails` against writers and the mail rows it will rewrite, each within a quarter of the database's deadlock
+  timeout (250 ms as PostgreSQL ships), or gives up saying that a row of `account_mails` is being written (the mail
+  worker writes a mail's row and then the log; waiting for it for long with the log locked would be a deadlock, with
+  every writer of the log waiting meanwhile, and this way it is always the command that gives up). The moment is
+  there because something holds that table for an instant now and then, the database's own vacuum or analyze, the
+  mail worker saying that it still has a mail: taking the lock at once or not at all refused the run for that. Under the locks it reads again what must not have
   changed: that no account has the address now, that the log rows to rewrite are as they were read, that no row of a
   user account was added, and **every mail again**: the same rows hold the address, with the same values, and no
   other row has come to hold it (a mail server's reply recorded meanwhile, a new mail). Otherwise it stops, has

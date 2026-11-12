@@ -3745,8 +3745,8 @@ only one who manages roles and users; everyone else gets exactly what their role
     `info@example.com`; the dry run names the rows that hold the address only when they are read as i, and the
     refusals read them as i. **The log's writers, the alarms among them, wait while it holds the lock**: it reads
     everything first, waits for the lock on the log at most `--lock-wait` seconds (5, a positive number) and gives
-    up otherwise; holding it, it waits for nothing more (a mail being written just then refuses the run, said as
-    such), and reads every mail again under the locks. **What remains:** the rows themselves (who invited whom, that a link was used, that the address
+    up otherwise; holding it, it waits for the mails for a moment only, a quarter of the database's deadlock timeout
+    (a mail being written just then refuses the run, said as such), and reads every mail again under the locks. **What remains:** the rows themselves (who invited whom, that a link was used, that the address
     changed), the placeholder, and the address in every backup taken before. A placeholder, not a digest: this is
     erasure, not the pseudonymisation above. The users tab, the History tab and the log read an erased row in every
     language (`core/tests_erasure.py`).

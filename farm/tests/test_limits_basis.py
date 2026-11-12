@@ -107,11 +107,14 @@ class FreshWaterTests(SimpleTestCase):
 
 
 class SeaWaterTests(SimpleTestCase):
-    """From 5 permil the NH3 limits' basis is the saltwater criteria's convention (cross review round 2, S1; owner rule:
-    the literature is the authority): Khoo, Culberson & Bates (1977)'s pKa^s, as Bower & Bidwell (1978) and Spotte &
-    Adams (1983) use it, applied to the NBS pH as measured: pKa^s = 0.09018 + 2729.92 / T + (0.1552 − 0.0003142 t) I,
-    T in K, t in °C, I = 19.9273 S / (1000 − 1.005109 S) the molal ionic strength of sea water. The CO2 basis there
-    stays formula 1's seawater constants."""
+    """From 5 permil the NH3 limits' basis is the classic sea-water tables' convention (cross review round 2, S1; owner
+    rule: the literature is the authority): a Khoo-type pKa^s, Emerson et al. (1975)'s temperature term with Khoo,
+    Culberson & Bates (1977)'s ionic term, as Bower & Bidwell (1978) and Spotte & Adams (1983) use it, applied to the
+    NBS pH as measured: pKa^s = 0.09018 + 2729.92 / T + (0.1552 − 0.0003142 t) I, T in K, t in °C,
+    I = 19.9273 S / (1000 − 1.005109 S) the molal ionic strength of sea water. It is not the US EPA 1989 saltwater
+    criteria's own speciation (Whitfield's model through Hampson's program, a linear temperature term: the K_NH4 panel
+    of 2026-11-10; chemcore/core/src/fresh.rs pk_nh4_seawater says the differences). The CO2 basis there stays formula
+    1's seawater constants."""
 
     @staticmethod
     def khoo(temp_c, salinity):

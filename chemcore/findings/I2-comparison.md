@@ -357,6 +357,11 @@ değişmedi.
    balık suyu aralığında (pH 8,5'e kadar, golden v3) değişim %0,09'un altında.
    **Sınırların temeli formül 1'in Kw'sini koruyor**: böylece değerlendirilen CO₂ formül 1'inkinin altına hiçbir zaman
    düşmüyor (mevcut güvenlik testleri aynen geçiyor). Bu uygulayıcının kararıdır; istenirse temel de düzeltilebilir.
+   **Bunun tatlı sudaki büyüklüğü (2026-11-12'de ölçüldü):** tuzluluk 0, 0–30 °C, alkalinite 10–400 mg/L, pH 6–10
+   (olabilen 1 953 su). Temelin CO₂'si, Millero'nun Kw'siyle çıkacak olandan hep **yüksek** (ihtiyatlı yön): pH 8,5'e
+   kadar en çok %0,035 (30 °C, 10 mg/L; 40 mg/L'den itibaren %0,009), pH 9'a kadar %0,12, pH 9,5'e kadar %0,45, pH
+   10'da alkalinite tabanına 0,06 meq/L kala %4,1; ortanca %0,001'in altında. Yani balık suyunda fark ölçülemeyecek
+   kadar küçük: Kw'deki %1,51 ile hidroksitin "tabanın üstünde kalan alkalinite"ye oranının çarpımı.
 2. **Kalsit ve aragonit doygunluğu (Ω).** Kalsiyum (mg/L) ve karbonat litre başına, Mucci'nin (1983) Ksp'si ise kg²
    başınaydı; Ω bu yüzden deniz suyunun yoğunluğunun karesi kadar yüksek çıkıyordu. Formül 3 artık Ksp'yi litre başına
    alıyor (Ksp × ρ²; yoğunluk EOS-80, Millero & Poisson 1981). Küçük grafikteki doygunluk indeksi ve diyagramdaki Ω = 1
@@ -385,6 +390,46 @@ denklemi Kılavuz'un bölüm 5, denklem 6–10'undan alındı; UNESCO kontrol de
 yazılımın belgelerinden okundu ve denklem bunları 5·10⁻⁶ içinde veriyor. Saf su pKw değeri 13,995 için basılı tablo
 açılmadı. Tuz eklenmiş (NaCl) suda Ω için de deniz suyu yoğunluğu kullanılıyor. Ω 44 ‰'ye kadar çiziliyor, yoğunluk
 denklemi 42 ‰'ye kadar geçerli.
+
+## K_NH4 paneli ve sonrası (2026-11-10 karar, 2026-11-12 uygulama)
+
+Bağımsız doğrulama, denizde kullandığımız amonyum sabitinin (Yao & Millero 1995) serbest ölçekte Clegg & Whitfield'in
+(1995) sabitinden %0,17–8,8 düşük olduğunu bulmuştu. Üç uzmanlı panel (deniz kimyacısı, su ürünleri toksikoloğu,
+metroloji şüphecisi; iki tur, her biri ayrı hesapladı) şuna karar verdi; sahibin kuralına göre kanıtlı uzlaşı karardır:
+
+1. **Sabit değişmiyor.** Yao & Millero 1995 kalıyor: aynı birimle karşılaştırınca Khoo'nun ölçtüğü değerlere −%0,3 …
+   +%1,2 yakın; Clegg & Whitfield'inki onlardan %3,3–5,1 yüksek. Değiştirmek bir kütüphanenin varsayılanına dayanırdı.
+2. **Koruma testi eklendi** (`chemcore/core/tests/nh3_guard.rs`). 0–30 °C ve 0,5–35 ‰ arasında 8 680 suda
+   değerlendirilen NH₃ ([NH₃]/[NH₄⁺] oranı olarak) ne kendi düzeltilmiş değerimizin ne de Clegg & Whitfield'e dayanan
+   değerin altına düşüyor (tolerans 0; en küçük pay 30 °C, 35 ‰'de +%2,9). Tuzluluk 0'da fark en çok %0,46 (0 °C).
+   "Büyük olanla değerlendir" kuralı kaldırılınca test kırılıyor (denendi). Yani hiçbir karar bu sabite dayanmıyor.
+3. **Sıcak ve çok tuzlu uçta uyarı.** 30 °C'nin veya 35 ‰'in üstünde değerlendirilen NH₃, Clegg & Whitfield'in altına
+   düşebiliyor (35 ‰'de 33,55 °C'den, 40 ‰'de 30,10 °C'den itibaren; 35 °C'de −%1,3, 40 °C'de −%5,6). Orada değer yine
+   hesaplanıp değerlendiriliyor, ama yanında üç dilde bir uyarı çıkıyor ("NH₃: 30 °C'nin veya 35 ‰ tuzluluğun
+   üzerinde ..."); asla reddedilmiyor. Bu iki sınır çiftliğin değiştireceği bir eşik değil, kaynak sabitlerin
+   denetlendiği aralığın sonu; bu yüzden referans veri değil, kodda sabit (gerekçesi kodda yazılı). Golden v3'te hiçbir
+   değer oynamadı (iki blok bayt bayt aynı: 72c3ed35…, d08a9fae…).
+4. **Denizdeki NH₃ temelinin adı düzeltildi.** Eskiden "tuzlu su kriterlerinin yöntemi" deniyordu. Doğrusu: klasik
+   deniz suyu tablolarının yöntemi (Emerson'un sıcaklık terimi + Khoo'nun iyonik terimi, ölçülen NBS pH'ına; Bower &
+   Bidwell 1978). **US EPA 1989 tuzlu su kriterleri bunu kullanmamış**: Whitfield'in (1974) modelini Hampson'un (1977)
+   programıyla, doğrusal bir sıcaklık terimiyle kullanmış (panel EPA 440/5-88-004'ün 1–2 ve 27–28. sayfalarını kendisi
+   okudu). EPA'nın tablosu bizim temele göre 0–5 °C'de %6,7–14,3 daha çok NH₃ veriyor (sebep o doğrusal terim; saf
+   suda 0 °C'de %8,1 hatalı), 10–25 °C'de %2–6 içinde. EIFAC (1986) deniz suyu tablolarının ima ettiği pK, 10–30 °C'de
+   her tuzluluk bandında temelimizin aralığının içinde ya da en çok 0,011 altında. Soğuk deniz için üçüncü bir aday
+   eklenmedi (panel: hayır); fark belgelendi. Bir çiftlik sınırını EPA 1989'un kendi tablosundan 0–5 °C için aldıysa,
+   o sınır bizim gösterdiğimizden %14'e kadar daha çok NH₃ ile konmuştur.
+5. **pH girişinin yardım metni.** pH'ın NBS/NIST tamponlarıyla kalibre edilmiş bir ölçerin okuduğu değer olduğu artık
+   girişin yanında yazıyor. Çekirdeğin kendi çarpanlarıyla (2026-11-12 ölçümü): toplam ölçekli (TRIS ile kalibre
+   edilmiş deniz suyu sensörü) bir pH, 5–35 ‰ ve 0–30 °C'de NBS'ten 0,10–0,14 düşük okur; olduğu gibi NBS diye girilirse
+   pH 8'de değerlendirilen NH₃ %20–27 düşük çıkar. Bu, sabit tartışmasının tamamından büyük bir hata kaynağı.
+
+**Bu bölümün zayıf noktaları (panelin kendi listesi).** Hiçbir birincil makale ilk elden okunmadı (Khoo vd. 1977, Clegg
+& Whitfield 1995, Yao & Millero 1995, Johansson & Wedborg 1980, Emerson vd. 1975, Whitfield 1974); denklemler Bell vd.
+(2007/2008), Xu vd. (2017; denklem 10'da bir basamak PyCO2SYS'in sayılarıyla uyuşmuyor, test ikisine karşı da
+tutuluyor), PyCO2SYS (yalnız sayılar) ve çekirdek üzerinden geldi. Khoo'nun sabitinin molal olduğu ikinci elden üç
+işarete dayanıyor. EPA 1989 tablosu kötü bir taramadan okundu. Çiftliklerin deniz suyu NH₃ sınırlarının hangi
+yönteme göre konduğu bilinmiyor; depoda hazır NH₃ sınırı yok. Koruma testinin ızgarası 0 °C'den başlıyor: daha soğuk
+deniz suyu (−2 °C'ye kadar) ızgarada yok. Çiftlik problarının gerçek NBS–serbest farkı ölçülmedi.
 
 ## Zayıf noktalar (geçişten sonra, dürüstçe)
 

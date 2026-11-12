@@ -443,8 +443,9 @@ pub struct LimitsBasis {
     pub kb: f64,
     pub boron: f64,
     pub k_nh4: f64,
-    /// The pH offset (free − NBS) of the NH₃ basis: from 5 ‰ the saltwater criteria apply their pKa^s to the NBS pH as
-    /// measured (Bower & Bidwell 1978), so 0 there, while the CO₂ basis keeps formula 1's offset (`ph_offset`).
+    /// The pH offset (free − NBS) of the NH₃ basis: from 5 ‰ the classic sea-water tables apply their pKa^s to the NBS
+    /// pH as measured (Bower & Bidwell 1978; `crate::fresh::pk_nh4_seawater`), so 0 there, while the CO₂ basis keeps
+    /// formula 1's offset (`ph_offset`).
     pub nh3_ph_offset: f64,
 }
 

@@ -1244,12 +1244,21 @@ published values):
   **The NH₃-N shown, judged and alarmed is the larger of two** (cross review F1, owner decision 2026-11-09, safety with live
   fish): the share on the basis the limits were set on (up to 1 ‰ the ideal water, every activity 1, Emerson et al.
   1975, as Piper et al. 1982 and US EPA 1985 used it; from 5 ‰ Khoo et al. 1977's pKaˢ on the NBS pH, as Bower & Bidwell
-  1978 apply it for saltwater, cross review round 2, S1; salt-added water: the ideal throughout) and formula 3's
+  1978 apply it for saltwater, cross review round 2, S1: the classic sea-water tables' convention, not the US EPA 1989
+  saltwater criteria's own speciation, Water-chemistry core; salt-added water: the ideal throughout) and formula 3's
   activity-corrected share. The corrected NH₃-N is said in the title beside it ("NH₃ judged on the basis its limits were
   set on ..., the larger; activity-corrected 0.0121 mg/L."); it is never judged. In fresh water the basis is always the
   larger (at 12 °C, pH 7.5 the corrected NH₃ is 8.7 % lower at 500 µS/cm, 11.6 % at 1000 and 17.2 % at 3000), so the
   status, the alarm and the safe TAN are those of the ideal share; in sea water Khoo's share is the larger too (at pH 8 formula
   3's corrected share is 10 to 23 % below it at 35 ‰ from 25 to 2 °C, formula 1's 10 to 27 %).
+  **Above 30 °C or a salinity of 35 ‰ the NH₃ says a warning** in the same title ("NH₃: above 30 °C or a salinity of
+  35 ‰ the water is outside the range the NH₃ judgement was checked over ..."; the K_NH4 panel's decision of 2026-11-10):
+  the activity-corrected constant stays Yao & Millero's (1995), which is 0.17 to 8.8 % below Clegg & Whitfield's (1995)
+  from 5 ‰, and no judgement rests on it, because up to 30 °C and 35 ‰ the judged NH₃ is never below either
+  (`chemcore/core/tests/nh3_guard.rs`: 8 680 waters, tolerance 0, smallest margin +2.9 % at 30 °C and 35 ‰; within
+  0.5 % at a salinity of 0). Past that range it does fall below (−1.3 % at 35 °C, −5.6 % at 40 °C, 35 ‰), so the value
+  is still worked out and judged, with the warning; never refused. The two bounds are validity bounds of the cited
+  constants (`fresh::NH3_GUARD_MAX_TEMP_C`, `NH3_GUARD_MAX_SALINITY`), not farm limits, so they are not reference data.
 - **Oxygen saturation**: Benson & Krause (1984) as in Standard Methods 4500-O, corrected for the
   barometric pressure of the site's altitude (sea-level pressure, said so, when the site has none; the altitude is
   0 .. 5000 m (owner: no site lies below sea level, a minus sign is a slip), held by the form, the model and the
@@ -1405,10 +1414,31 @@ without values it shows its defaults.
   larger; the activity-corrected NH₃-N and CO₂ are shown beside them as information ("not judged"), with a line saying
   which judged. The limits' basis is the ideal water up to 1 ‰ (every activity 1: Emerson et al. 1975's fraction, on
   which Piper et al. 1982 and US EPA 1985 set the NH₃ limits; Standard Methods 4500-CO₂ D's free CO₂), formula 1's
-  seawater constants from 5 ‰ for CO₂ and, for NH₃, the saltwater criteria's convention from 5 ‰ (cross review round 2,
-  S1): Khoo et al. 1977's pKaˢ = 0.09018 + 2729.92/T + (0.1552 − 0.0003142 t) I on the NBS pH as measured, as Bower &
-  Bidwell 1978 apply it (`fresh::pk_nh4_seawater`), blended between as formula 3 blends; a salt-added water keeps the
-  ideal throughout, past the Davies limit too. CO₂ needs the same rule: the salmonid CO₂ guidelines
+  seawater constants from 5 ‰ for CO₂ and, for NH₃, the classic sea-water tables' convention from 5 ‰ (cross review
+  round 2, S1): a Khoo-type pKaˢ = 0.09018 + 2729.92/T + (0.1552 − 0.0003142 t) I (Emerson's temperature term with Khoo
+  et al. 1977's ionic term) on the NBS pH as measured, as Bower & Bidwell 1978 apply it (`fresh::pk_nh4_seawater`),
+  blended between as formula 3 blends; a salt-added water keeps the ideal throughout, past the Davies limit too.
+  **What that sea-water basis is not** (the K_NH4 panel, 2026-11-10; it was earlier called "the saltwater criteria's
+  convention" here): the US EPA 1989 saltwater ammonia criteria (EPA 440/5-88-004, pp. 1–2 and 27–28, eq. 4, read by
+  the panel) did not use Khoo's pK. They used Hampson's (1977) program for Whitfield's (1974) seawater model with a
+  linear temperature term, 0.0324 (298 − T); only the convention is shared (a stoichiometric pK applied to the NBS meter
+  pH). Against our basis EPA's printed table gives 6.7 to 14.3 % more NH₃ at 0 to 5 °C (that linear term, which is
+  8.1 % wrong in pure water at 0 °C) and agrees within 2 to 6 % at 10 to 25 °C; the EIFAC (1986) sea-water tables imply a
+  pK inside our basis's span over each of their salinity bands at 10 to 30 °C, or up to 0.011 below it (NH₃ −2.6 to
+  +6.7 % against the band edges). A limit taken from EPA 1989's own table for water of 0 to 5 °C was therefore set
+  with up to 14 % more NH₃ than this basis shows: documented, not copied (the panel's decision; no limit is seeded,
+  each is entered per species). Which convention a farm's own sea-water NH₃ limits follow is not known.
+  **The basis keeps formula 1's ion product of water** (the 2007 Guide's total-scale value, `chemistry::kw_total`),
+  while the water's own constants take Millero's (`fresh::ideal_water`): so the judged CO₂ never falls below formula
+  1's. Its size in fresh water (measured 2026-11-12 over 0 to 30 °C, 10 to 400 mg/L, pH 6 to 10, 1 953 possible
+  waters at a salinity of 0): the basis's CO₂ is the higher of the two, by at most 0.035 % up to pH 8.5 (30 °C, 10 mg/L;
+  0.009 % from 40 mg/L), 0.12 % up to pH 9, 0.45 % up to pH 9.5, and 4.1 % at pH 10 within 0.06 meq/L of the
+  alkalinity floor; the median is below 0.001 %. It is Kw's 1.51 % times the hydroxide's share of the alkalinity above
+  the floor. The independent check's "at most 0.13 % away from the floor" for the Kw correction itself did not hold
+  on its own grid: 22 of its 2 160 waters move more (18 at pH 9, 4 at pH 8.5), up to 0.40 % at least 0.2 meq/L above
+  the floor (40 °C, 40 ‰, 1 meq/L, pH 9) and 3.8 % within 0.04 meq/L of it; up to pH 8.5 in golden v3's waters the
+  move is below 0.09 %.
+  CO₂ needs the same rule: the salmonid CO₂ guidelines
   rest partly on free CO₂ worked out from pH and alkalinity the ideal way (Standard Methods 4500-CO₂ D, which the
   calculator is checked against), partly on probes; which basis each was set on was not verified study by study, so for
   live fish the larger is taken. At 12 °C, 80 mg/L, pH 7.5 the corrected CO₂ is 8.8 % below the judged at 500 µS/cm,

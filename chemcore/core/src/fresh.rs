@@ -421,8 +421,9 @@ fn fresh_at(
 /// the sea side's NH₃, cross review round 2, S1). Up to `FRESH_UP_TO` the ideal water (the fresh path at an ionic
 /// strength of 0, formula 1's fresh water at S 0: every activity 1, the NBS pH taken as −log [H⁺], as Emerson et al.
 /// 1975's fraction, on which Piper et al. 1982 and US EPA 1985 set the NH₃ limits, and Standard Methods 4500-CO₂ D's free
-/// CO₂). From `SEA_FROM`: for NH₃ the saltwater criteria's convention, Khoo et al. (1977)'s pKa^s on the NBS pH as
-/// measured (`pk_nh4_seawater`; Bower & Bidwell 1978), for CO₂ formula 1's seawater constants (the salinity's; its NBS
+/// CO₂). From `SEA_FROM`: for NH₃ the classic sea-water tables' convention, a Khoo-type stoichiometric pKa^s (Emerson's
+/// temperature term with Khoo et al. 1977's ionic term) on the NBS pH as measured (`pk_nh4_seawater`, which says what it
+/// is and is not: Bower & Bidwell 1978's, not the US EPA 1989 criteria's own), for CO₂ formula 1's seawater constants (the salinity's; its NBS
 /// conversion with ε = 79: CO₂ limits are applied to measured true concentrations, which Millero's apparent constants
 /// estimate). Between, the same blend as the water's own (the module's rules) with the same weight. Up to 1 ‰ this is
 /// the ideal water even where formula 1 took seawater constants (0 < S ≤ 1): at the calculator's example (12 °C, 1 ‰,
@@ -456,16 +457,30 @@ pub fn limits_basis(temp_c: f64, salinity: f64, weight: f64, origin: Origin) -> 
     })
 }
 
-/// The stoichiometric pKa of NH₄⁺ in sea water against the NBS pH as measured, the saltwater ammonia criteria's
-/// convention: Khoo, Culberson & Bates (1977), J. Solution Chem. 6: 281, as Bower & Bidwell (1978), J. Fish. Res. Board
-/// Can. 35: 1012, apply it, pKa^s = 0.09018 + 2729.92 / T + (0.1552 − 0.0003142 t) I, T in K (Emerson et al. 1975's
-/// pure-water term), t in °C, I = 19.9273 S / (1000 − 1.005109 S) the molal ionic strength of sea water. The form as
-/// read here: Florida DEP (2013), the un-ionized ammonia calculator's SOP (Spotte & Adams 1983, from Thurston 1974, 1979
-/// and Khoo et al. 1977; it prints 2729.2 / (t + 273.2), taken as Emerson's 2729.92 / T), with t in °C in the ionic
-/// term; checked against Bower & Bidwell's method as a monitoring report applies it (S 32: 9.35 at 25 °C, 9.44 at 22.15
-/// °C). Not read: Khoo et al. 1977, Bower & Bidwell 1978, US EPA 1989 (which, per the same Florida DEP note, takes the
-/// 25 °C pKa^s with 0.0324 (298 − T) after Whitfield 1974 instead), nor Bell et al. (2007, Environ. Chem. 4: 183), who
-/// report that Khoo et al.'s printed equation 5 has no temperature effect at I = 0 (this form takes Emerson's).
+/// The stoichiometric pKa of NH₄⁺ in sea water against the NBS pH as measured, the convention of the classic sea-water
+/// ammonia tables: Emerson et al. (1975)'s pure-water temperature term with the ionic-strength term of Khoo, Culberson &
+/// Bates (1977), J. Solution Chem. 6: 281, as Bower & Bidwell (1978), J. Fish. Res. Board Can. 35: 1012, apply it,
+/// pKa^s = 0.09018 + 2729.92 / T + (0.1552 − 0.0003142 t) I, T in K, t in °C, I = 19.9273 S / (1000 − 1.005109 S) the
+/// molal ionic strength of sea water. The form as read here: Florida DEP (2013), the un-ionized ammonia calculator's SOP
+/// (Spotte & Adams 1983, from Thurston 1974, 1979 and Khoo et al. 1977; it prints 2729.2 / (t + 273.2), taken as
+/// Emerson's 2729.92 / T), with t in °C in the ionic term; checked against Bower & Bidwell's method as a monitoring
+/// report applies it (S 32: 9.35 at 25 °C, 9.44 at 22.15 °C).
+///
+/// What it is not (the K_NH4 panel's finding of 2026-11-10, decision row 4): the speciation of the US EPA (1989)
+/// saltwater ammonia criteria (EPA 440/5-88-004). Those used Hampson's (1977) program for Whitfield's (1974) seawater
+/// model, %UIA = 100 / (1 + 10^(X + 0.0324 (298 − T) + 0.0415 P / T − pH)) with X the model's pKa^s at 25 °C (its pp.
+/// 1–2 and 27–28, eq. 4, read first-hand by the panel; Khoo et al. are cited there only as having substantiated
+/// Whitfield). What the two share is the convention, a stoichiometric pK applied to the NBS meter pH; the pK here is
+/// Bower & Bidwell's choice. Against this form EPA's printed table gives 6.7 to 14.3 % more NH₃ at 0 to 5 °C, which is
+/// its linear temperature term (8.1 % wrong in pure water at 0 °C), and the two agree within 2 to 6 % at 10 to 25 °C; the
+/// EIFAC (1986) sea-water tables (FAO, read by the panel) imply a pK inside this form's span over each of their salinity
+/// bands at 10 to 30 °C, or up to 0.011 below it (NH₃ −2.6 to +6.7 % against the band edges). So the name "the basis the limits were set
+/// on" holds for limits worked out with tables of this convention; a limit taken from EPA 1989 at 0 to 5 °C was set
+/// with up to 14 % more NH₃ than this basis gives (documented, not copied: the panel's decision row 5).
+///
+/// Not read: Khoo et al. 1977 (that its constant is molal rests on second-hand indications), Bower & Bidwell 1978,
+/// Whitfield 1974, Hampson 1977, nor Bell et al. (2007, Environ. Chem. 4: 183) in full, who report that Khoo et al.'s
+/// printed equation 5 has no temperature effect at I = 0 (this form takes Emerson's).
 pub fn pk_nh4_seawater(temp_c: f64, salinity: f64) -> R {
     let t = finite(temp_c)?;
     let s = finite(salinity)?;

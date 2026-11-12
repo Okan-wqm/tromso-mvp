@@ -1122,7 +1122,14 @@ notes, and **Void** while allowed.
   biomass a day = 100 × feed / the sum of the book biomass of the days with fish; the book does not grow
   between weighings, so it reads high as the last weighing ages, and the drawer says how old it is), the
   feed in use, each batch's window ("1 Oct – 15 Oct, 168 kg fed, 196 kg grown") and its last 10 records.
-- The production overview: feed today and over the last 7 days on the whole farm.
+- The production overview: feed today and over the last 7 days on the whole farm, **each site on its own day** (the
+  owner's decision of 12.11.2026: everything is shown on the site's own day, by the site's own clock). Feed recorded
+  on a site's today is in "Feed today" at once, whatever the company's clock says; the 7 days are each site's own last
+  7; a figure over sites on different clocks is the sum of each site's own day, and on a farm of more than one clock
+  both cards say "Each site on its own day". The filter is `farm.clocks.own_days`, beside the clocks the tasks read.
+  Each card opens the feeding records from the earliest to the latest of those days among the sites, so in the hours
+  when two sites are on different days that list holds one day more of one site than the figure
+  (`farm.tests.test_feeding.OverviewFeedOnSeveralClocksTests`).
 
 **Who may do what:** the area Feeding records in the role matrix (Production · Operations · Feeding): Read
 the Meal board, Records and the feeding part of a unit's drawer, Create records a feeding or a meal, Delete voids
@@ -4922,8 +4929,8 @@ its own. From 23:00 to 24:00 UTC in winter (from 22:00 in summer) Oslo is a day 
 says "today" on one clock while the code reads another passes all day and fails there. Five did, in CI run 42921917659
 (23:17 to 23:57 UTC on 10.11.2026). Four were the tests' own: the wall's session day asked of the server's clock
 (`timezone.localdate()`) where the code reads the company's; the cleaner-fish cage's site left on the company's zone
-beside fixtures that count on UTC; the overview's "Feed today", which is the company's day, expected of a UTC site's
-day; a plan dated the company's today for people placed on a UTC site. One was the product's: the Treatments list read
+beside fixtures that count on UTC; the overview's "Feed today", then read on the company's day, expected of a UTC
+site's day; a plan dated the company's today for people placed on a UTC site. One was the product's: the Treatments list read
 every treatment on the company's day (Operations › Health). What holds the class now:
 
 - `core/tests_day_boundary.py` runs the classes that count days again with the clock held at each moment of
@@ -4938,11 +4945,10 @@ every treatment on the company's day (Operations › Health). What holds the cla
   started at `2027-12-31T23:30:00+00:00`: ten failures, three of them the tests above, six of the run's own making and
   one a data map that the branch's own test commits had left stale. **A sweep is run by hand**: nothing runs one on a
   schedule, and the reports' and leave tests stand at 11.11.2026 until someone moves them.
-- **One test pins a rule that is the owner's to decide**: `farm.tests.test_feeding` `test_the_overview_shows_the_feed`
-  expects "Feed today" of `0.00 kg` when the company's day is ahead of the site's, because the overview's day is the
-  company's as the code has it. Feed recorded on the today of a site on another clock is then not in the tile until
-  the company's day matches. The test follows the code, not a decision; when the owner decides the rule, the test
-  changes with it.
+- **Decided since (the owner, 12.11.2026): everything is shown on the site's own day.** The overview's feed figures
+  count each site on its own day (Feeding, the production overview), and the Treatments list reads the fish on the
+  day of the site they are on (Health). The test that had pinned "Feed today" to `0.00 kg` in the hours when the
+  company's day is ahead of the site's now expects the feed at every hour.
 - In a test, today is asked of the clock the code under test reads: `farm.stock.dates.site_today(site)` or
   `local_today(unit)` for a site's records, `core.dates.company_today()` for what has no site; never
   `timezone.localdate()`, `date.today()` or `timezone.now().date()` (`core/tests_company_clock.py` refuses them in the

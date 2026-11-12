@@ -39,7 +39,7 @@ docker run --rm --network "$NET" -v "$REPO:/app" -w /app -e DB_HOST="$DB_HOST" -
 # a broker with the production configuration (users ingest/ingest-pw and dev/dev-pw) for the live tests
 MOSQ=eclipse-mosquitto:2.0.20@sha256:21421af7b32bf9ce508e9090c8eb13bb81f410ca778dc205506180a6f862d0eb
 BROKER=sensors-ingest-test-broker
-cleanup() { docker rm -f "$BROKER" >/dev/null 2>&1 || true; docker volume rm si-test-broker-auth >/dev/null 2>&1 || true; }
+cleanup() { docker rm -f -v "$BROKER" >/dev/null 2>&1 || true; docker volume rm si-test-broker-auth >/dev/null 2>&1 || true; }
 cleanup
 trap cleanup EXIT
 docker run --rm -v si-test-broker-auth:/mosquitto/auth "$MOSQ" sh -c '

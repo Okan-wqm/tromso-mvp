@@ -11,7 +11,13 @@
 #
 # Deprecation warnings and naive datetimes are errors (scripts/testrunner/in-container.sh, config/test_runner.py).
 # Each run starts its own database server (the development database's image, timescale/timescaledb:2.17.2-pg17) in a
-# container named balik-test-db-<run>, on a network of its own, with its data in memory, and removes both at the end.
+# container named balik-test-db-<run>, on a network of its own, with its data in memory, and removes both at the end:
+# on every way out of this script (a pass, a failure, a step that could not start, Ctrl-C, a TERM or HUP signal), the
+# containers with any anonymous volume of theirs (`docker rm -f -v`; the server's data is a tmpfs in the place of the
+# image's volume, so it leaves none). The tests' container runs behind a `wait`, so a signal is answered at once and
+# not when the tests end. Only a script killed outright (SIGKILL, its console closed) cleans nothing: its
+# balik-test-db-<run> and balik-test-run-<run> containers and its network balik-test-<run> are then removed by name.
+# Old images of the test runner are scripts/testrunner/prune.sh's to remove.
 # So a run never touches the development database `balik`, its server or its volume, never meets another run's test
 # databases, roles or connections (the shared server's max_connections of 100 was the limit every overlapping run
 # shared), and DB_TEST_NAME is not needed. The server's settings, each for the tests only:
@@ -44,16 +50,17 @@ TESTS=balik-test-run-$RUN
 IMAGE=$(sh scripts/testrunner/image.sh build)
 
 cleanup() {
-  docker rm -f "$TESTS" >/dev/null 2>&1 || true
+  trap '' INT TERM HUP                      # a second signal does not cut the cleaning short
+  docker rm -f -v "$TESTS" >/dev/null 2>&1 || true
   if [ "${KEEP_DB:-0}" != 1 ]; then
-    docker rm -f "$DB" >/dev/null 2>&1 || true
+    docker rm -f -v "$DB" >/dev/null 2>&1 || true
     docker network rm "$NET" >/dev/null 2>&1 || true
   else
-    echo "database server kept: $DB (docker rm -f $DB; docker network rm $NET)"
+    echo "database server kept: $DB (docker rm -f -v $DB; docker network rm $NET)"
   fi
 }
 trap cleanup EXIT
-trap 'exit 130' INT TERM
+trap 'exit 130' INT TERM HUP
 
 docker network create "$NET" >/dev/null
 docker run -d --name "$DB" --network "$NET" --tmpfs /var/lib/postgresql/data:rw,size=${DB_TMPFS:-8g} \
@@ -71,9 +78,12 @@ parallel=()
 [ "$WORKERS" = 1 ] || parallel=(--parallel "$WORKERS")
 start=$(date +%s)
 status=0
+# In the background, behind `wait`: bash runs a trap only when the command in front has ended, and `wait` ends at once
+# on a signal, so an interrupted run is cleaned up then and not when the tests are over.
 docker run --rm --name "$TESTS" --network "$NET" -v "$REPO:/app" -w /app \
   -e DB_HOST="$DB" -e DB_PORT=5432 -e DB_NAME=balik -e DB_USER=balik -e DB_PASSWORD="$DB_PASSWORD" \
   -e DB_TEST_NAME=test_balik -e CHECKS="$CHECKS" -e SUITE="$SUITE" -e TEST_CLOCK="${TEST_CLOCK:-}" \
-  "$IMAGE" sh scripts/testrunner/in-container.sh "${parallel[@]}" "$@" || status=$?
+  "$IMAGE" sh scripts/testrunner/in-container.sh "${parallel[@]}" "$@" &
+wait $! || status=$?
 echo "scripts/test.sh: workers $WORKERS, checks $CHECKS, suite $SUITE, $(( $(date +%s) - start )) s, exit $status"
 exit $status

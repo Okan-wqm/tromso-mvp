@@ -28,7 +28,7 @@ note() { echo "  $*"; echo "  $*" >> "$ST/results.txt"; }
 sql() { docker run --rm --network balik-ciftligi_default -e PGPASSWORD=balik "$PG_IMAGE" psql -h db -U balik -d "$DB" -Atq -c "$1"; }
 cleanup() {
   [ "${KEEP:-0}" = 1 ] && return
-  docker rm -f ms-ingest ms-broker1 ms-broker2 ms-pub >/dev/null 2>&1
+  docker rm -f -v ms-ingest ms-broker1 ms-broker2 ms-pub >/dev/null 2>&1
   docker network rm ms-net >/dev/null 2>&1
 }
 trap cleanup EXIT

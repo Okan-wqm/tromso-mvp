@@ -1,7 +1,7 @@
 # Only for the test runs (scripts/test.sh), on top of the project's requirements.txt.
 # The parallel runner sends a failing test's traceback from its worker to the main process; without tblib a traceback
 # cannot be sent and the whole run stops at the first error instead of reporting it.
-tblib==3.1.0
+tblib==3.2.2
 # The Python linter of the project checks (CHECKS=1: scripts/testrunner/in-container.sh, ruff.toml): errors only,
 # pyflakes (F) and what stops a file from being read (E9). MIT. A development tool: never on a server.
 ruff==0.17.4

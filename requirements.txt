@@ -3,8 +3,8 @@ Babel==2.18.0
 # AES-encrypted PDFs (an owner password and no user password, common on publishers' PDFs): pypdf reads them with it.
 cryptography==50.0.2
 Django==6.1.2
-psycopg==3.3.6
-psycopg-binary==3.3.6
+psycopg==3.3.8
+psycopg-binary==3.3.8
 # Reads the text of an uploaded PDF (knowledge/extraction.py); a recent release, as each patch closes ways a
 # hostile PDF could exhaust the reader.
 pypdf==6.21.4

@@ -101,6 +101,7 @@ fn formula_3_takes_it_on_the_fresh_path() {
         conductivity_25_us_cm: Some(1000.0),
         hardness_mg_l: None,
         origin: Origin::Unknown,
+        phosphate_p_mg_l: None,
     };
     for temp_c in [2.0, 12.0, 25.0] {
         let eq = f::equilibria_v3(temp_c, 0.0, Some(80.0), ions);

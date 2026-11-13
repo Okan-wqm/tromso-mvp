@@ -7,6 +7,7 @@ fn kappa(conductivity: f64, hardness: Option<f64>) -> Ions {
         conductivity_25_us_cm: Some(conductivity),
         hardness_mg_l: hardness,
         origin: Origin::Unknown,
+        phosphate_p_mg_l: None,
     }
 }
 

@@ -62,6 +62,7 @@ WATER_UNITS = {
     'temperature_c': '°C', 'oxygen_mg_l': 'mg/L', 'oxygen_saturation_pct': '%', 'ph': 'pH', 'alkalinity_mg_l': 'mg/L',
     'co2_mg_l': 'mg/L', 'tan_mg_l': 'mg/L', 'nitrite_n_mg_l': 'mg/L', 'nitrate_n_mg_l': 'mg/L', 'tgp_pct': '%',
     'salinity_ppt': '‰', 'turbidity_ntu': 'NTU', 'hardness_mg_l': 'mg/L', 'conductivity_25_us_cm': 'µS/cm',
+    'phosphate_p_mg_l': 'mg/L',
 }
 # (deadband, heartbeat seconds, reduction) of each water parameter.
 WATER_DEFAULTS = {
@@ -79,6 +80,7 @@ WATER_DEFAULTS = {
     'turbidity_ntu': ('1', 600, DEADBAND),
     'hardness_mg_l': ('1', 3600, DEADBAND),
     'conductivity_25_us_cm': ('5', 300, DEADBAND),
+    'phosphate_p_mg_l': ('0.05', 3600, DEADBAND),
 }
 
 WATER = [

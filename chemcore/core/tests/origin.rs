@@ -9,6 +9,7 @@ fn salted(conductivity: Option<f64>) -> Ions {
         conductivity_25_us_cm: conductivity,
         hardness_mg_l: None,
         origin: Origin::SaltAdded,
+        phosphate_p_mg_l: None,
     }
 }
 

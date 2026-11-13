@@ -367,7 +367,7 @@ What the platform keeps about a person beyond Django's account.
 - **how it works**: Today the profile holds the language only: chosen with the language switcher, or on the Users tab.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › profiles
 - **forms**: `UserForm`
-- **tests that mention it**: `core/test_languages.py`, `farm/tests/test_calculator.py`, `farm/tests/test_cleaner_ration.py` and 28 more
+- **tests that mention it**: `core/test_languages.py`, `farm/tests/test_calculator.py`, `farm/tests/test_cleaner_ration.py` and 29 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1900,7 +1900,7 @@ How long a value of a water parameter says something about the water now (hours)
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › water_freshness
 - **forms**: `WaterFreshnessForm`
 - **constraints**: uq_water_freshness_parameter (unique: parameter); chk_water_freshness_hours (check); chk_water_freshness_kept (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_water_ionic_inputs.py`, `alarms/tests/test_freshness.py`
+- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_phosphate.py`, `farm/tests/test_water_ionic_inputs.py` and 1 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1961,8 +1961,8 @@ A water sample: what a person measured at one sampling point (a place on a unit,
 - **read**: farm.water.views.water_page (`/operations/water/`); farm.stock.views.production_units (`/operations/units/`)
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › water_measurements
 - **forms**: `WaterSampleForm`, `RoundForm`, `RoundRowForm`, `SampleVoidForm`
-- **constraints**: chk_water_measurements_any_value (check); chk_water_measurements_source (check); chk_water_measurements_void_reason (check); chk_water_measurements_temperature_c (check); chk_water_measurements_oxygen_mg_l (check); chk_water_measurements_oxygen_saturation_pct (check); chk_water_measurements_ph (check); chk_water_measurements_alkalinity_mg_l (check); chk_water_measurements_hardness_mg_l (check); chk_water_measurements_co2_mg_l (check); chk_water_measurements_tan_mg_l (check); chk_water_measurements_nitrite_n_mg_l (check); chk_water_measurements_nitrate_n_mg_l (check); chk_water_measurements_tgp_pct (check); chk_water_measurements_salinity_ppt (check); chk_water_measurements_conductivity_25_us_cm (check); chk_water_measurements_turbidity_ntu (check); chk_water_measurements_ph_scale (check); chk_water_measurements_oxygen_basis_temperature (check); chk_water_measurements_oxygen_basis_salinity (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 18 more
+- **constraints**: chk_water_measurements_any_value (check); chk_water_measurements_source (check); chk_water_measurements_void_reason (check); chk_water_measurements_temperature_c (check); chk_water_measurements_oxygen_mg_l (check); chk_water_measurements_oxygen_saturation_pct (check); chk_water_measurements_ph (check); chk_water_measurements_alkalinity_mg_l (check); chk_water_measurements_hardness_mg_l (check); chk_water_measurements_co2_mg_l (check); chk_water_measurements_tan_mg_l (check); chk_water_measurements_nitrite_n_mg_l (check); chk_water_measurements_nitrate_n_mg_l (check); chk_water_measurements_tgp_pct (check); chk_water_measurements_salinity_ppt (check); chk_water_measurements_conductivity_25_us_cm (check); chk_water_measurements_turbidity_ntu (check); chk_water_measurements_phosphate_p_mg_l (check); chk_water_measurements_ph_scale (check); chk_water_measurements_oxygen_basis_temperature (check); chk_water_measurements_oxygen_basis_salinity (check)
+- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 19 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1992,6 +1992,7 @@ A water sample: what a person measured at one sampling point (a place on a unit,
 | salinity_ppt | numeric(3, 1) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | conductivity_25_us_cm | numeric(6, 0) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | turbidity_ntu | numeric(5, 1) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
+| phosphate_p_mg_l | numeric(5, 2) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | oxygen_basis_temperature_c | numeric(3, 1) | yes |  | computed: what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis) |
 | oxygen_basis_temperature_source | varchar(20) |  |  | computed: what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis) |
 | oxygen_basis_temperature_channel | integer | yes |  | computed: what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis) |

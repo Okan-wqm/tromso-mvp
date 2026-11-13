@@ -211,6 +211,45 @@ pub fn co2_curve(eq: &Equilibria, co2: f64, chart: &ChartBox) -> G<(Vec<P>, bool
     Ok((points, leaves_top))
 }
 
+/// The curve where the JUDGED CO₂ (`Equilibria::co2_judged`: the largest of the limits' basis, the water's own and, with
+/// a phosphate, the water's own without it) is `co2` (mmol/L) inside the box, and whether it leaves at the top: for a
+/// water with a phosphate, whose judged CO₂ counts none, so that the judged and the own CO₂ are not in the one ratio the
+/// chart's curve is otherwise drawn by (`Equilibria::co2_chart_ratio`, `co2_curve`). Row by row of the alkalinity from 0
+/// to the box's top: the pH at which the judged CO₂ of that alkalinity is `co2` (`Equilibria::ph_where_co2`, the border
+/// every status takes) and the DIC the water's own constants give the alkalinity there (the chart is drawn in them).
+/// Near an alkalinity of 0 (a pH under about 4.7, where the phosphate holds negative alkalinity) the own DIC falls
+/// before it rises, and may lie right of the box: the curve then starts on the right edge where it comes in, and ends
+/// on it where it goes out (each crossing on the straight line between its two rows), else at the top.
+pub fn co2_curve_judged(eq: &Equilibria, co2: f64, chart: &ChartBox) -> G<(Vec<P>, bool)> {
+    let mut points: Vec<P> = Vec::with_capacity(SAMPLES + 2);
+    let mut before: Option<P> = None;
+    for step in 0..=SAMPLES {
+        let alkalinity = chart.alkalinity * step as f64 / SAMPLES as f64;
+        let Some(ph) = eq.ph_where_co2(alkalinity, co2)? else {
+            continue;
+        };
+        let point = (eq.dic_on_line(alkalinity, ph)?, alkalinity);
+        let inside = point.0 < chart.dic;
+        if let Some(last) = before {
+            if (last.0 < chart.dic) != inside {
+                let share = div(chart.dic - last.0, point.0 - last.0)?;
+                points.push((chart.dic, last.1 + share * (point.1 - last.1)));
+                if !inside {
+                    return Ok((points, false));
+                }
+            }
+        }
+        if inside {
+            points.push(point);
+        }
+        before = Some(point);
+    }
+    if points.len() < 2 {
+        return Ok((Vec::new(), false));
+    }
+    Ok((points, true))
+}
+
 fn co2_region(curve: &[P], leaves_top: bool, chart: &ChartBox) -> Vec<P> {
     let mut region = curve.to_vec();
     if leaves_top {
@@ -486,8 +525,11 @@ pub fn geometry<'a>(
     if layers.co2 {
         match limits.co2_mg_l {
             Some(limit) => {
-                let (curve, leaves_top) =
-                    co2_curve(&eq, div(analysis.co2_chart_limit(limit)?, c::MG_CO2_PER_MMOL)?, &chart)?;
+                let (curve, leaves_top) = if eq.phosphate > 0.0 {
+                    co2_curve_judged(&eq, div(limit, c::MG_CO2_PER_MMOL)?, &chart)?
+                } else {
+                    co2_curve(&eq, div(analysis.co2_chart_limit(limit)?, c::MG_CO2_PER_MMOL)?, &chart)?
+                };
                 if !curve.is_empty() {
                     shape
                         .regions

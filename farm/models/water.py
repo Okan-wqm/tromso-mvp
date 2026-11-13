@@ -164,6 +164,7 @@ class WaterMeasurement(AuditedModel):
     salinity_ppt = parameters.get('salinity_ppt').field()
     conductivity_25_us_cm = parameters.get('conductivity_25_us_cm').field()
     turbidity_ntu = parameters.get('turbidity_ntu').field()
+    phosphate_p_mg_l = parameters.get('phosphate_p_mg_l').field()
     # The provenance of an oxygen entered without its own temperature or salinity (BASIS): the value the server found
     # fresh at the sample's point and time when it was written (farm/water/read.oxygen_basis), where it came from (the
     # sensor's channel, or the time of the sample it was), and when it was measured; never a measurement of this sample.

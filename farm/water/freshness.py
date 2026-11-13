@@ -27,7 +27,9 @@ SEEDS = {'temperature_c': 24, 'oxygen_mg_l': 24, 'oxygen_saturation_pct': 24, 'p
          'co2_mg_l': 72, 'tan_mg_l': 168, 'nitrite_n_mg_l': 168, 'nitrate_n_mg_l': 336, 'tgp_pct': 168,
          'salinity_ppt': 168, 'turbidity_ntu': 168, 'nh3_n_mg_l': 168, 'nh4_n_mg_l': 168,
          # formula 3's ionic-strength inputs (farm 0040): the conductivity at 25 °C 7 days, the hardness 14
-         'conductivity_25_us_cm': 168, 'hardness_mg_l': 336}
+         'conductivity_25_us_cm': 168, 'hardness_mg_l': 336,
+         # the optional phosphate (farm 0042): 7 days, as the TAN and the other nutrients
+         'phosphate_p_mg_l': 168}
 
 _held = {}
 _lock = threading.Lock()

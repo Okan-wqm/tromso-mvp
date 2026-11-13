@@ -10,6 +10,7 @@ fn conductivity(kappa: f64) -> Ions {
         conductivity_25_us_cm: Some(kappa),
         hardness_mg_l: None,
         origin: Origin::Unknown,
+        phosphate_p_mg_l: None,
     }
 }
 

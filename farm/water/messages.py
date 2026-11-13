@@ -4,6 +4,8 @@ unchanged. farm/tests/test_native_geometry.py checks that every code the core gi
 from django.utils.formats import number_format
 from django.utils.translation import gettext_lazy as _
 
+from . import native
+
 NOTES = {
     'co2.no_limit': _('CO₂: no limit given.'),
     'safe.no_band': _('Safe zone: not drawn without the alkalinity band.'),
@@ -111,6 +113,9 @@ def provenance(equilibria):
             # Cross review F3: the band takes sea water's ions; a fresh water salted with NaCl would read low CO2.
             said = _('%(said)s (assumes sea water’s ion composition; salt-added fresh water may read low CO₂: say the '
                      'unit’s water origin)') % {'said': said}
+    if equilibria.phosphate > 0:
+        said = _('%(said)s; phosphate %(phosphate)s mg/L as P counted in the alkalinity') % {
+            'said': said, 'phosphate': number_format(equilibria.phosphate * 1000 * native.MG_P_PER_MMOL, 2)}
     if equilibria.water_origin == 'salt_added':
         said = (_('%(said)s; salt-added fresh water, its ions taken as NaCl') if equilibria.sea_weight == 0
                 else _('%(said)s; salt-added fresh water past the Davies range, worked out as sea water')) % {'said': said}
@@ -130,12 +135,21 @@ JUDGED = {
     ('co2', 'corrected'): _('CO₂ judged on its activity-corrected value, the larger here.'),
 }
 JUDGED_DECIMALS = {'nh3': 4, 'co2': 2}
+# With a phosphate given (chemcore/core/src/chemistry.rs Equilibria::co2_judged): the judged CO₂ is the water's without
+# it, the water's own with it is said beside it.
+JUDGED_WITHOUT_PHOSPHATE = _('CO₂ judged without the phosphate: the larger of the basis its limits were set on and the '
+                             'activity-corrected value, neither counting the phosphate’s alkalinity (Standard Methods '
+                             '4500-CO₂ D takes all the alkalinity as carbonate’s), so it is never below what it was '
+                             'before the phosphate was given. With the phosphate counted, the water’s own CO₂ is '
+                             '%(value)s mg/L.')
 
 
 def judged(kind, basis, corrected, equilibria):
     """Which value judged a water's NH3 ('nh3') or CO2 ('co2'), with the activity-corrected value beside it, in words;
     '' for formula 1 (its own value is the limits' basis), for the ideal water (an ionic strength of 0 in fresh water:
     the two are one) or without a value. KeyError for an unknown kind or basis."""
+    if kind == 'co2' and equilibria.formula != 1 and equilibria.phosphate > 0 and corrected is not None:
+        return str(JUDGED_WITHOUT_PHOSPHATE % {'value': number_format(corrected, JUDGED_DECIMALS[kind])})
     words = JUDGED[kind, basis]
     ideal = equilibria.ionic_strength == 0 and equilibria.sea_weight == 0
     if equilibria.formula == 1 or ideal or corrected is None:

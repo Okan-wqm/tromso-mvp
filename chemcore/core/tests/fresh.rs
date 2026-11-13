@@ -22,11 +22,13 @@ fn the_sources_in_order() {
         conductivity_25_us_cm: Some(500.0),
         hardness_mg_l: Some(300.0),
         origin: Origin::Unknown,
+        phosphate_p_mg_l: None,
     };
     let hardness = Ions {
         conductivity_25_us_cm: None,
         hardness_mg_l: Some(300.0),
         origin: Origin::Unknown,
+        phosphate_p_mg_l: None,
     };
     let source = |salinity, alkalinity, ions| f::ionic_strength(salinity, alkalinity, ions).map(|(_i, source)| source);
     assert_eq!(source(0.0, Some(80.0), both), Ok(Source::Hardness)); // 0.008 against 0.0089
@@ -74,6 +76,7 @@ const WATERS: [(f64, Ions); 4] = [
             conductivity_25_us_cm: None,
             hardness_mg_l: None,
             origin: Origin::Unknown,
+            phosphate_p_mg_l: None,
         },
     ),
     (
@@ -82,6 +85,7 @@ const WATERS: [(f64, Ions); 4] = [
             conductivity_25_us_cm: Some(3700.0),
             hardness_mg_l: None,
             origin: Origin::Unknown,
+            phosphate_p_mg_l: None,
         },
     ),
     (
@@ -90,6 +94,7 @@ const WATERS: [(f64, Ions); 4] = [
             conductivity_25_us_cm: None,
             hardness_mg_l: Some(300.0),
             origin: Origin::Unknown,
+            phosphate_p_mg_l: None,
         },
     ),
     (
@@ -98,6 +103,7 @@ const WATERS: [(f64, Ions); 4] = [
             conductivity_25_us_cm: None,
             hardness_mg_l: None,
             origin: Origin::Unknown,
+            phosphate_p_mg_l: None,
         },
     ),
 ];
@@ -180,6 +186,7 @@ fn above_davies_range_it_is_refused() {
         conductivity_25_us_cm: Some(40000.0),
         hardness_mg_l: None,
         origin: Origin::Unknown,
+        phosphate_p_mg_l: None,
     };
     assert_eq!(f::ionic_strength(0.0, Some(80.0), sea), Err(ChemError::OutOfRange));
     assert!(f::equilibria_v3(12.0, 0.0, Some(80.0), sea).is_err());
@@ -296,6 +303,7 @@ fn sea_water_keeps_v1s_constants_but_the_kw_and_converts_the_nbs_ph_with_the_tem
         conductivity_25_us_cm: Some(500.0),
         hardness_mg_l: None,
         origin: Origin::Unknown,
+        phosphate_p_mg_l: None,
     };
     for temp_c in [2.0, 12.0, 25.0] {
         for salinity in [5.0, 10.0, 35.0] {
@@ -324,6 +332,7 @@ fn every_equilibria_says_its_formula_its_ionic_strength_and_where_it_came_from()
         conductivity_25_us_cm: Some(300.0),
         hardness_mg_l: None,
         origin: Origin::Unknown,
+        phosphate_p_mg_l: None,
     };
     let fresh = f::water_equilibria(3, 12.0, 0.0, Some(80.0), ions);
     assert!(fresh.is_ok_and(|eq| eq.formula == 3

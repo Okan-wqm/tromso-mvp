@@ -24,6 +24,7 @@ fn water(temperature_c: f64, salinity_ppt: f64, ph: f64, alkalinity_mg_l: f64, f
         conductivity_25_us_cm: None,
         hardness_mg_l: None,
         origin: Origin::Unknown,
+        phosphate_p_mg_l: None,
         formula,
     }
 }

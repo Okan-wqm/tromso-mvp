@@ -40,8 +40,8 @@
 //! KB = KB° / γ₁²; KH2S = KH2S° / γ₁²; KNH4 = KNH4° (H⁺ and NH₄⁺ both monovalent); Ksp as v1 (Ω is drawn only from 5 ‰).
 pub use crate::chemistry::Source;
 use crate::chemistry::{
-    self as c, Equilibria, KELVIN, LimitsBasis, MG_CACO3_PER_MEQ, Origin, k_h2s_total, k_nh4_sws, k1_sws, k2_sws,
-    kb_total, kw_sws, kw_total, total_boron,
+    self as c, Equilibria, KELVIN, LimitsBasis, MG_CACO3_PER_MEQ, Origin, k_h2s_total, k_nh4_sws, k1_sws, k1p_sws,
+    k2_sws, k2p_sws, k3p_sws, kb_total, kw_sws, kw_total, total_boron,
 };
 use crate::num::{ChemError, R, div, exp, finite, ln, pow, sqrt};
 
@@ -74,7 +74,8 @@ pub const DAVIES: f64 = 0.3;
 /// or a conductivity in mS/cm is read as µS/cm.
 pub const DAVIES_MAX: f64 = 0.5;
 
-/// What is measured of a fresh water's ions besides its alkalinity (none: None).
+/// What is measured of a water besides its temperature, salinity and alkalinity (none: None): the ions its fresh-water
+/// ionic strength is taken from, where its salt came from, and its phosphate.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Ions {
     /// µS/cm, compensated to 25 °C (specific conductance; a reading at the water's own temperature is not this value).
@@ -83,6 +84,9 @@ pub struct Ions {
     /// Where its salt came from (a unit's water origin, cross review F3): salt-added water takes the fresh path to the
     /// Davies limit with NaCl's ionic strength.
     pub origin: Origin,
+    /// Orthophosphate, mg/L as P (PO₄-P): its part of the alkalinity is counted (`with_phosphate`). None, or 0: none
+    /// given, and every result is what it was without the input. Formula 1 does not read it.
+    pub phosphate_p_mg_l: Option<f64>,
 }
 
 fn present(value: Option<f64>) -> Result<Option<f64>, ChemError> {
@@ -413,6 +417,10 @@ fn fresh_at(
         limits_basis: None,
         origin,
         warnings: 0,
+        phosphate: 0.0,
+        k1p: 0.0,
+        k2p: 0.0,
+        k3p: 0.0,
     };
     checked(eq)
 }
@@ -532,9 +540,72 @@ pub fn equilibria_v3(
     alkalinity_mg_l: Option<f64>,
     ions: Ions,
 ) -> Result<Equilibria, ChemError> {
-    let eq = constants_v3(temp_c, salinity, alkalinity_mg_l, ions)?;
+    let eq = with_phosphate(
+        constants_v3(temp_c, salinity, alkalinity_mg_l, ions)?,
+        ions.phosphate_p_mg_l,
+    )?;
     Ok(Equilibria {
         warnings: plausibility(temp_c, salinity, alkalinity_mg_l, ions)?,
+        ..eq
+    })
+}
+
+/// A water's equilibria with its phosphate (the optional PO₄-P input: the independent check of 2026-11-09, hypothesis
+/// 12a; owner-approved 2026-11-10): the total, mg/L as P ÷ `chemistry::MG_P_PER_MMOL` as mmol/L, and the three constants
+/// of phosphoric acid (Millero 1995: `chemistry::k1p_sws`, `k2p_sws`, `k3p_sws`) made the water's as its other constants
+/// are. On the sea path, over [H⁺]SWS / [H⁺]free. On the fresh path, the S 0 (pure water) values made concentration
+/// constants with the Davies activity coefficients of the water's ionic strength (the module's rules): K1P = K1P° /
+/// γ₁² (H₃PO₄⁰ ⇌ H⁺ + H₂PO₄⁻), K2P = K2P° / γ₂ (the γ₁ of H₂PO₄⁻ and of H⁺ cancel), K3P = K3P° γ₂ / (γ₁ γ₃), with
+/// log γ_z = z² log γ₁, so 10^(2, 4, 6 log γ₁) under the three. In the band, the geometric blend with the sea path's
+/// weight. The phosphate is not added to the ionic strength (a conductivity already counts it; 10 mg/L as P is about
+/// 0.0005 mol/L). None, or 0: the equilibria as they are, nothing computed; a negative one is refused.
+fn with_phosphate(eq: Equilibria, phosphate_p_mg_l: Option<f64>) -> Result<Equilibria, ChemError> {
+    let Some(given) = present(phosphate_p_mg_l)? else {
+        return Ok(eq);
+    };
+    if given < 0.0 {
+        return Err(ChemError::Domain);
+    }
+    if given == 0.0 {
+        return Ok(eq);
+    }
+    let (temp_c, salinity, weight) = (eq.temp_c, eq.salinity, eq.sea_weight);
+    let fresh = || -> Result<(f64, f64, f64), ChemError> {
+        let one = davies_log_gamma(temp_c, eq.ionic_strength, 1.0)?;
+        Ok((
+            div(k1p_sws(temp_c, 0.0)?, pow(10.0, 2.0 * one)?)?,
+            div(k2p_sws(temp_c, 0.0)?, pow(10.0, 4.0 * one)?)?,
+            div(k3p_sws(temp_c, 0.0)?, pow(10.0, 6.0 * one)?)?,
+        ))
+    };
+    let sea = || -> Result<(f64, f64, f64), ChemError> {
+        let to_sws = c::free_to_sws(temp_c, salinity)?;
+        Ok((
+            div(k1p_sws(temp_c, salinity)?, to_sws)?,
+            div(k2p_sws(temp_c, salinity)?, to_sws)?,
+            div(k3p_sws(temp_c, salinity)?, to_sws)?,
+        ))
+    };
+    let (k1p, k2p, k3p) = if weight <= 0.0 {
+        fresh()?
+    } else if weight >= 1.0 {
+        sea()?
+    } else {
+        let (fresh, sea) = (fresh()?, sea()?);
+        (
+            blend(fresh.0, sea.0, weight)?,
+            blend(fresh.1, sea.1, weight)?,
+            blend(fresh.2, sea.2, weight)?,
+        )
+    };
+    for value in [k1p, k2p, k3p] {
+        finite(value)?;
+    }
+    Ok(Equilibria {
+        phosphate: given / c::MG_P_PER_MMOL / 1000.0,
+        k1p,
+        k2p,
+        k3p,
         ..eq
     })
 }
@@ -585,7 +656,8 @@ fn constants_v3(temp_c: f64, salinity: f64, alkalinity_mg_l: Option<f64>, ions: 
     checked(eq)
 }
 
-/// The equilibria of a water by a formula version: 1 (golden v1: the salinity alone, ε = 79; the ions are not read) or
+/// The equilibria of a water by a formula version: 1 (golden v1: the salinity alone, ε = 79; the ions and the phosphate
+/// are not read) or
 /// 3 (`equilibria_v3`); any other is refused (`ChemError::UnknownFormula`).
 pub fn water_equilibria(
     formula: u32,

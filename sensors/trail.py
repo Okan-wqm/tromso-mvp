@@ -18,7 +18,7 @@ from . import read
 HOUR = timedelta(hours=1)
 INPUTS = (parameters.TEMPERATURE, parameters.PH, 'alkalinity_mg_l', parameters.SALINITY)
 # Read when there, never required: the ions besides the alkalinity that give the water's ionic strength (formula 3).
-IONS = ('conductivity_25_us_cm', 'hardness_mg_l')
+IONS = ('conductivity_25_us_cm', 'hardness_mg_l', 'phosphate_p_mg_l')
 
 
 @dataclass(frozen=True)
@@ -103,7 +103,8 @@ def trail(owner, start, end):
             found.missing.append(at)
             continue
         equilibria = chemistry.water_equilibria(values[parameters.TEMPERATURE], values[parameters.SALINITY],
-                                                values['alkalinity_mg_l'], *(values.get(code) for code in IONS),
+                                                values['alkalinity_mg_l'],
+                                                **{code: values.get(code) for code in IONS},
                                                 water_origin=origin)
         alkalinity = values['alkalinity_mg_l'] / chemistry.MG_CACO3_PER_MEQ
         try:

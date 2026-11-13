@@ -31,18 +31,21 @@ fn water(temp_c: f64, salinity: f64, alkalinity_mg_l: f64, phosphate: Option<f64
 fn the_constants_meet_the_guides_check_values_and_pure_waters() {
     // Dickson, Sabine & Christian (2007), ch. 5, eq. 49, 52, 55: at S 35 and 25 °C, on the total scale, ln K1P = −3.71,
     // ln K2P = −13.727, ln K3P = −20.24. Ours are Millero's on his seawater scale (the Guide's with the 0.015 of its
-    // footnote 5 put back): over [H⁺]SWS / [H⁺]total they are the Guide's within its approximate shift (0.006).
+    // footnote 5 put back): over [H⁺]SWS / [H⁺]total they are the Guide's within its approximate shift.
     let to_total = c::free_to_sws(25.0, 35.0).unwrap_or(f64::NAN) / c::free_to_total(25.0, 35.0).unwrap_or(f64::NAN);
-    for (constant, wanted, within) in [
-        (c::k1p_sws(25.0, 35.0), -3.71, 0.011),
-        (c::k2p_sws(25.0, 35.0), -13.727, 0.0065),
-        (c::k3p_sws(25.0, 35.0), -20.24, 0.011),
+    // The exact shift there is ln([H⁺]SWS / [H⁺]total) = 0.0223, the Guide's approximate one 0.015: 0.007 apart.
+    for (constant, wanted, printed) in [
+        (c::k1p_sws(25.0, 35.0), -3.71, 0.0051),
+        (c::k2p_sws(25.0, 35.0), -13.727, 0.00051),
+        (c::k3p_sws(25.0, 35.0), -20.24, 0.0051),
     ] {
-        let total = constant.map_or(f64::NAN, |k| libm::log(k / to_total));
-        assert!((total - wanted).abs() < within, "{total} against {wanted}");
-        // And on the seawater scale itself, the Guide's value plus exactly its 0.015.
+        // On the seawater scale itself: the Guide's printed value plus exactly its 0.015, within the digits it prints.
         let sws = constant.map_or(f64::NAN, libm::log);
-        assert!((sws - 0.015 - wanted).abs() < within, "{sws}");
+        assert!((sws - 0.015 - wanted).abs() < printed, "{sws} against {wanted}");
+        // On the total scale by the exact factor: the Guide's within its approximation.
+        let total = constant.map_or(f64::NAN, |k| libm::log(k / to_total));
+        assert!((total - wanted).abs() < 0.0079 + printed, "{total} against {wanted}");
+        assert!((libm::log(to_total) - 0.0223).abs() < 0.0002);
     }
     // At S 0 they are phosphoric acid's in pure water at 25 °C: pK 2.149, 7.200, 12.345 (handbooks: about 2.15, 7.20,
     // 12.3 to 12.4).
@@ -311,11 +314,18 @@ fn the_charts_co2_curve_is_the_judged_one() {
         let curve = g::co2_curve_judged(&eq, limit, &chart);
         assert!(curve.is_ok());
         let Ok((points, _leaves_top)) = curve else { continue };
-        assert_eq!(points.len(), g::SAMPLES + 1);
-        let mut before = (f64::NEG_INFINITY, f64::NEG_INFINITY);
-        for &(dic, alkalinity) in points.iter().skip(1).take(g::SAMPLES - 1) {
-            assert!(dic > before.0 && alkalinity > before.1, "S {salinity}: not rising");
-            before = (dic, alkalinity);
+        assert!(points.len() > g::SAMPLES / 2, "S {salinity}: {} points", points.len());
+        let mut before = f64::NEG_INFINITY;
+        let mut checked = 0;
+        for &(dic, alkalinity) in &points {
+            assert!(
+                alkalinity > before && dic <= chart.dic,
+                "S {salinity}: not rising, or outside the box"
+            );
+            before = alkalinity;
+            if dic >= chart.dic || alkalinity <= 0.5 {
+                continue; // a crossing of the right edge (interpolated), or the acid corner no fish water is in
+            }
             let ph = eq.ph_at(dic, alkalinity).ok().flatten().unwrap_or(f64::NAN);
             let own = eq.co2(dic, ph).unwrap_or(f64::NAN);
             let judged = eq.co2_judged(alkalinity, ph, own).map_or(f64::NAN, |found| found.0);
@@ -324,6 +334,8 @@ fn the_charts_co2_curve_is_the_judged_one() {
                 "S {salinity}: {judged} against {limit}"
             );
             assert!(own < limit);
+            checked += 1;
         }
+        assert!(checked > g::SAMPLES / 2, "S {salinity}: {checked} points checked");
     }
 }

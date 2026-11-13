@@ -1429,6 +1429,24 @@ without values it shows its defaults.
   says so. Checked against PyCO2SYS 1.8.3.4 and seacarb 3.4.2 over 0 to 40 °C by 5 to 40 ‰ (72 cells): the free and the
   seawater-scale pH of a total-scale pH within 8.9e-15 and 2.4e-7 pH; the NBS leg is the core's own conversion (−0.069
   to +0.055 pH against CO2SYS's, as every NBS pH), which cancels in what the water's own constants work out.
+- **The optional phosphate** (PO₄-P, mg/L as P; the independent check's hypothesis 12a, owner 2026-11-10;
+  `chemcore/findings/phosphate.md`): phosphate is part of the alkalinity a titration measures, [HPO₄²⁻] + 2 [PO₄³⁻] −
+  [H₃PO₄] (Dickson 1981's definition as Dickson, Sabine & Christian 2007 give it, ch. 2), with Millero's (1995)
+  constants (the Guide's ch. 5, eq. 49, 52, 55, its 0.015 put back; on the fresh path with Davies coefficients).
+  **Without the input nothing moves** (no constant is computed; the golden files keep their bytes). With it, a water
+  parameter like the others (record form, round, limits and freshness as reference data, a sensor quantity; the
+  calculator's field; a unit's chart, the replay and the trail take the unit's fresh value): the DIC and the water's own
+  CO₂ of a pH and an alkalinity are lower by it, and **every dose, recipe and simulator step meets its buffer** (before,
+  at 10 mg/L in fresh water the CO₂ after a base dose or a degassing came out 57 to 71 % too low and the pH 0.4 to 0.55
+  too high: the unsafe side). **A judged CO₂ never falls because a phosphate was given**: every CO₂ judgement, border
+  and the chart's CO₂ curve take the largest of the limits' basis, the water's own value without the phosphate and its
+  own with it, so a mistyped phosphate (PO₄ typed as P is 3.07 times too much) cannot hide CO₂; the own value with the
+  phosphate is said beside it ("CO₂ judged without the phosphate: …"). A pH and an alkalinity whose phosphate alone
+  is that much alkalinity are refused with the phosphate in the reason. The NH₃ does not read it. Checked against
+  PyCO2SYS 1.8.3.4 over 763 waters (S 0 to 35, 5 to 25 °C, 1 to 4 meq/L, pH 6.5 to 8, 1 to 30 mg/L): the constants and
+  the phosphate's alkalinity within 3.1e-14; in sea water the CO₂ a median of 7.0e-6 and at most 1.4e-3 apart (the
+  per-litre bookkeeping, next to the floor), the pH after a dose within 1.0e-4; in ideal fresh water everything within
+  1e-10. The fresh path with real ions (Davies) has no independent reference.
 - **NH₃ and CO₂ are judged on the larger of the limits' basis and the activity-corrected value** (cross review F1,
   owner 2026-11-09; `chemistry::Basis`, `fresh::limits_basis`): the NH₃-N, the CO₂, their statuses, borders and margins,
   the safe TAN, the NH₃ share, the target CO₂, the small NH₃ chart, the simulator's steps and the safe zone all take the

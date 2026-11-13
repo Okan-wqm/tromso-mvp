@@ -33,7 +33,7 @@ from .evaluate import Status, judge as judge_bounds
 
 # The calculator's fields a unit or a loop measures, by the parameter they are.
 MEASURED_FIELDS = ['temperature_c', 'ph', 'salinity_ppt', 'alkalinity_mg_l', 'tan_mg_l', 'oxygen_mg_l',
-                   'conductivity_25_us_cm', 'hardness_mg_l']
+                   'conductivity_25_us_cm', 'hardness_mg_l', 'phosphate_p_mg_l']
 # The pH bounds, the field each fills and how the strictest of several species' is picked.
 PH_BOUNDS = [('ph_critical_low', 'critical_low', max), ('ph_warning_low', 'warning_low', max),
              ('ph_warning_high', 'warning_high', min), ('ph_critical_high', 'critical_high', min)]
@@ -95,7 +95,8 @@ def inputs_from(values):
         alkalinity_mg_l=values['alkalinity_mg_l'], tan_mg_l=values.get('tan_mg_l'),
         total_sulfide_ug_l=values.get('total_sulfide_ug_l'), calcium_mg_l=values.get('calcium_mg_l'),
         oxygen_mg_l=values.get('oxygen_mg_l'), conductivity_25_us_cm=values.get('conductivity_25_us_cm'),
-        hardness_mg_l=values.get('hardness_mg_l'), water_origin=values.get('water_origin') or '')
+        hardness_mg_l=values.get('hardness_mg_l'), water_origin=values.get('water_origin') or '',
+        phosphate_p_mg_l=values.get('phosphate_p_mg_l'))
     limits = deffeyes.Limits(
         nh3_n_mg_l=values.get('nh3_n_limit_mg_l'), co2_mg_l=values.get('co2_limit_mg_l'),
         h2s_ug_l=values.get('h2s_limit_ug_l'), alkalinity_low_mg_l=values.get('alkalinity_low_mg_l'),
@@ -242,7 +243,7 @@ def fish_limits(owner):
 # ---- a unit's own chart ---------------------------------------------------------------------------------------
 # What a unit's chart must have, in the order they are listed when missing.
 REQUIRED = ['temperature_c', 'ph', 'alkalinity_mg_l', 'salinity_ppt']
-OPTIONAL = ['tan_mg_l', 'oxygen_mg_l', 'conductivity_25_us_cm', 'hardness_mg_l']
+OPTIONAL = ['tan_mg_l', 'oxygen_mg_l', 'conductivity_25_us_cm', 'hardness_mg_l', 'phosphate_p_mg_l']
 # The limits a unit's chart takes from the fish, by the calculator field they fill.
 LIMIT_FIELDS = ['nh3_n_limit_mg_l', 'co2_limit_mg_l', 'alkalinity_low_mg_l', 'alkalinity_high_mg_l']
 
@@ -339,7 +340,7 @@ def chart_of(unit, point=None, now=None, at=None):
 def ions_of(values):
     """The conductivity at 25 °C and the hardness of field values (None when absent), and the water's origin ('' not
     said): what a water's equilibria read besides its alkalinity and salinity (formula 3)."""
-    return {**{name: values.get(name) for name in ('conductivity_25_us_cm', 'hardness_mg_l')},
+    return {**{name: values.get(name) for name in ('conductivity_25_us_cm', 'hardness_mg_l', 'phosphate_p_mg_l')},
             'water_origin': values.get('water_origin') or ''}
 
 

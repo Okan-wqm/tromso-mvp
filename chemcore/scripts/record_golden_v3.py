@@ -27,6 +27,11 @@ into formula 3 itself, formula 1's values in these files never moved; chemcore/f
   mg/L of calcium (no Ω was recorded before). Formula 3's takes the Ksp per litre, Mucci's per-kg2 Ksp times the square
   of the sea water's density (EOS-80; owner-approved after the same check, claim 12b: Ω was ρ2 too high); formula 1's
   keeps the per-kg Ksp, as golden v1 holds it. FORMAT 2: a key was added.
+- 2026-11-13, the optional phosphate (the independent check's hypothesis 12a; owner-approved 2026-11-10): a new block,
+  `phosphate`, waters with a PO4-P of 1 and of 10 mg/L (fresh, band and sea water): the phosphate's total and three
+  constants and, at each pH, the pH line, the DIC, the water's own CO2, the judged CO2 (the water's without the
+  phosphate) and the pH after 0.5 meq/L of base at the same DIC; a pH and an alkalinity the phosphate does not allow
+  are recorded as impossible. FORMAT 4: a block was added; the three blocks recorded before keep their bytes.
 - 2026-11-12, the scale of a pH (the K_NH4 panel's proposal, the owner's decision of 2026-11-11; chemcore/core/src/
   scale.rs): a new block, `scales`, the NBS pH of each of five pHs given on each scale (NBS: the pH itself) in sea water
   of 5, 10, 28.5 and 35 permil. FORMAT 3: a block was added; the two blocks recorded before keep their bytes.
@@ -41,7 +46,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-FORMAT = 3
+FORMAT = 4
 TEMPERATURES = (2.0, 8.0, 12.0, 18.0, 25.0, 30.0)
 SALINITIES = (0.0, 0.5, 1.0, 2.0, 3.0, 4.99, 5.0, 10.0, 28.3, 28.5, 35.0)   # 28.3, 28.5: NaCl's Davies limit
 PHS = (6.5, 7.0, 7.5, 8.0, 8.5)
@@ -54,6 +59,8 @@ IONS = ({}, {'conductivity_25_us_cm': 50.0}, {'conductivity_25_us_cm': 300.0}, {
 LIMITS = {'nh3_n_mg_l': 0.0103, 'co2_mg_l': 15.0, 'h2s_ug_l': 2.0, 'alkalinity_low_mg_l': 50.0,
           'alkalinity_high_mg_l': 150.0}
 CALCIUM_MG_L = 400.0                                  # the calcium Ω is recorded with (the calculator's example)
+PHOSPHATES = (1.0, 10.0)                              # mg/L as P
+PHOSPHATE_SALINITIES = (0.0, 0.5, 3.0, 5.0, 35.0)
 SCALE_SALINITIES = (5.0, 10.0, 28.5, 35.0)           # a pH on another scale than NBS is taken from 5 permil (scale.rs)
 OMEGA_SALINITY = (5.0, 44.0)                          # Ω is drawn where Mucci (1983) measured (the core's geometry.rs)
 ANALYSIS_KEYS = ('co2_mg_l', 'co2', 'nh3_n_mg_l', 'nh3', 'safe_tan_mg_l', 'h2s_ug_l', 'h2s', 'dic', 'target_dic',
@@ -125,7 +132,29 @@ def record_all():
             eq = n.water_equilibria(temp_c, salinity)
             scales.append({'temp_c': temp_c, 'salinity': salinity, 'ph_offset': eq.ph_offset,
                            'nbs_of': {scale: [eq.ph_nbs(ph, scale) for ph in PHS] for scale in n.PH_SCALES}})
-    return {'waters': waters, 'analyses': analyses, 'scales': scales}
+    phosphate = []
+    for temp_c in TEMPERATURES:
+        for salinity in PHOSPHATE_SALINITIES:
+            for alkalinity in ALKALINITIES:
+                for given in PHOSPHATES:
+                    eq = n.water_equilibria(temp_c, salinity, alkalinity, phosphate_p_mg_l=given)
+                    meq = alkalinity / n.MG_CACO3_PER_MEQ
+                    at_ph = []
+                    for ph in PHS:
+                        if not eq.possible(meq, ph):
+                            at_ph.append({'ph': ph, 'impossible': True})
+                            continue
+                        dic = eq.dic(meq, ph)
+                        at_ph.append({'ph': ph, 'isoline': list(eq.isoline(ph)), 'dic': dic,
+                                      'co2_mg_l': eq.co2(dic, ph) * n.MG_CO2_PER_MMOL,
+                                      'co2_judged_mg_l': eq.co2_judged(meq, ph)[0] * n.MG_CO2_PER_MMOL,
+                                      'ph_after_base': eq.ph_at(dic, meq + 0.5)})
+                    phosphate.append({'temp_c': temp_c, 'salinity': salinity, 'alkalinity_mg_l': alkalinity,
+                                      'phosphate_p_mg_l': given,
+                                      'constants': {'phosphate': eq.phosphate, 'k1p': eq.k1p, 'k2p': eq.k2p,
+                                                    'k3p': eq.k3p},
+                                      'at_ph': at_ph})
+    return {'waters': waters, 'analyses': analyses, 'scales': scales, 'phosphate': phosphate}
 
 
 def encode(records):

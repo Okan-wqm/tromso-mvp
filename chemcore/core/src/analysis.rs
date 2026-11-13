@@ -138,6 +138,8 @@ pub struct Water {
     pub origin: Origin,
     /// The formula version the water is worked out by (crate::FORMULAS).
     pub formula: u32,
+    /// Orthophosphate, mg/L as P (`crate::fresh::Ions::phosphate_p_mg_l`); None: not given.
+    pub phosphate_p_mg_l: Option<f64>,
 }
 
 impl Water {
@@ -147,6 +149,7 @@ impl Water {
             conductivity_25_us_cm: self.conductivity_25_us_cm,
             hardness_mg_l: self.hardness_mg_l,
             origin: self.origin,
+            phosphate_p_mg_l: self.phosphate_p_mg_l,
         }
     }
 }
@@ -237,6 +240,7 @@ pub fn analyse(water: &Water, limits: &Limits, target: Option<&Target>, pressure
         water.oxygen_mg_l,
         water.conductivity_25_us_cm,
         water.hardness_mg_l,
+        water.phosphate_p_mg_l,
         limits.nh3_n_mg_l,
         limits.co2_mg_l,
         limits.h2s_ug_l,

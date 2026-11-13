@@ -1075,6 +1075,10 @@ msgid "%(said)s; %(share)d %% seawater constants"
 msgstr "%(said)s; %%%(share)d deniz suyu sabitleri"
 
 #, python-format
+msgid "%(said)s; phosphate %(phosphate)s mg/L as P counted in the alkalinity"
+msgstr "%(said)s; %(phosphate)s mg/L (P olarak) fosfat alkaliniteye sayıldı"
+
+#, python-format
 msgid "%(said)s; salt-added fresh water past the Davies range, worked out as sea water"
 msgstr "%(said)s; Davies aralığının ötesinde tuz eklenmiş tatlı su, deniz suyu gibi hesaplandı"
 
@@ -3690,6 +3694,14 @@ msgid ""
 "that much."
 msgstr "Bu pH'de alkalinite %(floor)s mg/L CaCO₃'ün üstündedir: yalnızca hidroksit ve borat bu kadardır."
 
+#, python-format
+msgid ""
+"At this pH the alkalinity is above %(floor)s mg/L as CaCO₃: the hydroxide, the borate and the "
+"phosphate given alone are that much."
+msgstr ""
+"Bu pH’ta alkalinite %(floor)s mg/L (CaCO₃ olarak) değerinin üzerindedir: yalnızca hidroksit, "
+"borat ve girilen fosfat bu kadar eder."
+
 msgid "Attached"
 msgstr "Tutunmuş"
 
@@ -4073,6 +4085,18 @@ msgstr ""
 "CO₂, sınır değerlerinin konduğu temelde değerlendirildi (1 ‰'ye kadar ideal su, tüm aktiviteler "
 "1, Standard Methods 4500-CO₂ D gibi; 5 ‰'den itibaren formül 1'in deniz suyu sabitleri; tuz "
 "eklenmiş suda baştan sona ideal), büyük olan; aktiviteye göre düzeltilmiş %(value)s mg/L."
+
+#, python-format
+msgid ""
+"CO₂ judged without the phosphate: the larger of the basis its limits were set on and the "
+"activity-corrected value, neither counting the phosphate’s alkalinity (Standard Methods 4500-CO₂ "
+"D takes all the alkalinity as carbonate’s), so it is never below what it was before the phosphate"
+" was given. With the phosphate counted, the water’s own CO₂ is %(value)s mg/L."
+msgstr ""
+"CO₂ fosfatsız değerlendirildi: sınırların konduğu temel ile aktivite düzeltmeli değerin büyüğü; "
+"ikisi de fosfatın alkalinitesini saymaz (Standard Methods 4500-CO₂ D bütün alkaliniteyi karbonat "
+"sayar), bu yüzden fosfat girilmeden önceki değerin altına hiç düşmez. Fosfat sayıldığında suyun "
+"kendi CO₂’si %(value)s mg/L."
 
 msgid "CO₂ limit"
 msgstr "CO₂ sınırı"
@@ -10210,6 +10234,17 @@ msgstr "Organizasyon şeması"
 msgid "Origin"
 msgstr "Köken"
 
+msgid ""
+"Orthophosphate as phosphorus. A kit that reads PO₄³⁻: divide by 3.07. Phosphate is part of the "
+"alkalinity a titration measures: with it the calculator and a unit’s chart count its buffer in "
+"the DIC, in the water’s own CO₂ and in what a dose or a stripping does. The judged CO₂ never "
+"falls because of it. Empty: not counted, as before."
+msgstr ""
+"Fosfor cinsinden ortofosfat. PO₄³⁻ okuyan bir kit: 3,07’ye bölün. Fosfat, titrasyonun ölçtüğü "
+"alkalinitenin bir parçasıdır: girildiğinde hesap makinesi ve ünite grafiği onun tamponunu DIC’te,"
+" suyun kendi CO₂’sinde ve bir dozun ya da gaz gidermenin etkisinde hesaba katar. Değerlendirilen "
+"CO₂ bu yüzden hiçbir zaman düşmez. Boş: eskisi gibi hesaba katılmaz."
+
 msgid "Oslo time, as the authority keeps it."
 msgstr "Oslo saati, kurumun tuttuğu gibi."
 
@@ -10362,6 +10397,9 @@ msgstr "PDF dosyası"
 msgid "POST /api/slakt/v1/utfort, or the Altinn form \"Gjennomført slakting av oppdrettsfisk\""
 msgstr "POST /api/slakt/v1/utfort veya Altinn formu \"Gjennomført slakting av oppdrettsfisk\""
 
+msgid "PO₄-P (mg/L)"
+msgstr "PO₄-P (mg/L)"
+
 msgid "PSU is the same number: 0 in fresh water, about 35 in the sea."
 msgstr "PSU aynı sayıdır: tatlı suda 0, denizde yaklaşık 35."
 
@@ -10510,6 +10548,9 @@ msgstr "Faz"
 
 msgid "Phone"
 msgstr "Telefon"
+
+msgid "Phosphate (mg/L PO₄ as P)"
+msgstr "Fosfat (mg/L PO₄, P olarak)"
 
 msgid "Phosphorus (%)"
 msgstr "Fosfor (%)"

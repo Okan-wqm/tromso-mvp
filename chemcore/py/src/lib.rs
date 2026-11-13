@@ -41,8 +41,8 @@ fn err(error: ChemError) -> PyErr {
         ChemError::NonFinite => NonFiniteError::new_err("not a finite number"),
         ChemError::UnknownFormula => PyValueError::new_err("unknown formula version (the core has 1 and 3)"),
         ChemError::ImpossibleWater => ImpossibleWaterError::new_err(
-            "no water has this pH and alkalinity: the hydroxide and the borate of the pH alone are at least the \
-             alkalinity (or a DIC below 0 was given)",
+            "no water has this pH and alkalinity: the hydroxide and the borate of the pH, and the phosphate given, alone \
+             are at least the alkalinity (or a DIC below 0 was given)",
         ),
         ChemError::SeawaterScale => SeawaterScaleError::new_err(
             "a pH on the total, the seawater or the free scale is taken for sea water of 5 permil or more only (the \n             sea path's constants alone): give the NBS pH",
@@ -179,6 +179,24 @@ impl Equilibria {
     #[getter]
     fn water_origin(&self) -> &'static str {
         self.0.origin.code()
+    }
+    /// Total phosphate, mol/L (0: none given, and nothing of it is read).
+    #[getter]
+    fn phosphate(&self) -> f64 {
+        self.0.phosphate
+    }
+    /// The dissociation constants of phosphoric acid on the free scale (0 without a phosphate).
+    #[getter]
+    fn k1p(&self) -> f64 {
+        self.0.k1p
+    }
+    #[getter]
+    fn k2p(&self) -> f64 {
+        self.0.k2p
+    }
+    #[getter]
+    fn k3p(&self) -> f64 {
+        self.0.k3p
     }
     /// The plausibility warnings of its inputs, as codes (cross review F5): 'conductivity_salinity',
     /// 'conductivity_above_ions', 'conductivity_below_ions', 'seawater_conductivity'; and 'nh3_past_guard', the water
@@ -434,6 +452,9 @@ of_temperature_and_salinity!(
     k_nh4_sws,
     pk_nh4,
     k_h2s_total,
+    k1p_sws,
+    k2p_sws,
+    k3p_sws,
     ksp_calcite,
     ksp_aragonite,
     k0_co2,
@@ -500,11 +521,17 @@ fn origin_of(code: &str) -> PyResult<c::Origin> {
     c::Origin::from_code(code).ok_or_else(|| PyValueError::new_err(format!("unknown water origin {code:?}")))
 }
 
-fn ions(conductivity_25_us_cm: Option<f64>, hardness_mg_l: Option<f64>, water_origin: &str) -> PyResult<f::Ions> {
+fn ions(
+    conductivity_25_us_cm: Option<f64>,
+    hardness_mg_l: Option<f64>,
+    water_origin: &str,
+    phosphate_p_mg_l: Option<f64>,
+) -> PyResult<f::Ions> {
     Ok(f::Ions {
         conductivity_25_us_cm,
         hardness_mg_l,
         origin: origin_of(water_origin)?,
+        phosphate_p_mg_l,
     })
 }
 
@@ -521,7 +548,7 @@ fn fresh_ionic_strength(
     let (strength, source) = f::ionic_strength(
         salinity,
         alkalinity_mg_l,
-        ions(conductivity_25_us_cm, hardness_mg_l, water_origin)?,
+        ions(conductivity_25_us_cm, hardness_mg_l, water_origin, None)?,
     )
     .map_err(err)?;
     Ok((ok(Ok(strength))?, source.code()))
@@ -567,7 +594,8 @@ fn davies_log_gamma(temp_c: f64, ionic_strength: f64, charge: f64) -> PyResult<f
 
 /// The formula 3 equilibria of a water, its provenance with it (see `water_equilibria`).
 #[pyfunction]
-#[pyo3(signature = (temp_c, salinity, alkalinity_mg_l=None, conductivity_25_us_cm=None, hardness_mg_l=None, water_origin=""))]
+#[pyo3(signature = (temp_c, salinity, alkalinity_mg_l=None, conductivity_25_us_cm=None, hardness_mg_l=None, water_origin="",
+                    phosphate_p_mg_l=None))]
 fn equilibria_v3(
     temp_c: f64,
     salinity: f64,
@@ -575,12 +603,13 @@ fn equilibria_v3(
     conductivity_25_us_cm: Option<f64>,
     hardness_mg_l: Option<f64>,
     water_origin: &str,
+    phosphate_p_mg_l: Option<f64>,
 ) -> PyResult<Equilibria> {
     f::equilibria_v3(
         temp_c,
         salinity,
         alkalinity_mg_l,
-        ions(conductivity_25_us_cm, hardness_mg_l, water_origin)?,
+        ions(conductivity_25_us_cm, hardness_mg_l, water_origin, phosphate_p_mg_l)?,
     )
     .map(Equilibria)
     .map_err(err)
@@ -590,7 +619,8 @@ fn equilibria_v3(
 /// starts from. Formula 1 reads the temperature and the salinity only (golden v1).
 #[pyfunction]
 #[pyo3(signature = (temp_c, salinity, alkalinity_mg_l=None, conductivity_25_us_cm=None, hardness_mg_l=None, water_origin="",
-                    formula=chemcore_core::FORMULA_VERSION))]
+                    formula=chemcore_core::FORMULA_VERSION, phosphate_p_mg_l=None))]
+#[allow(clippy::too_many_arguments)]
 fn water_equilibria(
     temp_c: f64,
     salinity: f64,
@@ -599,13 +629,14 @@ fn water_equilibria(
     hardness_mg_l: Option<f64>,
     water_origin: &str,
     formula: u32,
+    phosphate_p_mg_l: Option<f64>,
 ) -> PyResult<Equilibria> {
     f::water_equilibria(
         formula,
         temp_c,
         salinity,
         alkalinity_mg_l,
-        ions(conductivity_25_us_cm, hardness_mg_l, water_origin)?,
+        ions(conductivity_25_us_cm, hardness_mg_l, water_origin, phosphate_p_mg_l)?,
     )
     .map(Equilibria)
     .map_err(err)
@@ -661,7 +692,7 @@ fn judge<'py>(
                     calcium_mg_l=None, oxygen_mg_l=None, conductivity_25_us_cm=None, hardness_mg_l=None, water_origin="",
                     formula=chemcore_core::FORMULA_VERSION, nh3_n_mg_l=None, co2_mg_l=None, h2s_ug_l=None,
                     alkalinity_low_mg_l=None, alkalinity_high_mg_l=None, target_ph=None, target_alkalinity_mg_l=None,
-                    pressure=1.0))]
+                    pressure=1.0, phosphate_p_mg_l=None))]
 #[allow(clippy::too_many_arguments)]
 fn analyse<'py>(
     py: Python<'py>,
@@ -685,6 +716,7 @@ fn analyse<'py>(
     target_ph: Option<f64>,
     target_alkalinity_mg_l: Option<f64>,
     pressure: f64,
+    phosphate_p_mg_l: Option<f64>,
 ) -> PyResult<Bound<'py, PyDict>> {
     let water = a::Water {
         temperature_c,
@@ -699,6 +731,7 @@ fn analyse<'py>(
         hardness_mg_l,
         origin: origin_of(water_origin)?,
         formula,
+        phosphate_p_mg_l,
     };
     let limits = a::Limits {
         nh3_n_mg_l,
@@ -748,7 +781,7 @@ fn analyse<'py>(
 /// The alkalinity floor of a pH in a medium (the formula; formula 3: the alkalinity and the ions measured).
 #[pyfunction]
 #[pyo3(signature = (temperature_c, salinity_ppt, ph, alkalinity_mg_l=None, conductivity_25_us_cm=None,
-                    hardness_mg_l=None, water_origin="", formula=chemcore_core::FORMULA_VERSION))]
+                    hardness_mg_l=None, water_origin="", formula=chemcore_core::FORMULA_VERSION, phosphate_p_mg_l=None))]
 #[allow(clippy::too_many_arguments)]
 fn alkalinity_floor(
     temperature_c: f64,
@@ -759,12 +792,13 @@ fn alkalinity_floor(
     hardness_mg_l: Option<f64>,
     water_origin: &str,
     formula: u32,
+    phosphate_p_mg_l: Option<f64>,
 ) -> PyResult<f64> {
     inputs(&[temperature_c, salinity_ppt, ph])?;
     let medium = a::Medium {
         formula,
         alkalinity_mg_l,
-        ions: ions(conductivity_25_us_cm, hardness_mg_l, water_origin)?,
+        ions: ions(conductivity_25_us_cm, hardness_mg_l, water_origin, phosphate_p_mg_l)?,
     };
     ok(a::alkalinity_floor(temperature_c, salinity_ppt, ph, &medium))
 }
@@ -772,7 +806,7 @@ fn alkalinity_floor(
 /// The alkalinity floor when a water of this pH and alkalinity cannot be, else None.
 #[pyfunction]
 #[pyo3(signature = (temperature_c, salinity_ppt, ph, alkalinity_mg_l, conductivity_25_us_cm=None, hardness_mg_l=None, water_origin="",
-                    formula=chemcore_core::FORMULA_VERSION))]
+                    formula=chemcore_core::FORMULA_VERSION, phosphate_p_mg_l=None))]
 #[allow(clippy::too_many_arguments)]
 fn why_impossible(
     temperature_c: f64,
@@ -783,6 +817,7 @@ fn why_impossible(
     hardness_mg_l: Option<f64>,
     water_origin: &str,
     formula: u32,
+    phosphate_p_mg_l: Option<f64>,
 ) -> PyResult<Option<f64>> {
     inputs(&[temperature_c, salinity_ppt, ph, alkalinity_mg_l])?;
     ok_option(a::why_impossible(
@@ -791,7 +826,7 @@ fn why_impossible(
         ph,
         alkalinity_mg_l,
         formula,
-        ions(conductivity_25_us_cm, hardness_mg_l, water_origin)?,
+        ions(conductivity_25_us_cm, hardness_mg_l, water_origin, phosphate_p_mg_l)?,
     ))
 }
 
@@ -838,6 +873,7 @@ fn water_of(water: &Bound<'_, PyDict>) -> PyResult<a::Water> {
         oxygen_mg_l: optional(water, "oxygen_mg_l")?,
         conductivity_25_us_cm: optional(water, "conductivity_25_us_cm")?,
         hardness_mg_l: optional(water, "hardness_mg_l")?,
+        phosphate_p_mg_l: optional(water, "phosphate_p_mg_l")?,
         origin: match water.get_item("water_origin")? {
             Some(value) if !value.is_none() => origin_of(&value.extract::<String>()?)?,
             _ => c::Origin::Unknown,
@@ -1277,6 +1313,7 @@ fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("MG_CO2_PER_MMOL", c::MG_CO2_PER_MMOL)?;
     module.add("MG_CALCIUM_PER_MOL", c::MG_CALCIUM_PER_MOL)?;
     module.add("H2S_PER_S", c::H2S_PER_S)?;
+    module.add("MG_P_PER_MMOL", c::MG_P_PER_MMOL)?;
     module.add("SOLVER_PH", c::SOLVER_PH)?;
     module.add("AIR_CO2", c::AIR_CO2)?;
     module.add("FRESH_UP_TO", f::FRESH_UP_TO)?;
@@ -1307,6 +1344,9 @@ fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
         wrap_pyfunction!(k_nh4_sws, module)?,
         wrap_pyfunction!(pk_nh4, module)?,
         wrap_pyfunction!(k_h2s_total, module)?,
+        wrap_pyfunction!(k1p_sws, module)?,
+        wrap_pyfunction!(k2p_sws, module)?,
+        wrap_pyfunction!(k3p_sws, module)?,
         wrap_pyfunction!(ksp_calcite, module)?,
         wrap_pyfunction!(ksp_aragonite, module)?,
         wrap_pyfunction!(k0_co2, module)?,

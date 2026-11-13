@@ -102,6 +102,13 @@ MEASURED = [
                  'on, referred to 25 °C, not 20 °C). A reading at the water’s own temperature is not this value. In '
                  'fresh water the ionic strength is taken from it (Russell 1976).')),
     _parameter('turbidity_ntu', _('Turbidity (NTU)'), _('Turbidity (NTU)'), 1, 0, 4000, 'other'),
+    # Optional, and nothing changes without it (the independent check of 2026-11-09, hypothesis 12a; owner 2026-11-10;
+    # chemcore/findings/phosphate.md). 3.07: PO₄ 94.9714 over P 30.973762.
+    _parameter('phosphate_p_mg_l', _('Phosphate (mg/L PO₄ as P)'), _('PO₄-P (mg/L)'), 2, 0, 100, 'other',
+               _('Orthophosphate as phosphorus. A kit that reads PO₄³⁻: divide by 3.07. Phosphate is part of the '
+                 'alkalinity a titration measures: with it the calculator and a unit’s chart count its buffer in the '
+                 'DIC, in the water’s own CO₂ and in what a dose or a stripping does. The judged CO₂ never falls '
+                 'because of it. Empty: not counted, as before.')),
 ]
 
 # Worked out on read from the same sample (farm/water/chemistry.py), never stored. NH₃-N takes limits;

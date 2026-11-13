@@ -127,6 +127,7 @@ fn waters() -> [(Option<f64>, Ions); 4] {
                 conductivity_25_us_cm: Some(1500.0),
                 hardness_mg_l: None,
                 origin: Origin::Unknown,
+                phosphate_p_mg_l: None,
             },
         ),
         (

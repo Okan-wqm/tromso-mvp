@@ -22,6 +22,8 @@ pub const MG_CO2_PER_MMOL: f64 = 44.0095;
 pub const MG_CALCIUM_PER_MOL: f64 = 40078.0;
 /// µg H₂S per µg S: total sulfide is reported as S, H₂S limits as H₂S (34.08088 / 32.065).
 pub const H2S_PER_S: f64 = 34.08088 / 32.065;
+/// Phosphorus, mg per mmol (P 30.973762, IUPAC 2007): a phosphate reported as PO₄-P (mg/L as P) ÷ this = mmol/L.
+pub const MG_P_PER_MMOL: f64 = 30.973762;
 /// The pH range the solvers search, NBS.
 pub const SOLVER_PH: (f64, f64) = (0.0, 14.0);
 /// The air's CO₂, mol/mol of dry air: 420 µmol/mol, outdoor air in 2024 (NOAA Global Monitoring Laboratory).
@@ -231,6 +233,45 @@ pub fn k_h2s_total(temp_c: f64, salinity: f64) -> R {
     exp(225.838 - div(13275.3, t)? - 34.6435 * ln(t)? + 0.3449 * root - 0.0274 * salinity)
 }
 
+/// First dissociation constant of phosphoric acid, H₃PO₄ ⇌ H⁺ + H₂PO₄⁻, seawater scale, mol/kg: Millero (1995),
+/// Geochim. Cosmochim. Acta 59: 661 (a composite of Kester & Pytkowicz 1967, Dickson & Riley 1979 and Johansson &
+/// Wedborg 1979), ln K = −4576.752/T + 115.540 − 18.453 ln T + (−106.736/T + 0.69171) S^½ + (−0.65643/T − 0.01844) S.
+/// Read in Dickson, Sabine & Christian (eds.) 2007, Guide to Best Practices for Ocean CO₂ Measurements, ch. 5, eq. (49),
+/// which prints it for the total scale with 0.015 taken from the constant term (115.525; its footnote 5: "to
+/// convert—approximately—from the SWS pH scale (including HF) used by Millero (1995)"). The term here is the Guide's
+/// plus that 0.015, Millero's own, as `kw_sws` (Millero's paper itself was not opened; PyCO2SYS and seacarb take the
+/// same numbers). Check value: the Guide's ln K1P = −3.71 at S 35, 25 °C (total scale). At S 0 it is pure water's:
+/// pK 2.148 at 25 °C. S 0–45, t 0–45 °C. Only a water with a phosphate given reads it (`crate::fresh`).
+pub fn k1p_sws(temp_c: f64, salinity: f64) -> R {
+    let t = temp_c + KELVIN;
+    let root = sqrt(salinity)?;
+    exp(div(-4576.752, t)? + 115.540 - 18.453 * ln(t)?
+        + (div(-106.736, t)? + 0.69171) * root
+        + (div(-0.65643, t)? - 0.01844) * salinity)
+}
+
+/// Second dissociation constant of phosphoric acid, H₂PO₄⁻ ⇌ H⁺ + HPO₄²⁻, seawater scale: Millero (1995) as
+/// `k1p_sws`, the Guide's eq. (52) with its 0.015 put back (172.0883 + 0.015), ln K = −8814.715/T + 172.1033 − 27.927
+/// ln T + (−160.340/T + 1.3566) S^½ + (0.37335/T − 0.05778) S. Check value: the Guide's ln K2P = −13.727 at S 35,
+/// 25 °C (total scale). At S 0: pK 7.200 at 25 °C.
+pub fn k2p_sws(temp_c: f64, salinity: f64) -> R {
+    let t = temp_c + KELVIN;
+    let root = sqrt(salinity)?;
+    exp(div(-8814.715, t)? + 172.1033 - 27.927 * ln(t)?
+        + (div(-160.340, t)? + 1.3566) * root
+        + (div(0.37335, t)? - 0.05778) * salinity)
+}
+
+/// Third dissociation constant of phosphoric acid, HPO₄²⁻ ⇌ H⁺ + PO₄³⁻, seawater scale: Millero (1995) as `k1p_sws`,
+/// the Guide's eq. (55) with its 0.015 put back (−18.141 + 0.015), ln K = −3070.75/T − 18.126 + (17.27039/T + 2.81197)
+/// S^½ + (−44.99486/T − 0.09984) S. Check value: the Guide's ln K3P = −20.24 at S 35, 25 °C (total scale). At S 0:
+/// pK 12.345 at 25 °C.
+pub fn k3p_sws(temp_c: f64, salinity: f64) -> R {
+    let t = temp_c + KELVIN;
+    let root = sqrt(salinity)?;
+    exp(div(-3070.75, t)? - 18.126 + (div(17.27039, t)? + 2.81197) * root + (div(-44.99486, t)? - 0.09984) * salinity)
+}
+
 /// Stoichiometric solubility product of calcite, (mol/kg)²: Mucci (1983), Am. J. Sci. 283: 780. S 5–44, t 5–40 °C
 /// (the chart draws Ω only there).
 pub fn ksp_calcite(temp_c: f64, salinity: f64) -> R {
@@ -378,6 +419,15 @@ pub struct Equilibria {
     /// The plausibility warnings of its inputs (`crate::fresh::plausibility`, bits; 0 for formula 1): said beside every
     /// value worked out from it, never a refusal (cross review F5; the NH₃ guard's range, `crate::fresh::NH3_PAST_GUARD`).
     pub warnings: u8,
+    /// Total phosphate, mol/L: the PO₄-P a water was given with (`crate::fresh::Ions::phosphate_p_mg_l`); 0 when none
+    /// was, and then nothing of it is read and every result is what it was without the input, bit for bit. Its part of
+    /// the alkalinity is in the pH lines (`isoline`, `phosphate_alkalinity`). Formula 1: always 0.
+    pub phosphate: f64,
+    /// The three dissociation constants of phosphoric acid on the free scale (`k1p_sws`, `k2p_sws`, `k3p_sws` as the
+    /// water's other constants are made: `crate::fresh`); 0 without a phosphate.
+    pub k1p: f64,
+    pub k2p: f64,
+    pub k3p: f64,
 }
 
 /// Where a water's salt came from (cross review F3, F4), as a unit says it: the band from 1 to 5 ‰ blends in the seawater
@@ -522,6 +572,10 @@ pub fn equilibria_with(temp_c: f64, salinity: f64, a_of: &dyn Fn(f64) -> R) -> R
         limits_basis: None,
         origin: Origin::Unknown,
         warnings: 0,
+        phosphate: 0.0,
+        k1p: 0.0,
+        k2p: 0.0,
+        k3p: 0.0,
     };
     for value in [
         eq.ph_offset,
@@ -562,12 +616,34 @@ impl Equilibria {
     }
 
     /// The pH's line on the Deffeyes chart, alkalinity = slope × DIC + intercept: slope α1 + 2 α2, intercept
-    /// [OH⁻] − [H⁺] + [B(OH)₄⁻] in meq/L.
+    /// [OH⁻] − [H⁺] + [B(OH)₄⁻] in meq/L, and with a phosphate given its alkalinity too (`phosphate_alkalinity`): the
+    /// alkalinity a titration measures counts the phosphate, so what is left for the carbonate, and so the DIC and the
+    /// CO₂ of a pH and an alkalinity, is less by it, and a dose meets the phosphate's buffer.
     pub fn isoline(&self, ph: f64) -> Result<(f64, f64), ChemError> {
         let (_co2, bicarbonate, carbonate) = self.fractions(ph)?;
         let h = self.hydrogen(ph)?;
         let borate = div(self.boron * self.kb, self.kb + h)?;
-        Ok((bicarbonate + 2.0 * carbonate, (div(self.kw, h)? - h + borate) * 1000.0))
+        let slope = bicarbonate + 2.0 * carbonate;
+        let intercept = (div(self.kw, h)? - h + borate) * 1000.0;
+        if self.phosphate > 0.0 {
+            // Only with a phosphate given: without one the line is what it always was, bit for bit.
+            return Ok((slope, intercept + self.phosphate_alkalinity(h)? * 1000.0));
+        }
+        Ok((slope, intercept))
+    }
+
+    /// The alkalinity the phosphate holds at a free [H⁺], mol/L: [HPO₄²⁻] + 2 [PO₄³⁻] − [H₃PO₄], its terms in the
+    /// definition of total alkalinity (Dickson 1981, as Dickson, Sabine & Christian 2007 give it, ch. 2, section 4.2,
+    /// read: the proton acceptors above the zero level H₂PO₄⁻ less the donor below it), each species its share of the
+    /// total phosphate by the three constants (the Guide's ch. 2, eq. 43 to 45). At a fish water's pH it is positive
+    /// (0.61 of the total at pH 7.4 in fresh water at 25 °C); below about pH 4.7 it is negative. 0 without a phosphate.
+    pub fn phosphate_alkalinity(&self, hydrogen: f64) -> R {
+        if self.phosphate <= 0.0 {
+            return Ok(0.0);
+        }
+        let (h, k1, k2, k3) = (hydrogen, self.k1p, self.k2p, self.k3p);
+        let whole = h * h * h + k1 * h * h + k1 * k2 * h + k1 * k2 * k3;
+        div(self.phosphate * (k1 * k2 * h + 2.0 * k1 * k2 * k3 - h * h * h), whole)
     }
 
     /// Whether a water of this pH (NBS) can have this alkalinity (meq/L): above the floor, the pH line's intercept (the
@@ -662,8 +738,13 @@ impl Equilibria {
     }
 
     /// The equilibria of the basis the limits were set on (`limits_basis`), the same water otherwise; None for formula 1.
+    /// The basis counts no phosphate: Standard Methods 4500-CO₂ D takes all the alkalinity of a pH and an alkalinity as
+    /// carbonate's, and which CO₂ limits were set so was not verified study by study (cross review F1), so a judged CO₂,
+    /// the larger of the basis's and the water's own, never falls because a phosphate was given; the water's own DIC and
+    /// CO₂, and so every dose, take it.
     pub fn limits_equilibria(&self) -> Option<Equilibria> {
         self.limits_basis.map(|basis| Equilibria {
+            phosphate: 0.0,
             ph_offset: basis.ph_offset,
             k1: basis.k1,
             k2: basis.k2,
@@ -671,6 +752,18 @@ impl Equilibria {
             kb: basis.kb,
             boron: basis.boron,
             k_nh4: basis.k_nh4,
+            limits_basis: None,
+            ..*self
+        })
+    }
+
+    /// This water's own constants without its phosphate, which every CO₂ judgement holds beside the limits' basis
+    /// (`co2_judged`, `ph_where_co2`, `alkalinity_where_co2`): a phosphate given never lowers a judged CO₂ nor moves a
+    /// CO₂ border to the unsafe side; what it changes is the water's own DIC and CO₂ (information beside the judged)
+    /// and what a dose does. None without a phosphate: nothing is computed and nothing changes.
+    fn without_phosphate(&self) -> Option<Equilibria> {
+        (self.phosphate > 0.0).then_some(Equilibria {
+            phosphate: 0.0,
             limits_basis: None,
             ..*self
         })
@@ -771,6 +864,10 @@ impl Equilibria {
     /// borders (CO₂ falls as the pH rises at a fixed alkalinity).
     pub fn ph_where_co2(&self, alkalinity: f64, co2: f64) -> Result<Option<f64>, ChemError> {
         let corrected = self.ph_where_co2_corrected(alkalinity, co2)?;
+        let corrected = match self.without_phosphate() {
+            Some(bare) => higher(bare.ph_where_co2_corrected(alkalinity, co2)?, corrected),
+            None => corrected,
+        };
         match self.limits_equilibria() {
             Some(basis) => Ok(higher(basis.ph_where_co2_corrected(alkalinity, co2)?, corrected)),
             None => Ok(corrected),
@@ -793,6 +890,12 @@ impl Equilibria {
         match self.limits_equilibria() {
             Some(basis) => {
                 let limits = basis.co2_on_line(alkalinity, ph)?;
+                // With a phosphate given, the water's own constants without it stand with the basis: the judged CO₂ is
+                // never below what it was before the phosphate was given.
+                let limits = match self.without_phosphate() {
+                    Some(bare) => larger(limits, bare.co2_on_line(alkalinity, ph)?),
+                    None => limits,
+                };
                 Ok(if own > limits {
                     (own, Basis::Corrected)
                 } else {
@@ -807,6 +910,8 @@ impl Equilibria {
     /// alkalinity · [H⁺] / K1 with [H⁺] = 10^−(pH + offset): K1 10^offset over the basis's, the same at every pH and
     /// alkalinity (in fresh water 1 / γ₁); 1 for formula 1 or when the own CO₂ is the larger. The chart draws its CO₂
     /// curve with it (`analysis::Analysis::co2_chart_limit`), so the diagram reads nothing of the water's pH or alkalinity.
+    /// With a phosphate given the two are not in one ratio (the basis counts none), and the chart draws the judged curve
+    /// itself (`geometry::co2_curve_judged`).
     pub fn co2_chart_ratio(&self) -> R {
         match self.limits_basis {
             Some(basis) => {
@@ -824,6 +929,13 @@ impl Equilibria {
     /// the alkalinity at a fixed pH).
     pub fn alkalinity_where_co2(&self, co2: f64, ph: f64) -> R {
         let corrected = self.alkalinity(div(co2, self.fractions(ph)?.0)?, ph)?;
+        let corrected = match self.without_phosphate() {
+            Some(bare) => {
+                let without = bare.alkalinity(div(co2, bare.fractions(ph)?.0)?, ph)?;
+                if without < corrected { without } else { corrected }
+            }
+            None => corrected,
+        };
         match self.limits_equilibria() {
             Some(basis) => {
                 let limits = basis.alkalinity(div(co2, basis.fractions(ph)?.0)?, ph)?;

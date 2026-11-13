@@ -459,6 +459,7 @@
             "salinity_ppt",
             "conductivity_25_us_cm",
             "turbidity_ntu",
+            "phosphate_p_mg_l",
             "nh3_n_mg_l"
           ],
           "link": null,
@@ -2971,6 +2972,7 @@
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
         "farm/tests/test_ph_scale.py",
+        "farm/tests/test_phosphate.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_size_mix.py",
         "farm/tests/test_size_mix_chips.py",
@@ -20386,6 +20388,7 @@
             "salinity_ppt",
             "conductivity_25_us_cm",
             "turbidity_ntu",
+            "phosphate_p_mg_l",
             "nh3_n_mg_l",
             "nh4_n_mg_l"
           ],
@@ -20498,6 +20501,7 @@
       },
       "tests": [
         "core/tests_workspaces.py",
+        "farm/tests/test_phosphate.py",
         "farm/tests/test_water_ionic_inputs.py",
         "alarms/tests/test_freshness.py"
       ]
@@ -20656,6 +20660,7 @@
             "salinity_ppt",
             "conductivity_25_us_cm",
             "turbidity_ntu",
+            "phosphate_p_mg_l",
             "nh3_n_mg_l"
           ],
           "link": null,
@@ -21236,6 +21241,17 @@
           "why": "one field for each water parameter (farm.forms.water.MEASURED)"
         },
         {
+          "name": "phosphate_p_mg_l",
+          "field": "phosphate_p_mg_l",
+          "type": "numeric(5, 2)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "dynamic",
+          "why": "one field for each water parameter (farm.forms.water.MEASURED)"
+        },
+        {
           "name": "oxygen_basis_temperature_c",
           "field": "oxygen_basis_temperature_c",
           "type": "numeric(3, 1)",
@@ -21507,6 +21523,12 @@
           "conditional": false
         },
         {
+          "name": "chk_water_measurements_phosphate_p_mg_l",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
           "name": "chk_water_measurements_ph_scale",
           "kind": "check",
           "fields": [],
@@ -21660,6 +21682,7 @@
         "farm/tests/test_health.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_ph_scale.py",
+        "farm/tests/test_phosphate.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_ionic_inputs.py",
@@ -35109,6 +35132,7 @@
             "salinity_ppt",
             "conductivity_25_us_cm",
             "turbidity_ntu",
+            "phosphate_p_mg_l",
             "conductivity_us_cm",
             "orp_mv",
             "flow_m3_h",
@@ -36221,6 +36245,7 @@
             "salinity_ppt",
             "conductivity_25_us_cm",
             "turbidity_ntu",
+            "phosphate_p_mg_l",
             "conductivity_us_cm",
             "orp_mv",
             "flow_m3_h",

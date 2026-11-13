@@ -81,6 +81,9 @@ class Water:
     hardness_mg_l: float | None = None
     water_origin: str = ''        # '' not said, 'seawater', 'salt_added' (a unit's Tank.water_origin; cross review F3)
     formula: int = chemistry.FORMULA_VERSION
+    # Orthophosphate, mg/L as P: its part of the alkalinity is counted (the water's own DIC and CO₂, every dose; never a
+    # lower judged CO₂). None: not given, and every result is what it was without the input.
+    phosphate_p_mg_l: float | None = None
 
 
 @dataclass(frozen=True)
@@ -208,6 +211,9 @@ def why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l, **ions):
     floor = native.why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l, **ions)
     if floor is None:
         return ''
+    if ions.get('phosphate_p_mg_l'):
+        return str(_('At this pH the alkalinity is above %(floor)s mg/L as CaCO₃: the hydroxide, the borate and the '
+                     'phosphate given alone are that much.') % {'floor': shown(floor, 1)})
     return str(_('At this pH the alkalinity is above %(floor)s mg/L as CaCO₃: the hydroxide and borate alone are '
                  'that much.') % {'floor': shown(floor, 1)})
 

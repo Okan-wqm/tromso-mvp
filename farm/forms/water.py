@@ -505,6 +505,7 @@ class CalculatorForm(forms.Form):
     oxygen_mg_l = _measured('oxygen_mg_l', help_text=_('For the oxygen saturation.'))
     conductivity_25_us_cm = _measured('conductivity_25_us_cm')
     hardness_mg_l = _measured('hardness_mg_l')
+    phosphate_p_mg_l = _measured('phosphate_p_mg_l')
     water_origin = forms.ChoiceField(
         label=_('Water origin'), required=False, choices=[('', _('Not said')), *Tank.WaterOrigin.choices],
         help_text=_('Fresh water with salt added (NaCl) is worked out without sea water’s ions, its ionic strength as '
@@ -549,7 +550,7 @@ class CalculatorForm(forms.Form):
     TABS = [
         ('water', _('Water'), ['temperature_c', 'ph', 'ph_scale', 'salinity_ppt', 'alkalinity_mg_l', 'tan_mg_l',
                                'total_sulfide_ug_l', 'oxygen_mg_l', 'conductivity_25_us_cm', 'hardness_mg_l',
-                               'water_origin']),
+                               'phosphate_p_mg_l', 'water_origin']),
         ('system', _('System'), ['volume_m3', 'calcium_mg_l', 'altitude_m']),
         ('target', _('Target'), ['target_ph', 'target_alkalinity_mg_l', 'alkalinity_low_mg_l', 'alkalinity_high_mg_l']),
         ('limits', _('Limits'), ['nh3_n_limit_mg_l', 'co2_limit_mg_l', 'h2s_limit_ug_l', *PH_FIELDS]),
@@ -560,7 +561,7 @@ class CalculatorForm(forms.Form):
         'point': '', 'loaded': '',
         'temperature_c': Decimal('12'), 'ph': Decimal('7.00'), 'ph_scale': services.NBS, 'salinity_ppt': Decimal('1'),
         'alkalinity_mg_l': Decimal('80'), 'tan_mg_l': Decimal('0.5'), 'total_sulfide_ug_l': Decimal('2'),
-        'oxygen_mg_l': None, 'conductivity_25_us_cm': None, 'hardness_mg_l': None, 'water_origin': '', 'volume_m3': Decimal('1'), 'calcium_mg_l': None, 'altitude_m': None,
+        'oxygen_mg_l': None, 'conductivity_25_us_cm': None, 'hardness_mg_l': None, 'phosphate_p_mg_l': None, 'water_origin': '', 'volume_m3': Decimal('1'), 'calcium_mg_l': None, 'altitude_m': None,
         'target_ph': Decimal('7.5'), 'target_alkalinity_mg_l': Decimal('100'),
         'alkalinity_low_mg_l': Decimal('50'), 'alkalinity_high_mg_l': Decimal('100'),
         'nh3_n_limit_mg_l': Decimal('0.0103'), 'co2_limit_mg_l': Decimal('15'), 'h2s_limit_ug_l': Decimal('2'),

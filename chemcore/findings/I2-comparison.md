@@ -433,6 +433,19 @@ metroloji şüphecisi; iki tur, her biri ayrı hesapladı) şuna karar verdi; sa
    nokta. PyCO2SYS ve seacarb ile 72 hücrede karşılaştırma: toplam → serbest 8,9·10⁻¹⁵ pH, toplam → SWS 2,4·10⁻⁷ pH
    içinde; NBS adımı bizim kendi dönüşümümüz (CO2SYS'e göre −0,069 … +0,055 pH; her NBS pH'ında olan belirsizlik).
 
+7. **İsteğe bağlı fosfat girişi (sahibin 2026-11-10 onayı; ayrıntı `phosphate.md`).** Fosfat, titrasyonla ölçülen
+   alkalinitenin bir parçasıdır; çekirdek bunu bilmiyordu. RAS suyunda (3–10 mg/L PO₄-P ve üstü) bir baz dozundan ya
+   da gaz gidermeden sonra CO₂ %57–71 düşük, pH 0,4–0,55 yüksek tahmin ediliyordu (güvensiz yön). Artık fosfat (mg/L,
+   P olarak) girilebiliyor: numune formunda, turda, hesap makinesinde; ünitenin grafiği, tekrar oynatma ve saatlik iz
+   ünitenin taze değerini alıyor. **Girilmezse hiçbir sonuç değişmez** (golden dosyaları bayt bayt aynı). Girilirse
+   suyun kendi DIC ve CO₂ değeri fosfat kadar düşer ve her doz, reçete ve simülatör adımı fosfatın tamponunu görür.
+   **Değerlendirilen CO₂ ise fosfat yüzünden asla düşmez**: değerlendirme, sınır temeli, suyun fosfatsız kendi değeri
+   ve fosfatlı kendi değerinin en büyüğünü alır; böylece yanlış girilen bir fosfat (PO₄'ü P diye yazmak 3,07 kat
+   fazladır) CO₂'yi gizleyemez. Fosfatlı gerçek değer yanında yazıyor. NH₃ fosfattan etkilenmez. PyCO2SYS ile 763 suda
+   karşılaştırma: sabitler ve fosfat alkalinitesi 3·10⁻¹⁴ içinde; deniz suyunda CO₂ ortanca 7·10⁻⁶, en çok 1,4·10⁻³;
+   doz sonrası pH 10⁻⁴ içinde; ideal tatlı suda her şey 10⁻¹⁰ içinde. Zayıf nokta: gerçek iyonlu tatlı su yolu
+   (Davies) için bağımsız bir referans yok; alkalinite kitinin fosfatı saydığı varsayılıyor.
+
 **Bu bölümün zayıf noktaları (panelin kendi listesi).** Hiçbir birincil makale ilk elden okunmadı (Khoo vd. 1977, Clegg
 & Whitfield 1995, Yao & Millero 1995, Johansson & Wedborg 1980, Emerson vd. 1975, Whitfield 1974); denklemler Bell vd.
 (2007/2008), Xu vd. (2017; denklem 10'da bir basamak PyCO2SYS'in sayılarıyla uyuşmuyor, test ikisine karşı da

@@ -1071,6 +1071,10 @@ msgid "%(said)s; %(share)d %% seawater constants"
 msgstr "%(said)s; %(share)d %% sjøvannskonstanter"
 
 #, python-format
+msgid "%(said)s; phosphate %(phosphate)s mg/L as P counted in the alkalinity"
+msgstr "%(said)s; fosfat %(phosphate)s mg/L som P regnet med i alkaliteten"
+
+#, python-format
 msgid "%(said)s; salt-added fresh water past the Davies range, worked out as sea water"
 msgstr "%(said)s; ferskvann tilsatt salt utenfor Davies-området, beregnet som sjøvann"
 
@@ -3686,6 +3690,14 @@ msgstr ""
 "Ved denne pH-en er alkaliteten over %(floor)s mg/L som CaCO₃: hydroksid og borat alene utgjør så "
 "mye."
 
+#, python-format
+msgid ""
+"At this pH the alkalinity is above %(floor)s mg/L as CaCO₃: the hydroxide, the borate and the "
+"phosphate given alone are that much."
+msgstr ""
+"Ved denne pH er alkaliteten over %(floor)s mg/L som CaCO₃: hydroksidet, boratet og det oppgitte "
+"fosfatet alene er så mye."
+
 msgid "Attached"
 msgstr "Fastsittende"
 
@@ -4064,6 +4076,18 @@ msgstr ""
 "CO₂ vurdert på grunnlaget grenseverdiene ble satt på (til 1 ‰ ideelt vann, alle aktiviteter 1, "
 "som Standard Methods 4500-CO₂ D; fra 5 ‰ formel 1s sjøvannskonstanter; vann tilsatt salt: ideelt "
 "hele veien), den største; aktivitetskorrigert %(value)s mg/L."
+
+#, python-format
+msgid ""
+"CO₂ judged without the phosphate: the larger of the basis its limits were set on and the "
+"activity-corrected value, neither counting the phosphate’s alkalinity (Standard Methods 4500-CO₂ "
+"D takes all the alkalinity as carbonate’s), so it is never below what it was before the phosphate"
+" was given. With the phosphate counted, the water’s own CO₂ is %(value)s mg/L."
+msgstr ""
+"CO₂ vurdert uten fosfatet: den største av grunnlaget grensene ble satt på og den "
+"aktivitetskorrigerte verdien, ingen av dem med fosfatets alkalitet (Standard Methods 4500-CO₂ D "
+"regner all alkalitet som karbonat), så den er aldri lavere enn før fosfatet ble oppgitt. Med "
+"fosfatet regnet med er vannets egen CO₂ %(value)s mg/L."
 
 msgid "CO₂ limit"
 msgstr "CO₂-grense"
@@ -10189,6 +10213,17 @@ msgstr "Organisasjonskart"
 msgid "Origin"
 msgstr "Opprinnelse"
 
+msgid ""
+"Orthophosphate as phosphorus. A kit that reads PO₄³⁻: divide by 3.07. Phosphate is part of the "
+"alkalinity a titration measures: with it the calculator and a unit’s chart count its buffer in "
+"the DIC, in the water’s own CO₂ and in what a dose or a stripping does. The judged CO₂ never "
+"falls because of it. Empty: not counted, as before."
+msgstr ""
+"Ortofosfat som fosfor. Et sett som måler PO₄³⁻: del på 3,07. Fosfat er en del av alkaliteten en "
+"titrering måler: med det regner kalkulatoren og en enhets diagram bufferen med i DIC, i vannets "
+"egen CO₂ og i hva en dose eller en avgassing gjør. Vurdert CO₂ blir aldri lavere av det. Tomt: "
+"ikke regnet med, som før."
+
 msgid "Oslo time, as the authority keeps it."
 msgstr "Oslo-tid, slik myndigheten fører den."
 
@@ -10341,6 +10376,9 @@ msgstr "PDF-fil"
 msgid "POST /api/slakt/v1/utfort, or the Altinn form \"Gjennomført slakting av oppdrettsfisk\""
 msgstr "POST /api/slakt/v1/utfort, eller Altinn-skjemaet «Gjennomført slakting av oppdrettsfisk»"
 
+msgid "PO₄-P (mg/L)"
+msgstr "PO₄-P (mg/L)"
+
 msgid "PSU is the same number: 0 in fresh water, about 35 in the sea."
 msgstr "PSU er samme tall: 0 i ferskvann, omkring 35 i sjøen."
 
@@ -10489,6 +10527,9 @@ msgstr "Fase"
 
 msgid "Phone"
 msgstr "Telefon"
+
+msgid "Phosphate (mg/L PO₄ as P)"
+msgstr "Fosfat (mg/L PO₄ som P)"
 
 msgid "Phosphorus (%)"
 msgstr "Fosfor (%)"

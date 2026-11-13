@@ -4618,7 +4618,10 @@ with `DJANGO_DEBUG=0`, `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, the database
 above in the environment. Should the server be started without the checks all the same and without its mail
 settings, no mail is lost silently: every send fails ("The public address of this server is not set", or the mailer's
 own refusal of a missing host) and shows on the person's row as any failed send. One worker thread per server
-process sends the mails, so a server run as several processes sends several at a time. Two conditions on whatever
+process sends the mails, so a server run as several processes sends several at a time. Nothing in the code ends that
+thread; should it end all the same, the next job starts a new one, and a job queued while the old one was still
+ending (alive, so no new one was started for it) is handed on by the ending thread itself (`Worker.run`): before,
+it waited until some later job happened to start a worker. Two conditions on whatever
 runs the server:
 
 - **It must run Python threads.** The worker is a thread: a server that runs none (uWSGI without `enable-threads`)
@@ -4975,6 +4978,16 @@ many connections as before" of that list at once and failed in a whole suite und
 runs alone; the worker had closed its connection every time. A test that asks the database whether a connection is
 gone asks for the clients' connections by their process id, those that were not there before, and waits for the
 answer with a bound; what the code under test has done itself (closed its connection) it asks of that connection.
+
+**Nor on how fast another thread is.** The mail worker's tests (`core/tests_account_mail_worker.py`) wait for a
+thread, an event, a lock or the worker at rest. Each waits for that condition itself, up to one generous bound
+(`WAIT`, 60 s), and fails saying what it waited for: `rested`, `reached`, `ended`, `until`. None sleeps a time that
+"should be enough" and goes on (a second "until both are at the row", a join of 20 s whose outcome nobody read: the
+whole suite of 13.11.2026 failed on that one, under load), and none measures seconds of the clock where it means
+work: 200 lookups "in a moment" are measured against the same 200 done at once on the same machine, the mail's time
+limit against how far the conversation with the test's mail server got. What must not happen is asked the other way
+round, with a short time (`drain(0.5)` is false while a mail is at the mail server). The platform's own patience
+with a mail server is set longer than any wait of a test there, so nothing is cut off behind a test's back.
 
 **Nor the hour it runs at.** The server's day is UTC's, the company's is Oslo's (`COMPANY_TIME_ZONE`) and a site's is
 its own. From 23:00 to 24:00 UTC in winter (from 22:00 in summer) Oslo is a day ahead of the server, and a test that

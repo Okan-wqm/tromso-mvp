@@ -100,7 +100,9 @@ WORKER = _identity()
 class Worker:
     """One background thread of this process that runs the jobs handed to it, one after the other. It starts with the
     first job (never at import: a server that forks its processes gives each its own) and is started again by the
-    next job should it ever have ended. A job's fault is logged and the worker goes on.
+    next job should it ever have ended. A job's fault is logged and the worker goes on. Nothing in the code ends the
+    thread; should anything (an exit raised inside a job), the thread says so as it goes (`run`): it is no longer the
+    worker, and what waits in its lines, a job queued while it was still alive but ending among it, gets a new one.
 
     Two lines wait for it: the mails the platform admin causes (invitations) and the requests anybody can send (the
     "Forgot your password?" form). It takes the admin's first, and each line has its own room, so requests from
@@ -139,12 +141,28 @@ class Worker:
             self.unfinished += 1
             self.resting = False
             if self.thread is None or not self.thread.is_alive():
-                self.thread = threading.Thread(target=self.run, name='account-mail', daemon=True)
-                self.thread.start()
+                self.start()
             self.changed.notify_all()
         return True
 
+    def start(self):
+        """A new worker thread (the caller holds `changed`)."""
+        self.thread = threading.Thread(target=self.run, name='account-mail', daemon=True)
+        self.thread.start()
+
     def run(self):
+        try:
+            self.work()
+        finally:
+            # The thread ends. `put` starts a worker only when none is alive, and this one still is: a job queued in
+            # this moment would wait for a worker that is gone, until some later job started one.
+            with self.changed:
+                if self.thread is threading.current_thread():
+                    self.thread = None
+                    if self.mails or self.requests:
+                        self.start()
+
+    def work(self):
         kept_since = None
         try:
             sweep()                      # a worker that starts (a new process) closes what a stopped one left waiting

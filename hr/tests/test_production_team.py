@@ -4,7 +4,6 @@ record of the other realm is a 404 on every address; a decision returns to the p
 person their side, and a menu line it hides never decides what may be opened."""
 from datetime import date, datetime, time, timezone as utc
 
-from django.contrib.auth import get_user_model
 from django.urls import reverse
 
 from core import navigation

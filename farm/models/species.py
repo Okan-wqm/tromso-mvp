@@ -76,7 +76,9 @@ class Species(CodedMixin, AuditedModel):
     owner's "fish of very different weights of the same species must not be in the same tank": how many times heavier,
     on average, one batch of the species may be than another sharing a unit with it. A stocking, transfer or grading
     beyond it asks for an acknowledgement, and a unit holding such a mix says so (farm/stock/services.py, read.py).
-    Migration 0034 gave every species there 2; a new species is offered 2 on its form, never given one by the code.
+    Migration 0034 gave every species there 2; a new species is offered 2 on its form, never given one by the code. A
+    cleaner fish is offered none (the owner, 2026-11-10: its cages are topped up with fish of other sizes); migration
+    0038 emptied the untouched default of the cleaner species already there.
 
     Status: "active" and "experimental" species are the ones offered for new batches (the batches
     tab); "inactive" and "discontinued" ones are not. There is no second flag `isActive`.

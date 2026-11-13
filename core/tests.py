@@ -61,7 +61,7 @@ class AuthFlowTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ['ali@example.com'])
 
-        link = re.search(r'http://testserver(\S+)', mail.outbox[0].body).group(1)
+        link = re.search(re.escape(settings.PUBLIC_BASE_URL) + r'(/\S+)', mail.outbox[0].body).group(1)
         response = self.client.get(link, follow=True)
         self.assertTrue(response.context['validlink'])
         response = self.client.post(
@@ -379,7 +379,7 @@ class UserTests(AdminTestCase):
         self.client.post(reverse('core:user_create'), user_data())
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ['kari@example.com'])
-        link = re.search(r'http://testserver(\S+)', mail.outbox[0].body).group(1)
+        link = re.search(re.escape(settings.PUBLIC_BASE_URL) + r'(/\S+)', mail.outbox[0].body).group(1)
 
         self.client.logout()
         response = self.client.get(link, follow=True)
@@ -400,9 +400,8 @@ class UserTests(AdminTestCase):
         self.client.post(reverse('password_reset'), {'email': 'kari@example.com'})
         self.assertEqual(len(mail.outbox), 1)
 
-    def test_email_is_required_and_unique(self):
-        response = self.client.post(reverse('core:user_create'), user_data(email=''))
-        self.assertIn('email', response.context['form'].errors)
+    def test_email_is_unique(self):
+        # (it may be left out: core.tests_account_mail, a user without an address)
         response = self.client.post(reverse('core:user_create'), user_data(username='other', email='ROOT@example.com'))
         self.assertEqual(response.context['form'].errors['email'], ['Another user already uses this email.'])
         self.assertEqual(get_user_model().objects.count(), 1)
@@ -425,11 +424,13 @@ class UserTests(AdminTestCase):
         self.client.post(reverse('core:user_create'), user_data(groups=[self.feeder.pk]))
         kari = get_user_model().objects.get(username='kari')
         self.client.post(reverse('core:user_edit', args=[kari.pk]), user_data(is_active='', groups=[self.vet.pk]))
-        created, edited = AuditLog.objects.order_by('created_at').values_list('action', 'entity_type', 'changes')
+        created, invited, edited = AuditLog.objects.order_by('created_at').values_list('action', 'entity_type', 'changes')
         self.assertEqual(created, ('create', 'user', {
             'Username': [None, 'kari'], 'First name': [None, 'Kari'], 'Last name': [None, 'Nordmann'],
             'Email': [None, 'kari@example.com'], 'Active': [None, message('Yes')], 'Roles': [None, 'Feeder'],
         }))
+        # the invitation the new person was sent (core.tests_account_mail)
+        self.assertEqual(invited, ('invite', 'user', {'Sent to': [None, 'kari@example.com']}))
         self.assertEqual(edited, ('update', 'user', {'Active': [message('Yes'), message('No')], 'Roles': ['Feeder', 'Vet']}))
 
 

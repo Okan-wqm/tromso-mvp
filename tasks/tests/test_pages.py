@@ -13,7 +13,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core import access, database, navigation, softdelete
-from core.audit import english
+from core.audit import english, private
 from core.models import AuditLog, EntryKey, Profile
 from core.widgets import NONE
 from farm.tests.helpers import stock_fish
@@ -266,7 +266,7 @@ class DeletedPlaceTests(TasksTestCase):
 
 class ViewsAndFiltersTests(TasksTestCase):
     def test_today_lists_the_overdue_first_then_due_today_then_done_today(self):
-        late = self.make_task(title='Late', due_date=self.day(-2))
+        self.make_task(title='Late', due_date=self.day(-2))
         today = self.make_task(title='Today', due_date=self.today, due_time=time(23, 59))
         done = self.make_task(title='Done', due_date=self.day(-5))
         services.complete(self.ali, done)
@@ -368,6 +368,10 @@ class ActionTests(TasksTestCase):
         task.refresh_from_db()
         self.assertEqual((task.status, task.completed_by, task.completion_note),
                          (Status.DONE, self.ali, '2 dead fish removed'))
+        # the log says a completion note was given, never its words (a person's free text, owner decision F-061)
+        done = AuditLog.objects.get(entity_id=str(task.pk), changes__has_key='Completion note')
+        self.assertEqual(done.changes['Completion note'], [None, private('2 dead fish removed')])
+        self.assertNotIn('dead fish', str(list(AuditLog.objects.values_list('changes', flat=True))))
         # a closed task's checklist is not ticked
         self.client.post(reverse('tasks:task_tick', args=[task.pk, item.pk]), {'done': '0'})
         item.refresh_from_db()
@@ -399,6 +403,11 @@ class ActionTests(TasksTestCase):
                    .order_by('created_at')]
         self.assertEqual([change[1]['msgid'] for change in changes if change],
                          ['Cancelled', 'Open', 'Done', 'Open'])
+        # the reason for cancelling is private in the log: given, then cleared by the reopening, the same value both times
+        reasons = [log.changes['Reason for cancelling'] for log in AuditLog.objects.filter(
+            entity_id=str(task.pk), changes__has_key='Reason for cancelling').order_by('created_at')]
+        self.assertEqual(reasons, [[None, private('The unit was emptied')], [private('The unit was emptied'), None]])
+        self.assertNotIn('emptied', str(list(AuditLog.objects.values_list('changes', flat=True))))
 
     def test_the_dialogs_render_and_a_closed_task_cannot_be_closed_again(self):
         task = self.make_task()
@@ -417,8 +426,10 @@ class ActionTests(TasksTestCase):
         self.assertRedirects(response, next_url, fetch_redirect_response=False)
         note = TaskNote.objects.get()
         self.assertEqual((note.body, note.author), ('Filter cleaned', self.kari))
+        # kept on the task for who reads it; in the log only that a note was added (private, with its digest)
         self.assertEqual(AuditLog.objects.get(entity_id=str(task.pk), changes__has_key='Note').changes['Note'],
-                         [None, 'Filter cleaned'])
+                         [None, private('Filter cleaned')])
+        self.assertNotIn('Filter cleaned', str(list(AuditLog.objects.values_list('changes', flat=True))))
         self.act(self.kari, 'note', task, {'body': '   '})
         self.assertEqual(TaskNote.objects.count(), 1)
         self.assertEqual(self.act(self.outsider, 'note', task, {'body': 'x'}).status_code, 403)

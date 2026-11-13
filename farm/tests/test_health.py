@@ -6,7 +6,7 @@ registry the harvest side reads, the statutory sea-lice limits, the write paths,
 import io
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone as dt_timezone
 from decimal import Decimal
 from unittest import mock
 
@@ -23,6 +23,7 @@ from django.utils import translation
 from core import access, database, navigation, softdelete
 from core.models import AuditLog, Profile
 from core.softdelete import plan_delete
+from core.testing import BAD_HOURS, FrozenClock
 
 from ..handling import check as handling_check, withdrawal as registry
 from ..handling.withdrawal import WithdrawalBlock
@@ -31,8 +32,8 @@ from ..health import diseases, lice, notices, services, withdrawal
 from ..health import read
 from ..health.read import LiceWeek, lice_weeks
 from ..models import (
-    Batch, Feed, HandlingAcknowledgement, HandlingRule, HealthEvent, LiceCount, Medicine, MedicineWithdrawal, Site,
-    Species, StockOperation, Supplier, System, Tank, Treatment, WaterMeasurement,
+    Batch, Feed, HandlingAcknowledgement, HandlingRule, HealthEvent, LiceCount, Medicine, MedicineWithdrawal,
+    ProductionDepartment, Site, Species, StockOperation, Supplier, System, Tank, Treatment, WaterMeasurement,
 )
 from ..models.site import zone_of
 from ..stock import integrity, services as stock_services
@@ -1397,8 +1398,9 @@ class TreatmentPageTests(HealthTestCase):
                          ([self.t1], medicine, Decimal('0.200'), 'mg_l', Decimal('1.500'), 45, self.vet, 'Calm'))
         page = self.client.get(back)
         self.assertEqual([row['treatment'] for row in page.context['rows']], [treatment])
-        [(batch, held)] = page.context['rows'][0]['batches']
-        self.assertEqual((batch, held.until), (self.batch, self.day(-7)))     # the last day + 7 + 1
+        [part] = page.context['rows'][0]['batches']
+        self.assertEqual((part.batch, part.withdrawal.until, part.held, part.units),
+                         (self.batch, self.day(-7), True, ()))                # the last day + 7 + 1
         self.assertContains(page, self.batch.code)
         # The last day, changed through its dialog.
         self.client.post(reverse('farm:treatment_last_day', args=[treatment.pk]),
@@ -1445,6 +1447,83 @@ class TreatmentPageTests(HealthTestCase):
         self.assertEqual(page(medicine=str(bath.pk)), [lice_bath])
         self.assertEqual(page(method='injection'), [vaccination])
         self.assertEqual(page(**{'from': self.day(3).isoformat()}), [lice_bath])
+
+
+class TreatmentPageSiteBehindTests(FrozenClock, HealthTestCase):
+    """The Treatments page reads each treatment on its own site's today, as the unit's own withdrawal line does
+    (withdrawal.of_units), not on the company's: at 23:30 UTC on the 10th it is the 10th on T-01's site (UTC) and already
+    the 11th in Oslo. On the company's day the page freed the fish a day early and counted the site's running day as a
+    past one without a temperature."""
+    NOW = BAD_HOURS['WinterNight']
+
+    def rows(self, **query):
+        return self.client.get(reverse('farm:treatments'), query).context['rows']
+
+    def test_fish_on_their_last_held_day_are_under_withdrawal_as_the_units_own_line_says(self):
+        treatment = self.treat(self.medicine(days=1), 1, 1)        # given yesterday, 1 day: free tomorrow, held today
+        [line] = self.held()
+        self.assertEqual((self.today, line.until), (BAD_HOURS['WinterNight'].date(), self.day(-1)))
+        [row] = self.rows(show='withdrawal')                       # "Under withdrawal today": the site's today
+        [part] = row['batches']
+        self.assertEqual((row['treatment'], part.today, part.batch, part.withdrawal.until, part.held),
+                         (treatment, self.today, self.batch, line.until, True))
+        self.assertContains(self.client.get(reverse('farm:treatments')), '<span class="over-text" title="')
+
+    def test_the_sites_running_day_is_not_counted_as_a_past_day_without_a_temperature(self):
+        self.treat(self.medicine(degree_days=50), 6, 6)            # five past days, none measured
+        [line] = self.held()
+        [row] = self.rows()
+        [part] = row['batches']
+        self.assertEqual((part.withdrawal.days_without_temperature, part.withdrawal.until), (5, line.until))
+        self.assertEqual(line.days_without_temperature, 5)
+
+
+class TokyoCase(HealthTestCase):
+    """A second site on Tokyo's clock beside the fixtures' Bergen (UTC), with a unit K-01; the company's clock is
+    Oslo's. `treated_there` stocks K-01 and treats its fish; `moved_here` moves them to Bergen's T-02. What the
+    Treatments list says of fish on several clocks is in test_withdrawal_clocks.py."""
+
+    def setUp(self):
+        super().setUp()
+        tokyo = Site.objects.create(name='Tokyo', code='TK', timezone='Asia/Tokyo')
+        hall = ProductionDepartment.objects.create(site=tokyo, name='Hall T', code='HT')
+        self.k1 = make_unit('K-01', hall)
+
+    def treated_there(self, last_day_ago, days):
+        """Fish in K-01 given a bath whose last day was `last_day_ago` days back on Tokyo's clock, `days` days of
+        withdrawal: (the batch, the treatment, the first day the fish may be harvested)."""
+        there = local_today(self.k1)
+        batch = self.stock(self.k1, count=1000, weight='100', days_ago=10)
+        last = there - timedelta(days=last_day_ago)
+        treatment = services.record_treatment(self.user, units=[self.k1], method='bath', reason='sea_lice',
+                                              start_date=last, end_date=last, medicine=self.medicine(days=days))
+        return batch, treatment, last + timedelta(days=days + 1)
+
+    def moved_here(self, batch):
+        self.going_on(stock_services.record_transfer, self.user, source=self.k1, batch=batch,
+                      day=local_today(self.t2), legs=[(self.t2, 1000)], reason='density')
+
+
+class EarliestTodayTests(FrozenClock, TokyoCase):
+    """farm.stock.dates.earliest_today: the EARLIEST today among the units' sites (the fish are held the longest so).
+    16:00 UTC on the 10th is the 10th in Bergen and Oslo and the 11th in Tokyo."""
+    NOW = datetime(2026, 11, 10, 16, 0, tzinfo=dt_timezone.utc)
+
+    def test_it_is_the_earliest_day_of_the_units_and_the_companys_without_any(self):
+        from ..stock.dates import earliest_today
+        self.assertEqual((local_today(self.k1), local_today(self.t2), local_today()),
+                         (date(2026, 11, 11), date(2026, 11, 10), date(2026, 11, 10)))
+        for units in ([self.k1, self.t2], [self.t2, self.k1]):
+            self.assertEqual(earliest_today(units), date(2026, 11, 10))       # never the later one
+        self.assertEqual(earliest_today([self.k1]), date(2026, 11, 11))
+        self.assertEqual(earliest_today([]), date(2026, 11, 10))               # no unit: the company's
+
+    def test_the_write_guards_day_is_the_earliest_among_every_unit_the_fish_were_in(self):
+        batch, _treatment, _until = self.treated_there(2, 1)
+        self.assertEqual(withdrawal._reached([self.k1.pk]), ({batch.pk}, date(2026, 11, 11)))     # only in Tokyo yet
+        self.moved_here(batch)
+        self.assertEqual(withdrawal._reached([self.k1.pk])[1], date(2026, 11, 10))               # Bergen's, the earlier
+        self.assertEqual(withdrawal._reached([self.t2.pk])[1], date(2026, 11, 10))
 
 
 class LicePageTests(HealthTestCase):

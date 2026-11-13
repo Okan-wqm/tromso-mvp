@@ -10,7 +10,7 @@ Going on needs the box (`withdrawal_ack`, the change's fingerprint): stored as W
 write, the batch, the withdrawal and the harvest, and logged as critical. The write paths are enumerated below, so a new
 one that skips the guard fails a test."""
 import io
-from datetime import datetime, time, timedelta
+from datetime import datetime, time
 from decimal import Decimal
 from unittest import mock
 

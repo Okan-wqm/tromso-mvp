@@ -1,7 +1,8 @@
 """THE read API of the sensor values. Nothing here writes; nothing else reads the readings, the rollups or the state.
 
 - `latest(channel_nos, now)`: each channel's last good value from `sensors_channel_state` (never the hypertable), fresh
-  for the channel's `fresh_s` (three heartbeats) after it was received;
+  while both its device time and its receipt are at most the channel's `fresh_s` old (its heartbeat times its own
+  `fresh_heartbeats`: 3 unless the farm set another, 1 to 20);
 - `value_at(channel_no, moment)`: the newest clean reading at or before a moment, never one from after it (a stored value
   stands until the next one: the deadband stores a value when it moves);
 - `segments(target, quantity, start, end)`: the channels bound to a target over a window, each clipped to the time it was
@@ -511,8 +512,8 @@ def _raw_rows(numbers, starts, ends, fresh, first, last, step, count):
     """`replay_rows` below an hour (the live view's rule at each moment, `SPAN_STEP` says which way it is read). The
     page's own bounds are constants, so TimescaleDB leaves out the chunks outside them when it plans."""
     since = first - timedelta(seconds=max(fresh))
-    segments = (f'WITH s AS (SELECT * FROM unnest(%s::int[], %s::timestamptz[], %s::timestamptz[], %s::int[]) '
-                f'WITH ORDINALITY AS s(channel_no, valid_from, valid_to, fresh_s, ord))')
+    segments = ('WITH s AS (SELECT * FROM unnest(%s::int[], %s::timestamptz[], %s::timestamptz[], %s::int[]) '
+                'WITH ORDINALITY AS s(channel_no, valid_from, valid_to, fresh_s, ord))')
     # The newest clean reading of a segment at or before a moment `at`, no older than the channel's freshness.
     newest = ('SELECT ts, value FROM sensors_reading WHERE channel_no = s.channel_no AND ts <= {at} '
               'AND ts >= greatest(s.valid_from, {at} - make_interval(secs => s.fresh_s)) AND ts < s.valid_to '

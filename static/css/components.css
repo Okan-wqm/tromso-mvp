@@ -147,7 +147,11 @@
 .badge-active, .badge-operational { background: var(--surface-sunken); color: var(--text-1); border: 1px solid var(--line-hair); }
 .badge-maintenance { background: var(--warn-tint); color: var(--warn-text); }
 .badge-inactive, .badge-construction { background: var(--surface-sunken); color: var(--text-3); }
-.badge-closed, .badge-offline { background: var(--crit-tint); color: var(--crit-text); }
+.badge-closed, .badge-offline, .badge-unsent { background: var(--crit-tint); color: var(--crit-text); }
+/* A person's invitation on the users tab (templates/core/_invitation.html): what became of it, then the button that
+   sends it (again); a mail server's own words may be one long token. */
+td.invitation { min-width: 14rem; overflow-wrap: anywhere; }
+td.invitation form { margin-top: .375rem; }
 .badge-repair { background: var(--warn-tint); color: var(--warn-text); }
 .badge-standby, .badge-decommissioned, .badge-discontinued { background: var(--surface-sunken); color: var(--text-3); }
 .badge-out_of_service { background: var(--crit-tint); color: var(--crit-text); }

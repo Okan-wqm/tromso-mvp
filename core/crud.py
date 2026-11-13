@@ -533,6 +533,13 @@ class Resource:
         rolls the save back and is shown on the form (a rule checked under a lock the form could not hold: HR's
         employment bound)."""
 
+    @classmethod
+    def after_commit(cls, request, obj, created):
+        """Runs once the save's transaction has committed, before the page is answered: for what must not happen
+        inside it, or for a record that might still be rolled back (handing a new user's invitation to the mail
+        worker). Not called for a save that failed. It cannot undo the save. "After the commit" holds while no
+        transaction wraps the whole request: ATOMIC_REQUESTS is refused for that (core.E006)."""
+
     # When a save may ask something first (`edited`, below): the template the edit page shows the question with, and the
     # name of the box that answers it.
     question_template = None
@@ -764,6 +771,7 @@ class CreateView(FormView):
                 form.instance._state.adding = True
                 return self.page(form)
             else:
+                r.after_commit(request, obj, created=True)
                 # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
                 flash(request, _('%(name)s “%(object)s” created.'), r, obj)
                 return done(request, self.url('edit', obj.pk), stay=True)
@@ -854,6 +862,7 @@ class UpdateView(FormView):
             if not trigger_refusal(form, error):
                 raise
             return self.page(form, self.get_object(pk))
+        r.after_commit(request, obj, created=False)
         # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
         flash(request, _('%(name)s “%(object)s” saved.'), r, obj)
         return done(request, self.url('list'))

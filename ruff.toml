@@ -1,0 +1,17 @@
+# Lint only, errors only (README, CI and dependency updates): ruff runs in the project checks (`CHECKS=1 scripts/test.sh`,
+# scripts/testrunner/in-container.sh) and so in CI. No formatter, no style rule, no import sorting: the rules below find
+# mistakes, not taste.
+#   F   pyflakes: an undefined name, an unused import or variable, a key written twice, a format string with no field
+#   E9  what stops a file from being read at all (a syntax error is reported whatever is selected)
+# An import that is there for what importing it does (a registration, a re-export) says so on its line:
+# `# noqa: F401  why`.
+target-version = "py312"
+# Not this project's code: packages installed by npm.
+extend-exclude = ["node_modules"]
+
+[lint]
+select = ["F", "E9"]
+
+[lint.per-file-ignores]
+# A migration that has been applied is history and is not edited: this one opens a cursor it does not use.
+"alarms/migrations/0008_severity_bounds.py" = ["F841"]

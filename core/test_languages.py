@@ -396,7 +396,7 @@ class ActivityLogLanguageTests(TestCase):
         self.assertEqual(created.changes['Status'], [None, message('Under maintenance')])
         self.assertEqual(created.changes['Site type'], [None, message('Hatchery')])
         self.assertEqual(edited.changes, {'Status': [message('Under maintenance'), message('Closed')]})
-        self.assertEqual(contacts.changes, {'Contacts': [None, 'Kari (Vet, primary)']})
+        self.assertEqual(contacts.changes, {'Contacts': [None, [['Kari (Vet, primary)']]]})
 
     def test_the_page_shows_them_in_the_readers_language_but_not_a_persons_own_text(self):
         self.in_language('en')
@@ -483,8 +483,8 @@ class EmailLanguageTests(TestCase):
         self.client.force_login(admin)                                  # the admin reads English
         self.client.post(reverse('core:user_create'), user_data(language='nb'))
         self.assertEqual(Profile.objects.get(user__username='kari').language, 'nb')
-        self.assertEqual(mail.outbox[0].subject, 'Tilbakestill passordet ditt')
-        self.assertIn('Hei kari,', mail.outbox[0].body)
+        self.assertEqual(mail.outbox[0].subject, 'Kontoen din i driftskonsollen: velg passord')
+        self.assertIn('Hei Kari Nordmann,', mail.outbox[0].body)
         self.assertEqual(lang_of(self.client.get(reverse('home'))), 'en')     # the admin's own page is unchanged
 
 
@@ -502,7 +502,8 @@ class UserLanguageFieldTests(TestCase):
         self.client.post(reverse('core:user_edit', args=[kari.pk]), user_data(language='nb'))
         kari.refresh_from_db()
         self.assertEqual(Profile.objects.get(user=kari).language, 'nb')
-        created, edited = AuditLog.objects.order_by('created_at')
+        # (the new person's invitation is a row of its own between them: core.tests_account_mail)
+        created, edited = AuditLog.objects.exclude(action='invite').order_by('created_at')
         self.assertEqual(created.changes['Language'], [None, 'Türkçe'])
         self.assertEqual(edited.changes, {'Language': ['Türkçe', 'Norsk bokmål']})
 
@@ -512,4 +513,4 @@ class UserLanguageFieldTests(TestCase):
         self.assertFalse(get_user_model().objects.filter(username='kari').exists())
         self.client.post(reverse('core:user_create'), user_data(language=''))
         self.assertEqual(Profile.objects.get(user__username='kari').language, '')
-        self.assertEqual(AuditLog.objects.get().changes.get('Language'), None)
+        self.assertEqual(AuditLog.objects.get(action='create').changes.get('Language'), None)

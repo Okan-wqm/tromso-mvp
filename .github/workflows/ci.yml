@@ -1,6 +1,7 @@
 # Continuous integration (README, CI and dependency updates). Every job runs what a developer runs locally:
 #   python    the browser build (static/js, which `check` asks for), then scripts/test.sh with CHECKS=1: the project
-#             checks, in the test runner's image (scripts/testrunner/image.sh) on a TimescaleDB server of its own, then
+#             checks (the linter first: ruff, errors only, ruff.toml), in the test runner's image
+#             (scripts/testrunner/image.sh) on a TimescaleDB server of its own, then
 #             the catalogs must be unchanged. On a pull request that is all (SUITE=0, minutes); the whole suite (an
 #             hour or more on a hosted runner) runs on a push to main, nightly and by hand
 #   frontend  npm ci, the Tailwind build checked against the committed static/css/tw.css, the browser build (tsc, Tailwind)
@@ -325,7 +326,7 @@ jobs:
           "$RUNNER_TEMP/app/bin/pip" install -r requirements.txt -r scripts/testrunner/requirements.txt
           "$RUNNER_TEMP/tools/bin/pip-licenses" --python "$RUNNER_TEMP/app/bin/python" --from=mixed --format=markdown
           "$RUNNER_TEMP/tools/bin/pip-licenses" --python "$RUNNER_TEMP/app/bin/python" --from=mixed \
-            --allow-only="Apache-2.0;Apache-2.0 OR BSD-3-Clause;BSD-2-Clause;BSD-3-Clause;BSD License;LGPL-3.0-only;MIT-0;PSF-2.0"
+            --allow-only="Apache-2.0;Apache-2.0 OR BSD-3-Clause;BSD-2-Clause;BSD-3-Clause;BSD License;LGPL-3.0-only;MIT;MIT-0;PSF-2.0"
       # The owner's banned components, whatever licence a client library carries: MinIO (its server is AGPL-3.0) and
       # rodbus (non-commercial). The crates are banned in the deny.toml files; here the Python packages, the npm tree
       # and every image a compose file or Dockerfile names.

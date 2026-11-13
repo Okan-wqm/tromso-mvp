@@ -21,7 +21,8 @@ UNESCAPED = re.compile(r'\|\s*safe(seq)?\b|\{%\s*autoescape\s+off\b')
 
 # The only templates allowed to turn escaping off, and why. A plain-text e-mail is never read as HTML.
 PLAIN_TEXT = {
-    'templates/registration/password_reset_email.html': 'the password reset e-mail, sent as plain text',
+    'templates/mail/invitation_body.txt': 'the invitation e-mail, sent as plain text (core.accountmail)',
+    'templates/mail/reset_body.txt': 'the password reset e-mail, sent as plain text (core.accountmail)',
 }
 
 # Every place in the code that marks a string as safe markup. Each one escapes the text it puts in; the test named
@@ -52,13 +53,29 @@ def _sources(pattern):
 class TemplateEscapingTests(SimpleTestCase):
     def test_no_template_prints_a_value_unescaped(self):
         found = []
-        for name, path in _sources('*.html'):
+        for name, path in [*_sources('*.html'), *_sources('*.txt')]:        # a mail's templates are .txt
             if name in PLAIN_TEXT:
                 continue
             for number, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
                 if UNESCAPED.search(line):
                     found.append(f'{name}:{number}')
         self.assertEqual(found, [], 'a template printed a value with |safe or autoescape off: text must be escaped')
+
+    def test_the_plain_text_templates_are_there_and_go_out_as_plain_text(self):
+        from core import accountmail
+        self.assertEqual({f'templates/mail/{kind}_body.txt' for kind in (accountmail.INVITATION, accountmail.RESET)},
+                         set(PLAIN_TEXT))
+        for name in PLAIN_TEXT:
+            self.assertTrue((Path(settings.BASE_DIR) / name).is_file(), name)
+        # what goes out, as accountmail builds it for each kind (not a property of Django's class)
+        from django.contrib.auth import get_user_model
+        from django.test import override_settings
+        person = get_user_model()(pk=1, username='kari', email='kari@example.com')
+        with override_settings(PUBLIC_BASE_URL='https://farm.example'):
+            for kind in (accountmail.INVITATION, accountmail.RESET):
+                built = accountmail.message(person, kind, person, 'en', 'MQ', 'token')
+                self.assertEqual((built.content_subtype, getattr(built, 'alternatives', [])), ('plain', []), kind)
+                self.assertEqual(built.message().get_content_type(), 'text/plain', kind)
 
     def test_only_the_known_builders_mark_markup_safe(self):
         found = set()

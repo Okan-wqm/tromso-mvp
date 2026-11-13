@@ -711,6 +711,14 @@ msgid "%(hours)s h"
 msgstr "%(hours)s sa"
 
 #, python-format
+msgid "%(inviter)s has created an account for you in the farm console of %(company)s."
+msgstr "%(inviter)s, %(company)s çiftlik konsolunda sizin için bir hesap oluşturdu."
+
+#, python-format
+msgid "%(inviter)s has created an account for you in the farm console."
+msgstr "%(inviter)s, çiftlik konsolunda sizin için bir hesap oluşturdu."
+
+#, python-format
 msgid "%(item)s in %(location)s (%(site)s): %(held)s, below the reorder level of %(level)s."
 msgstr "%(location)s (%(site)s) içinde %(item)s: %(held)s, %(level)s yeniden sipariş seviyesinin altında."
 
@@ -912,12 +920,34 @@ msgid "%(minutes)s min"
 msgstr "%(minutes)s dk"
 
 #, python-format
+msgid "%(more)s more not planned today"
+msgid_plural "%(more)s more not planned today"
+msgstr[0] "bugün planı olmayan %(more)s kişi daha"
+msgstr[1] "bugün planı olmayan %(more)s kişi daha"
+
+#, python-format
 msgid "%(name)s (copy %(number)d)"
 msgstr "%(name)s (kopya %(number)d)"
 
 #, python-format
 msgid "%(name)s (copy)"
 msgstr "%(name)s (kopya)"
+
+#, python-format
+msgid ""
+"%(name)s has already set a password: they sign in with it, or ask for a new link with “Forgot "
+"your password?”."
+msgstr ""
+"%(name)s parolasını zaten belirledi: onunla giriş yapar veya “Parolanızı mı unuttunuz?” ile yeni "
+"bir bağlantı ister."
+
+#, python-format
+msgid "%(name)s has no email address: add one first."
+msgstr "%(name)s için e-posta adresi yok: önce bir adres ekleyin."
+
+#, python-format
+msgid "%(name)s is inactive: an inactive person cannot sign in."
+msgstr "%(name)s pasif: pasif bir kişi giriş yapamaz."
 
 #. Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the
 #. record; %(reasons)s are sentences saying what is in the way.
@@ -949,10 +979,10 @@ msgid "%(number)s deleted"
 msgstr "%(number)s silinmiş"
 
 #, python-format
-msgid "%(open)s open more than 12 hours: check"
-msgid_plural "%(open)s open more than 12 hours: check"
-msgstr[0] "%(open)s kayıt 12 saatten uzun süredir açık: kontrol edin"
-msgstr[1] "%(open)s kayıt 12 saatten uzun süredir açık: kontrol edin"
+msgid "%(open)s of them open more than %(hours)s hours: clock-out forgotten"
+msgid_plural "%(open)s of them open more than %(hours)s hours: clock-out forgotten"
+msgstr[0] "bunların %(open)s tanesi %(hours)s saatten uzun süredir açık: çıkış unutulmuş"
+msgstr[1] "bunların %(open)s tanesi %(hours)s saatten uzun süredir açık: çıkış unutulmuş"
 
 #, python-format
 msgid "%(operation)s of %(date)s voided."
@@ -1574,6 +1604,14 @@ msgid "%(when)s through %(how)s, recorded by %(who)s"
 msgstr "%(when)s, %(how)s yoluyla, kaydeden: %(who)s"
 
 #, python-format
+msgid "%(when)s, to %(address)s: %(reason)s"
+msgstr "%(when)s, %(address)s adresine: %(reason)s"
+
+#, python-format
+msgid "%(when)s, to an address that was erased on request: %(reason)s"
+msgstr "%(when)s, talep üzerine silinmiş bir adrese: %(reason)s"
+
+#, python-format
 msgid "(%(dose)s g/m³)"
 msgstr "(%(dose)s g/m³)"
 
@@ -1819,6 +1857,20 @@ msgid "A checklist has at most %(num)d line."
 msgid_plural "A checklist has at most %(num)d lines."
 msgstr[0] "Bir kontrol listesi en çok %(num)d satırdır."
 msgstr[1] "Bir kontrol listesi en çok %(num)d satırdır."
+
+msgid "A clock-in counts as forgotten after (hours)"
+msgstr "Girişin unutulmuş sayılacağı süre (saat)"
+
+msgid ""
+"A clock-in still open after this many hours counts as a forgotten clock-out: the board says so "
+"instead of present, the person is told to ask their lead, and the lead closes it on the "
+"Attendance page with the real time and a reason. Default 16 hours; 1 to 168, and not shorter than"
+" the longest active shift with the punch window before it."
+msgstr ""
+"Bu kadar saat sonra hâlâ açık olan bir giriş, unutulmuş çıkış sayılır: pano “Mevcut” yerine bunu "
+"söyler, kişiye sorumlusuna başvurması söylenir ve sorumlu, Yoklama sayfasında gerçek saat ve bir "
+"gerekçe ile kapatır. Varsayılan 16 saat; 1 ile 168 arası ve öncesindeki giriş penceresiyle "
+"birlikte en uzun etkin vardiyadan kısa olamaz."
 
 msgid "A combination is numbered 1 to 9."
 msgstr "Bir kombinasyon 1 ile 9 arasında numaralanır."
@@ -2585,11 +2637,14 @@ msgid "A vaccine is given as a vaccination, and a vaccination with a vaccine."
 msgstr "Aşı aşılama olarak verilir, aşılama da aşıyla."
 
 msgid ""
-"A value is fresh for three heartbeats of its channel. A stale value is not used for a unit’s "
-"water: the next source counts (its system’s sensor, then the latest sample)."
+"A value is fresh while both its own time on the device and its arrival here are no older than its"
+" channel’s own number of heartbeats (3 unless the channel is set otherwise). A stale value is not"
+" used for a unit’s water: the next source counts (its system’s sensor, then the latest sample)."
 msgstr ""
-"Bir değer, kanalının üç nabzı boyunca günceldir. Eski bir değer bir birimin suyu için "
-"kullanılmaz: sıradaki kaynak geçerli olur (sisteminin sensörü, ardından en son numune)."
+"Bir değer, hem cihazdaki kendi zamanı hem de buraya ulaşması kanalının kendi nabız sayısından "
+"(kanal başka bir sayıya ayarlanmadıysa 3) eski olmadığı sürece günceldir. Eski bir değer bir "
+"birimin suyu için kullanılmaz: sıradaki kaynak geçerli olur (sisteminin sensörü, ardından en son "
+"numune)."
 
 msgid ""
 "A value is stored again when it moves this much from the last stored one, in the quantity’s unit."
@@ -3283,6 +3338,10 @@ msgstr "Pasif bir bağlantı dinlenmez: cihazlarının gönderdikleri kimseye ul
 
 msgid "An inactive location takes no new stock; what it holds still shows and can leave."
 msgstr "Pasif bir yer yeni stok almaz; tuttuğu görünmeye devam eder ve çıkabilir."
+
+#, python-format
+msgid "An invitation to %(name)s is being sent right now: wait for it, the row says what became of it."
+msgstr "%(name)s için bir davet şu anda gönderiliyor: bekleyin, satır ne olduğunu gösterir."
 
 msgid ""
 "An older value is shown stale with its age, never OK, and never clears an alarm. 1 to 8760 hours "
@@ -4299,6 +4358,9 @@ msgstr "Kartların şablonu"
 msgid "Cards can be added once the board is created."
 msgstr "Kartlar, pano oluşturulduktan sonra eklenebilir."
 
+msgid "Carried out by"
+msgstr "Uygulayan"
+
 msgid "Category"
 msgstr "Kategori"
 
@@ -4665,6 +4727,9 @@ msgstr "Çıkış"
 msgid "Clock tolerance (seconds)"
 msgstr "Saat toleransı (saniye)"
 
+msgid "Clock-out forgotten"
+msgstr "Çıkış unutulmuş"
+
 msgid "Clocked in by the person"
 msgstr "Kişinin kendisi giriş yaptı"
 
@@ -4776,6 +4841,9 @@ msgstr "Tamamlayan"
 msgid "Completion note"
 msgstr "Tamamlama notu"
 
+msgid "Completion note, kept when the task was reopened"
+msgstr "Tamamlama notu, görev yeniden açıldığında korundu"
+
 msgid "Composition as fed"
 msgstr "Verildiği hâliyle bileşim"
 
@@ -4836,8 +4904,14 @@ msgstr "İletişim"
 msgid "Contact e-mail"
 msgstr "İletişim e-postası"
 
+msgid "Contact e-mails and phones made private, the contact kept"
+msgstr "Özel yapılan kişi e-postaları ve telefonları, kişi korundu"
+
 msgid "Contact email"
 msgstr "İletişim e-postası"
+
+msgid "Contact lists made private whole"
+msgstr "Bütünüyle özel yapılan kişi listeleri"
 
 msgid "Contact person"
 msgstr "İletişim kişisi"
@@ -5700,6 +5774,9 @@ msgstr "Her nokta bir kez listelenebilir."
 msgid "Each point is the mean of its time; the band is its lowest and highest value."
 msgstr "Her nokta kendi zaman aralığının ortalamasıdır; bant, o aralığın en düşük ve en yüksek değeridir."
 
+msgid "Each site on its own day"
+msgstr "Her saha kendi gününde"
+
 msgid "Each temperature is a column once."
 msgstr "Her sıcaklık yalnızca bir sütun olabilir."
 
@@ -5893,6 +5970,12 @@ msgstr "Burada girilen"
 msgid "Entries"
 msgstr "Kayıtlar"
 
+msgid "Entries converted"
+msgstr "Dönüştürülen kayıtlar"
+
+msgid "Entries whose contact list was made private whole"
+msgstr "Kişi listesi bütünüyle özel yapılan kayıtlar"
+
 msgid "Epizootic haematopoietic necrosis (EHN)"
 msgstr "Epizootik hematopoietik nekroz (EHN)"
 
@@ -5907,6 +5990,9 @@ msgstr "Ekipman kendisinin parçası olamaz."
 
 msgid "Equipment that fits none of the other types."
 msgstr "Diğer türlerin hiçbirine uymayan ekipman."
+
+msgid "Erased on request"
+msgstr "Talep üzerine silindi"
 
 msgid "Error"
 msgstr "Hata"
@@ -6947,6 +7033,9 @@ msgstr ""
 msgid "Give a target pH and alkalinity for the recipes."
 msgstr "Reçeteler için bir hedef pH ve alkalinite girin."
 
+msgid "Give a whole number of hours from 1 to 168 (a week)."
+msgstr "1 ile 168 (bir hafta) arasında tam bir saat sayısı girin."
+
 msgid "Give a year from 2026."
 msgstr "2026’dan itibaren bir yıl girin."
 
@@ -7494,6 +7583,19 @@ msgstr ""
 "ör. 2: 100 g ve 200 g balıklar aynı birimi paylaşabilir. Bunu aşan bir stoklama, transfer veya "
 "boylama önce onay ister. Boş: denetim yok."
 
+msgid ""
+"How many times heavier, on average, one batch of this species may be than another in the same "
+"unit, e.g. 2: fish of 100 g and of 200 g may share a unit. A stocking, transfer or grading beyond"
+" it asks for an acknowledgement first. Left empty on a new species: 2 for a production species, "
+"no check for a cleaner fish (its cages are topped up with fish of other sizes). To have no check "
+"on a production species, empty it after saving."
+msgstr ""
+"Bu türün bir partisinin aynı birimdeki başka bir partiden ortalamada kaç kat ağır olabileceği, "
+"ör. 2: 100 g ve 200 g balıklar aynı birimi paylaşabilir. Bunu aşan bir stoklama, transfer veya "
+"boylama önce onay ister. Yeni bir türde boş bırakılırsa: üretim türü için 2, temizleyici balık "
+"için denetim yok (kafeslerine başka boylarda balık eklenir). Üretim türünde denetim olmaması için"
+" kaydettikten sonra boşaltın."
+
 msgid "How often the device sends a message. Offline after three times this without one."
 msgstr ""
 "Cihazın ne sıklıkla mesaj gönderdiği. Bunun üç katı süre boyunca mesaj gelmezse çevrimdışı "
@@ -7584,11 +7686,17 @@ msgstr ""
 "Bu adresi kullanan bir hesap varsa, sıfırlama bağlantısı yolda. Birkaç dakika içinde gelmezse "
 "spam klasörünüzü kontrol edin."
 
+msgid "If it has expired, ask for a new one here:"
+msgstr "Süresi dolduysa buradan yenisini isteyin:"
+
 msgid "If the fish were harvested today:"
 msgstr "Balıklar bugün hasat edilseydi:"
 
 msgid "If you did not ask for this, you can ignore this email."
 msgstr "Bunu siz istemediyseniz bu e-postayı yok sayabilirsiniz."
+
+msgid "If you did not expect this email, you can ignore it."
+msgstr "Bu e-postayı beklemiyorduysanız dikkate almayabilirsiniz."
 
 msgid "Ignored"
 msgstr "Yok sayıldı"
@@ -7680,8 +7788,44 @@ msgstr "Kurulum tarihi"
 msgid "Instead of one channel: every active channel of this quantity."
 msgstr "Tek bir kanal yerine: bu parametrenin tüm aktif kanalları."
 
+msgid "Instruction"
+msgstr "Talimat"
+
 msgid "Instrument unit"
 msgstr "Cihaz birimi"
+
+msgid "Invitation"
+msgstr "Davet"
+
+msgid "Invitation not sent"
+msgstr "Davet gönderilemedi"
+
+#, python-format
+msgid "Invitation sent %(when)s to %(address)s. Password not set yet."
+msgstr "Davet gönderildi: %(when)s, %(address)s. Parola henüz belirlenmedi."
+
+#, python-format
+msgid "Invitation sent %(when)s to %(address)s; its link has expired."
+msgstr "Davet gönderildi: %(when)s, %(address)s; bağlantının süresi doldu."
+
+#, python-format
+msgid ""
+"Invitation sent %(when)s to %(address)s; the address has changed since, so its link no longer "
+"works."
+msgstr ""
+"Davet gönderildi: %(when)s, %(address)s; adres o zamandan beri değişti, bu yüzden bağlantı artık "
+"çalışmıyor."
+
+#, python-format
+msgid ""
+"Invitation sent %(when)s to an address that was erased on request; the address has changed since,"
+" so its link no longer works."
+msgstr ""
+"Davet gönderildi: %(when)s, talep üzerine silinmiş bir adrese; adres o zamandan beri değişti, bu "
+"yüzden bağlantı artık çalışmıyor."
+
+msgid "Invited"
+msgstr "Davet edildi"
 
 msgid "Ionic strength"
 msgstr "İyonik şiddet"
@@ -8192,6 +8336,9 @@ msgstr "Kaplama kalınlığı (mm)"
 
 msgid "Lines"
 msgstr "Satırlar"
+
+msgid "Link sent to"
+msgstr "Bağlantının gönderildiği adres"
 
 msgid "List what was delivered."
 msgstr "Teslim edileni listeleyin."
@@ -9157,6 +9304,14 @@ msgstr ""
 "Bu günü kapsayan yemle tedavi yok: Sağlık › Tedaviler altında kaydedin, yoksa balıkların bekleme "
 "süresi bilinmez kalır."
 
+#, python-format
+msgid ""
+"No invitation was sent: %(name)s has no email address. They cannot sign in until an address is "
+"added and the invitation sent."
+msgstr ""
+"Davet gönderilmedi: %(name)s için e-posta adresi yok. Bir adres eklenip davet gönderilene kadar "
+"giriş yapamaz."
+
 msgid "No item name: the device’s payload format is one object."
 msgstr "Öğe adı yok: cihazın mesaj biçimi tek bir nesnedir."
 
@@ -9296,6 +9451,13 @@ msgstr "Hiçbir lokasyon bu sistemin dışındaki yıllık bir yükümlülükle 
 
 msgid "No site or facility to report for."
 msgstr "Rapor verilecek lokasyon veya tesis yok."
+
+msgid ""
+"No size check was set: a cleaner fish is topped up with fish of other sizes. Give it a limit on "
+"the Stocking tab if this farm wants one."
+msgstr ""
+"Boy denetimi konmadı: temizleyici balığın üzerine başka boylarda balık eklenir. Çiftlik isterse "
+"Stoklama sekmesinde bir sınır verin."
 
 msgid "No species yet. Use “Add species” to add a row."
 msgstr "Henüz balık türü yok. Satır eklemek için “Balık türü ekle”yi kullanın."
@@ -9570,6 +9732,15 @@ msgstr "PDF’in metninde yok: sözcükler künyede ya da özette geçiyor."
 msgid "Not in yet"
 msgstr "Henüz gelmedi"
 
+msgid "Not invited yet."
+msgstr "Henüz davet edilmedi."
+
+msgid "Not invited: no email address. Add one, then send the invitation."
+msgstr "Davet edilmedi: e-posta adresi yok. Bir adres ekleyin, sonra daveti gönderin."
+
+msgid "Not invited: the account is inactive."
+msgstr "Davet edilmedi: hesap pasif."
+
 msgid "Not linked to any system"
 msgstr "Hiçbir sisteme bağlı değil"
 
@@ -9621,6 +9792,9 @@ msgstr "Belirtilmedi"
 
 msgid "Not saved; unverified"
 msgstr "Kaydedilmedi; doğrulanmadı"
+
+msgid "Not sent"
+msgstr "Gönderilmedi"
 
 msgid "Not set"
 msgstr "Girilmedi"
@@ -10079,8 +10253,8 @@ msgid "Open questions acknowledged"
 msgstr "Onaylanan açık sorular"
 
 #, python-format
-msgid "Open since %(since)s: check"
-msgstr "%(since)s tarihinden beri açık: kontrol edin"
+msgid "Open since %(since)s: to be closed on the Attendance page"
+msgstr "%(since)s tarihinden beri açık: Yoklama sayfasında kapatılacak"
 
 msgid "Open the PDF"
 msgstr "PDF’i aç"
@@ -10090,6 +10264,9 @@ msgstr "Taslağı aç"
 
 msgid "Open this link to set a new password:"
 msgstr "Yeni parola belirlemek için bu bağlantıyı açın:"
+
+msgid "Open this link to set your password; then you can sign in:"
+msgstr "Parolanızı belirlemek için bu bağlantıyı açın; ardından giriş yapabilirsiniz:"
 
 msgid "Opened"
 msgstr "Açıldı"
@@ -10462,8 +10639,34 @@ msgstr "Parçalar"
 msgid "Password hash"
 msgstr "Parola özeti"
 
+msgid "Password reset"
+msgstr "Parola sıfırlama"
+
 msgid "Password saved"
 msgstr "Parola kaydedildi"
+
+msgid "Password set"
+msgstr "Parola belirlendi"
+
+#, python-format
+msgid "Password set %(when)s through an emailed link."
+msgstr "Parola %(when)s tarihinde e-postayla gönderilen bağlantıyla belirlendi."
+
+#, python-format
+msgid ""
+"Password set %(when)s through the link sent to %(address)s, which is not this account’s address "
+"now."
+msgstr ""
+"Parola %(when)s tarihinde %(address)s adresine gönderilen bağlantıyla belirlendi; bu adres artık "
+"bu hesabın adresi değil."
+
+#, python-format
+msgid ""
+"Password set %(when)s through the link sent to an address that was erased on request, which is "
+"not this account’s address now."
+msgstr ""
+"Parola %(when)s tarihinde talep üzerine silinmiş bir adrese gönderilen bağlantıyla belirlendi; bu"
+" adres artık bu hesabın adresi değil."
 
 msgid "Past the limit"
 msgstr "Sınırın ötesinde"
@@ -11022,6 +11225,25 @@ msgstr "Ham veri saklama süresi (gün)"
 msgid "Read"
 msgstr "Görüntüle"
 
+msgid ""
+"Read also shows and exports the farm figures a report is computed from (stock and biomass, feed "
+"given, slaughter and harvest plans, smolt, cleaner fish, sea-lice counts and treatments with "
+"their medicines, health events with diagnosis and deaths, escapes, sea temperature) to a person "
+"without Read on the farm areas they come from."
+msgstr ""
+"Görüntüle, bir raporun hesaplandığı çiftlik rakamlarını da (stok ve biyokütle, verilen yem, kesim"
+" ve hasat planları, smolt, temizleyici balık, deniz biti sayımları ve ilaçlarıyla tedaviler, tanı"
+" ve ölümleriyle sağlık olayları, kaçışlar, deniz suyu sıcaklığı) geldikleri çiftlik alanlarında "
+"Görüntüle yetkisi olmayan kişiye gösterir ve dışa aktarır."
+
+msgid ""
+"Read also shows the farm figures of an experiment’s own tanks (batches, fish, biomass, survival, "
+"feed conversion) to a person without Read on the farm areas they come from."
+msgstr ""
+"Görüntüle, bir deneyin kendi tanklarının çiftlik rakamlarını da (partiler, balık, biyokütle, "
+"hayatta kalma, yem dönüşümü) geldikleri çiftlik alanlarında Görüntüle yetkisi olmayan kişiye "
+"gösterir."
+
 #, python-format
 msgid ""
 "Read from the database itself and matched with the Django model <code>%(model)s</code> of the "
@@ -11047,6 +11269,9 @@ msgstr "Neden"
 
 msgid "Reason for cancelling"
 msgstr "İptal nedeni"
+
+msgid "Reason for cancelling, kept when the task was reopened"
+msgstr "İptal nedeni, görev yeniden açıldığında korundu"
 
 msgid "Reason for placing by hand"
 msgstr "Elle yerleştirme gerekçesi"
@@ -11494,8 +11719,14 @@ msgstr "Rol"
 msgid "Role name"
 msgstr "Rol adı"
 
+msgid "Role or phone"
+msgstr "Rol veya telefon"
+
 msgid "Roles"
 msgstr "Roller"
+
+msgid "Roles made private with a phone they could not be told apart from"
+msgstr "Ayırt edilemediği bir telefonla birlikte özel yapılan roller"
 
 msgid "Roles: a name and the permissions it allows."
 msgstr "Roller: bir ad ve izin verdiği izinler."
@@ -11708,6 +11939,9 @@ msgstr "Birimleri kaydet"
 
 msgid "Save withdrawal"
 msgstr "Bekleme süresini kaydet"
+
+msgid "Say after how many hours an open clock-in counts as a forgotten clock-out."
+msgstr "Açık bir girişin kaç saat sonra unutulmuş çıkış sayılacağını girin."
 
 msgid "Say from which day the change counts."
 msgstr "Değişikliğin hangi günden itibaren geçerli olduğunu belirtin."
@@ -12091,6 +12325,12 @@ msgstr "Yarı otomatik yemleme makinesi"
 msgid "Send"
 msgstr "Gönder"
 
+msgid "Send invitation"
+msgstr "Davet gönder"
+
+msgid "Send invitation again"
+msgstr "Daveti yeniden gönder"
+
 msgid "Send reset link"
 msgstr "Sıfırlama bağlantısı gönder"
 
@@ -12135,6 +12375,9 @@ msgstr "Gönderildi"
 
 msgid "Sent at"
 msgstr "Gönderilme zamanı"
+
+msgid "Sent to"
+msgstr "Gönderilen adres"
 
 msgid ""
 "Separated by spaces. A temperature between two columns is read in between them; outside the first"
@@ -13068,6 +13311,9 @@ msgstr "İlacın varsa ruhsat (MT) numarası."
 msgid "The abstract or summary, as the document gives it."
 msgstr "Belgenin verdiği haliyle özet."
 
+msgid "The account changed before the mail was sent."
+msgstr "E-posta gönderilmeden önce hesap değişti."
+
 msgid ""
 "The account the person signs in with. Their name is then the account’s; leave it empty for "
 "someone who never signs in (a student, a visiting researcher)."
@@ -13087,6 +13333,9 @@ msgstr "Adres yanlış ya da gösterdiği kayıt silinmiş."
 
 msgid "The address lacks a key its protocol needs."
 msgstr "Adreste, protokolünün gerektirdiği bir anahtar eksik."
+
+msgid "The address of a mis-sent invitation"
+msgstr "Yanlış gönderilen bir davetin adresi"
 
 #, python-format
 msgid ""
@@ -13249,8 +13498,14 @@ msgstr "Her değer doğru olduğunda çizelgeler ve değerler yeniden görünür
 msgid "The checklist has been started: its lines can no longer be changed. Add a note instead."
 msgstr "Kontrol listesine başlandı: satırları artık değiştirilemez. Bunun yerine bir not ekleyin."
 
+msgid "The clock-in cannot be later than now."
+msgstr "Giriş, şu andan sonra olamaz."
+
 msgid "The clock-ins of your team in these days appear here."
 msgstr "Ekibinizin bu günlerdeki girişleri burada görünür."
+
+msgid "The clock-out cannot be later than now: give the time the person really left."
+msgstr "Çıkış, şu andan sonra olamaz: kişinin gerçekten ayrıldığı saati girin."
 
 msgid ""
 "The companies the farm buys from: feed, live fish and eggs, equipment, medicines and services "
@@ -13665,8 +13920,24 @@ msgstr ""
 msgid "The ingest service’s own user name at the broker."
 msgstr "Veri alım servisinin broker’daki kendi kullanıcı adı."
 
-msgid "The invitation to set a password is sent here."
-msgstr "Parola belirleme daveti buraya gönderilir."
+#, python-format
+msgid "The invitation to %(address)s is being sent (%(when)s)."
+msgstr "%(address)s adresine davet gönderiliyor (%(when)s)."
+
+#, python-format
+msgid "The invitation to %(address)s is being sent: this person’s row says whether it went out."
+msgstr "%(address)s adresine davet gönderiliyor: gönderilip gönderilmediğini bu kişinin satırı gösterir."
+
+#, python-format
+msgid "The invitation to %(address)s was not sent: %(reason)s"
+msgstr "%(address)s adresine davet gönderilemedi: %(reason)s"
+
+msgid ""
+"The invitation to set a password is sent here. Without an address the person cannot be invited, "
+"and cannot sign in until one is added."
+msgstr ""
+"Parola belirleme daveti buraya gönderilir. Adres olmadan kişi davet edilemez ve bir adres "
+"eklenene kadar giriş yapamaz."
 
 msgid "The item's day-by-day book"
 msgstr "Kalemin günlük kaydı"
@@ -13779,6 +14050,12 @@ msgstr "%(factor)s faktörünün %(label)s düzeyinin iki farklı değeri var."
 msgid "The link was already used or has expired. Request a new one."
 msgstr "Bağlantı daha önce kullanılmış veya süresi dolmuş. Yeni bir tane isteyin."
 
+#, python-format
+msgid "The link works once and expires after %(hours)s hour."
+msgid_plural "The link works once and expires after %(hours)s hours."
+msgstr[0] "Bağlantı bir kez kullanılabilir ve %(hours)s saat sonra geçerliliğini yitirir."
+msgstr[1] "Bağlantı bir kez kullanılabilir ve %(hours)s saat sonra geçerliliğini yitirir."
+
 msgid "The live sensor values could not be read: the values below come from the water samples only."
 msgstr "Canlı sensör değerleri okunamadı: aşağıdaki değerler yalnızca su numunelerinden gelir."
 
@@ -13800,6 +14077,12 @@ msgstr "Elipsin en uzun çapı."
 
 msgid "The lower weight must be below the upper weight."
 msgstr "Alt ağırlık üst ağırlıktan küçük olmalı."
+
+msgid "The mail server did not finish in time: the mail may have gone out all the same."
+msgstr "E-posta sunucusu zamanında bitirmedi: e-posta yine de gitmiş olabilir."
+
+msgid "The mail server took no message."
+msgstr "E-posta sunucusu iletiyi almadı."
 
 msgid "The medicines and vaccines the farm uses, with their withdrawal before harvest."
 msgstr "Çiftliğin kullandığı ilaçlar ve aşılar, hasattan önceki bekleme süreleriyle."
@@ -14116,6 +14399,9 @@ msgstr ""
 "Protokol atanmış, bu yüzden tablosu kilitli: yemlediği günlerin rasyonları ondan okunur. "
 "Değiştirmek için protokolü kopyalayın, kopyayı değiştirin ve bir tarihten itibaren atayın."
 
+msgid "The public address of this server is not set (PUBLIC_BASE_URL): the link would lead nowhere."
+msgstr "Bu sunucunun genel adresi ayarlanmamış (PUBLIC_BASE_URL): bağlantı hiçbir yere götürmezdi."
+
 msgid ""
 "The question is in the register of questions for the authority. Recording the filing is refused "
 "until you confirm it, and your confirmation is logged."
@@ -14272,12 +14558,23 @@ msgstr "Gizli anahtar değiştirildi."
 msgid "The seed is a whole number from 0 to %(top)d."
 msgstr "Tohum, 0 ile %(top)d arasında bir tam sayıdır."
 
+msgid "The sending was interrupted: the server stopped, or the mail server never answered."
+msgstr "Gönderim yarıda kesildi: sunucu durdu ya da e-posta sunucusu hiç yanıt vermedi."
+
 msgid "The sensor rule no longer holds"
 msgstr "Sensör kuralı artık geçerli değil"
 
 #, python-format
 msgid "The sensors at %(place)s: those there now first, then those there before."
 msgstr "%(place)s yerindeki sensörler: önce şu an orada olanlar, sonra daha önce orada olanlar."
+
+#, python-format
+msgid ""
+"The shift %(shift)s and the %(window)s minutes a person may clock in before it are longer than "
+"%(hours)s hours: a person on it would count as forgotten before it ends."
+msgstr ""
+"%(shift)s vardiyası ve öncesinde giriş yapılabilen %(window)s dakika, %(hours)s saatten uzun: bu "
+"vardiyadaki kişi vardiya bitmeden unutulmuş sayılırdı."
 
 msgid ""
 "The shift patterns of the roster: a start and an end on the wall clock of the site, a break and a"
@@ -14353,6 +14650,14 @@ msgstr "Bölgedeki durum"
 
 msgid "The situation now"
 msgstr "Şimdiki durum"
+
+#, python-format
+msgid ""
+"The size limit was set to %(limit)s×, the default for a production species. Empty it on the "
+"Stocking tab if this species needs no check."
+msgstr ""
+"Boy sınırı, üretim türü için varsayılan olan %(limit)s× olarak ayarlandı. Bu tür denetim "
+"gerektirmiyorsa Stoklama sekmesinde boşaltın."
 
 msgid ""
 "The slaughterhouses harvested fish go to, with Mattilsynet’s approval number: every harvest names"
@@ -15037,6 +15342,15 @@ msgstr "Bu rapor zaten kapatıldı."
 msgid "This sample is already voided."
 msgstr "Bu numune zaten iptal edildi."
 
+#, python-format
+msgid ""
+"This shift and the %(window)s minutes a person may clock in before it are longer than the "
+"%(hours)s hours after which a clock-in counts as forgotten (Scheduling settings): raise that "
+"limit first."
+msgstr ""
+"Bu vardiya ve öncesinde giriş yapılabilen %(window)s dakika, bir girişin unutulmuş sayıldığı "
+"%(hours)s saatten uzun (Planlama ayarları): önce o sınırı yükseltin."
+
 msgid "This shift overlaps another shift of the person."
 msgstr "Bu vardiya, kişinin başka bir vardiyasıyla çakışıyor."
 
@@ -15237,6 +15551,9 @@ msgstr "Bugünkü rasyon"
 
 msgid "Tone"
 msgstr "Ton"
+
+msgid "Too many mails are waiting to be sent."
+msgstr "Gönderilmeyi bekleyen çok fazla e-posta var."
 
 msgid "Topic"
 msgstr "Konu"
@@ -15594,6 +15911,9 @@ msgstr "Değerlerin kaynağı"
 
 msgid "Values in the open run"
 msgstr "Açık serideki değerler"
+
+msgid "Values made private"
+msgstr "Özel yapılan değerler"
 
 msgid "Values the chart is drawn from"
 msgstr "Grafiğin çizildiği değerler"
@@ -16466,6 +16786,19 @@ msgstr "Bu sayfayı açamazsınız"
 msgid "You stop seeing its messages. Your messages stay, with your name; an owner can add you again."
 msgstr "Artık mesajlarını görmezsiniz. Mesajlarınız adınızla kalır; bir sahip sizi yeniden ekleyebilir."
 
+#, python-format
+msgid ""
+"Your clock-in of %(since)s was never closed: it has been open more than %(hours)s hours and "
+"counts as a forgotten clock-out. Ask your lead, or whoever keeps attendance for you, to close it "
+"on the Attendance page with the time you really left; then you can clock in again."
+msgstr ""
+"%(since)s tarihli girişiniz hiç kapatılmadı: %(hours)s saatten uzun süredir açık ve unutulmuş "
+"çıkış sayılıyor. Sorumlunuzdan veya yoklamanızı tutan kişiden, Yoklama sayfasında gerçekten "
+"ayrıldığınız saatle kapatmasını isteyin; ardından yeniden giriş yapabilirsiniz."
+
+msgid "Your farm console account: set your password"
+msgstr "Çiftlik konsolu hesabınız: parolanızı belirleyin"
+
 msgid "Your new password is saved. Use it the next time you sign in."
 msgstr "Yeni parolanız kaydedildi. Bir sonraki girişinizde kullanın."
 
@@ -16480,6 +16813,10 @@ msgstr "Rolünüz bu sayfayı kapsamıyor. Gerekirse bir yöneticiye sorun."
 
 msgid "Your role opens none of the production figures yet."
 msgstr "Rolünüz henüz üretim rakamlarından hiçbirini açmıyor."
+
+#, python-format
+msgid "Your username is %(username)s."
+msgstr "Kullanıcı adınız: %(username)s."
 
 msgid "a correction"
 msgstr "bir düzeltme"
@@ -16501,6 +16838,9 @@ msgstr "salmonid bulunan bir deniz lokasyonu (yükümlülük balığı izler, ü
 
 msgid "a site with cleaner-fish broodstock"
 msgstr "temizleyici balık damızlığı olan bir lokasyon"
+
+msgid "activity log"
+msgstr "etkinlik günlüğü"
 
 msgid "after the count"
 msgstr "sayımdan sonra"

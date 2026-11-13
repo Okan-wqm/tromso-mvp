@@ -12,7 +12,7 @@ from .. import read, scope
 from ..models import Employee, OfficeDepartment, Posting
 from ..units import token
 from .helpers import user
-from .helpers_people import LEAD_PERMS, PeopleTestCase, TOP, employee, place
+from .helpers_people import PeopleTestCase, TOP, employee, place
 
 DAY = date(2026, 3, 2)
 

@@ -37,4 +37,14 @@ SCREENS = {
         forms=(UserForm,),
         columns={'user': system('the person the profile belongs to')},
     ),
+    'AccountMail': Screen(
+        create=(UserResource, 'core:user_invite', 'password_reset'),
+        edit=no('a row is what became of one mail'),
+        delete=no('kept: the users tab shows what became of the last invitation, and the reset form counts an '
+                  'account\'s mails of the last hour'),
+        read=(UserResource,),
+        note='Written when a mail is sent: creating a user and "Send invitation" on the users tab send an invitation, '
+             '"Forgot your password?" a reset. Never the link or its token.',
+        columns={'*': system('written by core.accountmail when the mail is sent')},
+    ),
 }

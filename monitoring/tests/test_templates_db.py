@@ -12,7 +12,7 @@ from django.test import TestCase
 from django.utils import translation
 
 from core import softdelete
-from farm.models import Species, System, Tank
+from farm.models import Species, System
 from farm.tests.helpers import make_species
 from farm.tests.test_stock import make_unit
 from farm.models import ProductionDepartment, Site

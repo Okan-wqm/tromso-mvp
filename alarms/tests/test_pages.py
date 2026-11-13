@@ -14,7 +14,7 @@ from sensors import bindings
 from sensors.models import AlarmEvent, AlarmRule
 from sensors.tests import make_channel, make_connection, make_device, make_format
 
-from ..models import Acknowledgement, Alarm, RecipientRule
+from ..models import Acknowledgement, RecipientRule
 from . import AlarmsCase
 
 READER = ('view_alarm',)

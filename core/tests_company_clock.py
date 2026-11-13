@@ -10,17 +10,32 @@ the code, so a new fallback to the server's zone cannot slip by. Refused outside
 - a `__date` lookup on a moment (`created_at__date`, `clock_in__date`): the same, in a filter. A key's part before
   `__date` names a moment when it ends with `_at`, or is one of MOMENT_FIELDS; a field called `date` (`operation__date`)
   is a date already and passes.
-The scan is by name: it catches the usual calls, not every spelling (core/tests_date_inputs.py says the same of dates)."""
+The scan is by name: it catches the usual calls, not every spelling (core/tests_date_inputs.py says the same of dates).
+
+The tests are read too, for the day alone: a test that asks the server's clock for today (`localdate()` without a zone,
+`date.today()`, `datetime.today()`, `datetime.now()` without a zone, `now().date()`) while the code reads the company's
+or a site's passes all day and fails in the hours when the two days differ (README, Tests; core/tests_day_boundary.py
+runs the tests that count days there). A wall time of the server's zone (`localtime(x)`, `make_aware(x)`) is left to the
+tests: their fixtures' sites read UTC and say so."""
 import ast
 from pathlib import Path
 
 from django.conf import settings
 from django.test import SimpleTestCase
 
-APPS = ('config', 'core', 'experiments', 'farm', 'hr', 'inventory', 'knowledge', 'messaging', 'monitoring', 'reports',
-        'sensors', 'tasks')
+APPS = ('alarms', 'config', 'core', 'experiments', 'farm', 'hr', 'inventory', 'knowledge', 'messaging', 'monitoring',
+        'reports', 'sensors', 'tasks')
 # A benchmark that writes made-up readings: no farm's day is read.
 ALLOWED = {('sensors/management/commands/bench_sensors.py', 'get_default_timezone')}
+# The server's day read in a test, each with why it is the server's that is meant.
+TEST_DAY_READS = ('localdate() without a zone', 'date.today()', 'datetime.today()', 'datetime.now()',
+                  'now().date(): the UTC day')
+ALLOWED_IN_TESTS = {
+    # Django's token generator reads its own naive clock (PasswordResetTokenGenerator._now): the test moves that one.
+    ('core/tests_account_mail.py', 'datetime.now()'),
+    # the day migration farm/0032 itself wrote into the notes: the server's, by the migration's own localdate().
+    ('farm/tests/test_migration_altitude.py', 'localdate() without a zone'),
+}
 MOMENT_FIELDS = {'clock_in', 'clock_out', 'valid_from', 'valid_to', 'ts', 'time', 'moment', 'opened_at', 'closed_at'}
 TRUNC = {'TruncDate', 'TruncDay', 'TruncWeek', 'TruncMonth', 'TruncYear', 'TruncQuarter', 'TruncHour', 'Trunc'}
 
@@ -102,6 +117,23 @@ def server_clock_reads():
     return found
 
 
+def is_test(relative, name):
+    return '/tests' in relative or name.startswith('test')
+
+
+def server_day_reads_in_tests():
+    found = []
+    for app in APPS:
+        for path in Path(settings.BASE_DIR, app).rglob('*.py'):
+            relative = path.relative_to(settings.BASE_DIR).as_posix()
+            if not is_test(relative, path.name):
+                continue
+            for line, what, _name in server_clock_reads_in(ast.parse(path.read_text(encoding='utf-8'))):
+                if what in TEST_DAY_READS and (relative, what) not in ALLOWED_IN_TESTS:
+                    found.append(f'{relative}:{line} {what}')
+    return found
+
+
 # What the guard must see (the third cross-review's bypass probe, farm/zz_bypass.py): each line one way to read UTC's day.
 BYPASS = '''
 from datetime import date, datetime
@@ -125,6 +157,16 @@ class CompanyClockGuardTests(SimpleTestCase):
 
     def test_no_code_reads_the_servers_clock_as_a_farms(self):
         self.assertEqual(server_clock_reads(), [])
+
+    def test_no_test_asks_the_servers_clock_for_today(self):
+        self.assertEqual(server_day_reads_in_tests(), [])
+        for relative, _what in ALLOWED_IN_TESTS:                    # the list names files that are there
+            self.assertTrue(Path(settings.BASE_DIR, relative).is_file(), relative)
+
+    def test_every_app_is_read(self):
+        from django.apps import apps
+        ours = {config.name for config in apps.get_app_configs() if Path(settings.BASE_DIR, config.name).is_dir()}
+        self.assertEqual(ours - set(APPS), set())
 
 
 def fold_checks_outside_core_dates():

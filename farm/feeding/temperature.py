@@ -1,7 +1,8 @@
 """The water temperature a ration is read at, picked by the water's one rule (owner rule A9, `farm.water.read.choose`)
 from the places a unit's water is read from (`water_sources`, the points of the unit's own water, then its system's
 loop, then the loops of the systems that system is nested in) and the lookup in them, `Series`, which takes the sensors
-too (a sensor value counts as fresh for its channel's three heartbeats). The ration only ever sees a Temperature.
+too (a sensor value counts as fresh for its channel's own `fresh_s`: its heartbeat times its fresh heartbeats, 3 unless
+the farm set another). The ration only ever sees a Temperature.
 
 - The candidates are the values with a temperature at the unit's own-water points (its sensors and its samples), at
   the loop point of its system and of that system's parents (the sensors on the loop point and on the system, and the

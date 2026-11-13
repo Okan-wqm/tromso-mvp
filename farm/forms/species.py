@@ -28,9 +28,18 @@ SPECIES_FORM_TABS = [
     ]),
     ('status', _('Status and notes'), ['status', 'notes']),
 ]
-# What a new species is offered as its size limit (Species.max_weight_ratio): the owner's default, as migration 0034
-# gave the species already there. An offer on the form, never a value the code stores by itself.
+# What a new species gets as its size limit (Species.max_weight_ratio) when the box is left empty: the owner's default,
+# as migration 0034 gave the species already there, and none for a cleaner fish (the owner, 2026-11-10: lumpfish and
+# wrasses are topped up with fish of other sizes; migration 0038 did the same for the cleaner species still at the
+# default). The box is not filled in beforehand: a value standing in it could not be told from a typed one (review
+# R11), so an empty box on a new species means "the offer of its kind", said after saving, and whatever is typed is
+# kept, a 2 for a cleaner fish too.
 OFFERED_WEIGHT_RATIO = Decimal(2)
+
+
+def offered_weight_ratio(cleaner_fish_type):
+    """The size limit a new species is given when none is typed: the default, and none for a cleaner fish."""
+    return None if cleaner_fish_type else OFFERED_WEIGHT_RATIO
 
 
 class SpeciesForm(CodedFormMixin, TabbedForm):
@@ -81,7 +90,12 @@ class SpeciesForm(CodedFormMixin, TabbedForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance._state.adding:
-            self.fields['max_weight_ratio'].initial = OFFERED_WEIGHT_RATIO
+            self.fields['max_weight_ratio'].help_text = _(
+                'How many times heavier, on average, one batch of this species may be than another in the same unit, '
+                'e.g. 2: fish of 100 g and of 200 g may share a unit. A stocking, transfer or grading beyond it asks '
+                'for an acknowledgement first. Left empty on a new species: 2 for a production species, no check for a '
+                'cleaner fish (its cages are topped up with fish of other sizes). To have no check on a production '
+                'species, empty it after saving.')
         else:
             # The genus is not a field of its own: it is the first word of the scientific name.
             self.tab_help['classification'] = gettext('Genus: %(genus)s (the first word of the scientific name).') % {
@@ -99,6 +113,11 @@ class SpeciesForm(CodedFormMixin, TabbedForm):
         # The stored record still has its stored values here: the form fills it after clean().
         if name and (self.instance._state.adding or name != self.instance.scientific_name):
             self.instance.catalogue_filled = self._fill_from_catalogue(cleaned)
+        # A new species whose box was left empty gets the offer of its kind, which is known only now (the type may come
+        # from the catalogue): 2, or no check for a cleaner fish. Whatever was typed is kept; an edit is never touched.
+        if self.instance._state.adding and 'max_weight_ratio' in cleaned and cleaned['max_weight_ratio'] is None:
+            cleaned['max_weight_ratio'] = offered_weight_ratio(cleaned.get('cleaner_fish_type'))
+            self.instance.size_limit_offered = True
         return cleaned
 
     def _fill_from_catalogue(self, cleaned):

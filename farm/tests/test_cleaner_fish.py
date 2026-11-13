@@ -93,7 +93,7 @@ class CleanerFishTestCase(FeedingTestCase):
 
     def setUp(self):
         super().setUp()
-        self.fjord = Site.objects.create(name='Fjord', code='FJ', type='sea_cage', latitude=Decimal('60.1'),
+        self.fjord = Site.objects.create(name='Fjord', code='FJ', type='sea_cage', timezone='UTC', latitude=Decimal('60.1'),
                                          longitude=Decimal('5.1'))
         cages = ProductionDepartment.objects.create(site=self.fjord, name='Cages', code='CG')
         self.cage, self.cage2 = make_unit('C-01', cages), make_unit('C-02', cages)

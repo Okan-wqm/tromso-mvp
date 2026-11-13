@@ -1,19 +1,18 @@
 import re
 from datetime import date, datetime, time, timezone as utc
-from decimal import Decimal
 
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
-from farm.models import ProductionDepartment, Site
+from farm.models import ProductionDepartment
 from farm.tests.helpers import leave_without_site
 
 from .. import read
 from ..models import LeaveType, LeaveRequest, SchedulingSettings, Shift, ShiftAssignment
 from ..units import token
 from .helpers import user
-from .helpers_people import PeopleTestCase, TOP, employee, place
+from .helpers_people import PeopleTestCase, employee, place
 
 MONDAY = date(2026, 3, 2)
 VIEW = ('view_employee', 'view_shiftassignment', 'view_officedepartment')

@@ -7,7 +7,7 @@ rest shorter than the minimum, measured between the real instants (so across a w
 only: more hours than the standard week, more days in a row than the maximum, work on a holiday. The statutory figures
 are not constants here: they are settings the owner confirms (hr.models.SchedulingSettings)."""
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, timedelta, timezone
 
 from django.utils.translation import gettext, gettext_noop
 
@@ -114,7 +114,23 @@ def _runs(days, longest, wanted):
 # ---- who is where: a person's state on a day, from the plan, the punches and the leave ------------------------------
 UPCOMING, PRESENT, LATE, NOT_IN, ABSENT, ON_LEAVE, DONE = ('upcoming', 'present', 'late', 'not_in', 'absent', 'on_leave',
                                                            'done')
-STATES = (UPCOMING, PRESENT, LATE, NOT_IN, ABSENT, ON_LEAVE, DONE)
+FORGOTTEN = 'forgotten'          # a clock-in left open past the limit: nobody knows whether the person is there
+STATES = (UPCOMING, PRESENT, LATE, NOT_IN, ABSENT, ON_LEAVE, DONE, FORGOTTEN)
+
+
+def forgotten_before(now, forgotten_after_hours):
+    """The instant before which an open clock-in counts as a forgotten clock-out at `now`: the limit is HR's setting
+    (SchedulingSettings.forgotten_after_hours), never a figure here. Counted in UTC: hours taken off a moment on a
+    site's own clock would be an hour out on the night the clocks change."""
+    return now.astimezone(timezone.utc) - timedelta(hours=forgotten_after_hours)    # elapsed hours, in any zone
+
+
+def forgotten(clock_in, clock_out, now, forgotten_after_hours):
+    """Whether a stretch is a forgotten clock-out (the owner, F-095): still open, and open longer than the limit. The one
+    rule for the board, the emergency count, the person's own clock-in and clock-out and the Attendance page. Nobody
+    knows when the person left, so nothing may read it as presence or as worked time, and nothing closes it but a
+    person who knows the real time (a lead's correction on the Attendance page)."""
+    return clock_out is None and clock_in < forgotten_before(now, forgotten_after_hours)
 
 
 @dataclass(frozen=True)
@@ -127,7 +143,7 @@ class Standing:
     late_minutes: int = 0
 
 
-def status(span, punches, on_leave, now, grace_minutes, absent_after_minutes, window_minutes):
+def status(span, punches, on_leave, now, grace_minutes, absent_after_minutes, window_minutes, forgotten_after_hours):
     """The state of one person: nothing stored, all read. `span` is the planned (start, end) as instants, or None;
     `punches` are (clock_in, clock_out or None) of the person, which count for the shift when the clock-in falls from the
     punch window before the start up to the end (all of them when nothing is planned: an unplanned presence is still a
@@ -136,7 +152,13 @@ def status(span, punches, on_leave, now, grace_minutes, absent_after_minutes, wi
     later of the grace and the absent-after minutes, and absent after that. On approved leave a person who did not clock in is
     on leave; one who did is present (or done) all the same: the board is the headcount on site, in an emergency too.
     An open clock-in (no clock-out yet) counts whatever the window: the person is on site now, called in hours before the
-    shift or still there after it; only the shift's own clock-ins (inside the window) say whether they were late."""
+    shift or still there after it; only the shift's own clock-ins (inside the window) say whether they were late.
+    Until it is open longer than `forgotten_after_hours`: then it is a forgotten clock-out (`forgotten`), a state of its
+    own whatever the plan or the leave, with the clock-in it has been open since. Not present (nobody knows), not done
+    (no time to say), and not absent either: the person may be back at work, unable to clock in beside it."""
+    left_open = next((punch for punch in punches if forgotten(punch[0], punch[1], now, forgotten_after_hours)), None)
+    if left_open is not None:
+        return Standing(FORGOTTEN, left_open[0])
     counted = inside = list(punches)
     if span is not None:
         start, end = span

@@ -185,6 +185,12 @@ class AuditLog(models.Model):
         RESTORE = 'restore', _('Restored')
         # An operation that stops counting, with its reason (farm stock operations): history keeps it.
         VOID = 'void', _('Voided')
+        # A person sent their invitation, at first and each time again (core.resources.UserResource.invite): an
+        # event with what became of it, not a change of a value.
+        INVITE = 'invite', _('Invited')
+        # A person set their password through the link of an invitation or a reset mail (core.views.SetPasswordView):
+        # by them, with the address the link went to.
+        PASSWORD = 'password', _('Password set')
 
     # Defined outside the class so that its Meta can name their values in the constraint.
     Severity = AuditSeverity
@@ -204,7 +210,8 @@ class AuditLog(models.Model):
     entity_label = models.CharField(max_length=255)
     # {field label: [old, new]}; on create old is None, on delete new is None. Labels are msgids; a value
     # is None, a person's text as written, {'msgid': ...} for an enumeration, or a list of those for several
-    # choices (see core.audit).
+    # choices, a private value ({'msgid': 'Private text', 'rev': digest, 'of': what it is}) or a list of lists (a
+    # contact list: the parts of each contact) (see core.audit).
     changes = models.JSONField(default=dict, blank=True)
     severity = models.CharField(max_length=10, choices=Severity.choices, default=Severity.NORMAL)
 
@@ -233,13 +240,17 @@ class AuditLog(models.Model):
         return gettext(self.entity_type)
 
     def shown_changes(self):
-        """[(label, old, new)] in the active language. The stored rows stay in English."""
+        """[(label, old, new)] in the active language. The stored rows stay in English. A private value is shown as
+        its words ("Private text", "Email: Private text" when it says what it is), never with its digest: this is the
+        one place a stored value becomes text on a page (the activity log and a record's History tab), so no page
+        prints a digest. A list of lists (a contact list: the parts of each contact) is joined by "; "."""
         def shown(value):
             if isinstance(value, list):
-                return ', '.join(shown(item) for item in value)
+                nested = bool(value) and all(isinstance(item, list) for item in value)
+                return ('; ' if nested else ', ').join(shown(item) for item in value)
             if isinstance(value, dict):
-                msgid = value['msgid']
-                return gettext(msgid)
+                msgid, what = value['msgid'], value.get('of')      # by name: the catalog extraction reads a literal here
+                return f'{gettext(what)}: {gettext(msgid)}' if what else gettext(msgid)
             return value
         return [(gettext(label), shown(old), shown(new)) for label, (old, new) in self.changes.items()]
 
@@ -257,6 +268,53 @@ class Profile(models.Model):
 
     def __str__(self):
         return str(self.user)
+
+
+class AccountMail(models.Model):
+    """The account e-mails the platform sends: the invitation a new person gets, each time the admin sends it again,
+    and every password reset. One row per mail, and the outbox core.accountmail works from: what causes a mail writes
+    its row as waiting, in its own transaction; the mail is sent after that has committed, and the row then says when
+    it went out (`sent_at`) or why it did not (`error`). A row with neither is waiting, or never finished. Who it is
+    for, the address, who asked for it; never the link or its token. The users tab shows what became of a person's
+    last invitation, and the reset form counts an account's mails of the last hour."""
+
+    class Kind(models.TextChoices):
+        INVITATION = 'invitation', _('Invitation')
+        RESET = 'reset', _('Password reset')
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='account_mails')
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    # The account's address when the mail was written: the link holds it, so a later change of address ends the link.
+    address = models.EmailField()
+    # The admin who invited the person; empty for a reset, which the person asks for themselves (signed out).
+    requested_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+                                     related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+    # The server process that queued the mail (core.accountmail.WORKER): its queue is in that process's memory, so
+    # only it can send the mail. While the mail waits, the owner keeps saying that it still has it (`alive_at`); a
+    # waiting mail whose owner has stopped saying so is closed as interrupted (accountmail.sweep).
+    owner = models.CharField(max_length=64, blank=True)
+    alive_at = models.DateTimeField(default=timezone.now)
+    # When the mail server took it; empty while the mail waits to be sent, and for one that did not go out.
+    sent_at = models.DateTimeField(null=True, blank=True)
+    # Why the mail did not go out (the mail server's words, or the platform's own); empty otherwise.
+    error = models.CharField(max_length=500, blank=True)
+
+    class Meta:
+        db_table = 'account_mails'
+        ordering = ['-created_at', '-id']
+        indexes = [
+            models.Index(fields=['user', 'kind', '-created_at'], name='account_mails_recent_idx'),
+            # the few that wait, by when their owner last had them (accountmail.sweep, on every look at the users tab)
+            models.Index(fields=['alive_at'], condition=models.Q(sent_at__isnull=True, error=''),
+                         name='account_mails_waiting_idx'),
+        ]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(kind__in=['invitation', 'reset']), name='chk_account_mails_kind'),
+        ]
+
+    def __str__(self):
+        return f'{self.get_kind_display()}: {self.address}'
 
 
 # The bounds of the platform owner's settings: the database holds them (PlatformSettings' checks) and the form says them.

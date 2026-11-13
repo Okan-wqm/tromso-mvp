@@ -13,8 +13,8 @@ from django.urls import reverse
 from core.audit import message
 from core.models import AuditLog, Profile
 
-from ..models import Batch, Species, StockOperation
-from ..stock import integrity, read, services
+from ..models import Batch, StockOperation
+from ..stock import integrity, services
 from .test_cleaner_fish import CleanerFishTestCase
 from .test_stock import DialogTests, StockTestCase, make_unit
 from farm import withdrawal_gate
@@ -170,7 +170,7 @@ class CleanerFishAreAnotherSpeciesTests(CleanerFishTestCase):
         self.stock(self.cage2, count=100, weight='4000', days_ago=4)       # big salmon alone
         self.stock(self.cage2, count=500, weight='20', days_ago=3, species=self.lump)   # 200 times lighter: no question
         errors = self.refused(self.stock, self.cage, count=500, weight='200', days_ago=3, species=self.lump)
-        self.assertIn(f'C-01 would hold Lumpfish (LUM) of very different sizes', errors['size_mix_ack'][0])
+        self.assertIn('C-01 would hold Lumpfish (LUM) of very different sizes', errors['size_mix_ack'][0])
         self.assertIn(f'at {stocked("200 g", self.day(3))} and {self.lump_batch.code} at {stocked("50.0 g", self.day(10))}, '
                       '4.00 times as heavy', errors['size_mix_ack'][0])
 

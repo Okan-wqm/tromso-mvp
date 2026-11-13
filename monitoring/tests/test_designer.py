@@ -10,7 +10,7 @@ from core.models import AuditLog, Profile
 from ..cards import builtin
 from ..models import CardTemplate
 from .golden import Tree
-from .test_template_pages import DESIGNER, LAYOUT, PagesCase
+from .test_template_pages import LAYOUT, PagesCase
 
 PREVIEW = reverse('monitoring:cardtemplate_preview')
 

@@ -20,7 +20,6 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext, gettext_lazy as _
 
 from farm.models.water_point import PointKind
-from farm.water import parameters
 
 from . import catalogue
 

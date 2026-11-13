@@ -1,0 +1,14 @@
+{% load i18n %}{% autoescape off %}{% blocktrans trimmed %}Hi {{ name }},{% endblocktrans %}
+
+{% if company %}{% blocktrans trimmed %}{{ inviter }} has created an account for you in the farm console of {{ company }}.{% endblocktrans %}{% else %}{% blocktrans trimmed %}{{ inviter }} has created an account for you in the farm console.{% endblocktrans %}{% endif %}
+{% blocktrans trimmed %}Your username is {{ username }}.{% endblocktrans %}
+
+{% trans "Open this link to set your password; then you can sign in:" %}
+{{ link }}
+
+{% blocktrans trimmed count hours=hours %}The link works once and expires after {{ hours }} hour.{% plural %}The link works once and expires after {{ hours }} hours.{% endblocktrans %}
+{% trans "If it has expired, ask for a new one here:" %}
+{{ reset_url }}
+
+{% trans "If you did not expect this email, you can ignore it." %}
+{% endautoescape %}

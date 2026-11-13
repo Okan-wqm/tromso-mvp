@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('farm', '0038_water_ionic_inputs'),
+        ('farm', '0039_water_ionic_inputs'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

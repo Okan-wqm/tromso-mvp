@@ -9,7 +9,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('farm', '0037_water_freshness'),
+        ('farm', '0038_cleaner_fish_no_size_check'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

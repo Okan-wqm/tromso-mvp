@@ -19,6 +19,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
 from core.forms import PasswordResetForm
+from core.views import SetPasswordView
 
 from . import views
 
@@ -28,6 +29,8 @@ urlpatterns = [
     # Reset links go to invited people too, who have no password yet (core.forms.PasswordResetForm).
     path('accounts/password_reset/', auth_views.PasswordResetView.as_view(form_class=PasswordResetForm),
          name='password_reset'),
+    # The link of an invitation or a reset mail: Django's page, in the language saved on the account it is for.
+    path('accounts/reset/<uidb64>/<token>/', SetPasswordView.as_view(), name='password_reset_confirm'),
     path('accounts/', include('django.contrib.auth.urls')),
     path('', include('farm.urls')),
     path('', include('knowledge.urls')),

@@ -5,7 +5,6 @@ from datetime import timedelta
 
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import Q
 from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.translation import gettext as _
@@ -16,7 +15,7 @@ from farm.models.site import zone_of
 from farm.stock.dates import site_today
 
 from . import clock, leave, read, rules, scope, units
-from .models import (AttendanceRecord, Employee, Holiday, LeaveRequest, Posting, SchedulingSettings,
+from .models import (AttendanceRecord, Employee, LeaveRequest, Posting, SchedulingSettings,
                      ShiftAssignment)
 from .models.leave import LeaveStatus
 
@@ -514,9 +513,31 @@ def _save_punch(user, record, created, before=None):
         audit.record_update(user, record, before, _punch_values(record), entity_type=audit.entity_type_of(AttendanceRecord))
 
 
+def open_stretch(employee):
+    """The person's open stretch (at most one: the table's exclusion constraint), or None."""
+    return AttendanceRecord.objects.filter(employee=employee, clock_out__isnull=True).select_related('employee').first()
+
+
+def forgotten_refusal(record, now=None):
+    """What a person is told when their open clock-in counts as a forgotten clock-out (rules.forgotten, HR's limit), or
+    None while it does not. They neither clock in (a second stretch cannot stand beside an open one) nor clock out (the
+    stretch would run up to now: hours nobody worked): whoever may correct their attendance closes it on the Attendance
+    page with the real time and a reason, and then they clock in again."""
+    hours = SchedulingSettings.get().forgotten_after_hours
+    if record is None or not rules.forgotten(record.clock_in, record.clock_out, now or timezone.now(), hours):
+        return None
+    _day, zone = read.local_day(record.employee, record.clock_in)
+    return ValidationError(
+        _('Your clock-in of %(since)s was never closed: it has been open more than %(hours)s hours and counts as a '
+          'forgotten clock-out. Ask your lead, or whoever keeps attendance for you, to close it on the Attendance page '
+          'with the time you really left; then you can clock in again.')
+        % {'since': date_format(timezone.localtime(record.clock_in, zone), 'DATETIME_FORMAT'), 'hours': hours})
+
+
 def clock_in(user):
     """The person clocks in at the server's time (never the browser's). Needs Read on Attendance and an employee row of
-    one's own; refused while a punch is open (the database refuses a second open one as well)."""
+    one's own; refused while a punch is open (the database refuses a second open one as well), with the way forward when
+    that punch is a forgotten clock-out (`forgotten_refusal`)."""
     if not user.has_perm('hr.view_attendancerecord'):
         raise PermissionDenied
     with transaction.atomic():
@@ -524,8 +545,9 @@ def clock_in(user):
         if employee is None:
             raise PermissionDenied
         employee = Employee.objects.select_for_update().get(pk=employee.pk)
-        if AttendanceRecord.objects.filter(employee=employee, clock_out__isnull=True).exists():
-            raise ValidationError(_('You are already clocked in.'))
+        still_open = open_stretch(employee)
+        if still_open is not None:
+            raise forgotten_refusal(still_open) or ValidationError(_('You are already clocked in.'))
         check_employed(employee, punch_day(employee, timezone.now()))
         record = AttendanceRecord(employee=employee, clock_in=timezone.now(), via=AttendanceRecord.Via.SELF,
                                   created_by=user, updated_by=user)
@@ -534,7 +556,8 @@ def clock_in(user):
 
 
 def clock_out(user):
-    """The person clocks out of their open punch at the server's time."""
+    """The person clocks out of their open punch at the server's time. Not out of a forgotten one (`forgotten_refusal`):
+    the time they left is not now."""
     if not user.has_perm('hr.view_attendancerecord'):
         raise PermissionDenied
     with transaction.atomic():
@@ -542,14 +565,32 @@ def clock_out(user):
         if employee is None:
             raise PermissionDenied
         employee = Employee.objects.select_for_update().get(pk=employee.pk)
-        record = AttendanceRecord.objects.filter(employee=employee, clock_out__isnull=True).first()
+        record = open_stretch(employee)
         if record is None:
             raise ValidationError(_('You are not clocked in.'))
+        refusal = forgotten_refusal(record)
+        if refusal is not None:
+            raise refusal
         before = _punch_values(record)
         record.clock_out = max(timezone.now(), record.clock_in + timedelta(seconds=1))
         record.updated_by, record.version = user, record.version + 1
         _save_punch(user, record, False, before)
         return record
+
+
+def check_times(clock_in_at, clock_out_at, now=None):
+    """The rule of a stretch's two times when a person types them, on the form and in the service: the clock-out after
+    the clock-in, and neither later than the server's now. A time typed by hand is a time that has been: a clock-out
+    ahead would close a stretch with hours nobody has worked yet, keep the person from clocking in and take them out
+    of the emergency count while the record says they are in (review R6). Raises a ValidationError by field."""
+    now = now or timezone.now()
+    if clock_out_at is not None and clock_out_at <= clock_in_at:
+        raise ValidationError({'clock_out': _('The person cannot clock out before they clocked in.')})
+    if clock_in_at > now:
+        raise ValidationError({'clock_in': _('The clock-in cannot be later than now.')})
+    if clock_out_at is not None and clock_out_at > now:
+        raise ValidationError({'clock_out': _('The clock-out cannot be later than now: give the time the person really '
+                                              'left.')})
 
 
 def enter_presence(user, employee, clock_in_at, clock_out_at, note):
@@ -561,8 +602,7 @@ def enter_presence(user, employee, clock_in_at, clock_out_at, note):
     note = (note or '').strip()
     if not note:
         raise ValidationError(_('Say why the time was entered by hand.'))
-    if clock_out_at is not None and clock_out_at <= clock_in_at:
-        raise ValidationError(_('The person cannot clock out before they clocked in.'))
+    check_times(clock_in_at, clock_out_at)
     with transaction.atomic():
         employee = lock_employed(employee, punch_day(employee, clock_in_at),
                                  punch_day(employee, clock_out_at) if clock_out_at is not None else None)

@@ -1,5 +1,5 @@
 {% extends "crud/list.html" %}
-{% load i18n dates %}
+{% load i18n dates accounts %}
 {% block search_placeholder %}{% trans "Search by name, username or email" %}{% endblock %}
 {% block empty_text %}{% trans "Add the first user; they get an email to set their password." %}{% endblock %}
 {% block items %}
@@ -8,7 +8,7 @@
     <thead>
       <tr>
         <th scope="col">{% trans "Username" %}</th><th scope="col">{% trans "Name" %}</th><th scope="col">{% trans "Email" %}</th><th scope="col">{% trans "Roles" %}</th>
-        <th scope="col">{% trans "Status" %}</th><th scope="col">{% trans "Last sign-in" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th>
+        <th scope="col">{% trans "Status" %}</th><th scope="col">{% trans "Invitation" %}</th><th scope="col">{% trans "Last sign-in" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th>
       </tr>
     </thead>
     <tbody>
@@ -22,6 +22,7 @@
         <td>{{ person.email }}</td>
         <td>{{ person.groups.all|join:", " }}</td>
         <td>{% if person.is_active %}<span class="badge badge-active">{% trans "Active" %}</span>{% else %}<span class="badge badge-inactive">{% trans "Inactive" %}</span>{% endif %}</td>
+        <td class="invitation">{% include "core/_invitation.html" with standing=person|invitation %}</td>
         <td class="nowrap">{% if person.last_login %}<time datetime="{{ person.last_login|date:'c' }}">{{ person.last_login|company_clock|date:"DATETIME_FORMAT" }}</time>{% else %}{% trans "Never" %}{% endif %}</td>
         <td class="row-actions">
           {% if can_change %}<a class="icon-button" href="{% url 'core:user_edit' person.pk %}" data-modal title="{% blocktrans with name=person.username %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=person.username %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}

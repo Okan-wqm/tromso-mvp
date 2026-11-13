@@ -12,7 +12,7 @@ from core.crud import DRAFT
 from core.models import AuditLog
 from farm.tests.helpers import make_species, role
 
-from ..models import Document, EntryStatus, KnowledgeEntry
+from ..models import Document, KnowledgeEntry
 from .helpers import KnowledgeTestCase, entry_data
 
 SOURCE = ('source_kind', 'document', 'pages', 'section', 'quote', 'citation', 'url', 'expert', 'observed_on')

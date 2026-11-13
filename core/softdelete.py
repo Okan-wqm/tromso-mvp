@@ -80,7 +80,7 @@ class DeletePlan:
         """[{'label': 'Production departments', 'link': 'site', 'records': [...]}]: kept, but losing their link."""
         groups = []
         for model, pairs in self._by_model(self.detach, record_of=lambda pair: pair[0]).items():
-            for link in dict.fromkeys(link for _, link in pairs):
+            for link in dict.fromkeys(link for _record, link in pairs):
                 groups.append({
                     'label': capfirst(model._meta.verbose_name_plural),
                     'link': str(model._meta.get_field(link).verbose_name).lower(),

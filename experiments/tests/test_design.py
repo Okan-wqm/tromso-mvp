@@ -14,7 +14,7 @@ from farm.models import Feed, FeedingProtocol, ProtocolAssignment, ProtocolBand,
 from .. import design, services
 from ..models import Experiment, ExperimentGroup, Factor, GroupLevel, Level, Replicate, ReplicateUnit
 from . import D, ExperimentTestCase
-from .test_pages import RESEARCHER, STUDENT, PageTestCase, person
+from .test_pages import STUDENT, PageTestCase, person
 
 
 def diet(name='Diet'):

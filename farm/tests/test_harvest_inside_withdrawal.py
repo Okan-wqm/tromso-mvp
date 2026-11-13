@@ -18,7 +18,7 @@ from core.models import AuditLog
 
 from .. import withdrawal_gate as gate
 from ..handling import check
-from ..health import services, withdrawal
+from ..health import services
 from ..health.withdrawal import WithdrawalChanged
 from ..models import Treatment, WithdrawalAcknowledgement
 from ..stock import read as stock_read, services as stock_services

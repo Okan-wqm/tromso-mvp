@@ -12,7 +12,7 @@ licences gated by `sensors-ingest/deny.toml`) and the water-chemistry core's (th
 CI's licence gate (`.github/workflows/ci.yml`, job security) installs these and fails on any licence not allowed here, as
 `pip-licenses` reads it: AGPL, SSPL, BUSL, a non-commercial licence or any new one fails until it is reviewed and added.
 Allowed: `Apache-2.0`, `Apache-2.0 OR BSD-3-Clause`, `BSD-2-Clause`, `BSD-3-Clause`, `BSD License`, `LGPL-3.0-only`,
-`MIT-0`, `PSF-2.0`.
+`MIT`, `MIT-0`, `PSF-2.0` (`MIT` since the linter below, ruff: the gate reads the test runner's packages too).
 
 | Package | Licence (as pip-licenses reads it) | What it is used for |
 |---|---|---|
@@ -60,6 +60,7 @@ Installed only in the image the tests run in (`scripts/test.sh`); never on a ser
 | Package | Licence | What it is used for |
 |---|---|---|
 | `tblib` | BSD-2-Clause | Lets the parallel test runner send a failing test's traceback from its worker to the main process |
+| `ruff` (0.17.4, pinned exactly) | MIT | The Python linter of the project checks (`CHECKS=1 scripts/test.sh`, `ruff.toml`): errors only, pyflakes `F` and `E9`; reads the files, changes none |
 
 ## CI-only tools (`.github/workflows/ci.yml`)
 

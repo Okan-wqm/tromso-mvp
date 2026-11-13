@@ -124,3 +124,6 @@
 
 /* The Crew block under a worker's own week (templates/hr/_crew.html) */
 .crew { margin-top: 1.75rem; }
+/* Today and Attendance: a clock-in left open past the limit of Scheduling settings (hr.rules.forgotten). Not a presence:
+   the badge says so in the warning tone, beside the words. */
+.badge-state-forgotten { background: var(--warn-tint); color: var(--warn-text); }

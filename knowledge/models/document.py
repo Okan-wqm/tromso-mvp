@@ -12,7 +12,6 @@ from django.db import models, transaction
 from django.db.models import F, Q
 from django.db.models.functions import Lower
 from django.template.defaultfilters import filesizeformat
-from django.utils import timezone
 from django.utils.text import Truncator
 from django.utils.translation import gettext, gettext_lazy as _, ngettext
 

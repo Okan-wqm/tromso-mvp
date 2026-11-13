@@ -86,7 +86,7 @@ from farm.templatetags.stock import number, times
 
 from . import read
 # The farm's dates are one rule for every daily record; services.local_today and the others stay here.
-from .dates import check_date, earliest, local_today, shown_date, site_earliest, sites_of  # noqa: F401
+from .dates import check_date, earliest, earliest_today, local_today, shown_date, site_earliest, sites_of  # noqa: F401
 from .fold import StockError, fold
 from .sizes import Lots, size_mixes
 
@@ -250,7 +250,7 @@ def _commit(user, kind, day, entries, *, notes='', ack=False, size_mix_ack=False
 
         # A stock operation moves fish into or out of a course's units and days, or voids them: through the withdrawal
         # guard (a harvest it records itself is asked about by its own handling check).
-        return withdrawal.guarded(user, set(batches), min(local_today(unit) for unit in units.values()),
+        return withdrawal.guarded(user, set(batches), earliest_today(units.values()),
                                   lambda: write(batches), seen=withdrawal_ack,
                                   exclude_operation=lambda operation: operation.pk)
 
@@ -993,5 +993,4 @@ def void(user, operation, reason, withdrawal_ack=None, ack=False, size_mix_ack=F
             return operation
 
         # The fish leave or come back to the units and days of a course: through the withdrawal guard.
-        return withdrawal.guarded(user, set(batches), min(local_today(unit) for unit in units.values()), write,
-                                  seen=withdrawal_ack)
+        return withdrawal.guarded(user, set(batches), earliest_today(units.values()), write, seen=withdrawal_ack)

@@ -1,6 +1,6 @@
 """The last layer: the checks the database cannot hold, the demonstration seed and the roles it makes, the migrations back and
 forth, and the query budgets of the pages that list people."""
-from datetime import date, datetime, timezone as utc
+from datetime import date
 from io import StringIO
 
 from django.contrib.auth import get_user_model
@@ -14,10 +14,9 @@ from django.urls import reverse
 
 from farm.models import ProductionDepartment, Site
 
-from .. import checks, read
+from .. import checks
 from ..models import (AttendanceRecord, Employee, LeaveRequest, LeaveType, OfficeDepartment, Posting, SchedulingSettings,
                       Shift, ShiftAssignment)
-from .helpers import user
 from .helpers_people import PeopleTestCase, TOP, employee, place
 
 

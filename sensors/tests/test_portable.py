@@ -571,7 +571,7 @@ class LockTests(TransactionTestCase):
         def run():
             try:
                 work()
-            except Exception as error:                         # noqa: BLE001: every failure is the test's
+            except Exception as error:                         # noqa: BLE001  every failure is the test's
                 errors.append(error)
             finally:
                 connection.close()

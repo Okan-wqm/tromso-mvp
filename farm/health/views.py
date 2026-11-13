@@ -28,8 +28,7 @@ from ..forms.stock import VoidForm
 from ..models import Batch, HealthEvent, LiceCount, Medicine, Site, Tank, Treatment
 from ..models.health import MedicineKind
 from ..stock import read as stock_read, views as stock_views
-from ..stock.dates import local_today, shown_date
-from ..stock.read import Presence
+from ..stock.dates import shown_date
 from ..stock.services import AlreadyRecorded
 from . import notices, read, services, withdrawal
 
@@ -82,24 +81,7 @@ def _chosen_unit(request):
 TREATMENT_FILTERS = ('site', 'unit', 'batch', 'method', 'medicine', 'from', 'to', 'show', 'voided')
 
 
-def treated_batches(treatments, today):
-    """{treatment id: [(batch, Withdrawal or None)]}: the batches each treatment reached (from the stock ledger)
-    and, for a live treatment with a medicine, the withdrawal it puts on each."""
-    unit_ids = {unit.pk for treatment in treatments for unit in treatment.units.all()}
-    presence = Presence.of_units(unit_ids)
-    batch_ids = {batch_id for unit_id in unit_ids for batch_id in presence.batches.get(unit_id, ())}
-    reader = withdrawal.Reader(batch_ids, today)
-    batches = Batch.all_objects.in_bulk(batch_ids)
-    found = {}
-    for treatment in treatments:
-        treated = sorted((batches[batch_id] for batch_id in reader.treated(treatment)), key=lambda batch: batch.code)
-        found[treatment.pk] = [
-            (batch, reader.of_treatment(treatment, batch.pk) if treatment.medicine_id and not treatment.is_deleted
-             else None) for batch in treated]
-    return found
-
-
-def _filtered_treatments(params, today, request):
+def _filtered_treatments(params, request):
     treatments = Treatment.all_objects.select_related('medicine', 'vet', 'health_event', 'created_by', 'deleted_by')\
         .prefetch_related('units__production_department__site', 'acknowledgements')
     if params['voided'] != '1':
@@ -135,11 +117,11 @@ def _filtered_treatments(params, today, request):
     params['batch'] = str(batch.pk) if batch else ''
     if batch is not None or params['show'] == UNDER_WITHDRAWAL:
         candidates = list(treatments)
-        rows = treated_batches(candidates, today)
+        rows = withdrawal.of_treatments(candidates)
         keep = [treatment.pk for treatment in candidates
-                if (batch is None or any(each.pk == batch.pk for each, _w in rows[treatment.pk]))
-                and (params['show'] != UNDER_WITHDRAWAL
-                     or any(found is not None and found.holds_on(today) for _b, found in rows[treatment.pk]))]
+                if (batch is None or any(part.batch.pk == batch.pk for part in rows[treatment.pk]))
+                # held today: on today of the site the fish are on (withdrawal.of_treatments)
+                and (params['show'] != UNDER_WITHDRAWAL or any(part.held for part in rows[treatment.pk]))]
         treatments = treatments.filter(pk__in=keep)
     return treatments, choices
 
@@ -149,11 +131,10 @@ def treatments(request):
     """Operations › Treatments: every treatment, newest first, with the batches it reached and the withdrawal
     it puts on each, filtered in the address."""
     params = {key: request.GET.get(key, '').strip() for key in TREATMENT_FILTERS}
-    today = local_today()
-    found, choices = _filtered_treatments(params, today, request)
+    found, choices = _filtered_treatments(params, request)
     page = Paginator(found, PAGE_SIZE).get_page(request.GET.get('page'))
     rows = list(page.object_list)
-    batches = treated_batches(rows, today)
+    batches = withdrawal.of_treatments(rows)
     here = request.get_full_path()
     can_void, can_change = request.user.has_perm(TREATMENTS['delete']), request.user.has_perm(TREATMENTS['change'])
     kept = {key: value for key, value in params.items() if value}
@@ -164,7 +145,7 @@ def treatments(request):
                'last_day_url': dialog_url('farm:treatment_last_day', here, args=[treatment.pk])
                if can_change and not treatment.is_deleted else ''}
               for treatment in rows],
-        page=page, pager_query=urlencode(kept), params=params, choices=choices, today=today,
+        page=page, pager_query=urlencode(kept), params=params, choices=choices,
         count_line=ngettext('%(count)d treatment', '%(count)d treatments', page.paginator.count) % {
             'count': page.paginator.count},
         filtered=bool({key for key in kept if key != 'voided'}),

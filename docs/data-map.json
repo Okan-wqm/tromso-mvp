@@ -2163,6 +2163,229 @@
     },
     {
       "app": "core",
+      "model": "AccountMail",
+      "table": "account_mails",
+      "description": "The account e-mails the platform sends: the invitation a new person gets, each time the admin sends it again, and every password reset.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "user_id",
+          "field": "user",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.accountmail when the mail is sent"
+        },
+        {
+          "name": "kind",
+          "field": "kind",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "invitation",
+            "reset"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.accountmail when the mail is sent"
+        },
+        {
+          "name": "address",
+          "field": "address",
+          "type": "varchar(254)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.accountmail when the mail is sent"
+        },
+        {
+          "name": "requested_by_id",
+          "field": "requested_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.accountmail when the mail is sent"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "owner",
+          "field": "owner",
+          "type": "varchar(64)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.accountmail when the mail is sent"
+        },
+        {
+          "name": "alive_at",
+          "field": "alive_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.accountmail when the mail is sent"
+        },
+        {
+          "name": "sent_at",
+          "field": "sent_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.accountmail when the mail is sent"
+        },
+        {
+          "name": "error",
+          "field": "error",
+          "type": "varchar(500)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.accountmail when the mail is sent"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_account_mails_kind",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "users tab",
+              "url_names": [
+                "core:user_create"
+              ],
+              "routes": [
+                "/users/new/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "core:user_invite",
+              "url_names": [
+                "core:user_invite"
+              ],
+              "routes": [
+                "/users/<int:pk>/invite/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "password_reset",
+              "url_names": [
+                "password_reset"
+              ],
+              "routes": [
+                "/accounts/password_reset/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "a row is what became of one mail"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "kept: the users tab shows what became of the last invitation, and the reset form counts an account's mails of the last hour"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "users tab",
+              "url_names": [
+                "core:user_list",
+                "core:user_edit"
+              ],
+              "routes": [
+                "/users/",
+                "/users/<int:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "Written when a mail is sent: creating a user and \"Send invitation\" on the users tab send an invitation, \"Forgot your password?\" a reset. Never the link or its token.",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Administration",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/testing.py",
+        "core/tests_account_mail.py",
+        "core/tests_account_mail_timing.py",
+        "core/tests_account_mail_worker.py",
+        "core/tests_erasure.py"
+      ]
+    },
+    {
+      "app": "core",
       "model": "AuditLog",
       "table": "audit_log",
       "description": "Who did what to which record, with old and new values.",
@@ -2225,7 +2448,9 @@
             "update",
             "delete",
             "restore",
-            "void"
+            "void",
+            "invite",
+            "password"
           ],
           "link": null,
           "on_form": [],
@@ -2342,21 +2567,28 @@
       },
       "viewer": {
         "section": "Administration",
-        "masked": [],
+        "masked": [
+          "changes"
+        ],
         "left_out": false
       },
       "tests": [
         "core/test_database.py",
         "core/test_languages.py",
         "core/tests.py",
+        "core/tests_account_mail.py",
+        "core/tests_account_mail_worker.py",
         "core/tests_crud_mount.py",
         "core/tests_entry_key.py",
+        "core/tests_erasure.py",
         "core/tests_platform.py",
+        "core/tests_private_log.py",
         "core/tests_scope.py",
         "core/tests_workspaces.py",
         "farm/tests/test_assignments.py",
         "farm/tests/test_batch_details.py",
         "farm/tests/test_cleaner_fish.py",
+        "farm/tests/test_cleaner_size_limit.py",
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_escape_delivery.py",
@@ -2370,6 +2602,7 @@
         "farm/tests/test_migration_altitude.py",
         "farm/tests/test_opening_balance.py",
         "farm/tests/test_ph_scale.py",
+        "farm/tests/test_private_contacts.py",
         "farm/tests/test_production_departments.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
@@ -2405,17 +2638,21 @@
         "reports/tests/test_tabs.py",
         "reports/tests/test_take_away_once.py",
         "tasks/tests/test_pages.py",
+        "tasks/tests/test_private_text.py",
+        "tasks/tests/test_reopen_keeps.py",
         "tasks/tests/test_series.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_departments.py",
-        "hr/tests/test_employees.py",
         "hr/tests/test_employment_bounds.py",
+        "hr/tests/test_forgotten.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_correction.py",
+        "hr/tests/test_manager_rights.py",
         "hr/tests/test_own_record.py",
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm.py",
         "hr/tests/test_review.py",
+        "hr/tests/test_roles.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scheduling_settings.py",
         "hr/tests/test_scope.py",
@@ -2963,6 +3200,8 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_account_mail.py",
+        "core/tests_matrix_notes.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_ration.py",
         "farm/tests/test_deffeyes.py",
@@ -2973,6 +3212,7 @@
         "farm/tests/test_health.py",
         "farm/tests/test_ph_scale.py",
         "farm/tests/test_phosphate.py",
+        "farm/tests/test_private_contacts.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_size_mix.py",
         "farm/tests/test_size_mix_chips.py",
@@ -2987,6 +3227,7 @@
         "messaging/tests/test_pages.py",
         "inventory/tests/test_pages.py",
         "tasks/tests/test_pages.py",
+        "hr/tests/test_forgotten.py",
         "experiments/tests/test_amend.py",
         "experiments/tests/test_deviations.py",
         "experiments/tests/test_pages.py",
@@ -3333,7 +3574,6 @@
       },
       "tests": [
         "experiments/tests/__init__.py",
-        "experiments/tests/test_constraints.py",
         "experiments/tests/test_copy.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_pages.py",
@@ -3828,7 +4068,6 @@
       },
       "tests": [
         "experiments/tests/__init__.py",
-        "experiments/tests/test_constraints.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_overview.py",
         "experiments/tests/test_pages.py",
@@ -4972,7 +5211,6 @@
       "tests": [
         "experiments/tests/__init__.py",
         "experiments/tests/test_amend.py",
-        "experiments/tests/test_constraints.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_overview.py",
         "experiments/tests/test_pages.py",
@@ -6012,12 +6250,14 @@
         "core/test_datamap.py",
         "farm/tests/test_batch_details.py",
         "farm/tests/test_cleaner_fish.py",
+        "farm/tests/test_cleaner_size_limit.py",
         "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_health.py",
         "farm/tests/test_opening_balance.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_size_mix.py",
         "farm/tests/test_stock.py",
+        "farm/tests/test_withdrawal_clocks.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_compute.py",
         "reports/tests/test_cross_review.py",
@@ -8023,7 +8263,6 @@
         "farm/tests/test_protocols.py",
         "reports/tests/test_compute.py",
         "experiments/tests/__init__.py",
-        "experiments/tests/test_amend.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_start.py"
       ]
@@ -8201,7 +8440,6 @@
       "tests": [
         "farm/tests/test_protocols.py",
         "experiments/tests/__init__.py",
-        "experiments/tests/test_amend.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_start.py"
       ]
@@ -9586,11 +9824,14 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_erasure.py",
+        "core/tests_private_log.py",
         "core/tests_workspaces.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_feeding.py",
         "farm/tests/test_feeds.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_private_contacts.py",
         "farm/tests/test_probe_review.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_size_mix_review.py",
@@ -13236,7 +13477,9 @@
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
+        "farm/tests/test_feeding.py",
         "farm/tests/test_fix_seed_size_mix.py",
+        "farm/tests/test_health.py",
         "farm/tests/test_lock_order.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_production_departments.py",
@@ -13249,6 +13492,7 @@
         "farm/tests/test_systems.py",
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
+        "farm/tests/test_withdrawal_clocks.py",
         "inventory/tests/helpers.py",
         "inventory/tests/test_pages.py",
         "reports/tests/helpers.py",
@@ -13256,6 +13500,7 @@
         "hr/tests/helpers_people.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_departments.py",
+        "hr/tests/test_forgotten.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_impact.py",
@@ -14170,6 +14415,8 @@
       "tests": [
         "core/test_database.py",
         "core/test_languages.py",
+        "core/tests_private_log.py",
+        "farm/tests/test_private_contacts.py",
         "farm/tests/test_sites.py"
       ]
     },
@@ -14925,6 +15172,8 @@
         "core/tests_crud_mount.py",
         "core/tests_design_shell.py",
         "core/tests_entry_key.py",
+        "core/tests_erasure.py",
+        "core/tests_private_log.py",
         "core/tests_query_pages.py",
         "core/tests_schema.py",
         "core/tests_scope.py",
@@ -14936,12 +15185,14 @@
         "farm/tests/test_clocks.py",
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
+        "farm/tests/test_feeding.py",
         "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_health.py",
         "farm/tests/test_lock_order.py",
         "farm/tests/test_migration_altitude.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_migration_site_zone.py",
+        "farm/tests/test_private_contacts.py",
         "farm/tests/test_production_departments.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
@@ -14954,6 +15205,7 @@
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
+        "farm/tests/test_withdrawal_clocks.py",
         "inventory/tests/helpers.py",
         "reports/tests/helpers.py",
         "reports/tests/test_due.py",
@@ -14969,9 +15221,9 @@
         "hr/tests/helpers_people.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_departments.py",
+        "hr/tests/test_forgotten.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
-        "hr/tests/test_overview_chart.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scheduling_settings.py",
         "experiments/tests/test_amend.py",
@@ -16071,6 +16323,7 @@
         "core/tests_scope.py",
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
+        "farm/tests/test_cleaner_size_limit.py",
         "farm/tests/test_feeds.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
@@ -16089,7 +16342,6 @@
         "reports/tests/test_compute.py",
         "reports/tests/test_labels.py",
         "hr/tests/test_production_permissions.py",
-        "experiments/tests/test_overview.py",
         "experiments/tests/test_pages.py",
         "monitoring/tests/test_templates_db.py"
       ]
@@ -17168,6 +17420,7 @@
         "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_cleaner_fish.py",
+        "farm/tests/test_cleaner_size_limit.py",
         "farm/tests/test_escape_delivery.py",
         "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_harvest.py",
@@ -18050,6 +18303,7 @@
         "farm/tests/test_feeds.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_private_contacts.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_suppliers.py",
         "inventory/tests/helpers.py",
@@ -19554,7 +19808,6 @@
         "monitoring/tests/__init__.py",
         "monitoring/tests/test_boards.py",
         "monitoring/tests/test_golden.py",
-        "monitoring/tests/test_templates_db.py",
         "monitoring/tests/test_token.py",
         "sensors/tests/test_pages.py",
         "sensors/tests/test_portable.py",
@@ -22162,7 +22415,6 @@
         "farm/tests/test_water_followups.py",
         "farm/tests/test_water_points.py",
         "farm/tests/test_water_review3.py",
-        "farm/tests/test_water_sources.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
         "reports/tests/test_lice.py",
@@ -22684,7 +22936,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "self for a person's own clock-in and out, entered for a lead's form"
+          "why": "self for a person's own clock-in and out, entered for a lead's form and for a stretch whose time a lead's correction changed (a forgotten clock-out closed by hand)"
         },
         {
           "name": "note",
@@ -22832,7 +23084,7 @@
           "why": ""
         }
       },
-      "note": "A person's own clock-in and clock-out are written by hr.services at the server's time.",
+      "note": "A person's own clock-in and clock-out are written by hr.services at the server's time; a clock-in left open longer than Scheduling settings' limit is a forgotten clock-out, closed on the Attendance page.",
       "forms": [
         {
           "form": "AttendanceRecordForm",
@@ -22865,11 +23117,13 @@
         "hr/tests/test_boundary.py",
         "hr/tests/test_crew.py",
         "hr/tests/test_employment_bounds.py",
+        "hr/tests/test_forgotten.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_menu_access.py",
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm.py",
-        "hr/tests/test_review.py"
+        "hr/tests/test_review.py",
+        "hr/tests/test_roles.py"
       ]
     },
     {
@@ -23231,6 +23485,7 @@
         "hr/tests/test_crew.py",
         "hr/tests/test_employees.py",
         "hr/tests/test_employment_bounds.py",
+        "hr/tests/test_forgotten.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_correction.py",
@@ -24931,11 +25186,10 @@
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_employees.py",
+        "hr/tests/test_forgotten.py",
         "hr/tests/test_hardening.py",
-        "hr/tests/test_leave.py",
         "hr/tests/test_own_record.py",
         "hr/tests/test_realm.py",
-        "hr/tests/test_roster.py",
         "hr/tests/test_scope.py",
         "hr/tests/test_services.py"
       ]
@@ -25161,6 +25415,19 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "forgotten_after_hours",
+          "field": "forgotten_after_hours",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SchedulingSettingsForm › Days and punches"
+          ],
+          "how": "form",
+          "why": ""
         }
       ],
       "constraints": [
@@ -25216,6 +25483,12 @@
         },
         {
           "name": "chk_scheduling_absent_after",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_scheduling_forgotten_after",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -25278,6 +25551,7 @@
             "working_weekdays": "Days and punches",
             "punch_window_minutes": "Days and punches",
             "absent_after_minutes": "Days and punches",
+            "forgotten_after_hours": "Days and punches",
             "version": ""
           }
         }
@@ -25296,6 +25570,7 @@
       "tests": [
         "core/tests_workspaces.py",
         "hr/tests/test_attendance.py",
+        "hr/tests/test_forgotten.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_on_shift.py",
@@ -25628,6 +25903,7 @@
         "hr/tests/test_boundary.py",
         "hr/tests/test_crew.py",
         "hr/tests/test_employment_bounds.py",
+        "hr/tests/test_forgotten.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_impact.py",
@@ -25638,6 +25914,7 @@
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm_reads.py",
         "hr/tests/test_review.py",
+        "hr/tests/test_roles.py",
         "hr/tests/test_roster.py"
       ]
     },
@@ -26008,21 +26285,26 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_private_log.py",
         "core/tests_workspaces.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_crew.py",
         "hr/tests/test_employment_bounds.py",
+        "hr/tests/test_forgotten.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_impact.py",
+        "hr/tests/test_manager_rights.py",
         "hr/tests/test_menu_access.py",
         "hr/tests/test_on_shift.py",
         "hr/tests/test_overview_chart.py",
+        "hr/tests/test_preset_restore.py",
         "hr/tests/test_production_permissions.py",
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm_reads.py",
         "hr/tests/test_review.py",
+        "hr/tests/test_roles.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scheduling_settings.py"
       ]
@@ -39859,7 +40141,7 @@
       "app": "tasks",
       "model": "TaskNote",
       "table": "task_notes",
-      "description": "A note on a task by a person who can read it: part of the task's record, never edited or removed (tasks.services.add_note is its only writer), and in the activity log.",
+      "description": "A note on a task by a person who can read it: part of the task's record, never edited or removed (tasks.services.add_note is its only writer).",
       "columns": [
         {
           "name": "id",
@@ -39916,6 +40198,21 @@
           "why": ""
         },
         {
+          "name": "kind",
+          "field": "kind",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [
+            "note",
+            "completion_note",
+            "cancel_reason"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "note for a note added in the drawer; completion_note or cancel_reason for the words a reopening took off the task and kept here (tasks.services.reopen)"
+        },
+        {
           "name": "created_at",
           "field": "created_at",
           "type": "timestamp with time zone",
@@ -39930,6 +40227,12 @@
       "constraints": [
         {
           "name": "chk_task_notes_body",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_task_notes_kind",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -39981,7 +40284,7 @@
           "why": ""
         }
       },
-      "note": "Shown in the task's drawer.",
+      "note": "Shown in the task's drawer. Reopening a task keeps its completion note and its reason for cancelling here, by their writer.",
       "forms": [
         {
           "form": "NoteForm",
@@ -40005,6 +40308,7 @@
       "tests": [
         "tasks/tests/test_models.py",
         "tasks/tests/test_pages.py",
+        "tasks/tests/test_reopen_keeps.py",
         "tasks/tests/test_series.py"
       ]
     },
@@ -40562,9 +40866,11 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_private_log.py",
         "core/tests_workspaces.py",
         "tasks/tests/test_models.py",
         "tasks/tests/test_pages.py",
+        "tasks/tests/test_private_text.py",
         "tasks/tests/test_series.py"
       ]
     },
@@ -41549,10 +41855,12 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_private_log.py",
         "core/tests_workspaces.py",
         "tasks/tests/__init__.py",
         "tasks/tests/test_models.py",
         "tasks/tests/test_pages.py",
+        "tasks/tests/test_private_text.py",
         "tasks/tests/test_read.py",
         "tasks/tests/test_series.py",
         "monitoring/tests/test_golden.py",

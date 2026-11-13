@@ -14,7 +14,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 
 from .helpers import role
-from .test_water import D, WaterTestCase
+from .test_water import WaterTestCase
 
 from ..models import SamplingPoint
 

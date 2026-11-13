@@ -40,6 +40,13 @@ def local_today(unit=None):
     return site_today(_site(unit))
 
 
+def earliest_today(units):
+    """The earliest today among the units' sites, the company's when there are none: the one day the withdrawals of
+    fish on sites of several clocks are worked out on (the fish are held the longest so), for a write's guard and for
+    a page alike."""
+    return min((local_today(unit) for unit in units), default=local_today())
+
+
 def earliest(unit=None):
     """The first day a record of the unit may be dated (and the oldest one that may be voided)."""
     return site_earliest(_site(unit))

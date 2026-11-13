@@ -5,7 +5,7 @@ point on the diagram from the hour tier, the channel that feeds each input, and 
 through the Move dialog."""
 import json
 import re
-from datetime import datetime, timedelta, timezone as tz
+from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model

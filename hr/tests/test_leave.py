@@ -2,18 +2,17 @@ from datetime import date, datetime, timezone as utc
 from decimal import Decimal
 from unittest import mock
 
-from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, connection, transaction
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from core.models import AuditLog
+from core.testing import FrozenClock
 from farm.models import ProductionDepartment, Site
 
 from .. import leave, read, services
-from ..models import Employee, Holiday, LeaveRequest, LeaveType, Posting, SchedulingSettings, Shift, ShiftAssignment
-from ..units import token
+from ..models import Employee, Holiday, LeaveRequest, LeaveType, SchedulingSettings, Shift, ShiftAssignment
 from .helpers import PRIVATE, fields_of, user
 from .helpers_people import PeopleTestCase, TOP, employee, place
 
@@ -29,7 +28,12 @@ def request_for(person, first, last, kind, status='pending', **fields):
                                        **fields)
 
 
-class LeaveTestCase(PeopleTestCase):
+# The requests are dated on fixed days (March 2026, one in June 2027 as "not begun yet"), and a request can be cancelled
+# only before its first day: the clock is held (README, Tests), or the June 2027 one has begun from 01.06.2027 on
+# (found with TEST_CLOCK=2027-12-31T23:30:00+00:00). The moment is the day these tests last ran on the real clock.
+class LeaveTestCase(FrozenClock, PeopleTestCase):
+    NOW = datetime(2026, 11, 11, 12, 0, tzinfo=utc.utc)
+
     def setUp(self):
         super().setUp()
         self.annual = LeaveType.objects.create(name='Annual leave', code='ANNUAL')
@@ -171,7 +175,7 @@ class LeaveRequestModelTests(LeaveTestCase):
 
 class FilingTests(LeaveTestCase):
     def test_a_person_files_for_themselves_pending_and_the_reason_is_theirs(self):
-        response = self.file(self.ann_user, self.in_a, MONDAY, TUESDAY, reason='Family matter')
+        self.file(self.ann_user, self.in_a, MONDAY, TUESDAY, reason='Family matter')
         request = LeaveRequest.objects.get()
         self.assertEqual({name: getattr(request, name) for name in fields_of(LeaveRequest)},
                          {'employee': self.in_a, 'leave_type': self.annual, 'first_day': MONDAY, 'last_day': TUESDAY,

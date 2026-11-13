@@ -27,7 +27,7 @@ from ..water import parameters, points, read, services
 from ..water.evaluate import Status
 from .helpers import point_of, role
 from .test_stock import make_unit
-from .test_water import WATER_KEEPER, WaterTestCase
+from .test_water import WaterTestCase
 from farm import withdrawal_gate
 
 D = Decimal

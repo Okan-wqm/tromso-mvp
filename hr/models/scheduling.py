@@ -125,6 +125,12 @@ class RestRule(models.TextChoices):
     BLOCK = 'block', _('Block')
 
 
+# The bounds of the forgotten clock-out limit: under an hour everyone at work would count as forgotten, past a week a
+# forgotten clock-out would never be found. The form also refuses a limit shorter than an active shift.
+MIN_FORGOTTEN_HOURS, MAX_FORGOTTEN_HOURS = 1, 168
+FORGOTTEN_RANGE = _('Give a whole number of hours from 1 to 168 (a week).')
+
+
 class SchedulingSettings(AuditedModel):
     """The scheduling limits and defaults, one row for the company (a database check keeps it one). Each setting has
     exactly one reader (hr.rules, hr.leave, hr.read); a default is a labelled default, not the law: none of the statutory
@@ -145,6 +151,12 @@ class SchedulingSettings(AuditedModel):
         _('Punch window (minutes)'), default=120, validators=[MaxValueValidator(720)])
     absent_after_minutes = models.PositiveSmallIntegerField(
         _('Absent after (minutes)'), default=30, validators=[MaxValueValidator(240)])
+    # How long a clock-in may stay open before it counts as a forgotten clock-out (hr.rules.forgotten, its one rule; the
+    # owner, 2026-11-10, F-095: 16 hours until HR sets another). 1 to 168 hours, a database check.
+    forgotten_after_hours = models.PositiveSmallIntegerField(
+        _('A clock-in counts as forgotten after (hours)'), default=16,
+        validators=[MinValueValidator(MIN_FORGOTTEN_HOURS, FORGOTTEN_RANGE),
+                    MaxValueValidator(MAX_FORGOTTEN_HOURS, FORGOTTEN_RANGE)])
 
     class Meta:
         db_table = 'scheduling_settings'
@@ -162,6 +174,9 @@ class SchedulingSettings(AuditedModel):
                                    & Q(working_weekdays__len__gt=0), name='chk_scheduling_weekdays'),
             models.CheckConstraint(condition=Q(punch_window_minutes__lte=720), name='chk_scheduling_punch_window'),
             models.CheckConstraint(condition=Q(absent_after_minutes__lte=240), name='chk_scheduling_absent_after'),
+            models.CheckConstraint(condition=Q(forgotten_after_hours__gte=MIN_FORGOTTEN_HOURS,
+                                               forgotten_after_hours__lte=MAX_FORGOTTEN_HOURS),
+                                   name='chk_scheduling_forgotten_after', violation_error_message=FORGOTTEN_RANGE),
         ]
 
     def __str__(self):

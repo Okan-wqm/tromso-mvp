@@ -35,14 +35,14 @@ class DemoCase(SensorsCase):
 
     def setup_demo(self, *extra):
         out = StringIO()
-        call_command('sensors_demo_setup', '--confirm', *extra, stdout=out)
+        call_command('sensors_demo_setup', '--force', '--confirm', *extra, stdout=out)
         return out.getvalue()
 
 
 class SetupTests(DemoCase):
     def test_it_refuses_without_a_flag(self):
         with self.assertRaises(CommandError):
-            call_command('sensors_demo_setup', stdout=StringIO())
+            call_command('sensors_demo_setup', '--force', stdout=StringIO())
 
     def test_a_device_per_tank_and_system_with_every_measured_parameter_bound_in_place(self):
         out = self.setup_demo()
@@ -87,7 +87,7 @@ class SetupTests(DemoCase):
 
     def test_remove_takes_away_only_what_it_made(self):
         self.setup_demo()
-        call_command('sensors_demo_setup', '--remove', stdout=StringIO())
+        call_command('sensors_demo_setup', '--force', '--remove', stdout=StringIO())
         self.assertFalse(Device.all_objects.filter(connection__client_id=demo.CLIENT_ID).exists())
         self.assertFalse(Connection.all_objects.filter(client_id=demo.CLIENT_ID).exists())
         self.assertFalse(Credential.all_objects.filter(username=demo.USERNAME).exists())

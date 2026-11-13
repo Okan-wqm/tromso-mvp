@@ -20,7 +20,7 @@ def unseed(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('farm', '0039_water_origin'),
+        ('farm', '0040_water_origin'),
     ]
 
     operations = [

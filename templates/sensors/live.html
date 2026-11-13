@@ -1,13 +1,14 @@
 {% extends "app_base.html" %}
 {% load i18n sensors water dates %}
 {% comment %} Sensors › Operations › Live values (sensors.views.live): every channel listened to, its last good value, how
-   old it is, whether it is fresh (three heartbeats) and where it is bound now. The water of a unit, with its other
-   sources, is on the Water chemistry page and the monitoring cards. {% endcomment %}
+   old it is, whether it is fresh (within its channel's own fresh_s: its heartbeat times its fresh heartbeats) and
+   where it is bound now. The water of a unit, with its other sources, is on the Water chemistry page and the
+   monitoring cards. {% endcomment %}
 {% block title %}{{ title }}{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
-<p class="panel-help">{% trans "A value is fresh for three heartbeats of its channel. A stale value is not used for a unit’s water: the next source counts (its system’s sensor, then the latest sample)." %}</p>
+<p class="panel-help">{% trans "A value is fresh while both its own time on the device and its arrival here are no older than its channel’s own number of heartbeats (3 unless the channel is set otherwise). A stale value is not used for a unit’s water: the next source counts (its system’s sensor, then the latest sample)." %}</p>
 {% if rows %}
 <div class="table-wrap">
   <table class="data-table">

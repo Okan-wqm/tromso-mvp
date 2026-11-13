@@ -1,17 +1,15 @@
 from datetime import date, time, timedelta
 
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
-from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
+from core.management.devtool import DevCommand
 from farm.models import ProductionDepartment, Site
 from farm.stock.dates import site_today
 
 from ...models import (AttendanceRecord, Employee, Holiday, LeaveRequest, LeaveType, OfficeDepartment, Posting,
                        Shift, ShiftAssignment)
-from ...scope import covering
 
 PASSWORD = 'demo-password-1'
 
@@ -36,15 +34,15 @@ ROLES = {
 }
 
 
-class Command(BaseCommand):
+class Command(DevCommand):
+    forcible = False        # it makes accounts with a known password: never with DEBUG off, not even when told twice
+
     help = ('Makes a small demonstration company in the HR area for walking through it in a browser: a site on Oslo time, two '
             'production departments with their managers, an office department, people placed in them, shifts, a week of plans, '
             'leave and four roles with a sign-in each. Idempotent. It refuses to run unless DEBUG is on: it makes accounts '
             'with a known password.')
 
     def handle(self, *args, **options):
-        if not settings.DEBUG:
-            raise CommandError('seed_hr_demo makes accounts with a known password and runs only with DEBUG on.')
         with transaction.atomic():
             groups = self.roles()
             users = self.users(groups)

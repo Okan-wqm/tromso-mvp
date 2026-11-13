@@ -3,10 +3,9 @@ from django.conf import settings
 from django.contrib.auth import forms as auth_forms, get_user_model
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
-from django.utils import translation
 from django.utils.translation import gettext_lazy as _
 
-from . import access, navigation
+from . import access, accountmail, navigation
 from .crud import TabbedForm, tab_fields
 from .language import account_language, save_account_language
 from .models import PlatformSettings
@@ -34,7 +33,8 @@ class PermissionMatrix(forms.CheckboxSelectMultiple):
                     cell['attrs']['data-requires'] = read['attrs']['id']
             sections.setdefault(area.group, []).append(
                 {'label': area.label, 'cells': [(label, cells.get(action)) for action, label in access.ACTIONS],
-                 'notes': navigation.notes(area.perm(access.READ))})
+                 # under the area: what its rights also reach (Area.note), then its lines shown only to some
+                 'notes': [*([area.note] if area.note else []), *navigation.notes(area.perm(access.READ))]})
         context['widget']['columns'] = [label for _, label in access.ACTIONS]
         context['widget']['sections'] = sections.items()
         return context
@@ -95,7 +95,8 @@ class UserForm(TabbedForm):
                   'email': _('Email'), 'is_active': _('Active'), 'groups': _('Roles')}
         help_texts = {
             'username': _('Used to sign in. Letters, digits and @ . + - _ only.'),
-            'email': _('The invitation to set a password is sent here.'),
+            'email': _('The invitation to set a password is sent here. Without an address the person cannot be '
+                       'invited, and cannot sign in until one is added.'),
             'is_active': _('Inactive people cannot sign in.'),
             'groups': _('What the person can open and change. Without a role they see only the overview.'),
         }
@@ -108,7 +109,6 @@ class UserForm(TabbedForm):
     def __init__(self, *args, editor, **kwargs):
         super().__init__(*args, **kwargs)
         self.editor = editor
-        self.fields['email'].required = True
         self.initial['language'] = account_language(self.instance) or ''
         self.fields['groups'].queryset = Group.objects.order_by('name')
         if self.instance._state.adding:
@@ -120,8 +120,9 @@ class UserForm(TabbedForm):
         save_account_language(self.instance, self.cleaned_data['language'])
 
     def clean_email(self):
+        """An address belongs to one person; it may be left out (the person then cannot be invited: accountmail)."""
         email = self.cleaned_data['email']
-        if User.objects.exclude(pk=self.instance.pk).filter(email__iexact=email).exists():
+        if email and User.objects.exclude(pk=self.instance.pk).filter(email__iexact=email).exists():
             raise ValidationError(_('Another user already uses this email.'))
         return email
 
@@ -133,21 +134,17 @@ class UserForm(TabbedForm):
 
 
 class PasswordResetForm(auth_forms.PasswordResetForm):
-    """Django's reset form, also for people who have not set a password yet: users the platform admin
-    creates start without one, and this email is their invitation (and its replacement once the
-    link has expired)."""
+    """Django's "Forgot your password?" form, also for people who have not set a password yet: users the platform
+    admin creates start without one, so this is how an invited person whose link has expired gets a new one
+    themselves. The mail takes the one path every account e-mail takes (core.accountmail)."""
 
-    def send_mail(self, subject_template_name, email_template_name, context, from_email, to_email,
-                  html_email_template_name=None):
-        """Written in the recipient's saved language, not the language of whoever triggered it (an
-        invitation is sent while the admin who created the account is signed in)."""
-        with translation.override(account_language(context['user']) or translation.get_language()):
-            super().send_mail(subject_template_name, email_template_name, context, from_email, to_email,
-                              html_email_template_name)
-
-    def get_users(self, email):
-        users = User._default_manager.filter(email__iexact=email, is_active=True)
-        return (user for user in users if auth_forms._unicode_ci_compare(email, user.email))
+    def save(self, **kwargs):
+        """Hands the address over and nothing else (accountmail.reset_later): no account is looked up here, so the
+        request does the same work and takes the same time for every address, and the page is told nothing: an
+        address without an account, a request held back and a mail that failed are answered like one that went
+        out. What Django's view hands over (the request, the templates' names) is not used: the link starts with the
+        configured public address."""
+        accountmail.reset_later(self.cleaned_data['email'])
 
 
 PLATFORM_TABS = [

@@ -15,7 +15,7 @@ from django.db import models
 from django.db.models import Max
 from django.utils import translation
 from django.utils.text import capfirst
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _, gettext_noop
 
 from .models import AuditLog
 
@@ -82,6 +82,40 @@ def _display(instance, field):
     return str(value)
 
 
+def digest_key():
+    """The key of the log's digests: its own (settings.AUDIT_DIGEST_KEY, DJANGO_AUDIT_DIGEST_KEY in the environment),
+    the server's secret key when it has none. Its own, so that the secret key can be rotated (everyone is signed out)
+    without the digests changing, and the digests' key rotated (every digest written before stops comparing with
+    anything: the link to the old values is cut) without signing anyone out."""
+    return settings.AUDIT_DIGEST_KEY or settings.SECRET_KEY
+
+
+def digest(text):
+    """The short keyed digest the log keeps of a private value instead of the value: eight hex digits of an HMAC-SHA256
+    under `digest_key`. This is pseudonymisation, not erasure. Equal values give equal digests, so the log shows that
+    a value changed; two equal digests say "probably the same value" (32 bits: sure enough for one change, not across
+    a whole log). Whoever holds the key and the log can test a guess, and so recover a short value such as a phone
+    number by trying them all; without the key that cannot be done from the stored rows, and no page prints a digest
+    (AuditLog.shown_changes; the database viewer masks the log's `changes`), so nobody tests a guess through the
+    application either: a digest is read only with direct access to the database. The one digest of the log:
+    whatever keeps a private value out of it calls this."""
+    return hmac.new(digest_key().encode(), str(text).encode(), hashlib.sha256).hexdigest()[:8]
+
+
+def private(text, of=None):
+    """How the log keeps a private value (a person's own words, a contact's e-mail or phone): the enumerated value
+    "Private text" with its `digest`, never the text. A page shows "Private text"; replacing one value by another is
+    still a change the log shows ("Private text" to "Private text") without saying anything about what they say.
+    `of` names what the value is when it stands among others (a contact's "Email" in the contact list): a msgid, shown
+    as "Email: Private text". The digest is stored for comparing rows and is printed on no page
+    (AuditLog.shown_changes): whoever could read it beside a value they typed themselves could test a guess."""
+    value = {**message(_('Private text')), 'rev': digest(text)}
+    return {**value, 'of': english(of)} if of else value
+
+
+_kept_private = private       # `snapshot` takes the private field names under the function's own name
+
+
 def snapshot(instance, field_names, labels=None, private=()):
     """{field label: display value} for the given fields, None for empty values. Labels come from
     `labels` (e.g. a form's Meta.labels) and default to the model field's verbose name. A `private` field
@@ -93,10 +127,7 @@ def snapshot(instance, field_names, labels=None, private=()):
         field = instance._meta.get_field(name)
         value = _display(instance, field)
         if name in private and value is not None:
-            # The words are never stored. A short keyed digest is, so that replacing one text by another is a change the log
-            # shows ("Private text" to "Private text") without saying anything about what they say.
-            value = {**message(_('Private text')), 'rev': hmac.new(
-                settings.SECRET_KEY.encode(), str(value).encode(), hashlib.sha256).hexdigest()[:8]}
+            value = _kept_private(value)
         result[str(labels.get(name, capfirst(field.verbose_name)))] = value
     return result
 
@@ -189,3 +220,18 @@ def record_update(user, instance, before, after, **kwargs):
 
 def record_delete(user, instance, **kwargs):
     return record(user, AuditLog.Action.DELETE, instance, **kwargs)
+
+
+# The words a data migration writes into the log (core/migrations/_private.py: the record type of the conversion's own
+# row, the labels of its counts, what a contact's unsure part is called). The catalogs are not read from migrations,
+# so they are marked here; core/tests_private_log.py holds the two lists together.
+MIGRATION_WORDS = (
+    gettext_noop('activity log'), gettext_noop('Entries converted'), gettext_noop('Values made private'),
+    gettext_noop('Contact e-mails and phones made private, the contact kept'),
+    gettext_noop('Roles made private with a phone they could not be told apart from'),
+    gettext_noop('Contact lists made private whole'),
+    gettext_noop('Entries whose contact list was made private whole'), gettext_noop('Role or phone'),
+    # the label of the row the erasure procedure writes on a task (docs/erasure.md, step 6): not 'Note', which is
+    # a private label of a task and would read as a plain value left behind (core.W004)
+    gettext_noop('Erased on request'),
+)

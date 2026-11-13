@@ -4,7 +4,7 @@ fish rule both ways, the dialogs, the list, void, permissions and the integratio
 the stored rows."""
 import io
 import uuid
-from datetime import date, time as clock
+from datetime import date, datetime, time as clock, timedelta, timezone as dt_timezone
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -16,14 +16,18 @@ from django.urls import reverse
 from django.utils import translation
 
 from core import access, database, navigation
+from core.dates import company_today
 from core.models import AuditLog, Profile
+from core.testing import FrozenClock
 
 from ..feeding import read, services, views as feeding_views
 from ..feeding.fold import Feeding, Point, PointKind, walk
 from ..handling import check
-from ..models import Equipment, EquipmentType, Feed, FeedingRecord, FeedSuitability, Tank
+from ..models import Equipment, EquipmentType, Feed, FeedingRecord, FeedSuitability, ProductionDepartment, Site, Tank
 from ..stock import integrity, read as stock_read, services as stock_services
+from ..stock.dates import local_today
 from ..stock.fold import Line, Op
+from ..templatetags.stock import tonnes
 from .helpers import correction_window, make_facility, role
 from .test_stock import StockTestCase, make_unit
 from farm import withdrawal_gate
@@ -35,6 +39,7 @@ def setUpModule():
 
 FEEDING_KEEPER = ('view_feedingrecord', 'add_feedingrecord', 'delete_feedingrecord', 'view_feed', 'delete_feed',
                   'view_equipment', 'delete_equipment')
+DAY = timedelta(days=1)
 
 
 # ---- the walk, without a database ------------------------------------------------------------------
@@ -523,9 +528,66 @@ class FiguresTests(FeedingTestCase):
         self.assertContains(response, 'title="Not weighed since the fish came in."', count=1)
 
     def test_the_overview_shows_the_feed(self):
+        """Each site counts on its own day (the owner's decision of 12.11.2026): the 10 kg given today on T-01's site,
+        which reads UTC, are in "Feed today" at once, also in the hours when the company's day (Oslo's) has turned
+        and UTC's has not (core/tests_day_boundary.py holds the clock there)."""
         tiles = self.client.get(reverse('production_home')).context['feeding_tiles']
         self.assertEqual([(str(tile['label']), tile['count']) for tile in tiles],
                          [('Feed today', '10 kg'), ('Feed, last 7 days', '10 kg')])
+
+
+class OverviewFeedOnSeveralClocksTests(FrozenClock, FeedingTestCase):
+    """The overview's "Feed today" and "Feed, last 7 days" on a farm whose sites read several clocks: each site counts on
+    its own day, and the figure is the sum of each site's own day (the owner's decision of 12.11.2026). 16:00 UTC on
+    the 10th is the 10th in Bergen (the fixtures' site, UTC) and in Oslo (the company) and the 11th in Tokyo."""
+    NOW = datetime(2026, 11, 10, 16, 0, tzinfo=dt_timezone.utc)
+
+    def setUp(self):
+        super().setUp()
+        tokyo = Site.objects.create(name='Tokyo', code='TK', timezone='Asia/Tokyo')
+        self.k1 = make_unit('K-01', ProductionDepartment.objects.create(site=tokyo, name='Hall T', code='HT'))
+        self.stock(self.k1, count=1000, weight='100', days_ago=10)
+        self.here, self.there = local_today(self.t1), local_today(self.k1)
+        self.assertEqual((self.here, self.there, company_today()), (date(2026, 11, 10), date(2026, 11, 11), self.here))
+
+    def fed(self, unit, day, kilos):
+        services.record_feeding(self.user, unit=unit, day=day, feed=self.feed, amount_kg=Decimal(kilos))
+
+    def tiles(self):
+        return {tile['key']: tile for tile in self.client.get(reverse('production_home')).context['feeding_tiles']}
+
+    def test_feed_given_on_a_sites_today_is_in_feed_today_whatever_the_companys_clock_says(self):
+        self.fed(self.k1, self.there, '4')                         # Tokyo's today, the 11th: the company's tomorrow
+        self.fed(self.k1, self.there - DAY, '2')                   # Tokyo's yesterday, though it is the company's today
+        self.fed(self.t1, self.here, '10')                         # Bergen's today
+        self.fed(self.t1, self.here - DAY, '1')
+        tiles = self.tiles()
+        self.assertEqual((tiles['today']['count'], tiles['week']['count']),
+                         (tonnes(Decimal(14)), tonnes(Decimal(17))))
+
+    def test_the_seven_days_are_each_sites_own_last_seven(self):
+        self.fed(self.k1, self.there - 6 * DAY, '1')               # the 5th: the first of Tokyo's seven
+        self.fed(self.k1, self.there - 7 * DAY, '9')               # the 4th: before them, though in the company's seven
+        self.fed(self.t1, self.here - 6 * DAY, '3')                # the 4th: the first of Bergen's seven
+        self.fed(self.t1, self.here - 7 * DAY, '20')               # the 3rd: before them
+        tiles = self.tiles()
+        self.assertEqual((tiles['today']['count'], tiles['week']['count']), (tonnes(Decimal(0)), tonnes(Decimal(4))))
+
+    def test_the_cards_say_so_and_open_the_records_of_those_days(self):
+        tiles = self.tiles()
+        self.assertEqual({str(tile['sub']) for tile in tiles.values()}, {'Each site on its own day'})
+        records = reverse('farm:feeding_records')
+        self.assertEqual((tiles['today']['url'], tiles['week']['url']),
+                         (f'{records}?from=2026-11-10&to=2026-11-11', f'{records}?from=2026-11-04&to=2026-11-11'))
+        for language, words in (('en', 'Each site on its own day'), ('nb', 'Hver lokalitet på sin egen dag'),
+                                ('tr', 'Her saha kendi gününde')):
+            with self.subTest(language=language):
+                self.assertContains(self.client.get(reverse('production_home'), headers={'Accept-Language': language}),
+                                    words, count=2)
+
+    def test_a_farm_of_one_clock_says_nothing_of_it(self):
+        Site.objects.filter(code='TK').update(timezone=self.bergen.timezone)
+        self.assertEqual({str(tile['sub']) for tile in self.tiles().values()}, {''})
 
 class WindowsInTests(FeedingTestCase):
     """The windows of the units over days (read.windows_in), against the figures of the same worked example."""

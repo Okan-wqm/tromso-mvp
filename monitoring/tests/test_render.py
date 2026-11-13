@@ -9,19 +9,17 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from django.conf import settings
-from django.db import connection
 from django.test import SimpleTestCase
-from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 
 from farm.tests.test_water_sources import FakeProvider
 from farm.water import parameters, sources
 from farm.water.evaluate import Status
-from farm.water.read import Observation, Origin, PointWater, Reading
+from farm.water.read import Observation, Origin, Reading
 
 from .. import read
-from ..cards import builtin, catalogue, render, resolve
+from ..cards import builtin, catalogue, render
 from ..cards.resolve import Choice
 from ..models import CardTemplate, CardTemplateAssignment
 from . import D, MonitoringCase

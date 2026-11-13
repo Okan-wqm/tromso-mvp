@@ -1,16 +1,18 @@
 """Makes (or, with --remove, deletes) the live demo's sensor configuration for the tanks and systems the database already
 has (sensors/demo.py). It writes configuration rows into the database it is pointed at, so it runs only when told:
-`--confirm` to make, `--remove` to delete. The simulator credential's secret is printed once, when it is made (and
+`--confirm` to make, `--remove` to delete, and with DEBUG off (not a developer's database) only with `--force` as well
+(core/management/devtool.py). The simulator credential's secret is printed once, when it is made (and
 written to `--secret-file` when given, for the simulator's compose secret); run `manage.py sensor_broker_sync` after."""
 import os
 from pathlib import Path
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 
+from core.management.devtool import DevCommand
 from sensors import demo
 
 
-class Command(BaseCommand):
+class Command(DevCommand):
     help = 'Makes, or removes, the demo sensors for the existing tanks and systems.'
 
     def add_arguments(self, parser):

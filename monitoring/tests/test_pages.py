@@ -7,15 +7,15 @@ from django.contrib.sessions.models import Session
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
-from django.utils import timezone
 
 from core import access, navigation
+from core.dates import company_today
 from core.models import AuditLog, Profile
 from farm.models import FeedingRecord, StockOperation, WaterMeasurement
 
 from .. import read
 from ..cards import builtin
-from . import ALL_RIGHTS, MonitoringCase
+from . import MonitoringCase
 
 PAGE, CARDS = reverse('monitoring:monitor'), reverse('monitoring:cards')
 DETAILED_CARD = f'data-template="{builtin.DETAILED}"'
@@ -81,13 +81,18 @@ class PageTests(MonitoringCase):
         self.assertEqual(html.count('<svg'), html.count('class="icon"') + html.count('<svg class="capacity-bar'))
 
     def test_a_card_that_may_not_see_a_section_says_so_and_prints_no_value_of_it(self):
-        self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='8.1')
+        # Values that no date on the page can spell: the oxygen was 8.1, printed "8.10", and the page says when the
+        # fish were last weighed, 15 days back: "28.10.2026" on 12.11.2026, when this test failed for that alone.
+        self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='8.47')
+        shown = self.client.get(PAGE, {'mode': 'detailed'}).content.decode()
+        for text in ('13.2', '8.47'):
+            self.assertIn(text, shown)                               # as the page prints them for who may see the water
         self.as_person('stock-only', 'view_stockoperation')
         html = self.client.get(PAGE, {'mode': 'detailed'}).content.decode()
         for text in ('Feeding: not shown to you', 'Water: not shown to you', 'Health: not shown to you',
                      'Tasks: not shown to you', 'State from: Fish'):
             self.assertIn(text, html)
-        for text in ('13.2', '8.10', 'Deffeyes chart', 'Ration'):
+        for text in ('13.2', '8.47', 'Deffeyes chart', 'Ration'):
             self.assertNotIn(text, html)
         self.assertIn('12,000', html)                                # the fish are the stock right's
 
@@ -220,7 +225,7 @@ class WallTests(MonitoringCase):
         self.assertIn('data-fullscreen', html)                           # the wall keeps its Full screen button ...
         self.assertIn('Leave the wall', html)                            # ... and a way out
         self.assertIn('wall=1', re.search(r'data-poll="([^"]+)"', html).group(1))
-        self.assertEqual(self.client.session['monitoring_wall_day'], timezone.localdate().isoformat())
+        self.assertEqual(self.client.session['monitoring_wall_day'], company_today().isoformat())   # the company's day
         key = self.client.session.session_key
         first = Session.objects.get(pk=key).expire_date
         self.client.get(PAGE, {'wall': '1'})                        # the same day: no write
@@ -229,7 +234,7 @@ class WallTests(MonitoringCase):
         session['monitoring_wall_day'] = '2026-01-01'               # a day ago: extended again
         session.save()
         self.client.get(f'{CARDS}?wall=1')
-        self.assertEqual(self.client.session['monitoring_wall_day'], timezone.localdate().isoformat())
+        self.assertEqual(self.client.session['monitoring_wall_day'], company_today().isoformat())   # the company's day
 
     def test_a_page_that_is_not_a_wall_does_not_touch_the_session(self):
         self.client.get(PAGE)

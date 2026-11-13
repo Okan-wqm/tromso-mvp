@@ -1,10 +1,7 @@
 import re
 from datetime import date, datetime, time, timedelta, timezone as utc
-from decimal import Decimal
-from types import SimpleNamespace
 from unittest import mock
 
-from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, connection, transaction
 from django.test import SimpleTestCase
@@ -19,7 +16,7 @@ from .. import read, rules, services
 from ..models import (AttendanceRecord, Employee, LeaveRequest, LeaveType, Posting, SchedulingSettings, Shift,
                       ShiftAssignment)
 from .helpers import fields_of, user
-from .helpers_people import PeopleTestCase, TOP, employee, place
+from .helpers_people import PeopleTestCase, employee, place
 
 UTC = utc.utc
 DAY = date(2026, 3, 2)
@@ -37,12 +34,13 @@ def punch(person, start, end=None, **fields):
 
 
 class StatusRuleTests(SimpleTestCase):
-    """rules.status: pure, at a fixed now. Grace 10, absent after 30, punch window 120 (minutes)."""
+    """rules.status: pure, at a fixed now. Grace 10, absent after 30, punch window 120 (minutes); an open clock-in
+    counts as forgotten after 16 hours (hr/tests/test_forgotten.py)."""
 
     SPAN = (at(6), at(14))
 
     def standing(self, now, punches=(), on_leave=False, span=SPAN):
-        return rules.status(span, punches, on_leave, now, 10, 30, 120)
+        return rules.status(span, punches, on_leave, now, 10, 30, 120, 16)
 
     def test_upcoming_not_in_and_absent_follow_the_clock(self):
         self.assertEqual(self.standing(at(5)).state, 'upcoming')
@@ -156,13 +154,14 @@ class SelfPunchTests(PeopleTestCase):
         with mock.patch('django.utils.timezone.now', return_value=at(6)):
             services.clock_in(self.ann)
         before = (AttendanceRecord.objects.count(), AuditLog.objects.count())
-        with self.assertRaises(ValidationError):
-            services.clock_in(self.ann)
-        self.assertEqual((AttendanceRecord.objects.count(), AuditLog.objects.count()), before)
-        services.clock_out(self.ann)
-        before = (AttendanceRecord.objects.count(), AuditLog.objects.count())
-        with self.assertRaises(ValidationError):
+        with mock.patch('django.utils.timezone.now', return_value=at(14)):      # the same day: an ordinary open stretch
+            with self.assertRaisesMessage(ValidationError, 'You are already clocked in.'):
+                services.clock_in(self.ann)
+            self.assertEqual((AttendanceRecord.objects.count(), AuditLog.objects.count()), before)
             services.clock_out(self.ann)
+            before = (AttendanceRecord.objects.count(), AuditLog.objects.count())
+            with self.assertRaisesMessage(ValidationError, 'You are not clocked in.'):
+                services.clock_out(self.ann)
         self.assertEqual((AttendanceRecord.objects.count(), AuditLog.objects.count()), before)
 
     def test_only_a_person_with_read_and_an_employee_row_clocks(self):
@@ -346,7 +345,8 @@ class BoardTests(PeopleTestCase):
         punch(gus, at(7))                                              # here, not planned
         board = read.board(self.lead, at(10))
         tiles = [(tile.key, tile.count) for tile in board.tiles]
-        self.assertEqual(tiles, [('upcoming', 1), ('here', 2), ('not_in', 0), ('absent', 1), ('on_leave', 1), ('done', 1)])
+        self.assertEqual(tiles, [('upcoming', 1), ('here', 2), ('not_in', 0), ('absent', 1), ('on_leave', 1), ('done', 1),
+                                 ('forgotten', 0)])                 # shown only when someone forgot (test_forgotten)
         self.assertEqual((board.planned, sum(count for _, count in tiles), board.late, board.unplanned), (6, 6, 1, 1))
         self.client.force_login(self.lead)
         with mock.patch('django.utils.timezone.now', return_value=at(10)):
@@ -424,20 +424,15 @@ class BoardTests(PeopleTestCase):
         self.assertNotIn('Bravo', page)
         self.assertNotIn('Charlie', page)
 
-    def test_a_clock_in_open_more_than_twelve_hours_is_listed_and_flagged_not_dropped(self):
+    def test_a_clock_in_open_for_days_is_listed_never_dropped(self):
+        """A stretch left open is read whatever its age (closed ones from two days back): past the limit of Scheduling
+        settings it is a forgotten clock-out, its own state (hr/tests/test_forgotten.py); under it, a presence."""
         punch(self.in_a, at(7, day=DAY - timedelta(days=3)))           # forgot to clock out three days ago
         punch(self.ben, at(21, day=DAY - timedelta(days=1)))           # 13 hours ago
         punch(self.cy, at(8))                                          # 2 hours ago
-        board = read.board(self.lead, at(10))
-        flagged = {row.employee.last_name: row.open_since for row in board.rows}
-        self.assertEqual(flagged, {'Alfa': at(7, day=DAY - timedelta(days=3)),
-                                   'Bergh': at(21, day=DAY - timedelta(days=1)), 'Cyr': None})
-        self.assertEqual(board.open_long, 2)
-        self.client.force_login(self.lead)
-        with mock.patch('django.utils.timezone.now', return_value=at(10)):
-            page = self.client.get(reverse('hr:production_today_board')).content.decode()
-        self.assertIn('Open since 27.02.2026 07:00: check', page)          # on the site's clock (UTC here)
-        self.assertIn('2 open more than 12 hours: check', page)
+        states, board = self.states(at(10))
+        self.assertEqual(states, {'Alfa': 'forgotten', 'Bergh': 'present', 'Cyr': 'present'})
+        self.assertEqual((board.on_site, board.forgotten_open), (3, 1))
 
     def test_people_planned_off_or_with_no_plan_are_not_listed_unless_they_are_there(self):
         self.plan(self.in_a, None)                                     # planned off
@@ -509,7 +504,7 @@ class TodayPageTests(PeopleTestCase):
         ProductionDepartment.objects.filter(pk=self.dept_a.pk).update(manager=self.lead)
 
     def test_the_page_the_fragment_and_the_numbers_for_the_viewers_team_only(self):
-        today = site_today(None)
+        today = site_today(self.site)                 # the people's own site's day (the board reads each on their site's clock)
         for person in (self.in_a, self.in_b):
             ShiftAssignment.objects.create(employee=person, day=today, shift=self.early)
         self.client.force_login(self.lead)

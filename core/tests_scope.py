@@ -118,7 +118,7 @@ class PrivateFieldTests(TestCase):
             recorded = SiteResource.recorded(site)
         self.assertEqual(recorded['Description'], PRIVATE)
         self.assertNotIn('Secret words', str(recorded))
-        self.assertEqual(SiteResource.private_fields, ())
+        self.assertEqual(SiteResource.private_fields, ('contact_email', 'contact_phone'))     # a person's address
 
 
 @override_settings(ACCESS_AREAS='core.tests_scope.SCOPED_AREAS')

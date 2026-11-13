@@ -7,7 +7,8 @@ What works today:
 
 - Sign in, sign out, forgot password (reset link by email), change password. All of it is Django's
   built-in auth: PBKDF2 password hashing, signed one-time reset tokens, the standard password
-  validators, CSRF protection and sign-out by POST only.
+  validators, CSRF protection and sign-out by POST only. A new person is invited by email with a one-time
+  link that sets their password (see Email).
 - An activity log (`/activity/`): who created, changed or deleted which record, when, with the old
   and new value of every changed field. Rows are written in the same transaction as the change and a
   database trigger refuses to update or delete them. Each record's form has a History tab. An entry where
@@ -258,7 +259,7 @@ Differences from the source:
   are in it; deleting a system takes its units out of it, logged.
 - Water type is required and has no default (the source defaulted to saltwater in one place and
   freshwater in another).
-- The water origin is optional (cross review F3, farm 0039, `chk_tanks_water_origin`): sea water or diluted sea water,
+- The water origin is optional (cross review F3, farm 0040, `chk_tanks_water_origin`): sea water or diluted sea water,
   or fresh water with salt added (NaCl, for smolt or against disease). The water chemistry reads it (Water-chemistry
   core): salt-added water is worked out without sea water's ions; not said, a salinity of 1 to 5 ‰ is taken as diluted
   sea water and the value says so. A loop or a sampling point takes its units' origin when they all say the same.
@@ -304,7 +305,18 @@ code, filters by category, water environment, cleaner fish (any, lumpfish, wrass
   the bigger ones outcompete the smaller at feeding). A stocking, transfer or grading beyond it asks for an
   acknowledgement first, and a unit holding such a mix says so (see Production units). Empty means no check, and the
   list says "No check"; the list's **Size limit** column shows it (2×). Migration 0034 gave every species there the
-  owner's default 2; a new species is offered 2 on its form. It is not a withdrawal input: it is edited freely.
+  owner's default 2. It is not a withdrawal input: it is edited freely.
+  **A new species' box is empty, and empty takes the default of the species' kind** (`farm.forms.species.
+  offered_weight_ratio`): 2 for a production species, **no check for a cleaner fish** (the owner, 2026-11-10: lumpfish
+  and wrasses are topped up with fish of other sizes), also when the catalogue fills the cleaner-fish type in. The
+  person is told after saving which was applied. Whatever is typed is kept, a 2 for a cleaner fish too: the box is
+  never filled in beforehand, because a value standing in it could not be told from a typed one. On an edit, empty
+  means no check, as before. A top-up of a cleaner species without a limit asks nothing and its cage shows no
+  "Mixed sizes" chip; salmon is unchanged. Migration `farm/0038_cleaner_fish_no_size_check` emptied the limit of the
+  cleaner species that still held 0034's untouched default (2, and no person's word about the limit in the activity
+  log), deleted ones too, one activity-log row each (by `system`). A limit a person changed stays; a cleaner species
+  whose 2 came with its own creation through the form is left as it is and named in the migration's output (the 2 may
+  have been typed); going back gives 2 back only where it took it and nobody chose since.
 - **Status and notes**: active, experimental, inactive or discontinued; notes. Active and
   experimental species are the ones a new batch can take (Production units).
 
@@ -639,7 +651,7 @@ that would leave them without their fish. One transaction, locks in the lock ord
 cages, `check_stock` finding nothing new); run again it does nothing; `--dry-run` only reads, in a read-only
 transaction. The run needs the database migrated. The dry run also reads a database not migrated yet: the units and
 batches of the plan are read with the columns the database holds (`stored`: a column a pending migration adds to their
-tables, the unit's water origin of farm 0039 for one, is left out, whichever it is), and the stock without the opening
+tables, the unit's water origin of farm 0040 for one, is left out, whichever it is), and the stock without the opening
 balances.
 
 **Batch details.** A batch's year class (årsklasse) and whether its fish are farmed or wild-caught are what the reports
@@ -1117,7 +1129,14 @@ notes, and **Void** while allowed.
   biomass a day = 100 × feed / the sum of the book biomass of the days with fish; the book does not grow
   between weighings, so it reads high as the last weighing ages, and the drawer says how old it is), the
   feed in use, each batch's window ("1 Oct – 15 Oct, 168 kg fed, 196 kg grown") and its last 10 records.
-- The production overview: feed today and over the last 7 days on the whole farm.
+- The production overview: feed today and over the last 7 days on the whole farm, **each site on its own day** (the
+  owner's decision of 12.11.2026: everything is shown on the site's own day, by the site's own clock). Feed recorded
+  on a site's today is in "Feed today" at once, whatever the company's clock says; the 7 days are each site's own last
+  7; a figure over sites on different clocks is the sum of each site's own day, and on a farm of more than one clock
+  both cards say "Each site on its own day". The filter is `farm.clocks.own_days`, beside the clocks the tasks read.
+  Each card opens the feeding records from the earliest to the latest of those days among the sites, so in the hours
+  when two sites are on different days that list holds one day more of one site than the figure
+  (`farm.tests.test_feeding.OverviewFeedOnSeveralClocksTests`).
 
 **Who may do what:** the area Feeding records in the role matrix (Production · Operations · Feeding): Read
 the Meal board, Records and the feeding part of a unit's drawer, Create records a feeding or a meal, Delete voids
@@ -2033,6 +2052,35 @@ day. The list filters by site, unit, batch, method, medicine, dates, "under with
 "vaccinations", shows every batch a treatment reached with the withdrawal it puts on it, and offers **Last day**
 (the course ended earlier or goes on: Edit, logged with the old and new day) and **Void** (with a reason, the
 farm's window; it lifts the withdrawal). Nothing else is edited: a correction is a void and a new record.
+**The list reads the fish on the day of the site they are on now** (the owner's decision of 12.11.2026: everything
+is read on the site's own day, by the site's own clock; the company's day plays no part in whether fish are held).
+`farm.health.withdrawal.of_treatments` reads each batch a treatment reached on today of the site its fish are on now,
+with the reader the unit's own withdrawal line and the harvest check use (`of_units`), asked that same day; which
+units share a day is said in one place (`site_days`). So the list's row, "Under withdrawal today", the day counts and
+the unit's own line are one answer:
+
+- a site ahead of the company: a course given today there has begun and holds the fish, and fish free on the site's
+  day are free on the list, though the company's day has not come;
+- a site behind the company: its running day is not counted as a past day without a temperature, and its fish are
+  not freed a day early;
+- a batch moved between clocks is read on the day of where it is now, with every course it carries;
+- a batch that arrived today in a unit under a running course is in the course;
+- a batch whose fish are on sites of different days is shown once for each day, each part with its units and its own
+  answer (`B-001 (K-01) · … `, `B-001 (T-02) · …`);
+- fish that are nowhere any more (harvested out) are read on the day of the units the course was given in.
+
+`farm/tests/test_withdrawal_clocks.py` asserts for each of these that the list says what the unit's own line says.
+**Known and accepted:** on the day fish move between clocks, the unit they left still names them on its own day (a
+batch counts in a unit on the day it leaves), so that day the list shows them as two parts, as the two units' lines
+do. And a course given today to the part of a batch on the later clock holds the whole batch, each part by its own
+site's calendar: the part on the earlier clock shows the withdrawal at once and is marked held when its own day
+reaches the course's first day, hours later.
+
+**The write guards keep their day**, the earliest today among every unit the fish were in (`withdrawal.reach`,
+`earliest_today` in `farm/stock/dates.py`): a guard asks before a write stands, of fish that can be on several sites.
+One thing changed for them: a course that has begun where it was given has begun (`Reader.there`, `Reader.holds`).
+Before, a course given today on the later clock began "tomorrow" on the guard's day and was not seen: a unit of such
+fish could be deleted and a medicine's withdrawal made shorter without the question (`GuardsOnTwoClocksTests`).
 
 **The medicine withdrawal** is worked out on read, never stored (`farm/health/withdrawal.py`), so a void, a
 corrected temperature or a backdated transfer changes it at once:
@@ -2209,8 +2257,14 @@ optionally a due time, and:
   who can no longer be chosen (deactivated, or the role taken away) stays on the tasks they had, marked so.
 - a **checklist**, once the task exists: its lines, at most 30, edited as a list on the dialog's Checklist
   tab until the first line is ticked; then each tick is the only change, with who and when.
-- **notes**: anyone who can read Tasks adds one in the drawer; a note is never edited or removed and is in
-  the activity log with its text (task notes are part of the work record; Messages are not, see below).
+- **notes**: anyone who can read Tasks adds one in the drawer; a note is never edited or removed there (task
+  notes are part of the work record; Messages are not, see below). The activity log says that a note was added,
+  by whom and when, never its words; a description (a task's and a recurring task's), a completion note and a
+  reason for cancelling are logged the same way (a person's free text is private in the log, which nobody can
+  erase from: Security in the pages, Personal data). The words live on the task. **Reopening loses none of them:**
+  it clears the completion note and the reason on the task (it is open again) and keeps each as a note by the
+  person who wrote it, marked as what it was (`TaskNote.kind`, `tasks.services.reopen`); the drawer says
+  "Completion note, kept when the task was reopened". Only the erasure procedure removes a person's words.
 
 **Statuses**: open, **in progress** (who started it and when), **done** (who completed it, when, and a
 note), **cancelled** (who, when and why). Start, Complete and a tick: a person the task is for, or whoever
@@ -2267,7 +2321,8 @@ free-text conditions), maintenance (preventive maintenance as a recurring task a
 repair as a task), a calendar, people without a login (with HR), and the AI assistants (reading
 `tasks/read.py`, writing through `tasks/services.py` with the person's confirmation). Task notes are not a
 Messages conversation: a conversation is for its members only and not in the activity log, while a task's
-notes are part of the farm's record that a supervisor, the next shift or an auditor reads.
+notes are part of the farm's record that a supervisor, the next shift or an auditor reads on the task (the
+activity log records that a note was added, not what it says).
 
 Differences from the source (details in the bug document, TSK-01 to TSK-23):
 
@@ -3261,10 +3316,16 @@ who reads the log sees everything else but not the people.
 with a check keeps it one; the migration makes it, the only seed: no shift, holiday or leave type is seeded). It is
 changed, never added or deleted. Every setting has exactly one reader: the standard week (the Team overview), the
 minimum rest, the most days in a row and the rest rule, warn or block (the rules of the roster), the working weekdays
-(the days a leave request is charged for) and the punch window and the absent-after minutes (Today). The figures are
+(the days a leave request is charged for), the punch window and the absent-after minutes (Today) and the hours after
+which an open clock-in counts as a forgotten clock-out (`forgotten_after_hours`, 16 until HR sets another; its one rule
+is `hr.rules.forgotten`, see Today & attendance). The figures are
 labelled defaults on the page, **not the law**: none of the statutory figures is verified, so none is a database
 constraint (a rest of 60 minutes can be stored); the settings may only be set stricter than the statute, and the owner
-confirms them. Sanity checks only: ranges and the enumerations.
+confirms them. Sanity checks only: ranges and the enumerations. The forgotten clock-out limit is 1 to 168 hours (a
+database check); a blank or an out-of-range value is refused with its reason, and so is one shorter than the longest
+active shift with the punch window before it (a stretch begins at the clock-in, which may come the whole window before
+the shift: a person on that shift would count as forgotten before it ends and could not clock out; a wider window alone
+is held to it too), as the shift form refuses an active shift that, with the window, is longer than the limit.
 
 **Shifts** (`/hr/settings/shifts/`, no menu line, reached from the settings page; Shifts is its own matrix area): a name,
 a code (capital letters, digits, hyphens, underscores; unique among live shifts, free again after a delete), the start
@@ -3378,20 +3439,57 @@ the clock-ins inside the window say whether they were late). People planned off,
 with nothing planned or on a day off are not listed (the source counted every unrecorded person absent, HR-12); pending leave is not
 leave; nothing planned and on leave is not listed either. Today shows the figures (`hr.read.Board`): **On site now** first (every open
 clock-in on the farm, whoever looks: the emergency muster, a number only, never names past the viewer's team, by site when
-there are several, `hr.read.muster`; the tile says "Everyone clocked in, all teams" and how many are open more than 12 hours),
+there are several, `hr.read.muster`; the tile says "Everyone clocked in, all teams" and how many of them are forgotten
+clock-outs, with the limit's own number),
 Planned today, then one
 tile per state the planned people are in, each person in exactly one, so they add up to it (upcoming, here now with the late among
-them said in it, not in yet, absent, on leave, done), and "Here, not planned" apart (only those still in; someone unplanned who clocked
-out is listed as done, not counted here); closed stretches are read from two days back and an open clock-in whatever its age:
-one open more than 12 hours stays on site and its row says "Open since …: check" (a forgotten clock-out is closed on the
-attendance page); then the people; the board is a fragment the page
+them said in it, not in yet, absent, on leave, done, and clock-out forgotten, a tile shown when someone is in it), and "Here, not planned" apart (only those still in; someone unplanned who clocked
+out is listed as done, not counted here); closed stretches are read from two days back and an open clock-in whatever its age;
+then the people; the board is a fragment the page
 polls (`data-poll`, 30 seconds) and the server draws every number and every time, on the clock of each person's site. The person's own
 **Clock in** and **Clock out** buttons need Read on Attendance and an employee row of their own, and are refused while a stretch is open
 or none is.
 
+**A forgotten clock-out** (owner decision F-095, 2026-11-10; `hr.rules.forgotten`, the one rule): a clock-in still open longer
+than the limit of Scheduling settings (16 hours until HR sets another, never a figure in the code). Nobody knows when the person
+left, so nothing is assumed in either direction and no hours are invented:
+
+- **The board** gives the person a state of their own, *clock-out forgotten*, whatever their plan or leave, with "Open since …: to
+  be closed on the Attendance page" and, for who may correct that person's attendance, a link to the stretch. Never present or
+  here now (that would be an assumed value), never done (there is no time to say) and never absent (the person may be back at
+  work, unable to clock in beside the open stretch). A planned person in it is counted in its own tile, so the tiles still add
+  up to Planned today; one not planned is listed and said under that tile, in no other figure.
+- **The emergency count** (On site now) keeps every open clock-in, the forgotten ones too, and says how many of them are that old:
+  an overcount is checked, a person missed is not, and a forgotten stretch may be the only trace of someone who came back to work.
+- **The person** is told in words on Today instead of the two buttons ("Your clock-in of … was never closed: … Ask your lead,
+  or whoever keeps attendance for you, to close it on the Attendance page with the time you really left; then you can clock in
+  again.": a lead and a person without one are told something they can do), and a clock-in or clock-out sent
+  all the same is refused with the same sentence and writes nothing (`hr.services.forgotten_refusal`). A clock-out now would store
+  the days since as worked; a second clock-in cannot stand beside an open stretch (the table's exclusion constraint), and closing
+  the old one for them would invent the time they left.
+- **The lead closes it** on the Attendance page: whoever may correct that person's attendance (Edit on Attendance, never
+  one's own stretch without Everyone) types the real clock-out and the reason. **An open stretch is reached by whoever
+  reaches the person today as well as on its first day** (`hr.scope.stretches`, the one rule of who reaches a stretch): a
+  person who moved department since they clocked in is closed by their lead of today, not sent to a lead they no longer
+  have; once closed, the stretch is history of its day and its day's manager's. The stretch becomes an entered one (`via`),
+  and the log row says who closed it, the clock-out, that it was entered by hand and that a reason was given (never its
+  words). Then the person clocks in again.
+- **Never ahead of now** (`hr.services.check_times`, the one rule of a stretch's two typed times, on the form and in
+  `enter_presence`): the clock-out after the clock-in, and neither later than the server's now, each refused with its
+  sentence on the field. A clock-out typed days ahead would close the stretch with hours nobody has worked, keep the person
+  from clocking in and take them out of the emergency count while the record says they are in.
+- **The limit counts elapsed hours** (`hr.rules.forgotten_before` works in UTC), also on the night the clocks change.
+- **Totals.** Nothing in the code sums worked time yet (state is read, not stored); the rule for whatever does is the same: a
+  forgotten stretch has no end and counts for nothing until it is closed.
+
 **The Attendance page** lists the stretches of the viewer's team over the last fortnight or the days asked for, times on the site's clock,
 with **Mark present** (Create: a person of the team, the times, the reason), a correction (Edit, logged with what it was before) and a
-void (Delete). The page's heading is Attendance though it shares its permission with Today (the role matrix places the area under
+void (Delete). A stretch still open is listed whenever it began (it runs on through the days asked for), so a forgotten
+clock-out is always there to close, marked "Clock-out forgotten". **A time typed by hand needs its reason, whoever clocked
+in:** a correction that changes the clock-in or clock-out of a stretch the person clocked themselves makes it an entered
+stretch (the table's own check then holds the reason); an edit that leaves both times alone leaves it the person's own. The
+log keeps what the person's own clock-in keeps, so also who made the stretch (`AttendanceRecordResource.snapshot`,
+`hr.services.PUNCH_FIELDS`). The page's heading is Attendance though it shares its permission with Today (the role matrix places the area under
 HR dashboard, where its Read page first sits).
 
 ### HR dashboard › Organization chart (`/hr/organization/`) and Time & shifts › Team overview (`/hr/overview/`)
@@ -3466,9 +3564,14 @@ production people in Production, with the same permission.
 - **Approving leave** opens a dialog with the person's planned shifts inside the request (`hr.read.leave_impact`) to cover; it never
   blocks the approval. Nobody decides their own leave (service and trigger), so a sole production manager's own request goes to a head
   of production or HR.
-- **Roles.** `manage.py hr_roles` creates **Production manager** (Today, Attendance, Shift schedule with planning, Leave requests with
-  deciding, All production; no Team list, chart, settings or office people) and **Production worker** (own Today, own week with Crew,
+- **Roles.** `manage.py hr_roles` creates **Production manager** (Today, Attendance with entering presence and correcting a
+  stretch, Shift schedule with planning and clearing a day, Leave requests with deciding, All production; no voiding of a
+  stretch, no Team list, chart, settings or office people) and **Production worker** (own Today, own week with Crew,
   own leave) when they do not exist, and keeps a role an administrator changed as it is (`hr/roles.py`, never run on migrate).
+  Clearing a day and entering and correcting attendance are the owner's addition of 2026-11-10 (F-203: the manager closes
+  a forgotten clock-out). A Production manager role made before it gets the three rights from migration
+  `hr/0012_production_manager_rights`, one activity-log row per right given (by `system`); a right the role held already
+  is not said, what an administrator changed otherwise stays, and going back takes away exactly what it gave.
 - **Not built here** (decided with the owner): a minimum crew per shift and an on-site count. The legal items (information and
   discussion on attendance recording, impact assessment, working-time figures, retention, the undeletable log) are on
   [docs/hr-launch-checklist.md](docs/hr-launch-checklist.md) for HR and the data-protection officer: nothing there is encoded as law.
@@ -3538,7 +3641,7 @@ from which device, how late) is logged. The server side is built; the push trans
   the evaluation: the safest value of each field stands in (no on-delay, the longest off-delay, the shortest escalation,
   the most attempts) and a critical configuration alarm says so until the row is back (F6). The staleness thresholds the
   alarms depend on are rule data too (F10): how long a water value counts as fresh per parameter (Setup › Reference data ›
-  Water freshness, seeded with the hours the code held; the conductivity at 25 °C and the hardness by farm 0040, 7 and 14
+  Water freshness, seeded with the hours the code held; the conductivity at 25 °C and the hardness by farm 0041, 7 and 14
   days), the clock tolerance (Platform settings) and a sensor channel's
   fresh heartbeats; the ingest contract's hour (`evaluate.MAX_AHEAD`) is the contract's and stays. No number in the modules
   an alarm's decision reads is a threshold: a test reads them, each named exception with its reason.
@@ -3640,22 +3743,45 @@ only one who manages roles and users; everyone else gets exactly what their role
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
   users are not areas, so no role can grant them.
+  **What an area's Read also reaches is said under it** (`Area.note`, printed below the area's row in the matrix, in
+  every language): Experiments and Regulatory reports show farm figures to a person without Read on the farm areas they
+  come from (an experiment's read page the batches, fish, biomass, survival and feed conversion of its own tanks; a
+  report, on its page and in its exports, everything it is computed from: stock and biomass, the feed given, slaughter
+  and harvest plans, smolt, cleaner fish, sea-lice counts and treatments with their medicines, health events with
+  diagnosis and deaths, escapes and the sea temperature; the note names them all, the most sensitive among them). That is kept on purpose (a trial needs its own tanks' figures and a regulatory filing its numbers; owner
+  decision F-168 / F-173, 2026-11-10), so whoever grants either area is told what comes with it
+  (`core/tests_matrix_notes.py`).
 - **Roles** (`/roles/`, Django `Group`): a table with each role's users and what it allows; the
   dialog has the name and a permission matrix (areas by group, columns Read / Create / Edit /
-  Delete, and Crew, All production and Everyone where an area offers them: see Row scope). Create, Edit and Delete include Read: the form adds it and the browser ticks it. Crew, All production and Everyone include nothing: they widen whose rows the role's other rights reach, so a role saved in the matrix keeps exactly what it had (the Production manager preset has All production without the Team list, `hr/roles.py`). **Deploying this rule:** a role saved before it kept the Read the old rule added; migration `hr/0010_restore_preset_rights` puts the two presets back to exactly their rights, and `manage.py check --database default` lists any other role whose Read on an area may come only from it (core.W003: Read and a widening column, no Create, Edit or Delete there) for the administrator to review in Roles. Saving
+  Delete, and Crew, All production and Everyone where an area offers them: see Row scope). Create, Edit and Delete include Read: the form adds it and the browser ticks it. Crew, All production and Everyone include nothing: they widen whose rows the role's other rights reach, so a role saved in the matrix keeps exactly what it had (the Production manager preset has All production without the Team list, `hr/roles.py`). **Deploying this rule:** a role saved before it kept the Read the old rule added; migration `hr/0010_restore_preset_rights` puts the two presets back to exactly their rights, and `manage.py check --database default` lists any other role whose Read on an area may come only from it (core.W003: Read and All production or Everyone, no Create, Edit or Delete there) for the administrator to review in Roles. Crew is not such a column: it is drawn only on the Shift schedule's own page, which needs Read on that area, so Read beside Crew is how it works at all (the Production worker preset) and the check leaves it alone (`core.access.OWN_PAGE`). Saving
   sets exactly the ticked boxes (the model's standard view/add/change/delete permissions). The
   activity log shows permission changes as "Sites: read, create; Activity log: read". Deleting a
   role removes it from its people.
-- **Users** (`/users/`): username, name, email, roles, active, last sign-in, and a Platform admin
-  badge. Email is required and unique. A new user has no password: they are sent the password reset
-  email, whose link sets their first password (and "Forgot password" sends a new link if it
-  expired). People are deactivated, not deleted, and nobody can deactivate their own account.
-  Platform admin status is not edited here (only with `createsuperuser`).
+- **Users** (`/users/`): username, name, email, roles, active, invitation, last sign-in, and a Platform admin
+  badge. A new user has no password and cannot sign in until they set one: creating them queues the
+  **invitation**, a mail with a one-time link that sets their first password, which is sent right after the save
+  (see Email: a mail leaves after the request). The Invitation column says where each person stands: "The
+  invitation to kari@example.com is being sent", "Invitation sent 10.11.2026 14:05 to kari@example.com. Password
+  not set yet.", its link has expired, the address has changed since (so that link no longer works), "Invitation
+  not sent" with the reason (the mail server's own words, or that the sending was interrupted), "Not invited yet",
+  or "Password set", with when and through which link when it was set through one ("through the link sent to
+  wrong@…, which is not this account's address now" tells a link used before a mistyped address was put right).
+  While the password is not set, the row has **Send invitation (again)** (POST `/users/<id>/invite/`, the platform
+  admin only, never to someone who has set a password, is inactive, has no address or has an invitation under way).
+  The activity log and the person's History tab have a row for every invitation (Invited: by whom, when, to which
+  address), the platform's own row when one did not go out (Not sent, the kind of failure) and a row when a password
+  is set through a link (Password set: by the person, the address the link went to); never a link. An edit sends
+  nothing. Deactivating a person ends every link sent to them.
+  Email is unique and may be left out: the person is created, the admin is told that no invitation was sent,
+  the row says "Not invited: no email address", and the person cannot sign in until an address is added and
+  the invitation sent from the row (nobody hands out a password here). An inactive person is not invited.
+  Guests and students are users like everyone else. People are deactivated, not deleted, and nobody can
+  deactivate their own account. Platform admin status is not edited here (only with `createsuperuser`).
 
 ## Security in the pages
 
 - **Text is escaped everywhere.** No template prints a value with `|safe` or `autoescape off` (the one exception is
-  the password reset e-mail, which is plain text). A form's help text is text too: several forms write a name into it
+  the two account e-mails' bodies, `templates/mail/`, which are plain text; `core/tests_escaping.py` names them). A form's help text is text too: several forms write a name into it
   (a task whose place was deleted, equipment whose systems were deleted), so `templates/registration/_field.html`
   escapes it, and Django's own layouts (`{{ form }}`, `as_p`, `as_table`, `as_ul`, `as_field_group`) draw their fields
   with the same template (`templates/django/forms/`). Markup reaches a page only from the few places that build it with
@@ -3680,6 +3806,75 @@ only one who manages roles and users; everyone else gets exactly what their role
 - **The fonts are the project's own** (`static/fonts`, declared in `static/css/fonts.css`: Atkinson Hyperlegible Next and
   Bricolage Grotesque under the SIL Open Font License 1.1, one entry each in `THIRD_PARTY.md`): no page asks Google or any
   other site for anything, so no reader's address leaves the farm with a page, and the farm's own network shows them.
+- **Personal data is private in the activity log** (owner decision F-059 / F-061 / F-179 / F-050, 2026-11-10; review
+  R1 to R7). The log is append-only (a trigger): no page and no ordinary statement changes or removes a row, so what
+  is written into it stays. Two pieces of code set the trigger aside, each inside its own transaction and for its own
+  updates only: the conversion below (`core/0011`), and the erasure of a stranger's address on request
+  (`manage.py erase_stranger_address`, at the end of this list).
+  - **What is private**, in the code (the tabs' `private_fields`, `ContactList.PRIVATE`, `tasks.services.PRIVATE`,
+    `SERIES_PRIVATE`, `add_note`) and in the conversion's list, which a test holds together: a contact person's e-mail
+    and phone (a site's and a supplier's contact list); a site's, a supplier's and a report's own contact e-mail and
+    phone; a task's and a recurring task's description, a task's notes, completion note and reason for cancelling; HR's
+    leave reasons and notes (as before). **Plain, by decision**, with the reason in
+    [docs/erasure.md](docs/erasure.md): a contact's name, role and primary flag, a site manager, a report's contact
+    person, a supplier's name, number and address, a user account's address, name and roles, a task's title and checklist.
+  - **How.** One mechanism, `core.audit.private` / `core.audit.digest`: the enumerated "Private text" with eight hex
+    digits of an HMAC-SHA256 under the digests' own key (`settings.AUDIT_DIGEST_KEY`, `DJANGO_AUDIT_DIGEST_KEY`; the
+    secret key when it is not set, so the two are rotated apart). A contact list is logged as parts: who the contact
+    is in plain text, then the e-mail and the phone as private values that say which they are; the page shows
+    `Kari (Vet, primary), Email: Private text, Phone: Private text`. This is **pseudonymisation**: the log still shows
+    that a value changed, and two equal digests mean "probably the same value"; whoever holds the key and the log can
+    recover a short value (a phone number) by trying them all.
+  - **The digest is stored, never shown.** `AuditLog.shown_changes` is the one place a stored value becomes text (the
+    activity log, and a record's History tab, which whoever may edit the record reads without the Activity log right),
+    and it never prints a digest: nobody types a guess, saves and compares it with a removed contact's. The database
+    viewer masks `audit_log.changes` (`config/database.py`: cells, search, sort, filter and the CSV export), so the
+    platform admin cannot either; a digest is read only with direct access to the database.
+  - **The rows written before** were converted by migration `core/0011_private_log_values`
+    (`core/migrations/_private.py`, one place the migration, the command and the check call). An old contact-list
+    sentence is taken apart and becomes exactly what the code writes now, so the name, the role, the primary flag and
+    who was added or taken off stay. It is read with matched brackets (contacts split on "; " and details on ", " only
+    where no bracket is open, so "Service manager (24 h line)" is a role) and from the right-hand end: the e-mail is
+    what the contact form's own field accepts (`validate_email`, one definition), the phone is digits in a phone's
+    form, "primary" is last. No address and no number of five digits or more stays plain unless it is the role left of
+    the e-mail: a role and a phone that cannot be told apart become one private part beside the name; a sentence whose
+    brackets do not balance, or with a name that holds an address or a number, becomes one private value, counted, its
+    entries named by id in the log's own row. Words without a number typed into the phone box stay plain as a role. The table is locked against writers before it is read; the append-only trigger is set aside for the
+    updates only, inside the transaction, and set back; only `changes` is written. **One-way:** going back is refused
+    once a row was converted. It refuses to convert real data under a key printed in the repository (DEBUG off and a
+    `django-insecure-` key).
+  - **Before and after it runs.** `manage.py private_log_values --dry-run` writes nothing and says how many values
+    would be converted and which entries' contact lists cannot be taken apart: run it on a copy of the database first.
+    Stop every server running the old code before `migrate` (it would write plain values behind the conversion);
+    afterwards `manage.py check --database default` (core.W004) counts plain values under private labels, and
+    `manage.py private_log_values` converts what an old server left.
+  - **A stranger's address is erased from the log on request** (the owner's decision of 2026-11-11). An invitation
+    sent to a mistyped address leaves that address in `account_mails` and in the account's log rows (`Email`,
+    `Sent to`, `Link sent to`). `manage.py erase_stranger_address ADDRESS` lists what would change and, for each
+    account, what the log says of the address; with `--apply --instruction ... --carried-out-by ...` it replaces the
+    address, in one transaction, by `erased@invalid` in `account_mails` (also inside a mail server's reply) and by the
+    value "Erased on request" in the log, and adds one "Erased on request" row on each account touched
+    (`core/erasure.py`). **Who:** the platform's database administrator, on the data-protection officer's written
+    instruction for that address. **What it checks:** only that no account has the address now. It cannot tell a
+    stranger's address from a person's own former one, so the dry run shows when the address was the account's own,
+    whether it replaced an earlier address, whether a password was set through a link sent to it and what the
+    account wrote meanwhile (by the account's key, whatever its name), and warns when it does not look like a
+    stranger's: always when it replaced an earlier address and a password was set through a link sent to it, the way
+    an account is taken over. The DPO judges, the command obeys. **What it will not do:** an address that is an
+    account's own now, a mail to it still being sent (refused, not waited for), an address that only contains it, any
+    other label, shape or record (it names where else the text stands; nothing covers an account's username or the
+    name on the log's old rows), an instruction or a name that holds the address anywhere in it (nothing it writes
+    may hold it; this refusal refuses rather once too often). **The Turkish capital İ and the dotless ı** are other
+    letters than i to the comparison that decides what is replaced, so `İNFO@EXAMPLE.COM` is not erased for
+    `info@example.com`; the dry run names the rows that hold the address only when they are read as i, and the
+    refusals read them as i. **The log's writers, the alarms among them, wait while it holds the lock**: it reads
+    everything first, waits for the lock on the log at most `--lock-wait` seconds (5, a positive number) and gives
+    up otherwise; holding it, it waits for nothing more (a mail being written just then refuses the run, said as
+    such), and reads every mail again under the locks. **What remains:** the rows themselves (who invited whom, that a link was used, that the address
+    changed), the placeholder, and the address in every backup taken before. A placeholder, not a digest: this is
+    erasure, not the pseudonymisation above. The users tab, the History tab and the log read an erased row in every
+    language (`core/tests_erasure.py`).
+  What is erased where on a person's request, what remains and who may do it: [docs/erasure.md](docs/erasure.md).
 
 ## Database viewer
 
@@ -3712,8 +3907,9 @@ app belongs to. The tables of other apps (sessions, the Django admin's log) are 
 Everything the query string names is checked against the table's real columns and the rows come
 through the ORM.
 
-**Sensitive data.** `config/database.py` lists the masked columns (`auth_user.password`, and
-`messages.body`: what people write to each other, see Messages). A masked
+**Sensitive data.** `config/database.py` lists the masked columns (`auth_user.password`,
+`messages.body`: what people write to each other, see Messages, and `audit_log.changes`: it holds the digests of
+private values, and what changed is read on the activity log page). A masked
 column is never read from the database: its cells show a placeholder, it cannot be sorted, filtered or
 searched (that would reveal it a character at a time) and the export leaves it out. A column that
 holds a secret belongs in that list; a test fails when a column named like a password, secret, token
@@ -3794,7 +3990,7 @@ The water chemistry needs the `chemcore` module, which is built only in the cont
 [Water-chemistry core](#water-chemistry-core-chemcore)); a plain virtual environment does not start without it.
 
 The database connection reads `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST` and `DB_PORT`; the
-defaults match the local container in `docker-compose.yml`. `COMPANY_TIME_ZONE` is the company's time zone, a new site's and the one migration farm/0028 gives a site without one
+defaults match the local container in `docker-compose.yml`. The mail settings (`EMAIL_HOST`, `DEFAULT_FROM_EMAIL`, `PUBLIC_BASE_URL` and the rest) are listed under Email: a development server needs none and prints its mail in the `runserver` terminal. `COMPANY_TIME_ZONE` is the company's time zone, a new site's and the one migration farm/0028 gives a site without one
 (default `Europe/Oslo`; the server's own clock stays UTC; one of the zones a site may have, or the server refuses to start: `farm.E001`). `DB_CONN_MAX_AGE` keeps a connection open between requests for that many seconds (default 0, one per request) and is meant for a server with long-lived worker threads or processes (gunicorn); a kept connection is health-checked before reuse. Never set it for `manage.py runserver`: the development server starts a new thread for every request, so each request leaves its own connection open until the database refuses new clients ("too many clients"). Uploaded files (the library's PDFs) go to
 `MEDIA_ROOT`: `DJANGO_MEDIA_ROOT`, by default `media/` in the checkout (ignored by git); keep it outside the
 checkout anywhere but a developer's machine, and back it up with the database.
@@ -4033,7 +4229,8 @@ English is the source language of every text in the code and templates; Norwegia
 Turkish (`tr`) are translations kept in `locale/<language>/LC_MESSAGES/django.po`. A visitor gets the
 language of the cookie set by the switch, otherwise of the browser, otherwise English; a signed-in
 person's choice is also saved on their account (`Profile`) and the admin can set it on the user form,
-so an invitation email arrives in the new person's language. Numbers and dates follow the language
+so an invitation email arrives in the new person's language, and the page its link opens is shown in it
+(`core.views.SetPasswordView`). Numbers and dates follow the language
 (`60,3913`); a date is shown and typed the European way in every language (`02.11.2026`, `02.11.2026 13:05`, owner rule). The activity log is stored in English and shown translated.
 
 GNU gettext is not needed: `manage.py update_catalogs` and `manage.py compile_catalogs` (Babel) do
@@ -4050,7 +4247,11 @@ pages are drawn in it: the Overview, Meal board, Production units and Water chem
 without a redesign yet, and are redesigned one page at a time.
 
 - **Tokens.** `static/css/tokens.css` is the design system's `tokens.css` plus a short block of the app's own (the
-  rail's overlays), loaded first. No stylesheet writes a colour of its own: `core/tests_design_shell.py` fails on a
+  rail's overlays), loaded first. **The design system's file is the source** (`docs/design/system/tokens.css`, made from
+  its `tokens.json`; its previews load it): a token is changed there and the file copied, never in one of the two, and
+  `core.tests_design_shell.TokenSourceTests` fails when the served file is not that file with only the app's block
+  after it, or when the app's block sets a name the design system sets. `static/css/tw.css` does not hold the tokens (it
+  names the variables), so it is built from neither. No stylesheet writes a colour of its own: `core/tests_design_shell.py` fails on a
   hex, `rgb()` or `rgba()` outside `tokens.css`. The old variables (`--mist`, `--olive`, `--stripe` and the rest) are
   gone; every sheet reads the role tokens (`--surface-*`, `--text-1` to `-3`, `--line-*`, `--primary`, `--action`,
   `--ok`, `--warn`, `--crit` with their `-text` and `-tint`).
@@ -4414,10 +4615,198 @@ Every text file is LF (`.gitattributes`), so tools on any system produce the sam
 
 ## Email
 
-Email uses the console backend for now: the password reset email is printed in the `runserver`
-terminal instead of being sent. It is written in the recipient's saved language, otherwise in the
-language of the request. Put an SMTP backend into `MAILERS` in `config/settings.py` to send
-real mail.
+Two mails go out, both about a person's account and both by one path (`core/accountmail.py`): the **invitation** a
+new person gets when the platform admin creates their account (and each time the admin sends it again), and the
+**password reset** ("Forgot your password?" on the sign-in page). Nothing else sends mail (the alarms' transports are
+their own, see Alarms).
+
+- **The link** is Django's one-time link (`PasswordResetTokenGenerator`; the page behind it is Django's
+  `PasswordResetConfirmView`, served as `core.views.SetPasswordView`): no token is stored and no token scheme is
+  written here. The project's generator (`accountmail.tokens`) adds one thing to what Django signs, the account's
+  `is_active`. A link stops working when the password is set (so it works once), when the person signs in, when the
+  account's address changes, when the account is deactivated (an opened page too), and after `ACCOUNT_LINK_HOURS`
+  (24): a day is long enough to open a mail the next morning, and a person whose link has expired asks for a new one
+  themselves or the admin sends the invitation again. Sending again does not end an earlier link that is still in
+  time; setting the password ends them all. An account made active again within a link's lifetime has that link back.
+  A link that no longer works says so ("The link was already used or has expired") and offers "Request a new link"
+  and the sign-in page. Setting the password does not sign in. Between opening the link and saving the password the
+  token is in the person's session row, and the link's address is in the access log of whatever stands in front of
+  Django: Django's design; the secure-cookie settings are still on the open deploy list for it.
+- **The link starts with `PUBLIC_BASE_URL`**, never with the Host header of the request that caused the mail.
+- **The text** is plain text (`templates/mail/`), in English, Norwegian bokmål and Turkish: in the language saved on
+  the recipient's account (the admin chooses it on the user form), otherwise the language of whoever caused the mail.
+  The invitation says who created the account; both say the username (it is what signs in), how long the link lives
+  and, the invitation, where to ask for a new one. The set-password page, and the reasons it refuses a password for,
+  are shown in the same saved language once the link has proved who it is for.
+- **A password set through a link is logged** (activity log, action "Password set": by the person, when, the address
+  the link went to) and shows on the person's row on Users: "Password set 10.11.2026 14:05 through an emailed link",
+  and, when the account's address has been changed since, "through the link sent to wrong@…, which is not this
+  account's address now". An invitation that went to a mistyped address and was used before the address was put
+  right is seen there. There is no "take the password back" action: the right person uses "Forgot your password?"
+  (the owner's decision if more is wanted).
+
+### A mail leaves after the request, never in it
+
+`core.AccountMail` (table `account_mails`) is the **outbox**. What causes a mail writes its row as waiting, inside
+its own transaction (creating a user writes the user, the log row "Invited" and the mail's row together); the request
+is answered; once that transaction has committed, the row is handed to **one worker thread per server process**
+(`accountmail.worker`), which talks to the mail server outside any transaction and any lock and then writes on the
+row when the mail went out (`sent_at`) or why it did not (`error`). The shared tab layer has the hook for it
+(`Resource.after_commit`, called after a save's transaction, before the page is answered). So:
+
+- no request waits for a mail server, and "Forgot your password?" does the same work and takes the same time for
+  every address: the form hands the address over and nothing else; whether it has an account, the hourly limit, the
+  row and the send are the worker's (measured with a mail server taking 0.6 s a mail: answers of 2 to 5 ms for an
+  address nobody has and for one with an account; 610 to 690 ms for the latter before);
+- a person's row is never locked while a mail server is talked to (a reset under way does not hold up their sign-in);
+- a save that fails sends nothing, and no mail is out for a user that does not exist.
+
+**One mail gets `EMAIL_TIMEOUT` seconds in all** (30), not for each step: the SMTP library's timeout is per step of
+the conversation (connect, greeting, sender, recipient, data, ...), so the worker cuts the conversation off itself at
+that limit and the mail counts as not sent ("The mail server did not finish in time: the mail may have gone out all
+the same"). Only the opening of the
+connection can add its own timeout once more.
+
+**What the admin sees.** The answer to creating a user or to "Send invitation" says that the invitation is being
+sent and that the person's row says whether it went out; the row says "is being sent" (no second send meanwhile),
+then "Invitation sent …" or "Invitation not sent" with the reason and "Send invitation again". The mail server's own
+words are on that row and in the database viewer (`account_mails`: the address, who asked, when, the reason; no
+token, nothing masked), which only the platform admin opens; the activity log, which a role can be given, gets the
+platform's own line after the admin's "Invited": "Not sent" with the kind of failure only (the error's class, or the
+platform's own sentence). The platform's own sentences are shown in the reader's language. The server's log has a
+line for every mail that did not go out (the kind and the row's id), with time and level (`LOGGING`,
+`core.accountmail`, to stderr).
+
+**The worker.** Two lines wait for it, each with room for 200 jobs: the mails the platform admin causes
+(invitations) and the requests anybody can send (the forgot-password form). It takes the admin's first, so requests
+from outside can neither crowd an invitation out nor make it wait behind them. It keeps its database connection from
+one job to the next while jobs wait and closes it when none does: 200 lookups of addresses nobody has are emptied
+in 0.2 s (about 900 a second; 42 a second while it opened a connection for each). It tries the kept connection before
+each job and opens a new one when the database has dropped it meanwhile, so the job after a database restart is not
+lost. **A full line is never silent.**
+An invitation that finds its line full is marked not sent ("Too many mails are waiting to be sent") and the admin is
+told. A reset request that finds the requests' line full is dropped: the person is answered like every other, and
+the server's log says so once a minute with how many were dropped since the last line and since the process started
+(the count an operator reads; `accountmail.worker.dropped`).
+
+**Whose a waiting mail is, and what happens at a restart.** The lines are in memory, so a waiting mail can be sent
+only by the server process that queued it. Its row names that process (`owner`), and the process keeps saying that
+it still has the mail (`alive_at`, renewed at every job its worker starts, **for the mails the worker holds**: the
+ones handed to it and not yet done, never everything that carries the process's name). A mail is called not sent only
+when that is known, and it is then **written down**, once, on the row and in the logs ("The sending was interrupted: the server
+stopped, or the mail server never answered", stored like any other reason):
+
+- by the process itself, when it stops in order with mails still queued (`atexit`: the mails under way get
+  `EMAIL_TIMEOUT`, what is left is closed);
+- for a process that was killed, by the next look at the row once its owner has been silent for three times
+  `EMAIL_TIMEOUT`: before the users tab is drawn, before an invitation is sent again or a reset is counted, and when
+  a worker starts (a restart);
+- the same way for **a mail whose job was lost while its process lives on** (the database failed when the job
+  started, or when the outcome was to be written after the mail server had answered): the worker no longer holds
+  it, so nobody renews it, and the next look after three times `EMAIL_TIMEOUT` closes it as interrupted. Such a mail
+  **may have gone out**: the row cannot say, since writing it down is what failed.
+
+Never by the row's age: a mail behind a slow mail server or a long line is "being sent" for as long as its owner has
+it, and sending it again is refused meanwhile. **A mail can go out twice in two cases, both to the same person at
+the same address**, and in both the first row stays "interrupted" though the mail went: the mail under way of an
+owner that was silent past the lease without having stopped (a hung process, a paused machine), when the admin sends
+again and the first send then completes after all; and a mail whose outcome could not be written (above), sent again
+by the admin. Neither can be closed without the mail server's help. A mail still waiting in a line cannot: a row
+closed as interrupted is skipped by an owner that gets to it after all. Nothing sends a lost mail again by itself: the admin sends the
+invitation again from the row, and a person asks for their reset again (a lost reset does not count against their
+hour). Two server processes each have their own worker and their own rows; neither closes the other's while it lives.
+
+**Forgot your password** answers every address the same way (the same page, the same work in the request). One
+account is sent at most `PASSWORD_RESET_MAILS_PER_HOUR` (3) reset mails an hour: the mails that went out or are
+waiting count for the hour, one that failed for five minutes (a mail server that was down keeps nobody out for the
+hour); the account's row is locked while its mails are counted, so two server processes cannot both read "none
+yet". An account held back is one warning in the server's log an hour. The admin's "Send invitation again" is not
+limited (it is the admin's, and logged). An invited person who has not set a password yet can ask for a link here
+too. **There is no limit per client**: the reverse proxy in front of the server must limit
+`/accounts/password_reset/` (for nginx, `limit_req`), or one script can send three mails an hour to every account.
+A reset is not in the activity log (anyone can ask for one); its row is in `account_mails`.
+
+**Where the mail goes** is the environment's alone; no address, user or password is in the repository. They are
+deployment settings, not the platform owner's (a farm does not change its mail server or its link lifetime on a
+page):
+
+| Variable | What | Default |
+|---|---|---|
+| `EMAIL_HOST` | the SMTP server | none: a development server prints the mail in its terminal |
+| `EMAIL_PORT` | its port | the encryption's own: 587 (starttls), 465 (ssl), 25 (off) |
+| `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | the account to sign in to the SMTP server with (both or neither) | no sign-in |
+| `EMAIL_TLS` | `starttls`, `ssl` or `off` | `starttls` |
+| `EMAIL_TIMEOUT` | seconds one mail may take in all (1 or more) | 30 |
+| `DEFAULT_FROM_EMAIL` | the sender address | none (a development server: `webmaster@localhost`) |
+| `PUBLIC_BASE_URL` | the address people open the console at, scheme and host only (`https://farm.example.no`) | a development server: `http://127.0.0.1:8047` |
+| `ACCOUNT_LINK_HOURS` | how long an invitation's or a reset's link works (1 or more) | 24 |
+| `PASSWORD_RESET_MAILS_PER_HOUR` | reset mails one account is sent in an hour (1 or more) | 3 |
+
+A development server (`DJANGO_DEBUG` on, the default) without `EMAIL_HOST` uses Django's console backend: the mail is
+printed in the `runserver` terminal, link and all. **With `DJANGO_DEBUG=0` there is no console to fall back on**: the
+mailer is SMTP whatever the environment holds, and the system check `core.checks.mail_is_configured` stops `runserver`,
+`migrate` and `check` with an Error when something is missing:
+
+- `core.E002`: no SMTP server (`EMAIL_HOST`);
+- `core.E003`: no sender address (`DEFAULT_FROM_EMAIL`), or not an address;
+- `core.E004`: `PUBLIC_BASE_URL` not set, not `https://host[:port]` alone (a user part before the host is refused
+  too), or a host this server does not answer to (`DJANGO_ALLOWED_HOSTS`; with `*` there every host passes);
+- `core.E005`: an SMTP user without a password (or the other way round), or a password with `EMAIL_TLS=off`;
+- `core.E006`: `ATOMIC_REQUESTS` on a database (whatever the mail settings): a mail would be handed to the worker
+  inside the request's transaction, before the save that causes it is committed.
+
+A development server pointed at a real SMTP server is held to E003 to E005 too, and every server to E006. The deploy check
+(`CHECKS=1 scripts/test.sh`) runs with an SMTP server, a sender and a public address in its production-like settings,
+so Django's `mail.E001` (a development-only mail backend) is closed and no longer in the list of open deploy issues.
+
+### Starting a production server
+
+Nothing in the repository starts a production server yet (no image, no entry point, no WSGI server in
+`requirements.txt`), and a WSGI server does not run Django's system checks by itself. Whatever starts it must run,
+in this order and stopping at the first failure:
+
+```
+python manage.py check --deploy --fail-level ERROR   # exits 1 on core.E001 (chemistry core), farm.E001, core.E002 to E005 (mail)
+python manage.py migrate                             # runs the same checks first
+python manage.py compile_catalogs
+<the WSGI server> config.wsgi:application
+```
+
+with `DJANGO_DEBUG=0`, `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, the database variables and the mail variables
+above in the environment. Should the server be started without the checks all the same and without its mail
+settings, no mail is lost silently: every send fails ("The public address of this server is not set", or the mailer's
+own refusal of a missing host) and shows on the person's row as any failed send. One worker thread per server
+process sends the mails, so a server run as several processes sends several at a time. Two conditions on whatever
+runs the server:
+
+- **It must run Python threads.** The worker is a thread: a server that runs none (uWSGI without `enable-threads`)
+  would queue every mail and send none; the rows would be closed as interrupted and nothing would ever arrive.
+- **It should end its processes in order.** A process that exits normally sends what is under way and closes the
+  rest itself (`atexit`). gunicorn turns SIGTERM into such an exit; a bare `runserver --noreload` in a container does
+  not (SIGTERM kills it, as SIGKILL kills anything): what was queued is then lost, and its rows are closed as
+  interrupted at the next look (see "Whose a waiting mail is").
+
+### Known and accepted
+
+- **A person who has an account can still learn, slowly, whether another address has one.** The one worker takes the
+  requests in turn, so their own reset mail is built later when the request before it had a mail to send, and a mail
+  says when it was built (`Date`, `Message-ID`). It needs an account of one's own, costs one of that account's three
+  mails an hour for each address tried, and stops working for an address once it is held back. An outsider learns
+  nothing: the answer and its time are the same for every address.
+- **A mail the mail server took but acknowledged after the limit** is recorded as not sent ("The mail server did not
+  finish in time: the mail may have gone out all the same"); sending it again can put a second one in the inbox.
+- **The time limit reaches into Django's SMTP backend** (its `connection` and `_partial_connection` attributes) to
+  cut a conversation. A Django that renames them, or another mail backend, is held by the per-step timeout only;
+  `core.tests_account_mail.SendTimeTests` fails then, which is the alarm.
+- **An account made active again within a link's lifetime has that link back** (the token is stateless; putting a
+  wrong address right ends the link for good).
+- **No limit per client** on "Forgot your password?": the reverse proxy's (above).
+- **A mail can reach the same person twice**, at the same address, in the two cases of "Whose a waiting mail is" (the
+  mail under way of an owner silent past the lease that completes after all; a mail whose outcome could not be
+  written), when the admin sends again. The first row stays "interrupted" though the mail went.
+- **A stranger's address** an invitation was mis-sent to stays in `account_mails` and in the log, as the evidence
+  of where a link went, until the stranger asks: it is then erased from both by `manage.py erase_stranger_address`,
+  on the data-protection officer's instruction (`docs/erasure.md`, step 8).
 
 ## Pages
 
@@ -4504,13 +4893,14 @@ real mail.
 | `/alarms/severity-rules/`, `/alarms/deadbands/` | Alarms › Alarm severity rules and Alarm deadbands (the alarm rules, the user's reference data) |
 | `/administration/opening-balances/` | Administration › Opening balances; `new/` registers one (the platform owner's right) |
 | `/roles/` | Administration › Roles (platform admin) |
-| `/users/` | Administration › Users (platform admin) |
+| `/users/` | Administration › Users (platform admin); `<id>/invite/` sends a person their invitation (again; POST) |
 | `/database/` | Administration › Database: every table (platform admin) |
 | `/database/<table>/` | One table: Data and Structure tabs; `export.csv` below it downloads the filtered rows |
 | `/language/` | Language switch (POST; sets the cookie and the account's language) |
 | `/accounts/login/` | Sign in |
 | `/accounts/logout/` | Sign out (POST) |
 | `/accounts/password_reset/` | Forgot password |
+| `/accounts/reset/<uid>/<token>/` | The link of an invitation or a reset mail: set the password (once, while the link lives) |
 | `/accounts/password_change/` | Change password |
 | `/admin/` | Django admin: deleted farm records, and restoring them (platform admin) |
 
@@ -4522,6 +4912,7 @@ real mail.
 | `core/` | TimescaleDB extension, audit log (model, append-only trigger, `audit.py` helpers, activity page), roles and users (`resources.py`, `forms.py`), tests |
 | `core/language.py`, `core/catalogs.py`, `locale/`, `config/formats/`, `docs/i18n.md` | Languages: which one a request gets, the catalogs without GNU gettext, the English date look, the guide and glossary |
 | `core/access.py`, `config/access.py` | Access areas: what a role can be given (the permission matrix) |
+| `core/accountmail.py`, `templates/mail/`, `core/checks.py` | The account e-mails, one path: the invitation and the password reset, the outbox they are sent from after the request (`account_mails`, the worker thread, the whole-mail time limit), the link's token, the reset limit, a person's standing on the users tab; the check that stops a server that could not send them (Email) |
 | `farm/` | Farm module, one module per tab under `models/`, `forms/`, `resources/`; tests |
 | `core/widgets.py`, `core/links.py` | `DependentSelect`: a choice that belongs to another field's value (a production department to its site); `Output`: a value shown, not typed; `LinkList`: check boxes for a record's links, with their details |
 | `core/fields.py` | Model fields the tabs share: `ChoiceArrayField`, several choices stored as an array |
@@ -4572,9 +4963,58 @@ real mail.
 | `static/css/app.css` | Console shell layout |
 | `frontend/`, `tsconfig.json`, `package.json` | Browser code in TypeScript |
 | `tsconfig.test.json`, `scripts/mark-esm.mjs` | The TypeScript unit tests' build (`npm test`) |
-| `scripts/test.sh`, `scripts/testrunner/` | The whole suite in Docker, in parallel, on a database server of its own (Tests); `in-container.sh` the checks and the run inside the container, deprecations as errors |
+| `scripts/test.sh`, `scripts/testrunner/` | The whole suite in Docker, in parallel, on a database server of its own (Tests); `in-container.sh` the checks and the run inside the container, deprecations as errors; `prune.sh` removes the test runner's old image tags |
 | `config/test_runner.py`, `config/tests.py` | The test runner: the parallel suite, fast password hashing, warnings as errors (Tests) |
+| `core/testing.py` | The tests' clock: `FrozenClock` holds `timezone.now()` at a class's `NOW`, so a test dated on fixed days does not read the day it runs on (Tests) |
 | `.github/workflows/ci.yml`, `.github/dependabot.yml`, `sensors-ingest/rust-toolchain.toml`, `scripts/testrunner/image.sh` | CI, dependency updates and the ingest's pinned toolchain (CI and dependency updates) |
+
+### Management commands
+
+Every `manage.py` command of the project, and what kind it is. The product's commands and the developer's tools live in
+the same folders (each app's `management/commands/`, beside its tests and the scripts that call them by name); this
+table tells them apart, and `core/tests_commands.py` holds it against the code: a command missing here, or listed
+under the wrong kind, fails.
+
+- **product**: part of running a farm's server (a scheduled job, a set-up step, an operator's check). Changes nothing
+  it should not; safe on a farm's database.
+- **build**: makes or checks files of the repository (catalogs, the data map, generated CSS, the layout test's pages);
+  no farm's data is read or written. Run by a developer and by CI.
+- **dev**: made-up or development-only data: a demonstration seeder, a benchmark, a repair of the development seed.
+  Each is built on `core.management.devtool.DevCommand`: **with `DEBUG` off it refuses to run** unless `--force` is
+  given too (`seed_hr_demo` never runs with `DEBUG` off: it makes accounts with a known password). A developer's
+  machine and the scripts' throwaway databases run with `DEBUG` on (the default) and are not asked. **The guard judges
+  the process, not the database**: a process started with `DEBUG` on and pointed at a farm's database is not stopped by
+  it (each of these commands still has its own check: a confirmed database name, a flag, the seed's marker).
+
+| Command | App | Kind | What it does | Who runs it |
+|---|---|---|---|---|
+| `run_alarms` | alarms | product | One pass of the alarms, or one every `--loop` seconds: opens, clears, notifies, escalates, sends | The deployment, as its loop (Alarms) |
+| `check_sensors` | sensors | product | The sensor alarm rules once, or every `--loop` seconds | An operator; the deployment runs `run_alarms` instead, which checks these too |
+| `generate_tasks` | tasks | product | Makes the planned tasks of every active recurring task | A cron job (the Tasks pages do the same before they read) |
+| `sensors_housekeeping` | sensors | product | Deletes the dead letters last seen more than 90 days ago | A daily job |
+| `sensor_broker_sync` | sensors | product | Writes the MQTT broker's passwd and acl files from the sensors configuration | An operator, after the sensors configuration changed (the broker reloads the files) |
+| `sensors_ingest_role` | sensors | product | Lets the ingest's database role sign in with the password in a file, or stops it | An operator, at set-up |
+| `hr_roles` | hr | product | Creates the Production manager and Production worker roles when missing | An operator, at set-up |
+| `private_log_values` | core | product | The conversion of migration `core/0011` again: plain values under private labels in the activity log made private (`--dry-run`) | The database administrator (docs/erasure.md) |
+| `erase_stranger_address` | core | product | Erases, on the data-protection officer's instruction, an address an invitation was mis-sent to: in `account_mails` and in the activity log's rows of the account (a dry run unless `--apply`; it checks only that no account has the address now) | The database administrator (docs/erasure.md, step 8) |
+| `check_stock` | farm | product | Folds the stock ledger from its first line and reports every broken rule; changes nothing | An operator |
+| `check_withdrawal` | farm | product | The withdrawals holding fish today, and harvests recorded inside one; changes nothing | An operator |
+| `check_inventory` | inventory | product | Every rule of the store from scratch; changes nothing | An operator |
+| `check_reports` | reports | product | Every report against its frozen content and its key; changes nothing | An operator |
+| `check_experiments` | experiments | product | Every started experiment against the rules the database cannot hold; changes nothing | An operator |
+| `check_hr` | hr | product | What disagrees in the HR records; changes nothing | An operator |
+| `compile_catalogs` | core | build | Builds the `.mo` files from the `.po` files (Babel) | Landing, CI, the tests |
+| `update_catalogs` | core | build | Updates `locale/*/django.po` from the code and the templates | A developer after changing text; CI checks it changed nothing |
+| `data_map` | core | build | Writes `docs/data-map.md` and `.json` (`--check`) | A developer after changing models; CI |
+| `layout_pages` | core | build | Writes `frontend/test/pages` from the real templates (`--check`) | A developer after changing those templates; the suite checks |
+| `card_grid_css` | monitoring | build | Writes `static/css/card-grid.css` from the widget catalogue (`--check`) | A developer after changing the catalogue; the suite checks |
+| `seed_hr_demo` | hr | dev | A small demonstration company in the HR area, with sign-ins of a known password | A developer, for a walk-through (never with `DEBUG` off) |
+| `sensors_demo_setup` | sensors | dev | Makes (`--confirm`) or removes (`--remove`) the live demo's sensors for the tanks and systems a database has | A developer; `sensors-ingest/simulator/farm-check.sh` |
+| `bench_sensors` | sensors | dev | Writes synthetic readings into a database named on the command line and prints storage and read figures | A developer, on a copy or a test database (Sensors, Measured figures) |
+| `fix_seed_size_mix` | farm | dev | Separates the batches of very different sizes the development seed stocked together (Production, the development seed's mixed cages) | A developer, once per database restored from a dump older than it |
+
+`fix_seed_size_mix` is a finished one-off on a database it has run on (run again it does nothing), and is kept: every
+development dump taken before it holds the mixed cages, and a restore of one needs it again.
 
 ## Tests
 
@@ -4592,7 +5032,16 @@ memory), runs `manage.py compile_catalogs` and `manage.py test --noinput --paral
 image, stage `tests` of `docker/testrunner.Dockerfile` (the hashed requirements, the water-chemistry core built from the
 checkout and `tblib`; `scripts/testrunner/image.sh` defines it, its Dockerfile, stage, context and a tag hashed from
 everything it is built from, and builds it when missing; CI builds it by the same script), and removes the
-server and the network at the end (`KEEP_DB=1` keeps them). So a run never touches the development database `balik`, its
+server and the network at the end (`KEEP_DB=1` keeps them): on every way out of the script, a pass, a failure, a step
+that could not start, Ctrl-C, a TERM or HUP signal (the tests' container runs behind a `wait`, so a signal is answered at
+once), with any anonymous volume of the containers (`docker rm -f -v`; the server's data is a tmpfs in the place of the
+image's volume, so a run leaves no volume). Only a script killed outright (SIGKILL, its console closed) cleans nothing:
+remove its `balik-test-db-<run>`, `balik-test-run-<run>` and network `balik-test-<run>` by name. **The old images are
+`scripts/testrunner/prune.sh`'s**: every change to the requirements, `docker/` or `chemcore/` builds a new
+`balik-testrunner-chemcore:req-<hash>` tag (some 400 MB), and nothing removed the old ones. The script removes every
+`req-*` tag except the tag of every live git worktree of the repository (each tree's own `image.sh` says it), a tag
+whose image a container uses, and a tag made within the last 24 hours; it says what it removed and what it kept and
+why, `--dry-run` removes nothing, and it touches no other image, no container, no volume and no network. So a run never touches the development database `balik`, its
 server or its volume, never shares test databases, roles or the shared server's 100 connections with another run, and needs
 no `DB_TEST_NAME`. There is no serial-only group: every test runs in the parallel run. Why the run is shaped so:
 
@@ -4654,6 +5103,54 @@ empty: the whole suite raises none). `scripts/test.sh` also runs every command w
 import (`scripts/testrunner/in-container.sh`), which catches one raised while the models are imported, before the runner
 starts; a plain `manage.py test` has the runner's filters only.
 
+**A test does not read the day it runs on.** A test whose records are dated on fixed days holds the clock
+(`core.testing.FrozenClock`, mixed in before the TestCase with `NOW`: `django.utils.timezone.now`, the one clock the code
+reads, stands at that moment for the class's data and every test of it). Otherwise the rules that count from today (a
+record dated at most the correction window back, nothing in the future, a freshness) fail the test by the calendar:
+`sensors/tests/test_replay.py`, dated 10.10.2026 with a sample of the day before, failed from 10.11.2026 on (31 days).
+The dates stay as written and the clock is held, rather than the dates moved with the run's day, wherever the data is
+tied to its dates (seeded readings, whole hours, an address's `2026-10-10T00:05`). The database's own `now()` is not held,
+nor a model field's `default=timezone.now` (it keeps the real function it was given). Where the records must be made
+one after the other (the newest report, a history in order), `core.testing.StartedClock` starts the clock at `NOW` and
+lets it run on. Held so since the sweep below: the reports' tests (`reports.tests.helpers.ReportTestCase`, dated in
+October and November 2026: the deadline of a week's planned slaughter is expected from the day its plans' rows are
+made, and failed from 12.11.2026 on; the overdue driftsplan of 2026 failed once a later year's is owed) and HR's leave
+tests (a request of 01.06.2027 stands for "not begun yet"). **A date can also spell a value**, and no sweep by
+clock looks for that: `monitoring.tests.test_pages` asserted that the oxygen value "8.10" was nowhere on a page that
+also says when the fish were last weighed, 15 days back, and failed on 12.11.2026 for "28.10.2026" alone (it would
+again on every day whose date 15 days back ends in 8.10). A test that asserts a number is absent from a whole page
+uses a number no date can spell, and first shows that the page prints it for someone who may see it.
+
+**Nor the hour it runs at.** The server's day is UTC's, the company's is Oslo's (`COMPANY_TIME_ZONE`) and a site's is
+its own. From 23:00 to 24:00 UTC in winter (from 22:00 in summer) Oslo is a day ahead of the server, and a test that
+says "today" on one clock while the code reads another passes all day and fails there. Five did, in CI run 42921917659
+(23:17 to 23:57 UTC on 10.11.2026). Four were the tests' own: the wall's session day asked of the server's clock
+(`timezone.localdate()`) where the code reads the company's; the cleaner-fish cage's site left on the company's zone
+beside fixtures that count on UTC; the overview's "Feed today", then read on the company's day, expected of a UTC
+site's day; a plan dated the company's today for people placed on a UTC site. One was the product's: the Treatments list read
+every treatment on the company's day (Operations › Health). What holds the class now:
+
+- `core/tests_day_boundary.py` runs the classes that count days again with the clock held at each moment of
+  `core.testing.BAD_HOURS` (23:30 UTC on a winter night, 22:30 UTC on a summer night, the second before and the second
+  after Oslo's midnight, New Year's Eve at 23:30 UTC), in every run of the suite: `at_bad_hours(globals(), ...)` makes
+  `<Class>At<Moment>` for each. A class that says "today" belongs in that list.
+- `TEST_CLOCK=2026-11-10T23:30:00+00:00 scripts/test.sh <labels>` starts the whole run's clock at that moment and lets
+  it run on (`core.testing.run_clock`, in every worker): the way to look for more, at any hour, day or year. The
+  database's clock stays the real one, so in such a run the tests that compare the two clocks fail by design
+  (`core.tests_testing`, the test that runs `makemigrations`, the account mails' lease); it is a search, not a way to
+  run the suite. Run on 11.11.2026 over the 150 test modules that name a clock or a date (3,106 tests) with the clock
+  started at `2027-12-31T23:30:00+00:00`: ten failures, three of them the tests above, six of the run's own making and
+  one a data map that the branch's own test commits had left stale. **A sweep is run by hand**: nothing runs one on a
+  schedule, and the reports' and leave tests stand at 11.11.2026 until someone moves them.
+- **Decided since (the owner, 12.11.2026): everything is shown on the site's own day.** The overview's feed figures
+  count each site on its own day (Feeding, the production overview), and the Treatments list reads the fish on the
+  day of the site they are on (Health). The test that had pinned "Feed today" to `0.00 kg` in the hours when the
+  company's day is ahead of the site's now expects the feed at every hour.
+- In a test, today is asked of the clock the code under test reads: `farm.stock.dates.site_today(site)` or
+  `local_today(unit)` for a site's records, `core.dates.company_today()` for what has no site; never
+  `timezone.localdate()`, `date.today()` or `timezone.now().date()` (`core/tests_company_clock.py` refuses them in the
+  code and, since this change, in the tests).
+
 ## CI and dependency updates
 
 GitHub Actions (`.github/workflows/ci.yml`) runs five jobs in parallel, `permissions: contents: read`, every action pinned
@@ -4677,11 +5174,28 @@ so run `scripts/test.sh` on the branch before asking for a merge.
 
 | Job | What it runs | The same on a developer's machine |
 |---|---|---|
-| `python` | the browser build first (`npm ci`, `npm run build`: `check` fails on core.W001 without `static/js`), then `CHECKS=1 scripts/test.sh` (`SUITE=0` on a pull request) with 4 workers, in the test runner's image (`scripts/testrunner/image.sh`, built with its layers cached): `compile_catalogs` (a fresh checkout has no `.mo`, and core.W002 would fail the check); `manage.py check --fail-level WARNING`; `check --deploy` with production-like settings (DEBUG off, a random key, a host), where any issue but the five still open fails (`DEPLOY_OPEN` in `scripts/testrunner/in-container.sh`: the console mail backend and the four HTTPS settings, until the production settings exist); `makemigrations --check`; `data_map --check`; `update_catalogs`, then `git diff --exit-code -- locale` (the catalogs were up to date); `compile_catalogs`; then, except on a pull request, the whole suite with warnings as errors | `CHECKS=1 SUITE=0 scripts/test.sh` (the checks only) or `CHECKS=1 scripts/test.sh`, then `git diff -- locale` |
+| `python` | the browser build first (`npm ci`, `npm run build`: `check` fails on core.W001 without `static/js`), then `CHECKS=1 scripts/test.sh` (`SUITE=0` on a pull request) with 4 workers, in the test runner's image (`scripts/testrunner/image.sh`, built with its layers cached): `ruff check` (the linter, below); `compile_catalogs` (a fresh checkout has no `.mo`, and core.W002 would fail the check); `manage.py check --fail-level WARNING`; `check --deploy` with production-like settings (DEBUG off, a random key, a host, an SMTP server, a sender and an https public address: Email), where any issue but the four still open fails (`DEPLOY_OPEN` in `scripts/testrunner/in-container.sh`: the four HTTPS settings, until the production settings exist); `makemigrations --check`; `data_map --check`; `update_catalogs`, then `git diff --exit-code -- locale` (the catalogs were up to date); `compile_catalogs`; then, except on a pull request, the whole suite with warnings as errors | `CHECKS=1 SUITE=0 scripts/test.sh` (the checks only) or `CHECKS=1 scripts/test.sh`, then `git diff -- locale` |
 | `frontend` | `npm ci`, `npm run check:css` (the committed `static/css/tw.css` is what `frontend/tailwind.css` and the templates build now), `npm run build` (tsc, `tsconfig.json`, then the Tailwind build), `npm test` (the TypeScript tests, the designer's and the layout's browser tests on the runner's Chrome) | the same four |
 | `rust` | in `sensors-ingest/`, on the toolchain of `rust-toolchain.toml` (1.88.0, the release image's and the crate's `rust-version`): `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked --all-targets` against a TimescaleDB service migrated by Django (`manage.py migrate` in the test runner's image, the server's own packages) and a Mosquitto broker (`REQUIRE_DB=1`: the database and broker tests run, never skip), `cargo deny --locked check` (licences, bans, sources, RustSec advisories), `THIRD_PARTY` equal to what `Cargo.lock` says | `sensors-ingest/tests/run.sh` |
 | `chemcore` | `chemcore/scripts/test.sh` in the `chemcore-tools` stage of `docker/testrunner.Dockerfile` (its layers cached): rustfmt, clippy, `cargo test`, libm the chemistry's only dependency, no WebAssembly, `cargo deny` with advisories, `chemcore/THIRD_PARTY`, `docker/requirements.lock` naming the pins of `requirements.txt`; the built module's handshake with `chemcore/EXPECTED` (core.E001) is the python job's `check`. | the same `docker run` as the script's header |
 | `security` | `pip-audit --strict` on `requirements.txt` and the test runner's, and with `--require-hashes` on what the runner image installs (`docker/requirements.lock`) and the chemcore wheel's build tool (`docker/chemcore-build.lock`, maturin); the Python licence gate (`pip-licenses --allow-only`, the licences [`THIRD_PARTY.md`](THIRD_PARTY.md) allows: AGPL, SSPL, BUSL, non-commercial or any unreviewed licence fails); the banned components, MinIO and rodbus, whatever licence a client library carries (a Python or npm package, or an image a compose file or Dockerfile names; the crates are denied in `deny.toml`); `npm audit --omit=dev --audit-level=high` | see below |
+
+The ingest's tests, bench and end-to-end runs make their configuration in SQL of their own (`sensors-ingest/tests/common/mod.rs`,
+`bench/seed.sql`, `bench/multisource_setup.py`, `e2e/seed.sql`) on the schema Django migrates, so a migration breaks them
+without touching `sensors-ingest/`: a NOT NULL column without a database default (a model's `default` is Python's) that
+they do not give (`sensors_channel.fresh_heartbeats`, sensors 0010, kept the `rust` job red on `main` from its landing).
+Two things hold it: `sensors.tests.test_contract.IngestSqlTests`, in the Python suite, reads every `INSERT INTO table
+(columns)` under `sensors-ingest/` against the schema (a column the database does not fill left out, a column that is
+gone), and a branch with a migration runs `sensors-ingest/tests/run.sh` before it lands (CLAUDE.md, How work lands).
+
+**The linter** is ruff (MIT), pinned exactly in `scripts/testrunner/requirements.txt`, so it is in the image the tests
+run in and never in a server's (the `runner` stage installs `docker/requirements.lock` only). It finds mistakes, not
+taste (`ruff.toml`): pyflakes (`F`: an undefined name, an unused import or variable, a key written twice, a format
+string with no field) and `E9` (what stops a file from being read); no formatter, no style rule, no import sorting, and
+it changes no file. It runs first among the project checks, reading the files without importing them. An import that is
+there for what importing it does (a registration, a re-export) says so on its line (`# noqa: F401  why`); an applied
+migration is not edited for it (one is listed in `ruff.toml`). By hand, without the checks:
+`docker run --rm -v "$PWD:/app" -w /app "$(sh scripts/testrunner/image.sh build)" ruff check --no-cache .`
 
 The security job by hand (Docker, nothing installed on the machine):
 
@@ -4690,7 +5204,7 @@ docker run --rm -v "$PWD:/w:ro" -w /w python:3.12-slim sh -c '
   python -m venv /tools && /tools/bin/pip install -q pip-audit==2.10.1 pip-licenses==5.5.5 &&
   /tools/bin/pip-audit --strict -r requirements.txt -r scripts/testrunner/requirements.txt &&
   python -m venv /app && /app/bin/pip install -q -r requirements.txt -r scripts/testrunner/requirements.txt &&
-  /tools/bin/pip-licenses --python /app/bin/python --from=mixed --allow-only="Apache-2.0;Apache-2.0 OR BSD-3-Clause;BSD-2-Clause;BSD-3-Clause;BSD License;LGPL-3.0-only;MIT-0;PSF-2.0"'
+  /tools/bin/pip-licenses --python /app/bin/python --from=mixed --allow-only="Apache-2.0;Apache-2.0 OR BSD-3-Clause;BSD-2-Clause;BSD-3-Clause;BSD License;LGPL-3.0-only;MIT;MIT-0;PSF-2.0"'
 npm audit --omit=dev --audit-level=high
 ```
 

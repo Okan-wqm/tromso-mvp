@@ -23,7 +23,7 @@ def unseed(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('farm', '0041_ph_scale'),
+        ('farm', '0042_ph_scale'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

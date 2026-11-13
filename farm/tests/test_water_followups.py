@@ -6,7 +6,6 @@
   outlets, drain; never the inlet), else its system's loop: the conservative side, a longer withdrawal.
 - A "Judged as" note only where a conversion was made.
 - A system without a loop point: its sensors stand in for the ration as they do on the water page."""
-from datetime import timedelta
 from decimal import Decimal
 
 

@@ -13,7 +13,6 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from core import audit
-from core.models import AuditLog
 from farm.models import SamplingPoint, Tank
 from farm.models.water_point import EQUIPMENT, OUTLET_KINDS, SYSTEM, UNIT, PointKind, owner_type_of
 

@@ -25,7 +25,7 @@ class ParameterTests(WaterTestCase):
         self.assertEqual((conductivity.decimals, conductivity.low, conductivity.high), (0, D(0), D(100000)))
         self.assertIn('as CaCO₃', str(hardness.label))
         self.assertEqual((hardness.decimals, hardness.low, hardness.high), (0, D(0), D(10000)))
-        # How long each is fresh is the user's reference data (farm.WaterFreshness; farm 0040 seeds them): 7 days for the
+        # How long each is fresh is the user's reference data (farm.WaterFreshness; farm 0041 seeds them): 7 days for the
         # conductivity, 14 for the hardness, as the chemistry has read them since formula 3.
         self.assertEqual((freshness.SEEDS[CONDUCTIVITY], freshness.SEEDS[HARDNESS]), (168, 336))
         self.assertEqual(dict(WaterFreshness.objects.filter(parameter__in=[CONDUCTIVITY, HARDNESS])
@@ -72,11 +72,11 @@ class ParameterTests(WaterTestCase):
 
 class FreshnessMigrationTests(WaterTestCase):
     def test_farm_0040_seeds_the_two_rows_and_takes_them_back(self):
-        """farm 0040 adds the two rows (the conductivity 168 h, the hardness 336 h) with the parameter's choices; back,
+        """farm 0041 adds the two rows (the conductivity 168 h, the hardness 336 h) with the parameter's choices; back,
         it removes only them."""
         import importlib
         from django.apps import apps as global_apps
-        migration = importlib.import_module('farm.migrations.0040_water_freshness_ionic_inputs')
+        migration = importlib.import_module('farm.migrations.0041_water_freshness_ionic_inputs')
         WaterFreshness.objects.filter(parameter__in=[CONDUCTIVITY, HARDNESS]).delete()
         migration.seed(global_apps, None)
         self.assertEqual(dict(WaterFreshness.objects.filter(parameter__in=[CONDUCTIVITY, HARDNESS])

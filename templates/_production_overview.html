@@ -29,8 +29,8 @@
       {% endif %}
       {% if feeding %}
       {% blocktrans trimmed asvar source %}Feeding records at {{ clock }}{% endblocktrans %}
-      {% include "_metric_card.html" with key="feed-today" url=feeding.today.url label=feeding.today.label figure=feeding.today.count source=source only %}
-      {% include "_metric_card.html" with key="feed-week" url=feeding.week.url label=feeding.week.label figure=feeding.week.count source=source only %}
+      {% include "_metric_card.html" with key="feed-today" url=feeding.today.url label=feeding.today.label figure=feeding.today.count sub=feeding.today.sub source=source only %}
+      {% include "_metric_card.html" with key="feed-week" url=feeding.week.url label=feeding.week.label figure=feeding.week.count sub=feeding.week.sub source=source only %}
       {% endif %}
       {% if water %}
       {% blocktrans trimmed asvar source %}Samples and sensors at {{ clock }}{% endblocktrans %}

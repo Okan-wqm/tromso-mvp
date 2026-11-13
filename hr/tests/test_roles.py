@@ -28,8 +28,9 @@ class PresetTests(PeopleTestCase):
     def test_the_command_creates_both_roles_once(self):
         run()
         self.assertEqual(codenames('Production manager'), {
-            'view_attendancerecord', 'view_shiftassignment', 'add_shiftassignment', 'change_shiftassignment',
-            'view_leaverequest', 'add_leaverequest', 'change_leaverequest', 'all_production_employee'})
+            'view_attendancerecord', 'add_attendancerecord', 'change_attendancerecord', 'view_shiftassignment',
+            'add_shiftassignment', 'change_shiftassignment', 'delete_shiftassignment', 'view_leaverequest',
+            'add_leaverequest', 'change_leaverequest', 'all_production_employee'})
         self.assertEqual(codenames('Production worker'), {
             'view_attendancerecord', 'view_shiftassignment', 'crew_shiftassignment', 'view_leaverequest',
             'add_leaverequest'})
@@ -109,6 +110,38 @@ class WalkTests(PeopleTestCase):
         week = self.client.get(reverse('hr:production_shiftassignment_list')).context['week']
         self.assertEqual({row.employee.pk for row in week.rows}, {self.in_a.pk, self.in_b.pk})   # every production person
         self.assertEqual(self.client.get(reverse('hr:employee_detail', args=[self.in_fin.pk])).status_code, 403)
+
+    def test_the_production_manager_clears_a_cell_and_enters_and_corrects_attendance(self):
+        """Owner decision F-203: the manager's preset clears a planned day and enters and corrects the attendance of the
+        production people, through the pages, each logged; voiding a stretch stays outside it."""
+        from datetime import date, datetime, time, timezone as utc
+        from core.models import AuditLog
+        from ..models import AttendanceRecord, Shift, ShiftAssignment
+        day = date(2026, 3, 2)
+        early = Shift.objects.create(name='Early', code='EARLY', starts_at=time(6), ends_at=time(14))
+        cell = ShiftAssignment.objects.create(employee=self.in_b, day=day, shift=early)
+        self.client.force_login(self.manager)
+        response = self.client.post(reverse('hr:production_roster_plan'), {
+            'cells': [f'{self.in_b.pk}:{day.isoformat()}'], 'shift': 'clear'})
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(ShiftAssignment.all_objects.get(pk=cell.pk).is_deleted)
+        self.assertEqual(AuditLog.objects.filter(entity_id=str(cell.pk), action='delete', user=self.manager).count(), 1)
+        response = self.client.post(reverse('hr:production_attendancerecord_create'), {
+            'employee': str(self.in_b.pk), 'clock_in': '2026-03-02T06:00', 'clock_out': '', 'note': 'Phone was dead'})
+        self.assertEqual(response.status_code, 302, response.context and response.context['form'].errors)
+        record = AttendanceRecord.objects.get()
+        self.assertEqual((record.employee, record.clock_out, record.via, record.created_by),
+                         (self.in_b, None, 'entered', self.manager))
+        response = self.client.post(reverse('hr:production_attendancerecord_edit', args=[record.pk]), {
+            'clock_in': '2026-03-02T06:00', 'clock_out': '2026-03-02T14:00', 'note': 'Left at two', 'version': '1'})
+        self.assertEqual(response.status_code, 302, response.context and response.context['form'].errors)
+        record.refresh_from_db()
+        self.assertEqual(record.clock_out, datetime(2026, 3, 2, 14, tzinfo=utc.utc))
+        self.assertEqual(list(AuditLog.objects.filter(entity_id=str(record.pk)).order_by('created_at')
+                              .values_list('action', 'user__username')), [('create', 'manager'), ('update', 'manager')])
+        self.assertEqual(self.client.post(reverse('hr:production_attendancerecord_delete', args=[record.pk])).status_code,
+                         403)                                                     # voiding is not in the preset
+        self.assertFalse(AttendanceRecord.all_objects.get().is_deleted)
 
     def test_the_production_worker_has_their_own_pages_and_nothing_else(self):
         self.walk(self.worker, {

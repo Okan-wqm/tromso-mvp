@@ -24,6 +24,7 @@ before it commits.
 
 --dry-run only reads (in a read-only transaction): it prints the plan, the fish and weights, and what the run would ask.
 The run itself needs the database migrated (the size check's columns), and refuses otherwise.
+A development tool (core/management/devtool.py): with DEBUG off it runs only with --force.
 
     python manage.py fix_seed_size_mix --user admin --dry-run
     python manage.py fix_seed_size_mix --user admin"""
@@ -32,7 +33,7 @@ from dataclasses import dataclass, field
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 from django.db import connection, transaction
 from django.db.migrations.executor import MigrationExecutor
 from django.db.models import Sum
@@ -41,6 +42,7 @@ from django.test import RequestFactory
 from django.utils import translation
 
 from core import audit
+from core.management.devtool import DevCommand
 from farm.handling import check
 from farm.health.withdrawal import WithdrawalChanged
 from farm.models import Batch, Site, StockMovement, Tank
@@ -106,7 +108,7 @@ class Plan:
     cleaner: list = field(default_factory=list)   # [(unit, batch)] left where they are
 
 
-class Command(BaseCommand):
+class Command(DevCommand):
     help = ('Development data: moves the post-smolt and the smolt that the seed history stocked beside the grow-out salmon '
             'in TG-M01 and TG-M02 into cages of their own (transfers dated today, one transaction, --dry-run reads only).')
 

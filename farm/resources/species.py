@@ -58,7 +58,15 @@ class SpeciesResource(WithdrawalInput, Resource):
 
     @classmethod
     def after_save(cls, request, species, created):
-        """Says what the catalogue filled in (SpeciesForm), with the values, in the person's language."""
+        """Says what the catalogue filled in (SpeciesForm), with the values, in the person's language, and which size
+        limit a new species got when its box was left empty (never silently: 2, or no check for a cleaner fish)."""
+        if getattr(species, 'size_limit_offered', False) and species.max_weight_ratio is None:
+            messages.info(request, gettext('No size check was set: a cleaner fish is topped up with fish of other sizes. '
+                                           'Give it a limit on the Stocking tab if this farm wants one.'))
+        elif getattr(species, 'size_limit_offered', False):
+            messages.info(request, gettext('The size limit was set to %(limit)s×, the default for a production species. '
+                                           'Empty it on the Stocking tab if this species needs no check.')
+                          % {'limit': f'{species.max_weight_ratio:g}'})
         filled = getattr(species, 'catalogue_filled', [])
         if not filled:
             return

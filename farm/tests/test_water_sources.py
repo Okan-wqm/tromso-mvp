@@ -20,11 +20,10 @@ from unittest import mock
 from django.test import SimpleTestCase
 from django.urls import reverse
 
-from ..models import SamplingPoint
 from ..water import calculation, read, sources
 from ..water.evaluate import Status, is_fresh
 from ..water.parameters import get
-from .helpers import make_species, point_of
+from .helpers import point_of
 from .test_water import WaterTestCase
 
 D = Decimal

@@ -4,11 +4,10 @@ from django.contrib.auth import get_user_model
 from django.db import IntegrityError, connection, transaction
 from django.urls import reverse
 
-from core.models import AuditLog
 from core.softdelete import plan_delete
 
 from ..models import Employee, Posting
-from .helpers import fields_of, user
+from .helpers import fields_of
 from .helpers_people import PeopleTestCase, TOP, employee, place
 
 
@@ -25,7 +24,7 @@ class EmployeeRoundTripTests(PeopleTestCase):
         # Create (the HR administrator, who holds Everyone)
         self.client.force_login(self.hr)
         from ..units import token
-        response = self.client.post(reverse('hr:employee_create'), data(token(self.finance)))
+        self.client.post(reverse('hr:employee_create'), data(token(self.finance)))
         person = Employee.objects.get(employee_number='E-100')
         stored = {name: getattr(person, name) for name in fields_of(Employee)}
         self.assertEqual(stored, {

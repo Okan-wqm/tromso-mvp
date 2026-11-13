@@ -21,7 +21,9 @@ TODAY = {'temperature_c': 24, 'oxygen_mg_l': 24, 'oxygen_saturation_pct': 24, 'p
          'salinity_ppt': 168, 'turbidity_ntu': 168, 'nh3_n_mg_l': 168, 'nh4_n_mg_l': 168,
          # formula 3's ionic-strength inputs, water parameters since farm 0038, their rows seeded by farm 0040: the
          # conductivity at 25 °C 7 days, the hardness 14, as formula 3 had read them (farm/water/freshness.py SEEDS)
-         'conductivity_25_us_cm': 168, 'hardness_mg_l': 336}
+         'conductivity_25_us_cm': 168, 'hardness_mg_l': 336,
+         # the optional phosphate, a water parameter with its row since the phosphate migration of farm
+         'phosphate_p_mg_l': 168}
 
 
 def rows():

@@ -44,7 +44,8 @@ ADDED = {'angle', 'counter_productive', 'priority',       # a reagent's angle, a
          # the judged NH3 and CO2's activity-corrected value and basis (cross review F1); for formula 1 the corrected
          # equals the judged and the basis is 'limits' (farm/tests/test_limits_basis.py)
          'co2_corrected_mg_l', 'co2_basis', 'nh3_corrected_n_mg_l', 'nh3_basis',
-         'water_origin'}                                         # a water's origin, '' not said (cross review F3)
+         'water_origin',                                         # a water's origin, '' not said (cross review F3)
+         'phosphate_p_mg_l'}                                     # a water's optional phosphate, None: not given
 # Exceptions the core names where Python raised an accidental one: (recorded, now). Each is a deliberate, tested change.
 RENAMED_RAISES = {('StopIteration', 'ChartTooLargeError')}     # the box beyond 12 steps of 5e7 (S5)
 

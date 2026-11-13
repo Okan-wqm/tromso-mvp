@@ -50,7 +50,9 @@ class CoreTests(SimpleTestCase):
                 self.assertEqual(same, bare)
                 self.assertEqual((same.phosphate, same.k1p, same.k2p, same.k3p), (0.0, 0.0, 0.0, 0.0))
                 self.assertEqual(same.isoline(7.2), bare.isoline(7.2))
-            self.assertEqual(analysis(None, salinity), analysis(0.0, salinity))
+            none, zero = analysis(None, salinity), analysis(0.0, salinity)
+            self.assertEqual((none.equilibria, none.dic, none.co2_mg_l, none.co2_corrected_mg_l, none.co2, none.nh3),
+                             (zero.equilibria, zero.dic, zero.co2_mg_l, zero.co2_corrected_mg_l, zero.co2, zero.nh3))
         # Formula 1 does not read it.
         self.assertEqual(native.water_equilibria(15.0, 1.0, 100.0, phosphate_p_mg_l=10.0, formula=1),
                          native.equilibria(15.0, 1.0))
@@ -147,11 +149,17 @@ class CalculatorTests(WaterTestCase):
     def page(self, name='farm:water_calculator', **values):
         return self.client.get(reverse(name), {**self.WATER, **values})
 
+    @staticmethod
+    def same(found):
+        """What of an analysis does not depend on the limits it was given (the page has its own defaults)."""
+        return found.equilibria, found.dic, found.co2_mg_l, found.co2_corrected_mg_l, found.nh3_n_mg_l
+
     def test_left_empty_the_calculator_is_what_it_was(self):
         self.assertIsNone(CalculatorForm.DEFAULTS['phosphate_p_mg_l'])
         plain, empty = self.page(), self.page(phosphate_p_mg_l='')
         self.assertEqual(plain.context['analysis'], empty.context['analysis'])
-        self.assertEqual(plain.context['analysis'], analysis(None))
+        self.assertIsNone(plain.context['analysis'].water.phosphate_p_mg_l)
+        self.assertEqual(self.same(plain.context['analysis']), self.same(analysis(None)))
         self.assertNotContains(plain, 'counted in the alkalinity')
 
     def test_with_a_phosphate_the_page_and_the_report_say_it(self):
@@ -159,7 +167,8 @@ class CalculatorTests(WaterTestCase):
             with self.subTest(page=name):
                 page = self.page(name, phosphate_p_mg_l='10')
                 self.assertEqual(page.status_code, 200)
-                self.assertEqual(page.context['analysis'], analysis(10.0))
+                self.assertEqual(page.context['analysis'].water.phosphate_p_mg_l, 10.0)
+                self.assertEqual(self.same(page.context['analysis']), self.same(analysis(10.0)))
                 self.assertContains(page, 'phosphate 10.00 mg/L as P counted in the alkalinity')
                 self.assertContains(page, 'CO₂ judged without the phosphate')
         self.assertContains(self.page(), 'name="phosphate_p_mg_l"')
@@ -177,7 +186,7 @@ class CalculatorTests(WaterTestCase):
         self.assertAlmostEqual(chart.calculation.analysis.equilibria.phosphate, 10.0 / 30.973762 / 1000, delta=1e-15)
         self.assertIn('phosphate 10.00 mg/L as P counted in the alkalinity', chart.calculation.analysis.provenance)
         page = self.client.get(reverse('farm:water_unit_chart', args=[self.t1.pk]))
-        self.assertContains(page, 'counted in the alkalinity')
+        self.assertContains(page, 'Phosphate (mg/L PO₄ as P)')            # among the inputs the chart was drawn from
 
     def test_in_three_languages(self):
         for language, words in (('nb', 'fosfat'), ('tr', 'fosfat')):

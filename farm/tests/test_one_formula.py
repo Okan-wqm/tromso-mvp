@@ -117,7 +117,7 @@ NOT_CHEMISTRY = {
                                   'Calculation.change': "the difference of the core's values, shown",
                                   'calculate': 'counts the reagents chosen',
                                   'offers': "the altitude's accepted range (an input check)",
-                                  'fish_limits': "a limit pair's order (an input check)"},
+                                  'limit_offers': "a limit pair's order (an input check)"},
 }
 
 

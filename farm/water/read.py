@@ -19,7 +19,8 @@ The functions, by what they answer:
   (farm/health/withdrawal.py) both start here, and `Series` is the lookup they share;
 - `samples_of(...)`: the live samples of live points in a time window, newest first, for the history of a point,
   of an owner (all its points) or of a site; `history(samples)`: those samples with their readings, judged;
-- `limits_now(point)`: the limits that would judge a value at the point today.
+- `limits_now(point)`: the limits that would judge a value at the point today; `limits_of(places)`: the same for
+  many places in one read.
 
 - The latest value is per parameter, not per sample: a later sample without DO never hides a critical
   DO (the source read the newest row, WQ-04). One grouped query finds, per point, the newest live sample
@@ -597,7 +598,8 @@ class SpeciesBook:
 
 # ---- everything a set of points needs, read once ----------------------------------------------------------
 class Context:
-    """The points' units, the fish in them, their salinity over time and the limits."""
+    """The points' units, the fish in them, their salinity over time and the limits. With `since` None, the fish and the
+    limits alone (`limits_of`: no value is read there, so neither the middle points nor the salinity are)."""
 
     def __init__(self, points, since):
         points = list(points)
@@ -605,6 +607,9 @@ class Context:
         self.book = SpeciesBook({unit.pk for units in self.served.values() for unit in units})
         species = set(self.book.species.values())
         self.limits = Limits(WaterLimit.objects.filter(species_id__in=species, species__is_deleted=False))
+        if since is None:
+            self.middles, self.salinity = {}, None
+            return
         self.middles = middle_points({point.owner.pk: point.owner for point in points}.values())
         self.salinity = Series([*points, *self.middles.values()], parameters.SALINITY, since - WINDOW)
 
@@ -1294,23 +1299,32 @@ def history(samples):
     return rows
 
 
-def limits_now(place):
-    """{code: [WaterLimit]} for the fish at a point, or in a unit, loop or piece of equipment, today: what a value
-    there would be judged against."""
+def limits_of(places):
+    """{place id: {code: [WaterLimit]}} for the fish at each point, or in each unit, loop or piece of equipment, today:
+    what a value there would be judged against. ONE read of the fish and of the limits for all the places (a wall of
+    cards asks for every unit at once): the queries do not grow with the places."""
     now = timezone.now()
-    point = place if isinstance(place, SamplingPoint) else SamplingPoint(**{owner_type_of(place): place})
-    context = Context([point], now)
-    exposures = context.exposures(point, local_time(now, point).date())
+    points = {place.pk: place if isinstance(place, SamplingPoint) else SamplingPoint(**{owner_type_of(place): place})
+              for place in places}
+    context = Context(points.values(), None)
     found = {}
-    for parameter in parameters.LIMITED:
-        rows = []
-        for species_id, water_type in exposures:
-            row = context.limits.applying(species_id, parameter.code, water_type)
-            if row is not None and row not in rows:
-                rows.append(row)
-        if rows:
-            found[parameter.code] = rows
+    for pk, point in points.items():
+        exposures = context.exposures(point, local_time(now, point).date())
+        limits = found[pk] = {}
+        for parameter in parameters.LIMITED:
+            rows = []
+            for species_id, water_type in exposures:
+                row = context.limits.applying(species_id, parameter.code, water_type)
+                if row is not None and row not in rows:
+                    rows.append(row)
+            if rows:
+                limits[parameter.code] = rows
     return found
+
+
+def limits_now(place):
+    """{code: [WaterLimit]} for the fish at a point, or in a unit, loop or piece of equipment, today (`limits_of`)."""
+    return limits_of([place])[place.pk]
 
 
 @dataclass(frozen=True)

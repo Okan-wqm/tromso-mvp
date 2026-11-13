@@ -722,6 +722,9 @@ class Context:
         """{code: Reading} of a sample or an Observation: what was measured and what follows from it."""
         observation = observe(observation)
         found = {code: Reading(parameters.get(code), value, observation) for code, value in observation.values().items()}
+        if observation.sample is not None and observation.sample.ph_scale and parameters.PH in found:
+            # A pH measured on another scale is stored on the NBS scale; the reading says what was measured.
+            found[parameters.PH].provenance = str(messages.ph_measured(observation.sample))
         salinity = self.salinity_for(observation)
         if observation.get(TAN) is not None:
             found.update(self._ammonia(observation, salinity))

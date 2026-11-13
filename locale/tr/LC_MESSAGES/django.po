@@ -2136,6 +2136,25 @@ msgid "A note is at most %(count)d characters."
 msgstr "Bir not en çok %(count)d karakterdir."
 
 #, python-format
+msgid ""
+"A pH channel is on the NBS scale (a probe calibrated with NBS/NIST buffers). A sensor that "
+"reports on the total scale (calibrated with TRIS) is not converted here: its pH reads 0.10 to "
+"0.14 low in sea water and the NH₃ worked out from it 20 to 27 % low. Record such a pH as a sample"
+" with its scale."
+msgstr ""
+"Bir pH kanalı NBS ölçeğindedir (NBS/NIST tamponlarıyla kalibre edilmiş prob). Toplam ölçekte "
+"okuyan (TRIS ile kalibre edilmiş) bir sensör burada çevrilmez: pH’ı deniz suyunda 0,10–0,14 "
+"düşük, ondan hesaplanan NH₃ ise % 20–27 düşük okunur. Böyle bir pH’ı ölçeğiyle birlikte numune "
+"olarak kaydedin."
+
+msgid ""
+"A pH on this scale is taken for sea water of 5 ‰ or more only (not fresh water with salt added): "
+"give the pH a meter calibrated with NBS/NIST buffers reads."
+msgstr ""
+"Bu ölçekteki pH yalnızca 5 ‰ ve üzeri deniz suyu için kabul edilir (tuz eklenmiş tatlı su için "
+"değil): NBS/NIST tamponlarıyla kalibre edilmiş bir ölçerin okuduğu pH’ı girin."
+
+#, python-format
 msgid "A page shows at most %(days)s day: the first day was moved."
 msgid_plural "A page shows at most %(days)s days: the first day was moved."
 msgstr[0] "Bir sayfa en fazla %(days)s gün gösterir: ilk gün kaydırıldı."
@@ -4399,6 +4418,9 @@ msgstr "Bu birimlerin sahasına ait bir sağlık olayı seçin."
 
 msgid "Choose a health event of the site."
 msgstr "Sahanın bir sağlık olayını seçin."
+
+msgid "Choose a pH scale."
+msgstr "Bir pH ölçeği seçin."
 
 msgid "Choose a person"
 msgstr "Bir kişi seçin"
@@ -6683,6 +6705,9 @@ msgstr "Formül %(formula)d."
 msgid "Formula %(formula)d: ionic strength %(strength)s, %(source)s"
 msgstr "Formül %(formula)d: iyonik şiddet %(strength)s, %(source)s"
 
+msgid "Formula the pH was put on the NBS scale by"
+msgstr "pH’ı NBS ölçeğine çeviren formül"
+
 msgid "Found at"
 msgstr "Bulunma zamanı"
 
@@ -6697,6 +6722,9 @@ msgstr "Francisellozis"
 
 msgid "Free carbon dioxide, from a CO₂ probe or a titration."
 msgstr "Serbest karbondioksit; bir CO₂ probundan veya titrasyonla."
+
+msgid "Free scale"
+msgstr "Serbest ölçek"
 
 msgid "Freeboard (m)"
 msgstr "Hava payı (m)"
@@ -8372,6 +8400,14 @@ msgstr "Günlük öğün"
 msgid "Measured"
 msgstr "Ölçülen"
 
+#, python-format
+msgid ""
+"Measured %(value)s on the %(scale)s; put on the NBS scale by formula %(formula)d with the "
+"sample’s %(temperature)s °C and %(salinity)s ‰."
+msgstr ""
+"%(scale)s %(value)s ölçüldü; formül %(formula)d ve numunenin %(temperature)s °C ile %(salinity)s "
+"‰ değerleriyle NBS ölçeğine çevrildi."
+
 msgid "Measured at"
 msgstr "Ölçüm zamanı"
 
@@ -8642,6 +8678,9 @@ msgstr "Belediye"
 msgid "My tasks"
 msgstr "Görevlerim"
 
+msgid "NBS (a meter calibrated with NBS/NIST buffers)"
+msgstr "NBS (NBS/NIST tamponlarıyla kalibre edilmiş ölçer)"
+
 msgid ""
 "NH₃ and NH₄⁺ together, as nitrogen. A kit that reads NH₄⁺: divide by 1.29; one that reads NH₃: "
 "divide by 1.22. The toxic NH₃ is worked out from this, the pH and the temperature of the same "
@@ -8758,6 +8797,13 @@ msgstr ""
 
 msgid "Natural gas"
 msgstr "Doğal gaz"
+
+msgid ""
+"Needed with a pH on another scale than NBS: the conversion takes the temperature and the salinity"
+" of the same sample."
+msgstr ""
+"NBS dışındaki bir ölçekte pH girildiğinde gerekir: çevirme, aynı numunenin sıcaklığını ve "
+"tuzluluğunu kullanır."
 
 msgid "Needed with the oxygen: no fresh salinity here at that time to work the other unit out with."
 msgstr "Oksijenle gerekli: diğer birimi hesaplamak için o zamanda burada güncel tuzluluk yok."
@@ -11691,6 +11737,9 @@ msgstr "Nedenini yazın: ayrılan veya değiştirilen bir tank gerekçesiyle kay
 msgid "Scale loss"
 msgstr "Pul kaybı"
 
+msgid "Scale the pH was measured on"
+msgstr "pH’ın ölçüldüğü ölçek"
+
 msgid "Scheduled"
 msgstr "Planlı"
 
@@ -11858,6 +11907,9 @@ msgstr "Birim, parti veya balık türü ara"
 
 msgid "Search vector"
 msgstr "Arama vektörü"
+
+msgid "Seawater scale (SWS)"
+msgstr "Deniz suyu ölçeği (SWS)"
 
 msgid "Seaweed"
 msgstr "Deniz yosunu"
@@ -14136,6 +14188,31 @@ msgstr "Tuzluluk: %(source)s."
 msgid "The salinity is fresh water’s."
 msgstr "Tuzluluk tatlı suyunkidir."
 
+msgid ""
+"The scale the pH above was measured on. Other than NBS: for sea water of 5 ‰ or more; the chart "
+"and every value are then worked out and drawn on the NBS scale. The target pH and the pH limits "
+"are NBS."
+msgstr ""
+"Yukarıdaki pH’ın ölçüldüğü ölçek. NBS dışında: 5 ‰ ve üzeri deniz suyu için; grafik ve bütün "
+"değerler o zaman NBS ölçeğinde hesaplanıp çizilir. Hedef pH ve pH sınırları NBS’tir."
+
+msgid ""
+"The scale the pH was measured on. Other than NBS (a seawater sensor calibrated with TRIS reads on"
+" the total scale): for sea water of 5 ‰ or more, with the temperature and the salinity of the "
+"same sample. The pH is then stored and shown on the NBS scale, with what was measured beside it."
+msgstr ""
+"pH’ın ölçüldüğü ölçek. NBS dışında (TRIS ile kalibre edilmiş bir deniz suyu sensörü toplam "
+"ölçekte okur): 5 ‰ ve üzeri deniz suyu için, aynı numunenin sıcaklığı ve tuzluluğuyla birlikte. "
+"pH o zaman NBS ölçeğinde saklanır ve gösterilir; ölçülen değer yanında durur."
+
+msgid ""
+"The scale the round’s pHs were measured on. Other than NBS: for sea water of 5 ‰ or more, each "
+"row with its own temperature and salinity; the pH is stored and shown on the NBS scale, with what"
+" was measured beside it."
+msgstr ""
+"Turdaki pH’ların ölçüldüğü ölçek. NBS dışında: 5 ‰ ve üzeri deniz suyu için, her satır kendi "
+"sıcaklığı ve tuzluluğuyla; pH NBS ölçeğinde saklanır ve gösterilir, ölçülen değer yanında durur."
+
 #, python-format
 msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."
 msgstr "%(unit)s birimindeki %(date)s tarihli deniz biti sayımının balığı kalmaz: önce onu iptal edin."
@@ -15141,6 +15218,9 @@ msgstr "Toplam gaz basıncı (barometrik basıncın %'si)"
 
 msgid "Total hardness (mg/L as CaCO₃)"
 msgstr "Toplam sertlik (mg/L CaCO₃ olarak)"
+
+msgid "Total scale (calibrated with TRIS)"
+msgstr "Toplam ölçek (TRIS ile kalibre)"
 
 msgid "Total sulfide (µg/L as S)"
 msgstr "Toplam sülfür (µg/L S olarak)"
@@ -17166,6 +17246,9 @@ msgstr "bu sayfada değiştirildi"
 msgid "found %(time)s"
 msgstr "saat %(time)s’te bulundu"
 
+msgid "free scale"
+msgstr "serbest ölçekte"
+
 msgid "fresh water"
 msgstr "tatlı su"
 
@@ -17597,11 +17680,22 @@ msgstr "s. %(page)s"
 msgid "pH"
 msgstr "pH"
 
+#, python-format
+msgid ""
+"pH %(given)s on the %(scale)s is %(nbs)s on the NBS scale (formula %(formula)s): every value and "
+"the chart are worked out and drawn on the NBS scale."
+msgstr ""
+"pH %(scale)s %(given)s, NBS ölçeğinde %(nbs)s (formül %(formula)s): bütün değerler ve grafik NBS "
+"ölçeğinde hesaplanıp çizilir."
+
 msgid "pH (NBS scale)"
 msgstr "pH (NBS ölçeği)"
 
 msgid "pH (NBS)"
 msgstr "pH (NBS)"
+
+msgid "pH as measured, on its own scale"
+msgstr "Ölçüldüğü hâliyle pH, kendi ölçeğinde"
 
 msgid "pH border, toxic above"
 msgstr "pH sınırı, üstünde toksik"
@@ -17614,6 +17708,9 @@ msgstr "pH eş çizgileri"
 
 msgid "pH margin to the border"
 msgstr "Sınıra pH payı"
+
+msgid "pH scale"
+msgstr "pH ölçeği"
 
 msgid "pH sensor"
 msgstr "pH sensörü"
@@ -17780,6 +17877,9 @@ msgstr "deniz biti sayımı"
 
 msgid "sea-lice counts"
 msgstr "deniz biti sayımları"
+
+msgid "seawater scale (SWS)"
+msgstr "deniz suyu ölçeğinde (SWS)"
 
 msgid "seconds"
 msgstr "saniye"
@@ -17973,6 +18073,9 @@ msgstr "%(unit)s birimine"
 #, python-format
 msgid "to the cleaner fish %(kilos)s"
 msgstr "temizleyici balığa %(kilos)s"
+
+msgid "total scale"
+msgstr "toplam ölçekte"
 
 #, python-format
 msgid "total sulfide %(value)s µg/L as S"

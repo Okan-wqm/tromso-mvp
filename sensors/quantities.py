@@ -22,6 +22,11 @@ from django.utils.translation import gettext_lazy as _
 from farm.water import parameters
 
 ALL, DEADBAND = 'all', 'deadband'
+# A sensor's pH is taken as it comes (farm/tests/test_ph_scale.py; README, the pH's scale): the ingest stores what the
+# device sends, and putting a pH on the NBS scale needs the temperature and the salinity of the same moment.
+PH_SCALE_NOTE = _('A pH channel is on the NBS scale (a probe calibrated with NBS/NIST buffers). A sensor that reports on '
+                  'the total scale (calibrated with TRIS) is not converted here: its pH reads 0.10 to 0.14 low in sea '
+                  'water and the NH₃ worked out from it 20 to 27 % low. Record such a pH as a sample with its scale.')
 
 
 @dataclass(frozen=True)

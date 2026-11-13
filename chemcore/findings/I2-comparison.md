@@ -423,6 +423,16 @@ metroloji şüphecisi; iki tur, her biri ayrı hesapladı) şuna karar verdi; sa
    edilmiş deniz suyu sensörü) bir pH, 5–35 ‰ ve 0–30 °C'de NBS'ten 0,10–0,14 düşük okur; olduğu gibi NBS diye girilirse
    pH 8'de değerlendirilen NH₃ %20–27 düşük çıkar. Bu, sabit tartışmasının tamamından büyük bir hata kaynağı.
 
+6. **pH ölçeği seçimi (sahibin 2026-11-11 kararı; ayrıntı ve karşılaştırma `pH-scale.md`).** pH'ın yazıldığı üç yerde
+   (numune kaydı, su turu, hesap makinesi) artık ölçek seçilebiliyor: NBS (varsayılan; hiçbir şey değişmez, golden
+   dosyaları bayt bayt aynı), toplam, deniz suyu (SWS), serbest. Başka ölçekte girilen pH, çekirdek tarafından o kapıda
+   NBS'e çevrilir ve **NBS olarak saklanır**; ölçülen değer, ölçeği ve formül sürümü yanında tutulur ve değerin
+   başlığında yazar ("7,95 toplam ölçekte ölçüldü; ... NBS ölçeğine çevrildi"). Böylece hiçbir sayfa iki ölçeği
+   karıştıramaz. Yalnız 5 ‰ ve üzeri deniz suyu için ve aynı numunenin sıcaklığı ile tuzluluğu varsa kabul edilir;
+   değilse sebebiyle reddedilir. Sensörlerin pH'ı çevrilmiyor (kanal formunda yazıyor): bu, sahibin kararına açık bir
+   nokta. PyCO2SYS ve seacarb ile 72 hücrede karşılaştırma: toplam → serbest 8,9·10⁻¹⁵ pH, toplam → SWS 2,4·10⁻⁷ pH
+   içinde; NBS adımı bizim kendi dönüşümümüz (CO2SYS'e göre −0,069 … +0,055 pH; her NBS pH'ında olan belirsizlik).
+
 **Bu bölümün zayıf noktaları (panelin kendi listesi).** Hiçbir birincil makale ilk elden okunmadı (Khoo vd. 1977, Clegg
 & Whitfield 1995, Yao & Millero 1995, Johansson & Wedborg 1980, Emerson vd. 1975, Whitfield 1974); denklemler Bell vd.
 (2007/2008), Xu vd. (2017; denklem 10'da bir basamak PyCO2SYS'in sayılarıyla uyuşmuyor, test ikisine karşı da

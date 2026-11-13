@@ -30,6 +30,9 @@ pub enum ChemError {
     /// are that much alkalinity), whose DIC, CO₂ and carbonate would be 0 or negative; or a negative DIC given. Formula
     /// 3 refuses it at every door (`chemistry::Equilibria::possible`, the one rule); formula 1 never did (golden v1).
     ImpossibleWater,
+    /// A pH on a seawater scale (total, seawater, free) given for a water that is not sea water of 5 ‰ or more worked
+    /// out by the sea path alone (`crate::scale`): never converted on an assumption.
+    SeawaterScale,
 }
 
 /// A number or the reason there is none.

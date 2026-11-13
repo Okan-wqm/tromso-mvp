@@ -27,6 +27,9 @@ into formula 3 itself, formula 1's values in these files never moved; chemcore/f
   mg/L of calcium (no Ω was recorded before). Formula 3's takes the Ksp per litre, Mucci's per-kg2 Ksp times the square
   of the sea water's density (EOS-80; owner-approved after the same check, claim 12b: Ω was ρ2 too high); formula 1's
   keeps the per-kg Ksp, as golden v1 holds it. FORMAT 2: a key was added.
+- 2026-11-12, the scale of a pH (the K_NH4 panel's proposal, the owner's decision of 2026-11-11; chemcore/core/src/
+  scale.rs): a new block, `scales`, the NBS pH of each of five pHs given on each scale (NBS: the pH itself) in sea water
+  of 5, 10, 28.5 and 35 permil. FORMAT 3: a block was added; the two blocks recorded before keep their bytes.
 - 2026-11-10, the refusal of a water that cannot be (ImpossibleWaterError; the same check, claim 9): every water of the
   corpus is possible, so no value moved (both blocks have the bytes of the recording before); the manifest names the
   new core."""
@@ -38,7 +41,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-FORMAT = 2
+FORMAT = 3
 TEMPERATURES = (2.0, 8.0, 12.0, 18.0, 25.0, 30.0)
 SALINITIES = (0.0, 0.5, 1.0, 2.0, 3.0, 4.99, 5.0, 10.0, 28.3, 28.5, 35.0)   # 28.3, 28.5: NaCl's Davies limit
 PHS = (6.5, 7.0, 7.5, 8.0, 8.5)
@@ -51,6 +54,7 @@ IONS = ({}, {'conductivity_25_us_cm': 50.0}, {'conductivity_25_us_cm': 300.0}, {
 LIMITS = {'nh3_n_mg_l': 0.0103, 'co2_mg_l': 15.0, 'h2s_ug_l': 2.0, 'alkalinity_low_mg_l': 50.0,
           'alkalinity_high_mg_l': 150.0}
 CALCIUM_MG_L = 400.0                                  # the calcium Ω is recorded with (the calculator's example)
+SCALE_SALINITIES = (5.0, 10.0, 28.5, 35.0)           # a pH on another scale than NBS is taken from 5 permil (scale.rs)
 OMEGA_SALINITY = (5.0, 44.0)                          # Ω is drawn where Mucci (1983) measured (the core's geometry.rs)
 ANALYSIS_KEYS = ('co2_mg_l', 'co2', 'nh3_n_mg_l', 'nh3', 'safe_tan_mg_l', 'h2s_ug_l', 'h2s', 'dic', 'target_dic',
                  'oxygen_solubility_mg_l', 'oxygen_saturation_pct', 'nh3_share_pct', 'h2s_share_pct',
@@ -115,7 +119,13 @@ def record_all():
                                           target_alkalinity_mg_l=100.0)
                         record[f'v{formula}'] = {key: found[key] for key in ANALYSIS_KEYS}
                     analyses.append(record)
-    return {'waters': waters, 'analyses': analyses}
+    scales = []
+    for temp_c in TEMPERATURES:
+        for salinity in SCALE_SALINITIES:
+            eq = n.water_equilibria(temp_c, salinity)
+            scales.append({'temp_c': temp_c, 'salinity': salinity, 'ph_offset': eq.ph_offset,
+                           'nbs_of': {scale: [eq.ph_nbs(ph, scale) for ph in PHS] for scale in n.PH_SCALES}})
+    return {'waters': waters, 'analyses': analyses, 'scales': scales}
 
 
 def encode(records):

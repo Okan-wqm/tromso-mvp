@@ -31,6 +31,7 @@
   <div class="form-grid">
     {% with field=header.measured_at %}{% include "registration/_field.html" %}{% endwith %}
     {% with field=header.source %}{% include "registration/_field.html" %}{% endwith %}
+    {% if ph_column %}{% with field=header.ph_scale %}{% include "registration/_field.html" %}{% endwith %}{% endif %}
   </div>
   <div class="table-wrap">
     <table class="data-table round-table">

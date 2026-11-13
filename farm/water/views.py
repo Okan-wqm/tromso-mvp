@@ -295,7 +295,10 @@ def _calculator_data(query):
     data['point'] = chosen
     owner = find_owner(chosen)
     if owner is not None:
-        CalculatorForm.fill(data, calculation.offers(owner))
+        offers = calculation.offers(owner)
+        CalculatorForm.fill(data, offers)
+        if 'ph' in offers:
+            data['ph_scale'] = services.NBS                     # a stored pH is on the NBS scale, whatever was chosen
         data['water_origin'] = calculation.origin_of(owner)       # the unit's (cross review F3)
     data['loaded'] = chosen
     return data, True
@@ -327,6 +330,7 @@ def _calculator_context(request, data, all_layers=False):
     query = data.urlencode() if data else ''
     return _context(
         form=form, result=result, analysis=result.analysis if result else None,
+        ph_conversion=form.ph_conversion if result else None,
         chart=result.chart if result else None, source=_source(form, owner) if owner is not None else None,
         point_gone=bool(chosen) and owner is None, query=query,
         latest_url=page_url(), history_tab_url=page_url(view=HISTORY), calculator_url=reverse('farm:water_calculator'),
@@ -482,6 +486,7 @@ def record_round(request):
     rows = [RoundRowForm(data, point=point, columns=columns, water=water.get(point.pk), assumed=assumed.get(point.pk))
             for point in points]
     context = _context(heading=_('Water round'), scope=scope, header=header, rows=rows,
+                       ph_column=parameters.PH in columns,
                        columns=[parameters.get(code) for code in columns], site=site,
                        back_url=page_url(site=site.pk if site else ''))
     if data is not None and points:
@@ -494,7 +499,7 @@ def record_round(request):
                     source=header.cleaned_data['source'], token=header.cleaned_data['token'],
                     withdrawal_ack=header.cleaned_data['withdrawal_ack'],
                     rows=[(row.point, row.entered(), row.cleaned_data['notes']) for row in entered],
-                    require_basis=True)
+                    require_basis=True, ph_scale=header.cleaned_data.get('ph_scale') or services.NBS)
             except AlreadyRecorded:
                 return done(request, context['back_url'])
             except ValidationError as error:

@@ -1408,6 +1408,27 @@ without values it shows its defaults.
   5 °C, +0.001 at 25 °C and +0.034 at 40 °C (formula 1, with a fixed ε of 79: −0.073, −0.058, +0.004, +0.051). Closer
   to it at 20 to 35 ‰ for t ≤ 15 °C and at 35 ‰ at every temperature; not at 10 ‰ from 10 to 20 °C (B1.md; formula 4,
   Takahashi's fH for 20 to 40 ‰, is the planned follow-up).
+- **The pH's scale** (the K_NH4 panel's proposal, built by the owner's decision of 2026-11-11;
+  `chemcore/core/src/scale.rs`, `chemcore/findings/pH-scale.md`): every pH stored, shown, judged and worked out from is
+  on the NBS scale, what a meter calibrated with NBS/NIST buffers reads, and its field says so with the size of the
+  hazard (a total-scale pH reads 0.10 to 0.14 lower from 5 to 35 ‰; typed as NBS the NH₃ comes out 20 to 27 % too low).
+  Where a pH is typed (Record water sample, a water round, the calculator) its **scale can be chosen**: NBS (the
+  default: nothing changes, the golden files keep their bytes), total (a seawater sensor calibrated with TRIS),
+  seawater (SWS) or free. A pH on another scale is put on the NBS scale by the core at that door: pH free = pH total +
+  log₁₀(1 + ST/KS) (Dickson, Sabine & Christian 2007, ch. 2, eq. 15; the seawater scale with FT/KF too), less the
+  water's own offset free − NBS. Only for sea water (5 ‰ or more, the sea path's constants alone; not fresh water with
+  salt added) and only with the temperature and the salinity of the same sample; otherwise refused with the reason,
+  by the form, the write path (`farm/water/services.on_nbs`) and the core (`SeawaterScaleError`). A sample keeps what
+  was measured (`ph_scale`, `ph_as_measured`, `ph_converted_formula`; `chk_water_measurements_ph_scale` holds them
+  together) and its reading says it wherever a value's title is shown (the latest values, the history, a monitoring
+  card): "Measured 7.95 on the total scale; put on the NBS scale by formula 3 with the sample's 12.0 °C and 34.0 ‰."
+  The stored pH has the column's two decimals; the calculator converts without rounding and says "pH 7.95 on the
+  total scale is 8.08 on the NBS scale", its target pH and pH limits are NBS, and values taken from a unit are NBS. **No
+  page holds a pH on another scale, so none can mix them.** A sensor's pH is not converted (the ingest stores what the
+  device sends; the conversion needs the temperature and salinity of the same moment): a pH channel is NBS and its form
+  says so. Checked against PyCO2SYS 1.8.3.4 and seacarb 3.4.2 over 0 to 40 °C by 5 to 40 ‰ (72 cells): the free and the
+  seawater-scale pH of a total-scale pH within 8.9e-15 and 2.4e-7 pH; the NBS leg is the core's own conversion (−0.069
+  to +0.055 pH against CO2SYS's, as every NBS pH), which cancels in what the water's own constants work out.
 - **NH₃ and CO₂ are judged on the larger of the limits' basis and the activity-corrected value** (cross review F1,
   owner 2026-11-09; `chemistry::Basis`, `fresh::limits_basis`): the NH₃-N, the CO₂, their statuses, borders and margins,
   the safe TAN, the NH₃ share, the target CO₂, the small NH₃ chart, the simulator's steps and the safe zone all take the

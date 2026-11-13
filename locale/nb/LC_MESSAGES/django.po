@@ -2130,6 +2130,25 @@ msgid "A note is at most %(count)d characters."
 msgstr "Et notat er på høyst %(count)d tegn."
 
 #, python-format
+msgid ""
+"A pH channel is on the NBS scale (a probe calibrated with NBS/NIST buffers). A sensor that "
+"reports on the total scale (calibrated with TRIS) is not converted here: its pH reads 0.10 to "
+"0.14 low in sea water and the NH₃ worked out from it 20 to 27 % low. Record such a pH as a sample"
+" with its scale."
+msgstr ""
+"En pH-kanal er på NBS-skalaen (en sonde kalibrert med NBS/NIST-buffere). En sensor som måler på "
+"totalskalaen (kalibrert med TRIS) blir ikke regnet om her: pH viser 0,10 til 0,14 for lavt i "
+"sjøvann, og NH₃ beregnet fra den 20 til 27 % for lavt. Registrer en slik pH som en prøve med "
+"skalaen sin."
+
+msgid ""
+"A pH on this scale is taken for sea water of 5 ‰ or more only (not fresh water with salt added): "
+"give the pH a meter calibrated with NBS/NIST buffers reads."
+msgstr ""
+"En pH på denne skalaen tas bare for sjøvann på 5 ‰ eller mer (ikke ferskvann tilsatt salt): oppgi"
+" pH slik et meter kalibrert med NBS/NIST-buffere viser den."
+
+#, python-format
 msgid "A page shows at most %(days)s day: the first day was moved."
 msgid_plural "A page shows at most %(days)s days: the first day was moved."
 msgstr[0] "En side viser høyst %(days)s dag: første dag ble flyttet."
@@ -4388,6 +4407,9 @@ msgstr "Velg en helsehendelse på lokaliteten til disse enhetene."
 
 msgid "Choose a health event of the site."
 msgstr "Velg en helsehendelse på lokaliteten."
+
+msgid "Choose a pH scale."
+msgstr "Velg en pH-skala."
 
 msgid "Choose a person"
 msgstr "Velg en person"
@@ -6664,6 +6686,9 @@ msgstr "Formel %(formula)d."
 msgid "Formula %(formula)d: ionic strength %(strength)s, %(source)s"
 msgstr "Formel %(formula)d: ionestyrke %(strength)s, %(source)s"
 
+msgid "Formula the pH was put on the NBS scale by"
+msgstr "Formelen pH ble satt på NBS-skalaen med"
+
 msgid "Found at"
 msgstr "Funnet"
 
@@ -6678,6 +6703,9 @@ msgstr "Francisellose"
 
 msgid "Free carbon dioxide, from a CO₂ probe or a titration."
 msgstr "Fri karbondioksid, fra en CO₂-sonde eller en titrering."
+
+msgid "Free scale"
+msgstr "Fri skala"
 
 msgid "Freeboard (m)"
 msgstr "Fribord (m)"
@@ -8350,6 +8378,14 @@ msgstr "Måltider per dag"
 msgid "Measured"
 msgstr "Målt"
 
+#, python-format
+msgid ""
+"Measured %(value)s on the %(scale)s; put on the NBS scale by formula %(formula)d with the "
+"sample’s %(temperature)s °C and %(salinity)s ‰."
+msgstr ""
+"Målt %(value)s på %(scale)s; satt på NBS-skalaen med formel %(formula)d og prøvens "
+"%(temperature)s °C og %(salinity)s ‰."
+
 msgid "Measured at"
 msgstr "Målt"
 
@@ -8618,6 +8654,9 @@ msgstr "Kommune"
 msgid "My tasks"
 msgstr "Mine oppgaver"
 
+msgid "NBS (a meter calibrated with NBS/NIST buffers)"
+msgstr "NBS (et meter kalibrert med NBS/NIST-buffere)"
+
 msgid ""
 "NH₃ and NH₄⁺ together, as nitrogen. A kit that reads NH₄⁺: divide by 1.29; one that reads NH₃: "
 "divide by 1.22. The toxic NH₃ is worked out from this, the pH and the temperature of the same "
@@ -8734,6 +8773,13 @@ msgstr ""
 
 msgid "Natural gas"
 msgstr "Naturgass"
+
+msgid ""
+"Needed with a pH on another scale than NBS: the conversion takes the temperature and the salinity"
+" of the same sample."
+msgstr ""
+"Trengs sammen med en pH på en annen skala enn NBS: omregningen bruker temperaturen og saliniteten"
+" fra samme prøve."
 
 msgid "Needed with the oxygen: no fresh salinity here at that time to work the other unit out with."
 msgstr ""
@@ -11671,6 +11717,9 @@ msgstr "Skriv hvorfor: et kar som går ut eller byttes ut, registreres med begru
 msgid "Scale loss"
 msgstr "Skjelltap"
 
+msgid "Scale the pH was measured on"
+msgstr "Skalaen pH ble målt på"
+
 msgid "Scheduled"
 msgstr "Planlagte"
 
@@ -11838,6 +11887,9 @@ msgstr "Søk etter enhet, fiskegruppe eller art"
 
 msgid "Search vector"
 msgstr "Søkevektor"
+
+msgid "Seawater scale (SWS)"
+msgstr "Sjøvannsskala (SWS)"
 
 msgid "Seaweed"
 msgstr "Tang og tare"
@@ -14115,6 +14167,32 @@ msgstr "Saliniteten er fra %(source)s."
 msgid "The salinity is fresh water’s."
 msgstr "Saliniteten er ferskvannets."
 
+msgid ""
+"The scale the pH above was measured on. Other than NBS: for sea water of 5 ‰ or more; the chart "
+"and every value are then worked out and drawn on the NBS scale. The target pH and the pH limits "
+"are NBS."
+msgstr ""
+"Skalaen pH-verdien over ble målt på. Annet enn NBS: for sjøvann på 5 ‰ eller mer; diagrammet og "
+"alle verdier blir da beregnet og tegnet på NBS-skalaen. Mål-pH og pH-grensene er NBS."
+
+msgid ""
+"The scale the pH was measured on. Other than NBS (a seawater sensor calibrated with TRIS reads on"
+" the total scale): for sea water of 5 ‰ or more, with the temperature and the salinity of the "
+"same sample. The pH is then stored and shown on the NBS scale, with what was measured beside it."
+msgstr ""
+"Skalaen pH ble målt på. Annet enn NBS (en sjøvannssensor kalibrert med TRIS måler på "
+"totalskalaen): for sjøvann på 5 ‰ eller mer, med temperaturen og saliniteten fra samme prøve. pH "
+"lagres og vises da på NBS-skalaen, med det som ble målt ved siden av."
+
+msgid ""
+"The scale the round’s pHs were measured on. Other than NBS: for sea water of 5 ‰ or more, each "
+"row with its own temperature and salinity; the pH is stored and shown on the NBS scale, with what"
+" was measured beside it."
+msgstr ""
+"Skalaen rundens pH-verdier ble målt på. Annet enn NBS: for sjøvann på 5 ‰ eller mer, hver rad med"
+" sin egen temperatur og salinitet; pH lagres og vises på NBS-skalaen, med det som ble målt ved "
+"siden av."
+
 #, python-format
 msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."
 msgstr "Lusetellingen %(date)s i %(unit)s ville stått uten fisk: annuller den først."
@@ -15114,6 +15192,9 @@ msgstr "Totalt gasstrykk (% av lufttrykket)"
 
 msgid "Total hardness (mg/L as CaCO₃)"
 msgstr "Total hardhet (mg/L som CaCO₃)"
+
+msgid "Total scale (calibrated with TRIS)"
+msgstr "Totalskala (kalibrert med TRIS)"
 
 msgid "Total sulfide (µg/L as S)"
 msgstr "Totalt sulfid (µg/L som S)"
@@ -17142,6 +17223,9 @@ msgstr "byttet på denne siden"
 msgid "found %(time)s"
 msgstr "funnet %(time)s"
 
+msgid "free scale"
+msgstr "den frie skalaen"
+
 msgid "fresh water"
 msgstr "ferskvann"
 
@@ -17573,11 +17657,22 @@ msgstr "s. %(page)s"
 msgid "pH"
 msgstr "pH"
 
+#, python-format
+msgid ""
+"pH %(given)s on the %(scale)s is %(nbs)s on the NBS scale (formula %(formula)s): every value and "
+"the chart are worked out and drawn on the NBS scale."
+msgstr ""
+"pH %(given)s på %(scale)s er %(nbs)s på NBS-skalaen (formel %(formula)s): alle verdier og "
+"diagrammet er beregnet og tegnet på NBS-skalaen."
+
 msgid "pH (NBS scale)"
 msgstr "pH (NBS-skala)"
 
 msgid "pH (NBS)"
 msgstr "pH (NBS)"
+
+msgid "pH as measured, on its own scale"
+msgstr "pH slik den ble målt, på sin egen skala"
 
 msgid "pH border, toxic above"
 msgstr "pH-grense, giftig over"
@@ -17590,6 +17685,9 @@ msgstr "pH-isolinjer"
 
 msgid "pH margin to the border"
 msgstr "pH-margin til grensen"
+
+msgid "pH scale"
+msgstr "pH-skala"
 
 msgid "pH sensor"
 msgstr "pH-sensor"
@@ -17756,6 +17854,9 @@ msgstr "lusetelling"
 
 msgid "sea-lice counts"
 msgstr "lusetellinger"
+
+msgid "seawater scale (SWS)"
+msgstr "sjøvannsskalaen (SWS)"
 
 msgid "seconds"
 msgstr "sekunder"
@@ -17949,6 +18050,9 @@ msgstr "til %(unit)s"
 #, python-format
 msgid "to the cleaner fish %(kilos)s"
 msgstr "til rensefisken %(kilos)s"
+
+msgid "total scale"
+msgstr "totalskalaen"
 
 #, python-format
 msgid "total sulfide %(value)s µg/L as S"

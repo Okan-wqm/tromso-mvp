@@ -13,6 +13,7 @@ pub mod fresh;
 pub mod geometry;
 pub mod num;
 pub mod plots;
+pub mod scale;
 
 mod digest {
     include!(concat!(env!("OUT_DIR"), "/core_hash.rs"));

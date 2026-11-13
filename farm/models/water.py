@@ -27,6 +27,21 @@ class Source(models.TextChoices):
     LAB = 'lab', _('Laboratory')
 
 
+class PhScale(models.TextChoices):
+    """The scales a pH may be measured on besides NBS (the core's codes, chemcore/core/src/scale.rs). A sample's `ph` is
+    always on the NBS scale; one measured on another scale is put on it when it is written (farm/water/services.py) and
+    keeps what was measured beside it (`ph_scale`, `ph_as_measured`, `ph_converted_formula`)."""
+    TOTAL = 'total', _('Total scale (calibrated with TRIS)')
+    SWS = 'sws', _('Seawater scale (SWS)')
+    FREE = 'free', _('Free scale')
+
+
+# The least salinity (‰) a pH on another scale than NBS is taken for: sea water, the core's SEA_FROM
+# (farm/tests/test_ph_scale.py holds the two together).
+PH_SCALE_SALINITY = 5
+PH_SCALE_COLUMNS = ['ph_scale', 'ph_as_measured', 'ph_converted_formula']
+
+
 # The samples of live points of live owners. A deleted unit, system or piece of equipment keeps its points, and
 # a point its samples, out of sight, and they come back with the owner when it is restored (core.softdelete:
 # the links keep them, DO_NOTHING).
@@ -59,6 +74,16 @@ def _sample_checks():
             condition=Q(**{f'{column}__isnull': True}) | Q(**{f'{column}__gte': parameter.low,
                                                               f'{column}__lte': parameter.high}),
             name=f'chk_water_measurements_{column}'))
+    ph = parameters.get('ph')
+    checks.append(models.CheckConstraint(
+        # A pH measured on another scale: its scale, what was measured (in the pH's range), the formula it was converted
+        # by, the NBS pH and the temperature and salinity the conversion took, in sea water; or none of them (NBS).
+        condition=(Q(ph_scale='', ph_as_measured__isnull=True, ph_converted_formula__isnull=True)
+                   | Q(ph_scale__in=PhScale.values, ph_as_measured__isnull=False, ph_as_measured__gte=ph.low,
+                       ph_as_measured__lte=ph.high, ph_converted_formula__isnull=False, ph__isnull=False,
+                       temperature_c__isnull=False, salinity_ppt__isnull=False,
+                       salinity_ppt__gte=PH_SCALE_SALINITY)),
+        name='chk_water_measurements_ph_scale'))
     oxygen = Q(oxygen_mg_l__isnull=False) | Q(oxygen_saturation_pct__isnull=False)
     for code, prefix in BASIS.items():
         parameter = parameters.get(code)
@@ -156,6 +181,16 @@ class WaterMeasurement(AuditedModel):
                                                     choices=BasisSource.choices)
     oxygen_basis_salinity_channel = models.PositiveIntegerField(_('Sensor channel of the oxygen’s salinity'), null=True, blank=True)
     oxygen_basis_salinity_at = models.DateTimeField(_('When the oxygen’s salinity was measured'), null=True, blank=True)
+    # The provenance of a pH measured on another scale than NBS (PhScale): `ph` holds it on the NBS scale, as every pH
+    # is stored, shown and judged; these keep the scale, the value as measured and the formula version the conversion
+    # was made by (with the sample's own temperature and salinity), so nothing is converted out of sight. Empty for a
+    # pH read on the NBS scale.
+    ph_scale = models.CharField(_('Scale the pH was measured on'), max_length=5, blank=True, choices=PhScale.choices)
+    ph_as_measured = models.DecimalField(
+        _('pH as measured, on its own scale'), max_digits=parameters.get('ph').max_digits,
+        decimal_places=parameters.get('ph').decimals, null=True, blank=True)
+    ph_converted_formula = models.PositiveSmallIntegerField(_('Formula the pH was put on the NBS scale by'), null=True,
+                                                            blank=True)
     notes = models.CharField(_('Notes'), max_length=500, blank=True)
     void_reason = models.CharField(_('Reason for voiding'), max_length=500, blank=True)
 

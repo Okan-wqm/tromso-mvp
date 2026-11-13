@@ -25,14 +25,27 @@ from core.widgets import MomentInput
 from ..models import (Equipment, ProductionDepartment, SamplingPoint, Site, Species, System, Tank, WaterFreshness,
                       WaterLimit, WaterMeasurement)
 from ..models.site import ALTITUDE_HIGH, ALTITUDE_LOW, zone_of
-from ..models.water import BOUNDS
+from ..models.water import BOUNDS, PhScale
 from ..models.water_point import EQUIPMENT, SYSTEM, UNIT, PointKind, owner_type_of, site_of
 from ..templatetags.water import limit_text, source
-from ..water import calculation, deffeyes, dosing, parameters, read, services
+from ..water import calculation, chemistry, deffeyes, dosing, messages, parameters, read, services
 from ..water.parameters import GROUPS, MEASURED
 from .stock import DECIMAL, ServiceErrors, VoidForm
 
 NOTES = forms.Textarea(attrs={'rows': 2})
+# The scale a pH was measured on (farm/water/services.on_nbs; the core's codes and order, native.PH_SCALES): NBS unless
+# said, and then nothing changes.
+PH_SCALE_CHOICES = [(services.NBS, _('NBS (a meter calibrated with NBS/NIST buffers)')), *PhScale.choices]
+
+
+def ph_scale_field(help_text):
+    return forms.ChoiceField(label=_('pH scale'), choices=PH_SCALE_CHOICES, required=False, initial=services.NBS,
+                             help_text=help_text)
+
+
+PH_SCALE_HELP = _('The scale the pH was measured on. Other than NBS (a seawater sensor calibrated with TRIS reads on '
+                  'the total scale): for sea water of 5 ‰ or more, with the temperature and the salinity of the same '
+                  'sample. The pH is then stored and shown on the NBS scale, with what was measured beside it.')
 # The columns a round shows unless others are chosen: the morning round's temperature and oxygen.
 ROUND_COLUMNS = ['temperature_c', 'oxygen_mg_l', 'oxygen_saturation_pct']
 
@@ -147,6 +160,10 @@ class ValuesMixin:
         groups = []
         for key, label in GROUPS:
             fields = [self[parameter.code] for parameter in parameters.in_group(key) if parameter.code in self.fields]
+            if 'ph_scale' in self.fields and parameters.PH in self.fields:
+                # The pH's scale right after the pH it is of.
+                fields = [field for each in fields
+                          for field in ((each, self['ph_scale']) if each.name == parameters.PH else (each,))]
             if fields:
                 groups.append((label, fields))
         return groups
@@ -216,6 +233,7 @@ class WaterSampleForm(OxygenInputs, ValuesMixin, ServiceErrors, forms.Form):
                                  help_text=_('Date and time on the site’s clock.'))
     source = forms.ChoiceField(label=_('Source'), choices=WaterMeasurement.Source.choices,
                                initial=WaterMeasurement.Source.MANUAL)
+    ph_scale = ph_scale_field(PH_SCALE_HELP)
     notes = forms.CharField(label=_('Notes'), max_length=500, required=False, widget=NOTES)
 
     service_fields = {}
@@ -244,7 +262,8 @@ class WaterSampleForm(OxygenInputs, ValuesMixin, ServiceErrors, forms.Form):
         self.fields['token'].initial = uuid.uuid4()
         self.fields['measured_at'].initial = now_on(clock(point or (points[0] if self.fixed else None)))
         self._offer(point or (points[0] if self.fixed else None))
-        self.order_fields(['point', 'measured_at', 'source', *(parameter.code for parameter in MEASURED), 'notes'])
+        self.order_fields(['point', 'measured_at', 'source', *(parameter.code for parameter in MEASURED), 'ph_scale',
+                           'notes'])
 
     def clean_point(self):
         point = find_point(self.cleaned_data['point'])
@@ -265,7 +284,8 @@ class WaterSampleForm(OxygenInputs, ValuesMixin, ServiceErrors, forms.Form):
         data = self.cleaned_data
         return services.record(user, point=data['point'], measured_at=data['measured_at'], source=data['source'],
                                values=self.entered(), notes=data['notes'], token=data['token'],
-                               require_basis=True, withdrawal_ack=data['withdrawal_ack'])
+                               require_basis=True, withdrawal_ack=data['withdrawal_ack'],
+                               ph_scale=data.get('ph_scale') or services.NBS)
 
 
 # ---- a round --------------------------------------------------------------------------------------------
@@ -347,6 +367,10 @@ class RoundForm(ServiceErrors, forms.Form):
     measured_at = SiteClockField(label=_('Measured at'), help_text=_('Date and time on the site’s clock.'))
     source = forms.ChoiceField(label=_('Source'), choices=WaterMeasurement.Source.choices,
                                initial=WaterMeasurement.Source.MANUAL)
+    # One scale for the round's pHs (shown with a pH column): each row is converted with its own temperature and salinity.
+    ph_scale = ph_scale_field(_('The scale the round’s pHs were measured on. Other than NBS: for sea water of 5 ‰ or '
+                                'more, each row with its own temperature and salinity; the pH is stored and shown on '
+                                'the NBS scale, with what was measured beside it.'))
 
     service_fields = {}
 
@@ -467,6 +491,9 @@ class CalculatorForm(forms.Form):
     loaded = forms.CharField(required=False, widget=forms.HiddenInput)
     temperature_c = _measured('temperature_c', required=True)
     ph = _measured('ph', required=True, low=4)
+    ph_scale = ph_scale_field(_('The scale the pH above was measured on. Other than NBS: for sea water of 5 ‰ or more; '
+                                'the chart and every value are then worked out and drawn on the NBS scale. The target '
+                                'pH and the pH limits are NBS.'))
     salinity_ppt = _measured('salinity_ppt', required=True)
     alkalinity_mg_l = _measured('alkalinity_mg_l', required=True)
     tan_mg_l = _measured('tan_mg_l', help_text=_('NH₃ and NH₄⁺ together, as nitrogen. The NH₃ limit is drawn from '
@@ -520,7 +547,7 @@ class CalculatorForm(forms.Form):
 
     DOSES = [dose_name(reagent) for reagent in dosing.REAGENTS]
     TABS = [
-        ('water', _('Water'), ['temperature_c', 'ph', 'salinity_ppt', 'alkalinity_mg_l', 'tan_mg_l',
+        ('water', _('Water'), ['temperature_c', 'ph', 'ph_scale', 'salinity_ppt', 'alkalinity_mg_l', 'tan_mg_l',
                                'total_sulfide_ug_l', 'oxygen_mg_l', 'conductivity_25_us_cm', 'hardness_mg_l',
                                'water_origin']),
         ('system', _('System'), ['volume_m3', 'calcium_mg_l', 'altitude_m']),
@@ -531,7 +558,7 @@ class CalculatorForm(forms.Form):
     ]
     DEFAULTS = {
         'point': '', 'loaded': '',
-        'temperature_c': Decimal('12'), 'ph': Decimal('7.00'), 'salinity_ppt': Decimal('1'),
+        'temperature_c': Decimal('12'), 'ph': Decimal('7.00'), 'ph_scale': services.NBS, 'salinity_ppt': Decimal('1'),
         'alkalinity_mg_l': Decimal('80'), 'tan_mg_l': Decimal('0.5'), 'total_sulfide_ug_l': Decimal('2'),
         'oxygen_mg_l': None, 'conductivity_25_us_cm': None, 'hardness_mg_l': None, 'water_origin': '', 'volume_m3': Decimal('1'), 'calcium_mg_l': None, 'altitude_m': None,
         'target_ph': Decimal('7.5'), 'target_alkalinity_mg_l': Decimal('100'),
@@ -585,8 +612,35 @@ class CalculatorForm(forms.Form):
         if low is not None and high is not None and low >= high:
             self.add_error('alkalinity_high_mg_l', _('The band goes up: its high end is above its low end.'))
         self._ph_order(data)
+        self._ph_scale(data)
         self._possible(data)
         return data
+
+    # What a pH given on another scale than NBS is on the NBS scale ({'given', 'scale', 'nbs', 'formula'}), else None:
+    # the calculation takes the NBS pH itself (not rounded), and the page says the conversion.
+    ph_conversion = None
+
+    def _ph_scale(self, data):
+        """The water's pH on the NBS scale when it was given on another (the core's conversion, for sea water of 5 ‰ or
+        more only: refused with the reason elsewhere). Left at NBS nothing is touched."""
+        scale = data.get('ph_scale') or services.NBS
+        data['ph_scale'] = scale
+        if scale == services.NBS or any(data.get(name) is None for name in ('ph', 'temperature_c', 'salinity_ppt')):
+            return
+        try:
+            equilibria = chemistry.water_equilibria(
+                float(data['temperature_c']), float(data['salinity_ppt']),
+                None if data.get('alkalinity_mg_l') is None else float(data['alkalinity_mg_l']),
+                **{name: value if value in (None, '') or isinstance(value, str) else float(value)
+                   for name, value in calculation.ions_of(data).items()})
+            taken = equilibria.takes_ph_scale(scale)
+        except ValueError:
+            taken = False
+        if not taken:
+            self.add_error('ph_scale', messages.PH_NOT_SEA)
+            return
+        self.ph_conversion = {'given': data['ph'], 'scale': messages.PH_SCALES[scale], 'code': scale,
+                              'nbs': equilibria.ph_nbs(float(data['ph']), scale), 'formula': equilibria.formula}
 
     def _ph_order(self, data):
         """The pH bounds go up: critical below, warning below, warning above, critical above, each given one not
@@ -611,7 +665,8 @@ class CalculatorForm(forms.Form):
         for ph_name, alkalinity_name in (('ph', 'alkalinity_mg_l'), ('target_ph', 'target_alkalinity_mg_l')):
             if data.get(ph_name) is None or data.get(alkalinity_name) is None:
                 continue
-            why = deffeyes.why_impossible(data['temperature_c'], data['salinity_ppt'], data[ph_name],
+            ph = self.ph_conversion['nbs'] if ph_name == 'ph' and self.ph_conversion else data[ph_name]
+            why = deffeyes.why_impossible(data['temperature_c'], data['salinity_ppt'], ph,
                                           data[alkalinity_name], **calculation.ions_of(data))
             if why:
                 self.add_error(alkalinity_name, why)
@@ -623,6 +678,8 @@ class CalculatorForm(forms.Form):
     def inputs(self):
         """The keyword arguments of farm/water/calculation.calculate."""
         values = {name: float(value) if isinstance(value, Decimal) else value for name, value in self.values().items()}
+        if self.ph_conversion:
+            values['ph'] = self.ph_conversion['nbs']             # the water's pH on the NBS scale, as everything takes it
         mapped = calculation.inputs_from(values)
         amounts = {reagent.key: values[dose_name(reagent)] for reagent in dosing.REAGENTS
                    if values[dose_name(reagent)]}

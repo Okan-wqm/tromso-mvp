@@ -42,6 +42,30 @@ def dosing_note(code):
     return '' if code is None else DOSING_NOTES[code]
 
 
+# The scales a pH may be measured on besides NBS, as a sentence says them (the core's codes, chemcore/core/src/scale.rs).
+PH_SCALES = {
+    'total': _('total scale'),
+    'sws': _('seawater scale (SWS)'),
+    'free': _('free scale'),
+}
+PH_NOT_SEA = _('A pH on this scale is taken for sea water of 5 ‰ or more only (not fresh water with salt added): give '
+               'the pH a meter calibrated with NBS/NIST buffers reads.')
+PH_NEEDED = _('Needed with a pH on another scale than NBS: the conversion takes the temperature and the salinity of the '
+              'same sample.')
+
+
+def ph_measured(sample):
+    """What a sample's pH was measured as, when on another scale than NBS, in words ('' for an NBS pH): said beside the
+    NBS pH wherever it is shown (a reading's provenance)."""
+    if not sample.ph_scale:
+        return ''
+    return _('Measured %(value)s on the %(scale)s; put on the NBS scale by formula %(formula)d with the sample’s '
+             '%(temperature)s °C and %(salinity)s ‰.') % {
+        'value': number_format(sample.ph_as_measured, 2), 'scale': PH_SCALES[sample.ph_scale],
+        'formula': sample.ph_converted_formula, 'temperature': number_format(sample.temperature_c, 1),
+        'salinity': number_format(sample.salinity_ppt, 1)}
+
+
 # Where a water's ionic strength came from (the core's codes, chemcore/core/src/chemistry.rs Source).
 STRENGTH_SOURCES = {
     'conductivity': _('from the conductivity at 25 °C'),

@@ -65,6 +65,12 @@ NonFiniteError = chemcore.NonFiniteError
 # A water that cannot be (its alkalinity at or below the floor of its pH, or a DIC below 0): formula 3 refuses it at every
 # door, never a negative concentration; a ValueError. The pages say the reason first (deffeyes.why_impossible, the same rule).
 ImpossibleWaterError = chemcore.ImpossibleWaterError
+# A pH on a seawater scale (total, seawater, free) for a water that is not sea water of 5 permil or more: never
+# converted on an assumption; a ValueError. The forms and the write path say the reason first (Equilibria.takes_ph_scale).
+SeawaterScaleError = chemcore.SeawaterScaleError
+# The scales a pH may be given on, the default (NBS: the pH itself) first (chemcore/core/src/scale.rs); a pH on another
+# is put on the NBS scale by Equilibria.ph_nbs before anything is worked out from it.
+PH_SCALES = tuple(chemcore.PH_SCALES)
 Equilibria = chemcore.Equilibria
 KELVIN = chemcore.KELVIN
 MG_CACO3_PER_MEQ = chemcore.MG_CACO3_PER_MEQ

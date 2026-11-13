@@ -49,6 +49,7 @@
         <tr><th scope="row">{% trans "Oxygen saturation" %}</th><td class="num">{{ analysis.oxygen_saturation_pct|percent:1 }}</td></tr>
       </table>
     </div>
+    {% include "farm/calculator/_ph_scale.html" %}
     <p class="calc-note" data-formula="{{ analysis.equilibria.formula }}">{{ analysis.provenance }}</p>
     {% if analysis.co2_judged %}<p class="calc-note" data-co2-basis="{{ analysis.co2_basis }}">{{ analysis.co2_judged }}</p>{% endif %}
   </section>

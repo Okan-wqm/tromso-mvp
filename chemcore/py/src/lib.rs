@@ -8,6 +8,7 @@ use chemcore_core::fresh as f;
 use chemcore_core::geometry as g;
 use chemcore_core::num::ChemError;
 use chemcore_core::plots as pl;
+use chemcore_core::scale as sc;
 use pyo3::create_exception;
 use pyo3::exceptions::{PyOverflowError, PyValueError, PyZeroDivisionError};
 use pyo3::prelude::*;
@@ -25,6 +26,12 @@ create_exception!(
     PyValueError,
     "A water that cannot be: its alkalinity at or below the floor of its pH, or a DIC below 0. Never worked out."
 );
+create_exception!(
+    chemcore,
+    SeawaterScaleError,
+    PyValueError,
+    "A pH on a seawater scale given for a water that is not sea water of 5 permil or more. Never converted."
+);
 
 fn err(error: ChemError) -> PyErr {
     match error {
@@ -36,6 +43,9 @@ fn err(error: ChemError) -> PyErr {
         ChemError::ImpossibleWater => ImpossibleWaterError::new_err(
             "no water has this pH and alkalinity: the hydroxide and the borate of the pH alone are at least the \
              alkalinity (or a DIC below 0 was given)",
+        ),
+        ChemError::SeawaterScale => SeawaterScaleError::new_err(
+            "a pH on the total, the seawater or the free scale is taken for sea water of 5 permil or more only (the \n             sea path's constants alone): give the NBS pH",
         ),
         ChemError::OutOfRange => PyValueError::new_err(
             "ionic strength above 0.5: outside the range of the Davies equation (a conductivity in mS/cm, or a sea \
@@ -84,6 +94,11 @@ fn formula_version() -> u32 {
 #[pyfunction]
 fn core_hash() -> &'static str {
     chemcore_core::core_hash()
+}
+
+/// The scale of a code ('nbs', 'total', 'sws', 'free'); ValueError for any other.
+fn scale_of(code: &str) -> PyResult<sc::PhScale> {
+    sc::PhScale::from_code(code).ok_or_else(|| PyValueError::new_err("unknown pH scale (nbs, total, sws, free)"))
 }
 
 /// The equilibria of one water (frozen; equal and hashed by its values).
@@ -316,6 +331,22 @@ impl Equilibria {
     #[getter]
     fn nh3_basis(&self) -> PyResult<&'static str> {
         self.0.nh3_basis().map(|basis| basis.code()).map_err(err)
+    }
+    /// The NBS pH of a pH given on a scale ('nbs', 'total', 'sws', 'free'; chemcore.PH_SCALES): the pH itself for
+    /// 'nbs'; chemcore.SeawaterScaleError where another scale is not taken (not sea water of 5 ‰ or more); ValueError
+    /// for an unknown code.
+    fn ph_nbs(&self, ph: f64, scale: &str) -> PyResult<f64> {
+        inputs(&[ph])?;
+        ok(sc::ph_nbs(&self.0, ph, scale_of(scale)?))
+    }
+    /// The pH on a scale of a water whose NBS pH is given (`ph_nbs` the other way).
+    fn ph_on(&self, ph_nbs: f64, scale: &str) -> PyResult<f64> {
+        inputs(&[ph_nbs])?;
+        ok(sc::ph_on(&self.0, ph_nbs, scale_of(scale)?))
+    }
+    /// Whether a pH on this scale is taken for this water (every water takes 'nbs').
+    fn takes_ph_scale(&self, scale: &str) -> PyResult<bool> {
+        Ok(sc::converts(&self.0, scale_of(scale)?))
     }
     /// The equilibria of the basis the limits were set on (None for formula 1).
     fn limits_equilibria(&self) -> Option<Equilibria> {
@@ -1233,6 +1264,11 @@ fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("NonFiniteError", module.py().get_type::<NonFiniteError>())?;
     module.add("ImpossibleWaterError", module.py().get_type::<ImpossibleWaterError>())?;
     module.add("ChartTooLargeError", module.py().get_type::<ChartTooLargeError>())?;
+    module.add("SeawaterScaleError", module.py().get_type::<SeawaterScaleError>())?;
+    module.add(
+        "PH_SCALES",
+        sc::PhScale::ALL.iter().map(|scale| scale.code()).collect::<Vec<_>>(),
+    )?;
     module.add("PH_RANGE", a::PH_RANGE)?;
     module.add("ALERT_PH", a::ALERT_PH)?;
     module.add("AXIS", a::AXIS)?;

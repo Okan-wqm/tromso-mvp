@@ -17,6 +17,7 @@ A failure raises ValidationError, a dict of field to message: 'measured_at', 'po
 code, 'reason' or NON_FIELD_ERRORS; for a round, a row's errors are under ('row', index). Nothing is
 written."""
 import uuid
+from decimal import Decimal
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import transaction
@@ -28,17 +29,19 @@ from core.models import AuditLog, EntryKey
 from core.platform import correction_window_days
 from farm.health import withdrawal
 from farm.models import Equipment, SamplingPoint, System, Tank, WaterMeasurement
-from farm.models.water import BASIS_COLUMNS
+from farm.models.water import BASIS_COLUMNS, PH_SCALE_COLUMNS, PhScale
 from farm.models.water_point import EQUIPMENT, SYSTEM, UNIT, local_time, site_of
 from farm.stock import dates
 from farm.stock.services import AlreadyRecorded, lock_fish
 
-from . import parameters
-from .read import POINT_RELATED, oxygen_basis
+from . import chemistry, messages, parameters
+from .read import POINT_RELATED, Context, common_origin, oxygen_basis
 
 # What the activity log shows of a sample: where it was taken, its source, its values and its notes (and its
 # time, which the entry carries).
-LOGGED = ['point', 'source', *parameters.COLUMNS, *BASIS_COLUMNS, 'notes']
+LOGGED = ['point', 'source', *parameters.COLUMNS, *BASIS_COLUMNS, *PH_SCALE_COLUMNS, 'notes']
+# The scale a pH is on unless said otherwise: as a meter calibrated with NBS/NIST buffers reads it.
+NBS = 'nbs'
 # The most rows a round takes (a hall's points; the form shows them all on one page).
 ROUND_ROWS = 200
 OWNERS = ((UNIT, Tank), (SYSTEM, System), (EQUIPMENT, Equipment))
@@ -95,12 +98,45 @@ def _locked_points(points):
     return found
 
 
-def _sample(user, point, measured_at, source, values, notes, basis=None):
+def _sample(user, point, measured_at, source, values, notes, basis=None, measured=None):
     provenance = {}
     for code, found in (basis or {}).items():
         provenance.update(found.fields(code))
     return WaterMeasurement(point=point, measured_at=measured_at, source=source, notes=notes.strip(), created_by=user,
-                            updated_by=user, **values, **provenance)
+                            updated_by=user, **values, **provenance, **(measured or {}))
+
+
+def on_nbs(point, values, scale):
+    """(the values with their pH on the NBS scale, the sample's provenance of it) for a pH measured on `scale` (NBS, or
+    a PhScale). Every pH is stored on the NBS scale (the one scale every page, limit and calculation reads): one
+    measured on the total, the seawater or the free scale is put on it here by the core (chemcore/core/src/scale.rs),
+    with the temperature and the salinity of the SAME sample, never ones looked up, for sea water of 5 ‰ or more only;
+    what was measured, its scale and the formula version are the provenance. NBS, or no pH: the values as they are and
+    no provenance. Refused (ValidationError, a dict of field to message) for an unknown scale, without the sample's own
+    temperature or salinity, or where the water is not sea water (the core's rule, Equilibria.takes_ph_scale)."""
+    if scale in (NBS, '', None):
+        return values, {}
+    if scale not in PhScale.values:
+        raise ValidationError({'ph_scale': _('Choose a pH scale.')})
+    if values.get(parameters.PH) is None:
+        return values, {}
+    missing = {code: str(messages.PH_NEEDED) for code in (parameters.TEMPERATURE, parameters.SALINITY)
+               if values.get(code) is None}
+    if missing:
+        raise ValidationError(missing)
+    origin = common_origin(Context._served([point])[point.pk])
+    try:
+        equilibria = chemistry.water_equilibria(float(values[parameters.TEMPERATURE]),
+                                                float(values[parameters.SALINITY]), water_origin=origin)
+        taken = equilibria.takes_ph_scale(scale)
+    except ValueError:                       # a water the core cannot work out is not one it converts a pH for
+        taken = False
+    if not taken:
+        raise ValidationError({'ph_scale': str(messages.PH_NOT_SEA)})
+    step = parameters.get(parameters.PH).step
+    converted = Decimal(repr(equilibria.ph_nbs(float(values[parameters.PH]), scale))).quantize(step)
+    return ({**values, parameters.PH: converted},
+            {'ph_scale': scale, 'ph_as_measured': values[parameters.PH], 'ph_converted_formula': equilibria.formula})
 
 
 BASIS_NEEDED = {
@@ -156,9 +192,9 @@ def _values(values):
 
 
 def record(user, *, point, measured_at, source, values, notes='', token=None, require_basis=False,
-           withdrawal_ack=None):
+           withdrawal_ack=None, ph_scale=NBS):
     """One sample at one sampling point (a place on a unit, a system's loop or a piece of equipment). Returns the
-    sample."""
+    sample. `ph_scale`: the scale its pH was measured on (`on_nbs`); NBS unless said."""
     values = _values(values)
     with transaction.atomic():
         fish = _fish_of([point], measured_at)
@@ -173,9 +209,14 @@ def record(user, *, point, measured_at, source, values, notes='', token=None, re
         errors = value_errors(values)
         if errors:
             raise ValidationError(errors)
+        values, measured = on_nbs(point, values, ph_scale)
+        errors = value_errors({parameters.PH: values[parameters.PH]}) if measured else {}
+        if errors:
+            raise ValidationError(errors)
         basis = _basis([(point, values)], measured_at, required=require_basis).get(0)
         return withdrawal.guarded(user, *fish, lambda: _write(
-            user, [_sample(user, point, measured_at, source, values, notes, basis)], [token])[0], seen=withdrawal_ack)
+            user, [_sample(user, point, measured_at, source, values, notes, basis, measured)], [token])[0],
+            seen=withdrawal_ack)
 
 
 def row_key(token, point):
@@ -184,9 +225,11 @@ def row_key(token, point):
     return uuid.uuid5(token, f'point:{point.pk}')
 
 
-def record_round(user, *, measured_at, source, rows, token=None, require_basis=False, withdrawal_ack=None):
+def record_round(user, *, measured_at, source, rows, token=None, require_basis=False, withdrawal_ack=None,
+                 ph_scale=NBS):
     """The samples of a round, at one time and from one source: `rows` = [(point, values, notes)]. A row
-    with no value is skipped; the rest are written together or not at all. Returns the samples."""
+    with no value is skipped; the rest are written together or not at all. Returns the samples. `ph_scale`: the scale
+    the round's pHs were measured on (`on_nbs`, each row with its own temperature and salinity); NBS unless said."""
     rows = [(point, _values(values), notes) for point, values, notes in rows]
     rows = [(point, values, notes) for point, values, notes in rows if values]
     if not rows:
@@ -211,10 +254,23 @@ def record_round(user, *, measured_at, source, rows, token=None, require_basis=F
                 errors[f'{index}-{code}'] = message
         if errors:
             raise ValidationError(errors)
+        measured = {}
+        for index, (point, (_point, values, notes)) in enumerate(zip(points, rows)):
+            try:
+                values, measured[index] = on_nbs(point, values, ph_scale)
+            except ValidationError as refused:
+                errors.update({f'{index}-{code}': reasons for code, reasons in refused.message_dict.items()})
+                continue
+            if measured[index]:
+                errors.update({f'{index}-{code}': message
+                               for code, message in value_errors({parameters.PH: values[parameters.PH]}).items()})
+            rows[index] = (_point, values, notes)
+        if errors:
+            raise ValidationError(errors)
         basis = _basis([(point, values) for point, (_point, values, _notes) in zip(points, rows)], measured_at,
                        by_row=True, required=require_basis)
         return withdrawal.guarded(user, *fish, lambda: _write(user, [
-            _sample(user, point, measured_at, source, values, notes, basis.get(index))
+            _sample(user, point, measured_at, source, values, notes, basis.get(index), measured.get(index))
             for index, (point, (_point, values, notes)) in enumerate(zip(points, rows))], keys),
             record_of=lambda samples: samples[0], seen=withdrawal_ack)
 

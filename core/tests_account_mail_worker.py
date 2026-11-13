@@ -226,21 +226,38 @@ class WorkerTests(WorkerCase):
 
     def test_the_worker_keeps_its_database_connection_while_jobs_wait_and_closes_it_when_none_does(self):
         # (review S2) a connection opened for every job made the worker seven times slower than requests arrive
+        #
+        # What "none left open" is asked of, and how. The worker has closed its connection by the time it rests
+        # (`drain`): that is asked of the connection itself. The database is asked too, but it goes on listing a
+        # connection until its server process has ended, which follows the client's close in the server's own time
+        # (measured on 13.11.2026: 2 to 22 ms alone, up to 64 ms beside other runs), and it lists its own autovacuum
+        # workers beside the clients. A count of everything listed, asked at once, failed for both in the whole suite
+        # of 28c4c18 and in 1 of 20 runs alone, 3 of 20 under load. So: the clients' connections by their process id,
+        # those that were not there before, waited for with a bound.
         from django.db.backends.base.base import BaseDatabaseWrapper
         connects, opened = [], BaseDatabaseWrapper.connect
 
         def counted(wrapper):
             if threading.current_thread().name == 'account-mail':
-                connects.append(1)
+                connects.append(wrapper)
             return opened(wrapper)
 
-        def open_connections():
+        def clients():
             with connection.cursor() as cursor:
-                cursor.execute('SELECT count(*) FROM pg_stat_activity WHERE datname = current_database()')
-                return cursor.fetchone()[0]
+                cursor.execute("SELECT pid FROM pg_stat_activity WHERE datname = current_database() "
+                               "AND backend_type = 'client backend'")
+                return {row[0] for row in cursor.fetchall()}
+
+        def left_open(before, seconds=20):
+            """The clients' connections the database lists that it did not list `before`, once there is none or
+            `seconds` are over."""
+            deadline = time.monotonic() + seconds
+            while (found := clients() - before) and time.monotonic() < deadline:
+                time.sleep(0.01)
+            return found
 
         self.assertTrue(accountmail.worker.drain(30))
-        before = open_connections()
+        before = clients()
         blocker, gate = threading.Event(), threading.Event()
 
         def wait():
@@ -257,7 +274,8 @@ class WorkerTests(WorkerCase):
             gate.set()
             self.assertTrue(accountmail.worker.drain(30))
         self.assertEqual(len(connects), 1)                                        # forty lookups, one connection
-        self.assertEqual(open_connections(), before)                              # and none left open afterwards
+        self.assertEqual([wrapper.connection for wrapper in connects], [None])    # closed by the worker, now at rest
+        self.assertEqual(left_open(before), set())                                # and none left open at the database
 
     def test_two_hundred_lookups_of_addresses_nobody_has_are_emptied_in_a_moment(self):
         # measured before: 4.8 s for 200 (42 a second); the connection kept: well under a second

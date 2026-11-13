@@ -4968,6 +4968,14 @@ also says when the fish were last weighed, 15 days back, and failed on 12.11.202
 again on every day whose date 15 days back ends in 8.10). A test that asserts a number is absent from a whole page
 uses a number no date can spell, and first shows that the page prints it for someone who may see it.
 
+**Nor on how soon the database lets go of a connection.** PostgreSQL lists a connection (`pg_stat_activity`) until its
+server process has ended, which follows the client's close in the server's own time (2 to 22 ms measured alone, up to
+64 ms beside other runs), and it lists its own autovacuum workers beside the clients. The mail worker's test asked "as
+many connections as before" of that list at once and failed in a whole suite under load (12.11.2026) and in 1 of 20
+runs alone; the worker had closed its connection every time. A test that asks the database whether a connection is
+gone asks for the clients' connections by their process id, those that were not there before, and waits for the
+answer with a bound; what the code under test has done itself (closed its connection) it asks of that connection.
+
 **Nor the hour it runs at.** The server's day is UTC's, the company's is Oslo's (`COMPANY_TIME_ZONE`) and a site's is
 its own. From 23:00 to 24:00 UTC in winter (from 22:00 in summer) Oslo is a day ahead of the server, and a test that
 says "today" on one clock while the code reads another passes all day and fails there. Five did, in CI run 42921917659

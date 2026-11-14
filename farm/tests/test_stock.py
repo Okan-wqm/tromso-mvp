@@ -1027,7 +1027,8 @@ class DialogTests(StockTestCase):
 
     def test_an_empty_unit_has_nothing_to_record(self):
         response = self.client.get(reverse('farm:stock_mortality', args=[self.t2.pk]))
-        self.assertContains(response, 'No fish are in T-02.')
+        self.assertContains(response, 'No fish are in T-02, and none were in it in the last 31 days: there is nothing '
+                                      'to record here.')
         self.assertNotIn('form', response.context)
 
     def test_void_through_its_dialog(self):

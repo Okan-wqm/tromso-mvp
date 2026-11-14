@@ -166,9 +166,9 @@ class WithdrawalTests(HarvestTestCase):
         about = WithdrawalBlock(self.batch, until, True, '', None)
         unknown = WithdrawalBlock(self.batch, None, False, 'No temperature recorded.', None)
         clear = WithdrawalBlock(self.batch, self.today, False, '', None)
-        other = self.stock(self.t2, count=10)
-        elsewhere = WithdrawalBlock(other, until, False, '', None)
-        with provider(held, about, unknown, clear, elsewhere):
+        # Which fish are in the unit is the provider's to say: the check warns of every block it gives for the unit
+        # that is in force, of whichever batch (test_withdrawal_shared_unit.py).
+        with provider(held, about, unknown, clear):
             messages = self.assess().messages()
         self.assertEqual(messages, [
             f'Not suitable for harvest — medicine withdrawal of {self.batch.code} until {services.shown_date(until)}. '

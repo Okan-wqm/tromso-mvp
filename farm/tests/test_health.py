@@ -570,7 +570,6 @@ class BulkRegistryTests(HealthTestCase):
             found = handling_check.in_force_of(self.units, day)
             for unit in self.units:
                 self.assertEqual(found[unit.pk], handling_check.in_force(unit, day or local_today(unit)))
-        self.assertEqual(handling_check.in_force(self.t2, local_today(self.t2), [self.b3]), [])
 
     def test_the_row_badges_of_production_units_are_the_units_with_a_block_in_force(self):
         self.assertEqual(set(harvest_views.withdrawals(self.units)), {self.t1.pk, self.t2.pk, self.s1.pk})

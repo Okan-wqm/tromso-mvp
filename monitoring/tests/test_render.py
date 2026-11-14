@@ -258,7 +258,7 @@ class PageTests(MonitoringCase):
     def test_state_in_the_address_changes_nothing_on_a_live_page(self):
         self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='8.1')
         plain, forced = self.page(), self.page(state='critical')
-        strip = lambda html: re.sub(r'computed at [^<]+|after=[0-9a-f]+', '', html)
+        strip = lambda html: re.sub(r'computed at <b[^>]*>[^<]+</b>|after=[0-9a-f]+', '', html)
         self.assertEqual([node.attrs['class'] for node in articles(plain).values()],
                          [node.attrs['class'] for node in articles(forced).values()])
         self.assertNotIn('data-preview', forced)

@@ -30,7 +30,7 @@ class PageTests(MonitoringCase):
         response = self.client.get(PAGE)
         self.assertEqual(response.status_code, 200)
         html = response.content.decode()
-        self.assertEqual(keys(html), ['head', 'strip', f'card:{self.t1.pk}', f'card:{self.t2.pk}'])
+        self.assertEqual(keys(html), ['band', f'card:{self.t1.pk}', f'card:{self.t2.pk}'])
         for text in ('data-poll="', 'data-poll-every="15"', 'data-poll-merge="data-key"', 'id="monitor-windows"',
                      'data-fullscreen', 'T-01', 'T-02', '2 of 3 units shown', 'computed at'):
             self.assertIn(text, html)
@@ -40,7 +40,7 @@ class PageTests(MonitoringCase):
             self.assertIn(text, html)                                    # focus can be restored by id after a refresh
 
     def test_filters_occupancy_and_the_units_chosen_narrow_what_is_shown(self):
-        shown = lambda **query: keys(self.client.get(PAGE, query).content.decode())[2:]
+        shown = lambda **query: keys(self.client.get(PAGE, query).content.decode())[1:]
         self.assertEqual(shown(q='t-02'), [f'card:{self.t2.pk}'])
         self.assertEqual(shown(occupancy='empty'), [f'card:{self.p1.pk}'])
         self.assertEqual(len(shown(occupancy='all')), 3)
@@ -125,7 +125,7 @@ class FragmentTests(MonitoringCase):
     def test_200_with_the_cards_and_the_next_address_then_204_while_nothing_changes(self):
         first = self.ask()
         self.assertEqual(first.status_code, 200)
-        self.assertEqual(keys(first.content.decode()), ['head', 'strip', f'card:{self.t1.pk}', f'card:{self.t2.pk}'])
+        self.assertEqual(keys(first.content.decode()), ['band', f'card:{self.t1.pk}', f'card:{self.t2.pk}'])
         self.assertEqual(first['Cache-Control'], 'no-store')
         after = first['X-Poll-Next']
         self.assertTrue(after.startswith(f'{CARDS}?after='))

@@ -151,3 +151,38 @@ class ColourTests(SimpleTestCase):
         self.assertIsNotNone(block)
         for selector in ('.monitor-shape', '.monitor-bar-svg .band', '.monitor-bar-svg .marker', '.monitor-card'):
             self.assertIn(selector, block.group(1))
+
+    def test_the_fitted_card_the_band_and_the_ph_window_say_everything_at_4_5_to_1(self):
+        """The pairs of text and ground the fitted card, the band and the pH window use (the final mock-up's
+        measure/contrast.txt, here in all five themes): the three inks on the sheet, the band's inks on the canvas,
+        the state's text on the sheet and on its tint, a border's number on the grey region, on the safe stretch and
+        on the critical tint."""
+        pairs = (('--text-1', '--surface-sheet'), ('--text-2', '--surface-sheet'), ('--text-3', '--surface-sheet'),
+                 ('--crit-text', '--surface-sheet'), ('--warn-text', '--surface-sheet'),
+                 ('--text-1', '--surface-canvas'), ('--text-2', '--surface-canvas'), ('--text-3', '--surface-canvas'),
+                 ('--crit-text', '--surface-canvas'), ('--warn-text', '--surface-canvas'),
+                 ('--text-2', '--surface-sunken'), ('--text-2', '--zone-safe'), ('--crit-text', '--crit-tint'))
+        for theme in THEMES:
+            theirs = tokens(theme)
+            for ink, ground in pairs:
+                with self.subTest(theme=theme, ink=ink, ground=ground):
+                    self.assertGreaterEqual(contrast(theirs[ink], theirs[ground]), 4.5)
+
+    def test_the_ph_windows_tones_are_the_ones_measured(self):
+        """The window's styles name the tokens the pairs above are of, and the mark is ink (never a state's colour)."""
+        monitor = self.css('monitor.css')
+        for selector, prop, token in (
+                ('.monitor-ph-window .chart-name', 'fill', '--text-2'),
+                ('.monitor-ph-window .chart-region-co2', 'fill', '--surface-sunken'),
+                ('.monitor-ph-window .chart-region-safe', 'fill', '--zone-safe'),
+                ('.monitor-ph-window.in-co2.is-critical .chart-region-co2', 'fill', '--crit-tint'),
+                ('.monitor-ph-window.in-co2.is-critical .chart-name-co2', 'fill', '--crit-text'),
+                ('.monitor-ph-window .chart-water', 'fill', '--text-1')):
+            with self.subTest(selector=selector):
+                self.assertEqual(declared(monitor, selector, prop), tokens()[token])
+
+    def test_forced_colours_keep_the_ph_windows_regions_and_its_mark(self):
+        monitor = self.css('monitor.css')
+        block = re.search(r'@media \(forced-colors: active\) \{(.*?)\n\}', monitor, re.S).group(1)
+        for selector in ('.monitor-ph-window .chart-region', '.monitor-ph-window .chart-water'):
+            self.assertIn(selector, block)

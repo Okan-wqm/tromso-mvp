@@ -693,10 +693,11 @@ Differences from the source (details in the bug document, STK-01 to STK-73):
 
 ### Operations › Monitoring (`/operations/monitoring/`)
 
-A live card per tank, pond or cage, simple or detailed, in one grid that doubles as a wall screen for a control room, with a
-unit's Deffeyes chart in a movable window. The app `monitoring` is composition only: it stores nothing but (later) shared
-wall boards, derives no figure and writes nothing, a poll included. Every number on a card comes from the module that owns
-it, through a read that answers for many units at once (the table is `monitoring/read.py`'s docstring):
+A live card per tank, pond or cage, small, simple or detailed, in one grid that doubles as a wall screen for a control room
+(the Small card is made for a wide monitor: every tank of a hall on one screen), with a unit's Deffeyes chart in a movable
+window. The app `monitoring` is composition only: it stores nothing but shared wall boards and card templates, derives no
+figure and writes nothing, a poll included. Every number on a card comes from the module that owns it, through a read that
+answers for many units at once (the table is `monitoring/read.py`'s docstring):
 
 | Card figure | Owner |
 |---|---|
@@ -707,16 +708,62 @@ it, through a read that answers for many units at once (the table is `monitoring
 | medicine withdrawal | the registry's one bulk answer (`harvest.views.withdrawals`), with the stock right, as Production units |
 | open health events (every card), treatments and the latest sea-lice count (detailed) | `health.read.open_events`, `recent_treatments`, `latest_counts` |
 | open, overdue and due-today tasks (detailed) | `tasks.read.per_unit` |
-| the Deffeyes chart | `water.calculation.chart_of` through `farm:water_unit_chart` (see Water chemistry) |
+| the Deffeyes chart in its window | `water.calculation.chart_of` through `farm:water_unit_chart` (see Water chemistry) |
+| the calculated CO₂ and the pH window of a card that shows them (the Small card) | `water.calculation.charts_of`: every such unit's chart at once, from the water the card read already holds and one read of the fish's limits |
 
 **The page** has a toolbar (a GET form that works without script: site, department, system, kind, fish (stocked by default,
-empty, all), the all-cards mode, a text search, a unit picker, Wall and Full screen) and the grid: a head ("2 of 3 units
-shown", "computed at" a time, so a frozen screen is visibly old), a strip naming each critical, warning or no-recent-data
-card, and one article per unit in the farm's one order (site, department, code), so a card never moves when its state does.
+empty, all), the cards (Simple, Small, Detailed), a text search, a unit picker, Wall and Full screen) and the grid: the
+**band** (below) and one article per unit in the farm's one order (site, department, code), so a card never moves when its
+state does.
 Each card has its Simple or Detailed link (the page with that card flipped; with script the grid refetches), its state word
 and shape, the withdrawal with its date, and a Deffeyes chart button that opens the window. A **section the person may not read
 is not read at all** (no query) and the card says so ("Water: not shown to you" and "State from: Fish"); one right for each
 section (`monitoring.read.sections_for`, the one place that spells a permission). Detailed never widens access.
+
+**The band** (`monitoring.read.band`, `templates/monitoring/_grid.html`; it replaced the head and the strip of one-line
+reasons, 2026-11-13) stands above the cards on the page and in every answer of the fragment, as ONE keyed child: when the
+cards were computed ("computed at 09:17", so a frozen screen is visibly old) and how many units are shown ("2 of 3 units
+shown"); the **tally**, how many units are on each rung (shape, count, word: "1 Critical", "2 Warning", "14 OK"), which
+counts every card whatever follows; the page of cards and its turn buttons (shown by `frontend/wall.ts` when a wall has
+more cards than fit); the switch of the screen's cards (Small, Simple, Detailed; on a board: Small, As the board), plain
+links that keep the filters and the wall; then a **chip** per thing that needs a look, worst first: the state's shape
+(its word for a screen reader), the units' codes, each a link to its card, and what is wrong in short, the value against
+the bound it is past ("T-02 O₂ (mg/L) 5.00 < critical limit 6.00"; a warning against the number alone, "6.50 < 7.00";
+an old value says "no recent data"). Units whose chip would say the same words share one chip; the units with no recent
+data share one, and those with a value no limit judges another. The server caps it: at most `MONITOR_BAND_CHIPS` chips
+(6), each naming at most `MONITOR_BAND_CODES` units (4), the rest counted ("+3", "+5 more units"), never dropped
+silently. The short form of a reason is its `Brief` (`read.brief_of`): the water's own answer to "which value is past
+which bound" (`farm.water.read.crossed`, `evaluate.crossed`: the bound `judge` judged it by, the worse fresh value when
+that decided the status, the oxygen's other unit when a row on that unit judged it), never a second judgement; a reason
+that is not a value against a bound is said whole. On a wall each row of the band is one line; on the desk page they wrap.
+
+**The Small card and the screen's view** (owner decisions 5 and 7, 2026-11-12: wide monitors; a small card for the
+overview). `mode=small` is a VIEW of the screen: EVERY card of it is drawn with the built-in Small template, on a board or
+not, whatever the rules say (it ranks first in the ladder below; "Template: Small · the view chosen on this screen" is in
+the unit name's title). The Small card says the unit's code and name, its state's shape and word, the FIRST reason of the
+state in short with how many more there are ("O₂ (mg/L) 5.00 · critical limit 6.00  +1"; every reason is there in full
+in the titles and for a screen reader, and on the card its flip link shows), or, with no reason, its fish ("Atlantic
+salmon · 12,000 fish · 1,045 kg · 7.4 kg/m³"); then four values, each a short label, the figure and, where the card is
+tall enough, how old it is and where it came from: the oxygen in mg/L with its saturation beside the label
+("O₂ · 98.0 %"), the temperature, the pH and the **calculated CO₂**; and the **pH window**. A figure past its limit takes
+the state's shape and colour and its word under it; an old value says "old" in its label whatever the card's height and
+is set in italics; a missing one is said in words ("no data"), never as a dash. The unit's status when it is not in use,
+the withdrawal (the word; its batches and dates in its title, and "until 25.11.2026" in the reason line of a Note card),
+a source that could not be read and the flip link (to Detailed, until the Big card exists) are on the frame.
+The **calculated CO₂** is the figure the chemistry core's analysis gives for the unit's chart (from the pH, the
+alkalinity, the temperature and the salinity; owner decision 2: a probe's value never enters the chart), tagged
+"calculated" with the age of the oldest of those four values. In this first phase it is SHOWN, NOT JUDGED: the card's
+state is what the readings say, as before, so a card can say OK while its pH window shows the water in the CO₂ region;
+that changes when the calculated CO₂ becomes a judged value (after the chemistry branch has landed).
+The **pH window** (`monitoring.cards.render.ph_window`, drawn by the server as an SVG in percentages, with no script and
+no style attribute) is the Deffeyes chart's one-line slice at the unit's own alkalinity, on the scale pH 6.4 to 8.6
+(`catalogue.PH_WINDOW`, the same on every card): left of one border the CO₂ is past its limit, right of the other the
+NH₃ is, each border with its pH; the mark is the unit's pH. A region is grey and takes the critical tint only while the
+water is in it (the core says so: past that border); the stretch between the borders is green only when the core has a
+safe zone at all (every limit it needs is set) and the limits judge the unit's alkalinity inside its band; a missing
+limit is never drawn as a safe side ("no NH₃ limit", "no TAN"); the mark is hollow and dashed when a value it is drawn
+from is old; its name says every number in words. When the chart cannot be worked out it says why in one line ("The pH
+window cannot be drawn: no value of Salinity (‰, g/kg).").
 
 **The state** is one ladder (`state_of`, the thresholds are the owners', none invented here): critical (a water reading judged
 critical, an old one too: "CO₂: Critical, no recent data", the water page's rule through
@@ -755,7 +802,26 @@ without a request, so the shell's context (the menu, the unread count) is never 
 **The wall.** `?wall=1` puts `data-wall` on `<html>` (no rail, no top bar, no width limit, larger figures), and the page and its
 polls keep the session alive once a day (the default session is two weeks and a wall must not sign itself out); the grid prints a
 large notice from `data-poll-state` when the server cannot be reached or cannot read the cards, or the person is signed out,
-and the announcer says it aloud (and says when the grid is updated again).
+and the announcer says it aloud (and says when the grid is updated again). A wall of cards that flow (Simple, Detailed, a
+template without a measure) is as it was: larger figures, and the page scrolls.
+
+**The wall of fitted cards** (`?wall=1&mode=small`; `static/css/monitor.css`, `frontend/wall.ts`). A template with a
+**measure** (its card's width and height in the card's own unit: Small is 31 by 10) is FITTED: the card is drawn at the
+size of its cell, and every length inside it is a multiple of ONE unit taken from the card's own size (`--u`, container
+units), in four type sizes (0.8, 1, 1.25 and 2.4 of the unit: `tw:text-u-s`, `-m`, `-l`, `-xl`) and two weights, so the
+same card reads on a 1080-high desk screen and a 2160-high wall. The wall is exactly one screen: the band and columns by
+rows of equal cells, chosen by the one **slot rule** (`monitoring/cards/slots.py`, the authority, and
+`frontend/wall/slots.ts`, where the screen's size is known; both run `monitoring/tests/slot_vectors.json`): of every grid
+whose cells hold all the cards, the one that gives a card its largest unit; when that unit is under 14 px (the smallest
+text would be under 11 px) the wall turns PAGES rather than shrink the type: the grid with the most cells that can still
+be read, PageDown and PageUp (and the band's buttons) turn the page, the band says "2 / 3", and the wall opens on the page
+of its worst card. A card never moves, so a page is always the same cards. Twenty small cards are one page on 3440×1440,
+5120×1440, 2560×1440, 3840×2160 and 1920×1080 (4 by 5, 5 by 4 on the 32:9 screen); a hundred are two pages of 56 on
+3440×1440. The line under each figure (age and origin) is shown where the cells are tall enough for it (`data-roomy`).
+The script sets only custom properties and attributes on the grid (never on a card: the poll would replace it), lays the
+wall out again after every poll and resize, and without it the cards stand four across and the grid scrolls. The
+toolbar's two buttons (leave the wall, full screen) stand at the band's right end as icons. On the desk page a fitted
+card is at least 34 rem wide and as high as it needs.
 
 **Boards** (Setup › Facility structure › Monitoring boards, `/monitoring-boards/`). A board is a
 named, shared wall screen: a name (unique among the live boards in any case), a description, the template its cards are drawn
@@ -803,7 +869,10 @@ is bound to a water parameter (and point), and its options as `core.schema.Schem
 colour, font, threshold, unit or free text); `as_data()` hands it to the designer in the person's language. The v1 widgets:
 value and value-against-limits (one parameter), water (the middle point's key values or every point's every value), fish
 (the key figures or every figure), feeding (the week too or not), health, tasks, experiments, the Deffeyes chart button,
-and a trend that is catalogued but refused until a bulk series read exists. `validate.py` is the one validator (pure, no
+the pH window (it reads the unit's chart: source `chart`), and a trend that is catalogued but refused until a bulk series
+read exists. A value widget may also be bound to a value the unit's chart works out (`catalogue.CALCULATED`: the
+calculated CO₂, `co2_calc_mg_l`, shown at the CO₂ parameter's precision; the designer is offered it among the
+parameters). `validate.py` is the one validator (pure, no
 query; the model, the form, the preview and the tests call it): errors block (the shape, an unknown version, more than 40
 widgets or 32 KB, keys, ids, kinds, whole numbers, a widget outside the 12 columns or below the grid's last row (`catalogue.ROWS`, the
 tallest widgets stacked 40 high: a designer's layout, compacted upwards, always fits) or outside its sizes, each overlapping
@@ -812,16 +881,21 @@ more than two large widgets, more than 16 widgets). An older layout version is u
 as upgraded, never changed in place; a fixture per version passes. The geometry is shared with the designer's TypeScript
 through `monitoring/tests/layout_vectors.json`, which both suites run.
 
-**Card templates in the database** (`monitoring/models.py`, migrations 0002 to 0004). `monitor_card_templates`: a name (unique
+**Card templates in the database** (`monitoring/models.py`, migrations 0002 to 0005). `monitor_card_templates`: a name (unique
 among the live templates in any case, not blank), a description, whether it is built in, the layout's version (stamped in
-the layout too) and the layout (JSONB), and the template its flip link shows (`expanded`, never itself). The database holds
+the layout too) and the layout (JSONB), the template its flip link shows (`expanded`, never itself) and the **measure** of
+a fitted card (`measure_w`, `measure_h`: its width and height in the card's own unit, 12 to 64 by 6 to 64, both or
+neither: a CHECK, said with IS NOT NULL since a range test of a NULL lets a CHECK pass; the form's General tab has the two
+fields, and a fitted layout takes at most 24 rows). The database holds
 the layout's shape (an object whose widgets are a list), at most 40 widgets, at most 32 KB and the version stamp, so a hand
-edit cannot store what no card can read; everything that needs the catalogue is the validator's. Three templates are built in
-(`monitoring/cards/builtin.py`, frozen the same in migration 0002, a test keeps them equal): **Simple** and **Detailed**, the
-cards as they were (each flips to the other), and **Operator view** (the oxygen and the temperature large and first, then
-O₂ %, pH and TAN; offered, not a default). A trigger refuses any change and any delete of a built-in,
-whoever writes; a CHECK allows only those three ids to be built in and never deleted (so a database emptied and loaded
-again, a test run's rollback or a restored dump, gets them back). Copy a built-in to change it.
+edit cannot store what no card can read; everything that needs the catalogue is the validator's. Four templates are built in
+(`monitoring/cards/builtin.py`, frozen the same in migrations 0002 and 0005, a test keeps them equal): **Simple** and
+**Detailed**, the cards as they were (each flips to the other), **Operator view** (the oxygen and the temperature large and
+first, then O₂ %, pH and TAN; offered, not a default) and **Small** (fitted, 31 by 10 units: the oxygen, the temperature,
+the pH, the calculated CO₂ and the pH window; it flips to Detailed until the Big card exists). A trigger refuses any change
+and any delete of a built-in,
+whoever writes; a CHECK allows only those four ids to be built in and never deleted (so a database emptied and loaded
+again, a test run's rollback or a restored dump, gets them back). Copy a built-in to change it (the copy keeps its measure).
 `monitor_card_assignments`: which template a unit's card gets, a rule for one unit, system, system type (hatchery and nursery
 reachable here), species or unit kind, or with none the global rule (migration 0002 makes it: every unit gets Simple). One
 scope per rule and one live rule per scope (NULLs equal, so one global) are a CHECK and a partial unique index. A rule of a
@@ -831,7 +905,8 @@ deleted, nor the global rule. A board gets its default template and a card width
 board's card row its own template. Migration 0004 copies each board's default mode and each row's mode into the built-in
 templates; back, a built-in maps to its mode again. The mode columns stay for one release, so a rollback loses nothing.
 
-**Which template a card gets** (`monitoring/cards/resolve.py`), first hit wins: the board's row for the unit, a rule for the
+**Which template a card gets** (`monitoring/cards/resolve.py`), first hit wins: the screen's view (`mode=small`: every card
+of the screen as Small, on a board or not; the address's, never stored), the board's row for the unit, a rule for the
 unit, for its system, for its system's type, for the species of its fish (an empty unit has none and falls through), for
 its kind, the board's default (no board: the page's `mode=simple|detailed`, the built-ins), the global rule, and with no rule
 at all Simple from the code. `?flip=` shows a card's flip target and its link goes back. Only live templates and live rules
@@ -850,6 +925,13 @@ and keeps its last picture with its stale notice. The two template queries are t
 reads simple, 40 detailed and mixed at 6, 24 and 200 units (the recording's 31 and 38 reads, plus the two; the recording
 also counted 4 savepoint statements, the chips' and the placement registry's own), and each optional source now has a
 savepoint of its own: 4 savepoint statements simple, 10 detailed (`RecordedCountsTests`).
+The unit's **chart** is one more source (`chart`, optional, worked out from the water's answer and read only for a person
+who may read the water): `water.calculation.charts_of` for the cards whose template shows it (the pH window, a value bound
+to the calculated CO₂) and for no other card, from the water the card read already holds (no sample and no sampling point
+is read again) and ONE read of the fish and their limits for all those cards (`water.read.limits_of`). A wall of Small
+cards costs 42 reads at 6, 24 and 200 units (measured 2026-11-13, pinned in `RecordedCountsTests`: three more than
+Simple's 39). A chart that cannot be read leaves the cards: "Could not be read: Deffeyes chart" on the frame and "no data"
+in its widgets.
 
 **How a card is drawn** (`monitoring/cards/render.py`, `templates/monitoring/_card.html`, `templates/monitoring/widgets/`). The
 frame (the unit and its link, the state word, shape and reasons, the withdrawal, the flip link named after the template it
@@ -870,6 +952,13 @@ the limit that judged it, an SVG with `role="img"` named by the same sentence, i
 tone (no `<meter>`: browser colours, three cut points); without a limit it says so. A board's card width sets `--card-min`
 (17, 21 or 28 rem, 15 % more on a wall). The old per-section partials are gone: the built-ins Simple and Detailed draw what
 they drew, value for value (`test_golden`).
+A FITTED card (a template with a measure, `Resolved.measure`) has the same frame on two lines
+(`templates/monitoring/_card_fit.html`) and its widgets in equal rows that share the card's height; it is drawn with
+`tw:` utilities (as `/production/` is), the page's own sheets loading before `tw.css` (`app_base.html` block
+`page_styles`), and `static/css/monitor.css` holds only what a utility cannot say: the card's unit, the wall's cells and
+the pH window's marks. Of the widgets, the value (`widgets/_value_fit.html`, `render.tile`) and the pH window have a
+fitted look; the others keep their flowing markup, so a fitted template of one's own should hold those two until the Big
+card brings the rest.
 
 **Setup › Reference data › Card templates** (`/card-templates/`) and **Card template rules** (`/card-template-rules/`), tabs on
 `core.crud` (`monitoring/resources.py`). A template's form has a General tab (name, description, the template its flip link
@@ -894,7 +983,10 @@ draws the card and why ("Template: Simple · the rule for every unit"). **Colour
 `monitoring/tests/test_frame.py`: text that says something at least 4.5:1 on white (the warning amber is #7A5410), a border or a
 dot that carries meaning at least 3:1 (the water page's warning dot moved from #C58A16, 2.99:1, to the text's amber), the pale
 sage never carries meaning (a note card's border is the muted green, an empty one's dotted); `@media (forced-colors: active)`
-keeps the shapes, the bands of a bar and the state borders in high-contrast mode.
+keeps the shapes, the bands of a bar and the state borders in high-contrast mode (and the pH window's regions and mark).
+The fitted card, the band and the pH window use three inks on three grounds and a colour only for a state; every pair of
+text and ground they use is at least 4.5:1 in all five themes (`test_frame.py`: the inks on the sheet and the canvas, the
+state's text on the sheet and on its tint, a border's number on the grey region, the safe stretch and the critical tint).
 
 **Measured with templates** (2026-11-05, `monitoring/tests/test_load.py`, run with `MONITOR_LOAD=1`; the test database on this
 development machine, the test client): a wall of 200 cards drawn with a 12-widget template (four values, a bar, every
@@ -1422,6 +1514,13 @@ assumption is a fresh-water unit's salinity of 0 (`read.assumed_salinity`, also 
 when there; no total sulfide or calcium is measured, so there is no H₂S or Ω layer, and a limit the fish do not
 have is said, not drawn. Each reading shows its age, status and point; the chart's SVG ids carry the point
 (`uid`), so several windows on one page never clash. The endpoint needs only the right to read water samples.
+The chart is drawn from the LATEST values received (owner decision 1, 2026-11-12: "it should be drawn according to the
+latest data that came in"): an input that is no longer fresh does not refuse it. It is never silent about it:
+`ChartInput.old` and `UnitChart.old` name the inputs that are old at the chart's moment, and the window says
+"Last known position." above the chart with each old input and when it was measured, and "old" on its row.
+`calculation.charts_of(units, water)` is the same chart for many units at once (a wall of monitoring cards): from the
+water the caller already holds, with one read of the fish's limits for all the units (`read.limits_of`), each answer
+`chart_of(unit)`'s figure for figure (`farm/tests/test_charts_of.py`).
 `calculation.inputs_from` is the one mapping from field values to the analysis, used by the calculator's form
 and by this chart. Still to come: total sulfide, calcium and H₂S become parameters (a column each, a migration,
 a limit parameter for H₂S); the pH and the alkalinity are taken from the same sample, or their age difference
@@ -2941,7 +3040,10 @@ then stands for the unit (`PointWater.for_unit`) with its other points and its s
 outlet or the system has a fresh value. A derived oxygen is no second card reason beside the measurement it comes
 from.
 
-A stale value never enters a calculation (PLAN A9.3): a value is worked out (the other oxygen unit, NH₃, the oxygen
+A stale value never enters a calculation whose result is JUDGED (PLAN A9.3; the one thing drawn from old values is the
+unit's Deffeyes chart, by the owner's decision of 2026-11-12: the chart, and the calculated CO₂ and pH window a
+monitoring card takes from it, are drawn from the latest values received and say which of them are old, "Last known
+position"; nothing is judged from them): a value is worked out (the other oxygen unit, NH₃, the oxygen
 judged through the mg/L row) only from values fresh AT its own time (`read.fresh_at`: measured at or before it, or within
 the clock's skew after it, and still fresh then), so a 3-day-old saturation is never judged with today's temperature and
 a salinity older than its 7 days is not used (the value is then not worked out and says why: "Needs the salinity: none
@@ -4087,7 +4189,11 @@ without a redesign yet, and are redesigned one page at a time.
   `app_base.html`; it styles nothing but an element that carries a `tw:` class, so the pages not redesigned are exactly as
   they were (`core/tests_tailwind.py`). `npm run build` writes it (`npm run build:css` alone); `npm run check:css` (CI,
   before the build, and `npm test`) fails when it is not what the source and the templates build now. Nothing is loaded
-  from a CDN and nothing runs in the browser.
+  from a CDN and nothing runs in the browser. A page whose own sheet styles the same elements (Monitoring: a card's frame)
+  loads that sheet in `app_base.html`'s block `page_styles`, BEFORE `tw.css`, so a utility wins over the sheet's rule for
+  the same class. The theme also holds a fitted monitoring card's type scale, four sizes in em of the card's own unit
+  (`tw:text-u-s`, `-m`, `-l`, `-xl`: 0.8, 1, 1.25, 2.4), and the variant `tw:wall:` for a wall screen (`data-wall`); a test
+  holds the monitoring templates to those four sizes and to two weights (`monitoring/tests/test_small.py`).
 - **Overview** (`/production/`, `templates/production_home.html`). The panel's landing page at the start of a shift, a
   dashboard (the owner's decision over the design system's earlier "no KPI tile row"): the day's figures as metric cards
   (`templates/_metric_card.html`) on one sheet, five to a row from 768 px and two on a phone: fish, biomass, stocked units
@@ -4162,6 +4268,12 @@ compiled by `npm run build` into `static/js/`, which is not committed:
   `data-poll-skip-same` leaves an answer equal to the last alone. Messages' append mode and the
   calculator's live form are unchanged, and pinned by `core/test_frontend_contract.py`, which also checks
   that every hook a template uses is one the script documents and reads.
+- `wall.ts` the monitoring wall of fitted cards: the screen under the band cut into columns and rows of equal cells by
+  the one slot rule (`wall/slots.ts`, pure, the twin of `monitoring/cards/slots.py`; both run
+  `monitoring/tests/slot_vectors.json`), pages when the cards do not fit at a unit that can be read (PageDown, PageUp, the
+  band's buttons, "2 / 3"; it opens on the page of the worst card), laid out again after a poll or a resize. It sets
+  custom properties and attributes on the grid through the CSSOM (`--cols`, `--rows`, `--mh`, `data-roomy`, `data-page`),
+  never on a card. A wall of cards that flow is left alone.
 - `windows.ts` movable, non-modal windows (the monitoring cards' Deffeyes chart) and the full-screen button
   of a wall: `<button data-window="<url>" data-window-title>` opens the fragment in a `section[role=dialog]`
   made from the server-rendered `#monitor-window-template` (templates/monitoring/_windows.html, in the
@@ -4761,7 +4873,7 @@ runs the server:
 | `tasks/` | Tasks and recurring tasks: models (`models.py`), the place as a choice (`places.py`), the one write path and the planned tasks (`services.py`), overdue and the views on read (`read.py`), the tabs (`resources.py`, `forms.py`), the drawer's actions and the overview tiles (`views.py`), `manage.py generate_tasks`, `templates/tasks/`, `static/css/tasks.css` |
 | `experiments/` | Experiments (its own app, reading the farm): the design, the placements and the team (`models.py`), the endpoints (`variables.py`), the tab, its design view and its team list (`resources.py`, `forms.py`), what is wrong with a design (`design.py`), the seeded deal (`allocation.py`), the reads that every figure goes through and the deviations (`read.py`), the check of every started experiment (`integrity.py`, `manage.py check_experiments`), the write path of the design and the places (`services.py`), the constraints and composite keys (`migrations/0001_initial.py`), the triggers that freeze a started design (`migrations/0002_design_frozen.py`), `templates/experiments/`, tests, `docs/experiments.md` |
 | `hr/` | Human resources (Company › HR, its own app): people, departments, placements, shifts, leave and attendance (`models/`), the rules and the scope (`rules.py`, `scope.py`, `roles.py`), the write path (`services.py`), the reads (`read.py`), what the database cannot hold (`checks.py`, `manage.py check_hr`), the tabs (`resources/`, `forms/`), `templates/hr/`, tests (README, Human resources) |
-| `monitoring/` | Operations › Monitoring: the one card read and its state ladder with its words (`read.py`), the card templates' catalogue, validator, resolution and drawing (`cards/`), boards and templates (`models.py`, `resources.py`, `forms.py`), the page, the fragment and the designer's preview (`views.py`), `templates/monitoring/`, `static/css/monitor.css`, `frontend/poll.ts`, `frontend/announce.ts`, `frontend/designer.ts`, `frontend/windows.ts`, tests (README, Monitoring) |
+| `monitoring/` | Operations › Monitoring: the one card read and its state ladder with its words (`read.py`), the band above the cards (`read.band`), the card templates' catalogue, validator, resolution, drawing and the wall's slot rule (`cards/`, `cards/slots.py`), boards and templates (`models.py`, `resources.py`, `forms.py`), the page, the fragment and the designer's preview (`views.py`), `templates/monitoring/`, `static/css/monitor.css`, `frontend/poll.ts`, `frontend/announce.ts`, `frontend/designer.ts`, `frontend/windows.ts`, `frontend/wall.ts`, tests (README, Monitoring) |
 | `sensors/` | The Sensors panel: devices, channels and their bindings (`models/`, `bindings.py`), the live water source the farm reads through `farm/water/sources.py` (`provider.py`, `read.py`), alarms and quality (`alarms.py`, `quality.py`), the charts and the trail (`chart.py`, `trail.py`), `sensors/CONTRACT.md`, tests (README, Sensors) |
 | `sensors-ingest/` | The ingest service (Rust): reads the broker's sensor messages and writes the readings (`CONTRACT-REQUESTS.md`, `BENCH.md`) |
 | `core/checks.py`, `core/ranges.py`, `core/text.py` | The system checks run at start (the built catalogs and assets); periods as PostgreSQL compares them, for exclusion constraints; lower case in the person's language |

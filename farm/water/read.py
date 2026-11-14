@@ -71,7 +71,7 @@ from farm.stock.read import Presence
 
 from . import chemistry, parameters, sources
 from . import freshness
-from .evaluate import ALERTS, MAX_AHEAD, RANK, Limits, Status, ahead, is_fresh, worst
+from .evaluate import ALERTS, MAX_AHEAD, RANK, Limits, Status, ahead, crossed as bound_crossed, is_fresh, worst
 from .parameters import NH3_N, NH4_N, OXYGEN_MG_L, OXYGEN_PCT, TAN
 
 # How far back the latest values, and a salinity for a sample without one, are looked for.
@@ -1193,6 +1193,23 @@ def worst_fresh(reading, others, now=None):
     reading.worse = worse
     reading.note = f'{reading.note} {said}' if reading.note else said
     return reading
+
+
+def crossed(reading):
+    """Which value is past which bound, for a reading the limits judge critical or a warning: (the Reading whose value
+    it is, the bound's name, the bound), or None when no one bound says it. The value is the worse fresh one when that
+    decided the status (`worst_fresh`), the value in its other unit when a row on that unit judged it (the oxygen,
+    `Context.judge`), else the reading's own; the bound is the one `evaluate.judge` judged it by (evaluate.crossed).
+    For a short sentence beside the full reason (a monitoring card's one line, the band's chip): never a judgement."""
+    source = reading.worse or reading
+    for each in (source, source.through):
+        if each is None or each.value is None:
+            continue
+        for row in each.limits:
+            found = bound_crossed(each.value, row)
+            if found is not None and found[0].startswith(str(reading.judged)):
+                return (each, *found)
+    return None
 
 
 def _values_at(targets, moment):

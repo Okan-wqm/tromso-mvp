@@ -1795,8 +1795,14 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
 - *Medicine withdrawal* (**a harvest only**: the fish go to food, to the slaughter facility the harvest names; a
   medicine withdrawal is a meat withdrawal, so it means nothing when live fish are moved or graded, where the
   fast and the live-transfer facts are what matter, and a treatment during a withdrawal harms nobody): every block
-  a registered provider gives for the batch whose end is after the day, or unknown (unknown is a warning, never
-  clear). The health records register their provider in `farm/apps.py` (`farm/handling/withdrawal.py`:
+  a registered provider gives for the **unit** whose end is after the day, or unknown (unknown is a warning, never
+  clear). The withdrawal is the unit's, never the chosen batch's: a net cannot separate the batches of one unit, so
+  the withdrawal of any fish in it holds a harvest of it, whichever batch the dialog names (`check.in_force(unit, day)`
+  takes no batch). The warning names the batch that is held and, when the unit holds other fish beside it, says "It
+  holds every fish in T-02: the fish of different batches in one unit cannot be told apart at a harvest."; the
+  acknowledgement row keeps that batch, the earliest suitable harvest date and the plan rows read the same blocks, and a
+  harvest locks every batch in its unit (`farm.stock.services._locked_for`), so it and a write that changes one of
+  their withdrawals take turns (`farm/tests/test_withdrawal_shared_unit.py`). The health records register their provider in `farm/apps.py` (`farm/handling/withdrawal.py`:
   `register(provider)`, `blocks(unit, day)`, `WithdrawalBlock(batch, until, approximate, reason, source)`; see
   Operations › Health). With no provider registered the harvest dialog would say "Medicine withdrawal not
   checked" and warn nothing.
@@ -2046,7 +2052,8 @@ Treatments (read, create, edit = change the last day, delete = void), Health eve
 void) and Sea-lice counts (read, create, delete = void), the last three under Production · Operations · Health.
 The admin shows voided treatments, events and counts and does not restore them. `manage.py check_withdrawal`
 works out every unit's withdrawal from scratch and lists the fish held, with the end and why, and then **every harvest
-already recorded inside a withdrawal** (medicated fish that may have gone to food), however it came to (a treatment entered
+already recorded inside a withdrawal** of its own batch or of a batch that shared its unit that day ("… lies inside a
+withdrawal of B-2026-001, in the same unit, …"; medicated fish that may have gone to food), however it came to (a treatment entered
 after the harvest, a longer course, a corrected temperature, a medicine's withdrawal changed), each with whether someone
 acknowledged it or not: an acknowledgement counts only for the harvest, the batch and the withdrawal it names (when the
 harvest was recorded, or when the write that brought it inside was), never for another withdrawal of the same harvest.

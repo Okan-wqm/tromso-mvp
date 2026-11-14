@@ -10,10 +10,13 @@ transaction: the stock service runs it after its locks (a feeding of the unit ta
 
 - Withdrawal (a harvest only: the fish go to food, to the slaughter facility the harvest names; a medicine
   withdrawal is a meat withdrawal, so it means nothing when live fish are moved or graded, and a treatment during
-  a withdrawal harms nobody): every block the registry gives (farm/handling/withdrawal.py) for the batch whose
-  `until` is after the day, or unknown. With no provider the harvest dialog says "Medicine withdrawal not
-  checked" and nothing is warned. A transfer or a grading is checked for the fast and the live-transfer facts
-  alone.
+  a withdrawal harms nobody): every block the registry gives (farm/handling/withdrawal.py) for the UNIT whose
+  `until` is after the day, or unknown. **The withdrawal is the unit's, never the chosen batch's** (flow fault S-02;
+  the owner, 14.11.2026: fish of two batches in one unit are one group): a net cannot separate the batches of a unit,
+  so the withdrawal of any fish in it holds a harvest of it, whichever batch the dialog names; `in_force` takes no
+  batch, so no caller can ask it of one. The warning names the batch that is held, and says so when the unit holds
+  other fish beside it. With no provider the harvest dialog says "Medicine withdrawal not checked" and nothing is
+  warned. A transfer or a grading is checked for the fast and the live-transfer facts alone.
 - Fasting: the hours since the fish's last feeding against the rule (farm/handling/fasting.py) and, for a harvest
   whose rule asks for purging in degree-days, the degree-days of the full days since it; each that the rule asks for
   must be reached, the later decides. No rule, or no feeding found in the 31 days before, is said, not warned.
@@ -40,6 +43,7 @@ from farm.feeding.read import book_on, last_fed_at
 from farm.models import Batch, HandlingAcknowledgement, Treatment
 from farm.models.handling import AcknowledgedWarning, HandlingKind, HandlingRule, WithdrawalWarning
 from farm.stock.dates import local_today
+from farm.stock.read import Presence
 from farm.water.degree_days import BatchWater, degree_days_text, missing_sentence
 
 from . import fasting, withdrawal
@@ -78,6 +82,7 @@ class HandlingWarning:
     rule: HandlingRule = None
     fasted_degree_days: Decimal = None   # a harvest's purging: the degree-days since the last feeding
     accrual: object = None               # how they were found (farm.water.degree_days.Accrual)
+    shared: bool = False                 # a withdrawal: the unit holds fish of other batches beside the held one
 
     @property
     def required_hours(self):
@@ -91,7 +96,8 @@ class HandlingWarning:
         """What the person saw, as text: a change in it asks them again."""
         if self.warning == AcknowledgedWarning.WITHDRAWAL:
             block = self.block
-            return f'withdrawal:{block.batch.pk}:{block.until}:{block.approximate}:{block.reason}'
+            shared = ':shared' if self.shared else ''
+            return f'withdrawal:{block.batch.pk}:{block.until}:{block.approximate}:{block.reason}{shared}'
         return (f'fasting:{self.rule.pk}:{self.required_hours}:{self.required_degree_days}:{self.fasted_degree_days}:'
                 f'{self.last_fed_at.isoformat()}')
 
@@ -99,6 +105,9 @@ class HandlingWarning:
         """The warning in the person's language (the activity log builds it in English)."""
         if self.warning == AcknowledgedWarning.WITHDRAWAL:
             text = withdrawal_text(self.block)
+            if self.shared:
+                text += ' ' + _('It holds every fish in %(unit)s: the fish of different batches in one unit cannot be '
+                                'told apart at a harvest.') % {'unit': self.unit.code}
             return f'{text} {self.block.reason}' if self.block.reason else text
         text = _('Last fed %(moment)s, %(fasted)s before %(day)s: the %(kind)s rule asks for %(asked)s.') % {
             'moment': shown_moment(self.last_fed_at, self.unit),
@@ -147,7 +156,7 @@ def assess(kind, unit, day, batch=None, with_earliest=True):
     result = Assessment(kind, unit, day, batch)
     batches = [batch] if batch is not None else _batches_in(unit, day)
     if kind == WITHDRAWAL_KIND:
-        _withdrawal(result, batches)
+        _withdrawal(result)
     _fasting(result, batches)
     if kind == WITHDRAWAL_KIND and with_earliest:
         _earliest(result, batches)
@@ -170,24 +179,28 @@ def in_force_of(units, day=None):
             for unit_id, blocks in found.items()}
 
 
-def in_force(unit, day, batches=None):
-    """The withdrawal blocks in force for the fish in `unit` on `day` (of `batches` only, when given): their
-    `until` is after the day, or unknown. None when no provider is registered: not checked."""
+def in_force(unit, day):
+    """The withdrawal blocks in force for the fish in `unit` on `day`, of EVERY batch with fish in it (the registry
+    says which): their `until` is after the day, or unknown. None when no provider is registered: not checked.
+    It takes no batch on purpose (S-02): the fish of a unit are handled together, so a withdrawal is never asked of
+    one of its batches alone."""
     found = in_force_of([unit], day)
-    if found is None:
-        return None
-    held = None if batches is None else {each.pk for each in batches}
-    return [block for block in found[unit.pk] if held is None or block.batch.pk in held]
+    return None if found is None else found[unit.pk]
 
 
-def _withdrawal(result, batches):
-    blocks = in_force(result.unit, result.day, batches)
+def _withdrawal(result):
+    """The withdrawal warnings of a handling of the unit: one per block in force for any fish in it, whichever batch
+    the handling names. A block is `shared` when the unit holds fish of another batch that day too (the stock's
+    presence, as the registry's provider reads it), which the warning then says."""
+    unit, day = result.unit, result.day
+    blocks = in_force(unit, day)
     if blocks is None:
         result.notes.append(_('Medicine withdrawal not checked: the health records are not in yet.'))
         return
+    present = Presence.of_units([unit.pk]).batches_in(unit.pk, day) if blocks else set()
     for block in blocks:
-        result.warnings.append(HandlingWarning(AcknowledgedWarning.WITHDRAWAL, result.kind, result.unit,
-                                               result.day, block=block))
+        result.warnings.append(HandlingWarning(AcknowledgedWarning.WITHDRAWAL, result.kind, unit, day, block=block,
+                                               shared=bool(present - {block.batch.pk})))
     if not blocks:
         result.notes.append(_('No medicine withdrawal in force.'))
 
@@ -275,12 +288,13 @@ class Earliest:
 
 
 def earliest(unit, batch, today=None):
-    """The Earliest suitable harvest date of `batch` in `unit` on the farm's `today`: the end of its medicine withdrawal
-    (the registry's blocks; unknown when a block's end is) and the first day its purge can be complete if it is not
+    """The Earliest suitable harvest date of `batch` in `unit` on the farm's `today`: the end of the medicine withdrawal
+    of the fish in the unit (the registry's blocks of every batch in it, S-02; unknown when a block's end is) and the
+    first day its purge can be complete if it is not
     fed again, which is `fasted` asked of each day from today on, from the last feeding. Nothing holds the fish when
     there is no withdrawal in force, no rule, no feeding recorded in the 31 days before, or the fast is complete."""
     today = local_today(unit) if today is None else today
-    blocks = in_force(unit, today, [batch]) or []
+    blocks = in_force(unit, today) or []
     dated = [block for block in blocks if block.until is not None]
     unknown = len(dated) < len(blocks)
     latest = max(dated, key=lambda block: block.until, default=None)

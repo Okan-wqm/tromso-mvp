@@ -7714,6 +7714,14 @@ msgstr "Stok işlemleri var: önce onları iptal edin."
 msgid "It has stock records on its site: it can only move to a production department of the same site."
 msgstr "Sahasında stok kayıtları var: yalnızca aynı sahanın bir üretim departmanına taşınabilir."
 
+#, python-format
+msgid ""
+"It holds every fish in %(unit)s: the fish of different batches in one unit cannot be told apart "
+"at a harvest."
+msgstr ""
+"%(unit)s içindeki bütün balıkları tutar: aynı birimdeki farklı partilerin balıkları hasatta "
+"birbirinden ayrılamaz."
+
 msgid "It holds fish: move or harvest them first."
 msgstr "İçinde balık var: önce taşıyın veya hasat edin."
 
@@ -14797,6 +14805,14 @@ msgstr ""
 
 msgid "The withdrawal counts from the new last day; the change is logged."
 msgstr "Bekleme süresi yeni son günden sayılır; değişiklik günlüğe yazılır."
+
+#, python-format
+msgid ""
+"The withdrawal is of %(held)s, which was in %(unit)s with the fish harvested: the fish of one "
+"unit cannot be told apart."
+msgstr ""
+"Bekleme süresi, hasat edilen balıklarla birlikte %(unit)s içinde bulunan %(held)s partisine "
+"aittir: aynı birimdeki balıklar birbirinden ayrılamaz."
 
 msgid ""
 "The withdrawal is the product’s, as its SPC states it per species, in degree-days, days or both, "

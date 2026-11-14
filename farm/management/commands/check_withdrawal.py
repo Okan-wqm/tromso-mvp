@@ -50,11 +50,13 @@ class Command(BaseCommand):
             line = each.line
             end = (each.until.isoformat() if each.until else 'unknown') + (' (estimated)' if each.approximate else '')
             facility = each.facility.name if each.facility is not None else 'an unknown facility'
-            pair = (each.operation_id, line.batch_id, source_key(each.withdrawal.source))
+            # The acknowledgements name the batch that is held: the harvested one, or one that shared its unit (S-02).
+            pair = (each.operation_id, each.batch.pk, source_key(each.withdrawal.source))
             acknowledged = self.acknowledged(given.get(pair, []), each.until)
+            whose = '' if each.own else f' of {each.batch.code}, in the same unit,'
             self.stdout.write(self.style.ERROR(
                 f'Harvest of {line.operation.date.isoformat()} from {line.unit.code} · {line.batch.code} '
-                f'({each.fish} fish to {facility}) lies inside a withdrawal until {end}: '
+                f'({each.fish} fish to {facility}) lies inside a withdrawal{whose} until {end}: '
                 f'{withdrawal.describe(each.withdrawal)} {acknowledged}'))
         if found:
             count = len({each.same_harvest() for each in found})

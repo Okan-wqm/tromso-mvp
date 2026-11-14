@@ -7690,6 +7690,14 @@ msgstr ""
 "Den har lagerposter på lokaliteten sin: den kan bare flyttes til en produksjonsavdeling på samme "
 "lokalitet."
 
+#, python-format
+msgid ""
+"It holds every fish in %(unit)s: the fish of different batches in one unit cannot be told apart "
+"at a harvest."
+msgstr ""
+"Den holder all fisk i %(unit)s: fisk fra ulike fiskegrupper i samme enhet kan ikke skilles fra "
+"hverandre ved høsting."
+
 msgid "It holds fish: move or harvest them first."
 msgstr "Det er fisk i den: flytt eller høst fisken først."
 
@@ -14764,6 +14772,14 @@ msgstr ""
 
 msgid "The withdrawal counts from the new last day; the change is logged."
 msgstr "Tilbakeholdelsestiden regnes fra den nye siste dagen; endringen logges."
+
+#, python-format
+msgid ""
+"The withdrawal is of %(held)s, which was in %(unit)s with the fish harvested: the fish of one "
+"unit cannot be told apart."
+msgstr ""
+"Tilbakeholdelsestiden gjelder %(held)s, som sto i %(unit)s sammen med fisken som ble høstet: fisk"
+" i samme enhet kan ikke skilles fra hverandre."
 
 msgid ""
 "The withdrawal is the product’s, as its SPC states it per species, in degree-days, days or both, "

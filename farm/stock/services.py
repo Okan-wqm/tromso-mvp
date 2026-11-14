@@ -3,7 +3,8 @@ goes through `_commit`, the only code that writes StockOperation and StockMoveme
 code that changes a unit's status for stock reasons. In one transaction it:
 
 1. locks the batches, then the units, each in primary-key order (the same order everywhere, so two
-   writers never deadlock, and two writers of the same unit or batch take turns);
+   writers never deadlock, and two writers of the same unit or batch take turns); a harvest locks every batch in
+   its unit, not only the one it names (`_locked_for`: a medicine withdrawal is the unit's);
 2. refuses a form sent twice (its token), and checks what needs no folding: the date (not in the
    future, at most the correction window back, in the farm's own time zone; not before the batch was
    stocked), live units and batches, units that may take fish (owner decision Q5), species that may
@@ -138,10 +139,11 @@ def locked(model, pks):
     return model.all_objects.select_for_update(of=('self',)).filter(pk__in=pks).order_by('pk').in_bulk()
 
 
-def lock_fish(unit_ids, first=None):
+def lock_fish(unit_ids, first=None, also=()):
     """Locks the fish of `unit_ids` from the day `first` on (None: every batch they ever held), in the order a stock operation locks them (batches, then
     units), and returns ({unit id: unit}, the batch ids): the fish a write about these units can reach, which the
-    withdrawal guard works the withdrawals of. Which batches were there is read before the units are locked and read
+    withdrawal guard works the withdrawals of. `also`: batches locked with them whether or not they are found there (an
+    operation's own). Which batches were there is read before the units are locked and read
     again after: a batch that arrived in between is locked too (cross-review 2, 7). That late lock is the one taken
     after a unit's: the operation that brought the batch has committed (it is read), so only an operation begun since,
     holding the batch and waiting for one of these units, can cross it; the database sees that deadlock and fails one of
@@ -151,13 +153,26 @@ def lock_fish(unit_ids, first=None):
         return {batch_id for unit_id in unit_ids for batch_id in presence.batches.get(unit_id, ())
                 if first is None or presence.present_between(unit_id, batch_id, first, date.max)}
 
-    batch_ids = present()
+    batch_ids = present() | set(also)
     locked(Batch, batch_ids)
     units = locked(Tank, set(unit_ids))
     arrived = present() - batch_ids
     if arrived:
         locked(Batch, arrived)
     return units, batch_ids | arrived
+
+
+def _locked_for(kind, day, batch_ids, unit_ids):
+    """Step 1: ({batch id: batch}, {unit id: unit}) of an operation, locked: the batches, then the units, each in
+    primary-key order. An operation whose handling check asks for a medicine withdrawal (a harvest) is held by the
+    withdrawal of EVERY batch in its unit, whichever batch it names (farm/handling/check.py, flow fault S-02): the
+    batches that share the unit from its day on are locked with its own, as a treatment locks its fish (`lock_fish`), so
+    the harvest and a write that creates or lengthens a withdrawal of any of them take turns, and the later one sees
+    the earlier. Only the operation's own batches are returned: the others are locked, not written."""
+    if KIND_OF_OPERATION.get(kind) != check.WITHDRAWAL_KIND:
+        return locked(Batch, batch_ids), locked(Tank, unit_ids)
+    units, _sharing = lock_fish(unit_ids, day, also=batch_ids)
+    return locked(Batch, batch_ids), units
 
 
 def _already(token):
@@ -179,8 +194,8 @@ def _commit(user, kind, day, entries, *, notes='', ack=False, size_mix_ack=False
     `ack` and `size_mix_ack` are the person's ticks of the two questions of step 5 (above the max biomass, batches of
     different sizes): a tick not needed is not stored."""
     with transaction.atomic():
-        batches = locked(Batch, {entry.batch.pk for entry in entries if entry.batch is not None})
-        units = locked(Tank, {entry.unit.pk for entry in entries})
+        batches, units = _locked_for(kind, day, {entry.batch.pk for entry in entries if entry.batch is not None},
+                                     {entry.unit.pk for entry in entries})
         _already(token)
         _check_static(kind, day, entries, batches, units, new_batch)
         if health_event is not None:
@@ -258,7 +273,8 @@ def _commit(user, kind, day, entries, *, notes='', ack=False, size_mix_ack=False
 def _handling(user, kind, day, entries, batches, units, seen):
     """The handling check of a harvest, transfer or grading (farm/handling/check.py), on the source unit and
     batch, after the locks: with warnings, the person must have seen exactly these (`seen`, their
-    fingerprint) and gone on; otherwise they are asked (again). None for other operations."""
+    fingerprint) and gone on; otherwise they are asked (again). None for other operations. A medicine withdrawal is
+    asked of the unit, of every batch in it, not of the source batch (the check's rule; `_locked_for` locks them)."""
     handling = KIND_OF_OPERATION.get(kind)
     if handling is None:
         return None
@@ -902,8 +918,7 @@ def record_harvest(user, *, unit, batch, day, count, measured_weight_kg, facilit
         raise ValidationError({'batch': _('Cleaner fish are not harvested: record their cull, with the reason “%(reason)s” '
                                           'at the end of their use.') % {'reason': CullReason.NOT_USED.label}})
     with transaction.atomic():
-        locked(Batch, {batch.pk})
-        locked(Tank, {unit.pk})
+        _locked_for(OperationKind.HARVEST, day, {batch.pk}, {unit.pk})
         book = read.share_on(unit.pk, batch.pk, day).count
         if count > book:
             raise ValidationError({'count': _('Only %(available)s fish of %(batch)s are in %(unit)s on %(date)s.') % {

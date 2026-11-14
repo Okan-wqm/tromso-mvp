@@ -13,16 +13,20 @@ from dataclasses import dataclass
 from django.utils.translation import gettext
 
 from core import text
+from farm.templatetags.stock import number, percent
 from farm.templatetags.water import water_value
-from farm.water import read as water_read
-from farm.water.evaluate import Status, judge
+from farm.water import calculation, deffeyes, parameters, read as water_read
+from farm.water.evaluate import ALERTS, Status, judge
 
 from . import catalogue
 
 # Which section a widget's sources fall under when the person may not read them, for its "not shown to you" line:
 # the first of its sources the person cannot read decides (a health widget needs one of its three).
 HIDDEN_AS = {'feeding': 'feeding', 'water': 'water', 'events': 'health', 'treatments': 'health', 'lice': 'health',
-             'tasks': 'tasks'}
+             'tasks': 'tasks', 'chart': 'water'}
+# A source worked out from another's answer is read with that one's right (monitoring/read.py Source.of): the unit's
+# chart with the water's.
+READ_WITH = {'chart': 'water'}
 
 
 @dataclass(frozen=True)
@@ -51,7 +55,8 @@ class WidgetView:
 
 
 def _hidden(spec, sections):
-    readable = [source for source in spec.sources if source not in HIDDEN_AS or source in sections]
+    readable = [source for source in spec.sources
+                if source not in HIDDEN_AS or READ_WITH.get(source, source) in sections]
     if readable:
         return ''
     return HIDDEN_AS[spec.sources[0]]
@@ -188,6 +193,173 @@ def bar(face):
     return Bar(tuple(bands), at(reading.value), sentence)
 
 
+# ---- a value the unit's chart works out, and the pH window -----------------------------------------------------------
+def _refused(chart):
+    """Why a unit's chart could not be worked out (calculation.Refusal), in a few words."""
+    if chart.no_point:
+        return gettext('no active middle sampling point')
+    if chart.missing:
+        return gettext('no value of %(values)s') % {'values': ', '.join(str(label) for label in chart.missing)}
+    return str(chart.impossible)
+
+
+def calculated(card, value):
+    """The Face of a value the unit's chart works out (`value`: a catalogue.Calculated), from the card's chart: the
+    figure at its precision, tagged "calculated", as old as the oldest of the four values it is worked out from and
+    `stale` when one of them is old (owner decision 1: shown, and said). Phase 1: it has no status, the limits do not
+    judge it yet. "no data" when the chart could not be worked out, the note saying why."""
+    label = str(value.short)
+    chart = card.chart
+    if not isinstance(chart, calculation.UnitChart):
+        why = '' if chart is None else gettext('Not worked out: %(why)s.') % {'why': _refused(chart)}
+        return Face(label, gettext('no data'), '', '', '', '', False, True, note=why)
+    figure = water_read.as_parameter(value.shown_as, getattr(chart.calculation.analysis, value.figure))
+    made_from = [item for item in chart.inputs if item.field in calculation.REQUIRED]
+    measured = [item.reading.at for item in made_from if item.reading is not None]
+    note = gettext('Calculated from the pH, the alkalinity, the temperature and the salinity.')
+    if chart.assumed:
+        note = '{} {}'.format(note, gettext('The salinity is assumed: fresh water.'))
+    return Face(label, water_value(figure, value.shown_as), '', '', gettext('calculated'),
+                age_text((card.now - min(measured)).total_seconds()) if measured else '',
+                any(item.old for item in made_from), False, note=note)
+
+
+def bound(card, view):
+    """The Face of what a value or bar widget is bound to: a water parameter at its point (the middle by default), or a
+    value the unit's chart works out."""
+    code = view.bind.get('parameter')
+    if code in catalogue.CALCULATED:
+        return calculated(card, catalogue.CALCULATED[code])
+    return face(reading_at(card, code, view.bind.get('point', water_read.MIDDLE)), card.now, parameters.get(code))
+
+
+@dataclass(frozen=True)
+class Tile:
+    """A value on a FITTED card: one short label, the figure, one line under it (monitoring/widgets/_value_fit.html)."""
+    label: str           # 'O₂', '°C', 'CO₂ calc.': catalogue.TILE_LABELS, else the parameter's short label
+    title: str           # the full label
+    face: Face
+    alert: str           # 'critical' or 'warning' when the limits say so of the value (an old one too), else ''
+    beside: str          # the same quantity in its other unit, said in the label: '98.0 %' beside the oxygen's mg/L
+    beside_alert: str
+
+
+def tile(card, view):
+    code = view.bind.get('parameter')
+    point = view.bind.get('point', water_read.MIDDLE)
+    said = bound(card, view)
+    named = catalogue.described(code)
+    label, title = str(catalogue.TILE_LABELS.get(code, named.short)), str(named.label)
+    if point != water_read.MIDDLE:
+        where = said.reading.point.name if said.reading is not None and said.reading.point is not None else point
+        label, title = f'{label} · {where}', f'{title} · {where}'
+    other = parameters.SAME_QUANTITY.get(code)
+    twin = reading_at(card, other, point) if other else None
+    beside = beside_alert = ''
+    if twin is not None and twin.value is not None:
+        beside = percent(twin.value, 1) if other == parameters.OXYGEN_PCT else f'{water_value(twin.value, other)} mg/L'
+        status = twin.old_alert or twin.status
+        beside_alert = str(status) if status in ALERTS else ''
+    return Tile(label, title, said, said.status if said.status in ALERTS else '', beside, beside_alert)
+
+
+@dataclass(frozen=True)
+class PhWindow:
+    """The pH window of a card: the chart's one-line slice at the unit's own alkalinity, on the scale of
+    catalogue.PH_WINDOW. Left of one border the CO₂ is past its limit, right of the other the NH₃ is; the water's pH is
+    the mark. Every length is a percentage of the picture, written with a dot whatever the language. `refused`: why
+    there is no picture."""
+    label: str = ''          # the picture's name: every number of it in words
+    regions: tuple = ()      # (key, x, width): 'co2', 'safe', 'nh3'
+    names: tuple = ()        # (key, text, x, inside): a border's number, or what is missing on that side
+    water: str = ''
+    zones: tuple = ()        # the regions the water is in: 'co2', 'nh3'
+    old: bool = False
+    refused: str = ''
+
+
+def _pc(value):
+    return f'{value:.1f}'
+
+
+def ph_window(card):
+    """The PhWindow of a card, from its chart (the chemistry core's analysis: the two borders as pH, and whether the
+    water is past each). Nothing is judged here: a region is where the core's border says it is, the water is "in" a
+    region when the core says it is past that border, and the stretch between the borders is called safe only when the
+    core has a safe zone at all (deffeyes.safe_zone_gaps: every limit it needs is set) and the limits judge the unit's
+    alkalinity inside its band. A missing limit is never drawn as a safe side: the picture says what is missing."""
+    chart = card.chart
+    if chart is None:
+        return PhWindow(refused=gettext('no data'))
+    if not isinstance(chart, calculation.UnitChart):
+        return PhWindow(refused=gettext('The pH window cannot be drawn: %(why)s.') % {'why': _refused(chart)})
+    analysis = chart.calculation.analysis
+    low, high = catalogue.PH_WINDOW
+
+    def at(ph):
+        return (min(max(ph, low), high) - low) / (high - low) * 100
+
+    def under(start, end):
+        return start - 2 < water < end + 2
+
+    # (a border's number never lies under the water's mark: it goes to the other side of its border, and when the mark
+    # is on the border itself, past the mark)
+
+    co2, nh3, water = analysis.co2, analysis.nh3, at(analysis.water.ph)
+    left = 100.0 if co2.everywhere else at(co2.ph) if co2.ph is not None else 0.0
+    right = 0.0 if nh3.everywhere else at(nh3.ph) if nh3.ph is not None else 100.0
+    alkalinity = next((item.reading for item in chart.inputs if item.field == 'alkalinity_mg_l'), None)
+    safe = (not deffeyes.safe_zone_gaps(analysis) and alkalinity is not None and alkalinity.judged == Status.OK)
+    regions = []
+    if left > 0:
+        regions.append(('co2', _pc(0), _pc(left)))
+    if safe and right > left:
+        regions.append(('safe', _pc(left), _pc(right - left)))
+    if right < 100:
+        regions.append(('nh3', _pc(right), _pc(100 - right)))
+    said = [gettext('pH %(ph)s') % {'ph': number(analysis.water.ph, 2)}]
+    names = []
+    if co2.everywhere:
+        names.append(('co2', 'CO₂', _pc(1.2), True))
+        said.append(gettext('CO₂ is past its limit at every pH'))
+    elif co2.ph is not None:
+        if left > 0:
+            outside = left >= 17 and not under(left - 15, left)
+            names.append(('co2', f'CO₂ {number(co2.ph, 2)}',
+                          _pc(left - 1.2 if outside else max(left + 1.2, water + 1.8 if under(left, left) else 0)),
+                          not outside))
+        said.append(gettext('CO₂ passes its limit below pH %(ph)s') % {'ph': number(co2.ph, 2)})
+    elif 'co2_limit_mg_l' not in chart.limits:
+        names.append(('co2', gettext('no CO₂ limit'), _pc(1.2), True))
+        said.append(gettext('no CO₂ limit for these fish'))
+    else:
+        said.append(gettext('CO₂ does not reach its limit'))
+    if nh3.everywhere:
+        names.append(('nh3', 'NH₃', _pc(98.8), True))
+        said.append(gettext('NH₃ is past its limit at every pH'))
+    elif nh3.ph is not None:
+        if right < 100:
+            outside = right <= 83 and not under(right, right + 15)
+            names.append(('nh3', f'{number(nh3.ph, 2)} NH₃',
+                          _pc(right + 1.2 if outside else min(right - 1.2, water - 1.8 if under(right, right) else 100)),
+                          not outside))
+        said.append(gettext('NH₃ passes its limit above pH %(ph)s') % {'ph': number(nh3.ph, 2)})
+    elif 'nh3_n_limit_mg_l' not in chart.limits:
+        names.append(('nh3', gettext('no NH₃ limit'), _pc(98.8), True))
+        said.append(gettext('no NH₃ limit for these fish'))
+    elif nh3.status == Status.NOT_MEASURED:
+        names.append(('nh3', gettext('no TAN'), _pc(98.8), True))
+        said.append(gettext('NH₃ not assessed: no TAN'))
+    else:
+        said.append(gettext('NH₃ does not reach its limit'))
+    if chart.old:
+        said.append(gettext('last known position, old: %(values)s') % {
+            'values': ', '.join(str(parameters.get(item.field).short) for item in chart.old)})
+    label = gettext('pH window, %(unit)s: %(said)s') % {'unit': card.unit.code, 'said': '; '.join(said)}
+    zones = tuple(key for key, border in (('co2', co2), ('nh3', nh3)) if border.status == Status.CRITICAL)
+    return PhWindow(label, tuple(regions), tuple(names), _pc(water), zones, bool(chart.old))
+
+
 def grid_css():
     """static/css/card-grid.css: a class for every column, row, width and height a valid layout can use (catalogue),
     each setting the custom property monitor.css places a widget by. Written by `manage.py card_grid_css`."""
@@ -199,4 +371,8 @@ def grid_css():
     lines += [f'.gw-{w}{{--w:{w}}}' for w in range(1, catalogue.COLUMNS + 1)]
     lines += [f'.gh-{h}{{--h:{h}}}' for h in range(1, tallest + 1)]
     lines += [f'.gy-{y}{{--y:{y}}}' for y in range(catalogue.ROWS)]
+    # A fitted card (a template with a measure): the rows its widgets share its height in, and its measure in card units.
+    lines += [f'.gr-{rows}{{--gr:{rows}}}' for rows in range(1, catalogue.FIT_ROWS + 1)]
+    lines += [f'.mw-{width}{{--mw:{width}}}' for width in range(catalogue.MEASURE_W[0], catalogue.MEASURE_W[1] + 1)]
+    lines += [f'.mh-{height}{{--mh:{height}}}' for height in range(catalogue.MEASURE_H[0], catalogue.MEASURE_H[1] + 1)]
     return '\n'.join(lines) + '\n'

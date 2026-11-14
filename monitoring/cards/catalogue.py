@@ -26,6 +26,15 @@ MAX_BYTES = 32768
 MANY_WIDGETS = 16               # more than this is a warning: a card that full is hard to read from a distance
 MAX_LARGE = 2                   # more large widgets than this is a warning: large no longer stands out
 
+# A FITTED template: one with a measure, its card's width and height in the card's own unit (monitoring/models.py
+# CardTemplate.measure_w, measure_h). A fitted card is drawn at the size of its cell, every length inside it a multiple
+# of that one unit (static/css/monitor.css `.monitor-card.is-fit`), so the same card reads on a 1080-high desk screen
+# and on a 2160-high wall; a template without a measure flows as cards always did. The bounds are what card-grid.css
+# holds a class for (render.grid_css); a fitted card's widgets share its height in at most FIT_ROWS equal rows.
+MEASURE_W = (12, 64)
+MEASURE_H = (6, 64)
+FIT_ROWS = 24
+
 # What a widget is bound to: nothing, or one water parameter (at the middle point unless it names another).
 NONE, PARAMETER = 'none', 'parameter'
 
@@ -84,6 +93,7 @@ WIDGETS = {spec.type: spec for spec in (
     _spec('experiment', _('Experiments'), (3, 1), (12, 2), (12, 1), ('chips',), on_empty=True),
     _spec('deffeyes', _('Deffeyes chart'), (2, 1), (6, 2), (4, 1), ('water',), on_empty=True,
           says_hidden=False),
+    _spec('ph_window', _('pH window'), (6, 1), (12, 3), (12, 2), ('water', 'chart')),
     _spec('spark', _('Trend'), (3, 2), (12, 4), (6, 2), ('water',), bind=PARAMETER, enabled=False),
 )}
 _('Points'), _('The middle point'), _('Every active point'), _('Parameters'), _('The key values')
@@ -95,6 +105,39 @@ KEY_WATER = (parameters.TEMPERATURE, parameters.OXYGEN_MG_L, parameters.OXYGEN_P
 OXYGEN = (parameters.OXYGEN_MG_L, parameters.OXYGEN_PCT)
 
 
+@dataclass(frozen=True)
+class Calculated:
+    """A value the unit's Deffeyes chart works out (farm.water.calculation, the chemistry core's analysis): a value
+    widget may be bound to it as to a water parameter, and its card then reads the chart (monitoring/read.py `needs`).
+    `shown_as` is the water parameter whose precision it is shown at."""
+    code: str
+    label: object
+    short: object
+    shown_as: str
+    figure: str             # the analysis's own name for it (farm.water.deffeyes.Analysis)
+
+
+# The CO₂ the chart is drawn with is ALWAYS the calculated one (owner decision 2, 2026-11-12: from the pH, the
+# alkalinity, the temperature and the salinity; a probe's value never enters it). Phase 1: shown and tagged as
+# calculated, not judged; it becomes a judged water parameter of this code once the chemistry branch has landed.
+CO2_CALCULATED = 'co2_calc_mg_l'
+CALCULATED = {each.code: each for each in (
+    Calculated(CO2_CALCULATED, _('Carbon dioxide, calculated (mg/L CO₂)'), _('CO₂ calc. (mg/L)'), 'co2_mg_l',
+               'co2_mg_l'),
+)}
+# How a fitted card's value tile names a value in its one short line (the full label is the tile's title); a value
+# not named here keeps its parameter's short label. A test holds each to TILE_LABEL_LENGTH characters in every language.
+TILE_LABELS = {parameters.OXYGEN_MG_L: _('O₂'), parameters.OXYGEN_PCT: _('O₂ %'), parameters.TEMPERATURE: _('°C'),
+               parameters.PH: _('pH'), 'co2_mg_l': _('CO₂ probe'), CO2_CALCULATED: _('CO₂ calc.'),
+               'alkalinity_mg_l': _('Alk.'), parameters.TAN: _('TAN'), parameters.SALINITY: _('‰'),
+               'nh3_n_mg_l': _('NH₃-N'), 'nh4_n_mg_l': _('NH₄-N'), 'nitrite_n_mg_l': _('NO₂-N'),
+               'nitrate_n_mg_l': _('NO₃-N'), 'tgp_pct': _('TGP %'), 'turbidity_ntu': _('NTU')}
+TILE_LABEL_LENGTH = 10
+# The pH window's scale, the same on every card so two cards can be compared: where a border or the water lies beyond
+# an end it is drawn at that end and the picture's words say its number.
+PH_WINDOW = (6.4, 8.6)
+
+
 # The rows a card's grid has: as many as the tallest widgets stacked, one per widget the card may hold. A designer's layout
 # is compacted upwards, so it always fits; the validator refuses a widget below it, and static/css/card-grid.css has a
 # class for every row (render.grid_css).
@@ -102,8 +145,14 @@ ROWS = MAX_WIDGETS * max(spec.max_h for spec in WIDGETS.values())
 
 
 def bindable():
-    """The parameter codes a widget may be bound to: every parameter the water module knows, measured or worked out."""
-    return list(parameters.BY_CODE)
+    """The codes a widget may be bound to: every parameter the water module knows, measured or worked out, and the
+    values the unit's chart works out (CALCULATED)."""
+    return [*parameters.BY_CODE, *CALCULATED]
+
+
+def described(code):
+    """The water parameter or the calculated value of a code a widget is bound to (each has a label and a short)."""
+    return CALCULATED.get(code) or parameters.get(code)
 
 
 def as_data():
@@ -124,7 +173,7 @@ def as_data():
                      'options': [translated(entry) for entry in spec.options.entries]}
                     for spec in WIDGETS.values()],
         'parameters': [{'value': parameter.code, 'label': str(parameter.label), 'short': str(parameter.short)}
-                       for parameter in parameters.BY_CODE.values()],
+                       for parameter in (*parameters.BY_CODE.values(), *CALCULATED.values())],
         'points': [{'value': value, 'label': str(label)} for value, label in PointKind.choices],
     }
 

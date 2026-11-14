@@ -1,9 +1,9 @@
-"""What the card widgets' partials ask of monitoring/cards/render.py: a water value as a card says it (`face`), the
-reading a value widget is bound to (`bound`), and the bar of a value against its limits (`bar`). No figure is worked out
-here."""
+"""What the card's templates ask of monitoring/cards/render.py and monitoring/read.py: a water value as a card says it
+(`face`), what a value or bar widget is bound to (`bound`), a fitted card's value tile (`tile`), the bar of a value
+against its limits (`bar`), the pH window (`ph_window`) and a reason in short (`brief`). No figure is worked out here."""
 from django import template
 
-from farm.water import parameters, read as water_read
+from farm.water import parameters
 
 from ..cards import render
 
@@ -17,15 +17,34 @@ def face(reading, now):
 
 @register.simple_tag
 def bound(card, view):
-    """The face of the reading a value or bar widget shows: its parameter at its point (the middle by default)."""
-    code = view.bind.get('parameter')
-    return render.face(render.reading_at(card, code, view.bind.get('point', water_read.MIDDLE)), card.now,
-                       parameters.get(code))
+    """The face of what a value or bar widget shows: a water parameter at its point (the middle by default), or a value
+    the unit's chart works out."""
+    return render.bound(card, view)
+
+
+@register.simple_tag
+def tile(card, view):
+    """A fitted card's value tile (render.Tile)."""
+    return render.tile(card, view)
+
+
+@register.simple_tag
+def ph_window(card):
+    """The pH window of a card (render.PhWindow)."""
+    return render.ph_window(card)
 
 
 @register.filter
 def bar(face):
     return render.bar(face)
+
+
+@register.filter
+def brief(reason):
+    """A reason of a card's state in short (monitoring/read.py Brief): a value against the bound it is past, or its own
+    words."""
+    from .. import read
+    return read.brief_of(reason)
 
 
 @register.simple_tag

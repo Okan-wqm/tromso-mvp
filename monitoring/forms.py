@@ -96,7 +96,7 @@ BoardUnitFormSet = forms.inlineformset_factory(
 
 # ---- card templates and their rules (Reference data) -------------------------------------------------------------
 TEMPLATE_TABS = [
-    ('general', _('General'), ['name', 'description', 'expanded']),
+    ('general', _('General'), ['name', 'description', 'expanded', 'measure_w', 'measure_h']),
     ('design', _('Design'), ['layout']),
 ]
 
@@ -125,8 +125,8 @@ class LayoutField(forms.JSONField):
 
 
 class CardTemplateForm(TabbedForm):
-    """A card template: its name, a description, the template its flip link shows and its layout. A built-in is shown,
-    never saved (a trigger refuses it too): copy it to make one's own."""
+    """A card template: its name, a description, the template its flip link shows, the measure of a fitted card and
+    its layout. A built-in is shown, never saved (a trigger refuses it too): copy it to make one's own."""
 
     tabs = TEMPLATE_TABS
 
@@ -140,6 +140,11 @@ class CardTemplateForm(TabbedForm):
             'expanded': _('The template a card’s flip link shows (Simple flips to Detailed). Empty: no flip link.'),
             'layout': _('Where each widget sits on the card’s 12 columns. The frame of a card (the unit, its state and '
                         'why, the withdrawal) is always shown and is not part of the layout.'),
+            'measure_w': _('For a fitted card, one that is drawn at the size of its place on a wall: how many of its '
+                           'own units the card is wide (12 to 64; the Small card is 31). Empty with the height: the '
+                           'card flows down the page.'),
+            'measure_h': _('How many of its own units a fitted card is high (6 to 64; the Small card is 10). The '
+                           'card’s widgets share that height in equal rows, at most 24.'),
         }
 
     def __init__(self, *args, **kwargs):
@@ -159,6 +164,17 @@ class CardTemplateForm(TabbedForm):
         cleaned = super().clean()
         if not self.instance._state.adding and self.instance.is_builtin:
             raise forms.ValidationError(_('A built-in template cannot be changed; copy it to make one of your own.'))
+        width, height, layout = cleaned.get('measure_w'), cleaned.get('measure_h'), cleaned.get('layout')
+        if (width is None) != (height is None):
+            self.add_error('measure_w' if width is None else 'measure_h',
+                           _('A fitted card needs both its width and its height; leave both empty for a card that '
+                             'flows.'))
+        elif width is not None and isinstance(layout, dict):
+            rows = max((widget['y'] + widget['h'] for widget in layout.get('widgets', [])), default=0)
+            if rows > catalogue.FIT_ROWS:
+                self.add_error('measure_h', _('A fitted card’s widgets share its height in at most %(most)d rows; '
+                                              'this layout takes %(rows)d.') % {'most': catalogue.FIT_ROWS,
+                                                                                'rows': rows})
         return cleaned
 
     def save(self, commit=True):

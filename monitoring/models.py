@@ -127,13 +127,14 @@ _IS_ARRAY = Exact(Coalesce(_json_type(_WIDGETS), Value('')), Value('array'))
 
 class CardTemplate(AuditedModel):
     """A named layout of widgets for a monitoring card (monitoring/cards/: the catalogue, the validator). The frame of a
-    card (unit, state, reasons, withdrawal, basis, flip link) is not here: a template cannot hide it. Three are built in
+    card (unit, state, reasons, withdrawal, basis, flip link) is not here: a template cannot hide it. Four are built in
     (monitoring/cards/builtin.py): never changed or deleted by any writer (a trigger, migration 0002), copied to make
-    one's own.
+    one's own. A template with a measure is FITTED: its card is drawn at the size of its cell (catalogue.MEASURE_W).
 
     What the database holds (a hand edit cannot pass it): a live name, unique in any case; the layout's version one the
     code knows and stamped in the layout too; the layout an object whose widgets are a list of at most 40, in at most 32
-    KB; a template not flipping to itself; only the three built-ins built in, never deleted. Everything that needs the
+    KB; a template not flipping to itself; a measure whole or absent and in its range; only the four built-ins built
+    in, never deleted. Everything that needs the
     catalogue (places, sizes, overlaps, bindings, options) is the validator's, once."""
 
     name = models.CharField(_('Name'), max_length=100)
@@ -145,6 +146,14 @@ class CardTemplate(AuditedModel):
     # The template the card's flip link shows (Simple flips to Detailed and back); empty: no flip link.
     expanded = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='expanded_by',
                                  verbose_name=_('Flip link shows'))
+    # A FITTED template's measure: its card's width and height in the card's own unit (monitoring/cards/catalogue.py
+    # MEASURE_W, MEASURE_H). Both empty: the card flows down the page as cards always did.
+    measure_w = models.PositiveSmallIntegerField(
+        _('Card width (units)'), null=True, blank=True,
+        validators=[MinValueValidator(catalogue.MEASURE_W[0]), MaxValueValidator(catalogue.MEASURE_W[1])])
+    measure_h = models.PositiveSmallIntegerField(
+        _('Card height (units)'), null=True, blank=True,
+        validators=[MinValueValidator(catalogue.MEASURE_H[0]), MaxValueValidator(catalogue.MEASURE_H[1])])
 
     class Meta:
         db_table = 'monitor_card_templates'
@@ -180,7 +189,20 @@ class CardTemplate(AuditedModel):
                                    violation_error_message=_('A template cannot flip to itself.')),
             models.CheckConstraint(condition=Q(is_builtin=False) | Q(id__in=BUILTIN_IDS, is_deleted=False),
                                    name='chk_monitor_card_templates_builtin'),
+            models.CheckConstraint(
+                # (said with IS NOT NULL: a range test of a NULL is unknown, and a CHECK lets the unknown pass)
+                condition=Q(measure_w__isnull=True, measure_h__isnull=True)
+                | Q(measure_w__isnull=False, measure_h__isnull=False, measure_w__range=catalogue.MEASURE_W,
+                    measure_h__range=catalogue.MEASURE_H),
+                name='chk_monitor_card_templates_measure',
+                violation_error_message=_('A fitted card needs both its width (12 to 64 units) and its height (6 to 64 '
+                                          'units); leave both empty for a card that flows.')),
         ]
+
+    @property
+    def measure(self):
+        """(width, height) of a fitted template's card in card units, else None."""
+        return (self.measure_w, self.measure_h) if self.measure_w and self.measure_h else None
 
     def __str__(self):
         return self.shown_name

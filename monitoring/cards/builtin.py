@@ -1,8 +1,11 @@
 """The built-in card templates, as the code says them: Simple and Detailed reproduce the cards as they were before
-templates, value for value (monitoring/tests/test_golden.py), and Operator puts the oxygen and the temperature first
-(offered, not a default: the owner decides after a trial on the wall). Migration 0002 froze the same layouts in the
-database (a test keeps the two equal); a trigger keeps any writer from changing or deleting them, so a change to a
-built-in is a new migration, never an edit. To change one for a farm, copy it.
+templates, value for value (monitoring/tests/test_golden.py), Operator puts the oxygen and the temperature first
+(offered, not a default: the owner decides after a trial on the wall), and Small is the overview card of a wide
+monitor (owner decision 7, 2026-11-12): the state, the worst reason, the oxygen with its saturation, the temperature,
+the pH, the calculated CO₂ and the pH window, FITTED (its measure in card units, catalogue.MEASURE_W), so every tank
+of a hall is on one screen. Migrations 0002 and 0005 froze the same layouts in the database (a test keeps the two
+equal); a trigger keeps any writer from changing or deleting them, so a change to a built-in is a new migration, never
+an edit. To change one for a farm, copy it.
 
 Their names are English msgids, shown in the person's language (`CardTemplate.shown_name`)."""
 from uuid import UUID
@@ -12,6 +15,7 @@ from django.utils.translation import gettext_noop
 SIMPLE = UUID('5f1c2a6e-0000-4000-8000-00000000c001')
 DETAILED = UUID('5f1c2a6e-0000-4000-8000-00000000c002')
 OPERATOR = UUID('5f1c2a6e-0000-4000-8000-00000000c003')
+SMALL = UUID('5f1c2a6e-0000-4000-8000-00000000c004')
 # The one global rule: every unit no other rule names gets Simple.
 GLOBAL_RULE = UUID('5f1c2a6e-0000-4000-8000-00000000a001')
 
@@ -55,9 +59,22 @@ OPERATOR_LAYOUT = {'schema': 1, 'widgets': [
     _w('w9', 'deffeyes', 0, 14, 4, 1),
 ]}
 
+# Five rows of a card 31 units wide and 10 high: four values on three rows, the pH window on two.
+SMALL_LAYOUT = {'schema': 1, 'widgets': [
+    _w('w1', 'value', 0, 0, 3, 3, bind={'parameter': 'oxygen_mg_l'}),
+    _w('w2', 'value', 3, 0, 3, 3, bind={'parameter': 'temperature_c'}),
+    _w('w3', 'value', 6, 0, 3, 3, bind={'parameter': 'ph'}),
+    _w('w4', 'value', 9, 0, 3, 3, bind={'parameter': 'co2_calc_mg_l'}),
+    _w('w5', 'ph_window', 0, 3, 12, 2),
+]}
+SMALL_MEASURE = (31, 10)
+
 # {id: (name msgid, layout, the template its flip link shows)}
 BUILTINS = {
     SIMPLE: (gettext_noop('Simple'), SIMPLE_LAYOUT, DETAILED),
     DETAILED: (gettext_noop('Detailed'), DETAILED_LAYOUT, SIMPLE),
     OPERATOR: (gettext_noop('Operator view'), OPERATOR_LAYOUT, DETAILED),
+    SMALL: (gettext_noop('Small'), SMALL_LAYOUT, DETAILED),
 }
+# {id: (width, height)} of the fitted built-ins, in card units.
+MEASURES = {SMALL: SMALL_MEASURE}

@@ -171,11 +171,11 @@ class WithdrawalTests(HarvestTestCase):
         with provider(held, about, unknown, clear):
             messages = self.assess().messages()
         self.assertEqual(messages, [
-            f'Not suitable for harvest — medicine withdrawal of {self.batch.code} until {services.shown_date(until)}. '
-            'Treated with Slice until 20 Oct.',
-            f'Not suitable for harvest — medicine withdrawal of {self.batch.code} until about '
+            f'Not suitable for harvest — medicine withdrawal of {self.batch.code}: harvest from '
+            f'{services.shown_date(until)}. Treated with Slice until 20 Oct.',
+            f'Not suitable for harvest — medicine withdrawal of {self.batch.code}: harvest from about '
             f'{services.shown_date(until)}.',
-            f'Not suitable for harvest — medicine withdrawal of {self.batch.code}, its end unknown. No temperature '
+            f'Not suitable for harvest — medicine withdrawal of {self.batch.code}: end unknown. No temperature '
             'recorded.'])
         with provider():
             self.assertIn('No medicine withdrawal in force.', self.assess().notes)
@@ -212,11 +212,11 @@ class WithdrawalTests(HarvestTestCase):
         with provider(held):
             form = self.client.get(reverse('farm:stock_harvest', args=[self.t1.pk]))
             page = self.client.get(reverse('farm:production_units'), {'unit': self.t1.pk})
-        self.assertContains(form, f'Not suitable for harvest — medicine withdrawal of {self.batch.code} until')
+        self.assertContains(form, f'Not suitable for harvest — medicine withdrawal of {self.batch.code}: harvest from')
         self.assertContains(form, 'name="handling_ack"')
         self.assertContains(page, 'Withdrawal</span>')
         self.assertContains(page, 'If the fish were harvested today:')
-        self.assertContains(page, f'Not suitable for harvest — medicine withdrawal of {self.batch.code} until')
+        self.assertContains(page, f'Not suitable for harvest — medicine withdrawal of {self.batch.code}: harvest from')
 
 
 class AcknowledgementTests(HarvestTestCase):
@@ -880,17 +880,18 @@ class EarliestTests(PurgingBase):
         found = self.earliest(self.block(10))
         self.assertEqual((found.decides, found.day, found.stop_by), ('withdrawal', self.day(-10), None))
         self.assertEqual(found.text(), f'Earliest suitable harvest date: {services.shown_date(self.day(-10))}. '
-                                       f'Medicine withdrawal decides: until {services.shown_date(self.day(-10))}.')
+                                       f'Medicine withdrawal decides: harvest from '
+                                       f'{services.shown_date(self.day(-10))}.')
         approximate = self.earliest(self.block(10, approximate=True))
-        self.assertIn('Medicine withdrawal decides: until about', approximate.text())
+        self.assertIn('Medicine withdrawal decides: harvest from about', approximate.text())
         # A tie goes to the withdrawal: food safety first.
         self.assertEqual(self.earliest(self.block(3)).decides, 'withdrawal')
 
     def test_an_unknown_withdrawal_end_has_no_date(self):
         found = self.earliest(self.block(None))
         self.assertEqual((found.decides, found.day, found.unknown), ('withdrawal', None, True))
-        self.assertEqual(found.text(), 'Earliest suitable harvest date: not known. Medicine withdrawal decides: its '
-                                       'end is unknown.')
+        self.assertEqual(found.text(), 'Earliest suitable harvest date: not known. Medicine withdrawal decides: end '
+                                       'unknown.')
         self.assertTrue(found.holds(self.day(-400)))
 
     def test_with_nothing_holding_the_fish_there_is_no_date(self):
@@ -916,7 +917,8 @@ class EarliestTests(PurgingBase):
             form = self.client.get(reverse('farm:stock_harvest', args=[self.t1.pk]))
             drawer = self.client.get(reverse('farm:production_units'), {'unit': self.t1.pk})
             self.assertContains(form, f'Earliest suitable harvest date: {services.shown_date(self.day(-10))}.')
-            self.assertContains(form, f'Medicine withdrawal decides: until {services.shown_date(self.day(-10))}.')
+            self.assertContains(form, f'Medicine withdrawal decides: harvest from '
+                                      f'{services.shown_date(self.day(-10))}.')
             self.assertContains(drawer, 'Earliest suitable harvest date:')
             self.assertIsNotNone(form.context['form'].handling.earliest)
             fingerprint = self.assess().fingerprint
@@ -950,7 +952,7 @@ class EarliestTests(PurgingBase):
         self.addCleanup(translation.activate, 'en')
         words = {'tr': ('En erken uygun hasat tarihi: ', 'İlaç bekleme süresi belirler: ',
                         'Arındırma belirler: yemleme en geç '),
-                 'nb': ('Tidligste egnede høstedato: ', 'Tilbakeholdelsestiden avgjør: til ',
+                 'nb': ('Tidligste egnede høstedato: ', 'Tilbakeholdelsestiden avgjør: høsting fra ',
                         'Rensingen avgjør: fôringen må stoppe senest ')}
         for language, (earliest, withdrawal_decides, purging_decides) in words.items():
             Profile.objects.update_or_create(user=self.user, defaults={'language': language})

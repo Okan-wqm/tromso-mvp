@@ -152,8 +152,8 @@ class GrownPastTheAcknowledgedEndTests(HarvestInsideTestCase):
             Treatment.objects.filter(pk=treatment.pk).update(end_date=self.day(4))
         out = io.StringIO()
         call_command('check_withdrawal', stdout=out)
-        self.assertIn(f'Not acknowledged (acknowledged until {self.day(-3).isoformat()}; now '
-                      f'{self.day(-4).isoformat()}).', out.getvalue())
+        self.assertIn(f'Not acknowledged (acknowledged for harvest from {self.day(-3).isoformat()}; now harvest '
+                      f'from {self.day(-4).isoformat()}).', out.getvalue())
 
 
 class DataLayerTests(HarvestInsideTestCase):

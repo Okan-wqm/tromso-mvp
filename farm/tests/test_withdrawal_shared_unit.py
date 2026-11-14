@@ -101,8 +101,8 @@ class HeldUnitTests(SharedUnitTestCase):
         out = io.StringIO()
         call_command('check_withdrawal', stdout=out)
         self.assertIn(f'Harvest of {self.today.isoformat()} from T-02 · {self.b.code} (100 fish to '
-                      f'{self.facility.name}) lies inside a withdrawal of {self.a.code}, in the same unit,',
-                      out.getvalue())
+                      f'{self.facility.name}) lies inside a withdrawal of {self.a.code}, in the same unit (harvest '
+                      f'from {self.until.isoformat()}):', out.getvalue())
         self.assertIn('Acknowledged when the harvest was recorded.', out.getvalue())
         self.assertIn('1 harvest lies inside a medicine withdrawal.', out.getvalue())
 
@@ -155,7 +155,7 @@ class TreatmentEnteredAfterwardsTests(SharedUnitTestCase):
         out = io.StringIO()
         call_command('check_withdrawal', stdout=out)
         self.assertIn(f'from T-02 · {self.b.code} (500 fish to {self.facility.name}) lies inside a withdrawal of '
-                      f'{self.a.code}, in the same unit,', out.getvalue())
+                      f'{self.a.code}, in the same unit (harvest from {self.today.isoformat()}):', out.getvalue())
         self.assertIn('Acknowledged when the treatment was recorded.', out.getvalue())
 
     def test_a_harvest_before_the_held_fish_came_into_the_unit_is_not_inside(self):

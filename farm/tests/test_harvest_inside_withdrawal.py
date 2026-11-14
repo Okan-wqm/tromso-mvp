@@ -55,8 +55,8 @@ class BackdatedTreatmentTests(HarvestInsideTestCase):
         self.assertEqual((found.operation_id, found.until, found.approximate), (harvest.pk, self.day(-3), False))
         self.assertEqual(change.messages(), [
             f'Harvest of {stock_services.shown_date(self.day(3))} from T-01 ({self.batch.code}, 500 fish to '
-            f'{self.facility.name}) lies inside this withdrawal, which holds the fish until '
-            f'{stock_services.shown_date(self.day(-3))}: medicated fish may have gone to food.'])
+            f'{self.facility.name}) lies inside this withdrawal (harvest from '
+            f'{stock_services.shown_date(self.day(-3))}): medicated fish may have gone to food.'])
         treatment = self.treat(bath, 5, 5, withdrawal_ack=change.fingerprint)
         [row] = WithdrawalAcknowledgement.objects.all()
         self.assertEqual((row.record_type, row.record_id, row.harvest, row.batch, row.warning, row.until),
@@ -217,7 +217,7 @@ class CheckWithdrawalTests(HarvestInsideTestCase):
         out = io.StringIO()
         call_command('check_withdrawal', stdout=out)
         self.assertIn(f'Harvest of {self.day(3).isoformat()} from T-01 · {self.batch.code} (500 fish to '
-                      f'{self.facility.name}) lies inside a withdrawal until {self.day(-3).isoformat()}: Salmosan vet., '
+                      f'{self.facility.name}) lies inside a withdrawal (harvest from {self.day(-3).isoformat()}): Salmosan vet., '
                       f'bath', out.getvalue())
         self.assertIn('Acknowledged when the treatment was recorded.', out.getvalue())
         self.assertIn('1 harvest lies inside a medicine withdrawal.', out.getvalue())

@@ -105,6 +105,15 @@
     {% elif not takes_fish %}
     <p class="notice notice-warning">{% blocktrans trimmed with unit=unit.code status=unit.get_status_display|lower %}{{ unit }} has the status {{ status }}: set it to preparing or fallow in Setup to stock it.{% endblocktrans %}{% if edit_unit_url %} <a href="{{ edit_unit_url }}" data-modal>{% trans "Edit the unit" %}</a>{% endif %}</p>
     {% endif %}
+    {% if left and actions %}
+    <section class="drawer-section">
+      <h3>{% trans "Records of the fish that left" %}</h3>
+      <p class="panel-help">{% for share in left %}{% if not forloop.first %}; {% endif %}{% blocktrans trimmed with batch=share.batch.code date=share.until|date:"DATE_FORMAT" %}{{ batch }} was here until {{ date }}{% endblocktrans %}{% endfor %}. {% blocktrans trimmed count days=window_days %}A record dated on a day the fish were here can still be entered, up to {{ days }} day back.{% plural %}A record dated on a day the fish were here can still be entered, up to {{ days }} days back.{% endblocktrans %}</p>
+      <div class="drawer-actions">
+        {% for action in actions %}<a class="button button-ghost" href="{{ action.url }}" data-modal>{{ action.label }}</a>{% endfor %}
+      </div>
+    </section>
+    {% endif %}
     {% endif %}
 
     {% if water_history_url %}{% include "farm/_unit_water.html" %}{% endif %}

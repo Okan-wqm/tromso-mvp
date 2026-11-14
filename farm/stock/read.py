@@ -201,6 +201,8 @@ class BatchShare:
     siblings: int = 1        # the batches of its kind in the unit, itself included
     lots: list = field(default_factory=list)   # sizes.Lot: its fish by size (a grading's classes kept apart)
 
+    past = False             # in the unit now (PastShare: a batch that left it inside the correction window)
+
     @property
     def cleaner(self):
         """Cleaner fish (a cleaner-fish species), beside the unit's production fish (D-1)."""
@@ -229,6 +231,51 @@ class BatchShare:
     @property
     def losses(self):
         return self.deaths + self.culls
+
+
+@dataclass(frozen=True)
+class PastShare:
+    """A batch that has no fish in a unit now and had some on a day a record may still be dated on (inside the
+    correction window): what a dialog offers beside the batches there now, so that a mortality, a weighing or a
+    treatment of a day the fish were there can still be entered once the unit is empty (flow fault S-04). The
+    service decides on the record's own day, as for every record."""
+    batch: Batch
+    until: object                # the last day it had fish in the unit: they left on it
+
+    past = True
+    count = 0
+
+    @property
+    def cleaner(self):
+        return self.batch.species.is_cleaner_fish
+
+
+def left_within(units, first_of, production=False):
+    """{unit id: [PastShare]} of the batches that have no fish in a unit now and still had some on a day from
+    `first_of(unit)` on (the first day a record of the unit may be dated: farm.stock.dates.earliest), by code; a unit
+    with none is left out. With `production`, production fish only. THE gate of a dialog that records something of a
+    past day: fish that were there on a day that may still be dated, not fish there today."""
+    presence = Presence.of_units([unit.pk for unit in units])
+    gone = defaultdict(list)
+    for unit in units:
+        first = first_of(unit)
+        for batch_id in presence.batches.get(unit.pk, ()):
+            days, counts = presence.timelines[(unit.pk, batch_id)]
+            if counts[-1] <= 0 and days[-1] >= first:
+                gone[unit.pk].append((batch_id, days[-1]))
+    batches = Batch.all_objects.select_related('species').in_bulk(
+        {batch_id for found in gone.values() for batch_id, _day in found})
+    shares = {unit_id: sorted((PastShare(batches[batch_id], day) for batch_id, day in found
+                               if not (production and batches[batch_id].species.is_cleaner_fish)),
+                              key=lambda share: share.batch.code)
+              for unit_id, found in gone.items()}
+    return {unit_id: found for unit_id, found in shares.items() if found}
+
+
+def offered(unit, stock, first):
+    """The batches a dialog of `unit` offers: those in it now (`stock`, its UnitStock or None) and those that left it
+    on a day from `first` on (`left_within`)."""
+    return [*(stock.shares if stock else []), *left_within([unit], lambda _unit: first).get(unit.pk, [])]
 
 
 @dataclass

@@ -291,15 +291,18 @@ def next_meal(unit):
 # ---- the dialogs ---------------------------------------------------------------------------------
 @permission_required(RECORD, raise_exception=True)
 def choose_unit(request):
-    """Record feeding from the list: the units with fish, each opening its feeding dialog."""
+    """Record feeding from the list: the units with fish, and those whose fish left on a day that may still be dated
+    (a feeding of such a day can still be entered, flow fault S-04), each opening its feeding dialog."""
     units = list(Tank.objects.select_related('production_department__site').order_by('code'))
     stock = stock_read.stock_of(units)
+    left = stock_read.left_within([unit for unit in units if unit.pk not in stock], earliest)
     target = request.GET.get('next', '')
     query = f'?{urlencode({"next": target})}' if target else ''
     return render_page(request, 'farm/feeding_choose.html', _context(
         heading=_('Record feeding'), back_url=_back(request),
-        units=[{'unit': unit, 'stock': stock[unit.pk], 'url': reverse('farm:feeding_record', args=[unit.pk]) + query}
-               for unit in units if unit.pk in stock]))
+        units=[{'unit': unit, 'stock': stock.get(unit.pk), 'left': left.get(unit.pk),
+                'url': reverse('farm:feeding_record', args=[unit.pk]) + query}
+               for unit in units if unit.pk in stock or unit.pk in left]))
 
 
 def _split(unit, day, target=FeedTarget.PRODUCTION):

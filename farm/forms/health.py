@@ -227,7 +227,7 @@ class MedicineChoice(forms.ModelChoiceField):
 
 
 class TreatmentForm(ServiceErrors, forms.ModelForm):
-    """A treatment: the units (those with fish now, of one site), how and with what, its first and last day,
+    """A treatment: the units (those with fish now or on a day that may still be dated, of one site), how and with what, its first and last day,
     the dose and the amount used, the prescription and the vet, the health event it answers, notes."""
 
     token = forms.UUIDField(widget=forms.HiddenInput)

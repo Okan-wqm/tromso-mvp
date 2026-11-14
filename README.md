@@ -594,6 +594,18 @@ their batch's average in that unit on that day, a weighing sets the biomass from
 out take whatever the book holds, moved fish arrive with exactly the grams that left, a grading weighs
 the whole lot. Only measured weights enter the book. Nothing is stored that can drift.
 
+**A record of a day the unit held fish can be entered once the unit is empty** (flow fault S-04): the dialogs gate on
+the record's own day inside the correction window, never on the fish in the unit today. A dialog of a unit offers the
+batches in it now and those that left it on a day that may still be dated (`farm.stock.read.left_within`, `PastShare`:
+"B-2026-001 — in the unit until 10.11.2026"); the Treatments and Sea-lice count dialogs and the feeding chooser offer
+such units, and the drawer of an emptied unit has "Records of the fish that left" with the same dialogs. A unit that is
+empty now gets no default date (today would be wrong): the person gives the day. The service decides on that day as it
+does for every record, so every later figure follows (a weighing dated before the harvest changes the harvest's book
+kilos; a treatment dated before it is asked about the harvest inside its withdrawal), and a record that would leave a
+later operation without its fish is refused, naming it ("The harvest of 10.11.2026 in T-01 would be left without its
+fish … Void that operation first, or correct this one."). No fish now and none inside the window is said: "No fish are
+in T-02, and none were in it in the last 31 days: there is nothing to record here." (`farm/tests/test_emptied_unit.py`).
+
 **One write path** (`farm/stock/services.py`, `_commit`): it locks the batches and the units, checks the
 date, the units' status (a unit takes fish while active, preparing or fallow, and only on a site: F-212), the species (one per unit,
 several batches of it; on a sea site cleaner fish may join the production species, see Cleaner fish below), then

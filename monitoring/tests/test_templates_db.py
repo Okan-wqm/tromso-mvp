@@ -79,28 +79,47 @@ class TemplateConstraintTests(Fixture):
         other = self.template('Other')
         CardTemplate.objects.filter(pk=template.pk).update(expanded=other)
 
-    def test_only_the_three_built_ins_are_built_in(self):
+    def test_only_the_four_built_ins_are_built_in(self):
         self.refused(name='Fake', is_builtin=True)
         template = self.template()
         self.refused_update(CardTemplate.objects.filter(pk=template.pk), is_builtin=True)
 
+    def test_a_measure_is_whole_or_absent_and_in_its_range(self):
+        """A fitted template's measure (0005): both its width and its height in card units, or neither."""
+        self.template('Flows')                                              # neither: a card that flows
+        fitted = self.template('Fitted', measure_w=31, measure_h=10)
+        self.assertEqual(fitted.measure, (31, 10))
+        self.assertIsNone(CardTemplate.objects.get(name='Flows').measure)
+        for width, height in ((31, None), (None, 10), (11, 10), (65, 10), (31, 5), (31, 65), (0, 0)):
+            with self.subTest(width=width, height=height):
+                self.refused(name=f'Odd {width} {height}', measure_w=width, measure_h=height)
+        self.refused_update(CardTemplate.objects.filter(pk=fitted.pk), measure_h=None)
+        low, high = catalogue.MEASURE_W, catalogue.MEASURE_H
+        self.template('Least', measure_w=low[0], measure_h=high[0])
+        self.template('Most', measure_w=low[1], measure_h=high[1])
+
 
 class BuiltinTests(Fixture):
-    def test_the_migration_made_the_three_built_ins_as_builtin_py_says_them(self):
+    def test_the_migrations_made_the_four_built_ins_as_builtin_py_says_them(self):
         found = {template.pk: template for template in CardTemplate.objects.filter(is_builtin=True)}
-        self.assertEqual(set(found), {builtin.SIMPLE, builtin.DETAILED, builtin.OPERATOR})
+        self.assertEqual(set(found), {builtin.SIMPLE, builtin.DETAILED, builtin.OPERATOR, builtin.SMALL})
         for pk, (name, layout, expanded) in builtin.BUILTINS.items():
             with self.subTest(template=name):
                 self.assertEqual((found[pk].name, found[pk].layout, found[pk].expanded_id), (name, layout, expanded))
+                self.assertEqual(found[pk].measure, builtin.MEASURES.get(pk))
                 self.assertEqual([problem for problem in validate.validate(layout) if problem.severity == 'error'], [])
         self.assertEqual((found[builtin.SIMPLE].expanded_id, found[builtin.DETAILED].expanded_id),
                          (builtin.DETAILED, builtin.SIMPLE))
+        self.assertEqual(found[builtin.SMALL].measure, (31, 10))
+        self.assertEqual(sorted(builtin.MEASURES), [builtin.SMALL])          # the others flow, as they always did
 
-    def test_the_migration_froze_the_same_layouts(self):
-        frozen = import_module('monitoring.migrations.0002_card_templates')
-        self.assertEqual(json.loads(json.dumps(frozen.BUILTINS)),
-                         {str(pk): [name, layout, str(expanded)] for pk, (name, layout, expanded)
-                          in builtin.BUILTINS.items()})
+    def test_the_migrations_froze_the_same_layouts(self):
+        first = import_module('monitoring.migrations.0002_card_templates')
+        small = import_module('monitoring.migrations.0005_small_template')
+        frozen = {**{pk: [*row, None] for pk, row in first.BUILTINS.items()}, **small.BUILTINS}
+        self.assertEqual(json.loads(json.dumps(frozen)),
+                         {str(pk): [name, layout, str(expanded), list(builtin.MEASURES[pk]) if pk in builtin.MEASURES
+                                    else None] for pk, (name, layout, expanded) in builtin.BUILTINS.items()})
 
     def test_every_unit_falls_back_to_simple(self):
         rule = CardTemplateAssignment.objects.get()
@@ -119,13 +138,16 @@ class BuiltinTests(Fixture):
 
     def test_a_database_emptied_and_loaded_again_gets_its_built_ins_back(self):
         """What a test run's serialized rollback and a restore of a dump do: TRUNCATE (no row trigger) and INSERT the rows
-        as they were. A built-in's id is one of the three (the CHECK), so only they can come back."""
-        rows = [(pk, name, layout) for pk, (name, layout, _expanded) in builtin.BUILTINS.items()]
+        as they were. A built-in's id is one of the four (the CHECK), so only they can come back."""
+        rows = [(pk, name, layout, builtin.MEASURES.get(pk, (None, None)))
+                for pk, (name, layout, _expanded) in builtin.BUILTINS.items()]
         with connection.cursor() as cursor:
             cursor.execute('TRUNCATE monitor_card_templates CASCADE')
-        for pk, name, layout in rows:
-            CardTemplate.objects.create(id=pk, name=name, layout=layout, is_builtin=True)
-        self.assertEqual(CardTemplate.objects.filter(is_builtin=True).count(), 3)
+        for pk, name, layout, (width, height) in rows:
+            CardTemplate.objects.create(id=pk, name=name, layout=layout, is_builtin=True, measure_w=width,
+                                        measure_h=height)
+        self.assertEqual(CardTemplate.objects.filter(is_builtin=True).count(), 4)
+        self.assertEqual(CardTemplate.objects.get(pk=builtin.SMALL).measure, builtin.SMALL_MEASURE)
 
     def test_a_built_in_shows_its_name_in_the_persons_language_a_template_of_ones_own_as_typed(self):
         simple = CardTemplate.objects.get(pk=builtin.SIMPLE)
@@ -255,5 +277,46 @@ class BackfillTests(TestCase):
         self.assertEqual({board.name: board.default_mode for board in Board.objects.all()},
                          {'Simple wall': 'simple', 'Detailed wall': 'simple'})
         self.assertEqual(Board.objects.count(), 2)
-        self.migrate('0004_backfill_modes')
+        self.migrate('0005_small_template')
         self.assertTrue(global_apps.get_model('monitoring', 'CardTemplate').objects.filter(is_builtin=True).exists())
+
+
+class SmallTemplateMigrationTests(TestCase):
+    """0005: the measure columns and the fourth built-in. Back, the row goes (a built-in is deleted by no writer but
+    this migration) with what pointed at it detached; forward again, it is back as it was."""
+
+    def migrate(self, target):
+        executor = MigrationExecutor(connection)
+        executor.loader.build_graph()
+        executor.migrate([('monitoring', target)])
+        return executor.loader.project_state([('monitoring', target)]).apps
+
+    def test_back_and_forward(self):
+        site = Site.objects.create(name='Bergen', code='BG')
+        hall = ProductionDepartment.objects.create(site=site, name='Hall A', code='HA')
+        unit = make_unit('T-01', hall)
+        board = MonitorBoard.objects.create(name='Overview', default_template_id=builtin.SMALL)
+        MonitorBoardUnit.objects.create(board=board, unit=unit, template_id=builtin.SMALL)
+        CardTemplateAssignment.objects.create(template_id=builtin.SMALL, unit=unit)
+        mine = CardTemplate.objects.create(name='Mine', layout=LAYOUT, expanded_id=builtin.SMALL, measure_w=31,
+                                           measure_h=10)
+        old = self.migrate('0004_backfill_modes')
+        Template, Board = old.get_model('monitoring', 'CardTemplate'), old.get_model('monitoring', 'MonitorBoard')
+        Row, Rule = old.get_model('monitoring', 'MonitorBoardUnit'), old.get_model('monitoring', 'CardTemplateAssignment')
+        self.assertEqual(sorted(str(pk) for pk in Template.objects.filter(is_builtin=True).values_list('pk', flat=True)),
+                         sorted(str(pk) for pk in (builtin.SIMPLE, builtin.DETAILED, builtin.OPERATOR)))
+        self.assertFalse(hasattr(Template.objects.get(pk=mine.pk), 'measure_w'))
+        self.assertIsNone(Template.objects.get(pk=mine.pk).expanded_id)
+        self.assertIsNone(Board.objects.get(pk=board.pk).default_template_id)
+        self.assertEqual([row.template_id for row in Row.objects.all()], [None])
+        self.assertEqual(Rule.objects.filter(unit_id=unit.pk).count(), 0)          # a rule goes with its template
+        with self.assertRaises(IntegrityError), transaction.atomic():              # the CHECK is the three ids again
+            Template.objects.create(id=builtin.SMALL, name='Small', layout=LAYOUT, is_builtin=True)
+        with self.assertRaises(IntegrityError), transaction.atomic():              # and the trigger is on again
+            Template.objects.filter(pk=builtin.SIMPLE).update(name='Mine too')
+        self.migrate('0005_small_template')
+        small = CardTemplate.objects.get(pk=builtin.SMALL)
+        self.assertEqual((small.name, small.layout, small.expanded_id, small.measure, small.is_builtin),
+                         ('Small', builtin.SMALL_LAYOUT, builtin.DETAILED, builtin.SMALL_MEASURE, True))
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            CardTemplate.objects.filter(pk=builtin.SMALL).update(measure_w=40)       # frozen, its measure too

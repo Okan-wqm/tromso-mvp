@@ -53,7 +53,7 @@ class ColumnsTests(PagesCase):
             for name in form.base_fields:
                 with self.subTest(form=form.__name__, field=name):
                     self.assertIn(name, columns)
-        self.assertEqual(set(CardTemplateForm.base_fields) - {'version'}, {'name', 'description', 'expanded', 'layout'})
+        self.assertEqual(set(CardTemplateForm.base_fields) - {'version'}, {'name', 'description', 'expanded', 'layout', 'measure_w', 'measure_h'})
         self.assertEqual(set(CardTemplateAssignmentForm.base_fields) - {'version'},
                          {'template', 'unit', 'system', 'system_type', 'species', 'kind'})
 

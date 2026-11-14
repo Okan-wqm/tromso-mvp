@@ -95,6 +95,10 @@ msgid "%(batch)s: %(start)s – %(end)s, %(feed)s fed, %(gain)s grown"
 msgstr "%(batch)s: %(start)s – %(end)s, %(feed)s yem, %(gain)s büyüme"
 
 #, python-format
+msgid "%(batch)s: medicine withdrawal, %(end)s"
+msgstr "%(batch)s: ilaç bekleme süresi, %(end)s"
+
+#, python-format
 msgid "%(batch)s: not weighed since it came in, so no FCR yet"
 msgstr "%(batch)s: geldiğinden beri tartılmadı, bu yüzden henüz FCR yok"
 
@@ -5827,9 +5831,6 @@ msgstr "Bitiş"
 msgid "End the leave earlier"
 msgstr "İzni erken bitir"
 
-msgid "End unknown"
-msgstr "Bitişi bilinmiyor"
-
 msgid "Ended"
 msgstr "Sona erdi"
 
@@ -7201,28 +7202,10 @@ msgstr "Arınma süresi içinde hasat"
 #, python-format
 msgid ""
 "Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this "
-"withdrawal, which holds the fish until %(until)s: medicated fish may have gone to food."
+"withdrawal (%(end)s): medicated fish may have gone to food."
 msgstr ""
 "%(unit)s biriminden %(date)s tarihli hasat (%(batch)s, %(facility)s tesisine %(fish)s balık) bu "
-"arınma süresinin içinde kalıyor; balıklar %(until)s tarihine kadar tutulmalı: ilaçlı balık gıdaya"
-" gitmiş olabilir."
-
-#, python-format
-msgid ""
-"Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this "
-"withdrawal, which holds the fish until about %(until)s: medicated fish may have gone to food."
-msgstr ""
-"%(unit)s biriminden %(date)s tarihli hasat (%(batch)s, %(facility)s tesisine %(fish)s balık) bu "
-"arınma süresinin içinde kalıyor; balıklar yaklaşık %(until)s tarihine kadar tutulmalı: ilaçlı "
-"balık gıdaya gitmiş olabilir."
-
-#, python-format
-msgid ""
-"Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this "
-"withdrawal, whose end is unknown: medicated fish may have gone to food."
-msgstr ""
-"%(unit)s biriminden %(date)s tarihli hasat (%(batch)s, %(facility)s tesisine %(fish)s balık) sonu"
-" bilinmeyen bu arınma süresinin içinde kalıyor: ilaçlı balık gıdaya gitmiş olabilir."
+"ilaç bekleme süresinin içinde kalıyor (%(end)s): ilaçlı balık gıdaya gitmiş olabilir."
 
 msgid "Harvest plan"
 msgstr "Hasat planı"
@@ -8512,16 +8495,9 @@ msgstr "İlaç dolabı"
 msgid "Medicine withdrawal"
 msgstr "İlaç bekleme süresi"
 
-msgid "Medicine withdrawal decides: its end is unknown."
-msgstr "İlaç bekleme süresi belirler: bitişi bilinmiyor."
-
 #, python-format
-msgid "Medicine withdrawal decides: until %(date)s."
-msgstr "İlaç bekleme süresi belirler: %(date)s tarihine kadar."
-
-#, python-format
-msgid "Medicine withdrawal decides: until about %(date)s."
-msgstr "İlaç bekleme süresi belirler: yaklaşık %(date)s tarihine kadar."
+msgid "Medicine withdrawal decides: %(end)s."
+msgstr "İlaç bekleme süresi belirler: %(end)s."
 
 msgid "Medicine withdrawal in force"
 msgstr "İlaç bekleme süresi sürüyor"
@@ -9659,16 +9635,8 @@ msgid "Not stated in the text saved; unverified (Q6)"
 msgstr "Kaydedilen metinde belirtilmemiş; doğrulanmadı (Q6)"
 
 #, python-format
-msgid "Not suitable for harvest — medicine withdrawal of %(batch)s until %(date)s."
-msgstr "Hasada uygun değil — %(batch)s için ilaç bekleme süresi %(date)s tarihine kadar."
-
-#, python-format
-msgid "Not suitable for harvest — medicine withdrawal of %(batch)s until about %(date)s."
-msgstr "Hasada uygun değil — %(batch)s için ilaç bekleme süresi yaklaşık %(date)s tarihine kadar."
-
-#, python-format
-msgid "Not suitable for harvest — medicine withdrawal of %(batch)s, its end unknown."
-msgstr "Hasada uygun değil — %(batch)s için ilaç bekleme süresi, bitişi bilinmiyor."
+msgid "Not suitable for harvest — medicine withdrawal of %(batch)s: %(end)s."
+msgstr "Hasada uygun değil — %(batch)s için ilaç bekleme süresi: %(end)s."
 
 msgid "Not updated: the server cannot be reached or cannot answer. This may be out of date."
 msgstr "Güncellenmedi: sunucuya ulaşılamıyor ya da yanıt veremiyor. Bu bilgi eski olabilir."
@@ -15605,10 +15573,6 @@ msgstr ""
 msgid "Until"
 msgstr "Bitiş"
 
-#, python-format
-msgid "Until %(date)s"
-msgstr "%(date)s tarihine kadar"
-
 msgid "Up to (g)"
 msgstr "Üst sınır (g)"
 
@@ -17450,6 +17414,14 @@ msgstr "elleçleme kuralı"
 msgid "handling rules"
 msgstr "elleçleme kuralları"
 
+#, python-format
+msgid "harvest from %(date)s"
+msgstr "hasat %(date)s tarihinden itibaren"
+
+#, python-format
+msgid "harvest from about %(date)s"
+msgstr "hasat yaklaşık %(date)s tarihinden itibaren"
+
 msgid "harvest record"
 msgstr "hasat kaydı"
 
@@ -17587,13 +17559,6 @@ msgstr "ilaç"
 
 msgid "medicine withdrawal"
 msgstr "ilaç bekleme süresi"
-
-#, python-format
-msgid "medicine withdrawal until %(date)s"
-msgstr "%(date)s tarihine kadar ilaç bekleme süresi"
-
-msgid "medicine withdrawal, end unknown"
-msgstr "ilaç bekleme süresi, bitişi bilinmiyor"
 
 msgid "medicine withdrawals"
 msgstr "ilaç bekleme süreleri"
@@ -18244,14 +18209,6 @@ msgstr "okunmamış"
 #, python-format
 msgid "until %(last)s"
 msgstr "%(last)s tarihine kadar"
-
-#, python-format
-msgid "until %(last)s (harvest from %(first)s)"
-msgstr "%(last)s tarihine kadar (hasat %(first)s tarihinden itibaren)"
-
-#, python-format
-msgid "until about %(last)s (harvest from about %(first)s)"
-msgstr "yaklaşık %(last)s tarihine kadar (hasat yaklaşık %(first)s tarihinden itibaren)"
 
 #, python-format
 msgid "up to %(weight)s g"

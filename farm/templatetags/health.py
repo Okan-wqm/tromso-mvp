@@ -1,9 +1,8 @@
 """How the health figures read on the page, in the person's language: a lice average to two decimals, a
 medicine's withdrawal rules per species, the withdrawal line of a unit or a batch, and whether a record may still be voided."""
 from django import template
-from django.utils import formats
-from django.utils.translation import gettext as _
 
+from ..handling import withdrawal as registry
 from ..health import withdrawal
 from ..stock.dates import earliest, site_earliest
 from .stock import DASH, number
@@ -41,22 +40,14 @@ def withdrawal_lines(medicine):
     return withdrawal.rule_lines(medicine)
 
 
-def _date(day):
-    return formats.date_format(day, 'DATE_FORMAT')
-
-
 @register.filter
-def withdrawal_until(item):
-    """A Withdrawal's end as the treatments list writes it: until 13 Dec 2026 (harvest from 14 Dec 2026),
-    "about" when projected, or that it is unknown."""
+def harvest_from(item):
+    """The end of a withdrawal (a Withdrawal of the health records or a WithdrawalBlock of the registry) in the one
+    wording of every page (farm.handling.withdrawal.harvest_from): harvest from 14.12.2026, "about" when projected, or
+    end unknown."""
     if item is None:
         return DASH
-    if item.until is None:
-        return _('end unknown')
-    params = {'last': _date(item.last_day), 'first': _date(item.until)}
-    if item.estimated:
-        return _('until about %(last)s (harvest from about %(first)s)') % params
-    return _('until %(last)s (harvest from %(first)s)') % params
+    return registry.harvest_from(item.until, getattr(item, 'approximate', getattr(item, 'estimated', False)))
 
 
 @register.filter

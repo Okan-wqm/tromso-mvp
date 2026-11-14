@@ -60,13 +60,10 @@ def _date(day):
 
 def withdrawal_text(block):
     """The withdrawal as a sentence, starting "Not suitable for harvest" (owner's words): it is only ever said
-    for a harvest."""
-    params = {'batch': block.batch.code, 'date': _date(block.until) if block.until else ''}
-    if block.until is None:
-        return _('Not suitable for harvest — medicine withdrawal of %(batch)s, its end unknown.') % params
-    if block.approximate:
-        return _('Not suitable for harvest — medicine withdrawal of %(batch)s until about %(date)s.') % params
-    return _('Not suitable for harvest — medicine withdrawal of %(batch)s until %(date)s.') % params
+    for a harvest. Its end in the one wording of every page (withdrawal.harvest_from): "… medicine withdrawal of
+    B-2026-001: harvest from 25.11.2026."."""
+    return _('Not suitable for harvest — medicine withdrawal of %(batch)s: %(end)s.') % {
+        'batch': block.batch.code, 'end': withdrawal.harvest_from(block.until, block.approximate)}
 
 
 @dataclass(frozen=True)
@@ -264,7 +261,7 @@ class Earliest:
         return bool(self.decides) and (self.day is None or day < self.day)
 
     def text(self):
-        """Earliest suitable harvest date: 17 Nov 2026. Medicine withdrawal decides: until 17 Nov 2026."""
+        """Earliest suitable harvest date: 17.11.2026. Medicine withdrawal decides: harvest from 17.11.2026."""
         if not self.decides:
             return ''
         if self.day is None:
@@ -272,12 +269,8 @@ class Earliest:
         else:
             text = _('Earliest suitable harvest date: %(date)s.') % {'date': _date(self.day)}
         if self.decides == WITHDRAWAL:
-            if self.unknown:
-                text += ' ' + _('Medicine withdrawal decides: its end is unknown.')
-            elif self.approximate:
-                text += ' ' + _('Medicine withdrawal decides: until about %(date)s.') % {'date': _date(self.until)}
-            else:
-                text += ' ' + _('Medicine withdrawal decides: until %(date)s.') % {'date': _date(self.until)}
+            text += ' ' + _('Medicine withdrawal decides: %(end)s.') % {
+                'end': withdrawal.harvest_from(None if self.unknown else self.until, self.approximate)}
         elif self.stop_by is not None:
             text += ' ' + _('Purging decides: feeding must stop by %(date)s.') % {'date': _date(self.stop_by)}
         else:

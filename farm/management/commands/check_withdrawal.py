@@ -2,10 +2,16 @@ from django.core.management.base import BaseCommand
 from django.utils import translation
 
 from farm.health import withdrawal
-from farm.handling.withdrawal import source_key
+from farm.handling.withdrawal import harvest_from, source_key
 from farm.models import Batch, HandlingAcknowledgement, Tank, WithdrawalAcknowledgement
 from farm.models.handling import AcknowledgedWarning
 from farm.stock import read
+
+
+def _end(until, approximate=False):
+    """A withdrawal's end in the one wording of every page (harvest_from), the day written as this command writes
+    days: harvest from 2026-11-25, harvest from about 2026-11-25, end unknown."""
+    return harvest_from(until, approximate, shown=lambda day: day.isoformat())
 
 
 class Command(BaseCommand):
@@ -27,9 +33,7 @@ class Command(BaseCommand):
         batches = Batch.all_objects.in_bulk({item.batch_id for items in held.values() for item in items})
         for unit in stocked:
             for item in held.get(unit.pk, []):
-                end = (item.until.isoformat() if item.until else 'unknown') + (' (estimated)' if item.estimated
-                                                                                else '')
-                self.stdout.write(f'{unit.code} · {batches[item.batch_id].code}: until {end}. '
+                self.stdout.write(f'{unit.code} · {batches[item.batch_id].code}: {_end(item.until, item.estimated)}. '
                                   f'{withdrawal.describe(item)}')
         self.stdout.write(self.style.SUCCESS(f'{len(held)} of {len(stocked)} units with fish are under a '
                                              f'medicine withdrawal.'))
@@ -48,15 +52,14 @@ class Command(BaseCommand):
             given.setdefault((row.harvest_id, row.batch_id, row.source), []).append((f'the {row.record_type}', row.until))
         for each in found:
             line = each.line
-            end = (each.until.isoformat() if each.until else 'unknown') + (' (estimated)' if each.approximate else '')
             facility = each.facility.name if each.facility is not None else 'an unknown facility'
             # The acknowledgements name the batch that is held: the harvested one, or one that shared its unit (S-02).
             pair = (each.operation_id, each.batch.pk, source_key(each.withdrawal.source))
             acknowledged = self.acknowledged(given.get(pair, []), each.until)
-            whose = '' if each.own else f' of {each.batch.code}, in the same unit,'
+            whose = '' if each.own else f' of {each.batch.code}, in the same unit'
             self.stdout.write(self.style.ERROR(
                 f'Harvest of {line.operation.date.isoformat()} from {line.unit.code} · {line.batch.code} '
-                f'({each.fish} fish to {facility}) lies inside a withdrawal{whose} until {end}: '
+                f'({each.fish} fish to {facility}) lies inside a withdrawal{whose} ({_end(each.until, each.approximate)}): '
                 f'{withdrawal.describe(each.withdrawal)} {acknowledged}'))
         if found:
             count = len({each.same_harvest() for each in found})
@@ -74,6 +77,5 @@ class Command(BaseCommand):
             return f'Acknowledged when {covering[0][0]} was recorded.'
         if rows:
             latest = max((given for _what, given in rows), key=lambda day: day.toordinal())
-            now = until.isoformat() if until else 'unknown'
-            return f'Not acknowledged (acknowledged until {latest.isoformat()}; now {now}).'
+            return f'Not acknowledged (acknowledged for {_end(latest)}; now {_end(until)}).'
         return 'Not acknowledged.'

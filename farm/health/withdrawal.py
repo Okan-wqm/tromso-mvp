@@ -52,7 +52,7 @@ from core.models import AuditLog
 from farm import withdrawal_gate as gate
 from farm.feeding import read as feeding_read
 from farm.handling import check
-from farm.handling.withdrawal import WithdrawalBlock, source_key
+from farm.handling.withdrawal import WithdrawalBlock, harvest_from, source_key
 from farm.models import (Batch, FeedingRecord, MedicineWithdrawal, StockMovement, Tank, Treatment,
                          WithdrawalAcknowledgement)
 from farm.models.feed import FeedType
@@ -564,17 +564,9 @@ class HarvestInside:
         params = {'date': shown_date(self.line.operation.date), 'unit': self.line.unit.code,
                   'batch': self.line.batch.code, 'fish': formats.number_format(self.fish, force_grouping=True),
                   'facility': self.facility.name if self.facility is not None else _('an unknown facility'),
-                  'until': shown_date(self.until) if self.until else ''}
-        if self.until is None:
-            text = _('Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this '
-                     'withdrawal, whose end is unknown: medicated fish may have gone to food.')
-        elif self.approximate:
-            text = _('Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this '
-                     'withdrawal, which holds the fish until about %(until)s: medicated fish may have gone to food.')
-        else:
-            text = _('Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this '
-                     'withdrawal, which holds the fish until %(until)s: medicated fish may have gone to food.')
-        text = text % params
+                  'end': harvest_from(self.until, self.approximate)}       # the one wording of a withdrawal's end
+        text = _('Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this '
+                 'withdrawal (%(end)s): medicated fish may have gone to food.') % params
         if not self.own:
             text += ' ' + _('The withdrawal is of %(held)s, which was in %(unit)s with the fish harvested: the fish of '
                             'one unit cannot be told apart.') % {'held': self.batch.code, 'unit': self.line.unit.code}

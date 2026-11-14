@@ -95,7 +95,7 @@
               {% if row.placements %}<span class="ui-sub">{% include "farm/_placements.html" with chips=row.placements %}</span>{% endif %}
               {% if stock %}{% include "farm/_size_mixes.html" with mixes=stock.size_mixes %}{% endif %}
               {% if row.water %}<span class="ui-mt">{% include "farm/_water_dot.html" with status=row.water.status old=row.water.old_alert %}</span>{% endif %}
-              {% if row.withdrawal %}<span class="ui-mt"><span class="ui-chip" data-status="hold" title="{% for block in row.withdrawal %}{{ block.batch.code }}{% if block.until %} · {{ block.until|date:'DATE_FORMAT' }}{% endif %} {% endfor %}">{% include "icons/_icon.html" with name="hourglass" %}<span>{% trans "Withdrawal" %}</span></span></span>{% for block in row.withdrawal %}<span class="ui-sub">{{ block.batch.code }}{% if block.until %}, {{ block.until|date:'DATE_FORMAT' }}{% endif %}</span>{% endfor %}{% endif %}
+              {% if row.withdrawal %}<span class="ui-mt"><span class="ui-chip" data-status="hold" title="{% for block in row.withdrawal %}{{ block.batch.code }}: {{ block|harvest_from }} {% endfor %}">{% include "icons/_icon.html" with name="hourglass" %}<span>{% trans "Withdrawal" %}</span></span></span>{% for block in row.withdrawal %}<span class="ui-sub">{{ block.batch.code }}: {{ block|harvest_from }}</span>{% endfor %}{% endif %}
             </td>
             <td class="units-batch"><a class="row-link" href="{{ row.href }}" tabindex="-1" aria-hidden="true"></a>
               {% if stock %}

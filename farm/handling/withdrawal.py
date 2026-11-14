@@ -17,7 +17,24 @@ as clear."""
 from dataclasses import dataclass
 from datetime import date
 
+from django.utils import formats
+from django.utils.translation import gettext as _
+
 _providers = []
+
+
+def harvest_from(until, approximate=False, shown=None):
+    """THE words for a withdrawal's end, on every page, message and log line that says it (flow fault M-01): the first
+    day the fish may be harvested. "harvest from 25.11.2026"; "harvest from about 25.11.2026" when it is projected;
+    "end unknown" when it cannot be worked out. Never "until <date>": `until` is the first FREE day, and "until" read
+    as the last HELD day on one page and as the first free day on five others, a day apart for one withdrawal.
+    `shown`: how the day is written (default: the page's date format, dd.mm.yyyy; a command's output its own)."""
+    if until is None:
+        return _('end unknown')
+    day = shown(until) if shown is not None else formats.date_format(until, 'DATE_FORMAT')
+    if approximate:
+        return _('harvest from about %(date)s') % {'date': day}
+    return _('harvest from %(date)s') % {'date': day}
 
 
 @dataclass(frozen=True)

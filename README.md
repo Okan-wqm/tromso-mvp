@@ -1818,7 +1818,16 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
   `register(provider)`, `blocks(unit, day)`, `WithdrawalBlock(batch, until, approximate, reason, source)`; see
   Operations › Health). With no provider registered the harvest dialog would say "Medicine withdrawal not
   checked" and warn nothing.
-  It reads "Not suitable for harvest — medicine withdrawal of B-2026-001 until 14 Dec 2026". The informational
+  It reads "Not suitable for harvest — medicine withdrawal of B-2026-001: harvest from 14.12.2026". **A withdrawal's
+  end is said in one wording everywhere** (`farm.handling.withdrawal.harvest_from`, the template filter
+  `harvest_from`): "harvest from <the first day the fish may be harvested>", "harvest from about …" when projected,
+  "end unknown" when it cannot be worked out, never "until <date>" (which read as the last held day on the Treatments
+  list and as the first free day on five other pages, a day apart for one withdrawal): the harvest dialog, the drawer,
+  the units row, the harvest plan and production plan rows, the Treatments list, the earliest suitable date, the
+  withdrawal guard's question, the stored critical log line and `check_withdrawal`
+  (`farm/tests/test_withdrawal_wording.py`). Not yet in that wording: the monitoring card's badge ("Withdrawal ·
+  <date>", `templates/monitoring/_card.html`) and the column label "Withdrawal until" of the two acknowledgement
+  tables (a label change is a migration). The informational
   badges (Production units rows, the drawer's Harvest and handling section, the plans) say the same and stay.
 - *The dialogs* (harvest, transfer, grading) show the check for the form's date and batch under "Before
   handling": the last feeding and its hours, the rule, for a harvest the withdrawal, and with warnings the box "Go
@@ -1849,7 +1858,7 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
 - *The earliest suitable harvest date* (`check.earliest`, on a harvest's dialog and the drawer's Harvest and handling
   section, and on each harvest plan item and production plan row): the **later of the end of the batch's medicine
   withdrawal and the first day its purge can be complete from the last feeding** (if it is not fed again), and **which
-  decides**: "Earliest suitable harvest date: 17 Nov 2026. Medicine withdrawal decides: until 17 Nov 2026." or "Earliest
+  decides**: "Earliest suitable harvest date: 17 Nov 2026. Medicine withdrawal decides: harvest from 17.11.2026." or "Earliest
   suitable harvest date: 15 Nov 2026. Purging decides: feeding must stop by 11 Nov 2026." (a tie goes to the
   withdrawal; an unknown withdrawal end is "not known"). It is worked out from the parts above on read, nothing is
   stored; a plan dated before it is marked, and a harvest before it is a warning on the parts' terms, acknowledged and
@@ -2011,9 +2020,9 @@ Where it shows: the health records give it to the shared handling check through 
 `farm/handling/withdrawal.py` (`blocks(unit, day)`: a block per batch and cause, `until` the first day the fish
 may be harvested; the provider is registered in `farm/apps.py`). From there Production units marks the unit's
 row **Withdrawal** and the drawer's Harvest and handling section says **"Not suitable for harvest — medicine
-withdrawal of B-2026-001 until 14 Dec 2026."** ("about" when projected, "its end unknown") with why, to everyone
+withdrawal of B-2026-001: harvest from 14.12.2026."** ("harvest from about …" when projected, "end unknown") with why, to everyone
 who sees the page; the harvest dialog warns, never blocks (owner decision), and keeps the acknowledgement (the
-transfer and grading dialogs are not asked for a withdrawal: live fish are not eaten). The Treatments list shows each batch's end as "until 13 Dec 2026 (harvest from 14 Dec 2026)".
+transfer and grading dialogs are not asked for a withdrawal: live fish are not eaten). The Treatments list shows each batch's end in the same words: "harvest from 14.12.2026".
 
 **Health events** (a tab: created and edited on their form, every change logged, voided with a reason instead of
 deleted): the site (chosen once) and some of its units or the whole site, the date, the kind (observation, vet or
@@ -2065,7 +2074,7 @@ void) and Sea-lice counts (read, create, delete = void), the last three under Pr
 The admin shows voided treatments, events and counts and does not restore them. `manage.py check_withdrawal`
 works out every unit's withdrawal from scratch and lists the fish held, with the end and why, and then **every harvest
 already recorded inside a withdrawal** of its own batch or of a batch that shared its unit that day ("… lies inside a
-withdrawal of B-2026-001, in the same unit, …"; medicated fish that may have gone to food), however it came to (a treatment entered
+withdrawal of B-2026-001, in the same unit (harvest from …)"; medicated fish that may have gone to food), however it came to (a treatment entered
 after the harvest, a longer course, a corrected temperature, a medicine's withdrawal changed), each with whether someone
 acknowledged it or not: an acknowledgement counts only for the harvest, the batch and the withdrawal it names (when the
 harvest was recorded, or when the write that brought it inside was), never for another withdrawal of the same harvest.

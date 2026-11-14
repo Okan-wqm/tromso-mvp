@@ -93,6 +93,10 @@ msgid "%(batch)s: %(start)s – %(end)s, %(feed)s fed, %(gain)s grown"
 msgstr "%(batch)s: %(start)s – %(end)s, %(feed)s fôret, %(gain)s tilvekst"
 
 #, python-format
+msgid "%(batch)s: medicine withdrawal, %(end)s"
+msgstr "%(batch)s: tilbakeholdelsestid, %(end)s"
+
+#, python-format
 msgid "%(batch)s: not weighed since it came in, so no FCR yet"
 msgstr "%(batch)s: ikke veid siden den kom inn, så ingen fôrfaktor ennå"
 
@@ -5819,9 +5823,6 @@ msgstr "Slutt"
 msgid "End the leave earlier"
 msgstr "Avslutt permisjonen tidligere"
 
-msgid "End unknown"
-msgstr "Slutt ukjent"
-
 msgid "Ended"
 msgstr "Avsluttet"
 
@@ -7184,28 +7185,10 @@ msgstr "Slakting innenfor en tilbakeholdelsestid"
 #, python-format
 msgid ""
 "Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this "
-"withdrawal, which holds the fish until %(until)s: medicated fish may have gone to food."
+"withdrawal (%(end)s): medicated fish may have gone to food."
 msgstr ""
 "Slaktingen %(date)s fra %(unit)s (%(batch)s, %(fish)s fisk til %(facility)s) ligger innenfor "
-"denne tilbakeholdelsestiden, som holder fisken til %(until)s: medisinert fisk kan ha gått til "
-"mat."
-
-#, python-format
-msgid ""
-"Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this "
-"withdrawal, which holds the fish until about %(until)s: medicated fish may have gone to food."
-msgstr ""
-"Slaktingen %(date)s fra %(unit)s (%(batch)s, %(fish)s fisk til %(facility)s) ligger innenfor "
-"denne tilbakeholdelsestiden, som holder fisken til omkring %(until)s: medisinert fisk kan ha gått"
-" til mat."
-
-#, python-format
-msgid ""
-"Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this "
-"withdrawal, whose end is unknown: medicated fish may have gone to food."
-msgstr ""
-"Slaktingen %(date)s fra %(unit)s (%(batch)s, %(fish)s fisk til %(facility)s) ligger innenfor "
-"denne tilbakeholdelsestiden, som har ukjent slutt: medisinert fisk kan ha gått til mat."
+"denne tilbakeholdelsestiden (%(end)s): medisinert fisk kan ha gått til mat."
 
 msgid "Harvest plan"
 msgstr "Høsteplan"
@@ -8490,16 +8473,9 @@ msgstr "Medisinskap"
 msgid "Medicine withdrawal"
 msgstr "Tilbakeholdelsestid"
 
-msgid "Medicine withdrawal decides: its end is unknown."
-msgstr "Tilbakeholdelsestiden avgjør: slutten er ukjent."
-
 #, python-format
-msgid "Medicine withdrawal decides: until %(date)s."
-msgstr "Tilbakeholdelsestiden avgjør: til %(date)s."
-
-#, python-format
-msgid "Medicine withdrawal decides: until about %(date)s."
-msgstr "Tilbakeholdelsestiden avgjør: til omtrent %(date)s."
+msgid "Medicine withdrawal decides: %(end)s."
+msgstr "Tilbakeholdelsestiden avgjør: %(end)s."
 
 msgid "Medicine withdrawal in force"
 msgstr "Tilbakeholdelsestid for legemiddel gjelder"
@@ -9645,16 +9621,8 @@ msgid "Not stated in the text saved; unverified (Q6)"
 msgstr "Ikke oppgitt i den lagrede teksten; ikke bekreftet (Q6)"
 
 #, python-format
-msgid "Not suitable for harvest — medicine withdrawal of %(batch)s until %(date)s."
-msgstr "Ikke egnet for høsting — tilbakeholdelsestid for %(batch)s til %(date)s."
-
-#, python-format
-msgid "Not suitable for harvest — medicine withdrawal of %(batch)s until about %(date)s."
-msgstr "Ikke egnet for høsting — tilbakeholdelsestid for %(batch)s til omtrent %(date)s."
-
-#, python-format
-msgid "Not suitable for harvest — medicine withdrawal of %(batch)s, its end unknown."
-msgstr "Ikke egnet for høsting — tilbakeholdelsestid for %(batch)s, slutten ukjent."
+msgid "Not suitable for harvest — medicine withdrawal of %(batch)s: %(end)s."
+msgstr "Ikke egnet for høsting — tilbakeholdelsestid for %(batch)s: %(end)s."
 
 msgid "Not updated: the server cannot be reached or cannot answer. This may be out of date."
 msgstr "Ikke oppdatert: serveren kan ikke nås eller kan ikke svare. Dette kan være utdatert."
@@ -15580,10 +15548,6 @@ msgstr ""
 msgid "Until"
 msgstr "Til og med"
 
-#, python-format
-msgid "Until %(date)s"
-msgstr "Til %(date)s"
-
 msgid "Up to (g)"
 msgstr "Opp til (g)"
 
@@ -17428,6 +17392,14 @@ msgstr "håndteringsregel"
 msgid "handling rules"
 msgstr "håndteringsregler"
 
+#, python-format
+msgid "harvest from %(date)s"
+msgstr "høsting fra %(date)s"
+
+#, python-format
+msgid "harvest from about %(date)s"
+msgstr "høsting fra omtrent %(date)s"
+
 msgid "harvest record"
 msgstr "høsteregistrering"
 
@@ -17565,13 +17537,6 @@ msgstr "legemiddel"
 
 msgid "medicine withdrawal"
 msgstr "legemiddelets tilbakeholdelsestid"
-
-#, python-format
-msgid "medicine withdrawal until %(date)s"
-msgstr "tilbakeholdelsestid til %(date)s"
-
-msgid "medicine withdrawal, end unknown"
-msgstr "tilbakeholdelsestid, slutt ukjent"
 
 msgid "medicine withdrawals"
 msgstr "legemidlers tilbakeholdelsestider"
@@ -18222,14 +18187,6 @@ msgstr "ulest"
 #, python-format
 msgid "until %(last)s"
 msgstr "til %(last)s"
-
-#, python-format
-msgid "until %(last)s (harvest from %(first)s)"
-msgstr "til og med %(last)s (høsting fra %(first)s)"
-
-#, python-format
-msgid "until about %(last)s (harvest from about %(first)s)"
-msgstr "til og med omtrent %(last)s (høsting fra omtrent %(first)s)"
 
 #, python-format
 msgid "up to %(weight)s g"

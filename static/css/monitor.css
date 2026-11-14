@@ -108,10 +108,14 @@ html[data-wall] .monitor-units { display: none; }      /* the wall keeps its Ful
 .monitor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--card-min, 21rem)), 1fr)); gap: 1rem; align-items: start; }
 .monitor-grid[data-card-width="1"] { --card-min: 17rem; }
 .monitor-grid[data-card-width="3"] { --card-min: 28rem; }
-.monitor-head, .monitor-strip { grid-column: 1 / -1; margin: 0; }
-.monitor-strip { display: flex; flex-wrap: wrap; gap: .25rem 1.5rem; padding: 0; list-style: none; }
-.monitor-strip:empty { display: none; }
-.monitor-strip-line a { color: inherit; text-decoration: none; }
+/* The band above the cards (templates/monitoring/_grid.html): its rows and tones are utilities in the template; here only
+   its place in the grid and the unit its four type sizes are steps of (on a wall, the screen's: section "the wall"). */
+.monitor-band { grid-column: 1 / -1; margin: 0; }
+.monitor-band .monitor-shape { width: .62em; height: .62em; }
+.monitor-band .monitor-state { gap: .3em; }
+/* (the page indicator is shown by frontend/wall.ts when a wall has two pages or more: `hidden` must win over the
+   utility that lays it out) */
+.monitor-band .monitor-pages[hidden] { display: none; }
 .monitor-card {
   container-type: inline-size;
   padding: .875rem 1rem;
@@ -122,11 +126,11 @@ html[data-wall] .monitor-units { display: none; }      /* the wall keeps its Ful
   font-variant-numeric: tabular-nums;
 }
 .monitor-card-head { display: flex; justify-content: space-between; gap: .75rem; }
-.monitor-card-head h3 { margin: 0; font-size: 1.25rem; }
+.monitor-card:not(.is-fit) .monitor-card-head h3 { margin: 0; font-size: 1.25rem; }
 .monitor-card-head h3 a { color: inherit; text-decoration: none; }
 .monitor-card-state { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .25rem .5rem; }
 .monitor-section { margin-top: .5rem; }
-.monitor-reasons { margin: .375rem 0 0; padding-left: 1.125rem; }
+.monitor-card:not(.is-fit) .monitor-reasons { margin: .375rem 0 0; padding-left: 1.125rem; }
 .monitor-card-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; margin-top: .75rem; }
 .monitor-card .metrics { grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr)); }
 .monitor-state { display: inline-flex; align-items: center; gap: .375rem; font-weight: 700; }
@@ -174,11 +178,89 @@ html[data-wall] .monitor-units { display: none; }      /* the wall keeps its Ful
 .monitor-bar-svg .band-critical { fill: var(--surface-sheet); stroke: var(--crit); stroke-dasharray: 1 1.5; }
 .monitor-bar-svg .marker { fill: var(--text-1); }
 
-/* A wall is read at a distance: larger figures, fixed rhythm, nothing that moves. */
-html[data-wall] .monitor-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, calc(var(--card-min, 21rem) * 1.15)), 1fr)); gap: clamp(.5rem, 1vw, 1.25rem); }
-html[data-wall] .monitor-card { font-size: clamp(1rem, 1.1vw, 1.75rem); }
-html[data-wall] .monitor-card-head h3 { font-size: 1.5em; }
-html[data-wall] .monitor-card .metrics dd { font-size: 1.25em; font-weight: 700; }
+/* A wall of cards that FLOW (Simple, Detailed, a template without a measure) is as it was: larger figures, the page
+   scrolls. A wall of fitted cards is the section after the next. */
+html[data-wall] .monitor-grid:not(:has(> .is-fit)) { grid-template-columns: repeat(auto-fill, minmax(min(100%, calc(var(--card-min, 21rem) * 1.15)), 1fr)); gap: clamp(.5rem, 1vw, 1.25rem); }
+html[data-wall] .monitor-card:not(.is-fit) { font-size: clamp(1rem, 1.1vw, 1.75rem); }
+html[data-wall] .monitor-card:not(.is-fit) .monitor-card-head h3 { font-size: 1.5em; }
+html[data-wall] .monitor-card:not(.is-fit) .metrics dd { font-size: 1.25em; font-weight: 700; }
+
+/* ---- a FITTED card: ONE unit, --u, from the card's own size and its template's measure (mw x mh units) -----------
+   A template with a measure (monitoring/models.py CardTemplate.measure_w, measure_h; the classes mw-N, mh-N and gr-N of
+   card-grid.css) is drawn at the size of its cell. Everything a utility can say is a tw: class in the templates
+   (monitoring/_card_fit.html, widgets/_value_fit.html); here is only what utilities cannot say: the unit, and the
+   pictures. Every size inside is one of FOUR steps of the unit (the theme's text-u-s, -m, -l, -xl; frontend/
+   tailwind.css) in two weights, and one Tailwind space step is a quarter of the unit, so tw:gap-3 and the rest scale
+   with the card. The unit is set on the card's children: a container's own lengths cannot be its container units.
+   On the desk page the unit follows the card's width (never under 14 px: the text of the smallest step is then 11 px);
+   on a wall, the card's width AND height, so the card fills its cell and nothing in it is cut. */
+.monitor-card.is-fit { overflow-wrap: normal; }
+.monitor-grid:has(> .is-fit) { --card-min: 34rem; }
+.monitor-card.is-fit > * { --u: clamp(14px, calc(100cqi / var(--mw)), 30px); --space-1: calc(var(--u) / 4); font-size: var(--u); }
+.is-fit .monitor-shape { width: .62em; height: .62em; }
+.is-fit b > .monitor-shape { width: .5em; height: .5em; margin-right: .08em; }
+.is-fit dt > .monitor-shape { width: .55em; height: .55em; }
+.is-fit .monitor-state { gap: .3em; }
+.is-fit .card-grid { --row: 1.2em; gap: calc(var(--u) * .35) calc(var(--u) * .9); margin-top: calc(var(--u) * .25); }
+.is-fit .card-grid > .w { min-height: 0; }
+
+/* ---- the wall of fitted cards: ONE screen, the band and columns x rows of equal cells -----------------------------
+   frontend/wall.ts sets --cols, --rows and --mh (the cards' measure) by the one slot rule (monitoring/cards/slots.py,
+   the same rule in Python; monitoring/tests/slot_vectors.json holds both to it) and turns the pages; a cell is never
+   lower than its template can be read at (mh units of --u-floor), so a low window turns pages rather than shrink the
+   type. Without the script the cards stand four across and the grid scrolls. The toolbar's two buttons (leave the
+   wall, full screen) stand at the band's right end as icons. */
+html[data-wall] { --wall-pad: clamp(6px, .7vh, 16px); --wall-gap: clamp(5px, .5vh, 12px); --wu: clamp(14px, 1.6vh, 34px); --band: calc(3.1 * var(--wu)); --u-floor: 14px; }
+html[data-wall]:has(.monitor-grid > .is-fit) body { overflow: hidden; }
+html[data-wall] .content:has(.monitor-grid > .is-fit) { display: flex; flex-direction: column; height: 100dvh; max-width: none; padding: var(--wall-pad); }
+html[data-wall] .monitor-grid:has(> .is-fit) {
+  flex: 1 1 auto; min-height: 0; overflow: hidden auto; scrollbar-width: none;
+  grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
+  grid-template-rows: var(--band);
+  grid-auto-rows: max(calc((100dvh - 2 * var(--wall-pad) - var(--band) - var(--rows, 3) * var(--wall-gap)) / var(--rows, 3)), calc(var(--mh, 10) * var(--u-floor) + 1.2 * var(--wall-pad) + 2px));
+  gap: var(--wall-gap); align-items: stretch;
+}
+html[data-wall] .monitor-band { position: sticky; top: 0; z-index: 2; padding-right: calc(5.4 * var(--wu)); background: var(--surface-canvas); font-size: var(--wu); }
+html[data-wall] .monitor-band > * { --u: var(--wu); --space-1: calc(var(--wu) / 4); }
+html[data-wall] .monitor-toolbar { position: fixed; top: var(--wall-pad); right: var(--wall-pad); z-index: 3; margin: 0; padding: 0; border: 0; background: none; }
+html[data-wall] .monitor-actions { gap: calc(.3 * var(--wu)); }
+html[data-wall] .monitor-actions .button { min-width: 0; min-height: 0; height: calc(1.55 * var(--wu)); padding: 0 calc(.45 * var(--wu)); font-size: var(--wu); }
+html[data-wall] .monitor-action-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+html[data-wall] .monitor-grid:has(> .is-fit) .monitor-card { display: flex; flex-direction: column; overflow: hidden; }
+html[data-wall] .monitor-grid .monitor-card.is-fit { container-type: size; padding: calc(var(--wall-pad) * .6) calc(var(--wall-pad) * 1.1); border-radius: 4px; }
+html[data-wall] .monitor-grid .monitor-card.is-fit > * { --u: min(calc(100cqi / var(--mw)), calc(100cqh / var(--mh))); flex: none; }
+/* The line under a figure (how old it is, where it came from) is shown where the cell is tall enough for it: wall.ts
+   says so (data-roomy: the cell is at least 1.26 times as high as the template's measure asks at the unit its width
+   gives), and the unit then leaves that line its room. On the desk page a card is as high as it needs: always shown. */
+html[data-wall] .monitor-grid .is-fit .monitor-roomy { display: none; }
+html[data-wall] .monitor-grid[data-roomy] .is-fit .monitor-roomy { display: block; }
+html[data-wall] .monitor-grid[data-roomy] .monitor-card.is-fit > * { --u: min(calc(100cqi / var(--mw)), calc(100cqh / (var(--mh) * 1.26))); }
+/* (a card's widgets stack below 30 rem of card: a fitted card on a wall keeps its template's twelve columns) */
+html[data-wall] .monitor-grid .is-fit .card-grid { flex: 1 1 0; min-height: 0; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: repeat(var(--gr), minmax(0, 1fr)); grid-auto-rows: 0; }
+html[data-wall] .monitor-grid .is-fit .card-grid > .w { grid-column: calc(var(--x) + 1) / span var(--w); grid-row: calc(var(--y) + 1) / span var(--h); }
+/* (a card that flows, on a wall of fitted cards, a mixed board: it scrolls inside its cell rather than be cut silently) */
+html[data-wall] .monitor-grid:has(> .is-fit) .monitor-card:not(.is-fit) { overflow: auto; }
+html[data-wall] .monitor-grid:has(> .is-fit):is([data-poll-state="stale"], [data-poll-state="gone"])::before { position: fixed; inset: var(--wall-pad) 30% auto 30%; z-index: 4; display: grid; place-items: center; min-height: var(--band); margin: 0; padding: 0 1em; font-size: var(--wu); }
+
+/* ---- the pH window (templates/monitoring/widgets/_ph_window.html) -------------------------------------------------
+   Three neutral tones and nothing else until the water is somewhere it should not be: the two regions beyond a limit
+   are the sunken grey, the safe stretch is --zone-safe; a region takes the critical tint only while the water is in
+   it. The water is ink; hollow and dashed when a value it is drawn from is old (a shape, never a tone alone). */
+.monitor-ph-window { display: block; width: 100%; height: calc(var(--h, 2) * var(--row, 1.75rem)); min-height: 0; overflow: hidden; font-family: var(--font-text); }
+html[data-wall] .monitor-grid .is-fit .monitor-ph-window { height: 100%; }
+.monitor-ph-window .chart-region { stroke: none; }
+.monitor-ph-window .chart-region-co2, .monitor-ph-window .chart-region-nh3 { fill: var(--surface-sunken); }
+.monitor-ph-window .chart-region-safe { fill: var(--zone-safe); }
+.monitor-ph-window text { font-size: .8em; }
+.monitor-ph-window .chart-name { fill: var(--text-2); text-anchor: end; dominant-baseline: central; }
+.monitor-ph-window .chart-name-nh3 { text-anchor: start; }
+.monitor-ph-window .chart-name.is-inside { text-anchor: start; }
+.monitor-ph-window .chart-name-nh3.is-inside { text-anchor: end; }
+.monitor-ph-window .chart-water { fill: var(--text-1); stroke: var(--surface-sheet); stroke-width: 2.5; }
+.monitor-ph-window.is-old .chart-water { fill: var(--surface-sheet); stroke: var(--text-1); stroke-width: 2; stroke-dasharray: 3 2.5; }
+.monitor-ph-window.is-old .chart-region { opacity: .55; }
+.monitor-ph-window.in-co2.is-critical .chart-region-co2, .monitor-ph-window.in-nh3.is-critical .chart-region-nh3 { fill: var(--crit-tint); }
+.monitor-ph-window.in-co2.is-critical .chart-name-co2, .monitor-ph-window.in-nh3.is-critical .chart-name-nh3 { fill: var(--crit-text); }
 
 .monitor-status { font-weight: 700; }
 .monitor-template-error { margin: .375rem 0 0; padding: .25rem .5rem; border: 1px dashed var(--crit); border-radius: 4px; color: var(--crit-text); font-weight: 700; }
@@ -193,6 +275,9 @@ html[data-wall] .monitor-card .metrics dd { font-size: 1.25em; font-weight: 700;
   .monitor-shape-blind, .monitor-shape-unjudged, .monitor-shape-empty { background: none; border-color: CanvasText; }
   .monitor-bar-svg .band { forced-color-adjust: none; fill: Canvas; stroke: CanvasText; }
   .monitor-bar-svg .marker { forced-color-adjust: none; fill: CanvasText; }
+  .monitor-ph-window .chart-region { forced-color-adjust: none; fill: Canvas; stroke: CanvasText; }
+  .monitor-ph-window .chart-water { forced-color-adjust: none; fill: CanvasText; stroke: Canvas; }
+  .monitor-ph-window.is-old .chart-water { fill: Canvas; stroke: CanvasText; }
 }
 
 /* ---- the card designer (Reference data › Card templates, Design tab; frontend/designer.ts) -------------------- */

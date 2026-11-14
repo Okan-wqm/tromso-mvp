@@ -2,7 +2,8 @@
    status when it is not in use, the flip link, a template that cannot be drawn, what the state is from and which
    template draws the card and why; a template cannot move, shrink or remove it), then the template's widgets placed on a 12-column CSS grid
    in reading order (monitoring/cards/render.py build). Below a narrow container the grid is one column in the same order
-   (static/css/monitor.css); the wall runs no layout script. {% endcomment %}{% with card=row.card unit=row.card.unit state=row.card.state stock=row.card.stock chosen=row.card.template %}
+   (static/css/monitor.css); the wall runs no layout script. A template with a measure is drawn FITTED instead (monitoring/_card_fit.html): the same frame at the size of
+   its cell. {% endcomment %}{% with card=row.card unit=row.card.unit state=row.card.state stock=row.card.stock chosen=row.card.template %}{% if chosen.measure %}{% include "monitoring/_card_fit.html" %}{% else %}
 <article class="monitor-card monitor-{{ state.key }}" data-key="card:{{ unit.pk }}" data-state="{{ state.key }}"{% if state.stale %} data-stale{% endif %} data-template="{{ chosen.template.pk|default:'' }}"{% if row.preview %} data-preview{% endif %} id="card-{{ unit.pk }}" aria-labelledby="card-title-{{ unit.pk }}">
   <header class="monitor-card-head">
     <div>
@@ -28,4 +29,4 @@
     <p class="row-sub monitor-why">{% trans "Template" %}: {{ chosen.name }} · {{ chosen.because }}</p>
   </footer>
 </article>
-{% endwith %}
+{% endif %}{% endwith %}

@@ -21,7 +21,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.translation import gettext as _, ngettext, pgettext
+from django.utils.translation import gettext as _, gettext_lazy, ngettext, pgettext
 from django.views.decorators.http import require_POST
 
 from core import audit, navigation
@@ -73,19 +73,41 @@ def _unavailable():
 
 
 def _grid(request, params, board, now=None):
-    """The context of the grid: the cards after the filters and the occupancy, how many units are not shown, and the
-    strip of the cards that need a look."""
+    """The context of the grid: the cards after the filters and the occupancy, how many units are not shown, the band
+    above them (the tally per state and the chips of what needs a look) and the switch of the page's cards."""
     units = read.units_for(params, board)
     found = read.cards(units, request.user, resolve.Choice.of(board, params), params.occupancy, now)
     farm = Tank.objects.count()
     return {
-        'rows': [{'card': card, 'flip': _flip_urls(params, card)} for card in found], 'strip': read.attention(found),
-        'params': params, 'card_width': board.card_width if board is not None else CardWidth.AUTO,
+        'rows': [{'card': card, 'flip': _flip_urls(params, card)} for card in found], 'band': read.band(found),
+        'modes': _modes(params, board), 'params': params, 'card_width': board.card_width if board is not None else CardWidth.AUTO,
         'computed_at': timezone.make_naive(now, company_zone()),     # naive: a template shows an aware one in UTC
         'shown': len(found), 'on_farm': farm,
         'count_line': ngettext('%(shown)d of %(farm)d unit shown', '%(shown)d of %(farm)d units shown', farm)
         % {'shown': len(found), 'farm': farm},
     }
+
+
+# How a screen's cards can be drawn, as the toolbar's choice and the band's switch name them. Small is a VIEW: every
+# card of the screen, whatever the rules and the board say (monitoring/cards/resolve.py). Without a board, '' is the
+# farm's own rules (Simple where it has made none) and Detailed the page's choice below them; on a board, '' is the
+# board's own cards.
+MODE_CHOICES = ((read.SMALL, gettext_lazy('Small')), ('', gettext_lazy('Simple')), (read.DETAILED, gettext_lazy('Detailed')))
+BOARD_CHOICES = ((read.SMALL, gettext_lazy('Small')), ('', gettext_lazy('As the board')))
+
+
+def _modes(params, board):
+    """The band's switch of the screen's cards: [{label, url, current}], each the page drawn with that kind of card and
+    no card flipped. Plain links: they work without script, and a wall, which has no toolbar, changes its cards with
+    them."""
+    page = reverse('monitoring:monitor')
+    on_board = board is not None
+    chosen = params.mode if params.mode == read.SMALL or (not on_board and params.mode == read.DETAILED) else ''
+    found = []
+    for key, label in (BOARD_CHOICES if on_board else MODE_CHOICES):
+        query = params.canonical(mode=key, flip=frozenset())
+        found.append({'label': label, 'url': f'{page}?{query}' if query else page, 'current': key == chosen})
+    return found
 
 
 def _flip_urls(params, card):
@@ -162,14 +184,15 @@ def _copy_name(source):
 @require_POST
 @permission_required('monitoring.add_cardtemplate', raise_exception=True)
 def copy_template(request, pk):
-    """A copy of a template (the way to change a built-in): its description, layout and flip target, a name of its
-    own; logged as a new record, then its form opens."""
+    """A copy of a template (the way to change a built-in): its description, layout, measure and flip target, a name of
+    its own; logged as a new record, then its form opens."""
     from .resources import CardTemplateResource
     source = get_object_or_404(CardTemplate, pk=pk)
     with transaction.atomic():
         copy = CardTemplate.objects.create(
             name=_copy_name(source), description=source.description, layout=source.layout,
-            schema_version=source.schema_version, expanded=source.expanded, created_by=request.user,
+            schema_version=source.schema_version, expanded=source.expanded, measure_w=source.measure_w,
+            measure_h=source.measure_h, created_by=request.user,
             updated_by=request.user)
         audit.record_create(request.user, copy, CardTemplateResource.recorded(copy),
                             entity_type=CardTemplateResource.entity_type())

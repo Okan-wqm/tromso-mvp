@@ -21,6 +21,9 @@
 @custom-variant coarse (@media (pointer: coarse));
 /* The two night themes, for the rare rule that must differ by night (tailwind.md). */
 @custom-variant night (&:where([data-theme="polarnatt"], [data-theme="polarnatt"] *, [data-theme="nordlys"], [data-theme="nordlys"] *));
+/* The wall: ?wall=1 puts data-wall on <html> (templates/monitoring/monitor.html): a band's row that wraps on the desk
+   page is one line there. */
+@custom-variant wall (&:where([data-wall], [data-wall] *));
 
 @theme inline prefix(tw) {
   /* Type: the two faces, and the scale of README, Type */
@@ -46,6 +49,18 @@
   --font-weight-bold: 700;
   --leading-tight: 1.2;
   --leading-normal: 1.45;
+  /* A fitted monitoring card's type scale: FOUR sizes, in em of the card's own unit (--u, which static/css/monitor.css
+     takes from the card's size and its template's measure). s: where a value came from, when, captions; m: every label,
+     row and sentence; l: the state word and the band's clock; xl: the unit's code and the figures one reads first. Two
+     weights go with it, 400 and 600 (a test holds the monitoring templates to these four and those two). */
+  --text-u-s: .8em;
+  --text-u-s--line-height: 1.25;
+  --text-u-m: 1em;
+  --text-u-m--line-height: 1.3;
+  --text-u-l: 1.25em;
+  --text-u-l--line-height: 1.15;
+  --text-u-xl: 2.4em;
+  --text-u-xl--line-height: 1;
 
   /* Colour: the role tokens only (README, Colour) */
   --color-canvas: var(--surface-canvas);

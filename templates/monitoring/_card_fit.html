@@ -1,0 +1,31 @@
+{% load i18n stock cards %}{% comment %} A FITTED card (its template has a measure: monitoring/cards/resolve.py Resolved.measure): the same frame as any card, on two
+   lines whatever happens, and the template's widgets in equal rows that share the card's height. Every length is one of
+   four steps of the card's own unit (tw:text-u-s, -m, -l, -xl; static/css/monitor.css `.monitor-card.is-fit`), two
+   weights. Line one: the unit and its link, its name (the department, and which template draws the card and why, in
+   its title), the unit's status when it is not in use, the withdrawal (the word: its batches and dates are in its title, and the date is in line two when it is the
+   card's reason), the flip link, the state's shape and word (what
+   the state is from, in its title). Line two: a source that could not be read, then the FIRST reason of the state in
+   short (monitoring/read.py Brief: the value against the bound it is past) and how many more there are; every reason
+   is there in full for a screen reader and in the titles, and on the card the flip link shows. A card with no reason
+   says its fish there. {% endcomment %}{% with fit=chosen.fit_classes %}
+<article class="monitor-card monitor-{{ state.key }} {{ fit.0 }}" data-key="card:{{ unit.pk }}" data-state="{{ state.key }}"{% if state.stale %} data-stale{% endif %} data-template="{{ chosen.template.pk|default:'' }}"{% if row.preview %} data-preview{% endif %} id="card-{{ unit.pk }}" aria-labelledby="card-title-{{ unit.pk }}">
+  <header class="monitor-card-head tw:items-baseline tw:min-w-0">
+    <div class="tw:flex tw:items-baseline tw:gap-3 tw:min-w-0">
+      <h3 id="card-title-{{ unit.pk }}" class="tw:m-0 tw:text-u-xl tw:font-semibold tw:whitespace-nowrap"><a class="tw:text-ink-1 tw:no-underline" href="{% url 'farm:production_units' %}?unit={{ unit.pk }}">{{ unit.code }}</a></h3>
+      <p class="tw:m-0 tw:truncate tw:text-u-s tw:text-ink-3" title="{{ unit.name }}{% if unit.production_department %} · {{ unit.production_department.name }}{% endif %} · {% trans "Template" %}: {{ chosen.name }} · {{ chosen.because }}">{{ unit.name }}</p>
+    </div>
+    <div class="monitor-card-state tw:flex-nowrap tw:min-w-0 tw:items-baseline tw:gap-3">
+      {% if unit.status != "active" %}<span class="monitor-status tw:truncate tw:text-u-s tw:font-semibold tw:text-ink-2">{{ unit.get_status_display }}</span>{% endif %}
+      {% if card.withdrawal %}<span class="monitor-withdrawal tw:shrink-0 tw:text-u-s tw:text-ink-2" title="{% trans "Withdrawal" %}: {% for block in card.withdrawal %}{{ block.batch.code }}{% if block.until %} · {{ block.until|date:'DATE_FORMAT' }}{% endif %} {% endfor %}">{% trans "Withdrawal" %}</span>{% endif %}
+      {% if chosen.flip_to %}<a class="monitor-flip tw:shrink-0 tw:text-u-s tw:text-ink-3" id="flip-{{ unit.pk }}" href="{{ row.flip.page }}" data-poll-url="{{ row.flip.poll }}">{{ chosen.flip_to.shown_name }}</a>{% endif %}
+      <span class="tw:shrink-0" title="{% trans "State from" %}: {% for name in state.basis %}{% if name == "stock" %}{% trans "Fish" %}{% elif name == "feeding" %}{% trans "Feeding" %}{% elif name == "water" %}{% trans "Water" %}{% else %}{% trans "Health" %}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}">{% include "monitoring/_state_word.html" with classes="tw:whitespace-nowrap tw:font-semibold tw:text-u-l" %}</span>
+    </div>
+  </header>
+  <div class="monitor-card-line tw:flex tw:items-baseline tw:gap-3 tw:min-w-0 tw:whitespace-nowrap tw:text-u-m">
+    {% if card.failed %}<p class="monitor-failed tw:m-0 tw:shrink-0 tw:font-semibold tw:text-warn-text" role="status">{% trans "Could not be read" %}: {{ card.failed_text }}</p>{% endif %}
+    {% if state.reasons %}{% with first=state.reasons.0|brief rest=state.reasons|slice:"1:" %}<ul class="monitor-reasons tw:flex tw:flex-1 tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0 tw:p-0 tw:list-none" role="list"><li class="tw:truncate {% if state.key == "critical" %}tw:text-crit-text{% elif state.key == "warning" %}tw:text-warn-text{% else %}tw:text-ink-1{% endif %}" title="{{ state.reasons.0 }}"><span class="tw:font-semibold">{{ first.figure }}</span>{% if first.bound %} <span class="tw:text-ink-2">· {{ first.bound }}</span>{% endif %}<span class="sr-only"> ({{ state.reasons.0 }})</span></li>{% if rest %}<li class="tw:shrink-0 tw:text-ink-2" title="{{ rest|join:' · ' }}"><span aria-hidden="true">+{{ rest|length }}</span><span class="sr-only">{{ rest|join:"; " }}</span></li>{% endif %}</ul>{% endwith %}
+    {% elif stock %}<p class="monitor-card-fish tw:m-0 tw:truncate tw:text-ink-3">{% with species=stock.shares.0.batch.species %}{{ species.local_name|default:species.common_name }}{% endwith %} · {% blocktrans trimmed with fish=stock.count|fish %}{{ fish }} fish{% endblocktrans %} · {{ stock.biomass_kg|kilos }} · {{ stock.density|density }}</p>{% endif %}
+  </div>
+  <div class="card-grid {{ fit.1 }}">{% for view in card.widgets %}<div class="w w-{{ view.type }} {{ view.place }}">{% if view.hidden %}{% if view.hidden == "feeding" %}{% include "monitoring/_card_hidden.html" with section=_("Feeding") fit=True %}{% elif view.hidden == "water" %}{% include "monitoring/_card_hidden.html" with section=_("Water") fit=True %}{% elif view.hidden == "health" %}{% include "monitoring/_card_hidden.html" with section=_("Health") fit=True %}{% else %}{% include "monitoring/_card_hidden.html" with section=_("Tasks") fit=True %}{% endif %}{% elif view.failed %}<p class="monitor-hidden tw:m-0 tw:truncate tw:self-center tw:text-u-s tw:text-ink-2">{% trans "no data" %}</p>{% else %}{% include view.renderer %}{% endif %}</div>{% endfor %}</div>
+</article>
+{% endwith %}

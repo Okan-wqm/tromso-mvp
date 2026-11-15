@@ -4372,7 +4372,9 @@ What one tab needed and the next ones will too lives in `core/`:
   species' common name).
 - `RowList` (`core/crud.py`): rows a record owns, edited as one list on a tab and saved together,
   replacing the stored rows, logged on the record (a site's contacts, a feeder's calibrations, a feed's
-  suitability). A record's contact persons are one shape for every record that has them
+  suitability). A refused list shows the record's edit page again from the list's address; the record's own form
+  posts to the record's own address whatever address the page came from (`FormView.page` gives `form_action`, never
+  "this page's address"), so "Save" after a refused list saves the record (`farm/tests/test_row_list_refused.py`). A record's contact persons are one shape for every record that has them
   (`farm/models/contact.py`, `farm/forms/contact.py`, `farm/resources/contact.py`,
   `templates/farm/_contacts.html`): a site's, a supplier's. Rows on an inner tab of their own with a
   heading row (a feeder's calibrations, a feed's suitability) are one template,

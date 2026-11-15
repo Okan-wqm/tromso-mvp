@@ -709,12 +709,22 @@ class ListView(ResourceView):
 
 class FormView(ResourceView):
     def page(self, form, obj=None, **extra):
+        """The record's form as a page. `form_action` is where the record's own form posts: its edit address, or the
+        create address for a new record, never "the address of this page": the page is also shown from another address
+        (a refused row list, a protocol's table, an experiment's team: `UpdateView.as_page`), and the record's Save
+        then went to that address and failed (flow fault B-04)."""
         r = self.resource
         history = []
         if obj is not None:
             history = AuditLog.objects.filter(entity_type=r.entity_type(), entity_id=str(obj.pk))[:20]
             extra = {**r.edit_extras(self.request, obj), **extra}
-        return render_page(self.request, r.form_template, self.context(form=form, object=obj, history=history, **extra))
+        # A tab without the route (it cannot be edited, or created) never shows this form from another address.
+        if obj is not None and obj.pk is not None and r.allows('change'):
+            action = self.url('edit', obj.pk)
+        else:
+            action = self.url('create') if obj is None and r.allows('add') else self.request.path
+        return render_page(self.request, r.form_template, self.context(
+            form=form, object=obj, history=history, form_action=action, **extra))
 
     def draft_page(self, form, obj=None):
         """The form rendered again from a draft (TabbedForm.refresh_on), open on the tab of the field

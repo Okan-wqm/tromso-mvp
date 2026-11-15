@@ -17,6 +17,13 @@ transaction: the stock service runs it after its locks (a feeding of the unit ta
   batch, so no caller can ask it of one. The warning names the batch that is held, and says so when the unit holds
   other fish beside it. With no provider the harvest dialog says "Medicine withdrawal not checked" and nothing is
   warned. A transfer or a grading is checked for the fast and the live-transfer facts alone.
+  **Cleaner fish beside the production fish are kept apart** (`held_apart`, review F-05): the owner's decision is about
+  two groups of production fish; cleaner fish are another species, sorted out at a harvest and never harvested
+  themselves (they are culled). Whether their withdrawal holds the salmon beside them is the owner's and the vet's to
+  decide; until then it is no warning on the production fish's harvest and no acknowledgement of theirs, it does not
+  decide their earliest date, and a harvest of theirs is not "inside" it: the dialog says it as a note ("Cleaner
+  fish in C-01 are in a medicine withdrawal (…): keep them out of the harvest."), and the unit's own line
+  (`in_force_of`) still shows it.
 - Fasting: **the fast is of the fish in the unit handled** (flow fault S-01; the owner, 14.11.2026: fish of two
   batches in one unit are one group): one fast for the unit, whichever batch the handling names, from the latest
   feeding of the fish in it along their own path (farm.feeding.read.last_fed_of: this unit since they came in, the
@@ -222,29 +229,59 @@ def in_force_of(units, day=None):
             for unit_id, blocks in found.items()}
 
 
+def held_apart(batch, named=None):
+    """Whether a withdrawal of `batch` is kept apart from a harvest of the production fish beside it: its fish are
+    cleaner fish (and it is not the batch the handling itself names). THE one place that says it (review F-05; the
+    module's docstring), for the check, the earliest date, the plan rows and the harvests inside a withdrawal."""
+    return batch.species.is_cleaner_fish and (named is None or batch.pk != named.pk)
+
+
+def _in_force(unit, day, named=None):
+    """(the blocks in force that hold a harvest of `unit` on `day`, those of cleaner fish beside the production fish:
+    `held_apart`); None when no provider is registered."""
+    found = in_force_of([unit], day)
+    if found is None:
+        return None
+    holding, beside = [], []
+    for block in found[unit.pk]:
+        (beside if held_apart(block.batch, named) else holding).append(block)
+    return holding, beside
+
+
 def in_force(unit, day):
-    """The withdrawal blocks in force for the fish in `unit` on `day`, of EVERY batch with fish in it (the registry
-    says which): their `until` is after the day, or unknown. None when no provider is registered: not checked.
+    """The withdrawal blocks in force that hold a harvest of the fish in `unit` on `day`: of EVERY production batch
+    with fish in it (the registry says which; cleaner fish beside them are kept apart, `held_apart`): their `until` is
+    after the day, or unknown. None when no provider is registered: not checked.
     It takes no batch on purpose (S-02): the fish of a unit are handled together, so a withdrawal is never asked of
     one of its batches alone."""
-    found = in_force_of([unit], day)
-    return None if found is None else found[unit.pk]
+    found = _in_force(unit, day)
+    return None if found is None else found[0]
+
+
+def cleaner_text(unit, block):
+    """The note of a harvest dialog about cleaner fish under a withdrawal beside the fish harvested."""
+    return _('Cleaner fish in %(unit)s are in a medicine withdrawal (%(batch)s, %(end)s): keep them out of the '
+             'harvest.') % {'unit': unit.code, 'batch': block.batch.code,
+                            'end': withdrawal.harvest_from(block.until, block.approximate)}
 
 
 def _withdrawal(result):
-    """The withdrawal warnings of a handling of the unit: one per block in force for any fish in it, whichever batch
-    the handling names. A block is `shared` when the unit holds fish of another batch that day too (the stock's
-    presence, as the registry's provider reads it), which the warning then says."""
+    """The withdrawal warnings of a handling of the unit: one per block in force for any production fish in it,
+    whichever batch the handling names. A block is `shared` when the unit holds fish of another batch that day too (the
+    stock's presence, as the registry's provider reads it), which the warning then says. A block of cleaner fish beside
+    them is a note, not a warning (`held_apart`)."""
     unit, day = result.unit, result.day
-    blocks = in_force(unit, day)
-    if blocks is None:
+    found = _in_force(unit, day, result.batch)
+    if found is None:
         result.notes.append(_('Medicine withdrawal not checked: the health records are not in yet.'))
         return
+    blocks, beside = found
     present = Presence.of_units([unit.pk]).batches_during(unit.pk, day) if blocks else set()
     for block in blocks:
         result.warnings.append(HandlingWarning(AcknowledgedWarning.WITHDRAWAL, result.kind, unit, day, block=block,
                                                shared=bool(present - {block.batch.pk})))
-    if not blocks:
+    result.notes.extend(cleaner_text(unit, block) for block in beside)
+    if not blocks and not beside:
         result.notes.append(_('No medicine withdrawal in force.'))
 
 
@@ -333,7 +370,8 @@ class Earliest:
 
 def earliest(unit, batch, today=None):
     """The Earliest suitable harvest date of `batch` in `unit` on the farm's `today`: the end of the medicine withdrawal
-    of the fish in the unit (the registry's blocks of every batch in it, S-02; unknown when a block's end is) and the
+    of the fish in the unit (`in_force`: the registry's blocks of every production batch in it, S-02; unknown when a
+    block's end is) and the
     first day its purge can be complete if it is not
     fed again, which is `fasted` asked of each day from today on, from the last feeding. Nothing holds the fish when
     there is no withdrawal in force, no rule, no feeding recorded in the 31 days before, or the fast is complete."""

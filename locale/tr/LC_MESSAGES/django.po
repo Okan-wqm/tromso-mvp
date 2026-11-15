@@ -4635,6 +4635,14 @@ msgstr ""
 "Temizleyici balıklar hasat edilmez: kullanımlarının sonunda “%(reason)s” nedeniyle itlafı "
 "kaydedin."
 
+#, python-format
+msgid ""
+"Cleaner fish in %(unit)s are in a medicine withdrawal (%(batch)s, %(end)s): keep them out of the "
+"harvest."
+msgstr ""
+"%(unit)s içindeki temizleyici balıklar ilaç bekleme süresinde (%(batch)s, %(end)s): onları "
+"hasadın dışında tutun."
+
 msgid "Cleaner fish only"
 msgstr "Yalnızca temizleyici balıklar"
 

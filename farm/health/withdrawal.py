@@ -601,13 +601,16 @@ def _inside(reader, withdrawals, lines):
     harvested batch, or of a batch that had fish in the harvested unit at any moment of that day (the stock's presence
     `during`, as the unit's own withdrawal line and the harvest's handling check read it: the fish of one unit go to
     food together, S-02; also fish that came in and left again that day, review F-03).
+    A withdrawal of cleaner fish is not one the production fish harvested beside them lie inside (check.held_apart,
+    review F-05: their harvest was not asked about it).
     `withdrawals` are `reader`'s (its presence and its batches say who was where)."""
     found = []
     for held in withdrawals:
+        beside = not check.held_apart(reader.batches[held.batch_id])
         for line in lines:
             day = line.operation.date
             if held.holds_on(day) and (held.batch_id == line.batch_id
-                                       or reader.presence.during(line.unit_id, held.batch_id, day)):
+                                       or beside and reader.presence.during(line.unit_id, held.batch_id, day)):
                 found.append(HarvestInside(line, held, reader.batches[held.batch_id]))
     return sorted(found, key=lambda each: (each.line.operation.date, each.line.unit.code, each.line.pk,
                                            each.withdrawal.start, each.batch.code))
@@ -884,7 +887,8 @@ def provider(units, day):
     """The health module's answer to farm.handling.withdrawal.blocks_of: {unit id: [block]}, a block per withdrawal
     that holds a batch in the unit on `day` (None: the unit's own today); the units without one are left out."""
     withdrawals = of_units(units, day)
-    batches = Batch.all_objects.in_bulk({withdrawal.batch_id for held in withdrawals.values() for withdrawal in held})
+    batches = Batch.all_objects.select_related('species').in_bulk(
+        {withdrawal.batch_id for held in withdrawals.values() for withdrawal in held})
     return {unit_id: [WithdrawalBlock(batches[withdrawal.batch_id], withdrawal.until, withdrawal.estimated,
                                       describe(withdrawal), withdrawal.source) for withdrawal in held]
             for unit_id, held in withdrawals.items()}

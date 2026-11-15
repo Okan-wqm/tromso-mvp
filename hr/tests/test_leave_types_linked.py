@@ -3,6 +3,8 @@ Scheduling settings page linked Shifts and Holidays only, so the first leave req
 was empty and nothing said why). The page now lists the leave types and links their tab, the leave request form says
 what is missing while no active type exists, and, for the class: every hidden menu entry is linked from the page of a
 visible entry of its own group, so a hidden page can always be reached by clicking."""
+from unittest import mock
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -54,6 +56,23 @@ class LeaveRequestFormHintTests(LeaveTestCase):
         self.assertContains(page, 'Scheduling settings › Leave types')
         self.assertEqual(list(page.context['form'].fields['leave_type'].queryset), [])
 
+    def test_the_hint_names_the_place_by_the_menus_own_names(self):
+        """The path was typed into the sentence (review F-09); it is read from the menu, as the correction window's
+        refusal reads its own (core.navigation.trail, B-07), so it follows the menu."""
+        LeaveType.objects.update(status='inactive')
+        from ..forms.leave import LeaveRequestForm
+
+        def hint():
+            return str(LeaveRequestForm(user=self.ann_user).fields['leave_type'].help_text)
+
+        where = navigation.trail('hr.view_schedulingsettings', '')
+        self.assertEqual(where, 'Company › HR › Time & shifts › Scheduling settings')
+        self.assertEqual(hint(), f'{self.HINT} Leave types are added in {where} › Leave types, by a person whose role '
+                                 'may.')
+        with mock.patch.object(navigation, 'trail', return_value='Company › People › Planning'):
+            self.assertEqual(hint(), f'{self.HINT} Leave types are added in Company › People › Planning › Leave '
+                                     'types, by a person whose role may.')
+
     def test_the_hint_is_translated(self):
         self.addCleanup(translation.activate, 'en')
         LeaveType.objects.update(status='inactive')
@@ -62,6 +81,9 @@ class LeaveRequestFormHintTests(LeaveTestCase):
             with translation.override(language):
                 text = str(LeaveRequestForm(user=self.ann_user).fields['leave_type'].help_text)
                 self.assertTrue(text and 'There is no active' not in text, language)
+                self.assertIn({'nb': 'i Selskap › HR › Tid og skift › Planleggingsinnstillinger › Permisjonstyper, ',
+                               'tr': ', Şirket › İK › Zaman ve vardiyalar › Planlama ayarları › İzin türleri altında, '}
+                              [language], text)
 
 
 class HiddenEntriesAreLinkedTests(TestCase):

@@ -3,7 +3,8 @@ day the fish may be harvested>", "harvest from about …" when projected, "end u
 Treatments list said "until 09.11 (harvest from 10.11)" while the harvest dialog, the units row, the plans and
 check_withdrawal said "until 10.11" for the same withdrawal: one day apart, and the later one a day the fish are free.
 Every page, message and log line now takes the words from farm.handling.withdrawal.harvest_from, and none says "until"
-with a withdrawal's date."""
+with the first free day. The Treatments list alone says BOTH days, as the fault's proposal did (review F-09): "until
+<the last day the fish are held> (harvest from <the first free day>)", the second part in the one wording."""
 import io
 import uuid
 from decimal import Decimal
@@ -88,11 +89,13 @@ class EveryPageTests(HarvestInsideTestCase):
         for name, page in pages.items():
             with self.subTest(page=name):
                 self.assertContains(page, self.words)
-                # No page says "until" with either day of the withdrawal: neither the last held nor the first free.
-                for day in (self.first_free, self.last_held):
+                # No page says "until" with the first free day; the last held day is said by the Treatments list only,
+                # and only with the first free day beside it.
+                for day in (self.first_free,) if name == 'treatments' else (self.first_free, self.last_held):
                     self.assertNotContains(page, f'until {shown_date(day)}')
                     self.assertNotContains(page, f'Until {shown_date(day)}')
                     self.assertNotContains(page, f'until about {shown_date(day)}')
+        self.assertContains(pages['treatments'], f'>until {shown_date(self.last_held)} ({self.words})</span>')
         self.assertContains(pages['units and drawer'], f'{code}: {self.words}</span>')                # the row's mark
         self.assertContains(pages['units and drawer'],
                             f'Not suitable for harvest — medicine withdrawal of {code}: {self.words}.')
@@ -130,6 +133,15 @@ class EveryPageTests(HarvestInsideTestCase):
         self.assertIn(f'lies inside this withdrawal (harvest from {shown_date(self.day(-6))}): medicated fish may '
                       'have gone to food.', message)
 
+    def test_the_treatments_lists_two_days_about_and_unknown(self):
+        say = getattr(health_tags, 'held_until', None)
+        self.assertIsNotNone(say, 'the Treatments list has no words for both days of a withdrawal')
+        about = WithdrawalBlock(self.batch, self.first_free, True, '', None)
+        self.assertEqual(say(about), f'until about {shown_date(self.last_held)} (harvest from about '
+                                     f'{shown_date(self.first_free)})')
+        self.assertEqual(say(WithdrawalBlock(self.batch, None, False, '', None)), 'end unknown')
+        self.assertEqual(say(None), '—')
+
     def test_an_unknown_and_a_projected_end(self):
         unknown = WithdrawalBlock(self.batch, None, False, '', None)
         about = WithdrawalBlock(self.batch, self.first_free, True, '', None)
@@ -144,6 +156,11 @@ class EveryPageTests(HarvestInsideTestCase):
         for language, words in (('nb', f'høsting fra {shown_date(self.first_free)}'),
                                 ('tr', f'hasat {shown_date(self.first_free)} tarihinden itibaren')):
             Profile.objects.update_or_create(user=self.user, defaults={'language': language})
-            for name, page in self.pages().items():
+            pages = self.pages()
+            for name, page in pages.items():
                 with self.subTest(language=language, page=name):
                     self.assertContains(page, words)
+            both = {'nb': f'>til og med {shown_date(self.last_held)} ({words})</span>',
+                    'tr': f'>{shown_date(self.last_held)} tarihine kadar ({words})</span>'}[language]
+            with self.subTest(language=language, page='treatments, both days'):
+                self.assertContains(pages['treatments'], both)

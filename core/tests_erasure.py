@@ -33,6 +33,9 @@ STRANGER = 'strangr@example.com'
 LONGER = 'xstrangr@example.com'               # another person's: the stranger's address is the tail of it
 ERASED = {'msgid': 'Erased on request'}
 INSTRUCTION = 'DPO instruction of 2026-11-11, ref. DP-17'
+# The table lock's wait in a test that is not about the wait: a loaded machine (an autovacuum on audit_log holds a
+# conflicting lock for seconds) must not fail it. The tests of the wait itself give their own, short one.
+WAIT = '60'
 # the erasure's own row: a label with an enumerated value (both shown translated), then what a person typed
 SAID = {'Erased on request': [None, {'msgid': 'The address of a mis-sent invitation'}],
         'Instruction': [None, INSTRUCTION], 'Carried out by': [None, 'Kari Nordmann']}
@@ -55,7 +58,7 @@ def run(*args):
 
 
 def apply(address=STRANGER):
-    return run(address, '--apply', '--instruction', INSTRUCTION, '--carried-out-by', 'Kari Nordmann')
+    return run(address, '--apply', '--instruction', INSTRUCTION, '--carried-out-by', 'Kari Nordmann', '--lock-wait', WAIT)
 
 
 def stored():
@@ -975,7 +978,7 @@ class LockWaitTests(ErasureCase):
             with self.subTest(wait=wait), self.assertRaisesMessage(ValueError, 'a positive number of seconds'):
                 erasure.erase(STRANGER, INSTRUCTION, 'Kari Nordmann', lock_wait=wait)
         self.assertEqual(stored(), self.before)
-        run(STRANGER, '--apply', '--instruction', INSTRUCTION, '--carried-out-by', 'Kari Nordmann', '--lock-wait=0.5')
+        run(STRANGER, '--apply', '--instruction', INSTRUCTION, '--carried-out-by', 'Kari Nordmann', f'--lock-wait={WAIT}.5')
         self.assertEqual(len(own_rows()), 3)
 
 

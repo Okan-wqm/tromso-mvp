@@ -192,8 +192,99 @@ def _overview():
         })
 
 
+# The units of the wall part: (code, name, oxygen mg/L, its status, temperature, pH, alkalinity, TAN, hours since the
+# sensors answered, what else). Twenty, in every state a Small card can be in.
+_WALL = (
+    [('HA-K01', 'Smolt tank 1', '10.30', 'ok', '13.1', '7.21', '112', '0.61', 0.01, 'withdrawal'),
+     ('HA-K02', 'Start tank 2', '6.40', 'warning', '13.1', '7.05', '104', '0.58', 0.01, ''),
+     ('HA-K03', 'Fry tank 3', '10.30', 'ok', '13.1', '7.40', '118', '0.42', 0.01, ''),
+     ('HA-R01', 'Raceway 1', '9.90', 'ok', '11.5', '7.30', '122', '0.47', 0.01, ''),
+     ('HA-R02', 'D-end raceway 2 with a long name', '5.10', 'critical', '11.5', '6.62', '122', '0.61', 0.01, 'second')]
+    + [(f'RT-{number:02d}', f'Trial tank {number}', f'9.{30 + number}', 'ok', '9.2', f'7.{20 + number % 9}', '96',
+        '0.35', 0.01, '') for number in range(1, 8)]
+    + [('RT-08', 'Trial tank 8', '9.38', 'stale', '9.2', '7.17', '96', '0.35', 96, ''),
+       ('RT-09', 'Trial tank 9', '9.33', 'ok', '9.3', '7.25', '96', '0.35', 0.01, 'maintenance'),
+       ('RT-10', 'Trial tank 10', '9.47', 'ok', '9.4', '7.26', '96', '0.35', 0.01, ''),
+       ('RT-11', 'Trial tank 11', '9.02', 'ok', '9.2', '8.31', '96', '0.90', 0.01, ''),
+       ('RT-12', 'Trial tank 12', '9.41', 'ok', '9.2', '7.23', '96', '0.35', 0.01, 'empty'),
+       ('TG-M01', 'Cage M1', '9.80', 'ok', '8.4', '7.98', '', '0.10', 0.01, ''),
+       ('TG-M03', 'Cage M3', '9.90', 'ok', '8.3', '8.02', '110', '0.10', 0.01, 'sea'),
+       ('TG-M04', 'Cage M4', '9.90', 'ok', '8.3', '8.02', '110', '0.10', 0.01, '')])
+
+
+def _wall(language):
+    """A wall of twenty Small cards with its band (monitoring/_grid.html), from made-up units and readings and the REAL
+    chart of each (the chemistry core through calculation.charts_of, the fish's limits made up too): a normal card, a
+    warning, a critical one with a second reason, old values, a unit not in use, a withdrawal, an empty unit, a chart
+    that cannot be worked out (no alkalinity; a sea unit with no salinity). No database."""
+    from datetime import timedelta
+    from uuid import UUID
+
+    from farm.models import ProductionDepartment, SamplingPoint, Site, Tank
+    from farm.water import calculation, parameters
+    from farm.water.evaluate import Status
+    from farm.water.read import Observation, Origin, PointWater, Reading
+    from monitoring import read
+    from monitoring.cards import builtin, resolve
+
+    def row(**bounds):
+        return N(**{'critical_low': None, 'warning_low': None, 'warning_high': None, 'critical_high': None,
+                    **{name: Decimal(value) for name, value in bounds.items()}})
+
+    limit_rows = {'oxygen_mg_l': [row(critical_low='6', warning_low='7')],
+                  'co2_mg_l': [row(warning_high='15', critical_high='20')],
+                  'nh3_n_mg_l': [row(warning_high='0.0100', critical_high='0.0125')],
+                  'alkalinity_mg_l': [row(warning_low='70', warning_high='150')]}
+    site = Site(name='Bergen Hatchery', code='BG', timezone='Europe/Oslo', altitude=Decimal('12'))
+    hall = ProductionDepartment(name='Hatchery hall A', site=site)
+    small = N(pk=builtin.SMALL, shown_name='Small', expanded_id=builtin.DETAILED, measure=builtin.SMALL_MEASURE)
+    chosen = resolve.Resolved(small, builtin.SMALL_LAYOUT, resolve.VIEW, flip_to=N(shown_name='Detailed'))
+    species = N(common_name='Atlantic salmon', local_name='')
+    cards = []
+    with translation.override(language):
+        for index, (code, name, oxygen, status, temperature, ph, alkalinity, tan, hours, extra) in enumerate(_WALL):
+            # (a fixed id: the part must be the same text at every run)
+            unit = Tank(id=UUID(int=1000 + index), code=code, name=name, production_department=hall,
+                        kind='cage' if code.startswith('TG') else 'tank',
+                        status='maintenance' if extra == 'maintenance' else 'active',
+                        water_type='saltwater' if extra == 'sea' else 'freshwater')
+            point = SamplingPoint(unit=unit, name='Middle', kind='middle')
+            at = NOW - timedelta(hours=hours)
+
+            def reading(code, value, status=Status.OK, channel=None, limit=None):
+                observation = Observation(point, at, Origin.SENSOR if channel else Origin.MANUAL, {code: Decimal(value)},
+                                          channel_no=channel, fresh_for=180 if channel else None)
+                judged = Status.OK if status == Status.STALE else status
+                return Reading(parameters.get(code), Decimal(value), observation, status=status, judged=judged,
+                               limits=[limit] if limit is not None else [])
+
+            old = Status.STALE if status == 'stale' else Status.OK
+            found = [reading('temperature_c', temperature, old, 57 + index),
+                     reading('oxygen_mg_l', oxygen, Status(status), 58 + index, limit_rows['oxygen_mg_l'][0]),
+                     reading('oxygen_saturation_pct', '98.0' if status in ('ok', 'stale') else '71.5', old, 58 + index),
+                     reading('ph', ph, Status.CRITICAL if extra == 'second' else old, 59 + index,
+                             row(critical_low='6.8') if extra == 'second' else None),
+                     reading('tan_mg_l', tan, old)]
+            if alkalinity:
+                found.append(reading('alkalinity_mg_l', alkalinity, old, limit=limit_rows['alkalinity_mg_l'][0]))
+            water = PointWater(point, {each.code: each for each in found}, for_unit=True)
+            with mock.patch('farm.water.read.limits_of', return_value={unit.pk: limit_rows}):
+                chart = calculation.charts_of([unit], {unit.pk: [water]}, NOW)[unit.pk]
+            stock = None if extra == 'empty' else N(
+                over_capacity=False, shares=[N(batch=N(species=species))], count=1000 + 137 * index,
+                biomass_kg=Decimal(66 + 31 * index), density=Decimal('23.6') + index)
+            withdrawal = (N(batch=N(code='B-2026-004'), until=date(2026, 11, 25)),) if extra == 'withdrawal' else ()
+            cards.append(read.Card(unit=unit, template=chosen, today=NOW.date(), stock=stock, water=(water,),
+                                   withdrawal=withdrawal, sections=frozenset(read.SECTIONS), now=NOW, chart=chart))
+        return render_to_string('monitoring/_grid.html', {
+            'rows': [{'card': card, 'flip': {'page': '#', 'poll': '#'}} for card in cards], 'band': read.band(cards),
+            'modes': [{'label': label, 'url': '#', 'current': label == 'Small'} for label in ('Small', 'Simple', 'Detailed')],
+            'computed_at': NOW.replace(tzinfo=None), 'count_line': '20 of 25 units shown'})
+
+
 PAGES = {'meal': _meal, 'stock': _stock, 'water': _water, 'card-en': lambda: _card('en'), 'card-nb': lambda: _card('nb'),
-         'matrix': _matrix, 'approve': _approve, 'tabs': _tabs, 'overview': _overview}
+         'matrix': _matrix, 'approve': _approve, 'tabs': _tabs, 'overview': _overview,
+         'wall-small-en': lambda: _wall('en'), 'wall-small-tr': lambda: _wall('tr')}
 
 
 def rendered():

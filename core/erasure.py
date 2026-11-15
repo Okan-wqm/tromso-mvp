@@ -46,18 +46,20 @@ What it is and is not:
   questions where once too often costs nothing: whether what the command writes holds the address, whether an account
   has it now, and which rows the dry run points at as holding it only when read so (`Plan.near`: named, left as they
   are; the operator runs the command with the address as it is stored when it is the same one).
-- **It does not hold up the log for long.** Everything is read before any lock is taken. The log is then locked
-  against writers with a bounded wait (`LOCK_WAIT_SECONDS`): when the lock cannot be had in that time the erasure is
-  refused, and no writer has waited behind it for longer. Holding it, the erasure waits for `account_mails` and for
-  the rows of it to rewrite only a moment, a quarter of the server's deadlock timeout each (`_mails_wait`: 250 ms as
-  PostgreSQL ships), and is refused otherwise (a mail is being written just then). So it gives up before a session
-  that waits behind its lock on the log looks for a deadlock, and never stands in one with the mail worker, which
-  writes a mail's row and then the log; and the instant something else holds the table (the database's own vacuum or
-  analyze, the mail worker saying it still has a mail) does not refuse the run, as taking the lock at once or not at
-  all did. Under the locks it
+- **It never waits for a lock with another one in its hand.** Everything is read before any lock is taken. Then,
+  in one transaction, it waits for the lock on the log (`audit_log`, against writers) with nothing in hand, and takes
+  everything after it at once or not at all: the lock on `account_mails`, the rows of it to rewrite (NOWAIT), and
+  whatever lock a later statement meets (given up after a millisecond, `IN_HAND`). When one of those is not to be
+  had, the whole transaction is rolled back, so the log is let go, and after a short pause (`RETRY_PAUSE_SECONDS`)
+  it starts again from the log, for as long as its one wait lasts (`lock_wait`, `LOCK_WAIT_SECONDS`; at most
+  `MAX_LOCK_WAIT_SECONDS`). A deadlock needs a session that waits while it holds, so the erasure can stand in none:
+  the session that writes a mail's row and then the log (the mail worker closing a mail) goes through the moment the
+  erasure lets go, and is never the one the database stops. What holds either table for a while (a writer, the
+  database's own vacuum or analyze) is waited out within that one wait; when the wait is over the erasure is refused,
+  naming the table and how long and how often it tried, never who held it (it does not know). While it waits for the
+  log every writer of the log, the alarms among them, queues behind it: so the wait is bounded. Under the locks it
   reads again what must not have changed (the refusals, the rows of the log to rewrite, that no row of a user account
-  was added, and every mail: the same rows hold the address as when it was read, none other) and writes. Every writer
-  of the log, the alarms among them, and of `account_mails` waits for that short moment.
+  was added, and every mail: the same rows hold the address as when it was read, none other) and writes.
 - **Not undone, and not complete beyond the database**: backups hold the address as they hold everything else.
 
 `plan` reads only; `erase` writes. The command `manage.py erase_stranger_address` is the only caller: no page does
@@ -65,6 +67,7 @@ this (it removes the evidence of where a link went, so the data-protection offic
 import json
 import math
 import re
+import time
 import unicodedata
 from dataclasses import dataclass, field
 from datetime import timedelta
@@ -87,9 +90,20 @@ ERASED = accountmail.ERASED
 ERASED_LABEL = gettext_noop('Erased on request')
 WHAT = gettext_noop('The address of a mis-sent invitation')
 INSTRUCTION_LABEL, BY_LABEL = gettext_noop('Instruction'), gettext_noop('Carried out by')
-# How long the erasure waits for the lock on the log (and for a row of account_mails) before it is refused: every
-# writer of the log queues behind a session that waits for this lock, so the wait is bounded.
+# How long the erasure tries to have its locks (the log, account_mails, the rows of it) before it is refused: every
+# writer of the log queues behind a session that waits for the log's lock, so the wait is bounded, and no caller may
+# ask for more than the maximum (ten minutes of every writer of the log, the alarms among them, waiting).
 LOCK_WAIT_SECONDS = 5
+MAX_LOCK_WAIT_SECONDS = 600
+# With the log's lock in hand nothing is waited for: the locks asked for are NOWAIT, and this is the lock timeout of
+# every other statement until the transaction ends (PostgreSQL has no shorter one; 0 would be "for ever").
+IN_HAND = '1ms'
+# The pause, nothing in hand, before the erasure starts again from the log after a lock was not to be had.
+RETRY_PAUSE_SECONDS = 0.1
+# What a lock was not to be had on, as the refusal names it.
+LOG, MAILS = 'The table audit_log (the activity log)', 'The table account_mails'
+ROWS = 'A row of account_mails that would be rewritten'
+UNDER = 'A row or a table this command reads or writes under its locks'
 # A mistyped address is put right soon: one that was an account's own for at least this long is said to look like a
 # person's own former address.
 OWN_FOR_LONG = timedelta(days=1)
@@ -439,18 +453,14 @@ def _still(found, cursor):
         raise Refused(CHANGED_MEANWHILE)
 
 
-def _mails_wait(cursor, lock_wait):
-    """How long, in milliseconds, the erasure waits for `account_mails` and then for its rows, the log locked: a
-    quarter of the server's deadlock timeout each (never more than `lock_wait`), so both together end before a session
-    that began to wait behind the log's lock looks for a deadlock, and it is this command that gives up, never that
-    session. Long enough for what holds the table for an instant: the database's own vacuum or analyze, the mail
-    worker saying that it still has a mail."""
-    cursor.execute("SELECT setting::int FROM pg_settings WHERE name = 'deadlock_timeout'")       # in milliseconds
-    return max(min(cursor.fetchone()[0] // 4, int(lock_wait * 1000)), 1)
+class _NotHad(Exception):
+    """A lock that was not to be had in one attempt; its one argument is what it was on (LOG, MAILS, ROWS, UNDER).
+    The attempt's transaction is rolled back by the time this is seen: the erasure holds nothing."""
 
 
-def _lock_timed_out(fault):
-    """Whether a statement gave up waiting for a lock (PostgreSQL's lock_not_available, 55P03)."""
+def _not_had(fault):
+    """Whether a statement did not get its lock, at once or in its lock timeout (PostgreSQL's lock_not_available,
+    55P03)."""
     return getattr(fault.__cause__, 'sqlstate', None) == '55P03'
 
 
@@ -458,37 +468,72 @@ def erase(address, instruction, by, lock_wait=LOCK_WAIT_SECONDS):
     """Erases `address` and returns the Plan that was carried out (empty: nothing was found, nothing was touched, no
     lock was taken and the trigger was never set aside). `instruction` is the data-protection officer's instruction (its
     reference and date), `by` who carries it out: both are written in the log's row of the erasure, and neither may
-    hold the address (`refuse_words`). `lock_wait`: a positive number of seconds.
+    hold the address (`refuse_words`). `lock_wait`: a positive number of seconds, MAX_LOCK_WAIT_SECONDS at most.
 
-    Everything is read first, with no lock (`plan`). Then one transaction: the log is locked against writers, waiting
-    at most `lock_wait` seconds for it (Refused when it cannot be had: nobody has waited behind this for longer). With
-    the log held, `account_mails` is locked against writers and the rows of it to rewrite are locked, each waited for
-    a moment only (`_mails_wait`; Refused, saying that it is the mails: a session that is writing a mail's row goes on
-    to write the log, so waiting for it here for long would be a deadlock, and every writer of the log waits
-    meanwhile). What must not have changed is read again (`_still`); the append-only trigger is set aside for the
-    updates of `changes` only and set back before the erasure's own rows are appended. PostgreSQL undoes the setting
-    aside with everything else when the transaction fails, and the function checks that the trigger is in force
-    before it returns."""
-    if isinstance(lock_wait, bool) or not isinstance(lock_wait, (int, float)) or not 0 < lock_wait < math.inf:
-        raise ValueError('lock_wait must be a positive number of seconds')
+    Everything is read first, with no lock (`plan`). Then it tries (`_attempt`: one transaction, the whole erasure or
+    nothing) until it is done or `lock_wait` seconds are over. An attempt waits for the log's lock with nothing in
+    hand, for what is left of `lock_wait`, and takes every lock after it at once or not at all; an attempt that did
+    not get a lock has rolled everything back, and after a pause (RETRY_PAUSE_SECONDS, nothing in hand) the next one
+    starts from the log again. So the erasure never waits for a lock while it holds another one, and no session can
+    stand in a deadlock with it: the one that wrote a mail's row and waits for the log goes on the moment the attempt
+    is rolled back. When the time is over: Refused, naming what could not be locked, for how long and how often it
+    tried (not who held it: that is not known here). What was read is not read again between attempts: `_still`
+    refuses, under the locks, when it is no longer so.
+
+    (Inside a caller's own transaction an attempt is a savepoint, and the locks the caller took before are the
+    caller's: the rule above is about the locks taken here. The command, the one caller, has none.)"""
+    if (isinstance(lock_wait, bool) or not isinstance(lock_wait, (int, float))
+            or not 0 < lock_wait <= MAX_LOCK_WAIT_SECONDS):
+        raise ValueError(f'lock_wait must be a positive number of seconds, {MAX_LOCK_WAIT_SECONDS} at most')
     refuse_words(address, instruction, by)
     found = plan(address)
     _refuse(found)
     if found.empty:
         return found
-    waiting_for = 'the log'
+    until, tries = time.monotonic() + lock_wait, 0
+    while True:
+        tries += 1
+        try:
+            _attempt(found, instruction, by, until - time.monotonic())
+            return found
+        except _NotHad as lock:
+            left = until - time.monotonic()
+            if left <= 0:
+                raise Refused(
+                    f'{lock.args[0]} could not be locked within {lock_wait:g} second(s): nothing was changed. It tried '
+                    f'{tries} time(s); another session held a lock on it each time (this command cannot tell which: a '
+                    f'writer, the database’s own vacuum or analyze). Run it again, with a longer --lock-wait if the '
+                    f'table is busy for longer. (It waits for the activity log with nothing in its hand and takes '
+                    f'every other lock at once or lets everything go and starts again, so that no other session is '
+                    f'stopped by a deadlock with it; while it waits for the log, every writer of the log, the alarms '
+                    f'among them, waits behind it: so it does not wait for longer.)') from None
+            time.sleep(min(RETRY_PAUSE_SECONDS, left))
+
+
+def _attempt(found, instruction, by, wait):
+    """One attempt at the erasure of the Plan `found`, in one transaction: done whole, or `_NotHad` with everything
+    rolled back (a lock was not to be had), or the fault that stopped it, likewise with nothing kept.
+
+    The log is locked against writers, waited for at most `wait` seconds with nothing in hand. From then on nothing
+    is waited for: `account_mails` is locked against writers and the rows of it to rewrite are locked NOWAIT, and the
+    lock timeout of every later statement is IN_HAND. What must not have changed is read again (`_still`); the
+    append-only trigger is set aside for the updates of `changes` only and set back before the erasure's own rows are
+    appended. PostgreSQL undoes the setting aside with everything else when the transaction fails, and the function
+    checks that the trigger is in force before it returns."""
+    what = LOG
     try:
         with transaction.atomic(), connection.cursor() as cursor:
             cursor.execute("SELECT current_setting('lock_timeout')")
             before = cursor.fetchone()[0]
-            cursor.execute("SELECT set_config('lock_timeout', %s, true)", [f'{max(int(lock_wait * 1000), 1)}ms'])
+            cursor.execute("SELECT set_config('lock_timeout', %s, true)", [f'{max(int(wait * 1000), 1)}ms'])
             cursor.execute('LOCK TABLE audit_log IN SHARE ROW EXCLUSIVE MODE')
-            waiting_for = 'the mails'
-            cursor.execute("SELECT set_config('lock_timeout', %s, true)", [f'{_mails_wait(cursor, lock_wait)}ms'])
-            cursor.execute('LOCK TABLE account_mails IN SHARE ROW EXCLUSIVE MODE')
-            list(AccountMail.objects.select_for_update().filter(
+            cursor.execute("SELECT set_config('lock_timeout', %s, true)", [IN_HAND])
+            what = MAILS
+            cursor.execute('LOCK TABLE account_mails IN SHARE ROW EXCLUSIVE MODE NOWAIT')
+            what = ROWS
+            list(AccountMail.objects.select_for_update(nowait=True).filter(
                 pk__in=[mail.pk for mail, _mine, _error in found.mails]).values_list('pk'))
-            waiting_for = None
+            what = UNDER
             _still(found, cursor)
             for mail, mine, error in found.mails:
                 values = {**({'address': ERASED_ADDRESS} if mine else {}),
@@ -505,18 +550,9 @@ def erase(address, instruction, by, lock_wait=LOCK_WAIT_SECONDS):
                                    f'kept.')
             cursor.execute("SELECT set_config('lock_timeout', %s, true)", [before])     # a caller's transaction goes on
     except OperationalError as fault:
-        if not _lock_timed_out(fault) or waiting_for is None:
+        if not _not_had(fault):
             raise
-        if waiting_for == 'the mails':
-            raise Refused('A row of account_mails is being written by another session right now (a mail is being sent, '
-                          'or what became of one is being recorded) and could not be locked in the moment this command '
-                          'waits for it: nothing was changed. Run it again. (It waits for the mails for a moment only: '
-                          'it holds the lock on the activity log by then, and every writer of the log waits with '
-                          'it.)') from None
-        raise Refused(f'The activity log is being written to and could not be locked within {lock_wait:g} second(s): '
-                      f'nothing was changed. Run it again. (While this command waits for the lock, every writer of '
-                      f'the log, the alarms among them, waits behind it: so it does not wait for longer.)') from None
-    return found
+        raise _NotHad(what) from None
 
 
 def _rewrite(cursor, entry, changes):

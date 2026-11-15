@@ -12,10 +12,12 @@ command obeys.
 Without `--apply` it changes nothing: it says exactly which `account_mails` rows and which activity-log rows and
 labels would change, and where else the text of the address stands (left as it is). That is the default because the
 erasure cannot be undone and sets the log's append-only trigger aside: the operator reads what will change, then
-runs it again with `--apply`, the instruction and their name. With `--apply` the log is locked against writers for
-the moment of the change; the command waits for that lock at most `--lock-wait` seconds (a positive number) and gives
-up otherwise, and once it holds the log it waits for `account_mails` for a moment only (a quarter of the database's
-deadlock timeout): when a mail is being written just then it gives up and says so.
+runs it again with `--apply`, the instruction and their name. With `--apply` the log (`audit_log`) and `account_mails`
+are locked against writers for the moment of the change. The command tries to have both for at most `--lock-wait`
+seconds (a positive number, 600 at most): it waits for the log with nothing in its hand and takes the mails at once or
+lets the log go and starts again, so it never waits for one lock while it holds another and no other session is
+stopped by a deadlock with it. When the time is over it gives up, has changed nothing, and says which table it could
+not lock.
 
     python manage.py erase_stranger_address stranger@example.com
     python manage.py erase_stranger_address stranger@example.com --apply \\
@@ -31,14 +33,16 @@ from core import erasure
 
 
 def seconds(text):
-    """`--lock-wait`: a positive number of seconds (zero, a negative number, `nan` and `inf` are refused: a wait of no
-    time is no wait, and the others are no time)."""
+    """`--lock-wait`: a positive number of seconds, `erasure.MAX_LOCK_WAIT_SECONDS` at most (zero, a negative number,
+    `nan` and `inf` are refused: a wait of no time is no wait, and the others are no time; a longer one too: every
+    writer of the log can wait for as long, and PostgreSQL takes no wait beyond some 24 days)."""
     try:
         value = float(text)
     except ValueError:
         value = math.nan
-    if not math.isfinite(value) or value <= 0:
-        raise argparse.ArgumentTypeError(f'“{text}” is not a positive number of seconds.')
+    if not math.isfinite(value) or not 0 < value <= erasure.MAX_LOCK_WAIT_SECONDS:
+        raise argparse.ArgumentTypeError(f'“{text}” is not a positive number of seconds, '
+                                         f'{erasure.MAX_LOCK_WAIT_SECONDS} at most.')
     return value
 
 
@@ -58,9 +62,11 @@ class Command(BaseCommand):
                                  '(written in the log\'s row).')
         parser.add_argument('--carried-out-by', default='', help='Who carries it out (written in the log\'s row).')
         parser.add_argument('--lock-wait', type=seconds, default=erasure.LOCK_WAIT_SECONDS, metavar='SECONDS',
-                            help='How long to wait for the lock on the activity log before giving up, a positive '
-                                 'number (default %(default)s): every writer of the log, the alarms among them, waits '
-                                 'meanwhile.')
+                            help='How long to try for the locks on the activity log (audit_log) and on account_mails '
+                                 f'before giving up, a positive number, {erasure.MAX_LOCK_WAIT_SECONDS} at most '
+                                 '(default %(default)s). It waits for audit_log, and every writer of the log, the '
+                                 'alarms among them, waits behind it meanwhile; account_mails is taken at once, or '
+                                 'the log is let go and it starts again.')
 
     def handle(self, *args, address, apply=False, instruction='', carried_out_by='', lock_wait=None, **options):
         address = address.strip()

@@ -215,17 +215,28 @@ python manage.py erase_stranger_address stranger@example.com --apply \
   - one new row on each account touched, by `system`: "Erased on request: The address of a mis-sent invitation", with
     the instruction and who carried it out under labels of their own (the labels and that sentence are shown in the
     reader's language; the instruction and the name are as typed). Never the address.
-- **The log's writers wait for a short moment, the alarms among them.** Everything is read before any lock is taken.
-  The command then locks the log against writers, waiting for that lock at most `--lock-wait` seconds (5; a positive
-  number, anything else is refused): when the log is being written and the lock cannot be had in that time, the
-  command gives up, says so and has changed nothing (a session that waits for this lock makes every later writer
-  queue behind it, so the wait is bounded). **Holding the log, it waits for the mails for a moment only**: it locks
-  `account_mails` against writers and the mail rows it will rewrite, each within a quarter of the database's deadlock
-  timeout (250 ms as PostgreSQL ships), or gives up saying that a row of `account_mails` is being written (the mail
-  worker writes a mail's row and then the log; waiting for it for long with the log locked would be a deadlock, with
-  every writer of the log waiting meanwhile, and this way it is always the command that gives up). The moment is
-  there because something holds that table for an instant now and then, the database's own vacuum or analyze, the
-  mail worker saying that it still has a mail: taking the lock at once or not at all refused the run for that. Under the locks it reads again what must not have
+- **The locks: one bounded wait, and never a wait with a lock in hand.** Everything is read before any lock is
+  taken. The command then needs two tables locked against writers, the log (`audit_log`) and `account_mails`, and the
+  mail rows it will rewrite. It tries to have them for at most `--lock-wait` seconds (5 unless given; a positive
+  number, **600 at most**: anything else is refused in a sentence, a larger number too, since every writer of the log
+  can be kept waiting for as long):
+  - it **waits** for the log's lock, with nothing in its hand (a session that waits for this lock makes every later
+    writer of the log, the alarms among them, queue behind it: that is why the wait is bounded);
+  - holding the log, it waits for **nothing**: `account_mails` and its rows are taken at once or not at all, and any
+    lock a later statement of the erasure meets is given up after a millisecond. When one is not to be had, the
+    command rolls its whole transaction back, which lets the log go, pauses a tenth of a second and starts again
+    from the log, until the `--lock-wait` seconds are over;
+  - so **it is always the command that gives up, and no other session is ever stopped by a deadlock with it.** The
+    mail worker writes a mail's row and then the log; a command that waited for the mails with the log locked stood
+    in a deadlock with it, and the database stopped the mail worker's session, not the command (the fourth review's
+    finding F1: a failed invitation then read "interrupted" with its real reason lost). Now the worker's session goes
+    through the moment the command lets go;
+  - what holds either table for a while (a writer, the database's own vacuum or analyze) is **waited out** within
+    those seconds. When they are over the command gives up, has changed nothing and says **which table** (or a row of
+    which) it could not lock, within how many seconds and in how many attempts. It does not say who held it: it does
+    not know. Run it again, with a longer `--lock-wait` when the table is busy for longer.
+
+  Under the locks it reads again what must not have
   changed: that no account has the address now, that the log rows to rewrite are as they were read, that no row of a
   user account was added, and **every mail again**: the same rows hold the address, with the same values, and no
   other row has come to hold it (a mail server's reply recorded meanwhile, a new mail). Otherwise it stops, has
@@ -292,8 +303,10 @@ log labels is a private one, the address is in the log and in `account_mails`, a
 row and label changed and nothing else (other addresses, an address that contains it, other users' rows, other labels,
 other kinds of record, a contact list, other shapes of value), the refusals (an instruction or a name that holds the
 address in any way among them, the Turkish capitals), what the dry run says is checked and shows of each account (the
-takeover pattern, the count that survives a rename), a second run, the mails read again under the locks and a mail
-being written said to be a mail and not waited for, the bounded and positive wait for the
-lock and the read before it, the trigger with real commits and a second session (a commit, a rollback, a fault and an
+takeover pattern, the count that survives a rename), a second run, the mails read again under the locks, the locks
+(the log waited for with nothing in hand and every lock after it taken at once or not at all, a session that writes a
+mail and then the log let through and never stopped by a deadlock, a held table waited out, the refusal that names
+the table when the wait is over), the positive wait with its upper bound and the read before it, the trigger with
+real commits and a second session (a commit, a rollback, a fault and an
 interrupt while it is set aside, a lost connection, a caller's transaction, autocommit off), and the users tab, the log
 and the History tab in three languages on the erased rows.

@@ -117,10 +117,15 @@ def batches_ever_in(unit_ids):
 
 class Presence:
     """Which batch had fish in which unit on which day, from the counts of the live lines alone (no fold:
-    a count is the sum of the lines up to a day). A batch counts on a day when it had fish there at the end
-    of that day or of the day before, so fish stocked, moved or harvested that day count. The water judges
-    a sample for the species present (farm/water/read.py), the health module finds the batches a treatment
-    reached and the units a batch was in (farm/health/withdrawal.py).
+    a count is the sum of the lines up to a day). A batch counts on a day (`present`) when it had fish there at the
+    end of that day or of the day before, so fish stocked, moved or harvested that day count. The water judges
+    a sample for the species present (farm/water/read.py), the health module finds the units a batch was in
+    (farm/health/withdrawal.py).
+
+    The ends of the days do not see fish that came into a unit and left it again on ONE day. `during` does: the batch
+    had fish in the unit at some moment of the day (at the end of the day before, or fish of it came in that day).
+    The medicine withdrawal asks that (which fish a course reached, which batches held a unit on a harvest's day:
+    review F-03 of the flow faults); `present` keeps its meaning for everything else.
 
     Build it with `of_units` (every batch that was in these units) or `of_batches` (every unit these
     batches were in)."""
@@ -128,8 +133,11 @@ class Presence:
     def __init__(self, rows):
         """`rows`: (unit id, batch id, date, count delta) of live lines."""
         changes = defaultdict(lambda: defaultdict(int))
+        self.arrived = defaultdict(set)              # (unit, batch) -> the days fish of the batch came into the unit
         for unit_id, batch_id, day, delta in rows:
             changes[(unit_id, batch_id)][day] += delta
+            if delta > 0:
+                self.arrived[(unit_id, batch_id)].add(day)
         self.timelines = {}                          # (unit, batch) -> (days, fish at the end of each)
         self.units = defaultdict(set)                # batch -> the units it was ever in
         self.batches = defaultdict(set)              # unit -> the batches ever in it
@@ -166,6 +174,24 @@ class Presence:
 
     def present(self, unit_id, batch_id, day):
         return self.count_at_end(unit_id, batch_id, day) > 0 or self.count_at_end(unit_id, batch_id, day - DAY) > 0
+
+    def during(self, unit_id, batch_id, day):
+        """Whether the batch had fish in the unit at any moment of `day`: there at the end of the day before, or fish
+        of it came in that day, also when they left again the same day. Wherever `present` says yes, this does."""
+        return (self.count_at_end(unit_id, batch_id, day - DAY) > 0
+                or day in self.arrived.get((unit_id, batch_id), ()))
+
+    def batches_during(self, unit_id, day):
+        """The batches that had fish in the unit at any moment of `day` (`during`)."""
+        return {batch_id for batch_id in self.batches.get(unit_id, ()) if self.during(unit_id, batch_id, day)}
+
+    def during_between(self, unit_id, batch_id, first, last):
+        """Whether the batch had fish in the unit at any moment of a day from `first` to `last`, both included: on
+        `first` (`during`), or fish of it came in on a later one of those days."""
+        if first > last:
+            return False
+        return (self.during(unit_id, batch_id, first)
+                or any(first < day <= last for day in self.arrived.get((unit_id, batch_id), ())))
 
     def batches_in(self, unit_id, day):
         """The batches with fish in the unit on `day`."""

@@ -240,7 +240,7 @@ def _withdrawal(result):
     if blocks is None:
         result.notes.append(_('Medicine withdrawal not checked: the health records are not in yet.'))
         return
-    present = Presence.of_units([unit.pk]).batches_in(unit.pk, day) if blocks else set()
+    present = Presence.of_units([unit.pk]).batches_during(unit.pk, day) if blocks else set()
     for block in blocks:
         result.warnings.append(HandlingWarning(AcknowledgedWarning.WITHDRAWAL, result.kind, unit, day, block=block,
                                                shared=bool(present - {block.batch.pk})))

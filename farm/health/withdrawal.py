@@ -15,6 +15,12 @@ The rules, for a batch b and a treatment T with a medicine:
 1. **It follows the fish.** T reached b when b had fish in one of T's units on a day from T's first day to its
    last (today at the latest; farm.stock.read.Presence). Wherever b is now, it is held; if only some of b's
    units were treated, the whole batch is held (conservative).
+   **"On a day" is at any moment of the day** (Presence.during, review F-03): fish that came into a unit and left it
+   again on one day were in it that day. So fish that passed through a treated unit on a course day are reached, held
+   fish that passed through a unit hold that unit for that day (`of_units`: its line, and the harvest check of every
+   batch in it), and a harvest out of it that day lies inside their withdrawal (`_inside`). The withdrawal is asked
+   of a DAY: the order of the operations within the day is not read (a harvest entered before the held fish came in
+   that day counts too; over-warned, never under-warned).
 2. **Days**: day 1 is the day after T's last day, so the first day b may be harvested is the last day +
    the row's days (the margin applied) + 1.
 3. **Degree-days**: the daily mean water temperature of b is added up from the day after T's last day until
@@ -231,7 +237,7 @@ class Reader:
             unit_ids = [unit.pk for unit in treatment.units.all()]
         last = min(treatment.end_date, self.there(unit_ids))
         return {batch_id for batch_id in self.batch_ids
-                if any(self.presence.present_between(unit_id, batch_id, treatment.start_date, last)
+                if any(self.presence.during_between(unit_id, batch_id, treatment.start_date, last)
                        for unit_id in unit_ids)}
 
     # ---- the batch's water (farm/water/degree_days.py) ------------------------------------------------
@@ -427,7 +433,7 @@ def of_units(units, day=None):
     found = {}
     for today, members in site_days(units).items():
         presence = Presence.of_units([unit.pk for unit in members])
-        present = {unit.pk: presence.batches_in(unit.pk, day or today) for unit in members}
+        present = {unit.pk: presence.batches_during(unit.pk, day or today) for unit in members}
         held = holding({batch_id for batches in present.values() for batch_id in batches}, today, day or today)
         for unit in members:
             withdrawals = [withdrawal for batch_id in sorted(present[unit.pk], key=str)
@@ -592,15 +598,16 @@ def _harvest_lines(batch_ids=None, since=None, unit_ids=()):
 def _inside(reader, withdrawals, lines):
     """THE rule: a harvest lies inside a withdrawal that holds on the harvest's day (Withdrawal.holds_on: from the
     treatment's first day, or the medicated feeding's, to the day before the batch may be harvested) and is of the
-    harvested batch, or of a batch that had fish in the harvested unit that day (the stock's presence, as the unit's own
-    withdrawal line and the harvest's handling check read it: the fish of one unit go to food together, S-02).
+    harvested batch, or of a batch that had fish in the harvested unit at any moment of that day (the stock's presence
+    `during`, as the unit's own withdrawal line and the harvest's handling check read it: the fish of one unit go to
+    food together, S-02; also fish that came in and left again that day, review F-03).
     `withdrawals` are `reader`'s (its presence and its batches say who was where)."""
     found = []
     for held in withdrawals:
         for line in lines:
             day = line.operation.date
             if held.holds_on(day) and (held.batch_id == line.batch_id
-                                       or reader.presence.present(line.unit_id, held.batch_id, day)):
+                                       or reader.presence.during(line.unit_id, held.batch_id, day)):
                 found.append(HarvestInside(line, held, reader.batches[held.batch_id]))
     return sorted(found, key=lambda each: (each.line.operation.date, each.line.unit.code, each.line.pk,
                                            each.withdrawal.start, each.batch.code))
@@ -619,7 +626,7 @@ def harvests_inside():
     for today, lines in sorted(by_today.items()):
         batch_ids = {line.batch_id for line in lines}
         for line in lines:
-            batch_ids |= presence.batches_in(line.unit_id, line.operation.date)
+            batch_ids |= presence.batches_during(line.unit_id, line.operation.date)
         reader = Reader(batch_ids, today)
         found += _inside(reader, reader.withdrawals(), lines)
     return found

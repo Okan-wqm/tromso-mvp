@@ -143,7 +143,8 @@ def locked(model, pks):
 def lock_fish(unit_ids, first=None, also=()):
     """Locks the fish of `unit_ids` from the day `first` on (None: every batch they ever held), in the order a stock operation locks them (batches, then
     units), and returns ({unit id: unit}, the batch ids): the fish a write about these units can reach, which the
-    withdrawal guard works the withdrawals of. `also`: batches locked with them whether or not they are found there (an
+    withdrawal guard works the withdrawals of (fish that were in a unit at any moment of a day, as the withdrawal asks:
+    Presence.during_between, review F-03). `also`: batches locked with them whether or not they are found there (an
     operation's own). Which batches were there is read before the units are locked and read
     again after: a batch that arrived in between is locked too (cross-review 2, 7). That late lock is the one taken
     after a unit's: the operation that brought the batch has committed (it is read), so only an operation begun since,
@@ -152,7 +153,7 @@ def lock_fish(unit_ids, first=None, also=()):
     def present():
         presence = read.Presence.of_units(unit_ids)
         return {batch_id for unit_id in unit_ids for batch_id in presence.batches.get(unit_id, ())
-                if first is None or presence.present_between(unit_id, batch_id, first, date.max)}
+                if first is None or presence.during_between(unit_id, batch_id, first, date.max)}
 
     batch_ids = present() | set(also)
     locked(Batch, batch_ids)

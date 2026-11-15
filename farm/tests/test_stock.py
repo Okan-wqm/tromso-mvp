@@ -25,7 +25,9 @@ from ..models import (
 )
 from ..stock import integrity, read, services
 from ..stock.fold import Line, Op, StockError, fold
-from .helpers import correction_window, make_facility, make_species, role, stock_fish
+from .helpers import (
+    OPENING_WAY_OUT, WINDOW_WAY_OUT, correction_window, make_facility, make_species, role, stock_fish,
+)
 from farm import withdrawal_gate
 
 Status = Tank.Status
@@ -228,7 +230,8 @@ class InputTests(StockTestCase):
                                          day=day, lines=[(self.t1, 10, Decimal(1))])
         self.assertEqual(self.refused(stock, self.today + timedelta(days=1)),
                          {'date': ['The date cannot be in the future.']})
-        self.assertEqual(self.refused(stock, self.day(32)), {'date': ['Operations can be dated at most 31 days back.']})
+        self.assertEqual(self.refused(stock, self.day(32)), {'date': [
+            f'Operations can be dated at most 31 days back. {OPENING_WAY_OUT} {WINDOW_WAY_OUT}']})
         stock(self.day(31))
         self.assertEqual(Batch.objects.count(), 1)
 
@@ -237,7 +240,8 @@ class InputTests(StockTestCase):
         def stock(day):
             return services.record_input(self.user, species=self.salmon, input_stage='fry', origin='own_hatchery',
                                          day=day, lines=[(self.t1, 10, Decimal(1))])
-        self.assertEqual(self.refused(stock, self.day(61)), {'date': ['Operations can be dated at most 60 days back.']})
+        self.assertEqual(self.refused(stock, self.day(61)), {'date': [
+            f'Operations can be dated at most 60 days back. {OPENING_WAY_OUT} {WINDOW_WAY_OUT}']})
         stock(self.day(60))
         self.assertEqual(Batch.objects.count(), 1)
 
@@ -400,7 +404,7 @@ class VoidTests(StockTestCase):
         died = self.mortality(batch, 1, days_ago=31)
         StockOperation.objects.filter(pk=died.pk).update(date=self.day(32))
         self.assertEqual(self.refused(services.void, self.user, died, 'old'),
-                         {'__all__': ['Operations older than 31 days cannot be voided.']})
+                         {'__all__': [f'Operations older than 31 days cannot be voided. {WINDOW_WAY_OUT}']})
 
     @correction_window(60)
     @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
@@ -409,7 +413,7 @@ class VoidTests(StockTestCase):
         died = self.mortality(batch, 1, days_ago=45)
         StockOperation.objects.filter(pk=died.pk).update(date=self.day(61))
         self.assertEqual(self.refused(services.void, self.user, died, 'old'),
-                         {'__all__': ['Operations older than 60 days cannot be voided.']})
+                         {'__all__': [f'Operations older than 60 days cannot be voided. {WINDOW_WAY_OUT}']})
         StockOperation.objects.filter(pk=died.pk).update(date=self.day(45))
         services.void(self.user, died, 'old, but inside the window')
 

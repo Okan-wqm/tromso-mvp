@@ -24,7 +24,7 @@ from ..models import (
 )
 from ..models.site import zone_of
 from ..stock import integrity, services
-from .helpers import correction_window, make_facility, point_of, role
+from .helpers import WINDOW_WAY_OUT, correction_window, make_facility, point_of, role
 from .test_feeding import FeedingTestCase
 from .test_protocols import ProtocolTestCase
 from farm import withdrawal_gate
@@ -484,10 +484,10 @@ class PlanItemTests(HarvestTestCase):
                                                                                     unit=str(self.t2.pk)))
         self.assertEqual(refused.context['form'].errors['batch'], [f'No fish of {self.batch.code} are in T-02 now.'])
         late = self.client.post(reverse('farm:handlingplanitem_create'), self.data(date=self.day(40).isoformat()))
-        self.assertEqual(late.context['form'].errors['date'], ['A plan can be dated at most 31 days back.'])
+        self.assertEqual(late.context['form'].errors['date'], [f'A plan can be dated at most 31 days back. {WINDOW_WAY_OUT}'])
         with correction_window(60):
             late = self.client.post(reverse('farm:handlingplanitem_create'), self.data(date=self.day(61).isoformat()))
-            self.assertEqual(late.context['form'].errors['date'], ['A plan can be dated at most 60 days back.'])
+            self.assertEqual(late.context['form'].errors['date'], [f'A plan can be dated at most 60 days back. {WINDOW_WAY_OUT}'])
         none = self.client.post(reverse('farm:handlingplanitem_create'), self.data(facility=''))
         self.assertIn('facility', none.context['form'].errors)
         with self.assertRaises(IntegrityError), transaction.atomic():

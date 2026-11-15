@@ -17,3 +17,10 @@ class LayoutPagesTests(SimpleTestCase):
         self.assertIn('class="wq-source"', pages['water.html'])
         self.assertIn('lang="nb"', pages['card-nb.html'])
         self.assertIn('class="form-actions"', pages['approve.html'])
+        for name in ('wall-small-en.html', 'wall-small-tr.html'):
+            self.assertIn('data-key="band"', pages[name])
+            self.assertEqual(pages[name].count('<article class="monitor-card '), 20)
+            self.assertIn('is-fit mw-31 mh-10', pages[name])
+            self.assertIn('class="monitor-ph-window', pages[name])
+        self.assertIn('lang=', pages['card-nb.html'])
+        self.assertNotEqual(pages['wall-small-en.html'], pages['wall-small-tr.html'])

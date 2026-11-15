@@ -759,6 +759,15 @@ msgstr "%(kilos)s igjen"
 
 #, python-format
 msgid ""
+"%(kilos)s of %(feed)s fed at %(site)s since %(date)s, and none of it was ever delivered to the "
+"store: the store is %(kilos)s short of it. Record its delivery, dated on or before that day."
+msgstr ""
+"%(kilos)s av %(feed)s er fôret ved %(site)s siden %(date)s, og ingenting av det er noen gang "
+"levert til lageret: lageret mangler %(kilos)s av det. Registrer leveransen, datert samme dag "
+"eller tidligere."
+
+#, python-format
+msgid ""
 "%(kilos)s of %(item)s fed at %(site)s beyond the recorded stock since %(date)s: record the "
 "missing delivery, dated on or before that day."
 msgstr ""
@@ -12018,6 +12027,9 @@ msgstr "Se alt i aktivitetsloggen"
 
 msgid "See the day-by-day book"
 msgstr "Se registeret dag for dag"
+
+msgid "See the feedings"
+msgstr "Se fôringene"
 
 msgid "Seed"
 msgstr "Frø"

@@ -1648,7 +1648,10 @@ off, Return to supplier and Count a location, each a dialog (the shared dialog o
 reasons on their fields, back to the page it came from):
 
 - **Overview**: feeding beyond the book (per site and feed, since when, a link to the day-by-day book) and
-  expired lots fed; per site and item the stock on hand, the feed of the last 7 days and the **days of
+  expired lots fed; **a feed that was fed and never delivered** (it has no item yet: an item is made at the first
+  delivery or reorder level) is named too, with all its feeding inside the correction window as the shortfall ("32 kg
+  of Grower 4 fed at Bergen since 12.11.2026, and none of it was ever delivered to the store …": `read.undelivered`
+  folds it as an item without a line, by the same fold; `inventory/tests/test_undelivered_feed.py`); per site and item the stock on hand, the feed of the last 7 days and the **days of
   cover** (on hand ÷ the kilos fed a day there over the last 7 days); low stock (on hand of an item in a
   location below its reorder level, owner decision Q-S4: what a purchasing agent will read to propose
   orders); over capacity; lots expiring within 30 days and expired lots with stock; the value on hand per

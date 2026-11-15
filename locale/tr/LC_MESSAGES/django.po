@@ -762,6 +762,15 @@ msgstr "%(kilos)s kaldı"
 
 #, python-format
 msgid ""
+"%(kilos)s of %(feed)s fed at %(site)s since %(date)s, and none of it was ever delivered to the "
+"store: the store is %(kilos)s short of it. Record its delivery, dated on or before that day."
+msgstr ""
+"%(date)s tarihinden beri %(site)s sahasında %(kilos)s %(feed)s yemlendi ve bunun hiçbiri depoya "
+"teslim alınmadı: depoda bu yemden %(kilos)s eksik. Teslimatını o gün veya öncesine tarihleyerek "
+"kaydedin."
+
+#, python-format
+msgid ""
 "%(kilos)s of %(item)s fed at %(site)s beyond the recorded stock since %(date)s: record the "
 "missing delivery, dated on or before that day."
 msgstr ""
@@ -12037,6 +12046,9 @@ msgstr "Etkinlik günlüğünde tümünü gör"
 
 msgid "See the day-by-day book"
 msgstr "Günlük kaydı görün"
+
+msgid "See the feedings"
+msgstr "Yemlemeleri gör"
 
 msgid "Seed"
 msgstr "Tohum"

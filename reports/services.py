@@ -20,8 +20,9 @@ from .models import (
 # The format of a notice that was recorded on the health event before notices existed (its time only).
 LEGACY_FORMAT = 0
 
-# The leaves of a content that name rather than count: a change of one is "identity changed since filing".
-IDENTITY_LEAVES = ('/number', '/species', '/organisation_number', '/lokalitetsnummer', '/site', '/site_code')
+# The leaves of a content that name rather than count (reports/labels.py, which also prints them as written): a change
+# of one is "identity changed since filing".
+IDENTITY_LEAVES = labels.IDENTITY_LEAVES
 
 # The answers a correction starts from: the report's own (the row lists are copied too).
 CARRIED = ('contact_name', 'contact_email', 'contact_phone', *NARRATIVE, 'notes')

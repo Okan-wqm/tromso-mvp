@@ -2486,7 +2486,9 @@ Fish at the month’s end: 500 → 1000", `reports/labels.py`), never a key of t
 A report's page shows its figures in the kind's own table (smolt, biomass, the slaughter plan, land stock, a site taken
 into use or emptied), an event notice's narrative for a notice (`reports.kinds.EVENTS`), and any other kind (sea lice,
 cleaner fish) as the print page does: every figure named by **one label registry** (`reports/labels.py`, the words the pages
-use, translated, numbers as the language writes them; a test computes a report of every kind with every optional part filled
+use, translated, numbers as the language writes them, and what names rather than counts, an organisation number, a
+lokalitetsnummer, an approval number, a unit number, a code, a year class, a week, printed as written, never
+"987,654,321": `labels.names`, `reports/tests/test_identifiers.py`; a test computes a report of every kind with every optional part filled
 (the contact person, a health event and its units, an escape, a planned slaughter by weekday), renders its print page and
 describes every path of its content, and fails on any row or difference that is a raw key or "(unnamed figure)"; a second
 test reads the computation's code (dict keys and assigned keys) so every key it writes has its

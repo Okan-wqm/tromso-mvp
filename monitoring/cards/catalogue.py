@@ -94,6 +94,13 @@ WIDGETS = {spec.type: spec for spec in (
     _spec('deffeyes', _('Deffeyes chart'), (2, 1), (6, 2), (4, 1), ('water',), on_empty=True,
           says_hidden=False),
     _spec('ph_window', _('pH window'), (6, 1), (12, 3), (12, 2), ('water', 'chart')),
+    # The Big card's widgets (owner decisions 4, 10, 11, 12): the unit's Deffeyes chart as a picture of the card's own
+    # size, in the screen's or the card's view (close or full scale); what to dose (Phase 1: no advice, and why); the
+    # unit's other sampling points; its stock in one line.
+    _spec('chart', _('Deffeyes chart, drawn'), (6, 4), (12, 12), (12, 8), ('water', 'chart')),
+    _spec('dosing', _('Dosing advice'), (3, 1), (12, 3), (4, 2), ('water', 'chart')),
+    _spec('points', _('Other sampling points'), (3, 1), (12, 4), (4, 2), ('water',)),
+    _spec('stock', _('Stock in one line'), (3, 1), (12, 3), (4, 2), ('stock',)),
     _spec('spark', _('Trend'), (3, 2), (12, 4), (6, 2), ('water',), bind=PARAMETER, enabled=False),
 )}
 _('Points'), _('The middle point'), _('Every active point'), _('Parameters'), _('The key values')

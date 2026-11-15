@@ -160,17 +160,20 @@ class BandPageTests(MonitoringCase):
             nav = next(each for each in band.walk() if 'monitor-modes' in each.classes)
             return [(text(each), each.attrs['href'], each.attrs.get('aria-current')) for each in nav.walk()
                     if each.tag == 'a']
-        self.assertEqual(switch(), [('Small', f'{PAGE}?mode=small', None), ('Simple', PAGE, 'page'),
-                                    ('Detailed', f'{PAGE}?mode=detailed', None)])
-        self.assertEqual([current for _label, _url, current in switch(mode='small')], ['page', None, None])
-        self.assertEqual([current for _label, _url, current in switch(mode='detailed')], [None, None, 'page'])
+        self.assertEqual(switch(), [('Small', f'{PAGE}?mode=small', None), ('Big', f'{PAGE}?mode=big', None),
+                                    ('Simple', PAGE, 'page'), ('Detailed', f'{PAGE}?mode=detailed', None)])
+        self.assertEqual([current for _label, _url, current in switch(mode='small')], ['page', None, None, None])
+        self.assertEqual([current for _label, _url, current in switch(mode='big')], [None, 'page', None, None])
+        self.assertEqual([current for _label, _url, current in switch(mode='detailed')], [None, None, None, 'page'])
         # the wall and the filters stay; a card flipped does not
         self.assertEqual([url for _label, url, _current in switch(wall='1', q='T', flip=str(self.t1.pk))],
-                         [f'{PAGE}?mode=small&q=T&wall=1', f'{PAGE}?q=T&wall=1', f'{PAGE}?mode=detailed&q=T&wall=1'])
+                         [f'{PAGE}?mode=small&q=T&wall=1', f'{PAGE}?mode=big&q=T&wall=1', f'{PAGE}?q=T&wall=1',
+                          f'{PAGE}?mode=detailed&q=T&wall=1'])
         board = MonitorBoard.objects.create(name='Hall A')
         MonitorBoardUnit.objects.create(board=board, unit=self.t1)
         self.assertEqual(switch(board=str(board.pk)),
                          [('Small', f'{PAGE}?board={board.pk}&mode=small', None),
+                          ('Big', f'{PAGE}?board={board.pk}&mode=big', None),
                           ('As the board', f'{PAGE}?board={board.pk}', 'page')])
 
     def test_the_page_indicator_is_there_for_the_wall_script_and_hidden_until_it_is_needed(self):

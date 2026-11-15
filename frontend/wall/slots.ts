@@ -57,6 +57,15 @@ export function slots(count: number, width: number, height: number, gap: number,
 }
 
 /** Whether a cell of the chosen grid is high enough for the line under each figure. */
+/** A FULL-HEIGHT card (its measure is higher than wide) keeps at least this share of the unit one card alone on the
+ *  screen would have: the wall turns pages rather than set more of them side by side (monitoring/cards/slots.py). */
+export const FILL = 0.97;
+
+/** The smallest unit (`minU`) of a wall of full-height cards. */
+export function fillUnit(width: number, height: number, mw: number, mh: number, padX = 0, padY = 0): number {
+  return FILL * Math.max(Math.min((width - padX) / mw, (height - padY) / mh), 0);
+}
+
 export function roomy(chosen: Slots, width: number, height: number, gap: number, mw: number, mh: number,
                       padX = 0, padY = 0): boolean {
   const byWidth = ((width - (chosen.cols - 1) * gap) / chosen.cols - padX) / mw;

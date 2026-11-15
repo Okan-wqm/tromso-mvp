@@ -57,7 +57,9 @@ from farm.models import Tank
 from farm.stock import read as stock_read, views as stock_views
 from farm.stock.dates import local_today
 from farm.templatetags.water import water_value
-from farm.water import calculation as water_calculation, parameters, read as water_read, views as water_views
+from farm.water import (
+    calculation as water_calculation, chemistry, deffeyes, parameters, read as water_read, views as water_views,
+)
 from farm.water.evaluate import Status
 from tasks import read as tasks_read, views as tasks_views
 
@@ -107,8 +109,10 @@ class Unavailable(Exception):
     """A source the roll-up needs could not be read: no card can be drawn honestly."""
 # What a card names as hidden: the health records are one block of the card.
 HEALTH = 'health'
-SMALL, SIMPLE, DETAILED = 'small', 'simple', 'detailed'
-MODES = (SMALL, SIMPLE, DETAILED)
+SMALL, BIG, SIMPLE, DETAILED = 'small', 'big', 'simple', 'detailed'
+MODES = (SMALL, BIG, SIMPLE, DETAILED)
+# The view a screen's charts are drawn in when the address says so: full scale (the default is the close view).
+CHART_FULL = 'full'
 STOCKED, EMPTY, ALL = 'stocked', 'empty', 'all'
 OCCUPANCIES = (STOCKED, EMPTY, ALL)
 KINDS = tuple(Tank.Kind.values)
@@ -156,6 +160,8 @@ class Params:
     flip: frozenset = frozenset()
     board: str = ''
     wall: bool = False
+    chart: str = ''                     # '' (the close view) or 'full': the view of every chart of the screen
+    zoom: frozenset = frozenset()       # the units whose chart is drawn in the OTHER view
 
     @classmethod
     def from_query(cls, query):
@@ -168,14 +174,16 @@ class Params:
             units=tuple(sorted({_uuid(item) for value in query.getlist('units') for item in value.split(',')} - {''})),
             mode=query.get('mode', '') if query.get('mode', '') in MODES else '',
             flip=frozenset(_uuid(item) for item in query.get('flip', '').split(',') if _uuid(item)),
-            board=_uuid(query.get('board', '')), wall=query.get('wall', '') == '1')
+            board=_uuid(query.get('board', '')), wall=query.get('wall', '') == '1',
+            chart=CHART_FULL if query.get('chart', '') == CHART_FULL else '',
+            zoom=frozenset(_uuid(item) for item in query.get('zoom', '').split(',') if _uuid(item)))
 
     def canonical(self, **changes):
         """The address's query, one spelling for one state (sorted, defaults left out): what the change token and the
         fragment's address are built on. `changes` replace fields first."""
         merged = {**self.__dict__, **changes}
         pairs = []
-        for name in ('board', 'department', 'kind', 'mode', 'q', 'site', 'system'):
+        for name in ('board', 'chart', 'department', 'kind', 'mode', 'q', 'site', 'system'):
             if merged[name]:
                 pairs.append((name, merged[name]))
         if merged['wall']:
@@ -186,6 +194,8 @@ class Params:
             pairs.append(('units', ','.join(sorted(merged['units']))))
         if merged['flip']:
             pairs.append(('flip', ','.join(sorted(merged['flip']))))
+        if merged['zoom']:
+            pairs.append(('zoom', ','.join(sorted(merged['zoom']))))
         return urlencode(sorted(pairs))
 
 
@@ -253,6 +263,8 @@ class Card:
     sections: frozenset = frozenset()
     failed: frozenset = frozenset()     # the optional sources that failed: their widgets say "no data"
     chart: object = None                # water.calculation.UnitChart or Refusal of its middle point (a card that shows it)
+    chart_view: str = deffeyes.CLOSE    # the view its chart's picture is drawn in (deffeyes.CLOSE, deffeyes.FULL)
+    chart_extent: tuple = ()            # what the FULL view's box must hold: one box per screen and water type
     now: object = None
     clock: tuple = ()                   # data-quality notes: a device of its water whose clock is off (clock_notes)
 
@@ -353,7 +365,7 @@ def needs(resolved):
             if widget.get('bind', {}).get('parameter') in catalogue.CALCULATED:
                 found[CHART].add(unit_id)               # a value the unit's chart works out
             opts = widget.get('opts', {})
-            if (widget['type'] == 'water_table' and opts.get('points') == 'all') or \
+            if (widget['type'] == 'water_table' and opts.get('points') == 'all') or widget['type'] == 'points' or \
                     widget.get('bind', {}).get('point', water_read.MIDDLE) != water_read.MIDDLE:
                 found[POINTS].add(unit_id)
             if widget['type'] == 'feeding' and opts.get('week'):
@@ -405,6 +417,7 @@ def cards(units, user, choice, occupancy=STOCKED, now=None):
     chips = optional(CHIPS, lambda wanted: _placements(wanted, user))
     # From the water just read: no value is read again, and the fish's limits once for all the cards that show it.
     charts = optional(CHART, lambda wanted: water_calculation.charts_of(wanted, water, now))
+    extents = chart_extents(kept, charts)
     hidden = tuple(key for key, shown in ((FEEDING, FEEDING in sections), (WATER, WATER in sections),
                                           (HEALTH, bool(sections & {TREATMENTS, EVENTS, LICE})),
                                           (TASKS, TASKS in sections)) if not shown)
@@ -422,8 +435,29 @@ def cards(units, user, choice, occupancy=STOCKED, now=None):
             withdrawal=tuple(withdrawals.get(unit.pk, ())), treatments=tuple(treatments.get(unit.pk, ())),
             events=tuple(events.get(unit.pk, ())), lice=counts.get(unit.pk), tasks=tasks.get(unit.pk),
             chips=tuple(chips.get(unit.pk, ())), failed=frozenset(failed), chart=charts.get(unit.pk),
+            chart_view=(deffeyes.FULL if (choice.chart == CHART_FULL) != (str(unit.pk) in choice.zoom)
+                        else deffeyes.CLOSE),
+            chart_extent=extents.get(unit.water_type, ()),
             hidden=hidden, sections=sections, now=now, clock=tuple(clocks.get(unit.pk, ()))))
     return found
+
+
+def chart_extents(units, charts):
+    """{water type: ((DIC, alkalinity),)}: for each water type of the screen's units, the one point every chart's box
+    must hold so that the charts of that water share ONE box at full scale (deffeyes.card_figure `extent`): the
+    largest DIC and the largest alkalinity (a water's own or its band's upper end) among the charts that could be
+    worked out. Fresh and sea water keep a box each: their waters are far apart, and a shared box would shrink both."""
+    found = {}
+    for unit in units:
+        chart = charts.get(unit.pk)
+        if not isinstance(chart, water_calculation.UnitChart):
+            continue
+        analysis = chart.calculation.analysis
+        top = analysis.limits.alkalinity_high_mg_l
+        alkalinity = max(analysis.alkalinity_meq, top / chemistry.MG_CACO3_PER_MEQ if top is not None else 0.0)
+        dic, high = found.get(unit.water_type, (0.0, 0.0))
+        found[unit.water_type] = (max(dic, analysis.dic), max(high, alkalinity))
+    return {water_type: (point,) for water_type, point in found.items()}
 
 
 def _live_channels(water):

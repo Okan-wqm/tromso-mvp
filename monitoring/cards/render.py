@@ -10,9 +10,12 @@ the parameter's precision, its status, where it came from and how old it is, in 
 The age is said in bands (`age_text`), so the card's bytes change once per band, not at every poll."""
 from dataclasses import dataclass
 
+from django.utils import timezone
+from django.utils.formats import date_format
 from django.utils.translation import gettext
 
 from core import text
+from core.dates import company_zone
 from farm.templatetags.stock import number, percent
 from farm.templatetags.water import water_value
 from farm.water import calculation, deffeyes, parameters, read as water_read
@@ -358,6 +361,139 @@ def ph_window(card):
     label = gettext('pH window, %(unit)s: %(said)s') % {'unit': card.unit.code, 'said': '; '.join(said)}
     zones = tuple(key for key, border in (('co2', co2), ('nh3', nh3)) if border.status == Status.CRITICAL)
     return PhWindow(label, tuple(regions), tuple(names), _pc(water), zones, bool(chart.old))
+
+
+# ---- the unit's chart as a picture of the card's own size ---------------------------------------------------------
+@dataclass(frozen=True)
+class DrawnChart:
+    """A card's Deffeyes chart as its template prints it: the picture (farm.water.deffeyes.Picture: shapes and places)
+    and every word on and under it, in the reader's language. `refused`: why there is no picture (then `title` and
+    `lines` say it in full). `zones`: the regions the core says the water is in ('co2', 'nh3'); `old`: an input is no
+    longer fresh, the picture is the last known position. `words`: the one sentence under the picture; `tone` the
+    state's shape beside it ('critical', 'blind' for an old picture, 'ok' in the safe zone, '' otherwise)."""
+    refused: str = ''
+    title: str = ''
+    lines: tuple = ()
+    picture: object = None
+    label: str = ''
+    zones: tuple = ()
+    old: bool = False
+    old_text: str = ''
+    words: str = ''
+    tone: str = ''
+    inputs: str = ''
+    names: tuple = ()        # (key, text, x, y): what each region is, with the farm's limit
+    ph_names: tuple = ()     # (text, x, y)
+    x_ticks: tuple = ()      # (text, x, y)
+    y_ticks: tuple = ()
+    scale: tuple = ()        # the view in words: one or two lines
+
+
+def arrived(at, now):
+    """When a value arrived, as a wall says it: the clock time today, the date and the time before (the farm's zone)."""
+    zone = company_zone()
+    local, today = timezone.localtime(at, zone), timezone.localtime(now, zone).date()
+    if local.date() == today:
+        return date_format(local, 'TIME_FORMAT')
+    return f"{date_format(local, 'SHORT_DATE_FORMAT')} {date_format(local, 'TIME_FORMAT')}"
+
+
+def _chart_words(chart, analysis):
+    """(words, tone) under a chart's picture: where the core says the water is. Nothing is judged here: past a border
+    is the core's CRITICAL of that border, the safe zone is said only when the core has one (deffeyes.safe_zone_gaps)
+    and the limits judge the alkalinity inside its band."""
+    if chart.old:
+        return gettext('Last known position · old: %(values)s') % {
+            'values': ', '.join(str(parameters.get(item.field).short) for item in chart.old)}, 'blind'
+    for key, border, text_ in (('co2', analysis.co2, gettext('In the CO₂ region: %(margin)s pH past the limit')),
+                               ('nh3', analysis.nh3, gettext('In the NH₃ region: %(margin)s pH past the limit'))):
+        if border.status == Status.CRITICAL:
+            if border.margin is None:
+                return (gettext('CO₂ is past its limit at every pH') if key == 'co2'
+                        else gettext('NH₃ is past its limit at every pH')), 'critical'
+            return text_ % {'margin': number(abs(border.margin), 2)}, 'critical'
+    gaps = deffeyes.safe_zone_gaps(analysis)
+    if gaps:
+        return gettext('No safe zone: %(why)s') % {'why': str(gaps[0])}, ''
+    alkalinity = next((item.reading for item in chart.inputs if item.field == 'alkalinity_mg_l'), None)
+    if alkalinity is None or alkalinity.judged != Status.OK:
+        return gettext('Between the CO₂ and the NH₃ limit, outside the alkalinity band'), ''
+    if analysis.co2.margin is not None:
+        return gettext('In the safe zone · %(margin)s pH to the CO₂ limit') % {
+            'margin': number(abs(analysis.co2.margin), 2)}, 'ok'
+    return gettext('In the safe zone'), 'ok'
+
+
+def chart(card):
+    """The DrawnChart of a card: its unit's chart (the chemistry core's analysis and figure) in the card's view
+    (card.chart_view: close by the rule of deffeyes.close_window, or full scale in the box the screen's charts of
+    this water share, card.chart_extent). Drawn from the LATEST values received (owner decision 1): old inputs are
+    said on the picture and under it, never silently. Phase 1: no dosing target is active."""
+    made = card.chart
+    if made is None:
+        return DrawnChart(refused=gettext('no data'), title=gettext('The chart cannot be drawn'))
+    if not isinstance(made, calculation.UnitChart):
+        return DrawnChart(refused=_refused(made), title=gettext('The chart cannot be drawn'),
+                          lines=(gettext('Missing: %(why)s.') % {'why': _refused(made)},
+                                 gettext('Nothing is assumed for a missing value.')))
+    analysis = made.calculation.analysis
+    view = card.chart_view
+    figure = deffeyes.card_figure(analysis, card.chart_extent if view == deffeyes.FULL else ())
+    per_meq = deffeyes.chemistry.MG_CACO3_PER_MEQ
+    low, top = analysis.limits.alkalinity_low_mg_l, analysis.limits.alkalinity_high_mg_l
+    band = (None if low is None else low / per_meq, None if top is None else top / per_meq)
+    window = deffeyes.window_of(figure, view, band)
+    picture = deffeyes.picture(figure, window, view)
+    words, tone = _chart_words(made, analysis)
+    limits = analysis.limits
+    region = {
+        'co2': '' if limits.co2_mg_l is None else gettext('CO₂ > %(limit)s mg/L') % {
+            'limit': deffeyes.shown(limits.co2_mg_l, 1)},
+        'nh3': '' if limits.nh3_n_mg_l is None else gettext('NH₃-N > %(limit)s mg/L') % {
+            'limit': deffeyes.shown(limits.nh3_n_mg_l, 4)},
+        'safe': gettext('safe'),
+    }
+    names = tuple((key, region[key], x, y) for key, (x, y) in picture.names.items() if region[key])
+    if window.full and view == deffeyes.CLOSE:
+        scale = (gettext('the close view is the full scale here: the water is far past a limit'),)
+    elif window.full:
+        scale = (gettext('full scale · axes from zero'),)
+    else:
+        scale = (gettext('close view · ×%(zoom)s') % {'zoom': number(window.zoom, 1)},
+                 gettext('this card’s own scale'))
+    said = []
+    for item in made.inputs:
+        if item.field not in calculation.REQUIRED:
+            continue
+        short = str(parameters.get(item.field).short)
+        said.append(gettext('%(value)s assumed') % {'value': short} if item.assumed or item.reading is None
+                    else f'{short} {arrived(item.reading.at, card.now)}')
+    label = gettext('Deffeyes chart, %(unit)s: %(words)s; pH %(ph)s, alkalinity %(alkalinity)s mg/L, DIC %(dic)s '
+                    'mmol/L, calculated CO₂ %(co2)s mg/L; %(view)s') % {
+        'unit': card.unit.code, 'words': words, 'ph': number(analysis.water.ph, 2),
+        'alkalinity': number(analysis.water.alkalinity_mg_l, 0), 'dic': number(analysis.dic, 2),
+        'co2': number(analysis.co2_mg_l, 1), 'view': scale[0]}
+    return DrawnChart(
+        picture=picture, label=label, words=words, tone=tone,
+        zones=tuple(key for key, border in (('co2', analysis.co2), ('nh3', analysis.nh3))
+                    if border.status == Status.CRITICAL),
+        old=bool(made.old), old_text=gettext('last known position'),
+        inputs=gettext('inputs: %(list)s') % {'list': ' · '.join(said)}, names=names,
+        ph_names=tuple((gettext('pH %(ph)s') % {'ph': number(ph, decimals)}, x, y)
+                       for ph, decimals, x, y in picture.ph_names),
+        x_ticks=tuple((number(dic, decimals), x, y) for dic, decimals, x, y in picture.x_ticks),
+        y_ticks=tuple((str(mg), x, y) for mg, x, y in picture.y_ticks), scale=scale)
+
+
+# What a card says of each of the unit's other sampling points.
+POINT_VALUES = (parameters.OXYGEN_MG_L, parameters.TEMPERATURE, parameters.PH)
+
+
+def other_points(card):
+    """((name, (Face, Face, Face)), ...): the unit's sampling points other than its middle one, each with its oxygen,
+    temperature and pH as a card says a value."""
+    return tuple((water.point.name, tuple(face(water.get(code), card.now, parameters.get(code)) for code in POINT_VALUES))
+                 for water in card.water if water.point is not None and water.point.kind != water_read.MIDDLE)
 
 
 def grid_css():

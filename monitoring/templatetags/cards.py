@@ -45,6 +45,18 @@ def ph_window(card):
     return render.ph_window(card)
 
 
+@register.simple_tag
+def other_points(card):
+    """The unit's other sampling points with their oxygen, temperature and pH (render.other_points)."""
+    return render.other_points(card)
+
+
+@register.simple_tag
+def chart(card):
+    """The card's Deffeyes chart as a picture of its own size, with its words (render.DrawnChart)."""
+    return render.chart(card)
+
+
 @register.filter
 def bar(face):
     return render.bar(face)

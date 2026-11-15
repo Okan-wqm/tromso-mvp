@@ -1504,6 +1504,10 @@ msgstr "%(value)s %%"
 msgid "%(value)s %(unit)s"
 msgstr "%(value)s %(unit)s"
 
+#, python-format
+msgid "%(value)s assumed"
+msgstr "%(value)s antatt"
+
 #. Translators: days of cover, e.g. 12.5 days.
 #, python-format
 msgid "%(value)s days"
@@ -3047,6 +3051,9 @@ msgstr "Alkalitetsbånd, øvre (mg/L som CaCO₃)"
 msgid "Alkalinity band, low (mg/L as CaCO₃)"
 msgstr "Alkalitetsbånd, nedre (mg/L som CaCO₃)"
 
+msgid "Alkalinity, mg/L CaCO₃"
+msgstr "Alkalitet, mg/L CaCO₃"
+
 msgid "All"
 msgstr "Alle"
 
@@ -3957,8 +3964,14 @@ msgstr "Mellom 0 og 5000 m: fra havnivå til de høyeste anleggene."
 msgid "Between 10 and 600. Empty uses the system’s 15 seconds."
 msgstr "Mellom 10 og 600. Tomt bruker systemets 15 sekunder."
 
+msgid "Between the CO₂ and the NH₃ limit, outside the alkalinity band"
+msgstr "Mellom CO₂- og NH₃-grensen, utenfor alkalitetsbåndet"
+
 msgid "Between the two doses"
 msgstr "Mellom de to dosene"
+
+msgid "Big"
+msgstr "Stor"
 
 msgid "Binding"
 msgstr "Tilknytning"
@@ -4099,6 +4112,10 @@ msgstr "CO₂"
 
 msgid "CO₂ (mg/L)"
 msgstr "CO₂ (mg/L)"
+
+#, python-format
+msgid "CO₂ > %(limit)s mg/L"
+msgstr "CO₂ > %(limit)s mg/L"
 
 msgid "CO₂ calc."
 msgstr "CO₂ ber."
@@ -4388,6 +4405,16 @@ msgstr "Kanaler uten fersk verdi"
 
 msgid "Charged"
 msgstr "Belastet"
+
+msgid "Chart"
+msgstr "Diagram"
+
+msgid "Chart view"
+msgstr "Diagramvisning"
+
+#, python-format
+msgid "Chart view, %(unit)s"
+msgstr "Diagramvisning, %(unit)s"
 
 msgid "Charts"
 msgstr "Diagrammer"
@@ -4680,6 +4707,9 @@ msgstr "Lukk den"
 
 msgid "Close without filing"
 msgstr "Lukk uten innsending"
+
+msgid "Close-up"
+msgstr "Nær"
 
 msgid "Closed"
 msgstr "Stengt"
@@ -5119,6 +5149,9 @@ msgstr "D-ende"
 msgid "DIC (mmol/L)"
 msgstr "DIC (mmol/L)"
 
+msgid "DIC, mmol/L"
+msgstr "DIC, mmol/L"
+
 msgid "DOI"
 msgstr "DOI"
 
@@ -5266,6 +5299,17 @@ msgstr "Deffeyes-diagram"
 #, python-format
 msgid "Deffeyes chart · %(unit)s"
 msgstr "Deffeyes-diagram · %(unit)s"
+
+#, python-format
+msgid ""
+"Deffeyes chart, %(unit)s: %(words)s; pH %(ph)s, alkalinity %(alkalinity)s mg/L, DIC %(dic)s "
+"mmol/L, calculated CO₂ %(co2)s mg/L; %(view)s"
+msgstr ""
+"Deffeyes-diagram, %(unit)s: %(words)s; pH %(ph)s, alkalitet %(alkalinity)s mg/L, DIC %(dic)s "
+"mmol/L, beregnet CO₂ %(co2)s mg/L; %(view)s"
+
+msgid "Deffeyes chart, drawn"
+msgstr "Deffeyes-diagram, tegnet"
 
 msgid "Definition"
 msgstr "Definisjon"
@@ -5550,6 +5594,9 @@ msgstr "Doseenhet"
 
 msgid "Dose · amount"
 msgstr "Dose · mengde"
+
+msgid "Dosing advice"
+msgstr "Doseringsråd"
 
 msgid "Dosing path"
 msgstr "Doseringsbane"
@@ -6864,6 +6911,9 @@ msgstr "Drivstofftype"
 msgid "Full name of the site manager"
 msgstr "Lokalitetslederens fulle navn"
 
+msgid "Full scale"
+msgstr "Full skala"
+
 msgid "Full screen"
 msgstr "Fullskjerm"
 
@@ -7623,6 +7673,14 @@ msgstr ""
 msgid "In progress"
 msgstr "Pågår"
 
+#, python-format
+msgid "In the CO₂ region: %(margin)s pH past the limit"
+msgstr "I CO₂-området: %(margin)s pH forbi grensen"
+
+#, python-format
+msgid "In the NH₃ region: %(margin)s pH past the limit"
+msgstr "I NH₃-området: %(margin)s pH forbi grensen"
+
 msgid "In the library"
 msgstr "I biblioteket"
 
@@ -7631,6 +7689,13 @@ msgstr "I parameterens enhet. 0: ikke noe dødbånd."
 
 msgid "In the quantity’s unit; for a rate, the change over the time below."
 msgstr "I parameterens enhet; for en endringsrate, endringen over tidsrommet nedenfor."
+
+msgid "In the safe zone"
+msgstr "I den trygge sonen"
+
+#, python-format
+msgid "In the safe zone · %(margin)s pH to the CO₂ limit"
+msgstr "I den trygge sonen · %(margin)s pH til CO₂-grensen"
 
 msgid "In time"
 msgstr "I tide"
@@ -8052,6 +8117,10 @@ msgstr "Siste gode verdi"
 
 msgid "Last good value at"
 msgstr "Siste gode verdi tidspunkt"
+
+#, python-format
+msgid "Last known position · old: %(values)s"
+msgstr "Siste kjente posisjon · gammelt: %(values)s"
 
 msgid "Last known position."
 msgstr "Siste kjente posisjon."
@@ -8622,6 +8691,10 @@ msgstr "Minutter etter starten uten innstempling før en person vises som fravæ
 msgid "Missing"
 msgstr "Mangler"
 
+#, python-format
+msgid "Missing: %(why)s."
+msgstr "Mangler: %(why)s."
+
 msgid "Mixed"
 msgstr "Blandet"
 
@@ -8783,6 +8856,10 @@ msgstr "NH₃-N"
 
 msgid "NH₃-N (mg/L)"
 msgstr "NH₃-N (mg/L)"
+
+#, python-format
+msgid "NH₃-N > %(limit)s mg/L"
+msgstr "NH₃-N > %(limit)s mg/L"
 
 msgid "NH₃-N limit"
 msgstr "NH₃-N-grense"
@@ -9036,6 +9113,9 @@ msgstr "Ingen kanal på apparatet samsvarer"
 msgid "No channels yet: add them on the Channels page."
 msgstr "Ingen kanaler ennå: legg dem til på Kanaler-siden."
 
+msgid "No chart"
+msgstr "Ingen diagram"
+
 msgid "No check"
 msgstr "Ingen kontroll"
 
@@ -9068,6 +9148,9 @@ msgstr "Ingen apparater publiserer på dette emnet"
 
 msgid "No diagnosis"
 msgstr "Ingen diagnose"
+
+msgid "No dosing advice"
+msgstr "Ingen doseringsråd"
 
 msgid "No expiry date recorded."
 msgstr "Ingen utløpsdato registrert."
@@ -9260,6 +9343,9 @@ msgstr "Ingen operasjon passer med disse filtrene."
 msgid "No operation recorded yet"
 msgstr "Ingen operasjon registrert ennå"
 
+msgid "No other sampling point"
+msgstr "Ingen andre prøvepunkter"
+
 msgid "No other table."
 msgstr "Ingen andre tabeller."
 
@@ -9302,6 +9388,10 @@ msgstr "Ingen rader samsvarer."
 #, python-format
 msgid "No rows match. <a href=\"%(url)s\">Clear the search and filters</a>."
 msgstr "Ingen rader samsvarer. <a href=\"%(url)s\">Fjern søket og filtrene</a>."
+
+#, python-format
+msgid "No safe zone: %(why)s"
+msgstr "Ingen trygg sone: %(why)s"
 
 msgid "No samples match these filters."
 msgstr "Ingen prøver samsvarer med disse filtrene."
@@ -9373,6 +9463,9 @@ msgstr "Ingen kar"
 
 msgid "No tank is placed."
 msgstr "Ingen kar er plassert."
+
+msgid "No target, reagent or dosing volume is set for these fish yet."
+msgstr "Ingen mål, reagens eller doseringsvolum er satt for denne fisken ennå."
 
 msgid "No task completed or cancelled yet"
 msgstr "Ingen oppgaver fullført eller avlyst ennå"
@@ -9746,6 +9839,9 @@ msgstr "Ingen beholdning passer med disse filtrene."
 
 msgid "Nothing in the store yet"
 msgstr "Ingenting på lager ennå"
+
+msgid "Nothing is assumed for a missing value."
+msgstr "Ingenting antas for en manglende verdi."
 
 msgid "Nothing is filled in for a missing value."
 msgstr "Ingenting fylles inn for en manglende verdi."
@@ -10341,6 +10437,9 @@ msgstr "Annet språk"
 
 msgid "Other parasites (e.g. AGD)"
 msgstr "Andre parasitter (f.eks. AGD)"
+
+msgid "Other sampling points"
+msgstr "Andre prøvepunkter"
 
 msgid "Other species"
 msgstr "Andre arter"
@@ -12769,6 +12868,9 @@ msgstr "Sett ut en fiskegruppe til"
 msgid "Stock at the month’s end"
 msgstr "Beholdning ved månedsslutt"
 
+msgid "Stock in one line"
+msgstr "Bestand på én linje"
+
 msgid "Stock lines"
 msgstr "Beholdningslinjer"
 
@@ -13352,6 +13454,9 @@ msgstr "Kanalen er ikke knyttet noe sted nå."
 
 msgid "The channel was in maintenance."
 msgstr "Kanalen var under vedlikehold."
+
+msgid "The chart cannot be drawn"
+msgstr "Diagrammet kan ikke tegnes"
 
 msgid "The chart cannot be drawn: this point has no recent value of"
 msgstr "Diagrammet kan ikke tegnes: dette punktet har ingen ferske verdier for"
@@ -16924,6 +17029,10 @@ msgstr "rensefisk %(batches)s: %(fish)s fisk"
 msgid "client reference"
 msgstr "klientreferanse"
 
+#, python-format
+msgid "close view · ×%(zoom)s"
+msgstr "nærbilde · ×%(zoom)s"
+
 msgid "closed report"
 msgstr "lukket rapport"
 
@@ -17487,6 +17596,9 @@ msgstr "fra %(start)s til %(end)s"
 msgid "from %(weight)s g"
 msgstr "fra %(weight)s g"
 
+msgid "full scale · axes from zero"
+msgstr "full skala · akser fra null"
+
 msgid "g"
 msgstr "g"
 
@@ -17559,6 +17671,10 @@ msgstr "innhentingsstatus"
 msgid "ingest statuses"
 msgstr "innhentingsstatuser"
 
+#, python-format
+msgid "inputs: %(list)s"
+msgstr "inndata: %(list)s"
+
 msgid "inventory item"
 msgstr "lagervare"
 
@@ -17594,6 +17710,9 @@ msgstr "kunnskapsoppføring"
 
 msgid "lab"
 msgstr "laboratorium"
+
+msgid "last known position"
+msgstr "siste kjente posisjon"
 
 #, python-format
 msgid "last known position, old: %(values)s"
@@ -18090,6 +18209,9 @@ msgstr "rolle"
 msgid "roles"
 msgstr "roller"
 
+msgid "safe"
+msgstr "trygg"
+
 msgid "sampling point"
 msgstr "prøvepunkt"
 
@@ -18246,6 +18368,9 @@ msgstr "den 7. i neste måned"
 msgid "the board’s default"
 msgstr "panelets standard"
 
+msgid "the close view is the full scale here: the water is far past a limit"
+msgstr "nærbildet er full skala her: vannet er langt forbi en grense"
+
 msgid "the layout being designed"
 msgstr "oppsettet som utformes"
 
@@ -18285,6 +18410,9 @@ msgstr "visningen valgt på denne skjermen"
 
 msgid "the whole site"
 msgstr "hele lokaliteten"
+
+msgid "this card’s own scale"
+msgstr "skalaen gjelder dette kortet"
 
 msgid "to"
 msgstr "til"

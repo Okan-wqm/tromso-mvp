@@ -14,7 +14,7 @@
 // #monitor-announce data-states: monitoring/read.py STATES); a card never moves, so a page is always the same cards.
 // A wall of cards that flow (Simple, Detailed) is left as it is: the page scrolls. Without this script the fitted
 // cards stand four across and the grid scrolls.
-import { roomy, slots, worstPage } from './wall/slots.js';
+import { fillUnit, roomy, slots, worstPage } from './wall/slots.js';
 
 const number = (value: string | null | undefined): number => Number.parseFloat(value ?? '') || 0;
 
@@ -92,7 +92,9 @@ function lay(keep: boolean): void {
   const own = getComputedStyle(fitted.card);
   const padX = number(own.paddingLeft) + number(own.paddingRight) + number(own.borderLeftWidth) + number(own.borderRightWidth);
   const padY = number(own.paddingTop) + number(own.paddingBottom) + number(own.borderTopWidth) + number(own.borderBottomWidth);
-  const chosen = slots(cards.length, width, height, gap, fitted.mw, fitted.mh, undefined, padX, padY);
+  // (a full-height card, data-fill, keeps a whole row of the screen: more of them than fit side by side turn pages)
+  const least = fitted.card.hasAttribute('data-fill') ? fillUnit(width, height, fitted.mw, fitted.mh, padX, padY) : undefined;
+  const chosen = slots(cards.length, width, height, gap, fitted.mw, fitted.mh, least, padX, padY);
   wall.style.setProperty('--cols', String(chosen.cols));
   wall.style.setProperty('--rows', String(chosen.rows));
   wall.style.setProperty('--mh', String(fitted.mh));

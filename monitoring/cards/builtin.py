@@ -3,7 +3,10 @@ templates, value for value (monitoring/tests/test_golden.py), Operator puts the 
 (offered, not a default: the owner decides after a trial on the wall), and Small is the overview card of a wide
 monitor (owner decision 7, 2026-11-12): the state, the worst reason, the oxygen with its saturation, the temperature,
 the pH, the calculated CO₂ and the pH window, FITTED (its measure in card units, catalogue.MEASURE_W), so every tank
-of a hall is on one screen. Migrations 0002 and 0005 froze the same layouts in the database (a test keeps the two
+of a hall is on one screen; Big is the card of one tank read from across the room (owner decisions 4, 10, 11, 12): its
+four first values large, the unit's Deffeyes chart DOMINANT (more than half of the card), then every value with where
+it came from and when, what to dose, the other sampling points and the stock, FITTED too. Migrations 0002, 0005 and
+0006 froze the same layouts in the database (a test keeps the two
 equal); a trigger keeps any writer from changing or deleting them, so a change to a built-in is a new migration, never
 an edit. To change one for a farm, copy it.
 
@@ -16,6 +19,7 @@ SIMPLE = UUID('5f1c2a6e-0000-4000-8000-00000000c001')
 DETAILED = UUID('5f1c2a6e-0000-4000-8000-00000000c002')
 OPERATOR = UUID('5f1c2a6e-0000-4000-8000-00000000c003')
 SMALL = UUID('5f1c2a6e-0000-4000-8000-00000000c004')
+BIG = UUID('5f1c2a6e-0000-4000-8000-00000000c005')
 # The one global rule: every unit no other rule names gets Simple.
 GLOBAL_RULE = UUID('5f1c2a6e-0000-4000-8000-00000000a001')
 
@@ -69,12 +73,28 @@ SMALL_LAYOUT = {'schema': 1, 'widgets': [
 ]}
 SMALL_MEASURE = (31, 10)
 
+# Twenty-one rows of a card 48 units wide and 61 high: the four first values on two, the chart on twelve (four sevenths
+# of the card's rows), every value of the middle point on five, then what to dose, the other points and the stock.
+BIG_LAYOUT = {'schema': 1, 'widgets': [
+    _w('w1', 'value', 0, 0, 3, 2, bind={'parameter': 'oxygen_mg_l'}),
+    _w('w2', 'value', 3, 0, 3, 2, bind={'parameter': 'temperature_c'}),
+    _w('w3', 'value', 6, 0, 3, 2, bind={'parameter': 'ph'}),
+    _w('w4', 'value', 9, 0, 3, 2, bind={'parameter': 'co2_calc_mg_l'}),
+    _w('w5', 'chart', 0, 2, 12, 12),
+    _w('w6', 'water_table', 0, 14, 12, 5, opts={'points': 'middle', 'parameters': 'all'}),
+    _w('w7', 'dosing', 0, 19, 4, 2),
+    _w('w8', 'points', 4, 19, 4, 2),
+    _w('w9', 'stock', 8, 19, 4, 2),
+]}
+BIG_MEASURE = (48, 61)
+
 # {id: (name msgid, layout, the template its flip link shows)}
 BUILTINS = {
     SIMPLE: (gettext_noop('Simple'), SIMPLE_LAYOUT, DETAILED),
     DETAILED: (gettext_noop('Detailed'), DETAILED_LAYOUT, SIMPLE),
     OPERATOR: (gettext_noop('Operator view'), OPERATOR_LAYOUT, DETAILED),
     SMALL: (gettext_noop('Small'), SMALL_LAYOUT, DETAILED),
+    BIG: (gettext_noop('Big'), BIG_LAYOUT, DETAILED),
 }
 # {id: (width, height)} of the fitted built-ins, in card units.
-MEASURES = {SMALL: SMALL_MEASURE}
+MEASURES = {SMALL: SMALL_MEASURE, BIG: BIG_MEASURE}

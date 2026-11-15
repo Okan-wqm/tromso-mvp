@@ -21,6 +21,10 @@ FLOOR = 14
 # figure (static/css/monitor.css data-roomy).
 ROOMY = 1.26
 MAX_COLS, MAX_ROWS = 16, 12
+# A FULL-HEIGHT card (its measure is higher than wide: the Big card, read from across the room) keeps at least this
+# share of the unit one card alone on the screen would have: the wall turns pages rather than set more of them side by
+# side and shrink them (`fill_unit` is its `min_u`).
+FILL = 0.97
 EPSILON = 1e-6
 
 Slots = namedtuple('Slots', 'cols rows u pages')
@@ -49,6 +53,11 @@ def slots(count, width, height, gap, mw, mh, min_u=FLOOR, pad_x=0, pad_y=0):
     if whole is not None and whole.u >= least - EPSILON:
         return whole
     return paged or whole or Slots(1, 1, FLOOR, max(1, count))
+
+
+def fill_unit(width, height, mw, mh, pad_x=0, pad_y=0):
+    """The smallest unit (`min_u`) of a wall of full-height cards: FILL of the unit one card alone would have."""
+    return FILL * max(min((width - pad_x) / mw, (height - pad_y) / mh), 0)
 
 
 def roomy(chosen, width, height, gap, mw, mh, pad_x=0, pad_y=0):

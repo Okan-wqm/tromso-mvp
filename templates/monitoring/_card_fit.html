@@ -8,7 +8,7 @@
    short (monitoring/read.py Brief: the value against the bound it is past) and how many more there are; every reason
    is there in full for a screen reader and in the titles, and on the card the flip link shows. A card with no reason
    says its fish there. {% endcomment %}{% with fit=chosen.fit_classes %}
-<article class="monitor-card monitor-{{ state.key }} {{ fit.0 }}" data-key="card:{{ unit.pk }}" data-state="{{ state.key }}"{% if state.stale %} data-stale{% endif %} data-template="{{ chosen.template.pk|default:'' }}"{% if row.preview %} data-preview{% endif %} id="card-{{ unit.pk }}" aria-labelledby="card-title-{{ unit.pk }}">
+<article class="monitor-card monitor-{{ state.key }} {{ fit.0 }}" data-key="card:{{ unit.pk }}" data-state="{{ state.key }}"{% if state.stale %} data-stale{% endif %} data-template="{{ chosen.template.pk|default:'' }}"{% if chosen.fill %} data-fill{% endif %}{% if row.preview %} data-preview{% endif %} id="card-{{ unit.pk }}" aria-labelledby="card-title-{{ unit.pk }}">
   <header class="monitor-card-head tw:items-baseline tw:min-w-0">
     <div class="tw:flex tw:items-baseline tw:gap-3 tw:min-w-0">
       <h3 id="card-title-{{ unit.pk }}" class="tw:m-0 tw:text-u-xl tw:font-semibold tw:whitespace-nowrap"><a class="tw:text-ink-1 tw:no-underline" href="{% url 'farm:production_units' %}?unit={{ unit.pk }}">{{ unit.code }}</a></h3>

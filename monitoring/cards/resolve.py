@@ -4,7 +4,7 @@
     species of its fish  >  for its kind  >  the board's default (no board: the page's own Simple/Detailed choice)  >
     the global rule  >  Simple from the code (no rule at all: a database flushed by a test, never a farm)
 
-The screen's VIEW (`mode=small`) is how the person at this screen looks at its units now: every card of it as that
+The screen's VIEW (`mode=small`, `mode=big`) is how the person at this screen looks at its units now: every card of it as that
 template, on a board or not, whatever the rules say (owner decision 7, 2026-11-12: "the user chooses how a screen
 shows the units", the overview shows EVERY unit as a small card); it is the address's, never stored. The board's row is
 the person arranging this wall; the board's default sits below the rules, as its default mode did (owner decision 1). A flip (`?flip=`) shows the template's flip target and the link goes back. Only live templates and
@@ -46,7 +46,7 @@ BECAUSE = {
 # The templates a page's `mode=` chooses (no board), as the cards before templates did: below the rules.
 ADDRESS_TEMPLATES = {'simple': builtin.SIMPLE, 'detailed': builtin.DETAILED}
 # The views a screen's `mode=` chooses: every card of the screen as that template, above everything.
-VIEW_TEMPLATES = {'small': builtin.SMALL}
+VIEW_TEMPLATES = {'small': builtin.SMALL, 'big': builtin.BIG}
 # Templates whose stored layout was refused, logged once each in this process.
 LOGGED = set()
 
@@ -85,6 +85,13 @@ class Resolved:
         return measure if measure and not self.error and 0 < self.rows <= catalogue.FIT_ROWS else None
 
     @property
+    def fill(self):
+        """A FULL-HEIGHT card: fitted, and higher than it is wide (the Big card). A wall gives it a whole row of the
+        screen and turns pages rather than set more of them side by side (monitoring/cards/slots.py FILL)."""
+        measure = self.measure
+        return bool(measure) and measure[1] > measure[0]
+
+    @property
     def fit_classes(self):
         """The classes of a fitted card and of its grid (static/css/card-grid.css): ('is-fit mw-31 mh-10', 'gr-5')."""
         width, height = self.measure
@@ -113,21 +120,26 @@ class Rules:
 class Choice:
     """What the page chooses: the screen's view (`mode=small`: every card as that template), the board's rows
     ({unit id: template id}) and default, or with no board the page's own template (`mode=simple|detailed`), and the
-    units flipped."""
+    units flipped. `chart`: the view the screen's charts are drawn in ('' close, 'full' full scale: `?chart=full`), and
+    `zoom`: the units whose chart is drawn in the other view (`?zoom=<unit>,...`)."""
     rows: dict = field(default_factory=dict)
     board: object = None
     address: object = None
     flip: frozenset = frozenset()
     preview: object = None          # a Resolved every card is drawn with (the designer's preview), no query
     view: object = None             # the template every card of the screen is drawn with (VIEW_TEMPLATES)
+    chart: str = ''
+    zoom: frozenset = frozenset()
 
     @classmethod
     def of(cls, board, params):
         view = VIEW_TEMPLATES.get(params.mode)
         if board is not None:
             return cls(rows={row.unit_id: row.template_id for row in board.rows.all() if row.template_id},
-                       board=board.default_template_id, flip=params.flip, view=view)
-        return cls(address=ADDRESS_TEMPLATES.get(params.mode), flip=params.flip, view=view)
+                       board=board.default_template_id, flip=params.flip, view=view, chart=params.chart,
+                       zoom=params.zoom)
+        return cls(address=ADDRESS_TEMPLATES.get(params.mode), flip=params.flip, view=view, chart=params.chart,
+                   zoom=params.zoom)
 
 
 def _layout(template):

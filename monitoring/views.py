@@ -79,8 +79,8 @@ def _grid(request, params, board, now=None):
     found = read.cards(units, request.user, resolve.Choice.of(board, params), params.occupancy, now)
     farm = Tank.objects.count()
     return {
-        'rows': [{'card': card, 'flip': _flip_urls(params, card)} for card in found], 'band': read.band(found),
-        'modes': _modes(params, board), 'params': params, 'card_width': board.card_width if board is not None else CardWidth.AUTO,
+        'rows': [{'card': card, 'flip': _flip_urls(params, card), 'zoom': _zoom_urls(params, card)} for card in found],
+        'band': read.band(found), 'modes': _modes(params, board), 'chart_views': _chart_views(params, found), 'params': params, 'card_width': board.card_width if board is not None else CardWidth.AUTO,
         'computed_at': timezone.make_naive(now, company_zone()),     # naive: a template shows an aware one in UTC
         'shown': len(found), 'on_farm': farm,
         'count_line': ngettext('%(shown)d of %(farm)d unit shown', '%(shown)d of %(farm)d units shown', farm)
@@ -92,8 +92,11 @@ def _grid(request, params, board, now=None):
 # card of the screen, whatever the rules and the board say (monitoring/cards/resolve.py). Without a board, '' is the
 # farm's own rules (Simple where it has made none) and Detailed the page's choice below them; on a board, '' is the
 # board's own cards.
-MODE_CHOICES = ((read.SMALL, gettext_lazy('Small')), ('', gettext_lazy('Simple')), (read.DETAILED, gettext_lazy('Detailed')))
-BOARD_CHOICES = ((read.SMALL, gettext_lazy('Small')), ('', gettext_lazy('As the board')))
+MODE_CHOICES = ((read.SMALL, gettext_lazy('Small')), (read.BIG, gettext_lazy('Big')), ('', gettext_lazy('Simple')),
+                (read.DETAILED, gettext_lazy('Detailed')))
+BOARD_CHOICES = ((read.SMALL, gettext_lazy('Small')), (read.BIG, gettext_lazy('Big')), ('', gettext_lazy('As the board')))
+# The two views of a chart's picture, as the band's and a card's switch name them (owner decision 12).
+CHART_CHOICES = (('', gettext_lazy('Close-up')), (read.CHART_FULL, gettext_lazy('Full scale')))
 
 
 def _modes(params, board):
@@ -102,11 +105,38 @@ def _modes(params, board):
     them."""
     page = reverse('monitoring:monitor')
     on_board = board is not None
-    chosen = params.mode if params.mode == read.SMALL or (not on_board and params.mode == read.DETAILED) else ''
+    chosen = params.mode if params.mode in (read.SMALL, read.BIG) or (not on_board and params.mode == read.DETAILED) else ''
     found = []
     for key, label in (BOARD_CHOICES if on_board else MODE_CHOICES):
         query = params.canonical(mode=key, flip=frozenset())
         found.append({'label': label, 'url': f'{page}?{query}' if query else page, 'current': key == chosen})
+    return found
+
+
+def _address(query, name='monitoring:monitor'):
+    return f'{reverse(name)}?{query}' if query else reverse(name)
+
+
+def _chart_views(params, found):
+    """The band's switch of the screen's charts, when a card of the screen draws one: [{label, url, poll, current}],
+    each the page with every chart in that view and no card differing. Links, as the cards' switch."""
+    if not any(view.type == 'chart' for card in found for view in card.widgets):
+        return []
+    return [{'label': label, 'current': key == params.chart,
+             'url': _address(params.canonical(chart=key, zoom=frozenset())),
+             'poll': _address(params.canonical(chart=key, zoom=frozenset()), POLL)} for key, label in CHART_CHOICES]
+
+
+def _zoom_urls(params, card):
+    """A card's own switch of its chart's view: [{label, url, poll, current}]. The address keeps the cards that
+    differ from the screen's view (`zoom`), as it keeps the flipped ones."""
+    unit, found = str(card.unit.pk), []
+    differs = unit in params.zoom
+    for key, label in CHART_CHOICES:
+        current = (key == params.chart) != differs
+        zoom = params.zoom if current else params.zoom ^ {unit}
+        query = params.canonical(zoom=frozenset(zoom))
+        found.append({'label': label, 'current': current, 'url': _address(query), 'poll': _address(query, POLL)})
     return found
 
 

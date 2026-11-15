@@ -1512,6 +1512,10 @@ msgstr "%%%(value)s"
 msgid "%(value)s %(unit)s"
 msgstr "%(value)s %(unit)s"
 
+#, python-format
+msgid "%(value)s assumed"
+msgstr "%(value)s varsayıldı"
+
 #. Translators: days of cover, e.g. 12.5 days.
 #, python-format
 msgid "%(value)s days"
@@ -3057,6 +3061,9 @@ msgstr "Alkalinite aralığı, üst (mg/L CaCO₃ olarak)"
 msgid "Alkalinity band, low (mg/L as CaCO₃)"
 msgstr "Alkalinite aralığı, alt (mg/L CaCO₃ olarak)"
 
+msgid "Alkalinity, mg/L CaCO₃"
+msgstr "Alkalinite, mg/L CaCO₃"
+
 msgid "All"
 msgstr "Tümü"
 
@@ -3963,8 +3970,14 @@ msgstr "0 ile 5000 m arasında: deniz seviyesinden en yüksek çiftliklere kadar
 msgid "Between 10 and 600. Empty uses the system’s 15 seconds."
 msgstr "10 ile 600 arasında. Boş bırakılırsa sistemin 15 saniyesi kullanılır."
 
+msgid "Between the CO₂ and the NH₃ limit, outside the alkalinity band"
+msgstr "CO₂ ve NH₃ sınırı arasında, alkalinite bandının dışında"
+
 msgid "Between the two doses"
 msgstr "İki doz arasında"
+
+msgid "Big"
+msgstr "Büyük"
 
 msgid "Binding"
 msgstr "Atama"
@@ -4110,6 +4123,10 @@ msgstr "CO₂"
 
 msgid "CO₂ (mg/L)"
 msgstr "CO₂ (mg/L)"
+
+#, python-format
+msgid "CO₂ > %(limit)s mg/L"
+msgstr "CO₂ > %(limit)s mg/L"
 
 msgid "CO₂ calc."
 msgstr "CO₂ hesap"
@@ -4401,6 +4418,16 @@ msgstr "Güncel değeri olmayan kanallar"
 
 msgid "Charged"
 msgstr "Sayılan"
+
+msgid "Chart"
+msgstr "Grafik"
+
+msgid "Chart view"
+msgstr "Grafik görünümü"
+
+#, python-format
+msgid "Chart view, %(unit)s"
+msgstr "Grafik görünümü, %(unit)s"
 
 msgid "Charts"
 msgstr "Grafikler"
@@ -4697,6 +4724,9 @@ msgstr "Kapat"
 
 msgid "Close without filing"
 msgstr "Bildirmeden kapat"
+
+msgid "Close-up"
+msgstr "Yakın"
 
 msgid "Closed"
 msgstr "Kapalı"
@@ -5136,6 +5166,9 @@ msgstr "D-uçlu"
 msgid "DIC (mmol/L)"
 msgstr "DIC (mmol/L)"
 
+msgid "DIC, mmol/L"
+msgstr "DIC, mmol/L"
+
 msgid "DOI"
 msgstr "DOI"
 
@@ -5281,6 +5314,17 @@ msgstr "Deffeyes grafiği"
 #, python-format
 msgid "Deffeyes chart · %(unit)s"
 msgstr "Deffeyes grafiği · %(unit)s"
+
+#, python-format
+msgid ""
+"Deffeyes chart, %(unit)s: %(words)s; pH %(ph)s, alkalinity %(alkalinity)s mg/L, DIC %(dic)s "
+"mmol/L, calculated CO₂ %(co2)s mg/L; %(view)s"
+msgstr ""
+"Deffeyes grafiği, %(unit)s: %(words)s; pH %(ph)s, alkalinite %(alkalinity)s mg/L, DIC %(dic)s "
+"mmol/L, hesaplanan CO₂ %(co2)s mg/L; %(view)s"
+
+msgid "Deffeyes chart, drawn"
+msgstr "Deffeyes grafiği, çizilmiş"
 
 msgid "Definition"
 msgstr "Tanım"
@@ -5565,6 +5609,9 @@ msgstr "Doz birimi"
 
 msgid "Dose · amount"
 msgstr "Doz · miktar"
+
+msgid "Dosing advice"
+msgstr "Dozlama önerisi"
 
 msgid "Dosing path"
 msgstr "Dozlama yolu"
@@ -6885,6 +6932,9 @@ msgstr "Yakıt tipi"
 msgid "Full name of the site manager"
 msgstr "Saha sorumlusunun tam adı"
 
+msgid "Full scale"
+msgstr "Tam ölçek"
+
 msgid "Full screen"
 msgstr "Tam ekran"
 
@@ -7649,6 +7699,14 @@ msgstr ""
 msgid "In progress"
 msgstr "Devam ediyor"
 
+#, python-format
+msgid "In the CO₂ region: %(margin)s pH past the limit"
+msgstr "CO₂ bölgesinde: sınırın %(margin)s pH ötesinde"
+
+#, python-format
+msgid "In the NH₃ region: %(margin)s pH past the limit"
+msgstr "NH₃ bölgesinde: sınırın %(margin)s pH ötesinde"
+
 msgid "In the library"
 msgstr "Kütüphanede"
 
@@ -7657,6 +7715,13 @@ msgstr "Parametrenin biriminde. 0: ölü bant yok."
 
 msgid "In the quantity’s unit; for a rate, the change over the time below."
 msgstr "Parametrenin biriminde; hız için aşağıdaki süre içindeki değişim."
+
+msgid "In the safe zone"
+msgstr "Güvenli bölgede"
+
+#, python-format
+msgid "In the safe zone · %(margin)s pH to the CO₂ limit"
+msgstr "Güvenli bölgede · CO₂ sınırına %(margin)s pH"
 
 msgid "In time"
 msgstr "Zamanında"
@@ -8078,6 +8143,10 @@ msgstr "Son iyi değer"
 
 msgid "Last good value at"
 msgstr "Son iyi değer zamanı"
+
+#, python-format
+msgid "Last known position · old: %(values)s"
+msgstr "Son bilinen konum · eski: %(values)s"
 
 msgid "Last known position."
 msgstr "Son bilinen konum."
@@ -8650,6 +8719,10 @@ msgstr ""
 msgid "Missing"
 msgstr "Eksik"
 
+#, python-format
+msgid "Missing: %(why)s."
+msgstr "Eksik: %(why)s."
+
 msgid "Mixed"
 msgstr "Karışık"
 
@@ -8811,6 +8884,10 @@ msgstr "NH₃-N"
 
 msgid "NH₃-N (mg/L)"
 msgstr "NH₃-N (mg/L)"
+
+#, python-format
+msgid "NH₃-N > %(limit)s mg/L"
+msgstr "NH₃-N > %(limit)s mg/L"
 
 msgid "NH₃-N limit"
 msgstr "NH₃-N sınırı"
@@ -9060,6 +9137,9 @@ msgstr "Cihazın hiçbir kanalı eşleşmiyor"
 msgid "No channels yet: add them on the Channels page."
 msgstr "Henüz kanal yok: Kanallar sayfasından ekleyin."
 
+msgid "No chart"
+msgstr "Grafik yok"
+
 msgid "No check"
 msgstr "Denetim yok"
 
@@ -9092,6 +9172,9 @@ msgstr "Bu konuda yayın yapan cihaz yok"
 
 msgid "No diagnosis"
 msgstr "Tanı yok"
+
+msgid "No dosing advice"
+msgstr "Dozlama önerisi yok"
 
 msgid "No expiry date recorded."
 msgstr "Son kullanma tarihi kaydedilmemiş."
@@ -9282,6 +9365,9 @@ msgstr "Bu filtrelere uyan işlem yok."
 msgid "No operation recorded yet"
 msgstr "Henüz işlem kaydedilmedi"
 
+msgid "No other sampling point"
+msgstr "Başka örnekleme noktası yok"
+
 msgid "No other table."
 msgstr "Başka tablo yok."
 
@@ -9324,6 +9410,10 @@ msgstr "Eşleşen satır yok."
 #, python-format
 msgid "No rows match. <a href=\"%(url)s\">Clear the search and filters</a>."
 msgstr "Eşleşen satır yok. <a href=\"%(url)s\">Aramayı ve filtreleri temizleyin</a>."
+
+#, python-format
+msgid "No safe zone: %(why)s"
+msgstr "Güvenli bölge yok: %(why)s"
 
 msgid "No samples match these filters."
 msgstr "Bu filtrelere uyan numune yok."
@@ -9393,6 +9483,9 @@ msgstr "Tank yok"
 
 msgid "No tank is placed."
 msgstr "Yerleştirilmiş tank yok."
+
+msgid "No target, reagent or dosing volume is set for these fish yet."
+msgstr "Bu balıklar için henüz hedef, reaktif veya dozlama hacmi tanımlanmadı."
 
 msgid "No task completed or cancelled yet"
 msgstr "Henüz tamamlanan veya iptal edilen görev yok"
@@ -9768,6 +9861,9 @@ msgstr "Bu filtrelere uyan stok yok."
 
 msgid "Nothing in the store yet"
 msgstr "Depoda henüz hiçbir şey yok"
+
+msgid "Nothing is assumed for a missing value."
+msgstr "Eksik değer için hiçbir şey varsayılmaz."
 
 msgid "Nothing is filled in for a missing value."
 msgstr "Eksik bir değer için hiçbir şey doldurulmaz."
@@ -10366,6 +10462,9 @@ msgstr "Başka bir dil"
 
 msgid "Other parasites (e.g. AGD)"
 msgstr "Diğer parazitler (örn. AGD)"
+
+msgid "Other sampling points"
+msgstr "Diğer örnekleme noktaları"
 
 msgid "Other species"
 msgstr "Diğer balık türleri"
@@ -12798,6 +12897,9 @@ msgstr "Başka bir parti stokla"
 msgid "Stock at the month’s end"
 msgstr "Ay sonundaki stok"
 
+msgid "Stock in one line"
+msgstr "Tek satırda stok"
+
 msgid "Stock lines"
 msgstr "Stok satırları"
 
@@ -13384,6 +13486,9 @@ msgstr "Kanal şu anda hiçbir yere atanmamış."
 
 msgid "The channel was in maintenance."
 msgstr "Kanal bakımdaydı."
+
+msgid "The chart cannot be drawn"
+msgstr "Grafik çizilemiyor"
 
 msgid "The chart cannot be drawn: this point has no recent value of"
 msgstr "Grafik çizilemiyor: bu noktanın güncel bir değeri yok:"
@@ -16952,6 +17057,10 @@ msgstr "temizleyici balık %(batches)s: %(fish)s balık"
 msgid "client reference"
 msgstr "istemci referansı"
 
+#, python-format
+msgid "close view · ×%(zoom)s"
+msgstr "yakın görünüm · ×%(zoom)s"
+
 msgid "closed report"
 msgstr "kapatılmış rapor"
 
@@ -17517,6 +17626,9 @@ msgstr "%(start)s – %(end)s"
 msgid "from %(weight)s g"
 msgstr "%(weight)s g ve üstü"
 
+msgid "full scale · axes from zero"
+msgstr "tam ölçek · eksenler sıfırdan"
+
 msgid "g"
 msgstr "g"
 
@@ -17589,6 +17701,10 @@ msgstr "veri alım durumu"
 msgid "ingest statuses"
 msgstr "veri alım durumları"
 
+#, python-format
+msgid "inputs: %(list)s"
+msgstr "girdiler: %(list)s"
+
 msgid "inventory item"
 msgstr "stok kalemi"
 
@@ -17624,6 +17740,9 @@ msgstr "bilgi kaydı"
 
 msgid "lab"
 msgstr "laboratuvar"
+
+msgid "last known position"
+msgstr "son bilinen konum"
 
 #, python-format
 msgid "last known position, old: %(values)s"
@@ -18120,6 +18239,9 @@ msgstr "rol"
 msgid "roles"
 msgstr "roller"
 
+msgid "safe"
+msgstr "güvenli"
+
 msgid "sampling point"
 msgstr "numune noktası"
 
@@ -18276,6 +18398,9 @@ msgstr "sonraki ayın 7’si"
 msgid "the board’s default"
 msgstr "panonun varsayılanı"
 
+msgid "the close view is the full scale here: the water is far past a limit"
+msgstr "yakın görünüm burada tam ölçek: su bir sınırın çok ötesinde"
+
 msgid "the layout being designed"
 msgstr "tasarlanan yerleşim"
 
@@ -18315,6 +18440,9 @@ msgstr "bu ekranda seçilen görünüm"
 
 msgid "the whole site"
 msgstr "tüm saha"
+
+msgid "this card’s own scale"
+msgstr "ölçek bu karta özgü"
 
 msgid "to"
 msgstr "bitiş"

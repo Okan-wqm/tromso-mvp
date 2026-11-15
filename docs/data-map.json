@@ -15222,6 +15222,7 @@
         "farm/tests/test_migration_altitude.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_migration_site_zone.py",
+        "farm/tests/test_overview_truth.py",
         "farm/tests/test_private_contacts.py",
         "farm/tests/test_production_departments.py",
         "farm/tests/test_protocols.py",

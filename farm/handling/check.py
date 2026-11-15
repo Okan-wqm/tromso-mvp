@@ -165,6 +165,11 @@ class Assessment:
     def messages(self):
         return [warning.message() for warning in self.warnings]
 
+    @property
+    def second_person(self):
+        """Why these warnings cannot be gone past by a tick, or '': a second person must approve (M-27)."""
+        return second_person_text() if needs_second_person(self) else ''
+
 
 def _batches_in(unit, day):
     """The production batches in the unit at the start of the day (at its end when it was empty then): the fish a
@@ -371,17 +376,31 @@ def require_acknowledged(assessment, seen, field='handling_ack', user=None, refu
     on (for the second-person hook); `refused(errors)` makes the error raised (a ValidationError by default; the withdrawal
     guard raises its WithdrawalChanged, which carries what it found)."""
     refused = refused or ValidationError
+    # The setting first (flow fault M-27): where a second person must approve, a tick cannot go on, so the person is
+    # told that before they are asked to tick, not after; the dialog shows the same sentence in the place of its box
+    # (`needs_second_person`).
+    if needs_second_person(assessment, user):
+        raise refused({field: second_person_text()})
     if assessment.warnings and seen != assessment.fingerprint:
         if not seen:
             message = _('Tick the box to go on despite these warnings.')
         else:
             message = _('The warnings changed since the form was shown: read them again, and tick the box to go on.')
         raise refused({field: message})
+
+
+def second_person_text():
+    return _('A second person must approve going on past a medicine withdrawal (the platform owner’s setting), and '
+             'that approval cannot be given here yet.')
+
+
+def needs_second_person(assessment, user=None):
+    """Whether going on past these warnings waits for a second person: a withdrawal warning is among them and the
+    platform owner asks for the second approval (`second_person_must_approve`, the one place the setting is read). The
+    save refuses then whatever is ticked, and a dialog says so where its box would be."""
     kinds = sorted({str(getattr(warning, 'warning', '')) for warning in assessment.warnings}
                    & {str(kind) for kind in WITHDRAWAL_WARNINGS})
-    if kinds and second_person_must_approve(user, kinds, assessment):
-        raise refused({field: _('A second person must approve going on past a medicine withdrawal (the '
-                                'platform owner’s setting), and that approval cannot be given here yet.')})
+    return bool(kinds) and bool(second_person_must_approve(user, kinds, assessment))
 
 
 # The warnings about fish that may go, or have gone, to food medicated: a withdrawal in force before a harvest, and the

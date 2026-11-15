@@ -3632,7 +3632,10 @@ The rules the platform owner (the customer the platform is given to) sets for th
   'withdrawal')` is asked by the one hook (`farm/handling/check.py` `second_person_must_approve`); an unknown kind is an
   error, never a quiet no. The second person's approval flow is not built yet, so the setting FAILS CLOSED (cross review
   F4): ticked, going on past a medicine withdrawal is refused with the reason (a second person must approve, and that
-  approval cannot be given here yet); nobody goes on alone. Unticked (the default), one person's acknowledgement goes on,
+  approval cannot be given here yet); nobody goes on alone. The setting is consulted before anything is asked: the
+  harvest dialog and the withdrawal guard's question show that sentence in the place of their box, and a save is
+  answered with it whatever is ticked, never first with "Tick the box" (`check.needs_second_person`,
+  `farm/tests/test_second_approval_said_first.py`). Unticked (the default), one person's acknowledgement goes on,
   logged as critical.
 - **Clock tolerance (seconds)**, 0 to 3600, 300 until the owner sets another (cross review F10): how far ahead of the
   server's clock a water value may be stamped and still count as fresh. A value further ahead, up to the ingest

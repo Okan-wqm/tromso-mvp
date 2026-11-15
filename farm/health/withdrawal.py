@@ -726,6 +726,12 @@ class Change:
     def messages(self):
         return [warning.message() for warning in self.warnings]
 
+    @property
+    def second_person(self):
+        """Why this change cannot be gone past by a tick, or '': a second person must approve (check.needs_second_person,
+        flow fault M-27: said with the question, not after the tick)."""
+        return check.second_person_text() if check.needs_second_person(self) else ''
+
 
 def change(before, after, exclude_operation=None):
     """The Change between two snapshots of the same batches. A harvest the write itself records is left out: the

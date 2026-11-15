@@ -9,14 +9,13 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
 from core.crud import RowFormSet, TabbedForm, tab_fields
-from core.platform import correction_window_days
 
 from ..health import services
 from ..health.withdrawal import rules_text
 from ..models import HealthEvent, LiceCount, Medicine, MedicineWithdrawal, Site, Species, Supplier, Tank, Treatment
 from ..models.health import SAME_SPECIES_MESSAGE
 from ..models.handling import HandlingKind
-from ..stock.dates import local_today, site_earliest, site_today
+from ..stock.dates import local_today, site_earliest, site_today, too_old
 from .stock import DATE, DECIMAL, NOTES, EventChoice, ServiceErrors, handling_ack_field
 
 
@@ -213,8 +212,7 @@ class HealthEventForm(TabbedForm):
             if day > site_today(site):
                 self.add_error('date', _('The date cannot be in the future.'))
             elif day < site_earliest(site):
-                self.add_error('date', _('Operations can be dated at most %(days)d days back.') % {
-                    'days': correction_window_days()})
+                self.add_error('date', too_old(_('Operations can be dated at most %(days)d days back.')))
         return cleaned
 
 

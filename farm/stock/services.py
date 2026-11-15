@@ -67,7 +67,6 @@ from django.utils.translation import gettext as _
 from core import audit
 from core.codes import next_code
 from core.models import AuditLog, EntryKey
-from core.platform import correction_window_days
 from farm.feeding import read as feeding_read
 from farm.feeding.fold import walk
 from farm.handling import check
@@ -87,7 +86,9 @@ from farm.templatetags.stock import number, times
 
 from . import read
 # The farm's dates are one rule for every daily record; services.local_today and the others stay here.
-from .dates import check_date, earliest, earliest_today, local_today, shown_date, site_earliest, sites_of  # noqa: F401
+from .dates import (  # noqa: F401
+    check_date, earliest, earliest_today, local_today, opening_way_out, shown_date, site_earliest, sites_of, too_old,
+)
 from .fold import StockError, fold
 from .sizes import Lots, size_mixes
 
@@ -197,7 +198,7 @@ def _commit(user, kind, day, entries, *, notes='', ack=False, size_mix_ack=False
         batches, units = _locked_for(kind, day, {entry.batch.pk for entry in entries if entry.batch is not None},
                                      {entry.unit.pk for entry in entries})
         _already(token)
-        _check_static(kind, day, entries, batches, units, new_batch)
+        _check_static(kind, day, entries, batches, units, new_batch, opening)
         if health_event is not None:
             _check_event(health_event, day, units.values())
         assessment = _handling(user, kind, day, entries, batches, units, handling_ack)
@@ -313,14 +314,15 @@ def _fulfil(user, item, operation, entries):
         audit.record_update(user, item, {str(_('Recorded as')): None}, {str(_('Recorded as')): label(operation)})
 
 
-def _check_static(kind, day, entries, batches, units, new_batch):
+def _check_static(kind, day, entries, batches, units, new_batch, opening=None):
     for unit in units.values():
         if unit.is_deleted:
             raise ValidationError({'unit': _('%(unit)s is deleted.') % {'unit': unit.code}})
     for batch in batches.values():
         if batch.is_deleted:
             raise ValidationError({'batch': _('%(batch)s was voided.') % {'batch': batch.code}})
-    check_date(day, units.values())
+    # A stocking older than the window is told of the opening balance: fish the farm already had (B-07).
+    check_date(day, units.values(), also=opening_way_out() if new_batch is not None and opening is None else '')
     if kind != OperationKind.INPUT:
         for batch in batches.values():
             if day < batch.input_date:
@@ -707,8 +709,8 @@ def voided(user, entry, reason, sites, label, check=None, noted=None):
         raise ValidationError({NON_FIELD_ERRORS: _('This operation is already voided.')})
     for site in sites:
         if entry.date < site_earliest(site):
-            raise ValidationError({NON_FIELD_ERRORS: _(
-                'Operations older than %(days)d days cannot be voided.') % {'days': correction_window_days()}})
+            raise ValidationError({NON_FIELD_ERRORS: too_old(_(
+                'Operations older than %(days)d days cannot be voided.'))})
     entry.void_reason = reason
     entry.soft_delete(user)
     if check is not None:

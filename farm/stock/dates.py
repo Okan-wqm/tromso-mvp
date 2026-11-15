@@ -11,7 +11,7 @@ from django.core.exceptions import ValidationError
 from django.utils import formats, timezone
 from django.utils.translation import gettext as _
 
-from core.platform import correction_window_days
+from core.platform import correction_window_days, window_way_out
 
 from farm.models.site import zone_of
 
@@ -67,16 +67,30 @@ def shown_date(day):
     return formats.date_format(day, 'DATE_FORMAT')
 
 
-def check_date(day, units):
-    """Refuses a date in the future or before the backdating window of any of the units."""
-    check_site_date(day, sites_of(units))
+def too_old(text, also=''):
+    """A refusal by the correction window as a person can act on it (flow fault B-07): `text` (what is refused, with
+    the days), `also` (another way for this kind of record: an opening balance for fish the farm already had), then
+    whose setting the window is and where it is changed (core.platform.window_way_out). Every refusal by the window is
+    worded here."""
+    return ' '.join(part for part in (text % {'days': correction_window_days()}, also, window_way_out()) if part)
 
 
-def check_site_date(day, sites):
+def opening_way_out():
+    """Where fish that were on the farm before the window are registered: said when a stocking is refused by it."""
+    from core import navigation
+    return _('Fish the farm already had before then are registered as an opening balance (%(where)s), by the platform '
+             'owner.') % {'where': navigation.trail('farm.view_openingbalance', _('Opening balances'))}
+
+
+def check_date(day, units, also=''):
+    """Refuses a date in the future or before the backdating window of any of the units (`also`: too_old's)."""
+    check_site_date(day, sites_of(units), also)
+
+
+def check_site_date(day, sites, also=''):
     """Refuses a date in the future or before the backdating window on the clock of any of the sites."""
     for site in sites:
         if day > site_today(site):
             raise ValidationError({'date': _('The date cannot be in the future.')})
         if day < site_earliest(site):
-            raise ValidationError({'date': _('Operations can be dated at most %(days)d days back.')
-                                   % {'days': correction_window_days()}})
+            raise ValidationError({'date': too_old(_('Operations can be dated at most %(days)d days back.'), also)})

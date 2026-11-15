@@ -568,7 +568,14 @@ escape from several units is recorded for each). A harvest shows the handling ch
 delivery the fast alone (a medicine withdrawal is a meat withdrawal: it means nothing for live fish), and each asks for an
 acknowledgement when it warns. A unit holding two batches asks which one.
 Dates default to the farm's today (the site's time zone), never in the future, at most the platform owner's correction window (31 days until they set another; Platform settings) back
-(`core.platform.correction_window_days`). A form sent twice records once (the form's key, stored with it in `entry_keys`).
+(`core.platform.correction_window_days`). A refusal by the window says what to do: every such message is worded in one
+place (`farm.stock.dates.too_old`) and ends with whose setting the window is and where it is changed ("The correction
+window is the platform owner’s setting: it is changed in Company › Administration › Platform settings.",
+`core.platform.window_way_out`, the path read from the menu), and a refused stocking first names the opening balance
+("Fish the farm already had before then are registered as an opening balance (Company › Administration › Opening
+balances), by the platform owner."): a stock operation and its void, a feeding, a water sample and its void, a
+treatment, a lice count, a health event, a movement of the store, a harvest plan, a protocol assignment and an
+experiment's day 0 (`farm/tests/test_window_refusals.py`). A form sent twice records once (the form's key, stored with it in `entry_keys`).
 
 **The opening balance** (F-197; Company › Administration › Opening balances, `/administration/opening-balances/`): the fish
 a farm already has on the day it starts using the platform. The platform owner (Platform settings: Edit; nobody else, checked

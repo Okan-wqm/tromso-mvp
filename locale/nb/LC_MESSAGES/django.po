@@ -6564,6 +6564,14 @@ msgstr[1] ""
 msgid "Fish the book still holds beyond the count are then recorded as an unaccounted loss."
 msgstr "Fisk beholdningen fortsatt har utover tellingen, registreres da som uforklart svinn."
 
+#, python-format
+msgid ""
+"Fish the farm already had before then are registered as an opening balance (%(where)s), by the "
+"platform owner."
+msgstr ""
+"Fisk anlegget allerede hadde før det, registreres som en åpningsbalanse (%(where)s) av "
+"plattformeieren."
+
 msgid ""
 "Fish the farm already had when it started using the platform: their real stocking date and year "
 "class, and their count and average weight on the takeover day. The batch number is given on "
@@ -13329,6 +13337,10 @@ msgstr ""
 
 msgid "The copy needs a name."
 msgstr "Kopien trenger et navn."
+
+#, python-format
+msgid "The correction window is the platform owner’s setting: it is changed in %(where)s."
+msgstr "Korreksjonsvinduet er plattformeierens innstilling: det endres i %(where)s."
 
 msgid "The credential was created."
 msgstr "Legitimasjonen ble opprettet."

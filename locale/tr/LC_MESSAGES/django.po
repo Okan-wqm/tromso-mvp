@@ -6578,6 +6578,14 @@ msgstr[1] ""
 msgid "Fish the book still holds beyond the count are then recorded as an unaccounted loss."
 msgstr "Kayıtta sayımın üstünde kalan balıklar o zaman açıklanamayan kayıp olarak kaydedilir."
 
+#, python-format
+msgid ""
+"Fish the farm already had before then are registered as an opening balance (%(where)s), by the "
+"platform owner."
+msgstr ""
+"Çiftliğin daha önce zaten sahip olduğu balıklar, platform sahibi tarafından açılış bakiyesi "
+"olarak kaydedilir (%(where)s)."
+
 msgid ""
 "Fish the farm already had when it started using the platform: their real stocking date and year "
 "class, and their count and average weight on the takeover day. The batch number is given on "
@@ -13352,6 +13360,10 @@ msgstr ""
 
 msgid "The copy needs a name."
 msgstr "Kopyanın bir adı olmalı."
+
+#, python-format
+msgid "The correction window is the platform owner’s setting: it is changed in %(where)s."
+msgstr "Düzeltme penceresi platform sahibinin ayarıdır: %(where)s altında değiştirilir."
 
 msgid "The credential was created."
 msgstr "Kimlik bilgisi oluşturuldu."

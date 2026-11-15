@@ -5,6 +5,7 @@ the same feeding by its day: "Last fed 21.10.2026, no time recorded: counted fro
 23.10.2026": a moment after the handling. Only the second sentence went into the critical log. Now one line says it,
 with the feeding's own day (and time when it has one); a feeding on the handling's own day says so instead of "0.0 h
 before". Which feedings count, the hours and what is stored are unchanged."""
+import re
 from datetime import time as clock
 from decimal import Decimal
 
@@ -81,14 +82,26 @@ class OneLineTests(HarvestTestCase):
                          ('fasting', start_of(self.today, self.t1), Decimal('0.0'), 72))
 
     def test_the_sentences_are_translated(self):
+        """The Norwegian and the Turkish sentences themselves (review F-08: "no English shows" passed on the old code,
+        whose sentences were translated too)."""
         self.addCleanup(translation.activate, 'en')
         self.fed(1)
-        timed = self.assess().warnings[0]
+        untimed = self.assess().warnings[0]
         self.fed(0, at=clock(9, 0))
         same_day = self.assess('transport').warnings[0]
-        for language in ('nb', 'tr'):
-            with translation.override(language):
-                for warning in (timed, same_day):
-                    self.assertNotIn('Last fed', warning.message(), language)
-                    self.assertNotIn('Fed on the day', warning.message(), language)
-                    self.assertNotIn('no time recorded', warning.message(), language)
+        with translation.override('nb'):
+            fed, day = shown_date(self.day(1)), shown_date(self.today)
+            self.assertRegex(untimed.message(), '^' + re.escape(
+                f'Sist fôret {fed} (uten klokkeslett: regnet fra slutten av dagen) i T-01, ')
+                + r'\S+ \S+ ' + re.escape(f'før {day}: regelen for ') + r'\S+ krever \S+ \S+\.$')
+            self.assertRegex(same_day.message(), '^' + re.escape(
+                f'Fôret samme dag som håndteringen (09:00): ingen sulting før {day}; regelen for ')
+                + r'\S+ krever \S+ \S+\.$')
+        with translation.override('tr'):
+            fed, day = shown_date(self.day(1)), shown_date(self.today)
+            self.assertRegex(untimed.message(), '^' + re.escape(
+                f'Son yemleme {fed} (saat kaydedilmemiş: gün sonundan itibaren sayılır), T-01 biriminde, {day} '
+                'öncesinden ') + r'\S+ \S+: \S+ kuralı \S+ \S+ istiyor\.$')
+            self.assertRegex(same_day.message(), '^' + re.escape(
+                f'İşlemin yapıldığı gün yemlendi (09:00): {day} öncesinde açlık yok; ')
+                + r'\S+ kuralı \S+ \S+ istiyor\.$')

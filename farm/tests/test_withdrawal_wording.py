@@ -14,8 +14,8 @@ from django.utils import translation
 
 from core.models import AuditLog, Profile
 
-from ..handling import check
-from ..handling.withdrawal import WithdrawalBlock, harvest_from
+from ..handling import check, withdrawal as registry
+from ..handling.withdrawal import WithdrawalBlock
 from ..health import services
 from ..models import HandlingAcknowledgement, HandlingPlanItem
 from ..stock import services as stock_services
@@ -31,13 +31,21 @@ def setUpModule():
 
 
 class OneFormatterTests(HarvestInsideTestCase):
+    def words(self, *args, **kwargs):
+        """The one formatter's words. It is looked up here, not imported at the top of the module: without the fix
+        there is none, and a test must then FAIL on what it asserts, not make the whole module an ImportError that runs
+        no assertion at all (review F-08)."""
+        formatter = getattr(registry, 'harvest_from', None)
+        self.assertIsNotNone(formatter, 'farm.handling.withdrawal has no one formatter of a withdrawal’s end')
+        return formatter(*args, **kwargs)
+
     def test_the_three_forms(self):
         day = self.day(-5)
-        self.assertEqual(harvest_from(day), f'harvest from {shown_date(day)}')
-        self.assertEqual(harvest_from(day, True), f'harvest from about {shown_date(day)}')
-        self.assertEqual(harvest_from(None), 'end unknown')
-        self.assertEqual(harvest_from(None, True), 'end unknown')
-        self.assertEqual(harvest_from(day, shown=lambda each: each.isoformat()), f'harvest from {day.isoformat()}')
+        self.assertEqual(self.words(day), f'harvest from {shown_date(day)}')
+        self.assertEqual(self.words(day, True), f'harvest from about {shown_date(day)}')
+        self.assertEqual(self.words(None), 'end unknown')
+        self.assertEqual(self.words(None, True), 'end unknown')
+        self.assertEqual(self.words(day, shown=lambda each: each.isoformat()), f'harvest from {day.isoformat()}')
         block = WithdrawalBlock(self.batch, day, True, '', None)
         self.assertEqual(health_tags.harvest_from(block), f'harvest from about {shown_date(day)}')
 
@@ -48,9 +56,9 @@ class OneFormatterTests(HarvestInsideTestCase):
                 'nb': ('høsting fra %s', 'høsting fra omtrent %s', 'slutt ukjent'),
                 'tr': ('hasat %s tarihinden itibaren', 'hasat yaklaşık %s tarihinden itibaren', 'sonu bilinmiyor')}.items():
             with translation.override(language):
-                self.assertEqual(harvest_from(day), dated % shown_date(day), language)
-                self.assertEqual(harvest_from(day, True), about % shown_date(day), language)
-                self.assertEqual(harvest_from(None), unknown, language)
+                self.assertEqual(self.words(day), dated % shown_date(day), language)
+                self.assertEqual(self.words(day, True), about % shown_date(day), language)
+                self.assertEqual(self.words(None), unknown, language)
 
 
 class EveryPageTests(HarvestInsideTestCase):

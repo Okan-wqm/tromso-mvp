@@ -326,7 +326,7 @@ def ph_window(card):
         if left > 0:
             outside = left >= 17 and not under(left - 15, left)
             names.append(('co2', f'CO₂ {number(co2.ph, 2)}',
-                          _pc(left - 1.2 if outside else max(left + 1.2, water + 1.8 if under(left, left) else 0)),
+                          _pc(left - 1.2 if outside else max(left + 1.2, water + 2.6 if under(left, left) else 0)),
                           not outside))
         said.append(gettext('CO₂ passes its limit below pH %(ph)s') % {'ph': number(co2.ph, 2)})
     elif 'co2_limit_mg_l' not in chart.limits:
@@ -341,7 +341,7 @@ def ph_window(card):
         if right < 100:
             outside = right <= 83 and not under(right, right + 15)
             names.append(('nh3', f'{number(nh3.ph, 2)} NH₃',
-                          _pc(right + 1.2 if outside else min(right - 1.2, water - 1.8 if under(right, right) else 100)),
+                          _pc(right + 1.2 if outside else min(right - 1.2, water - 2.6 if under(right, right) else 100)),
                           not outside))
         said.append(gettext('NH₃ passes its limit above pH %(ph)s') % {'ph': number(nh3.ph, 2)})
     elif 'nh3_n_limit_mg_l' not in chart.limits:

@@ -4396,6 +4396,9 @@ What one tab needed and the next ones will too lives in `core/`:
   stay on one page.
 - `CodedMixin.name_field`: a record shown as "Name (CODE)" whose name is in another field (a
   species' common name).
+- After a create the new record opens for editing only for a person who may edit it; a person whose role creates and
+  does not edit (a worker filing a leave request) lands on the record's own page when the tab has one, else on the
+  list, never on a refusal (`CreateView.created`, `hr/tests/test_after_create.py`).
 - `RowList` (`core/crud.py`): rows a record owns, edited as one list on a tab and saved together,
   replacing the stored rows, logged on the record (a site's contacts, a feeder's calibrations, a feed's
   suitability). A refused list shows the record's edit page again from the list's address; the record's own form

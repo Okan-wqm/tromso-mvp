@@ -738,6 +738,17 @@ class CreateView(FormView):
     def get(self, request):
         return self.page(self.resource.form(request))
 
+    def created(self, obj):
+        """Where the person goes once the record exists: its edit page when they may edit it; else its own page when the
+        tab has one; else the list. A person whose role creates and does not edit (a worker filing a leave request) was
+        sent to the edit page and met a refusal (flow fault M-18)."""
+        r, request = self.resource, self.request
+        if r.allows('change') and request.user.has_perm(r.perm('change')) and r.allowed(request, obj, 'change'):
+            return done(request, self.url('edit', obj.pk), stay=True)
+        if r.detail_template:
+            return done(request, self.url('detail', obj.pk))
+        return done(request, self.url('list'))
+
     def post(self, request):
         r = self.resource
         if DRAFT in request.POST:    # TabbedForm.refresh_on: the form again with what was entered
@@ -784,11 +795,11 @@ class CreateView(FormView):
                 r.after_commit(request, obj, created=True)
                 # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
                 flash(request, _('%(name)s “%(object)s” created.'), r, obj)
-                return done(request, self.url('edit', obj.pk), stay=True)
+                return self.created(obj)
         # Sent before: the record the first sending created, as that sending showed it.
         if getattr(sent, 'is_deleted', False):
             return done(request, self.url('list'))
-        return done(request, self.url('edit', sent.pk), stay=True)
+        return self.created(sent)
 
 
 class Crossed(Exception):

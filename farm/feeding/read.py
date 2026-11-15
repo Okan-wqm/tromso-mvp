@@ -313,7 +313,7 @@ def fed_where(lines, unit_id, batch_ids, day, since=None):
     return Paths(lines).where(unit_id, batch_ids, day, since)
 
 
-def last_fed_of(asked):
+def last_fed_of(asked, lines=None):
     """{unit id: LastFed or None}: THE reader of when the fish in a unit were last fed, for every page and check that
     says it (the handling check and its acknowledgement, the earliest harvest date, the units list, the drawer, the
     production plans, the cards). `asked`: [(unit, day, the ids of its production batches that day, since or None)].
@@ -322,13 +322,14 @@ def last_fed_of(asked):
     14.11.2026: fish of two batches in one unit are one group, one fast for the unit whichever batch a dialog names):
     the feedings of production fish in the units and days `fed_where` gives for each batch in the unit, on or before
     `day`; the latest of them decides (the least-fasted fish: they cannot be handled apart). A cleaner fish's feeding
-    is not theirs. One ledger read, indexed once (`Paths`), and one query of the feedings, for all the units asked."""
+    is not theirs. One ledger read (none when the caller holds the lines of these batches already: `lines`, a walk's),
+    indexed once (`Paths`), and one query of the feedings, for all the units asked."""
     asked = list(asked)
     found = {unit.pk: None for unit, _day, _ids, _since in asked}
     batch_ids = {batch_id for _unit, _day, ids, _since in asked for batch_id in ids}
     if not batch_ids:
         return found
-    paths = Paths(ledger(batch_ids))
+    paths = Paths(ledger(batch_ids) if lines is None else lines)
     places = {unit.pk: paths.where(unit.pk, ids, day, since) for unit, day, ids, since in asked}
     every = [place for found_for in places.values() for place in found_for]
     if not every:
@@ -533,9 +534,11 @@ def figures(stock, details=(), ration=False):
     projection = project(unit_ids, days) if days else None
     walked = projection.walked if projection else _walk(unit_ids, feedings(unit_ids, since), days)
     # When the fish in each unit were last fed: the one reader (`last_fed_of`), so the list, the drawer, the plans and
-    # the cards say what the handling check says (fish moved in bring their last meal in their old unit).
-    last = last_fed_of((item.unit, today[unit_id], [share.batch.pk for share in item.counted], None)
-                       for unit_id, item in stock.items())
+    # the cards say what the handling check says (fish moved in bring their last meal in their old unit). It reads the
+    # lines the walk has just folded (every batch ever in these units): no second read of the ledger, so a page or a
+    # wall of cards costs the queries it cost before (monitoring's recorded counts, review F-01).
+    last = last_fed_of(((item.unit, today[unit_id], [share.batch.pk for share in item.counted], None)
+                        for unit_id, item in stock.items()), lines=walked.lines)
     result = {}
     for unit_id, item in stock.items():
         fed = last.get(unit_id)

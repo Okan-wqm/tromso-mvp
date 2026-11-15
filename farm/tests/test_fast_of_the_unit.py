@@ -7,10 +7,15 @@ feedings since the fish came in, the unit they came from up to the day of the mo
 path; nothing else. The cases are those of ops2/RULES.md §1.2 (1 to 9 and 11 to 13; of 9 the read: the question at the
 back-dated feeding's own save, and case 10, are another change), the two real ones of Round 1, and the review's: a path
 follows the order the transfers happened in WITHIN a day (a unit emptied and refilled on one day, a move there and back,
-a grading day)."""
-from datetime import time as clock, timedelta
+a grading day), and the ledger is indexed once for every unit asked."""
+import uuid
+from dataclasses import dataclass
+from datetime import date, time as clock, timedelta
 from decimal import Decimal
+from types import SimpleNamespace
+from unittest import mock
 
+from django.test import TestCase
 from django.urls import reverse
 
 from core.models import AuditLog
@@ -20,6 +25,7 @@ from ..handling import check
 from ..handling import fasting
 from ..models import Feed, HandlingAcknowledgement, HandlingPlanItem, Site, Tank
 from ..stock import read as stock_read, services
+from ..stock.fold import Line, Op
 from ..stock.dates import local_today, shown_date
 from .helpers import going_on
 from .test_harvest import HarvestTestCase
@@ -341,3 +347,44 @@ class PlannedFastTests(FastTestCase):
         [warning] = check.assess('harvest', self.t2, self.today, other).warnings
         self.assertEqual((warning.fed.record.unit, warning.fasted_hours), (self.t1, Decimal('39.0')))
 
+
+# ---- the ledger is indexed once, whatever the number of units asked (review F-04) --------------------------
+TOUCHED = [0]
+
+
+@dataclass(frozen=True)
+class CountedLine(Line):
+    """A ledger line that counts every read of one of its fields: the work a reader does on the ledger."""
+
+    def __getattribute__(self, name):
+        TOUCHED[0] += 1
+        return object.__getattribute__(self, name)
+
+
+class OnePassTests(TestCase):
+    """`last_fed_of` of N units over a ledger of one line a day per unit (as daily mortality gives): the reads of
+    ledger lines grow with the lines, not with the lines times the units."""
+    DAYS = 120
+
+    def touched(self, units):
+        start = date(2026, 1, 1)
+        asked, lines, line_id = [], [], 0
+        for _number in range(units):
+            unit, batch = uuid.uuid4(), uuid.uuid4()
+            asked.append((SimpleNamespace(pk=unit), start + timedelta(days=self.DAYS), [batch], None))
+            for day in range(self.DAYS):
+                line_id += 1
+                kind = 'input' if day == 0 else 'mortality'
+                lines.append(CountedLine(line_id, Op(f'op{line_id}', kind, start + timedelta(days=day), line_id), unit,
+                                         batch, kind, 1000 if day == 0 else -1, Decimal(50) if day == 0 else None))
+        TOUCHED[0] = 0
+        with mock.patch.object(feeding_read, 'ledger', return_value=lines):
+            found = feeding_read.last_fed_of(asked)
+        self.assertEqual(found, {unit.pk: None for unit, _day, _ids, _since in asked})     # no feeding is recorded
+        return len(lines), TOUCHED[0]
+
+    def test_the_reads_of_the_ledger_do_not_grow_faster_than_its_lines(self):
+        (few, small), (many, big) = self.touched(10), self.touched(40)
+        self.assertEqual(many, 4 * few)
+        self.assertLessEqual(big, small * 4 * 1.05, f'{few} lines: {small} reads; {many} lines: {big} reads')
+        self.assertLessEqual(big, 25 * many)                          # a few passes over the lines, not one per unit

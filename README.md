@@ -998,6 +998,16 @@ the 3 s at most once a minute (the token's bucket) or after a change; gzip belon
 pages with a CSRF token in Django invites BREACH), and a cache or a patch protocol waits for a measured miss on the wall's
 own hardware (the live check of the plan: 20 polls, 30 % of the cards changing, long tasks, a 24 h memory soak).
 
+**Measured with the Small card** (2026-11-15, the same check, `test_a_wall_of_200_small_cards`; the machine was running
+two other suites, so the seconds are an upper figure and not a comparison with the 3.4 s above): a wall of 200 Small
+cards, each with its four values, the calculated CO₂ and the pH window from the unit's chart, costs 69 queries, 11.7 s
+and 1,222 KB for the page, 62 queries, 11.3 s and 1,184 KB for the fragment (about 6 KB a card). The reads stay flat with
+the units (42 at 6, 24 and 200 units, `test_budget.py`): the chart adds one read of the fish's limits for the whole wall
+and the chemistry core once for each unit. The same day the 12-widget wall costs 81 queries for the page and 74 for the
+fragment, on this work and on the commit it started from alike (the same statements, compared one by one): one above
+that check's bound of 80. The growth since 2026-11-05 came with what landed in between, not with the Small card; the
+bound is not raised here.
+
 **Characterised before card templates** (2026-11-04): `monitoring/tests/test_golden.py` renders a fixed farm of twenty units in
 every state (critical, warning, no recent data, note, OK, empty; over capacity, a withdrawal, tasks, a lice count, a treatment,
 an event, the saturation instead of mg/L) on eight screens (simple, detailed, all units, flipped, a board's mixed modes, the

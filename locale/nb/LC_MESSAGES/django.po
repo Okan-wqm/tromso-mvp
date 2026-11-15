@@ -516,6 +516,10 @@ msgstr[0] "%(days)s dag siden siste målte vekt"
 msgstr[1] "%(days)s dager siden siste målte vekt"
 
 #, python-format
+msgid "%(days)s days a year"
+msgstr "%(days)s dager i året"
+
+#, python-format
 msgid "%(days)s feeding day without an expected FCR"
 msgid_plural "%(days)s feeding days without an expected FCR"
 msgstr[0] "%(days)s fôringsdag uten forventet FCR"
@@ -8326,6 +8330,9 @@ msgstr "Gjør til eier"
 msgid "Manage holidays"
 msgstr "Administrer helligdager"
 
+msgid "Manage leave types"
+msgstr "Administrer permisjonstyper"
+
 msgid "Manage shifts"
 msgstr "Administrer skift"
 
@@ -9144,6 +9151,9 @@ msgstr "Ingen elementnavn: apparatets meldingsformat er ett objekt."
 
 msgid "No knowledge entry cites it yet."
 msgstr "Ingen kunnskapsoppføring viser til det ennå."
+
+msgid "No leave types yet: a leave request cannot be filed until there is one."
+msgstr "Ingen permisjonstyper ennå: en permisjonssøknad kan ikke sendes før det finnes en."
 
 msgid "No limit"
 msgstr "Ingen grense"
@@ -14869,6 +14879,15 @@ msgstr "Det finnes allerede en regel for denne håndteringen og arten."
 msgid "There is already a rule for this."
 msgstr "Det finnes allerede en regel for dette."
 
+msgid ""
+"There is no active leave type yet, so a request cannot be filed. Leave types are added in the "
+"Company panel under HR › Time & shifts › Scheduling settings › Leave types, by a person whose "
+"role may."
+msgstr ""
+"Det finnes ingen aktiv permisjonstype ennå, så en søknad kan ikke sendes. Permisjonstyper legges "
+"til i Selskap-panelet under HR › Tid og skift › Planleggingsinnstillinger › Permisjonstyper, av "
+"en person som har rollen til det."
+
 msgid "Thermal delousing"
 msgstr "Termisk avlusing"
 
@@ -17385,6 +17404,9 @@ msgstr "g"
 
 msgid "g/kg"
 msgstr "g/kg"
+
+msgid "granted without approval"
+msgstr "innvilges uten godkjenning"
 
 msgid "group level"
 msgstr "gruppenivå"

@@ -1800,7 +1800,11 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
   3 Nov 2026, 02:52, 48.0 h and 36 degree-days before 6 Nov 2026: the harvest rule asks for 72 h and 60 degree-days." The last feeding is of the fish themselves, wherever they were
   fed: the feeding walk's split says which batches a record fed, so fish moved in yesterday bring their last
   meal in the old unit with them (`farm.feeding.read.last_fed_at`). A record without a time counts from the end
-  of its day and a feeding on the day gives 0 h, so **the fast is never overstated** (and the degree-days of several
+  of its day and a feeding on the day gives 0 h, so **the fast is never overstated**; the sentence names the feeding
+  once, as it is true: its day and time, or its day and "(no time recorded: counted from the end of the day)", never
+  the counted moment as a feeding time, and a feeding on the handling's own day reads "Fed on the day of the handling
+  itself (09:00): no fast before …" (with a warning the notes do not repeat the feeding;
+  `farm/tests/test_fasting_sentence.py`) (and the degree-days of several
   batches in a unit are the fewest). The rule is the species'
   own, else the one for every species; a grading takes the longer of the grading and the transport rule. No
   rule, or no feeding in the 31 days before (longer than any rule), is said, not warned.
@@ -3272,8 +3276,11 @@ a person outside the team is a 404 and writes nothing); the page's batch route i
 
 ### Time & shifts › Leave requests (`/hr/leave/`) and Leave types
 
-**Leave types** (`/hr/settings/leave-types/`, no menu line, reached from Scheduling settings): a name, a code, the days a
-year (empty: no limit) and whether a request needs approval; owner data, none seeded. **A request** (`hr.LeaveRequest`,
+**Leave types** (`/hr/settings/leave-types/`, no menu line, reached from Scheduling settings, which lists them and
+links "Manage leave types" beside Shifts and Holidays; a test holds that every hidden menu entry is linked from a
+visible page of its group, `hr/tests/test_leave_types_linked.py`): a name, a code, the days a
+year (empty: no limit) and whether a request needs approval; owner data, none seeded. While no active type exists the
+leave request form says so under the empty list and where types are added. **A request** (`hr.LeaveRequest`,
 `leave_requests`) is a person, a type, a first and a last day, a status (pending, approved, rejected, cancelled), the person's
 reason, the decider, the time and a note. Database rules: the last day is not before the first; an approved or rejected request
 has the time it was decided; **no overlap** for one person while a request is pending or approved (an exclusion constraint on

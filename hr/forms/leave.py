@@ -68,6 +68,11 @@ class LeaveRequestForm(TabbedForm):
         if self.instance._state.adding and own is not None and not self.is_bound:
             self.initial.setdefault('employee', own.pk)
         self.fields['leave_type'].queryset = LeaveType.objects.filter(status='active')
+        if not self.fields['leave_type'].queryset.exists():
+            # An empty list with no word of why was a dead end (flow fault B-03): say what is missing and where it is.
+            self.fields['leave_type'].help_text = _(
+                'There is no active leave type yet, so a request cannot be filed. Leave types are added in the Company '
+                'panel under HR › Time & shifts › Scheduling settings › Leave types, by a person whose role may.')
         employee = own if self.instance._state.adding else self.instance.employee
         if not self.instance._state.adding and employee.user_id != getattr(user, 'pk', None) \
                 and not user.has_perm(scope.ALL):

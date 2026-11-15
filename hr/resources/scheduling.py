@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from core.crud import Resource
 
 from ..forms.scheduling import HolidayForm, SchedulingSettingsForm, ShiftForm
-from ..models import Holiday, SchedulingSettings, Shift
+from ..models import Holiday, LeaveType, SchedulingSettings, Shift
 
 
 class ShiftResource(Resource):
@@ -54,4 +54,5 @@ class SchedulingSettingsResource(Resource):
 
     @classmethod
     def filter_list(cls, request, objects):
-        return objects, {'shifts': Shift.objects.all(), 'holidays': Holiday.objects.select_related('site')[:10]}
+        return objects, {'shifts': Shift.objects.all(), 'holidays': Holiday.objects.select_related('site')[:10],
+                         'leave_types': LeaveType.objects.all()}

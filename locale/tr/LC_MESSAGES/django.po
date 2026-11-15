@@ -516,6 +516,10 @@ msgstr[0] "son ölçülen ağırlıktan bu yana %(days)s gün"
 msgstr[1] "son ölçülen ağırlıktan bu yana %(days)s gün"
 
 #, python-format
+msgid "%(days)s days a year"
+msgstr "yılda %(days)s gün"
+
+#, python-format
 msgid "%(days)s feeding day without an expected FCR"
 msgid_plural "%(days)s feeding days without an expected FCR"
 msgstr[0] "beklenen FCR’si olmayan %(days)s yemleme günü"
@@ -8348,6 +8352,9 @@ msgstr "Sahip yap"
 msgid "Manage holidays"
 msgstr "Tatilleri yönet"
 
+msgid "Manage leave types"
+msgstr "İzin türlerini yönet"
+
 msgid "Manage shifts"
 msgstr "Vardiyaları yönet"
 
@@ -9158,6 +9165,9 @@ msgstr "Öğe adı yok: cihazın mesaj biçimi tek bir nesnedir."
 
 msgid "No knowledge entry cites it yet."
 msgstr "Henüz hiçbir bilgi kaydı bu belgeye dayanmıyor."
+
+msgid "No leave types yet: a leave request cannot be filed until there is one."
+msgstr "Henüz izin türü yok: bir tane olana kadar izin talebi oluşturulamaz."
 
 msgid "No limit"
 msgstr "Sınır yok"
@@ -14896,6 +14906,15 @@ msgstr "Bu elleçleme ve tür için zaten bir kural var."
 msgid "There is already a rule for this."
 msgstr "Bunun için zaten bir kural var."
 
+msgid ""
+"There is no active leave type yet, so a request cannot be filed. Leave types are added in the "
+"Company panel under HR › Time & shifts › Scheduling settings › Leave types, by a person whose "
+"role may."
+msgstr ""
+"Henüz etkin bir izin türü yok; bu yüzden talep oluşturulamaz. İzin türleri, Şirket panelinde İK ›"
+" Zaman ve vardiyalar › Planlama ayarları › İzin türleri altında, rolü izin veren bir kişi "
+"tarafından eklenir."
+
 msgid "Thermal delousing"
 msgstr "Termal bitten arındırma"
 
@@ -17407,6 +17426,9 @@ msgstr "g"
 
 msgid "g/kg"
 msgstr "g/kg"
+
+msgid "granted without approval"
+msgstr "onaysız verilir"
 
 msgid "group level"
 msgstr "grup düzeyi"

@@ -89,6 +89,10 @@ msgid "%(batch)s: not weighed since it came in, so no FCR yet"
 msgstr "%(batch)s: ikke veid siden den kom inn, så ingen fôrfaktor ennå"
 
 #, python-format
+msgid "%(bound)s, no recent data"
+msgstr "%(bound)s, ingen ferske data"
+
+#, python-format
 msgid "%(channel)s measures %(quantity)s as %(other)s does: one of the two is the backup there."
 msgstr "%(channel)s måler %(quantity)s som %(other)s: én av de to er reserve der."
 
@@ -788,6 +792,10 @@ msgstr "%(label)s knyttet til den"
 #, python-format
 msgid "%(label)s that lose their %(link)s"
 msgstr "%(label)s som mister koblingen «%(link)s»"
+
+#, python-format
+msgid "%(label)s: measured %(moment)s"
+msgstr "%(label)s: målt %(moment)s"
 
 #, python-format
 msgid "%(label)s: no limit for these fish"
@@ -1530,6 +1538,10 @@ msgstr "%(value)s t"
 msgid "%(value)s °C"
 msgstr "%(value)s °C"
 
+#, python-format
+msgid "%(value)s, no recent data"
+msgstr "%(value)s, ingen ferske data"
+
 #. Translators: a ratio, how many times as much, e.g. 2× (a size limit).
 #, python-format
 msgid "%(value)s×"
@@ -1601,6 +1613,12 @@ msgstr "(tall uten navn)"
 
 msgid "(whole batch)"
 msgstr "(hele fiskegruppen)"
+
+#, python-format
+msgid "+%(count)s more unit"
+msgid_plural "+%(count)s more units"
+msgstr[0] "+%(count)s enhet til"
+msgstr[1] "+%(count)s enheter til"
 
 msgid "0 rows"
 msgstr "0 rader"
@@ -2013,6 +2031,22 @@ msgid ""
 msgstr ""
 "En innsending har tidspunkt, hvem som registrerte den, hvordan den ble sendt og, med mindre den "
 "ble gitt på telefon, kvittering eller referanse."
+
+msgid ""
+"A fitted card needs both its width (12 to 64 units) and its height (6 to 64 units); leave both "
+"empty for a card that flows."
+msgstr ""
+"Et tilpasset kort trenger både bredde (12 til 64 enheter) og høyde (6 til 64 enheter); la begge "
+"stå tomme for et kort som flyter."
+
+msgid "A fitted card needs both its width and its height; leave both empty for a card that flows."
+msgstr "Et tilpasset kort trenger både bredde og høyde; la begge stå tomme for et kort som flyter."
+
+#, python-format
+msgid "A fitted card’s widgets share its height in at most %(most)d rows; this layout takes %(rows)d."
+msgstr ""
+"Elementene i et tilpasset kort deler høyden i høyst %(most)d rader; dette oppsettet bruker "
+"%(rows)d."
 
 msgid "A flow can be stated for an inlet or an outlet only."
 msgstr "En vannføring kan bare oppgis for et innløp eller et utløp."
@@ -2991,6 +3025,9 @@ msgstr "Alarmer"
 
 msgid "Alive"
 msgstr "I live"
+
+msgid "Alk."
+msgstr "Alk."
 
 msgid "Alkalinity"
 msgstr "Alkalitet"
@@ -4063,11 +4100,30 @@ msgstr "CO₂"
 msgid "CO₂ (mg/L)"
 msgstr "CO₂ (mg/L)"
 
+msgid "CO₂ calc."
+msgstr "CO₂ ber."
+
+msgid "CO₂ calc. (mg/L)"
+msgstr "CO₂ ber. (mg/L)"
+
+msgid "CO₂ does not reach its limit"
+msgstr "CO₂ når ikke grensen"
+
+msgid "CO₂ is past its limit at every pH"
+msgstr "CO₂ er over grensen ved enhver pH"
+
 msgid "CO₂ limit"
 msgstr "CO₂-grense"
 
 msgid "CO₂ limit (mg/L)"
 msgstr "CO₂-grense (mg/L)"
+
+#, python-format
+msgid "CO₂ passes its limit below pH %(ph)s"
+msgstr "CO₂ passerer grensen under pH %(ph)s"
+
+msgid "CO₂ probe"
+msgstr "CO₂ sonde"
 
 msgid "CO₂ the air leaves in it"
 msgstr "CO₂ luften etterlater i vannet"
@@ -4123,6 +4179,9 @@ msgstr "Beregn"
 
 msgid "Calculated"
 msgstr "Beregnet"
+
+msgid "Calculated from the pH, the alkalinity, the temperature and the salinity."
+msgstr "Beregnet fra pH, alkalitet, temperatur og saltholdighet."
 
 msgid "Calculator"
 msgstr "Kalkulator"
@@ -4205,6 +4264,9 @@ msgstr "Karbondioksid (mg/L fri CO₂)"
 msgid "Carbon dioxide, added"
 msgstr "Karbondioksid, tilsatt"
 
+msgid "Carbon dioxide, calculated (mg/L CO₂)"
+msgstr "Karbondioksid, beregnet (mg/L CO₂)"
+
 msgid "Carbon dioxide, stripped"
 msgstr "Karbondioksid, luftet ut"
 
@@ -4222,6 +4284,9 @@ msgstr ""
 msgid "Card"
 msgstr "Kort"
 
+msgid "Card height (units)"
+msgstr "Kortets høyde (enheter)"
+
 msgid ""
 "Card layout: select a widget, move it with the arrow keys, resize it with Shift and the arrow "
 "keys, remove it with Delete."
@@ -4238,6 +4303,9 @@ msgstr "Kortmaler"
 msgid "Card width"
 msgstr "Kortbredde"
 
+msgid "Card width (units)"
+msgstr "Kortets bredde (enheter)"
+
 msgid "Cardiomyopathy syndrome (CMS)"
 msgstr "Kardiomyopatisyndrom (CMS)"
 
@@ -4249,6 +4317,9 @@ msgstr "Kortene er"
 
 msgid "Cards are drawn with"
 msgstr "Kortene tegnes med"
+
+msgid "Cards by state"
+msgstr "Kort etter tilstand"
 
 msgid "Cards can be added once the board is created."
 msgstr "Kort kan legges til når panelet er opprettet."
@@ -6585,6 +6656,15 @@ msgid "For a %(severity)s alarm, from %(low)d to %(high)d %(unit)s."
 msgstr "For en %(severity)s alarm, fra %(low)d til %(high)d %(unit)s."
 
 msgid ""
+"For a fitted card, one that is drawn at the size of its place on a wall: how many of its own "
+"units the card is wide (12 to 64; the Small card is 31). Empty with the height: the card flows "
+"down the page."
+msgstr ""
+"For et tilpasset kort, et som tegnes i størrelsen til plassen sin på en vegg: hvor mange av sine "
+"egne enheter kortet er bredt (12 til 64; det lille kortet er 31). Tomt sammen med høyden: kortet "
+"flyter nedover siden."
+
+msgid ""
 "For a sea site with salmonids: the lower sea-lice limit of spring runs in weeks 16–21 from Nord-"
 "Trøndelag southwards and in weeks 21–26 in Nordland, Troms and Finnmark (lakselusforskriften § "
 "8)."
@@ -7386,6 +7466,13 @@ msgstr ""
 "Hvor mange hjerteslag en verdi forblir fersk uten en ny; deretter viser stedet ingen nye data. 1 "
 "til 20. Tom: som den er (3 for en ny kanal)."
 
+msgid ""
+"How many of its own units a fitted card is high (6 to 64; the Small card is 10). The card’s "
+"widgets share that height in equal rows, at most 24."
+msgstr ""
+"Hvor mange av sine egne enheter et tilpasset kort er høyt (6 til 64; det lille kortet er 10). "
+"Kortets elementer deler den høyden i like rader, høyst 24."
+
 msgid "How many times a failing transport is tried with one notification."
 msgstr "Hvor mange ganger en transport som feiler prøves med ett varsel."
 
@@ -7965,6 +8052,9 @@ msgstr "Siste gode verdi"
 
 msgid "Last good value at"
 msgstr "Siste gode verdi tidspunkt"
+
+msgid "Last known position."
+msgstr "Siste kjente posisjon."
 
 msgid "Last message at"
 msgstr "Siste melding"
@@ -8662,6 +8752,19 @@ msgstr ""
 msgid "NH₃ and NH₄⁺ together, as nitrogen. The NH₃ limit is drawn from it."
 msgstr "NH₃ og NH₄⁺ sammen, som nitrogen. NH₃-grensen tegnes ut fra den."
 
+msgid "NH₃ does not reach its limit"
+msgstr "NH₃ når ikke grensen"
+
+msgid "NH₃ is past its limit at every pH"
+msgstr "NH₃ er over grensen ved enhver pH"
+
+msgid "NH₃ not assessed: no TAN"
+msgstr "NH₃ ikke vurdert: ingen TAN"
+
+#, python-format
+msgid "NH₃ passes its limit above pH %(ph)s"
+msgstr "NH₃ passerer grensen over pH %(ph)s"
+
 msgid "NH₃ share of TAN at the border"
 msgstr "NH₃-andelen av TAN ved grensen"
 
@@ -8699,14 +8802,26 @@ msgstr "NH₃: TAN kan ikke gi grensen ved noen pH (grensen er ikke under TAN)."
 msgid "NH₃: the limit is not reached anywhere on this chart."
 msgstr "NH₃: grensen nås ikke noe sted i dette diagrammet."
 
+msgid "NH₄-N"
+msgstr "NH₄-N"
+
 msgid "NH₄-N (mg/L)"
 msgstr "NH₄-N (mg/L)"
+
+msgid "NO₂-N"
+msgstr "NO₂-N"
 
 msgid "NO₂-N (mg/L)"
 msgstr "NO₂-N (mg/L)"
 
+msgid "NO₃-N"
+msgstr "NO₃-N"
+
 msgid "NO₃-N (mg/L)"
 msgstr "NO₃-N (mg/L)"
+
+msgid "NTU"
+msgstr "NTU"
 
 msgid "Name"
 msgstr "Navn"
@@ -8846,6 +8961,9 @@ msgstr "Neste"
 
 msgid "Next meal"
 msgstr "Neste måltid"
+
+msgid "Next page (PageDown)"
+msgstr "Neste side (PageDown)"
 
 msgid "Next week"
 msgstr "Neste uke"
@@ -9601,6 +9719,10 @@ msgstr "Ikke bekreftet"
 msgid "Not weighed since the fish came in."
 msgstr "Ikke veid siden fisken kom inn."
 
+#, python-format
+msgid "Not worked out: %(why)s."
+msgstr "Ikke beregnet: %(why)s."
+
 msgid "Not worked out: the TAN is no longer fresh."
 msgstr "Ikke regnet ut: TAN-verdien er ikke lenger fersk."
 
@@ -10317,6 +10439,12 @@ msgstr "Ozongenerator"
 msgid "Ozone production"
 msgstr "Ozonproduksjon"
 
+msgid "O₂"
+msgstr "O₂"
+
+msgid "O₂ %"
+msgstr "O₂ %"
+
 msgid "O₂ (%)"
 msgstr "O₂ (%)"
 
@@ -10724,6 +10852,9 @@ msgstr "Forhåndsvisningen er oppdatert."
 
 msgid "Previous"
 msgstr "Forrige"
+
+msgid "Previous page (PageUp)"
+msgstr "Forrige side (PageUp)"
 
 msgid "Previous week"
 msgstr "Forrige uke"
@@ -12372,6 +12503,9 @@ msgstr "Slaktevekt (kg)"
 msgid "Slow sinking"
 msgstr "Saktesynkende"
 
+msgid "Small"
+msgstr "Liten"
+
 msgid "Small size"
 msgstr "Små fisk"
 
@@ -12844,8 +12978,14 @@ msgstr "Systemer (kretsløp)"
 msgid "Systems by status"
 msgstr "Systemer etter status"
 
+msgid "TAN"
+msgstr "TAN"
+
 msgid "TAN (mg/L N)"
 msgstr "TAN (mg/L N)"
+
+msgid "TGP %"
+msgstr "TGP %"
 
 msgid "TGP (%)"
 msgstr "TGP (%)"
@@ -13215,6 +13355,13 @@ msgstr "Kanalen var under vedlikehold."
 
 msgid "The chart cannot be drawn: this point has no recent value of"
 msgstr "Diagrammet kan ikke tegnes: dette punktet har ingen ferske verdier for"
+
+msgid ""
+"The chart is drawn from the latest values received, and these are old: it shows where the water "
+"was, not where it is now."
+msgstr ""
+"Diagrammet er tegnet fra de siste verdiene som kom inn, og disse er gamle: det viser hvor vannet "
+"var, ikke hvor det er nå."
 
 msgid "The charts and the values show again once every value is right."
 msgstr "Diagrammene og verdiene vises igjen når alle verdiene er riktige."
@@ -13963,6 +14110,10 @@ msgstr ""
 msgid "The pH bounds go up: critical below, warning below, warning above, critical above."
 msgstr "pH-grensene går oppover: kritisk under, advarsel under, advarsel over, kritisk over."
 
+#, python-format
+msgid "The pH window cannot be drawn: %(why)s."
+msgstr "pH-vinduet kan ikke tegnes: %(why)s."
+
 msgid "The page could not be shown. Try again, and tell an administrator if it happens again."
 msgstr "Siden kunne ikke vises. Prøv igjen, og si fra til en administrator hvis det skjer igjen."
 
@@ -14239,6 +14390,9 @@ msgstr "Den trygge sonen ligger i dette båndet."
 #, python-format
 msgid "The salinity is %(source)s."
 msgstr "Saliniteten er fra %(source)s."
+
+msgid "The salinity is assumed: fresh water."
+msgstr "Saltholdigheten er antatt: ferskvann."
 
 msgid "The salinity is fresh water’s."
 msgstr "Saliniteten er ferskvannets."
@@ -16702,6 +16856,9 @@ msgstr "av <strong>%(name)s</strong>"
 msgid "by its recurring task"
 msgstr "av den gjentakende oppgaven"
 
+msgid "calculated"
+msgstr "beregnet"
+
 #, python-format
 msgid "calculated %(calculated)s"
 msgstr "beregnet %(calculated)s"
@@ -16812,6 +16969,10 @@ msgstr "kritisk under"
 #, python-format
 msgid "critical below %(value)s"
 msgstr "kritisk under %(value)s"
+
+#, python-format
+msgid "critical limit %(bound)s"
+msgstr "kritisk grense %(bound)s"
 
 #, python-format
 msgid "criticality %(level)d"
@@ -17434,6 +17595,10 @@ msgstr "kunnskapsoppføring"
 msgid "lab"
 msgstr "laboratorium"
 
+#, python-format
+msgid "last known position, old: %(values)s"
+msgstr "siste kjente posisjon, gammelt: %(values)s"
+
 msgid "leave outside these days"
 msgstr "permisjon utenfor disse dagene"
 
@@ -17544,6 +17709,24 @@ msgstr "neste måltid %(meal)s"
 msgid "no"
 msgstr "nei"
 
+msgid "no CO₂ limit"
+msgstr "ingen CO₂-grense"
+
+msgid "no CO₂ limit for these fish"
+msgstr "ingen CO₂-grense for denne fisken"
+
+msgid "no NH₃ limit"
+msgstr "ingen NH₃-grense"
+
+msgid "no NH₃ limit for these fish"
+msgstr "ingen NH₃-grense for denne fisken"
+
+msgid "no TAN"
+msgstr "ingen TAN"
+
+msgid "no active middle sampling point"
+msgstr "ingen aktivt prøvepunkt i midten"
+
 #, python-format
 msgid "no cleaner fish held at %(site)s since %(date)s"
 msgstr "ingen rensefisk på %(site)s siden %(date)s"
@@ -17621,6 +17804,10 @@ msgstr "ingen laksefisk i sjøen på %(site)s siden %(date)s"
 
 msgid "no such row"
 msgstr "ingen slik rad"
+
+#, python-format
+msgid "no value of %(values)s"
+msgstr "ingen verdi for %(values)s"
 
 msgid "none"
 msgstr "ingen"
@@ -17723,6 +17910,10 @@ msgstr "s. %(page)s"
 msgid "pH"
 msgstr "pH"
 
+#, python-format
+msgid "pH %(ph)s"
+msgstr "pH %(ph)s"
+
 msgid "pH (NBS scale)"
 msgstr "pH (NBS-skala)"
 
@@ -17743,6 +17934,13 @@ msgstr "pH-margin til grensen"
 
 msgid "pH sensor"
 msgstr "pH-sensor"
+
+msgid "pH window"
+msgstr "pH-vindu"
+
+#, python-format
+msgid "pH window, %(unit)s: %(said)s"
+msgstr "pH-vindu, %(unit)s: %(said)s"
 
 msgid "pH, critical above (NBS scale)"
 msgstr "pH, kritisk over (NBS-skala)"
@@ -18082,6 +18280,9 @@ msgstr "regelen for denne enheten"
 msgid "the site’s altitude"
 msgstr "lokalitetens høyde over havet"
 
+msgid "the view chosen on this screen"
+msgstr "visningen valgt på denne skjermen"
+
 msgid "the whole site"
 msgstr "hele lokaliteten"
 
@@ -18139,6 +18340,10 @@ msgid "unread"
 msgstr "ulest"
 
 #, python-format
+msgid "until %(date)s"
+msgstr "til %(date)s"
+
+#, python-format
 msgid "until %(last)s"
 msgstr "til %(last)s"
 
@@ -18193,6 +18398,10 @@ msgstr "varsel under"
 #, python-format
 msgid "warning below %(value)s"
 msgstr "advarsel under %(value)s"
+
+#, python-format
+msgid "warning limit %(bound)s"
+msgstr "varselgrense %(bound)s"
 
 msgid "water freshness"
 msgstr "vannets ferskhet"
@@ -18272,6 +18481,9 @@ msgstr "{label} fjernet."
 msgid "{unit} is now {state}."
 msgstr "{unit} er nå {state}."
 
+msgid "°C"
+msgstr "°C"
+
 #, python-format
 msgid "ΔCO₂ %(value)s mg/L"
 msgstr "ΔCO₂ %(value)s mg/L"
@@ -18350,4 +18562,7 @@ msgstr ""
 #, python-format
 msgid "“%(value)s” is not a temperature."
 msgstr "«%(value)s» er ikke en temperatur."
+
+msgid "‰"
+msgstr "‰"
 

@@ -12925,6 +12925,7 @@
         "farm/tests/test_species.py",
         "reports/tests/test_lice.py",
         "monitoring/tests/test_read.py",
+        "monitoring/tests/test_small.py",
         "monitoring/tests/test_token.py"
       ]
     },
@@ -19750,6 +19751,7 @@
         "core/test_languages.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
+        "farm/tests/test_charts_of.py",
         "farm/tests/test_cleaner_ration.py",
         "farm/tests/test_escape_delivery.py",
         "farm/tests/test_feeding.py",
@@ -21128,8 +21130,10 @@
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_water.py",
+        "farm/tests/test_water_crossed.py",
         "monitoring/tests/__init__.py",
         "monitoring/tests/test_extras.py",
+        "monitoring/tests/test_small.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_cross_review.py"
       ]
@@ -21791,6 +21795,7 @@
         "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
+        "farm/tests/test_charts_of.py",
         "farm/tests/test_deffeyes.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
@@ -22266,6 +22271,7 @@
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
         "farm/tests/test_calculator.py",
+        "farm/tests/test_charts_of.py",
         "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_production_overview.py",
@@ -31065,9 +31071,11 @@
         "left_out": false
       },
       "tests": [
+        "monitoring/tests/test_band.py",
         "monitoring/tests/test_boards.py",
         "monitoring/tests/test_golden.py",
         "monitoring/tests/test_resolve.py",
+        "monitoring/tests/test_small.py",
         "monitoring/tests/test_templates_db.py"
       ]
     },
@@ -31404,9 +31412,11 @@
       },
       "tests": [
         "core/tests_workspaces.py",
+        "monitoring/tests/test_band.py",
         "monitoring/tests/test_boards.py",
         "monitoring/tests/test_golden.py",
         "monitoring/tests/test_resolve.py",
+        "monitoring/tests/test_small.py",
         "monitoring/tests/test_templates_db.py"
       ]
     },
@@ -31768,6 +31778,7 @@
         "monitoring/tests/test_load.py",
         "monitoring/tests/test_render.py",
         "monitoring/tests/test_resolve.py",
+        "monitoring/tests/test_small.py",
         "monitoring/tests/test_template_pages.py",
         "monitoring/tests/test_templates_db.py"
       ]
@@ -31966,6 +31977,32 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "measure_w",
+          "field": "measure_w",
+          "type": "smallint",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "CardTemplateForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "measure_h",
+          "field": "measure_h",
+          "type": "smallint",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "CardTemplateForm › General"
+          ],
+          "how": "form",
+          "why": ""
         }
       ],
       "constraints": [
@@ -32027,6 +32064,12 @@
         },
         {
           "name": "chk_monitor_card_templates_builtin",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_card_templates_measure",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -32107,6 +32150,8 @@
             "name": "General",
             "description": "General",
             "expanded": "General",
+            "measure_w": "General",
+            "measure_h": "General",
             "layout": "Design",
             "version": ""
           }

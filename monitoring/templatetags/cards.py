@@ -1,7 +1,10 @@
 """What the card's templates ask of monitoring/cards/render.py and monitoring/read.py: a water value as a card says it
 (`face`), what a value or bar widget is bound to (`bound`), a fitted card's value tile (`tile`), the bar of a value
-against its limits (`bar`), the pH window (`ph_window`) and a reason in short (`brief`). No figure is worked out here."""
+against its limits (`bar`), the pH window (`ph_window`), a reason in short (`brief`) and the band's clock (`clock`). No figure is worked
+out here."""
 from django import template
+from django.utils.formats import date_format
+from django.utils.html import format_html
 
 from farm.water import parameters
 
@@ -13,6 +16,14 @@ register = template.Library()
 @register.filter
 def face(reading, now):
     return render.face(reading, now)
+
+
+@register.filter
+def clock(moment):
+    """The time a screen's cards were computed, as the band's figure. The sentence around it is the translator's
+    ("computed at %(time)s": the time comes first in Turkish), so the element is built here and its text escaped
+    (`format_html`); a template never switches escaping off (core.tests_escaping). The band's template styles it."""
+    return format_html('<b>{}</b>', date_format(moment, 'TIME_FORMAT'))
 
 
 @register.simple_tag

@@ -409,6 +409,17 @@
 .tw\:\[\&_b_\.wq-source\]\:inline b .wq-source {
   display: inline;
 }
+.tw\:\[\&\>b\]\:text-u-l > b {
+  font-size: 1.25em;
+  line-height: var(--tw-leading, 1.15);
+}
+.tw\:\[\&\>b\]\:font-semibold > b {
+  --tw-font-weight: 600;
+  font-weight: 600;
+}
+.tw\:\[\&\>b\]\:text-ink-1 > b {
+  color: var(--text-1);
+}
 @property --tw-divide-y-reverse {
   syntax: "*";
   inherits: false;

@@ -101,6 +101,17 @@ class BandPageTests(MonitoringCase):
             self.assertEqual(html.count('data-key="band"'), 1)
             band = band_of(html)
             self.assertRegex(text(band), r'^computed at \d\d:\d\d · 2 of 3 units shown')
+            # the clock is the band's one larger figure, an element with nothing but the time in it
+            self.assertRegex(html, r'computed at <b>\d\d:\d\d</b> · 2 of 3')
+
+    def test_the_clock_escapes_its_text(self):
+        """The one piece of markup the band's template takes ready-made (core.tests_escaping: no template prints a
+        value unescaped): whatever a time format would hold is text."""
+        from unittest import mock
+
+        from ..templatetags import cards
+        with mock.patch.object(cards, 'date_format', return_value='<img src=x onerror=alert(1)>'):
+            self.assertEqual(cards.clock(object()), '<b>&lt;img src=x onerror=alert(1)&gt;</b>')
 
     def test_the_tally_the_chips_and_their_links(self):
         self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='5')

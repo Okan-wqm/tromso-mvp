@@ -4,8 +4,10 @@ was ever in": a tank fasted 87 h was told "15.0 h" because its sibling tank was 
 "21.0 h" at a time nobody fed it (the land tanks' feeding on the sea site's clock), and the false sentence went into the
 acknowledgement and the critical log. One reader now says it for every page (farm.feeding.read.last_fed_of): this unit's
 feedings since the fish came in, the unit they came from up to the day of the move, and so on back along their own
-path; nothing else. The cases are those of ops2/RULES.md §1.2 (1 to 8 and 11; 9 and 10 are questions at a feeding's
-save, another change), and the two real ones of Round 1."""
+path; nothing else. The cases are those of ops2/RULES.md §1.2 (1 to 9 and 11 to 13; of 9 the read: the question at the
+back-dated feeding's own save, and case 10, are another change), the two real ones of Round 1, and the review's: a path
+follows the order the transfers happened in WITHIN a day (a unit emptied and refilled on one day, a move there and back,
+a grading day)."""
 from datetime import time as clock, timedelta
 from decimal import Decimal
 
@@ -15,7 +17,8 @@ from core.models import AuditLog
 
 from ..feeding import read as feeding_read, services as feeding_services
 from ..handling import check
-from ..models import Feed, HandlingAcknowledgement, Site, Tank
+from ..handling import fasting
+from ..models import Feed, HandlingAcknowledgement, HandlingPlanItem, Site, Tank
 from ..stock import read as stock_read, services
 from ..stock.dates import local_today, shown_date
 from .helpers import going_on
@@ -221,3 +224,120 @@ class OtherClockTests(FastTestCase):
         self.assertIn('09:00 in T-01 (', text)                                         # when and where it was given
         self.assertIn(' on the clock of M-01)', text)                                  # and what that is at the cage
         self.assertNotIn('09:00 on the clock', text)                                   # nobody fed the cage at 09:00
+
+
+class SameDayTests(FastTestCase):
+    """Transfers have a day and no time: within a day they happened in the order they were entered, the ledger's own
+    order, and a path follows it (review F-02). Read by day, the lines entered after the fish left a unit were taken
+    for their stay there: a tank fed 39 h before its harvest was told nothing, or "the fast is not checked"."""
+
+    def fasting(self, unit, kind='harvest'):
+        result = check.assess(kind, unit, self.today)
+        return result, [each for each in result.warnings if each.warning == 'fasting']
+
+    def test_a_unit_emptied_and_refilled_with_the_same_fish_on_one_day_keeps_its_last_feeding(self):
+        self.fed(2, at=clock(9, 0))                                   # T-01, 39 h before today
+        self.move(10000, 1)                                           # every fish to T-02 ...
+        self.move(10000, 1, source=self.t2, to=self.t1)               # ... and back the same day
+        result, warnings = self.fasting(self.t1)
+        self.assertEqual([(each.fed.record.unit, each.fed.record.date, each.fasted_hours) for each in warnings],
+                         [(self.t1, self.day(2), Decimal('39.0'))])
+        self.assertIn(f'Last fed {shown_date(self.day(2))} 09:00 in T-01, 39.0 h before', warnings[0].message())
+        self.assertFalse([note for note in result.notes if 'the fast is not checked' in note], result.notes)
+        figures = feeding_read.figures(stock_read.stock_of([self.t1]))[self.t1.pk]
+        self.assertEqual((figures.last_fed, figures.last_fed_in), (self.day(2), None))
+
+    def test_the_unit_the_fish_passed_through_that_day_is_on_their_path(self):
+        """(A feeding of a unit that holds no fish at the start or the end of its day is refused by the feeding service,
+        so none can be recorded there; the path still names the unit, for the day.)"""
+        self.move(10000, 1)
+        self.move(10000, 1, source=self.t2, to=self.t1)
+        where = feeding_read.fed_where(stock_read.ledger([self.batch.pk]), self.t1.pk, [self.batch.pk], self.today)
+        self.assertEqual(sorted((place.unit_id == self.t1.pk, place.first, place.last) for place in where),
+                         [(False, self.day(1), self.day(1)),                 # T-02, that day
+                          (True, self.day(20), self.day(1)),                 # T-01 up to the move out
+                          (True, self.day(1), self.today)])                  # T-01 since they came back
+
+    def test_a_grading_day_the_fish_moved_out_before_others_came_in_keep_their_own_feeding(self):
+        self.fed(12, at=clock(9, 0))                                  # the whole batch, in T-01
+        self.move(3000, 10, to=self.t3)                               # 3,000 to T-03, not fed since
+        self.fed(2, at=clock(9, 0))                                   # the 7,000 that stayed in T-01
+        self.move(7000, 1)                                            # T-01's 7,000 into T-02 ...
+        self.move(3000, 1, source=self.t3, to=self.t1)                # ... then T-03's 3,000 into T-01, the same day
+        result, warnings = self.fasting(self.t2)
+        self.assertEqual([(each.fed.record.unit, each.fed.record.date, each.fasted_hours) for each in warnings],
+                         [(self.t1, self.day(2), Decimal('39.0'))])
+        self.assertFalse([note for note in result.notes if 'Last fed' in note], result.notes)
+        # The fish now in T-01 came from T-03 after the 7,000 had left: the feeding of the 7,000 is not theirs.
+        self.assertEqual(self.fasted(self.t1), ('T-01', self.day(12), None))
+        figures = feeding_read.figures(stock_read.stock_of([self.t1, self.t2]))
+        self.assertEqual((figures[self.t2.pk].last_fed, figures[self.t2.pk].last_fed_in), (self.day(2), self.t1))
+        self.assertEqual((figures[self.t1.pk].last_fed, figures[self.t1.pk].last_fed_in), (self.day(12), None))
+
+    def test_the_other_order_on_a_grading_day_is_read_as_entered(self):
+        self.fed(12, at=clock(9, 0))
+        self.move(3000, 10, to=self.t3)
+        self.fed(2, at=clock(9, 0))
+        self.move(3000, 1, source=self.t3, to=self.t1)                # T-03's 3,000 join the 7,000 first ...
+        self.move(10000, 1)                                           # ... then all of T-01 goes to T-02
+        self.assertEqual(self.fasted(self.t2), ('T-01', self.day(2), Decimal('39.0')))
+
+    def test_fish_moved_out_and_back_on_other_days_bring_what_they_were_fed_there(self):
+        self.fed(6, at=clock(9, 0))
+        self.move(4000, 5)                                            # 4,000 to T-02
+        self.fed(4, at=clock(9, 0))                                   # the 6,000 in T-01
+        self.fed(3, at=clock(9, 0), unit=self.t2)                     # the 4,000 in T-02
+        self.move(4000, 2, source=self.t2, to=self.t1)                # and back beside the others
+        self.assertEqual(self.fasted(self.t1), ('T-02', self.day(3), Decimal('63.0')))
+
+
+class LaterRecordsTests(FastTestCase):
+    def test_case_9_a_feeding_back_dated_after_the_harvest_changes_the_answer_at_once(self):
+        """Nothing is stored on read: the check of the harvest's day says the back-dated feeding the moment it is
+        entered. (The question at that feeding's own save is not built: another change.)"""
+        self.fed(5, at=clock(9, 0))
+        self.assertEqual(check.assess('harvest', self.t1, self.day(1)).warnings, [])      # 87 h against 72 h
+        self.harvest(count=100, kilos='5.5', days_ago=1)                                  # no tick was needed
+        self.fed(2, at=clock(9, 0))                                                       # entered afterwards
+        [warning] = check.assess('harvest', self.t1, self.day(1)).warnings
+        self.assertEqual((warning.warning, warning.fasted_hours, warning.fed.record.date),
+                         ('fasting', Decimal('15.0'), self.day(2)))
+
+
+class PlannedFastTests(FastTestCase):
+    """Cases 12 and 13: the days the meal board shows "Fasting" for a planned harvest and the days on which a feeding
+    makes the harvest's check warn are the same days, of the same unit."""
+
+    def plan(self, unit, batch=None):
+        return HandlingPlanItem.objects.create(kind='harvest', date=self.today, unit=unit, batch=batch or self.batch,
+                                               facility=self.facility)
+
+    def test_case_12_the_board_fasts_on_the_days_a_feeding_would_make_the_check_warn(self):
+        self.plan(self.t1)
+        board = fasting.fasts([self.t1], self.day(5), self.today)
+        for days_ago in (5, 4, 3, 2, 1, 0):                           # one more feeding each round: the latest decides
+            self.fed(days_ago, at=clock(12, 0))
+            warned = bool(check.assess('harvest', self.t1, self.today).warnings)
+            with self.subTest(days_ago=days_ago):
+                self.assertEqual((self.t1.pk, self.day(days_ago)) in board, warned)
+        self.assertEqual(sorted(day for _unit, day in board), [self.day(3), self.day(2), self.day(1), self.today])
+
+    def test_case_12_a_unit_not_fed_inside_the_window_passes_whatever_its_sibling_was_fed(self):
+        self.fed(6, at=clock(9, 0))
+        self.move(4000, 5)                                            # 4,000 to T-02, planned for harvest today
+        self.plan(self.t2)
+        self.fed(1, at=clock(9, 0))                                   # the sibling tank, inside T-02's window
+        self.assertEqual(check.assess('harvest', self.t2, self.today).warnings, [])
+        board = fasting.fasts([self.t1, self.t2], self.day(1), self.day(1))
+        self.assertEqual(list(board), [(self.t2.pk, self.day(1))])    # the planned unit fasts, its sibling does not
+
+    def test_case_13_fish_moved_in_during_the_window_decide_by_their_own_path(self):
+        other = self.stock(self.t2, count=3000, weight='50', days_ago=12)
+        self.fed(6, at=clock(9, 0), unit=self.t2)                     # T-02's own fish: 135 h
+        self.plan(self.t2, other)
+        self.fed(2, at=clock(9, 0))                                   # T-01, inside T-02's window
+        self.assertEqual(check.assess('harvest', self.t2, self.today).warnings, [])
+        self.move(500, 1)                                             # 500 of them come into T-02 during the window
+        [warning] = check.assess('harvest', self.t2, self.today, other).warnings
+        self.assertEqual((warning.fed.record.unit, warning.fasted_hours), (self.t1, Decimal('39.0')))
+

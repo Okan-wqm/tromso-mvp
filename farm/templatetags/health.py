@@ -51,6 +51,15 @@ def harvest_from(item):
 
 
 @register.filter
+def held_until(item):
+    """The end of a Withdrawal as the Treatments list says it, both days (farm.handling.withdrawal.held_until): until
+    13.12.2026 (harvest from 14.12.2026)."""
+    if item is None:
+        return DASH
+    return registry.held_until(item.until, getattr(item, 'approximate', getattr(item, 'estimated', False)))
+
+
+@register.filter
 def withdrawal_reason(item):
     """Why a Withdrawal holds the fish."""
     return withdrawal.describe(item)

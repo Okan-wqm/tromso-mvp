@@ -140,6 +140,12 @@ msgstr[0] "Ondan %(count)d balık partisi satın alındı: “%(category)s” i�
 msgstr[1] "Ondan %(count)d balık partisi satın alındı: “%(category)s” işaretli kalsın."
 
 #, python-format
+msgid "%(count)d batch that left it can still be chosen, for a day it was in the unit."
+msgid_plural "%(count)d batches that left it can still be chosen, for a day they were in the unit."
+msgstr[0] "Birimden ayrılan %(count)d parti, birimde bulunduğu bir gün için hâlâ seçilebilir."
+msgstr[1] "Birimden ayrılan %(count)d parti, birimde bulundukları bir gün için hâlâ seçilebilir."
+
+#, python-format
 msgid "%(count)d calibration saved."
 msgid_plural "%(count)d calibrations saved."
 msgstr[0] "%(count)d kalibrasyon kaydedildi."
@@ -15017,14 +15023,13 @@ msgstr "Bu elleçleme ve tür için zaten bir kural var."
 msgid "There is already a rule for this."
 msgstr "Bunun için zaten bir kural var."
 
+#, python-format
 msgid ""
-"There is no active leave type yet, so a request cannot be filed. Leave types are added in the "
-"Company panel under HR › Time & shifts › Scheduling settings › Leave types, by a person whose "
-"role may."
+"There is no active leave type yet, so a request cannot be filed. Leave types are added in "
+"%(where)s › %(types)s, by a person whose role may."
 msgstr ""
-"Henüz etkin bir izin türü yok; bu yüzden talep oluşturulamaz. İzin türleri, Şirket panelinde İK ›"
-" Zaman ve vardiyalar › Planlama ayarları › İzin türleri altında, rolü izin veren bir kişi "
-"tarafından eklenir."
+"Henüz etkin bir izin türü yok; bu yüzden talep oluşturulamaz. İzin türleri, %(where)s › %(types)s"
+" altında, rolü izin veren bir kişi tarafından eklenir."
 
 msgid "Thermal delousing"
 msgstr "Termal bitten arındırma"
@@ -15320,6 +15325,9 @@ msgid "This unit holds %(count)d batch: the operation applies to the one chosen.
 msgid_plural "This unit holds %(count)d batches: the operation applies to the one chosen."
 msgstr[0] "Bu birimde %(count)d parti var: işlem seçilen partiye uygulanır."
 msgstr[1] "Bu birimde %(count)d parti var: işlem seçilen partiye uygulanır."
+
+msgid "This unit holds no fish now: choose the batch that was in it on the day of the record."
+msgstr "Bu birimde şu anda balık yok: kaydın ait olduğu gün birimde bulunan partiyi seçin."
 
 msgid "This unit is booked to another experiment on some of these days."
 msgstr "Bu birim, bu günlerin bazılarında başka bir denemeye ayrılmış."
@@ -18365,6 +18373,14 @@ msgstr "okunmamış"
 #, python-format
 msgid "until %(last)s"
 msgstr "%(last)s tarihine kadar"
+
+#, python-format
+msgid "until %(last)s (%(harvest)s)"
+msgstr "%(last)s tarihine kadar (%(harvest)s)"
+
+#, python-format
+msgid "until about %(last)s (%(harvest)s)"
+msgstr "yaklaşık %(last)s tarihine kadar (%(harvest)s)"
 
 #, python-format
 msgid "up to %(weight)s g"

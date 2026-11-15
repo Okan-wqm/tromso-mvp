@@ -15,7 +15,8 @@ from ..health.withdrawal import rules_text
 from ..models import HealthEvent, LiceCount, Medicine, MedicineWithdrawal, Site, Species, Supplier, Tank, Treatment
 from ..models.health import SAME_SPECIES_MESSAGE
 from ..models.handling import HandlingKind
-from ..stock.dates import local_today, site_earliest, site_today, too_old
+from ..stock.dates import site_earliest, site_today, too_old
+from ..stock.read import offered_day
 from .stock import DATE, DECIMAL, NOTES, EventChoice, ServiceErrors, handling_ack_field
 
 
@@ -259,7 +260,7 @@ class TreatmentForm(ServiceErrors, forms.ModelForm):
         self.fields['units'].queryset = units
         self.fields['handling_ack'] = handling_ack_field(HandlingKind.TREATMENT)
         self._handling = None
-        today = local_today(unit)
+        today = offered_day(unit)        # none for a unit that is empty now: the course is of days its fish were there
         # A new record's own empty dates would win over the farm's today (as the feeding form says).
         self.initial.update({'start_date': today, 'end_date': today})
         if unit is not None:
@@ -356,7 +357,7 @@ class LiceCountForm(ServiceErrors, forms.ModelForm):
         self.fields['unit'].queryset = units
         if unit is not None:
             self.initial['unit'] = unit.pk
-        self.initial['date'] = local_today(unit)
+        self.initial['date'] = offered_day(unit)
 
     def save(self, user):
         data = self.cleaned_data

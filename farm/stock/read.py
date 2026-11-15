@@ -25,6 +25,7 @@ from django.db.models import F, IntegerField, Q, Sum, Value
 from farm.models import Batch, Site, StockMovement, Tank
 from farm.models.feeding import FeedTarget
 
+from .dates import local_today
 from .fold import Line, Op, Share, fold
 from .sizes import Lots, size_mixes
 
@@ -296,6 +297,16 @@ def left_within(units, first_of, production=False):
                               key=lambda share: share.batch.code)
               for unit_id, found in gone.items()}
     return {unit_id: found for unit_id, found in shares.items() if found}
+
+
+def offered_day(unit):
+    """The day a dialog offers for a new record of `unit` (None: no unit chosen yet): its today while it holds fish;
+    NONE when it is empty now. A record of an emptied unit is of a day its fish were still there (flow fault S-04), which
+    the person gives: today would be refused ("T-01 holds no fish on …"), and offering it invited that (review F-09:
+    the stock dialogs gave no day, the feeding, treatment and sea-lice dialogs still gave today)."""
+    if unit is not None and not unit_counts([unit.pk]).get(unit.pk):
+        return None
+    return local_today(unit)
 
 
 def offered(unit, stock, first):

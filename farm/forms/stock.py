@@ -41,6 +41,24 @@ def share_label(share):
         'batch': share.batch.code, 'count': number(share.count), 'weight': number(share.avg_weight_g, 1)}
 
 
+def batches_help(shares):
+    """What the batch choice of a unit says when it offers several: how many batches the unit holds NOW, and that those
+    that left it inside the correction window (farm.stock.read.PastShare) can still be chosen for a day they were
+    there. The batches that left were counted as held ("This unit holds 2 batches" of an empty unit: review F-09)."""
+    shares = list(shares)
+    gone = sum(1 for share in shares if share.past)
+    held = len(shares) - gone
+    if not held:
+        return _('This unit holds no fish now: choose the batch that was in it on the day of the record.')
+    text = ngettext('This unit holds %(count)d batch: the operation applies to the one chosen.',
+                    'This unit holds %(count)d batches: the operation applies to the one chosen.', held) % {'count': held}
+    if gone:
+        text += ' ' + ngettext('%(count)d batch that left it can still be chosen, for a day it was in the unit.',
+                               '%(count)d batches that left it can still be chosen, for a day they were in the unit.',
+                               gone) % {'count': gone}
+    return text
+
+
 class Unshown(forms.HiddenInput):
     """A field the form carries but does not draw: the withdrawal guard's box is drawn with its question
     (farm/_withdrawal_change.html), only when there is one."""
@@ -211,10 +229,7 @@ class OperationForm(ServiceErrors, forms.Form):
             field.widget = forms.HiddenInput()
         else:
             field.choices = [('', '---------'), *choices]
-            field.help_text = ngettext(
-                'This unit holds %(count)d batch: the operation applies to the one chosen.',
-                'This unit holds %(count)d batches: the operation applies to the one chosen.', len(choices)) % {
-                'count': len(choices)}
+            field.help_text = batches_help(self.present.values())
         # The farm's today, while the unit holds fish. A unit that is empty now is recorded for a day it held them
         # (flow fault S-04): no day is assumed, the person gives it.
         self.fields['date'].initial = None if self.past and len(self.past) == len(self.present) else             services.local_today(unit)

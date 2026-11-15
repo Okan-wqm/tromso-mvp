@@ -15,7 +15,7 @@ days still accruing). A block whose `until` is on or before the day is clear.
 they return None, not an empty list: the check then says "Medicine withdrawal not checked" instead of reading it
 as clear."""
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 
 from django.utils import formats
 from django.utils.translation import gettext as _
@@ -35,6 +35,20 @@ def harvest_from(until, approximate=False, shown=None):
     if approximate:
         return _('harvest from about %(date)s') % {'date': day}
     return _('harvest from %(date)s') % {'date': day}
+
+
+def held_until(until, approximate=False):
+    """The Treatments list's words for a withdrawal's end, BOTH days (flow fault M-01 proposed both; review F-09): the
+    last day the fish are held and, in the one wording (`harvest_from`), the first day they may be harvested: "until
+    13.12.2026 (harvest from 14.12.2026)", "until about … (harvest from about …)", "end unknown". The last held day
+    is only ever said with the first free day beside it: "until <date>" alone was read both ways."""
+    harvest = harvest_from(until, approximate)
+    if until is None:
+        return harvest
+    params = {'last': formats.date_format(until - timedelta(days=1), 'DATE_FORMAT'), 'harvest': harvest}
+    if approximate:
+        return _('until about %(last)s (%(harvest)s)') % params
+    return _('until %(last)s (%(harvest)s)') % params
 
 
 @dataclass(frozen=True)

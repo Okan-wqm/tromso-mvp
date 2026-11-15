@@ -96,9 +96,14 @@ def fed_when(fed, unit):
     return when
 
 
-def fed_at(fed):
-    """The time of a feeding given on the handling's own day, as recorded: 09:00, or that none was."""
-    return formats.time_format(fed.record.time, 'TIME_FORMAT') if fed.timed else _('no time recorded')
+def fed_at(fed, unit):
+    """The time of a feeding given on the handling's own day, as recorded: 09:00, or that none was; and the unit it was
+    given in when that is not `unit`, the one handled (the fish came out of it that day, RULES case 5: "09:00 in
+    T-01"), as `fed_when` names it for a feeding of a day before."""
+    at = formats.time_format(fed.record.time, 'TIME_FORMAT') if fed.timed else _('no time recorded')
+    if fed.record.unit_id != unit.pk:
+        at = _('%(when)s in %(unit)s') % {'when': at, 'unit': fed.record.unit.code}
+    return at
 
 
 @dataclass(frozen=True)
@@ -148,7 +153,7 @@ class HandlingWarning:
             # Fed on the handling's own day: the handling has no time, so no fast is counted, and the sentence does not
             # say "0.0 h before" a day the feeding is on, nor name a moment after it (M-05).
             text = _('Fed on the day of the handling itself (%(at)s): no fast before %(day)s; the %(kind)s rule asks '
-                     'for %(asked)s.') % {**params, 'at': fed_at(self.fed)}
+                     'for %(asked)s.') % {**params, 'at': fed_at(self.fed, self.unit)}
         else:
             text = _('Last fed %(moment)s, %(fasted)s before %(day)s: the %(kind)s rule asks for %(asked)s.') % {
                 **params,
@@ -314,7 +319,7 @@ def _fasting(result, batches):
             rule=requirement.rule, fasted_degree_days=done.degree_days, accrual=done.accrual, fed=fed))
         return
     if fed.record.date >= day:
-        result.notes.append(_('Fed on the day of the handling itself (%(at)s).') % {'at': fed_at(fed)})
+        result.notes.append(_('Fed on the day of the handling itself (%(at)s).') % {'at': fed_at(fed, unit)})
     else:
         result.notes.append(_('Last fed %(when)s: %(fasted)s before %(day)s.') % {
             'when': fed_when(fed, unit), 'fasted': done.text(requirement), 'day': _date(day)})

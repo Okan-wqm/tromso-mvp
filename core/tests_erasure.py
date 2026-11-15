@@ -17,7 +17,7 @@ from django.core import mail
 from django.core.mail.backends.base import BaseEmailBackend
 from django.core.management import call_command
 from django.core.management.base import CommandError
-from django.db import DatabaseError, connection, connections, transaction
+from django.db import DatabaseError, OperationalError, connection, connections, transaction
 from django.test import TestCase, TransactionTestCase, override_settings
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
@@ -33,8 +33,9 @@ STRANGER = 'strangr@example.com'
 LONGER = 'xstrangr@example.com'               # another person's: the stranger's address is the tail of it
 ERASED = {'msgid': 'Erased on request'}
 INSTRUCTION = 'DPO instruction of 2026-11-11, ref. DP-17'
-# The table lock's wait in a test that is not about the wait: a loaded machine (an autovacuum on audit_log holds a
-# conflicting lock for seconds) must not fail it. The tests of the wait itself give their own, short one.
+# The wait for the locks in a test that is not about the wait: a loaded machine (an autovacuum on audit_log or on
+# account_mails holds a conflicting lock for seconds) must not fail it. It is one budget for both tables. The tests of
+# the wait itself give their own.
 WAIT = '60'
 # the erasure's own row: a label with an enumerated value (both shown translated), then what a person typed
 SAID = {'Erased on request': [None, {'msgid': 'The address of a mis-sent invitation'}],
@@ -718,7 +719,7 @@ class TriggerTests(RealCase):
         with transaction.atomic():
             with mock.patch.object(erasure, '_rewrite', side_effect=RuntimeError('boom')), \
                     self.assertRaisesMessage(RuntimeError, 'boom'):
-                erasure.erase(STRANGER, INSTRUCTION, 'Kari Nordmann')
+                erasure.erase(STRANGER, INSTRUCTION, 'Kari Nordmann', lock_wait=float(WAIT))
             with connection.cursor() as cursor:
                 self.assertTrue(erasure.trigger_in_force(cursor))
                 cursor.execute("SELECT current_setting('lock_timeout')")
@@ -731,7 +732,7 @@ class TriggerTests(RealCase):
         try:
             with mock.patch.object(erasure, '_rewrite', side_effect=RuntimeError('boom')), \
                     self.assertRaisesMessage(RuntimeError, 'boom'):
-                erasure.erase(STRANGER, INSTRUCTION, 'Kari Nordmann')
+                erasure.erase(STRANGER, INSTRUCTION, 'Kari Nordmann', lock_wait=float(WAIT))
             with connection.cursor() as cursor:
                 self.assertTrue(erasure.trigger_in_force(cursor))
             transaction.commit()
@@ -771,7 +772,6 @@ class LockTests(RealCase):
         outcome = {}
 
         def command():
-            began = time.monotonic()
             try:
                 run(STRANGER, '--apply', '--instruction', INSTRUCTION, '--carried-out-by', 'Kari Nordmann',
                     '--lock-wait', '1')
@@ -779,19 +779,19 @@ class LockTests(RealCase):
             except CommandError as refusal:
                 outcome['said'] = str(refusal)
             finally:
-                outcome['took'] = time.monotonic() - began
                 connection.close()
 
         thread = threading.Thread(target=command)
         thread.start()
-        thread.join(8)
+        thread.join(BOUND)                                    # the writer holds the log until the command has come back
         waiting = thread.is_alive()
         if waiting:                                           # the old way: it waits for as long as the writer does
             holder.rollback()
-            thread.join(30)
-        self.assertFalse(waiting, 'the command was still waiting for the lock after 8 seconds')
-        self.assertIn('could not be locked within 1 second(s): nothing was changed', outcome['said'])
-        self.assertLess(outcome['took'], 6)
+            thread.join(BOUND)
+        self.assertFalse(waiting, f'the command was still waiting for the lock after {BOUND} seconds')
+        self.assertIn('The table audit_log (the activity log) could not be locked within 1 second(s): nothing was '
+                      'changed', outcome['said'])
+        self.assertNotIn('is being written', outcome['said'])      # it does not know who holds it, and does not say so
         self.elsewhere("SET lock_timeout = '2s'")
         self.elsewhere(self.INSERT)                           # no writer is held up once it has given up
         self.elsewhere('SET lock_timeout = 0')
@@ -967,7 +967,28 @@ class TurkishCapitalsTests(ErasureCase):
 
 
 class LockWaitTests(ErasureCase):
-    """Review S5: `--lock-wait -3` was accepted."""
+    """Review S5: `--lock-wait -3` was accepted. Fourth review, F5: so was any number up to what PostgreSQL takes
+    (every writer of the log queued for that long), and a larger one ended in a traceback."""
+
+    def test_the_wait_has_an_upper_bound_said_in_a_sentence(self):
+        for wait in ('3000000', '1e306', '601', '600.001'):
+            with self.subTest(wait=wait), self.assertRaisesMessage(
+                    CommandError, f'“{wait}” is not a positive number of seconds, 600 at most'):
+                run(STRANGER, '--apply', '--instruction', INSTRUCTION, '--carried-out-by', 'Kari Nordmann',
+                    f'--lock-wait={wait}')
+        for wait in (601, 3000000, 1e306):
+            with self.subTest(wait=wait), self.assertRaisesMessage(ValueError, 'a positive number of seconds, 600 at most'):
+                erasure.erase(STRANGER, INSTRUCTION, 'Kari Nordmann', lock_wait=wait)
+        self.assertEqual(stored(), self.before)
+        run(STRANGER, '--apply', '--instruction', INSTRUCTION, '--carried-out-by', 'Kari Nordmann', '--lock-wait=600')
+        self.assertEqual(len(own_rows()), 3)
+
+    def test_the_help_names_both_tables_the_wait_is_for(self):
+        from core.management.commands.erase_stranger_address import Command
+        said = ' '.join(Command().create_parser('manage.py', 'erase_stranger_address').format_help().split())
+        wait = said[said.index('--lock-wait SECONDS'):]
+        for word in ('audit_log', 'account_mails', '600'):
+            self.assertIn(word, wait)
 
     def test_the_wait_for_the_lock_is_a_positive_number_of_seconds(self):
         for wait in ('0', '-3', 'nan', 'inf', '-inf', 'soon', ''):
@@ -982,9 +1003,39 @@ class LockWaitTests(ErasureCase):
         self.assertEqual(len(own_rows()), 3)
 
 
+BOUND = 120            # seconds a test waits for what must happen before it says that it did not
+
+
+class Statements:
+    """An execute wrapper for the erasing session (`connection.execute_wrapper`): the statements it sent (`sent`), the
+    ones refused for a lock (`refused`: lock_not_available, 55P03), and what a test does at the two moments it cannot
+    otherwise meet without a race: `refused(sql)` right after a refusal, the erasure's transaction still open, and
+    `again()` before the first statement after a refusal, when the erasure has let go of everything."""
+
+    def __init__(self, refused=None, again=None):
+        self.sent, self.refused, self.on_refused, self.on_again, self.pending = [], [], refused, again, False
+
+    def __call__(self, execute, sql, params, many, context):
+        if self.pending:
+            self.pending = False
+            if self.on_again:
+                self.on_again()
+        self.sent.append((sql, params))
+        try:
+            return execute(sql, params, many, context)
+        except OperationalError as fault:
+            if getattr(fault.__cause__, 'sqlstate', None) == '55P03':
+                self.refused.append(sql)
+                self.pending = True
+                if self.on_refused:
+                    self.on_refused(sql)
+            raise
+
+
 class MailsUnderTheLockTests(RealCase):
-    """Review S4 and S5, with a second session: the mails are read again under the locks, and a mail that is being
-    written is said to be a mail."""
+    """Review S4 and S5, and the fourth review's F1 and F2, with a second session: the mails are read again under the
+    locks; the erasure never waits for a lock with another one in its hand, so no other session can die of a deadlock
+    with it; what holds a table for a while is waited out within the one wait, and a refusal names the table."""
 
     def setUp(self):
         super().setUp()
@@ -1024,37 +1075,154 @@ class MailsUnderTheLockTests(RealCase):
         self.elsewhere(sql, params, connection=holder)
         return holder
 
-    def refused_at_once(self):
-        began = time.monotonic()
-        with self.assertRaises(CommandError) as refused:
-            run(STRANGER, '--apply', '--instruction', INSTRUCTION, '--carried-out-by', 'Kari Nordmann', '--lock-wait', '4')
-        self.assertLess(time.monotonic() - began, 3)              # it did not wait, the log's lock in its hand
-        self.assertIn('A row of account_mails is being written by another session right now', str(refused.exception))
-        self.assertIn('nothing was changed', str(refused.exception))
-        self.assertNotIn('The activity log is being written to', str(refused.exception))
+    def refused_when_the_wait_is_over(self, what):
+        """The erasure with a wait of one second, while another session holds `what` for longer than that: refused,
+        naming it, nothing changed. Returns the statements it sent."""
+        sent = Statements()
+        with connection.execute_wrapper(sent), self.assertRaises(CommandError) as refused:
+            run(STRANGER, '--apply', '--instruction', INSTRUCTION, '--carried-out-by', 'Kari Nordmann', '--lock-wait', '1')
+        said = str(refused.exception)
+        self.assertIn(f'{what} could not be locked within 1 second(s): nothing was changed', said)
+        self.assertRegex(said, r'It tried [0-9]+ time\(s\)')
+        for claim in ('is being written', 'a mail is being sent', 'The table audit_log'):
+            self.assertNotIn(claim, said)                         # the table, never a guess at who holds it
+        self.assertTrue(sent.refused)
+        return sent
 
-    def test_a_row_of_the_plan_that_another_session_holds_is_said_to_be_a_mail_and_not_waited_for(self):
+    def test_a_row_of_the_plan_that_another_session_holds_refuses_it_when_the_wait_is_over(self):
         mail = AccountMail.objects.get(address=STRANGER)
         holder = self.held_elsewhere('SELECT id FROM account_mails WHERE id = %s FOR UPDATE', [mail.pk])
-        self.refused_at_once()
+        sent = self.refused_when_the_wait_is_over('A row of account_mails that would be rewritten')
+        self.assertTrue(all('account_mails' in sql and 'NOWAIT' in sql for sql in sent.refused), sent.refused)
         self.elsewhere("SET lock_timeout = '2s'")
         self.elsewhere(self.INSERT)                               # and no writer of the log is held up after it
         self.elsewhere('SET lock_timeout = 0')
         holder.rollback()
         self.assert_nothing_changed()
 
-    def test_a_mail_being_written_by_another_session_is_said_to_be_a_mail_and_not_waited_for(self):
-        """What the mail worker does when it closes a mail: it writes the mail's row, then the log. A command that
-        waited for that row with the log locked would stand in a deadlock with it."""
+    def test_the_mails_table_held_for_longer_than_the_wait_refuses_it_and_names_the_table(self):
+        """What a vacuum or an analyze of account_mails holds (the fourth review's probe, F2): the refusal blamed "a
+        mail being written"."""
+        holder = self.held_elsewhere('LOCK TABLE account_mails IN SHARE UPDATE EXCLUSIVE MODE', None)
+        self.refused_when_the_wait_is_over('The table account_mails')
+        holder.rollback()
+        self.assert_nothing_changed()
+
+    def test_a_row_of_the_log_that_another_session_holds_refuses_it_when_the_wait_is_over(self):
+        """A lock met under the erasure's own two: it is not waited for either (the wait would be one with the log and
+        the mails in hand), and it ended in a traceback."""
+        entry = AuditLog.objects.get(action='password', entity_id=str(self.kari.pk))
+        holder = self.held_elsewhere('SELECT id FROM audit_log WHERE id = %s FOR UPDATE', [entry.pk])
+        self.refused_when_the_wait_is_over('A row or a table this command reads or writes under its locks')
+        holder.rollback()
+        self.assert_nothing_changed()
+
+    def test_a_mail_being_written_by_another_session_is_let_through_and_the_erasure_then_done(self):
+        """What the mail worker does when it closes a mail: it writes the mail's row, then the log. The erasure does
+        not wait for the mails with the log in its hand (that wait is a deadlock with this session): it lets the log
+        go, the other session writes the log and ends, and the erasure, starting again, is done."""
         holder = self.held_elsewhere('UPDATE account_mails SET error = %s WHERE id = %s', ['Sending interrupted.',
                                                                                        self.reset.pk])
-        self.refused_at_once()
-        self.elsewhere("SET lock_timeout = '2s'", connection=holder)
-        self.elsewhere(self.INSERT, connection=holder)            # the other session goes on to write the log
-        holder.commit()
-        self.assertEqual(self.seen_elsewhere()[:2], (['O'], 4))
-        apply()                                                   # and the erasure, run again, is done
+
+        def the_other_session_goes_on():                          # the erasure holds nothing now
+            self.elsewhere("SET lock_timeout = '10s'", connection=holder)
+            self.elsewhere(self.INSERT, connection=holder)
+            holder.commit()
+
+        sent = Statements(again=the_other_session_goes_on)
+        with connection.execute_wrapper(sent):
+            apply()
+        self.assertEqual(len(sent.refused), 1)
+        self.assertIn('LOCK TABLE account_mails', sent.refused[0])
         self.assertEqual(self.seen_elsewhere()[:2], (['O'], 0))
+        self.assertEqual(self.elsewhere('SELECT error FROM account_mails WHERE id = %s', [self.reset.pk]),
+                         [('Sending interrupted.',)])
+
+    def test_with_the_log_in_its_hand_no_statement_of_the_erasure_waits_for_a_lock(self):
+        """The rule, asked of the statements themselves: the log's lock is the only one waited for (with nothing in
+        hand); every lock asked for after it is taken at once or not at all, and whatever lock a later statement meets
+        is given up after a millisecond."""
+        sent = Statements()
+        with connection.execute_wrapper(sent):
+            apply()
+        locks = [(sql, params) for sql, params in sent.sent
+                 if 'LOCK TABLE' in sql or 'FOR UPDATE' in sql or 'lock_timeout' in sql]
+        self.assertEqual([' '.join(sql.split()) if 'FOR UPDATE' not in sql else 'rows ' + sql[sql.index('FOR UPDATE'):]
+                          for sql, _params in locks], [
+            "SELECT current_setting('lock_timeout')",
+            "SELECT set_config('lock_timeout', %s, true)",                # what is left of the wait: for the log
+            'LOCK TABLE audit_log IN SHARE ROW EXCLUSIVE MODE',
+            "SELECT set_config('lock_timeout', %s, true)",                # a millisecond: for whatever comes after it
+            'LOCK TABLE account_mails IN SHARE ROW EXCLUSIVE MODE NOWAIT',
+            'rows FOR UPDATE NOWAIT',
+            "SELECT set_config('lock_timeout', %s, true)",                # as it was: a caller's transaction goes on
+        ])
+        waits = [list(params)[0] for sql, params in locks if 'set_config' in sql]
+        self.assertRegex(waits[0], r'^[0-9]{4,5}ms$')                     # of the 60 seconds given
+        self.assertEqual(waits[1:], ['1ms', '0'])
+        self.assertEqual(self.seen_elsewhere()[:2], (['O'], 0))
+
+    def queued_for_the_log(self, count):
+        """Waits until `count` sessions wait for a lock on the log (asked of the server), with a bound."""
+        for _ in range(BOUND * 100):
+            if self.elsewhere("SELECT count(*) FROM pg_locks WHERE NOT granted AND relation = 'audit_log'::regclass AND "
+                              "database = (SELECT oid FROM pg_database WHERE datname = current_database())")[0][0] == count:
+                return
+            time.sleep(0.01)
+        self.fail(f'{count} session(s) were not waiting for the log within {BOUND} s')
+
+    def test_the_session_that_writes_a_mail_and_then_the_log_never_dies_of_a_deadlock_with_the_erasure(self):
+        """The fourth review's schedule (F1). H holds the log (an open writer); E, the erasure, queues for it; M does
+        what closing a mail does (UPDATE account_mails, then INSERT audit_log) and queues behind E; H lets go just
+        before M, having waited for the server's deadlock timeout, looks for a deadlock. E then had the log and waited
+        for the mails, which M holds: M found the deadlock and was its victim. The order of the three is asked of the
+        server; the one time in it is when H lets go, which is what made the old way fail (any other moment passes
+        both ways)."""
+        deadlock_timeout = self.elsewhere("SELECT setting::int FROM pg_settings WHERE name = 'deadlock_timeout'")[0][0]
+        holder = self.held_elsewhere(self.INSERT, None)                                    # H
+        outcome = {}
+
+        def erases():                                                                      # E
+            try:
+                apply()
+                outcome['E'] = 'done'
+            except Exception as fault:
+                outcome['E'] = f'{type(fault).__name__}: {" ".join(str(fault).split())}'
+            finally:
+                connection.close()
+
+        def writes_a_mail_then_the_log():                                                  # M
+            mailer = connections['default'].copy()
+            try:
+                mailer.set_autocommit(False)
+                with mailer.cursor() as cursor:
+                    cursor.execute('UPDATE account_mails SET error = %s WHERE id = %s', ['Sending interrupted.',
+                                                                                         self.reset.pk])
+                    cursor.execute(self.INSERT)
+                mailer.commit()
+                outcome['M'] = 'done'
+            except Exception as fault:
+                outcome['M'] = f'{type(fault).__name__}: {" ".join(str(fault).split())}'
+            finally:
+                mailer.close()
+
+        threads = [threading.Thread(target=erases), threading.Thread(target=writes_a_mail_then_the_log)]
+        try:
+            threads[0].start()
+            self.queued_for_the_log(1)                            # E waits for the log, nothing in its hand
+            threads[1].start()
+            self.queued_for_the_log(2)                            # M has written its mail and waits behind E
+            waiting_since = time.monotonic()
+            time.sleep(max(waiting_since + 0.85 * deadlock_timeout / 1000 - time.monotonic(), 0))
+        finally:
+            holder.rollback()
+            for thread in threads:
+                if thread.ident is not None:
+                    thread.join(BOUND)
+        self.assertEqual(outcome, {'E': 'done', 'M': 'done'})
+        self.assertEqual(self.seen_elsewhere()[:2], (['O'], 0))
+        self.assertEqual(self.elsewhere('SELECT error FROM account_mails WHERE id = %s', [self.reset.pk]),
+                         [('Sending interrupted.',)])
 
     def test_the_mails_cannot_be_written_while_the_erasure_writes(self):
         rewrite, seen = erasure._rewrite, {}
@@ -1075,37 +1243,16 @@ class MailsUnderTheLockTests(RealCase):
         self.assertIn('lock timeout', seen['update'])
         self.assertEqual(AccountMail.objects.get(pk=self.reset.pk).error, 'The mail server refused it.')
 
-    def test_a_lock_on_the_mails_held_for_an_instant_is_waited_for(self):
-        """Taking the mails' locks at once or not at all refused the run whenever anything held the table for an
-        instant: the database's own vacuum or analyze (the lock held here), the mail worker saying that it still has a
-        mail. It showed as a failure of another test of this module in a run of 12.11.2026 (19:06 UTC). The command
-        waits a moment, shorter than the server's deadlock timeout; the other session lets go once it is waited for."""
+    def test_a_lock_on_the_mails_is_waited_out_with_nothing_in_hand(self):
+        """Taking the mails' locks at once or not at all refused the run whenever anything held the table: the
+        database's own vacuum or analyze (the lock held here), the mail worker saying that it still has a mail. It
+        showed as a failure of another test of this module in a run of 12.11.2026 (19:06 UTC), and again on 15.11.2026
+        with a wait of a quarter of a second in its place. The erasure lets the log go and tries again until its wait
+        is over; here the other session lets go when the erasure has been refused once, however long that took."""
         holder = self.held_elsewhere('LOCK TABLE account_mails IN SHARE UPDATE EXCLUSIVE MODE', None)
-        holder.inc_thread_sharing()
-        self.addCleanup(holder.dec_thread_sharing)
-        seen = []
-
-        def let_go_when_waited_for():
-            watcher = connections['default'].copy()
-            try:
-                for _ in range(250):
-                    with watcher.cursor() as cursor:
-                        cursor.execute("SELECT count(*) FROM pg_locks WHERE NOT granted AND relation = "
-                                       "'account_mails'::regclass AND database = (SELECT oid FROM pg_database "
-                                       "WHERE datname = current_database())")
-                        if cursor.fetchone()[0]:
-                            seen.append('waited for')
-                            break
-                    time.sleep(0.02)
-            finally:
-                holder.rollback()
-                watcher.close()
-
-        thread = threading.Thread(target=let_go_when_waited_for)
-        thread.start()
-        try:
+        sent = Statements(refused=lambda sql: holder.rollback())
+        with connection.execute_wrapper(sent):
             apply()
-        finally:
-            thread.join(15)
-        self.assertEqual(seen, ['waited for'])
+        self.assertEqual(len(sent.refused), 1)
+        self.assertIn('LOCK TABLE account_mails', sent.refused[0])
         self.assertEqual(self.seen_elsewhere()[:2], (['O'], 0))

@@ -24,7 +24,7 @@ class OneLineTests(HarvestTestCase):
         result = self.assess()
         [warning] = result.warnings
         self.assertEqual(warning.message(),
-                         f'Last fed {shown_date(self.day(1))} (no time recorded: counted from the end of the day), '
+                         f'Last fed {shown_date(self.day(1))} (no time recorded: counted from the end of the day) in T-01, '
                          f'0.0 h before {shown_date(self.today)}: the harvest rule asks for 72 h.')
         self.assertNotIn('00:00', warning.message())                         # nobody fed at midnight
         self.assertFalse([note for note in result.notes if 'Last fed' in note or 'asks for' in note])
@@ -34,7 +34,7 @@ class OneLineTests(HarvestTestCase):
     def test_a_feeding_with_a_time_is_named_by_its_moment_once(self):
         self.fed(1, at=clock(18, 0))
         result = self.assess()
-        self.assertEqual(result.messages(), [f'Last fed {shown_date(self.day(1))} 18:00, 6.0 h before '
+        self.assertEqual(result.messages(), [f'Last fed {shown_date(self.day(1))} 18:00 in T-01, 6.0 h before '
                                              f'{shown_date(self.today)}: the harvest rule asks for 72 h.'])
         self.assertFalse([note for note in result.notes if 'Last fed' in note])
 
@@ -55,7 +55,7 @@ class OneLineTests(HarvestTestCase):
         self.fed(5)                                                          # 96 h before today
         result = self.assess()
         self.assertEqual(result.warnings, [])
-        self.assertIn(f'Last fed {shown_date(self.day(5))} (no time recorded: counted from the end of the day): '
+        self.assertIn(f'Last fed {shown_date(self.day(5))} (no time recorded: counted from the end of the day) in T-01: '
                       f'96.0 h before {shown_date(self.today)}.', result.notes)
         self.assertIn('The harvest rule for Atlantic salmon asks for 72 h.', result.notes)
 
@@ -65,7 +65,7 @@ class OneLineTests(HarvestTestCase):
                            ('drawer', self.client.get(reverse('farm:production_units'), {'unit': self.t1.pk}))):
             with self.subTest(page=name):
                 self.assertContains(page, f'Last fed {shown_date(self.day(1))} (no time recorded: counted from the '
-                                          'end of the day), 0.0 h before', count=1)
+                                          'end of the day) in T-01, 0.0 h before', count=1)
                 self.assertNotContains(page, f'Last fed {shown_date(self.today)} 00:00')
                 self.assertNotContains(page, 'counted from the end of the day:')
 
@@ -75,7 +75,7 @@ class OneLineTests(HarvestTestCase):
         entry = AuditLog.objects.get(entity_type='stock operation', action='create', entity_id=str(operation.pk))
         logged = entry.changes['Handling warnings acknowledged'][1]
         self.assertEqual(logged, f'Last fed {shown_date(self.day(1))} (no time recorded: counted from the end of the '
-                                 f'day), 0.0 h before {shown_date(self.today)}: the harvest rule asks for 72 h.')
+                                 f'day) in T-01, 0.0 h before {shown_date(self.today)}: the harvest rule asks for 72 h.')
         row = HandlingAcknowledgement.objects.get()
         self.assertEqual((row.warning, row.last_fed_at, row.fasted_hours, row.required_hours),
                          ('fasting', start_of(self.today, self.t1), Decimal('0.0'), 72))

@@ -91,7 +91,7 @@ class FastingTests(HarvestTestCase):
         self.assertEqual((warning.warning, warning.fasted_hours, warning.required_hours, warning.rule.kind),
                          ('fasting', Decimal('6.0'), 72, 'harvest'))
         # One line says it (M-05): the warning, with the feeding's own time; the notes do not repeat the feeding.
-        self.assertEqual(warning.message(), f'Last fed {services.shown_date(self.day(1))} 18:00, 6.0 h before '
+        self.assertEqual(warning.message(), f'Last fed {services.shown_date(self.day(1))} 18:00 in T-01, 6.0 h before '
                                             f'{services.shown_date(self.today)}: the harvest rule asks for 72 h.')
         self.assertFalse([note for note in result.notes if 'Last fed' in note])
 
@@ -100,7 +100,7 @@ class FastingTests(HarvestTestCase):
         result = self.assess()
         self.assertEqual(result.warnings[0].fasted_hours, Decimal('48.0'))
         self.assertIn(f'Last fed {services.shown_date(self.day(3))} (no time recorded: counted from the end of the '
-                      'day), 48.0 h before', result.warnings[0].message())
+                      'day) in T-01, 48.0 h before', result.warnings[0].message())
         self.assertEqual(self.assess('transport').warnings, [])            # 48 h against the transport rule's 24
 
     def test_a_feeding_on_the_day_itself_gives_no_fast(self):
@@ -629,7 +629,7 @@ class PurgingTests(PurgingBase):
                          ('fasting', Decimal('30.0'), Decimal('60.0'), None, 'harvest'))
         self.assertEqual(warning.fasted_hours, Decimal('78.0'))              # 18:00 four days ago to today's start
         self.assertEqual(warning.message(),
-                         f'Last fed {services.shown_date(self.day(4))} 18:00, 30 degree-days before '
+                         f'Last fed {services.shown_date(self.day(4))} 18:00 in T-01, 30 degree-days before '
                          f'{services.shown_date(self.today)}: the harvest rule asks for 60 degree-days.')
         self.assertFalse([note for note in result.notes if 'Last fed' in note or 'asks for' in note])   # one line
         # Reached exactly: no warning; one degree-day short: a warning.
@@ -697,7 +697,7 @@ class PurgingTests(PurgingBase):
         [warning] = self.assess('transport').warnings
         self.assertEqual((warning.required_hours, warning.required_degree_days, warning.fasted_degree_days),
                          (100, None, None))
-        self.assertEqual(warning.message(), f'Last fed {services.shown_date(self.day(4))} 18:00, 78.0 h before '
+        self.assertEqual(warning.message(), f'Last fed {services.shown_date(self.day(4))} 18:00 in T-01, 78.0 h before '
                                             f'{services.shown_date(self.today)}: the transport rule asks for 100 h.')
 
     @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')

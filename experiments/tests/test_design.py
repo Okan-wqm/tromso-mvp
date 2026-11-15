@@ -8,7 +8,7 @@ from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.urls import reverse
 
 from core.models import AuditLog
-from farm.tests.helpers import correction_window
+from farm.tests.helpers import WINDOW_WAY_OUT, correction_window
 from farm.models import Feed, FeedingProtocol, ProtocolAssignment, ProtocolBand, ProtocolRate
 
 from .. import design, services
@@ -340,8 +340,8 @@ class ProblemsTests(DesignTestCase):
         Experiment.objects.filter(pk=self.trial.pk).update(starts_on=self.day(32))
         ReplicateUnit.objects.update(from_on=self.day(32), until_on=self.day(32) + timedelta(days=56))   # the days move too
         self.assertEqual(self.codes('error'), ['day_0_too_old'])
-        self.assertEqual(self.found()[0].text, 'Day 0 is further back than records can be dated: an '
-                                                              'experiment is registered at most 31 days after it begins.')
+        self.assertEqual(self.found()[0].text, 'Day 0 is further back than records can be dated: an experiment is '
+                                               f'registered at most 31 days after it begins. {WINDOW_WAY_OUT}')
         Experiment.objects.filter(pk=self.trial.pk).update(starts_on=self.day(31))
         ReplicateUnit.objects.update(from_on=self.day(31), until_on=self.day(31) + timedelta(days=56))
         self.assertEqual(self.codes('error'), [])

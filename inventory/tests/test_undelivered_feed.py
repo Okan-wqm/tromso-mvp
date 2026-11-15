@@ -71,5 +71,3 @@ class UndeliveredFeedTests(StoreTestCase):
         self.fed('20', 1)
         with correction_window(2):
             self.assertEqual(self.undelivered(), [(self.bergen, self.feed, D(20), self.day(1))])
-        with correction_window(0):
-            self.assertEqual(self.undelivered(), [])

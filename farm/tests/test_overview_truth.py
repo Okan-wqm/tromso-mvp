@@ -10,7 +10,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils import timezone
 
-from ..models import HealthEvent, StockOperation
+from ..models import HealthEvent, Site, StockOperation
 from ..stock import services
 from .helpers import role
 from .test_production_overview import OverviewTestCase, card_of, section
@@ -82,6 +82,7 @@ class ReportsTruthTests(OverviewTestCase):
         self.assertIn('Nothing needs attention', section(html, 'Needs attention'))
 
     def test_a_notice_due_at_once_needs_attention(self):
+        Site.objects.filter(pk=self.bergen.pk).update(reports_from=timezone.localdate() - timedelta(days=30))
         HealthEvent.objects.create(site=self.bergen, date=timezone.localdate() - timedelta(days=1), kind='vet_visit',
                                    diagnosis='isa', confirmation='suspected')
         html = self.page()

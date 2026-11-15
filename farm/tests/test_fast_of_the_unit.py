@@ -197,14 +197,14 @@ class OtherClockTests(FastTestCase):
         services.record_transfer(self.user, source=self.t1, batch=self.batch, day=day, legs=[(self.m1, 3000)],
                                  reason='density', handling_ack=seen)
 
-    def feed(self, unit, day, at):
+    def give(self, unit, day, at):
         return feeding_services.record_feeding(self.user, unit=unit, day=day, feed=self.feed, amount_kg=Decimal('5'),
                                                time=at)
 
     def test_the_cage_fasted_39_hours_whatever_the_land_tanks_were_fed(self):
         self.to_sea(5)
-        own = self.feed(self.m1, self.there - timedelta(days=2), clock(9, 0))         # 09:00 on the cage's clock
-        self.feed(self.t1, self.there - timedelta(days=1), clock(9, 0))               # the land tank, the day after
+        own = self.give(self.m1, self.there - timedelta(days=2), clock(9, 0))         # 09:00 on the cage's clock
+        self.give(self.t1, self.there - timedelta(days=1), clock(9, 0))               # the land tank, the day after
         [warning] = [each for each in check.assess('harvest', self.m1, self.there).warnings
                      if each.warning == 'fasting']
         self.assertEqual((warning.fed.record, warning.fasted_hours), (own, Decimal('39.0')))
@@ -213,7 +213,7 @@ class OtherClockTests(FastTestCase):
         self.assertNotIn('on the clock of', warning.message())                         # its own unit, its own clock
 
     def test_a_feeding_in_the_unit_they_came_from_is_said_on_its_own_clock_and_on_the_cages(self):
-        fed = self.feed(self.t1, self.there - timedelta(days=4), clock(9, 0))         # 09:00 UTC, in the land tank
+        fed = self.give(self.t1, self.there - timedelta(days=4), clock(9, 0))         # 09:00 UTC, in the land tank
         self.to_sea(3)                                                                 # never fed in the cage
         found = feeding_read.last_fed_at(self.m1, self.there)
         self.assertEqual(found.record, fed)

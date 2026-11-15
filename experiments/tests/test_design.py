@@ -348,8 +348,8 @@ class ProblemsTests(DesignTestCase):
         with correction_window(60):
             Experiment.objects.filter(pk=self.trial.pk).update(starts_on=self.day(61))
             ReplicateUnit.objects.update(from_on=self.day(61), until_on=self.day(61) + timedelta(days=56))
-            self.assertEqual(self.found()[0].text, 'Day 0 is further back than records can be dated: an '
-                                                   'experiment is registered at most 60 days after it begins.')
+            self.assertEqual(self.found()[0].text, 'Day 0 is further back than records can be dated: an experiment is '
+                                                   f'registered at most 60 days after it begins. {WINDOW_WAY_OUT}')
             Experiment.objects.filter(pk=self.trial.pk).update(starts_on=self.day(45))
             ReplicateUnit.objects.update(from_on=self.day(45), until_on=self.day(45) + timedelta(days=56))
             self.assertEqual(self.codes('error'), [])

@@ -65,7 +65,6 @@ What it is and is not:
 `plan` reads only; `erase` writes. The command `manage.py erase_stranger_address` is the only caller: no page does
 this (it removes the evidence of where a link went, so the data-protection officer decides each case)."""
 import json
-import math
 import re
 import time
 import unicodedata

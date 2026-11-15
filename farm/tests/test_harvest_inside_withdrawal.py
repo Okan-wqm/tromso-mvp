@@ -171,7 +171,11 @@ class SecondPersonSettingTests(HarvestInsideTestCase):
         self.tick()
         self.harvest(3)
         bath = self.medicine(days=7)
-        change = self.change_of(self.treat, bath, 5, 5)
+        # Told at once, before any tick is asked for (flow fault M-27), and whatever is ticked.
+        with self.assertRaises(WithdrawalChanged) as caught:
+            self.treat(bath, 5, 5)
+        self.assertIn('A second person must approve', caught.exception.message_dict['withdrawal_ack'][0])
+        change = caught.exception.change
         with self.assertRaises(WithdrawalChanged) as caught:
             self.treat(bath, 5, 5, withdrawal_ack=change.fingerprint)
         self.assertIn('A second person must approve', caught.exception.message_dict['withdrawal_ack'][0])

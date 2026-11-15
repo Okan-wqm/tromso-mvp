@@ -388,3 +388,19 @@ class OnePassTests(TestCase):
         self.assertEqual(many, 4 * few)
         self.assertLessEqual(big, small * 4 * 1.05, f'{few} lines: {small} reads; {many} lines: {big} reads')
         self.assertLessEqual(big, 25 * many)                          # a few passes over the lines, not one per unit
+
+
+class OneLedgerReadTests(FastTestCase):
+    def test_the_figures_read_the_ledger_once_for_the_walk_and_for_the_last_feeding(self):
+        """The units list, the drawer, the plans and a wall of cards: the last feeding is read along the lines the
+        feeding walk has just folded, not from a second read of the ledger (review F-01: one query more on every card
+        read broke monitoring's recorded counts)."""
+        self.fed(4, at=clock(9, 0))
+        self.move(4000, 3)
+        stock = stock_read.stock_of([self.t1, self.t2])
+        for details in ((), (self.t1,)):
+            with self.subTest(details=details),                     mock.patch.object(feeding_read, 'ledger', wraps=feeding_read.ledger) as ledger:
+                figures = feeding_read.figures(stock, details=details)
+                self.assertEqual(ledger.call_count, 1)
+                self.assertEqual((figures[self.t2.pk].last_fed, figures[self.t2.pk].last_fed_in),
+                                 (self.day(4), self.t1))

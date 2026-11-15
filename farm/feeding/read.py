@@ -250,7 +250,8 @@ class Paths:
     order, never at a day: fish that left a unit by one transfer were in it up to that transfer, whatever was entered
     for the unit later the same day (a unit emptied and refilled on one day, a move there and back, a grading day:
     read by day, the lines after the move were taken for the stay the fish left, and their last feeding was lost,
-    review F-02)."""
+    review F-02). Indexed once whatever the number of units (review F-04: once per unit, a units list of 200 units
+    cost 60 times one of 25)."""
 
     def __init__(self, lines):
         self.days = []                           # the day of every line, in the ledger's order: where a day ends
@@ -321,14 +322,14 @@ def last_fed_of(asked):
     14.11.2026: fish of two batches in one unit are one group, one fast for the unit whichever batch a dialog names):
     the feedings of production fish in the units and days `fed_where` gives for each batch in the unit, on or before
     `day`; the latest of them decides (the least-fasted fish: they cannot be handled apart). A cleaner fish's feeding
-    is not theirs. One ledger read and one query of the feedings for all the units asked."""
+    is not theirs. One ledger read, indexed once (`Paths`), and one query of the feedings, for all the units asked."""
     asked = list(asked)
     found = {unit.pk: None for unit, _day, _ids, _since in asked}
     batch_ids = {batch_id for _unit, _day, ids, _since in asked for batch_id in ids}
     if not batch_ids:
         return found
-    lines = ledger(batch_ids)
-    places = {unit.pk: fed_where(lines, unit.pk, ids, day, since) for unit, day, ids, since in asked}
+    paths = Paths(ledger(batch_ids))
+    places = {unit.pk: paths.where(unit.pk, ids, day, since) for unit, day, ids, since in asked}
     every = [place for found_for in places.values() for place in found_for]
     if not every:
         return found

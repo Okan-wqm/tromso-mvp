@@ -6,8 +6,11 @@ from django.core.management import call_command
 from django.urls import reverse
 from django.utils import translation
 
+from core.models import Profile
+
 from ..models import HandlingPlanItem
 from .test_harvest import HarvestTestCase
+
 
 def setUpModule():
     call_command('compile_catalogs', verbosity=0)    # the language test reads the built catalogs
@@ -42,9 +45,8 @@ class PlanFormTests(HarvestTestCase):
 
     def test_the_help_is_translated(self):
         self.addCleanup(translation.activate, 'en')
-        for language in ('nb', 'tr'):
-            with translation.override(language):
-                fields = self.form('harvest').context['form'].fields
-                for name in ('planned_kg', 'facility'):
-                    text = str(fields[name].help_text)
-                    self.assertTrue(text and 'planned-slaughter notice' not in text, (language, name))
+        for language, words in (('nb', 'meldingen om planlagt slakting'), ('tr', 'planlı kesim bildirimi')):
+            Profile.objects.update_or_create(user=self.user, defaults={'language': language})
+            page = self.form('harvest')
+            self.assertContains(page, words, msg_prefix=language)
+            self.assertNotContains(page, 'planned-slaughter notice', msg_prefix=language)

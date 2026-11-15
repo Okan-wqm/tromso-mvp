@@ -14159,6 +14159,13 @@ msgstr ""
 "Den planlagte slaktingen fra %(unit)s %(planned)s ble registrert %(date)s ved %(facility)s: den "
 "rapporteres her som planlagt; rett meldingen hvis den er sendt."
 
+msgid ""
+"The planned-slaughter notice is filed per facility; it also needs the company that files for the "
+"facility (its operator, Purchasing › Suppliers) to have a 9-digit organisation number."
+msgstr ""
+"Meldingen om planlagt slakting sendes per anlegg; den krever også at selskapet som melder for "
+"anlegget (operatøren, Innkjøp › Leverandører) har et 9-sifret organisasjonsnummer."
+
 #, python-format
 msgid "The points of %(owner)s."
 msgstr "Punktene på %(owner)s."
@@ -14890,6 +14897,15 @@ msgstr "Året det ble publisert."
 
 msgid "Their average on the takeover day; to 0.0001 g for eggs and larvae."
 msgstr "Snittet på overtakelsesdagen; til 0,0001 g for rogn og larver."
+
+msgid ""
+"Their round (live) weight, in kg. The plan is saved without it, but the planned-slaughter notice "
+"of its week (Production › Reports) reports these kilos and cannot be filed for a plan that has "
+"none."
+msgstr ""
+"Rundvekten (levende vekt) i kg. Planen lagres uten den, men meldingen om planlagt slakting for "
+"uken (Produksjon › Rapporter) rapporterer disse kiloene og kan ikke sendes for en plan som "
+"mangler dem."
 
 msgid "Their weight (kg)"
 msgstr "Samlet vekt (kg)"

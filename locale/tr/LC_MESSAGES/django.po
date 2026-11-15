@@ -14183,6 +14183,13 @@ msgstr ""
 "%(unit)s biriminin %(planned)s tarihli planlı hasadı %(date)s tarihinde %(facility)s tesisinde "
 "kaydedildi: burada planlandığı gibi raporlanır; bildirim gönderildiyse düzeltin."
 
+msgid ""
+"The planned-slaughter notice is filed per facility; it also needs the company that files for the "
+"facility (its operator, Purchasing › Suppliers) to have a 9-digit organisation number."
+msgstr ""
+"Planlı kesim bildirimi tesis başına verilir; ayrıca tesis adına bildirimi yapan şirketin "
+"(işletmecisi, Satın alma › Tedarikçiler) 9 haneli bir kuruluş numarası olması gerekir."
+
 #, python-format
 msgid "The points of %(owner)s."
 msgstr "%(owner)s noktaları."
@@ -14917,6 +14924,15 @@ msgstr "Yayımlandığı yıl."
 
 msgid "Their average on the takeover day; to 0.0001 g for eggs and larvae."
 msgstr "Devir günündeki ortalamaları; yumurta ve larvalar için 0,0001 g hassasiyetle."
+
+msgid ""
+"Their round (live) weight, in kg. The plan is saved without it, but the planned-slaughter notice "
+"of its week (Production › Reports) reports these kilos and cannot be filed for a plan that has "
+"none."
+msgstr ""
+"Bütün (canlı) ağırlıkları, kg olarak. Plan bu olmadan da kaydedilir; ancak o haftanın planlı "
+"kesim bildirimi (Üretim › Raporlar) bu kiloları bildirir ve kilosu olmayan bir plan için "
+"gönderilemez."
 
 msgid "Their weight (kg)"
 msgstr "Toplam ağırlıkları (kg)"

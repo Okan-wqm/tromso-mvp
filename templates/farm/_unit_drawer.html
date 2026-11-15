@@ -55,7 +55,7 @@
       <h3>{% trans "Feeding" %}</h3>
       {% with week=feeding.week %}
       <dl class="metrics">
-        <div><dt>{% trans "Last fed" %}</dt><dd>{{ feeding.last_fed|fed_on:feeding.today }}</dd></div>
+        <div><dt>{% trans "Last fed" %}</dt><dd>{{ feeding.last_fed|fed_on:feeding.today }}{% if feeding.last_fed_in %} <span class="muted">{% blocktrans trimmed with unit=feeding.last_fed_in.code %}in {{ unit }}, before the fish were moved here{% endblocktrans %}</span>{% endif %}</dd></div>
         <div><dt>{% trans "Fed today" %}</dt><dd>{{ week.today_kg|feed_kg }}</dd>{% if week.today_meals %}<dd class="row-sub">{% blocktrans trimmed count meals=week.today_meals %}{{ meals }} meal{% plural %}{{ meals }} meals{% endblocktrans %}</dd>{% endif %}</div>
         <div><dt>{% trans "Last 7 days" %}</dt><dd>{{ week.kg|kilos }}</dd></div>
       </dl>

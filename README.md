@@ -1807,9 +1807,18 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
   one the medicine withdrawal adds up (`farm/water/degree_days.py`, one definition for both: the unit's middle point,
   else its system's loop; a past day without a measured temperature counts at the species' assumed temperature, else as
   0 °C, and the warning says so). Each thing the rule asks for must be reached, so the warning shows each: "Last fed
-  3 Nov 2026, 02:52, 48.0 h and 36 degree-days before 6 Nov 2026: the harvest rule asks for 72 h and 60 degree-days." The last feeding is of the fish themselves, wherever they were
-  fed: the feeding walk's split says which batches a record fed, so fish moved in yesterday bring their last
-  meal in the old unit with them (`farm.feeding.read.last_fed_at`). A record without a time counts from the end
+  3 Nov 2026, 02:52, 48.0 h and 36 degree-days before 6 Nov 2026: the harvest rule asks for 72 h and 60 degree-days." **The fast is of the fish in the unit
+  handled** (the owner, 14.11.2026: fish of two batches in one unit are one group; flow fault S-01): one fast for the
+  unit, whichever batch a dialog names, counted from the latest feeding of production fish along the fish's own path
+  (`farm.feeding.read.last_fed_of`, `fed_where`): this unit's feedings since each of its batches came into it, the
+  feedings of the unit they came from up to and including the day of the move (a move has no time), and so on back;
+  never a unit the fish were not in, nor their old unit after they left it, so a sibling tank fed after a split does
+  not break the fast of the fish that were moved, and the least-fasted fish of a mixed unit decide. The sentence, the
+  acknowledgement row (`handling_acknowledgements.feeding`, farm 0039) and the critical log line name the feeding's
+  unit ("Last fed 09.11.2026 09:00 in T-01, 87.0 h before …"), and when that unit is on another clock than the unit
+  handled, the moment on both. The one reader also gives "Last fed" on the units list, the drawer ("in T-01, before
+  the fish were moved here"), the production plans and the cards (`farm/tests/test_fast_of_the_unit.py`, the cases of
+  the panel's rules). A record without a time counts from the end
   of its day and a feeding on the day gives 0 h, so **the fast is never overstated**; the sentence names the feeding
   once, as it is true: its day and time, or its day and "(no time recorded: counted from the end of the day)", never
   the counted moment as a feeding time, and a feeding on the handling's own day reads "Fed on the day of the handling

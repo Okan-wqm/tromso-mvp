@@ -1633,8 +1633,16 @@ msgid "%(weight)s weighed %(date)s"
 msgstr "%(weight)s veid %(date)s"
 
 #, python-format
+msgid "%(when)s (%(here)s on the clock of %(unit)s)"
+msgstr "%(when)s (%(here)s etter klokken til %(unit)s)"
+
+#, python-format
 msgid "%(when)s by %(who)s"
 msgstr "%(when)s av %(who)s"
+
+#, python-format
+msgid "%(when)s in %(unit)s"
+msgstr "%(when)s i %(unit)s"
 
 #, python-format
 msgid "%(when)s through %(how)s, recorded by %(who)s"
@@ -6368,6 +6376,9 @@ msgstr "Fôring"
 
 msgid "Feeding (from the records)"
 msgstr "Fôring (fra registreringene)"
+
+msgid "Feeding counted from"
+msgstr "Fôring det er regnet fra"
 
 msgid "Feeding drawn from it (estimated)"
 msgstr "Fôring trukket fra det (anslått)"
@@ -17562,6 +17573,14 @@ msgstr "på %(location)s: %(held)s, utløper %(date)s."
 #, python-format
 msgid "in %(name)s"
 msgstr "i %(name)s"
+
+#, python-format
+msgid "in %(unit)s"
+msgstr "i %(unit)s"
+
+#, python-format
+msgid "in %(unit)s, before the fish were moved here"
+msgstr "i %(unit)s, før fisken ble flyttet hit"
 
 msgid "ingest contract"
 msgstr "innhentingskontrakt"

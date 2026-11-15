@@ -5,7 +5,7 @@ harvested, transported, graded or treated, have they fasted long enough?
     assess(kind, unit, day, batch=None) -> Assessment            the warnings and what the dialog says besides
 
 `kind` is a HandlingKind: harvest, transport (a transfer), grading, treatment (the health tab's dialog).
-Without a batch, every batch in the unit that day counts. Pure reads of stored facts, inside the caller's
+The fish of a unit are one group (the batch named only says which fish an operation books). Pure reads of stored facts, inside the caller's
 transaction: the stock service runs it after its locks (a feeding of the unit takes turns with it).
 
 - Withdrawal (a harvest only: the fish go to food, to the slaughter facility the harvest names; a medicine
@@ -17,7 +17,11 @@ transaction: the stock service runs it after its locks (a feeding of the unit ta
   batch, so no caller can ask it of one. The warning names the batch that is held, and says so when the unit holds
   other fish beside it. With no provider the harvest dialog says "Medicine withdrawal not checked" and nothing is
   warned. A transfer or a grading is checked for the fast and the live-transfer facts alone.
-- Fasting: the hours since the fish's last feeding against the rule (farm/handling/fasting.py) and, for a harvest
+- Fasting: **the fast is of the fish in the unit handled** (flow fault S-01; the owner, 14.11.2026: fish of two
+  batches in one unit are one group): one fast for the unit, whichever batch the handling names, from the latest
+  feeding of the fish in it along their own path (farm.feeding.read.last_fed_of: this unit since they came in, the
+  unit they came from up to the day of the move, and so on back; never a sibling unit fed after a split). The hours
+  since that feeding against the rule (farm/handling/fasting.py) and, for a harvest
   whose rule asks for purging in degree-days, the degree-days of the full days since it; each that the rule asks for
   must be reached, the later decides. No rule, or no feeding found in the 31 days before, is said, not warned.
 
@@ -39,7 +43,7 @@ from django.core.exceptions import ValidationError
 from django.utils import formats
 from django.utils.translation import gettext as _
 
-from farm.feeding.read import book_on, last_fed_at
+from farm.feeding.read import handled, last_fed_at
 from farm.models import Batch, HandlingAcknowledgement, Treatment
 from farm.models.handling import AcknowledgedWarning, HandlingKind, HandlingRule, WithdrawalWarning
 from farm.stock.dates import local_today
@@ -67,13 +71,22 @@ def withdrawal_text(block):
 
 
 def fed_when(fed, unit):
-    """When fish were last fed (a LastFed), as it is true: the feeding's moment on the unit's clock when it has a time;
-    else its day, and that no time was recorded. A feeding without a time COUNTS from the end of its day
-    (farm.feeding.read.fed_moment), but that is not a moment anybody fed at, so it is never printed as one (flow fault
-    M-05: "Last fed 22.10.2026 00:00" for a feeding of 21.10)."""
+    """When and where fish were last fed (a LastFed), as it is true: the feeding's moment on the clock of the unit it
+    was given in, when it has a time; else its day, and that no time was recorded. A feeding without a time COUNTS
+    from the end of its day (farm.feeding.read.fed_moment), but that is not a moment anybody fed at, so it is never
+    printed as one (flow fault M-05: "Last fed 22.10.2026 00:00" for a feeding of 21.10). The unit of the feeding is
+    named (S-01: the fish may have been fed in the unit they came from), and when that unit is on another clock than
+    `unit`, the one handled, the moment is said on both: nobody fed at the converted time."""
+    there = fed.record.unit
     if fed.timed:
-        return shown_moment(fed.moment, unit)
-    return _('%(date)s (no time recorded: counted from the end of the day)') % {'date': _date(fed.record.date)}
+        when = shown_moment(fed.moment, there)
+    else:
+        when = _('%(date)s (no time recorded: counted from the end of the day)') % {'date': _date(fed.record.date)}
+    when = _('%(when)s in %(unit)s') % {'when': when, 'unit': there.code}
+    here = shown_moment(fed.moment, unit)
+    if fed.timed and there.pk != unit.pk and here != shown_moment(fed.moment, there):
+        when = _('%(when)s (%(here)s on the clock of %(unit)s)') % {'when': when, 'here': here, 'unit': unit.code}
+    return when
 
 
 def fed_at(fed):
@@ -172,16 +185,19 @@ class Assessment:
 
 
 def _batches_in(unit, day):
-    """The production batches in the unit at the start of the day (at its end when it was empty then): the fish a
-    harvest, a transport or a grading of the unit handles; the cleaner fish beside them are not slaughtered."""
-    return list(Batch.all_objects.filter(pk__in=book_on(unit, day).production.weights).select_related('species'))
+    """The production batches in the unit at the start of the day or at its end (farm.feeding.read.handled): the fish
+    a harvest, a transport or a grading of the unit handles, as one group; the cleaner fish beside them are not
+    slaughtered."""
+    return list(Batch.all_objects.filter(pk__in=handled(unit, day)).select_related('species').order_by('code'))
 
 
 def assess(kind, unit, day, batch=None, with_earliest=True):
     """The warnings and notes of handling the fish of `batch` (or every batch) in `unit` on `day`; for a harvest, with
     the earliest suitable date among the notes (`with_earliest`: the save, which needs only the warnings, leaves it)."""
     result = Assessment(kind, unit, day, batch)
-    batches = [batch] if batch is not None else _batches_in(unit, day)
+    # The fish of the unit are one group (S-01, S-02): the fast and the withdrawal are the unit's, whichever batch the
+    # handling names; `batch` only says which fish the operation books.
+    batches = _batches_in(unit, day)
     if kind == WITHDRAWAL_KIND:
         _withdrawal(result)
     _fasting(result, batches)
@@ -242,7 +258,7 @@ def _fasting(result, batches):
     if requirement is None:
         result.notes.append(_('No handling rule for %(kind)s: the fast is not checked (Reference data › Handling '
                               'rules).') % {'kind': label})
-    fed = last_fed_at(unit, day, batch=result.batch, since=day - timedelta(days=LOOKBACK_DAYS))
+    fed = last_fed_at(unit, day, since=day - timedelta(days=LOOKBACK_DAYS))
     if fed is None:
         result.notes.append(_('No feeding of these fish is recorded in the %(days)d days before %(day)s: the fast '
                               'is not checked.') % {'days': LOOKBACK_DAYS, 'day': _date(day)})
@@ -329,7 +345,7 @@ def earliest(unit, batch, today=None):
     requirement = fasting.requirement_of(HandlingKind.HARVEST, batch.species)
     purge_day, degrees_unknown, water = None, False, None
     if requirement is not None and requirement.asks:
-        fed = last_fed_at(unit, today, batch=batch, since=today - timedelta(days=LOOKBACK_DAYS))
+        fed = last_fed_at(unit, today, since=today - timedelta(days=LOOKBACK_DAYS))      # the unit's, not the batch's
         if fed is not None:
             if requirement.degree_days:
                 water = BatchWater({batch.pk}, today, fed.record.date + DAY)
@@ -437,6 +453,7 @@ def acknowledge(record, assessment):
         else:
             rows.append(HandlingAcknowledgement(
                 **link, warning=warning.warning, last_fed_at=warning.last_fed_at,
+                feeding=warning.fed.record if warning.fed is not None else None,
                 fasted_hours=warning.fasted_hours, required_hours=warning.required_hours,
                 fasted_degree_days=warning.fasted_degree_days, required_degree_days=warning.required_degree_days,
                 rule=warning.rule))

@@ -1643,8 +1643,16 @@ msgid "%(weight)s weighed %(date)s"
 msgstr "%(date)s tarihinde %(weight)s tartıldı"
 
 #, python-format
+msgid "%(when)s (%(here)s on the clock of %(unit)s)"
+msgstr "%(when)s (%(unit)s saatine göre %(here)s)"
+
+#, python-format
 msgid "%(when)s by %(who)s"
 msgstr "%(when)s, %(who)s"
+
+#, python-format
+msgid "%(when)s in %(unit)s"
+msgstr "%(when)s, %(unit)s biriminde"
 
 #, python-format
 msgid "%(when)s through %(how)s, recorded by %(who)s"
@@ -6382,6 +6390,9 @@ msgstr "Yemleme"
 
 msgid "Feeding (from the records)"
 msgstr "Yemleme (kayıtlardan)"
+
+msgid "Feeding counted from"
+msgstr "Sayımın başladığı yemleme"
 
 msgid "Feeding drawn from it (estimated)"
 msgstr "Ondan düşülen yemleme (tahmini)"
@@ -17586,6 +17597,14 @@ msgstr "%(location)s içinde: %(held)s, süresi %(date)s tarihinde doluyor."
 #, python-format
 msgid "in %(name)s"
 msgstr "%(name)s içinde"
+
+#, python-format
+msgid "in %(unit)s"
+msgstr "%(unit)s biriminde"
+
+#, python-format
+msgid "in %(unit)s, before the fish were moved here"
+msgstr "%(unit)s biriminde, balıklar buraya taşınmadan önce"
 
 msgid "ingest contract"
 msgstr "veri alım sözleşmesi"

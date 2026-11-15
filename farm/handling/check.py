@@ -66,6 +66,21 @@ def withdrawal_text(block):
         'batch': block.batch.code, 'end': withdrawal.harvest_from(block.until, block.approximate)}
 
 
+def fed_when(fed, unit):
+    """When fish were last fed (a LastFed), as it is true: the feeding's moment on the unit's clock when it has a time;
+    else its day, and that no time was recorded. A feeding without a time COUNTS from the end of its day
+    (farm.feeding.read.fed_moment), but that is not a moment anybody fed at, so it is never printed as one (flow fault
+    M-05: "Last fed 22.10.2026 00:00" for a feeding of 21.10)."""
+    if fed.timed:
+        return shown_moment(fed.moment, unit)
+    return _('%(date)s (no time recorded: counted from the end of the day)') % {'date': _date(fed.record.date)}
+
+
+def fed_at(fed):
+    """The time of a feeding given on the handling's own day, as recorded: 09:00, or that none was."""
+    return formats.time_format(fed.record.time, 'TIME_FORMAT') if fed.timed else _('no time recorded')
+
+
 @dataclass(frozen=True)
 class HandlingWarning:
     """One warning of the check (the contract's Warning; named so as not to hide Python's own Warning)."""
@@ -80,6 +95,7 @@ class HandlingWarning:
     fasted_degree_days: Decimal = None   # a harvest's purging: the degree-days since the last feeding
     accrual: object = None               # how they were found (farm.water.degree_days.Accrual)
     shared: bool = False                 # a withdrawal: the unit holds fish of other batches beside the held one
+    fed: object = None                   # a fast: the feeding it counts from (farm.feeding.read.LastFed), for the words
 
     @property
     def required_hours(self):
@@ -106,12 +122,21 @@ class HandlingWarning:
                 text += ' ' + _('It holds every fish in %(unit)s: the fish of different batches in one unit cannot be '
                                 'told apart at a harvest.') % {'unit': self.unit.code}
             return f'{text} {self.block.reason}' if self.block.reason else text
-        text = _('Last fed %(moment)s, %(fasted)s before %(day)s: the %(kind)s rule asks for %(asked)s.') % {
-            'moment': shown_moment(self.last_fed_at, self.unit),
-            'fasted': both_text(None if self.required_hours is None else hours_text(self.fasted_hours),
-                                None if self.required_degree_days is None else degree_days_text(self.fasted_degree_days)),
-            'day': _date(self.day), 'kind': str(HandlingKind(self.kind).label).lower(),
-            'asked': asks_text(self.required_hours, self.required_degree_days)}
+        params = {'day': _date(self.day), 'kind': str(HandlingKind(self.kind).label).lower(),
+                  'asked': asks_text(self.required_hours, self.required_degree_days)}
+        if self.fed is not None and self.fed.record.date >= self.day:
+            # Fed on the handling's own day: the handling has no time, so no fast is counted, and the sentence does not
+            # say "0.0 h before" a day the feeding is on, nor name a moment after it (M-05).
+            text = _('Fed on the day of the handling itself (%(at)s): no fast before %(day)s; the %(kind)s rule asks '
+                     'for %(asked)s.') % {**params, 'at': fed_at(self.fed)}
+        else:
+            text = _('Last fed %(moment)s, %(fasted)s before %(day)s: the %(kind)s rule asks for %(asked)s.') % {
+                **params,
+                'moment': (fed_when(self.fed, self.unit) if self.fed is not None
+                           else shown_moment(self.last_fed_at, self.unit)),
+                'fasted': both_text(
+                    None if self.required_hours is None else hours_text(self.fasted_hours),
+                    None if self.required_degree_days is None else degree_days_text(self.fasted_degree_days))}
         if self.accrual is not None and self.accrual.missing:
             text += ' ' + missing_sentence(self.accrual.missing, self.accrual.assumed)
         return text
@@ -222,20 +247,25 @@ def _fasting(result, batches):
     if requirement is not None and requirement.degree_days is not None:
         water = BatchWater(batch_ids, local_today(unit), fed.record.date + DAY)
     done = fasting.fasted(unit, day, fed, requirement, water, batch_ids)
-    when = shown_moment(fed.moment, unit) if fed.timed else _('%(date)s, no time recorded: counted from the end of '
-                                                              'the day') % {'date': _date(fed.record.date)}
-    result.notes.append(_('Last fed %(when)s: %(fasted)s before %(day)s.') % {
-        'when': when, 'fasted': done.text(requirement), 'day': _date(day)})
+    if requirement is not None and not done.ok:
+        # ONE line (flow fault M-05): the warning says when the fish were fed, how long before the day and what the
+        # rule asks; the notes do not say the same feeding a second time. What is stored is unchanged: the moment the
+        # feeding counts from (`last_fed_at`) and the hours.
+        result.warnings.append(HandlingWarning(
+            AcknowledgedWarning.FASTING, result.kind, unit, day, last_fed_at=fed.moment, fasted_hours=done.hours,
+            rule=requirement.rule, fasted_degree_days=done.degree_days, accrual=done.accrual, fed=fed))
+        return
+    if fed.record.date >= day:
+        result.notes.append(_('Fed on the day of the handling itself (%(at)s).') % {'at': fed_at(fed)})
+    else:
+        result.notes.append(_('Last fed %(when)s: %(fasted)s before %(day)s.') % {
+            'when': fed_when(fed, unit), 'fasted': done.text(requirement), 'day': _date(day)})
     if requirement is None:
         return
     result.notes.append(_('The %(kind)s rule for %(species)s asks for %(asked)s.') % {
         'kind': label, 'species': species.common_name, 'asked': requirement.text()})
     if done.accrual is not None and done.accrual.missing:
         result.notes.append(missing_sentence(done.accrual.missing, done.accrual.assumed))
-    if not done.ok:
-        result.warnings.append(HandlingWarning(
-            AcknowledgedWarning.FASTING, result.kind, unit, day, last_fed_at=fed.moment, fasted_hours=done.hours,
-            rule=requirement.rule, fasted_degree_days=done.degree_days, accrual=done.accrual))
 
 
 # ---- the earliest suitable harvest date ---------------------------------------------------------------

@@ -496,8 +496,8 @@ msgstr[0] "%(counter)s satır"
 msgstr[1] "%(counter)s satır"
 
 #, python-format
-msgid "%(date)s, no time recorded: counted from the end of the day"
-msgstr "%(date)s, saat kaydedilmemiş: günün sonundan sayıldı"
+msgid "%(date)s (no time recorded: counted from the end of the day)"
+msgstr "%(date)s (saat kaydedilmemiş: gün sonundan itibaren sayılır)"
 
 #, python-format
 msgid "%(days)d d ago"
@@ -6240,6 +6240,18 @@ msgstr "Kaydın ötesinde yemlenen"
 
 msgid "Fed from the book"
 msgstr "Kayıttan yemlenen"
+
+#, python-format
+msgid "Fed on the day of the handling itself (%(at)s)."
+msgstr "İşlemin yapıldığı gün yemlendi (%(at)s)."
+
+#, python-format
+msgid ""
+"Fed on the day of the handling itself (%(at)s): no fast before %(day)s; the %(kind)s rule asks "
+"for %(asked)s."
+msgstr ""
+"İşlemin yapıldığı gün yemlendi (%(at)s): %(day)s öncesinde açlık yok; %(kind)s kuralı %(asked)s "
+"istiyor."
 
 msgid "Fed to"
 msgstr "Yemlenen"
@@ -17689,6 +17701,9 @@ msgstr "%(date)s tarihinden beri %(site)s lokasyonunda denizde salmonid yok"
 
 msgid "no such row"
 msgstr "böyle bir satır yok"
+
+msgid "no time recorded"
+msgstr "saat kaydedilmemiş"
 
 msgid "none"
 msgstr "yok"

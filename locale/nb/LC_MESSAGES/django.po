@@ -496,8 +496,8 @@ msgstr[0] "%(counter)s rad"
 msgstr[1] "%(counter)s rader"
 
 #, python-format
-msgid "%(date)s, no time recorded: counted from the end of the day"
-msgstr "%(date)s, uten klokkeslett: regnet fra slutten av dagen"
+msgid "%(date)s (no time recorded: counted from the end of the day)"
+msgstr "%(date)s (uten klokkeslett: regnet fra slutten av dagen)"
 
 #, python-format
 msgid "%(days)d d ago"
@@ -6226,6 +6226,18 @@ msgstr "Fôret ut over registeret"
 
 msgid "Fed from the book"
 msgstr "Fôret fra registeret"
+
+#, python-format
+msgid "Fed on the day of the handling itself (%(at)s)."
+msgstr "Fôret samme dag som håndteringen (%(at)s)."
+
+#, python-format
+msgid ""
+"Fed on the day of the handling itself (%(at)s): no fast before %(day)s; the %(kind)s rule asks "
+"for %(asked)s."
+msgstr ""
+"Fôret samme dag som håndteringen (%(at)s): ingen sulting før %(day)s; regelen for %(kind)s krever"
+" %(asked)s."
 
 msgid "Fed to"
 msgstr "Fôret til"
@@ -17667,6 +17679,9 @@ msgstr "ingen laksefisk i sjøen på %(site)s siden %(date)s"
 
 msgid "no such row"
 msgstr "ingen slik rad"
+
+msgid "no time recorded"
+msgstr "uten klokkeslett"
 
 msgid "none"
 msgstr "ingen"

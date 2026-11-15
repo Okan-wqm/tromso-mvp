@@ -120,12 +120,12 @@ class HeldUnitTests(SharedUnitTestCase):
             self.harvest_b(0, handling_ack=seen)
         locks = [query['sql'] for query in queries.captured_queries
                  if 'FOR UPDATE' in query['sql'] and 'FROM "batches"' in query['sql']]
-        self.assertTrue(any(str(self.a.pk) in sql and str(self.b.pk) in sql for sql in locks), locks)
+        self.assertTrue(any(self.a.pk.hex in sql and self.b.pk.hex in sql for sql in locks), locks)
         first_units = next(index for index, query in enumerate(queries.captured_queries)
                            if 'FOR UPDATE' in query['sql'] and 'FROM "tanks"' in query['sql'])
         first_both = next(index for index, query in enumerate(queries.captured_queries)
                           if 'FOR UPDATE' in query['sql'] and 'FROM "batches"' in query['sql']
-                          and str(self.a.pk) in query['sql'])
+                          and self.a.pk.hex in query['sql'])
         self.assertLess(first_both, first_units)                             # the fish first, then the units
 
 

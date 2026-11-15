@@ -392,6 +392,12 @@ msgstr[0] "%(count)s tane zamanı geldi"
 msgstr[1] "%(count)s tane zamanı geldi"
 
 #, python-format
+msgid "%(count)s due at once"
+msgid_plural "%(count)s due at once"
+msgstr[0] "%(count)s hemen verilmeli"
+msgstr[1] "%(count)s hemen verilmeli"
+
+#, python-format
 msgid "%(count)s fish stay in %(unit)s: weigh them too."
 msgstr "%(unit)s içinde %(count)s balık kalıyor: onları da tartın."
 
@@ -406,6 +412,12 @@ msgid "%(count)s more sampling point on Water chemistry"
 msgid_plural "%(count)s more sampling points on Water chemistry"
 msgstr[0] "Su kimyasında %(count)s numune noktası daha"
 msgstr[1] "Su kimyasında %(count)s numune noktası daha"
+
+#, python-format
+msgid "%(count)s notice due at once"
+msgid_plural "%(count)s notices due at once"
+msgstr[0] "hemen verilmesi gereken %(count)s bildirim"
+msgstr[1] "hemen verilmesi gereken %(count)s bildirim"
 
 #, python-format
 msgid "%(count)s overdue"
@@ -454,6 +466,32 @@ msgid "%(count)s sampling point"
 msgid_plural "%(count)s sampling points"
 msgstr[0] "%(count)s numune noktası"
 msgstr[1] "%(count)s numune noktası"
+
+#, python-format
+msgid "%(count)s site not set up for reports"
+msgid_plural "%(count)s sites not set up for reports"
+msgstr[0] "%(count)s saha raporlar için ayarlanmamış"
+msgstr[1] "%(count)s saha raporlar için ayarlanmamış"
+
+#, python-format
+msgid ""
+"%(count)s site with fish is not set up for reports: what it owes is not known, so nothing is "
+"listed as due for it."
+msgid_plural ""
+"%(count)s sites with fish are not set up for reports: what they owe is not known, so nothing is "
+"listed as due for them."
+msgstr[0] ""
+"Balık bulunan %(count)s saha raporlar için ayarlanmamış: ne borçlu olduğu bilinmiyor, bu yüzden "
+"onun için vadesi gelen hiçbir şey listelenmiyor."
+msgstr[1] ""
+"Balık bulunan %(count)s saha raporlar için ayarlanmamış: ne borçlu oldukları bilinmiyor, bu "
+"yüzden onlar için vadesi gelen hiçbir şey listelenmiyor."
+
+#, python-format
+msgid "%(count)s stocked unit without a water sample"
+msgid_plural "%(count)s stocked units without a water sample"
+msgstr[0] "su örneği olmayan %(count)s balıklı birim"
+msgstr[1] "su örneği olmayan %(count)s balıklı birim"
 
 #, python-format
 msgid "%(count)s system is not in any production department."
@@ -2199,6 +2237,9 @@ msgstr ""
 #, python-format
 msgid "A note is at most %(count)d characters."
 msgstr "Bir not en çok %(count)d karakterdir."
+
+msgid "A notice is filed at once: it has no later deadline."
+msgstr "Bildirim hemen verilir: daha sonraki bir son tarihi yoktur."
 
 #, python-format
 msgid "A page shows at most %(days)s day: the first day was moved."
@@ -6617,6 +6658,12 @@ msgstr "Tartılan balık"
 msgid "Fish with no limit"
 msgstr "Sınırı olmayan balıklar"
 
+#, python-format
+msgid "Fish, and no water sample in the last %(days)s day."
+msgid_plural "Fish, and no water sample in the last %(days)s days."
+msgstr[0] "Balık var ve son %(days)s günde su örneği yok."
+msgstr[1] "Balık var ve son %(days)s günde su örneği yok."
+
 msgid "Fiskeridirektoratet; confirm the form with Fiskeridirektoratet"
 msgstr "Fiskeridirektoratet; formu Fiskeridirektoratet ile teyit edin"
 
@@ -7784,6 +7831,11 @@ msgid ""
 msgstr ""
 "%(unit)s içindeki bütün balıkları tutar: aynı birimdeki farklı partilerin balıkları hasatta "
 "birbirinden ayrılamaz."
+
+msgid "It holds fish, and what it owes cannot be worked out: no report is listed as due for it."
+msgstr ""
+"Balık barındırıyor ve ne borçlu olduğu hesaplanamıyor: onun için vadesi gelen hiçbir rapor "
+"listelenmiyor."
 
 msgid "It holds fish: move or harvest them first."
 msgstr "İçinde balık var: önce taşıyın veya hasat edin."

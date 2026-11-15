@@ -49,6 +49,10 @@ def overview_upcoming(user):
     rows = owed.rows
     reminders = [line for line in owed.duties if line.status in (duties.OVERDUE, duties.DUE_SOON)]
     return {'rows': rows[:UPCOMING], 'more': max(len(rows) - UPCOMING, 0), 'url': reverse('reports:report_list'),
+            # What the Reports page says beside its list, said on the overviews too (flow faults M-06, M-20): the sites
+            # that hold fish and are not set up for their reports (nothing can be known to be due for them), and the
+            # notices to file at once (they have no deadline, so they are never "overdue").
+            'not_set_up': owed.not_set_up, 'at_once': [row for row in rows if row.deadline is None],
             'overdue': sum(1 for row in rows if row.overdue) + sum(1 for line in reminders
                                                                    if line.status == duties.OVERDUE),
             'duties': reminders, 'duties_url': reverse('reports:outside_duties')}

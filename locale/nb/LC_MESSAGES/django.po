@@ -392,6 +392,12 @@ msgstr[0] "%(count)s skal sendes"
 msgstr[1] "%(count)s skal sendes"
 
 #, python-format
+msgid "%(count)s due at once"
+msgid_plural "%(count)s due at once"
+msgstr[0] "%(count)s forfaller straks"
+msgstr[1] "%(count)s forfaller straks"
+
+#, python-format
 msgid "%(count)s fish stay in %(unit)s: weigh them too."
 msgstr "%(count)s fisk blir igjen i %(unit)s: vei dem også."
 
@@ -406,6 +412,12 @@ msgid "%(count)s more sampling point on Water chemistry"
 msgid_plural "%(count)s more sampling points on Water chemistry"
 msgstr[0] "%(count)s prøvepunkt til under Vannkjemi"
 msgstr[1] "%(count)s prøvepunkter til under Vannkjemi"
+
+#, python-format
+msgid "%(count)s notice due at once"
+msgid_plural "%(count)s notices due at once"
+msgstr[0] "%(count)s melding som skal sendes straks"
+msgstr[1] "%(count)s meldinger som skal sendes straks"
 
 #, python-format
 msgid "%(count)s overdue"
@@ -454,6 +466,32 @@ msgid "%(count)s sampling point"
 msgid_plural "%(count)s sampling points"
 msgstr[0] "%(count)s prøvepunkt"
 msgstr[1] "%(count)s prøvepunkter"
+
+#, python-format
+msgid "%(count)s site not set up for reports"
+msgid_plural "%(count)s sites not set up for reports"
+msgstr[0] "%(count)s lokalitet er ikke satt opp for rapporter"
+msgstr[1] "%(count)s lokaliteter er ikke satt opp for rapporter"
+
+#, python-format
+msgid ""
+"%(count)s site with fish is not set up for reports: what it owes is not known, so nothing is "
+"listed as due for it."
+msgid_plural ""
+"%(count)s sites with fish are not set up for reports: what they owe is not known, so nothing is "
+"listed as due for them."
+msgstr[0] ""
+"%(count)s lokalitet med fisk er ikke satt opp for rapporter: hva den skylder er ikke kjent, så "
+"ingenting er oppført som forfalt for den."
+msgstr[1] ""
+"%(count)s lokaliteter med fisk er ikke satt opp for rapporter: hva de skylder er ikke kjent, så "
+"ingenting er oppført som forfalt for dem."
+
+#, python-format
+msgid "%(count)s stocked unit without a water sample"
+msgid_plural "%(count)s stocked units without a water sample"
+msgstr[0] "%(count)s enhet med fisk uten vannprøve"
+msgstr[1] "%(count)s enheter med fisk uten vannprøve"
 
 #, python-format
 msgid "%(count)s system is not in any production department."
@@ -2191,6 +2229,9 @@ msgstr ""
 #, python-format
 msgid "A note is at most %(count)d characters."
 msgstr "Et notat er på høyst %(count)d tegn."
+
+msgid "A notice is filed at once: it has no later deadline."
+msgstr "En melding sendes straks: den har ingen senere frist."
 
 #, python-format
 msgid "A page shows at most %(days)s day: the first day was moved."
@@ -6602,6 +6643,12 @@ msgstr "Fisk veid"
 msgid "Fish with no limit"
 msgstr "Fisk uten grense"
 
+#, python-format
+msgid "Fish, and no water sample in the last %(days)s day."
+msgid_plural "Fish, and no water sample in the last %(days)s days."
+msgstr[0] "Fisk, og ingen vannprøve den siste %(days)s dagen."
+msgstr[1] "Fisk, og ingen vannprøve de siste %(days)s dagene."
+
 msgid "Fiskeridirektoratet; confirm the form with Fiskeridirektoratet"
 msgstr "Fiskeridirektoratet; bekreft skjemaet med Fiskeridirektoratet"
 
@@ -7762,6 +7809,9 @@ msgid ""
 msgstr ""
 "Den holder all fisk i %(unit)s: fisk fra ulike fiskegrupper i samme enhet kan ikke skilles fra "
 "hverandre ved høsting."
+
+msgid "It holds fish, and what it owes cannot be worked out: no report is listed as due for it."
+msgstr "Den har fisk, og hva den skylder kan ikke beregnes: ingen rapport er oppført som forfalt for den."
 
 msgid "It holds fish: move or harvest them first."
 msgstr "Det er fisk i den: flytt eller høst fisken først."

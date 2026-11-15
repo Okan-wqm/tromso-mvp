@@ -74,6 +74,12 @@ def production_home(request):
         if user.has_perm(WATER_RECORD) else '',
         'late_tasks': tasks_named['overdue']['count'] if tasks_named else 0,
         'late_reports': len(upcoming['late']) + len(upcoming['late_duties']) if upcoming else 0,
+        # What else is not "nothing needs attention" (flow faults M-06, M-20), each counted by the read of its own page:
+        # the notices to file at once, the sites with fish that are not set up for reports, the stocked units with no
+        # water value inside the window of the Water page.
+        'at_once': len(upcoming['at_once']) if upcoming else 0,
+        'not_set_up': len(upcoming['not_set_up']) if upcoming else 0,
+        'unmeasured': len(water['unmeasured']) if water else 0,
         'tiles': _counts(request.user,
                          (_('Production departments'), ProductionDepartment, 'farm:productiondepartment_list'),
                          (_('Systems'), System, 'farm:system_list'),

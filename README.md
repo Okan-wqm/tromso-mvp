@@ -4141,7 +4141,11 @@ without a redesign yet, and are redesigned one page at a time.
   (of all units), feed today and over 7 days, critical water points and water points with a warning (of all sampling
   points), tasks due today, overdue tasks, reports due (with the overdue ones as a chip). Each card is the figure large
   with its label, one sub-line and its source and time ("Stock records at 15:35"), the whole card a link; grey unless
-  abnormal (the 4 px status edge, glyph and word). Below, Needs attention in compact rows (the water points with a
+  abnormal (the 4 px status edge, glyph and word). Below, Needs attention in compact rows (what else is not "nothing needs attention", each from the read of the page
+that owns it, so the two cannot disagree: the stocked units with no water value inside the Water page's 30 days, the
+sites with fish that are not set up for reports, for which nothing can be known to be due, and the notices to file at
+once, which have no deadline and so are never "overdue"; the head's chips, the Reports card and the Reports due panel
+say the same, and the company's home page too: `farm/tests/test_overview_truth.py`; the water points with a
   critical or warning value measured at them, the critical first, at most six, each value on one line with its origin and
   age, a small History button; overdue tasks; overdue reports and duties) and beside it, from 1024 px, the farm as cards
   (production departments, systems, equipment, tanks, ponds and cages; the systems by status and the units by kind) and

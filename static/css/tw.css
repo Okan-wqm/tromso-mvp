@@ -379,6 +379,11 @@
 .tw\:wall\:gap-y-0:where([data-wall], [data-wall] *) {
   row-gap: 0px;
 }
+.tw\:wall\:truncate:where([data-wall], [data-wall] *) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .tw\:wall\:overflow-hidden:where([data-wall], [data-wall] *) {
   overflow: hidden;
 }

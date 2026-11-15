@@ -199,7 +199,7 @@ html[data-wall] .monitor-card:not(.is-fit) .metrics dd { font-size: 1.25em; font
 .monitor-card.is-fit > * { --u: clamp(14px, calc(100cqi / var(--mw)), 30px); --space-1: calc(var(--u) / 4); font-size: var(--u); }
 .is-fit .monitor-shape { width: .62em; height: .62em; }
 .is-fit b > .monitor-shape { width: .5em; height: .5em; margin-right: .08em; }
-.is-fit dt > .monitor-shape { width: .55em; height: .55em; }
+.is-fit dt .monitor-shape { width: .55em; height: .55em; }
 .is-fit .monitor-state { gap: .3em; }
 .is-fit .card-grid { --row: 1.2em; gap: calc(var(--u) * .35) calc(var(--u) * .9); margin-top: calc(var(--u) * .25); }
 .is-fit .card-grid > .w { min-height: 0; }

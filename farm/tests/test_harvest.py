@@ -90,14 +90,17 @@ class FastingTests(HarvestTestCase):
         [warning] = result.warnings
         self.assertEqual((warning.warning, warning.fasted_hours, warning.required_hours, warning.rule.kind),
                          ('fasting', Decimal('6.0'), 72, 'harvest'))
-        self.assertIn(f'Last fed {services.shown_date(self.day(1))} 18:00: 6.0 h before', result.notes[1])
-        self.assertIn('the harvest rule asks for 72 h', warning.message())
+        # One line says it (M-05): the warning, with the feeding's own time; the notes do not repeat the feeding.
+        self.assertEqual(warning.message(), f'Last fed {services.shown_date(self.day(1))} 18:00, 6.0 h before '
+                                            f'{services.shown_date(self.today)}: the harvest rule asks for 72 h.')
+        self.assertFalse([note for note in result.notes if 'Last fed' in note])
 
     def test_a_feeding_without_a_time_counts_from_the_end_of_its_day(self):
         self.fed(3)
         result = self.assess()
         self.assertEqual(result.warnings[0].fasted_hours, Decimal('48.0'))
-        self.assertIn('no time recorded: counted from the end of the day', result.notes[1])
+        self.assertIn(f'Last fed {services.shown_date(self.day(3))} (no time recorded: counted from the end of the '
+                      'day), 48.0 h before', result.warnings[0].message())
         self.assertEqual(self.assess('transport').warnings, [])            # 48 h against the transport rule's 24
 
     def test_a_feeding_on_the_day_itself_gives_no_fast(self):
@@ -628,9 +631,7 @@ class PurgingTests(PurgingBase):
         self.assertEqual(warning.message(),
                          f'Last fed {services.shown_date(self.day(4))} 18:00, 30 degree-days before '
                          f'{services.shown_date(self.today)}: the harvest rule asks for 60 degree-days.')
-        self.assertIn(f'Last fed {services.shown_date(self.day(4))} 18:00: 30 degree-days before '
-                      f'{services.shown_date(self.today)}.', result.notes)
-        self.assertIn('The harvest rule for Atlantic salmon asks for 60 degree-days.', result.notes)
+        self.assertFalse([note for note in result.notes if 'Last fed' in note or 'asks for' in note])   # one line
         # Reached exactly: no warning; one degree-day short: a warning.
         self.purge(degrees=30)
         self.assertEqual(self.assess().warnings, [])
@@ -680,8 +681,6 @@ class PurgingTests(PurgingBase):
         self.assertTrue(warning.message().endswith(
             '1 day without a measured water temperature is counted at the assumed 8.0 °C (the species’ setting in '
             'Reference data).'), warning.message())
-        self.assertIn('1 day without a measured water temperature is counted at the assumed 8.0 °C (the species’ '
-                      'setting in Reference data).', result.notes)
         # Exactly as the same day measured at that value would.
         self.temperature(2, '8')
         measured = self.assess().warnings[0]

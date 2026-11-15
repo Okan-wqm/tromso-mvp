@@ -26,8 +26,8 @@ from .golden import Tree
 PAGE, CARDS = reverse('monitoring:monitor'), reverse('monitoring:cards')
 SMALL = {'mode': 'small'}
 # What one small card may weigh in the page, in bytes (a wall of 200 is then about 1 MB before compression): measured
-# 5.0 to 5.6 KB on the cards of these tests, 2026-11-13. Raise it only with a reason; a card that grows is a wall that
-# slows.
+# 5.0 to 5.6 KB on the cards of these tests, 2026-11-13 (5.3 to 6.1 KB on a copy of the development data, in Turkish,
+# 2026-11-15). Raise it only with a reason; a card that grows is a wall that slows.
 SMALL_CARD_BYTES = 6200
 
 
@@ -56,6 +56,7 @@ class SmallCase(MonitoringCase):
         self.limit('co2_mg_l', warning_high=10, critical_high=15)
         self.limit('nh3_n_mg_l', warning_high='0.0100', critical_high='0.0200')
         self.limit('alkalinity_mg_l', warning_low=70, warning_high=150)
+        self.limit('tan_mg_l', warning_high=1, critical_high=2)           # (a value with no limit is never OK: "No limit")
 
     def good_water(self, unit=None, hours=1, **values):
         """A sample an hour ago with every value the chart needs, all inside their limits but for `values`. (T-02's
@@ -63,6 +64,11 @@ class SmallCase(MonitoringCase):
         the oxygen or the pH.)"""
         good = dict(temperature_c='13.2', oxygen_mg_l='8.1', ph='7.2', alkalinity_mg_l='95', tan_mg_l='0.5')
         self.sample(unit or self.t2, hours=hours, **{**good, **values})
+
+    def reasons(self, unit):
+        """Every reason of the unit's small card, as the read gives them."""
+        return [str(each) for each in read.cards([unit], self.reader, read.resolve.Choice(view=builtin.SMALL))[0]
+                .state.reasons]
 
     def page(self, **query):
         response = self.client.get(PAGE, {**SMALL, **query})
@@ -125,7 +131,9 @@ class SmallCardTests(SmallCase):
         self.good_water()
         html = self.page()
         card = card_of(html, self.t2)
-        self.assertEqual(card.attrs['data-state'], 'ok')
+        # every value is inside its limits: the water gives the card no reason (the worked example's T-02 was weighed 15
+        # days ago, a note of its own)
+        self.assertEqual((card.attrs['data-state'], self.reasons(self.t2)), ('note', ['Weigh soon']), text(card))
         labels = [text(each) for each in card.walk() if each.tag == 'dt']
         self.assertRegex(labels[0], r'^O₂ · \d\d\.\d %$')                   # the oxygen, with its saturation beside it
         self.assertEqual(labels[1:], ['°C', 'pH', 'CO₂ calc.'])
@@ -160,10 +168,11 @@ class SmallCardTests(SmallCase):
         low, high = catalogue.PH_WINDOW
         (mark,) = [each for each in window.walk() if 'chart-water' in each.classes]
         self.assertEqual(mark.attrs['cx'], f'{(7.2 - low) / (high - low) * 100:.1f}%')
-        # nothing the Content-Security-Policy would block, and a card with no reason says its fish
+        # nothing the Content-Security-Policy would block; the card's one reason stands where a card with none says its
+        # fish (that card, OK with its fish line, is G-00 of the golden scenario `small`)
         self.assertNotIn(' style=', source(html, self.t2))
-        self.assertEqual(text(nodes(card, 'monitor-card-fish')[0]).split(' · ')[1], '12,000 fish')
-        self.assertFalse(nodes(card, 'monitor-reasons'))
+        self.assertTrue(text(nodes(card, 'monitor-reasons')[0]).startswith('Weigh soon'))
+        self.assertFalse(nodes(card, 'monitor-card-fish'))
 
     def test_the_first_reason_in_short_and_how_many_more_and_every_reason_still_there(self):
         self.good_water(oxygen_mg_l='5', ph='5.9')
@@ -201,7 +210,7 @@ class SmallCardTests(SmallCase):
         self.assertEqual(window.classes, ['monitor-ph-window', 'in-co2', 'is-critical'])
         analysis = calculation.chart_of(self.t2).calculation.analysis
         self.assertGreater(analysis.co2_mg_l, 15)
-        self.assertEqual(card.attrs['data-state'], 'ok')
+        self.assertEqual((card.attrs['data-state'], self.reasons(self.t2)), ('note', ['Weigh soon']), text(card))
         figure = [each for each in card.walk() if each.tag == 'b'][3]
         self.assertIn('tw:text-ink-1', figure.classes)                    # shown, not judged: ink, no shape
 
@@ -210,7 +219,7 @@ class SmallCardTests(SmallCase):
         self.sample(self.t2, hours=100, ph='7.4', tan_mg_l='0.5')                    # a pH says something for 72 hours
         card = card_of(self.page(), self.t2)
         labels = [each for each in card.walk() if each.tag == 'dt']
-        self.assertEqual([text(each) for each in labels][1:], ['°C', 'pH · old', 'CO₂ calc. · old'])
+        self.assertEqual([text(each) for each in labels][1:], ['°C', 'pH old', 'CO₂ calc. old'])
         self.assertEqual([bool([node for node in each.walk() if 'data-old' in node.attrs]) for each in labels],
                          [False, False, True, True])
         figures = [each for each in card.walk() if each.tag == 'b']
@@ -222,15 +231,22 @@ class SmallCardTests(SmallCase):
         self.assertTrue(nodes(card, 'monitor-roomy')[3].attrs['title'].startswith('calculated · 4 d ago · '))
 
     def test_a_chart_that_cannot_be_worked_out_says_why_and_draws_nothing(self):
-        card = card_of(self.page(), self.t1)                              # T-01 has no water at all
+        html = self.page()
+        card = card_of(html, self.t1)                                     # T-01 has no sampling point at all
         self.assertFalse(nodes(card, 'monitor-ph-window'))
         (line,) = nodes(card, 'monitor-ph-refused')
-        self.assertEqual(text(line), 'The pH window cannot be drawn: no value of Temperature (°C), pH (NBS scale), '
-                                     'Alkalinity (mg/L as CaCO₃).')
+        self.assertEqual(text(line), 'The pH window cannot be drawn: no active middle sampling point.')
         self.assertEqual(line.attrs['title'], text(line))
         values = [text(each) for each in card.walk() if each.tag == 'dd' and 'monitor-roomy' not in each.classes]
         self.assertEqual(values, ['no data'] * 4)                         # words, never a dash
         self.assertFalse([each for each in card.walk() if each.tag == 'b'])
+        # T-02 has a point and a temperature, and nothing else: the values the chart lacks are named
+        partly = card_of(html, self.t2)
+        self.assertEqual(text(nodes(partly, 'monitor-ph-refused')[0]),
+                         'The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).')
+        self.assertEqual([text(each) for each in partly.walk() if each.tag == 'b'], ['13.2'])
+        missing = next(each for each in partly.walk() if each.tag == 'span' and each.attrs.get('title', '').startswith('Not'))
+        self.assertEqual(missing.attrs['title'], 'Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).')
 
     def test_a_missing_limit_is_never_drawn_as_a_safe_side(self):
         from farm.models import WaterLimit

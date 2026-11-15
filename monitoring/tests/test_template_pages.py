@@ -113,7 +113,7 @@ class TemplateRoundTripTests(PagesCase):
         template.refresh_from_db()
         self.assertEqual(template.measure, (31, 10))
         updated = AuditLog.objects.filter(entity_type='card template', action='update').latest('pk')
-        self.assertEqual(updated.changes['Card width (units)'][1], 31)
+        self.assertEqual(updated.changes['Card width (units)'][1], '31')
         for width, height, said in (('31', '', 'needs both its width and its height'), ('', '10', 'needs both'),
                                     ('11', '10', 'greater than or equal to 12'), ('31', '65', 'less than or equal to 64')):
             with self.subTest(width=width, height=height):

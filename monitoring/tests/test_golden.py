@@ -108,8 +108,13 @@ class GoldenFarm(MonitoringCase):
         found['flipped'] = self.says(PAGE, {'flip': f'{self.t2.pk},{self.g[7].pk}'})
         found['board'] = self.says(PAGE, {'board': str(self.board.pk)})
         found['fragment-detailed'] = self.says(CARDS, {'mode': 'detailed'})
+        # the Small card (recorded 2026-11-14, when it was made): every unit, the fragment, a card flipped to Detailed
+        found['small'] = self.says(PAGE, {'mode': 'small', 'occupancy': 'all'})
+        found['fragment-small'] = self.says(CARDS, {'mode': 'small'})
+        found['small-flipped'] = self.says(PAGE, {'mode': 'small', 'flip': str(self.g[1].pk)})
         self.as_person('stock-only', 'view_stockoperation')
         found['stock-only-detailed'] = self.says(PAGE, {'mode': 'detailed', 'occupancy': 'all'})
+        found['stock-only-small'] = self.says(PAGE, {'mode': 'small', 'occupancy': 'all'})
         self.as_person('stock-water', 'view_stockoperation', 'view_watermeasurement')
         found['stock-water-simple'] = self.says(PAGE)
         return found

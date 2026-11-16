@@ -1234,7 +1234,20 @@ notes, and **Void** while allowed.
   both cards say "Each site on its own day". The filter is `farm.clocks.own_days`, beside the clocks the tasks read.
   Each card opens the feeding records from the earliest to the latest of those days among the sites, so in the hours
   when two sites are on different days that list holds one day more of one site than the figure
-  (`farm.tests.test_feeding.OverviewFeedOnSeveralClocksTests`).
+  (`farm.tests.test_feeding.OverviewFeedOnSeveralClocksTests`). A unit whose department has no site (a row a deleted
+  site left) counts on the company's day, as everywhere. The query reads only the records of the days some clock
+  counts, never the whole table (`FourClocks*Tests`: four clocks, a site ahead, a site behind, the two nights the
+  clocks change).
+- **What still reads the company's day over sites of several clocks** (found while the two figures above were
+  changed; none changed here). The owner decided on 12.11.2026 that the first three go to the site's own day on a
+  branch of their own: Feeding › Records › By unit and day (its last day and its default seven days,
+  `farm/feeding/views.py` `_by_day`); the water history's date filter; the default date of a form opened without a
+  unit (a harvest, a feeding protocol's first day). Not decided: the feeding protocols' "in force today" count and
+  filter and the check that refuses to retire a protocol assigned "for today or later"
+  (`farm/resources/feeding_protocol.py`, `farm/models/feeding_protocol.py`); HR's head counts, organisation chart,
+  the attendance list's default days, the roster's default week and who is in a person's scope today (`hr/read.py`,
+  `hr/resources/attendance.py`, `hr/resources/roster.py`, `hr/scope.py`). The reports' deadlines read Oslo's day on
+  purpose: they are the authority's.
 
 **Who may do what:** the area Feeding records in the role matrix (Production · Operations · Feeding): Read
 the Meal board, Records and the feeding part of a unit's drawer, Create records a feeding or a meal, Delete voids
@@ -2064,7 +2077,14 @@ the unit's own line are one answer:
 batch counts in a unit on the day it leaves), so that day the list shows them as two parts, as the two units' lines
 do. And a course given today to the part of a batch on the later clock holds the whole batch, each part by its own
 site's calendar: the part on the earlier clock shows the withdrawal at once and is marked held when its own day
-reaches the course's first day, hours later.
+reaches the course's first day, hours later. **The hard edge of the same rule** (the third review's case K; as on
+main, and the owner's rule applied as decided): the course is given today on a site whose clock is ahead (its first
+day is that site's today, say the 11th), and some of those very fish are moved the same day to a site whose clock is
+behind, where it is still the 10th. Exactly then, for the hours until the second site's own day reaches the course's
+first day, that site's unit line and harvest check say nothing of the withdrawal for fish that were in the bath: on
+their site's calendar the course begins tomorrow. The Treatments list shows that part with the withdrawal's end and
+not as held; a write guard sees the course at once. Closing it would mean reading those fish on another day than
+their site's own, which is the owner's to decide.
 
 **The write guards keep their day**, the earliest today among every unit the fish were in (`withdrawal.reach`,
 `earliest_today` in `farm/stock/dates.py`): a guard asks before a write stands, of fish that can be on several sites.
@@ -3859,9 +3879,12 @@ only one who manages roles and users; everyone else gets exactly what their role
     letters than i to the comparison that decides what is replaced, so `İNFO@EXAMPLE.COM` is not erased for
     `info@example.com`; the dry run names the rows that hold the address only when they are read as i, and the
     refusals read them as i. **The log's writers, the alarms among them, wait while it holds the lock**: it reads
-    everything first, waits for the lock on the log at most `--lock-wait` seconds (5, a positive number) and gives
-    up otherwise; holding it, it waits for nothing more (a mail being written just then refuses the run, said as
-    such), and reads every mail again under the locks. **What remains:** the rows themselves (who invited whom, that a link was used, that the address
+    everything first, then tries for at most `--lock-wait` seconds (5; a positive number, 600 at most) to have the
+    log and `account_mails` locked. It waits for the log with nothing in its hand and takes the mails at once or
+    lets the log go and starts again: it never waits for a lock while it holds another one, so no other session (the
+    mail worker, which writes a mail's row and then the log) is stopped by a deadlock with it, and a table held for
+    a while (a writer, a vacuum or an analyze) is waited out. When the seconds are over it gives up, has changed
+    nothing and names the table it could not lock. It reads every mail again under the locks. **What remains:** the rows themselves (who invited whom, that a link was used, that the address
     changed), the placeholder, and the address in every backup taken before. A placeholder, not a digest: this is
     erasure, not the pseudonymisation above. The users tab, the History tab and the log read an erased row in every
     language (`core/tests_erasure.py`).
@@ -4723,7 +4746,10 @@ with `DJANGO_DEBUG=0`, `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, the database
 above in the environment. Should the server be started without the checks all the same and without its mail
 settings, no mail is lost silently: every send fails ("The public address of this server is not set", or the mailer's
 own refusal of a missing host) and shows on the person's row as any failed send. One worker thread per server
-process sends the mails, so a server run as several processes sends several at a time. Two conditions on whatever
+process sends the mails, so a server run as several processes sends several at a time. Nothing in the code ends that
+thread; should it end all the same, the next job starts a new one, and a job queued while the old one was still
+ending (alive, so no new one was started for it) is handed on by the ending thread itself (`Worker.run`): before,
+it waited until some later job happened to start a worker. Two conditions on whatever
 runs the server:
 
 - **It must run Python threads.** The worker is a thread: a server that runs none (uWSGI without `enable-threads`)
@@ -4978,7 +5004,10 @@ WORKERS=1 scripts/test.sh                # one process, without --parallel
 memory), runs `manage.py compile_catalogs` and `manage.py test --noinput --parallel $WORKERS` in the test runner's
 image, stage `tests` of `docker/testrunner.Dockerfile` (the hashed requirements, the water-chemistry core built from the
 checkout and `tblib`; `scripts/testrunner/image.sh` defines it, its Dockerfile, stage, context and a tag hashed from
-everything it is built from, and builds it when missing; CI builds it by the same script), and removes the
+everything it is built from, and builds it when missing; CI builds it by the same script. Of `docker/` and `chemcore/`
+the tag is hashed from the files git tracks, so what a run leaves in a tree, a `__pycache__` beside chemcore's scripts
+or `chemcore/target/`, is not in the image's name, and a worktree that has run its tests asks for the same tag as a
+clean checkout), and removes the
 server and the network at the end (`KEEP_DB=1` keeps them): on every way out of the script, a pass, a failure, a step
 that could not start, Ctrl-C, a TERM or HUP signal (the tests' container runs behind a `wait`, so a signal is answered at
 once), with any anonymous volume of the containers (`docker rm -f -v`; the server's data is a tmpfs in the place of the
@@ -4986,9 +5015,11 @@ image's volume, so a run leaves no volume). Only a script killed outright (SIGKI
 remove its `balik-test-db-<run>`, `balik-test-run-<run>` and network `balik-test-<run>` by name. **The old images are
 `scripts/testrunner/prune.sh`'s**: every change to the requirements, `docker/` or `chemcore/` builds a new
 `balik-testrunner-chemcore:req-<hash>` tag (some 400 MB), and nothing removed the old ones. The script removes every
-`req-*` tag except the tag of every live git worktree of the repository (each tree's own `image.sh` says it), a tag
-whose image a container uses, and a tag made within the last 24 hours; it says what it removed and what it kept and
-why, `--dry-run` removes nothing, and it touches no other image, no container, no volume and no network. So a run never touches the development database `balik`, its
+`req-*` tag except the tag of its own tree (always) and of every live git worktree of the repository (each tree's own
+`image.sh` says it), a tag whose image a container uses, and a tag made within the last 24 hours; it says what it
+removed and what it kept and why, `--dry-run` removes nothing, and it touches no other image, no container, no volume
+and no network. Where git cannot list the worktrees (a copy that is no checkout) it stops with a message and removes
+nothing: it cannot know there which tags the worktrees ask for. So a run never touches the development database `balik`, its
 server or its volume, never shares test databases, roles or the shared server's 100 connections with another run, and needs
 no `DB_TEST_NAME`. There is no serial-only group: every test runs in the parallel run. Why the run is shaped so:
 
@@ -5067,6 +5098,24 @@ clock looks for that: `monitoring.tests.test_pages` asserted that the oxygen val
 also says when the fish were last weighed, 15 days back, and failed on 12.11.2026 for "28.10.2026" alone (it would
 again on every day whose date 15 days back ends in 8.10). A test that asserts a number is absent from a whole page
 uses a number no date can spell, and first shows that the page prints it for someone who may see it.
+
+**Nor on how soon the database lets go of a connection.** PostgreSQL lists a connection (`pg_stat_activity`) until its
+server process has ended, which follows the client's close in the server's own time (2 to 22 ms measured alone, up to
+64 ms beside other runs), and it lists its own autovacuum workers beside the clients. The mail worker's test asked "as
+many connections as before" of that list at once and failed in a whole suite under load (12.11.2026) and in 1 of 20
+runs alone; the worker had closed its connection every time. A test that asks the database whether a connection is
+gone asks for the clients' connections by their process id, those that were not there before, and waits for the
+answer with a bound; what the code under test has done itself (closed its connection) it asks of that connection.
+
+**Nor on how fast another thread is.** The mail worker's tests (`core/tests_account_mail_worker.py`) wait for a
+thread, an event, a lock or the worker at rest. Each waits for that condition itself, up to one generous bound
+(`WAIT`, 60 s), and fails saying what it waited for: `rested`, `reached`, `ended`, `until`. None sleeps a time that
+"should be enough" and goes on (a second "until both are at the row", a join of 20 s whose outcome nobody read: the
+whole suite of 13.11.2026 failed on that one, under load), and none measures seconds of the clock where it means
+work: 200 lookups "in a moment" are measured against the same 200 done at once on the same machine, the mail's time
+limit against how far the conversation with the test's mail server got. What must not happen is asked the other way
+round, with a short time (`drain(0.5)` is false while a mail is at the mail server). The platform's own patience
+with a mail server is set longer than any wait of a test there, so nothing is cut off behind a test's back.
 
 **Nor the hour it runs at.** The server's day is UTC's, the company's is Oslo's (`COMPANY_TIME_ZONE`) and a site's is
 its own. From 23:00 to 24:00 UTC in winter (from 22:00 in summer) Oslo is a day ahead of the server, and a test that

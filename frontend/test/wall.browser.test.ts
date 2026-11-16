@@ -120,6 +120,49 @@ function look(tab: Page): Promise<Seen> {
   });
 }
 
+/** What is wrong with the line under a figure (review R1: where a value came from and how old it is stand under
+ *  EVERY figure of a card on the screen, in visible text, whole): [] when nothing is. */
+async function ages(tab: Page): Promise<string[]> {
+  return tab.evaluate(() => {
+    const wrong: string[] = [];
+    const cards = Array.from(document.querySelectorAll<HTMLElement>('.monitor-grid .monitor-card.is-fit'));
+    for (const card of cards) {
+      const box = card.getBoundingClientRect();
+      if (box.right <= 0 || box.left >= innerWidth || box.bottom <= 0 || box.top >= innerHeight) continue;   // another page
+      const code = card.querySelector('h3')?.textContent?.trim() ?? '';
+      for (const figure of Array.from(card.querySelectorAll<HTMLElement>('dl b'))) {
+        const tile = figure.closest('dl') as HTMLElement;
+        const line = tile.querySelector<HTMLElement>('.monitor-under');
+        if (!line) { wrong.push(`${code}: a figure with no line under it`); continue; }
+        const at = line.getBoundingClientRect();
+        const text = (line.textContent ?? '').replace(/\s+/g, ' ').trim();
+        const inside = tile.getBoundingClientRect();
+        if (getComputedStyle(line).display === 'none' || at.height < 8) wrong.push(`${code}: "${text}" is not shown`);
+        else if (!text.includes(' · ')) wrong.push(`${code}: "${text}" lacks the origin or the age`);
+        else if (line.scrollWidth > line.clientWidth + 1 || at.right > inside.right + 1 || at.bottom > box.bottom + 1) wrong.push(`${code}: "${text}" is cut`);
+        else if (Number.parseFloat(getComputedStyle(line).fontSize) < 11) wrong.push(`${code}: "${text}" is under 11 px`);
+      }
+    }
+    return wrong;
+  });
+}
+
+/** Four more cards on the wall (copies of its first four under their own keys): a farm of twenty-four tanks. */
+async function twentyFour(tab: Page): Promise<void> {
+  await tab.evaluate(() => {
+    const wall = document.querySelector('.monitor-grid') as HTMLElement;
+    Array.from(wall.querySelectorAll<HTMLElement>('.monitor-card')).slice(0, 4).forEach((card, index) => {
+      const copy = card.cloneNode(true) as HTMLElement;
+      copy.dataset.key = `card:copy-${index}`;
+      copy.id = `card-copy-${index}`;
+      copy.querySelectorAll('[id]').forEach((node) => node.removeAttribute('id'));
+      wall.append(copy);
+    });
+    window.dispatchEvent(new Event('resize'));
+  });
+  await tab.waitForTimeout(150);
+}
+
 async function open(tab: Page, origin: string, language: string, width: number, height: number): Promise<void> {
   await tab.setViewportSize({ width, height });
   await tab.goto(`${origin}/${language}`);
@@ -140,7 +183,7 @@ test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, asyn
   const browser = await chromium.launch({ executablePath: BROWSERS[0] ?? '', headless: true });
   try {
     const tab = await browser.newPage({ reducedMotion: 'reduce' });
-    for (const [language, width, height, grid] of [['en', 3440, 1440, '4x5'], ['en', 1920, 1080, '4x5'], ['tr', 3440, 1440, '4x5'],
+    for (const [language, width, height, grid] of [['en', 3440, 1440, '5x4'], ['en', 1920, 1080, '4x5'], ['tr', 3440, 1440, '5x4'],
                                                    ['tr', 1920, 1080, '4x5'], ['en', 5120, 1440, '5x4'], ['en', 2560, 1440, '4x5'],
                                                    ['en', 3840, 2160, '4x5']] as const) {
       await t.test(`twenty cards are one screen at ${width}x${height} (${language}): nothing cut, nothing outside its card`, async () => {
@@ -155,8 +198,30 @@ test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, asyn
         assert.ok(seen.smallest >= 11, `the smallest text is ${seen.smallest} px`);
         assert.equal(seen.indicatorHidden, true, 'one page: no page indicator');
         assert.deepEqual(seen.tallyCut, [], 'the band\'s clock and tally are whole');
+        assert.deepEqual(await ages(tab), [], 'where it came from and how old it is stand under every figure');
       });
     }
+
+    for (const [width, height] of [[3440, 1440], [5120, 1440], [2560, 1440], [3840, 2160]] as const) {
+      await t.test(`twenty-four cards are one screen at ${width}x${height}, the age under every figure`, async () => {
+        await open(tab, origin, 'tr', width, height);
+        await twentyFour(tab);
+        const seen = await look(tab);
+        assert.deepEqual([seen.cards, seen.onScreen, seen.pages], [24, 24, '1']);
+        assert.deepEqual([seen.spills, seen.cut, seen.never], [[], [], []]);
+        assert.ok(seen.smallest >= 11, `the smallest text is ${seen.smallest} px`);
+        assert.deepEqual(await ages(tab), []);
+      });
+    }
+
+    await t.test('twenty-four cards on 1920x1080 turn pages rather than lose the age or shrink the type', async () => {
+      await open(tab, origin, 'tr', 1920, 1080);
+      await twentyFour(tab);
+      const seen = await look(tab);
+      assert.ok(seen.smallest >= 11, `the smallest text is ${seen.smallest} px`);
+      assert.deepEqual([seen.spills, seen.cut, seen.never], [[], [], []]);
+      assert.deepEqual(await ages(tab), []);
+    });
 
     await t.test('a low window turns pages rather than shrink the type, and the keys turn them', async () => {
       await open(tab, origin, 'en', 1280, 720);
@@ -164,6 +229,7 @@ test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, asyn
       assert.ok(Number(first.pages) > 1, `${first.pages} pages`);
       assert.ok(first.smallest >= 11, `the smallest text is ${first.smallest} px`);
       assert.deepEqual([first.cut, first.never, first.spills], [[], [], []]);
+      assert.deepEqual(await ages(tab), []);
       assert.equal(first.indicatorHidden, false);
       assert.equal(first.indicator, `${first.page} / ${first.pages}`);
       // it opened on the page of its worst card (HA-R02, critical, is the fifth card)

@@ -110,7 +110,7 @@ class BuiltinTests(Fixture):
                 self.assertEqual([problem for problem in validate.validate(layout) if problem.severity == 'error'], [])
         self.assertEqual((found[builtin.SIMPLE].expanded_id, found[builtin.DETAILED].expanded_id),
                          (builtin.DETAILED, builtin.SIMPLE))
-        self.assertEqual(found[builtin.SMALL].measure, (31, 10))
+        self.assertEqual(found[builtin.SMALL].measure, (31, 12))
         self.assertEqual(sorted(builtin.MEASURES), [builtin.SMALL])          # the others flow, as they always did
 
     def test_the_migrations_froze_the_same_layouts(self):
@@ -320,3 +320,34 @@ class SmallTemplateMigrationTests(TestCase):
                          ('Small', builtin.SMALL_LAYOUT, builtin.DETAILED, builtin.SMALL_MEASURE, True))
         with self.assertRaises(IntegrityError), transaction.atomic():
             CardTemplate.objects.filter(pk=builtin.SMALL).update(measure_w=40)       # frozen, its measure too
+
+    def test_a_farm_that_already_has_a_template_called_small_keeps_it_under_another_name(self):
+        """Review R3: the built-in takes its name; the farm's own template, with every board, row and rule that points
+        at it, lives on as "small (2)" (the next number that is free), and the deploy does not stop."""
+        site = Site.objects.create(name='Bergen', code='BG')
+        hall = ProductionDepartment.objects.create(site=site, name='Hall A', code='HA')
+        unit = make_unit('T-01', hall)
+        old = self.migrate('0004_backfill_modes')
+        Template, Board = old.get_model('monitoring', 'CardTemplate'), old.get_model('monitoring', 'MonitorBoard')
+        Rule = old.get_model('monitoring', 'CardTemplateAssignment')
+        mine = Template.objects.create(name='small', layout=LAYOUT)
+        taken = Template.objects.create(name='Small (2)', layout=LAYOUT)
+        gone = Template.objects.create(name='SMALL', layout=LAYOUT, is_deleted=True)     # a deleted one is in no one's way
+        board = Board.objects.create(name='Overview', default_template_id=mine.pk)
+        Rule.objects.create(template_id=mine.pk, unit_id=unit.pk)
+        # (the rows just made have foreign keys checked at the end of the transaction, and PostgreSQL alters no table
+        # while a check is pending: a deploy migrates in a transaction of its own, a test must check them first)
+        with connection.cursor() as cursor:
+            cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')
+            cursor.execute('SET CONSTRAINTS ALL DEFERRED')
+        self.migrate('0005_small_template')
+        self.assertEqual(CardTemplate.objects.get(pk=builtin.SMALL).name, 'Small')
+        self.assertEqual(CardTemplate.objects.get(pk=mine.pk).name, 'small (3)')            # (2) was taken
+        self.assertEqual(CardTemplate.objects.get(pk=taken.pk).name, 'Small (2)')
+        self.assertEqual(CardTemplate.all_objects.get(pk=gone.pk).name, 'SMALL')
+        self.assertEqual(MonitorBoard.objects.get(pk=board.pk).default_template_id, mine.pk)
+        self.assertEqual(CardTemplateAssignment.objects.get(unit=unit).template_id, mine.pk)
+        # back: the built-in goes, the farm's template keeps the name it was given (nothing guesses it back)
+        back = self.migrate('0004_backfill_modes')
+        self.assertEqual(back.get_model('monitoring', 'CardTemplate').objects.get(pk=mine.pk).name, 'small (3)')
+        self.migrate('0005_small_template')

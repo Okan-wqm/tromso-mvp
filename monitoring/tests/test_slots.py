@@ -31,8 +31,6 @@ class SlotVectorTests(SimpleTestCase):
                 found = answer(case)
                 self.assertEqual((found.cols, found.rows, found.pages), (case['cols'], case['rows'], case['pages']))
                 self.assertAlmostEqual(found.u, case['u'], places=5)
-                self.assertEqual(slots.roomy(found, case['width'], case['height'], case['gap'], case['mw'], case['mh'],
-                                             case['pad_x'], case['pad_y']), case['roomy'])
 
     def test_the_small_cases_are_of_the_built_in_small_templates_measure(self):
         width, height = builtin.SMALL_MEASURE
@@ -62,7 +60,7 @@ class SlotRuleTests(SimpleTestCase):
         for _round in range(400):
             count = draw.randint(1, 220)
             width, height, gap = draw.uniform(600, 5600), draw.uniform(300, 2500), draw.uniform(0, 14)
-            mw, mh = (31, 10) if draw.random() < 0.5 else (draw.randint(12, 64), draw.randint(6, 64))
+            mw, mh = (31, 12) if draw.random() < 0.5 else (draw.randint(12, 64), draw.randint(6, 64))
             pad_x, pad_y = draw.uniform(0, 40), draw.uniform(0, 20)
             found = slots.slots(count, width, height, gap, mw, mh, slots.FLOOR, pad_x, pad_y)
             where = dict(count=count, width=width, height=height, gap=gap, mw=mw, mh=mh, pad_x=pad_x, pad_y=pad_y,

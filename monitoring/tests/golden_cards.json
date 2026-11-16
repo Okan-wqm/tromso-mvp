@@ -13836,14 +13836,14 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-00",
     "Laks · 500 fish · 30 kg · 0.3 kg/m³",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-00"
+    "Unit G-00",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -13894,12 +13894,12 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-01",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
-    "Unit G-01"
+    "Unit G-01",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -13950,12 +13950,12 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-02",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
-    "Unit G-02"
+    "Unit G-02",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -14007,12 +14007,12 @@
     ]
    ],
    "texts": [
-    "1 d ago",
-    "1 d ago",
     "Detailed",
     "G-03",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
-    "Unit G-03"
+    "Unit G-03",
+    "sample · 1 d",
+    "sample · 1 d"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -14118,13 +14118,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-05",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-05"
+    "Unit G-05",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -14174,14 +14174,14 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-06",
     "Laks · 1,100 fish · 73 kg · 0.7 kg/m³",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-06"
+    "Unit G-06",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -14230,14 +14230,14 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-07",
     "Laks · 1,200 fish · 80 kg · 0.8 kg/m³",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-07"
+    "Unit G-07",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -14286,14 +14286,14 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-08",
     "Laks · 1,300 fish · 88 kg · 0.9 kg/m³",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-08"
+    "Unit G-08",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -14342,13 +14342,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-09",
     "Laks · 1,400 fish · 97 kg · 1.0 kg/m³",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
-    "Unit G-09"
+    "Unit G-09",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -14399,13 +14399,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-10",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-10"
+    "Unit G-10",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "1 open health event",
@@ -14459,14 +14459,14 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-11",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
     "Unit G-11",
-    "Withdrawal"
+    "Withdrawal",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -14520,12 +14520,12 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-12",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
-    "Unit G-12"
+    "Unit G-12",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -14577,13 +14577,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-13",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-13"
+    "Unit G-13",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -14636,13 +14636,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-14",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-14"
+    "Unit G-14",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -14694,13 +14694,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-15",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-15"
+    "Unit G-15",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -14752,13 +14752,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-16",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-16"
+    "Unit G-16",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -14810,12 +14810,12 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-17",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
-    "Unit G-17"
+    "Unit G-17",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -14920,13 +14920,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "<recent>",
     "Detailed",
     "T-02",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit T-02"
+    "Unit T-02",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · now"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -15005,14 +15005,14 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-00",
     "Laks · 500 fish · 30 kg · 0.3 kg/m³",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-00"
+    "Unit G-00",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -15063,12 +15063,12 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-01",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
-    "Unit G-01"
+    "Unit G-01",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -15119,12 +15119,12 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-02",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
-    "Unit G-02"
+    "Unit G-02",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -15176,12 +15176,12 @@
     ]
    ],
    "texts": [
-    "1 d ago",
-    "1 d ago",
     "Detailed",
     "G-03",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
-    "Unit G-03"
+    "Unit G-03",
+    "sample · 1 d",
+    "sample · 1 d"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -15287,13 +15287,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-05",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-05"
+    "Unit G-05",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -15343,14 +15343,14 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-06",
     "Laks · 1,100 fish · 73 kg · 0.7 kg/m³",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-06"
+    "Unit G-06",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -15399,14 +15399,14 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-07",
     "Laks · 1,200 fish · 80 kg · 0.8 kg/m³",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-07"
+    "Unit G-07",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -15455,14 +15455,14 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-08",
     "Laks · 1,300 fish · 88 kg · 0.9 kg/m³",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-08"
+    "Unit G-08",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -15511,13 +15511,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-09",
     "Laks · 1,400 fish · 97 kg · 1.0 kg/m³",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
-    "Unit G-09"
+    "Unit G-09",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -15568,13 +15568,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-10",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-10"
+    "Unit G-10",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "1 open health event",
@@ -15628,14 +15628,14 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-11",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
     "Unit G-11",
-    "Withdrawal"
+    "Withdrawal",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -15689,12 +15689,12 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-12",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
-    "Unit G-12"
+    "Unit G-12",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -15746,13 +15746,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-13",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-13"
+    "Unit G-13",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -15805,13 +15805,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-14",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-14"
+    "Unit G-14",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -15863,13 +15863,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-15",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-15"
+    "Unit G-15",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -15921,13 +15921,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-16",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-16"
+    "Unit G-16",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -15979,12 +15979,12 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-17",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
-    "Unit G-17"
+    "Unit G-17",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -16089,13 +16089,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "<recent>",
     "Detailed",
     "T-02",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit T-02"
+    "Unit T-02",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · now"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -16147,14 +16147,14 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-00",
     "Laks · 500 fish · 30 kg · 0.3 kg/m³",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-00"
+    "Unit G-00",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -16356,12 +16356,12 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-02",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
-    "Unit G-02"
+    "Unit G-02",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -16413,12 +16413,12 @@
     ]
    ],
    "texts": [
-    "1 d ago",
-    "1 d ago",
     "Detailed",
     "G-03",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
-    "Unit G-03"
+    "Unit G-03",
+    "sample · 1 d",
+    "sample · 1 d"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -16524,13 +16524,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-05",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-05"
+    "Unit G-05",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -16580,14 +16580,14 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-06",
     "Laks · 1,100 fish · 73 kg · 0.7 kg/m³",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-06"
+    "Unit G-06",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -16636,14 +16636,14 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-07",
     "Laks · 1,200 fish · 80 kg · 0.8 kg/m³",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-07"
+    "Unit G-07",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -16692,14 +16692,14 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-08",
     "Laks · 1,300 fish · 88 kg · 0.9 kg/m³",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-08"
+    "Unit G-08",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -16748,13 +16748,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-09",
     "Laks · 1,400 fish · 97 kg · 1.0 kg/m³",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
-    "Unit G-09"
+    "Unit G-09",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -16805,13 +16805,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-10",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-10"
+    "Unit G-10",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "1 open health event",
@@ -16865,14 +16865,14 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-11",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
     "Unit G-11",
-    "Withdrawal"
+    "Withdrawal",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -16926,12 +16926,12 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-12",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
-    "Unit G-12"
+    "Unit G-12",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -16983,13 +16983,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-13",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-13"
+    "Unit G-13",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -17042,13 +17042,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-14",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-14"
+    "Unit G-14",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -17100,13 +17100,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-15",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-15"
+    "Unit G-15",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -17158,13 +17158,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-16",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit G-16"
+    "Unit G-16",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -17216,12 +17216,12 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
     "Detailed",
     "G-17",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
-    "Unit G-17"
+    "Unit G-17",
+    "sample · 1 h",
+    "sample · 1 h"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -17326,13 +17326,13 @@
     ]
    ],
    "texts": [
-    "1 h ago",
-    "1 h ago",
-    "<recent>",
     "Detailed",
     "T-02",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
-    "Unit T-02"
+    "Unit T-02",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · now"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",

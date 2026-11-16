@@ -1,5 +1,5 @@
 {
- "about": "The slot rule of a monitoring wall both implementations agree on: monitoring/cards/slots.py (the authority) and frontend/wall/slots.ts. Each case: `count` cards of `mw` x `mh` units on `width` x `height` px under the band with `gap` px between cells, a card's own padding and borders `pad_x`, `pad_y` px, the smallest unit that can be read `min_u`; the answer is the grid (`cols`, `rows`), its `pages`, the unit `u` (to 1e-6) and whether a cell has room for the line under a figure (`roomy`). The screens' lengths are the wall's own (static/css/monitor.css html[data-wall]); \"big\" is the measure of the Big template that keeps its full height (the unit at least 0.97 of what one full-height row gives).",
+ "about": "The slot rule of a monitoring wall both implementations agree on: monitoring/cards/slots.py (the authority) and frontend/wall/slots.ts. Each case: `count` cards of `mw` x `mh` units on `width` x `height` px under the band with `gap` px between cells, a card's own padding and borders `pad_x`, `pad_y` px, the smallest unit that can be read `min_u`; the answer is the grid (`cols`, `rows`), its `pages`, the unit `u` (to 1e-6). The Small measure (31 x 12) holds the line under each figure, at every size (review R1). The screens' lengths are the wall's own (static/css/monitor.css html[data-wall]); \"big\" is the measure of the Big template that keeps its full height (the unit at least 0.97 of what one full-height row gives).",
  "floor": 14,
  "cases": [
   {
@@ -9,15 +9,14 @@
    "height": 1341.216,
    "gap": 7.2,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 29.176,
    "pad_y": 14.096,
    "cols": 1,
    "rows": 1,
    "pages": 1,
-   "u": 109.376258,
-   "roomy": false
+   "u": 109.376258
   },
   {
    "name": "small x 6 on 3440x1440",
@@ -26,15 +25,14 @@
    "height": 1341.216,
    "gap": 7.2,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 29.176,
    "pad_y": 14.096,
    "cols": 2,
    "rows": 3,
    "pages": 1,
-   "u": 42.8176,
-   "roomy": false
+   "u": 35.681333
   },
   {
    "name": "small x 20 on 3440x1440",
@@ -43,15 +41,14 @@
    "height": 1341.216,
    "gap": 7.2,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 29.176,
    "pad_y": 14.096,
-   "cols": 4,
-   "rows": 5,
+   "cols": 5,
+   "rows": 4,
    "pages": 1,
-   "u": 24.83872,
-   "roomy": false
+   "u": 20.936516
   },
   {
    "name": "small x 24 on 3440x1440",
@@ -60,15 +57,14 @@
    "height": 1341.216,
    "gap": 7.2,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 29.176,
    "pad_y": 14.096,
    "cols": 5,
    "rows": 5,
    "pages": 1,
-   "u": 20.936516,
-   "roomy": false
+   "u": 20.698933
   },
   {
    "name": "small x 100 on 3440x1440",
@@ -77,15 +73,14 @@
    "height": 1341.216,
    "gap": 7.2,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 29.176,
    "pad_y": 14.096,
    "cols": 7,
-   "rows": 8,
-   "pages": 2,
-   "u": 14.619392,
-   "roomy": false
+   "rows": 7,
+   "pages": 3,
+   "u": 14.277905
   },
   {
    "name": "small x 200 on 3440x1440",
@@ -94,15 +89,14 @@
    "height": 1341.216,
    "gap": 7.2,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 29.176,
    "pad_y": 14.096,
    "cols": 7,
-   "rows": 8,
-   "pages": 4,
-   "u": 14.619392,
-   "roomy": false
+   "rows": 7,
+   "pages": 5,
+   "u": 14.277905
   },
   {
    "name": "big x 1 on 3440x1440",
@@ -118,8 +112,7 @@
    "cols": 1,
    "rows": 1,
    "pages": 1,
-   "u": 21.756066,
-   "roomy": false
+   "u": 21.756066
   },
   {
    "name": "big x 20 on 3440x1440",
@@ -135,8 +128,7 @@
    "cols": 3,
    "rows": 1,
    "pages": 7,
-   "u": 21.756066,
-   "roomy": false
+   "u": 21.756066
   },
   {
    "name": "small x 1 on 5120x1440",
@@ -145,15 +137,14 @@
    "height": 1341.216,
    "gap": 7.2,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 29.176,
    "pad_y": 14.096,
    "cols": 1,
    "rows": 1,
    "pages": 1,
-   "u": 132.712,
-   "roomy": false
+   "u": 110.593333
   },
   {
    "name": "small x 6 on 5120x1440",
@@ -162,15 +153,14 @@
    "height": 1341.216,
    "gap": 7.2,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 29.176,
    "pad_y": 14.096,
    "cols": 3,
    "rows": 2,
    "pages": 1,
-   "u": 53.740989,
-   "roomy": false
+   "u": 53.740989
   },
   {
    "name": "small x 20 on 5120x1440",
@@ -179,15 +169,14 @@
    "height": 1341.216,
    "gap": 7.2,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 29.176,
    "pad_y": 14.096,
    "cols": 5,
    "rows": 4,
    "pages": 1,
-   "u": 31.5808,
-   "roomy": false
+   "u": 26.317333
   },
   {
    "name": "small x 24 on 5120x1440",
@@ -196,15 +185,14 @@
    "height": 1341.216,
    "gap": 7.2,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 29.176,
    "pad_y": 14.096,
    "cols": 6,
    "rows": 4,
    "pages": 1,
-   "u": 26.283785,
-   "roomy": false
+   "u": 26.283785
   },
   {
    "name": "small x 100 on 5120x1440",
@@ -213,15 +201,14 @@
    "height": 1341.216,
    "gap": 7.2,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 29.176,
    "pad_y": 14.096,
    "cols": 10,
-   "rows": 8,
+   "rows": 7,
    "pages": 2,
-   "u": 14.7256,
-   "roomy": false
+   "u": 14.277905
   },
   {
    "name": "small x 200 on 5120x1440",
@@ -230,15 +217,14 @@
    "height": 1341.216,
    "gap": 7.2,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 29.176,
    "pad_y": 14.096,
    "cols": 10,
-   "rows": 8,
+   "rows": 7,
    "pages": 3,
-   "u": 14.7256,
-   "roomy": false
+   "u": 14.277905
   },
   {
    "name": "big x 1 on 5120x1440",
@@ -254,8 +240,7 @@
    "cols": 1,
    "rows": 1,
    "pages": 1,
-   "u": 21.756066,
-   "roomy": false
+   "u": 21.756066
   },
   {
    "name": "big x 20 on 5120x1440",
@@ -271,8 +256,7 @@
    "cols": 4,
    "rows": 1,
    "pages": 5,
-   "u": 21.756066,
-   "roomy": false
+   "u": 21.756066
   },
   {
    "name": "small x 1 on 2560x1440",
@@ -281,15 +265,14 @@
    "height": 1341.216,
    "gap": 7.2,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 29.176,
    "pad_y": 14.096,
    "cols": 1,
    "rows": 1,
    "pages": 1,
-   "u": 80.989161,
-   "roomy": true
+   "u": 80.989161
   },
   {
    "name": "small x 6 on 2560x1440",
@@ -298,15 +281,14 @@
    "height": 1341.216,
    "gap": 7.2,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 29.176,
    "pad_y": 14.096,
    "cols": 2,
    "rows": 3,
    "pages": 1,
-   "u": 39.907871,
-   "roomy": false
+   "u": 35.681333
   },
   {
    "name": "small x 20 on 2560x1440",
@@ -315,15 +297,14 @@
    "height": 1341.216,
    "gap": 7.2,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 29.176,
    "pad_y": 14.096,
    "cols": 4,
    "rows": 5,
    "pages": 1,
-   "u": 19.367226,
-   "roomy": true
+   "u": 19.367226
   },
   {
    "name": "small x 24 on 2560x1440",
@@ -332,15 +313,14 @@
    "height": 1341.216,
    "gap": 7.2,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 29.176,
    "pad_y": 14.096,
    "cols": 4,
    "rows": 6,
    "pages": 1,
-   "u": 19.367226,
-   "roomy": false
+   "u": 16.953333
   },
   {
    "name": "small x 100 on 2560x1440",
@@ -349,15 +329,14 @@
    "height": 1341.216,
    "gap": 7.2,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 29.176,
    "pad_y": 14.096,
    "cols": 5,
-   "rows": 8,
+   "rows": 7,
    "pages": 3,
-   "u": 14.7256,
-   "roomy": false
+   "u": 14.277905
   },
   {
    "name": "small x 200 on 2560x1440",
@@ -366,15 +345,14 @@
    "height": 1341.216,
    "gap": 7.2,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 29.176,
    "pad_y": 14.096,
    "cols": 5,
-   "rows": 8,
-   "pages": 5,
-   "u": 14.7256,
-   "roomy": false
+   "rows": 7,
+   "pages": 6,
+   "u": 14.277905
   },
   {
    "name": "big x 1 on 2560x1440",
@@ -390,8 +368,7 @@
    "cols": 1,
    "rows": 1,
    "pages": 1,
-   "u": 21.756066,
-   "roomy": false
+   "u": 21.756066
   },
   {
    "name": "big x 20 on 2560x1440",
@@ -407,8 +384,7 @@
    "cols": 2,
    "rows": 1,
    "pages": 10,
-   "u": 21.756066,
-   "roomy": false
+   "u": 21.756066
   },
   {
    "name": "small x 1 on 3840x2160",
@@ -417,15 +393,14 @@
    "height": 2013.56,
    "gap": 10.8,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 40.264,
    "pad_y": 20.144,
    "cols": 1,
    "rows": 1,
    "pages": 1,
-   "u": 121.596645,
-   "roomy": true
+   "u": 121.596645
   },
   {
    "name": "small x 6 on 3840x2160",
@@ -434,15 +409,14 @@
    "height": 2013.56,
    "gap": 10.8,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 40.264,
    "pad_y": 20.144,
    "cols": 2,
    "rows": 3,
    "pages": 1,
-   "u": 59.97471,
-   "roomy": false
+   "u": 53.653556
   },
   {
    "name": "small x 20 on 3840x2160",
@@ -451,15 +425,14 @@
    "height": 2013.56,
    "gap": 10.8,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 40.264,
    "pad_y": 20.144,
    "cols": 4,
    "rows": 5,
    "pages": 1,
-   "u": 29.163742,
-   "roomy": true
+   "u": 29.163742
   },
   {
    "name": "small x 24 on 3840x2160",
@@ -468,15 +441,14 @@
    "height": 2013.56,
    "gap": 10.8,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 40.264,
    "pad_y": 20.144,
    "cols": 4,
    "rows": 6,
    "pages": 1,
-   "u": 29.163742,
-   "roomy": false
+   "u": 25.537444
   },
   {
    "name": "small x 100 on 3840x2160",
@@ -485,15 +457,14 @@
    "height": 2013.56,
    "gap": 10.8,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 40.264,
    "pad_y": 20.144,
    "cols": 7,
-   "rows": 11,
+   "rows": 10,
    "pages": 2,
-   "u": 15.308873,
-   "roomy": false
+   "u": 14.291
   },
   {
    "name": "small x 200 on 3840x2160",
@@ -502,15 +473,14 @@
    "height": 2013.56,
    "gap": 10.8,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 40.264,
    "pad_y": 20.144,
    "cols": 7,
-   "rows": 11,
+   "rows": 10,
    "pages": 3,
-   "u": 15.308873,
-   "roomy": false
+   "u": 14.291
   },
   {
    "name": "big x 1 on 3840x2160",
@@ -526,8 +496,7 @@
    "cols": 1,
    "rows": 1,
    "pages": 1,
-   "u": 32.678951,
-   "roomy": false
+   "u": 32.678951
   },
   {
    "name": "big x 20 on 3840x2160",
@@ -543,8 +512,7 @@
    "cols": 2,
    "rows": 1,
    "pages": 10,
-   "u": 32.678951,
-   "roomy": false
+   "u": 32.678951
   },
   {
    "name": "small x 1 on 1920x1080",
@@ -553,15 +521,14 @@
    "height": 1005.912,
    "gap": 5.4,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 23.632,
    "pad_y": 11.072,
    "cols": 1,
    "rows": 1,
    "pages": 1,
-   "u": 60.685419,
-   "roomy": true
+   "u": 60.685419
   },
   {
    "name": "small x 6 on 1920x1080",
@@ -570,15 +537,14 @@
    "height": 1005.912,
    "gap": 5.4,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 23.632,
    "pad_y": 11.072,
    "cols": 2,
    "rows": 3,
    "pages": 1,
-   "u": 29.874452,
-   "roomy": false
+   "u": 26.719333
   },
   {
    "name": "small x 20 on 1920x1080",
@@ -587,15 +553,14 @@
    "height": 1005.912,
    "gap": 5.4,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 23.632,
    "pad_y": 11.072,
    "cols": 4,
    "rows": 5,
    "pages": 1,
-   "u": 14.468968,
-   "roomy": true
+   "u": 14.468968
   },
   {
    "name": "small x 24 on 1920x1080",
@@ -604,15 +569,14 @@
    "height": 1005.912,
    "gap": 5.4,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 23.632,
    "pad_y": 11.072,
    "cols": 4,
-   "rows": 6,
-   "pages": 1,
-   "u": 14.468968,
-   "roomy": false
+   "rows": 5,
+   "pages": 2,
+   "u": 14.468968
   },
   {
    "name": "small x 100 on 1920x1080",
@@ -621,15 +585,14 @@
    "height": 1005.912,
    "gap": 5.4,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 23.632,
    "pad_y": 11.072,
    "cols": 4,
-   "rows": 6,
+   "rows": 5,
    "pages": 5,
-   "u": 14.468968,
-   "roomy": false
+   "u": 14.468968
   },
   {
    "name": "small x 200 on 1920x1080",
@@ -638,15 +601,14 @@
    "height": 1005.912,
    "gap": 5.4,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 23.632,
    "pad_y": 11.072,
    "cols": 4,
-   "rows": 6,
-   "pages": 9,
-   "u": 14.468968,
-   "roomy": false
+   "rows": 5,
+   "pages": 10,
+   "u": 14.468968
   },
   {
    "name": "big x 1 on 1920x1080",
@@ -662,8 +624,7 @@
    "cols": 1,
    "rows": 1,
    "pages": 1,
-   "u": 16.308852,
-   "roomy": false
+   "u": 16.308852
   },
   {
    "name": "big x 20 on 1920x1080",
@@ -679,8 +640,7 @@
    "cols": 2,
    "rows": 1,
    "pages": 10,
-   "u": 16.308852,
-   "roomy": false
+   "u": 16.308852
   },
   {
    "name": "small x 1 on 1280x720",
@@ -689,15 +649,14 @@
    "height": 659.6,
    "gap": 5,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 20.2,
    "pad_y": 9.2,
    "cols": 1,
    "rows": 1,
    "pages": 1,
-   "u": 40.251613,
-   "roomy": true
+   "u": 40.251613
   },
   {
    "name": "small x 6 on 1280x720",
@@ -706,15 +665,14 @@
    "height": 659.6,
    "gap": 5,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 20.2,
    "pad_y": 9.2,
    "cols": 2,
    "rows": 3,
    "pages": 1,
-   "u": 19.719355,
-   "roomy": false
+   "u": 17.277778
   },
   {
    "name": "small x 20 on 1280x720",
@@ -723,15 +681,14 @@
    "height": 659.6,
    "gap": 5,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 20.2,
    "pad_y": 9.2,
    "cols": 2,
-   "rows": 4,
-   "pages": 3,
-   "u": 15.195,
-   "roomy": false
+   "rows": 3,
+   "pages": 4,
+   "u": 17.277778
   },
   {
    "name": "small x 24 on 1280x720",
@@ -740,15 +697,14 @@
    "height": 659.6,
    "gap": 5,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 20.2,
    "pad_y": 9.2,
    "cols": 2,
-   "rows": 4,
-   "pages": 3,
-   "u": 15.195,
-   "roomy": false
+   "rows": 3,
+   "pages": 4,
+   "u": 17.277778
   },
   {
    "name": "small x 100 on 1280x720",
@@ -757,15 +713,14 @@
    "height": 659.6,
    "gap": 5,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 20.2,
    "pad_y": 9.2,
    "cols": 2,
-   "rows": 4,
-   "pages": 13,
-   "u": 15.195,
-   "roomy": false
+   "rows": 3,
+   "pages": 17,
+   "u": 17.277778
   },
   {
    "name": "small x 200 on 1280x720",
@@ -774,15 +729,14 @@
    "height": 659.6,
    "gap": 5,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 20.2,
    "pad_y": 9.2,
    "cols": 2,
-   "rows": 4,
-   "pages": 25,
-   "u": 15.195,
-   "roomy": false
+   "rows": 3,
+   "pages": 34,
+   "u": 17.277778
   },
   {
    "name": "big x 1 on 1280x720",
@@ -798,8 +752,7 @@
    "cols": 1,
    "rows": 1,
    "pages": 1,
-   "u": 14,
-   "roomy": false
+   "u": 14
   },
   {
    "name": "big x 20 on 1280x720",
@@ -815,8 +768,7 @@
    "cols": 1,
    "rows": 1,
    "pages": 20,
-   "u": 14,
-   "roomy": false
+   "u": 14
   },
   {
    "name": "small x 1 on 1366x600",
@@ -825,15 +777,14 @@
    "height": 539.6,
    "gap": 5,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 20.2,
    "pad_y": 9.2,
    "cols": 1,
    "rows": 1,
    "pages": 1,
-   "u": 43.025806,
-   "roomy": false
+   "u": 43.025806
   },
   {
    "name": "small x 6 on 1366x600",
@@ -842,15 +793,14 @@
    "height": 539.6,
    "gap": 5,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 20.2,
    "pad_y": 9.2,
    "cols": 2,
-   "rows": 3,
-   "pages": 1,
-   "u": 16.733333,
-   "roomy": false
+   "rows": 2,
+   "pages": 2,
+   "u": 21.106452
   },
   {
    "name": "small x 20 on 1366x600",
@@ -859,15 +809,14 @@
    "height": 539.6,
    "gap": 5,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 20.2,
    "pad_y": 9.2,
    "cols": 2,
-   "rows": 3,
-   "pages": 4,
-   "u": 16.733333,
-   "roomy": false
+   "rows": 2,
+   "pages": 5,
+   "u": 21.106452
   },
   {
    "name": "small x 24 on 1366x600",
@@ -876,15 +825,14 @@
    "height": 539.6,
    "gap": 5,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 20.2,
    "pad_y": 9.2,
    "cols": 2,
-   "rows": 3,
-   "pages": 4,
-   "u": 16.733333,
-   "roomy": false
+   "rows": 2,
+   "pages": 6,
+   "u": 21.106452
   },
   {
    "name": "small x 100 on 1366x600",
@@ -893,15 +841,14 @@
    "height": 539.6,
    "gap": 5,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 20.2,
    "pad_y": 9.2,
    "cols": 2,
-   "rows": 3,
-   "pages": 17,
-   "u": 16.733333,
-   "roomy": false
+   "rows": 2,
+   "pages": 25,
+   "u": 21.106452
   },
   {
    "name": "small x 200 on 1366x600",
@@ -910,15 +857,14 @@
    "height": 539.6,
    "gap": 5,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 20.2,
    "pad_y": 9.2,
    "cols": 2,
-   "rows": 3,
-   "pages": 34,
-   "u": 16.733333,
-   "roomy": false
+   "rows": 2,
+   "pages": 50,
+   "u": 21.106452
   },
   {
    "name": "big x 1 on 1366x600",
@@ -934,8 +880,7 @@
    "cols": 1,
    "rows": 1,
    "pages": 1,
-   "u": 14,
-   "roomy": false
+   "u": 14
   },
   {
    "name": "big x 20 on 1366x600",
@@ -951,8 +896,7 @@
    "cols": 1,
    "rows": 1,
    "pages": 20,
-   "u": 14,
-   "roomy": false
+   "u": 14
   },
   {
    "name": "no card",
@@ -961,15 +905,14 @@
    "height": 900,
    "gap": 8,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 30,
    "pad_y": 14,
    "cols": 1,
    "rows": 1,
    "pages": 1,
-   "u": 60.322581,
-   "roomy": true
+   "u": 60.322581
   },
   {
    "name": "a window too low for one row",
@@ -978,15 +921,14 @@
    "height": 120,
    "gap": 6,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 20,
    "pad_y": 10,
    "cols": 2,
    "rows": 1,
    "pages": 4,
-   "u": 14,
-   "roomy": false
+   "u": 14
   },
   {
    "name": "a window too narrow for one card",
@@ -995,15 +937,14 @@
    "height": 900,
    "gap": 6,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 20,
    "pad_y": 10,
    "cols": 2,
    "rows": 4,
    "pages": 1,
-   "u": 4.096774,
-   "roomy": true
+   "u": 4.096774
   },
   {
    "name": "no gap and no padding",
@@ -1012,15 +953,14 @@
    "height": 1200,
    "gap": 0,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 0,
    "pad_y": 0,
    "cols": 3,
    "rows": 4,
    "pages": 1,
-   "u": 25.806452,
-   "roomy": false
+   "u": 25
   },
   {
    "name": "one more card than a full grid",
@@ -1029,15 +969,14 @@
    "height": 1334.016,
    "gap": 7.2,
    "mw": 31,
-   "mh": 10,
+   "mh": 12,
    "min_u": 14,
    "pad_x": 29.176,
    "pad_y": 14.096,
    "cols": 5,
    "rows": 5,
    "pages": 1,
-   "u": 20.936516,
-   "roomy": false
+   "u": 20.578933
   }
  ]
 }

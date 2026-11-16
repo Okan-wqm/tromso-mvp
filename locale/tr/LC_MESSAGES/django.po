@@ -39,24 +39,24 @@ msgstr[0] "%(batch)s henüz %(units)s içinde bulunmadı: satır, parti oraya gi
 msgstr[1] "%(batch)s henüz %(units)s içinde bulunmadı: satırlar, parti oraya girdiğinde geçerli olur."
 
 #, python-format
+msgid ""
+"%(batch)s in %(unit)s is held (%(withdrawal)s): after this change its withdrawal would end "
+"earlier, the fish may go to food from %(after)s instead of %(until)s."
+msgstr ""
+"%(unit)s içindeki %(batch)s tutuluyor (%(withdrawal)s): bu değişiklikten sonra arınma süresi daha"
+" erken biter, balıklar %(until)s yerine %(after)s tarihinden itibaren gıdaya gidebilir."
+
+#, python-format
+msgid ""
+"%(batch)s in %(unit)s is held today (%(withdrawal)s) and would no longer be held by a medicine "
+"withdrawal after this change: the fish could go to food."
+msgstr ""
+"%(unit)s içindeki %(batch)s bugün tutuluyor (%(withdrawal)s) ve bu değişiklikten sonra artık bir "
+"ilaç arınma süresiyle tutulmayacak: balıklar gıdaya gidebilir."
+
+#, python-format
 msgid "%(batch)s is %(species)s; the protocol is for %(protocol_species)s."
 msgstr "%(batch)s partisi %(species)s; protokol ise %(protocol_species)s için."
-
-#, python-format
-msgid ""
-"%(batch)s is held (%(withdrawal)s): after this change its withdrawal would end earlier, the fish "
-"may go to food from %(after)s instead of %(until)s."
-msgstr ""
-"%(batch)s tutuluyor (%(withdrawal)s): bu değişiklikten sonra arınma süresi daha erken biter, "
-"balıklar %(until)s yerine %(after)s tarihinden itibaren gıdaya gidebilir."
-
-#, python-format
-msgid ""
-"%(batch)s is held today (%(withdrawal)s) and would no longer be held by a medicine withdrawal "
-"after this change: the fish could go to food."
-msgstr ""
-"%(batch)s bugün tutuluyor (%(withdrawal)s) ve bu değişiklikten sonra artık bir ilaç arınma "
-"süresiyle tutulmayacak: balıklar gıdaya gidebilir."
 
 #, python-format
 msgid "%(batch)s was harvested on %(date)s: cleaner fish are culled, not harvested."
@@ -14968,6 +14968,14 @@ msgstr ""
 "Bekleme süresi, hasat edilen balıklarla birlikte %(unit)s içinde bulunan %(held)s partisine "
 "aittir: aynı birimdeki balıklar birbirinden ayrılamaz."
 
+#, python-format
+msgid ""
+"The withdrawal is of %(held)s: the fish harvested shared %(unit)s with %(with)s before, and the "
+"fish of one unit cannot be told apart."
+msgstr ""
+"Bekleme süresi %(held)s partisine aittir: hasat edilen balıklar daha önce %(unit)s birimini "
+"%(with)s ile paylaştı ve aynı birimdeki balıklar birbirinden ayrılamaz."
+
 msgid ""
 "The withdrawal is the product’s, as its SPC states it per species, in degree-days, days or both, "
 "with your own safety margin on top; nothing is filled in for you. A treatment counts it from its "
@@ -15070,6 +15078,18 @@ msgid ""
 msgstr ""
 "%(batch)s partisinin bu balıkları, %(date)s tarihinde %(unit)s için kayıttaki kadar ya da daha "
 "fazla tartıyor: önce birimi tartın."
+
+#, python-format
+msgid "These fish shared %(unit)s with %(batch)s (%(how)s)."
+msgstr "Bu balıklar %(unit)s birimini %(batch)s ile paylaştı (%(how)s)."
+
+#, python-format
+msgid "These fish were given the medicated feed in %(units)s."
+msgstr "Bu balıklara ilaçlı yem %(units)s içinde verildi."
+
+#, python-format
+msgid "These fish were treated in %(units)s."
+msgstr "Bu balıklar %(units)s içinde tedavi edildi."
 
 msgid ""
 "They keep the link, but it does not count while this is deleted; restoring it brings the link "
@@ -17546,6 +17566,10 @@ msgstr "g"
 msgid "g/kg"
 msgstr "g/kg"
 
+#, python-format
+msgid "given medicated feed in %(units)s"
+msgstr "%(units)s içinde ilaçlı yem verildi"
+
 msgid "granted without approval"
 msgstr "onaysız verilir"
 
@@ -18163,6 +18187,9 @@ msgstr "sensör okuması"
 msgid "sensor readings"
 msgstr "sensör okumaları"
 
+msgid "shared a unit"
+msgstr "bir birimi paylaştı"
+
 msgid "shift"
 msgstr "vardiya"
 
@@ -18335,6 +18362,10 @@ msgstr "temizleyici balığa %(kilos)s"
 #, python-format
 msgid "total sulfide %(value)s µg/L as S"
 msgstr "toplam sülfür %(value)s µg/L S olarak"
+
+#, python-format
+msgid "treated in %(units)s"
+msgstr "%(units)s içinde tedavi edildi"
 
 msgid "treatment"
 msgstr "tedavi"

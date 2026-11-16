@@ -1865,7 +1865,9 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
   their withdrawals take turns (`farm/tests/test_withdrawal_shared_unit.py`). **A batch holds a unit on a day when it
   had fish there at any moment of that day** (`farm.stock.read.Presence.during`: at the end of the day before, or fish
   of it came in that day), so held fish that come into a unit and leave it again the same day still hold it that day:
-  the other batch's harvest out of it warns and takes its tick, and `check_withdrawal` lists it; the same question says
+  the other batch's harvest out of it warns and takes its tick, and `check_withdrawal` lists it, and the fish that were
+  beside them stay held to the same end after that day, wherever they go (the lots, flow fault S-03: Operations ›
+  Health, the medicine withdrawal); the same question says
   which fish a course reached (`farm/tests/test_withdrawal_same_day.py`; the stock books' `Presence.present`, the ends
   of the days, is unchanged). **Cleaner fish beside the production fish are kept apart** (`check.held_apart`, until the
   owner and the vet decide): their withdrawal is no warning on the production fish's harvest, no acknowledgement of
@@ -2018,7 +2020,7 @@ day. The list filters by site, unit, batch, method, medicine, dates, "under with
 farm's window; it lifts the withdrawal). Nothing else is edited: a correction is a void and a new record.
 **The list reads the fish on the day of the site they are on now** (the owner's decision of 12.11.2026: everything
 is read on the site's own day, by the site's own clock; the company's day plays no part in whether fish are held).
-`farm.health.withdrawal.of_treatments` reads each batch a treatment reached on today of the site its fish are on now,
+`farm.health.withdrawal.of_treatments` reads each batch a treatment reached or holds on today of the site its held fish are on now,
 with the reader the unit's own withdrawal line and the harvest check use (`of_units`), asked that same day; which
 units share a day is said in one place (`site_days`). So the list's row, "Under withdrawal today", the day counts and
 the unit's own line are one answer:
@@ -2029,16 +2031,18 @@ the unit's own line are one answer:
   not freed a day early;
 - a batch moved between clocks is read on the day of where it is now, with every course it carries;
 - a batch that arrived today in a unit under a running course is in the course;
-- a batch whose fish are on sites of different days is shown once for each day, each part with its units and its own
-  answer (`B-001 (K-01) · … `, `B-001 (T-02) · …`);
-- fish that are nowhere any more (harvested out) are read on the day of the units the course was given in.
+- every batch is shown with the units its fish held by the course are in now (`B-001 (T-01, T-03) · …`), and one whose
+  held fish are on sites of different days once for each day, each part with its units and its own answer
+  (`B-001 (K-01) · … `, `B-001 (T-02) · …`);
+- fish that are nowhere any more (harvested out) are shown without a unit, not held, read on the day of the units the
+  course was given in.
 
 `farm/tests/test_withdrawal_clocks.py` asserts for each of these that the list says what the unit's own line says.
 **Known and accepted:** on the day fish move between clocks, the unit they left still names them on its own day (a
 batch counts in a unit on the day it leaves), so that day the list shows them as two parts, as the two units' lines
-do. And a course given today to the part of a batch on the later clock holds the whole batch, each part by its own
-site's calendar: the part on the earlier clock shows the withdrawal at once and is marked held when its own day
-reaches the course's first day, hours later. **The hard edge of the same rule** (the third review's case K; as on
+do. And fish of a course given today on the later clock that are moved the same day to the earlier clock are held
+by their own site's calendar: that part shows the withdrawal at once and is marked held when its own day reaches the
+course's first day, hours later (a part of the batch that was never in the course's units is not held at all: S-03). **The hard edge of the same rule** (the third review's case K; as on
 main, and the owner's rule applied as decided): the course is given today on a site whose clock is ahead (its first
 day is that site's today, say the 11th), and some of those very fish are moved the same day to a site whose clock is
 behind, where it is still the 10th. Exactly then, for the hours until the second site's own day reaches the course's
@@ -2056,14 +2060,42 @@ fish could be deleted and a medicine's withdrawal made shorter without the quest
 **The medicine withdrawal** is worked out on read, never stored (`farm/health/withdrawal.py`), so a void, a
 corrected temperature or a backdated transfer changes it at once:
 
-- it **follows the fish**: every live treatment with a medicine whose treated batches include the batch holds
-  it, wherever it is now; if only some of its units were treated, the whole batch is held;
+- it **holds the fish that were exposed, not their batch** (flow fault S-03; the owner, 14.11.2026). The reader works
+  out **lots** on read, nothing stored (`Reader.lots`; a lot is the fish of one batch in one unit over one stay):
+  - **A.** the fish of a batch that were in a treated unit at any moment of a day from the course's first day to its
+    last are exposed (also fish that passed through it that day);
+  - **B.** the hold follows them: a move out of a held lot holds the lot the fish go into, to the same end;
+  - **C.** a unit is held as a whole: every batch in a unit at any moment of a day a held lot is in it is held there
+    from that day, to the same end, and stays held after either moves on (the owner's example: tank A treated and held
+    to 23.11, 500 untreated fish of tank B moved into A and on to tank C before the end: tank C is held to 23.11);
+  - **D.** fish of the same batch that left the treated unit before the course's first day, or were never in it, are
+    not held: a tank split off before the course is free, on every page, and its harvest asks nothing;
+  - **E.** an unknown end (no withdrawal row; medicated feed without a treatment) holds the same fish.
+  A lot ends the day its last fish leave the unit and still holds that day (a harvest of that day lies inside); fish
+  that come into the unit later are another lot. The order of the operations within a day is not read (a move has no
+  time): fish that leave a unit on the day held fish come into it are held too (over-warned, never under-warned).
+  When fish are held only because they shared a unit, every place says so by name: "These fish shared T-03 with
+  B-2026-001 (treated in T-01)."; fish held in a unit they were not treated in: "These fish were treated in T-01."
+  (the unit's line, the harvest warning, its stored acknowledgement, the critical log line, `check_withdrawal`).
+  A unit's line says each cause once per batch with its latest end; while the exposed fish of a cause are in the
+  unit their line stands for every fish in it. **Cleaner fish** (interim, `check.held_apart`, until the owner and
+  the vet decide): a held lot of production fish holds the cleaner fish beside it; a held lot of cleaner fish holds
+  the other cleaner fish beside it and never the production fish, whose harvest dialog says it as one note per
+  cleaner batch with its latest end. The batches a reader loads are every batch the fish asked can have met
+  (`farm.stock.read.together` over `spans()`: one grouped query of the live ledger, whatever the number of units or
+  batches), and the moves are read with the presence in one query, so the units list, a drawer, the plans, the
+  cards, the Treatments list and a guard cost the same for 6 units as for 24
+  (`farm/tests/test_withdrawal_lots.py`, the ten cases of the rule and the recorded counts);
 - **per species**: the medicine's row for the batch's species, else its row for every species, else the end is
   unknown (see Medicines); the margin is applied to both values;
 - **days**: day 1 is the day after the last treatment day, the first day the fish may be harvested is the last
   day + the days + 1;
-- **degree-days**: the batch's daily mean water temperature is added up from the day after the last day until
-  it reaches the row's degree-days, the next day is the first harvest day. A unit's daily mean is the mean
+- **degree-days**: the EXPOSED batch's daily mean water temperature is added up from the day after the last day
+  until it reaches the row's degree-days, the next day is the first harvest day. **Open question for the farm's vet**
+  (decided for now, the safe side): the degrees are still those of the exposed batch in EVERY unit it is in (the
+  lowest counts), also a unit that was never treated, not those of the held fish alone; so an untreated sibling
+  tank's cold water still moves the end of the held fish, and for a degree-day medicine deleting that sibling tank
+  or its loop stays blocked (below). A unit's daily mean is the mean
   of that farm-local day's temperatures in the unit, else in its system's loop (the water samples, never a
   copy); with the batch in several units that day, the lowest counts. **A past day without a measured
   temperature counts at the batch species' assumed water temperature** (Reference data › Species; one query reads
@@ -2079,11 +2111,31 @@ corrected temperature or a backdated transfer changes it at once:
   covers holds it with an unknown end until the treatment is recorded or the feeding voided; the feeding dialog
   says so when such a feeding is recorded.
 
-A withdrawal holds the batch from the treatment's first day (or the medicated feeding's day) to the day before
+A withdrawal holds the fish from the treatment's first day (or the medicated feeding's day) to the day before
 the first harvest day; a day before the treatment is not held.
 
+**Every reader asks the lots.** The unit's own line and the handling check (`of_units`, through the registry), the
+harvests inside a withdrawal (`_inside`: the lot of the harvested fish is held that day; `check_withdrawal` says "…
+inside a withdrawal of B-2026-001, through T-01 shared with B-2026-001" when the fish met it in another unit), the
+Treatments list (`of_treatments`: each batch with the units its held fish are in now, and ", shared a unit" for a
+batch that was not treated itself), and the write guard (`snapshot`, `change`): fish are **released lot by lot**, the
+question names the batch and the unit ("B-2026-002 in T-03 is held today (…) and would no longer be held …"), and a
+move the write itself records or voids is followed, so a move dated before the course that takes fish out of its
+reach, and the void of the move that had brought fish beside held fish, are asked about where the fish are after it;
+a move of fish that were never held asks nothing. A write about some units locks every batch their fish can have
+met (`lock_fish`), since it can move the withdrawal of a batch that was never in them.
+**What blocks a delete** (`held_reached`): a unit, a loop or a species waits while a lot held today would be moved
+by it: the unit holds such a lot; the withdrawal's batch was exposed in it (without the unit the course reached
+nobody); or, for a degree-day withdrawal, its batch was in the unit since the course's last day (its water counts for
+the end: the open question above). An empty unit that was never treated is no longer blocked by a hold elsewhere on
+a batch that was once in it; for a day-based medicine neither is the untreated sibling tank.
+**Landing this changes what stored courses hold, with no record changed** (worked out on read): a tank split off
+before a course loses its withdrawal; a unit whose fish shared a unit with held fish and moved on, or that held fish
+passed through, gains one until the same end. `manage.py check_withdrawal` lists the fish held now, unit by unit, and
+every harvest inside a withdrawal: run it after landing and read both lists.
+
 Where it shows: the health records give it to the shared handling check through the registry of
-`farm/handling/withdrawal.py` (`blocks(unit, day)`: a block per batch and cause, `until` the first day the fish
+`farm/handling/withdrawal.py` (`blocks(unit, day)`: a block per batch held in the unit and cause, `until` the first day the fish
 may be harvested; the provider is registered in `farm/apps.py`). From there Production units marks the unit's
 row **Withdrawal** and the drawer's Harvest and handling section says **"Not suitable for harvest — medicine
 withdrawal of B-2026-001: harvest from 14.12.2026."** ("harvest from about …" when projected, "end unknown") with why, to everyone

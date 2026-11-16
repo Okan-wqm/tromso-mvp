@@ -37,24 +37,24 @@ msgstr[0] "%(batch)s har ikke vært i %(units)s ennå: raden gjelder når den ko
 msgstr[1] "%(batch)s har ikke vært i %(units)s ennå: radene gjelder når den kommer dit."
 
 #, python-format
+msgid ""
+"%(batch)s in %(unit)s is held (%(withdrawal)s): after this change its withdrawal would end "
+"earlier, the fish may go to food from %(after)s instead of %(until)s."
+msgstr ""
+"%(batch)s i %(unit)s holdes tilbake (%(withdrawal)s): etter denne endringen slutter "
+"tilbakeholdelsestiden tidligere, fisken kan gå til mat fra %(after)s i stedet for %(until)s."
+
+#, python-format
+msgid ""
+"%(batch)s in %(unit)s is held today (%(withdrawal)s) and would no longer be held by a medicine "
+"withdrawal after this change: the fish could go to food."
+msgstr ""
+"%(batch)s i %(unit)s holdes tilbake i dag (%(withdrawal)s) og vil ikke lenger holdes av en "
+"tilbakeholdelsestid etter denne endringen: fisken kan gå til mat."
+
+#, python-format
 msgid "%(batch)s is %(species)s; the protocol is for %(protocol_species)s."
 msgstr "%(batch)s er %(species)s; protokollen er for %(protocol_species)s."
-
-#, python-format
-msgid ""
-"%(batch)s is held (%(withdrawal)s): after this change its withdrawal would end earlier, the fish "
-"may go to food from %(after)s instead of %(until)s."
-msgstr ""
-"%(batch)s holdes tilbake (%(withdrawal)s): etter denne endringen slutter tilbakeholdelsestiden "
-"tidligere, fisken kan gå til mat fra %(after)s i stedet for %(until)s."
-
-#, python-format
-msgid ""
-"%(batch)s is held today (%(withdrawal)s) and would no longer be held by a medicine withdrawal "
-"after this change: the fish could go to food."
-msgstr ""
-"%(batch)s holdes tilbake i dag (%(withdrawal)s) og vil ikke lenger holdes av en "
-"tilbakeholdelsestid etter denne endringen: fisken kan gå til mat."
 
 #, python-format
 msgid "%(batch)s was harvested on %(date)s: cleaner fish are culled, not harvested."
@@ -14937,6 +14937,14 @@ msgstr ""
 "Tilbakeholdelsestiden gjelder %(held)s, som sto i %(unit)s sammen med fisken som ble høstet: fisk"
 " i samme enhet kan ikke skilles fra hverandre."
 
+#, python-format
+msgid ""
+"The withdrawal is of %(held)s: the fish harvested shared %(unit)s with %(with)s before, and the "
+"fish of one unit cannot be told apart."
+msgstr ""
+"Tilbakeholdelsestiden gjelder %(held)s: fisken som ble høstet, delte %(unit)s med %(with)s "
+"tidligere, og fisk i samme enhet kan ikke skilles fra hverandre."
+
 msgid ""
 "The withdrawal is the product’s, as its SPC states it per species, in degree-days, days or both, "
 "with your own safety margin on top; nothing is filled in for you. A treatment counts it from its "
@@ -15038,6 +15046,18 @@ msgid ""
 msgstr ""
 "Denne fisken av %(batch)s veier like mye som beholdningen har for %(unit)s %(date)s, eller mer: "
 "vei enheten først."
+
+#, python-format
+msgid "These fish shared %(unit)s with %(batch)s (%(how)s)."
+msgstr "Denne fisken delte %(unit)s med %(batch)s (%(how)s)."
+
+#, python-format
+msgid "These fish were given the medicated feed in %(units)s."
+msgstr "Denne fisken fikk medisinfôret i %(units)s."
+
+#, python-format
+msgid "These fish were treated in %(units)s."
+msgstr "Denne fisken ble behandlet i %(units)s."
 
 msgid ""
 "They keep the link, but it does not count while this is deleted; restoring it brings the link "
@@ -17520,6 +17540,10 @@ msgstr "g"
 msgid "g/kg"
 msgstr "g/kg"
 
+#, python-format
+msgid "given medicated feed in %(units)s"
+msgstr "fikk medisinfôr i %(units)s"
+
 msgid "granted without approval"
 msgstr "innvilges uten godkjenning"
 
@@ -18137,6 +18161,9 @@ msgstr "sensoravlesning"
 msgid "sensor readings"
 msgstr "sensoravlesninger"
 
+msgid "shared a unit"
+msgstr "delte en enhet"
+
 msgid "shift"
 msgstr "skift"
 
@@ -18309,6 +18336,10 @@ msgstr "til rensefisken %(kilos)s"
 #, python-format
 msgid "total sulfide %(value)s µg/L as S"
 msgstr "totalt sulfid %(value)s µg/L som S"
+
+#, python-format
+msgid "treated in %(units)s"
+msgstr "behandlet i %(units)s"
 
 msgid "treatment"
 msgstr "behandling"

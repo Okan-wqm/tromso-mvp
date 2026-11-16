@@ -390,3 +390,6 @@ html[data-wall] .monitor-grid .is-fit .monitor-ph-window { height: 100%; }
 /* A pH beyond the pH window's scale: an arrow and the number at that end, never a mark drawn as if it were there. */
 .monitor-ph-window .chart-off { fill: var(--text-1); font-size: 1em; font-weight: 600; dominant-baseline: central; }
 .monitor-ph-window .chart-off-high { text-anchor: end; }
+/* The rows of a fitted card's water share its height: a row is one line of text and no taller than its share. */
+.is-fit .monitor-rows { line-height: 1; }
+.is-fit .w-dosing p { line-height: 1.2; }

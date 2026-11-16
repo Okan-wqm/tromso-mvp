@@ -18036,6 +18036,10 @@ msgstr[1] "%(total)s birimden"
 msgid "off"
 msgstr "izinli"
 
+#, python-format
+msgid "off the scale (%(low)s to %(high)s)"
+msgstr "ölçek dışında (%(low)s – %(high)s)"
+
 msgid "office department"
 msgstr "ofis departmanı"
 

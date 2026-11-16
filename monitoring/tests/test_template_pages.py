@@ -72,7 +72,7 @@ class TemplateRoundTripTests(PagesCase):
         # read: the list (built-ins first, a mark, how many rules and boards use each), the form filled from the row
         listing = self.client.get(TEMPLATES)
         self.assertEqual([each.pk for each in listing.context['objects']][:3],
-                         [builtin.DETAILED, builtin.OPERATOR, builtin.SIMPLE])
+                         [builtin.BIG, builtin.DETAILED, builtin.OPERATOR])
         self.assertContains(listing, 'Hall view')
         self.assertEqual(next(each for each in listing.context['objects'] if each.pk == builtin.SIMPLE).rules, 1)
         form = self.client.get(self.edit(template)).context['form']

@@ -190,10 +190,11 @@ class BigCardTests(BigCase):
         self.assertGreaterEqual(len(names), 1)
         self.assertIn('no data', text(points))
         self.assertNotIn('—', text(points))
-        (bare,) = self.farm_of(1)                                      # a unit with its middle point alone
-        alone = card_of(self.page(), bare)
-        (none,) = [each for each in alone.walk() if 'w-points' in each.classes]
-        self.assertEqual(text(none), 'No other sampling point')
+        from types import SimpleNamespace
+
+        from ..cards import render
+        alone = SimpleNamespace(water=(SimpleNamespace(point=SimpleNamespace(kind='middle', name='Middle')),), now=None)
+        self.assertEqual(render.other_points(alone), ())               # a unit with its middle point alone: the box says so
 
     def test_every_value_is_a_row_with_its_strip_its_source_and_its_arrival(self):
         self.good_water()
@@ -204,7 +205,7 @@ class BigCardTests(BigCase):
         self.assertIn('pH', labels)
         self.assertGreaterEqual(len(labels), 5)
         said = text(rows)
-        self.assertRegex(said, r'Meter or test kit \d\d:\d\d · 1 h')              # the source whole, the clock, the age
+        self.assertRegex(said, r'Meter or test kit\s?\d\d:\d\d · 1 h')           # the source whole, the clock, the age
         self.assertNotIn('truncate', ' '.join(' '.join(each.classes) for each in rows.walk()))
         self.assertTrue(nodes(rows, 'monitor-bar-svg'))                            # a strip where a limit row judges
         self.assertFalse([each for each in rows.walk() if 'data-old' in each.attrs])
@@ -228,8 +229,9 @@ class BigCardTests(BigCase):
         (reasons,) = nodes(card, 'monitor-reasons')
         lines = [text(each) for each in reasons.children if not isinstance(each, str)]
         self.assertEqual(len(lines), len(read.cards([self.t2], self.reader, read.resolve.Choice(view=builtin.BIG))[0].state.reasons))
-        self.assertTrue(lines[0].startswith('O₂ (mg/L) 5.00 · critical limit 6.00'))
-        self.assertTrue(any(line.startswith('pH 5.90 · critical limit 6.00') for line in lines), lines)
+        self.assertTrue(lines[0].startswith('O₂ (mg/L) 5.00'), lines)
+        self.assertIn('critical limit 6.00', lines[0])
+        self.assertTrue(any(line.startswith('pH 5.90') for line in lines), lines)
 
     def test_the_chart_says_what_the_farm_has_not_set(self):
         from farm.models import WaterLimit

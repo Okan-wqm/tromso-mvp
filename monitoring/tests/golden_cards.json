@@ -14463,7 +14463,7 @@
     "G-11",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
     "Unit G-11",
-    "Withdrawal",
+    "Withdrawal · 20.11",
     "sample · 1 h",
     "sample · 1 h",
     "sample · 1 h"
@@ -15632,7 +15632,7 @@
     "G-11",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
     "Unit G-11",
-    "Withdrawal",
+    "Withdrawal · 20.11",
     "sample · 1 h",
     "sample · 1 h",
     "sample · 1 h"
@@ -16869,7 +16869,7 @@
     "G-11",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
     "Unit G-11",
-    "Withdrawal",
+    "Withdrawal · 20.11",
     "sample · 1 h",
     "sample · 1 h",
     "sample · 1 h"
@@ -17357,6 +17357,4173 @@
      "Detailed",
      "/operations/monitoring/?flip=G-01,T-02&mode=small",
      "/operations/monitoring/cards/?flip=G-01,T-02&mode=small"
+    ]
+   }
+  }
+ },
+ "big": {
+  "G-00": {
+   "state": "OK",
+   "reasons": [],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "13.0",
+    "30 kg · 0.3 kg/m³",
+    "500",
+    "7.20",
+    "85.4",
+    "9.00",
+    "<batch-2>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-00",
+    "Inlet",
+    "Laks",
+    "Laks · 500 fish · 30 kg · 0.3 kg/m³",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-00",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-00 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-00",
+     "/operations/units/?unit=G-00"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=G-00&mode=big&occupancy=all",
+     "/operations/monitoring/cards/?flip=G-00&mode=big&occupancy=all"
+    ]
+   }
+  },
+  "G-01": {
+   "state": "Critical",
+   "reasons": [
+    "O₂ (mg/L) 5.00· critical limit 6.00 (Dissolved oxygen (mg/L O₂): Critical)"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 47.5 %",
+     "5.00"
+    ],
+    [
+     "pH",
+     "no data"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "13.0",
+    "37 kg · 0.4 kg/m³",
+    "47.5",
+    "5.00",
+    "600",
+    "<batch-3>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-01",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-01",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃)",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Critical · Meter or test kit · 1 h ago",
+    "Dissolved oxygen (mg/L O₂) · 47.5 %",
+    "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-01 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-01",
+     "/operations/units/?unit=G-01"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=G-01&mode=big&occupancy=all",
+     "/operations/monitoring/cards/?flip=G-01&mode=big&occupancy=all"
+    ]
+   }
+  },
+  "G-02": {
+   "state": "Warning",
+   "reasons": [
+    "O₂ (mg/L) 6.50· warning limit 7.00 (Dissolved oxygen (mg/L O₂): Warning)"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 61.7 %",
+     "6.50"
+    ],
+    [
+     "pH",
+     "no data"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "13.0",
+    "43 kg · 0.4 kg/m³",
+    "6.50",
+    "61.7",
+    "700",
+    "<batch-4>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-02",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-02",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃)",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 61.7 %",
+    "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-02 · Hall A · Template: Big · the view chosen on this screen",
+    "Warning · Meter or test kit · 1 h ago",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-02",
+     "/operations/units/?unit=G-02"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=G-02&mode=big&occupancy=all",
+     "/operations/monitoring/cards/?flip=G-02&mode=big&occupancy=all"
+    ]
+   }
+  },
+  "G-03": {
+   "state": "No recent data",
+   "reasons": [
+    "Temperature (°C): no recent data, <age> old",
+    "Dissolved oxygen (mg/L O₂): no recent data, <age> old"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ old",
+     "8.80"
+    ],
+    [
+     "pH",
+     "no data"
+    ],
+    [
+     "°C old",
+     "9.1"
+    ]
+   ],
+   "texts": [
+    "50 kg · 0.5 kg/m³",
+    "76.3",
+    "8.80",
+    "800",
+    "9.1",
+    "<batch-5>",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-03",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-03",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃)",
+    "old",
+    "old",
+    "old",
+    "sample · 1 d",
+    "sample · 1 d",
+    "· 14.11 <time> · 1 d",
+    "· 14.11 <time> · 1 d",
+    "· 14.11 <time> · 1 d"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 76.3 %",
+    "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "Stale · Meter or test kit · 1 d ago",
+    "Stale · Meter or test kit · 1 d ago",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-03 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-03",
+     "/operations/units/?unit=G-03"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=G-03&mode=big&occupancy=all",
+     "/operations/monitoring/cards/?flip=G-03&mode=big&occupancy=all"
+    ]
+   }
+  },
+  "G-04": {
+   "state": "No recent data",
+   "reasons": [
+    "Temperature (°C): no recent data",
+    "Dissolved oxygen (mg/L O₂): no recent data"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂",
+     "no data"
+    ],
+    [
+     "pH",
+     "no data"
+    ],
+    [
+     "°C",
+     "no data"
+    ]
+   ],
+   "texts": [
+    "58 kg · 0.6 kg/m³",
+    "900",
+    "<batch-6>",
+    "Biomass",
+    "Detailed",
+    "Fish",
+    "G-04",
+    "Laks",
+    "Missing: no active middle sampling point.",
+    "No chart",
+    "No dosing advice",
+    "No other sampling point",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "The chart cannot be drawn",
+    "This unit has no active middle sampling point, so no water is shown for it.",
+    "Unit G-04",
+    "no active middle sampling point"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂)",
+    "Not worked out: no active middle sampling point.",
+    "State from: Fish, Feeding, Water, Health",
+    "Temperature (°C)",
+    "Unit G-04 · Hall A · Template: Big · the view chosen on this screen",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-04",
+     "/operations/units/?unit=G-04"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=G-04&mode=big&occupancy=all",
+     "/operations/monitoring/cards/?flip=G-04&mode=big&occupancy=all"
+    ]
+   }
+  },
+  "G-05": {
+   "state": "Warning",
+   "reasons": [
+    "Over capacity"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "120,000",
+    "13.0",
+    "7,800 kg · 78.0 kg/m³",
+    "7.20",
+    "85.4",
+    "9.00",
+    "<batch-7>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-05",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-05",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-05 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-05",
+     "/operations/units/?unit=G-05"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=G-05&mode=big&occupancy=all",
+     "/operations/monitoring/cards/?flip=G-05&mode=big&occupancy=all"
+    ]
+   }
+  },
+  "G-06": {
+   "state": "OK",
+   "reasons": [],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "1,100",
+    "13.0",
+    "7.20",
+    "73 kg · 0.7 kg/m³",
+    "85.4",
+    "9.00",
+    "<batch-8>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-06",
+    "Inlet",
+    "Laks",
+    "Laks · 1,100 fish · 73 kg · 0.7 kg/m³",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-06",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-06 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-06",
+     "/operations/units/?unit=G-06"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=G-06&mode=big&occupancy=all",
+     "/operations/monitoring/cards/?flip=G-06&mode=big&occupancy=all"
+    ]
+   }
+  },
+  "G-07": {
+   "state": "OK",
+   "reasons": [],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "1,200",
+    "13.0",
+    "7.20",
+    "80 kg · 0.8 kg/m³",
+    "85.4",
+    "9.00",
+    "<batch-9>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-07",
+    "Inlet",
+    "Laks",
+    "Laks · 1,200 fish · 80 kg · 0.8 kg/m³",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-07",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-07 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-07",
+     "/operations/units/?unit=G-07"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=G-07&mode=big&occupancy=all",
+     "/operations/monitoring/cards/?flip=G-07&mode=big&occupancy=all"
+    ]
+   }
+  },
+  "G-08": {
+   "state": "OK",
+   "reasons": [],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "1,300",
+    "13.0",
+    "7.20",
+    "85.4",
+    "88 kg · 0.9 kg/m³",
+    "9.00",
+    "<batch-10>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-08",
+    "Inlet",
+    "Laks",
+    "Laks · 1,300 fish · 88 kg · 0.9 kg/m³",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-08",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-08 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-08",
+     "/operations/units/?unit=G-08"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=G-08&mode=big&occupancy=all",
+     "/operations/monitoring/cards/?flip=G-08&mode=big&occupancy=all"
+    ]
+   }
+  },
+  "G-09": {
+   "state": "OK",
+   "reasons": [],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 95.0 %",
+     "9.99"
+    ],
+    [
+     "pH",
+     "no data"
+    ],
+    [
+     "°C",
+     "13.1"
+    ]
+   ],
+   "texts": [
+    "1,400",
+    "13.1",
+    "9.99",
+    "95.0",
+    "97 kg · 1.0 kg/m³",
+    "<batch-11>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-09",
+    "Inlet",
+    "Laks",
+    "Laks · 1,400 fish · 97 kg · 1.0 kg/m³",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-09",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃)",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 95.0 %",
+    "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago · Worked out from 13.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s.",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-09 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-09",
+     "/operations/units/?unit=G-09"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=G-09&mode=big&occupancy=all",
+     "/operations/monitoring/cards/?flip=G-09&mode=big&occupancy=all"
+    ]
+   }
+  },
+  "G-10": {
+   "state": "Note",
+   "reasons": [
+    "Weigh soon",
+    "1 open health event"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "1,500",
+    "105 kg · 1.1 kg/m³",
+    "13.0",
+    "7.20",
+    "85.4",
+    "9.00",
+    "<batch-12>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-10",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-10",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-10 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-10",
+     "/operations/units/?unit=G-10"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=G-10&mode=big&occupancy=all",
+     "/operations/monitoring/cards/?flip=G-10&mode=big&occupancy=all"
+    ]
+   }
+  },
+  "G-11": {
+   "state": "Note",
+   "reasons": [
+    "Medicine withdrawal in force· until <day+5>",
+    "Weigh soon"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "1,600",
+    "114 kg · 1.1 kg/m³",
+    "13.0",
+    "7.20",
+    "85.4",
+    "9.00",
+    "<batch-13>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-11",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-11",
+    "Value",
+    "Withdrawal · 20.11",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-11 · Hall A · Template: Big · the view chosen on this screen",
+    "Withdrawal: <batch-13> · <day+5>",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-11",
+     "/operations/units/?unit=G-11"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=G-11&mode=big&occupancy=all",
+     "/operations/monitoring/cards/?flip=G-11&mode=big&occupancy=all"
+    ]
+   }
+  },
+  "G-12": {
+   "state": "Warning",
+   "reasons": [
+    "Temp. (°C) 16.0· warning limit 15.0 (Temperature (°C): Warning)"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.1 %",
+     "8.40"
+    ],
+    [
+     "pH",
+     "no data"
+    ],
+    [
+     "°C",
+     "16.0"
+    ]
+   ],
+   "texts": [
+    "1,700",
+    "12.0",
+    "122 kg · 1.2 kg/m³",
+    "16.0",
+    "8.40",
+    "85.1",
+    "<batch-14>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "CO₂ (mg/L)",
+    "Detailed",
+    "Fish",
+    "G-12",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-12",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃)",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.1 %",
+    "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-12 · Hall A · Template: Big · the view chosen on this screen",
+    "Warning · Meter or test kit · 1 h ago",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-12",
+     "/operations/units/?unit=G-12"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=G-12&mode=big&occupancy=all",
+     "/operations/monitoring/cards/?flip=G-12&mode=big&occupancy=all"
+    ]
+   }
+  },
+  "G-13": {
+   "state": "Note",
+   "reasons": [
+    "Weigh soon",
+    "No protocol is assigned to these fish."
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "1,800",
+    "13.0",
+    "131 kg · 1.3 kg/m³",
+    "7.20",
+    "85.4",
+    "9.00",
+    "<batch-15>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-13",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-13",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-13 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-13",
+     "/operations/units/?unit=G-13"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=G-13&mode=big&occupancy=all",
+     "/operations/monitoring/cards/?flip=G-13&mode=big&occupancy=all"
+    ]
+   }
+  },
+  "G-14": {
+   "state": "Note",
+   "reasons": [
+    "Weigh soon"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "1,900",
+    "13.0",
+    "141 kg · 1.4 kg/m³",
+    "7.20",
+    "85.4",
+    "9.00",
+    "<batch-16>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-14",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-14",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-14 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-14",
+     "/operations/units/?unit=G-14"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=G-14&mode=big&occupancy=all",
+     "/operations/monitoring/cards/?flip=G-14&mode=big&occupancy=all"
+    ]
+   }
+  },
+  "G-15": {
+   "state": "Note",
+   "reasons": [
+    "Weigh soon"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "13.0",
+    "150 kg · 1.5 kg/m³",
+    "2,000",
+    "7.20",
+    "85.4",
+    "9.00",
+    "<batch-17>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-15",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-15",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-15 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-15",
+     "/operations/units/?unit=G-15"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=G-15&mode=big&occupancy=all",
+     "/operations/monitoring/cards/?flip=G-15&mode=big&occupancy=all"
+    ]
+   }
+  },
+  "G-16": {
+   "state": "Note",
+   "reasons": [
+    "Weigh soon"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "13.0",
+    "160 kg · 1.6 kg/m³",
+    "2,100",
+    "7.20",
+    "85.4",
+    "9.00",
+    "<batch-18>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-16",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-16",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-16 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-16",
+     "/operations/units/?unit=G-16"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=G-16&mode=big&occupancy=all",
+     "/operations/monitoring/cards/?flip=G-16&mode=big&occupancy=all"
+    ]
+   }
+  },
+  "G-17": {
+   "state": "No limit",
+   "reasons": [
+    "Nitrite (mg/L NO₂ as N): no limit for these fish"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "no data"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "0.050",
+    "13.0",
+    "169 kg · 1.7 kg/m³",
+    "2,200",
+    "85.4",
+    "9.00",
+    "<batch-19>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-17",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "NO₂-N (mg/L)",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-17",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃)",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-17 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-17",
+     "/operations/units/?unit=G-17"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=G-17&mode=big&occupancy=all",
+     "/operations/monitoring/cards/?flip=G-17&mode=big&occupancy=all"
+    ]
+   }
+  },
+  "T-01": {
+   "state": "No recent data",
+   "reasons": [
+    "Temperature (°C): no recent data",
+    "Dissolved oxygen (mg/L O₂): no recent data"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂",
+     "no data"
+    ],
+    [
+     "pH",
+     "no data"
+    ],
+    [
+     "°C",
+     "no data"
+    ]
+   ],
+   "texts": [
+    "10,000",
+    "500 kg · 5.0 kg/m³",
+    "<batch-0>",
+    "Biomass",
+    "Detailed",
+    "Fish",
+    "Laks",
+    "Missing: no active middle sampling point.",
+    "No chart",
+    "No dosing advice",
+    "No other sampling point",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "T-01",
+    "The chart cannot be drawn",
+    "This unit has no active middle sampling point, so no water is shown for it.",
+    "Unit T-01",
+    "no active middle sampling point"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂)",
+    "Not worked out: no active middle sampling point.",
+    "State from: Fish, Feeding, Water, Health",
+    "Temperature (°C)",
+    "Unit T-01 · Hall A · Template: Big · the view chosen on this screen",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "T-01",
+     "/operations/units/?unit=T-01"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=T-01&mode=big&occupancy=all",
+     "/operations/monitoring/cards/?flip=T-01&mode=big&occupancy=all"
+    ]
+   }
+  },
+  "T-02": {
+   "state": "Note",
+   "reasons": [
+    "Weigh soon"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 77.2 %",
+     "8.10"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.2"
+    ]
+   ],
+   "texts": [
+    "1,020 kg · 10.2 kg/m³",
+    "12,000",
+    "13.2",
+    "7.20",
+    "77.2",
+    "8.10",
+    "<batch-1>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · now",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "T-02",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit T-02",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · now"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 77.2 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · <recent>",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit T-02 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "T-02",
+     "/operations/units/?unit=T-02"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=T-02&mode=big&occupancy=all",
+     "/operations/monitoring/cards/?flip=T-02&mode=big&occupancy=all"
+    ]
+   }
+  },
+  "P-01": {
+   "state": "Empty",
+   "reasons": [],
+   "pairs": [],
+   "texts": [
+    "Detailed",
+    "Maintenance",
+    "P-01",
+    "Unit P-01"
+   ],
+   "titles": [
+    "Maintenance",
+    "State from: Fish, Feeding, Water, Health",
+    "Unit P-01 · Sea · Template: Big · the view chosen on this screen"
+   ],
+   "links": {
+    "unit": [
+     "P-01",
+     "/operations/units/?unit=P-01"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=P-01&mode=big&occupancy=all",
+     "/operations/monitoring/cards/?flip=P-01&mode=big&occupancy=all"
+    ]
+   }
+  }
+ },
+ "big-full": {
+  "G-00": {
+   "state": "OK",
+   "reasons": [],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "13.0",
+    "30 kg · 0.3 kg/m³",
+    "500",
+    "7.20",
+    "85.4",
+    "9.00",
+    "<batch-2>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-00",
+    "Inlet",
+    "Laks",
+    "Laks · 500 fish · 30 kg · 0.3 kg/m³",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-00",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-00 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-00",
+     "/operations/units/?unit=G-00"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?chart=full&flip=G-00&mode=big",
+     "/operations/monitoring/cards/?chart=full&flip=G-00&mode=big"
+    ]
+   }
+  },
+  "G-01": {
+   "state": "Critical",
+   "reasons": [
+    "O₂ (mg/L) 5.00· critical limit 6.00 (Dissolved oxygen (mg/L O₂): Critical)"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 47.5 %",
+     "5.00"
+    ],
+    [
+     "pH",
+     "no data"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "13.0",
+    "37 kg · 0.4 kg/m³",
+    "47.5",
+    "5.00",
+    "600",
+    "<batch-3>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-01",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-01",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃)",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Critical · Meter or test kit · 1 h ago",
+    "Dissolved oxygen (mg/L O₂) · 47.5 %",
+    "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-01 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-01",
+     "/operations/units/?unit=G-01"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?chart=full&flip=G-01&mode=big",
+     "/operations/monitoring/cards/?chart=full&flip=G-01&mode=big"
+    ]
+   }
+  },
+  "G-02": {
+   "state": "Warning",
+   "reasons": [
+    "O₂ (mg/L) 6.50· warning limit 7.00 (Dissolved oxygen (mg/L O₂): Warning)"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 61.7 %",
+     "6.50"
+    ],
+    [
+     "pH",
+     "no data"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "13.0",
+    "43 kg · 0.4 kg/m³",
+    "6.50",
+    "61.7",
+    "700",
+    "<batch-4>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-02",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-02",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃)",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 61.7 %",
+    "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-02 · Hall A · Template: Big · the view chosen on this screen",
+    "Warning · Meter or test kit · 1 h ago",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-02",
+     "/operations/units/?unit=G-02"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?chart=full&flip=G-02&mode=big",
+     "/operations/monitoring/cards/?chart=full&flip=G-02&mode=big"
+    ]
+   }
+  },
+  "G-03": {
+   "state": "No recent data",
+   "reasons": [
+    "Temperature (°C): no recent data, <age> old",
+    "Dissolved oxygen (mg/L O₂): no recent data, <age> old"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ old",
+     "8.80"
+    ],
+    [
+     "pH",
+     "no data"
+    ],
+    [
+     "°C old",
+     "9.1"
+    ]
+   ],
+   "texts": [
+    "50 kg · 0.5 kg/m³",
+    "76.3",
+    "8.80",
+    "800",
+    "9.1",
+    "<batch-5>",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-03",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-03",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃)",
+    "old",
+    "old",
+    "old",
+    "sample · 1 d",
+    "sample · 1 d",
+    "· 14.11 <time> · 1 d",
+    "· 14.11 <time> · 1 d",
+    "· 14.11 <time> · 1 d"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 76.3 %",
+    "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "Stale · Meter or test kit · 1 d ago",
+    "Stale · Meter or test kit · 1 d ago",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-03 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-03",
+     "/operations/units/?unit=G-03"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?chart=full&flip=G-03&mode=big",
+     "/operations/monitoring/cards/?chart=full&flip=G-03&mode=big"
+    ]
+   }
+  },
+  "G-04": {
+   "state": "No recent data",
+   "reasons": [
+    "Temperature (°C): no recent data",
+    "Dissolved oxygen (mg/L O₂): no recent data"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂",
+     "no data"
+    ],
+    [
+     "pH",
+     "no data"
+    ],
+    [
+     "°C",
+     "no data"
+    ]
+   ],
+   "texts": [
+    "58 kg · 0.6 kg/m³",
+    "900",
+    "<batch-6>",
+    "Biomass",
+    "Detailed",
+    "Fish",
+    "G-04",
+    "Laks",
+    "Missing: no active middle sampling point.",
+    "No chart",
+    "No dosing advice",
+    "No other sampling point",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "The chart cannot be drawn",
+    "This unit has no active middle sampling point, so no water is shown for it.",
+    "Unit G-04",
+    "no active middle sampling point"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂)",
+    "Not worked out: no active middle sampling point.",
+    "State from: Fish, Feeding, Water, Health",
+    "Temperature (°C)",
+    "Unit G-04 · Hall A · Template: Big · the view chosen on this screen",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-04",
+     "/operations/units/?unit=G-04"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?chart=full&flip=G-04&mode=big",
+     "/operations/monitoring/cards/?chart=full&flip=G-04&mode=big"
+    ]
+   }
+  },
+  "G-05": {
+   "state": "Warning",
+   "reasons": [
+    "Over capacity"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "120,000",
+    "13.0",
+    "7,800 kg · 78.0 kg/m³",
+    "7.20",
+    "85.4",
+    "9.00",
+    "<batch-7>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-05",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-05",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-05 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-05",
+     "/operations/units/?unit=G-05"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?chart=full&flip=G-05&mode=big",
+     "/operations/monitoring/cards/?chart=full&flip=G-05&mode=big"
+    ]
+   }
+  },
+  "G-06": {
+   "state": "OK",
+   "reasons": [],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "1,100",
+    "13.0",
+    "7.20",
+    "73 kg · 0.7 kg/m³",
+    "85.4",
+    "9.00",
+    "<batch-8>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-06",
+    "Inlet",
+    "Laks",
+    "Laks · 1,100 fish · 73 kg · 0.7 kg/m³",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-06",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-06 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-06",
+     "/operations/units/?unit=G-06"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?chart=full&flip=G-06&mode=big",
+     "/operations/monitoring/cards/?chart=full&flip=G-06&mode=big"
+    ]
+   }
+  },
+  "G-07": {
+   "state": "OK",
+   "reasons": [],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "1,200",
+    "13.0",
+    "7.20",
+    "80 kg · 0.8 kg/m³",
+    "85.4",
+    "9.00",
+    "<batch-9>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-07",
+    "Inlet",
+    "Laks",
+    "Laks · 1,200 fish · 80 kg · 0.8 kg/m³",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-07",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-07 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-07",
+     "/operations/units/?unit=G-07"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?chart=full&flip=G-07&mode=big",
+     "/operations/monitoring/cards/?chart=full&flip=G-07&mode=big"
+    ]
+   }
+  },
+  "G-08": {
+   "state": "OK",
+   "reasons": [],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "1,300",
+    "13.0",
+    "7.20",
+    "85.4",
+    "88 kg · 0.9 kg/m³",
+    "9.00",
+    "<batch-10>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-08",
+    "Inlet",
+    "Laks",
+    "Laks · 1,300 fish · 88 kg · 0.9 kg/m³",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-08",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-08 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-08",
+     "/operations/units/?unit=G-08"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?chart=full&flip=G-08&mode=big",
+     "/operations/monitoring/cards/?chart=full&flip=G-08&mode=big"
+    ]
+   }
+  },
+  "G-09": {
+   "state": "OK",
+   "reasons": [],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 95.0 %",
+     "9.99"
+    ],
+    [
+     "pH",
+     "no data"
+    ],
+    [
+     "°C",
+     "13.1"
+    ]
+   ],
+   "texts": [
+    "1,400",
+    "13.1",
+    "9.99",
+    "95.0",
+    "97 kg · 1.0 kg/m³",
+    "<batch-11>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-09",
+    "Inlet",
+    "Laks",
+    "Laks · 1,400 fish · 97 kg · 1.0 kg/m³",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-09",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃)",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 95.0 %",
+    "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago · Worked out from 13.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s.",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-09 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-09",
+     "/operations/units/?unit=G-09"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?chart=full&flip=G-09&mode=big",
+     "/operations/monitoring/cards/?chart=full&flip=G-09&mode=big"
+    ]
+   }
+  },
+  "G-10": {
+   "state": "Note",
+   "reasons": [
+    "Weigh soon",
+    "1 open health event"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "1,500",
+    "105 kg · 1.1 kg/m³",
+    "13.0",
+    "7.20",
+    "85.4",
+    "9.00",
+    "<batch-12>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-10",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-10",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-10 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-10",
+     "/operations/units/?unit=G-10"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?chart=full&flip=G-10&mode=big",
+     "/operations/monitoring/cards/?chart=full&flip=G-10&mode=big"
+    ]
+   }
+  },
+  "G-11": {
+   "state": "Note",
+   "reasons": [
+    "Medicine withdrawal in force· until <day+5>",
+    "Weigh soon"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "1,600",
+    "114 kg · 1.1 kg/m³",
+    "13.0",
+    "7.20",
+    "85.4",
+    "9.00",
+    "<batch-13>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-11",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-11",
+    "Value",
+    "Withdrawal · 20.11",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-11 · Hall A · Template: Big · the view chosen on this screen",
+    "Withdrawal: <batch-13> · <day+5>",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-11",
+     "/operations/units/?unit=G-11"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?chart=full&flip=G-11&mode=big",
+     "/operations/monitoring/cards/?chart=full&flip=G-11&mode=big"
+    ]
+   }
+  },
+  "G-12": {
+   "state": "Warning",
+   "reasons": [
+    "Temp. (°C) 16.0· warning limit 15.0 (Temperature (°C): Warning)"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.1 %",
+     "8.40"
+    ],
+    [
+     "pH",
+     "no data"
+    ],
+    [
+     "°C",
+     "16.0"
+    ]
+   ],
+   "texts": [
+    "1,700",
+    "12.0",
+    "122 kg · 1.2 kg/m³",
+    "16.0",
+    "8.40",
+    "85.1",
+    "<batch-14>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "CO₂ (mg/L)",
+    "Detailed",
+    "Fish",
+    "G-12",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-12",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃)",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.1 %",
+    "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-12 · Hall A · Template: Big · the view chosen on this screen",
+    "Warning · Meter or test kit · 1 h ago",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-12",
+     "/operations/units/?unit=G-12"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?chart=full&flip=G-12&mode=big",
+     "/operations/monitoring/cards/?chart=full&flip=G-12&mode=big"
+    ]
+   }
+  },
+  "G-13": {
+   "state": "Note",
+   "reasons": [
+    "Weigh soon",
+    "No protocol is assigned to these fish."
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "1,800",
+    "13.0",
+    "131 kg · 1.3 kg/m³",
+    "7.20",
+    "85.4",
+    "9.00",
+    "<batch-15>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-13",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-13",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-13 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-13",
+     "/operations/units/?unit=G-13"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?chart=full&flip=G-13&mode=big",
+     "/operations/monitoring/cards/?chart=full&flip=G-13&mode=big"
+    ]
+   }
+  },
+  "G-14": {
+   "state": "Note",
+   "reasons": [
+    "Weigh soon"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "1,900",
+    "13.0",
+    "141 kg · 1.4 kg/m³",
+    "7.20",
+    "85.4",
+    "9.00",
+    "<batch-16>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-14",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-14",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-14 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-14",
+     "/operations/units/?unit=G-14"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?chart=full&flip=G-14&mode=big",
+     "/operations/monitoring/cards/?chart=full&flip=G-14&mode=big"
+    ]
+   }
+  },
+  "G-15": {
+   "state": "Note",
+   "reasons": [
+    "Weigh soon"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "13.0",
+    "150 kg · 1.5 kg/m³",
+    "2,000",
+    "7.20",
+    "85.4",
+    "9.00",
+    "<batch-17>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-15",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-15",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-15 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-15",
+     "/operations/units/?unit=G-15"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?chart=full&flip=G-15&mode=big",
+     "/operations/monitoring/cards/?chart=full&flip=G-15&mode=big"
+    ]
+   }
+  },
+  "G-16": {
+   "state": "Note",
+   "reasons": [
+    "Weigh soon"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "13.0",
+    "160 kg · 1.6 kg/m³",
+    "2,100",
+    "7.20",
+    "85.4",
+    "9.00",
+    "<batch-18>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-16",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-16",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-16 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-16",
+     "/operations/units/?unit=G-16"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?chart=full&flip=G-16&mode=big",
+     "/operations/monitoring/cards/?chart=full&flip=G-16&mode=big"
+    ]
+   }
+  },
+  "G-17": {
+   "state": "No limit",
+   "reasons": [
+    "Nitrite (mg/L NO₂ as N): no limit for these fish"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 85.4 %",
+     "9.00"
+    ],
+    [
+     "pH",
+     "no data"
+    ],
+    [
+     "°C",
+     "13.0"
+    ]
+   ],
+   "texts": [
+    "0.050",
+    "13.0",
+    "169 kg · 1.7 kg/m³",
+    "2,200",
+    "85.4",
+    "9.00",
+    "<batch-19>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "G-17",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "NO₂-N (mg/L)",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit G-17",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃)",
+    "sample · 1 h",
+    "sample · 1 h"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 85.4 %",
+    "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit G-17 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "G-17",
+     "/operations/units/?unit=G-17"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?chart=full&flip=G-17&mode=big",
+     "/operations/monitoring/cards/?chart=full&flip=G-17&mode=big"
+    ]
+   }
+  },
+  "T-01": {
+   "state": "No recent data",
+   "reasons": [
+    "Temperature (°C): no recent data",
+    "Dissolved oxygen (mg/L O₂): no recent data"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂",
+     "no data"
+    ],
+    [
+     "pH",
+     "no data"
+    ],
+    [
+     "°C",
+     "no data"
+    ]
+   ],
+   "texts": [
+    "10,000",
+    "500 kg · 5.0 kg/m³",
+    "<batch-0>",
+    "Biomass",
+    "Detailed",
+    "Fish",
+    "Laks",
+    "Missing: no active middle sampling point.",
+    "No chart",
+    "No dosing advice",
+    "No other sampling point",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "T-01",
+    "The chart cannot be drawn",
+    "This unit has no active middle sampling point, so no water is shown for it.",
+    "Unit T-01",
+    "no active middle sampling point"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂)",
+    "Not worked out: no active middle sampling point.",
+    "State from: Fish, Feeding, Water, Health",
+    "Temperature (°C)",
+    "Unit T-01 · Hall A · Template: Big · the view chosen on this screen",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "T-01",
+     "/operations/units/?unit=T-01"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?chart=full&flip=T-01&mode=big",
+     "/operations/monitoring/cards/?chart=full&flip=T-01&mode=big"
+    ]
+   }
+  },
+  "T-02": {
+   "state": "Note",
+   "reasons": [
+    "Weigh soon"
+   ],
+   "pairs": [
+    [
+     "CO₂ calc.",
+     "no data"
+    ],
+    [
+     "O₂ · 77.2 %",
+     "8.10"
+    ],
+    [
+     "pH",
+     "7.20"
+    ],
+    [
+     "°C",
+     "13.2"
+    ]
+   ],
+   "texts": [
+    "1,020 kg · 10.2 kg/m³",
+    "12,000",
+    "13.2",
+    "7.20",
+    "77.2",
+    "8.10",
+    "<batch-1>",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · 1 h",
+    "<time> · now",
+    "Against its limits",
+    "Arrived",
+    "Biomass",
+    "Bottom drain",
+    "Detailed",
+    "Fish",
+    "Inlet",
+    "Laks",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Meter or test kit",
+    "Missing: no value of Alkalinity (mg/L as CaCO₃).",
+    "No chart",
+    "No dosing advice",
+    "No target, reagent or dosing volume is set for these fish yet.",
+    "Nothing is assumed for a missing value.",
+    "O₂ (%)",
+    "O₂ (mg/L)",
+    "Side outlet",
+    "Source",
+    "T-02",
+    "Temp. (°C)",
+    "The chart cannot be drawn",
+    "Unit T-02",
+    "Value",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no data",
+    "no value of Alkalinity (mg/L as CaCO₃)",
+    "pH",
+    "sample · 1 h",
+    "sample · 1 h",
+    "sample · now"
+   ],
+   "titles": [
+    "Carbon dioxide, calculated (mg/L CO₂)",
+    "Dissolved oxygen (mg/L O₂) · 77.2 %",
+    "Not worked out: no value of Alkalinity (mg/L as CaCO₃).",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · 1 h ago",
+    "OK · Meter or test kit · <recent>",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "O₂ (mg/L)",
+    "State from: Fish, Feeding, Water, Health",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temp. (°C)",
+    "Temperature (°C)",
+    "Unit T-02 · Hall A · Template: Big · the view chosen on this screen",
+    "pH",
+    "pH",
+    "pH",
+    "pH (NBS scale)"
+   ],
+   "links": {
+    "unit": [
+     "T-02",
+     "/operations/units/?unit=T-02"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?chart=full&flip=T-02&mode=big",
+     "/operations/monitoring/cards/?chart=full&flip=T-02&mode=big"
     ]
    }
   }
@@ -19036,7 +23203,7 @@
     "Water: not shown to you",
     "Water: not shown to you",
     "Water: not shown to you",
-    "Withdrawal"
+    "Withdrawal · 20.11"
    ],
    "titles": [
     "Medicine withdrawal in force",

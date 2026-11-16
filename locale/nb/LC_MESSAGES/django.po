@@ -18006,6 +18006,10 @@ msgstr[1] "av %(total)s enheter"
 msgid "off"
 msgstr "fri"
 
+#, python-format
+msgid "off the scale (%(low)s to %(high)s)"
+msgstr "utenfor skalaen (%(low)s til %(high)s)"
+
 msgid "office department"
 msgstr "kontoravdeling"
 

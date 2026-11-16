@@ -188,8 +188,8 @@ class PictureTests(SimpleTestCase):
         self.assertIsNone(full.locator)
         left, top, width, height = (float(value) for value in close.locator)
         self.assertAlmostEqual(left, close.window.dic[0] / 6 * 100, places=1)
-        self.assertAlmostEqual(width, 100 / close.window.zoom, places=1)
-        self.assertAlmostEqual(top + height, 100 - close.window.alkalinity[0] / 6 * 100, places=0)
+        self.assertAlmostEqual(width, max(100 / close.window.zoom, deffeyes.LOCATOR_MARK), places=1)   # never a dash
+        self.assertAlmostEqual(top, 100 - close.window.alkalinity[1] / 6 * 100, places=0)
 
     def test_every_coordinate_is_a_plain_number_with_a_dot_whatever_the_language(self):
         with translation.override('tr'):

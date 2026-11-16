@@ -311,14 +311,6 @@
   font-size: 2.4em;
   line-height: var(--tw-leading, 1);
 }
-.tw\:leading-none {
-  --tw-leading: 1;
-  line-height: 1;
-}
-.tw\:leading-tight {
-  --tw-leading: 1.2;
-  line-height: 1.2;
-}
 .tw\:font-normal {
   --tw-font-weight: 400;
   font-weight: 400;
@@ -472,10 +464,6 @@
   inherits: false;
   initial-value: solid;
 }
-@property --tw-leading {
-  syntax: "*";
-  inherits: false;
-}
 @property --tw-font-weight {
   syntax: "*";
   inherits: false;
@@ -485,7 +473,6 @@
     *, ::before, ::after, ::backdrop {
       --tw-divide-y-reverse: 0;
       --tw-border-style: solid;
-      --tw-leading: initial;
       --tw-font-weight: initial;
     }
   }

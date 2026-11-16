@@ -38,8 +38,10 @@ def codes(problems, severity='error'):
 
 class CatalogueTests(SimpleTestCase):
     def test_the_v1_widgets_and_their_sources(self):
-        self.assertEqual(sorted(WIDGETS), ['bar', 'deffeyes', 'experiment', 'feeding', 'fish', 'health', 'ph_window',
-                                           'spark', 'tasks', 'value', 'water_table'])
+        self.assertEqual(sorted(WIDGETS), ['bar', 'chart', 'deffeyes', 'dosing', 'experiment', 'feeding', 'fish',
+                                           'health', 'ph_window', 'points', 'spark', 'stock', 'tasks', 'value',
+                                           'water_table'])
+        self.assertEqual(WIDGETS['chart'].sources, ('water', 'chart'))          # the Big card's picture of the chart
         self.assertEqual(WIDGETS['value'].sources, ('water',))
         self.assertEqual(WIDGETS['ph_window'].sources, ('water', 'chart'))      # drawn from the unit's chart
         self.assertEqual(WIDGETS['health'].sources, ('events', 'treatments', 'lice'))

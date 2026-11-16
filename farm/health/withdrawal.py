@@ -59,7 +59,7 @@ medicated feeding's day) to the day before `until`: a day before the treatment i
 gives the harvest side these blocks through the registry of farm/handling/withdrawal.py (`provider`)."""
 import hashlib
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date
 from decimal import ROUND_CEILING, Decimal
 
@@ -649,8 +649,9 @@ class Reached:
                                     # end; None: the treatment has no medicine, or is voided
     held: bool                      # a lot of the batch is held by the treatment on `today`
     today: object                   # today on the site these fish are on
-    units: tuple = ()               # the codes of the units its lots under this treatment's withdrawal are in now
+    units: tuple = ()               # the codes of the units of this part, when the batch is on sites of different days
     shared: bool = False            # not exposed itself: held because it shared a unit with held fish
+    where: tuple = ()               # the codes of the units its lots under this treatment's withdrawal are in now
 
 
 def of_treatments(treatments):
@@ -659,7 +660,7 @@ def of_treatments(treatments):
     lots are in now and the withdrawal on them, read as the unit's own line reads it (`of_units`): on today of the
     site the fish are on now, by the same reader, asked that same day. So the list, "Under withdrawal today", the day
     counts and the unit's line are one answer. A batch whose held fish are on sites of different days is shown once
-    per day. A batch the treatment reached whose exposed fish are nowhere any more (harvested out) is shown once,
+    per day (`units`: that part's; `where` names the units of every part, always). A batch the treatment reached whose exposed fish are nowhere any more (harvested out) is shown once,
     without a unit, not held, with the withdrawal the course put on it, read on the day of the units the course was
     given in. One reader per site's day."""
     found = {treatment.pk: [] for treatment in treatments}
@@ -690,8 +691,11 @@ def of_treatments(treatments):
                 listed.add(batch_id)
                 rows.append(Reached(reader.batches[batch_id], max(holds, key=_rank),
                                     any(hold.on(today) for hold in holds), today,
-                                    tuple(sorted({units[hold.unit_id].code for hold in holds})),
-                                    all(hold.shared for hold in holds)))
+                                    shared=all(hold.shared for hold in holds),
+                                    where=tuple(sorted({units[hold.unit_id].code for hold in holds}))))
+        several = {batch.pk for batch in (row.batch for row in rows)
+                   if len({row.today for row in rows if row.batch.pk == batch.pk}) > 1}
+        rows = [replace(row, units=row.where) if row.batch.pk in several else row for row in rows]
         for batch_id, reader in exposed.items():
             if batch_id not in listed:
                 reader = readers.get(gone, reader)

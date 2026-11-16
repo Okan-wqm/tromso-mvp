@@ -68,7 +68,7 @@ class LotsTestCase(HarvestInsideTestCase):
 
     def listed(self, treatment):
         """[(batch, units, held)] of a treatment's row of the Treatments list."""
-        return [(part.batch.code, part.units, part.held)
+        return [(part.batch.code, part.where, part.held)
                 for part in withdrawal.of_treatments([Treatment.all_objects.prefetch_related('units').get(
                     pk=treatment.pk)])[treatment.pk]]
 

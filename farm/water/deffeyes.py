@@ -678,6 +678,13 @@ def _inside(ring, point):
     return odd
 
 
+def in_region(figure, key):
+    """Whether the figure's water lies in its region `key` ('safe', 'co2', 'nh3') as the core drew it; False when the
+    figure has no such region."""
+    ring = next((flat for name, _label, flat in figure['regions'] if name == key), None)
+    return ring is not None and _inside(_pairs(ring), tuple(figure['point']))
+
+
 def _clip(segment, ends):
     """The part of a segment (x1, y1, x2, y2) inside a window (Liang-Barsky), or None."""
     x1, y1, x2, y2 = segment

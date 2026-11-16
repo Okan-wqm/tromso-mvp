@@ -175,8 +175,9 @@ class BigCardTests(BigCase):
         card = card_of(self.page(), self.t2)
         (box,) = [each for each in card.walk() if 'w-dosing' in each.classes]
         self.assertEqual([text(each) for each in box.walk() if each.tag == 'p'],
-                         ['Dosing advice', 'No dosing advice',
-                          'No target, reagent or dosing volume is set for these fish yet.'])
+                         ['No dosing advice', 'No target, reagent or dosing volume is set for these fish yet.'])
+        self.assertEqual(box.children[0].attrs['aria-label'] if not isinstance(box.children[0], str) else '', 'Dosing advice')
+        self.assertNotIn('truncate', ' '.join(' '.join(each.classes) for each in box.walk()))
 
     def test_the_stock_and_the_other_points(self):
         self.good_water()

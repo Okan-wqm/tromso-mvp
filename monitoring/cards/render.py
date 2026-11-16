@@ -419,10 +419,10 @@ def arrived(at, now):
     return f"{local:%d.%m} {date_format(local, 'TIME_FORMAT')}"
 
 
-def _chart_words(chart, analysis):
+def _chart_words(chart, analysis, figure):
     """(words, tone) under a chart's picture: where the core says the water is. Nothing is judged here: past a border
-    is the core's CRITICAL of that border, the safe zone is said only when the core has one (deffeyes.safe_zone_gaps)
-    and the limits judge the alkalinity inside its band."""
+    is the core's CRITICAL of that border, and the safe zone is said only when the water lies in the safe region the
+    core drew (deffeyes.in_region): the words never differ from the picture."""
     if chart.old:
         return gettext('Last known position · old: %(values)s') % {
             'values': ', '.join(str(parameters.get(item.field).short) for item in chart.old)}, 'blind'
@@ -433,11 +433,10 @@ def _chart_words(chart, analysis):
                 return (gettext('CO₂ is past its limit at every pH') if key == 'co2'
                         else gettext('NH₃ is past its limit at every pH')), 'critical'
             return text_ % {'margin': number(abs(border.margin), 2)}, 'critical'
-    gaps = deffeyes.safe_zone_gaps(analysis)
-    if gaps:
-        return gettext('No safe zone: %(why)s') % {'why': str(gaps[0])}, ''
-    alkalinity = next((item.reading for item in chart.inputs if item.field == 'alkalinity_mg_l'), None)
-    if alkalinity is None or alkalinity.judged != Status.OK:
+    if not deffeyes.in_region(figure, 'safe'):
+        gaps = deffeyes.safe_zone_gaps(analysis)
+        if gaps:
+            return gettext('No safe zone: %(why)s') % {'why': str(gaps[0])}, ''
         return gettext('Between the CO₂ and the NH₃ limit, outside the alkalinity band'), ''
     if analysis.co2.margin is not None:
         return gettext('In the safe zone · %(margin)s pH to the CO₂ limit') % {
@@ -465,7 +464,7 @@ def chart(card):
     band = (None if low is None else low / per_meq, None if top is None else top / per_meq)
     window = deffeyes.window_of(figure, view, band)
     picture = deffeyes.picture(figure, window, view)
-    words, tone = _chart_words(made, analysis)
+    words, tone = _chart_words(made, analysis, figure)
     limits = analysis.limits
     region = {
         'co2': '' if limits.co2_mg_l is None else gettext('CO₂ > %(limit)s mg/L') % {

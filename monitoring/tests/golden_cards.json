@@ -1297,14 +1297,14 @@
     "Template: Simple · the rule for every unit",
     "Unit G-11 · Hall A",
     "Weigh soon",
-    "Withdrawal · <day+5>",
+    "Withdrawal · harvest from <day+5>",
     "·",
     "·",
     "·",
     "·"
    ],
    "titles": [
-    "<batch-13> · <day+5>",
+    "<batch-13>: harvest from <day+5>",
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "Not weighed since the fish came in.",
@@ -4035,14 +4035,14 @@
     "Treatments, last <age>",
     "Unit G-11 · Hall A",
     "Weigh soon",
-    "Withdrawal · <day+5>",
+    "Withdrawal · harvest from <day+5>",
     "·",
     "·",
     "·",
     "·"
    ],
    "titles": [
-    "<batch-13> · <day+5>",
+    "<batch-13>: harvest from <day+5>",
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "Not weighed since the fish came in.",
@@ -6617,14 +6617,14 @@
     "Template: Simple · the rule for every unit",
     "Unit G-11 · Hall A",
     "Weigh soon",
-    "Withdrawal · <day+5>",
+    "Withdrawal · harvest from <day+5>",
     "·",
     "·",
     "·",
     "·"
    ],
    "titles": [
-    "<batch-13> · <day+5>",
+    "<batch-13>: harvest from <day+5>",
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "Not weighed since the fish came in.",
@@ -8916,14 +8916,14 @@
     "Template: Simple · the rule for every unit",
     "Unit G-11 · Hall A",
     "Weigh soon",
-    "Withdrawal · <day+5>",
+    "Withdrawal · harvest from <day+5>",
     "·",
     "·",
     "·",
     "·"
    ],
    "titles": [
-    "<batch-13> · <day+5>",
+    "<batch-13>: harvest from <day+5>",
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "Not weighed since the fish came in.",
@@ -10438,14 +10438,14 @@
     "Treatments, last <age>",
     "Unit G-11 · Hall A",
     "Weigh soon",
-    "Withdrawal · <day+5>",
+    "Withdrawal · harvest from <day+5>",
     "·",
     "·",
     "·",
     "·"
    ],
    "titles": [
-    "<batch-13> · <day+5>",
+    "<batch-13>: harvest from <day+5>",
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "Not weighed since the fish came in.",
@@ -12529,14 +12529,14 @@
     "Treatments, last <age>",
     "Unit G-11 · Hall A",
     "Weigh soon",
-    "Withdrawal · <day+5>",
+    "Withdrawal · harvest from <day+5>",
     "·",
     "·",
     "·",
     "·"
    ],
    "titles": [
-    "<batch-13> · <day+5>",
+    "<batch-13>: harvest from <day+5>",
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "Not weighed since the fish came in.",
@@ -14437,7 +14437,7 @@
   "G-11": {
    "state": "Note",
    "reasons": [
-    "Medicine withdrawal in force · until <day+5> (Medicine withdrawal in force)",
+    "Medicine withdrawal in force · harvest from <day+5> (Medicine withdrawal in force)",
     "+1Weigh soon"
    ],
    "pairs": [
@@ -14463,7 +14463,7 @@
     "G-11",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
     "Unit G-11",
-    "Withdrawal · 20.11",
+    "Withdrawal · harvest from 20.11",
     "sample · 1 h",
     "sample · 1 h",
     "sample · 1 h"
@@ -14481,7 +14481,7 @@
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
     "Unit G-11 · Hall A · Template: Small · the view chosen on this screen",
     "Weigh soon",
-    "Withdrawal: <batch-13> · <day+5>",
+    "Withdrawal: <batch-13>: harvest from <day+5>",
     "pH (NBS scale)"
    ],
    "links": {
@@ -15606,7 +15606,7 @@
   "G-11": {
    "state": "Note",
    "reasons": [
-    "Medicine withdrawal in force · until <day+5> (Medicine withdrawal in force)",
+    "Medicine withdrawal in force · harvest from <day+5> (Medicine withdrawal in force)",
     "+1Weigh soon"
    ],
    "pairs": [
@@ -15632,7 +15632,7 @@
     "G-11",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
     "Unit G-11",
-    "Withdrawal · 20.11",
+    "Withdrawal · harvest from 20.11",
     "sample · 1 h",
     "sample · 1 h",
     "sample · 1 h"
@@ -15650,7 +15650,7 @@
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
     "Unit G-11 · Hall A · Template: Small · the view chosen on this screen",
     "Weigh soon",
-    "Withdrawal: <batch-13> · <day+5>",
+    "Withdrawal: <batch-13>: harvest from <day+5>",
     "pH (NBS scale)"
    ],
    "links": {
@@ -16843,7 +16843,7 @@
   "G-11": {
    "state": "Note",
    "reasons": [
-    "Medicine withdrawal in force · until <day+5> (Medicine withdrawal in force)",
+    "Medicine withdrawal in force · harvest from <day+5> (Medicine withdrawal in force)",
     "+1Weigh soon"
    ],
    "pairs": [
@@ -16869,7 +16869,7 @@
     "G-11",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
     "Unit G-11",
-    "Withdrawal · 20.11",
+    "Withdrawal · harvest from 20.11",
     "sample · 1 h",
     "sample · 1 h",
     "sample · 1 h"
@@ -16887,7 +16887,7 @@
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
     "Unit G-11 · Hall A · Template: Small · the view chosen on this screen",
     "Weigh soon",
-    "Withdrawal: <batch-13> · <day+5>",
+    "Withdrawal: <batch-13>: harvest from <day+5>",
     "pH (NBS scale)"
    ],
    "links": {
@@ -18496,7 +18496,7 @@
   "G-11": {
    "state": "Note",
    "reasons": [
-    "Medicine withdrawal in force· until <day+5>",
+    "Medicine withdrawal in force· harvest from <day+5>",
     "Weigh soon"
    ],
    "pairs": [
@@ -18555,7 +18555,7 @@
     "The chart cannot be drawn",
     "Unit G-11",
     "Value",
-    "Withdrawal · 20.11",
+    "Withdrawal · harvest from 20.11",
     "no data",
     "no data",
     "no data",
@@ -18587,7 +18587,7 @@
     "Temp. (°C)",
     "Temperature (°C)",
     "Unit G-11 · Hall A · Template: Big · the view chosen on this screen",
-    "Withdrawal: <batch-13> · <day+5>",
+    "Withdrawal: <batch-13>: harvest from <day+5>",
     "pH",
     "pH",
     "pH",
@@ -20593,7 +20593,7 @@
   "G-11": {
    "state": "Note",
    "reasons": [
-    "Medicine withdrawal in force· until <day+5>",
+    "Medicine withdrawal in force· harvest from <day+5>",
     "Weigh soon"
    ],
    "pairs": [
@@ -20652,7 +20652,7 @@
     "The chart cannot be drawn",
     "Unit G-11",
     "Value",
-    "Withdrawal · 20.11",
+    "Withdrawal · harvest from 20.11",
     "no data",
     "no data",
     "no data",
@@ -20684,7 +20684,7 @@
     "Temp. (°C)",
     "Temperature (°C)",
     "Unit G-11 · Hall A · Template: Big · the view chosen on this screen",
-    "Withdrawal: <batch-13> · <day+5>",
+    "Withdrawal: <batch-13>: harvest from <day+5>",
     "pH",
     "pH",
     "pH",
@@ -22288,10 +22288,10 @@
     "Template: Detailed · chosen on this page",
     "Unit G-11 · Hall A",
     "Water: not shown to you",
-    "Withdrawal · <day+5>"
+    "Withdrawal · harvest from <day+5>"
    ],
    "titles": [
-    "<batch-13> · <day+5>"
+    "<batch-13>: harvest from <day+5>"
    ],
    "links": {
     "unit": [
@@ -23191,7 +23191,7 @@
   "G-11": {
    "state": "Note",
    "reasons": [
-    "Medicine withdrawal in force · until <day+5> (Medicine withdrawal in force)"
+    "Medicine withdrawal in force · harvest from <day+5> (Medicine withdrawal in force)"
    ],
    "pairs": [],
    "texts": [
@@ -23203,13 +23203,13 @@
     "Water: not shown to you",
     "Water: not shown to you",
     "Water: not shown to you",
-    "Withdrawal · 20.11"
+    "Withdrawal · harvest from 20.11"
    ],
    "titles": [
     "Medicine withdrawal in force",
     "State from: Fish",
     "Unit G-11 · Hall A · Template: Small · the view chosen on this screen",
-    "Withdrawal: <batch-13> · <day+5>"
+    "Withdrawal: <batch-13>: harvest from <day+5>"
    ],
    "links": {
     "unit": [
@@ -24456,14 +24456,14 @@
     "State from: Fish, Water",
     "Template: Simple · the rule for every unit",
     "Unit G-11 · Hall A",
-    "Withdrawal · <day+5>",
+    "Withdrawal · harvest from <day+5>",
     "·",
     "·",
     "·",
     "·"
    ],
    "titles": [
-    "<batch-13> · <day+5>",
+    "<batch-13>: harvest from <day+5>",
     "OK · <day+0> <time> · <age> ago",
     "OK · <day+0> <time> · <age> ago",
     "OK · <day+0> <time> · <age> ago",

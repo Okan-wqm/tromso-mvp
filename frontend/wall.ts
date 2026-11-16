@@ -6,7 +6,6 @@
 // every poll. static/css/monitor.css does the rest ("the wall of fitted cards").
 //   --cols, --rows   the grid, on .monitor-grid
 //   --mh             the cards' height in card units (the template's measure), for the least height of a cell
-//   data-roomy       the cells are high enough for the line under each figure
 //   data-page, data-page-count, data-per   the page shown, the pages, the cards on one
 //   [data-pages]     the band's page indicator (hidden by the server; shown here when there are two pages or more),
 //                    [data-pages-text] its "2 / 3", [data-page-turn="-1|1"] its buttons
@@ -14,7 +13,7 @@
 // #monitor-announce data-states: monitoring/read.py STATES); a card never moves, so a page is always the same cards.
 // A wall of cards that flow (Simple, Detailed) is left as it is: the page scrolls. Without this script the fitted
 // cards stand four across and the grid scrolls.
-import { roomy, slots, worstPage } from './wall/slots.js';
+import { slots, worstPage } from './wall/slots.js';
 
 const number = (value: string | null | undefined): number => Number.parseFloat(value ?? '') || 0;
 
@@ -26,7 +25,7 @@ function cardsOf(wall: HTMLElement): HTMLElement[] {
   return Array.from(wall.querySelectorAll<HTMLElement>(':scope > .monitor-card'));
 }
 
-/** The measure of the wall's fitted cards, from their classes (mw-31 mh-10): the largest of each, null when none is
+/** The measure of the wall's fitted cards, from their classes (mw-31 mh-12): the largest of each, null when none is
  *  fitted. */
 function measure(cards: HTMLElement[]): { mw: number; mh: number; card: HTMLElement } | null {
   let mw = 0;
@@ -66,8 +65,7 @@ function show(wall: HTMLElement, page: number): void {
 }
 
 function clear(wall: HTMLElement): void {
-  for (const name of ['--cols', '--rows', '--mh']) wall.style.removeProperty(name);
-  wall.removeAttribute('data-roomy');
+  for (const name of ['--cols', '--rows', '--mh', '--band']) wall.style.removeProperty(name);
   delete wall.dataset.page;
   delete wall.dataset.pageCount;
   delete wall.dataset.per;
@@ -88,6 +86,8 @@ function lay(keep: boolean): void {
   const gap = number(style.rowGap);
   const band = wall.querySelector<HTMLElement>(':scope > .monitor-band');
   const width = wall.clientWidth - number(style.paddingLeft) - number(style.paddingRight);
+  // (the band wraps rather than cut a chip, review R4: the cards get the room it really leaves)
+  if (band) wall.style.setProperty('--band', `${band.offsetHeight}px`);
   const height = wall.clientHeight - (band ? band.offsetHeight + gap : 0);
   const own = getComputedStyle(fitted.card);
   const padX = number(own.paddingLeft) + number(own.paddingRight) + number(own.borderLeftWidth) + number(own.borderRightWidth);
@@ -96,7 +96,6 @@ function lay(keep: boolean): void {
   wall.style.setProperty('--cols', String(chosen.cols));
   wall.style.setProperty('--rows', String(chosen.rows));
   wall.style.setProperty('--mh', String(fitted.mh));
-  wall.toggleAttribute('data-roomy', roomy(chosen, width, height, gap, fitted.mw, fitted.mh, padX, padY));
   const per = chosen.cols * chosen.rows;
   wall.dataset.per = String(per);
   wall.dataset.pageCount = String(chosen.pages);

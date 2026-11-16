@@ -133,6 +133,9 @@ TILE_LABELS = {parameters.OXYGEN_MG_L: _('O₂'), parameters.OXYGEN_PCT: _('O₂
                'nh3_n_mg_l': _('NH₃-N'), 'nh4_n_mg_l': _('NH₄-N'), 'nitrite_n_mg_l': _('NO₂-N'),
                'nitrate_n_mg_l': _('NO₃-N'), 'tgp_pct': _('TGP %'), 'turbidity_ntu': _('NTU')}
 TILE_LABEL_LENGTH = 10
+# How a reason or a band's chip names a MEASURED value that the card also shows worked out (review R5): the CO₂ of a
+# probe or a test kit is never a bare "CO₂" beside the tile of the calculated one.
+REASON_LABELS = {'co2_mg_l': _('CO₂ probe (mg/L)')}
 # The pH window's scale, the same on every card so two cards can be compared: where a border or the water lies beyond
 # an end it is drawn at that end and the picture's words say its number.
 PH_WINDOW = (6.4, 8.6)

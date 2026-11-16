@@ -94,6 +94,8 @@ class Face:
     missing: bool
     reading: object = None
     note: str = ''           # what a worked-out value was worked out from, or why it could not be
+    source: str = ''         # where it came from in ONE word: sensor, sample, calc. (the line under a fitted figure)
+    age_short: str = ''      # how old, without "ago": 12 s, 5 min, 3 h, 7 d ('' when there is no reading)
 
 
 def age_text(seconds):
@@ -109,6 +111,21 @@ def age_text(seconds):
     return gettext('%(days)d d ago') % {'days': seconds // 86400}
 
 
+def age_short(seconds):
+    """An age in the fewest letters, in the bands of `age_text`: under a figure on a wall there is room for no more,
+    and the line it stands in is about nothing else ("sensor · 12 s")."""
+    seconds = max(int(seconds), 0)
+    if seconds < 10:
+        return gettext('now')
+    if seconds < 60:
+        return gettext('%(seconds)d s') % {'seconds': seconds // 10 * 10}
+    if seconds < 3600:
+        return gettext('%(minutes)d min') % {'minutes': seconds // 60}
+    if seconds < 86400:
+        return gettext('%(hours)d h') % {'hours': seconds // 3600}
+    return gettext('%(days)d d') % {'days': seconds // 86400}
+
+
 def face(reading, now, parameter=None):
     """A water value as a card says it. `parameter` names it when there is no reading at all."""
     parameter = reading.parameter if reading is not None else parameter
@@ -118,12 +135,14 @@ def face(reading, now, parameter=None):
     # A sample says how it was taken (its source); a live value which sensor gave it (owner rule A1, farm/water/read.py).
     sample = getattr(reading.sample, 'sample', None)
     origin = str(sample.get_source_display()) if sample is not None else water_read.origin_text(reading)
-    age = age_text((now - reading.at).total_seconds())
+    seconds = (now - reading.at).total_seconds()
+    age = age_text(seconds)
     missing = reading.value is None
     status = '' if missing else str(reading.old_alert or reading.status)
     return Face(label, gettext('no data') if missing else water_value(reading.value, reading.code), status,
                 str(Status(status).label) if status else '', origin, age,
-                not reading.fresh(now), missing, reading, str(reading.note or ''))
+                not reading.fresh(now), missing, reading, str(reading.note or ''),
+                gettext('sample') if sample is not None else gettext('sensor'), age_short(seconds))
 
 
 def reading_at(card, code, point_kind):
@@ -219,9 +238,10 @@ def calculated(card, value):
     note = gettext('Calculated from the pH, the alkalinity, the temperature and the salinity.')
     if chart.assumed:
         note = '{} {}'.format(note, gettext('The salinity is assumed: fresh water.'))
+    seconds = (card.now - min(measured)).total_seconds() if measured else None
     return Face(label, water_value(figure, value.shown_as), '', '', gettext('calculated'),
-                age_text((card.now - min(measured)).total_seconds()) if measured else '',
-                any(item.old for item in made_from), False, note=note)
+                age_text(seconds) if measured else '', any(item.old for item in made_from), False, note=note,
+                source=gettext('calc.'), age_short=age_short(seconds) if measured else '')
 
 
 def bound(card, view):

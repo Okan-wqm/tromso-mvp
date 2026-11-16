@@ -492,6 +492,10 @@ msgid "%(date)s, no time recorded: counted from the end of the day"
 msgstr "%(date)s, saat kaydedilmemiş: günün sonundan sayıldı"
 
 #, python-format
+msgid "%(days)d d"
+msgstr "%(days)d gün"
+
+#, python-format
 msgid "%(days)d d ago"
 msgstr "%(days)d gün önce"
 
@@ -701,6 +705,10 @@ msgstr "%(grams)s g"
 #, python-format
 msgid "%(grams)s g (%(percent)s %%, %(kilos)s kg)"
 msgstr "%(grams)s g (%%%(percent)s, %(kilos)s kg)"
+
+#, python-format
+msgid "%(hours)d h"
+msgstr "%(hours)d sa"
 
 #, python-format
 msgid "%(hours)d h ago"
@@ -4135,6 +4143,9 @@ msgstr "CO₂ sınırı pH %(ph)s altında aşılır"
 
 msgid "CO₂ probe"
 msgstr "CO₂ prob"
+
+msgid "CO₂ probe (mg/L)"
+msgstr "CO₂ prob (mg/L)"
 
 msgid "CO₂ the air leaves in it"
 msgstr "Havanın suda bıraktığı CO₂"
@@ -16884,6 +16895,9 @@ msgstr "<strong>%(name)s</strong> tarafından"
 msgid "by its recurring task"
 msgstr "yinelenen görevi tarafından"
 
+msgid "calc."
+msgstr "hesap"
+
 msgid "calculated"
 msgstr "hesap"
 
@@ -18119,6 +18133,9 @@ msgstr "rol"
 
 msgid "roles"
 msgstr "roller"
+
+msgid "sample"
+msgstr "örnek"
 
 msgid "sampling point"
 msgstr "numune noktası"

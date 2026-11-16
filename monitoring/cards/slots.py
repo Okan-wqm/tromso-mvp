@@ -17,9 +17,6 @@ from collections import namedtuple
 
 # Under this unit (px) a card's smallest text, 0.8 of it, is under 11 px.
 FLOOR = 14
-# A cell this many times as high as the measure asks (at the unit its width gives) has room for the line under each
-# figure (static/css/monitor.css data-roomy).
-ROOMY = 1.26
 MAX_COLS, MAX_ROWS = 16, 12
 EPSILON = 1e-6
 
@@ -49,10 +46,3 @@ def slots(count, width, height, gap, mw, mh, min_u=FLOOR, pad_x=0, pad_y=0):
     if whole is not None and whole.u >= least - EPSILON:
         return whole
     return paged or whole or Slots(1, 1, FLOOR, max(1, count))
-
-
-def roomy(chosen, width, height, gap, mw, mh, pad_x=0, pad_y=0):
-    """Whether a cell of the chosen grid is high enough for the line under each figure."""
-    by_width = ((width - (chosen.cols - 1) * gap) / chosen.cols - pad_x) / mw
-    cell = (height - (chosen.rows - 1) * gap) / chosen.rows
-    return by_width > 0 and (cell - pad_y) / by_width >= mh * ROOMY

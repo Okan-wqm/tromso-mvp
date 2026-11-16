@@ -11,9 +11,6 @@
 
 /** Under this unit (px) a card's smallest text, 0.8 of it, is under 11 px. */
 export const FLOOR = 14;
-/** A cell this many times as high as the measure asks (at the unit its width gives) has room for the line under each
- *  figure (static/css/monitor.css data-roomy). */
-export const ROOMY = 1.26;
 const MAX_COLS = 16;
 const MAX_ROWS = 12;
 const EPSILON = 1e-6;
@@ -54,14 +51,6 @@ export function slots(count: number, width: number, height: number, gap: number,
     return all;
   }
   return paged ?? all ?? { cols: 1, rows: 1, u: FLOOR, pages: Math.max(1, count) };
-}
-
-/** Whether a cell of the chosen grid is high enough for the line under each figure. */
-export function roomy(chosen: Slots, width: number, height: number, gap: number, mw: number, mh: number,
-                      padX = 0, padY = 0): boolean {
-  const byWidth = ((width - (chosen.cols - 1) * gap) / chosen.cols - padX) / mw;
-  const cell = (height - (chosen.rows - 1) * gap) / chosen.rows;
-  return byWidth > 0 && (cell - padY) / byWidth >= mh * ROOMY;
 }
 
 /** The page (from 1) that holds the card at `index` (from 0) when a page holds `per` cards. */

@@ -538,6 +538,8 @@ class Brief:
     limit: str = ''
     critical: bool = False
     old: bool = False
+    label: str = ''          # what the figure is of ('O₂ (mg/L)'): units past the same bound of it share a chip
+    amount: object = None    # the figure as a number: the worst of a chip's units is the one it says
 
     @property
     def sentence(self):
@@ -579,7 +581,7 @@ def _brief(reading, middle, stale):
     if found is None:
         return None
     source, name, bound = found
-    label = str(source.parameter.short)
+    label = str(catalogue.REASON_LABELS.get(source.code, source.parameter.short))
     if source.point is not None and middle.point is not None and source.point != middle.point:
         label = f'{label} ({source.point})'
     limit = water_value(bound, source.code)
@@ -587,7 +589,7 @@ def _brief(reading, middle, stale):
     if stale:
         words = _('%(bound)s, no recent data') % {'bound': words}
     return Brief(f'{label} {water_value(source.value, source.code)}', '<' if name.endswith('low') else '>', str(words),
-                 limit, reading.judged == Status.CRITICAL, stale)
+                 limit, reading.judged == Status.CRITICAL, stale, label, source.value)
 
 
 def state_of(card):
@@ -697,16 +699,22 @@ class Chip:
 class Band:
     """What stands above the cards on every screen and page of them: how many units are on each rung (`tally`:
     (key, word, count), worst first, the rungs that have a unit), a chip per thing that needs a look (`chips`), and how
-    many abnormal units no chip names because there were more chips than fit (`more`)."""
+    many abnormal units no chip names because there were more chips than fit (`more`), said by state, worst first
+    (`rest`: (key, word, count)); `hidden` are the CRITICAL cards among them: the page links to a wall of exactly
+    those, so no critical unit is ever only a number (review R2)."""
     tally: tuple
     chips: tuple
     more: int
+    rest: tuple = ()
+    hidden: tuple = ()
 
 
 def band(cards_, chips=None, codes=None):
     """The Band of the cards shown. The tally counts EVERY card, so nothing is left out of the count whatever the cap.
-    The chips, worst first (`attention`): a critical or warning unit with the first reason of its state in short
-    (`Brief`: the value against the bound it is past); units whose chip would say the same words share one chip; the
+    The chips, worst first (`attention`: every critical chip before any warning one): a critical or warning unit with
+    the first reason of its state in short (`Brief`: the value against the bound it is past); units past the SAME
+    BOUND of the same value share one chip, which says the worst of their figures (5.00 and 5.01 mg/L under one limit
+    are one cause, review R2), as do units whose reason is the same words; the
     units with no recent data share one, and those with a value no limit judges another (their words are the state's:
     the card says which value). At most `chips` chips (settings.MONITOR_BAND_CHIPS), each naming at most `codes` units
     (settings.MONITOR_BAND_CODES); the rest are counted, never dropped silently."""
@@ -719,14 +727,28 @@ def band(cards_, chips=None, codes=None):
     groups = {}
     for card in attention(cards_):
         state = card.state
-        if state.key in (CRITICAL, WARNING) and state.reasons:
-            text = brief_of(state.reasons[0]).sentence
+        brief = brief_of(state.reasons[0]) if state.key in (CRITICAL, WARNING) and state.reasons else None
+        if brief is None:
+            cause = text_lower(str(state.word))
+        elif brief.sign and brief.amount is not None:
+            cause = (brief.label, brief.sign, brief.limit, brief.old)
         else:
-            text = text_lower(str(state.word))
-        groups.setdefault((state.key, text), []).append(card)
-    found = [Chip(key, tuple(members), text, tuple(members[:codes]), max(len(members) - codes, 0))
-             for (key, text), members in groups.items()]
-    return Band(tally, tuple(found[:chips]), sum(len(chip.cards) for chip in found[chips:]))
+            cause = brief.sentence
+        groups.setdefault((state.key, cause), []).append((card, brief))
+    found = []
+    for (key, cause), members in groups.items():
+        if isinstance(cause, tuple):
+            worst = (min if cause[1] == '<' else max)((brief for _card, brief in members), key=lambda brief: brief.amount)
+            cause = worst.sentence
+        cards = tuple(card for card, _brief in members)
+        found.append(Chip(key, cards, cause, cards[:codes], max(len(cards) - codes, 0)))
+    dropped = [card for chip in found[chips:] for card in chip.cards]
+    counts = {}
+    for card in dropped:
+        counts[card.state.key] = counts.get(card.state.key, 0) + 1
+    return Band(tally, tuple(found[:chips]), len(dropped),
+                tuple((key, word, counts[key]) for key, word in STATES if key in counts),
+                tuple(card for card in dropped if card.state.key == CRITICAL))
 
 
 # ---- the change token -------------------------------------------------------------------------------------------------

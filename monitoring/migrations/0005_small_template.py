@@ -6,7 +6,8 @@ high (monitoring/cards/catalogue.py MEASURE_W, MEASURE_H); both empty, the card 
 holds the pair whole and in range (with IS NOT NULL: a range test of a NULL is unknown, which a CHECK lets pass). The CHECK on the built-in ids is widened to the fourth before its row is made; the
 trigger of 0002 is BEFORE UPDATE OR DELETE, so the insert passes it, and the row is made whole in one statement (a
 later update of it would be refused). Back, the row is deleted with the trigger off for that statement alone (boards,
-rows and rules that point at it are detached or deleted by the ORM, as when any template is deleted)."""
+rows and rules that point at it are detached or deleted by the ORM, as when any template is deleted). A farm's own live
+template called Small (in any case) is renamed first (`free_the_name`)."""
 
 import django.core.validators
 import uuid
@@ -23,14 +24,27 @@ BUILTINS = {
         {'id': 'w3', 'type': 'value', 'x': 6, 'y': 0, 'w': 3, 'h': 3, 'bind': {'parameter': 'ph'}},
         {'id': 'w4', 'type': 'value', 'x': 9, 'y': 0, 'w': 3, 'h': 3, 'bind': {'parameter': 'co2_calc_mg_l'}},
         {'id': 'w5', 'type': 'ph_window', 'x': 0, 'y': 3, 'w': 12, 'h': 2},
-    ]}, DETAILED, [31, 10]],
+    ]}, DETAILED, [31, 12]],
 }
 TRIGGER = 'ALTER TABLE monitor_card_templates {} TRIGGER trg_monitor_card_templates_builtin'
+
+
+def free_the_name(Template, name):
+    """A farm may already have a live template of a built-in's name (in any case); a live name is unique, so the built-in
+    could not be made and the deploy would stop on a raw IntegrityError (review R3). The built-in takes the name; the
+    farm's template, with every board, row and rule that points at it, lives on under the same name with the first
+    free number: "small" becomes "small (2)". Nothing guesses the name back when the migration is undone."""
+    for clash in Template.objects.filter(name__iexact=name, is_deleted=False, is_builtin=False):
+        number = 2
+        while Template.objects.filter(name__iexact=f'{clash.name[:94]} ({number})', is_deleted=False).exists():
+            number += 1
+        Template.objects.filter(pk=clash.pk).update(name=f'{clash.name[:94]} ({number})')
 
 
 def make_small(apps, schema_editor):
     Template = apps.get_model('monitoring', 'CardTemplate')
     for pk, (name, layout, expanded, (width, height)) in BUILTINS.items():
+        free_the_name(Template, name)
         Template.objects.create(id=pk, name=name, layout=layout, is_builtin=True, schema_version=layout['schema'],
                                 expanded_id=expanded, measure_w=width, measure_h=height)
 

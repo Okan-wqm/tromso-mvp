@@ -705,6 +705,9 @@ def _step(span, choices, about):
     return next((step for step in choices if span / step <= about), choices[-1])
 
 
+# The locator (the core's box in outline, the window marked in it) draws a window never smaller than this share of the
+# box each way: at x12 the true mark is a dash a wall cannot read as "here".
+LOCATOR_MARK = 12
 # Where a toxic region may say what it is, as fractions of the window (across, down): the first that lies in the
 # region and is clear of the water's lead lines is taken.
 CO2_SPOTS = ((0.82, 0.82), (0.88, 0.9), (0.88, 0.6), (0.6, 0.9), (0.45, 0.92))
@@ -820,7 +823,7 @@ def picture(figure, window, view=CLOSE, target_active=False):
     if not window.full:
         box_dic, box_alkalinity = float(figure['box'][0]), float(figure['box'][1])
         locator = (_one(xa / box_dic * 100), _one((1 - yb / box_alkalinity) * 100),
-                   _one(max(wide / box_dic * 100, 4)), _one(max(high / box_alkalinity * 100, 6)))
+                   _one(max(wide / box_dic * 100, LOCATOR_MARK)), _one(max(high / box_alkalinity * 100, LOCATOR_MARK)))
     return Picture(
         view, window, (_one(PLOT_LEFT), _one(PLOT_TOP), _one(PLOT_WIDTH), _one(PLOT_HEIGHT)), regions,
         tuple(isolines), bounds, leads, dose, tuple(ph_names), names, tuple(y_ticks), tuple(x_ticks),

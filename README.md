@@ -816,8 +816,11 @@ whose cells hold all the cards, the one that gives a card its largest unit; when
 text would be under 11 px) the wall turns PAGES rather than shrink the type: the grid with the most cells that can still
 be read, PageDown and PageUp (and the band's buttons) turn the page, the band says "2 / 3", and the wall opens on the page
 of its worst card. A card never moves, so a page is always the same cards. Twenty small cards are one page on 3440×1440,
-5120×1440, 2560×1440, 3840×2160 and 1920×1080 (4 by 5, 5 by 4 on the 32:9 screen); a hundred are two pages of 56 on
-3440×1440. The line under each figure (age and origin) is shown where the cells are tall enough for it (`data-roomy`).
+5120×1440, 2560×1440, 3840×2160 and 1920×1080 (5 by 4 on the two wide screens, 4 by 5 on 16:9); twenty-four are one
+page on the first four and two pages on 1920×1080 (`monitoring/tests/slot_vectors.json`). The line under each figure
+says where it came from in one word and how old it is ("sensor · 12 s", "sample · 3 h", "calc. · 7 d") at EVERY size
+(review R1: a value 23 hours old must not look like one of ten minutes ago, and a wall has no pointer for a title):
+the Small measure (31 × 12) holds it, nothing hides it, and a cell too low for the card turns pages.
 The script sets only custom properties and attributes on the grid (never on a card: the poll would replace it), lays the
 wall out again after every poll and resize, and without it the cards stand four across and the grid scrolls. The
 toolbar's two buttons (leave the wall, full screen) stand at the band's right end as icons. On the desk page a fitted
@@ -4282,7 +4285,7 @@ compiled by `npm run build` into `static/js/`, which is not committed:
   the one slot rule (`wall/slots.ts`, pure, the twin of `monitoring/cards/slots.py`; both run
   `monitoring/tests/slot_vectors.json`), pages when the cards do not fit at a unit that can be read (PageDown, PageUp, the
   band's buttons, "2 / 3"; it opens on the page of the worst card), laid out again after a poll or a resize. It sets
-  custom properties and attributes on the grid through the CSSOM (`--cols`, `--rows`, `--mh`, `data-roomy`, `data-page`),
+  custom properties and attributes on the grid through the CSSOM (`--cols`, `--rows`, `--mh`, `data-page`),
   never on a card. A wall of cards that flow is left alone.
 - `windows.ts` movable, non-modal windows (the monitoring cards' Deffeyes chart) and the full-screen button
   of a wall: `<button data-window="<url>" data-window-title>` opens the fragment in a `section[role=dialog]`

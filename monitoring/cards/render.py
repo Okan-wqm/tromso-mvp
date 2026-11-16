@@ -97,6 +97,8 @@ class Face:
     missing: bool
     reading: object = None
     note: str = ''           # what a worked-out value was worked out from, or why it could not be
+    source: str = ''         # where it came from in ONE word: sensor, sample, calc. (the line under a fitted figure)
+    age_short: str = ''      # how old, without "ago": 12 s, 5 min, 3 h, 7 d ('' when there is no reading)
 
 
 def age_text(seconds):
@@ -112,6 +114,21 @@ def age_text(seconds):
     return gettext('%(days)d d ago') % {'days': seconds // 86400}
 
 
+def age_short(seconds):
+    """An age in the fewest letters, in the bands of `age_text`: under a figure on a wall there is room for no more,
+    and the line it stands in is about nothing else ("sensor · 12 s")."""
+    seconds = max(int(seconds), 0)
+    if seconds < 10:
+        return gettext('now')
+    if seconds < 60:
+        return gettext('%(seconds)d s') % {'seconds': seconds // 10 * 10}
+    if seconds < 3600:
+        return gettext('%(minutes)d min') % {'minutes': seconds // 60}
+    if seconds < 86400:
+        return gettext('%(hours)d h') % {'hours': seconds // 3600}
+    return gettext('%(days)d d') % {'days': seconds // 86400}
+
+
 def face(reading, now, parameter=None):
     """A water value as a card says it. `parameter` names it when there is no reading at all."""
     parameter = reading.parameter if reading is not None else parameter
@@ -121,12 +138,14 @@ def face(reading, now, parameter=None):
     # A sample says how it was taken (its source); a live value which sensor gave it (owner rule A1, farm/water/read.py).
     sample = getattr(reading.sample, 'sample', None)
     origin = str(sample.get_source_display()) if sample is not None else water_read.origin_text(reading)
-    age = age_text((now - reading.at).total_seconds())
+    seconds = (now - reading.at).total_seconds()
+    age = age_text(seconds)
     missing = reading.value is None
     status = '' if missing else str(reading.old_alert or reading.status)
     return Face(label, gettext('no data') if missing else water_value(reading.value, reading.code), status,
                 str(Status(status).label) if status else '', origin, age,
-                not reading.fresh(now), missing, reading, str(reading.note or ''))
+                not reading.fresh(now), missing, reading, str(reading.note or ''),
+                gettext('sample') if sample is not None else gettext('sensor'), age_short(seconds))
 
 
 def reading_at(card, code, point_kind):
@@ -222,9 +241,10 @@ def calculated(card, value):
     note = gettext('Calculated from the pH, the alkalinity, the temperature and the salinity.')
     if chart.assumed:
         note = '{} {}'.format(note, gettext('The salinity is assumed: fresh water.'))
+    seconds = (card.now - min(measured)).total_seconds() if measured else None
     return Face(label, water_value(figure, value.shown_as), '', '', gettext('calculated'),
-                age_text((card.now - min(measured)).total_seconds()) if measured else '',
-                any(item.old for item in made_from), False, note=note)
+                age_text(seconds) if measured else '', any(item.old for item in made_from), False, note=note,
+                source=gettext('calc.'), age_short=age_short(seconds) if measured else '')
 
 
 def bound(card, view):
@@ -382,6 +402,7 @@ class DrawnChart:
     words: str = ''
     tone: str = ''
     inputs: str = ''
+    notes: tuple = ()        # (text, dy): what the farm has not set, so a region or the safe zone is not drawn
     names: tuple = ()        # (key, text, x, y): what each region is, with the farm's limit
     ph_names: tuple = ()     # (text, x, y)
     x_ticks: tuple = ()      # (text, x, y)
@@ -395,7 +416,7 @@ def arrived(at, now):
     local, today = timezone.localtime(at, zone), timezone.localtime(now, zone).date()
     if local.date() == today:
         return date_format(local, 'TIME_FORMAT')
-    return f"{date_format(local, 'SHORT_DATE_FORMAT')} {date_format(local, 'TIME_FORMAT')}"
+    return f"{local:%d.%m} {date_format(local, 'TIME_FORMAT')}"
 
 
 def _chart_words(chart, analysis):
@@ -461,6 +482,19 @@ def chart(card):
     else:
         scale = (gettext('close view · ×%(zoom)s') % {'zoom': number(window.zoom, 1)},
                  gettext('this card’s own scale'))
+    # what is NOT in the picture, and why: a region or the safe zone the farm's limits do not give is said, never left
+    # as an empty side that reads as safe
+    missing = []
+    if 'co2_limit_mg_l' not in made.limits:
+        missing.append(gettext('no CO₂ limit for these fish'))
+    if 'nh3_n_limit_mg_l' not in made.limits:
+        missing.append(gettext('no NH₃ limit for these fish'))
+    elif analysis.nh3.status == Status.NOT_MEASURED:
+        missing.append(gettext('NH₃ not assessed: no TAN'))
+    if low is None or top is None:
+        missing.append(gettext('no alkalinity band for these fish'))
+    first = 4.45 if not window.full else 2.7
+    notes = tuple((text_, f'{first + 1.35 * index:.2f}em') for index, text_ in enumerate(missing))
     said = []
     for item in made.inputs:
         if item.field not in calculation.REQUIRED:
@@ -478,11 +512,43 @@ def chart(card):
         zones=tuple(key for key, border in (('co2', analysis.co2), ('nh3', analysis.nh3))
                     if border.status == Status.CRITICAL),
         old=bool(made.old), old_text=gettext('last known position'),
-        inputs=gettext('inputs: %(list)s') % {'list': ' · '.join(said)}, names=names,
+        inputs=gettext('inputs: %(list)s') % {'list': ' · '.join(said)}, notes=notes, names=names,
         ph_names=tuple((gettext('pH %(ph)s') % {'ph': number(ph, decimals)}, x, y)
                        for ph, decimals, x, y in picture.ph_names),
         x_ticks=tuple((number(dic, decimals), x, y) for dic, decimals, x, y in picture.x_ticks),
         y_ticks=tuple((str(mg), x, y) for mg, x, y in picture.y_ticks), scale=scale)
+
+
+# ---- every value of the middle point, a row each ---------------------------------------------------------------------
+@dataclass(frozen=True)
+class WaterRow:
+    """One value of the card's water as a row: what it is and its figure (`said`, a Face), the strip against the limit
+    row that judged it (`bar`, None without a limit), where it came from in words, and when it arrived: the clock
+    time today, the day and month before, with its age."""
+    said: Face
+    bar: object
+    arrived: str
+    alert: str
+
+
+# More rows than this stand in two columns: a row is never lower than a line of the card's small text.
+WATER_ROWS = 7
+
+
+def water_rows(card):
+    """((WaterRow, ...), ...): every value of the card's middle point in one column of rows, or in two when there are
+    more than WATER_ROWS; () when the unit has no middle point or it has no value."""
+    water = card.middle_water
+    if water is None:
+        return ()
+    rows = []
+    for reading in water.readings.values():
+        said = face(reading, card.now)
+        rows.append(WaterRow(said, bar(said), arrived(reading.at, card.now), said.status if said.status in ALERTS else ''))
+    if not rows:
+        return ()
+    per = (len(rows) + 1) // 2 if len(rows) > WATER_ROWS else len(rows)
+    return tuple(tuple(rows[start:start + per]) for start in range(0, len(rows), per))
 
 
 # What a card says of each of the unit's other sampling points.

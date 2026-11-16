@@ -46,6 +46,12 @@ def ph_window(card):
 
 
 @register.simple_tag
+def water_rows(card):
+    """Every value of the card's middle point as rows, in one or two columns (render.water_rows)."""
+    return render.water_rows(card)
+
+
+@register.simple_tag
 def other_points(card):
     """The unit's other sampling points with their oxygen, temperature and pH (render.other_points)."""
     return render.other_points(card)

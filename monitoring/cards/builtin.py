@@ -63,7 +63,8 @@ OPERATOR_LAYOUT = {'schema': 1, 'widgets': [
     _w('w9', 'deffeyes', 0, 14, 4, 1),
 ]}
 
-# Five rows of a card 31 units wide and 10 high: four values on three rows, the pH window on two.
+# Five rows of a card 31 units wide and 12 high: four values on three rows (label, figure, and under it where the
+# value came from and how old it is: always, review R1), the pH window on two.
 SMALL_LAYOUT = {'schema': 1, 'widgets': [
     _w('w1', 'value', 0, 0, 3, 3, bind={'parameter': 'oxygen_mg_l'}),
     _w('w2', 'value', 3, 0, 3, 3, bind={'parameter': 'temperature_c'}),
@@ -71,7 +72,7 @@ SMALL_LAYOUT = {'schema': 1, 'widgets': [
     _w('w4', 'value', 9, 0, 3, 3, bind={'parameter': 'co2_calc_mg_l'}),
     _w('w5', 'ph_window', 0, 3, 12, 2),
 ]}
-SMALL_MEASURE = (31, 10)
+SMALL_MEASURE = (31, 12)
 
 # Twenty-one rows of a card 48 units wide and 61 high: the four first values on two, the chart on twelve (four sevenths
 # of the card's rows), every value of the middle point on five, then what to dose, the other points and the stock.

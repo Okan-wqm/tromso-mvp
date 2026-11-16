@@ -48,9 +48,6 @@
 .tw\:min-h-10 {
   min-height: calc(var(--space-1) * 10);
 }
-.tw\:max-w-full {
-  max-width: 100%;
-}
 .tw\:min-w-0 {
   min-width: 0px;
 }
@@ -405,14 +402,6 @@
 }
 .tw\:wall\:gap-y-0:where([data-wall], [data-wall] *) {
   row-gap: 0px;
-}
-.tw\:wall\:truncate:where([data-wall], [data-wall] *) {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.tw\:wall\:overflow-hidden:where([data-wall], [data-wall] *) {
-  overflow: hidden;
 }
 .tw\:wall\:whitespace-nowrap:where([data-wall], [data-wall] *) {
   white-space: nowrap;

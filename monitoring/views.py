@@ -78,9 +78,14 @@ def _grid(request, params, board, now=None):
     units = read.units_for(params, board)
     found = read.cards(units, request.user, resolve.Choice.of(board, params), params.occupancy, now)
     farm = Tank.objects.count()
+    band = read.band(found)
+    # (review R2) critical units no chip has room for: a wall of exactly those, one click from the band
+    hidden = params.canonical(units=tuple(str(card.unit.pk) for card in band.hidden), flip=frozenset())
     return {
+        'band_hidden_url': f'{reverse("monitoring:monitor")}?{hidden}' if band.hidden else '',
         'rows': [{'card': card, 'flip': _flip_urls(params, card), 'zoom': _zoom_urls(params, card)} for card in found],
-        'band': read.band(found), 'modes': _modes(params, board), 'chart_views': _chart_views(params, found), 'params': params, 'card_width': board.card_width if board is not None else CardWidth.AUTO,
+        'band': band, 'modes': _modes(params, board), 'chart_views': _chart_views(params, found),
+        'params': params, 'card_width': board.card_width if board is not None else CardWidth.AUTO,
         'computed_at': timezone.make_naive(now, company_zone()),     # naive: a template shows an aware one in UTC
         'shown': len(found), 'on_farm': farm,
         'count_line': ngettext('%(shown)d of %(farm)d unit shown', '%(shown)d of %(farm)d units shown', farm)

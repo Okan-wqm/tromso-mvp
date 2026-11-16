@@ -26,9 +26,11 @@ from .golden import Tree
 PAGE, CARDS = reverse('monitoring:monitor'), reverse('monitoring:cards')
 SMALL = {'mode': 'small'}
 # What one small card may weigh in the page, in bytes (a wall of 200 is then about 1 MB before compression): measured
-# 5.0 to 5.6 KB on the cards of these tests, 2026-11-13 (5.3 to 6.1 KB on a copy of the development data, in Turkish,
-# 2026-11-15). Raise it only with a reason; a card that grows is a wall that slows.
-SMALL_CARD_BYTES = 6200
+# 5.0 to 5.6 KB on the cards of these tests, 2026-11-13; 6,257 bytes on T-02 once the line under each figure said
+# where the value came from (review R1), and the reviewer measured 6,479 bytes on the largest card of a copy of the
+# development data in Turkish (review R9), so the bound is what real cards weigh with a little room. Raise it only
+# with a reason; a card that grows is a wall that slows.
+SMALL_CARD_BYTES = 6800
 
 
 def card_of(html, unit):
@@ -86,7 +88,7 @@ class ViewTests(SmallCase):
             card = card_of(html, unit)
             self.assertEqual(card.attrs['data-template'], str(builtin.SMALL))
             self.assertEqual(card.classes[:5], ['monitor-card', f'monitor-{card.attrs["data-state"]}', 'is-fit',
-                                                'mw-31', 'mh-10'])
+                                                'mw-31', 'mh-12'])
             self.assertEqual([each.classes for each in card.walk() if 'card-grid' in each.classes], [['card-grid', 'gr-5']])
         # which template draws the card and why is still said, in the name's title
         named = next(each for each in card_of(html, self.t1).walk() if each.tag == 'p' and each.attrs.get('title'))
@@ -146,9 +148,14 @@ class SmallCardTests(SmallCase):
         titles = [each.attrs['title'] for each in card.walk() if each.tag == 'dt']
         self.assertTrue(titles[0].startswith('Dissolved oxygen (mg/L O₂) · '))
         self.assertEqual(titles[3], 'Carbon dioxide, calculated (mg/L CO₂)')
-        under = nodes(card, 'monitor-roomy')
-        self.assertEqual([text(each) for index, each in enumerate(under) if index != 1], ['1 h ago'] * 3)
-        self.assertRegex(text(under[1]), r'^(just now|\d+ s ago|\d+ min ago)$')      # the fixture's own temperature
+        under = nodes(card, 'monitor-under')
+        self.assertEqual([text(each) for index, each in enumerate(under) if index != 1],
+                         ['sample · 1 h', 'sample · 1 h', 'calc. · 1 h'])
+        self.assertRegex(text(under[1]), r'^sample · (now|\d+ s|\d+ min)$')           # the fixture's own temperature
+        # (review R1) the line is the card's at every size: no class a stylesheet hides, nothing that cuts it
+        for line in under:
+            self.assertEqual([name for name in line.classes if 'truncate' in name or 'roomy' in name], [])
+        self.assertNotIn('roomy', (Path(settings.BASE_DIR) / 'static/css/monitor.css').read_text(encoding='utf-8'))
         self.assertRegex(under[0].attrs['title'], r'^OK · .+ · 1 h ago$')
         self.assertEqual(under[3].attrs['title'], 'calculated · 1 h ago · Calculated from the pH, the alkalinity, the '
                                                   'temperature and the salinity. The salinity is assumed: fresh water.')
@@ -192,7 +199,7 @@ class SmallCardTests(SmallCase):
         figure = next(each for each in card.walk() if each.tag == 'b' and '5.00' in text(each))
         self.assertIn('tw:text-crit-text', figure.classes)
         self.assertTrue(nodes(figure, 'monitor-shape-critical'))
-        self.assertRegex(nodes(card, 'monitor-roomy')[0].attrs['title'], r'^Critical · .+ · 1 h ago')
+        self.assertRegex(nodes(card, 'monitor-under')[0].attrs['title'], r'^Critical · .+ · 1 h ago')
 
     def test_a_warning_says_the_warning_bound(self):
         self.good_water(oxygen_mg_l='6.5')
@@ -227,8 +234,8 @@ class SmallCardTests(SmallCase):
         (window,) = nodes(card, 'monitor-ph-window')
         self.assertIn('is-old', window.classes)
         self.assertIn('last known position, old: pH', window.attrs['aria-label'])
-        self.assertEqual(text(nodes(card, 'monitor-roomy')[3]), '4 d ago')
-        self.assertTrue(nodes(card, 'monitor-roomy')[3].attrs['title'].startswith('calculated · 4 d ago · '))
+        self.assertEqual(text(nodes(card, 'monitor-under')[3]), 'calc. · 4 d')
+        self.assertTrue(nodes(card, 'monitor-under')[3].attrs['title'].startswith('calculated · 4 d ago · '))
 
     def test_a_chart_that_cannot_be_worked_out_says_why_and_draws_nothing(self):
         html = self.page()
@@ -237,7 +244,7 @@ class SmallCardTests(SmallCase):
         (line,) = nodes(card, 'monitor-ph-refused')
         self.assertEqual(text(line), 'The pH window cannot be drawn: no active middle sampling point.')
         self.assertEqual(line.attrs['title'], text(line))
-        values = [text(each) for each in card.walk() if each.tag == 'dd' and 'monitor-roomy' not in each.classes]
+        values = [text(each) for each in card.walk() if each.tag == 'dd' and 'monitor-under' not in each.classes]
         self.assertEqual(values, ['no data'] * 4)                         # words, never a dash
         self.assertFalse([each for each in card.walk() if each.tag == 'b'])
         # T-02 has a point and a temperature, and nothing else: the values the chart lacks are named

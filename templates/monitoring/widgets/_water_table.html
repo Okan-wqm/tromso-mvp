@@ -2,7 +2,7 @@
    water page's own markup (farm/_water_value.html, its status and time in the title) and under it where it came from
    and how old it is, in words (monitoring/cards/render.py face); when the live sensor values could not be read, it says the
    values are the samples' only (owner rule A1). {% endcomment %}
-<section class="monitor-section monitor-water">
+{% if chosen.measure %}{% include "monitoring/widgets/_water_rows.html" %}{% else %}<section class="monitor-section monitor-water">
   {% if card.water and card.water.0.sensors_failed %}<p class="row-sub wq-warning" role="status">{% trans "Live sensor values could not be read: samples only." %}</p>{% endif %}
   {% if view.opts.points == "all" %}
   {% for water in card.water %}{% include "monitoring/widgets/_water_point.html" with named=True %}
@@ -11,4 +11,4 @@
   {% else %}
   {% with water=card.middle_water %}{% if water %}{% include "monitoring/widgets/_water_point.html" with named=False %}{% else %}<p class="row-sub">{% trans "This unit has no active middle sampling point, so no water is shown for it." %}</p>{% endif %}{% endwith %}
   {% endif %}
-</section>
+</section>{% endif %}

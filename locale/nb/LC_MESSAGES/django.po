@@ -492,6 +492,10 @@ msgid "%(date)s, no time recorded: counted from the end of the day"
 msgstr "%(date)s, uten klokkeslett: regnet fra slutten av dagen"
 
 #, python-format
+msgid "%(days)d d"
+msgstr "%(days)d d"
+
+#, python-format
 msgid "%(days)d d ago"
 msgstr "%(days)d d siden"
 
@@ -698,6 +702,10 @@ msgstr "%(grams)s g"
 #, python-format
 msgid "%(grams)s g (%(percent)s %%, %(kilos)s kg)"
 msgstr "%(grams)s g (%(percent)s %%, %(kilos)s kg)"
+
+#, python-format
+msgid "%(hours)d h"
+msgstr "%(hours)d t"
 
 #, python-format
 msgid "%(hours)d h ago"
@@ -4141,6 +4149,9 @@ msgstr "CO₂ passerer grensen under pH %(ph)s"
 
 msgid "CO₂ probe"
 msgstr "CO₂ sonde"
+
+msgid "CO₂ probe (mg/L)"
+msgstr "CO₂ sonde (mg/L)"
 
 msgid "CO₂ the air leaves in it"
 msgstr "CO₂ luften etterlater i vannet"
@@ -16961,6 +16972,9 @@ msgstr "av <strong>%(name)s</strong>"
 msgid "by its recurring task"
 msgstr "av den gjentakende oppgaven"
 
+msgid "calc."
+msgstr "ber."
+
 msgid "calculated"
 msgstr "beregnet"
 
@@ -18211,6 +18225,9 @@ msgstr "roller"
 
 msgid "safe"
 msgstr "trygg"
+
+msgid "sample"
+msgstr "prøve"
 
 msgid "sampling point"
 msgstr "prøvepunkt"

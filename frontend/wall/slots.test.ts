@@ -5,12 +5,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { FLOOR, pageOf, roomy, slots, worstPage } from './slots.js';
+import { FLOOR, pageOf, slots, worstPage } from './slots.js';
 import { mulberry32 } from '../test/random.js';
 
 interface Case {
   name: string; count: number; width: number; height: number; gap: number; mw: number; mh: number; min_u: number;
-  pad_x: number; pad_y: number; cols: number; rows: number; pages: number; u: number; roomy: boolean;
+  pad_x: number; pad_y: number; cols: number; rows: number; pages: number; u: number;
 }
 const VECTORS = JSON.parse(readFileSync('monitoring/tests/slot_vectors.json', 'utf8')) as { floor: number; cases: Case[] };
 const named = (name: string): Case => {
@@ -26,7 +26,6 @@ test('the vectors shared with the Python rule', () => {
     const found = slots(each.count, each.width, each.height, each.gap, each.mw, each.mh, each.min_u, each.pad_x, each.pad_y);
     assert.deepEqual([found.cols, found.rows, found.pages], [each.cols, each.rows, each.pages], each.name);
     assert.ok(Math.abs(found.u - each.u) < 1e-5, `${each.name}: unit ${found.u} against ${each.u}`);
-    assert.equal(roomy(found, each.width, each.height, each.gap, each.mw, each.mh, each.pad_x, each.pad_y), each.roomy, each.name);
   }
 });
 
@@ -51,7 +50,7 @@ test('whatever the screen: every card has a cell, the unit is never under the fl
     const width = 600 + random() * 5000;
     const height = 300 + random() * 2200;
     const gap = random() * 14;
-    const [mw, mh] = random() < 0.5 ? [31, 10] : [12 + Math.floor(random() * 52), 6 + Math.floor(random() * 58)];
+    const [mw, mh] = random() < 0.5 ? [31, 12] : [12 + Math.floor(random() * 52), 6 + Math.floor(random() * 58)];
     const padX = random() * 40;
     const padY = random() * 20;
     const found = slots(count, width, height, gap, mw, mh, FLOOR, padX, padY);

@@ -30,9 +30,20 @@ TRIGGER = 'ALTER TABLE monitor_card_templates {} TRIGGER trg_monitor_card_templa
 EARLIER = tuple(uuid.UUID(f'5f1c2a6e-0000-4000-8000-00000000c00{number}') for number in (1, 2, 3, 4))
 
 
+def free_the_name(Template, name):
+    """As 0005 does for Small (review R3): a farm's own live template called Big (in any case) keeps everything that
+    points at it and takes the first free number, "big (2)"; the built-in takes the name, and the deploy does not stop."""
+    for clash in Template.objects.filter(name__iexact=name, is_deleted=False, is_builtin=False):
+        number = 2
+        while Template.objects.filter(name__iexact=f'{clash.name[:94]} ({number})', is_deleted=False).exists():
+            number += 1
+        Template.objects.filter(pk=clash.pk).update(name=f'{clash.name[:94]} ({number})')
+
+
 def make_big(apps, schema_editor):
     Template = apps.get_model('monitoring', 'CardTemplate')
     for pk, (name, layout, expanded, (width, height)) in BUILTINS.items():
+        free_the_name(Template, name)
         Template.objects.create(id=pk, name=name, layout=layout, is_builtin=True, schema_version=layout['schema'],
                                 expanded_id=expanded, measure_w=width, measure_h=height)
 
@@ -63,6 +74,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # (0005 made a row whose foreign key is checked at the end of the transaction, and PostgreSQL alters no table
+        # while a check is pending: when the two run in ONE transaction, as a test's do, the checks are made first)
+        migrations.RunSQL('SET CONSTRAINTS ALL IMMEDIATE; SET CONSTRAINTS ALL DEFERRED',
+                          'SET CONSTRAINTS ALL IMMEDIATE; SET CONSTRAINTS ALL DEFERRED'),
         migrations.RemoveConstraint(
             model_name='cardtemplate',
             name='chk_monitor_card_templates_builtin',

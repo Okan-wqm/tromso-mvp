@@ -150,7 +150,8 @@ class BandPageTests(MonitoringCase):
         with override_settings(MONITOR_BAND_CHIPS=2):
             band = band_of(self.client.get(PAGE).content.decode())
         (more,) = [each for each in band.walk() if 'monitor-strip-more' in each.classes]
-        self.assertEqual(text(more), '+3 more units')                    # a warning unit and the two without water
+        # (the two warning units are past the same bound: one chip; what is left over says its state)
+        self.assertEqual(text(more), '+2 more units: 2 No recent data')
         self.assertEqual(text(next(each for each in band.walk() if 'monitor-tally' in each.classes)),
                          '1 Critical 2 Warning 2 No recent data')
 
@@ -183,3 +184,83 @@ class BandPageTests(MonitoringCase):
         self.assertEqual([each.attrs['data-page-turn'] for each in pages.walk() if each.tag == 'button'], ['-1', '1'])
         self.assertTrue(all(each.attrs.get('aria-label') for each in pages.walk() if each.tag == 'button'))
         self.assertTrue([each for each in pages.walk() if 'data-pages-text' in each.attrs])
+
+
+class BandReviewTests(MonitoringCase):
+    """The review of 1B (R2, R4, R5): the cap never hides a critical unit, units past one bound are one chip, no chip
+    is cut, and a measured CO₂ says it is the probe's."""
+
+    def setUp(self):
+        super().setUp()
+        self.limit('oxygen_mg_l', critical_low=6, warning_low=7)
+        self.limit('temperature_c', warning_high=15, critical_high=18)
+        self.limit('co2_mg_l', warning_high=10, critical_high=15)
+
+    def cards(self, units):
+        return read.cards(units, self.reader, read.resolve.Choice())
+
+    def test_units_past_the_same_bound_are_one_chip_with_the_worst_figure(self):
+        units = self.farm_of(10, fresh=False)
+        for number, unit in enumerate(units):
+            self.sample(unit, hours=1, temperature_c='9.5', oxygen_mg_l=f'5.{number:02d}')       # 5.00 ... 5.09
+        warned = self.farm_of(4, prefix='W', fresh=False)
+        for number, unit in enumerate(warned):
+            self.sample(unit, hours=1, temperature_c='9.5', oxygen_mg_l=f'6.{number + 3}')        # 6.3 ... 6.6
+        found = read.band(self.cards([*units, *warned]), chips=6, codes=4)
+        self.assertEqual([(chip.state, chip.text, len(chip.cards), len(chip.shown), chip.more) for chip in found.chips],
+                         [('critical', 'O₂ (mg/L) 5.00 < critical limit 6.00', 10, 4, 6),
+                          ('warning', 'O₂ (mg/L) 6.30 < 7.00', 4, 4, 0)])
+        self.assertEqual((found.more, found.rest, found.hidden), (0, (), ()))
+
+    def test_the_cap_says_what_it_holds_by_state_and_links_to_the_critical_units_it_holds(self):
+        units = self.farm_of(5, fresh=False)
+        causes = [dict(oxygen_mg_l='5'), dict(temperature_c='19'), dict(co2_mg_l='16'),
+                  dict(oxygen_mg_l='5', hours=30), dict(temperature_c='19', hours=30)]      # five causes, all critical
+        for unit, cause in zip(units, causes):
+            hours = cause.pop('hours', 1)
+            self.sample(unit, hours=hours, **{'temperature_c': '9.5', 'oxygen_mg_l': '9', **cause})
+        (warned,) = self.farm_of(1, prefix='W', fresh=False)
+        self.sample(warned, hours=1, temperature_c='9.5', oxygen_mg_l='6.5')
+        every = [*units, warned]
+        found = read.band(self.cards(every), chips=3, codes=4)
+        self.assertEqual([chip.state for chip in found.chips], ['critical'] * 3)       # every critical chip comes first
+        self.assertEqual(found.more, 3)
+        self.assertEqual([(key, str(word), count) for key, word, count in found.rest],
+                         [('critical', 'Critical', 2), ('warning', 'Warning', 1)])
+        self.assertEqual(sorted(card.unit.code for card in found.hidden), sorted(unit.code for unit in units[3:]))
+        with override_settings(MONITOR_BAND_CHIPS=3):
+            html = self.client.get(PAGE, {'units': ','.join(str(unit.pk) for unit in every)}).content.decode()
+        more = next(each for each in band_of(html).walk() if 'monitor-strip-more' in each.classes)
+        self.assertEqual(text(more), '+3 more units: 2 Critical · 1 Warning')
+        (link,) = [each for each in more.walk() if each.tag == 'a']
+        wanted = '%2C'.join(sorted(str(unit.pk) for unit in units[3:]))
+        self.assertEqual(link.attrs['href'], f'{PAGE}?units={wanted}')
+        self.assertEqual(self.client.get(link.attrs['href']).content.decode().count('data-key="card:'), 2)
+
+    def test_no_chip_and_no_reason_with_a_bound_can_be_cut(self):
+        self.sample(self.t2, hours=30, oxygen_mg_l='5')                # critical and old: the longest chip there is
+        html = self.client.get(PAGE, {'mode': 'small', 'wall': '1'}).content.decode()
+        band = band_of(html)
+        self.assertNotIn('truncate', ' '.join(' '.join(each.classes) for each in band.walk()))
+        self.assertNotIn('overflow-hidden', ' '.join(' '.join(each.classes) for each in band.walk()))
+        strip = next(each for each in band.walk() if 'monitor-strip' in each.classes)
+        self.assertIn('tw:flex-wrap', strip.classes)
+        self.assertNotIn('tw:wall:flex-nowrap', strip.classes)
+        chip = next(each for each in strip.walk() if 'monitor-chip-text' in each.classes)
+        self.assertEqual(text(chip), 'O₂ (mg/L) 5.00 < critical limit 6.00, no recent data')
+        card = next(node for node in Tree(html).root.walk() if node.attrs.get('data-key') == f'card:{self.t2.pk}')
+        reasons = next(each for each in card.walk() if 'monitor-reasons' in each.classes)
+        first = next(each for each in reasons.children if not isinstance(each, str))
+        self.assertNotIn('tw:truncate', first.classes)
+        self.assertIn('critical limit 6.00, no recent data', text(first))
+
+    def test_a_measured_co2_says_it_is_the_probes(self):
+        self.sample(self.t2, hours=1, oxygen_mg_l='9', co2_mg_l='16')
+        html = self.client.get(PAGE, {'mode': 'small'}).content.decode()
+        chip = next(each for each in band_of(html).walk() if 'monitor-chip-text' in each.classes)
+        self.assertEqual(text(chip), 'CO₂ probe (mg/L) 16.0 > critical limit 15.0')
+        card = next(node for node in Tree(html).root.walk() if node.attrs.get('data-key') == f'card:{self.t2.pk}')
+        reasons = next(each for each in card.walk() if 'monitor-reasons' in each.classes)
+        self.assertTrue(text(reasons).startswith('CO₂ probe (mg/L) 16.0 · critical limit 15.0'))
+        labels = [text(each) for each in card.walk() if each.tag == 'dt']
+        self.assertEqual(labels[3], 'CO₂ calc.')                                  # never two bare "CO₂" on one card

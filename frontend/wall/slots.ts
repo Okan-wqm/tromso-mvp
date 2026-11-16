@@ -11,9 +11,6 @@
 
 /** Under this unit (px) a card's smallest text, 0.8 of it, is under 11 px. */
 export const FLOOR = 14;
-/** A cell this many times as high as the measure asks (at the unit its width gives) has room for the line under each
- *  figure (static/css/monitor.css data-roomy). */
-export const ROOMY = 1.26;
 const MAX_COLS = 16;
 const MAX_ROWS = 12;
 const EPSILON = 1e-6;
@@ -56,7 +53,6 @@ export function slots(count: number, width: number, height: number, gap: number,
   return paged ?? all ?? { cols: 1, rows: 1, u: FLOOR, pages: Math.max(1, count) };
 }
 
-/** Whether a cell of the chosen grid is high enough for the line under each figure. */
 /** A FULL-HEIGHT card (its measure is higher than wide) keeps at least this share of the unit one card alone on the
  *  screen would have: the wall turns pages rather than set more of them side by side (monitoring/cards/slots.py). */
 export const FILL = 0.97;
@@ -64,13 +60,6 @@ export const FILL = 0.97;
 /** The smallest unit (`minU`) of a wall of full-height cards. */
 export function fillUnit(width: number, height: number, mw: number, mh: number, padX = 0, padY = 0): number {
   return FILL * Math.max(Math.min((width - padX) / mw, (height - padY) / mh), 0);
-}
-
-export function roomy(chosen: Slots, width: number, height: number, gap: number, mw: number, mh: number,
-                      padX = 0, padY = 0): boolean {
-  const byWidth = ((width - (chosen.cols - 1) * gap) / chosen.cols - padX) / mw;
-  const cell = (height - (chosen.rows - 1) * gap) / chosen.rows;
-  return byWidth > 0 && (cell - padY) / byWidth >= mh * ROOMY;
 }
 
 /** The page (from 1) that holds the card at `index` (from 0) when a page holds `per` cards. */

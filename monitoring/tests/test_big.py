@@ -43,7 +43,7 @@ class ViewTests(BigCase):
         placed = [each.classes[1:] for each in card.walk() if each.classes[:1] == ['w']]
         self.assertEqual([place[0] for place in placed],
                          ['w-value'] * 4 + ['w-chart', 'w-water_table', 'w-dosing', 'w-points', 'w-stock'])
-        self.assertEqual(placed[4][1:], ['gx-0', 'gy-2', 'gw-12', 'gh-12'])           # the chart: twelve rows of 21
+        self.assertEqual(placed[4][1:], ['gx-0', 'gy-2', 'gw-12', 'gh-11'])           # the chart: eleven rows of 21
         self.assertIn('<option value="big" selected>Big</option>', html)
         self.assertNotIn(' style=', html[html.index('data-key="card:'):])             # nothing the policy would block
 

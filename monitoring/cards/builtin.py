@@ -74,15 +74,16 @@ SMALL_LAYOUT = {'schema': 1, 'widgets': [
 ]}
 SMALL_MEASURE = (31, 12)
 
-# Twenty-one rows of a card 48 units wide and 61 high: the four first values on two, the chart on twelve (four sevenths
-# of the card's rows), every value of the middle point on five, then what to dose, the other points and the stock.
+# Twenty-one rows of a card 48 units wide and 61 high: the four first values on two, the chart on eleven (more than
+# half of the card's rows), every value of the middle point on six (a row each for up to fourteen values, never a cut
+# source), then what to dose, the other points and the stock.
 BIG_LAYOUT = {'schema': 1, 'widgets': [
     _w('w1', 'value', 0, 0, 3, 2, bind={'parameter': 'oxygen_mg_l'}),
     _w('w2', 'value', 3, 0, 3, 2, bind={'parameter': 'temperature_c'}),
     _w('w3', 'value', 6, 0, 3, 2, bind={'parameter': 'ph'}),
     _w('w4', 'value', 9, 0, 3, 2, bind={'parameter': 'co2_calc_mg_l'}),
-    _w('w5', 'chart', 0, 2, 12, 12),
-    _w('w6', 'water_table', 0, 14, 12, 5, opts={'points': 'middle', 'parameters': 'all'}),
+    _w('w5', 'chart', 0, 2, 12, 11),
+    _w('w6', 'water_table', 0, 13, 12, 6, opts={'points': 'middle', 'parameters': 'all'}),
     _w('w7', 'dosing', 0, 19, 4, 2),
     _w('w8', 'points', 4, 19, 4, 2),
     _w('w9', 'stock', 8, 19, 4, 2),

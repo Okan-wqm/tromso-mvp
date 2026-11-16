@@ -532,7 +532,7 @@ class WaterRow:
 
 
 # More rows than this stand in two columns: a row is never lower than a line of the card's small text.
-WATER_ROWS = 7
+WATER_ROWS = 14
 
 
 def water_rows(card):

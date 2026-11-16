@@ -9,8 +9,10 @@
 # repository's name is image.sh's alone and is asked of it here, config.tests.TestRunnerImageNameTests)
 # and nothing removed the old ones: they filled the disk Docker lives on. This removes every req-* tag of that
 # repository except:
-#   (a) the tag of every live git worktree of this repository (`git worktree list`; that tree's own
-#       scripts/testrunner/image.sh says its tag, so a tree on another branch keeps the image its own files ask for);
+#   (a) the tag of this tree, always, and of every live git worktree of this repository (`git worktree list`; that
+#       tree's own scripts/testrunner/image.sh says its tag, so a tree on another branch keeps the image its own files
+#       ask for). When git cannot list the worktrees (a copy that is no checkout, no git) the script STOPS and removes
+#       nothing: it cannot know which tags the worktrees ask for, and it would take the main checkout's for an old one;
 #   (b) a tag whose image a container uses, running or stopped;
 #   (c) a tag made within the last 24 hours (KEEP_HOURS): a build that is running, a tree that was just removed.
 # It removes tags only (`docker rmi <tag>`, never --force): the layers go when no other tag and no container holds
@@ -34,22 +36,29 @@ KEEP_HOURS=${KEEP_HOURS:-24}
 case "$KEEP_HOURS" in ''|*[!0-9]*) echo "KEEP_HOURS must be a whole number of hours" >&2; exit 2 ;; esac
 
 own=$(sh scripts/testrunner/image.sh | sed -n 's/^tag=//p')
+[ -n "$own" ] || { echo "scripts/testrunner/prune.sh: scripts/testrunner/image.sh named no tag: nothing is removed" >&2; exit 1; }
 REPOSITORY=${PRUNE_REPOSITORY:-${own%%:*}}
 
-# (a) the tag each live worktree asks for
+# (a) this tree's own tag, whatever git says, and the tag each live worktree asks for
 declare -A of_tree=()
+of_tree[$own]="this tree"
+trees=$(git worktree list --porcelain 2>&1) || {
+  echo "scripts/testrunner/prune.sh: git cannot list the worktrees here ($(printf '%s' "$trees" | head -n 1)):" \
+       "the tags they ask for cannot be known, so nothing is removed. Run it in a git worktree of the repository." >&2
+  exit 1
+}
 while IFS= read -r tree; do
   if [ -f "$tree/scripts/testrunner/image.sh" ]; then
     tag=$(sh "$tree/scripts/testrunner/image.sh" 2>/dev/null | sed -n 's/^tag=//p') || tag=
     if [ -n "$tag" ]; then
-      of_tree[$tag]="${of_tree[$tag]:+${of_tree[$tag]}, }$tree"
+      of_tree[$tag]="${of_tree[$tag]:+${of_tree[$tag]}, }the worktree $tree"
     else
       echo "note: $tree: its scripts/testrunner/image.sh named no tag"
     fi
   else
     echo "note: $tree: no scripts/testrunner/image.sh (a tree from before it, or one that is gone): no tag kept for it"
   fi
-done < <(git worktree list --porcelain | sed -n 's/^worktree //p')
+done < <(printf '%s\n' "$trees" | sed -n 's/^worktree //p')
 
 # (b) the images containers use, by id (a container can be made from another name of the same image)
 declare -A used=()
@@ -73,7 +82,7 @@ while IFS= read -r tag; do
   hours=$(( (now - made) / 3600 ))
   why=
   if [ -n "${of_tree[$tag]:-}" ]; then
-    why="the tag of the worktree ${of_tree[$tag]}"
+    why="the tag of ${of_tree[$tag]}"
   elif [ -n "${used[$id]:-}" ]; then
     why="a container uses its image (${used[$id]})"
   elif [ "$made" -eq 0 ]; then

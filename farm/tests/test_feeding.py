@@ -10,8 +10,10 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
+from django.db.models import Sum
 from django.test import SimpleTestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import translation
 
@@ -28,7 +30,7 @@ from ..stock import integrity, read as stock_read, services as stock_services
 from ..stock.dates import local_today
 from ..stock.fold import Line, Op
 from ..templatetags.stock import tonnes
-from .helpers import WINDOW_WAY_OUT, correction_window, make_facility, role
+from .helpers import WINDOW_WAY_OUT, correction_window, leave_without_site, make_facility, role
 from .test_stock import StockTestCase, make_unit
 from farm import withdrawal_gate
 
@@ -588,6 +590,111 @@ class OverviewFeedOnSeveralClocksTests(FrozenClock, FeedingTestCase):
     def test_a_farm_of_one_clock_says_nothing_of_it(self):
         Site.objects.filter(code='TK').update(timezone=self.bergen.timezone)
         self.assertEqual({str(tile['sub']) for tile in self.tiles().values()}, {''})
+
+    def test_a_unit_whose_department_has_no_site_counts_on_the_companys_day(self):
+        """Review T2: a department can be without a site (a row a deleted site left, farm 0029), and its units read the
+        company's day everywhere (local_today). Counting by the sites' clocks alone dropped their feed from both
+        cards; main counted it."""
+        hall = ProductionDepartment.objects.create(site=self.bergen, name='Old hall', code='OH')
+        unit = make_unit('X-01', hall)
+        self.stock(unit, count=1000, weight='100', days_ago=12)
+        leave_without_site(hall)
+        unit.refresh_from_db()
+        self.assertEqual(local_today(unit), company_today())
+        self.fed(unit, company_today(), '7')
+        self.fed(unit, company_today() - 6 * DAY, '2')
+        self.fed(unit, company_today() - 7 * DAY, '5')              # before the company's seven days
+        self.fed(self.k1, self.there, '4')
+        tiles = self.tiles()
+        self.assertEqual((tiles['today']['count'], tiles['week']['count']), (tonnes(Decimal(11)), tonnes(Decimal(13))))
+
+
+class FourClocksCase(FeedingTestCase):
+    """The third review's probe, kept: sites on four clocks (Bergen on UTC, Oslofjord, Tokyo, Seattle), each fed on its
+    own today and on each of the nine days before, a different amount every time. The cards must be the sum of each
+    site's own today and of each site's own last seven days, worked out here unit by unit."""
+
+    def setUp(self):
+        super().setUp()
+        self.units = {'Bergen': self.t1}
+        for name, code, zone in (('Tokyo', 'TK', 'Asia/Tokyo'), ('Oslofjord', 'OS', 'Europe/Oslo'),
+                                 ('Seattle', 'SE', 'America/Los_Angeles')):
+            site = Site.objects.create(name=name, code=code, timezone=zone)
+            hall = ProductionDepartment.objects.create(site=site, name=f'Hall {code}', code=f'H{code}')
+            self.units[name] = make_unit(f'{code}-01', hall)
+            self.stock(self.units[name], count=1000, weight='100', days_ago=12)
+        kilos = Decimal('0.5')
+        for unit in self.units.values():
+            for back in range(10):
+                services.record_feeding(self.user, unit=unit, day=local_today(unit) - back * DAY, feed=self.feed,
+                                        amount_kg=kilos)
+                kilos += Decimal('0.125')
+
+    def days(self):
+        return {name: local_today(unit).day for name, unit in self.units.items()}
+
+    def own_sums(self):
+        today = week = Decimal(0)
+        for unit in self.units.values():
+            day, of_unit = local_today(unit), FeedingRecord.objects.filter(unit=unit)
+            today += of_unit.filter(date=day).aggregate(found=Sum('amount_kg'))['found'] or 0
+            week += of_unit.filter(date__range=(day - 6 * DAY, day)).aggregate(found=Sum('amount_kg'))['found'] or 0
+        return today, week
+
+    def cards(self):
+        """(the cards' two figures, the queries the cards ran)"""
+        with CaptureQueriesContext(connection) as queries:
+            tiles = {tile['key']: tile for tile in feeding_views.overview_tiles(self.user)}
+        return (tiles['today']['count'], tiles['week']['count']), [query['sql'] for query in queries]
+
+    def assert_the_cards_are_the_sum_of_each_sites_own_days(self, days):
+        self.assertEqual(self.days(), days)
+        today, week = self.own_sums()
+        self.assertEqual(self.cards()[0], (tonnes(today), tonnes(week)))
+        everything = FeedingRecord.objects.aggregate(found=Sum('amount_kg'))['found']
+        self.assertTrue(0 < today < week < everything)               # each figure leaves something out
+
+
+class FourClocksAfternoonTests(FrozenClock, FourClocksCase):
+    """16:00 UTC on 10.11.2026: the 10th in Bergen, Oslo and Seattle, the 11th in Tokyo."""
+    NOW = datetime(2026, 11, 10, 16, 0, tzinfo=dt_timezone.utc)
+
+    def test_the_cards_are_the_sum_of_each_sites_own_days(self):
+        self.assert_the_cards_are_the_sum_of_each_sites_own_days({'Bergen': 10, 'Oslofjord': 10, 'Tokyo': 11, 'Seattle': 10})
+
+    def test_one_query_reads_the_feeding_records_and_only_those_of_the_days_counted(self):
+        """Review T3: the sums had their days in FILTER clauses only, so every look at the overview read the whole
+        table of feeding records, with two joins. The query is bounded by the days any clock counts: from the first of
+        the earliest clock's seven days (the 4th) to the latest clock's today (the 11th)."""
+        table = FeedingRecord._meta.db_table
+        read = [sql for sql in self.cards()[1] if f'FROM "{table}"' in sql]
+        self.assertEqual(len(read), 1)
+        where = read[0][read[0].index(f'FROM "{table}"'):]
+        self.assertRegex(where, rf" WHERE .*\"{table}\"\.\"date\" BETWEEN '?2026-11-04'?(::date)? AND '?2026-11-11'?(::date)?")
+
+
+class FourClocksASiteBehindTests(FrozenClock, FourClocksCase):
+    """07:30 UTC on 11.11.2026: the 11th in Bergen, Oslo and Tokyo, still the 10th in Seattle (23:30)."""
+    NOW = datetime(2026, 11, 11, 7, 30, tzinfo=dt_timezone.utc)
+
+    def test_the_cards_are_the_sum_of_each_sites_own_days(self):
+        self.assert_the_cards_are_the_sum_of_each_sites_own_days({'Bergen': 11, 'Oslofjord': 11, 'Tokyo': 11, 'Seattle': 10})
+
+
+class FourClocksSummerTimeNightTests(FrozenClock, FourClocksCase):
+    """22:30 UTC on 29.03.2026, the day Oslo went to summer time: 00:30 on the 30th in Oslo, the 29th in Bergen."""
+    NOW = datetime(2026, 3, 29, 22, 30, tzinfo=dt_timezone.utc)
+
+    def test_the_cards_are_the_sum_of_each_sites_own_days(self):
+        self.assert_the_cards_are_the_sum_of_each_sites_own_days({'Bergen': 29, 'Oslofjord': 30, 'Tokyo': 30, 'Seattle': 29})
+
+
+class FourClocksWinterTimeNightTests(FrozenClock, FourClocksCase):
+    """23:30 UTC on 24.10.2026, the night Oslo goes back to winter time: 01:30 on the 25th in Oslo, the 24th in Bergen."""
+    NOW = datetime(2026, 10, 24, 23, 30, tzinfo=dt_timezone.utc)
+
+    def test_the_cards_are_the_sum_of_each_sites_own_days(self):
+        self.assert_the_cards_are_the_sum_of_each_sites_own_days({'Bergen': 24, 'Oslofjord': 25, 'Tokyo': 25, 'Seattle': 24})
 
 class WindowsInTests(FeedingTestCase):
     """The windows of the units over days (read.windows_in), against the figures of the same worked example."""

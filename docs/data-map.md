@@ -1286,7 +1286,7 @@ A medicine or vaccine the farm uses.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › medicines
 - **forms**: `MedicineForm`
 - **constraints**: uq_medicines_name_live (unique: name); chk_medicines_kind (check); chk_medicines_administration (check); chk_medicines_status (check); chk_medicines_lice_report_code (check); chk_medicines_strength (check); chk_medicines_strength_positive (check); chk_medicines_strength_unit (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_harvest.py` and 9 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_harvest.py` and 10 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1803,7 +1803,7 @@ A unit fish are held in: a tank, a pond or a cage.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › tanks
 - **forms**: `TankForm`
 - **constraints**: uq_tanks_code_live (unique: code); uq_tanks_regulatory_unit_id_live (unique: production_department, regulatory_unit_id); chk_tanks_kind (check); chk_tanks_status (check); chk_tanks_water_type (check); chk_tanks_shape_by_kind (check); chk_tanks_material_by_kind (check); chk_tanks_pond_type_by_kind (check); chk_tanks_liner_type_by_kind (check); chk_tanks_water_source_by_kind (check); chk_tanks_cage_type_by_kind (check); chk_tanks_frame_type_by_kind (check); chk_tanks_net_material_by_kind (check); chk_tanks_tank_required (check); chk_tanks_pond_required (check); chk_tanks_cage_required (check); chk_tanks_diameter_by_shape (check); chk_tanks_length_by_shape (check); chk_tanks_stated_volume_m3_by_shape (check); chk_tanks_width_by_shape (check); chk_tanks_square_sides (check); chk_tanks_long_side_first (check); chk_tanks_water_depth (check); chk_tanks_max_depth (check); chk_tanks_liner_by_pond_type (check); chk_tanks_liner_thickness (check); chk_tanks_submersion (check); chk_tanks_diameter_range (check); chk_tanks_length_range (check); chk_tanks_width_range (check); chk_tanks_stated_volume_m3_range (check); chk_tanks_depth_range (check); chk_tanks_surface_area_m2_range (check); chk_tanks_max_depth_range (check); chk_tanks_mesh_size_mm_range (check); chk_tanks_max_submersion_depth_range (check); chk_tanks_max_density_kg_m3_range (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_workspaces.py` and 34 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_workspaces.py` and 35 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1955,7 +1955,7 @@ The water a species is kept in: for one parameter, the bounds outside which a va
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › water_limits
 - **forms**: `WaterLimitForm`
 - **constraints**: uq_water_limits_live (unique: species, parameter, water_type); chk_water_limits_parameter (check); chk_water_limits_water_type (check); chk_water_limits_any_bound (check); chk_water_limits_critical_low (check); chk_water_limits_warning_low (check); chk_water_limits_warning_high (check); chk_water_limits_critical_high (check); chk_water_limits_order (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_calculator.py` and 6 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_calculator.py` and 9 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1989,7 +1989,7 @@ A water sample: what a person measured at one sampling point (a place on a unit,
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › water_measurements
 - **forms**: `WaterSampleForm`, `RoundForm`, `RoundRowForm`, `SampleVoidForm`
 - **constraints**: chk_water_measurements_any_value (check); chk_water_measurements_source (check); chk_water_measurements_void_reason (check); chk_water_measurements_temperature_c (check); chk_water_measurements_oxygen_mg_l (check); chk_water_measurements_oxygen_saturation_pct (check); chk_water_measurements_ph (check); chk_water_measurements_alkalinity_mg_l (check); chk_water_measurements_co2_mg_l (check); chk_water_measurements_tan_mg_l (check); chk_water_measurements_nitrite_n_mg_l (check); chk_water_measurements_nitrate_n_mg_l (check); chk_water_measurements_tgp_pct (check); chk_water_measurements_salinity_ppt (check); chk_water_measurements_turbidity_ntu (check); chk_water_measurements_oxygen_basis_temperature (check); chk_water_measurements_oxygen_basis_salinity (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 16 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 17 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2040,7 +2040,7 @@ Where a water sample is taken: a named place on one unit, one system’s loop or
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › water_sampling_points
 - **forms**: `SamplingPointForm`
 - **constraints**: chk_water_sampling_points_one_owner (check); chk_water_sampling_points_kind (check); chk_water_sampling_points_name (check); chk_water_sampling_points_depth (check); chk_water_sampling_points_flow (check); chk_water_sampling_points_share (check); uq_water_sampling_points_unit_name (unique: unit, name); uq_water_sampling_points_unit_middle (unique: unit); uq_water_sampling_points_system_name (unique: system, name); uq_water_sampling_points_system_middle (unique: system); uq_water_sampling_points_equipment_name (unique: equipment, name); uq_water_sampling_points_equipment_middle (unique: equipment)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/helpers.py`, `farm/tests/test_calculator.py` and 13 more
+- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/helpers.py`, `farm/tests/test_calculator.py` and 14 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2881,7 +2881,7 @@ The cards of each monitoring board: a unit and, when it differs from the board, 
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Monitoring › monitor_board_units
 - **forms**: `MonitorBoardUnitForm`, `BoardUnitForm`
 - **constraints**: uq_monitor_board_units_unit (unique: board, unit); chk_monitor_board_units_mode (check)
-- **tests that mention it**: `monitoring/tests/test_boards.py`, `monitoring/tests/test_golden.py`, `monitoring/tests/test_resolve.py` and 1 more
+- **tests that mention it**: `monitoring/tests/test_band.py`, `monitoring/tests/test_boards.py`, `monitoring/tests/test_golden.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2906,7 +2906,7 @@ The named wall screens of Monitoring: a name, the template its cards are drawn w
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Monitoring › monitor_boards
 - **forms**: `MonitorBoardForm`
 - **constraints**: uq_monitor_boards_name_live (unique: name); chk_monitor_boards_name (check); chk_monitor_boards_mode (check); chk_monitor_boards_refresh (check); chk_monitor_boards_card_width (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `monitoring/tests/test_boards.py`, `monitoring/tests/test_golden.py` and 2 more
+- **tests that mention it**: `core/tests_workspaces.py`, `monitoring/tests/test_band.py`, `monitoring/tests/test_boards.py` and 4 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2939,7 +2939,7 @@ Which template a unit’s card gets: a rule for one unit, system, system type, s
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Monitoring › monitor_card_assignments
 - **forms**: `CardTemplateAssignmentForm`
 - **constraints**: chk_monitor_card_assignments_one_scope (check); uq_monitor_card_assignments_scope (unique: unit, system, system_type, species, kind); chk_monitor_card_assignments_system_type (check); chk_monitor_card_assignments_kind (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `monitoring/tests/test_frame.py`, `monitoring/tests/test_load.py` and 4 more
+- **tests that mention it**: `core/tests_workspaces.py`, `monitoring/tests/test_frame.py`, `monitoring/tests/test_load.py` and 5 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2971,7 +2971,7 @@ The monitoring card templates: a name, the widgets of the card as a layout and t
 - **how it works**: The layout is edited on the Design tab (the designer fills the JSON the validator checks); the layout version is stamped from the layout. The three built-ins come from migration 0002 and a trigger keeps them as they are: Copy makes an editable one. Deleting a template deletes its rules and detaches the boards and templates that point at it; restoring brings back the template with its rules (the boards and templates stay detached).
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Monitoring › monitor_card_templates
 - **forms**: `CardTemplateForm`
-- **constraints**: uq_monitor_card_templates_name_live (unique: name); chk_monitor_card_templates_name (check); chk_monitor_card_templates_schema (check); chk_monitor_card_templates_object (check); chk_monitor_card_templates_widgets (check); chk_monitor_card_templates_count (check); chk_monitor_card_templates_bytes (check); chk_monitor_card_templates_stamp (check); chk_monitor_card_templates_expanded (check); chk_monitor_card_templates_builtin (check)
+- **constraints**: uq_monitor_card_templates_name_live (unique: name); chk_monitor_card_templates_name (check); chk_monitor_card_templates_schema (check); chk_monitor_card_templates_object (check); chk_monitor_card_templates_widgets (check); chk_monitor_card_templates_count (check); chk_monitor_card_templates_bytes (check); chk_monitor_card_templates_stamp (check); chk_monitor_card_templates_expanded (check); chk_monitor_card_templates_builtin (check); chk_monitor_card_templates_measure (check)
 - **tests that mention it**: `core/tests_workspaces.py`, `monitoring/tests/test_designer.py`, `monitoring/tests/test_frame.py` and 5 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
@@ -2991,6 +2991,8 @@ The monitoring card templates: a name, the widgets of the card as a layout and t
 | schema_version | smallint |  |  | system: not editable: set by the code |
 | layout | jsonb |  |  | CardTemplateForm › Design |
 | expanded_id | uuid | yes | monitor_card_templates (SET_NULL) | CardTemplateForm › General |
+| measure_w | smallint | yes |  | CardTemplateForm › General |
+| measure_h | smallint | yes |  | CardTemplateForm › General |
 
 ## reports
 

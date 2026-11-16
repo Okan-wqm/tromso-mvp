@@ -18153,12 +18153,12 @@ msgstr "ingen laksefisk i sjøen på %(site)s siden %(date)s"
 msgid "no such row"
 msgstr "ingen slik rad"
 
+msgid "no time recorded"
+msgstr "uten klokkeslett"
+
 #, python-format
 msgid "no value of %(values)s"
 msgstr "ingen verdi for %(values)s"
-
-msgid "no time recorded"
-msgstr "uten klokkeslett"
 
 msgid "none"
 msgstr "ingen"
@@ -18705,10 +18705,6 @@ msgstr "enheter"
 
 msgid "unread"
 msgstr "ulest"
-
-#, python-format
-msgid "until %(date)s"
-msgstr "til %(date)s"
 
 #, python-format
 msgid "until %(last)s"

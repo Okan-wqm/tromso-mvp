@@ -18181,12 +18181,12 @@ msgstr "%(date)s tarihinden beri %(site)s lokasyonunda denizde salmonid yok"
 msgid "no such row"
 msgstr "böyle bir satır yok"
 
+msgid "no time recorded"
+msgstr "saat kaydedilmemiş"
+
 #, python-format
 msgid "no value of %(values)s"
 msgstr "şu değerler yok: %(values)s"
-
-msgid "no time recorded"
-msgstr "saat kaydedilmemiş"
 
 msgid "none"
 msgstr "yok"
@@ -18733,10 +18733,6 @@ msgstr "birimler"
 
 msgid "unread"
 msgstr "okunmamış"
-
-#, python-format
-msgid "until %(date)s"
-msgstr "%(date)s tarihine kadar"
 
 #, python-format
 msgid "until %(last)s"

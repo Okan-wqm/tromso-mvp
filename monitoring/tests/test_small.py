@@ -298,7 +298,7 @@ class SmallCardTests(SmallCase):
         self.assertEqual(text(chip), 'Withdrawal')
         self.assertIn(self.fish.code, chip.attrs['title'])
         self.assertEqual(card.attrs['data-state'], 'note')
-        self.assertRegex(text(nodes(card, 'monitor-reasons')[0]), r'^Medicine withdrawal in force · until \d\d\.\d\d\.\d{4}')
+        self.assertRegex(text(nodes(card, 'monitor-reasons')[0]), r'^Medicine withdrawal in force · harvest from \d\d\.\d\d\.\d{4}')
         pond = card_of(html, self.p1)                                     # P-01 is under maintenance, and empty
         self.assertEqual(text(nodes(pond, 'monitor-status')[0]), 'Maintenance')
         self.assertEqual(pond.attrs['data-state'], 'empty')

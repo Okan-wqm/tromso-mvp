@@ -44,13 +44,13 @@ from uuid import UUID
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone, translation
-from django.utils.formats import date_format
 from django.utils.timesince import timesince
 from django.utils.translation import gettext as _, gettext_lazy, ngettext
 
 from core import audit
 from core.text import lower as text_lower
 from farm.feeding import read as feeding_read, views as feeding_views
+from farm.handling.withdrawal import harvest_from
 from farm.harvest import views as harvest_views
 from farm.health import read as health_read, views as health_views
 from farm.models import Tank
@@ -652,10 +652,11 @@ def _ladder(card):
         if unjudged:
             return State(UNJUDGED, tuple(unjudged), basis)
     if card.withdrawal:
-        text, until = _('Medicine withdrawal in force'), getattr(card.withdrawal[0], 'until', None)
-        # (in short, with its date: a small card has no room for the withdrawal's chip and its date)
-        note.append(Reason(text, Brief(text, bound=_('until %(date)s') % {
-            'date': date_format(until, 'DATE_FORMAT')}) if until else None))
+        text, first = _('Medicine withdrawal in force'), card.withdrawal[0]
+        # (in short, with its end in the product's one wording, farm.handling.withdrawal.harvest_from: the first day
+        # the fish may be harvested, never "until")
+        note.append(Reason(text, Brief(text, bound=str(harvest_from(
+            getattr(first, 'until', None), getattr(first, 'approximate', False))))))
     if card.drift == 'soon':
         note.append(_('Weigh soon'))
     note += [line['why'] for line in card.lines if line['why']]

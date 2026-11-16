@@ -1,4 +1,4 @@
-{% load i18n stock cards %}{% comment %} A FITTED card (its template has a measure: monitoring/cards/resolve.py Resolved.measure): the same frame as any card, on two
+{% load i18n stock cards health %}{% comment %} A FITTED card (its template has a measure: monitoring/cards/resolve.py Resolved.measure): the same frame as any card, on two
    lines whatever happens, and the template's widgets in equal rows that share the card's height. Every length is one of
    four steps of the card's own unit (tw:text-u-s, -m, -l, -xl; static/css/monitor.css `.monitor-card.is-fit`), two
    weights. Line one: the unit and its link, its name (the department, and which template draws the card and why, in
@@ -16,7 +16,7 @@
     </div>
     <div class="monitor-card-state tw:flex-nowrap tw:min-w-0 tw:items-baseline tw:gap-3">
       {% if unit.status != "active" %}<span class="monitor-status tw:truncate tw:text-u-s tw:font-semibold tw:text-ink-2" title="{{ unit.get_status_display }}">{{ unit.get_status_display }}</span>{% endif %}
-      {% if card.withdrawal %}<span class="monitor-withdrawal tw:shrink-0 tw:text-u-s tw:text-ink-2" title="{% trans "Withdrawal" %}: {% for block in card.withdrawal %}{{ block.batch.code }}{% if block.until %} · {{ block.until|date:'DATE_FORMAT' }}{% endif %} {% endfor %}">{% trans "Withdrawal" %}</span>{% endif %}
+      {% if card.withdrawal %}<span class="monitor-withdrawal tw:shrink-0 tw:text-u-s tw:text-ink-2" title="{% trans "Withdrawal" %}: {% for block in card.withdrawal %}{{ block.batch.code }}: {{ block|harvest_from }} {% endfor %}">{% trans "Withdrawal" %}</span>{% endif %}
       {% if chosen.flip_to %}<a class="monitor-flip tw:shrink-0 tw:text-u-s tw:text-ink-3" id="flip-{{ unit.pk }}" href="{{ row.flip.page }}" data-poll-url="{{ row.flip.poll }}">{{ chosen.flip_to.shown_name }}</a>{% endif %}
       <span class="tw:shrink-0" title="{% trans "State from" %}: {% for name in state.basis %}{% if name == "stock" %}{% trans "Fish" %}{% elif name == "feeding" %}{% trans "Feeding" %}{% elif name == "water" %}{% trans "Water" %}{% else %}{% trans "Health" %}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}">{% include "monitoring/_state_word.html" with classes="tw:whitespace-nowrap tw:font-semibold tw:text-u-l" %}</span>
     </div>

@@ -1011,6 +1011,27 @@ fragment, on this work and on the commit it started from alike (the same stateme
 that check's bound of 80. The growth since 2026-11-05 came with what landed in between, not with the Small card; the
 bound is not raised here.
 
+**The Big card** (`mode=big`, the built-in Big template, migration 0006; owner decisions 4, 10, 11, 12): the card of
+one tank read from across the room, fitted (48 × 61 units, 21 rows) and FULL-HEIGHT: a card higher than it is wide
+keeps a whole row of the wall (`monitoring/cards/slots.py` `FILL`: at least 0.97 of the unit one card alone would
+have), so 3440×1440 shows three, 5120×1440 four, and more turn pages. Its four first values are large, each with its
+strip against the limit row and under it where it came from and how old it is; the unit's Deffeyes chart takes eleven
+of the 21 rows, drawn by the server as a picture of the card's own size (`farm/water/deffeyes.py` `card_figure`,
+`picture`: no viewBox outside, a stretched plot inside, labels by percentage, no style attribute) in one of two views:
+CLOSE, the window `close_window(figure, band, target_active)` works out (the water, the active target and where each
+limit's border crosses the water's alkalinity are the middle half of it; never narrower than 0.5 mmol/L; a window of
+four fifths of the core's box IS the box; held to the mock-up's own rule on 26 waters in
+`farm/tests/close_vectors.json` and to its promises on 2,000 made-up ones), and FULL, the core's box, ONE box for the
+charts of one water type on the screen (the core's `extent`, `monitoring/read.py` `chart_extents`). `?chart=full` sets
+the screen, `?zoom=<unit>,…` the cards that differ; both are in `Params.canonical()`, so the poll answers the same
+view. The picture says its view and its magnification, what the farm has not set (no NH₃ limit, no CO₂ limit, no
+alkalinity band: a side that is not drawn never reads as safe), "last known position" when an input is old, and under
+it where the water is, said from the picture itself (the safe zone only when the water lies in the region the core
+drew). Then every value of the middle point, a row each (figure, strip, source in words, arrival as clock time or day
+and month, with its age: never cut), every reason in full under the head, the other sampling points, the stock, and the
+dosing box, which in this phase says "No dosing advice" and why. The dev copy's real waters come out at ×5 to ×12 in
+the close view; ×12 is the smallest window, where a water lies within 0.06 mmol/L of its only border.
+
 **Characterised before card templates** (2026-11-04): `monitoring/tests/test_golden.py` renders a fixed farm of twenty units in
 every state (critical, warning, no recent data, note, OK, empty; over capacity, a withdrawal, tasks, a lice count, a treatment,
 an event, the saturation instead of mg/L) on eight screens (simple, detailed, all units, flipped, a board's mixed modes, the

@@ -102,7 +102,7 @@ class TemplateConstraintTests(Fixture):
 class BuiltinTests(Fixture):
     def test_the_migrations_made_the_four_built_ins_as_builtin_py_says_them(self):
         found = {template.pk: template for template in CardTemplate.objects.filter(is_builtin=True)}
-        self.assertEqual(set(found), {builtin.SIMPLE, builtin.DETAILED, builtin.OPERATOR, builtin.SMALL})
+        self.assertEqual(set(found), {builtin.SIMPLE, builtin.DETAILED, builtin.OPERATOR, builtin.SMALL, builtin.BIG})
         for pk, (name, layout, expanded) in builtin.BUILTINS.items():
             with self.subTest(template=name):
                 self.assertEqual((found[pk].name, found[pk].layout, found[pk].expanded_id), (name, layout, expanded))
@@ -148,7 +148,7 @@ class BuiltinTests(Fixture):
         for pk, name, layout, (width, height) in rows:
             CardTemplate.objects.create(id=pk, name=name, layout=layout, is_builtin=True, measure_w=width,
                                         measure_h=height)
-        self.assertEqual(CardTemplate.objects.filter(is_builtin=True).count(), 4)
+        self.assertEqual(CardTemplate.objects.filter(is_builtin=True).count(), 5)
         self.assertEqual(CardTemplate.objects.get(pk=builtin.SMALL).measure, builtin.SMALL_MEASURE)
 
     def test_a_built_in_shows_its_name_in_the_persons_language_a_template_of_ones_own_as_typed(self):

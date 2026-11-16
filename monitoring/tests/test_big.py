@@ -15,6 +15,8 @@ from .test_small import SmallCase, card_of, nodes, text
 
 PAGE, CARDS = reverse('monitoring:monitor'), reverse('monitoring:cards')
 BIG = {'mode': 'big'}
+# Raise it only with a reason; a card that grows is a wall that slows.
+BIG_CARD_BYTES = 26000
 
 
 class BigCase(SmallCase):
@@ -78,7 +80,7 @@ class ViewTests(BigCase):
                          r'alkalinity 95 mg/L, DIC \d\.\d\d mmol/L, calculated CO₂ \d+\.\d mg/L; close view · ×\d')
         caption = next(each for each in card_of(html, self.t2).walk() if each.tag == 'figcaption')
         self.assertIn('In the safe zone', text(caption))
-        self.assertRegex(text(caption), r'inputs: °C .+ · pH \d\d:\d\d · Alk\. \(mg/L\) \d\d:\d\d · .+ assumed')
+        self.assertNotIn('truncate', ' '.join(' '.join(each.classes) for each in caption.walk()))   # nothing to cut
 
     def test_full_scale_for_the_screen_and_the_cards_that_differ(self):
         self.good_water()
@@ -172,8 +174,9 @@ class BigCardTests(BigCase):
         self.good_water()
         card = card_of(self.page(), self.t2)
         (box,) = [each for each in card.walk() if 'w-dosing' in each.classes]
-        self.assertEqual(text(box), 'Dosing advice No dosing advice No target, reagent or dosing volume is set for '
-                                    'these fish yet.')
+        self.assertEqual([text(each) for each in box.walk() if each.tag == 'p'],
+                         ['Dosing advice', 'No dosing advice',
+                          'No target, reagent or dosing volume is set for these fish yet.'])
 
     def test_the_stock_and_the_other_points(self):
         self.good_water()
@@ -181,4 +184,67 @@ class BigCardTests(BigCase):
         (stock,) = [each for each in card.walk() if 'w-stock' in each.classes]
         self.assertIn('12,000', text(stock))
         (points,) = [each for each in card.walk() if 'w-points' in each.classes]
-        self.assertEqual(text(points), 'No other sampling point')
+        # the worked example's T-02 has other points with no value yet: each says so in words, never a dash
+        names = [text(each) for each in points.walk() if each.tag == 'span' and 'tw:truncate' in each.classes]
+        self.assertGreaterEqual(len(names), 1)
+        self.assertIn('no data', text(points))
+        self.assertNotIn('—', text(points))
+        (bare,) = self.farm_of(1)                                      # a unit with its middle point alone
+        alone = card_of(self.page(), bare)
+        (none,) = [each for each in alone.walk() if 'w-points' in each.classes]
+        self.assertEqual(text(none), 'No other sampling point')
+
+    def test_every_value_is_a_row_with_its_strip_its_source_and_its_arrival(self):
+        self.good_water()
+        card = card_of(self.page(), self.t2)
+        (rows,) = nodes(card, 'monitor-rows')
+        labels = [text(each) for each in nodes(rows, 'monitor-row')]
+        self.assertIn('O₂ (mg/L)', labels)
+        self.assertIn('pH', labels)
+        self.assertGreaterEqual(len(labels), 5)
+        said = text(rows)
+        self.assertRegex(said, r'Meter or test kit \d\d:\d\d · 1 h')              # the source whole, the clock, the age
+        self.assertNotIn('truncate', ' '.join(' '.join(each.classes) for each in rows.walk()))
+        self.assertTrue(nodes(rows, 'monitor-bar-svg'))                            # a strip where a limit row judges
+        self.assertFalse([each for each in rows.walk() if 'data-old' in each.attrs])
+        # the four large figures: the strip beside the figure, and under it the source and the age (review R1)
+        tiles = [each for each in card.walk() if 'w-value' in each.classes]
+        self.assertTrue(nodes(tiles[0], 'monitor-bar-svg'))
+        self.assertEqual(text(nodes(tiles[0], 'monitor-under')[0]), 'sample · 1 h')
+        self.assertEqual(text(nodes(tiles[3], 'monitor-under')[0]), 'calc. · 1 h')
+
+    def test_an_old_row_says_old_and_its_day(self):
+        self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='8.1', alkalinity_mg_l='95')
+        self.sample(self.t2, hours=100, ph='7.4')
+        card = card_of(self.page(), self.t2)
+        (rows,) = nodes(card, 'monitor-rows')
+        (old,) = [each for each in rows.walk() if 'data-old' in each.attrs]
+        self.assertRegex(text(old.parent) if hasattr(old, 'parent') else text(rows), r'old · \d\d\.\d\d \d\d:\d\d · 4 d')
+
+    def test_every_reason_is_on_the_card_in_full(self):
+        self.good_water(oxygen_mg_l='5', ph='5.9')
+        card = card_of(self.page(), self.t2)
+        (reasons,) = nodes(card, 'monitor-reasons')
+        lines = [text(each) for each in reasons.children if not isinstance(each, str)]
+        self.assertEqual(len(lines), len(read.cards([self.t2], self.reader, read.resolve.Choice(view=builtin.BIG))[0].state.reasons))
+        self.assertTrue(lines[0].startswith('O₂ (mg/L) 5.00 · critical limit 6.00'))
+        self.assertTrue(any(line.startswith('pH 5.90 · critical limit 6.00') for line in lines), lines)
+
+    def test_the_chart_says_what_the_farm_has_not_set(self):
+        from farm.models import WaterLimit
+        WaterLimit.objects.filter(parameter='nh3_n_mg_l').delete()
+        self.good_water()
+        drawn = self.chart(self.page(), self.t2)
+        notes = [text(each) for each in nodes(drawn, 'chart-note')]
+        self.assertEqual(notes, ['no NH₃ limit for these fish'])
+        self.assertNotIn('chart-region-safe', ' '.join(' '.join(each.classes) for each in drawn.walk()))
+        self.assertNotIn('chart-region-nh3', ' '.join(' '.join(each.classes) for each in drawn.walk()))
+
+    def test_a_big_card_stays_within_its_weight(self):
+        """What one Big card may weigh in the page (the mock-up's was 21.6 KB): pinned from what these cards weigh."""
+        import re
+        self.good_water(oxygen_mg_l='5', ph='5.9')
+        html = self.page()
+        card = re.search(rf'<article[^>]*card:{self.t2.pk}.*?</article>', html, re.S).group(0)
+        self.assertLessEqual(len(card.encode()), BIG_CARD_BYTES)
+        self.assertGreater(len(card.encode()), 8000)

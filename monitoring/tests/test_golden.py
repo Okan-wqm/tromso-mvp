@@ -112,6 +112,9 @@ class GoldenFarm(MonitoringCase):
         found['small'] = self.says(PAGE, {'mode': 'small', 'occupancy': 'all'})
         found['fragment-small'] = self.says(CARDS, {'mode': 'small'})
         found['small-flipped'] = self.says(PAGE, {'mode': 'small', 'flip': str(self.g[1].pk)})
+        # the Big card (recorded 2026-11-16, when it was made): every unit close, and at full scale
+        found['big'] = self.says(PAGE, {'mode': 'big', 'occupancy': 'all'})
+        found['big-full'] = self.says(CARDS, {'mode': 'big', 'chart': 'full'})
         self.as_person('stock-only', 'view_stockoperation')
         found['stock-only-detailed'] = self.says(PAGE, {'mode': 'detailed', 'occupancy': 'all'})
         found['stock-only-small'] = self.says(PAGE, {'mode': 'small', 'occupancy': 'all'})

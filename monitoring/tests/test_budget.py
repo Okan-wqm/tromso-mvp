@@ -20,7 +20,7 @@ from . import ALL_RIGHTS, MonitoringCase, chosen
 # The ceilings, set at the first green run and never raised without a review: a card read costs this many queries
 # for a person who may read everything, whatever the number of units.
 PEOPLE = itertools.count()
-CEILINGS = {'simple': 80, 'detailed': 100, 'mixed': 100, 'small': 80}
+CEILINGS = {'simple': 80, 'detailed': 100, 'mixed': 100, 'small': 80, 'big': 80}
 
 
 class Counting:
@@ -28,7 +28,8 @@ class Counting:
         modes = {unit.pk: (mode if mode != 'mixed' else ('detailed' if index % 2 else 'simple'))
                  for index, unit in enumerate(units)}
         # 'small': the screen's view, every card as the Small template (which shows the unit's chart)
-        choice = Choice(view=builtin.SMALL) if mode == 'small' else chosen(modes)
+        choice = (Choice(view=builtin.SMALL) if mode == 'small' else Choice(view=builtin.BIG) if mode == 'big'
+                  else chosen(modes))
         user = self.as_person(f'budget-{mode}-{len(units)}-{next(PEOPLE)}', *ALL_RIGHTS)
         read.sections_for(user)                                   # the person's rights are cached on the user
         with CaptureQueriesContext(connection) as log:
@@ -43,7 +44,7 @@ class Counting:
 class BudgetTests(Counting, MonitoringCase):
     def test_the_counts_at_six_and_twenty_four_units_are_equal_in_every_mode(self):
         units = self.farm_of(24)
-        for mode in ('simple', 'detailed', 'mixed', 'small'):
+        for mode in ('simple', 'detailed', 'mixed', 'small', 'big'):
             with self.subTest(mode=mode):
                 self.count(units[:6], mode)                           # warm what the first call loads once
                 six, twenty_four = self.count(units[:6], mode), self.count(units, mode)
@@ -124,6 +125,8 @@ OWNER_2026_11_08_QUERIES = 2  # the newest temperature before the ration's range
                               # own-water points for the withdrawal's degree-days, whatever the number of units
 
 
+# What a Big card may read beyond a Small one (the unit's other points): pinned from the first measurement.
+BIG_MORE_READS = 6
 SMALL_READS = 42            # measured 2026-11-13 at 6, 24 and 200 units: three more than a Simple card's 39 (the fish and
                             # their limits for the chart, once; no experiment chips)
 
@@ -150,5 +153,11 @@ class RecordedCountsTests(Counting, MonitoringCase):
         self.count(units[:6], 'small')
         small = [self.count(units[:size], 'small') - self.savepoints for size in (6, 24, 200)]
         self.assertEqual(small, [SMALL_READS] * 3)
+        # The Big card (2026-11-16): the same chart read, and every active point's water for its other points; the
+        # core draws each card's figure, which is no query. The same at 6, 24 and 200 units.
+        self.count(units[:6], 'big')
+        big = [self.count(units[:size], 'big') - self.savepoints for size in (6, 24, 200)]
+        self.assertEqual(len(set(big)), 1, big)
+        self.assertLessEqual(big[0], SMALL_READS + BIG_MORE_READS, big)
         self.assertEqual(savepoints, {mode: count + SENSOR_SAVEPOINTS for mode, count in
                                       {'simple': 4, 'detailed': 10, 'mixed': 10}.items()})   # chips; + treatments, lice, tasks

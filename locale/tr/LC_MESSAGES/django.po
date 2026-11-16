@@ -2990,6 +2990,9 @@ msgstr ""
 "%(formula)s sonrasında CO₂, havayla dengedeki bir suyun tuttuğu %(air)s mg/L’nin altında: sıyırma"
 " onu oraya indiremez."
 
+msgid "Against its limits"
+msgstr "Sınırlara göre"
+
 msgid "Against the standard week (min)"
 msgstr "Standart haftaya göre (dk)"
 
@@ -3622,6 +3625,9 @@ msgstr "Alan"
 
 msgid "Area not set: the stricter limit applies (Facility › Sites)"
 msgstr "Bölge girilmemiş: daha sıkı sınır geçerli (Tesis › Sahalar)"
+
+msgid "Arrived"
+msgstr "Geldi"
 
 msgid "As a pH meter or kit reads it."
 msgstr "pH metrenin veya kitin okuduğu gibi."
@@ -16419,6 +16425,9 @@ msgstr ""
 "Suyun alındığı yer, örn. “Yan çıkış”, “Filtreden sonra” veya “3 m”. Bir sahibin noktalarının "
 "adları farklıdır."
 
+msgid "Where this view lies in the full scale"
+msgstr "Bu görünümün tam ölçekteki yeri"
+
 msgid "Where to file it"
 msgstr "Nereye sunulur"
 
@@ -17889,6 +17898,9 @@ msgstr "TAN yok"
 
 msgid "no active middle sampling point"
 msgstr "etkin orta örnekleme noktası yok"
+
+msgid "no alkalinity band for these fish"
+msgstr "bu balıklar için alkalinite bandı yok"
 
 #, python-format
 msgid "no cleaner fish held at %(site)s since %(date)s"

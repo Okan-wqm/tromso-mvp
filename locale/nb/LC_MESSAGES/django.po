@@ -2980,6 +2980,9 @@ msgstr ""
 "Etter %(formula)s er CO₂ under de %(air)s mg/L et vann holder i likevekt med luften: lufting kan "
 "ikke få det dit."
 
+msgid "Against its limits"
+msgstr "Mot grensene"
+
 msgid "Against the standard week (min)"
 msgstr "Mot standarduken (min)"
 
@@ -3612,6 +3615,9 @@ msgstr "Område"
 
 msgid "Area not set: the stricter limit applies (Facility › Sites)"
 msgstr "Område ikke satt: den strengeste grensen gjelder (Anlegg › Lokaliteter)"
+
+msgid "Arrived"
+msgstr "Kom"
 
 msgid "As a pH meter or kit reads it."
 msgstr "Slik et pH-meter eller et sett leser den."
@@ -16387,6 +16393,9 @@ msgstr ""
 "Hvor vannet tas, f.eks. “Sideutløp”, “Etter filteret” eller “3 m”. Hver eiers punkter har ulike "
 "navn."
 
+msgid "Where this view lies in the full scale"
+msgstr "Hvor dette utsnittet ligger i full skala"
+
 msgid "Where to file it"
 msgstr "Hvor den sendes inn"
 
@@ -17859,6 +17868,9 @@ msgstr "ingen TAN"
 
 msgid "no active middle sampling point"
 msgstr "ingen aktivt prøvepunkt i midten"
+
+msgid "no alkalinity band for these fish"
+msgstr "ingen alkalitetsgrense for denne fisken"
 
 #, python-format
 msgid "no cleaner fish held at %(site)s since %(date)s"

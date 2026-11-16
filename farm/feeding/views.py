@@ -422,22 +422,30 @@ def overview_tiles(user):
     different clocks is the sum of each site's own day, and the cards of a farm with more than one clock say so
     (`sub`). Each card opens the records of its days, from the earliest to the latest among the sites (on a farm whose
     sites are on different days just then, that list holds a day more of one site than the figure). For people who may
-    read the feeding records."""
+    read the feeding records.
+
+    **A unit whose department has no site** (a row a deleted site left, farm 0029) reads the company's day everywhere
+    (`local_today`), and so here: the company's clock is one of the clocks counted. **One query, bounded**: the sums
+    have their own days in FILTER clauses, and the query reads only the records of the days some clock counts, from
+    the first of the earliest clock's seven days to the latest clock's today, never the whole table."""
     if not user.has_perm(VIEW):
         return []
-    now = [clock for clock in clocks() if clock.sites is not None]         # a feeding has a unit, and a unit a site
+    now = clocks()                                         # the sites' clocks, and the company's for a unit with no site
     site = 'unit__production_department__site'
-    kilos = FeedingRecord.objects.aggregate(today=Sum('amount_kg', filter=own_days(now, site)),
-                                            week=Sum('amount_kg', filter=own_days(now, site, read.WEEK))) if now else {}
-    days = [clock.today for clock in now] or [local_today()]
+    todays = [clock.today for clock in now]
+    kilos = FeedingRecord.objects.filter(
+        date__range=(min(todays) - timedelta(days=read.WEEK - 1), max(todays)),
+    ).aggregate(today=Sum('amount_kg', filter=own_days(now, site)),
+                week=Sum('amount_kg', filter=own_days(now, site, read.WEEK)))
+    days = [clock.today for clock in now if clock.sites is not None] or todays       # the cards open the sites' days
     earliest_day, latest_day = min(days), max(days)
     first = earliest_day - timedelta(days=read.WEEK - 1)
-    sub = _('Each site on its own day') if len(now) > 1 else ''
+    sub = _('Each site on its own day') if len({clock.zone for clock in now if clock.sites is not None}) > 1 else ''
     url = reverse('farm:feeding_records')
     return [
-        {'key': 'today', 'label': _('Feed today'), 'count': tonnes(kilos.get('today') or 0), 'sub': sub,
+        {'key': 'today', 'label': _('Feed today'), 'count': tonnes(kilos['today'] or 0), 'sub': sub,
          'url': f'{url}?{urlencode({"from": earliest_day.isoformat(), "to": latest_day.isoformat()})}'},
-        {'key': 'week', 'label': _('Feed, last 7 days'), 'count': tonnes(kilos.get('week') or 0), 'sub': sub,
+        {'key': 'week', 'label': _('Feed, last 7 days'), 'count': tonnes(kilos['week'] or 0), 'sub': sub,
          'url': f'{url}?{urlencode({"from": first.isoformat(), "to": latest_day.isoformat()})}'},
     ]
 

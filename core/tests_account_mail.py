@@ -1137,6 +1137,7 @@ class Tarpit(socketserver.BaseRequestHandler):
     """A mail server that answers every step of the conversation, each after `delay` seconds: under the per-step
     timeout every time, far over it in all."""
     delay = 0.6
+    answered = []         # what the server has answered so far: how far the conversation got
 
     def handle(self):
         def answer(line):
@@ -1145,6 +1146,8 @@ class Tarpit(socketserver.BaseRequestHandler):
                 self.request.sendall(line)
             except OSError:
                 pass
+            else:
+                type(self).answered.append(line)
         answer(b'220 tarpit ESMTP\r\n')
         data, buffer = False, b''
         while True:
@@ -1186,13 +1189,27 @@ class SendTimeTests(AccountMailCase):
         mailers = {'default': {'BACKEND': 'django.core.mail.backends.smtp.EmailBackend', 'OPTIONS': {
             'host': '127.0.0.1', 'port': server.server_address[1], 'username': None, 'password': None,
             'use_tls': False, 'use_ssl': False, 'timeout': 1}}}
-        with override_settings(MAILERS=mailers, MAIL_SEND_SECONDS=1, DEFAULT_FROM_EMAIL='console@farm.example'), \
-                self.assertLogs('core.accountmail', 'ERROR'):
+        Tarpit.answered.clear()
+        send, took = accountmail._send, []
+
+        def timed(mail):
             start = time.perf_counter()
+            try:
+                return send(mail)
+            finally:
+                took.append(time.perf_counter() - start)
+
+        with override_settings(MAILERS=mailers, MAIL_SEND_SECONDS=1, DEFAULT_FROM_EMAIL='console@farm.example'), \
+                mock.patch.object(accountmail, '_send', timed), self.assertLogs('core.accountmail', 'ERROR'):
             self.client.post(reverse('core:user_create'), user_data())
-            took = time.perf_counter() - start
-        # seven steps of 0.6 s would be over four seconds; the limit is one
-        self.assertLess(took, 2.5)
+        # Seven steps of 0.6 s are over four seconds of the server's own waiting; the limit is one. Asked of the
+        # conversation, not of the clock around the request (2.5 s for the whole request was the machine's time as
+        # much as the mail's): the send itself took less than the conversation needs, the server got through at most
+        # three of its seven answers (a cut at the limit comes during the second), and it never took the mail.
+        [sending] = took
+        self.assertLess(sending, 7 * Tarpit.delay)
+        self.assertLessEqual(len(Tarpit.answered), 3, Tarpit.answered)
+        self.assertNotIn(b'250 queued\r\n', Tarpit.answered)
         # (S4) a server may have taken the mail and only its answer came late: the words do not say it was not sent
         late = 'The mail server did not finish in time: the mail may have gone out all the same.'
         self.assertEqual(outcomes(), [late])

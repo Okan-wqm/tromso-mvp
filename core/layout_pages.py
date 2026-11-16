@@ -277,7 +277,8 @@ def _wall(language):
                 biomass_kg=Decimal(66 + 31 * index), density=Decimal('23.6') + index)
             withdrawal = (N(batch=N(code='B-2026-004'), until=date(2026, 11, 25)),) if extra == 'withdrawal' else ()
             cards.append(read.Card(unit=unit, template=chosen, today=NOW.date(), stock=stock, water=(water,),
-                                   withdrawal=withdrawal, sections=frozenset(read.SECTIONS), now=NOW, chart=chart))
+                                   withdrawal=withdrawal, sections=frozenset(read.SECTIONS), now=NOW, chart=chart,
+                                   ph_scale=(6.4, 8.6)))
         return render_to_string('monitoring/_grid.html', {
             'rows': [{'card': card, 'flip': {'page': '#', 'poll': '#'}} for card in cards], 'band': read.band(cards),
             'modes': [{'label': label, 'url': '#', 'current': label == 'Small'} for label in ('Small', 'Simple', 'Detailed')],

@@ -10,8 +10,8 @@ from core.crud import RowFormSet, TabbedForm, tab_fields
 from farm.models import Species, System, Tank
 
 from .cards import catalogue, validate
-from .models import (REFRESH_MAX, REFRESH_MIN, SCOPES, CardTemplate, CardTemplateAssignment, MonitorBoard,
-                     MonitorBoardUnit)
+from .models import (PH_SCALE_BOUNDS, PH_SCALE_SPAN, REFRESH_MAX, REFRESH_MIN, SCOPES, CardTemplate,
+                     CardTemplateAssignment, MonitorBoard, MonitorBoardUnit, PhWindowScale)
 
 BOARD_TABS = [
     ('general', _('General'), ['name', 'description', 'default_template', 'card_width', 'refresh_seconds']),
@@ -222,4 +222,41 @@ class CardTemplateAssignmentForm(TabbedForm):
             raise forms.ValidationError(ONE_SCOPE)
         if not self.instance._state.adding and self.instance.is_global and given:
             raise forms.ValidationError(_('The global rule stays for every unit: change its template only.'))
+        return cleaned
+
+
+# ---- the pH window's scale (Reference data) ---------------------------------------------------------------------------
+SCALE_TABS = [('scale', _('Scale'), ['ph_low', 'ph_high'])]
+
+
+class PhWindowScaleForm(TabbedForm):
+    """The scale of the pH window on the monitoring cards of one water type (monitoring.PhWindowScale): its two ends.
+    The water type is the row's own and is not changed."""
+
+    tabs = SCALE_TABS
+
+    class Meta:
+        model = PhWindowScale
+        fields = tab_fields(SCALE_TABS)
+        help_texts = {
+            'ph_low': _('The left end of the pH window on the cards of units with this water. A pH below it is shown as '
+                        'an arrow and the number, never as a mark on the end.'),
+            'ph_high': _('The right end. Choose the two ends so that the pH the water is kept at and the pH at which '
+                         'CO₂ and NH₃ pass their limits lie between them; at least half a pH unit apart.'),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ('ph_low', 'ph_high'):
+            self.fields[name].widget.attrs.update({'min': PH_SCALE_BOUNDS[0], 'max': PH_SCALE_BOUNDS[1], 'step': '0.1'})
+
+    def clean(self):
+        cleaned = super().clean()
+        low, high = cleaned.get('ph_low'), cleaned.get('ph_high')
+        for name, value in (('ph_low', low), ('ph_high', high)):
+            if value is not None and not PH_SCALE_BOUNDS[0] <= value <= PH_SCALE_BOUNDS[1]:
+                self.add_error(name, _('A pH lies between 0 and 14.'))
+        if low is not None and high is not None and high < low + PH_SCALE_SPAN and not self.has_error('ph_high'):
+            self.add_error('ph_high', _('The scale must span at least half a pH unit, from the lower end to the '
+                                       'higher.'))
         return cleaned

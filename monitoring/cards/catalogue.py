@@ -143,9 +143,7 @@ TILE_LABEL_LENGTH = 10
 # How a reason or a band's chip names a MEASURED value that the card also shows worked out (review R5): the CO₂ of a
 # probe or a test kit is never a bare "CO₂" beside the tile of the calculated one.
 REASON_LABELS = {'co2_mg_l': _('CO₂ probe (mg/L)')}
-# The pH window's scale, the same on every card so two cards can be compared: where a border or the water lies beyond
-# an end it is drawn at that end and the picture's words say its number.
-PH_WINDOW = (6.4, 8.6)
+# (The pH window's scale is not here: it is the farm's reference data per water type, monitoring.PhWindowScale.)
 
 
 # The rows a card's grid has: as many as the tallest widgets stacked, one per widget the card may hold. A designer's layout

@@ -192,6 +192,9 @@ WORKSPACES = [
                       'monitoring.view_cardtemplate'),
                 Entry(_('Card template rules'), 'monitoring:cardtemplateassignment_list', 'list-checks',
                       'monitoring.view_cardtemplateassignment'),
+                # The two ends of a card's pH window, per water type (owner decision 15, 2026-11-16).
+                Entry(_('pH window scales'), 'monitoring:phwindowscale_list', 'gauge',
+                      'monitoring.view_phwindowscale'),
             ]),
             # Harvest and logistics: the outside facilities harvested fish go to; wellboats join it when they get
             # records of their own.

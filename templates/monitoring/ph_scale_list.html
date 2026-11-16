@@ -1,0 +1,24 @@
+{% extends "crud/list.html" %}
+{% load i18n stock %}
+{% comment %} Setup › Reference data › pH window scales (monitoring.resources.PhWindowScaleResource): per water type, the two ends of
+   the pH window on the monitoring cards. The farm's reference data (owner decision 15), never the code's. {% endcomment %}
+{% block search_placeholder %}{% trans "Search" %}{% endblock %}
+{% block empty_text %}{% trans "One row per water type is made by the platform; it is changed, never added or deleted." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th scope="col">{% trans "Water type" %}</th><th scope="col" class="num">{% trans "From pH" %}</th><th scope="col" class="num">{% trans "To pH" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>
+    <tbody>
+      {% for row in objects %}
+      <tr>
+        <td><span class="row-title">{{ row.get_water_type_display }}</span></td>
+        <td class="num">{{ row.ph_low|number:1 }}</td>
+        <td class="num">{{ row.ph_high|number:1 }}</td>
+        <td class="row-actions">{% if can_change %}<a class="icon-button" href="{% url 'monitoring:phwindowscale_edit' row.pk %}" data-modal title="{% trans "Edit" %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% trans "Edit" %}</span></a>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="panel-help">{% trans "A card’s pH window is drawn on the scale of its unit’s water type. A pH beyond the scale is shown as an arrow and the number." %}</p>
+{% endblock %}

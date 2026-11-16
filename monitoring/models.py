@@ -8,6 +8,8 @@ the modes and the refresh seconds in their ranges; one card per unit per board; 
 version; one scope per rule and one live rule per scope; the built-ins unchangeable, by a trigger); the form mirrors them
 for friendly messages. That a board holds only live units is not a row fact (liveness is soft-delete state), so it is the
 form's choices and the read's live join."""
+from decimal import Decimal
+
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -19,6 +21,7 @@ from django.utils.translation import gettext, gettext_lazy as _
 
 from core.models import AuditedModel
 from farm.models import Species, System, Tank
+from farm.models.tank import WaterType
 
 from .cards import builtin, catalogue
 
@@ -293,3 +296,42 @@ class CardTemplateAssignment(AuditedModel):
             return [gettext('The global rule is never deleted: every unit must get a template. Change its template '
                             'instead.')]
         return []
+
+
+# How narrow a pH window's scale may be and where it may lie: the refusal of nonsense, never a value in force.
+PH_SCALE_BOUNDS = (0, 14)
+PH_SCALE_SPAN = Decimal('0.5')
+
+
+class PhWindowScale(AuditedModel):
+    """The scale of the pH window on a monitoring card (monitoring/cards/render.py ph_window), one row per water type
+    (farm.models.tank.WaterType, the class a unit's water has: a fresh-water loop run near pH 6.3 and a sea cage at 8.1
+    do not read well on one scale). The farm's reference data (owner decision 15, 2026-11-16), seeded by migration 0007
+    with the 6.4 to 8.6 the code held; changed, never added or deleted. A pH beyond the scale is marked as off it,
+    never drawn on its end. Read once for a wall (monitoring/read.py ph_scales)."""
+
+    water_type = models.CharField(_('Water type'), max_length=20, choices=WaterType.choices, editable=False)
+    ph_low = models.DecimalField(_('From pH'), max_digits=3, decimal_places=1)
+    ph_high = models.DecimalField(_('To pH'), max_digits=3, decimal_places=1)
+
+    class Meta:
+        db_table = 'monitor_ph_window_scales'
+        ordering = ['water_type']
+        verbose_name = _('pH window scale')
+        verbose_name_plural = _('pH window scales')
+        constraints = [
+            models.UniqueConstraint(fields=['water_type'], name='uq_monitor_ph_window_scales_water'),
+            models.CheckConstraint(condition=Q(water_type__in=WaterType.values),
+                                   name='chk_monitor_ph_window_scales_water'),
+            models.CheckConstraint(condition=Q(ph_low__gte=PH_SCALE_BOUNDS[0], ph_high__lte=PH_SCALE_BOUNDS[1]),
+                                   name='chk_monitor_ph_window_scales_range',
+                                   violation_error_message=_('A pH lies between 0 and 14.')),
+            models.CheckConstraint(condition=Q(ph_high__gte=F('ph_low') + Value(PH_SCALE_SPAN)),
+                                   name='chk_monitor_ph_window_scales_span',
+                                   violation_error_message=_('The scale must span at least half a pH unit, from the '
+                                                             'lower end to the higher.')),
+            models.CheckConstraint(condition=Q(is_deleted=False), name='chk_monitor_ph_window_scales_kept'),
+        ]
+
+    def __str__(self):
+        return str(self.get_water_type_display())

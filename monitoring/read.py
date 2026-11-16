@@ -24,7 +24,9 @@ The sources, each read once for every card and only for a person who may read it
 - the medicine withdrawal: the registry's one bulk answer (`harvest.views.withdrawals`), with the stock right, as on
   Production units;
 - the health (open events for the state; treatments and the latest sea-lice count of a card with a health widget), the
-  tasks (a card with a tasks widget) and the placement chips (a card with an experiments widget).
+  tasks (a card with a tasks widget) and the placement chips (a card with an experiments widget);
+- the pH window's scale per water type (`ph_scales`: the farm's reference data, one query for a wall whose cards
+  draw the window).
 
 SOURCES is the one table of them: each with the right that reads it and whether the card can be drawn without it. The
 roll-up's set (the fish, the feeding, the middle point's water, the open events) is read for every card whatever its
@@ -265,6 +267,7 @@ class Card:
     chart: object = None                # water.calculation.UnitChart or Refusal of its middle point (a card that shows it)
     chart_view: str = deffeyes.CLOSE    # the view its chart's picture is drawn in (deffeyes.CLOSE, deffeyes.FULL)
     chart_extent: tuple = ()            # what the FULL view's box must hold: one box per screen and water type
+    ph_scale: tuple = ()                # (low, high): the pH window's scale for its water type, () when none is set
     now: object = None
     clock: tuple = ()                   # data-quality notes: a device of its water whose clock is off (clock_notes)
 
@@ -418,6 +421,7 @@ def cards(units, user, choice, occupancy=STOCKED, now=None):
     # From the water just read: no value is read again, and the fish's limits once for all the cards that show it.
     charts = optional(CHART, lambda wanted: water_calculation.charts_of(wanted, water, now))
     extents = chart_extents(kept, charts)
+    scales = ph_scales(resolved) if WATER in sections else {}
     hidden = tuple(key for key, shown in ((FEEDING, FEEDING in sections), (WATER, WATER in sections),
                                           (HEALTH, bool(sections & {TREATMENTS, EVENTS, LICE})),
                                           (TASKS, TASKS in sections)) if not shown)
@@ -437,8 +441,22 @@ def cards(units, user, choice, occupancy=STOCKED, now=None):
             chips=tuple(chips.get(unit.pk, ())), failed=frozenset(failed), chart=charts.get(unit.pk),
             chart_view=(deffeyes.FULL if (choice.chart == CHART_FULL) != (str(unit.pk) in choice.zoom)
                         else deffeyes.CLOSE),
-            chart_extent=extents.get(unit.water_type, ()),
+            chart_extent=extents.get(unit.water_type, ()), ph_scale=scales.get(unit.water_type, ()),
             hidden=hidden, sections=sections, now=now, clock=tuple(clocks.get(unit.pk, ()))))
+    return found
+
+
+def ph_scales(resolved):
+    """{water type: (low, high)}: the scale of the pH window for each water type, the farm's reference data
+    (monitoring.PhWindowScale, owner decision 15), in ONE query for the whole wall and none when no card of it draws
+    the window. In a savepoint, as an optional source: rows that cannot be read leave the cards, and each window says
+    it has no scale rather than draw on a number of the code's."""
+    if not any(widget['type'] == 'ph_window' for chosen in resolved.values() for widget in chosen.layout['widgets']):
+        return {}
+    from .models import PhWindowScale
+    found, _broke = _optional('ph_scale', lambda: {
+        water: (float(low), float(high))
+        for water, low, high in PhWindowScale.objects.values_list('water_type', 'ph_low', 'ph_high')})
     return found
 
 

@@ -172,7 +172,7 @@ class SmallCardTests(SmallCase):
             for name in ('x', 'cx', 'width'):
                 if name in each.attrs:
                     self.assertRegex(each.attrs[name], r'^\d+\.\d%$')
-        low, high = catalogue.PH_WINDOW
+        low, high = 6.4, 8.6                                        # the seeded scale of fresh water (test_ph_scale.py)
         (mark,) = [each for each in window.walk() if 'chart-water' in each.classes]
         self.assertEqual(mark.attrs['cx'], f'{(7.2 - low) / (high - low) * 100:.1f}%')
         # nothing the Content-Security-Policy would block; the card's one reason stands where a card with none says its

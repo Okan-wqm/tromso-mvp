@@ -288,8 +288,8 @@ def tile(card, view):
 
 @dataclass(frozen=True)
 class PhWindow:
-    """The pH window of a card: the chart's one-line slice at the unit's own alkalinity, on the scale of
-    catalogue.PH_WINDOW. Left of one border the CO₂ is past its limit, right of the other the NH₃ is; the water's pH is
+    """The pH window of a card: the chart's one-line slice at the unit's own alkalinity, on the scale the farm has
+    set for the unit's water type (card.ph_scale: monitoring.PhWindowScale, owner decision 15). Left of one border the CO₂ is past its limit, right of the other the NH₃ is; the water's pH is
     the mark. Every length is a percentage of the picture, written with a dot whatever the language. `refused`: why
     there is no picture."""
     label: str = ''          # the picture's name: every number of it in words
@@ -318,8 +318,12 @@ def ph_window(card):
         return PhWindow(refused=gettext('no data'))
     if not isinstance(chart, calculation.UnitChart):
         return PhWindow(refused=gettext('The pH window cannot be drawn: %(why)s.') % {'why': _refused(chart)})
+    if not card.ph_scale:
+        # (never a scale of the code's own: the farm's row for this water is gone or could not be read)
+        return PhWindow(refused=gettext('The pH window cannot be drawn: no scale is set for %(water)s.') % {
+            'water': text.lower(str(card.unit.get_water_type_display()))})
     analysis = chart.calculation.analysis
-    low, high = catalogue.PH_WINDOW
+    low, high = card.ph_scale
 
     def at(ph):
         return (min(max(ph, low), high) - low) / (high - low) * 100

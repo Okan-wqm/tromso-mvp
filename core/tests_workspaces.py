@@ -217,6 +217,7 @@ class MenuPlacementTests(TestCase):
             'farm.HandlingRule': 'Production · Setup · Reference data',
             'monitoring.CardTemplate': 'Production · Setup · Reference data',
             'monitoring.CardTemplateAssignment': 'Production · Setup · Reference data',
+            'monitoring.PhWindowScale': 'Production · Setup · Reference data',
             'farm.Supplier': 'Production · Setup · Purchasing',
             'farm.StockOperation': 'Production · Operations',
             'farm.FeedingRecord': 'Production · Operations · Feeding',

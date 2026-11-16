@@ -476,8 +476,9 @@ class Case10CleanerFishTests(CleanerWithdrawalTestCase):
         # ... while C-01's own salmon, moved on, hold the unit they come into.
         stock_services.record_transfer(self.user, source=self.cage, batch=self.salmon_batch, day=self.day(1),
                                        legs=[(self.cage3, 100)], reason='density')
-        [warning] = self.withdrawals(check.assess('harvest', self.cage3, self.today, self.other_salmon))
-        self.assertEqual((warning.block.batch, warning.block.until), (self.salmon_batch, self.until))
+        warnings = self.withdrawals(check.assess('harvest', self.cage3, self.today, self.other_salmon))
+        self.assertCountEqual([(each.block.batch, each.block.until) for each in warnings],
+                              [(self.salmon_batch, self.until), (self.other_salmon, self.until)])
 
 
 def health_bath(case, days):

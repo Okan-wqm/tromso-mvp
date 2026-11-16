@@ -3,6 +3,9 @@
    warnings (feeding beyond the book, expired lots fed, low stock, over capacity, expiring and expired lots) and
    the value per currency, never added across currencies.{% endcomment %}
 {% with summary as s %}
+{% for row in s.undelivered %}
+<p class="notice notice-warning">{% include "icons/_icon.html" with name="alert" %}{% blocktrans trimmed with kilos=row.kilos|quantity feed=row.feed site=row.site.name date=row.since|date:"DATE_FORMAT" %}{{ kilos }} of {{ feed }} fed at {{ site }} since {{ date }}, and none of it was ever delivered to the store: the store is {{ kilos }} short of it. Record its delivery, dated on or before that day.{% endblocktrans %} <a href="{{ feeding_url }}?feed={{ row.feed.pk }}">{% trans "See the feedings" %}</a></p>
+{% endfor %}
 {% if not s.site_items and not s.low %}
 <div class="empty">
   {% include "icons/_icon.html" with name="package" %}

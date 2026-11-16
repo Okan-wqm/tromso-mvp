@@ -1,5 +1,5 @@
 {% extends "crud/list.html" %}
-{% load i18n stock feeding %}
+{% load i18n stock feeding health %}
 {% comment %} Operations › Harvest › Production plans (farm.resources.harvest_plan): every batch in stock in each unit
    it is in, its book average, its target weight, the estimate now and the day the target is reached
    (farm.harvest.forecast); "Plan harvest" starts a planned harvest of the share at the target weight, on that
@@ -50,7 +50,7 @@
         <td>{% with forecast=row.forecast %}{% if forecast %}{{ forecast.now_g|grams }}{% if forecast.reached and forecast.temperature_c is not None %}<span class="row-sub">{% blocktrans trimmed with date=forecast.day|date:"DATE_FORMAT" temperature=forecast.temperature_c|floatformat:"1" %}target on {{ date }}, at {{ temperature }} °C held{% endblocktrans %}</span>{% elif forecast.reached %}<span class="row-sub">{% trans "target reached" %}</span>{% elif forecast.why %}<span class="row-sub warn-text">{{ forecast.why }}</span>{% endif %}{% else %}—{% endif %}{% endwith %}</td>
         <td class="nowrap">{{ row.expected|date:"DATE_FORMAT"|default:"—" }}</td>
         <td class="nowrap">{{ row.last_fed|fed_on:row.today }}</td>
-        <td>{% if row.withdrawal is None %}<span class="muted">{% trans "Not checked" %}</span>{% elif row.withdrawal %}{% for block in row.withdrawal %}<span class="over-text">{% if block.until %}{% blocktrans trimmed with date=block.until|date:"DATE_FORMAT" %}Until {{ date }}{% endblocktrans %}{% else %}{% trans "End unknown" %}{% endif %}</span>{% endfor %}{% else %}{% trans "None" %}{% endif %}{% if row.earliest.decides %}<span class="row-sub">{{ row.earliest.text }}</span>{% endif %}</td>
+        <td>{% if row.withdrawal is None %}<span class="muted">{% trans "Not checked" %}</span>{% elif row.withdrawal %}{% for block in row.withdrawal %}<span class="row-line over-text">{{ block.batch.code }}: {{ block|harvest_from }}</span>{% endfor %}{% else %}{% trans "None" %}{% endif %}{% if row.earliest.decides %}<span class="row-sub">{{ row.earliest.text }}</span>{% endif %}</td>
         <td class="row-actions">
           {% if row.plan_harvest_url %}<a class="button button-ghost" href="{{ row.plan_harvest_url }}" data-modal>{% trans "Plan harvest" %}</a>{% endif %}
           {% if plan and can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:productionplan_delete' plan.pk %}" data-modal title="{% trans "Delete" %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% trans "Delete" %}</span></a>{% endif %}

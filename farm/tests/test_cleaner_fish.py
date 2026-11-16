@@ -221,7 +221,7 @@ class CullAndHarvestTests(CleanerFishTestCase):
         self.assertEqual([share.batch for share in form.present.values()], [self.salmon_batch])
         self.stock(self.cage2, species=self.lump, days_ago=5)
         self.assertContains(self.client.get(reverse('farm:stock_harvest', args=[self.cage2.pk])),
-                            'No fish are in C-02.')
+                            'C-02 holds cleaner fish only: they are not harvested.')
 
     def test_cleaner_fish_are_not_in_the_harvest_plan_nor_its_targets(self):
         self.user.groups.add(role('Harvest keeper', *HARVEST_KEEPER))

@@ -5,16 +5,30 @@ harvested, transported, graded or treated, have they fasted long enough?
     assess(kind, unit, day, batch=None) -> Assessment            the warnings and what the dialog says besides
 
 `kind` is a HandlingKind: harvest, transport (a transfer), grading, treatment (the health tab's dialog).
-Without a batch, every batch in the unit that day counts. Pure reads of stored facts, inside the caller's
+The fish of a unit are one group (the batch named only says which fish an operation books). Pure reads of stored facts, inside the caller's
 transaction: the stock service runs it after its locks (a feeding of the unit takes turns with it).
 
 - Withdrawal (a harvest only: the fish go to food, to the slaughter facility the harvest names; a medicine
   withdrawal is a meat withdrawal, so it means nothing when live fish are moved or graded, and a treatment during
-  a withdrawal harms nobody): every block the registry gives (farm/handling/withdrawal.py) for the batch whose
-  `until` is after the day, or unknown. With no provider the harvest dialog says "Medicine withdrawal not
-  checked" and nothing is warned. A transfer or a grading is checked for the fast and the live-transfer facts
-  alone.
-- Fasting: the hours since the fish's last feeding against the rule (farm/handling/fasting.py) and, for a harvest
+  a withdrawal harms nobody): every block the registry gives (farm/handling/withdrawal.py) for the UNIT whose
+  `until` is after the day, or unknown. **The withdrawal is the unit's, never the chosen batch's** (flow fault S-02;
+  the owner, 14.11.2026: fish of two batches in one unit are one group): a net cannot separate the batches of a unit,
+  so the withdrawal of any fish in it holds a harvest of it, whichever batch the dialog names; `in_force` takes no
+  batch, so no caller can ask it of one. The warning names the batch that is held, and says so when the unit holds
+  other fish beside it. With no provider the harvest dialog says "Medicine withdrawal not checked" and nothing is
+  warned. A transfer or a grading is checked for the fast and the live-transfer facts alone.
+  **Cleaner fish beside the production fish are kept apart** (`held_apart`, review F-05): the owner's decision is about
+  two groups of production fish; cleaner fish are another species, sorted out at a harvest and never harvested
+  themselves (they are culled). Whether their withdrawal holds the salmon beside them is the owner's and the vet's to
+  decide; until then it is no warning on the production fish's harvest and no acknowledgement of theirs, it does not
+  decide their earliest date, and a harvest of theirs is not "inside" it: the dialog says it as a note ("Cleaner
+  fish in C-01 are in a medicine withdrawal (…): keep them out of the harvest."), and the unit's own line
+  (`in_force_of`) still shows it.
+- Fasting: **the fast is of the fish in the unit handled** (flow fault S-01; the owner, 14.11.2026: fish of two
+  batches in one unit are one group): one fast for the unit, whichever batch the handling names, from the latest
+  feeding of the fish in it along their own path (farm.feeding.read.last_fed_of: this unit since they came in, the
+  unit they came from up to the day of the move, and so on back; never a sibling unit fed after a split). The hours
+  since that feeding against the rule (farm/handling/fasting.py) and, for a harvest
   whose rule asks for purging in degree-days, the degree-days of the full days since it; each that the rule asks for
   must be reached, the later decides. No rule, or no feeding found in the 31 days before, is said, not warned.
 
@@ -36,10 +50,11 @@ from django.core.exceptions import ValidationError
 from django.utils import formats
 from django.utils.translation import gettext as _
 
-from farm.feeding.read import book_on, last_fed_at
+from farm.feeding.read import handled, last_fed_at
 from farm.models import Batch, HandlingAcknowledgement, Treatment
 from farm.models.handling import AcknowledgedWarning, HandlingKind, HandlingRule, WithdrawalWarning
 from farm.stock.dates import local_today
+from farm.stock.read import Presence
 from farm.water.degree_days import BatchWater, degree_days_text, missing_sentence
 
 from . import fasting, withdrawal
@@ -56,13 +71,39 @@ def _date(day):
 
 def withdrawal_text(block):
     """The withdrawal as a sentence, starting "Not suitable for harvest" (owner's words): it is only ever said
-    for a harvest."""
-    params = {'batch': block.batch.code, 'date': _date(block.until) if block.until else ''}
-    if block.until is None:
-        return _('Not suitable for harvest — medicine withdrawal of %(batch)s, its end unknown.') % params
-    if block.approximate:
-        return _('Not suitable for harvest — medicine withdrawal of %(batch)s until about %(date)s.') % params
-    return _('Not suitable for harvest — medicine withdrawal of %(batch)s until %(date)s.') % params
+    for a harvest. Its end in the one wording of every page (withdrawal.harvest_from): "… medicine withdrawal of
+    B-2026-001: harvest from 25.11.2026."."""
+    return _('Not suitable for harvest — medicine withdrawal of %(batch)s: %(end)s.') % {
+        'batch': block.batch.code, 'end': withdrawal.harvest_from(block.until, block.approximate)}
+
+
+def fed_when(fed, unit):
+    """When and where fish were last fed (a LastFed), as it is true: the feeding's moment on the clock of the unit it
+    was given in, when it has a time; else its day, and that no time was recorded. A feeding without a time COUNTS
+    from the end of its day (farm.feeding.read.fed_moment), but that is not a moment anybody fed at, so it is never
+    printed as one (flow fault M-05: "Last fed 22.10.2026 00:00" for a feeding of 21.10). The unit of the feeding is
+    named (S-01: the fish may have been fed in the unit they came from), and when that unit is on another clock than
+    `unit`, the one handled, the moment is said on both: nobody fed at the converted time."""
+    there = fed.record.unit
+    if fed.timed:
+        when = shown_moment(fed.moment, there)
+    else:
+        when = _('%(date)s (no time recorded: counted from the end of the day)') % {'date': _date(fed.record.date)}
+    when = _('%(when)s in %(unit)s') % {'when': when, 'unit': there.code}
+    here = shown_moment(fed.moment, unit)
+    if fed.timed and there.pk != unit.pk and here != shown_moment(fed.moment, there):
+        when = _('%(when)s (%(here)s on the clock of %(unit)s)') % {'when': when, 'here': here, 'unit': unit.code}
+    return when
+
+
+def fed_at(fed, unit):
+    """The time of a feeding given on the handling's own day, as recorded: 09:00, or that none was; and the unit it was
+    given in when that is not `unit`, the one handled (the fish came out of it that day, RULES case 5: "09:00 in
+    T-01"), as `fed_when` names it for a feeding of a day before."""
+    at = formats.time_format(fed.record.time, 'TIME_FORMAT') if fed.timed else _('no time recorded')
+    if fed.record.unit_id != unit.pk:
+        at = _('%(when)s in %(unit)s') % {'when': at, 'unit': fed.record.unit.code}
+    return at
 
 
 @dataclass(frozen=True)
@@ -78,6 +119,8 @@ class HandlingWarning:
     rule: HandlingRule = None
     fasted_degree_days: Decimal = None   # a harvest's purging: the degree-days since the last feeding
     accrual: object = None               # how they were found (farm.water.degree_days.Accrual)
+    shared: bool = False                 # a withdrawal: the unit holds fish of other batches beside the held one
+    fed: object = None                   # a fast: the feeding it counts from (farm.feeding.read.LastFed), for the words
 
     @property
     def required_hours(self):
@@ -91,7 +134,8 @@ class HandlingWarning:
         """What the person saw, as text: a change in it asks them again."""
         if self.warning == AcknowledgedWarning.WITHDRAWAL:
             block = self.block
-            return f'withdrawal:{block.batch.pk}:{block.until}:{block.approximate}:{block.reason}'
+            shared = ':shared' if self.shared else ''
+            return f'withdrawal:{block.batch.pk}:{block.until}:{block.approximate}:{block.reason}{shared}'
         return (f'fasting:{self.rule.pk}:{self.required_hours}:{self.required_degree_days}:{self.fasted_degree_days}:'
                 f'{self.last_fed_at.isoformat()}')
 
@@ -99,13 +143,25 @@ class HandlingWarning:
         """The warning in the person's language (the activity log builds it in English)."""
         if self.warning == AcknowledgedWarning.WITHDRAWAL:
             text = withdrawal_text(self.block)
+            if self.shared:
+                text += ' ' + _('It holds every fish in %(unit)s: the fish of different batches in one unit cannot be '
+                                'told apart at a harvest.') % {'unit': self.unit.code}
             return f'{text} {self.block.reason}' if self.block.reason else text
-        text = _('Last fed %(moment)s, %(fasted)s before %(day)s: the %(kind)s rule asks for %(asked)s.') % {
-            'moment': shown_moment(self.last_fed_at, self.unit),
-            'fasted': both_text(None if self.required_hours is None else hours_text(self.fasted_hours),
-                                None if self.required_degree_days is None else degree_days_text(self.fasted_degree_days)),
-            'day': _date(self.day), 'kind': str(HandlingKind(self.kind).label).lower(),
-            'asked': asks_text(self.required_hours, self.required_degree_days)}
+        params = {'day': _date(self.day), 'kind': str(HandlingKind(self.kind).label).lower(),
+                  'asked': asks_text(self.required_hours, self.required_degree_days)}
+        if self.fed is not None and self.fed.record.date >= self.day:
+            # Fed on the handling's own day: the handling has no time, so no fast is counted, and the sentence does not
+            # say "0.0 h before" a day the feeding is on, nor name a moment after it (M-05).
+            text = _('Fed on the day of the handling itself (%(at)s): no fast before %(day)s; the %(kind)s rule asks '
+                     'for %(asked)s.') % {**params, 'at': fed_at(self.fed, self.unit)}
+        else:
+            text = _('Last fed %(moment)s, %(fasted)s before %(day)s: the %(kind)s rule asks for %(asked)s.') % {
+                **params,
+                'moment': (fed_when(self.fed, self.unit) if self.fed is not None
+                           else shown_moment(self.last_fed_at, self.unit)),
+                'fasted': both_text(
+                    None if self.required_hours is None else hours_text(self.fasted_hours),
+                    None if self.required_degree_days is None else degree_days_text(self.fasted_degree_days))}
         if self.accrual is not None and self.accrual.missing:
             text += ' ' + missing_sentence(self.accrual.missing, self.accrual.assumed)
         return text
@@ -134,20 +190,28 @@ class Assessment:
     def messages(self):
         return [warning.message() for warning in self.warnings]
 
+    @property
+    def second_person(self):
+        """Why these warnings cannot be gone past by a tick, or '': a second person must approve (M-27)."""
+        return second_person_text() if needs_second_person(self) else ''
+
 
 def _batches_in(unit, day):
-    """The production batches in the unit at the start of the day (at its end when it was empty then): the fish a
-    harvest, a transport or a grading of the unit handles; the cleaner fish beside them are not slaughtered."""
-    return list(Batch.all_objects.filter(pk__in=book_on(unit, day).production.weights).select_related('species'))
+    """The production batches in the unit at the start of the day or at its end (farm.feeding.read.handled): the fish
+    a harvest, a transport or a grading of the unit handles, as one group; the cleaner fish beside them are not
+    slaughtered."""
+    return list(Batch.all_objects.filter(pk__in=handled(unit, day)).select_related('species').order_by('code'))
 
 
 def assess(kind, unit, day, batch=None, with_earliest=True):
     """The warnings and notes of handling the fish of `batch` (or every batch) in `unit` on `day`; for a harvest, with
     the earliest suitable date among the notes (`with_earliest`: the save, which needs only the warnings, leaves it)."""
     result = Assessment(kind, unit, day, batch)
-    batches = [batch] if batch is not None else _batches_in(unit, day)
+    # The fish of the unit are one group (S-01, S-02): the fast and the withdrawal are the unit's, whichever batch the
+    # handling names; `batch` only says which fish the operation books.
+    batches = _batches_in(unit, day)
     if kind == WITHDRAWAL_KIND:
-        _withdrawal(result, batches)
+        _withdrawal(result)
     _fasting(result, batches)
     if kind == WITHDRAWAL_KIND and with_earliest:
         _earliest(result, batches)
@@ -170,25 +234,59 @@ def in_force_of(units, day=None):
             for unit_id, blocks in found.items()}
 
 
-def in_force(unit, day, batches=None):
-    """The withdrawal blocks in force for the fish in `unit` on `day` (of `batches` only, when given): their
-    `until` is after the day, or unknown. None when no provider is registered: not checked."""
+def held_apart(batch, named=None):
+    """Whether a withdrawal of `batch` is kept apart from a harvest of the production fish beside it: its fish are
+    cleaner fish (and it is not the batch the handling itself names). THE one place that says it (review F-05; the
+    module's docstring), for the check, the earliest date, the plan rows and the harvests inside a withdrawal."""
+    return batch.species.is_cleaner_fish and (named is None or batch.pk != named.pk)
+
+
+def _in_force(unit, day, named=None):
+    """(the blocks in force that hold a harvest of `unit` on `day`, those of cleaner fish beside the production fish:
+    `held_apart`); None when no provider is registered."""
     found = in_force_of([unit], day)
     if found is None:
         return None
-    held = None if batches is None else {each.pk for each in batches}
-    return [block for block in found[unit.pk] if held is None or block.batch.pk in held]
+    holding, beside = [], []
+    for block in found[unit.pk]:
+        (beside if held_apart(block.batch, named) else holding).append(block)
+    return holding, beside
 
 
-def _withdrawal(result, batches):
-    blocks = in_force(result.unit, result.day, batches)
-    if blocks is None:
+def in_force(unit, day):
+    """The withdrawal blocks in force that hold a harvest of the fish in `unit` on `day`: of EVERY production batch
+    with fish in it (the registry says which; cleaner fish beside them are kept apart, `held_apart`): their `until` is
+    after the day, or unknown. None when no provider is registered: not checked.
+    It takes no batch on purpose (S-02): the fish of a unit are handled together, so a withdrawal is never asked of
+    one of its batches alone."""
+    found = _in_force(unit, day)
+    return None if found is None else found[0]
+
+
+def cleaner_text(unit, block):
+    """The note of a harvest dialog about cleaner fish under a withdrawal beside the fish harvested."""
+    return _('Cleaner fish in %(unit)s are in a medicine withdrawal (%(batch)s, %(end)s): keep them out of the '
+             'harvest.') % {'unit': unit.code, 'batch': block.batch.code,
+                            'end': withdrawal.harvest_from(block.until, block.approximate)}
+
+
+def _withdrawal(result):
+    """The withdrawal warnings of a handling of the unit: one per block in force for any production fish in it,
+    whichever batch the handling names. A block is `shared` when the unit holds fish of another batch that day too (the
+    stock's presence, as the registry's provider reads it), which the warning then says. A block of cleaner fish beside
+    them is a note, not a warning (`held_apart`)."""
+    unit, day = result.unit, result.day
+    found = _in_force(unit, day, result.batch)
+    if found is None:
         result.notes.append(_('Medicine withdrawal not checked: the health records are not in yet.'))
         return
+    blocks, beside = found
+    present = Presence.of_units([unit.pk]).batches_during(unit.pk, day) if blocks else set()
     for block in blocks:
-        result.warnings.append(HandlingWarning(AcknowledgedWarning.WITHDRAWAL, result.kind, result.unit,
-                                               result.day, block=block))
-    if not blocks:
+        result.warnings.append(HandlingWarning(AcknowledgedWarning.WITHDRAWAL, result.kind, unit, day, block=block,
+                                               shared=bool(present - {block.batch.pk})))
+    result.notes.extend(cleaner_text(unit, block) for block in beside)
+    if not blocks and not beside:
         result.notes.append(_('No medicine withdrawal in force.'))
 
 
@@ -202,7 +300,7 @@ def _fasting(result, batches):
     if requirement is None:
         result.notes.append(_('No handling rule for %(kind)s: the fast is not checked (Reference data › Handling '
                               'rules).') % {'kind': label})
-    fed = last_fed_at(unit, day, batch=result.batch, since=day - timedelta(days=LOOKBACK_DAYS))
+    fed = last_fed_at(unit, day, since=day - timedelta(days=LOOKBACK_DAYS))
     if fed is None:
         result.notes.append(_('No feeding of these fish is recorded in the %(days)d days before %(day)s: the fast '
                               'is not checked.') % {'days': LOOKBACK_DAYS, 'day': _date(day)})
@@ -212,20 +310,25 @@ def _fasting(result, batches):
     if requirement is not None and requirement.degree_days is not None:
         water = BatchWater(batch_ids, local_today(unit), fed.record.date + DAY)
     done = fasting.fasted(unit, day, fed, requirement, water, batch_ids)
-    when = shown_moment(fed.moment, unit) if fed.timed else _('%(date)s, no time recorded: counted from the end of '
-                                                              'the day') % {'date': _date(fed.record.date)}
-    result.notes.append(_('Last fed %(when)s: %(fasted)s before %(day)s.') % {
-        'when': when, 'fasted': done.text(requirement), 'day': _date(day)})
+    if requirement is not None and not done.ok:
+        # ONE line (flow fault M-05): the warning says when the fish were fed, how long before the day and what the
+        # rule asks; the notes do not say the same feeding a second time. What is stored is unchanged: the moment the
+        # feeding counts from (`last_fed_at`) and the hours.
+        result.warnings.append(HandlingWarning(
+            AcknowledgedWarning.FASTING, result.kind, unit, day, last_fed_at=fed.moment, fasted_hours=done.hours,
+            rule=requirement.rule, fasted_degree_days=done.degree_days, accrual=done.accrual, fed=fed))
+        return
+    if fed.record.date >= day:
+        result.notes.append(_('Fed on the day of the handling itself (%(at)s).') % {'at': fed_at(fed, unit)})
+    else:
+        result.notes.append(_('Last fed %(when)s: %(fasted)s before %(day)s.') % {
+            'when': fed_when(fed, unit), 'fasted': done.text(requirement), 'day': _date(day)})
     if requirement is None:
         return
     result.notes.append(_('The %(kind)s rule for %(species)s asks for %(asked)s.') % {
         'kind': label, 'species': species.common_name, 'asked': requirement.text()})
     if done.accrual is not None and done.accrual.missing:
         result.notes.append(missing_sentence(done.accrual.missing, done.accrual.assumed))
-    if not done.ok:
-        result.warnings.append(HandlingWarning(
-            AcknowledgedWarning.FASTING, result.kind, unit, day, last_fed_at=fed.moment, fasted_hours=done.hours,
-            rule=requirement.rule, fasted_degree_days=done.degree_days, accrual=done.accrual))
 
 
 # ---- the earliest suitable harvest date ---------------------------------------------------------------
@@ -251,7 +354,7 @@ class Earliest:
         return bool(self.decides) and (self.day is None or day < self.day)
 
     def text(self):
-        """Earliest suitable harvest date: 17 Nov 2026. Medicine withdrawal decides: until 17 Nov 2026."""
+        """Earliest suitable harvest date: 17.11.2026. Medicine withdrawal decides: harvest from 17.11.2026."""
         if not self.decides:
             return ''
         if self.day is None:
@@ -259,12 +362,8 @@ class Earliest:
         else:
             text = _('Earliest suitable harvest date: %(date)s.') % {'date': _date(self.day)}
         if self.decides == WITHDRAWAL:
-            if self.unknown:
-                text += ' ' + _('Medicine withdrawal decides: its end is unknown.')
-            elif self.approximate:
-                text += ' ' + _('Medicine withdrawal decides: until about %(date)s.') % {'date': _date(self.until)}
-            else:
-                text += ' ' + _('Medicine withdrawal decides: until %(date)s.') % {'date': _date(self.until)}
+            text += ' ' + _('Medicine withdrawal decides: %(end)s.') % {
+                'end': withdrawal.harvest_from(None if self.unknown else self.until, self.approximate)}
         elif self.stop_by is not None:
             text += ' ' + _('Purging decides: feeding must stop by %(date)s.') % {'date': _date(self.stop_by)}
         else:
@@ -275,19 +374,21 @@ class Earliest:
 
 
 def earliest(unit, batch, today=None):
-    """The Earliest suitable harvest date of `batch` in `unit` on the farm's `today`: the end of its medicine withdrawal
-    (the registry's blocks; unknown when a block's end is) and the first day its purge can be complete if it is not
+    """The Earliest suitable harvest date of `batch` in `unit` on the farm's `today`: the end of the medicine withdrawal
+    of the fish in the unit (`in_force`: the registry's blocks of every production batch in it, S-02; unknown when a
+    block's end is) and the
+    first day its purge can be complete if it is not
     fed again, which is `fasted` asked of each day from today on, from the last feeding. Nothing holds the fish when
     there is no withdrawal in force, no rule, no feeding recorded in the 31 days before, or the fast is complete."""
     today = local_today(unit) if today is None else today
-    blocks = in_force(unit, today, [batch]) or []
+    blocks = in_force(unit, today) or []
     dated = [block for block in blocks if block.until is not None]
     unknown = len(dated) < len(blocks)
     latest = max(dated, key=lambda block: block.until, default=None)
     requirement = fasting.requirement_of(HandlingKind.HARVEST, batch.species)
     purge_day, degrees_unknown, water = None, False, None
     if requirement is not None and requirement.asks:
-        fed = last_fed_at(unit, today, batch=batch, since=today - timedelta(days=LOOKBACK_DAYS))
+        fed = last_fed_at(unit, today, since=today - timedelta(days=LOOKBACK_DAYS))      # the unit's, not the batch's
         if fed is not None:
             if requirement.degree_days:
                 water = BatchWater({batch.pk}, today, fed.record.date + DAY)
@@ -334,17 +435,31 @@ def require_acknowledged(assessment, seen, field='handling_ack', user=None, refu
     on (for the second-person hook); `refused(errors)` makes the error raised (a ValidationError by default; the withdrawal
     guard raises its WithdrawalChanged, which carries what it found)."""
     refused = refused or ValidationError
+    # The setting first (flow fault M-27): where a second person must approve, a tick cannot go on, so the person is
+    # told that before they are asked to tick, not after; the dialog shows the same sentence in the place of its box
+    # (`needs_second_person`).
+    if needs_second_person(assessment, user):
+        raise refused({field: second_person_text()})
     if assessment.warnings and seen != assessment.fingerprint:
         if not seen:
             message = _('Tick the box to go on despite these warnings.')
         else:
             message = _('The warnings changed since the form was shown: read them again, and tick the box to go on.')
         raise refused({field: message})
+
+
+def second_person_text():
+    return _('A second person must approve going on past a medicine withdrawal (the platform owner’s setting), and '
+             'that approval cannot be given here yet.')
+
+
+def needs_second_person(assessment, user=None):
+    """Whether going on past these warnings waits for a second person: a withdrawal warning is among them and the
+    platform owner asks for the second approval (`second_person_must_approve`, the one place the setting is read). The
+    save refuses then whatever is ticked, and a dialog says so where its box would be."""
     kinds = sorted({str(getattr(warning, 'warning', '')) for warning in assessment.warnings}
                    & {str(kind) for kind in WITHDRAWAL_WARNINGS})
-    if kinds and second_person_must_approve(user, kinds, assessment):
-        raise refused({field: _('A second person must approve going on past a medicine withdrawal (the '
-                                'platform owner’s setting), and that approval cannot be given here yet.')})
+    return bool(kinds) and bool(second_person_must_approve(user, kinds, assessment))
 
 
 # The warnings about fish that may go, or have gone, to food medicated: a withdrawal in force before a harvest, and the
@@ -381,6 +496,7 @@ def acknowledge(record, assessment):
         else:
             rows.append(HandlingAcknowledgement(
                 **link, warning=warning.warning, last_fed_at=warning.last_fed_at,
+                feeding=warning.fed.record if warning.fed is not None else None,
                 fasted_hours=warning.fasted_hours, required_hours=warning.required_hours,
                 fasted_degree_days=warning.fasted_degree_days, required_degree_days=warning.required_degree_days,
                 rule=warning.rule))

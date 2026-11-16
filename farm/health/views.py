@@ -28,7 +28,7 @@ from ..forms.stock import VoidForm
 from ..models import Batch, HealthEvent, LiceCount, Medicine, Site, Tank, Treatment
 from ..models.health import MedicineKind
 from ..stock import read as stock_read, views as stock_views
-from ..stock.dates import shown_date
+from ..stock.dates import earliest, shown_date
 from ..stock.services import AlreadyRecorded
 from . import notices, read, services, withdrawal
 
@@ -61,13 +61,19 @@ def dialog_url(name, back, unit=None, args=()):
 
 
 def _units_with_fish(site=None, production=False):
-    """The live units holding fish now (of `site` when given), in code order; with `production`, those holding production
-    fish (a cage of cleaner fish alone is not counted for lice: the count is of the salmonids)."""
+    """The live units a treatment or a sea-lice count can be recorded for (of `site` when given), in code order: those
+    holding fish now, and those whose fish left on a day that may still be dated (inside the correction window:
+    farm.stock.read.left_within, flow fault S-04: a course given before the harvest that emptied the unit must still be
+    enterable, or the harvest inside its withdrawal is never found). The service checks the fish on the record's own
+    day. With `production`, units of production fish (a cage of cleaner fish alone is not counted for lice: the count is
+    of the salmonids)."""
     units = Tank.objects.select_related('production_department__site').order_by('code')
     if site is not None:
         units = units.filter(production_department__site=site)
-    stock = stock_read.stock_of(list(units))
-    held = [pk for pk, unit_stock in stock.items() if unit_stock.count > 0 or not production]
+    units = list(units)
+    stock = stock_read.stock_of(units)
+    held = {pk for pk, unit_stock in stock.items() if unit_stock.count > 0 or not production}
+    held |= set(stock_read.left_within([unit for unit in units if unit.pk not in held], earliest, production))
     return Tank.objects.filter(pk__in=held).select_related('production_department__site').order_by('code')
 
 

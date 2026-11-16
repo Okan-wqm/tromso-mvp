@@ -32,9 +32,31 @@ NOTES = forms.Textarea(attrs={'rows': 3})
 
 
 def share_label(share):
-    """A batch in the unit as a choice reads it: B-2026-001 — 3,200 fish · 145.2 g."""
+    """A batch in the unit as a choice reads it: B-2026-001 — 3,200 fish · 145.2 g; one that left the unit on a day
+    that may still be dated (farm.stock.read.PastShare): B-2026-001 — in the unit until 10.11.2026."""
+    if share.past:
+        return _('%(batch)s — in the unit until %(date)s') % {
+            'batch': share.batch.code, 'date': formats.date_format(share.until, 'DATE_FORMAT')}
     return _('%(batch)s — %(count)s fish · %(weight)s g') % {
         'batch': share.batch.code, 'count': number(share.count), 'weight': number(share.avg_weight_g, 1)}
+
+
+def batches_help(shares):
+    """What the batch choice of a unit says when it offers several: how many batches the unit holds NOW, and that those
+    that left it inside the correction window (farm.stock.read.PastShare) can still be chosen for a day they were
+    there. The batches that left were counted as held ("This unit holds 2 batches" of an empty unit: review F-09)."""
+    shares = list(shares)
+    gone = sum(1 for share in shares if share.past)
+    held = len(shares) - gone
+    if not held:
+        return _('This unit holds no fish now: choose the batch that was in it on the day of the record.')
+    text = ngettext('This unit holds %(count)d batch: the operation applies to the one chosen.',
+                    'This unit holds %(count)d batches: the operation applies to the one chosen.', held) % {'count': held}
+    if gone:
+        text += ' ' + ngettext('%(count)d batch that left it can still be chosen, for a day it was in the unit.',
+                               '%(count)d batches that left it can still be chosen, for a day they were in the unit.',
+                               gone) % {'count': gone}
+    return text
 
 
 class Unshown(forms.HiddenInput):
@@ -163,7 +185,12 @@ class HandlingChecked:
             if batch is None:
                 share = self.present.get(str(self.initial.get('batch', ''))) or self.only_batch
                 batch = share.batch if share is not None else None
-            self._handling = check.assess(self.handling_kind, self.unit, day, batch)
+            if day is None:
+                # No day yet (a unit that is empty now offers none): the check is of the record's day, so it waits.
+                self._handling = check.Assessment(self.handling_kind, self.unit, None, batch, notes=[
+                    _('Choose the date first: the fast and the medicine withdrawal are checked for that day.')])
+            else:
+                self._handling = check.assess(self.handling_kind, self.unit, day, batch)
             self.fields['handling_ack'].widget.fingerprint = self._handling.fingerprint
         return self._handling
 
@@ -202,11 +229,10 @@ class OperationForm(ServiceErrors, forms.Form):
             field.widget = forms.HiddenInput()
         else:
             field.choices = [('', '---------'), *choices]
-            field.help_text = ngettext(
-                'This unit holds %(count)d batch: the operation applies to the one chosen.',
-                'This unit holds %(count)d batches: the operation applies to the one chosen.', len(choices)) % {
-                'count': len(choices)}
-        self.fields['date'].initial = services.local_today(unit)
+            field.help_text = batches_help(self.present.values())
+        # The farm's today, while the unit holds fish. A unit that is empty now is recorded for a day it held them
+        # (flow fault S-04): no day is assumed, the person gives it.
+        self.fields['date'].initial = None if self.past and len(self.past) == len(self.present) else             services.local_today(unit)
         self.fields['token'].initial = uuid.uuid4()
         for name in self.refresh_on:
             self.fields[name].widget.attrs['data-refresh'] = DRAFT
@@ -215,6 +241,11 @@ class OperationForm(ServiceErrors, forms.Form):
     def only_batch(self):
         """The one batch in the unit, shown instead of a choice."""
         return next(iter(self.present.values())) if len(self.present) == 1 else None
+
+    @property
+    def past(self):
+        """The batches offered that are no longer in the unit: they left it on a day that may still be dated."""
+        return [share for share in self.present.values() if share.past]
 
     def clean_batch(self):
         return self.present[self.cleaned_data['batch']].batch
@@ -560,8 +591,9 @@ class PlannedForm:
             widget=forms.HiddenInput)
         if plan is not None:
             # Recorded on the planned day, or today when it is done before it.
+            today = self.fields['date'].initial
             self.initial.update({'plan_item': plan.pk, 'batch': str(plan.batch_id),
-                                 'date': min(plan.date, self.fields['date'].initial)})
+                                 'date': min(plan.date, today) if today is not None else plan.date})
 
 
 class TransferForm(PlannedForm, HandlingChecked, Acknowledged, OperationForm):

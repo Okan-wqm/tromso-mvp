@@ -26,7 +26,6 @@ from django.utils.translation import gettext as _, gettext_lazy
 
 from core import audit
 from core.models import AuditLog, EntryKey
-from core.platform import correction_window_days
 from farm.health import withdrawal
 from farm.models import Equipment, SamplingPoint, System, Tank, WaterMeasurement
 from farm.models.water import BASIS_COLUMNS, PH_SCALE_COLUMNS, PhScale
@@ -58,8 +57,8 @@ def _check_time(measured_at, points):
         raise ValidationError({'measured_at': _('The time cannot be in the future.')})
     for point in points:
         if local_time(measured_at, point).date() < earliest(point):
-            raise ValidationError({'measured_at': _('Samples can be dated at most %(days)d days back.')
-                                   % {'days': correction_window_days()}})
+            raise ValidationError({'measured_at': dates.too_old(_('Samples can be dated at most %(days)d days '
+                                                                    'back.'))})
 
 
 def value_errors(values):
@@ -289,8 +288,8 @@ def void(user, sample, reason, withdrawal_ack=None):
         if sample.is_deleted:
             raise ValidationError({NON_FIELD_ERRORS: _('This sample is already voided.')})
         if local_time(sample.measured_at, sample.point).date() < earliest(sample.point):
-            raise ValidationError({NON_FIELD_ERRORS: _('Samples older than %(days)d days cannot be voided.')
-                                   % {'days': correction_window_days()}})
+            raise ValidationError({NON_FIELD_ERRORS: dates.too_old(_('Samples older than %(days)d days cannot be '
+                                                                     'voided.'))})
 
         def write():
             sample.void_reason = reason

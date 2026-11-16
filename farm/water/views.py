@@ -40,6 +40,7 @@ from ..forms.water import (CalculatorForm, RoundForm, RoundRowForm, RoundScopeFo
 from ..models import Equipment, SamplingPoint, Site, System, Tank, WaterMeasurement
 from ..models.site import zone_of
 from ..models.water_point import EQUIPMENT, SYSTEM, UNIT, local_time, owner_type_of, site_of
+from ..stock.read import unit_counts
 from ..stock.services import AlreadyRecorded
 from . import calculation, parameters, read, services
 from .evaluate import ALERTS, Status
@@ -600,7 +601,18 @@ def overview(user):
     latest = _latest(None)
     alerting = [row for row in latest['rows'] if row['point'] is not None and row['water'].point_status in ALERTS]
     alerting.sort(key=lambda row: row['water'].point_status != Status.CRITICAL)
+    # The units that hold fish and have no water value at all inside the page's window (no row of theirs has a reading:
+    # "Not measured" on this page): nothing is known about their water, which is not "nothing needs attention" (flow
+    # fault M-20). Read from the page's own rows, so the overview and Water chemistry cannot disagree.
+    rows_of = defaultdict(list)
+    for row in latest['rows']:
+        if isinstance(row['owner'], Tank):
+            rows_of[row['owner']].append(row)
+    stocked = {unit_id for unit_id, fish in unit_counts([unit.pk for unit in rows_of]).items() if fish > 0}
+    unmeasured = [unit for unit, rows in rows_of.items()
+                  if unit.pk in stocked and not any(row['water'].readings for row in rows)]
     return {'points': latest['point_count'], 'critical': latest['critical_count'], 'warning': latest['warning_count'],
+            'unmeasured': unmeasured, 'window_days': read.WINDOW.days,
             'alerts': alerting[:OVERVIEW_ALERTS], 'more': max(len(alerting) - OVERVIEW_ALERTS, 0),
             'sensors_failed': latest['sensors_failed'], 'url': page_url(),
             'tiles': [{'label': _('Sampling points with a critical water value'), 'count': latest['critical_count'],

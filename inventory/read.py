@@ -17,7 +17,7 @@ from decimal import Decimal
 
 from django.db.models import Sum
 
-from farm.models import FeedingRecord, Site
+from farm.models import Feed, FeedingRecord, Site
 from farm.stock.dates import site_earliest, site_today
 
 from .fold import ZERO, Folded, Line, Lot, Op, Place
@@ -78,6 +78,21 @@ def folds(items=None):
         lots[lot.item_id][lot.pk] = Lot(lot.pk, lot.number, lot.expiry_date)
     return {item.pk: Folded(lines.get(item.pk, []), counts, feeding.get(item.feed_id, {}), lots[item.pk], places)
             for item in items}
+
+
+def undelivered():
+    """{feed: fold.Folded} of the feeds that were fed (a live feeding record on a site) and have no item in the store:
+    an item is made at a feed's first delivery or reorder level (services.item_for), so a feed never delivered had no
+    fold and its feeding was compared with nothing: invisible in the store (flow fault M-03). Each is folded as an item
+    without a line, by the same fold that finds a stocked item's shortfall, so all its feeding is `uncovered`."""
+    stocked = set(InventoryItem.all_objects.values_list('feed_id', flat=True))
+    feed_ids = set(FeedingRecord.objects.filter(unit__production_department__site__isnull=False)
+                   .exclude(feed_id__in=stocked).order_by().values_list('feed_id', flat=True).distinct())
+    if not feed_ids:
+        return {}
+    feeding, places = _feeding(feed_ids), _places()         # no line: no count to reset anything
+    feeds = Feed.all_objects.in_bulk(feed_ids)
+    return {feeds[feed_id]: Folded([], [], feeding.get(feed_id, {}), {}, places) for feed_id in feed_ids}
 
 
 def physical_lines(items):
@@ -193,8 +208,19 @@ class SiteItem:
 
 
 @dataclass
+class Undelivered:
+    """A feed fed on a site and never delivered to the store: the kilos fed inside the correction window, all of them a
+    shortfall, and the first such day."""
+    site: Site
+    feed: Feed
+    kilos: Decimal
+    since: object
+
+
+@dataclass
 class Overview:
     site_items: list = field(default_factory=list)
+    undelivered: list = field(default_factory=list)    # Undelivered rows: feeds fed and never delivered
     low: list = field(default_factory=list)            # (location, item, on hand, level)
     over: list = field(default_factory=list)           # (location, on hand, capacity)
     expiring: list = field(default_factory=list)       # Bucket rows
@@ -236,6 +262,16 @@ def overview():
             site = site_rows[draw.site]
             if draw.expired and draw.day >= site_earliest(site):
                 entry(site, items[item_id]).expired_used += draw.kg
+    for feed, fold in undelivered().items():
+        short = {}
+        for site_id, day, kilos in fold.uncovered:
+            site = site_rows[site_id]
+            if day >= site_earliest(site):
+                held = short.setdefault(site_id, Undelivered(site, feed, ZERO, day))
+                held.kilos += kilos
+                held.since = min(held.since, day)
+        found.undelivered += short.values()
+    found.undelivered.sort(key=lambda row: (row.site.name, str(row.feed)))
     for (site_id, _item_id), record in per.items():
         if record.item.feed_id:
             today = site_today(record.site)

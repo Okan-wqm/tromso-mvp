@@ -27,6 +27,7 @@ from django.utils.translation import gettext as _, gettext_lazy, ngettext, pgett
 
 from core import navigation
 from core.crud import DRAFT, done, render_page
+from core.platform import correction_window_days
 
 from ..feeding import read as feeding_read, views as feeding_views
 from ..health import views as health_views
@@ -215,15 +216,18 @@ def _drawer(request, unit, stock, feeding, params):
             if can_void and not operation.is_deleted and operation.date >= earliest else ''})
     open_to_fish = takes_fish(unit)
     actions = []
-    if stock is not None and request.user.has_perm(feeding_views.RECORD):
+    # An empty unit whose fish left on a day that may still be dated offers the same dialogs, for a record of such a
+    # day (S-04); the drawer says so.
+    left = read.left_within([unit], services.earliest).get(unit.pk, []) if stock is None else []
+    if (stock is not None or left) and request.user.has_perm(feeding_views.RECORD):
         actions.append({'label': _('Record feeding'), 'url': reverse('farm:feeding_record', args=[unit.pk]) + query})
-    if can_record and stock is not None:
+    if can_record and (stock is not None or left):
         actions += [{'label': heading, 'url': reverse(f'farm:stock_{kind}', args=[unit.pk]) + query}
                     for kind, (_form, heading) in OPERATIONS.items()]
-        if open_to_fish:
+        if open_to_fish and stock is not None:
             actions.append({'label': _('Stock another batch'), 'url': reverse('farm:stock_input') + query})
     for index, action in enumerate(actions):
-        action['primary'] = index == 0
+        action['primary'] = index == 0 and stock is not None
     return {
         **feeding_views.drawer(request, unit, stock, feeding, query),
         **water_views.drawer(request, unit),
@@ -235,7 +239,8 @@ def _drawer(request, unit, stock, feeding, params):
         if stock is not None else [],
         # Today's ration of each batch, at its estimated weight (farm/feeding/projection.py).
         'ration_rows': _ration_rows(stock, feeding),
-        'drawer': unit, 'drawer_stock': stock, 'history': history, 'actions': actions,
+        'drawer': unit, 'drawer_stock': stock, 'history': history, 'actions': actions, 'left': left,
+        'window_days': correction_window_days(),
         'drawer_placements': placements.of([unit], request.user).get(unit.pk, ()),
         'drawer_days': stock.days(services.local_today(unit)) if stock else None,
         'stock_url': reverse('farm:stock_input') + query if can_record and open_to_fish else '',
@@ -430,13 +435,22 @@ def record_operation(request, pk, kind):
     unit = get_object_or_404(Tank.objects.select_related('production_department__site'), pk=pk)
     form_class, heading = OPERATIONS[kind]
     stock = read.stock_of([unit]).get(unit.pk)
-    present = stock.shares if stock else []
+    # The fish the record may be about: those in the unit now, and those that left it on a day that may still be
+    # dated (flow fault S-04: a mortality or a weighing of a day before the harvest that emptied the unit). The
+    # service decides on the record's own day.
+    present = read.offered(unit, stock, services.earliest(unit))
     if form_class is HarvestForm:
         present = [share for share in present if not share.cleaner]      # cleaner fish are culled, not harvested
     plan = _plan(request, unit, form_class)
-    context = _context(unit=unit, stock=stock, heading=heading, back_url=_back(request, unit), plan=plan)
+    context = _context(unit=unit, stock=stock, heading=heading, back_url=_back(request, unit), plan=plan,
+                       window_days=correction_window_days())
     if not present:
-        return render_page(request, 'farm/stock_operation.html', context)
+        # No fish now and none on a day that may still be dated: said, on a GET and on a POST alike (a POST saves
+        # nothing, and says so with a refusal's status).
+        response = render_page(request, 'farm/stock_operation.html', context)
+        if request.method == 'POST':
+            response.status_code = 422
+        return response
     row_kwargs = {'form_kwargs': _unit_choices(stockable_units().exclude(pk=unit.pk)), 'prefix': 'rows'}
     form_kwargs = {'plan': plan} if issubclass(form_class, PlannedForm) else {}
     if request.method == 'POST' and DRAFT in request.POST and form_class.refresh_on:

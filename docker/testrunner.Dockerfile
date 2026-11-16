@@ -29,7 +29,7 @@ WORKDIR /src
 COPY chemcore/ ./chemcore/
 RUN cd chemcore/py && maturin build --release --locked --out /wheels
 
-FROM python:3.12-slim@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159 AS runner
+FROM python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b AS runner
 COPY docker/requirements.lock /tmp/requirements.lock
 RUN pip install --no-cache-dir --require-hashes -r /tmp/requirements.lock
 COPY --from=chemcore-wheel /wheels/ /wheels/

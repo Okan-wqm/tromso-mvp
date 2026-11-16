@@ -167,7 +167,8 @@ def _overview():
                                deadline=date(2026, 10, 29), overdue=True)],
                     'due': [N(kind=N(label='Sykdom'), place='Tromsø Grow-out (TG-02)', period=None, deadline=None,
                               overdue=False)],
-                    'late_duties': [], 'due_duties': [], 'more': 2, 'count': 4, 'url': '#', 'duties_url': '#'}
+                    'late_duties': [], 'due_duties': [], 'more': 2, 'count': 4, 'url': '#', 'duties_url': '#',
+                    'at_once': [], 'not_set_up': []}
         return render_to_string('_production_overview.html', {
             'now': NOW, 'late_tasks': 18, 'late_reports': 1,
             'stock': {'stocked': {'label': _('Stocked units'), 'count': 19, 'of': 23, 'url': '#'},
@@ -178,7 +179,8 @@ def _overview():
             'tasks': {'due_today': {'label': _('Tasks due today'), 'count': 3, 'url': '#'},
                       'overdue': {'label': _('Overdue tasks'), 'count': 18, 'url': '#'}},
             'water': {'points': 40, 'critical': 2, 'warning': 6, 'alerts': alerts, 'more': 4, 'url': '#',
-                      'sensors_failed': False},
+                      'sensors_failed': False, 'unmeasured': [], 'window_days': 30},
+            'at_once': 0, 'not_set_up': 0, 'unmeasured': 0,
             'upcoming': upcoming,
             'tiles': [{'key': 'productiondepartment', 'label': _('Production departments'), 'count': 6, 'url': '#'},
                       {'key': 'system', 'label': _('Systems'), 'count': 6, 'url': '#'},

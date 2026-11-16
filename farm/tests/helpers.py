@@ -64,6 +64,14 @@ class correction_window(ContextDecorator):
         return False
 
 
+# What every refusal by the correction window ends with (core.platform.window_way_out), and what a refused stocking
+# says before it (farm.stock.dates.opening_way_out): flow fault B-07.
+WINDOW_WAY_OUT = ('The correction window is the platform owner’s setting: it is changed in Company › Administration › '
+                  'Platform settings.')
+OPENING_WAY_OUT = ('Fish the farm already had before then are registered as an opening balance (Company › '
+                   'Administration › Opening balances), by the platform owner.')
+
+
 SITE_MANAGER = ('view_site', 'add_site', 'change_site', 'delete_site', 'view_auditlog')
 
 

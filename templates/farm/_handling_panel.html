@@ -9,6 +9,9 @@
   {% if handling.warnings %}
   <div class="notice notice-warning handling-warnings" role="alert">
     <ul role="list">{% for warning in handling.warnings %}<li>{{ warning.message }}</li>{% endfor %}</ul>
+    {% if handling.second_person %}
+    <p class="form-error" role="alert">{{ handling.second_person }}</p>
+    {% else %}
     {% with field=form.handling_ack %}
     <div class="field{% if field.errors %} has-error{% endif %}">
       <label class="check">{{ field }} {{ field.label }}</label>
@@ -16,6 +19,7 @@
       {{ field.errors }}
     </div>
     {% endwith %}
+    {% endif %}
   </div>
   {% elif form.handling_ack.errors %}
   <div class="notice notice-warning" role="alert">{{ form.handling_ack.errors }}</div>

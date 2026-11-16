@@ -17,7 +17,8 @@
     </li>{% endfor %}
   </ul>
   <p><a href="{{ upcoming.url }}">{% if upcoming.more %}{% blocktrans trimmed with count=upcoming.more %}and {{ count }} more: all reports{% endblocktrans %}{% else %}{% trans "All reports" %}{% endif %}</a></p>
-  {% else %}
+  {% elif not upcoming.not_set_up %}
   <p>{% trans "No report is due." %} <a href="{{ upcoming.url }}">{% trans "All reports" %}</a></p>
   {% endif %}
+  {% if upcoming.not_set_up %}<p class="notice notice-warning">{% blocktrans trimmed count count=upcoming.not_set_up|length %}{{ count }} site with fish is not set up for reports: what it owes is not known, so nothing is listed as due for it.{% plural %}{{ count }} sites with fish are not set up for reports: what they owe is not known, so nothing is listed as due for them.{% endblocktrans %}{% if not upcoming.rows %} <a href="{{ upcoming.url }}">{% trans "All reports" %}</a>{% endif %}</p>{% endif %}
 </section>

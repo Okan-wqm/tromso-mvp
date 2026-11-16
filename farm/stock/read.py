@@ -25,6 +25,7 @@ from django.db.models import F, IntegerField, Q, Sum, Value
 from farm.models import Batch, Site, StockMovement, Tank
 from farm.models.feeding import FeedTarget
 
+from .dates import local_today
 from .fold import Line, Op, Share, fold
 from .sizes import Lots, size_mixes
 
@@ -117,10 +118,15 @@ def batches_ever_in(unit_ids):
 
 class Presence:
     """Which batch had fish in which unit on which day, from the counts of the live lines alone (no fold:
-    a count is the sum of the lines up to a day). A batch counts on a day when it had fish there at the end
-    of that day or of the day before, so fish stocked, moved or harvested that day count. The water judges
-    a sample for the species present (farm/water/read.py), the health module finds the batches a treatment
-    reached and the units a batch was in (farm/health/withdrawal.py).
+    a count is the sum of the lines up to a day). A batch counts on a day (`present`) when it had fish there at the
+    end of that day or of the day before, so fish stocked, moved or harvested that day count. The water judges
+    a sample for the species present (farm/water/read.py), the health module finds the units a batch was in
+    (farm/health/withdrawal.py).
+
+    The ends of the days do not see fish that came into a unit and left it again on ONE day. `during` does: the batch
+    had fish in the unit at some moment of the day (at the end of the day before, or fish of it came in that day).
+    The medicine withdrawal asks that (which fish a course reached, which batches held a unit on a harvest's day:
+    review F-03 of the flow faults); `present` keeps its meaning for everything else.
 
     Build it with `of_units` (every batch that was in these units) or `of_batches` (every unit these
     batches were in)."""
@@ -128,8 +134,11 @@ class Presence:
     def __init__(self, rows):
         """`rows`: (unit id, batch id, date, count delta) of live lines."""
         changes = defaultdict(lambda: defaultdict(int))
+        self.arrived = defaultdict(set)              # (unit, batch) -> the days fish of the batch came into the unit
         for unit_id, batch_id, day, delta in rows:
             changes[(unit_id, batch_id)][day] += delta
+            if delta > 0:
+                self.arrived[(unit_id, batch_id)].add(day)
         self.timelines = {}                          # (unit, batch) -> (days, fish at the end of each)
         self.units = defaultdict(set)                # batch -> the units it was ever in
         self.batches = defaultdict(set)              # unit -> the batches ever in it
@@ -167,6 +176,24 @@ class Presence:
     def present(self, unit_id, batch_id, day):
         return self.count_at_end(unit_id, batch_id, day) > 0 or self.count_at_end(unit_id, batch_id, day - DAY) > 0
 
+    def during(self, unit_id, batch_id, day):
+        """Whether the batch had fish in the unit at any moment of `day`: there at the end of the day before, or fish
+        of it came in that day, also when they left again the same day. Wherever `present` says yes, this does."""
+        return (self.count_at_end(unit_id, batch_id, day - DAY) > 0
+                or day in self.arrived.get((unit_id, batch_id), ()))
+
+    def batches_during(self, unit_id, day):
+        """The batches that had fish in the unit at any moment of `day` (`during`)."""
+        return {batch_id for batch_id in self.batches.get(unit_id, ()) if self.during(unit_id, batch_id, day)}
+
+    def during_between(self, unit_id, batch_id, first, last):
+        """Whether the batch had fish in the unit at any moment of a day from `first` to `last`, both included: on
+        `first` (`during`), or fish of it came in on a later one of those days."""
+        if first > last:
+            return False
+        return (self.during(unit_id, batch_id, first)
+                or any(first < day <= last for day in self.arrived.get((unit_id, batch_id), ())))
+
     def batches_in(self, unit_id, day):
         """The batches with fish in the unit on `day`."""
         return {batch_id for batch_id in self.batches.get(unit_id, ()) if self.present(unit_id, batch_id, day)}
@@ -201,6 +228,8 @@ class BatchShare:
     siblings: int = 1        # the batches of its kind in the unit, itself included
     lots: list = field(default_factory=list)   # sizes.Lot: its fish by size (a grading's classes kept apart)
 
+    past = False             # in the unit now (PastShare: a batch that left it inside the correction window)
+
     @property
     def cleaner(self):
         """Cleaner fish (a cleaner-fish species), beside the unit's production fish (D-1)."""
@@ -229,6 +258,61 @@ class BatchShare:
     @property
     def losses(self):
         return self.deaths + self.culls
+
+
+@dataclass(frozen=True)
+class PastShare:
+    """A batch that has no fish in a unit now and had some on a day a record may still be dated on (inside the
+    correction window): what a dialog offers beside the batches there now, so that a mortality, a weighing or a
+    treatment of a day the fish were there can still be entered once the unit is empty (flow fault S-04). The
+    service decides on the record's own day, as for every record."""
+    batch: Batch
+    until: object                # the last day it had fish in the unit: they left on it
+
+    past = True
+    count = 0
+
+    @property
+    def cleaner(self):
+        return self.batch.species.is_cleaner_fish
+
+
+def left_within(units, first_of, production=False):
+    """{unit id: [PastShare]} of the batches that have no fish in a unit now and still had some on a day from
+    `first_of(unit)` on (the first day a record of the unit may be dated: farm.stock.dates.earliest), by code; a unit
+    with none is left out. With `production`, production fish only. THE gate of a dialog that records something of a
+    past day: fish that were there on a day that may still be dated, not fish there today."""
+    presence = Presence.of_units([unit.pk for unit in units])
+    gone = defaultdict(list)
+    for unit in units:
+        first = first_of(unit)
+        for batch_id in presence.batches.get(unit.pk, ()):
+            days, counts = presence.timelines[(unit.pk, batch_id)]
+            if counts[-1] <= 0 and days[-1] >= first:
+                gone[unit.pk].append((batch_id, days[-1]))
+    batches = Batch.all_objects.select_related('species').in_bulk(
+        {batch_id for found in gone.values() for batch_id, _day in found})
+    shares = {unit_id: sorted((PastShare(batches[batch_id], day) for batch_id, day in found
+                               if not (production and batches[batch_id].species.is_cleaner_fish)),
+                              key=lambda share: share.batch.code)
+              for unit_id, found in gone.items()}
+    return {unit_id: found for unit_id, found in shares.items() if found}
+
+
+def offered_day(unit):
+    """The day a dialog offers for a new record of `unit` (None: no unit chosen yet): its today while it holds fish;
+    NONE when it is empty now. A record of an emptied unit is of a day its fish were still there (flow fault S-04), which
+    the person gives: today would be refused ("T-01 holds no fish on …"), and offering it invited that (review F-09:
+    the stock dialogs gave no day, the feeding, treatment and sea-lice dialogs still gave today)."""
+    if unit is not None and not unit_counts([unit.pk]).get(unit.pk):
+        return None
+    return local_today(unit)
+
+
+def offered(unit, stock, first):
+    """The batches a dialog of `unit` offers: those in it now (`stock`, its UnitStock or None) and those that left it
+    on a day from `first` on (`left_within`)."""
+    return [*(stock.shares if stock else []), *left_within([unit], lambda _unit: first).get(unit.pk, [])]
 
 
 @dataclass

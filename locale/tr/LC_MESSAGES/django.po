@@ -63,6 +63,10 @@ msgid "%(batch)s was harvested on %(date)s: cleaner fish are culled, not harvest
 msgstr "%(batch)s %(date)s tarihinde hasat edilmiş: temizleyici balıklar hasat edilmez, itlaf edilir."
 
 #, python-format
+msgid "%(batch)s was here until %(date)s"
+msgstr "%(batch)s %(date)s tarihine kadar buradaydı"
+
+#, python-format
 msgid "%(batch)s was stocked on %(date)s: an operation on it cannot be dated before."
 msgstr "%(batch)s %(date)s tarihinde stoklandı: üzerindeki bir işlem bundan önceye tarihlenemez."
 
@@ -83,8 +87,16 @@ msgid "%(batch)s — %(count)s fish · %(weight)s g"
 msgstr "%(batch)s — %(count)s balık · %(weight)s g"
 
 #, python-format
+msgid "%(batch)s — in the unit until %(date)s"
+msgstr "%(batch)s — %(date)s tarihine kadar birimdeydi"
+
+#, python-format
 msgid "%(batch)s: %(start)s – %(end)s, %(feed)s fed, %(gain)s grown"
 msgstr "%(batch)s: %(start)s – %(end)s, %(feed)s yem, %(gain)s büyüme"
+
+#, python-format
+msgid "%(batch)s: medicine withdrawal, %(end)s"
+msgstr "%(batch)s: ilaç bekleme süresi, %(end)s"
 
 #, python-format
 msgid "%(batch)s: not weighed since it came in, so no FCR yet"
@@ -130,6 +142,12 @@ msgid "%(count)d batch of fish was bought from it: keep “%(category)s” ticke
 msgid_plural "%(count)d batches of fish were bought from it: keep “%(category)s” ticked."
 msgstr[0] "Ondan %(count)d balık partisi satın alındı: “%(category)s” işaretli kalsın."
 msgstr[1] "Ondan %(count)d balık partisi satın alındı: “%(category)s” işaretli kalsın."
+
+#, python-format
+msgid "%(count)d batch that left it can still be chosen, for a day it was in the unit."
+msgid_plural "%(count)d batches that left it can still be chosen, for a day they were in the unit."
+msgstr[0] "Birimden ayrılan %(count)d parti, birimde bulunduğu bir gün için hâlâ seçilebilir."
+msgstr[1] "Birimden ayrılan %(count)d parti, birimde bulundukları bir gün için hâlâ seçilebilir."
 
 #, python-format
 msgid "%(count)d calibration saved."
@@ -384,6 +402,12 @@ msgstr[0] "%(count)s tane zamanı geldi"
 msgstr[1] "%(count)s tane zamanı geldi"
 
 #, python-format
+msgid "%(count)s due at once"
+msgid_plural "%(count)s due at once"
+msgstr[0] "%(count)s hemen verilmeli"
+msgstr[1] "%(count)s hemen verilmeli"
+
+#, python-format
 msgid "%(count)s fish stay in %(unit)s: weigh them too."
 msgstr "%(unit)s içinde %(count)s balık kalıyor: onları da tartın."
 
@@ -398,6 +422,12 @@ msgid "%(count)s more sampling point on Water chemistry"
 msgid_plural "%(count)s more sampling points on Water chemistry"
 msgstr[0] "Su kimyasında %(count)s numune noktası daha"
 msgstr[1] "Su kimyasında %(count)s numune noktası daha"
+
+#, python-format
+msgid "%(count)s notice due at once"
+msgid_plural "%(count)s notices due at once"
+msgstr[0] "hemen verilmesi gereken %(count)s bildirim"
+msgstr[1] "hemen verilmesi gereken %(count)s bildirim"
 
 #, python-format
 msgid "%(count)s overdue"
@@ -448,6 +478,32 @@ msgstr[0] "%(count)s numune noktası"
 msgstr[1] "%(count)s numune noktası"
 
 #, python-format
+msgid "%(count)s site not set up for reports"
+msgid_plural "%(count)s sites not set up for reports"
+msgstr[0] "%(count)s saha raporlar için ayarlanmamış"
+msgstr[1] "%(count)s saha raporlar için ayarlanmamış"
+
+#, python-format
+msgid ""
+"%(count)s site with fish is not set up for reports: what it owes is not known, so nothing is "
+"listed as due for it."
+msgid_plural ""
+"%(count)s sites with fish are not set up for reports: what they owe is not known, so nothing is "
+"listed as due for them."
+msgstr[0] ""
+"Balık bulunan %(count)s saha raporlar için ayarlanmamış: ne borçlu olduğu bilinmiyor, bu yüzden "
+"onun için vadesi gelen hiçbir şey listelenmiyor."
+msgstr[1] ""
+"Balık bulunan %(count)s saha raporlar için ayarlanmamış: ne borçlu oldukları bilinmiyor, bu "
+"yüzden onlar için vadesi gelen hiçbir şey listelenmiyor."
+
+#, python-format
+msgid "%(count)s stocked unit without a water sample"
+msgid_plural "%(count)s stocked units without a water sample"
+msgstr[0] "su örneği olmayan %(count)s balıklı birim"
+msgstr[1] "su örneği olmayan %(count)s balıklı birim"
+
+#, python-format
 msgid "%(count)s system is not in any production department."
 msgid_plural "%(count)s systems are not in any production department."
 msgstr[0] "%(count)s sistem hiçbir üretim departmanında değil."
@@ -488,8 +544,8 @@ msgstr[0] "%(counter)s satır"
 msgstr[1] "%(counter)s satır"
 
 #, python-format
-msgid "%(date)s, no time recorded: counted from the end of the day"
-msgstr "%(date)s, saat kaydedilmemiş: günün sonundan sayıldı"
+msgid "%(date)s (no time recorded: counted from the end of the day)"
+msgstr "%(date)s (saat kaydedilmemiş: gün sonundan itibaren sayılır)"
 
 #, python-format
 msgid "%(days)d d"
@@ -510,6 +566,10 @@ msgid "%(days)s day since the last measured weight"
 msgid_plural "%(days)s days since the last measured weight"
 msgstr[0] "son ölçülen ağırlıktan bu yana %(days)s gün"
 msgstr[1] "son ölçülen ağırlıktan bu yana %(days)s gün"
+
+#, python-format
+msgid "%(days)s days a year"
+msgstr "yılda %(days)s gün"
 
 #, python-format
 msgid "%(days)s feeding day without an expected FCR"
@@ -755,6 +815,15 @@ msgstr ""
 #, python-format
 msgid "%(kilos)s left"
 msgstr "%(kilos)s kaldı"
+
+#, python-format
+msgid ""
+"%(kilos)s of %(feed)s fed at %(site)s since %(date)s, and none of it was ever delivered to the "
+"store: the store is %(kilos)s short of it. Record its delivery, dated on or before that day."
+msgstr ""
+"%(date)s tarihinden beri %(site)s sahasında %(kilos)s %(feed)s yemlendi ve bunun hiçbiri depoya "
+"teslim alınmadı: depoda bu yemden %(kilos)s eksik. Teslimatını o gün veya öncesine tarihleyerek "
+"kaydedin."
 
 #, python-format
 msgid ""
@@ -1411,6 +1480,14 @@ msgstr ""
 
 #, python-format
 msgid ""
+"%(unit)s holds cleaner fish only: they are not harvested. Record their cull at the end of their "
+"use."
+msgstr ""
+"%(unit)s içinde yalnızca temizleyici balık var: bunlar hasat edilmez. Kullanımları bittiğinde "
+"itlaflarını kaydedin."
+
+#, python-format
+msgid ""
 "%(unit)s holds fish and has no active sampling point for its own water: its water raises no alarm"
 " until it has one."
 msgstr ""
@@ -1592,8 +1669,16 @@ msgid "%(weight)s weighed %(date)s"
 msgstr "%(date)s tarihinde %(weight)s tartıldı"
 
 #, python-format
+msgid "%(when)s (%(here)s on the clock of %(unit)s)"
+msgstr "%(when)s (%(unit)s saatine göre %(here)s)"
+
+#, python-format
 msgid "%(when)s by %(who)s"
 msgstr "%(when)s, %(who)s"
+
+#, python-format
+msgid "%(when)s in %(unit)s"
+msgstr "%(when)s, %(unit)s biriminde"
 
 #, python-format
 msgid "%(when)s through %(how)s, recorded by %(who)s"
@@ -2211,6 +2296,9 @@ msgstr ""
 msgid "A note is at most %(count)d characters."
 msgstr "Bir not en çok %(count)d karakterdir."
 
+msgid "A notice is filed at once: it has no later deadline."
+msgstr "Bildirim hemen verilir: daha sonraki bir son tarihi yoktur."
+
 #, python-format
 msgid "A page shows at most %(days)s day: the first day was moved."
 msgid_plural "A page shows at most %(days)s days: the first day was moved."
@@ -2354,6 +2442,12 @@ msgstr[0] ""
 msgstr[1] ""
 "Bir kayıt en fazla %(days)s gün geriye tarihlenebilir ve bundan eski olmadıkça iptal edilebilir. "
 "Daha eski kayıtlar olduğu gibi kalır."
+
+#, python-format
+msgid "A record dated on a day the fish were here can still be entered, up to %(days)s day back."
+msgid_plural "A record dated on a day the fish were here can still be entered, up to %(days)s days back."
+msgstr[0] "Balıkların burada olduğu bir güne tarihlenen kayıt hâlâ girilebilir; en çok %(days)s gün geriye."
+msgstr[1] "Balıkların burada olduğu bir güne tarihlenen kayıt hâlâ girilebilir; en çok %(days)s gün geriye."
 
 #, python-format
 msgid ""
@@ -3891,6 +3985,10 @@ msgstr "%(batch)s partisi %(tank)s tankındaydı, oysa tankın denemedeki ilk g�
 msgid "Batch %(batch)s: %(fish)s fish at %(weight)s"
 msgstr "Parti %(batch)s: %(fish)s balık, %(weight)s"
 
+#, python-format
+msgid "Batch %(batch)s: in %(unit)s until %(date)s"
+msgstr "Parti %(batch)s: %(date)s tarihine kadar %(unit)s içindeydi"
+
 msgid "Batch details"
 msgstr "Parti ayrıntıları"
 
@@ -4561,6 +4659,9 @@ msgstr "Sahip ya da üye seçin."
 msgid "Choose someone else: a conversation is with another person."
 msgstr "Başka birini seçin: konuşma başka bir kişiyle yapılır."
 
+msgid "Choose the date first: the fast and the medicine withdrawal are checked for that day."
+msgstr "Önce tarihi seçin: açlık ve ilaç bekleme süresi o gün için kontrol edilir."
+
 msgid "Choose the document in the library it comes from."
 msgstr "Bilginin geldiği kütüphane belgesini seçin."
 
@@ -4623,6 +4724,14 @@ msgid ""
 msgstr ""
 "Temizleyici balıklar hasat edilmez: kullanımlarının sonunda “%(reason)s” nedeniyle itlafı "
 "kaydedin."
+
+#, python-format
+msgid ""
+"Cleaner fish in %(unit)s are in a medicine withdrawal (%(batch)s, %(end)s): keep them out of the "
+"harvest."
+msgstr ""
+"%(unit)s içindeki temizleyici balıklar ilaç bekleme süresinde (%(batch)s, %(end)s): onları "
+"hasadın dışında tutun."
 
 msgid "Cleaner fish only"
 msgstr "Yalnızca temizleyici balıklar"
@@ -5882,9 +5991,6 @@ msgstr "Bitiş"
 msgid "End the leave earlier"
 msgstr "İzni erken bitir"
 
-msgid "End unknown"
-msgstr "Bitişi bilinmiyor"
-
 msgid "Ended"
 msgstr "Sona erdi"
 
@@ -6295,6 +6401,18 @@ msgstr "Kaydın ötesinde yemlenen"
 msgid "Fed from the book"
 msgstr "Kayıttan yemlenen"
 
+#, python-format
+msgid "Fed on the day of the handling itself (%(at)s)."
+msgstr "İşlemin yapıldığı gün yemlendi (%(at)s)."
+
+#, python-format
+msgid ""
+"Fed on the day of the handling itself (%(at)s): no fast before %(day)s; the %(kind)s rule asks "
+"for %(asked)s."
+msgstr ""
+"İşlemin yapıldığı gün yemlendi (%(at)s): %(day)s öncesinde açlık yok; %(kind)s kuralı %(asked)s "
+"istiyor."
+
 msgid "Fed to"
 msgstr "Yemlenen"
 
@@ -6370,6 +6488,9 @@ msgstr "Yemleme"
 
 msgid "Feeding (from the records)"
 msgstr "Yemleme (kayıtlardan)"
+
+msgid "Feeding counted from"
+msgstr "Sayımın başladığı yemleme"
 
 msgid "Feeding drawn from it (estimated)"
 msgstr "Ondan düşülen yemleme (tahmini)"
@@ -6595,8 +6716,34 @@ msgstr "Devir günündeki balık"
 msgid "Fish recaptured"
 msgstr "Yeniden yakalanan balık"
 
+#, python-format
+msgid ""
+"Fish that left %(unit)s in the last %(days)s day are offered too: date the record on a day they "
+"were in the unit. A record that would leave a later operation without its fish is refused, and "
+"says which."
+msgid_plural ""
+"Fish that left %(unit)s in the last %(days)s days are offered too: date the record on a day they "
+"were in the unit. A record that would leave a later operation without its fish is refused, and "
+"says which."
+msgstr[0] ""
+"Son %(days)s günde %(unit)s biriminden ayrılan balıklar da sunulur: kaydı, balıkların birimde "
+"olduğu bir güne tarihleyin. Daha sonraki bir işlemi balıksız bırakacak kayıt reddedilir ve hangi "
+"işlem olduğu söylenir."
+msgstr[1] ""
+"Son %(days)s günde %(unit)s biriminden ayrılan balıklar da sunulur: kaydı, balıkların birimde "
+"olduğu bir güne tarihleyin. Daha sonraki bir işlemi balıksız bırakacak kayıt reddedilir ve hangi "
+"işlem olduğu söylenir."
+
 msgid "Fish the book still holds beyond the count are then recorded as an unaccounted loss."
 msgstr "Kayıtta sayımın üstünde kalan balıklar o zaman açıklanamayan kayıp olarak kaydedilir."
+
+#, python-format
+msgid ""
+"Fish the farm already had before then are registered as an opening balance (%(where)s), by the "
+"platform owner."
+msgstr ""
+"Çiftliğin daha önce zaten sahip olduğu balıklar, platform sahibi tarafından açılış bakiyesi "
+"olarak kaydedilir (%(where)s)."
 
 msgid ""
 "Fish the farm already had when it started using the platform: their real stocking date and year "
@@ -6619,6 +6766,12 @@ msgstr "Tartılan balık"
 
 msgid "Fish with no limit"
 msgstr "Sınırı olmayan balıklar"
+
+#, python-format
+msgid "Fish, and no water sample in the last %(days)s day."
+msgid_plural "Fish, and no water sample in the last %(days)s days."
+msgstr[0] "Balık var ve son %(days)s günde su örneği yok."
+msgstr[1] "Balık var ve son %(days)s günde su örneği yok."
 
 msgid "Fiskeridirektoratet; confirm the form with Fiskeridirektoratet"
 msgstr "Fiskeridirektoratet; formu Fiskeridirektoratet ile teyit edin"
@@ -7247,28 +7400,10 @@ msgstr "Arınma süresi içinde hasat"
 #, python-format
 msgid ""
 "Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this "
-"withdrawal, which holds the fish until %(until)s: medicated fish may have gone to food."
+"withdrawal (%(end)s): medicated fish may have gone to food."
 msgstr ""
 "%(unit)s biriminden %(date)s tarihli hasat (%(batch)s, %(facility)s tesisine %(fish)s balık) bu "
-"arınma süresinin içinde kalıyor; balıklar %(until)s tarihine kadar tutulmalı: ilaçlı balık gıdaya"
-" gitmiş olabilir."
-
-#, python-format
-msgid ""
-"Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this "
-"withdrawal, which holds the fish until about %(until)s: medicated fish may have gone to food."
-msgstr ""
-"%(unit)s biriminden %(date)s tarihli hasat (%(batch)s, %(facility)s tesisine %(fish)s balık) bu "
-"arınma süresinin içinde kalıyor; balıklar yaklaşık %(until)s tarihine kadar tutulmalı: ilaçlı "
-"balık gıdaya gitmiş olabilir."
-
-#, python-format
-msgid ""
-"Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this "
-"withdrawal, whose end is unknown: medicated fish may have gone to food."
-msgstr ""
-"%(unit)s biriminden %(date)s tarihli hasat (%(batch)s, %(facility)s tesisine %(fish)s balık) sonu"
-" bilinmeyen bu arınma süresinin içinde kalıyor: ilaçlı balık gıdaya gitmiş olabilir."
+"ilaç bekleme süresinin içinde kalıyor (%(end)s): ilaçlı balık gıdaya gitmiş olabilir."
 
 msgid "Harvest plan"
 msgstr "Hasat planı"
@@ -7813,6 +7948,19 @@ msgstr "Stok işlemleri var: önce onları iptal edin."
 
 msgid "It has stock records on its site: it can only move to a production department of the same site."
 msgstr "Sahasında stok kayıtları var: yalnızca aynı sahanın bir üretim departmanına taşınabilir."
+
+#, python-format
+msgid ""
+"It holds every fish in %(unit)s: the fish of different batches in one unit cannot be told apart "
+"at a harvest."
+msgstr ""
+"%(unit)s içindeki bütün balıkları tutar: aynı birimdeki farklı partilerin balıkları hasatta "
+"birbirinden ayrılamaz."
+
+msgid "It holds fish, and what it owes cannot be worked out: no report is listed as due for it."
+msgstr ""
+"Balık barındırıyor ve ne borçlu olduğu hesaplanamıyor: onun için vadesi gelen hiçbir rapor "
+"listelenmiyor."
 
 msgid "It holds fish: move or harvest them first."
 msgstr "İçinde balık var: önce taşıyın veya hasat edin."
@@ -8401,6 +8549,9 @@ msgstr "Sahip yap"
 msgid "Manage holidays"
 msgstr "Tatilleri yönet"
 
+msgid "Manage leave types"
+msgstr "İzin türlerini yönet"
+
 msgid "Manage shifts"
 msgstr "Vardiyaları yönet"
 
@@ -8560,16 +8711,9 @@ msgstr "İlaç dolabı"
 msgid "Medicine withdrawal"
 msgstr "İlaç bekleme süresi"
 
-msgid "Medicine withdrawal decides: its end is unknown."
-msgstr "İlaç bekleme süresi belirler: bitişi bilinmiyor."
-
 #, python-format
-msgid "Medicine withdrawal decides: until %(date)s."
-msgstr "İlaç bekleme süresi belirler: %(date)s tarihine kadar."
-
-#, python-format
-msgid "Medicine withdrawal decides: until about %(date)s."
-msgstr "İlaç bekleme süresi belirler: yaklaşık %(date)s tarihine kadar."
+msgid "Medicine withdrawal decides: %(end)s."
+msgstr "İlaç bekleme süresi belirler: %(end)s."
 
 msgid "Medicine withdrawal in force"
 msgstr "İlaç bekleme süresi sürüyor"
@@ -9151,8 +9295,14 @@ msgid "No file."
 msgstr "Dosya yok."
 
 #, python-format
-msgid "No fish are in %(unit)s."
-msgstr "%(unit)s içinde balık yok."
+msgid ""
+"No fish are in %(unit)s, and none were in it in the last %(days)s day: there is nothing to record"
+" here."
+msgid_plural ""
+"No fish are in %(unit)s, and none were in it in the last %(days)s days: there is nothing to "
+"record here."
+msgstr[0] "%(unit)s içinde balık yok ve son %(days)s günde de olmadı: burada kaydedilecek bir şey yok."
+msgstr[1] "%(unit)s içinde balık yok ve son %(days)s günde de olmadı: burada kaydedilecek bir şey yok."
 
 msgid "No fish arrived at the site on that day."
 msgstr "O gün sahaya balık gelmedi."
@@ -9240,6 +9390,9 @@ msgstr "Öğe adı yok: cihazın mesaj biçimi tek bir nesnedir."
 
 msgid "No knowledge entry cites it yet."
 msgstr "Henüz hiçbir bilgi kaydı bu belgeye dayanmıyor."
+
+msgid "No leave types yet: a leave request cannot be filed until there is one."
+msgstr "Henüz izin türü yok: bir tane olana kadar izin talebi oluşturulamaz."
 
 msgid "No limit"
 msgstr "Sınır yok"
@@ -9729,16 +9882,8 @@ msgid "Not stated in the text saved; unverified (Q6)"
 msgstr "Kaydedilen metinde belirtilmemiş; doğrulanmadı (Q6)"
 
 #, python-format
-msgid "Not suitable for harvest — medicine withdrawal of %(batch)s until %(date)s."
-msgstr "Hasada uygun değil — %(batch)s için ilaç bekleme süresi %(date)s tarihine kadar."
-
-#, python-format
-msgid "Not suitable for harvest — medicine withdrawal of %(batch)s until about %(date)s."
-msgstr "Hasada uygun değil — %(batch)s için ilaç bekleme süresi yaklaşık %(date)s tarihine kadar."
-
-#, python-format
-msgid "Not suitable for harvest — medicine withdrawal of %(batch)s, its end unknown."
-msgstr "Hasada uygun değil — %(batch)s için ilaç bekleme süresi, bitişi bilinmiyor."
+msgid "Not suitable for harvest — medicine withdrawal of %(batch)s: %(end)s."
+msgstr "Hasada uygun değil — %(batch)s için ilaç bekleme süresi: %(end)s."
 
 msgid "Not updated: the server cannot be reached or cannot answer. This may be out of date."
 msgstr "Güncellenmedi: sunucuya ulaşılamıyor ya da yanıt veremiyor. Bu bilgi eski olabilir."
@@ -11328,6 +11473,9 @@ msgstr "Kayıtlar"
 msgid "Records of the farm"
 msgstr "Çiftliğin kayıtları"
 
+msgid "Records of the fish that left"
+msgstr "Ayrılan balıkların kayıtları"
+
 msgid "Records read"
 msgstr "Okunan kayıtlar"
 
@@ -12119,6 +12267,9 @@ msgstr "Etkinlik günlüğünde tümünü gör"
 
 msgid "See the day-by-day book"
 msgstr "Günlük kaydı görün"
+
+msgid "See the feedings"
+msgstr "Yemlemeleri gör"
 
 msgid "Seed"
 msgstr "Tohum"
@@ -13459,6 +13610,10 @@ msgstr ""
 msgid "The copy needs a name."
 msgstr "Kopyanın bir adı olmalı."
 
+#, python-format
+msgid "The correction window is the platform owner’s setting: it is changed in %(where)s."
+msgstr "Düzeltme penceresi platform sahibinin ayarıdır: %(where)s altında değiştirilir."
+
 msgid "The credential was created."
 msgstr "Kimlik bilgisi oluşturuldu."
 
@@ -14269,6 +14424,13 @@ msgstr ""
 "%(unit)s biriminin %(planned)s tarihli planlı hasadı %(date)s tarihinde %(facility)s tesisinde "
 "kaydedildi: burada planlandığı gibi raporlanır; bildirim gönderildiyse düzeltin."
 
+msgid ""
+"The planned-slaughter notice is filed per facility; it also needs the company that files for the "
+"facility (its operator, Purchasing › Suppliers) to have a 9-digit organisation number."
+msgstr ""
+"Planlı kesim bildirimi tesis başına verilir; ayrıca tesis adına bildirimi yapan şirketin "
+"(işletmecisi, Satın alma › Tedarikçiler) 9 haneli bir kuruluş numarası olması gerekir."
+
 #, python-format
 msgid "The points of %(owner)s."
 msgstr "%(owner)s noktaları."
@@ -14965,6 +15127,14 @@ msgstr ""
 msgid "The withdrawal counts from the new last day; the change is logged."
 msgstr "Bekleme süresi yeni son günden sayılır; değişiklik günlüğe yazılır."
 
+#, python-format
+msgid ""
+"The withdrawal is of %(held)s, which was in %(unit)s with the fish harvested: the fish of one "
+"unit cannot be told apart."
+msgstr ""
+"Bekleme süresi, hasat edilen balıklarla birlikte %(unit)s içinde bulunan %(held)s partisine "
+"aittir: aynı birimdeki balıklar birbirinden ayrılamaz."
+
 msgid ""
 "The withdrawal is the product’s, as its SPC states it per species, in degree-days, days or both, "
 "with your own safety margin on top; nothing is filled in for you. A treatment counts it from its "
@@ -14999,6 +15169,15 @@ msgstr "Yayımlandığı yıl."
 msgid "Their average on the takeover day; to 0.0001 g for eggs and larvae."
 msgstr "Devir günündeki ortalamaları; yumurta ve larvalar için 0,0001 g hassasiyetle."
 
+msgid ""
+"Their round (live) weight, in kg. The plan is saved without it, but the planned-slaughter notice "
+"of its week (Production › Reports) reports these kilos and cannot be filed for a plan that has "
+"none."
+msgstr ""
+"Bütün (canlı) ağırlıkları, kg olarak. Plan bu olmadan da kaydedilir; ancak o haftanın planlı "
+"kesim bildirimi (Üretim › Raporlar) bu kiloları bildirir ve kilosu olmayan bir plan için "
+"gönderilemez."
+
 msgid "Their weight (kg)"
 msgstr "Toplam ağırlıkları (kg)"
 
@@ -15010,6 +15189,14 @@ msgstr "Bu elleçleme ve tür için zaten bir kural var."
 
 msgid "There is already a rule for this."
 msgstr "Bunun için zaten bir kural var."
+
+#, python-format
+msgid ""
+"There is no active leave type yet, so a request cannot be filed. Leave types are added in "
+"%(where)s › %(types)s, by a person whose role may."
+msgstr ""
+"Henüz etkin bir izin türü yok; bu yüzden talep oluşturulamaz. İzin türleri, %(where)s › %(types)s"
+" altında, rolü izin veren bir kişi tarafından eklenir."
 
 msgid "Thermal delousing"
 msgstr "Termal bitten arındırma"
@@ -15305,6 +15492,9 @@ msgid "This unit holds %(count)d batch: the operation applies to the one chosen.
 msgid_plural "This unit holds %(count)d batches: the operation applies to the one chosen."
 msgstr[0] "Bu birimde %(count)d parti var: işlem seçilen partiye uygulanır."
 msgstr[1] "Bu birimde %(count)d parti var: işlem seçilen partiye uygulanır."
+
+msgid "This unit holds no fish now: choose the batch that was in it on the day of the record."
+msgstr "Bu birimde şu anda balık yok: kaydın ait olduğu gün birimde bulunan partiyi seçin."
 
 msgid "This unit is booked to another experiment on some of these days."
 msgstr "Bu birim, bu günlerin bazılarında başka bir denemeye ayrılmış."
@@ -15699,10 +15889,6 @@ msgstr ""
 
 msgid "Until"
 msgstr "Bitiş"
-
-#, python-format
-msgid "Until %(date)s"
-msgstr "%(date)s tarihine kadar"
 
 msgid "Up to (g)"
 msgstr "Üst sınır (g)"
@@ -17537,6 +17723,9 @@ msgstr "g"
 msgid "g/kg"
 msgstr "g/kg"
 
+msgid "granted without approval"
+msgstr "onaysız verilir"
+
 msgid "group level"
 msgstr "grup düzeyi"
 
@@ -17554,6 +17743,14 @@ msgstr "elleçleme kuralı"
 
 msgid "handling rules"
 msgstr "elleçleme kuralları"
+
+#, python-format
+msgid "harvest from %(date)s"
+msgstr "hasat %(date)s tarihinden itibaren"
+
+#, python-format
+msgid "harvest from about %(date)s"
+msgstr "hasat yaklaşık %(date)s tarihinden itibaren"
 
 msgid "harvest record"
 msgstr "hasat kaydı"
@@ -17593,6 +17790,14 @@ msgstr "%(location)s içinde: %(held)s, süresi %(date)s tarihinde doluyor."
 #, python-format
 msgid "in %(name)s"
 msgstr "%(name)s içinde"
+
+#, python-format
+msgid "in %(unit)s"
+msgstr "%(unit)s biriminde"
+
+#, python-format
+msgid "in %(unit)s, before the fish were moved here"
+msgstr "%(unit)s biriminde, balıklar buraya taşınmadan önce"
 
 msgid "ingest contract"
 msgstr "veri alım sözleşmesi"
@@ -17697,13 +17902,6 @@ msgstr "ilaç"
 msgid "medicine withdrawal"
 msgstr "ilaç bekleme süresi"
 
-#, python-format
-msgid "medicine withdrawal until %(date)s"
-msgstr "%(date)s tarihine kadar ilaç bekleme süresi"
-
-msgid "medicine withdrawal, end unknown"
-msgstr "ilaç bekleme süresi, bitişi bilinmiyor"
-
 msgid "medicine withdrawals"
 msgstr "ilaç bekleme süreleri"
 
@@ -17789,6 +17987,9 @@ msgstr "balık yok"
 msgid "no fish held at %(site)s since %(date)s"
 msgstr "%(date)s tarihinden beri %(site)s lokasyonunda balık yok"
 
+msgid "no fish now"
+msgstr "şu anda balık yok"
+
 msgid ""
 "no increased mortality has stayed unexplained for 14 days; otherwise started by a person when an "
 "event happens"
@@ -17852,6 +18053,9 @@ msgstr "böyle bir satır yok"
 #, python-format
 msgid "no value of %(values)s"
 msgstr "şu değerler yok: %(values)s"
+
+msgid "no time recorded"
+msgstr "saat kaydedilmemiş"
 
 msgid "none"
 msgstr "yok"
@@ -18395,12 +18599,12 @@ msgid "until %(last)s"
 msgstr "%(last)s tarihine kadar"
 
 #, python-format
-msgid "until %(last)s (harvest from %(first)s)"
-msgstr "%(last)s tarihine kadar (hasat %(first)s tarihinden itibaren)"
+msgid "until %(last)s (%(harvest)s)"
+msgstr "%(last)s tarihine kadar (%(harvest)s)"
 
 #, python-format
-msgid "until about %(last)s (harvest from about %(first)s)"
-msgstr "yaklaşık %(last)s tarihine kadar (hasat yaklaşık %(first)s tarihinden itibaren)"
+msgid "until about %(last)s (%(harvest)s)"
+msgstr "yaklaşık %(last)s tarihine kadar (%(harvest)s)"
 
 #, python-format
 msgid "up to %(weight)s g"

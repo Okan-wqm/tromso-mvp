@@ -35,7 +35,7 @@ A person said they saw an alarm: when, from which device (the id the app sends; 
 - **how it works**: The mobile app will acknowledge through the same service (alarms.services.acknowledge).
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarm_acknowledgements
 - **constraints**: uq_alarm_acknowledgements_once (unique: alarm, user); chk_alarm_acknowledgements_app (check)
-- **tests that mention it**: `farm/tests/test_migration_purging.py`, `sensors/tests/test_alarms.py`, `alarms/tests/test_alarms.py` and 2 more
+- **tests that mention it**: `farm/tests/test_migration_feeding_acknowledgement.py`, `farm/tests/test_migration_purging.py`, `sensors/tests/test_alarms.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -316,7 +316,7 @@ Who did what to which record, with old and new values.
 - **how it works**: A record's own rows are also shown on the History tab of its edit page.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log (never shown: changes)
 - **constraints**: chk_audit_log_severity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 101 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 106 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -364,7 +364,7 @@ The rules the platform owner (the customer the platform is given to) sets for th
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Administration › platform_settings
 - **forms**: `PlatformSettingsForm`
 - **constraints**: uq_platform_settings_singleton (unique: singleton); chk_platform_settings_singleton (check); chk_platform_settings_window (check); chk_platform_settings_clock_tolerance (check)
-- **tests that mention it**: `core/tests_platform.py`, `core/tests_workspaces.py`, `farm/tests/helpers.py` and 3 more
+- **tests that mention it**: `core/tests_platform.py`, `core/tests_workspaces.py`, `farm/tests/helpers.py` and 4 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -394,7 +394,7 @@ What the platform keeps about a person beyond Django's account.
 - **how it works**: Today the profile holds the language only: chosen with the language switcher, or on the Users tab.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › profiles
 - **forms**: `UserForm`
-- **tests that mention it**: `core/test_languages.py`, `core/tests_account_mail.py`, `core/tests_matrix_notes.py` and 31 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_account_mail.py`, `core/tests_matrix_notes.py` and 34 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -660,7 +660,7 @@ A group of fish that came in together: its identity and origin, no counts.
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › batches
 - **forms**: `BatchDetailsForm`, `BatchInputForm`, `OpeningBalanceForm`
 - **constraints**: uq_batches_code (unique: code); chk_batches_code (check); chk_batches_stage (check); chk_batches_origin (check); chk_batches_supplier (check); chk_batches_provenance (check); chk_batches_origin_provenance (check); chk_batches_year_class (check); chk_batches_harvest_after_input (check)
-- **tests that mention it**: `core/test_datamap.py`, `farm/tests/test_batch_details.py`, `farm/tests/test_cleaner_fish.py` and 16 more
+- **tests that mention it**: `core/test_datamap.py`, `farm/tests/test_batch_details.py`, `farm/tests/test_cleaner_fish.py` and 18 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -960,7 +960,7 @@ Feed given to one unit on one day: the farm's feeding record.
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › feeding_records
 - **forms**: `FeedingForm`
 - **constraints**: chk_feeding_records_amount (check); chk_feeding_records_target (check); chk_feeding_records_meals (check); chk_feeding_records_void_reason (check)
-- **tests that mention it**: `core/tests_entry_key.py`, `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py` and 6 more
+- **tests that mention it**: `core/tests_entry_key.py`, `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py` and 7 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -997,7 +997,7 @@ A feed the farm uses: its maker, what it is made for, its pellet and its analysi
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › feeds
 - **forms**: `FeedForm`
 - **constraints**: uq_feeds_code_live (unique: code); uq_feeds_name_live (unique: name); chk_feeds_code (check); chk_feeds_feed_type (check); chk_feeds_feed_form (check); chk_feeds_buoyancy (check); chk_feeds_status (check); chk_feeds_pellet_size (check); chk_feeds_protein_pct (check); chk_feeds_fat_pct (check); chk_feeds_nfe_pct (check); chk_feeds_fibre_pct (check); chk_feeds_ash_pct (check); chk_feeds_moisture_pct (check); chk_feeds_phosphorus_pct (check); chk_feeds_gross_energy_mj_kg (check); chk_feeds_digestible_energy_mj_kg (check); chk_feeds_fractions (check); chk_feeds_phosphorus_in_ash (check); chk_feeds_digestible_energy (check); chk_feeds_price (check); chk_feeds_price_currency (check)
-- **tests that mention it**: `core/tests_erasure.py`, `core/tests_private_log.py`, `core/tests_workspaces.py` and 31 more
+- **tests that mention it**: `core/tests_erasure.py`, `core/tests_private_log.py`, `core/tests_workspaces.py` and 34 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1043,7 +1043,7 @@ One warning a person went on past when recording a handling (a harvest, a transf
 - **how it works**: One row for each warning the person went on past, written with the operation or the treatment it was given for. The pages show that a warning was acknowledged (its kind in a tooltip on Harvested), not the values it kept.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › handling_acknowledgements
 - **constraints**: chk_handling_acknowledgements_warning (check); chk_handling_acknowledgements_shape (check); chk_handling_acknowledgements_fasted (check); chk_handling_acknowledgements_fasted_degree_days (check); chk_handling_acknowledgements_one_record (check); uq_handling_acknowledgements_one_fast (unique: operation)
-- **tests that mention it**: `farm/tests/test_fix_seed_size_mix.py`, `farm/tests/test_harvest.py`, `farm/tests/test_health.py` and 2 more
+- **tests that mention it**: `farm/tests/test_fast_of_the_unit.py`, `farm/tests/test_fasting_sentence.py`, `farm/tests/test_fix_seed_size_mix.py` and 9 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1057,6 +1057,7 @@ One warning a person went on past when recording a handling (a harvest, a transf
 | withdrawal_approximate | boolean |  |  | computed: what the person was shown when they acknowledged the warning: the handling check (farm/handling/check.py) works it out and the service stores it |
 | withdrawal_reason | varchar(500) |  |  | computed: what the person was shown when they acknowledged the warning: the handling check (farm/handling/check.py) works it out and the service stores it |
 | last_fed_at | timestamp with time zone | yes |  | computed: what the person was shown when they acknowledged the warning: the handling check (farm/handling/check.py) works it out and the service stores it |
+| feeding_id | uuid | yes | feeding_records (PROTECT) | computed: what the person was shown when they acknowledged the warning: the handling check (farm/handling/check.py) works it out and the service stores it |
 | fasted_hours | numeric(6, 1) | yes |  | computed: what the person was shown when they acknowledged the warning: the handling check (farm/handling/check.py) works it out and the service stores it |
 | required_hours | smallint | yes |  | computed: what the person was shown when they acknowledged the warning: the handling check (farm/handling/check.py) works it out and the service stores it |
 | fasted_degree_days | numeric(6, 1) | yes |  | computed: what the person was shown when they acknowledged the warning: the handling check (farm/handling/check.py) works it out and the service stores it |
@@ -1075,7 +1076,7 @@ A harvest or a transport planned for the fish of one batch in one unit on a day:
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › handling_plan_items
 - **forms**: `HandlingPlanItemForm`
 - **constraints**: chk_handling_plan_items_kind (check); chk_handling_plan_items_destination (check); chk_handling_plan_items_count (check); chk_handling_plan_items_kg (check); chk_handling_plan_items_other_unit (check); uq_handling_plan_items_operation (unique: operation)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py`, `farm/tests/test_harvest.py` and 13 more
+- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py`, `farm/tests/test_fast_of_the_unit.py` and 16 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1114,7 +1115,7 @@ How long the fish must have been without feed before they are handled: one row p
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › handling_rules
 - **forms**: `HandlingRuleForm`
 - **constraints**: uq_handling_rules_live (unique: kind, species); chk_handling_rules_kind (check); chk_handling_rules_hours (check); chk_handling_rules_degree_days (check); chk_handling_rules_fast (check); chk_handling_rules_degree_days_harvest (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_harvest.py` and 4 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_harvest.py` and 5 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1184,7 +1185,7 @@ A health observation, a vet or fish-health visit, a lab result or a rise in mort
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › health_events
 - **forms**: `HealthEventForm`
 - **constraints**: chk_health_events_kind (check); chk_health_events_signs (check); chk_health_events_diagnosis (check); chk_health_events_confirmation (check); chk_health_events_closed_on (check); chk_health_events_void_reason (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 8 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 9 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1259,7 +1260,7 @@ A medicine's withdrawal for one species, or for every species without a row of i
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › medicine_withdrawals
 - **forms**: `MedicineWithdrawalForm`, `MedicineWithdrawalForm`
 - **constraints**: uq_medicine_withdrawals_species (unique: medicine, species); chk_medicine_withdrawals_value (check); chk_medicine_withdrawals_degree_days (check); chk_medicine_withdrawals_days (check); chk_medicine_withdrawals_margin (check)
-- **tests that mention it**: `core/test_languages.py`, `farm/tests/test_health.py`, `farm/tests/test_migration_withdrawals.py` and 1 more
+- **tests that mention it**: `core/test_languages.py`, `farm/tests/test_health.py`, `farm/tests/test_migration_withdrawals.py` and 2 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1285,7 +1286,7 @@ A medicine or vaccine the farm uses.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › medicines
 - **forms**: `MedicineForm`
 - **constraints**: uq_medicines_name_live (unique: name); chk_medicines_kind (check); chk_medicines_administration (check); chk_medicines_status (check); chk_medicines_lice_report_code (check); chk_medicines_strength (check); chk_medicines_strength_positive (check); chk_medicines_strength_unit (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_harvest.py` and 7 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_harvest.py` and 9 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1342,7 +1343,7 @@ A production unit within a site: a hatchery hall, a nursery, a grow-out unit.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › production_departments
 - **forms**: `ProductionDepartmentForm`
 - **constraints**: uq_production_departments_code_live (unique: code); uq_production_departments_site_name_live (unique: site, name); chk_production_departments_capacity (check); chk_production_departments_live_on_a_site (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_design_shell.py` and 56 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_design_shell.py` and 57 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1465,7 +1466,7 @@ A physical facility (locality).
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › sites
 - **forms**: `SiteForm`
 - **constraints**: uq_sites_code_live (unique: code); uq_sites_name_live (unique: name); uq_sites_lokalitetsnummer_live (unique: lokalitetsnummer); chk_sites_lokalitetsnummer_range (check); chk_sites_organisation_number (check); chk_sites_production_form (check); chk_sites_latitude_range (check); chk_sites_longitude_range (check); chk_sites_altitude_range (check); chk_sites_coordinates_paired (check); chk_sites_sea_cage_location (check); chk_sites_timezone_given (check); chk_sites_lice_area (check)
-- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 75 more
+- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 79 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1619,7 +1620,7 @@ A line of the stock ledger: fish of one batch into (+) or out of (−) one unit,
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › stock_movements
 - **forms**: `MortalityForm`, `CullForm`, `WeighingForm`, `TransferForm`, `LegForm`, `GradingForm`, `OutputForm`, `HarvestForm`, `DeliveryForm`, `EscapeForm`, `InputLineForm`
 - **constraints**: chk_stock_movements_kind (check); chk_stock_movements_sign (check); chk_stock_movements_weight_positive (check); chk_stock_movements_weight_required (check); chk_stock_movements_weight_inherited (check); chk_stock_movements_pair (check); chk_stock_movements_measured (check); chk_stock_movements_reason (check); chk_stock_movements_escape_removes (check); chk_stock_movements_size_class (check); chk_stock_movements_harvest_weighed (check); chk_stock_movements_sample (check); uq_stock_movements_line (unique: operation, unit, batch, kind, pair)
-- **tests that mention it**: `farm/tests/test_cleaner_fish.py`, `farm/tests/test_escape_delivery.py`, `farm/tests/test_fix_seed_size_mix.py` and 5 more
+- **tests that mention it**: `farm/tests/test_cleaner_fish.py`, `farm/tests/test_emptied_unit.py`, `farm/tests/test_escape_delivery.py` and 10 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1649,7 +1650,7 @@ One thing a person did to the stock (a stocking, a mortality, a weighing), the u
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › stock_operations
 - **forms**: `MortalityForm`, `CullForm`, `WeighingForm`, `TransferForm`, `LegForm`, `GradingForm`, `OutputForm`, `HarvestForm`, `DeliveryForm`, `EscapeForm`, `InputLineForm`, `StockVoidForm`
 - **constraints**: chk_stock_operations_kind (check); chk_stock_operations_void_reason (check); chk_stock_operations_ack_on_arrival (check); chk_stock_operations_size_mix_ack_on_arrival (check); chk_stock_operations_health_event (check)
-- **tests that mention it**: `core/tests_entry_key.py`, `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py` and 17 more
+- **tests that mention it**: `core/tests_entry_key.py`, `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py` and 20 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1802,7 +1803,7 @@ A unit fish are held in: a tank, a pond or a cage.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › tanks
 - **forms**: `TankForm`
 - **constraints**: uq_tanks_code_live (unique: code); uq_tanks_regulatory_unit_id_live (unique: production_department, regulatory_unit_id); chk_tanks_kind (check); chk_tanks_status (check); chk_tanks_water_type (check); chk_tanks_shape_by_kind (check); chk_tanks_material_by_kind (check); chk_tanks_pond_type_by_kind (check); chk_tanks_liner_type_by_kind (check); chk_tanks_water_source_by_kind (check); chk_tanks_cage_type_by_kind (check); chk_tanks_frame_type_by_kind (check); chk_tanks_net_material_by_kind (check); chk_tanks_tank_required (check); chk_tanks_pond_required (check); chk_tanks_cage_required (check); chk_tanks_diameter_by_shape (check); chk_tanks_length_by_shape (check); chk_tanks_stated_volume_m3_by_shape (check); chk_tanks_width_by_shape (check); chk_tanks_square_sides (check); chk_tanks_long_side_first (check); chk_tanks_water_depth (check); chk_tanks_max_depth (check); chk_tanks_liner_by_pond_type (check); chk_tanks_liner_thickness (check); chk_tanks_submersion (check); chk_tanks_diameter_range (check); chk_tanks_length_range (check); chk_tanks_width_range (check); chk_tanks_stated_volume_m3_range (check); chk_tanks_depth_range (check); chk_tanks_surface_area_m2_range (check); chk_tanks_max_depth_range (check); chk_tanks_mesh_size_mm_range (check); chk_tanks_max_submersion_depth_range (check); chk_tanks_max_density_kg_m3_range (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_workspaces.py` and 33 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_workspaces.py` and 34 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1884,7 +1885,7 @@ One course given to the fish of one or more units of a site: a bath, a medicated
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › treatments
 - **forms**: `TreatmentForm`, `LastDayForm`
 - **constraints**: chk_treatments_method (check); chk_treatments_reason (check); chk_treatments_medicine (check); chk_treatments_dates (check); chk_treatments_dose (check); chk_treatments_amount (check); chk_treatments_dose_unit (check); chk_treatments_amount_unit (check); chk_treatments_bath_minutes (check); chk_treatments_dose_positive (check); chk_treatments_amount_positive (check); chk_treatments_void_reason (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 6 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 9 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1954,7 +1955,7 @@ The water a species is kept in: for one parameter, the bounds outside which a va
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › water_limits
 - **forms**: `WaterLimitForm`
 - **constraints**: uq_water_limits_live (unique: species, parameter, water_type); chk_water_limits_parameter (check); chk_water_limits_water_type (check); chk_water_limits_any_bound (check); chk_water_limits_critical_low (check); chk_water_limits_warning_low (check); chk_water_limits_warning_high (check); chk_water_limits_critical_high (check); chk_water_limits_order (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_calculator.py` and 8 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_calculator.py` and 6 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1988,7 +1989,7 @@ A water sample: what a person measured at one sampling point (a place on a unit,
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › water_measurements
 - **forms**: `WaterSampleForm`, `RoundForm`, `RoundRowForm`, `SampleVoidForm`
 - **constraints**: chk_water_measurements_any_value (check); chk_water_measurements_source (check); chk_water_measurements_void_reason (check); chk_water_measurements_temperature_c (check); chk_water_measurements_oxygen_mg_l (check); chk_water_measurements_oxygen_saturation_pct (check); chk_water_measurements_ph (check); chk_water_measurements_alkalinity_mg_l (check); chk_water_measurements_co2_mg_l (check); chk_water_measurements_tan_mg_l (check); chk_water_measurements_nitrite_n_mg_l (check); chk_water_measurements_nitrate_n_mg_l (check); chk_water_measurements_tgp_pct (check); chk_water_measurements_salinity_ppt (check); chk_water_measurements_turbidity_ntu (check); chk_water_measurements_oxygen_basis_temperature (check); chk_water_measurements_oxygen_basis_salinity (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 17 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 16 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2039,7 +2040,7 @@ Where a water sample is taken: a named place on one unit, one system’s loop or
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › water_sampling_points
 - **forms**: `SamplingPointForm`
 - **constraints**: chk_water_sampling_points_one_owner (check); chk_water_sampling_points_kind (check); chk_water_sampling_points_name (check); chk_water_sampling_points_depth (check); chk_water_sampling_points_flow (check); chk_water_sampling_points_share (check); uq_water_sampling_points_unit_name (unique: unit, name); uq_water_sampling_points_unit_middle (unique: unit); uq_water_sampling_points_system_name (unique: system, name); uq_water_sampling_points_system_middle (unique: system); uq_water_sampling_points_equipment_name (unique: equipment, name); uq_water_sampling_points_equipment_middle (unique: equipment)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/helpers.py`, `farm/tests/test_calculator.py` and 14 more
+- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/helpers.py`, `farm/tests/test_calculator.py` and 13 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2075,7 +2076,7 @@ One warning a person went on past when a write changed a medicine withdrawal (th
 - **how it works**: One row for each warning of the withdrawal guard (farm.health.withdrawal.guarded) the person went on past: a harvest already recorded brought inside a withdrawal, or fish held today freed by the write.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › withdrawal_acknowledgements
 - **constraints**: chk_withdrawal_acknowledgements_warning (check); chk_withdrawal_acknowledgements_harvest (check)
-- **tests that mention it**: `farm/tests/test_harvest_inside_withdrawal.py`, `farm/tests/test_withdrawal_gate.py`, `farm/tests/test_withdrawal_guard.py`
+- **tests that mention it**: `farm/tests/test_emptied_unit.py`, `farm/tests/test_harvest_inside_withdrawal.py`, `farm/tests/test_withdrawal_gate.py` and 2 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2203,7 +2204,7 @@ A person’s request to be away from a first to a last day, and how it was decid
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › leave_requests (never shown: decision_note, reason)
 - **forms**: `LeaveRequestForm`
 - **constraints**: chk_leave_requests_days (check); chk_leave_requests_status (check); chk_leave_requests_decided (check); chk_leave_requests_pending_undecided (check); excl_leave_requests_employee_days (exclusion: employee, first_day, last_day)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 15 more
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_after_create.py`, `hr/tests/test_attendance.py` and 16 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2238,7 +2239,7 @@ The kinds of leave the company grants (annual, sick, parental), with the days a 
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › leave_types
 - **forms**: `LeaveTypeForm`
 - **constraints**: uq_leave_types_code_live (unique: code); chk_leave_types_code (check); chk_leave_types_days (check); chk_leave_types_status (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 14 more
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 15 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2880,7 +2881,7 @@ The cards of each monitoring board: a unit and, when it differs from the board, 
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Monitoring › monitor_board_units
 - **forms**: `MonitorBoardUnitForm`, `BoardUnitForm`
 - **constraints**: uq_monitor_board_units_unit (unique: board, unit); chk_monitor_board_units_mode (check)
-- **tests that mention it**: `monitoring/tests/test_band.py`, `monitoring/tests/test_boards.py`, `monitoring/tests/test_golden.py` and 3 more
+- **tests that mention it**: `monitoring/tests/test_boards.py`, `monitoring/tests/test_golden.py`, `monitoring/tests/test_resolve.py` and 1 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2905,7 +2906,7 @@ The named wall screens of Monitoring: a name, the template its cards are drawn w
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Monitoring › monitor_boards
 - **forms**: `MonitorBoardForm`
 - **constraints**: uq_monitor_boards_name_live (unique: name); chk_monitor_boards_name (check); chk_monitor_boards_mode (check); chk_monitor_boards_refresh (check); chk_monitor_boards_card_width (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `monitoring/tests/test_band.py`, `monitoring/tests/test_boards.py` and 4 more
+- **tests that mention it**: `core/tests_workspaces.py`, `monitoring/tests/test_boards.py`, `monitoring/tests/test_golden.py` and 2 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2938,7 +2939,7 @@ Which template a unit’s card gets: a rule for one unit, system, system type, s
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Monitoring › monitor_card_assignments
 - **forms**: `CardTemplateAssignmentForm`
 - **constraints**: chk_monitor_card_assignments_one_scope (check); uq_monitor_card_assignments_scope (unique: unit, system, system_type, species, kind); chk_monitor_card_assignments_system_type (check); chk_monitor_card_assignments_kind (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `monitoring/tests/test_frame.py`, `monitoring/tests/test_load.py` and 5 more
+- **tests that mention it**: `core/tests_workspaces.py`, `monitoring/tests/test_frame.py`, `monitoring/tests/test_load.py` and 4 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2970,7 +2971,7 @@ The monitoring card templates: a name, the widgets of the card as a layout and t
 - **how it works**: The layout is edited on the Design tab (the designer fills the JSON the validator checks); the layout version is stamped from the layout. The three built-ins come from migration 0002 and a trigger keeps them as they are: Copy makes an editable one. Deleting a template deletes its rules and detaches the boards and templates that point at it; restoring brings back the template with its rules (the boards and templates stay detached).
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Monitoring › monitor_card_templates
 - **forms**: `CardTemplateForm`
-- **constraints**: uq_monitor_card_templates_name_live (unique: name); chk_monitor_card_templates_name (check); chk_monitor_card_templates_schema (check); chk_monitor_card_templates_object (check); chk_monitor_card_templates_widgets (check); chk_monitor_card_templates_count (check); chk_monitor_card_templates_bytes (check); chk_monitor_card_templates_stamp (check); chk_monitor_card_templates_expanded (check); chk_monitor_card_templates_builtin (check); chk_monitor_card_templates_measure (check)
+- **constraints**: uq_monitor_card_templates_name_live (unique: name); chk_monitor_card_templates_name (check); chk_monitor_card_templates_schema (check); chk_monitor_card_templates_object (check); chk_monitor_card_templates_widgets (check); chk_monitor_card_templates_count (check); chk_monitor_card_templates_bytes (check); chk_monitor_card_templates_stamp (check); chk_monitor_card_templates_expanded (check); chk_monitor_card_templates_builtin (check)
 - **tests that mention it**: `core/tests_workspaces.py`, `monitoring/tests/test_designer.py`, `monitoring/tests/test_frame.py` and 5 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
@@ -2990,8 +2991,6 @@ The monitoring card templates: a name, the widgets of the card as a layout and t
 | schema_version | smallint |  |  | system: not editable: set by the code |
 | layout | jsonb |  |  | CardTemplateForm › Design |
 | expanded_id | uuid | yes | monitor_card_templates (SET_NULL) | CardTemplateForm › General |
-| measure_w | smallint | yes |  | CardTemplateForm › General |
-| measure_h | smallint | yes |  | CardTemplateForm › General |
 
 ## reports
 

@@ -90,6 +90,7 @@ class NeedsAttentionTests(OverviewTestCase):
 
     def test_nothing_abnormal_says_so_in_words(self):
         self.sample(self.t1, co2_mg_l='8')
+        self.sample(self.t2, co2_mg_l='8')        # both stocked units: one without a sample needs attention (M-20)
         html = self.page()
         attention = section(html, 'Needs attention')
         self.assertIn('Nothing needs attention', attention)

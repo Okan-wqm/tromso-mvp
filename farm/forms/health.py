@@ -9,14 +9,14 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
 from core.crud import RowFormSet, TabbedForm, tab_fields
-from core.platform import correction_window_days
 
 from ..health import services
 from ..health.withdrawal import rules_text
 from ..models import HealthEvent, LiceCount, Medicine, MedicineWithdrawal, Site, Species, Supplier, Tank, Treatment
 from ..models.health import SAME_SPECIES_MESSAGE
 from ..models.handling import HandlingKind
-from ..stock.dates import local_today, site_earliest, site_today
+from ..stock.dates import site_earliest, site_today, too_old
+from ..stock.read import offered_day
 from .stock import DATE, DECIMAL, NOTES, EventChoice, ServiceErrors, handling_ack_field
 
 
@@ -213,8 +213,7 @@ class HealthEventForm(TabbedForm):
             if day > site_today(site):
                 self.add_error('date', _('The date cannot be in the future.'))
             elif day < site_earliest(site):
-                self.add_error('date', _('Operations can be dated at most %(days)d days back.') % {
-                    'days': correction_window_days()})
+                self.add_error('date', too_old(_('Operations can be dated at most %(days)d days back.')))
         return cleaned
 
 
@@ -227,7 +226,7 @@ class MedicineChoice(forms.ModelChoiceField):
 
 
 class TreatmentForm(ServiceErrors, forms.ModelForm):
-    """A treatment: the units (those with fish now, of one site), how and with what, its first and last day,
+    """A treatment: the units (those with fish now or on a day that may still be dated, of one site), how and with what, its first and last day,
     the dose and the amount used, the prescription and the vet, the health event it answers, notes."""
 
     token = forms.UUIDField(widget=forms.HiddenInput)
@@ -261,7 +260,7 @@ class TreatmentForm(ServiceErrors, forms.ModelForm):
         self.fields['units'].queryset = units
         self.fields['handling_ack'] = handling_ack_field(HandlingKind.TREATMENT)
         self._handling = None
-        today = local_today(unit)
+        today = offered_day(unit)        # none for a unit that is empty now: the course is of days its fish were there
         # A new record's own empty dates would win over the farm's today (as the feeding form says).
         self.initial.update({'start_date': today, 'end_date': today})
         if unit is not None:
@@ -358,7 +357,7 @@ class LiceCountForm(ServiceErrors, forms.ModelForm):
         self.fields['unit'].queryset = units
         if unit is not None:
             self.initial['unit'] = unit.pk
-        self.initial['date'] = local_today(unit)
+        self.initial['date'] = offered_day(unit)
 
     def save(self, user):
         data = self.cleaned_data

@@ -14,7 +14,7 @@ from core.models import AuditLog
 from ..feeding import read as feeding_read
 from ..models import Batch, OpeningBalance, StockOperation
 from ..stock import integrity, read, services
-from .helpers import role
+from .helpers import OPENING_WAY_OUT, WINDOW_WAY_OUT, role
 from .test_stock import STOCK_KEEPER, StockTestCase
 
 OWNER = ('view_platformsettings', 'change_platformsettings', 'view_openingbalance')
@@ -47,7 +47,7 @@ class RulesTests(OpeningBalanceTestCase):
 
     def test_the_real_stocking_date_may_be_beyond_the_window_the_takeover_day_may_not(self):
         self.assertEqual(self.refused(self.open, day=self.day(32)),
-                         {'date': ['Operations can be dated at most 31 days back.']})
+                         {'date': [f'Operations can be dated at most 31 days back. {WINDOW_WAY_OUT}']})
         self.assertEqual(self.refused(self.open, stocked_on=self.day(1)),
                          {'stocked_on': ['The fish were stocked on or before the takeover day.']})
         self.open()
@@ -154,7 +154,8 @@ class PageTests(OpeningBalanceTestCase):
         self.client.force_login(self.owner)
         response = self.client.post(reverse('farm:opening_balance_create'), self.data(day=self.day(40).isoformat()))
         self.assertEqual(response.status_code, 422)
-        self.assertEqual(response.context['form'].errors['day'], ['Operations can be dated at most 31 days back.'])
+        self.assertEqual(response.context['form'].errors['day'],
+                         [f'Operations can be dated at most 31 days back. {WINDOW_WAY_OUT}'])
         response = self.client.post(reverse('farm:opening_balance_create'), self.data(document=''))
         self.assertIn('document', response.context['form'].errors)
         self.assertEqual(Batch.objects.count(), 0)
@@ -176,4 +177,5 @@ class ExistingStockingTests(OpeningBalanceTestCase):
         self.assertEqual(batch.input_date, self.day(5))
 
     def test_the_window_still_bounds_a_normal_stocking(self):
-        self.assertEqual(self.refused(self.stock, days_ago=32), {'date': ['Operations can be dated at most 31 days back.']})
+        self.assertEqual(self.refused(self.stock, days_ago=32), {'date': [
+            f'Operations can be dated at most 31 days back. {OPENING_WAY_OUT} {WINDOW_WAY_OUT}']})

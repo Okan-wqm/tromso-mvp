@@ -2,7 +2,8 @@
 read, so a rule that depends on one cannot read it its own way.
 
 - `correction_window_days()`: how far back a daily record may be dated and how old a record may be voided (farm/stock/
-  dates.py applies it; every message that names the days reads it here);
+  dates.py applies it; every message that names the days reads it here), and `window_way_out()`, the sentence every
+  refusal by the window ends with: whose setting it is and where it is changed;
 - `second_approval_required(kind)`: whether an acknowledgement of that kind waits for a second person (the kinds are
   APPROVALS); the hook of the withdrawal acknowledgement calls it with 'withdrawal';
 
@@ -47,6 +48,17 @@ def forget():
 def correction_window_days():
     """How many days back a daily record may be dated, and how old a record may be voided."""
     return current().correction_window_days
+
+
+def window_way_out():
+    """What to do about a record older than the correction window, said with every refusal by the window (flow fault
+    B-07: "Operations can be dated at most 31 days back." was a dead end): whose setting the window is and where it is
+    changed, by the menu's own names, so the sentence follows the menu."""
+    from django.utils.translation import gettext as _
+
+    from . import navigation
+    return _('The correction window is the platform owner’s setting: it is changed in %(where)s.') % {
+        'where': navigation.trail('core.view_platformsettings', _('Platform settings'))}
 
 
 def second_approval_required(kind):

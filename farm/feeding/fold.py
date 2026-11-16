@@ -157,6 +157,8 @@ class Walk:
     days: dict = field(default_factory=dict)                    # (unit, day) -> Day, for the days asked
     split: dict = field(default_factory=dict)                   # feeding id -> {batch id: kg}
     orphans: list = field(default_factory=list)                 # feedings without fish, earliest first
+    lines: list = field(default_factory=list)                   # the ledger lines it folded, for a reader of the same
+                                                                # fish that would else read them again (last_fed_of)
 
 
 class _Walker:
@@ -276,6 +278,7 @@ def walk(lines, feedings=(), days=(), observe=None, projector=None):
     on to the fold. A `projector` (farm/feeding/projection.py) keeps the estimated weight along the same walk:
     it sees every stock line, every weighing point and the end of every day read. Raises the fold's StockError."""
     walker = _Walker(feedings, days, observe, projector, frozenset(line.batch_id for line in lines if line.cleaner))
+    walker.result.lines = lines
     walker.result.shares = fold(lines, walker.after, before=walker.before, on_line=walker.line)
     walker.capture(walker.result.shares)
     return walker.result

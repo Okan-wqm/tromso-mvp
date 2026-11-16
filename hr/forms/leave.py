@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from core import navigation
 from core.crud import CodedFormMixin, TabbedForm, tab_fields
 from core.widgets import DayInput
 
@@ -68,6 +69,15 @@ class LeaveRequestForm(TabbedForm):
         if self.instance._state.adding and own is not None and not self.is_bound:
             self.initial.setdefault('employee', own.pk)
         self.fields['leave_type'].queryset = LeaveType.objects.filter(status='active')
+        if not self.fields['leave_type'].queryset.exists():
+            # An empty list with no word of why was a dead end (flow fault B-03): say what is missing and where it is.
+            # Where: by the menu's own names (core.navigation.trail, as the correction window's refusal says its page,
+            # B-07), so the sentence follows the menu; Leave types has no menu line, it is a part of Scheduling settings.
+            self.fields['leave_type'].help_text = _(
+                'There is no active leave type yet, so a request cannot be filed. Leave types are added in '
+                '%(where)s › %(types)s, by a person whose role may.') % {
+                'where': navigation.trail('hr.view_schedulingsettings', _('Scheduling settings')),
+                'types': _('Leave types')}
         employee = own if self.instance._state.adding else self.instance.employee
         if not self.instance._state.adding and employee.user_id != getattr(user, 'pk', None) \
                 and not user.has_perm(scope.ALL):

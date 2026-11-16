@@ -7,10 +7,14 @@
   <h3 class="handling-title" id="withdrawal-change-title">{% trans "Medicine withdrawal" %}</h3>
   <div class="notice notice-warning handling-warnings" role="alert">
     <ul role="list">{% for text in withdrawal_change.messages %}<li>{{ text }}</li>{% endfor %}</ul>
+    {% if withdrawal_change.second_person %}
+    <p class="form-error" role="alert">{{ withdrawal_change.second_person }}</p>
+    {% else %}
     <div class="field">
       <label class="check"><input type="checkbox" name="withdrawal_ack" value="{{ withdrawal_change.fingerprint }}" aria-describedby="withdrawal-ack-help"> {% trans "Go on despite these warnings" %}</label>
       <div class="help" id="withdrawal-ack-help">{% trans "Fish under a medicine withdrawal must not go to food. Going on is stored with what is shown here and logged as critical." %}</div>
     </div>
+    {% endif %}
   </div>
 </section>
 {% endif %}

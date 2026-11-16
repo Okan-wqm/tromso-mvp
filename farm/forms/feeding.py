@@ -67,7 +67,9 @@ class FeedingForm(Acknowledged, ServiceErrors, forms.ModelForm):
     def __init__(self, *args, unit, stock=None, **kwargs):
         super().__init__(*args, instance=FeedingRecord(unit=unit), **kwargs)
         self.unit = unit
-        self.initial['date'] = local_today(unit)      # a new record: its own empty date would win over the field's
+        # A new record: its own empty date would win over the field's. The unit's today while it holds fish; no day for
+        # a unit that is empty now (`stock` None: the feeding is of a day its fish were there, flow fault S-04).
+        self.initial['date'] = local_today(unit) if stock is not None else None
         self.fields['token'].initial = uuid.uuid4()
         self.fields['feed'].queryset = Feed.objects.filter(status=Feed.Status.ACTIVE).prefetch_related('suitability')
         self.fields['feed'].choices = self._feed_choices(stock)

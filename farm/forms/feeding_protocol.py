@@ -11,13 +11,12 @@ from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _, ngettext
 
 from core.crud import DRAFT, CodedFormMixin, TabbedForm, tab_fields
-from core.platform import correction_window_days
 from core.widgets import DayInput
 
 from ..feeding import assignments
 from ..models import Batch, Feed, FeedingProtocol, ProtocolAssignment, ProtocolBand, Species, StockMovement, Tank
 from ..models.feeding_protocol import MAX_SFR, TEMPERATURE, ProtocolStatus
-from ..stock.dates import earliest, local_today
+from ..stock.dates import earliest, local_today, too_old
 
 DECIMAL = {'inputmode': 'decimal'}
 MAX_COLUMNS = 12      # temperature columns a table can have: what a screen shows side by side
@@ -254,8 +253,7 @@ def within_window(day, stored=None, unit=None):
     """A first day changed or new is at most the correction window back, as every daily record (farm/stock/dates.py):
     the days before are history."""
     if day != stored and day < earliest(unit):
-        raise ValidationError(_('An assignment can start at most %(days)d days back.') % {
-            'days': correction_window_days()})
+        raise ValidationError(too_old(_('An assignment can start at most %(days)d days back.')))
     return day
 
 

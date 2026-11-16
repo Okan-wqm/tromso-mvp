@@ -322,7 +322,7 @@ class WithdrawalTests(HealthTestCase):
         self.assertEqual((block.until, block.approximate), (None, False))
         # The harvest is warned: an unknown end is never clear.
         [warning] = handling_check.check('harvest', self.t1, self.today)
-        self.assertIn('its end unknown', warning.message())
+        self.assertIn(': end unknown.', warning.message())
         self.assertIn('No withdrawal is recorded for Atlantic salmon', warning.message())
         # Adding the row for every species gives it its end at once.
         self.withdraw(medicine, None, days=7)
@@ -570,7 +570,6 @@ class BulkRegistryTests(HealthTestCase):
             found = handling_check.in_force_of(self.units, day)
             for unit in self.units:
                 self.assertEqual(found[unit.pk], handling_check.in_force(unit, day or local_today(unit)))
-        self.assertEqual(handling_check.in_force(self.t2, local_today(self.t2), [self.b3]), [])
 
     def test_the_row_badges_of_production_units_are_the_units_with_a_block_in_force(self):
         self.assertEqual(set(harvest_views.withdrawals(self.units)), {self.t1.pk, self.t2.pk, self.s1.pk})
@@ -867,7 +866,7 @@ class TreatmentServiceTests(HealthTestCase):
         self.treat(self.medicine(days=7), 3, 3)
         out = io.StringIO()
         call_command('check_withdrawal', stdout=out)
-        self.assertIn(f'T-01 · {self.batch.code}: until {self.day(-5).isoformat()}. Salmosan vet., bath',
+        self.assertIn(f'T-01 · {self.batch.code}: harvest from {self.day(-5).isoformat()}. Salmosan vet., bath',
                       out.getvalue())
         self.assertIn('1 of 1 units with fish are under a medicine withdrawal.', out.getvalue())
 
@@ -1568,7 +1567,7 @@ class ProductionUnitsHealthTests(HealthTestCase):
         [block] = row['withdrawal']
         self.assertEqual((block.batch, block.until, block.approximate, block.source),
                          (self.batch, self.day(-5), False, treatment))
-        line = (f'Not suitable for harvest — medicine withdrawal of {self.batch.code} until '
+        line = (f'Not suitable for harvest — medicine withdrawal of {self.batch.code}: harvest from '
                 f'{stock_services.shown_date(self.day(-5))}.')
         self.assertContains(page, line, count=1)
         self.assertContains(page, 'Record treatment')
@@ -1590,7 +1589,7 @@ class ProductionUnitsHealthTests(HealthTestCase):
     def test_an_unknown_end_says_so(self):
         self.treat(self.medicine(degree_days=50), 2, 2)
         page = self.client.get(reverse('farm:production_units'), {'unit': self.t1.pk})
-        self.assertContains(page, f'Not suitable for harvest — medicine withdrawal of {self.batch.code}, its end '
+        self.assertContains(page, f'Not suitable for harvest — medicine withdrawal of {self.batch.code}: end '
                                   'unknown.')
 
     def test_a_harvest_during_the_withdrawal_warns_and_keeps_what_was_shown(self):

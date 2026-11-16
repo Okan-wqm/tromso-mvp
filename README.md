@@ -568,7 +568,14 @@ escape from several units is recorded for each). A harvest shows the handling ch
 delivery the fast alone (a medicine withdrawal is a meat withdrawal: it means nothing for live fish), and each asks for an
 acknowledgement when it warns. A unit holding two batches asks which one.
 Dates default to the farm's today (the site's time zone), never in the future, at most the platform owner's correction window (31 days until they set another; Platform settings) back
-(`core.platform.correction_window_days`). A form sent twice records once (the form's key, stored with it in `entry_keys`).
+(`core.platform.correction_window_days`). A refusal by the window says what to do: every such message is worded in one
+place (`farm.stock.dates.too_old`) and ends with whose setting the window is and where it is changed ("The correction
+window is the platform owner’s setting: it is changed in Company › Administration › Platform settings.",
+`core.platform.window_way_out`, the path read from the menu), and a refused stocking first names the opening balance
+("Fish the farm already had before then are registered as an opening balance (Company › Administration › Opening
+balances), by the platform owner."): a stock operation and its void, a feeding, a water sample and its void, a
+treatment, a lice count, a health event, a movement of the store, a harvest plan, a protocol assignment and an
+experiment's day 0 (`farm/tests/test_window_refusals.py`). A form sent twice records once (the form's key, stored with it in `entry_keys`).
 
 **The opening balance** (F-197; Company › Administration › Opening balances, `/administration/opening-balances/`): the fish
 a farm already has on the day it starts using the platform. The platform owner (Platform settings: Edit; nobody else, checked
@@ -593,6 +600,21 @@ lines: a unit's fish is their sum, its biomass a date-ordered fold (`farm/stock/
 their batch's average in that unit on that day, a weighing sets the biomass from that day, the last fish
 out take whatever the book holds, moved fish arrive with exactly the grams that left, a grading weighs
 the whole lot. Only measured weights enter the book. Nothing is stored that can drift.
+
+**A record of a day the unit held fish can be entered once the unit is empty** (flow fault S-04): the dialogs gate on
+the record's own day inside the correction window, never on the fish in the unit today. A dialog of a unit offers the
+batches in it now and those that left it on a day that may still be dated (`farm.stock.read.left_within`, `PastShare`:
+"B-2026-001 — in the unit until 10.11.2026"); the Treatments and Sea-lice count dialogs and the feeding chooser offer
+such units, and the drawer of an emptied unit has "Records of the fish that left" with the same dialogs. A unit that is
+empty now gets no default date (today would be wrong): the person gives the day, in the stock dialogs and in the
+feeding, treatment and sea-lice dialogs alike (`farm.stock.read.offered_day`); the batch choice counts the batches the
+unit holds now and says that those that left can still be chosen (`farm.forms.stock.batches_help`,
+`farm/tests/test_review_texts.py`). The service decides on that day as it
+does for every record, so every later figure follows (a weighing dated before the harvest changes the harvest's book
+kilos; a treatment dated before it is asked about the harvest inside its withdrawal), and a record that would leave a
+later operation without its fish is refused, naming it ("The harvest of 10.11.2026 in T-01 would be left without its
+fish … Void that operation first, or correct this one."). No fish now and none inside the window is said: "No fish are
+in T-02, and none were in it in the last 31 days: there is nothing to record here." (`farm/tests/test_emptied_unit.py`).
 
 **One write path** (`farm/stock/services.py`, `_commit`): it locks the batches and the units, checks the
 date, the units' status (a unit takes fish while active, preparing or fallow, and only on a site: F-212), the species (one per unit,
@@ -1775,7 +1797,10 @@ off, Return to supplier and Count a location, each a dialog (the shared dialog o
 reasons on their fields, back to the page it came from):
 
 - **Overview**: feeding beyond the book (per site and feed, since when, a link to the day-by-day book) and
-  expired lots fed; per site and item the stock on hand, the feed of the last 7 days and the **days of
+  expired lots fed; **a feed that was fed and never delivered** (it has no item yet: an item is made at the first
+  delivery or reorder level) is named too, with all its feeding inside the correction window as the shortfall ("32 kg
+  of Grower 4 fed at Bergen since 12.11.2026, and none of it was ever delivered to the store …": `read.undelivered`
+  folds it as an item without a line, by the same fold; `inventory/tests/test_undelivered_feed.py`); per site and item the stock on hand, the feed of the last 7 days and the **days of
   cover** (on hand ÷ the kilos fed a day there over the last 7 days); low stock (on hand of an item in a
   location below its reorder level, owner decision Q-S4: what a purchasing agent will read to propose
   orders); over capacity; lots expiring within 30 days and expired lots with stock; the value on hand per
@@ -1931,22 +1956,70 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
   one the medicine withdrawal adds up (`farm/water/degree_days.py`, one definition for both: the unit's middle point,
   else its system's loop; a past day without a measured temperature counts at the species' assumed temperature, else as
   0 °C, and the warning says so). Each thing the rule asks for must be reached, so the warning shows each: "Last fed
-  3 Nov 2026, 02:52, 48.0 h and 36 degree-days before 6 Nov 2026: the harvest rule asks for 72 h and 60 degree-days." The last feeding is of the fish themselves, wherever they were
-  fed: the feeding walk's split says which batches a record fed, so fish moved in yesterday bring their last
-  meal in the old unit with them (`farm.feeding.read.last_fed_at`). A record without a time counts from the end
-  of its day and a feeding on the day gives 0 h, so **the fast is never overstated** (and the degree-days of several
+  3 Nov 2026, 02:52, 48.0 h and 36 degree-days before 6 Nov 2026: the harvest rule asks for 72 h and 60 degree-days." **The fast is of the fish in the unit
+  handled** (the owner, 14.11.2026: fish of two batches in one unit are one group; flow fault S-01): one fast for the
+  unit, whichever batch a dialog names, counted from the latest feeding of production fish along the fish's own path
+  (`farm.feeding.read.last_fed_of`, `Paths`): this unit's feedings since each of its batches came into it, the
+  feedings of the unit they came from up to and including the day of the move (a move has no time), and so on back;
+  **a path is cut at a place in the ledger's own order** (the day, then the order the operations were entered: the
+  order the transfers happened in), never at a day, so a unit emptied and refilled on one day, a move there and back
+  and a grading day (the fish moved out before others came in) keep the true last feeding of the fish now in the
+  unit; where a day leaves a doubt the day counts in both units (over-warned, never under-warned). The ledger is
+  indexed once for every unit asked (`Paths`; a test counts the reads of ledger lines, not seconds), and the pages'
+  `figures()` hands the reader the lines its own walk folded, so the units list, the drawer, the plans and a wall of
+  cards cost no query more than before (`monitoring.tests.test_budget`);
+  never a unit the fish were not in, nor their old unit after they left it, so a sibling tank fed after a split does
+  not break the fast of the fish that were moved, and the least-fasted fish of a mixed unit decide. The sentence, the
+  acknowledgement row (`handling_acknowledgements.feeding`, farm 0039, which goes back only while no row names a
+  feeding: `farm/tests/test_migration_feeding_acknowledgement.py`) and the critical log line name the feeding's
+  unit ("Last fed 09.11.2026 09:00 in T-01, 87.0 h before …"), and when that unit is on another clock than the unit
+  handled, the moment on both. The one reader also gives "Last fed" on the units list, the drawer ("in T-01, before
+  the fish were moved here"), the production plans and the cards (`farm/tests/test_fast_of_the_unit.py`, the cases of
+  the panel's rules). A record without a time counts from the end
+  of its day and a feeding on the day gives 0 h, so **the fast is never overstated**; the sentence names the feeding
+  once, as it is true: its day and time, or its day and "(no time recorded: counted from the end of the day)", never
+  the counted moment as a feeding time, and a feeding on the handling's own day reads "Fed on the day of the handling
+  itself (09:00): no fast before …", with the unit when the fish were fed in the unit they came out of that day
+  ("09:00 in T-01") (with a warning the notes do not repeat the feeding;
+  `farm/tests/test_fasting_sentence.py`) (and the degree-days of several
   batches in a unit are the fewest). The rule is the species'
   own, else the one for every species; a grading takes the longer of the grading and the transport rule. No
   rule, or no feeding in the 31 days before (longer than any rule), is said, not warned.
 - *Medicine withdrawal* (**a harvest only**: the fish go to food, to the slaughter facility the harvest names; a
   medicine withdrawal is a meat withdrawal, so it means nothing when live fish are moved or graded, where the
   fast and the live-transfer facts are what matter, and a treatment during a withdrawal harms nobody): every block
-  a registered provider gives for the batch whose end is after the day, or unknown (unknown is a warning, never
-  clear). The health records register their provider in `farm/apps.py` (`farm/handling/withdrawal.py`:
+  a registered provider gives for the **unit** whose end is after the day, or unknown (unknown is a warning, never
+  clear). The withdrawal is the unit's, never the chosen batch's: a net cannot separate the batches of one unit, so
+  the withdrawal of any fish in it holds a harvest of it, whichever batch the dialog names (`check.in_force(unit, day)`
+  takes no batch). The warning names the batch that is held and, when the unit holds other fish beside it, says "It
+  holds every fish in T-02: the fish of different batches in one unit cannot be told apart at a harvest."; the
+  acknowledgement row keeps that batch, the earliest suitable harvest date and the plan rows read the same blocks, and a
+  harvest locks every batch in its unit (`farm.stock.services._locked_for`), so it and a write that changes one of
+  their withdrawals take turns (`farm/tests/test_withdrawal_shared_unit.py`). **A batch holds a unit on a day when it
+  had fish there at any moment of that day** (`farm.stock.read.Presence.during`: at the end of the day before, or fish
+  of it came in that day), so held fish that come into a unit and leave it again the same day still hold it that day:
+  the other batch's harvest out of it warns and takes its tick, and `check_withdrawal` lists it; the same question says
+  which fish a course reached (`farm/tests/test_withdrawal_same_day.py`; the stock books' `Presence.present`, the ends
+  of the days, is unchanged). **Cleaner fish beside the production fish are kept apart** (`check.held_apart`, until the
+  owner and the vet decide): their withdrawal is no warning on the production fish's harvest, no acknowledgement of
+  theirs and not their earliest date; the dialog says it as a note ("Cleaner fish in C-01 are in a medicine
+  withdrawal (B-2026-004, harvest from 19.11.2026): keep them out of the harvest."), and the unit's own line still
+  shows it (`farm/tests/test_withdrawal_cleaner_fish.py`). The health records register their provider in `farm/apps.py` (`farm/handling/withdrawal.py`:
   `register(provider)`, `blocks(unit, day)`, `WithdrawalBlock(batch, until, approximate, reason, source)`; see
   Operations › Health). With no provider registered the harvest dialog would say "Medicine withdrawal not
   checked" and warn nothing.
-  It reads "Not suitable for harvest — medicine withdrawal of B-2026-001 until 14 Dec 2026". The informational
+  It reads "Not suitable for harvest — medicine withdrawal of B-2026-001: harvest from 14.12.2026". **A withdrawal's
+  end is said in one wording everywhere** (`farm.handling.withdrawal.harvest_from`, the template filter
+  `harvest_from`): "harvest from <the first day the fish may be harvested>", "harvest from about …" when projected,
+  "end unknown" when it cannot be worked out, never "until <date>" (which read as the last held day on the Treatments
+  list and as the first free day on five other pages, a day apart for one withdrawal): the harvest dialog, the drawer,
+  the units row, the harvest plan and production plan rows, the Treatments list (which says both days, the last held
+  day only with the first free day beside it: "until 13.12.2026 (harvest from 14.12.2026)", `held_until`), the
+  earliest suitable date, the
+  withdrawal guard's question, the stored critical log line and `check_withdrawal`
+  (`farm/tests/test_withdrawal_wording.py`). Not yet in that wording: the monitoring card's badge ("Withdrawal ·
+  <date>", `templates/monitoring/_card.html`) and the column label "Withdrawal until" of the two acknowledgement
+  tables (a label change is a migration). The informational
   badges (Production units rows, the drawer's Harvest and handling section, the plans) say the same and stay.
 - *The dialogs* (harvest, transfer, grading) show the check for the form's date and batch under "Before
   handling": the last feeding and its hours, the rule, for a harvest the withdrawal, and with warnings the box "Go
@@ -1977,7 +2050,7 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
 - *The earliest suitable harvest date* (`check.earliest`, on a harvest's dialog and the drawer's Harvest and handling
   section, and on each harvest plan item and production plan row): the **later of the end of the batch's medicine
   withdrawal and the first day its purge can be complete from the last feeding** (if it is not fed again), and **which
-  decides**: "Earliest suitable harvest date: 17 Nov 2026. Medicine withdrawal decides: until 17 Nov 2026." or "Earliest
+  decides**: "Earliest suitable harvest date: 17 Nov 2026. Medicine withdrawal decides: harvest from 17.11.2026." or "Earliest
   suitable harvest date: 15 Nov 2026. Purging decides: feeding must stop by 11 Nov 2026." (a tie goes to the
   withdrawal; an unknown withdrawal end is "not known"). It is worked out from the parts above on read, nothing is
   stored; a plan dated before it is marked, and a harvest before it is a warning on the parts' terms, acknowledged and
@@ -2146,9 +2219,9 @@ Where it shows: the health records give it to the shared handling check through 
 `farm/handling/withdrawal.py` (`blocks(unit, day)`: a block per batch and cause, `until` the first day the fish
 may be harvested; the provider is registered in `farm/apps.py`). From there Production units marks the unit's
 row **Withdrawal** and the drawer's Harvest and handling section says **"Not suitable for harvest — medicine
-withdrawal of B-2026-001 until 14 Dec 2026."** ("about" when projected, "its end unknown") with why, to everyone
+withdrawal of B-2026-001: harvest from 14.12.2026."** ("harvest from about …" when projected, "end unknown") with why, to everyone
 who sees the page; the harvest dialog warns, never blocks (owner decision), and keeps the acknowledgement (the
-transfer and grading dialogs are not asked for a withdrawal: live fish are not eaten). The Treatments list shows each batch's end as "until 13 Dec 2026 (harvest from 14 Dec 2026)".
+transfer and grading dialogs are not asked for a withdrawal: live fish are not eaten). The Treatments list shows each batch's end with both days, the second in the same words: "until 13.12.2026 (harvest from 14.12.2026)".
 
 **Health events** (a tab: created and edited on their form, every change logged, voided with a reason instead of
 deleted): the site (chosen once) and some of its units or the whole site, the date, the kind (observation, vet or
@@ -2199,7 +2272,8 @@ Treatments (read, create, edit = change the last day, delete = void), Health eve
 void) and Sea-lice counts (read, create, delete = void), the last three under Production · Operations · Health.
 The admin shows voided treatments, events and counts and does not restore them. `manage.py check_withdrawal`
 works out every unit's withdrawal from scratch and lists the fish held, with the end and why, and then **every harvest
-already recorded inside a withdrawal** (medicated fish that may have gone to food), however it came to (a treatment entered
+already recorded inside a withdrawal** of its own batch or of a production batch that had fish in its unit at any moment of that day ("… lies inside a
+withdrawal of B-2026-001, in the same unit (harvest from …)"; medicated fish that may have gone to food), however it came to (a treatment entered
 after the harvest, a longer course, a corrected temperature, a medicine's withdrawal changed), each with whether someone
 acknowledged it or not: an acknowledgement counts only for the harvest, the batch and the withdrawal it names (when the
 harvest was recorded, or when the write that brought it inside was), never for another withdrawal of the same harvest.
@@ -2597,7 +2671,9 @@ Fish at the month’s end: 500 → 1000", `reports/labels.py`), never a key of t
 A report's page shows its figures in the kind's own table (smolt, biomass, the slaughter plan, land stock, a site taken
 into use or emptied), an event notice's narrative for a notice (`reports.kinds.EVENTS`), and any other kind (sea lice,
 cleaner fish) as the print page does: every figure named by **one label registry** (`reports/labels.py`, the words the pages
-use, translated, numbers as the language writes them; a test computes a report of every kind with every optional part filled
+use, translated, numbers as the language writes them, and what names rather than counts, an organisation number, a
+lokalitetsnummer, an approval number, a unit number, a code, a year class, a week, printed as written, never
+"987,654,321": `labels.names`, `reports/tests/test_identifiers.py`; a test computes a report of every kind with every optional part filled
 (the contact person, a health event and its units, an escape, a planned slaughter by weekday), renders its print page and
 describes every path of its content, and fails on any row or difference that is a raw key or "(unnamed figure)"; a second
 test reads the computation's code (dict keys and assigned keys) so every key it writes has its
@@ -3400,8 +3476,12 @@ a person outside the team is a 404 and writes nothing); the page's batch route i
 
 ### Time & shifts › Leave requests (`/hr/leave/`) and Leave types
 
-**Leave types** (`/hr/settings/leave-types/`, no menu line, reached from Scheduling settings): a name, a code, the days a
-year (empty: no limit) and whether a request needs approval; owner data, none seeded. **A request** (`hr.LeaveRequest`,
+**Leave types** (`/hr/settings/leave-types/`, no menu line, reached from Scheduling settings, which lists them and
+links "Manage leave types" beside Shifts and Holidays; a test holds that every hidden menu entry is linked from a
+visible page of its group, `hr/tests/test_leave_types_linked.py`): a name, a code, the days a
+year (empty: no limit) and whether a request needs approval; owner data, none seeded. While no active type exists the
+leave request form says so under the empty list and where types are added (the place by the menu's own names,
+`core.navigation.trail`). **A request** (`hr.LeaveRequest`,
 `leave_requests`) is a person, a type, a first and a last day, a status (pending, approved, rejected, cancelled), the person's
 reason, the decider, the time and a note. Database rules: the last day is not before the first; an approved or rejected request
 has the time it was decided; **no overlap** for one person while a request is pending or approved (an exclusion constraint on
@@ -3741,7 +3821,10 @@ The rules the platform owner (the customer the platform is given to) sets for th
   'withdrawal')` is asked by the one hook (`farm/handling/check.py` `second_person_must_approve`); an unknown kind is an
   error, never a quiet no. The second person's approval flow is not built yet, so the setting FAILS CLOSED (cross review
   F4): ticked, going on past a medicine withdrawal is refused with the reason (a second person must approve, and that
-  approval cannot be given here yet); nobody goes on alone. Unticked (the default), one person's acknowledgement goes on,
+  approval cannot be given here yet); nobody goes on alone. The setting is consulted before anything is asked: the
+  harvest dialog and the withdrawal guard's question show that sentence in the place of their box, and a save is
+  answered with it whatever is ticked, never first with "Tick the box" (`check.needs_second_person`,
+  `farm/tests/test_second_approval_said_first.py`). Unticked (the default), one person's acknowledgement goes on,
   logged as critical.
 - **Clock tolerance (seconds)**, 0 to 3600, 300 until the owner sets another (cross review F10): how far ahead of the
   server's clock a water value may be stamped and still count as fresh. A value further ahead, up to the ingest
@@ -4257,7 +4340,11 @@ without a redesign yet, and are redesigned one page at a time.
   (of all units), feed today and over 7 days, critical water points and water points with a warning (of all sampling
   points), tasks due today, overdue tasks, reports due (with the overdue ones as a chip). Each card is the figure large
   with its label, one sub-line and its source and time ("Stock records at 15:35"), the whole card a link; grey unless
-  abnormal (the 4 px status edge, glyph and word). Below, Needs attention in compact rows (the water points with a
+  abnormal (the 4 px status edge, glyph and word). Below, Needs attention in compact rows (what else is not "nothing needs attention", each from the read of the page
+that owns it, so the two cannot disagree: the stocked units with no water value inside the Water page's 30 days, the
+sites with fish that are not set up for reports, for which nothing can be known to be due, and the notices to file at
+once, which have no deadline and so are never "overdue"; the head's chips, the Reports card and the Reports due panel
+say the same, and the company's home page too: `farm/tests/test_overview_truth.py`; the water points with a
   critical or warning value measured at them, the critical first, at most six, each value on one line with its origin and
   age, a small History button; overdue tasks; overdue reports and duties) and beside it, from 1024 px, the farm as cards
   (production departments, systems, equipment, tanks, ponds and cages; the systems by status and the units by kind) and
@@ -4511,9 +4598,14 @@ What one tab needed and the next ones will too lives in `core/`:
   stay on one page.
 - `CodedMixin.name_field`: a record shown as "Name (CODE)" whose name is in another field (a
   species' common name).
+- After a create the new record opens for editing only for a person who may edit it; a person whose role creates and
+  does not edit (a worker filing a leave request) lands on the record's own page when the tab has one, else on the
+  list, never on a refusal (`CreateView.created`, `hr/tests/test_after_create.py`).
 - `RowList` (`core/crud.py`): rows a record owns, edited as one list on a tab and saved together,
   replacing the stored rows, logged on the record (a site's contacts, a feeder's calibrations, a feed's
-  suitability). A record's contact persons are one shape for every record that has them
+  suitability). A refused list shows the record's edit page again from the list's address; the record's own form
+  posts to the record's own address whatever address the page came from (`FormView.page` gives `form_action`, never
+  "this page's address"), so "Save" after a refused list saves the record (`farm/tests/test_row_list_refused.py`). A record's contact persons are one shape for every record that has them
   (`farm/models/contact.py`, `farm/forms/contact.py`, `farm/resources/contact.py`,
   `templates/farm/_contacts.html`): a site's, a supplier's. Rows on an inner tab of their own with a
   heading row (a feeder's calibrations, a feed's suitability) are one template,

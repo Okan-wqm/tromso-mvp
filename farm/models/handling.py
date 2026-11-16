@@ -118,10 +118,13 @@ def _shape():
     """A withdrawal row keeps what the person saw of the withdrawal, a fasting row what they saw of the fast;
     the other's columns stay empty. A fasting row has its last feeding, the hours fasted and the rule, and at least
     one of the two things the rule asked for not reached: the hours (`fasted_hours < required_hours`) or, for a
-    harvest's purging, the degree-days; the degree-days are both given or both empty. A withdrawal row may name the batch
+    harvest's purging, the degree-days; the degree-days are both given or both empty. It names the feeding record the
+    fast was counted from (`feeding`; empty on rows written before it was kept: flow fault S-01, where the feeding was
+    of another unit and the row could not say so). A withdrawal row may name the batch
     and the withdrawal it was about (`batch`, `withdrawal_source`), kept since the cross-review so that check_withdrawal
     labels an acknowledgement per harvest and withdrawal; a fasting row names neither."""
-    fasting = ('last_fed_at', 'fasted_hours', 'required_hours', 'rule', 'fasted_degree_days', 'required_degree_days')
+    fasting = ('last_fed_at', 'fasted_hours', 'required_hours', 'rule', 'fasted_degree_days', 'required_degree_days',
+               'feeding')
     no_fasting = {f'{name}__isnull': True for name in fasting}
     no_withdrawal = Q(withdrawal_until__isnull=True, withdrawal_approximate=False, withdrawal_reason='')
     unmet = (Q(required_hours__isnull=False, fasted_hours__lt=models.F('required_hours'))
@@ -157,6 +160,10 @@ class HandlingAcknowledgement(models.Model):
     withdrawal_approximate = models.BooleanField(_('Withdrawal end estimated'), default=False)
     withdrawal_reason = models.CharField(_('Withdrawal'), max_length=500, blank=True)
     last_fed_at = models.DateTimeField(_('Last fed'), null=True, blank=True)
+    # The feeding record the fast was counted from (its unit is where the fish were fed: the unit handled, or the one
+    # they came from). A voided feeding stays as a row, so the link never breaks.
+    feeding = models.ForeignKey('farm.FeedingRecord', null=True, blank=True, on_delete=models.PROTECT, related_name='+',
+                                verbose_name=_('Feeding counted from'))
     fasted_hours = models.DecimalField(_('Hours fasted'), max_digits=6, decimal_places=1, null=True, blank=True)
     required_hours = models.PositiveSmallIntegerField(_('Hours the rule asks for'), null=True, blank=True)
     fasted_degree_days = models.DecimalField(_('Degree-days fasted'), max_digits=6, decimal_places=1, null=True,

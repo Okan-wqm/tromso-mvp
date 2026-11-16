@@ -95,7 +95,7 @@
               {% if row.placements %}<span class="ui-sub">{% include "farm/_placements.html" with chips=row.placements %}</span>{% endif %}
               {% if stock %}{% include "farm/_size_mixes.html" with mixes=stock.size_mixes %}{% endif %}
               {% if row.water %}<span class="ui-mt">{% include "farm/_water_dot.html" with status=row.water.status old=row.water.old_alert %}</span>{% endif %}
-              {% if row.withdrawal %}<span class="ui-mt"><span class="ui-chip" data-status="hold" title="{% for block in row.withdrawal %}{{ block.batch.code }}{% if block.until %} · {{ block.until|date:'DATE_FORMAT' }}{% endif %} {% endfor %}">{% include "icons/_icon.html" with name="hourglass" %}<span>{% trans "Withdrawal" %}</span></span></span>{% for block in row.withdrawal %}<span class="ui-sub">{{ block.batch.code }}{% if block.until %}, {{ block.until|date:'DATE_FORMAT' }}{% endif %}</span>{% endfor %}{% endif %}
+              {% if row.withdrawal %}<span class="ui-mt"><span class="ui-chip" data-status="hold" title="{% for block in row.withdrawal %}{{ block.batch.code }}: {{ block|harvest_from }} {% endfor %}">{% include "icons/_icon.html" with name="hourglass" %}<span>{% trans "Withdrawal" %}</span></span></span>{% for block in row.withdrawal %}<span class="ui-sub">{{ block.batch.code }}: {{ block|harvest_from }}</span>{% endfor %}{% endif %}
             </td>
             <td class="units-batch"><a class="row-link" href="{{ row.href }}" tabindex="-1" aria-hidden="true"></a>
               {% if stock %}
@@ -124,7 +124,7 @@
             {% if show_feeding %}{% with conversion=row.feeding.conversion %}<td class="num"{% if row.feeding and not conversion.biological %} title="{{ conversion.why_no_biological }}"{% endif %}>{{ conversion.biological|fcr }}</td>{% endwith %}{% endif %}
             <td class="num">{{ stock.survival|percent:1 }}</td>
             {% if show_water %}{% with reading=row.water.readings.temperature_c %}{% include "farm/_water_face.html" %}{% endwith %}{% with reading=row.water.readings.oxygen_mg_l %}{% include "farm/_water_face.html" %}{% endwith %}{% endif %}
-            {% if show_feeding %}<td class="nowrap">{% if row.feeding %}{{ row.feeding.last_fed|fed_on:row.feeding.today }}{% else %}—{% endif %}</td>{% endif %}
+            {% if show_feeding %}<td class="nowrap">{% if row.feeding %}{{ row.feeding.last_fed|fed_on:row.feeding.today }}{% if row.feeding.last_fed_in %}<span class="ui-sub">{% blocktrans trimmed with unit=row.feeding.last_fed_in.code %}in {{ unit }}{% endblocktrans %}</span>{% endif %}{% else %}—{% endif %}</td>{% endif %}
             <td class="sticky-end"><a class="ui-btn" href="{{ row.href }}" aria-label="{% blocktrans trimmed with unit=unit.code %}Open {{ unit }}{% endblocktrans %}">{% include "icons/_icon.html" with name="more" %}</a></td>
           </tr>
           {% endwith %}{% endfor %}

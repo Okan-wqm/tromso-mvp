@@ -6,6 +6,8 @@ from django import template
 from django.utils.formats import date_format
 from django.utils.html import format_html
 
+from farm.handling.withdrawal import harvest_from
+
 from farm.water import parameters
 
 from ..cards import render
@@ -46,11 +48,16 @@ def ph_window(card):
 
 
 @register.simple_tag
-def withdrawal_until(card):
-    """The first day every batch of the card may be harvested (the latest of its withdrawal blocks' days), or None when
-    one of them is not known: the date a fitted card prints beside the word (owner decision 16, 2026-11-16)."""
-    days = [block.until for block in card.withdrawal]
-    return max(days) if days and all(day is not None for day in days) else None
+def withdrawal_end(card):
+    """When the card's fish may be harvested, beside the word on a fitted card (owner decision 16, 2026-11-16), in the
+    product's one wording (farm.handling.withdrawal.harvest_from) with the day as day.month, a card's line having no
+    room for a year: "harvest from 23.11", "harvest from about 23.11" when projected, "end unknown" when the day of
+    one of its batches is not known. The day is the latest of its withdrawal blocks': every batch is free then."""
+    blocks = list(card.withdrawal)
+    if not blocks or any(block.until is None for block in blocks):
+        return harvest_from(None)
+    last = max(blocks, key=lambda block: block.until)
+    return harvest_from(last.until, getattr(last, 'approximate', False), shown=lambda day: f'{day:%d.%m}')
 
 
 @register.simple_tag

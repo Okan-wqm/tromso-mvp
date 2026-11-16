@@ -28,7 +28,7 @@ from ..stock.dates import local_today
 from ..stock.services import AlreadyRecorded
 from ..water import chemistry, parameters, read, services
 from ..water.evaluate import Limits, Status, judge, worst
-from .helpers import correction_window, make_species, point_of, role, stock_fish
+from .helpers import WINDOW_WAY_OUT, correction_window, make_species, point_of, role, stock_fish
 from .test_stock import make_unit
 from farm import withdrawal_gate
 
@@ -273,7 +273,8 @@ class RecordTests(WaterTestCase):
         first_day = timezone.localdate(timezone=tokyo) - timedelta(days=31)
         record(timezone.make_aware(datetime.combine(first_day, datetime.min.time()), tokyo))
         too_old = timezone.make_aware(datetime.combine(first_day, datetime.min.time()), tokyo) - timedelta(minutes=1)
-        self.assertEqual(self.refused(record, too_old), {'measured_at': ['Samples can be dated at most 31 days back.']})
+        self.assertEqual(self.refused(record, too_old), {'measured_at': [
+            f'Samples can be dated at most 31 days back. {WINDOW_WAY_OUT}']})
         self.assertEqual(WaterMeasurement.objects.count(), 1)
 
     def test_a_form_sent_twice_records_once_and_a_deleted_unit_takes_none(self):
@@ -346,18 +347,18 @@ class VoidTests(WaterTestCase):
         old = self.sample(hours=24 * 30, ph='7')
         with mock.patch('django.utils.timezone.now', return_value=self.now + timedelta(days=3)):
             self.assertEqual(self.refused(services.void, self.user, old, 'Too late'),
-                             {'__all__': ['Samples older than 31 days cannot be voided.']})
+                             {'__all__': [f'Samples older than 31 days cannot be voided. {WINDOW_WAY_OUT}']})
 
     @correction_window(60)
     def test_the_window_is_the_platform_owners_setting(self):
         old = self.sample(hours=24 * 30, ph='7')
         with mock.patch('django.utils.timezone.now', return_value=self.now + timedelta(days=35)):
             self.assertEqual(self.refused(services.void, self.user, old, 'Too late'),
-                             {'__all__': ['Samples older than 60 days cannot be voided.']})
+                             {'__all__': [f'Samples older than 60 days cannot be voided. {WINDOW_WAY_OUT}']})
         record = lambda moment: services.record(self.user, point=self.mid1, measured_at=moment, source='manual',
                                                 values={'ph': D(7)})
         self.assertEqual(self.refused(record, self.now - timedelta(days=62)),
-                         {'measured_at': ['Samples can be dated at most 60 days back.']})
+                         {'measured_at': [f'Samples can be dated at most 60 days back. {WINDOW_WAY_OUT}']})
         with mock.patch('django.utils.timezone.now', return_value=self.now + timedelta(days=25)):
             services.void(self.user, old, 'Inside the window')
 

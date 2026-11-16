@@ -119,6 +119,13 @@ class Place:
         return self.group.label or self.section.label or self.workspace.label
 
     @property
+    def trail(self):
+        """'Company › Administration › Platform settings': the way to the page through the menu, as a message names it
+        (in the language active when it is asked)."""
+        return ' › '.join(str(label) for label in (self.workspace.label, self.section.label, self.group.label,
+                                                  self.entry.label) if label)
+
+    @property
     def path(self):
         """'Production · Setup · Facility structure', translated when shown."""
         labels = [label for label in (self.workspace.label, self.section.label, self.group.label) if label]
@@ -171,6 +178,16 @@ def place(perm):
                     if entry.perm == perm:
                         return Place(workspace, section, group, entry)
     raise ImproperlyConfigured(f'No menu entry in {settings.RAIL_MENU} is read with {perm!r}: add one.')
+
+
+def trail(perm, fallback):
+    """The way through the menu to the page read with this permission ('Company › Administration › Platform
+    settings'), for a message that names where something is done; `fallback` (the page's name) when the menu in use
+    has no such entry."""
+    try:
+        return place(perm).trail
+    except ImproperlyConfigured:
+        return str(fallback)
 
 
 def page(url_name):

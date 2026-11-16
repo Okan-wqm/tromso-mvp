@@ -30,7 +30,7 @@ from ..stock import integrity, read as stock_read, services as stock_services
 from ..stock.dates import local_today
 from ..stock.fold import Line, Op
 from ..templatetags.stock import tonnes
-from .helpers import correction_window, leave_without_site, make_facility, role
+from .helpers import WINDOW_WAY_OUT, correction_window, leave_without_site, make_facility, role
 from .test_stock import StockTestCase, make_unit
 from farm import withdrawal_gate
 
@@ -263,7 +263,7 @@ class RecordTests(FeedingTestCase):
     def test_the_date_is_within_the_window_and_the_unit_holds_fish_that_day(self):
         self.assertEqual(self.refused(self.record, days_ago=-1), {'date': ['The date cannot be in the future.']})
         self.assertEqual(self.refused(self.record, days_ago=32),
-                         {'date': ['Operations can be dated at most 31 days back.']})
+                         {'date': [f'Operations can be dated at most 31 days back. {WINDOW_WAY_OUT}']})
         self.assertEqual(self.refused(self.record, days_ago=21),
                          {'date': [f'T-01 holds no fish on {stock_services.shown_date(self.day(21))}.']})
         self.assertEqual(self.refused(self.record, unit=self.t2),
@@ -461,20 +461,20 @@ class VoidTests(FeedingTestCase):
         feeding = self.record(days_ago=20)
         FeedingRecord.objects.filter(pk=feeding.pk).update(date=self.day(32))
         self.assertEqual(self.refused(services.void_feeding, self.user, feeding, 'old'),
-                         {'__all__': ['Operations older than 31 days cannot be voided.']})
+                         {'__all__': [f'Operations older than 31 days cannot be voided. {WINDOW_WAY_OUT}']})
 
     @correction_window(60)
     @translation.override('en')              # the test before it voided in Turkish: the language must not leak in
     @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_window_is_the_platform_owners_setting(self):
         self.assertEqual(self.refused(self.record, days_ago=61),
-                         {'date': ['Operations can be dated at most 60 days back.']})
+                         {'date': [f'Operations can be dated at most 60 days back. {WINDOW_WAY_OUT}']})
         self.assertEqual(self.refused(self.record, days_ago=32),             # not the window: the fish
                          {'date': [f'T-01 holds no fish on {stock_services.shown_date(self.day(32))}.']})
         feeding = self.record(days_ago=20)
         FeedingRecord.objects.filter(pk=feeding.pk).update(date=self.day(61))
         self.assertEqual(self.refused(services.void_feeding, self.user, feeding, 'old'),
-                         {'__all__': ['Operations older than 60 days cannot be voided.']})
+                         {'__all__': [f'Operations older than 60 days cannot be voided. {WINDOW_WAY_OUT}']})
 
 
 class FiguresTests(FeedingTestCase):

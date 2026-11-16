@@ -295,10 +295,10 @@ class SmallCardTests(SmallCase):
             html = self.page(occupancy='all')
         card = card_of(html, self.t2)
         (chip,) = nodes(card, 'monitor-withdrawal')
-        self.assertEqual(text(chip), f'Withdrawal · {self.today + timedelta(days=5):%d.%m}')
+        self.assertEqual(text(chip), f'Withdrawal · harvest from {self.today + timedelta(days=5):%d.%m}')
         self.assertIn(self.fish.code, chip.attrs['title'])
         self.assertEqual(card.attrs['data-state'], 'note')
-        self.assertRegex(text(nodes(card, 'monitor-reasons')[0]), r'^Medicine withdrawal in force · until \d\d\.\d\d\.\d{4}')
+        self.assertRegex(text(nodes(card, 'monitor-reasons')[0]), r'^Medicine withdrawal in force · harvest from \d\d\.\d\d\.\d{4}')
         pond = card_of(html, self.p1)                                     # P-01 is under maintenance, and empty
         self.assertEqual(text(nodes(pond, 'monitor-status')[0]), 'Maintenance')
         self.assertEqual(pond.attrs['data-state'], 'empty')
@@ -374,8 +374,8 @@ class OwnerDecisionsOf16NovemberTests(SmallCase):
         with mock.patch('farm.handling.withdrawal._providers', [lambda units, day: {self.t2.pk: [block]}]):
             card = card_of(self.page(), self.t2)
         (badge,) = nodes(card, 'monitor-withdrawal')
-        self.assertEqual(text(badge), 'Withdrawal · 23.11')
+        self.assertEqual(text(badge), 'Withdrawal · harvest from 23.11')
         unknown = WithdrawalBlock(batch=self.fish, until=None, approximate=False, reason='', source=None)
         with mock.patch('farm.handling.withdrawal._providers', [lambda units, day: {self.t2.pk: [block, unknown]}]):
             (badge,) = nodes(card_of(self.page(), self.t2), 'monitor-withdrawal')
-        self.assertEqual(text(badge), 'Withdrawal')                      # a day not known is never guessed
+        self.assertEqual(text(badge), 'Withdrawal · end unknown')        # a day not known is never guessed

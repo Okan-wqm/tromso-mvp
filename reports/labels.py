@@ -218,16 +218,38 @@ def _reaches(content, parts):
     return True
 
 
-def shown(value, zone=None, codes=None):
+# The leaves of a content that name rather than count: an identifier, a code, a year. A change of one of
+# IDENTITY_LEAVES is "identity changed since filing" (reports/services.py); every naming leaf (`names`) is printed as it
+# is written, never as a number of the language (flow fault M-13: "Organisation number 987,654,321").
+IDENTITY_LEAVES = ('/number', '/species', '/organisation_number', '/lokalitetsnummer', '/site', '/site_code')
+NAMING_KEYS = frozenset({'number', 'organisation_number', 'lokalitetsnummer', 'site_code', 'code', 'approval_number',
+                         'year', 'year_class', 'week', 'reference', 'phone'})
+NAMING_ENDINGS = ('_number', 'nummer', '_code', '_reference')
+
+
+def names(parts):
+    """Whether the leaf at these path parts (the keys from the content's top; a list's index is not a key) names
+    something: an identifier, a code or a year, by its key, or anything under the content's identity or facility."""
+    keys = [part for part in parts if not part.isdigit()]
+    if not keys:
+        return False
+    return (keys[-1] in NAMING_KEYS or keys[-1].endswith(NAMING_ENDINGS) or 'identity' in keys[:-1]
+            or (keys[0] == 'facility' and len(keys) > 1))
+
+
+def shown(value, zone=None, codes=None, naming=False):
     """A content value as the page says it: a coded value in words, a number in the language's way (its decimals kept),
     yes or no, a date dd.mm.yyyy, an instant on the site's clock (`zone`; none: the company's) as dd.mm.yyyy HH:MM, a
-    dash. The content keeps the machine form (ISO, the instant with its offset): the exports read it as it is."""
+    dash. `naming`: the value names something (`names`): it is printed as it is written, digits and all. The content
+    keeps the machine form (ISO, the instant with its offset): the exports read it as it is."""
     if value is None or value == '':
         return '–'
     if isinstance(value, bool):
         return gettext('Yes') if value else gettext('No')
     if codes and isinstance(value, str) and value in codes:
         return str(codes[value])
+    if naming and isinstance(value, (int, str)):
+        return str(value)
     if isinstance(value, (int, float, Decimal)) or (isinstance(value, str) and re.fullmatch(r'-?\d+(\.\d+)?', value)):
         try:
             number = Decimal(str(value))
@@ -260,9 +282,9 @@ def outline(content, zone=None):
             for index, item in enumerate(node):
                 walk(item, parts + [str(index)])
         elif not (isinstance(node, str) and RECORD_ID.match(node)):
-            codes = codes_for(parts)
-            value = (', '.join(shown(item, zone, codes) for item in node) if isinstance(node, list)
-                     else shown(node, zone, codes))
+            codes, naming = codes_for(parts), names(parts)
+            value = (', '.join(shown(item, zone, codes, naming) for item in node) if isinstance(node, list)
+                     else shown(node, zone, codes, naming))
             rows.append((_words(parts, content), value))
     walk(content, [])
     return rows

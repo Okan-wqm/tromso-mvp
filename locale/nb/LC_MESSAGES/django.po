@@ -61,6 +61,10 @@ msgid "%(batch)s was harvested on %(date)s: cleaner fish are culled, not harvest
 msgstr "%(batch)s ble høstet %(date)s: rensefisk avlives, den høstes ikke."
 
 #, python-format
+msgid "%(batch)s was here until %(date)s"
+msgstr "%(batch)s sto her til %(date)s"
+
+#, python-format
 msgid "%(batch)s was stocked on %(date)s: an operation on it cannot be dated before."
 msgstr "%(batch)s ble satt ut %(date)s: en operasjon på den kan ikke dateres tidligere."
 
@@ -81,8 +85,16 @@ msgid "%(batch)s — %(count)s fish · %(weight)s g"
 msgstr "%(batch)s — %(count)s fisk · %(weight)s g"
 
 #, python-format
+msgid "%(batch)s — in the unit until %(date)s"
+msgstr "%(batch)s — i enheten til %(date)s"
+
+#, python-format
 msgid "%(batch)s: %(start)s – %(end)s, %(feed)s fed, %(gain)s grown"
 msgstr "%(batch)s: %(start)s – %(end)s, %(feed)s fôret, %(gain)s tilvekst"
+
+#, python-format
+msgid "%(batch)s: medicine withdrawal, %(end)s"
+msgstr "%(batch)s: tilbakeholdelsestid, %(end)s"
 
 #, python-format
 msgid "%(batch)s: not weighed since it came in, so no FCR yet"
@@ -126,6 +138,12 @@ msgid "%(count)d batch of fish was bought from it: keep “%(category)s” ticke
 msgid_plural "%(count)d batches of fish were bought from it: keep “%(category)s” ticked."
 msgstr[0] "%(count)d fiskegruppe ble kjøpt herfra: behold «%(category)s» avkrysset."
 msgstr[1] "%(count)d fiskegrupper ble kjøpt herfra: behold «%(category)s» avkrysset."
+
+#, python-format
+msgid "%(count)d batch that left it can still be chosen, for a day it was in the unit."
+msgid_plural "%(count)d batches that left it can still be chosen, for a day they were in the unit."
+msgstr[0] "%(count)d fiskegruppe som har forlatt enheten kan fortsatt velges, for en dag den sto i enheten."
+msgstr[1] "%(count)d fiskegrupper som har forlatt enheten kan fortsatt velges, for en dag de sto i enheten."
 
 #, python-format
 msgid "%(count)d calibration saved."
@@ -384,6 +402,12 @@ msgstr[0] "%(count)s skal sendes"
 msgstr[1] "%(count)s skal sendes"
 
 #, python-format
+msgid "%(count)s due at once"
+msgid_plural "%(count)s due at once"
+msgstr[0] "%(count)s forfaller straks"
+msgstr[1] "%(count)s forfaller straks"
+
+#, python-format
 msgid "%(count)s fish stay in %(unit)s: weigh them too."
 msgstr "%(count)s fisk blir igjen i %(unit)s: vei dem også."
 
@@ -398,6 +422,12 @@ msgid "%(count)s more sampling point on Water chemistry"
 msgid_plural "%(count)s more sampling points on Water chemistry"
 msgstr[0] "%(count)s prøvepunkt til under Vannkjemi"
 msgstr[1] "%(count)s prøvepunkter til under Vannkjemi"
+
+#, python-format
+msgid "%(count)s notice due at once"
+msgid_plural "%(count)s notices due at once"
+msgstr[0] "%(count)s melding som skal sendes straks"
+msgstr[1] "%(count)s meldinger som skal sendes straks"
 
 #, python-format
 msgid "%(count)s overdue"
@@ -448,6 +478,32 @@ msgstr[0] "%(count)s prøvepunkt"
 msgstr[1] "%(count)s prøvepunkter"
 
 #, python-format
+msgid "%(count)s site not set up for reports"
+msgid_plural "%(count)s sites not set up for reports"
+msgstr[0] "%(count)s lokalitet er ikke satt opp for rapporter"
+msgstr[1] "%(count)s lokaliteter er ikke satt opp for rapporter"
+
+#, python-format
+msgid ""
+"%(count)s site with fish is not set up for reports: what it owes is not known, so nothing is "
+"listed as due for it."
+msgid_plural ""
+"%(count)s sites with fish are not set up for reports: what they owe is not known, so nothing is "
+"listed as due for them."
+msgstr[0] ""
+"%(count)s lokalitet med fisk er ikke satt opp for rapporter: hva den skylder er ikke kjent, så "
+"ingenting er oppført som forfalt for den."
+msgstr[1] ""
+"%(count)s lokaliteter med fisk er ikke satt opp for rapporter: hva de skylder er ikke kjent, så "
+"ingenting er oppført som forfalt for dem."
+
+#, python-format
+msgid "%(count)s stocked unit without a water sample"
+msgid_plural "%(count)s stocked units without a water sample"
+msgstr[0] "%(count)s enhet med fisk uten vannprøve"
+msgstr[1] "%(count)s enheter med fisk uten vannprøve"
+
+#, python-format
 msgid "%(count)s system is not in any production department."
 msgid_plural "%(count)s systems are not in any production department."
 msgstr[0] "%(count)s system tilhører ingen produksjonsavdeling."
@@ -488,8 +544,8 @@ msgstr[0] "%(counter)s rad"
 msgstr[1] "%(counter)s rader"
 
 #, python-format
-msgid "%(date)s, no time recorded: counted from the end of the day"
-msgstr "%(date)s, uten klokkeslett: regnet fra slutten av dagen"
+msgid "%(date)s (no time recorded: counted from the end of the day)"
+msgstr "%(date)s (uten klokkeslett: regnet fra slutten av dagen)"
 
 #, python-format
 msgid "%(days)d d"
@@ -510,6 +566,10 @@ msgid "%(days)s day since the last measured weight"
 msgid_plural "%(days)s days since the last measured weight"
 msgstr[0] "%(days)s dag siden siste målte vekt"
 msgstr[1] "%(days)s dager siden siste målte vekt"
+
+#, python-format
+msgid "%(days)s days a year"
+msgstr "%(days)s dager i året"
 
 #, python-format
 msgid "%(days)s feeding day without an expected FCR"
@@ -752,6 +812,15 @@ msgstr ""
 #, python-format
 msgid "%(kilos)s left"
 msgstr "%(kilos)s igjen"
+
+#, python-format
+msgid ""
+"%(kilos)s of %(feed)s fed at %(site)s since %(date)s, and none of it was ever delivered to the "
+"store: the store is %(kilos)s short of it. Record its delivery, dated on or before that day."
+msgstr ""
+"%(kilos)s av %(feed)s er fôret ved %(site)s siden %(date)s, og ingenting av det er noen gang "
+"levert til lageret: lageret mangler %(kilos)s av det. Registrer leveransen, datert samme dag "
+"eller tidligere."
 
 #, python-format
 msgid ""
@@ -1404,6 +1473,12 @@ msgstr ""
 
 #, python-format
 msgid ""
+"%(unit)s holds cleaner fish only: they are not harvested. Record their cull at the end of their "
+"use."
+msgstr "%(unit)s har bare rensefisk: de høstes ikke. Registrer utsorteringen når de ikke lenger brukes."
+
+#, python-format
+msgid ""
 "%(unit)s holds fish and has no active sampling point for its own water: its water raises no alarm"
 " until it has one."
 msgstr ""
@@ -1588,8 +1663,16 @@ msgid "%(weight)s weighed %(date)s"
 msgstr "%(weight)s veid %(date)s"
 
 #, python-format
+msgid "%(when)s (%(here)s on the clock of %(unit)s)"
+msgstr "%(when)s (%(here)s etter klokken til %(unit)s)"
+
+#, python-format
 msgid "%(when)s by %(who)s"
 msgstr "%(when)s av %(who)s"
+
+#, python-format
+msgid "%(when)s in %(unit)s"
+msgstr "%(when)s i %(unit)s"
 
 #, python-format
 msgid "%(when)s through %(how)s, recorded by %(who)s"
@@ -2207,6 +2290,9 @@ msgstr ""
 msgid "A note is at most %(count)d characters."
 msgstr "Et notat er på høyst %(count)d tegn."
 
+msgid "A notice is filed at once: it has no later deadline."
+msgstr "En melding sendes straks: den har ingen senere frist."
+
 #, python-format
 msgid "A page shows at most %(days)s day: the first day was moved."
 msgid_plural "A page shows at most %(days)s days: the first day was moved."
@@ -2349,6 +2435,16 @@ msgstr[0] ""
 msgstr[1] ""
 "En registrering kan dateres høyst %(days)s dager tilbake, og annulleres så lenge den ikke er "
 "eldre. Eldre registreringer blir stående som de er."
+
+#, python-format
+msgid "A record dated on a day the fish were here can still be entered, up to %(days)s day back."
+msgid_plural "A record dated on a day the fish were here can still be entered, up to %(days)s days back."
+msgstr[0] ""
+"En registrering datert til en dag fisken sto her, kan fortsatt legges inn, inntil %(days)s dag "
+"tilbake."
+msgstr[1] ""
+"En registrering datert til en dag fisken sto her, kan fortsatt legges inn, inntil %(days)s dager "
+"tilbake."
 
 #, python-format
 msgid ""
@@ -3898,6 +3994,10 @@ msgstr "Parti %(batch)s sto i %(tank)s, selv om det ikke var der karets første 
 msgid "Batch %(batch)s: %(fish)s fish at %(weight)s"
 msgstr "Fiskegruppe %(batch)s: %(fish)s fisk på %(weight)s"
 
+#, python-format
+msgid "Batch %(batch)s: in %(unit)s until %(date)s"
+msgstr "Fiskegruppe %(batch)s: i %(unit)s til %(date)s"
+
 msgid "Batch details"
 msgstr "Gruppedetaljer"
 
@@ -4581,6 +4681,9 @@ msgstr "Velg eier eller medlem."
 msgid "Choose someone else: a conversation is with another person."
 msgstr "Velg en annen: en samtale er med en annen person."
 
+msgid "Choose the date first: the fast and the medicine withdrawal are checked for that day."
+msgstr "Velg datoen først: sultingen og tilbakeholdelsestiden kontrolleres for den dagen."
+
 msgid "Choose the document in the library it comes from."
 msgstr "Velg dokumentet i biblioteket kunnskapen kommer fra."
 
@@ -4641,6 +4744,12 @@ msgid ""
 "Cleaner fish are not harvested: record their cull, with the reason “%(reason)s” at the end of "
 "their use."
 msgstr "Rensefisk høstes ikke: registrer avlivingen med årsaken «%(reason)s» når bruken er slutt."
+
+#, python-format
+msgid ""
+"Cleaner fish in %(unit)s are in a medicine withdrawal (%(batch)s, %(end)s): keep them out of the "
+"harvest."
+msgstr "Rensefisk i %(unit)s har tilbakeholdelsestid (%(batch)s, %(end)s): hold dem utenfor høstingen."
 
 msgid "Cleaner fish only"
 msgstr "Bare rensefisk"
@@ -5923,9 +6032,6 @@ msgstr "Slutt"
 msgid "End the leave earlier"
 msgstr "Avslutt permisjonen tidligere"
 
-msgid "End unknown"
-msgstr "Slutt ukjent"
-
 msgid "Ended"
 msgstr "Avsluttet"
 
@@ -6330,6 +6436,18 @@ msgstr "Fôret ut over registeret"
 msgid "Fed from the book"
 msgstr "Fôret fra registeret"
 
+#, python-format
+msgid "Fed on the day of the handling itself (%(at)s)."
+msgstr "Fôret samme dag som håndteringen (%(at)s)."
+
+#, python-format
+msgid ""
+"Fed on the day of the handling itself (%(at)s): no fast before %(day)s; the %(kind)s rule asks "
+"for %(asked)s."
+msgstr ""
+"Fôret samme dag som håndteringen (%(at)s): ingen sulting før %(day)s; regelen for %(kind)s krever"
+" %(asked)s."
+
 msgid "Fed to"
 msgstr "Fôret til"
 
@@ -6405,6 +6523,9 @@ msgstr "Fôring"
 
 msgid "Feeding (from the records)"
 msgstr "Fôring (fra registreringene)"
+
+msgid "Feeding counted from"
+msgstr "Fôring det er regnet fra"
 
 msgid "Feeding drawn from it (estimated)"
 msgstr "Fôring trukket fra det (anslått)"
@@ -6630,8 +6751,34 @@ msgstr "Fisk på overtakelsesdagen"
 msgid "Fish recaptured"
 msgstr "Gjenfanget fisk"
 
+#, python-format
+msgid ""
+"Fish that left %(unit)s in the last %(days)s day are offered too: date the record on a day they "
+"were in the unit. A record that would leave a later operation without its fish is refused, and "
+"says which."
+msgid_plural ""
+"Fish that left %(unit)s in the last %(days)s days are offered too: date the record on a day they "
+"were in the unit. A record that would leave a later operation without its fish is refused, and "
+"says which."
+msgstr[0] ""
+"Fisk som forlot %(unit)s den siste %(days)s dagen, tilbys også: dater registreringen til en dag "
+"de sto i enheten. En registrering som ville la en senere operasjon stå uten fisken sin, avvises, "
+"og det sies hvilken."
+msgstr[1] ""
+"Fisk som forlot %(unit)s de siste %(days)s dagene, tilbys også: dater registreringen til en dag "
+"de sto i enheten. En registrering som ville la en senere operasjon stå uten fisken sin, avvises, "
+"og det sies hvilken."
+
 msgid "Fish the book still holds beyond the count are then recorded as an unaccounted loss."
 msgstr "Fisk beholdningen fortsatt har utover tellingen, registreres da som uforklart svinn."
+
+#, python-format
+msgid ""
+"Fish the farm already had before then are registered as an opening balance (%(where)s), by the "
+"platform owner."
+msgstr ""
+"Fisk anlegget allerede hadde før det, registreres som en åpningsbalanse (%(where)s) av "
+"plattformeieren."
 
 msgid ""
 "Fish the farm already had when it started using the platform: their real stocking date and year "
@@ -6653,6 +6800,12 @@ msgstr "Fisk veid"
 
 msgid "Fish with no limit"
 msgstr "Fisk uten grense"
+
+#, python-format
+msgid "Fish, and no water sample in the last %(days)s day."
+msgid_plural "Fish, and no water sample in the last %(days)s days."
+msgstr[0] "Fisk, og ingen vannprøve den siste %(days)s dagen."
+msgstr[1] "Fisk, og ingen vannprøve de siste %(days)s dagene."
 
 msgid "Fiskeridirektoratet; confirm the form with Fiskeridirektoratet"
 msgstr "Fiskeridirektoratet; bekreft skjemaet med Fiskeridirektoratet"
@@ -7282,28 +7435,10 @@ msgstr "Slakting innenfor en tilbakeholdelsestid"
 #, python-format
 msgid ""
 "Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this "
-"withdrawal, which holds the fish until %(until)s: medicated fish may have gone to food."
+"withdrawal (%(end)s): medicated fish may have gone to food."
 msgstr ""
 "Slaktingen %(date)s fra %(unit)s (%(batch)s, %(fish)s fisk til %(facility)s) ligger innenfor "
-"denne tilbakeholdelsestiden, som holder fisken til %(until)s: medisinert fisk kan ha gått til "
-"mat."
-
-#, python-format
-msgid ""
-"Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this "
-"withdrawal, which holds the fish until about %(until)s: medicated fish may have gone to food."
-msgstr ""
-"Slaktingen %(date)s fra %(unit)s (%(batch)s, %(fish)s fisk til %(facility)s) ligger innenfor "
-"denne tilbakeholdelsestiden, som holder fisken til omkring %(until)s: medisinert fisk kan ha gått"
-" til mat."
-
-#, python-format
-msgid ""
-"Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this "
-"withdrawal, whose end is unknown: medicated fish may have gone to food."
-msgstr ""
-"Slaktingen %(date)s fra %(unit)s (%(batch)s, %(fish)s fisk til %(facility)s) ligger innenfor "
-"denne tilbakeholdelsestiden, som har ukjent slutt: medisinert fisk kan ha gått til mat."
+"denne tilbakeholdelsestiden (%(end)s): medisinert fisk kan ha gått til mat."
 
 msgid "Harvest plan"
 msgstr "Høsteplan"
@@ -7858,6 +7993,17 @@ msgid "It has stock records on its site: it can only move to a production depart
 msgstr ""
 "Den har lagerposter på lokaliteten sin: den kan bare flyttes til en produksjonsavdeling på samme "
 "lokalitet."
+
+#, python-format
+msgid ""
+"It holds every fish in %(unit)s: the fish of different batches in one unit cannot be told apart "
+"at a harvest."
+msgstr ""
+"Den holder all fisk i %(unit)s: fisk fra ulike fiskegrupper i samme enhet kan ikke skilles fra "
+"hverandre ved høsting."
+
+msgid "It holds fish, and what it owes cannot be worked out: no report is listed as due for it."
+msgstr "Den har fisk, og hva den skylder kan ikke beregnes: ingen rapport er oppført som forfalt for den."
 
 msgid "It holds fish: move or harvest them first."
 msgstr "Det er fisk i den: flytt eller høst fisken først."
@@ -8450,6 +8596,9 @@ msgstr "Gjør til eier"
 msgid "Manage holidays"
 msgstr "Administrer helligdager"
 
+msgid "Manage leave types"
+msgstr "Administrer permisjonstyper"
+
 msgid "Manage shifts"
 msgstr "Administrer skift"
 
@@ -8609,16 +8758,9 @@ msgstr "Medisinskap"
 msgid "Medicine withdrawal"
 msgstr "Tilbakeholdelsestid"
 
-msgid "Medicine withdrawal decides: its end is unknown."
-msgstr "Tilbakeholdelsestiden avgjør: slutten er ukjent."
-
 #, python-format
-msgid "Medicine withdrawal decides: until %(date)s."
-msgstr "Tilbakeholdelsestiden avgjør: til %(date)s."
-
-#, python-format
-msgid "Medicine withdrawal decides: until about %(date)s."
-msgstr "Tilbakeholdelsestiden avgjør: til omtrent %(date)s."
+msgid "Medicine withdrawal decides: %(end)s."
+msgstr "Tilbakeholdelsestiden avgjør: %(end)s."
 
 msgid "Medicine withdrawal in force"
 msgstr "Tilbakeholdelsestid for legemiddel gjelder"
@@ -9218,8 +9360,18 @@ msgid "No file."
 msgstr "Ingen fil."
 
 #, python-format
-msgid "No fish are in %(unit)s."
-msgstr "Det er ingen fisk i %(unit)s."
+msgid ""
+"No fish are in %(unit)s, and none were in it in the last %(days)s day: there is nothing to record"
+" here."
+msgid_plural ""
+"No fish are in %(unit)s, and none were in it in the last %(days)s days: there is nothing to "
+"record here."
+msgstr[0] ""
+"Det er ingen fisk i %(unit)s, og det har ikke vært noen der den siste %(days)s dagen: her er det "
+"ingenting å registrere."
+msgstr[1] ""
+"Det er ingen fisk i %(unit)s, og det har ikke vært noen der de siste %(days)s dagene: her er det "
+"ingenting å registrere."
 
 msgid "No fish arrived at the site on that day."
 msgstr "Ingen fisk kom til lokaliteten den dagen."
@@ -9307,6 +9459,9 @@ msgstr "Ingen elementnavn: apparatets meldingsformat er ett objekt."
 
 msgid "No knowledge entry cites it yet."
 msgstr "Ingen kunnskapsoppføring viser til det ennå."
+
+msgid "No leave types yet: a leave request cannot be filed until there is one."
+msgstr "Ingen permisjonstyper ennå: en permisjonssøknad kan ikke sendes før det finnes en."
 
 msgid "No limit"
 msgstr "Ingen grense"
@@ -9806,16 +9961,8 @@ msgid "Not stated in the text saved; unverified (Q6)"
 msgstr "Ikke oppgitt i den lagrede teksten; ikke bekreftet (Q6)"
 
 #, python-format
-msgid "Not suitable for harvest — medicine withdrawal of %(batch)s until %(date)s."
-msgstr "Ikke egnet for høsting — tilbakeholdelsestid for %(batch)s til %(date)s."
-
-#, python-format
-msgid "Not suitable for harvest — medicine withdrawal of %(batch)s until about %(date)s."
-msgstr "Ikke egnet for høsting — tilbakeholdelsestid for %(batch)s til omtrent %(date)s."
-
-#, python-format
-msgid "Not suitable for harvest — medicine withdrawal of %(batch)s, its end unknown."
-msgstr "Ikke egnet for høsting — tilbakeholdelsestid for %(batch)s, slutten ukjent."
+msgid "Not suitable for harvest — medicine withdrawal of %(batch)s: %(end)s."
+msgstr "Ikke egnet for høsting — tilbakeholdelsestid for %(batch)s: %(end)s."
 
 msgid "Not updated: the server cannot be reached or cannot answer. This may be out of date."
 msgstr "Ikke oppdatert: serveren kan ikke nås eller kan ikke svare. Dette kan være utdatert."
@@ -11407,6 +11554,9 @@ msgstr "Registreringer"
 msgid "Records of the farm"
 msgstr "Anleggets registre"
 
+msgid "Records of the fish that left"
+msgstr "Registreringer for fisken som har forlatt enheten"
+
 msgid "Records read"
 msgstr "Registreringer lest"
 
@@ -12197,6 +12347,9 @@ msgstr "Se alt i aktivitetsloggen"
 
 msgid "See the day-by-day book"
 msgstr "Se registeret dag for dag"
+
+msgid "See the feedings"
+msgstr "Se fôringene"
 
 msgid "Seed"
 msgstr "Frø"
@@ -13539,6 +13692,10 @@ msgstr ""
 msgid "The copy needs a name."
 msgstr "Kopien trenger et navn."
 
+#, python-format
+msgid "The correction window is the platform owner’s setting: it is changed in %(where)s."
+msgstr "Korreksjonsvinduet er plattformeierens innstilling: det endres i %(where)s."
+
 msgid "The credential was created."
 msgstr "Legitimasjonen ble opprettet."
 
@@ -14348,6 +14505,13 @@ msgstr ""
 "Den planlagte slaktingen fra %(unit)s %(planned)s ble registrert %(date)s ved %(facility)s: den "
 "rapporteres her som planlagt; rett meldingen hvis den er sendt."
 
+msgid ""
+"The planned-slaughter notice is filed per facility; it also needs the company that files for the "
+"facility (its operator, Purchasing › Suppliers) to have a 9-digit organisation number."
+msgstr ""
+"Meldingen om planlagt slakting sendes per anlegg; den krever også at selskapet som melder for "
+"anlegget (operatøren, Innkjøp › Leverandører) har et 9-sifret organisasjonsnummer."
+
 #, python-format
 msgid "The points of %(owner)s."
 msgstr "Punktene på %(owner)s."
@@ -15041,6 +15205,14 @@ msgstr ""
 msgid "The withdrawal counts from the new last day; the change is logged."
 msgstr "Tilbakeholdelsestiden regnes fra den nye siste dagen; endringen logges."
 
+#, python-format
+msgid ""
+"The withdrawal is of %(held)s, which was in %(unit)s with the fish harvested: the fish of one "
+"unit cannot be told apart."
+msgstr ""
+"Tilbakeholdelsestiden gjelder %(held)s, som sto i %(unit)s sammen med fisken som ble høstet: fisk"
+" i samme enhet kan ikke skilles fra hverandre."
+
 msgid ""
 "The withdrawal is the product’s, as its SPC states it per species, in degree-days, days or both, "
 "with your own safety margin on top; nothing is filled in for you. A treatment counts it from its "
@@ -15075,6 +15247,15 @@ msgstr "Året det ble publisert."
 msgid "Their average on the takeover day; to 0.0001 g for eggs and larvae."
 msgstr "Snittet på overtakelsesdagen; til 0,0001 g for rogn og larver."
 
+msgid ""
+"Their round (live) weight, in kg. The plan is saved without it, but the planned-slaughter notice "
+"of its week (Production › Reports) reports these kilos and cannot be filed for a plan that has "
+"none."
+msgstr ""
+"Rundvekten (levende vekt) i kg. Planen lagres uten den, men meldingen om planlagt slakting for "
+"uken (Produksjon › Rapporter) rapporterer disse kiloene og kan ikke sendes for en plan som "
+"mangler dem."
+
 msgid "Their weight (kg)"
 msgstr "Samlet vekt (kg)"
 
@@ -15086,6 +15267,14 @@ msgstr "Det finnes allerede en regel for denne håndteringen og arten."
 
 msgid "There is already a rule for this."
 msgstr "Det finnes allerede en regel for dette."
+
+#, python-format
+msgid ""
+"There is no active leave type yet, so a request cannot be filed. Leave types are added in "
+"%(where)s › %(types)s, by a person whose role may."
+msgstr ""
+"Det finnes ingen aktiv permisjonstype ennå, så en søknad kan ikke sendes. Permisjonstyper legges "
+"til i %(where)s › %(types)s, av en person som har rollen til det."
 
 msgid "Thermal delousing"
 msgstr "Termisk avlusing"
@@ -15383,6 +15572,9 @@ msgid "This unit holds %(count)d batch: the operation applies to the one chosen.
 msgid_plural "This unit holds %(count)d batches: the operation applies to the one chosen."
 msgstr[0] "Denne enheten har %(count)d fiskegruppe: operasjonen gjelder den som velges."
 msgstr[1] "Denne enheten har %(count)d fiskegrupper: operasjonen gjelder den som velges."
+
+msgid "This unit holds no fish now: choose the batch that was in it on the day of the record."
+msgstr "Denne enheten har ingen fisk nå: velg fiskegruppen som sto i den på dagen registreringen gjelder."
 
 msgid "This unit is booked to another experiment on some of these days."
 msgstr "Dette karet er booket til et annet forsøk noen av disse dagene."
@@ -15777,10 +15969,6 @@ msgstr ""
 
 msgid "Until"
 msgstr "Til og med"
-
-#, python-format
-msgid "Until %(date)s"
-msgstr "Til %(date)s"
 
 msgid "Up to (g)"
 msgstr "Opp til (g)"
@@ -17628,6 +17816,9 @@ msgstr "g"
 msgid "g/kg"
 msgstr "g/kg"
 
+msgid "granted without approval"
+msgstr "innvilges uten godkjenning"
+
 msgid "group level"
 msgstr "gruppenivå"
 
@@ -17645,6 +17836,14 @@ msgstr "håndteringsregel"
 
 msgid "handling rules"
 msgstr "håndteringsregler"
+
+#, python-format
+msgid "harvest from %(date)s"
+msgstr "høsting fra %(date)s"
+
+#, python-format
+msgid "harvest from about %(date)s"
+msgstr "høsting fra omtrent %(date)s"
 
 msgid "harvest record"
 msgstr "høsteregistrering"
@@ -17684,6 +17883,14 @@ msgstr "på %(location)s: %(held)s, utløper %(date)s."
 #, python-format
 msgid "in %(name)s"
 msgstr "i %(name)s"
+
+#, python-format
+msgid "in %(unit)s"
+msgstr "i %(unit)s"
+
+#, python-format
+msgid "in %(unit)s, before the fish were moved here"
+msgstr "i %(unit)s, før fisken ble flyttet hit"
 
 msgid "ingest contract"
 msgstr "innhentingskontrakt"
@@ -17795,13 +18002,6 @@ msgstr "legemiddel"
 msgid "medicine withdrawal"
 msgstr "legemiddelets tilbakeholdelsestid"
 
-#, python-format
-msgid "medicine withdrawal until %(date)s"
-msgstr "tilbakeholdelsestid til %(date)s"
-
-msgid "medicine withdrawal, end unknown"
-msgstr "tilbakeholdelsestid, slutt ukjent"
-
 msgid "medicine withdrawals"
 msgstr "legemidlers tilbakeholdelsestider"
 
@@ -17890,6 +18090,9 @@ msgstr "ingen fisk"
 msgid "no fish held at %(site)s since %(date)s"
 msgstr "ingen fisk på %(site)s siden %(date)s"
 
+msgid "no fish now"
+msgstr "ingen fisk nå"
+
 msgid ""
 "no increased mortality has stayed unexplained for 14 days; otherwise started by a person when an "
 "event happens"
@@ -17953,6 +18156,9 @@ msgstr "ingen slik rad"
 #, python-format
 msgid "no value of %(values)s"
 msgstr "ingen verdi for %(values)s"
+
+msgid "no time recorded"
+msgstr "uten klokkeslett"
 
 msgid "none"
 msgstr "ingen"
@@ -18509,12 +18715,12 @@ msgid "until %(last)s"
 msgstr "til %(last)s"
 
 #, python-format
-msgid "until %(last)s (harvest from %(first)s)"
-msgstr "til og med %(last)s (høsting fra %(first)s)"
+msgid "until %(last)s (%(harvest)s)"
+msgstr "til og med %(last)s (%(harvest)s)"
 
 #, python-format
-msgid "until about %(last)s (harvest from about %(first)s)"
-msgstr "til og med omtrent %(last)s (høsting fra omtrent %(first)s)"
+msgid "until about %(last)s (%(harvest)s)"
+msgstr "til og med omtrent %(last)s (%(harvest)s)"
 
 #, python-format
 msgid "up to %(weight)s g"

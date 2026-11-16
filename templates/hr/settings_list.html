@@ -38,4 +38,11 @@
   {% else %}<p class="muted">{% trans "No holidays yet." %}</p>{% endif %}
   {% if perms.hr.view_holiday %}<p><a href="{% url 'hr:holiday_list' %}">{% trans "Manage holidays" %}</a></p>{% endif %}
 </section>
+<section class="detail-section">
+  <h2 class="section-title">{% trans "Leave types" %}</h2>
+  {% if leave_types %}
+  <ul class="plain-list">{% for kind in leave_types %}<li>{{ kind.name }} ({{ kind.code }}){% if kind.annual_days is not None %} · {% blocktrans trimmed with days=kind.annual_days|floatformat:"-2" %}{{ days }} days a year{% endblocktrans %}{% endif %}{% if not kind.needs_approval %} · {% trans "granted without approval" %}{% endif %}{% if kind.status != "active" %} · {{ kind.get_status_display }}{% endif %}</li>{% endfor %}</ul>
+  {% else %}<p class="muted">{% trans "No leave types yet: a leave request cannot be filed until there is one." %}</p>{% endif %}
+  {% if perms.hr.view_leavetype %}<p><a href="{% url 'hr:leavetype_list' %}">{% trans "Manage leave types" %}</a></p>{% endif %}
+</section>
 {% endblock %}

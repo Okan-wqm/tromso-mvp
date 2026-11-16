@@ -55,7 +55,7 @@
       <h3>{% trans "Feeding" %}</h3>
       {% with week=feeding.week %}
       <dl class="metrics">
-        <div><dt>{% trans "Last fed" %}</dt><dd>{{ feeding.last_fed|fed_on:feeding.today }}</dd></div>
+        <div><dt>{% trans "Last fed" %}</dt><dd>{{ feeding.last_fed|fed_on:feeding.today }}{% if feeding.last_fed_in %} <span class="muted">{% blocktrans trimmed with unit=feeding.last_fed_in.code %}in {{ unit }}, before the fish were moved here{% endblocktrans %}</span>{% endif %}</dd></div>
         <div><dt>{% trans "Fed today" %}</dt><dd>{{ week.today_kg|feed_kg }}</dd>{% if week.today_meals %}<dd class="row-sub">{% blocktrans trimmed count meals=week.today_meals %}{{ meals }} meal{% plural %}{{ meals }} meals{% endblocktrans %}</dd>{% endif %}</div>
         <div><dt>{% trans "Last 7 days" %}</dt><dd>{{ week.kg|kilos }}</dd></div>
       </dl>
@@ -104,6 +104,15 @@
     <a class="button button-inline" href="{{ stock_url }}" data-modal>{% trans "Stock this unit" %}</a>
     {% elif not takes_fish %}
     <p class="notice notice-warning">{% blocktrans trimmed with unit=unit.code status=unit.get_status_display|lower %}{{ unit }} has the status {{ status }}: set it to preparing or fallow in Setup to stock it.{% endblocktrans %}{% if edit_unit_url %} <a href="{{ edit_unit_url }}" data-modal>{% trans "Edit the unit" %}</a>{% endif %}</p>
+    {% endif %}
+    {% if left and actions %}
+    <section class="drawer-section">
+      <h3>{% trans "Records of the fish that left" %}</h3>
+      <p class="panel-help">{% for share in left %}{% if not forloop.first %}; {% endif %}{% blocktrans trimmed with batch=share.batch.code date=share.until|date:"DATE_FORMAT" %}{{ batch }} was here until {{ date }}{% endblocktrans %}{% endfor %}. {% blocktrans trimmed count days=window_days %}A record dated on a day the fish were here can still be entered, up to {{ days }} day back.{% plural %}A record dated on a day the fish were here can still be entered, up to {{ days }} days back.{% endblocktrans %}</p>
+      <div class="drawer-actions">
+        {% for action in actions %}<a class="button button-ghost" href="{{ action.url }}" data-modal>{{ action.label }}</a>{% endfor %}
+      </div>
+    </section>
     {% endif %}
     {% endif %}
 

@@ -59,7 +59,7 @@ class HarvestBroughtInsideTests(GuardTestCase):
         change = self.asked(self.feed, 4, feed)
         [found] = change.harvested
         self.assertEqual((found.operation_id, found.until), (harvest.pk, None))
-        self.assertIn('lies inside this withdrawal, whose end is unknown', change.messages()[0])
+        self.assertIn('lies inside this withdrawal (end unknown)', change.messages()[0])
         record = self.acknowledged(change, self.feed, 4, feed)
         [row] = WithdrawalAcknowledgement.objects.all()
         self.assertEqual((row.warning, row.harvest, row.batch, row.record_type, row.record_id, row.created_by),

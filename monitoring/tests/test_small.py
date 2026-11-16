@@ -295,7 +295,7 @@ class SmallCardTests(SmallCase):
             html = self.page(occupancy='all')
         card = card_of(html, self.t2)
         (chip,) = nodes(card, 'monitor-withdrawal')
-        self.assertEqual(text(chip), 'Withdrawal')
+        self.assertEqual(text(chip), f'Withdrawal · {self.today + timedelta(days=5):%d.%m}')
         self.assertIn(self.fish.code, chip.attrs['title'])
         self.assertEqual(card.attrs['data-state'], 'note')
         self.assertRegex(text(nodes(card, 'monitor-reasons')[0]), r'^Medicine withdrawal in force · until \d\d\.\d\d\.\d{4}')
@@ -345,3 +345,37 @@ class TemplateTypeTests(SimpleTestCase):
                         self.assertLessEqual(len(str(label)), catalogue.TILE_LABEL_LENGTH, str(label))
                 self.assertLessEqual(len(translation.gettext('old')), 6)        # 'pH · old' on the label's one line
         self.assertTrue(set(catalogue.TILE_LABELS) <= set(catalogue.bindable()))
+
+
+class OwnerDecisionsOf16NovemberTests(SmallCase):
+    def test_a_ph_beyond_the_windows_scale_is_an_arrow_and_the_number_never_a_mark_on_its_end(self):
+        """Decision 15."""
+        self.good_water(ph='6.10', alkalinity_mg_l='20')
+        card = card_of(self.page(), self.t2)
+        (window,) = nodes(card, 'monitor-ph-window')
+        self.assertFalse(nodes(window, 'chart-water'))
+        (off,) = [each for each in window.walk() if 'data-off-scale' in each.attrs]
+        self.assertEqual((text(off), off.classes, off.attrs['x']), ('◀ 6.10', ['chart-off', 'chart-off-low'], '0.6%'))
+        self.assertIn('off the scale (6.4 to 8.6)', window.attrs['aria-label'])
+        self.good_water(ph='8.75')
+        (window,) = nodes(card_of(self.page(), self.t2), 'monitor-ph-window')
+        (off,) = [each for each in window.walk() if 'data-off-scale' in each.attrs]
+        self.assertEqual((text(off), off.attrs['x']), ('8.75 ▶', '99.4%'))
+        self.good_water(ph='7.20')
+        (window,) = nodes(card_of(self.page(), self.t2), 'monitor-ph-window')
+        self.assertTrue(nodes(window, 'chart-water'))
+        self.assertFalse([each for each in window.walk() if 'data-off-scale' in each.attrs])
+
+    def test_the_withdrawal_says_its_date_beside_the_word_whatever_the_first_reason(self):
+        """Decision 16."""
+        from datetime import date
+        self.good_water(oxygen_mg_l='5')                                 # the first reason is the oxygen, not the withdrawal
+        block = WithdrawalBlock(batch=self.fish, until=date(2026, 11, 23), approximate=False, reason='', source=None)
+        with mock.patch('farm.handling.withdrawal._providers', [lambda units, day: {self.t2.pk: [block]}]):
+            card = card_of(self.page(), self.t2)
+        (badge,) = nodes(card, 'monitor-withdrawal')
+        self.assertEqual(text(badge), 'Withdrawal · 23.11')
+        unknown = WithdrawalBlock(batch=self.fish, until=None, approximate=False, reason='', source=None)
+        with mock.patch('farm.handling.withdrawal._providers', [lambda units, day: {self.t2.pk: [block, unknown]}]):
+            (badge,) = nodes(card_of(self.page(), self.t2), 'monitor-withdrawal')
+        self.assertEqual(text(badge), 'Withdrawal')                      # a day not known is never guessed

@@ -46,6 +46,14 @@ def ph_window(card):
 
 
 @register.simple_tag
+def withdrawal_until(card):
+    """The first day every batch of the card may be harvested (the latest of its withdrawal blocks' days), or None when
+    one of them is not known: the date a fitted card prints beside the word (owner decision 16, 2026-11-16)."""
+    days = [block.until for block in card.withdrawal]
+    return max(days) if days and all(day is not None for day in days) else None
+
+
+@register.simple_tag
 def water_rows(card):
     """Every value of the card's middle point as rows, in one or two columns (render.water_rows)."""
     return render.water_rows(card)

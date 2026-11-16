@@ -387,3 +387,6 @@ html[data-wall] .monitor-grid .is-fit .monitor-ph-window { height: 100%; }
 .is-fit .monitor-bar-svg .band-critical { fill: var(--line-hair); }
 .is-fit .monitor-bar-svg .marker { fill: var(--text-1); }
 .monitor-chart-svg .chart-note { fill: var(--text-2); }
+/* A pH beyond the pH window's scale: an arrow and the number at that end, never a mark drawn as if it were there. */
+.monitor-ph-window .chart-off { fill: var(--text-1); font-size: 1em; font-weight: 600; dominant-baseline: central; }
+.monitor-ph-window .chart-off-high { text-anchor: end; }

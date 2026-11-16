@@ -299,6 +299,8 @@ class PhWindow:
     zones: tuple = ()        # the regions the water is in: 'co2', 'nh3'
     old: bool = False
     refused: str = ''
+    off: str = ''            # 'low' or 'high': the water's pH lies beyond that end of the scale (owner decision 15)
+    off_text: str = ''       # then, instead of the mark: an arrow and the number
 
 
 def _pc(value):
@@ -341,6 +343,13 @@ def ph_window(card):
     if right < 100:
         regions.append(('nh3', _pc(right), _pc(100 - right)))
     said = [gettext('pH %(ph)s') % {'ph': number(analysis.water.ph, 2)}]
+    # (owner decision 15, 2026-11-16) a pH beyond the scale is never drawn on its end as if it were there: an arrow
+    # and the number stand at that end, and the picture's words say it is off the scale
+    off = 'low' if analysis.water.ph < low else 'high' if analysis.water.ph > high else ''
+    off_text = ''
+    if off:
+        off_text = (f'◀ {number(analysis.water.ph, 2)}' if off == 'low' else f'{number(analysis.water.ph, 2)} ▶')
+        said.append(gettext('off the scale (%(low)s to %(high)s)') % {'low': number(low, 1), 'high': number(high, 1)})
     names = []
     if co2.everywhere:
         names.append(('co2', 'CO₂', _pc(1.2), True))
@@ -380,7 +389,7 @@ def ph_window(card):
             'values': ', '.join(str(parameters.get(item.field).short) for item in chart.old)})
     label = gettext('pH window, %(unit)s: %(said)s') % {'unit': card.unit.code, 'said': '; '.join(said)}
     zones = tuple(key for key, border in (('co2', co2), ('nh3', nh3)) if border.status == Status.CRITICAL)
-    return PhWindow(label, tuple(regions), tuple(names), _pc(water), zones, bool(chart.old))
+    return PhWindow(label, tuple(regions), tuple(names), _pc(water), zones, bool(chart.old), off=off, off_text=off_text)
 
 
 # ---- the unit's chart as a picture of the card's own size ---------------------------------------------------------

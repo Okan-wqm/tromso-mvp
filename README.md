@@ -1869,8 +1869,8 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
   beside them stay held to the same end after that day, wherever they go (the lots, flow fault S-03: Operations ›
   Health, the medicine withdrawal); the same question says
   which fish a course reached (`farm/tests/test_withdrawal_same_day.py`; the stock books' `Presence.present`, the ends
-  of the days, is unchanged). **Cleaner fish beside the production fish are kept apart** (`check.held_apart`, until the
-  owner and the vet decide): their withdrawal is no warning on the production fish's harvest, no acknowledgement of
+  of the days, is unchanged). **Cleaner fish beside the production fish are kept apart** (`check.held_apart`; the
+  owner's decision of 16.11.2026): their withdrawal is no warning on the production fish's harvest, no acknowledgement of
   theirs and not their earliest date; the dialog says it as a note ("Cleaner fish in C-01 are in a medicine
   withdrawal (B-2026-004, harvest from 19.11.2026): keep them out of the harvest."), and the unit's own line still
   shows it (`farm/tests/test_withdrawal_cleaner_fish.py`). The health records register their provider in `farm/apps.py` (`farm/handling/withdrawal.py`:
@@ -2078,10 +2078,11 @@ corrected temperature or a backdated transfer changes it at once:
   B-2026-001 (treated in T-01)."; fish held in a unit they were not treated in: "These fish were treated in T-01."
   (the unit's line, the harvest warning, its stored acknowledgement, the critical log line, `check_withdrawal`).
   A unit's line says each cause once per batch with its latest end; while the exposed fish of a cause are in the
-  unit their line stands for every fish in it. **Cleaner fish** (interim, `check.held_apart`, until the owner and
-  the vet decide): a held lot of production fish holds the cleaner fish beside it; a held lot of cleaner fish holds
-  the other cleaner fish beside it and never the production fish, whose harvest dialog says it as one note per
-  cleaner batch with its latest end. The batches a reader loads are every batch the fish asked can have met
+  unit their line stands for every fish in it. **Cleaner fish** (the owner, 16.11.2026; `check.held_apart`): a held
+  lot of production fish holds the unit as a whole, its cleaner fish too, and their hold follows them where they are
+  moved; a held lot of cleaner fish never makes another lot held (sharing a unit with held cleaner fish carries no
+  hold onward), and the harvest dialog of the production fish beside them says it as one note per cleaner batch with
+  its latest end: no warning, no acknowledgement, no change of the earliest date. The batches a reader loads are every batch the fish asked can have met
   (`farm.stock.read.together` over `spans()`: one grouped query of the live ledger, whatever the number of units or
   batches), and the moves are read with the presence in one query, so the units list, a drawer, the plans, the
   cards, the Treatments list and a guard cost the same for 6 units as for 24

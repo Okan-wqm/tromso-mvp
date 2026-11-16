@@ -413,7 +413,8 @@ class Case9DeleteBlockerTests(LotsTestCase):
 
 class Case10CleanerFishTests(CleanerWithdrawalTestCase):
     """C-02 (500 lumpfish and 300 salmon of other batches) was bathed 3 days ago; C-01 holds 2,000 salmon and 10,000
-    lumpfish that were never treated."""
+    lumpfish that were never treated; C-03 holds 1,000 salmon of another batch, never treated. The owner's decision 6
+    (16.11.2026), both directions."""
 
     def setUp(self):
         super().setUp()
@@ -423,7 +424,8 @@ class Case10CleanerFishTests(CleanerWithdrawalTestCase):
     def ends(self, unit, day=None):
         return sorted((held.batch_id, held.until) for held in withdrawal.of_units([unit], day).get(unit.pk, []))
 
-    def test_bathed_cleaner_fish_hold_the_cleaner_fish_beside_them_and_never_the_salmon(self):
+    def test_held_cleaner_fish_hold_nobody_beside_them_and_carry_no_hold_onward(self):
+        """The owner, 16.11.2026 (decision 6): a cleaner-fish lot never makes another lot held."""
         self.join(self.bathed_lump)
         result = check.assess('harvest', self.cage, self.today, self.salmon_batch)
         self.assertEqual(self.withdrawals(result), [])
@@ -431,16 +433,16 @@ class Case10CleanerFishTests(CleanerWithdrawalTestCase):
         self.assertEqual(check.earliest(self.cage, self.salmon_batch).decides, '')
         # The cage's own line: the bathed lumpfish and the lumpfish that are beside them now.
         self.assertEqual(self.ends(self.cage), [(self.bathed_lump.pk, self.until)])
-        # ... and the cage's own lumpfish, which were beside them, where they are moved on to.
-        stock_services.record_transfer(self.user, source=self.cage, batch=self.lump_batch, day=self.day(1),
-                                       legs=[(self.cage3, 1000)], reason='density')
-        self.assertEqual(self.ends(self.cage3), [(self.lump_batch.pk, self.until)])
-        self.assertIn(f'These fish shared C-01 with {self.bathed_lump.code} (treated in C-02).',
-                      withdrawal.describe(withdrawal.of_units([self.cage3])[self.cage3.pk][0]))
+        self.assertIn(self.note(self.bathed_lump), result.notes)
+        # The cage's own lumpfish and salmon, which were beside them, carry nothing on to C-03.
+        for batch in (self.lump_batch, self.salmon_batch):
+            stock_services.record_transfer(self.user, source=self.cage, batch=batch, day=self.day(1),
+                                           legs=[(self.cage3, 500)], reason='density')
+        self.assertEqual(self.ends(self.cage3), [])
         result = check.assess('harvest', self.cage3, self.today, self.other_salmon)
-        self.assertEqual(self.withdrawals(result), [])                              # a note, never a warning
-        self.assertIn(f'Cleaner fish in C-03 are in a medicine withdrawal ({self.lump_batch.code}, harvest from '
-                      f'{shown_date(self.until)}): keep them out of the harvest.', result.notes)
+        self.assertEqual((self.withdrawals(result), result.fingerprint), ([], ''))
+        self.assertIn('No medicine withdrawal in force.', result.notes)
+        self.assertEqual(withdrawal.harvests_inside(), [])
 
     def test_v03_one_note_per_cleaner_batch_with_its_latest_end(self):
         self.join(self.bathed_lump)
@@ -459,6 +461,23 @@ class Case10CleanerFishTests(CleanerWithdrawalTestCase):
         [warning] = self.withdrawals(check.assess('harvest', self.cage, self.today, self.salmon_batch))
         self.assertEqual((warning.block.batch, warning.block.until), (self.bathed_salmon, self.until))
         self.assertEqual(self.ends(self.cage), [(self.bathed_salmon.pk, self.until)])     # one line holds them all
+        # The cage's lumpfish, held with it, are held where they are moved on to: a note for the salmon there, never a
+        # warning, and those salmon are not held by them.
+        stock_services.record_transfer(self.user, source=self.cage, batch=self.lump_batch, day=self.day(1),
+                                       legs=[(self.cage3, 1000)], reason='density')
+        self.assertEqual(self.ends(self.cage3), [(self.lump_batch.pk, self.until)])
+        self.assertIn(f'These fish shared C-01 with {self.bathed_salmon.code} (treated in C-02).',
+                      withdrawal.describe(withdrawal.of_units([self.cage3])[self.cage3.pk][0]))
+        result = check.assess('harvest', self.cage3, self.today, self.other_salmon)
+        self.assertEqual((self.withdrawals(result), result.fingerprint), ([], ''))
+        self.assertIn(f'Cleaner fish in C-03 are in a medicine withdrawal ({self.lump_batch.code}, harvest from '
+                      f'{shown_date(self.until)}): keep them out of the harvest.', result.notes)
+        self.assertEqual(check.earliest(self.cage3, self.other_salmon).decides, '')
+        # ... while C-01's own salmon, moved on, hold the unit they come into.
+        stock_services.record_transfer(self.user, source=self.cage, batch=self.salmon_batch, day=self.day(1),
+                                       legs=[(self.cage3, 100)], reason='density')
+        [warning] = self.withdrawals(check.assess('harvest', self.cage3, self.today, self.other_salmon))
+        self.assertEqual((warning.block.batch, warning.block.until), (self.salmon_batch, self.until))
 
 
 def health_bath(case, days):

@@ -29,9 +29,10 @@ The rules, for a batch b and a treatment T with a medicine:
    E. An unknown end (rule 0, rule 6) holds the same fish.
    The withdrawal is asked of a DAY: the order of the operations within the day is not read (a move has no time), so
    fish that left a unit on the day held fish came into it are held too (over-warned, never under-warned).
-   **Cleaner fish** (interim, until the owner and the vet decide; farm.handling.check.held_apart): a held lot of
-   production fish holds the cleaner fish beside it; a held lot of cleaner fish holds the other cleaner fish beside
-   it and never the production fish (their harvest dialog says it as a note).
+   **Cleaner fish** (the owner, 16.11.2026, decision 6; farm.handling.check.held_apart): a held lot of production
+   fish holds the unit as a whole, the cleaner fish beside it too, and their hold follows them where they are moved
+   (B); a held lot of cleaner fish never makes another lot held: sharing a unit with held cleaner fish carries no
+   hold onward, to production fish or to other cleaner fish (the production fish's harvest dialog says it as a note).
    **Degree-days are still the exposed batch's** (rule 3: the lowest daily mean among EVERY unit b is in, also a
    unit that was never treated: the latest end, the safe side), until a vet has said whether they follow the held
    fish alone (RULES F). So for a degree-day medicine an untreated sibling unit's water still moves the end, and
@@ -413,7 +414,7 @@ class Reader:
         ({unit id: [day]}). The ledger's days are walked from the first of them while the withdrawal is in force and
         a lot is held or still to be exposed; on each day, to a fixpoint (the order within a day is not read): the
         exposed fish (A), the lots fish of a held lot were moved into (B), every batch in a unit a held lot is in
-        (C; a cleaner-fish lot never holds production fish). A lot whose last fish left by the end of the day ends
+        (C; never from a cleaner-fish lot: the owner's decision 6). A lot whose last fish left by the end of the day ends
         with that day. `via`: (unit id, batch id) of the held lot a shared lot met; None along the exposed fish's own
         path."""
         presence, batch_id, end = self.presence, withdrawal.batch_id, withdrawal.until
@@ -436,9 +437,10 @@ class Reader:
                         held[(target, moved)] = (day, held[(source, moved)][1])
                         grown = True
                 for unit_id, holder in list(held):
+                    if self._cleaner(holder):
+                        continue
                     for other in presence.batches.get(unit_id, ()):
-                        if ((unit_id, other) not in held and presence.during(unit_id, other, day)
-                                and not (self._cleaner(holder) and not self._cleaner(other))):
+                        if (unit_id, other) not in held and presence.during(unit_id, other, day):
                             held[(unit_id, other)] = (day, (unit_id, holder))
                             grown = True
             for lot in [lot for lot in held if presence.count_at_end(*lot, day) <= 0]:
@@ -483,8 +485,7 @@ class Reader:
         kept = []
         for (cause, _batch), hold in latest.items():
             covering = [own for (theirs, _own), own in latest.items()
-                        if theirs == cause and own.own
-                        and (self._cleaner(hold.batch_id) or not self._cleaner(own.batch_id))]
+                        if theirs == cause and own.own and not self._cleaner(own.batch_id)]
             if hold.own or not any(not _later(hold.until, own.until) for own in covering):
                 kept.append(hold)
         order = {id(withdrawal): index for index, withdrawal in enumerate(self.withdrawals())}
@@ -820,8 +821,8 @@ def _inside(reader, lines):
     from the treatment's first day, or the medicated feeding's, to the day before the fish may be harvested). The lots
     say which fish a withdrawal holds (rule 1): the exposed fish, where they were moved, and every batch that was in a
     unit with held fish (the fish of one unit go to food together, S-02; also fish that came in and left again that
-    day, review F-03), also after they moved on. Production fish are never held by a lot of cleaner fish (review
-    F-05), so a harvest is never inside a cleaner fish's withdrawal. `reader` has read the harvested batches."""
+    day, review F-03), also after they moved on. Production fish are never held by a lot of cleaner fish (the
+    owner's decision 6), so a harvest is never inside a cleaner fish's withdrawal. `reader` has read the harvested batches."""
     found = []
     for line in lines:
         for hold in reader.of_lot(line.unit_id, line.batch_id, line.operation.date):

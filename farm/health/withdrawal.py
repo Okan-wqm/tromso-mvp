@@ -12,15 +12,30 @@ The rules, for a batch b and a treatment T with a medicine:
    **No row for b's species, and none for every species: the end is unknown** (`until` None) and the warning says
    "no withdrawal is recorded for <species> of <medicine>: add it in Reference data › Medicines": never silently
    no withdrawal, never silently zero.
-1. **It follows the fish.** T reached b when b had fish in one of T's units on a day from T's first day to its
-   last (today at the latest; farm.stock.read.Presence). Wherever b is now, it is held; if only some of b's
-   units were treated, the whole batch is held (conservative).
-   **"On a day" is at any moment of the day** (Presence.during, review F-03): fish that came into a unit and left it
-   again on one day were in it that day. So fish that passed through a treated unit on a course day are reached, held
-   fish that passed through a unit hold that unit for that day (`of_units`: its line, and the harvest check of every
-   batch in it), and a harvest out of it that day lies inside their withdrawal (`_inside`). The withdrawal is asked
-   of a DAY: the order of the operations within the day is not read (a harvest entered before the held fish came in
-   that day counts too; over-warned, never under-warned).
+1. **It holds the fish that were exposed, not their batch** (flow fault S-03; the owner, 14.11.2026; the lots:
+   `Reader.lots`, a lot = the fish of one batch in one unit over one stay, worked out on read, nothing stored):
+   A. T reached the fish of b that were in one of T's units on a day from T's first day to its last (today at the
+      latest; farm.stock.read.Presence.during: at any moment of the day, so fish that passed through a treated unit
+      on a course day are reached). T's withdrawal of b is worked out for b (its species' row, rules 2 to 5).
+   B. The hold follows those fish: every move out of a held lot, dated on or after the day the lot became held,
+      holds the lot the fish go into, to the same end.
+   C. A unit is held as a whole: a batch that is in a unit at any moment of a day a held lot is in it is held there
+      from that day, to the same end, and stays held after either moves on (they can no longer be told apart; the
+      owner's example: tank C held to 23.11). The unit's line names the batch and says how: "These fish shared T-03
+      with B-2026-001 (treated in T-01)."
+   D. Not held: fish of b that left the treated unit before T's first day, or were never in it, in a unit no held
+      fish came into. A lot ends the day its last fish leave the unit (it still holds that day: a harvest of that
+      day lies inside); fish of the same batch that come into the unit later are another lot.
+   E. An unknown end (rule 0, rule 6) holds the same fish.
+   The withdrawal is asked of a DAY: the order of the operations within the day is not read (a move has no time), so
+   fish that left a unit on the day held fish came into it are held too (over-warned, never under-warned).
+   **Cleaner fish** (interim, until the owner and the vet decide; farm.handling.check.held_apart): a held lot of
+   production fish holds the cleaner fish beside it; a held lot of cleaner fish holds the other cleaner fish beside
+   it and never the production fish (their harvest dialog says it as a note).
+   **Degree-days are still the exposed batch's** (rule 3: the lowest daily mean among EVERY unit b is in, also a
+   unit that was never treated: the latest end, the safe side), until a vet has said whether they follow the held
+   fish alone (RULES F). So for a degree-day medicine an untreated sibling unit's water still moves the end, and
+   deleting that unit or its loop stays blocked (`held_reached`).
 2. **Days**: day 1 is the day after T's last day, so the first day b may be harvested is the last day +
    the row's days (the margin applied) + 1.
 3. **Degree-days**: the daily mean water temperature of b is added up from the day after T's last day until
@@ -45,6 +60,7 @@ gives the harvest side these blocks through the registry of farm/handling/withdr
 import hashlib
 from collections import defaultdict
 from dataclasses import dataclass, field
+from datetime import date
 from decimal import ROUND_CEILING, Decimal
 
 from django.core.exceptions import ValidationError
@@ -65,6 +81,7 @@ from farm.models.feed import FeedType
 from farm.models.handling import WithdrawalWarning
 from farm.models.health import TreatmentMethod
 from farm.models.stock import MovementKind
+from farm.stock import read as stock_read
 from farm.stock.dates import earliest_today, local_today, shown_date
 from farm.stock.read import Presence
 from farm.water.degree_days import (DAY, LOOKBACK_DAYS, PENDING, ZERO, BatchWater, degree_days_text,
@@ -176,8 +193,61 @@ class Withdrawal:
         return last >= self.start and (self.until is None or first < self.until)
 
 
+@dataclass(frozen=True)
+class Hold:
+    """A lot a withdrawal holds: the fish of one batch (`batch_id`) in one unit over one stay, from the day they became
+    held there (`since`) to the day the last of them left the unit (`left`; None: they are there). `via_unit` and
+    `via_batch` (codes) say how fish that were not exposed themselves came to be held: the unit they shared with held
+    fish, and whose; '' for the exposed fish and the lots they were moved into. `treated_in`: the codes of the units
+    the withdrawal's batch was exposed in (`exposed_in`: their ids). Everything else is the withdrawal's (its end, its
+    cause, its rule)."""
+    withdrawal: Withdrawal
+    unit_id: object
+    batch_id: object
+    since: object
+    left: object = None
+    via_unit: str = ''
+    via_batch: str = ''
+    treated_in: tuple = ()
+    exposed_in: frozenset = frozenset()
+
+    def __getattr__(self, name):
+        if name.startswith('__'):
+            raise AttributeError(name)
+        return getattr(self.withdrawal, name)
+
+    @property
+    def shared(self):
+        """Held because these fish shared a unit with held fish, not because they were exposed themselves."""
+        return bool(self.via_unit)
+
+    @property
+    def own(self):
+        """The fish of the batch the withdrawal was worked out for, exposed themselves."""
+        return not self.shared and self.batch_id == self.withdrawal.batch_id
+
+    def there(self, day):
+        """Whether the lot is in its unit on `day` (the day its fish left counts)."""
+        return self.since <= day and (self.left is None or day <= self.left)
+
+    def on(self, day):
+        """Whether the lot is held on `day`: it is there, and the withdrawal holds that day."""
+        return self.there(day) and self.withdrawal.holds_on(day)
+
+
+def _rank(hold):
+    """What the latest of several holds is told by: an unknown end is the latest of all; of two equal ends the exposed
+    fish's own comes first."""
+    return hold.until is None, hold.until or date.min, hold.own, not hold.shared
+
+
 class Reader:
     """The withdrawals of a set of batches, read on `today`.
+
+    **The batches read are more than the batches asked** (`asked`): a batch can be held by a course given in a unit it
+    was never in, through a unit it shared with held fish (rule 1 C), so the reader loads every batch the fish asked
+    can have met (farm.stock.read.together: one grouped query, whatever the number of units or batches; `spans`: that
+    query's answer, when the caller has it).
 
     **Whose today** (the owner's decision of 12.11.2026: everything is read on the site's own day). Fish are read on
     today of the site they are on NOW: a unit's own withdrawal line, the harvest check and the Treatments list all make
@@ -190,9 +260,11 @@ class Reader:
     nothing where the course was given on that site; it makes a guard, whose day can be an earlier one, see a course
     begun today on the later clock (`holds`), which it did not."""
 
-    def __init__(self, batch_ids, today):
-        self.batch_ids, self.today = set(batch_ids), today
-        self.presence = Presence.of_batches(self.batch_ids)
+    def __init__(self, batch_ids, today, spans=None):
+        self.asked, self.today = set(batch_ids), today
+        self.batch_ids = stock_read.together(self.asked, spans)
+        self.presence = Presence.of_batches(self.batch_ids, moves=True)
+        self._withdrawals = self._lots = None
         unit_ids = {unit_id for units in self.presence.units.values() for unit_id in units}
         self.treatments = list(Treatment.objects.filter(units__in=unit_ids, medicine__isnull=False).distinct()
                                .select_related('medicine').prefetch_related('units').order_by('start_date', 'pk'))
@@ -229,16 +301,29 @@ class Reader:
         return withdrawal.holds_between(self.today, self.there(given_in))
 
     # ---- which fish a treatment reached ---------------------------------------------------------
-    def treated(self, treatment, unit_ids=None):
-        """The batches of this reader that had fish in one of the treatment's units on one of its days, up to the day
-        it is in those units (`there`: what happens later is not recorded yet, and what has happened there has
-        happened, whatever day this reader's `today` is). `unit_ids`: the units of a treatment not saved yet."""
+    def exposed(self, treatment, unit_ids=None):
+        """{batch id: {unit id: [day]}}: the fish a treatment reached (rule 1 A). For each of this reader's batches
+        that had fish in one of the treatment's units at any moment of one of its days, up to the day it is in those
+        units (`there`: what happens later is not recorded yet, and what has happened there has happened, whatever day
+        this reader's `today` is), the units and in each the days its fish became exposed: the course's first day
+        when they were there, and every later course day fish of it came in. `unit_ids`: the units of a treatment not
+        saved yet."""
         if unit_ids is None:
             unit_ids = [unit.pk for unit in treatment.units.all()]
-        last = min(treatment.end_date, self.there(unit_ids))
-        return {batch_id for batch_id in self.batch_ids
-                if any(self.presence.during_between(unit_id, batch_id, treatment.start_date, last)
-                       for unit_id in unit_ids)}
+        first, last = treatment.start_date, min(treatment.end_date, self.there(unit_ids))
+        found = defaultdict(dict)
+        for unit_id in unit_ids:
+            for batch_id in self.presence.batches.get(unit_id, ()):
+                days = sorted(day for day in self.presence.arrived.get((unit_id, batch_id), ()) if first < day <= last)
+                if first <= last and self.presence.during(unit_id, batch_id, first):
+                    days.insert(0, first)
+                if days:
+                    found[batch_id][unit_id] = days
+        return found
+
+    def treated(self, treatment, unit_ids=None):
+        """The batches of this reader with fish a treatment reached (`exposed`)."""
+        return set(self.exposed(treatment, unit_ids))
 
     # ---- the batch's water (farm/water/degree_days.py) ------------------------------------------------
     def degree_days(self, batch_id, end, needed):
@@ -304,10 +389,111 @@ class Reader:
         return found
 
     def withdrawals(self):
-        """Every withdrawal of the batches, ended ones too."""
-        found = [self.of_treatment(treatment, batch_id) for treatment in self.treatments
-                 for batch_id in sorted(self.treated(treatment), key=str)]
-        return found + self.uncovered_feedings()
+        """Every withdrawal of the batches, ended ones too: one per cause and batch exposed by it."""
+        if self._withdrawals is None:
+            self._seeds = []                      # beside each withdrawal: {unit id: [day]} its batch was exposed
+            found = []
+            for treatment in self.treatments:
+                exposed = self.exposed(treatment)
+                for batch_id in sorted(exposed, key=str):
+                    found.append(self.of_treatment(treatment, batch_id))
+                    self._seeds.append(exposed[batch_id])
+            for held in self.uncovered_feedings():
+                found.append(held)
+                self._seeds.append({held.feeding.unit_id: [held.feeding.date]})
+            self._withdrawals = found
+        return self._withdrawals
+
+    # ---- the lots a withdrawal holds (rule 1) -------------------------------------------------------
+    def _cleaner(self, batch_id):
+        return self.batches[batch_id].species.is_cleaner_fish
+
+    def _walk(self, withdrawal, seeds):
+        """[(unit id, batch id, since, left, via)] of the lots `withdrawal` holds, its batch exposed on `seeds`
+        ({unit id: [day]}). The ledger's days are walked from the first of them while the withdrawal is in force and
+        a lot is held or still to be exposed; on each day, to a fixpoint (the order within a day is not read): the
+        exposed fish (A), the lots fish of a held lot were moved into (B), every batch in a unit a held lot is in
+        (C; a cleaner-fish lot never holds production fish). A lot whose last fish left by the end of the day ends
+        with that day. `via`: (unit id, batch id) of the held lot a shared lot met; None along the exposed fish's own
+        path."""
+        presence, batch_id, end = self.presence, withdrawal.batch_id, withdrawal.until
+        exposed_on = defaultdict(list)
+        for unit_id, days in seeds.items():
+            for day in days:
+                exposed_on[day].append(unit_id)
+        first, last = min(exposed_on), max(exposed_on)
+        held, found = {}, []
+        for day in sorted({*exposed_on, *(each for each in presence.days if each > first)}):
+            if (end is not None and day >= end) or (day > last and not held):
+                break
+            for unit_id in exposed_on.get(day, ()):
+                held.setdefault((unit_id, batch_id), (day, None))
+            grown = True
+            while grown:
+                grown = False
+                for source, target, moved in presence.moves.get(day, ()):
+                    if (source, moved) in held and (target, moved) not in held:
+                        held[(target, moved)] = (day, held[(source, moved)][1])
+                        grown = True
+                for unit_id, holder in list(held):
+                    for other in presence.batches.get(unit_id, ()):
+                        if ((unit_id, other) not in held and presence.during(unit_id, other, day)
+                                and not (self._cleaner(holder) and not self._cleaner(other))):
+                            held[(unit_id, other)] = (day, (unit_id, holder))
+                            grown = True
+            for lot in [lot for lot in held if presence.count_at_end(*lot, day) <= 0]:
+                since, via = held.pop(lot)
+                found.append((*lot, since, day, via))
+        return found + [(*lot, since, None, via) for lot, (since, via) in held.items()]
+
+    def lots(self):
+        """[Hold]: every lot every withdrawal of this reader holds or held, ended ones too."""
+        if self._lots is None:
+            self._lots, self._by_unit, self._by_lot = [], defaultdict(list), defaultdict(list)
+            for index, withdrawal in enumerate(self.withdrawals()):
+                seeds = self._seeds[index]
+                codes = tuple(sorted(self.units[unit_id].code for unit_id in seeds if unit_id in self.units))
+                for unit_id, batch_id, since, left, via in self._walk(withdrawal, seeds):
+                    hold = Hold(withdrawal, unit_id, batch_id, since, left,
+                                self.units[via[0]].code if via else '', self.batches[via[1]].code if via else '',
+                                codes, frozenset(seeds))
+                    self._lots.append(hold)
+                    self._by_unit[unit_id].append(hold)
+                    self._by_lot[(unit_id, batch_id)].append(hold)
+        return self._lots
+
+    def of_lot(self, unit_id, batch_id, day):
+        """The Holds of the fish of the batch in the unit on `day`."""
+        self.lots()
+        return [hold for hold in self._by_lot.get((unit_id, batch_id), ()) if hold.on(day)]
+
+    def of_unit(self, unit_id, day):
+        """[Hold]: the unit's own withdrawal line on `day`, what the harvest check reads. The unit is held as a whole
+        (rule 1 C), so each cause is said once per batch (its latest end), and not again for the fish that are held only
+        because they are beside the exposed fish of that cause while those are in the unit: they are named by the
+        exposed batch's line, which holds every fish in the unit. A cleaner-fish line never stands for production fish
+        (farm.handling.check.held_apart reads the line's batch)."""
+        self.lots()
+        latest = {}
+        for hold in self._by_unit.get(unit_id, ()):
+            if hold.on(day):
+                key = (source_key(hold.source), hold.batch_id)
+                if key not in latest or _rank(hold) > _rank(latest[key]):
+                    latest[key] = hold
+        kept = []
+        for (cause, _batch), hold in latest.items():
+            covering = [own for (theirs, _own), own in latest.items()
+                        if theirs == cause and own.own
+                        and (self._cleaner(hold.batch_id) or not self._cleaner(own.batch_id))]
+            if hold.own or not any(not _later(hold.until, own.until) for own in covering):
+                kept.append(hold)
+        order = {id(withdrawal): index for index, withdrawal in enumerate(self.withdrawals())}
+        return sorted(kept, key=lambda hold: (str(hold.batch_id), order[id(hold.withdrawal)]))
+
+    def current(self, hold):
+        """For a reader whose `today` is not one site's own (a write guard, what blocks a deletion): whether the lot
+        is held now. Its fish are there (or left today at the earliest) and the withdrawal holds now (`holds`)."""
+        return (hold.left is None or hold.left >= self.today) and self.holds(hold.withdrawal)
 
 
 def covers(treatment, record):
@@ -324,19 +510,6 @@ def covered(record):
 
 
 # ---- what the pages and the handling check read --------------------------------------------------------
-def holding(batch_ids, today, day=None):
-    """{batch id: [Withdrawal]} of the withdrawals that hold the batches on `day`, read on `today`. Without a day (a
-    question that is not one site's own: what blocks a deletion, on the earliest day among several units), those that
-    hold them now by Reader.holds."""
-    found = defaultdict(list)
-    if batch_ids:
-        reader = Reader(batch_ids, today)
-        for withdrawal in reader.withdrawals():
-            if reader.holds(withdrawal) if day is None else withdrawal.holds_on(day):
-                found[withdrawal.batch_id].append(withdrawal)
-    return found
-
-
 def reach(unit_sets):
     """{key: (the batches ever in the units of `unit_sets[key]`, the farm's earliest today among EVERY unit those
     batches were ever in; None when the units never held fish)}, for several sets of units at once.
@@ -373,14 +546,36 @@ def _reached(unit_ids=(), species=None):
 
 
 def held_reached(unit_ids=(), species=None):
-    """Why a unit, a loop (the units in it) or a species is not deleted or restored now: the batches a withdrawal holds
-    today among the fish ever in `unit_ids` and the batches of `species`. Deleting or restoring one moves their
-    withdrawals (the treatments' units, the loop's samples that count for a unit, the species' assumed temperature), so
-    it waits until they end (cross-review 3). [] when none is held."""
+    """Why a unit, a loop (the units in it) or a species is not deleted or restored now: the batches with fish a
+    withdrawal holds today that deleting or restoring it would move. A lot is moved by `unit_ids` when
+    - it is in one of them (the fish of a deleted unit show no withdrawal at all);
+    - its withdrawal's batch was exposed in one of them (the treatment's unit, the medicated feeding's unit): without
+      the unit the course reached nobody;
+    - its withdrawal is in degree-days and its batch was in one of them since the course's last day: the unit's water
+      counts for the end (rule 3: the lowest among every unit the batch is in, also one that was never treated; the
+      vet's open question, rule 1), so its samples and its loop's move it;
+    and by `species` when the lot's batch or its withdrawal's batch is of it (the species' withdrawal rows, its
+    assumed temperature). A unit that was never treated, holds no held fish and whose water counts for no
+    degree-days is NOT blocked by a hold elsewhere on a batch that was once in it (flow fault S-03, RULES case 9).
+    [] when nothing held is moved."""
     batch_ids, today = _reached(unit_ids, species)
     if not batch_ids:
         return []
-    codes = sorted(Batch.all_objects.filter(pk__in=holding(batch_ids, today)).values_list('code', flat=True))
+    unit_ids, reader = set(unit_ids), Reader(batch_ids, today)
+
+    def of_species(batch_id):
+        return species is not None and reader.batches[batch_id].species_id == species.pk
+
+    def water_counts(held):
+        if held.rule is None or held.rule.degree_days is None:
+            return False
+        return any(reader.presence.during_between(unit_id, held.batch_id, held.treatment.end_date + DAY, date.max)
+                   for unit_id in unit_ids)
+
+    moved = {hold.batch_id for hold in reader.lots() if reader.current(hold) and (
+        hold.unit_id in unit_ids or unit_ids & hold.exposed_in or water_counts(hold.withdrawal)
+        or of_species(hold.batch_id) or of_species(hold.withdrawal.batch_id))}
+    codes = sorted(reader.batches[batch_id].code for batch_id in moved)
     if not codes:
         return []
     return [ngettext('A medicine withdrawal holds batch %(batches)s, and this moves it: wait until it ends.',
@@ -398,7 +593,7 @@ def weighed(record, values, unit_ids):
     before = snapshot(batch_ids, today)
     with transaction.atomic(), gate.opened('weighing a write, rolled back'):
         type(record)._base_manager.filter(pk=record.pk).update(**values)
-        after = snapshot(batch_ids, today)
+        after = snapshot(batch_ids | before.scope, today)
         transaction.set_rollback(True)
     return change(before, after).messages()
 
@@ -427,76 +622,81 @@ def site_days(units):
 
 
 def of_units(units, day=None):
-    """{unit id: [Withdrawal]} of the batches in each unit on `day` (default each unit's today) that a withdrawal
-    holds then: the unit's own withdrawal line, and what the harvest check reads. One reader per site's day
-    (`site_days`), asked that day itself."""
-    found = {}
+    """{unit id: [Hold]} of the lots in each unit on `day` (default each unit's today) that a withdrawal holds then:
+    the unit's own withdrawal line (`Reader.of_unit`), and what the harvest check reads. One reader per site's day
+    (`site_days`), asked that day itself; the same number of queries for one unit as for fifty."""
+    found, spans = {}, None
     for today, members in site_days(units).items():
-        presence = Presence.of_units([unit.pk for unit in members])
-        present = {unit.pk: presence.batches_during(unit.pk, day or today) for unit in members}
-        held = holding({batch_id for batches in present.values() for batch_id in batches}, today, day or today)
+        spans = stock_read.spans() if spans is None else spans
+        on = day or today
+        batch_ids = stock_read.in_units(spans, [unit.pk for unit in members], on)
+        if not batch_ids:
+            continue
+        reader = Reader(batch_ids, today, spans)
         for unit in members:
-            withdrawals = [withdrawal for batch_id in sorted(present[unit.pk], key=str)
-                           for withdrawal in held.get(batch_id, [])]
-            if withdrawals:
-                found[unit.pk] = withdrawals
+            holds = reader.of_unit(unit.pk, on)
+            if holds:
+                found[unit.pk] = holds
     return found
 
 
 @dataclass(frozen=True)
 class Reached:
-    """A batch a treatment reached, as the Treatments list shows it: read on today of the site its fish are on now."""
+    """Fish a treatment reached or holds, as the Treatments list shows them: a batch, read on today of the site its
+    held fish are on now."""
     batch: Batch
-    withdrawal: Withdrawal          # None: the treatment has no medicine, or is voided
-    held: bool                      # the withdrawal holds the fish on `today`
+    withdrawal: object              # the Hold (or the Withdrawal, for fish that are nowhere any more) with the latest
+                                    # end; None: the treatment has no medicine, or is voided
+    held: bool                      # a lot of the batch is held by the treatment on `today`
     today: object                   # today on the site these fish are on
-    units: tuple = ()               # the codes of the units of this part, when the batch is on sites of different days
+    units: tuple = ()               # the codes of the units its lots under this treatment's withdrawal are in now
+    shared: bool = False            # not exposed itself: held because it shared a unit with held fish
 
 
 def of_treatments(treatments):
-    """{treatment id: [Reached]} for the Treatments list (the treatments' units prefetched): each batch a treatment
-    reached with the withdrawal it puts on it, read as the unit's own line reads it (`of_units`): on today of the site
-    the fish are on now, by the same reader, asked that same day. So the list, "Under withdrawal today", the day counts
-    and the unit's line are one answer, for a site ahead of the company or behind it, a batch moved between clocks
-    (the day of where it is now, with the course history it carries), a course begun today on its site, a batch that
-    arrived today. A batch whose fish are on sites of different days is shown once per day, each part with its units
-    and its own answer. Fish that are nowhere any more (harvested out) are read on the day of the units the course
-    was given in. One reader per site's day."""
+    """{treatment id: [Reached]} for the Treatments list (the treatments' units prefetched): each batch with fish a
+    treatment reached, and each batch its withdrawal holds through a shared unit (rule 1 C), with the units those
+    lots are in now and the withdrawal on them, read as the unit's own line reads it (`of_units`): on today of the
+    site the fish are on now, by the same reader, asked that same day. So the list, "Under withdrawal today", the day
+    counts and the unit's line are one answer. A batch whose held fish are on sites of different days is shown once
+    per day. A batch the treatment reached whose exposed fish are nowhere any more (harvested out) is shown once,
+    without a unit, not held, with the withdrawal the course put on it, read on the day of the units the course was
+    given in. One reader per site's day."""
+    found = {treatment.pk: [] for treatment in treatments}
     given = {treatment.pk: {unit.pk for unit in treatment.units.all()} for treatment in treatments}
     every = {unit_id for unit_ids in given.values() for unit_id in unit_ids}
-    in_units = Presence.of_units(every).batches if every else {}
-    candidates = {pk: {batch_id for unit_id in unit_ids for batch_id in in_units.get(unit_id, ())}
-                  for pk, unit_ids in given.items()}
-    presence = Presence.of_batches({batch_id for batch_ids in candidates.values() for batch_id in batch_ids})
+    spans = stock_read.spans() if every else {}
+    batch_ids = stock_read.together(stock_read.in_units(spans, every), spans)
+    if not batch_ids:
+        return found
     units = Tank.all_objects.select_related('production_department__site').in_bulk(
-        {unit_id for unit_ids in presence.units.values() for unit_id in unit_ids})
+        {unit_id for unit_id, batch_id in spans if batch_id in batch_ids} | every)
     today_of = {pk: local_today(unit) for pk, unit in units.items()}
-    where, wanted = {}, defaultdict(set)
-    for batch_id, unit_ids in presence.units.items():            # where each batch is now, by its site's day
-        now = [units[unit_id] for unit_id in unit_ids
-               if unit_id in units and presence.present(unit_id, batch_id, today_of[unit_id])]
-        where[batch_id] = site_days(now)
-    gone = {pk: earliest_today(units[unit_id] for unit_id in unit_ids if unit_id in units)
-            for pk, unit_ids in given.items()}                   # the day of fish that are nowhere any more
-    for pk, batch_ids in candidates.items():
-        for batch_id in batch_ids:
-            for today in where.get(batch_id) or {gone[pk]: []}:
-                wanted[today].add(batch_id)
-    readers = {today: Reader(batch_ids, today) for today, batch_ids in wanted.items()}
-    batches = Batch.all_objects.in_bulk({batch_id for batch_ids in candidates.values() for batch_id in batch_ids})
-    found = {}
+    readers = {today: Reader(batch_ids, today, spans) for today in sorted(set(today_of.values()))}
     for treatment in treatments:
-        treated = {today: reader.treated(treatment) for today, reader in readers.items()}
-        rows = []
-        for batch_id in candidates[treatment.pk]:
-            days = where.get(batch_id) or {gone[treatment.pk]: []}
-            for today, members in days.items():
-                if batch_id not in treated[today]:
-                    continue
-                held = (readers[today].of_treatment(treatment, batch_id)
-                        if treatment.medicine_id and not treatment.is_deleted else None)
-                rows.append(Reached(batches[batch_id], held, held is not None and held.holds_on(today), today,
-                                    tuple(sorted(unit.code for unit in members)) if len(days) > 1 else ()))
+        live = bool(treatment.medicine_id) and not treatment.is_deleted
+        gone = earliest_today(units[unit_id] for unit_id in given[treatment.pk] if unit_id in units)
+        rows, exposed, listed = [], {}, set()
+        for today, reader in readers.items():
+            for batch_id in reader.treated(treatment):
+                exposed.setdefault(batch_id, reader)
+            parts = defaultdict(list)
+            for hold in reader.lots() if live else ():
+                if (hold.treatment is not None and hold.treatment.pk == treatment.pk
+                        and today_of.get(hold.unit_id) == today and hold.there(today)
+                        and reader.presence.during(hold.unit_id, hold.batch_id, today)):
+                    parts[hold.batch_id].append(hold)
+            for batch_id, holds in parts.items():
+                listed.add(batch_id)
+                rows.append(Reached(reader.batches[batch_id], max(holds, key=_rank),
+                                    any(hold.on(today) for hold in holds), today,
+                                    tuple(sorted({units[hold.unit_id].code for hold in holds})),
+                                    all(hold.shared for hold in holds)))
+        for batch_id, reader in exposed.items():
+            if batch_id not in listed:
+                reader = readers.get(gone, reader)
+                rows.append(Reached(reader.batches[batch_id], reader.of_treatment(treatment, batch_id) if live else None,
+                                    False, reader.today))
         found[treatment.pk] = sorted(rows, key=lambda each: (each.batch.code, each.units))
     return found
 
@@ -514,7 +714,8 @@ class HarvestInside:
     `reason`, and `batch`: the batch that is held, as the harvest's own acknowledgement names it)."""
     line: object                          # the harvest's StockMovement: its operation, unit, batch, fish
     withdrawal: Withdrawal
-    held: object = None                   # the Batch the withdrawal holds; None: read as the harvest's own
+    held: object = None                   # the Batch the withdrawal is of; None: read as the harvest's own
+    hold: Hold = None                     # the lot of the harvested fish the withdrawal holds, with how it came to
 
     warning = WithdrawalWarning.HARVESTED
 
@@ -574,9 +775,23 @@ class HarvestInside:
         text = _('Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this '
                  'withdrawal (%(end)s): medicated fish may have gone to food.') % params
         if not self.own:
-            text += ' ' + _('The withdrawal is of %(held)s, which was in %(unit)s with the fish harvested: the fish of '
-                            'one unit cannot be told apart.') % {'held': self.batch.code, 'unit': self.line.unit.code}
+            text += ' ' + self.through()
         return text
+
+    @property
+    def beside(self):
+        """Whether the withdrawal's own batch was in the harvested unit with the fish harvested (else they met it, or
+        fish held with it, in another unit before)."""
+        return self.hold is None or self.hold.via_unit in ('', self.line.unit.code)
+
+    def through(self):
+        """How a withdrawal of another batch came to hold the fish harvested."""
+        if self.beside:
+            return _('The withdrawal is of %(held)s, which was in %(unit)s with the fish harvested: the fish of '
+                     'one unit cannot be told apart.') % {'held': self.batch.code, 'unit': self.line.unit.code}
+        return _('The withdrawal is of %(held)s: the fish harvested shared %(unit)s with %(with)s before, and the fish '
+                 'of one unit cannot be told apart.') % {'held': self.batch.code, 'unit': self.hold.via_unit,
+                                                         'with': self.hold.via_batch}
 
     def same_harvest(self):
         """Which harvest of which batch it is, whatever the withdrawal's end."""
@@ -595,43 +810,37 @@ def _harvest_lines(batch_ids=None, since=None, unit_ids=()):
     return list(lines.order_by('operation__date', 'unit__code', 'pk'))
 
 
-def _inside(reader, withdrawals, lines):
-    """THE rule: a harvest lies inside a withdrawal that holds on the harvest's day (Withdrawal.holds_on: from the
-    treatment's first day, or the medicated feeding's, to the day before the batch may be harvested) and is of the
-    harvested batch, or of a batch that had fish in the harvested unit at any moment of that day (the stock's presence
-    `during`, as the unit's own withdrawal line and the harvest's handling check read it: the fish of one unit go to
-    food together, S-02; also fish that came in and left again that day, review F-03).
-    A withdrawal of cleaner fish is not one the production fish harvested beside them lie inside (check.held_apart,
-    review F-05: their harvest was not asked about it).
-    `withdrawals` are `reader`'s (its presence and its batches say who was where)."""
+def _inside(reader, lines):
+    """THE rule: a harvest lies inside a withdrawal that holds the lot of the harvested fish (their batch in their
+    unit) on the harvest's day (Hold.on: the lot is there, the day its last fish left too, and the withdrawal holds:
+    from the treatment's first day, or the medicated feeding's, to the day before the fish may be harvested). The lots
+    say which fish a withdrawal holds (rule 1): the exposed fish, where they were moved, and every batch that was in a
+    unit with held fish (the fish of one unit go to food together, S-02; also fish that came in and left again that
+    day, review F-03), also after they moved on. Production fish are never held by a lot of cleaner fish (review
+    F-05), so a harvest is never inside a cleaner fish's withdrawal. `reader` has read the harvested batches."""
     found = []
-    for held in withdrawals:
-        beside = not check.held_apart(reader.batches[held.batch_id])
-        for line in lines:
-            day = line.operation.date
-            if held.holds_on(day) and (held.batch_id == line.batch_id
-                                       or beside and reader.presence.during(line.unit_id, held.batch_id, day)):
-                found.append(HarvestInside(line, held, reader.batches[held.batch_id]))
-    return sorted(found, key=lambda each: (each.line.operation.date, each.line.unit.code, each.line.pk,
-                                           each.withdrawal.start, each.batch.code))
+    for line in lines:
+        for hold in reader.of_lot(line.unit_id, line.batch_id, line.operation.date):
+            found.append(HarvestInside(line, hold.withdrawal, reader.batches[hold.withdrawal.batch_id], hold))
+    best = {}
+    for each in found:                    # a withdrawal holds a lot once a day; a lot ended and begun again that day
+        best.setdefault((each.line.pk, each.identity()), each)
+    return sorted(best.values(), key=lambda each: (each.line.operation.date, each.line.unit.code, each.line.pk,
+                                                   each.withdrawal.start, each.batch.code))
 
 
 def harvests_inside():
-    """Every live harvest that lies inside a withdrawal of a batch of its unit, however it came to (check_withdrawal):
-    one reader per farm-local today of the harvested units (sites in different time zones), over the harvested batches
-    and the batches that shared a harvested unit on the harvest's day."""
+    """Every live harvest that lies inside a withdrawal that holds its fish, however it came to (check_withdrawal):
+    one reader per farm-local today of the harvested units (sites in different time zones), over the harvested
+    batches (the reader loads the batches they can have met)."""
     every = _harvest_lines()
-    presence = Presence.of_units({line.unit_id for line in every}) if every else None
+    spans = stock_read.spans() if every else None
     by_today = defaultdict(list)
     for line in every:
         by_today[local_today(line.unit)].append(line)
     found = []
     for today, lines in sorted(by_today.items()):
-        batch_ids = {line.batch_id for line in lines}
-        for line in lines:
-            batch_ids |= presence.batches_during(line.unit_id, line.operation.date)
-        reader = Reader(batch_ids, today)
-        found += _inside(reader, reader.withdrawals(), lines)
+        found += _inside(Reader({line.batch_id for line in lines}, today, spans), lines)
     return found
 
 
@@ -653,11 +862,13 @@ def _later(first, second):
 class Released:
     """Fish held today by a withdrawal whose end a write moves earlier (`until_after`), or ends today (no withdrawal
     holds them after it: `freed`): a course voided or shortened, a medicine's withdrawal shortened, a medicated feeding
-    voided, a temperature corrected. Asked whether or not the new end is still ahead (cross-review 2, 4)."""
+    voided, a temperature corrected, a move of fish voided or dated before the course that reached them. Asked whether
+    or not the new end is still ahead (cross-review 2, 4). The fish are a lot: a batch in a unit (`unit`)."""
     batch: object
-    withdrawal: Withdrawal                # the one that held the batch longest before the write
+    withdrawal: Withdrawal                # the one that held the fish longest before the write
     until_after: object = None            # the end after the write
-    freed: bool = False                   # no withdrawal holds the batch today after the write
+    freed: bool = False                   # no withdrawal holds the fish today after the write
+    unit: object = None                   # the unit the fish are in after the write
 
     warning = WithdrawalWarning.RELEASED
     harvest = None
@@ -676,40 +887,46 @@ class Released:
 
     def key(self):
         after = 'free' if self.freed else self.until_after
-        return f'released:{self.batch.pk}:{self.until}:{after}:{self.approximate}:{self.reason}'
+        return f'released:{self.batch.pk}:{self.unit.pk}:{self.until}:{after}:{self.approximate}:{self.reason}'
 
     def message(self):
-        params = {'batch': self.batch.code, 'withdrawal': self.reason,
+        params = {'batch': self.batch.code, 'unit': self.unit.code, 'withdrawal': self.reason,
                   'until': shown_date(self.until) if self.until else _('an unknown end'),
                   'after': shown_date(self.until_after) if self.until_after else _('an unknown end')}
         if self.freed:
-            return _('%(batch)s is held today (%(withdrawal)s) and would no longer be held by a medicine withdrawal after '
-                     'this change: the fish could go to food.') % params
-        return _('%(batch)s is held (%(withdrawal)s): after this change its withdrawal would end earlier, the fish may go '
-                 'to food from %(after)s instead of %(until)s.') % params
+            return _('%(batch)s in %(unit)s is held today (%(withdrawal)s) and would no longer be held by a medicine '
+                     'withdrawal after this change: the fish could go to food.') % params
+        return _('%(batch)s in %(unit)s is held (%(withdrawal)s): after this change its withdrawal would end earlier, '
+                 'the fish may go to food from %(after)s instead of %(until)s.') % params
 
 
 @dataclass(frozen=True)
 class Snapshot:
-    """The withdrawals of some batches as the stored facts give them now: the harvests inside one (by identity) and the
-    withdrawals that hold each batch today."""
+    """The withdrawals of some fish as the stored facts give them now: the harvests inside one (by identity), the
+    withdrawals that hold each lot today (`held`: {(unit id, batch id): [Hold]}), the lots with fish now (`stocked`),
+    the moves of fish between units (`transfers`) and the batches read (`scope`: the batches asked and every batch
+    their fish can have met)."""
     inside: dict
     held: dict
+    scope: frozenset = frozenset()
+    stocked: frozenset = frozenset()
+    transfers: frozenset = frozenset()
 
 
 def snapshot(batch_ids, today):
     if not batch_ids:
         return Snapshot({}, {})
     reader = Reader(batch_ids, today)
-    found = reader.withdrawals()
     held = defaultdict(list)
-    for each in found:
-        if reader.holds(each):            # held now, by the reader's rule for several clocks: the guards read it too
-            held[each.batch_id].append(each)
-    # The harvests of these batches, and of any batch out of a unit these batches were in: a harvest of another batch
-    # lies inside a withdrawal of one of these when they shared its unit that day (`_inside`).
-    lines = _harvest_lines(batch_ids, unit_ids=set(reader.units))
-    return Snapshot({each.identity(): each for each in _inside(reader, found, lines)}, dict(held))
+    for hold in reader.lots():
+        if reader.current(hold):          # held now, by the reader's rule for several clocks: the guards read it too
+            held[(hold.unit_id, hold.batch_id)].append(hold)
+    # The harvests of every batch read: a harvest of a batch that was never treated lies inside a withdrawal when its
+    # fish shared a unit with held fish (`_inside`).
+    lines = _harvest_lines(reader.batch_ids)
+    stocked = frozenset(lot for lot, (_days, counts) in reader.presence.timelines.items() if counts[-1] > 0)
+    return Snapshot({each.identity(): each for each in _inside(reader, lines)}, dict(held),
+                    frozenset(reader.batch_ids), stocked, frozenset(reader.presence.transfers))
 
 
 def _longest(withdrawals):
@@ -744,20 +961,39 @@ class Change:
 
 
 def change(before, after, exclude_operation=None):
-    """The Change between two snapshots of the same batches. A harvest the write itself records is left out: the
-    harvest's own handling check asks about the withdrawal in force on its day."""
+    """The Change between two snapshots, `after` read over `before`'s batches at least (`guarded`). A harvest the write
+    itself records is left out: the harvest's own handling check asks about the withdrawal in force on its day.
+
+    A harvest that neither is of a batch read before nor lies inside a withdrawal of one is not this write's: the write
+    only joined its fish to the fish asked (a move into their unit), and what was true of it before stays true.
+
+    Fish are RELEASED lot by lot (a batch in a unit, rule 1): a lot with fish after the write whose fish were held
+    before it and are not held after it, or to an earlier end. "Its fish before the write" are the lot's own and those
+    the write itself moved into it: the lot a move the write records took them out of, the lot a move the write voids
+    had put them in. So fish taken out of a course's reach by a move dated before it, or put back by a void, are asked
+    about where they are now; a move of fish that were never held asks nothing."""
     harvested = [found for key, found in after.inside.items() if found.operation_id != exclude_operation
+                 and (not before.scope or found.line.batch_id in before.scope
+                      or found.withdrawal.batch_id in before.scope)
                  and (key not in before.inside or _later(found.until, before.inside[key].until))]
-    released = []
-    batches = Batch.all_objects.in_bulk(list(before.held))
-    for batch_id in sorted(before.held, key=str):
-        old = _longest(before.held[batch_id])
-        if batch_id not in after.held:
-            released.append(Released(batches[batch_id], old, freed=True))
-        else:
-            new_end = _end(after.held[batch_id])
-            if _later(_end(before.held[batch_id]), new_end):
-                released.append(Released(batches[batch_id], old, until_after=new_end))
+    came_from = defaultdict(set)
+    for _operation, _pair, source, target, batch_id in after.transfers - before.transfers:
+        came_from[(target, batch_id)].add((source, batch_id))
+    for _operation, _pair, source, target, batch_id in before.transfers - after.transfers:
+        came_from[(source, batch_id)].add((target, batch_id))
+    found = []
+    for lot in sorted({*before.held, *came_from}, key=str):
+        prior = [hold for each in (lot, *sorted(came_from.get(lot, ()), key=str)) for hold in before.held.get(each, ())]
+        if not prior or lot not in after.stocked:
+            continue
+        if lot not in after.held:
+            found.append((lot, _longest(prior), None, True))
+        elif _later(_end(prior), _end(after.held[lot])):
+            found.append((lot, _longest(prior), _end(after.held[lot]), False))
+    batches = Batch.all_objects.in_bulk({batch_id for (_unit, batch_id), *_rest in found})
+    units = Tank.all_objects.in_bulk({unit_id for (unit_id, _batch), *_rest in found})
+    released = [Released(batches[batch_id], old, until_after, freed, units[unit_id])
+                for (unit_id, batch_id), old, until_after, freed in found]
     return Change(harvested, released)
 
 
@@ -800,7 +1036,9 @@ def guarded(user, batch_ids, today, write, *, seen=None, record_of=None, exclude
     with gate.opened('withdrawal guard'), transaction.atomic():
         result = write()
         excluded = exclude_operation(result) if exclude_operation else None
-        found = change(before, snapshot(batch_ids, today), excluded)
+        # Read again over everything read before (a write that parts fish, a move voided, must not lose them from
+        # the comparison) and whatever the write joined to it.
+        found = change(before, snapshot(batch_ids | before.scope, today), excluded)
         if found.warnings or seen:
             if seen != found.fingerprint and not found.warnings:
                 raise WithdrawalChanged(found, {FIELD: _('The warnings changed since the form was shown: read them '
@@ -857,7 +1095,11 @@ def rules_text(medicine):
 
 
 def describe(withdrawal):
-    """Why a withdrawal holds the fish and until when, in the active language."""
+    """Why a withdrawal holds the fish and until when, in the active language. Of a Hold (the fish of a batch in a
+    unit), first how these fish came to be held when they were not exposed themselves ("These fish shared T-03 with
+    B-2026-001 (treated in T-01)."), or where they were treated when that is not the unit they are in now."""
+    if isinstance(withdrawal, Hold):
+        return ' '.join(part for part in (_held_how(withdrawal), describe(withdrawal.withdrawal)) if part)
     if withdrawal.feeding is not None:
         record = withdrawal.feeding
         return _('Medicated feed %(feed)s was fed in %(unit)s on %(date)s and no in-feed treatment covers that '
@@ -883,9 +1125,28 @@ def describe(withdrawal):
     return text
 
 
+def _held_how(hold):
+    """How the fish of a Hold came to be held, when it is not said by the withdrawal itself: '' for the exposed fish
+    in a unit they were exposed in."""
+    units = ', '.join(hold.treated_in)
+    if not hold.shared:
+        if hold.unit_id in hold.exposed_in or not units:
+            return ''
+        if hold.feeding is not None:
+            return _('These fish were given the medicated feed in %(units)s.') % {'units': units}
+        return _('These fish were treated in %(units)s.') % {'units': units}
+    if hold.feeding is not None:
+        how = _('given medicated feed in %(units)s') % {'units': units}
+    else:
+        how = _('treated in %(units)s') % {'units': units}
+    return _('These fish shared %(unit)s with %(batch)s (%(how)s).') % {
+        'unit': hold.via_unit, 'batch': hold.via_batch, 'how': how}
+
+
 def provider(units, day):
-    """The health module's answer to farm.handling.withdrawal.blocks_of: {unit id: [block]}, a block per withdrawal
-    that holds a batch in the unit on `day` (None: the unit's own today); the units without one are left out."""
+    """The health module's answer to farm.handling.withdrawal.blocks_of: {unit id: [block]}, a block per line of the
+    unit's withdrawal on `day` (None: the unit's own today; `of_units`): the batch held there, the end, and why, which
+    says by name when the fish are held because they shared a unit; the units without one are left out."""
     withdrawals = of_units(units, day)
     batches = Batch.all_objects.select_related('species').in_bulk(
         {withdrawal.batch_id for held in withdrawals.values() for withdrawal in held})

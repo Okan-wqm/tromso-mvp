@@ -16,7 +16,8 @@ def _end(until, approximate=False):
 
 class Command(BaseCommand):
     help = ('Works out the medicine withdrawal of the fish in every unit from scratch (the treatments, the stock '
-            'ledger and the water samples) and lists every batch a withdrawal holds today, with its end and why; then '
+            'ledger and the water samples) and lists the fish a withdrawal holds today, unit by unit, with the end and '
+            'why (the fish that were exposed, where they were moved, and the fish that shared a unit with them); then '
             'every harvest already recorded inside a withdrawal (medicated fish that may have gone to food), however it '
             'came to, and whether someone acknowledged it.')
 
@@ -54,9 +55,18 @@ class Command(BaseCommand):
             line = each.line
             facility = each.facility.name if each.facility is not None else 'an unknown facility'
             # The acknowledgements name the batch that is held: the harvested one, or one that shared its unit (S-02).
-            pair = (each.operation_id, each.batch.pk, source_key(each.withdrawal.source))
-            acknowledged = self.acknowledged(given.get(pair, []), each.until)
-            whose = '' if each.own else f' of {each.batch.code}, in the same unit'
+            # ... or the harvested batch itself, when its fish are held because they shared a unit before (S-03: the
+            # harvest's warning named them, the unit's line).
+            source = source_key(each.withdrawal.source)
+            rows = [row for batch_id in dict.fromkeys((each.batch.pk, line.batch_id))
+                    for row in given.get((each.operation_id, batch_id, source), [])]
+            acknowledged = self.acknowledged(rows, each.until)
+            if each.own:
+                whose = ''
+            elif each.beside:
+                whose = f' of {each.batch.code}, in the same unit'
+            else:                # the fish harvested met it, or fish held with it, in another unit before (S-03)
+                whose = f' of {each.batch.code}, through {each.hold.via_unit} shared with {each.hold.via_batch}'
             self.stdout.write(self.style.ERROR(
                 f'Harvest of {line.operation.date.isoformat()} from {line.unit.code} · {line.batch.code} '
                 f'({each.fish} fish to {facility}) lies inside a withdrawal{whose} ({_end(each.until, each.approximate)}): '

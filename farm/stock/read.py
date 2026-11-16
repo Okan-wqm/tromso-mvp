@@ -20,7 +20,7 @@ from datetime import timedelta
 from decimal import Decimal
 from typing import NamedTuple
 
-from django.db.models import F, IntegerField, Q, Sum, Value
+from django.db.models import F, IntegerField, Max, Min, Q, Sum, Value
 
 from farm.models import Batch, Site, StockMovement, Tank
 from farm.models.feeding import FeedTarget
@@ -116,6 +116,51 @@ def batches_ever_in(unit_ids):
                .values_list('batch_id', flat=True).distinct())
 
 
+def spans():
+    """{(unit id, batch id): (the day of its first live line, the day of its last; None while fish of the batch are
+    in the unit)}: when each batch was in each unit, roughly (a gap between two stays is not seen), for the whole live
+    ledger in ONE grouped query. What `together` and `in_units` are asked of, so that a reader of the medicine
+    withdrawal finds the fish a hold can have travelled between without a query per unit or per batch."""
+    rows = (StockMovement.objects.filter(operation__is_deleted=False).order_by().values('unit_id', 'batch_id')
+            .annotate(first=Min('operation__date'), last=Max('operation__date'), fish=Sum('count_delta')))
+    return {(row['unit_id'], row['batch_id']): (row['first'], None if row['fish'] > 0 else row['last'])
+            for row in rows}
+
+
+def _meet(one, other):
+    """Whether two spans share a day."""
+    return (other[1] is None or one[0] <= other[1]) and (one[1] is None or other[0] <= one[1])
+
+
+def in_units(found, unit_ids, day=None):
+    """The batches of `found` (`spans()`) that were in one of `unit_ids`: ever, or with `day` on a day their span
+    there covers (never fewer than Presence.batches_during says)."""
+    unit_ids = set(unit_ids)
+    return {batch_id for (unit_id, batch_id), (first, last) in found.items()
+            if unit_id in unit_ids and (day is None or (first <= day and (last is None or day <= last)))}
+
+
+def together(batch_ids, found=None):
+    """`batch_ids` and every batch their fish can have met: a batch that was in a unit while one of them was (their
+    spans there share a day), and so on from batch to batch. A medicine withdrawal travels with the fish and through
+    the units they share (farm/health/withdrawal.py, the lots), so the fish a reader must load, and a write must lock,
+    are these and not only the batches asked. Never fewer than can be reached; more when two stays only look
+    overlapping. `found`: `spans()` when the caller has them (else one query)."""
+    found = spans() if found is None else found
+    of_batch, of_unit = defaultdict(list), defaultdict(list)
+    for (unit_id, batch_id), span in found.items():
+        of_batch[batch_id].append((unit_id, span))
+        of_unit[unit_id].append((batch_id, span))
+    reached, waiting = set(batch_ids), list(batch_ids)
+    while waiting:
+        for unit_id, span in of_batch.get(waiting.pop(), ()):
+            for other, theirs in of_unit[unit_id]:
+                if other not in reached and _meet(span, theirs):
+                    reached.add(other)
+                    waiting.append(other)
+    return reached
+
+
 class Presence:
     """Which batch had fish in which unit on which day, from the counts of the live lines alone (no fold:
     a count is the sum of the lines up to a day). A batch counts on a day (`present`) when it had fish there at the
@@ -139,6 +184,8 @@ class Presence:
             changes[(unit_id, batch_id)][day] += delta
             if delta > 0:
                 self.arrived[(unit_id, batch_id)].add(day)
+        self.moves = defaultdict(list)               # day -> [(unit left, unit entered, batch)]: `of_batches(moves=True)`
+        self.transfers = set()                       # (operation, pair, unit left, unit entered, batch) of those moves
         self.timelines = {}                          # (unit, batch) -> (days, fish at the end of each)
         self.units = defaultdict(set)                # batch -> the units it was ever in
         self.batches = defaultdict(set)              # unit -> the batches ever in it
@@ -161,8 +208,24 @@ class Presence:
         return cls._of(StockMovement.objects.filter(unit_id__in=unit_ids, operation__is_deleted=False))
 
     @classmethod
-    def of_batches(cls, batch_ids):
-        return cls._of(StockMovement.objects.filter(batch_id__in=batch_ids, operation__is_deleted=False))
+    def of_batches(cls, batch_ids, moves=False):
+        """`moves`: also which unit the fish of every transfer left and which they entered (`moves`, `transfers`, `days`),
+        read in the same query: what the medicine withdrawal follows held fish by."""
+        lines = StockMovement.objects.filter(batch_id__in=batch_ids, operation__is_deleted=False)
+        if not moves:
+            return cls._of(lines)
+        rows = list(lines.values_list('unit_id', 'batch_id', 'operation__date', 'count_delta', 'kind',
+                                      'operation_id', 'pair'))
+        presence = cls(row[:4] for row in rows)
+        left = {(operation_id, pair): unit_id for unit_id, _batch, _day, _delta, kind, operation_id, pair in rows
+                if kind == 'transfer_out'}
+        for unit_id, batch_id, day, _delta, kind, operation_id, pair in rows:
+            source = left.get((operation_id, pair)) if kind == 'transfer_in' else None
+            if source is not None:
+                presence.moves[day].append((source, unit_id, batch_id))
+                presence.transfers.add((operation_id, pair, source, unit_id, batch_id))
+        presence.days = sorted({row[2] for row in rows})
+        return presence
 
     def count_at_end(self, unit_id, batch_id, day):
         """The fish of the batch in the unit after every line dated `day` or before."""

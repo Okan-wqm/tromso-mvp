@@ -155,10 +155,13 @@ def lock_fish(unit_ids, first=None, also=()):
         return {batch_id for unit_id in unit_ids for batch_id in presence.batches.get(unit_id, ())
                 if first is None or presence.during_between(unit_id, batch_id, first, date.max)}
 
-    batch_ids = present() | set(also)
+    # With every batch their fish can have met (read.together): a withdrawal holds the fish that shared a unit with
+    # held fish wherever they went (flow fault S-03), so a write about these units can move the withdrawal of a batch
+    # that was never in them, and a harvest of that batch must take turns with it.
+    batch_ids = read.together(present() | set(also))
     locked(Batch, batch_ids)
     units = locked(Tank, set(unit_ids))
-    arrived = present() - batch_ids
+    arrived = read.together(present()) - batch_ids
     if arrived:
         locked(Batch, arrived)
     return units, batch_ids | arrived

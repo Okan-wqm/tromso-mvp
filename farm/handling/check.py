@@ -285,7 +285,14 @@ def _withdrawal(result):
     for block in blocks:
         result.warnings.append(HandlingWarning(AcknowledgedWarning.WITHDRAWAL, result.kind, unit, day, block=block,
                                                shared=bool(present - {block.batch.pk})))
-    result.notes.extend(cleaner_text(unit, block) for block in beside)
+    # One note per cleaner-fish batch, with its latest end (review V-03: a batch held by two causes gave two notes
+    # with different ends); an unknown end is the latest of all.
+    latest = {}
+    for block in beside:
+        known = latest.get(block.batch.pk)
+        if known is None or (known.until is not None and (block.until is None or block.until > known.until)):
+            latest[block.batch.pk] = block
+    result.notes.extend(cleaner_text(unit, block) for block in latest.values())
     if not blocks and not beside:
         result.notes.append(_('No medicine withdrawal in force.'))
 

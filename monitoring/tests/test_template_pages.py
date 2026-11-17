@@ -107,7 +107,12 @@ class TemplateRoundTripTests(PagesCase):
     def test_a_measure_is_saved_whole_and_a_fitted_layout_takes_at_most_24_rows(self):
         """A fitted card's measure (the General tab): both its width and its height or neither, in their ranges; the
         layout of a fitted template fits its rows; the copy of a fitted template is fitted."""
-        template = self.template('Overview')
+        # (a layout of widgets that have a fitted look: one without cannot be given a measure, review R7,
+        # monitoring/tests/test_fitted_designer.py)
+        fitted = {'schema': 1, 'widgets': [
+            {'id': 'w1', 'type': 'value', 'x': 0, 'y': 0, 'w': 3, 'h': 2, 'bind': {'parameter': 'oxygen_mg_l'}},
+            {'id': 'w2', 'type': 'ph_window', 'x': 0, 'y': 2, 'w': 12, 'h': 2}]}
+        template = self.template('Overview', layout=fitted)
         response = self.client.post(self.edit(template), self.posted(template, measure_w='31', measure_h='10'))
         self.assertEqual(response.status_code, 302)
         template.refresh_from_db()
@@ -125,7 +130,7 @@ class TemplateRoundTripTests(PagesCase):
         response = self.client.post(self.edit(template), self.posted(template, layout=json.dumps(tall)))
         self.assertContains(response, 'at most 24 rows; this layout takes 26')
         template.refresh_from_db()
-        self.assertEqual((template.measure, template.layout), ((31, 10), LAYOUT))    # nothing of the refusals was stored
+        self.assertEqual((template.measure, template.layout), ((31, 10), fitted))    # nothing of the refusals was stored
         self.client.post(self.edit(template), self.posted(template, measure_w='', measure_h=''))
         template.refresh_from_db()
         self.assertIsNone(template.measure)                                          # and it flows again

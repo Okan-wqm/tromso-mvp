@@ -3237,6 +3237,7 @@
         "experiments/tests/test_deviations.py",
         "experiments/tests/test_pages.py",
         "experiments/tests/test_placements.py",
+        "monitoring/tests/test_big.py",
         "monitoring/tests/test_designer.py",
         "monitoring/tests/test_pages.py",
         "monitoring/tests/test_template_pages.py"

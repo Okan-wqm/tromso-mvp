@@ -189,7 +189,8 @@ class ValidateTests(SimpleTestCase):
             problem = validate.Problem('error', 'w1', code, (('other', 'w2'), ('label', 'x'), ('version', 9),
                                                              ('detail', 'y'), ('option', 'z'), ('count', 16),
                                                              ('min_w', 1), ('min_h', 1), ('max_w', 2), ('max_h', 2),
-                                                             ('max', 40)))
+                                                             ('max', 40), ('most', 24), ('rows', 26), ('has', '2.2'),
+                                                             ('needs', '4.0')))
             with self.subTest(code=code):
                 self.assertTrue(problem.message)
                 with translation.override('nb'):

@@ -394,7 +394,7 @@ What the platform keeps about a person beyond Django's account.
 - **how it works**: Today the profile holds the language only: chosen with the language switcher, or on the Users tab.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › profiles
 - **forms**: `UserForm`
-- **tests that mention it**: `core/test_languages.py`, `core/tests_account_mail.py`, `core/tests_matrix_notes.py` and 34 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_account_mail.py`, `core/tests_matrix_notes.py` and 35 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

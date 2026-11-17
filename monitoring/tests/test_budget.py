@@ -128,7 +128,9 @@ OWNER_2026_11_08_QUERIES = 2  # the newest temperature before the ration's range
 SMALL_READS = 43            # measured 2026-11-13 at 6, 24 and 200 units: 42, three more than a Simple card's 39 (the fish
                             # and their limits for the chart, once; no experiment chips); and since 2026-11-17 the pH
                             # window's scales (owner decision 15: the farm's reference data, one read for the wall)
-BIG_READS = 0               # (placeholder: the number is read from the first run and pinned)
+BIG_READS = 43              # measured 2026-11-17 at 6, 24 and 200 units (build/d5-green.log: [43, 43, 43]): Small's 42
+                            # (the same chart read, no pH window, so no scale read) and ONE more, every active
+                            # point's water for the card's other points. Before, the test only held it under 48.
 
 
 class RecordedCountsTests(Counting, MonitoringCase):

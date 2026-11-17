@@ -181,7 +181,9 @@ class BandPageTests(MonitoringCase):
         band = band_of(self.client.get(PAGE, {'wall': '1'}).content.decode())
         (pages,) = [each for each in band.walk() if 'data-pages' in each.attrs]
         self.assertIn('hidden', pages.attrs)
-        self.assertEqual([each.attrs['data-page-turn'] for each in pages.walk() if each.tag == 'button'], ['-1', '1'])
+        # (its third button is the way to the page of the worst card: Phase 1D, monitoring/tests/test_going_in.py)
+        self.assertEqual([each.attrs.get('data-page-turn') for each in pages.walk() if each.tag == 'button'],
+                         ['-1', '1', None])
         self.assertTrue(all(each.attrs.get('aria-label') for each in pages.walk() if each.tag == 'button'))
         self.assertTrue([each for each in pages.walk() if 'data-pages-text' in each.attrs])
 

@@ -27,6 +27,10 @@ optional scale field (NBS default; total; SWS; free) converted with the core's o
   (`scale::converts`): KS holds from S 5, TRIS buffers are made for S 20 to 40, and below 5 ‰ or in fresh water salted
   with NaCl the offset depends on the ions measured. Elsewhere it is refused with the reason (the forms, the write path,
   and the core itself: `ChemError::SeawaterScale`, Python `SeawaterScaleError`), never converted on an assumption.
+  Fresh water with salt added is refused at EVERY salinity, by its origin: past the Davies limit (about 28.4 ‰ as NaCl)
+  the core works its constants out by the sea path, which does not give it sea water's sulfate and fluoride (the
+  independent review of 2026-11-16, R4: until then S 29, 30 and 35 salt-added were converted, 12 °C, S 30, total 8.00
+  to 8.1372).
 - **The sample's own temperature and salinity.** A sample or a round's row converts with the temperature and salinity
   typed in the same sample; without them it is refused, nothing is looked up.
 - **What was measured is kept.** `water_measurements.ph` holds the NBS pH at the column's two decimals;
@@ -79,7 +83,7 @@ Over 5 to 35 ‰ and 0 to 30 °C a total-scale pH is 0.104 to 0.141 below the NB
 | Point the panel left open | Choice | Why |
 |---|---|---|
 | Where the scale lives | At the door: converted when written, the NBS pH stored, what was measured kept beside it | Every reader (latest values, limits, alarms, charts, monitoring cards, reports, exports) reads one column on one scale; a per-value scale would have every reader convert, and one that forgot would mix scales silently. The price: a stored value that was worked out; so the scale, the measured value and the formula version are stored with it and a database check holds them together. |
-| Which waters | Sea water of 5 ‰ or more, the sea path's constants alone | The seawater scales are defined in sea water; below 5 ‰ and in NaCl-salted water the conversion would rest on the ions measured and on KS outside its range. Refused with the reason. |
+| Which waters | Sea water of 5 ‰ or more, the sea path's constants alone, never salt-added water (at any salinity) | The seawater scales are defined in sea water; below 5 ‰ and in NaCl-salted water the conversion would rest on the ions measured and on KS outside its range. Refused with the reason. |
 | What the conversion takes | The same sample's temperature and salinity | A looked-up value could be another water's; a missing one is asked for. |
 | Precision | The pH column's two decimals (half-even), so up to ±0.005 pH of rounding (about 1.2 % of NH₃); the calculator does not round | The column's precision and its checks were not widened for this. |
 | Sensors | Not converted; said on the channel form | The ingest cannot convert (no temperature and salinity of the same moment), and a conversion on read would put a second scale into every reader of live values. A TRIS-calibrated sensor is exactly the case the selector is for: open, for the owner. |

@@ -28,11 +28,15 @@
 //! (`fresh::limits_basis`), as it reaches every NBS pH a meter reads.
 //!
 //! Where a scale other than NBS is taken: sea water only, a salinity of `fresh::SEA_FROM` (5 ‰) or more whose constants
-//! are the sea path's alone (`Equilibria::sea_weight` 1). The three are seawater scales: KS holds from S 5 (Dickson
-//! 1990), TRIS buffers are made for S 20 to 40, and below 5 ‰, or in fresh water salted with NaCl (no sulfate, no
-//! fluoride), the offset is the fresh path's and depends on the ions measured. There the core refuses
-//! (`ChemError::SeawaterScale`), never assuming a conversion: a fresh water's pH is given as NBS.
-use crate::chemistry::{Equilibria, free_to_sws, free_to_total};
+//! are the sea path's alone (`Equilibria::sea_weight` 1) and whose salt is not said to be added NaCl
+//! (`Origin::SaltAdded`). The three are seawater scales: KS holds from S 5 (Dickson 1990), TRIS buffers are made for
+//! S 20 to 40, and below 5 ‰ the offset is the fresh path's and depends on the ions measured. Fresh water salted with
+//! NaCl has no sulfate and no fluoride at ANY salinity: inside the Davies range it is on the fresh path, and past it
+//! (about 28.4 ‰ as NaCl) the core works its constants out by the sea path for want of another
+//! (`fresh::ionic_strength`), which does not make it sea water (the independent review of 2026-11-16, R4: S 29, 30 and
+//! 35 salt-added were converted with sea water's sulfate). In all of these the core refuses
+//! (`ChemError::SeawaterScale`), never assuming a conversion: such a water's pH is given as NBS.
+use crate::chemistry::{Equilibria, Origin, free_to_sws, free_to_total};
 use crate::fresh::SEA_FROM;
 use crate::num::{ChemError, R, finite, log10};
 
@@ -70,9 +74,10 @@ impl PhScale {
 }
 
 /// Whether a pH on a scale other than NBS can be put on the NBS scale for this water: sea water's constants alone, from
-/// `SEA_FROM` (the module's rule). The NBS scale is taken for every water.
+/// `SEA_FROM`, and never a water whose salt is added NaCl, whichever path works it out (the module's rule). The NBS
+/// scale is taken for every water.
 pub fn converts(eq: &Equilibria, scale: PhScale) -> bool {
-    scale == PhScale::Nbs || (eq.salinity >= SEA_FROM && eq.sea_weight >= 1.0)
+    scale == PhScale::Nbs || (eq.salinity >= SEA_FROM && eq.sea_weight >= 1.0 && eq.origin != Origin::SaltAdded)
 }
 
 /// The NBS pH of a pH given on a scale, for a water with these equilibria (the module's rules): the pH itself when it is

@@ -230,7 +230,10 @@ fn a_salt_added_water_never_takes_another_scale() {
         };
         for salinity in [29.0, 30.0, 35.0] {
             let eq = f::equilibria_v3(12.0, salinity, Some(80.0), ions);
-            assert!(eq.is_ok_and(|eq| s::converts(&eq, PhScale::Total)), "S {salinity} {origin:?}");
+            assert!(
+                eq.is_ok_and(|eq| s::converts(&eq, PhScale::Total)),
+                "S {salinity} {origin:?}"
+            );
         }
     }
 }

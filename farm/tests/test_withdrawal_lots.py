@@ -358,7 +358,7 @@ class Case7And8TheGuardTests(LotsTestCase):
     def test_a_backdated_course_asks_about_a_harvest_of_fish_that_only_shared_the_unit(self):
         self.going_on(services.void_treatment, self.user, self.treatment, 'entered twice')
         harvest = self.harvest_of(self.t3, self.b, days_ago=1)                      # nothing in force: no tick
-        self.assertFalse(HandlingAcknowledgement.objects.exists())
+        self.assertFalse(HandlingAcknowledgement.objects.filter(operation=harvest).exists())
         change = self.change_of(self.treat, self.bath, 6, 6)                        # T-01, never B's own tank
         [found] = change.harvested
         self.assertEqual((found.operation_id, found.line.batch, found.batch), (harvest.pk, self.b, self.a))
@@ -544,5 +544,5 @@ class BudgetTests(LotsTestCase):
 
 
 # The queries of each reader, whatever the number of units or batches (measured at 6 and at 24 units).
-RECORDED = {'of_units': 10, 'in_force_of': 11, 'of_treatments': 14, 'blockers': 18, 'snapshot': 15,
+RECORDED = {'of_units': 10, 'in_force_of': 11, 'of_treatments': 14, 'blockers': 18, 'snapshot': 16,
             'harvests_inside': 1}

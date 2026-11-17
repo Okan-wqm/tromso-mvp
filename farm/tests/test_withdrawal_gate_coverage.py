@@ -226,6 +226,8 @@ NOT_INPUT_TABLES = {
                         'registered whole), never changed; voided with it',
     'equipment': 'a point\'s equipment, loaded with the point (with_owners): the withdrawal reads the middle points of '
                  'units and loops only',
+    'platform_settings': 'the correction window says how far back a guard READS (the first day a record can still be '
+                         'dated on, S-03 review F-3); it never changes what a withdrawal is or holds',
     'feeds': None,                           # registered (feed_type); its other columns are names
     'species': None,                         # registered (withdrawal_temperature_c); others are names
     'tanks': None, 'systems': None, 'water_sampling_points': None,

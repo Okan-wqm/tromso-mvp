@@ -278,7 +278,10 @@ class WithdrawalTests(HealthTestCase):
                 reader = withdrawal.Reader(ids, self.today)
                 reader.withdrawals()
             counts.append(sum('FROM "batches"' in query['sql'] for query in queries.captured_queries))
-            self.assertEqual(set(reader.batches), ids)
+            # The reader also reads the batches a course in force can have exposed (S-03: the lots, review F-3): here
+            # the trout of T-02, in the course's units, whoever was asked. Still one query.
+            self.assertLessEqual(ids, set(reader.batches))
+            self.assertLessEqual(set(reader.batches), {self.batch.pk, other.pk, third.pk})
         self.assertEqual(counts, [1, 1])
 
     def test_the_later_of_days_and_degree_days_wins(self):

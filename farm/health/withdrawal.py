@@ -71,6 +71,7 @@ from django.utils import formats
 from django.utils.translation import gettext as _, ngettext
 
 from core import audit
+from core.platform import correction_window_days
 from core.models import AuditLog
 from farm import withdrawal_gate as gate
 from farm.feeding import read as feeding_read
@@ -262,8 +263,9 @@ class Reader:
     grouped query (`spans`: its answer, when the caller has it) says who was where; the number of queries does not
     grow with the units or the batches. A course of unknown end (no withdrawal row, an uncovered medicated feeding,
     degree-days with no temperature) is in force until it is given one, however old: its fish are read.
-    `first=LIFE`: from the first day that can matter to the batches asked (their earliest harvest and the earliest
-    course that can have exposed them): a write guard, which compares the harvests of their whole life.
+    `first=LIFE`: from the first day that can matter to the batches asked (their earliest harvest, the earliest
+    course that can have exposed them, the first day of the correction window): a write guard, which compares the
+    harvests of their whole life and everything a record dated in the window can reach.
     `also`: treatments the caller will ask `of_treatment` of whatever their end (the Treatments list).
 
     **Whose today** (the owner's decision of 12.11.2026: everything is read on the site's own day). Fish are read on
@@ -322,8 +324,11 @@ class Reader:
 
     def _life(self, treatments):
         """The first day that can matter to the batches asked: their earliest live harvest, the first day of the
-        earliest course that can have exposed them (by the spans), today at the latest."""
-        days = [self.today]
+        earliest course that can have exposed them (by the spans), and the first day a record can still be dated on
+        (the correction window): a course, a feeding or a move entered now for a day in the window holds fish from
+        that day, also fish of other batches and their harvests, and both snapshots of a guard must read from before
+        it."""
+        days = [self.today - correction_window_days() * DAY]
         harvested = (StockMovement.objects.filter(kind=MovementKind.HARVEST, operation__is_deleted=False,
                                                   batch_id__in=self.asked)
                      .order_by('operation__date').values_list('operation__date', flat=True).first())
@@ -1016,7 +1021,8 @@ class Combined:
         return self.message()
 
     def key(self):
-        return (f'combined:{self.batch.pk}:{self.unit.pk}:{self.until}:{self.approximate}:'
+        # The batch by its code: a batch the operation itself stocks has a new id each time it is sent.
+        return (f'combined:{self.batch.code}:{self.unit.pk}:{self.until}:{self.approximate}:'
                 f'{source_key(self.withdrawal.source)}:{self.withdrawal.via_unit}:{self.withdrawal.via_batch}')
 
     def message(self):

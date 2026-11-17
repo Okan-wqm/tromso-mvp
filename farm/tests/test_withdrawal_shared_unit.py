@@ -88,7 +88,7 @@ class HeldUnitTests(SharedUnitTestCase):
         self.assertEqual(self.client.post(url, {**data, 'handling_ack': fingerprint}).status_code, 302)
         line = StockMovement.objects.get(kind='harvest')
         self.assertEqual((line.batch, line.unit, line.count_delta), (self.b, self.t2, -100))
-        row = HandlingAcknowledgement.objects.get()
+        row = HandlingAcknowledgement.objects.get(operation=line.operation)     # the move in has its own (S-03, F-1)
         self.assertEqual((row.operation, row.warning, row.batch, row.withdrawal_until, row.withdrawal_source),
                          (line.operation, 'withdrawal', self.a, self.until, f'treatment:{self.treatment.pk}'))
         entry = AuditLog.objects.get(entity_type='stock operation', action='create', entity_id=str(line.operation_id))

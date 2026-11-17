@@ -194,7 +194,7 @@ class Case3And4SharedUnitTests(LotsTestCase):
         warnings, _notes = self.warned(self.t3, self.b)
         self.assertEqual(warnings, [(self.b.code, self.until)])
         operation = self.harvest_of(self.t3, self.b)
-        row = HandlingAcknowledgement.objects.get()
+        row = HandlingAcknowledgement.objects.get(operation=operation)
         self.assertEqual((row.operation, row.batch, row.withdrawal_until, row.withdrawal_source),
                          (operation, self.b, self.until, f'treatment:{self.treatment.pk}'))
         self.assertIn(said, row.withdrawal_reason)
@@ -382,15 +382,17 @@ class Case7And8TheGuardTests(LotsTestCase):
         self.assertEqual(self.ends(self.t1), [(self.a.code, self.until)])
 
     def test_a_move_of_fish_that_were_never_held_asks_nothing(self):
+        asked = HandlingAcknowledgement.objects.count()         # the move of B in beside A, in the class's setUp
         self.move(self.b, self.t2, self.t4, 0, 200, withdrawal_ack=None)   # B's untreated fish to an empty tank
         self.assertFalse(WithdrawalAcknowledgement.objects.exists())
-        self.assertFalse(HandlingAcknowledgement.objects.exists())
+        self.assertEqual(HandlingAcknowledgement.objects.count(), asked)
         self.assertEqual(self.ends(self.t4), [])
         # Held fish in beside them: nobody is released; that B now waits with them is said at the move (the owner's
         # decision 8, farm/tests/test_withdrawal_combined.py) and ticked by `move`.
         self.move(self.a, self.t1, self.t4, 0, 200)
         self.assertFalse(WithdrawalAcknowledgement.objects.exists())
-        self.assertEqual([row.batch for row in HandlingAcknowledgement.objects.all()], [self.b])
+        self.assertEqual(HandlingAcknowledgement.objects.count(), asked + 1)
+        self.assertEqual(HandlingAcknowledgement.objects.order_by('pk').last().batch, self.b)
         self.assertEqual(self.ends(self.t4), [(self.a.code, self.until)])
 
 
@@ -542,5 +544,5 @@ class BudgetTests(LotsTestCase):
 
 
 # The queries of each reader, whatever the number of units or batches (measured at 6 and at 24 units).
-RECORDED = {'of_units': 10, 'in_force_of': 11, 'of_treatments': 11, 'blockers': 15, 'snapshot': 11,
+RECORDED = {'of_units': 10, 'in_force_of': 11, 'of_treatments': 14, 'blockers': 18, 'snapshot': 15,
             'harvests_inside': 1}

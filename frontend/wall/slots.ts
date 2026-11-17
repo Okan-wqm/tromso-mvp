@@ -62,6 +62,18 @@ export function fillUnit(width: number, height: number, mw: number, mh: number, 
   return FILL * Math.max(Math.min((width - padX) / mw, (height - padY) / mh), 0);
 }
 
+/** The pane beside an overview (the Big card of the unit gone into): as wide as ONE cell of a wall of full-height
+ *  cards of `mw` by `mh` units on this screen (so the pane is the card the all-big wall would show), at most half the
+ *  screen. `beside` is false when a card that wide could not be read (its unit under FLOOR): the pane then lies over
+ *  the cards instead of standing beside them, never hidden. `width`, `height`: the room under the band. */
+export function dock(width: number, height: number, gap: number, mw: number, mh: number, padX = 0, padY = 0):
+    { width: number; beside: boolean } {
+  const big = slots(MAX_COLS, width, height, gap, mw, mh, fillUnit(width, height, mw, mh, padX, padY), padX, padY);
+  const wide = Math.min((width - (big.cols - 1) * gap) / big.cols, width * 0.5);
+  const unit = Math.min((wide - padX) / mw, (height - padY) / mh);
+  return { width: wide, beside: unit >= FLOOR - 0.5 };
+}
+
 /** The page (from 1) that holds the card at `index` (from 0) when a page holds `per` cards. */
 export function pageOf(index: number, per: number): number {
   return Math.floor(Math.max(index, 0) / Math.max(per, 1)) + 1;
@@ -70,11 +82,18 @@ export function pageOf(index: number, per: number): number {
 /** The page of the worst card: the first card in the first of `order` (the states, worst first) that any card is in;
  *  the first page when none is. `states`: each card's state, in the page's order. */
 export function worstPage(states: readonly string[], per: number, order: readonly string[]): number {
+  return worst(states, per, order)?.page ?? 1;
+}
+
+/** The worst card: the first card in the first of `order` that any card is in, with its place, its page and its
+ *  state; null when no card is in any of them. */
+export function worst(states: readonly string[], per: number, order: readonly string[]):
+    { index: number; page: number; state: string } | null {
   for (const state of order) {
     const index = states.indexOf(state);
     if (index >= 0) {
-      return pageOf(index, per);
+      return { index, page: pageOf(index, per), state };
     }
   }
-  return 1;
+  return null;
 }

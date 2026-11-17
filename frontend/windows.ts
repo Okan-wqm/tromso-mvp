@@ -18,6 +18,25 @@
 // each window was (as fractions of the screen) is kept per device in localStorage, in a try/catch: losing it
 // only centres the window again. Below 640 px a window is a sheet at the bottom of the screen (CSS) and is not
 // dragged. This code has no text of its own.
+//
+// THE DOCK (going into a tank, owner decision 7): the same window, docked beside the cards instead of floating.
+//   <a data-dock="<unit>" data-dock-code="<code>" href="<the page with ?focus=<unit>>">   on a small card's code and on
+//                              a chip of the band: opens that unit's Big card in the pane; the pane that is open is
+//                              replaced (one tank at a time); the link of the unit that is open closes it
+//   #monitor-dock              where the pane goes (templates/monitoring/monitor.html), with data-param (the name of
+//                              the address's parameter, "focus"), data-pane-url and data-grid-url (the two fragments'
+//                              addresses, without a query), data-every, data-title-text ("Focus: {unit}"), and the
+//                              two notices' words. The server draws the pane itself for an address that has the
+//                              focus (no script needed): this code adopts it.
+//   <template id="monitor-dock-template">   the pane's skeleton: [data-dock-title], [data-dock-close] (a link: its
+//                              href is the page without the focus), [data-window-body]
+// Opening, replacing and closing never load the page: the address follows (history.replaceState, the page's own query
+// with the parameter set or taken out, so a reload or a copied link shows the same), the pane's body is polled at the
+// pane's fragment (poll.ts `watch`, merged by key) and the grid is asked again at once at ITS fragment with the same
+// query, so the open card is marked and every later poll of the grid carries the focus. Escape, anywhere but in a
+// field or a floating window, closes the pane; the focus goes back to the open card's link (by its id: the grid's
+// cards are replaced by polls). A unit that is gone closes its pane (`poll:gone`). `dock:changed` tells the wall
+// (frontend/wall.ts) to share the screen anew.
 import { required } from './dom.js';
 import { watch } from './poll.js';
 
@@ -232,6 +251,108 @@ function fullScreen(button: HTMLElement): void {
   });
 }
 
+/** The pane of the unit gone into (see THE DOCK above). */
+function openDock(pane: HTMLElement): void {
+  const template = required<HTMLTemplateElement>(document, '#monitor-dock-template');
+  const param = pane.dataset.param ?? 'focus';
+  let stop: () => void = () => undefined;
+
+  const changed = (): void => { document.dispatchEvent(new CustomEvent('dock:changed')); };
+  const current = (): HTMLElement | null => pane.querySelector<HTMLElement>('.monitor-window');
+  const unitOf = (): string => current()?.dataset.dockUnit ?? '';
+
+  /** The page's own query with the focus on `unit` ('' : taken out). */
+  const queryFor = (unit: string): string => {
+    const query = new URLSearchParams(window.location.search);
+    if (unit) query.set(param, unit);
+    else query.delete(param);
+    return query.toString();
+  };
+  const withQuery = (base: string, query: string): string => (query ? `${base}?${query}` : base);
+
+  /** The address and the grid follow the pane: the page's address without a load, the grid's fragment at once. */
+  const follow = (unit: string): void => {
+    const query = queryFor(unit);
+    window.history.replaceState(window.history.state, '', withQuery(window.location.pathname, query));
+    const cards = document.querySelector<HTMLElement>('.monitor-grid[data-poll]');
+    cards?.dispatchEvent(new CustomEvent('poll:now', { detail: { url: withQuery(pane.dataset.gridUrl ?? '', query) } }));
+  };
+
+  const wire = (section: HTMLElement): void => {
+    const body = required<HTMLElement>(section, '[data-window-body]');
+    stop = watch(body);                                    // (a pane the server drew is watched already: the same stop)
+    section.addEventListener('poll:gone', () => { close(false); });
+    section.addEventListener('poll:merged', changed);      // its card came, or changed its measure
+  };
+
+  const close = (refocus: boolean): void => {
+    const section = current();
+    if (!section) return;
+    const unit = unitOf();
+    stop();
+    stop = () => undefined;
+    section.remove();
+    follow('');
+    changed();
+    if (refocus) document.getElementById(`open-${unit}`)?.focus({ preventScroll: true });
+  };
+
+  const open = (unit: string, code: string): void => {
+    current()?.remove();
+    stop();
+    const section = (template.content.firstElementChild as HTMLElement).cloneNode(true) as HTMLElement;
+    const title = (pane.dataset.titleText ?? '{unit}').replace('{unit}', code);
+    section.dataset.dockUnit = unit;
+    section.setAttribute('aria-label', title);
+    required<HTMLElement>(section, '[data-dock-title]').textContent = title;
+    const closer = required<HTMLAnchorElement>(section, '[data-dock-close]');
+    closer.id = 'dock-close';
+    closer.href = withQuery(window.location.pathname, queryFor(''));
+    const body = required<HTMLElement>(section, '[data-window-body]');
+    body.dataset.poll = withQuery(pane.dataset.paneUrl ?? '', queryFor(unit));
+    body.dataset.pollEvery = pane.dataset.every ?? EVERY;
+    body.dataset.pollMerge = 'data-key';
+    body.dataset.staleText = pane.dataset.staleText ?? '';
+    body.dataset.goneText = pane.dataset.goneText ?? '';
+    pane.append(section);
+    wire(section);
+    follow(unit);
+    changed();
+    body.dispatchEvent(new CustomEvent('poll:now'));
+    section.focus({ preventScroll: true });
+  };
+
+  const adopted = current();
+  if (adopted) wire(adopted);
+
+  document.addEventListener('click', (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (target?.closest('[data-dock-close]') && pane.contains(target)) {
+      event.preventDefault();
+      close(true);
+      return;
+    }
+    const link = target?.closest<HTMLElement>('[data-dock]');
+    if (!link || event.defaultPrevented) return;
+    const mouse = event as MouseEvent;
+    if (mouse.button !== 0 || mouse.ctrlKey || mouse.metaKey || mouse.shiftKey || mouse.altKey) return;   // a new tab is the link's own
+    event.preventDefault();
+    const unit = link.dataset.dock ?? '';
+    if (unit && unit === unitOf() && link.id === `open-${unit}`) close(true);       // the open card's link closes it
+    else if (unit && unit === unitOf()) current()?.focus({ preventScroll: true });   // a chip of the unit that is open
+    else if (unit) open(unit, link.dataset.dockCode ?? link.textContent?.trim() ?? '');
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || event.defaultPrevented || !current()) return;
+    const target = event.target instanceof Element ? event.target : null;
+    if (target?.closest('input, select, textarea, [contenteditable], #monitor-windows .monitor-window, dialog')) return;
+    event.preventDefault();
+    close(true);
+  });
+}
+
 const host = document.getElementById('monitor-windows');
 if (host) openWindows(host);
+const pane = document.getElementById('monitor-dock');
+if (pane && document.getElementById('monitor-dock-template')) openDock(pane);
 document.querySelectorAll<HTMLElement>('[data-fullscreen]').forEach(fullScreen);

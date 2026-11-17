@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { FLOOR, pageOf, slots, worstPage } from './slots.js';
+import { FLOOR, dock, fillUnit, pageOf, slots, worst, worstPage } from './slots.js';
 import { mulberry32 } from '../test/random.js';
 
 interface Case {

@@ -191,6 +191,23 @@ class FrameTests(ReplayCase):
         self.assertEqual(frame.impossible, deffeyes.why_impossible(10.0, 0.0, 12.4, 100.0))
         self.assertTrue(frame.impossible)
 
+    def test_a_water_the_core_refuses_has_no_diagram_and_says_why(self):
+        """The review's R1: a stored conductivity past the Davies range on a fresh water. The frame says the core's
+        reason, as a unit's chart does; before, the page of frames raised."""
+        water_services.record(self.user, point=self.mid1, measured_at=START - timedelta(hours=1), source='manual',
+                              values={'conductivity_25_us_cm': Decimal('40000')})
+        insert(self.ph.channel_no, [(START, 7.2)])
+        insert(self.channel.channel_no, [(START, 12.0)])
+        frame = read.deffeyes_frames(self.t1, START, START + timedelta(minutes=1), timedelta(minutes=1)).frames[0]
+        self.assertEqual(frame.missing, ())
+        self.assertIsNone(frame.point)
+        self.assertIsNone(frame.figure)
+        self.assertEqual(frame.impossible, deffeyes.unworkable(12.0, 0.0, 100.0, conductivity_25_us_cm=40000.0))
+        self.assertIn('Cannot be worked out: ionic strength above 0.5', frame.impossible)
+        self.assertEqual(read.frame_analysis({'temperature_c': 12.0, 'salinity_ppt': 0.0, 'ph': 7.2, 'alkalinity_mg_l': 80.0,
+                                              'conductivity_25_us_cm': 40000.0, 'water_origin': ''}, {}),
+                         (None, frame.impossible))
+
     def test_a_moved_sensor_counts_for_the_tank_it_was_in(self):
         self.steady()
         bindings.move(self.user, self.ph, point=self.mid2, at=START + timedelta(minutes=30))

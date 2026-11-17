@@ -175,6 +175,31 @@ class TrailTests(HistoryCase):
         self.assertEqual(answer['impossible'], [(start + timedelta(hours=1)).isoformat()])
         self.assertEqual(len(answer['points']), 1)
 
+    def test_an_hour_the_core_refuses_is_listed_with_its_reason_never_a_server_error(self):
+        """The review's R1: a stored conductivity past the Davies range on a fresh water. The trail lists the hour with
+        the core's reason (deffeyes.unworkable, the gate a unit's chart asks); before, the whole trail raised."""
+        start = self.now - timedelta(hours=2)
+        insert(self.ph.channel_no, [(start + timedelta(hours=hour, minutes=10), 7.2) for hour in range(2)])
+        insert(self.channel.channel_no, [(start + timedelta(hours=hour, minutes=5), 12.0) for hour in range(2)])
+        self.sample(self.mid1, start - timedelta(days=1), alkalinity_mg_l='80', salinity_ppt='0',
+                    conductivity_25_us_cm='40000')
+        why = deffeyes.unworkable(12.0, 0.0, 80.0, conductivity_25_us_cm=40000.0)
+        self.assertIn('Cannot be worked out: ionic strength above 0.5', why)
+        found = trail.trail(self.t1, start, self.now)
+        self.assertEqual(found.points, [])
+        self.assertEqual(found.missing, [])
+        self.assertEqual(found.impossible, [])
+        self.assertEqual(found.unworkable, [(start, why), (start + timedelta(hours=1), why)])
+        user = get_user_model().objects.create_user('reader', 'reader@example.com', 'x')
+        user.groups.add(role('Reader', 'view_watermeasurement'), role('Readings', 'view_reading'))
+        self.client.force_login(user)
+        response = self.client.get(reverse('sensors:trail'), {'target': f'unit:{self.t1.pk}', 'range': '6h'})
+        self.assertEqual(response.status_code, 200)
+        answer = json.loads(response.content)
+        self.assertEqual(answer['unworkable'], [{'at': start.isoformat(), 'why': why},
+                                                {'at': (start + timedelta(hours=1)).isoformat(), 'why': why}])
+        self.assertEqual(answer['points'], [])
+
     def test_the_trail_endpoint_needs_both_rights_and_gives_the_points(self):
         start = self.now - timedelta(hours=1)
         insert(self.ph.channel_no, [(start + timedelta(minutes=10), 7.2)])

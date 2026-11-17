@@ -20,7 +20,6 @@ from django.utils import translation
 from core.models import AuditLog
 
 from ..health import withdrawal
-from ..health.withdrawal import WithdrawalChanged
 from ..models import Batch, HandlingAcknowledgement, StockOperation, WithdrawalAcknowledgement
 from ..stock import read as stock_read, services as stock_services
 from ..stock.dates import shown_date

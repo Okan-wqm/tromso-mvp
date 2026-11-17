@@ -22,6 +22,7 @@ from django.utils.translation import gettext as _, ngettext
 from core import navigation
 from core.crud import done, render_page
 from core.dates import read_day
+from core.platform import unknown_withdrawal_days
 
 from ..forms.health import LastDayForm, LiceCountForm, TreatmentForm
 from ..forms.stock import VoidForm
@@ -158,6 +159,9 @@ def treatments(request):
         clear_url=reverse('farm:treatments'),
         record_url=dialog_url('farm:treatment_record', here) if request.user.has_perm(TREATMENTS['add']) else '',
         under_withdrawal=UNDER_WITHDRAWAL, vaccinations=VACCINATIONS,
+        # The courses whose unknown end has stopped holding fish (withdrawal rule 8), with what gives each an end.
+        unresolved=[withdrawal.unresolved_text(batch, held) for batch, held in withdrawal.unresolved()],
+        unknown_days=unknown_withdrawal_days(),
     ))
 
 

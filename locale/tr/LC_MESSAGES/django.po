@@ -2225,6 +2225,20 @@ msgstr[1] ""
 
 #, python-format
 msgid ""
+"A medicine withdrawal whose end is unknown holds the fish for %(days)s day after the course’s "
+"last day; after that the course is listed as unresolved on the Treatments page."
+msgid_plural ""
+"A medicine withdrawal whose end is unknown holds the fish for %(days)s days after the course’s "
+"last day; after that the course is listed as unresolved on the Treatments page."
+msgstr[0] ""
+"Sonu bilinmeyen bir ilaç arınma süresi balıkları kürün son gününden sonra %(days)s gün tutar; "
+"sonrasında kür Tedaviler sayfasında çözülmemiş olarak listelenir."
+msgstr[1] ""
+"Sonu bilinmeyen bir ilaç arınma süresi balıkları kürün son gününden sonra %(days)s gün tutar; "
+"sonrasında kür Tedaviler sayfasında çözülmemiş olarak listelenir."
+
+#, python-format
+msgid ""
 "A membrane (HDPE, PVC, EPDM) is %(low)s to %(high)s mm thick, concrete %(concrete_low)s to "
 "%(concrete_high)s mm."
 msgstr ""
@@ -3422,6 +3436,9 @@ msgstr "Açık bir alarm, ancak değer eşiğin bu kadar ötesine geri döndüğ
 
 msgid "An organisation number is 9 digits."
 msgstr "Kuruluş numarası 9 haneden oluşur."
+
+msgid "An unknown withdrawal end holds for (days)"
+msgstr "Sonu bilinmeyen arınma süresi şu kadar tutar (gün)"
 
 msgid "Anaesthetic"
 msgstr "Anestezik"
@@ -7541,6 +7558,19 @@ msgid "How long the value must be back inside the limit, by the deadband, before
 msgstr "Alarm kapanmadan önce değerin, ölü bant kadar, limitin içinde ne kadar kalması gerektiği."
 
 msgid ""
+"How many days after a course’s last day a medicine withdrawal whose end is unknown (a medicine "
+"with no withdrawal recorded, medicated feed with no treatment, degree-days with no water "
+"temperature) holds the fish. After them the fish are no longer held, and the course is listed as "
+"unresolved on the Treatments page until it is given an end. 1 to 3650; 180 until you set another."
+" Making it shorter asks first when it would free fish held today."
+msgstr ""
+"Sonu bilinmeyen bir ilaç arınma süresinin (arınma süresi kaydedilmemiş bir ilaç, tedavisi olmayan"
+" ilaçlı yem, su sıcaklığı olmayan derece-gün) balıkları kürün son gününden sonra kaç gün tuttuğu."
+" Bu günlerden sonra balıklar artık tutulmaz ve kür, bir son verilene kadar Tedaviler sayfasında "
+"çözülmemiş olarak listelenir. 1 ile 3650 arası; siz başka bir değer verene kadar 180. Kısaltmak, "
+"bugün tutulan balıkları serbest bırakacaksa önce sorar."
+
+msgid ""
 "How many days back a daily record (a stock operation, a feeding, a water sample, a movement of "
 "the store, a plan, a treatment) may be dated, and how old a record may be voided. Older records "
 "stay as they are. 1 to 3650; 31 until you set another."
@@ -10342,6 +10372,14 @@ msgstr "İsteğe bağlı: ne yapıldı veya ne bulundu, örn. “2 ölü balık 
 
 msgid "Optional; the batch number is given on saving."
 msgstr "İsteğe bağlı; parti numarası kaydedilirken verilir."
+
+#, python-format
+msgid ""
+"Or set the assumed water temperature of %(species)s in Reference data › Species: the days without"
+" a measured temperature then count."
+msgstr ""
+"Ya da Referans veriler › Türler altında %(species)s için varsayılan su sıcaklığını girin: o zaman"
+" sıcaklık ölçülmeyen günler sayılır."
 
 msgid "Or start one: New message writes to one person, a channel to a group."
 msgstr "Ya da yeni bir tane başlatın: Yeni mesaj bir kişiye, kanal bir gruba yazar."
@@ -13614,6 +13652,20 @@ msgstr "Sonu hesaplanamıyor: su sıcaklığını kaydedin."
 msgid "The end comes after the start."
 msgstr "Bitiş, başlangıçtan sonra gelir."
 
+#, python-format
+msgid ""
+"The end of these withdrawals is unknown and the course is older than %(days)s day: the fish are "
+"no longer held (Platform settings). Give each an end."
+msgid_plural ""
+"The end of these withdrawals is unknown and the course is older than %(days)s days: the fish are "
+"no longer held (Platform settings). Give each an end."
+msgstr[0] ""
+"Bu arınma sürelerinin sonu bilinmiyor ve kür %(days)s günden eski: balıklar artık tutulmuyor "
+"(Platform ayarları). Her birine bir son verin."
+msgstr[1] ""
+"Bu arınma sürelerinin sonu bilinmiyor ve kür %(days)s günden eski: balıklar artık tutulmuyor "
+"(Platform ayarları). Her birine bir son verin."
+
 msgid "The equipment is linked to this system already."
 msgstr "Ekipman bu sisteme zaten bağlı."
 
@@ -15748,6 +15800,9 @@ msgstr "Bilinmiyor"
 
 msgid "Unpaid: it is taken off the planned hours. At most 240, shorter than the shift."
 msgstr "Ücretsiz: planlanan saatlerden düşülür. En çok 240, vardiyadan kısa."
+
+msgid "Unresolved old courses"
+msgstr "Çözülmemiş eski kürler"
 
 msgid ""
 "Untick to pause it: its tasks from today on that nobody has started are removed, and none are "

@@ -2217,6 +2217,20 @@ msgstr[1] "Tilbakeholdelsestider holder fiskegruppene %(batches)s, og dette flyt
 
 #, python-format
 msgid ""
+"A medicine withdrawal whose end is unknown holds the fish for %(days)s day after the course’s "
+"last day; after that the course is listed as unresolved on the Treatments page."
+msgid_plural ""
+"A medicine withdrawal whose end is unknown holds the fish for %(days)s days after the course’s "
+"last day; after that the course is listed as unresolved on the Treatments page."
+msgstr[0] ""
+"En tilbakeholdelsestid med ukjent slutt holder fisken tilbake i %(days)s dag etter behandlingens "
+"siste dag; deretter står behandlingen som uavklart på siden Behandlinger."
+msgstr[1] ""
+"En tilbakeholdelsestid med ukjent slutt holder fisken tilbake i %(days)s dager etter "
+"behandlingens siste dag; deretter står behandlingen som uavklart på siden Behandlinger."
+
+#, python-format
+msgid ""
 "A membrane (HDPE, PVC, EPDM) is %(low)s to %(high)s mm thick, concrete %(concrete_low)s to "
 "%(concrete_high)s mm."
 msgstr ""
@@ -3416,6 +3430,9 @@ msgstr "En åpen alarm lukkes først når verdien er tilbake forbi terskelen med
 
 msgid "An organisation number is 9 digits."
 msgstr "Et organisasjonsnummer har 9 sifre."
+
+msgid "An unknown withdrawal end holds for (days)"
+msgstr "En ukjent slutt på tilbakeholdelsestiden holder i (dager)"
 
 msgid "Anaesthetic"
 msgstr "Bedøvelsesmiddel"
@@ -7518,6 +7535,20 @@ msgid "How long the value must be back inside the limit, by the deadband, before
 msgstr "Hvor lenge verdien må være tilbake innenfor grensen, med dødbåndet, før alarmen oppheves."
 
 msgid ""
+"How many days after a course’s last day a medicine withdrawal whose end is unknown (a medicine "
+"with no withdrawal recorded, medicated feed with no treatment, degree-days with no water "
+"temperature) holds the fish. After them the fish are no longer held, and the course is listed as "
+"unresolved on the Treatments page until it is given an end. 1 to 3650; 180 until you set another."
+" Making it shorter asks first when it would free fish held today."
+msgstr ""
+"Hvor mange dager etter behandlingens siste dag en tilbakeholdelsestid med ukjent slutt (et "
+"legemiddel uten registrert tilbakeholdelsestid, medisinfôr uten behandling, døgngrader uten "
+"vanntemperatur) holder fisken tilbake. Etter dem holdes fisken ikke lenger tilbake, og "
+"behandlingen står som uavklart på siden Behandlinger til den får en slutt. 1 til 3650; 180 til du"
+" setter en annen. Gjør du den kortere, spørres det først når det ville frigi fisk som holdes "
+"tilbake i dag."
+
+msgid ""
 "How many days back a daily record (a stock operation, a feeding, a water sample, a movement of "
 "the store, a plan, a treatment) may be dated, and how old a record may be voided. Older records "
 "stay as they are. 1 to 3650; 31 until you set another."
@@ -10321,6 +10352,14 @@ msgstr "Valgfritt: hva som ble gjort eller funnet, f.eks. «2 døde fisk fjernet
 
 msgid "Optional; the batch number is given on saving."
 msgstr "Valgfritt; gruppenummeret gis ved lagring."
+
+#, python-format
+msgid ""
+"Or set the assumed water temperature of %(species)s in Reference data › Species: the days without"
+" a measured temperature then count."
+msgstr ""
+"Eller sett antatt vanntemperatur for %(species)s i Referansedata › Arter: da teller dagene uten "
+"målt temperatur."
 
 msgid "Or start one: New message writes to one person, a channel to a group."
 msgstr "Eller start en: Ny melding skriver til én person, en kanal til en gruppe."
@@ -13587,6 +13626,20 @@ msgstr "Slutten kan ikke regnes ut: registrer vanntemperaturen."
 msgid "The end comes after the start."
 msgstr "Slutten kommer etter starten."
 
+#, python-format
+msgid ""
+"The end of these withdrawals is unknown and the course is older than %(days)s day: the fish are "
+"no longer held (Platform settings). Give each an end."
+msgid_plural ""
+"The end of these withdrawals is unknown and the course is older than %(days)s days: the fish are "
+"no longer held (Platform settings). Give each an end."
+msgstr[0] ""
+"Slutten på disse tilbakeholdelsestidene er ukjent, og behandlingen er eldre enn %(days)s dag: "
+"fisken holdes ikke lenger tilbake (Plattforminnstillinger). Gi hver av dem en slutt."
+msgstr[1] ""
+"Slutten på disse tilbakeholdelsestidene er ukjent, og behandlingen er eldre enn %(days)s dager: "
+"fisken holdes ikke lenger tilbake (Plattforminnstillinger). Gi hver av dem en slutt."
+
 msgid "The equipment is linked to this system already."
 msgstr "Utstyret er allerede knyttet til dette systemet."
 
@@ -15719,6 +15772,9 @@ msgstr "Ukjent"
 
 msgid "Unpaid: it is taken off the planned hours. At most 240, shorter than the shift."
 msgstr "Ubetalt: den trekkes fra de planlagte timene. Høyst 240, kortere enn skiftet."
+
+msgid "Unresolved old courses"
+msgstr "Uavklarte gamle behandlinger"
 
 msgid ""
 "Untick to pause it: its tasks from today on that nobody has started are removed, and none are "

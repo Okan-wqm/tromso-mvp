@@ -50,6 +50,11 @@ def correction_window_days():
     return current().correction_window_days
 
 
+def unknown_withdrawal_days():
+    """How many days after a course's last day a medicine withdrawal whose end is unknown holds fish."""
+    return current().unknown_withdrawal_days
+
+
 def window_way_out():
     """What to do about a record older than the correction window, said with every refusal by the window (flow fault
     B-07: "Operations can be dated at most 31 days back." was a dead end): whose setting the window is and where it is

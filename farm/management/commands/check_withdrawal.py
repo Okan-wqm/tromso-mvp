@@ -33,7 +33,19 @@ class Command(BaseCommand):
             if options['listing']:
                 return self.listing()
             self.held_now()
+            self.unresolved()
             self.harvested_inside()
+
+    def unresolved(self):
+        """The old courses whose end is unknown and which hold nobody any more (withdrawal rule 8)."""
+        found = withdrawal.unresolved()
+        for batch, held in found:
+            self.stdout.write(self.style.WARNING(f'Unresolved old course · {withdrawal.unresolved_text(batch, held)}'))
+        if found:
+            self.stdout.write(self.style.WARNING(
+                f'{len(found)} unresolved old course{"" if len(found) == 1 else "s"}: the end is unknown and the '
+                'fish are no longer held (Platform settings: an unknown withdrawal end holds for a number of days). '
+                'Give each an end.'))
 
     def listing(self):
         """The two lists as lines that say the same for the same facts whatever the wording of the pages: ids are not
@@ -60,6 +72,9 @@ class Command(BaseCommand):
                    str(each.fish), each.batch.code, end(each.until), 'about' if each.approximate else '',
                    source(each.withdrawal))
                   for each in withdrawal.harvests_inside()]
+        # The old courses of unknown end that hold nobody any more (rule 8): on a checkout that has them.
+        lines += [('unresolved', codes[held.batch_id], source(held), withdrawal.describe(held))
+                  for _batch, held in getattr(withdrawal, 'unresolved', lambda: [])()]
         for line in sorted(lines):
             self.stdout.write('\t'.join(line))
 

@@ -48,6 +48,14 @@
   {% if record_url %}<a class="button button-inline" href="{{ record_url }}" data-modal>{% include "icons/_icon.html" with name="plus" %}{% trans "Record treatment" %}</a>{% endif %}
 </div>
 
+{% if unresolved %}
+<section class="notice notice-warning" aria-labelledby="unresolved-title">
+  <h2 class="section-title" id="unresolved-title">{% trans "Unresolved old courses" %}</h2>
+  <p>{% blocktrans trimmed count days=unknown_days %}The end of these withdrawals is unknown and the course is older than {{ days }} day: the fish are no longer held (Platform settings). Give each an end.{% plural %}The end of these withdrawals is unknown and the course is older than {{ days }} days: the fish are no longer held (Platform settings). Give each an end.{% endblocktrans %}</p>
+  <ul role="list">{% for text in unresolved %}<li>{{ text }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+
 <p class="units-count">{{ count_line }}</p>
 
 {% if not rows %}

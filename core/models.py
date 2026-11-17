@@ -320,6 +320,7 @@ class AccountMail(models.Model):
 # The bounds of the platform owner's settings: the database holds them (PlatformSettings' checks) and the form says them.
 WINDOW_DAYS = (1, 3650)           # a day back at least; ten years at most, which keeps every date's arithmetic sane
 CLOCK_TOLERANCE = (0, 3600)          # seconds: at most the sensors' ingest contract's hour
+UNKNOWN_WITHDRAWAL_DAYS = (1, 3650)  # a day at least; ten years at most, as the correction window
 
 
 class PlatformSettings(AuditedModel):
@@ -332,6 +333,10 @@ class PlatformSettings(AuditedModel):
       31 days until the owner sets another). A record older than that stays as it is.
     - Whether a second person must approve the acknowledgement of a medicine-withdrawal warning before what it was given
       for counts (F-164); other critical acknowledgements may join it.
+    - How long a medicine withdrawal whose END IS UNKNOWN holds fish (the owner's decision of 17.11.2026): the days
+      after the course's last day (or the medicated feeding's day), 180 until the owner sets another. After them the
+      fish are not held and the course is listed as unresolved (farm/health/withdrawal.py, rule 8). A change of it
+      goes through the withdrawal guard, which asks when it would free fish held today.
     The alarms' rules (delays, escalation, deadbands) are the alarms app's own reference data, per severity and per
     parameter (alarms.SeverityPolicy, alarms.ParameterDeadband)."""
 
@@ -341,6 +346,9 @@ class PlatformSettings(AuditedModel):
         validators=[MinValueValidator(WINDOW_DAYS[0]), MaxValueValidator(WINDOW_DAYS[1])])
     second_approval_withdrawal = models.BooleanField(
         _('A second person approves a withdrawal warning acknowledgement'), default=False)
+    unknown_withdrawal_days = models.PositiveSmallIntegerField(
+        _('An unknown withdrawal end holds for (days)'), default=180,
+        validators=[MinValueValidator(UNKNOWN_WITHDRAWAL_DAYS[0]), MaxValueValidator(UNKNOWN_WITHDRAWAL_DAYS[1])])
     # How far ahead of the server's clock a value may be stamped and still count as fresh (farm/water/freshness.py): at
     # most the sensors' ingest contract's hour (evaluate.MAX_AHEAD). 300 s is the value the code held (cross review F10).
     clock_tolerance_seconds = models.PositiveIntegerField(
@@ -361,6 +369,10 @@ class PlatformSettings(AuditedModel):
                 condition=models.Q(clock_tolerance_seconds__gte=CLOCK_TOLERANCE[0],
                                    clock_tolerance_seconds__lte=CLOCK_TOLERANCE[1]),
                 name='chk_platform_settings_clock_tolerance'),
+            models.CheckConstraint(
+                condition=models.Q(unknown_withdrawal_days__gte=UNKNOWN_WITHDRAWAL_DAYS[0],
+                                   unknown_withdrawal_days__lte=UNKNOWN_WITHDRAWAL_DAYS[1]),
+                name='chk_platform_settings_unknown_withdrawal'),
         ]
 
     def __str__(self):

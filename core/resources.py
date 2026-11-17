@@ -162,6 +162,14 @@ class PlatformSettingsResource(Resource):
     actions = ('change',)
     list_template = 'core/platform_settings.html'
     icon = 'settings'
+    # How long an unknown withdrawal end holds fish is a rule a medicine withdrawal is worked out from: its change goes
+    # through the withdrawal guard, which asks before it frees fish held today (the owner's decision of 17.11.2026).
+    question_template, question_field = 'farm/_withdrawal_change.html', 'withdrawal_ack'
+
+    @classmethod
+    def edited(cls, request, record, write, seen):
+        from farm.health import withdrawal
+        return withdrawal.guarded_ceiling(request.user, write, seen)
 
     @classmethod
     def list_queryset(cls, request):

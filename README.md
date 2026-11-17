@@ -2089,7 +2089,7 @@ corrected temperature or a backdated transfer changes it at once:
   exposed, and, of the withdrawals still in force in the window asked, the batches they can have reached
   (`farm.stock.read.reach` over `spans()`: one grouped query of the live ledger says who was where). A batch that
   only shared a unit long before, or with fish that were never held, is not read. A course of UNKNOWN end is in
-  force until it is given one, however old, and its fish are read. The queries do not grow with the units or the
+  force for the days the platform owner set (below), and its fish are read for as long. The queries do not grow with the units or the
   batches (the units list, a drawer, the plans, the cards, the Treatments list and a guard cost the same for 6
   units as for 24: `farm/tests/test_withdrawal_lots.py`, the ten cases of the rule and the recorded counts), and
   the batches read and locked do not grow with the generations of fish long gone
@@ -2118,6 +2118,19 @@ corrected temperature or a backdated transfer changes it at once:
 - **medicated feed** (a feed of the type Medicated) fed to a batch on a day no live in-feed treatment of the unit
   covers holds it with an unknown end until the treatment is recorded or the feeding voided; the feeding dialog
   says so when such a feeding is recorded.
+- **an unknown end holds for a number of days only** (the owner's decision of 17.11.2026). Three records make an
+  end unknown: a medicine with no withdrawal row for the species (give it one in Reference data › Medicines), a
+  medicated feeding no in-feed treatment covers (record the treatment under Health › Treatments, or void the
+  feeding), and degree-days that can be neither counted nor projected (record the water temperature, or set the
+  species' assumed temperature in Reference data › Species: the only way once the fish are gone). Such a withdrawal
+  holds, and spreads as any other, to the day set in **Platform settings › An unknown withdrawal end holds for
+  (days)** after the course's last day (180 until the platform owner sets another; 1 to 3650). After it the fish are
+  not held: no warning, no delete block. The course is then listed under **Unresolved old courses** at the top of
+  the Treatments page and by `check_withdrawal` ("Unresolved old course · B-2024-003: …"), each with what gives it
+  an end (`withdrawal.unresolved`). A change of the setting is a rule change: it goes through the withdrawal guard
+  (`guarded_ceiling`), which asks before a shorter one frees fish held today, the data layer refuses it anywhere
+  else (`farm/withdrawal_gate.py`), and it is logged with its old and new value
+  (`farm/tests/test_withdrawal_ceiling.py`). It also bounds what a reader loads for old courses of unknown end;
 
 A withdrawal holds the fish from the treatment's first day (or the medicated feeding's day) to the day before
 the first harvest day; a day before the treatment is not held.

@@ -227,7 +227,8 @@ NOT_INPUT_TABLES = {
     'equipment': 'a point\'s equipment, loaded with the point (with_owners): the withdrawal reads the middle points of '
                  'units and loops only',
     'platform_settings': 'the correction window says how far back a guard READS (the first day a record can still be '
-                         'dated on, S-03 review F-3); it never changes what a withdrawal is or holds',
+                         'dated on, S-03 review F-3); how long an unknown end holds (unknown_withdrawal_days, rule 8) '
+                         'IS an input: registered by its field in farm/apps.py and changed only through the guard',
     'feeds': None,                           # registered (feed_type); its other columns are names
     'species': None,                         # registered (withdrawal_temperature_c); others are names
     'tanks': None, 'systems': None, 'water_sampling_points': None,

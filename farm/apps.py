@@ -41,4 +41,5 @@ class FarmConfig(AppConfig):
             Treatment: None, Treatment.units.through: None, FeedingRecord: None, WaterMeasurement: None,
             MedicineWithdrawal: None, StockOperation: None, StockMovement: None, Feed: ('feed_type',),
             Species: ('withdrawal_temperature_c',), SamplingPoint: ('is_active', 'kind', 'unit', 'system', 'equipment'),
+            PlatformSettings: ('unknown_withdrawal_days',),
         }, conditional={System: deleted, Tank: {**deleted, **loop}, Species: deleted, SamplingPoint: deleted})

@@ -148,7 +148,7 @@ class PasswordResetForm(auth_forms.PasswordResetForm):
 
 
 PLATFORM_TABS = [
-    ('records', _('Records'), ['correction_window_days', 'second_approval_withdrawal']),
+    ('records', _('Records'), ['correction_window_days', 'second_approval_withdrawal', 'unknown_withdrawal_days']),
     ('clocks', _('Clocks'), ['clock_tolerance_seconds']),
 ]
 
@@ -170,6 +170,13 @@ class PlatformSettingsForm(TabbedForm):
                                             'treatment reaching back over a harvest) needs a second person’s approval. '
                                             'That approval is not built yet: while this is ticked, every such step is '
                                             'refused, so nobody goes on alone.'),
+            'unknown_withdrawal_days': _('How many days after a course’s last day a medicine withdrawal whose end is '
+                                         'unknown (a medicine with no withdrawal recorded, medicated feed with no '
+                                         'treatment, degree-days with no water temperature) holds the fish. After '
+                                         'them the fish are no longer held, and the course is listed as unresolved '
+                                         'on the Treatments page until it is given an end. 1 to 3650; 180 until you '
+                                         'set another. Making it shorter asks first when it would free fish held '
+                                         'today.'),
             'clock_tolerance_seconds': _('How far ahead of the server’s clock a water value may be stamped and still '
                                          'count as fresh (a device or tablet clock a little fast). A value further ahead, '
                                          'up to an hour, still decides its unit’s status and its alarm, but is not shown '

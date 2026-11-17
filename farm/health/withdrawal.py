@@ -54,6 +54,14 @@ The rules, for a batch b and a treatment T with a medicine:
 6. **Medicated feed** (a feed of the type Medicated) that fed b on a day no live in-feed treatment of its unit
    covers holds b with an unknown end until such a treatment is recorded or the feeding is voided.
 7. A voided treatment holds nothing (it is not live).
+8. **An unknown end holds for a number of days only** (the owner's decision of 17.11.2026; the platform owner's
+   setting "An unknown withdrawal end holds for (days)", 180 until they set another): a withdrawal whose end is
+   unknown (rule 0: no row for the species; rule 5: degree-days with nothing to count or project at; rule 6: medicated
+   feed with no treatment) holds, and spreads as any other hold, to the day that many days after the course's last
+   day (the medicated feeding's day). From the next day (`gives_up`) the fish are NOT held: no warning, nothing
+   blocked. The course is then listed as an unresolved old course on the Treatments page and by `check_withdrawal`
+   (`unresolved`), with what must be entered to give it an end. A change of the setting is a change of a rule: it
+   goes through the guard (`guarded_ceiling`), which asks when it would free fish held today.
 
 `until` is the first day b may be harvested; a withdrawal holds from the treatment's first day (or the
 medicated feeding's day) to the day before `until`: a day before the treatment is not held. The health module
@@ -71,7 +79,7 @@ from django.utils import formats
 from django.utils.translation import gettext as _, ngettext
 
 from core import audit
-from core.platform import correction_window_days
+from core.platform import correction_window_days, unknown_withdrawal_days
 from core.models import AuditLog
 from farm import withdrawal_gate as gate
 from farm.feeding import read as feeding_read
@@ -171,6 +179,7 @@ class Withdrawal:
                                           # it has none and they were counted as 0 °C
     projected_at_assumed: bool = False    # no temperature was measured lately: projected at the assumed one
     remaining_degree_days: Decimal = None  # what was still to accrue today, when projected or unknown
+    gives_up: object = None               # an unknown end: the first day it no longer holds (rule 8); else None
 
     @property
     def source(self):
@@ -186,13 +195,19 @@ class Withdrawal:
         """The first day it holds: the treatment's first day, or the day of the medicated feeding."""
         return self.treatment.start_date if self.treatment is not None else self.feeding.date
 
+    @property
+    def ends(self):
+        """The first day it no longer holds: the first day the batch may be harvested, or for an unknown end the day
+        it gives up (rule 8); None only for an unknown end read without the setting."""
+        return self.until if self.until is not None else self.gives_up
+
     def holds_on(self, day):
-        """From its first day (fish under treatment are held too) to the day before `until`."""
-        return day >= self.start and (self.until is None or day < self.until)
+        """From its first day (fish under treatment are held too) to the day before it ends."""
+        return day >= self.start and (self.ends is None or day < self.ends)
 
     def holds_between(self, first, last):
         """Whether it holds on some day from `first` to `last`: it has begun by `last` and has not ended on `first`."""
-        return last >= self.start and (self.until is None or first < self.until)
+        return last >= self.start and (self.ends is None or first < self.ends)
 
 
 @dataclass(frozen=True)
@@ -262,7 +277,7 @@ class Reader:
     So a batch that only shared a unit with fish that were never held, or long after a hold ended, is not read. One
     grouped query (`spans`: its answer, when the caller has it) says who was where; the number of queries does not
     grow with the units or the batches. A course of unknown end (no withdrawal row, an uncovered medicated feeding,
-    degree-days with no temperature) is in force until it is given one, however old: its fish are read.
+    degree-days with no temperature) is in force for the days of rule 8, and its fish are read for as long.
     `first=LIFE`: from the first day that can matter to the batches asked (their earliest harvest, the earliest
     course that can have exposed them, the first day of the correction window): a write guard, which compares the
     harvests of their whole life and everything a record dated in the window can reach.
@@ -282,7 +297,7 @@ class Reader:
     def __init__(self, batch_ids, today, spans=None, first=None, last=None, also=()):
         self.asked, self.today = set(batch_ids), today
         self.spans = stock_read.spans() if spans is None else spans
-        self._withdrawals = self._lots = None
+        self._withdrawals = self._lots = self._ceiling = None
         # A day beyond: a course begun today on a later clock has begun (`there`).
         self.last = max(today, last or today) + DAY
         every = list(Treatment.objects.filter(medicine__isnull=False, start_date__lte=self.last)
@@ -297,6 +312,9 @@ class Reader:
                        .select_related('feed', 'unit'))
         self.feedings = [record for record in records
                          if not any(covers(treatment, record) for treatment in self.in_feed)]
+        if self.feedings:                              # an unknown end that has given up before the window (rule 8)
+            self.feedings = [record for record in self.feedings
+                             if record.date + (self.ceiling + 1) * DAY > self.first]
         exposed = set()
         for treatment in [*self.treatments, *also]:
             exposed |= stock_read.between(self.spans, [unit.pk for unit in treatment.units.all()],
@@ -312,15 +330,32 @@ class Reader:
         self.water = BatchWater(self.batch_ids, today, water, presence=self.presence)
         self.units, self.batches = self.water.units, self.water.batches
 
+    @property
+    def ceiling(self):
+        """The days an unknown end holds (rule 8), read once, and only when a course needs it."""
+        if self._ceiling is None:
+            self._ceiling = unknown_withdrawal_days()
+        return self._ceiling
+
     def _over(self, treatment):
-        """Whether a course's withdrawal has ended before the window whatever fish it reached: its medicine's rows
-        are all in days and one of them is for every species (so no species is without a row), and the longest has
-        run out. A degree-day row, or a species that may have no row, needs the fish read to say."""
+        """Whether a course's withdrawal has ended before the window whatever fish it reached: its medicine has no
+        degree-day row, and the longest it can hold has run out: its longest row in days, and, when a species may be
+        without a row (none is for every species), the days an unknown end holds (rule 8). A degree-day row needs
+        the fish read to say."""
         rows = self.rows.get(treatment.medicine_id, ())
-        if not any(row.species_id is None for row in rows) or any(row.degree_days is not None for row in rows):
+        if any(row.degree_days is not None for row in rows):
             return False
-        longest = max(Rule.of(row).days for row in rows)
+        longest = max((Rule.of(row).days for row in rows), default=0)
+        if not any(row.species_id is None for row in rows):
+            longest = max(longest, self.ceiling)
         return treatment.end_date + (longest + 1) * DAY <= self.first
+
+    def _bounded(self, held):
+        """A withdrawal of unknown end with the day it gives up (rule 8); any other as it is."""
+        if held.until is not None:
+            return held
+        last = held.treatment.end_date if held.treatment is not None else held.feeding.date
+        return replace(held, gives_up=last + (self.ceiling + 1) * DAY)
 
     def _life(self, treatments):
         """The first day that can matter to the batches asked: their earliest live harvest, the first day of the
@@ -416,7 +451,10 @@ class Reader:
 
     # ---- the withdrawals ----------------------------------------------------------------------------
     def of_treatment(self, treatment, batch_id):
-        """The withdrawal of one batch from one treatment (rules 2 to 5)."""
+        """The withdrawal of one batch from one treatment (rules 2 to 5, and 8 for an unknown end)."""
+        return self._bounded(self._of_treatment(treatment, batch_id))
+
+    def _of_treatment(self, treatment, batch_id):
         end, species = treatment.end_date, self.batches[batch_id].species
         self.load_rows({treatment.medicine_id})
         rule = rule_for(self.rows[treatment.medicine_id], species.pk)
@@ -446,7 +484,7 @@ class Reader:
         found = []
         for record_id, parts in feeding_read.split_of(records).items():
             record = next(item for item in records if item.pk == record_id)
-            found += [Withdrawal(batch_id, None, True, feeding=record)
+            found += [self._bounded(Withdrawal(batch_id, None, True, feeding=record))
                       for batch_id in sorted(parts, key=str) if batch_id in self.batch_ids]
         return found
 
@@ -460,7 +498,7 @@ class Reader:
                 for batch_id in sorted(exposed, key=str):
                     held = self.of_treatment(treatment, batch_id)
                     # in force in the window, or after it; or a course the caller lists whatever its end
-                    if held.until is None or held.until > self.first or treatment.pk in self.listed:
+                    if held.ends > self.first or treatment.pk in self.listed:
                         found.append(held)
                         self._seeds.append(exposed[batch_id])
             for held in self.uncovered_feedings():
@@ -477,7 +515,7 @@ class Reader:
         wanted = set()
         for held, seeds in zip(self._withdrawals, self._seeds):
             wanted |= stock_read.reach(self.spans, [(unit_id, held.batch_id, min(days))
-                                                    for unit_id, days in seeds.items()], held.until)
+                                                    for unit_id, days in seeds.items()], held.ends)
         missing = wanted - self.batch_ids
         if not missing:
             return
@@ -500,7 +538,7 @@ class Reader:
         (C; never from a cleaner-fish lot: the owner's decision 6). A lot whose last fish left by the end of the day ends
         with that day. `via`: (unit id, batch id) of the held lot a shared lot met; None along the exposed fish's own
         path."""
-        presence, batch_id, end = self.presence, withdrawal.batch_id, withdrawal.until
+        presence, batch_id, end = self.presence, withdrawal.batch_id, withdrawal.ends
         exposed_on = defaultdict(list)
         for unit_id, days in seeds.items():
             for day in days:
@@ -1333,6 +1371,78 @@ def provider(units, day):
     return {unit_id: [WithdrawalBlock(batches[withdrawal.batch_id], withdrawal.until, withdrawal.estimated,
                                       describe(withdrawal), withdrawal.source) for withdrawal in held]
             for unit_id, held in withdrawals.items()}
+
+
+def unresolved(today=None):
+    """[(Batch, Withdrawal)]: the unresolved old courses (rule 8): every live course with a medicine, and every
+    medicated feeding no in-feed course covers, whose withdrawal for a batch it reached has an unknown end and has
+    given up by `today` (default the company's). They hold nobody any more; the Treatments page and check_withdrawal
+    list them with what gives each an end (`unresolved_text`). Only the batches whose end can be unknown are read:
+    a species without a row of the medicine, or a degree-day row for a species without an assumed temperature."""
+    today = today or local_today()
+    days = unknown_withdrawal_days()
+    before = today - days * DAY                        # a last day before this has given up: last + days + 1 <= today
+    spans = stock_read.spans()
+    treatments = list(Treatment.objects.filter(medicine__isnull=False, end_date__lt=before)
+                      .select_related('medicine').prefetch_related('units').order_by('start_date', 'pk'))
+    rows = defaultdict(list)
+    for row in MedicineWithdrawal.objects.filter(medicine__in={each.medicine_id for each in treatments}):
+        rows[row.medicine_id].append(row)
+    reached = {each.pk: stock_read.between(spans, [unit.pk for unit in each.units.all()], each.start_date,
+                                           each.end_date) for each in treatments}
+    batches = Batch.all_objects.select_related('species').in_bulk({pk for ids in reached.values() for pk in ids})
+
+    def may_be_unknown(treatment, batch):
+        rule = rule_for(rows[treatment.medicine_id], batch.species_id)
+        return rule is None or (rule.degree_days is not None and not batch.species.withdrawal_temperature_c)
+
+    wanted = {each.pk: {pk for pk in reached[each.pk] if may_be_unknown(each, batches[pk])} for each in treatments}
+    listed = [each for each in treatments if wanted[each.pk]]
+    found = []
+    if listed:
+        reader = Reader({pk for each in listed for pk in wanted[each.pk]}, today, spans, also=listed)
+        for treatment in listed:
+            for batch_id in sorted(wanted[treatment.pk] & reader.treated(treatment), key=str):
+                held = reader.of_treatment(treatment, batch_id)
+                if held.until is None:
+                    found.append((batches[batch_id], held))
+    in_feed = list(Treatment.objects.filter(medicine__isnull=False, method=TreatmentMethod.IN_FEED)
+                   .prefetch_related('units'))
+    records = [record for record in FeedingRecord.objects.filter(feed__feed_type=FeedType.MEDICATED, date__lt=before)
+               .select_related('feed', 'unit') if not any(covers(treatment, record) for treatment in in_feed)]
+    if records:
+        parts = feeding_read.split_of(records)
+        fed = Batch.all_objects.select_related('species').in_bulk({pk for each in parts.values() for pk in each})
+        for record in sorted(records, key=lambda each: (each.date, each.pk)):
+            for batch_id in sorted(parts.get(record.pk, ()), key=str):
+                found.append((fed[batch_id], Withdrawal(batch_id, None, True, feeding=record,
+                                                        gives_up=record.date + (days + 1) * DAY)))
+    return found
+
+
+def unresolved_text(batch, held):
+    """An unresolved old course as the Treatments page and check_withdrawal say it: the batch, the course and why its
+    end is unknown, which says what to enter (`describe`); for degree-days that could not be counted, also the
+    species' assumed temperature, which gives an end when the fish are gone and no temperature can be recorded."""
+    text = f'{batch.code}: {describe(held)}'
+    if held.rule is not None:
+        text += ' ' + _('Or set the assumed water temperature of %(species)s in Reference data › Species: the days '
+                        'without a measured temperature then count.') % {'species': batch.species.common_name}
+    return text
+
+
+def guarded_ceiling(user, write, seen=None):
+    """A change of the platform owner's setting of how long an unknown end holds fish (rule 8): through the guard, over
+    the fish an unknown end holds today, which are locked first (their batches, as every write locks them). Made
+    shorter, it frees some of them: asked. Made longer, it holds fish again that had been let go: not asked (as a
+    longer withdrawal row is not)."""
+    from farm.stock.services import locked
+    today = local_today()
+    with transaction.atomic():
+        reader = Reader(set(), today)
+        batch_ids = {hold.batch_id for hold in reader.lots() if hold.until is None and reader.current(hold)}
+        locked(Batch, batch_ids)
+        return guarded(user, batch_ids, today, write, seen=seen)
 
 
 def guarded_units(user, unit_ids, first, write, seen=None):

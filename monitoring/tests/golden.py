@@ -96,7 +96,7 @@ class Normaliser:
         for old, new in self.pairs:
             text = text.replace(old, new)
         text = re.sub(r'\b\d{1,2}:\d{2}\b', '<time>', text)
-        text = re.sub(r'(?:(?<=harvest from )|(?<=harvest from about ))\d\d\.\d\d\b|\b\d\d\.\d\d(?= <time>)',
+        text = re.sub(r'(?:(?<=harvest from )|(?<=harvest from about ))\d\d\.\d\d\b(?!\.\d)|\b\d\d\.\d\d(?= <time>)',
                       lambda found: self.short.get(found.group(0), found.group(0)), text)
         for old, new in self.dates:
             if old in text:

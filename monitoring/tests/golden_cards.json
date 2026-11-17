@@ -13852,6 +13852,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -13861,7 +13862,7 @@
    "links": {
     "unit": [
      "G-00",
-     "/operations/units/?unit=G-00"
+     "/operations/monitoring/?focus=G-00&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -13908,6 +13909,7 @@
     "Dissolved oxygen (mg/L O₂): Critical",
     "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
@@ -13917,7 +13919,7 @@
    "links": {
     "unit": [
      "G-01",
-     "/operations/units/?unit=G-01"
+     "/operations/monitoring/?focus=G-01&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -13963,6 +13965,7 @@
     "Dissolved oxygen (mg/L O₂): Warning",
     "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
@@ -13973,7 +13976,7 @@
    "links": {
     "unit": [
      "G-02",
-     "/operations/units/?unit=G-02"
+     "/operations/monitoring/?focus=G-02&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -13994,7 +13997,7 @@
      "no data"
     ],
     [
-     "O₂ old",
+     "O₂ · 76.3 % old",
      "8.80"
     ],
     [
@@ -14019,6 +14022,7 @@
     "Dissolved oxygen (mg/L O₂) · 76.3 %",
     "Dissolved oxygen (mg/L O₂): no recent data, <age> old",
     "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "Open the big card beside the overview",
     "Stale · Meter or test kit · 1 d ago",
     "Stale · Meter or test kit · 1 d ago",
     "State from: Fish, Feeding, Water, Health",
@@ -14031,7 +14035,7 @@
    "links": {
     "unit": [
      "G-03",
-     "/operations/units/?unit=G-03"
+     "/operations/monitoring/?focus=G-03&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -14075,6 +14079,7 @@
     "Dissolved oxygen (mg/L O₂)",
     "Dissolved oxygen (mg/L O₂): no recent data",
     "Not worked out: no active middle sampling point.",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "Temperature (°C): no recent data",
@@ -14085,7 +14090,7 @@
    "links": {
     "unit": [
      "G-04",
-     "/operations/units/?unit=G-04"
+     "/operations/monitoring/?focus=G-04&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -14133,6 +14138,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "Over capacity",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
@@ -14143,7 +14149,7 @@
    "links": {
     "unit": [
      "G-05",
-     "/operations/units/?unit=G-05"
+     "/operations/monitoring/?focus=G-05&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -14190,6 +14196,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -14199,7 +14206,7 @@
    "links": {
     "unit": [
      "G-06",
-     "/operations/units/?unit=G-06"
+     "/operations/monitoring/?focus=G-06&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -14246,6 +14253,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -14255,7 +14263,7 @@
    "links": {
     "unit": [
      "G-07",
-     "/operations/units/?unit=G-07"
+     "/operations/monitoring/?focus=G-07&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -14302,6 +14310,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -14311,7 +14320,7 @@
    "links": {
     "unit": [
      "G-08",
-     "/operations/units/?unit=G-08"
+     "/operations/monitoring/?focus=G-08&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -14356,6 +14365,7 @@
     "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago · Worked out from 13.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s.",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
@@ -14365,7 +14375,7 @@
    "links": {
     "unit": [
      "G-09",
-     "/operations/units/?unit=G-09"
+     "/operations/monitoring/?focus=G-09&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -14415,6 +14425,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -14425,7 +14436,7 @@
    "links": {
     "unit": [
      "G-10",
-     "/operations/units/?unit=G-10"
+     "/operations/monitoring/?focus=G-10&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -14463,7 +14474,7 @@
     "G-11",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
     "Unit G-11",
-    "Withdrawal · harvest from 20.11",
+    "Withdrawal · harvest from <short+5>",
     "sample · 1 h",
     "sample · 1 h",
     "sample · 1 h"
@@ -14476,6 +14487,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -14487,7 +14499,7 @@
    "links": {
     "unit": [
      "G-11",
-     "/operations/units/?unit=G-11"
+     "/operations/monitoring/?focus=G-11&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -14532,6 +14544,7 @@
     "Dissolved oxygen (mg/L O₂) · 85.1 %",
     "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "Temperature (°C): Warning",
@@ -14543,7 +14556,7 @@
    "links": {
     "unit": [
      "G-12",
-     "/operations/units/?unit=G-12"
+     "/operations/monitoring/?focus=G-12&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -14593,6 +14606,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -14603,7 +14617,7 @@
    "links": {
     "unit": [
      "G-13",
-     "/operations/units/?unit=G-13"
+     "/operations/monitoring/?focus=G-13&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -14651,6 +14665,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -14661,7 +14676,7 @@
    "links": {
     "unit": [
      "G-14",
-     "/operations/units/?unit=G-14"
+     "/operations/monitoring/?focus=G-14&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -14709,6 +14724,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -14719,7 +14735,7 @@
    "links": {
     "unit": [
      "G-15",
-     "/operations/units/?unit=G-15"
+     "/operations/monitoring/?focus=G-15&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -14767,6 +14783,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -14777,7 +14794,7 @@
    "links": {
     "unit": [
      "G-16",
-     "/operations/units/?unit=G-16"
+     "/operations/monitoring/?focus=G-16&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -14824,6 +14841,7 @@
     "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
@@ -14833,7 +14851,7 @@
    "links": {
     "unit": [
      "G-17",
-     "/operations/units/?unit=G-17"
+     "/operations/monitoring/?focus=G-17&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -14877,6 +14895,7 @@
     "Dissolved oxygen (mg/L O₂)",
     "Dissolved oxygen (mg/L O₂): no recent data",
     "Not worked out: no active middle sampling point.",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "Temperature (°C): no recent data",
@@ -14887,7 +14906,7 @@
    "links": {
     "unit": [
      "T-01",
-     "/operations/units/?unit=T-01"
+     "/operations/monitoring/?focus=T-01&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -14935,6 +14954,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · <recent>",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -14945,7 +14965,7 @@
    "links": {
     "unit": [
      "T-02",
-     "/operations/units/?unit=T-02"
+     "/operations/monitoring/?focus=T-02&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -14966,13 +14986,14 @@
    ],
    "titles": [
     "Maintenance",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Unit P-01 · Sea · Template: Small · the view chosen on this screen"
    ],
    "links": {
     "unit": [
      "P-01",
-     "/operations/units/?unit=P-01"
+     "/operations/monitoring/?focus=P-01&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -15021,6 +15042,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -15030,7 +15052,7 @@
    "links": {
     "unit": [
      "G-00",
-     "/operations/units/?unit=G-00"
+     "/operations/monitoring/?focus=G-00&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -15077,6 +15099,7 @@
     "Dissolved oxygen (mg/L O₂): Critical",
     "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
@@ -15086,7 +15109,7 @@
    "links": {
     "unit": [
      "G-01",
-     "/operations/units/?unit=G-01"
+     "/operations/monitoring/?focus=G-01&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -15132,6 +15155,7 @@
     "Dissolved oxygen (mg/L O₂): Warning",
     "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
@@ -15142,7 +15166,7 @@
    "links": {
     "unit": [
      "G-02",
-     "/operations/units/?unit=G-02"
+     "/operations/monitoring/?focus=G-02&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -15163,7 +15187,7 @@
      "no data"
     ],
     [
-     "O₂ old",
+     "O₂ · 76.3 % old",
      "8.80"
     ],
     [
@@ -15188,6 +15212,7 @@
     "Dissolved oxygen (mg/L O₂) · 76.3 %",
     "Dissolved oxygen (mg/L O₂): no recent data, <age> old",
     "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "Open the big card beside the overview",
     "Stale · Meter or test kit · 1 d ago",
     "Stale · Meter or test kit · 1 d ago",
     "State from: Fish, Feeding, Water, Health",
@@ -15200,7 +15225,7 @@
    "links": {
     "unit": [
      "G-03",
-     "/operations/units/?unit=G-03"
+     "/operations/monitoring/?focus=G-03&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -15244,6 +15269,7 @@
     "Dissolved oxygen (mg/L O₂)",
     "Dissolved oxygen (mg/L O₂): no recent data",
     "Not worked out: no active middle sampling point.",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "Temperature (°C): no recent data",
@@ -15254,7 +15280,7 @@
    "links": {
     "unit": [
      "G-04",
-     "/operations/units/?unit=G-04"
+     "/operations/monitoring/?focus=G-04&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -15302,6 +15328,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "Over capacity",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
@@ -15312,7 +15339,7 @@
    "links": {
     "unit": [
      "G-05",
-     "/operations/units/?unit=G-05"
+     "/operations/monitoring/?focus=G-05&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -15359,6 +15386,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -15368,7 +15396,7 @@
    "links": {
     "unit": [
      "G-06",
-     "/operations/units/?unit=G-06"
+     "/operations/monitoring/?focus=G-06&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -15415,6 +15443,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -15424,7 +15453,7 @@
    "links": {
     "unit": [
      "G-07",
-     "/operations/units/?unit=G-07"
+     "/operations/monitoring/?focus=G-07&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -15471,6 +15500,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -15480,7 +15510,7 @@
    "links": {
     "unit": [
      "G-08",
-     "/operations/units/?unit=G-08"
+     "/operations/monitoring/?focus=G-08&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -15525,6 +15555,7 @@
     "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago · Worked out from 13.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s.",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
@@ -15534,7 +15565,7 @@
    "links": {
     "unit": [
      "G-09",
-     "/operations/units/?unit=G-09"
+     "/operations/monitoring/?focus=G-09&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -15584,6 +15615,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -15594,7 +15626,7 @@
    "links": {
     "unit": [
      "G-10",
-     "/operations/units/?unit=G-10"
+     "/operations/monitoring/?focus=G-10&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -15632,7 +15664,7 @@
     "G-11",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
     "Unit G-11",
-    "Withdrawal · harvest from 20.11",
+    "Withdrawal · harvest from <short+5>",
     "sample · 1 h",
     "sample · 1 h",
     "sample · 1 h"
@@ -15645,6 +15677,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -15656,7 +15689,7 @@
    "links": {
     "unit": [
      "G-11",
-     "/operations/units/?unit=G-11"
+     "/operations/monitoring/?focus=G-11&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -15701,6 +15734,7 @@
     "Dissolved oxygen (mg/L O₂) · 85.1 %",
     "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "Temperature (°C): Warning",
@@ -15712,7 +15746,7 @@
    "links": {
     "unit": [
      "G-12",
-     "/operations/units/?unit=G-12"
+     "/operations/monitoring/?focus=G-12&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -15762,6 +15796,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -15772,7 +15807,7 @@
    "links": {
     "unit": [
      "G-13",
-     "/operations/units/?unit=G-13"
+     "/operations/monitoring/?focus=G-13&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -15820,6 +15855,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -15830,7 +15866,7 @@
    "links": {
     "unit": [
      "G-14",
-     "/operations/units/?unit=G-14"
+     "/operations/monitoring/?focus=G-14&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -15878,6 +15914,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -15888,7 +15925,7 @@
    "links": {
     "unit": [
      "G-15",
-     "/operations/units/?unit=G-15"
+     "/operations/monitoring/?focus=G-15&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -15936,6 +15973,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -15946,7 +15984,7 @@
    "links": {
     "unit": [
      "G-16",
-     "/operations/units/?unit=G-16"
+     "/operations/monitoring/?focus=G-16&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -15993,6 +16031,7 @@
     "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
@@ -16002,7 +16041,7 @@
    "links": {
     "unit": [
      "G-17",
-     "/operations/units/?unit=G-17"
+     "/operations/monitoring/?focus=G-17&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -16046,6 +16085,7 @@
     "Dissolved oxygen (mg/L O₂)",
     "Dissolved oxygen (mg/L O₂): no recent data",
     "Not worked out: no active middle sampling point.",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "Temperature (°C): no recent data",
@@ -16056,7 +16096,7 @@
    "links": {
     "unit": [
      "T-01",
-     "/operations/units/?unit=T-01"
+     "/operations/monitoring/?focus=T-01&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -16104,6 +16144,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · <recent>",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -16114,7 +16155,7 @@
    "links": {
     "unit": [
      "T-02",
-     "/operations/units/?unit=T-02"
+     "/operations/monitoring/?focus=T-02&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -16163,6 +16204,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -16172,7 +16214,7 @@
    "links": {
     "unit": [
      "G-00",
-     "/operations/units/?unit=G-00"
+     "/operations/monitoring/?flip=G-01&focus=G-00&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -16369,6 +16411,7 @@
     "Dissolved oxygen (mg/L O₂): Warning",
     "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
@@ -16379,7 +16422,7 @@
    "links": {
     "unit": [
      "G-02",
-     "/operations/units/?unit=G-02"
+     "/operations/monitoring/?flip=G-01&focus=G-02&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -16400,7 +16443,7 @@
      "no data"
     ],
     [
-     "O₂ old",
+     "O₂ · 76.3 % old",
      "8.80"
     ],
     [
@@ -16425,6 +16468,7 @@
     "Dissolved oxygen (mg/L O₂) · 76.3 %",
     "Dissolved oxygen (mg/L O₂): no recent data, <age> old",
     "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
+    "Open the big card beside the overview",
     "Stale · Meter or test kit · 1 d ago",
     "Stale · Meter or test kit · 1 d ago",
     "State from: Fish, Feeding, Water, Health",
@@ -16437,7 +16481,7 @@
    "links": {
     "unit": [
      "G-03",
-     "/operations/units/?unit=G-03"
+     "/operations/monitoring/?flip=G-01&focus=G-03&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -16481,6 +16525,7 @@
     "Dissolved oxygen (mg/L O₂)",
     "Dissolved oxygen (mg/L O₂): no recent data",
     "Not worked out: no active middle sampling point.",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "Temperature (°C): no recent data",
@@ -16491,7 +16536,7 @@
    "links": {
     "unit": [
      "G-04",
-     "/operations/units/?unit=G-04"
+     "/operations/monitoring/?flip=G-01&focus=G-04&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -16539,6 +16584,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "Over capacity",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
@@ -16549,7 +16595,7 @@
    "links": {
     "unit": [
      "G-05",
-     "/operations/units/?unit=G-05"
+     "/operations/monitoring/?flip=G-01&focus=G-05&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -16596,6 +16642,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -16605,7 +16652,7 @@
    "links": {
     "unit": [
      "G-06",
-     "/operations/units/?unit=G-06"
+     "/operations/monitoring/?flip=G-01&focus=G-06&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -16652,6 +16699,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -16661,7 +16709,7 @@
    "links": {
     "unit": [
      "G-07",
-     "/operations/units/?unit=G-07"
+     "/operations/monitoring/?flip=G-01&focus=G-07&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -16708,6 +16756,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -16717,7 +16766,7 @@
    "links": {
     "unit": [
      "G-08",
-     "/operations/units/?unit=G-08"
+     "/operations/monitoring/?flip=G-01&focus=G-08&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -16762,6 +16811,7 @@
     "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago · Worked out from 13.1 °C, 0.0 ‰ and 1.000 atm. At sea-level pressure: the site has no altitude. The salinity is fresh water’s.",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
@@ -16771,7 +16821,7 @@
    "links": {
     "unit": [
      "G-09",
-     "/operations/units/?unit=G-09"
+     "/operations/monitoring/?flip=G-01&focus=G-09&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -16821,6 +16871,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -16831,7 +16882,7 @@
    "links": {
     "unit": [
      "G-10",
-     "/operations/units/?unit=G-10"
+     "/operations/monitoring/?flip=G-01&focus=G-10&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -16869,7 +16920,7 @@
     "G-11",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
     "Unit G-11",
-    "Withdrawal · harvest from 20.11",
+    "Withdrawal · harvest from <short+5>",
     "sample · 1 h",
     "sample · 1 h",
     "sample · 1 h"
@@ -16882,6 +16933,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -16893,7 +16945,7 @@
    "links": {
     "unit": [
      "G-11",
-     "/operations/units/?unit=G-11"
+     "/operations/monitoring/?flip=G-01&focus=G-11&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -16938,6 +16990,7 @@
     "Dissolved oxygen (mg/L O₂) · 85.1 %",
     "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "Temperature (°C): Warning",
@@ -16949,7 +17002,7 @@
    "links": {
     "unit": [
      "G-12",
-     "/operations/units/?unit=G-12"
+     "/operations/monitoring/?flip=G-01&focus=G-12&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -16999,6 +17052,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -17009,7 +17063,7 @@
    "links": {
     "unit": [
      "G-13",
-     "/operations/units/?unit=G-13"
+     "/operations/monitoring/?flip=G-01&focus=G-13&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -17057,6 +17111,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -17067,7 +17122,7 @@
    "links": {
     "unit": [
      "G-14",
-     "/operations/units/?unit=G-14"
+     "/operations/monitoring/?flip=G-01&focus=G-14&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -17115,6 +17170,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -17125,7 +17181,7 @@
    "links": {
     "unit": [
      "G-15",
-     "/operations/units/?unit=G-15"
+     "/operations/monitoring/?flip=G-01&focus=G-15&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -17173,6 +17229,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -17183,7 +17240,7 @@
    "links": {
     "unit": [
      "G-16",
-     "/operations/units/?unit=G-16"
+     "/operations/monitoring/?flip=G-01&focus=G-16&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -17230,6 +17287,7 @@
     "Not worked out: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of pH (NBS scale), Alkalinity (mg/L as CaCO₃).",
@@ -17239,7 +17297,7 @@
    "links": {
     "unit": [
      "G-17",
-     "/operations/units/?unit=G-17"
+     "/operations/monitoring/?flip=G-01&focus=G-17&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -17283,6 +17341,7 @@
     "Dissolved oxygen (mg/L O₂)",
     "Dissolved oxygen (mg/L O₂): no recent data",
     "Not worked out: no active middle sampling point.",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "Temperature (°C): no recent data",
@@ -17293,7 +17352,7 @@
    "links": {
     "unit": [
      "T-01",
-     "/operations/units/?unit=T-01"
+     "/operations/monitoring/?flip=G-01&focus=T-01&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -17341,6 +17400,7 @@
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · 1 h ago",
     "OK · Meter or test kit · <recent>",
+    "Open the big card beside the overview",
     "State from: Fish, Feeding, Water, Health",
     "Temperature (°C)",
     "The pH window cannot be drawn: no value of Alkalinity (mg/L as CaCO₃).",
@@ -17351,7 +17411,7 @@
    "links": {
     "unit": [
      "T-02",
-     "/operations/units/?unit=T-02"
+     "/operations/monitoring/?flip=G-01&focus=T-02&mode=small"
     ],
     "flip": [
      "Detailed",
@@ -17418,9 +17478,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-00",
+    "Unit G-00 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -17524,9 +17585,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-01",
+    "Unit G-01 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -17627,9 +17689,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-02",
+    "Unit G-02 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -17688,7 +17751,7 @@
      "no data"
     ],
     [
-     "O₂ old",
+     "O₂ · 76.3 % old",
      "8.80"
     ],
     [
@@ -17728,9 +17791,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-03",
+    "Unit G-03 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -17747,9 +17811,9 @@
     "old",
     "sample · 1 d",
     "sample · 1 d",
-    "· 14.11 <time> · 1 d",
-    "· 14.11 <time> · 1 d",
-    "· 14.11 <time> · 1 d"
+    "· <short-1> <time> · 1 d",
+    "· <short-1> <time> · 1 d",
+    "· <short-1> <time> · 1 d"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -17822,9 +17886,10 @@
     "No other sampling point",
     "No target, reagent or dosing volume is set for these fish yet.",
     "Nothing is assumed for a missing value.",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "The chart cannot be drawn",
     "This unit has no active middle sampling point, so no water is shown for it.",
-    "Unit G-04",
+    "Unit G-04 · Hall A",
     "no active middle sampling point"
    ],
    "titles": [
@@ -17905,9 +17970,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-05",
+    "Unit G-05 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -18013,9 +18079,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-06",
+    "Unit G-06 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -18121,9 +18188,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-07",
+    "Unit G-07 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -18229,9 +18297,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-08",
+    "Unit G-08 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -18334,9 +18403,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-09",
+    "Unit G-09 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -18441,9 +18511,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-10",
+    "Unit G-10 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -18551,11 +18622,12 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-11",
+    "Unit G-11 · Hall A",
     "Value",
-    "Withdrawal · harvest from 20.11",
+    "Withdrawal · harvest from <short+5>",
     "no data",
     "no data",
     "no data",
@@ -18663,9 +18735,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-12",
+    "Unit G-12 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -18770,9 +18843,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-13",
+    "Unit G-13 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -18879,9 +18953,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-14",
+    "Unit G-14 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -18988,9 +19063,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-15",
+    "Unit G-15 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -19097,9 +19173,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-16",
+    "Unit G-16 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -19207,9 +19284,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-17",
+    "Unit G-17 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -19294,10 +19372,11 @@
     "No other sampling point",
     "No target, reagent or dosing volume is set for these fish yet.",
     "Nothing is assumed for a missing value.",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "T-01",
     "The chart cannot be drawn",
     "This unit has no active middle sampling point, so no water is shown for it.",
-    "Unit T-01",
+    "Unit T-01 · Hall A",
     "no active middle sampling point"
    ],
    "titles": [
@@ -19377,10 +19456,11 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "T-02",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit T-02",
+    "Unit T-02 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -19438,7 +19518,8 @@
     "Detailed",
     "Maintenance",
     "P-01",
-    "Unit P-01"
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
+    "Unit P-01 · Sea"
    ],
    "titles": [
     "Maintenance",
@@ -19515,9 +19596,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-00",
+    "Unit G-00 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -19621,9 +19703,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-01",
+    "Unit G-01 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -19724,9 +19807,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-02",
+    "Unit G-02 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -19785,7 +19869,7 @@
      "no data"
     ],
     [
-     "O₂ old",
+     "O₂ · 76.3 % old",
      "8.80"
     ],
     [
@@ -19825,9 +19909,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-03",
+    "Unit G-03 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -19844,9 +19929,9 @@
     "old",
     "sample · 1 d",
     "sample · 1 d",
-    "· 14.11 <time> · 1 d",
-    "· 14.11 <time> · 1 d",
-    "· 14.11 <time> · 1 d"
+    "· <short-1> <time> · 1 d",
+    "· <short-1> <time> · 1 d",
+    "· <short-1> <time> · 1 d"
    ],
    "titles": [
     "Carbon dioxide, calculated (mg/L CO₂)",
@@ -19919,9 +20004,10 @@
     "No other sampling point",
     "No target, reagent or dosing volume is set for these fish yet.",
     "Nothing is assumed for a missing value.",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "The chart cannot be drawn",
     "This unit has no active middle sampling point, so no water is shown for it.",
-    "Unit G-04",
+    "Unit G-04 · Hall A",
     "no active middle sampling point"
    ],
    "titles": [
@@ -20002,9 +20088,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-05",
+    "Unit G-05 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -20110,9 +20197,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-06",
+    "Unit G-06 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -20218,9 +20306,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-07",
+    "Unit G-07 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -20326,9 +20415,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-08",
+    "Unit G-08 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -20431,9 +20521,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-09",
+    "Unit G-09 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -20538,9 +20629,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-10",
+    "Unit G-10 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -20648,11 +20740,12 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-11",
+    "Unit G-11 · Hall A",
     "Value",
-    "Withdrawal · harvest from 20.11",
+    "Withdrawal · harvest from <short+5>",
     "no data",
     "no data",
     "no data",
@@ -20760,9 +20853,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-12",
+    "Unit G-12 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -20867,9 +20961,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-13",
+    "Unit G-13 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -20976,9 +21071,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-14",
+    "Unit G-14 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -21085,9 +21181,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-15",
+    "Unit G-15 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -21194,9 +21291,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-16",
+    "Unit G-16 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -21304,9 +21402,10 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit G-17",
+    "Unit G-17 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -21391,10 +21490,11 @@
     "No other sampling point",
     "No target, reagent or dosing volume is set for these fish yet.",
     "Nothing is assumed for a missing value.",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "T-01",
     "The chart cannot be drawn",
     "This unit has no active middle sampling point, so no water is shown for it.",
-    "Unit T-01",
+    "Unit T-01 · Hall A",
     "no active middle sampling point"
    ],
    "titles": [
@@ -21474,10 +21574,11 @@
     "O₂ (mg/L)",
     "Side outlet",
     "Source",
+    "State from: Fish, Feeding, Water, Health · Template: Big · the view chosen on this screen",
     "T-02",
     "Temp. (°C)",
     "The chart cannot be drawn",
-    "Unit T-02",
+    "Unit T-02 · Hall A",
     "Value",
     "no data",
     "no data",
@@ -22861,13 +22962,14 @@
     "Water: not shown to you"
    ],
    "titles": [
+    "Open the big card beside the overview",
     "State from: Fish",
     "Unit G-00 · Hall A · Template: Small · the view chosen on this screen"
    ],
    "links": {
     "unit": [
      "G-00",
-     "/operations/units/?unit=G-00"
+     "/operations/monitoring/?focus=G-00&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -22892,13 +22994,14 @@
     "Water: not shown to you"
    ],
    "titles": [
+    "Open the big card beside the overview",
     "State from: Fish",
     "Unit G-01 · Hall A · Template: Small · the view chosen on this screen"
    ],
    "links": {
     "unit": [
      "G-01",
-     "/operations/units/?unit=G-01"
+     "/operations/monitoring/?focus=G-01&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -22923,13 +23026,14 @@
     "Water: not shown to you"
    ],
    "titles": [
+    "Open the big card beside the overview",
     "State from: Fish",
     "Unit G-02 · Hall A · Template: Small · the view chosen on this screen"
    ],
    "links": {
     "unit": [
      "G-02",
-     "/operations/units/?unit=G-02"
+     "/operations/monitoring/?focus=G-02&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -22954,13 +23058,14 @@
     "Water: not shown to you"
    ],
    "titles": [
+    "Open the big card beside the overview",
     "State from: Fish",
     "Unit G-03 · Hall A · Template: Small · the view chosen on this screen"
    ],
    "links": {
     "unit": [
      "G-03",
-     "/operations/units/?unit=G-03"
+     "/operations/monitoring/?focus=G-03&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -22985,13 +23090,14 @@
     "Water: not shown to you"
    ],
    "titles": [
+    "Open the big card beside the overview",
     "State from: Fish",
     "Unit G-04 · Hall A · Template: Small · the view chosen on this screen"
    ],
    "links": {
     "unit": [
      "G-04",
-     "/operations/units/?unit=G-04"
+     "/operations/monitoring/?focus=G-04&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -23017,6 +23123,7 @@
     "Water: not shown to you"
    ],
    "titles": [
+    "Open the big card beside the overview",
     "Over capacity",
     "State from: Fish",
     "Unit G-05 · Hall A · Template: Small · the view chosen on this screen"
@@ -23024,7 +23131,7 @@
    "links": {
     "unit": [
      "G-05",
-     "/operations/units/?unit=G-05"
+     "/operations/monitoring/?focus=G-05&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -23049,13 +23156,14 @@
     "Water: not shown to you"
    ],
    "titles": [
+    "Open the big card beside the overview",
     "State from: Fish",
     "Unit G-06 · Hall A · Template: Small · the view chosen on this screen"
    ],
    "links": {
     "unit": [
      "G-06",
-     "/operations/units/?unit=G-06"
+     "/operations/monitoring/?focus=G-06&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -23080,13 +23188,14 @@
     "Water: not shown to you"
    ],
    "titles": [
+    "Open the big card beside the overview",
     "State from: Fish",
     "Unit G-07 · Hall A · Template: Small · the view chosen on this screen"
    ],
    "links": {
     "unit": [
      "G-07",
-     "/operations/units/?unit=G-07"
+     "/operations/monitoring/?focus=G-07&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -23111,13 +23220,14 @@
     "Water: not shown to you"
    ],
    "titles": [
+    "Open the big card beside the overview",
     "State from: Fish",
     "Unit G-08 · Hall A · Template: Small · the view chosen on this screen"
    ],
    "links": {
     "unit": [
      "G-08",
-     "/operations/units/?unit=G-08"
+     "/operations/monitoring/?focus=G-08&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -23142,13 +23252,14 @@
     "Water: not shown to you"
    ],
    "titles": [
+    "Open the big card beside the overview",
     "State from: Fish",
     "Unit G-09 · Hall A · Template: Small · the view chosen on this screen"
    ],
    "links": {
     "unit": [
      "G-09",
-     "/operations/units/?unit=G-09"
+     "/operations/monitoring/?focus=G-09&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -23173,13 +23284,14 @@
     "Water: not shown to you"
    ],
    "titles": [
+    "Open the big card beside the overview",
     "State from: Fish",
     "Unit G-10 · Hall A · Template: Small · the view chosen on this screen"
    ],
    "links": {
     "unit": [
      "G-10",
-     "/operations/units/?unit=G-10"
+     "/operations/monitoring/?focus=G-10&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -23203,10 +23315,11 @@
     "Water: not shown to you",
     "Water: not shown to you",
     "Water: not shown to you",
-    "Withdrawal · harvest from 20.11"
+    "Withdrawal · harvest from <short+5>"
    ],
    "titles": [
     "Medicine withdrawal in force",
+    "Open the big card beside the overview",
     "State from: Fish",
     "Unit G-11 · Hall A · Template: Small · the view chosen on this screen",
     "Withdrawal: <batch-13>: harvest from <day+5>"
@@ -23214,7 +23327,7 @@
    "links": {
     "unit": [
      "G-11",
-     "/operations/units/?unit=G-11"
+     "/operations/monitoring/?focus=G-11&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -23239,13 +23352,14 @@
     "Water: not shown to you"
    ],
    "titles": [
+    "Open the big card beside the overview",
     "State from: Fish",
     "Unit G-12 · Hall A · Template: Small · the view chosen on this screen"
    ],
    "links": {
     "unit": [
      "G-12",
-     "/operations/units/?unit=G-12"
+     "/operations/monitoring/?focus=G-12&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -23270,13 +23384,14 @@
     "Water: not shown to you"
    ],
    "titles": [
+    "Open the big card beside the overview",
     "State from: Fish",
     "Unit G-13 · Hall A · Template: Small · the view chosen on this screen"
    ],
    "links": {
     "unit": [
      "G-13",
-     "/operations/units/?unit=G-13"
+     "/operations/monitoring/?focus=G-13&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -23301,13 +23416,14 @@
     "Water: not shown to you"
    ],
    "titles": [
+    "Open the big card beside the overview",
     "State from: Fish",
     "Unit G-14 · Hall A · Template: Small · the view chosen on this screen"
    ],
    "links": {
     "unit": [
      "G-14",
-     "/operations/units/?unit=G-14"
+     "/operations/monitoring/?focus=G-14&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -23332,13 +23448,14 @@
     "Water: not shown to you"
    ],
    "titles": [
+    "Open the big card beside the overview",
     "State from: Fish",
     "Unit G-15 · Hall A · Template: Small · the view chosen on this screen"
    ],
    "links": {
     "unit": [
      "G-15",
-     "/operations/units/?unit=G-15"
+     "/operations/monitoring/?focus=G-15&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -23363,13 +23480,14 @@
     "Water: not shown to you"
    ],
    "titles": [
+    "Open the big card beside the overview",
     "State from: Fish",
     "Unit G-16 · Hall A · Template: Small · the view chosen on this screen"
    ],
    "links": {
     "unit": [
      "G-16",
-     "/operations/units/?unit=G-16"
+     "/operations/monitoring/?focus=G-16&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -23394,13 +23512,14 @@
     "Water: not shown to you"
    ],
    "titles": [
+    "Open the big card beside the overview",
     "State from: Fish",
     "Unit G-17 · Hall A · Template: Small · the view chosen on this screen"
    ],
    "links": {
     "unit": [
      "G-17",
-     "/operations/units/?unit=G-17"
+     "/operations/monitoring/?focus=G-17&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -23425,13 +23544,14 @@
     "Water: not shown to you"
    ],
    "titles": [
+    "Open the big card beside the overview",
     "State from: Fish",
     "Unit T-01 · Hall A · Template: Small · the view chosen on this screen"
    ],
    "links": {
     "unit": [
      "T-01",
-     "/operations/units/?unit=T-01"
+     "/operations/monitoring/?focus=T-01&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -23456,13 +23576,14 @@
     "Water: not shown to you"
    ],
    "titles": [
+    "Open the big card beside the overview",
     "State from: Fish",
     "Unit T-02 · Hall A · Template: Small · the view chosen on this screen"
    ],
    "links": {
     "unit": [
      "T-02",
-     "/operations/units/?unit=T-02"
+     "/operations/monitoring/?focus=T-02&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",
@@ -23483,13 +23604,14 @@
    ],
    "titles": [
     "Maintenance",
+    "Open the big card beside the overview",
     "State from: Fish",
     "Unit P-01 · Sea · Template: Small · the view chosen on this screen"
    ],
    "links": {
     "unit": [
      "P-01",
-     "/operations/units/?unit=P-01"
+     "/operations/monitoring/?focus=P-01&mode=small&occupancy=all"
     ],
     "flip": [
      "Detailed",

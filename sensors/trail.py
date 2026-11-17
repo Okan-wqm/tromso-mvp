@@ -4,14 +4,16 @@ fresh value of the owner's own places (the hour's mean of the sensors bound ther
 lab sample fresh at the hour's end), else of its system's, else (salinity only) the assumption for fresh water. An hour
 without one of the four inputs is listed as
 missing, never filled; an hour whose pH and alkalinity cannot go together (the pH's hydroxide alone is more alkalinity
-than the water has: the core refuses such a water, chemistry.ImpossibleWaterError) is listed as impossible, never drawn.
+than the water has: the core refuses such a water, chemistry.ImpossibleWaterError) is listed as impossible, never drawn;
+an hour whose water the core refuses itself (a conductivity past the fresh path's range) is listed as unworkable with
+the core's reason (deffeyes.unworkable, the gate a unit's chart asks; review R1: the whole trail raised).
 The point is the diagram's: the dissolved inorganic carbon and the alkalinity
 (farm/water/chemistry.py, the chart's own equilibria: formula 3, with the conductivity at 25 °C and the hardness of the
 hour when there, IONS)."""
 from dataclasses import dataclass, field
 from datetime import timedelta
 
-from farm.water import chemistry, parameters, read as water_read
+from farm.water import chemistry, deffeyes, parameters, read as water_read
 
 from . import read
 
@@ -40,6 +42,7 @@ class Trail:
     points: list = field(default_factory=list)
     missing: list = field(default_factory=list)        # the hours without every input
     impossible: list = field(default_factory=list)     # the hours whose pH and alkalinity cannot go together
+    unworkable: list = field(default_factory=list)     # (hour, why) of the hours whose water the core refuses
 
 
 def _hourly(owner, conditions, code, start, end):
@@ -102,10 +105,13 @@ def trail(owner, start, end):
         if any(code not in values for code in INPUTS):
             found.missing.append(at)
             continue
-        equilibria = chemistry.water_equilibria(values[parameters.TEMPERATURE], values[parameters.SALINITY],
-                                                values['alkalinity_mg_l'],
-                                                **{code: values.get(code) for code in IONS},
-                                                water_origin=origin)
+        water = (values[parameters.TEMPERATURE], values[parameters.SALINITY], values['alkalinity_mg_l'])
+        ions = {**{code: values.get(code) for code in IONS}, 'water_origin': origin}
+        try:
+            equilibria = chemistry.water_equilibria(*water, **ions)
+        except (ValueError, ArithmeticError):       # the core refuses the water: the gate's words for it
+            found.unworkable.append((at, deffeyes.unworkable(*water, **ions)))
+            continue
         alkalinity = values['alkalinity_mg_l'] / chemistry.MG_CACO3_PER_MEQ
         try:
             dic = equilibria.dic(alkalinity, values[parameters.PH])

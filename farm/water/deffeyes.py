@@ -202,13 +202,36 @@ def alkalinity_floor(temperature_c, salinity_ppt, ph, **medium):
     return native.alkalinity_floor(temperature_c, salinity_ppt, ph, **medium)
 
 
+def unworkable(temperature_c, salinity_ppt, alkalinity_mg_l=None, **ions):
+    """Why the core cannot work this water out at all, in the active language (messages.refused: the core's own
+    reason); '' when it can. A water outside what its formulas hold for is refused by the core at every door (a
+    ValueError: on the fresh path an ionic strength past the Davies equation's range, as a conductivity in mS/cm typed
+    as µS/cm gives; a value that is no number or below 0). Such a water can be stored (each value is inside its
+    parameter's range), so every page that works a stored or typed water out meets it: `why_impossible`, THE gate they
+    all ask first, says this reason (the independent review of 2026-11-16, R1: the unit's chart and the calculator
+    raised). `ions`: as `why_impossible`'s."""
+    try:
+        chemistry.water_equilibria(temperature_c, salinity_ppt, alkalinity_mg_l, **ions)
+    except (ValueError, ArithmeticError) as error:
+        return str(messages.refused(error))
+    return ''
+
+
 def why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l, **ions):
-    """Why a water of this pH and alkalinity cannot be (its alkalinity at or below the floor of `alkalinity_floor`),
-    in the active language; '' when it can. The calculator's form, a unit's chart and a replay frame ask here; the
-    decision is the core's one rule, by which the core itself refuses such a water (native.ImpossibleWaterError), so a
-    water with no reason here is never refused there. `ions`: its conductivity_25_us_cm and hardness_mg_l, and the
-    formula."""
-    floor = native.why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l, **ions)
+    """Why a water of this pH and alkalinity cannot be worked out, in the active language; '' when it can: the core
+    refuses the water itself (`unworkable`), or its alkalinity is at or below the floor of its pH (`alkalinity_floor`).
+    The calculator's form, a unit's chart, a replay frame and the trail ask here before they work a water out; the
+    decision is the core's own (the equilibria it builds or refuses; its one rule of the floor, by which it refuses such
+    a water, native.ImpossibleWaterError), so a water with no reason here is never refused there, and no page meets a
+    refusal it has no words for. `ions`: its conductivity_25_us_cm, hardness_mg_l, phosphate_p_mg_l and water_origin,
+    and the formula."""
+    refused = unworkable(temperature_c, salinity_ppt, alkalinity_mg_l, **ions)
+    if refused:
+        return refused
+    try:
+        floor = native.why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l, **ions)
+    except (ValueError, ArithmeticError) as error:          # a pH that is no number
+        return str(messages.refused(error))
     if floor is None:
         return ''
     if ions.get('phosphate_p_mg_l'):

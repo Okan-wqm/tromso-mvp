@@ -663,6 +663,13 @@ class CalculatorForm(forms.Form):
         values are in."""
         if data.get('temperature_c') is None or data.get('salinity_ppt') is None:
             return
+        # A water the core refuses itself (a conductivity past the fresh path's range): its reason, on no one field
+        # (deffeyes.unworkable, the first half of the gate below; review R1: the page raised).
+        refused = deffeyes.unworkable(data['temperature_c'], data['salinity_ppt'], data.get('alkalinity_mg_l'),
+                                      **calculation.ions_of(data))
+        if refused:
+            self.add_error(None, refused)
+            return
         for ph_name, alkalinity_name in (('ph', 'alkalinity_mg_l'), ('target_ph', 'target_alkalinity_mg_l')):
             if data.get(ph_name) is None or data.get(alkalinity_name) is None:
                 continue

@@ -44,6 +44,13 @@ def dosing_note(code):
     return '' if code is None else DOSING_NOTES[code]
 
 
+def refused(error):
+    """A refusal of the core (the ValueError or arithmetic error a call of farm/water/native.py raised) as the sentence
+    a page says in the place of the value, the chart or the result: the core's own reason, in its words. The one
+    wording of it: a sample's NH₃ (read._ammonia) and the gate of every chart and calculation (deffeyes.unworkable)."""
+    return _('Cannot be worked out: %(why)s.') % {'why': error}
+
+
 # The scales a pH may be measured on besides NBS, as a sentence says them (the core's codes, chemcore/core/src/scale.rs).
 PH_SCALES = {
     'total': _('total scale'),

@@ -120,8 +120,16 @@ function lay(keep: boolean): void {
   const gap = number(style.rowGap);
   const band = wall.querySelector<HTMLElement>(':scope > .monitor-band');
   const width = wall.clientWidth - number(style.paddingLeft) - number(style.paddingRight);
-  // (the band wraps rather than cut a chip, review R4: the cards get the room it really leaves)
-  if (band) wall.style.setProperty('--band', `${band.offsetHeight}px`);
+  // (the band wraps rather than cut a chip, review R4: the cards get the room it really leaves. Its row is as high as
+  // --band says, so its own height is measured with the row left to its content: never less than the sheet's height
+  // of a band, and as much more as a third line of chips needs. Measured in its row, it only ever read --band back,
+  // and a third line was cut at the top of the screen.)
+  if (band) {
+    wall.style.removeProperty('--band');
+    const least = band.offsetHeight;
+    wall.style.setProperty('--band', 'max-content');
+    wall.style.setProperty('--band', `${Math.max(least, band.offsetHeight)}px`);
+  }
   const height = wall.clientHeight - (band ? band.offsetHeight + gap : 0);
   const own = getComputedStyle(fitted.card);
   const padX = number(own.paddingLeft) + number(own.paddingRight) + number(own.borderLeftWidth) + number(own.borderRightWidth);

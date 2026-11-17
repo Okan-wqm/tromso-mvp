@@ -125,10 +125,10 @@ OWNER_2026_11_08_QUERIES = 2  # the newest temperature before the ration's range
                               # own-water points for the withdrawal's degree-days, whatever the number of units
 
 
-# What a Big card may read beyond a Small one (the unit's other points): pinned from the first measurement.
-BIG_MORE_READS = 6
-SMALL_READS = 42            # measured 2026-11-13 at 6, 24 and 200 units: three more than a Simple card's 39 (the fish and
-                            # their limits for the chart, once; no experiment chips)
+SMALL_READS = 43            # measured 2026-11-13 at 6, 24 and 200 units: 42, three more than a Simple card's 39 (the fish
+                            # and their limits for the chart, once; no experiment chips); and since 2026-11-17 the pH
+                            # window's scales (owner decision 15: the farm's reference data, one read for the wall)
+BIG_READS = 0               # (placeholder: the number is read from the first run and pinned)
 
 
 class RecordedCountsTests(Counting, MonitoringCase):
@@ -157,7 +157,9 @@ class RecordedCountsTests(Counting, MonitoringCase):
         # core draws each card's figure, which is no query. The same at 6, 24 and 200 units.
         self.count(units[:6], 'big')
         big = [self.count(units[:size], 'big') - self.savepoints for size in (6, 24, 200)]
-        self.assertEqual(len(set(big)), 1, big)
-        self.assertLessEqual(big[0], SMALL_READS + BIG_MORE_READS, big)
+        self.assertEqual(big, [BIG_READS] * 3)
+        # The pane of a unit gone into (Phase 1D) is ONE unit's Big card: the same reads, whatever the wall beside it.
+        self.count(units[:1], 'big')
+        self.assertEqual(self.count(units[:1], 'big') - self.savepoints, BIG_READS)
         self.assertEqual(savepoints, {mode: count + SENSOR_SAVEPOINTS for mode, count in
                                       {'simple': 4, 'detailed': 10, 'mixed': 10}.items()})   # chips; + treatments, lice, tasks

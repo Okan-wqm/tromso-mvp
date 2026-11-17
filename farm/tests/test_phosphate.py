@@ -119,7 +119,7 @@ class ParameterTests(WaterTestCase):
         phosphate = parameters.get('phosphate_p_mg_l')
         self.assertEqual((str(phosphate.label), phosphate.decimals, phosphate.low, phosphate.high),
                          ('Phosphate (mg/L PO₄ as P)', 2, D('0'), D('100')))
-        self.assertIn('divide by 3.07', str(phosphate.help))
+        self.assertIn('3.07 times', str(phosphate.help))             # the slip is named (review R3)
         self.assertIn(phosphate, parameters.LIMITED)                      # a farm sets its own limits on it
         # How long it stays fresh is the farm's reference data, seeded at 7 days.
         self.assertEqual(freshness.SEEDS['phosphate_p_mg_l'], 168)
@@ -133,7 +133,7 @@ class ParameterTests(WaterTestCase):
         self.assertEqual(read.latest([self.mid1])[self.mid1.pk].get('phosphate_p_mg_l').value, D('8.50'))
         for query in ({'unit': self.t1.pk}, {'unit': self.t1.pk, 'view': 'history'}):
             self.assertContains(self.client.get(reverse('farm:water'), query), 'PO₄-P (mg/L)')
-        self.assertContains(self.client.get(reverse('farm:water_record')), 'Phosphate (mg/L PO₄ as P)')
+        self.assertContains(self.client.get(reverse('farm:water_record')), 'Phosphate (mg/L, in the unit chosen beside it)')
         local = timezone.localtime(self.ago(hours=2)).strftime('%Y-%m-%dT%H:%M')
         data = {'token': str(uuid.uuid4()), 'point': str(self.mid1.pk), 'measured_at': local, 'source': 'manual',
                 'notes': '', **{code: '' for code in parameters.COLUMNS}, 'phosphate_p_mg_l': '101'}

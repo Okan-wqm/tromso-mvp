@@ -937,6 +937,10 @@ msgid "%(meals)s × %(meal)s"
 msgstr "%(meals)s × %(meal)s"
 
 #, python-format
+msgid "%(measured)s, stored as %(nbs)s NBS"
+msgstr "%(measured)s, lagret som %(nbs)s NBS"
+
+#, python-format
 msgid "%(medicine)s has no strength (Reference data › Medicines)."
 msgstr "%(medicine)s har ingen styrke (Referansedata › Legemidler)."
 
@@ -17002,6 +17006,9 @@ msgstr "en sjølokalitet med laksefisk (plikten følger fisken, ikke produksjons
 msgid "a site with cleaner-fish broodstock"
 msgstr "en lokalitet med rensefiskstamfisk"
 
+msgid "a unit or a loop"
+msgstr "en enhet eller en sløyfe"
+
 msgid "activity log"
 msgstr "aktivitetslogg"
 
@@ -17994,6 +18001,10 @@ msgstr "maskert"
 msgid "meals done"
 msgstr "måltidene er gitt"
 
+#, python-format
+msgid "measured %(value)s on the %(scale)s"
+msgstr "målt %(value)s på %(scale)s"
+
 msgid "medicine"
 msgstr "legemiddel"
 
@@ -18247,6 +18258,16 @@ msgid ""
 msgstr ""
 "pH %(given)s på %(scale)s er %(nbs)s på NBS-skalaen (formel %(formula)s): alle verdier og "
 "diagrammet er beregnet og tegnet på NBS-skalaen."
+
+#, python-format
+msgid ""
+"pH %(ph)s is the value loaded from %(point)s: it is on the NBS scale already (a stored pH always "
+"is) and is not converted again. Leave the scale at NBS, or type the pH as it was measured with "
+"its scale."
+msgstr ""
+"pH %(ph)s er verdien som ble hentet fra %(point)s: den er allerede på NBS-skalaen (en lagret pH "
+"er alltid det) og regnes ikke om igjen. La skalaen stå på NBS, eller skriv inn pH-en slik den ble"
+" målt, med skalaen sin."
 
 msgid "pH (NBS scale)"
 msgstr "pH (NBS-skala)"

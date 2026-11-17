@@ -940,6 +940,10 @@ msgid "%(meals)s × %(meal)s"
 msgstr "%(meals)s × %(meal)s"
 
 #, python-format
+msgid "%(measured)s, stored as %(nbs)s NBS"
+msgstr "%(measured)s, %(nbs)s NBS olarak saklandı"
+
+#, python-format
 msgid "%(medicine)s has no strength (Reference data › Medicines)."
 msgstr "%(medicine)s için etken madde miktarı (kuvvet) yok (Referans verileri › İlaçlar)."
 
@@ -17025,6 +17029,9 @@ msgstr "salmonid bulunan bir deniz lokasyonu (yükümlülük balığı izler, ü
 msgid "a site with cleaner-fish broodstock"
 msgstr "temizleyici balık damızlığı olan bir lokasyon"
 
+msgid "a unit or a loop"
+msgstr "bir birim veya döngü"
+
 msgid "activity log"
 msgstr "etkinlik günlüğü"
 
@@ -18019,6 +18026,10 @@ msgstr "gizli"
 msgid "meals done"
 msgstr "öğünler tamamlandı"
 
+#, python-format
+msgid "measured %(value)s on the %(scale)s"
+msgstr "%(scale)s %(value)s ölçüldü"
+
 msgid "medicine"
 msgstr "ilaç"
 
@@ -18272,6 +18283,16 @@ msgid ""
 msgstr ""
 "pH %(scale)s %(given)s, NBS ölçeğinde %(nbs)s (formül %(formula)s): bütün değerler ve grafik NBS "
 "ölçeğinde hesaplanıp çizilir."
+
+#, python-format
+msgid ""
+"pH %(ph)s is the value loaded from %(point)s: it is on the NBS scale already (a stored pH always "
+"is) and is not converted again. Leave the scale at NBS, or type the pH as it was measured with "
+"its scale."
+msgstr ""
+"pH %(ph)s, %(point)s kaynağından yüklenen değerdir: zaten NBS ölçeğinde (saklanan pH her zaman "
+"öyledir) ve yeniden dönüştürülmez. Ölçeği NBS olarak bırakın veya pH’ı ölçüldüğü haliyle, "
+"ölçeğiyle birlikte yazın."
 
 msgid "pH (NBS scale)"
 msgstr "pH (NBS ölçeği)"

@@ -474,6 +474,14 @@ def _measured(code, required=False, low=None, help_text=None):
 PH_FIELDS = ['ph_critical_low', 'ph_warning_low', 'ph_warning_high', 'ph_critical_high']
 
 
+def loaded_field(code):
+    """The hidden field beside a measured field of the calculator that carries the value a unit or a loop last gave it
+    (CalculatorForm.LOADED), at the parameter's range and precision, in the language as the field itself."""
+    parameter = parameters.get(code)
+    return forms.DecimalField(required=False, min_value=parameter.low, max_value=parameter.high,
+                              decimal_places=parameter.decimals, localize=True, widget=forms.HiddenInput)
+
+
 def dose_name(reagent):
     """A simulator field's name: the grams of a reagent."""
     return f'dose_{reagent.key}'
@@ -491,6 +499,7 @@ class CalculatorForm(forms.Form):
     loaded = forms.CharField(required=False, widget=forms.HiddenInput)
     temperature_c = _measured('temperature_c', required=True)
     ph = _measured('ph', required=True, low=4)
+    ph_loaded = loaded_field('ph')
     ph_scale = ph_scale_field(_('The scale the pH above was measured on. Other than NBS: for sea water of 5 ‰ or more; '
                                 'the chart and every value are then worked out and drawn on the NBS scale. The target '
                                 'pH and the pH limits are NBS.'))
@@ -558,7 +567,7 @@ class CalculatorForm(forms.Form):
         ('simulator', _('Simulator'), DOSES),
     ]
     DEFAULTS = {
-        'point': '', 'loaded': '',
+        'point': '', 'loaded': '', 'ph_loaded': None,
         'temperature_c': Decimal('12'), 'ph': Decimal('7.00'), 'ph_scale': services.NBS, 'salinity_ppt': Decimal('1'),
         'alkalinity_mg_l': Decimal('80'), 'tan_mg_l': Decimal('0.5'), 'total_sulfide_ug_l': Decimal('2'),
         'oxygen_mg_l': None, 'conductivity_25_us_cm': None, 'hardness_mg_l': None, 'phosphate_p_mg_l': None, 'water_origin': '', 'volume_m3': Decimal('1'), 'calcium_mg_l': None, 'altitude_m': None,
@@ -575,6 +584,11 @@ class CalculatorForm(forms.Form):
     DRAWN = 'drawn'
     # The fields a choice of boxes is: unticked they are missing from the address.
     BOXES = ('reagents', 'layers')
+    # The values that are given with a scale (the pH), by field: (the hidden field that carries the value a unit or a
+    # loop last gave it, the scale's field, the scale a stored value is on). A stored value is on that scale already,
+    # whatever it was measured on: it is loaded with it, and another scale on the unchanged loaded value is refused,
+    # never converted a second time (`unchanged_loaded`; the independent review of 2026-11-16, R2).
+    LOADED = {'ph': ('ph_loaded', 'ph_scale', services.NBS)}
 
     def __init__(self, data=None, **kwargs):
         super().__init__(data, initial=self.DEFAULTS, **kwargs)
@@ -626,7 +640,16 @@ class CalculatorForm(forms.Form):
         more only: refused with the reason elsewhere). Left at NBS nothing is touched."""
         scale = data.get('ph_scale') or services.NBS
         data['ph_scale'] = scale
-        if scale == services.NBS or any(data.get(name) is None for name in ('ph', 'temperature_c', 'salinity_ppt')):
+        if scale == services.NBS:
+            return
+        source = self.unchanged_loaded(data, 'ph')
+        if source is not None:
+            # The unit's stored pH, already NBS (measured on whichever scale): converting it would be a second
+            # conversion (8.08 from a total-scale 7.95 would become 8.2145: NH₃ +35 %, CO₂ −30 %).
+            self.add_error('ph_scale', messages.PH_LOADED % {'ph': formats.number_format(data['ph'], 2),
+                                                             'point': source})
+            return
+        if any(data.get(name) is None for name in ('ph', 'temperature_c', 'salinity_ppt')):
             return
         try:
             equilibria = chemistry.water_equilibria(
@@ -642,6 +665,27 @@ class CalculatorForm(forms.Form):
             return
         self.ph_conversion = {'given': data['ph'], 'scale': messages.PH_SCALES[scale], 'code': scale,
                               'nbs': equilibria.ph_nbs(float(data['ph']), scale), 'formula': equilibria.formula}
+
+    def unchanged_loaded(self, data, name):
+        """What gave the field its value (a unit's or a loop's code; "a unit or a loop" when it is gone) when the value
+        is still the one loaded from it, else None: the value the address carries beside it (LOADED's hidden field,
+        set when the unit was chosen), or, for an address without one, the value the unit named by `loaded` offers
+        now (farm/water/calculation.offers, at the field's precision). A value typed over the loaded one is a new
+        measurement, not this."""
+        value = data.get(name)
+        if value is None:
+            return None
+        owner = find_owner(data.get('loaded') or '')
+        source = _('a unit or a loop') if owner is None else owner.code
+        if data.get(self.LOADED[name][0]) == value:
+            return source
+        if owner is None:
+            return None
+        offer = calculation.offers(owner).get(name)
+        if offer is None or offer.value is None:
+            return None
+        step = Decimal(1).scaleb(-self.fields[name].decimal_places)
+        return source if offer.value.quantize(step) == value else None
 
     def _ph_order(self, data):
         """The pH bounds go up: critical below, warning below, warning above, critical above, each given one not

@@ -61,6 +61,28 @@ PH_NOT_SEA = _('A pH on this scale is taken for sea water of 5 ‰ or more only 
                'the pH a meter calibrated with NBS/NIST buffers reads.')
 PH_NEEDED = _('Needed with a pH on another scale than NBS: the conversion takes the temperature and the salinity of the '
               'same sample.')
+# The calculator: another scale chosen on the unchanged pH a unit or a loop gave it (farm/forms/water.py
+# CalculatorForm.unchanged_loaded; the independent review of 2026-11-16, R2).
+PH_LOADED = _('pH %(ph)s is the value loaded from %(point)s: it is on the NBS scale already (a stored pH always is) and '
+              'is not converted again. Leave the scale at NBS, or type the pH as it was measured with its scale.')
+
+
+def ph_measured_short(sample):
+    """What a sample's pH was measured as, when on another scale than NBS, as the few visible words beside the NBS
+    number ('' for an NBS pH); `ph_measured` is the whole sentence."""
+    if not sample.ph_scale:
+        return ''
+    return _('measured %(value)s on the %(scale)s') % {'value': number_format(sample.ph_as_measured, 2),
+                                                        'scale': PH_SCALES[sample.ph_scale]}
+
+
+def ph_stored(sample):
+    """A converted pH where its stored value is given on (the calculator's values from a unit): "measured 7.95 on the
+    total scale, stored as 8.08 NBS"; '' for an NBS pH."""
+    if not sample.ph_scale:
+        return ''
+    return _('%(measured)s, stored as %(nbs)s NBS') % {'measured': ph_measured_short(sample),
+                                                       'nbs': number_format(sample.ph, 2)}
 
 
 def ph_measured(sample):

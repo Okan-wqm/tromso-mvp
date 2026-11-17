@@ -42,7 +42,7 @@ from ..models.site import zone_of
 from ..models.water_point import EQUIPMENT, SYSTEM, UNIT, local_time, owner_type_of, site_of
 from ..stock.read import unit_counts
 from ..stock.services import AlreadyRecorded
-from . import calculation, parameters, read, services
+from . import calculation, messages as words, parameters, read, services
 from .evaluate import ALERTS, Status
 from .parameters import MEASURED, NH3_N
 
@@ -298,8 +298,14 @@ def _calculator_data(query):
     if owner is not None:
         offers = calculation.offers(owner)
         CalculatorForm.fill(data, offers)
-        if 'ph' in offers:
-            data['ph_scale'] = services.NBS                     # a stored pH is on the NBS scale, whatever was chosen
+        for name, (carried, scale, stored) in CalculatorForm.LOADED.items():
+            if name in offers:
+                # A stored pH is on the NBS scale, whatever was chosen and whatever it was measured on; the value goes
+                # with it, so another scale on it is refused, never a second conversion (review R2).
+                data[scale] = stored
+                data[carried] = data[name]
+            else:
+                data[carried] = ''
         data['water_origin'] = calculation.origin_of(owner)       # the unit's (cross review F3)
     data['loaded'] = chosen
     return data, True
@@ -314,8 +320,11 @@ def _source(form, owner):
     for name, offer in offers.items():
         field = form.fields[name]
         value = None if offer.value is None else offer.value.quantize(Decimal(1).scaleb(-field.decimal_places))
+        sample = getattr(getattr(offer.reading, 'sample', None), 'sample', None)
         rows.append({'label': field.label, 'value': value, 'decimals': field.decimal_places, 'offer': offer,
-                     'changed': entered.get(name) != value})
+                     'changed': entered.get(name) != value,
+                     # a pH measured on another scale: what was measured, and that the value here is the stored NBS one
+                     'measured': words.ph_stored(sample) if name == 'ph' and sample is not None else ''})
     missing = [form.fields[name].label for name in calculation.MEASURED_FIELDS if name not in offers]
     return {'point': owner, 'rows': rows, 'missing': missing}
 

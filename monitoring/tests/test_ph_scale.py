@@ -160,7 +160,7 @@ class PagesTests(SmallCase):
 
     def test_the_menu_and_the_role_matrix_know_the_tab(self):
         place = navigation.page('monitoring:phwindowscale_list')
-        self.assertEqual((str(place.entry.label), place.entry.permission),
+        self.assertEqual((str(place.entry.label), place.entry.perm),
                          ('pH window scales', 'monitoring.view_phwindowscale'))
         (area,) = [each for each in access.areas() if each.model == 'monitoring.PhWindowScale']
         self.assertEqual(tuple(area.actions), ('view', 'change'))

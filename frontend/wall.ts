@@ -232,21 +232,28 @@ document.addEventListener('focusin', (event) => {
   const target = event.target;
   held = target instanceof HTMLElement && target.id && grid()?.contains(target) ? target.id : '';
 });
-// (leaving by choice, a click elsewhere or Tab, fires focusout; an element REPLACED while focused fires nothing)
-document.addEventListener('focusout', (event) => {
-  if (event.target instanceof HTMLElement && event.target.isConnected) held = '';
-});
+
 // A poll replaced, added or removed cards (and the band with its page indicator): the same page, laid out again, and
 // the focus back where it was.
 document.addEventListener('poll:merged', (event) => {
   if (!(event.target instanceof HTMLElement) || !event.target.classList.contains('monitor-grid')) return;
   lay(true);
-  if (!held || document.activeElement?.id === held) return;
+  // (only a focus that was LOST: the element was replaced and nothing else took the focus since)
+  if (!held || (document.activeElement !== null && document.activeElement !== document.body)) return;
   const again = document.getElementById(held);
   if (again && grid()?.contains(again)) again.focus({ preventScroll: true });
 });
 // The pane was opened, replaced or closed (frontend/windows.ts), or its card came: the cards share the room anew.
-document.addEventListener('dock:changed', () => lay(true));
+// (fewer columns beside a pane are other pages: the page shown is then the one of the card that is open)
+document.addEventListener('dock:changed', () => {
+  lay(true);
+  const wall = grid();
+  const unit = document.querySelector<HTMLElement>('#monitor-dock .monitor-window')?.dataset.dockUnit;
+  const card = unit ? document.getElementById(`card-${unit}`) : null;
+  if (!wall || !card || !wall.dataset.pageCount) return;
+  const index = cardsOf(wall).indexOf(card);
+  if (index >= 0) show(wall, pageOf(index, Number(wall.dataset.per) || 1));
+});
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', relay);
 else relay();

@@ -4,6 +4,7 @@ template), saved as a whole list (monitoring/resources.py). The templates
 offered are the live ones (Reference data › Card templates), a built-in by its name in the person's language."""
 from django import forms
 from django.urls import reverse
+from django.utils.text import get_text_list
 from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
 from core.crud import RowFormSet, TabbedForm, tab_fields
@@ -169,12 +170,20 @@ class CardTemplateForm(TabbedForm):
             self.add_error('measure_w' if width is None else 'measure_h',
                            _('A fitted card needs both its width and its height; leave both empty for a card that '
                              'flows.'))
-        elif width is not None and isinstance(layout, dict):
-            rows = max((widget['y'] + widget['h'] for widget in layout.get('widgets', [])), default=0)
-            if rows > catalogue.FIT_ROWS:
-                self.add_error('measure_h', _('A fitted card’s widgets share its height in at most %(most)d rows; '
-                                              'this layout takes %(rows)d.') % {'most': catalogue.FIT_ROWS,
-                                                                                'rows': rows})
+        elif width is not None and isinstance(layout, dict) and 'layout' not in self.errors:
+            # What a fitted card refuses is the validator's (validate.FITTED_ERRORS), said on the measure: a widget
+            # with no fitted look would be cut on a wall without a word (review R7), so the measure is not taken.
+            problems = [problem for problem in validate.validate(layout, (width, height))
+                        if problem.code in validate.FITTED_ERRORS]
+            unfitted = [dict(problem.params)['label'] for problem in problems if problem.code == 'fit_look']
+            if unfitted:
+                self.add_error('measure_w', _(
+                    'This layout cannot be a fitted card: there is no fitted look for %(widgets)s, which would be cut. '
+                    'Remove them on the Design tab, or leave the width and the height empty for a card that flows.') % {
+                        'widgets': get_text_list(list(dict.fromkeys(unfitted)), _('and'))})
+            for problem in problems:
+                if problem.code == 'fit_rows':
+                    self.add_error('measure_h', problem.message)
         return cleaned
 
     def save(self, commit=True):

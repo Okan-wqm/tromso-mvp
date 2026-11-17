@@ -214,6 +214,9 @@ html[data-wall] { --wall-pad: clamp(6px, .7vh, 16px); --wall-gap: clamp(5px, .5v
 html[data-wall]:has(.monitor-grid > .is-fit) body { overflow: hidden; }
 html[data-wall] .content:has(.monitor-grid > .is-fit) { display: flex; flex-direction: column; height: 100dvh; max-width: none; padding: var(--wall-pad); }
 html[data-wall] .monitor-grid:has(> .is-fit) {
+  /* (positioned: what a card hides for screen readers only is placed absolutely, and on a page that is not shown it
+     would otherwise lie outside the grid's clip and make the whole screen scroll) */
+  position: relative;
   flex: 1 1 auto; min-height: 0; overflow: hidden auto; scrollbar-width: none;
   grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
   grid-template-rows: var(--band);

@@ -34,6 +34,14 @@ MAX_LARGE = 2                   # more large widgets than this is a warning: lar
 MEASURE_W = (12, 64)
 MEASURE_H = (6, 64)
 FIT_ROWS = 24
+# The two LOOKS a widget can have: on a card that flows down the page, and on a fitted card (its own markup in the
+# card's unit). A widget with no fitted look cannot stand on a fitted card (it would be cut: the validator refuses
+# it, review R7); one with only the fitted look is advised against on a card that flows.
+FLOW, FIT = 'flow', 'fit'
+# What a fitted card's frame takes of its height (the code's line, the reason's line, the card's own padding) and what
+# its padding takes of its width, in card units: what is left is the widgets' (validate.fitted_place).
+FIT_FRAME = 4.4
+FIT_SIDES = 1.0
 
 # What a widget is bound to: nothing, or one water parameter (at the middle point unless it names another).
 NONE, PARAMETER = 'none', 'parameter'
@@ -63,6 +71,9 @@ class WidgetSpec:
     enabled: bool = True        # False: catalogued, refused by the validator until what it needs exists
     on_empty: bool = False      # also drawn on the card of a unit with no fish
     says_hidden: bool = True    # False: left out, not 'not shown to you', for a person who may not read its source
+    looks: tuple = (FLOW,)      # where it can be drawn: on a card that flows, on a fitted card, or both
+    fit_units: tuple = None     # (width, height) in card units its fitted look needs at the least to print what it
+                                # prints uncut: under it the validator warns (advice: the preview is the proof)
 
     @property
     def renderer(self):
@@ -75,14 +86,16 @@ def _spec(type, label, minimum, maximum, default, sources, **extra):
 
 
 WIDGETS = {spec.type: spec for spec in (
-    _spec('value', _('Value'), (2, 2), (6, 4), (3, 2), ('water',), bind=PARAMETER, options=_schema(SIZE)),
+    _spec('value', _('Value'), (2, 2), (6, 4), (3, 2), ('water',), bind=PARAMETER, options=_schema(SIZE),
+          looks=(FLOW, FIT), fit_units=(6.0, 4.0)),
     _spec('bar', _('Value against its limits'), (3, 2), (12, 3), (4, 2), ('water',), bind=PARAMETER,
           options=_schema(SIZE)),
     _spec('water_table', _('Water'), (4, 2), (12, 12), (12, 4), ('water',), options=_schema(
         {'name': 'points', 'label': 'Points', 'type': 'select', 'defaultValue': 'middle',
          'options': [{'value': 'middle', 'label': 'The middle point'}, {'value': 'all', 'label': 'Every active point'}]},
         {'name': 'parameters', 'label': 'Parameters', 'type': 'select', 'defaultValue': 'key',
-         'options': [{'value': 'key', 'label': 'The key values'}, {'value': 'all', 'label': 'Every value measured'}]})),
+         'options': [{'value': 'key', 'label': 'The key values'}, {'value': 'all', 'label': 'Every value measured'}]}),
+          looks=(FLOW, FIT), fit_units=(20.0, 3.0)),
     _spec('fish', _('Fish'), (4, 3), (12, 8), (12, 5), ('stock',), options=_schema(
         {'name': 'figures', 'label': 'Figures', 'type': 'select', 'defaultValue': 'brief',
          'options': [{'value': 'brief', 'label': 'The key figures'}, {'value': 'full', 'label': 'Every figure'}]})),
@@ -93,14 +106,18 @@ WIDGETS = {spec.type: spec for spec in (
     _spec('experiment', _('Experiments'), (3, 1), (12, 2), (12, 1), ('chips',), on_empty=True),
     _spec('deffeyes', _('Deffeyes chart'), (2, 1), (6, 2), (4, 1), ('water',), on_empty=True,
           says_hidden=False),
-    _spec('ph_window', _('pH window'), (6, 1), (12, 3), (12, 2), ('water', 'chart')),
+    _spec('ph_window', _('pH window'), (6, 1), (12, 3), (12, 2), ('water', 'chart'), looks=(FLOW, FIT),
+          fit_units=(16.0, 1.6)),
     # The Big card's widgets (owner decisions 4, 10, 11, 12): the unit's Deffeyes chart as a picture of the card's own
     # size, in the screen's or the card's view (close or full scale); what to dose (Phase 1: no advice, and why); the
     # unit's other sampling points; its stock in one line.
-    _spec('chart', _('Deffeyes chart, drawn'), (6, 4), (12, 12), (12, 8), ('water', 'chart')),
-    _spec('dosing', _('Dosing advice'), (3, 1), (12, 3), (4, 2), ('water', 'chart')),
-    _spec('points', _('Other sampling points'), (3, 1), (12, 4), (4, 2), ('water',)),
-    _spec('stock', _('Stock in one line'), (3, 1), (12, 3), (4, 2), ('stock',)),
+    _spec('chart', _('Deffeyes chart, drawn'), (6, 4), (12, 12), (12, 8), ('water', 'chart'), looks=(FIT,),
+          fit_units=(24.0, 14.0)),
+    _spec('dosing', _('Dosing advice'), (3, 1), (12, 3), (4, 2), ('water', 'chart'), looks=(FIT,),
+          fit_units=(10.0, 2.4)),
+    _spec('points', _('Other sampling points'), (3, 1), (12, 4), (4, 2), ('water',), looks=(FIT,),
+          fit_units=(10.0, 2.4)),
+    _spec('stock', _('Stock in one line'), (3, 1), (12, 3), (4, 2), ('stock',), looks=(FIT,), fit_units=(10.0, 2.4)),
     _spec('spark', _('Trend'), (3, 2), (12, 4), (6, 2), ('water',), bind=PARAMETER, enabled=False),
 )}
 _('Points'), _('The middle point'), _('Every active point'), _('Parameters'), _('The key values')
@@ -177,7 +194,7 @@ def as_data():
         'columns': COLUMNS, 'rows': ROWS, 'schema': SCHEMA_VERSION, 'max_widgets': MAX_WIDGETS,
         'widgets': [{'type': spec.type, 'label': str(spec.label), 'min_w': spec.min_w, 'min_h': spec.min_h,
                      'max_w': spec.max_w, 'max_h': spec.max_h, 'default_w': spec.default_w,
-                     'default_h': spec.default_h, 'bind': spec.bind, 'enabled': spec.enabled,
+                     'default_h': spec.default_h, 'bind': spec.bind, 'enabled': spec.enabled, 'looks': list(spec.looks),
                      'options': [translated(entry) for entry in spec.options.entries]}
                     for spec in WIDGETS.values()],
         'parameters': [{'value': parameter.code, 'label': str(parameter.label), 'short': str(parameter.short)}

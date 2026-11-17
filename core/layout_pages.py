@@ -214,11 +214,13 @@ _WALL = (
        ('TG-M04', 'Cage M4', '9.90', 'ok', '8.3', '8.02', '110', '0.10', 0.01, '')])
 
 
-def _wall(language):
+def _wall(language, pane=''):
     """A wall of twenty Small cards with its band (monitoring/_grid.html), from made-up units and readings and the REAL
     chart of each (the chemistry core through calculation.charts_of, the fish's limits made up too): a normal card, a
     warning, a critical one with a second reason, old values, a unit not in use, a withdrawal, an empty unit, a chart
-    that cannot be worked out (no alkalinity; a sea unit with no salinity). No database."""
+    that cannot be worked out (no alkalinity; a sea unit with no salinity). No database. `pane`: instead of the wall,
+    the pane of that unit (monitoring/_dock.html: its Big card with the line that names and closes it, as the dock
+    beside the wall holds it)."""
     from datetime import timedelta
     from uuid import UUID
 
@@ -273,14 +275,29 @@ def _wall(language):
             with mock.patch('farm.water.read.limits_of', return_value={unit.pk: limit_rows}):
                 chart = calculation.charts_of([unit], {unit.pk: [water]}, NOW)[unit.pk]
             stock = None if extra == 'empty' else N(
-                over_capacity=False, shares=[N(batch=N(species=species))], count=1000 + 137 * index,
-                biomass_kg=Decimal(66 + 31 * index), density=Decimal('23.6') + index)
+                over_capacity=False, shares=[N(batch=N(species=species, code=f'B-2026-{index:03d}'))],
+                count=1000 + 137 * index, biomass_kg=Decimal(66 + 31 * index), density=Decimal('23.6') + index,
+                avg_weight_g=Decimal('92.4'))
             withdrawal = (N(batch=N(code='B-2026-004'), until=date(2026, 11, 25)),) if extra == 'withdrawal' else ()
             cards.append(read.Card(unit=unit, template=chosen, today=NOW.date(), stock=stock, water=(water,),
                                    withdrawal=withdrawal, sections=frozenset(read.SECTIONS), now=NOW, chart=chart,
                                    ph_scale=(6.4, 8.6)))
+        if pane:
+            from dataclasses import replace
+            big = N(pk=builtin.BIG, shown_name='Big', expanded_id=builtin.DETAILED, measure=builtin.BIG_MEASURE)
+            card = replace(next(card for card in cards if card.unit.code == pane),
+                           template=resolve.Resolved(big, builtin.BIG_LAYOUT, resolve.VIEW))
+            views = [{'label': label, 'current': label == 'Close-up', 'url': '#', 'poll': '#'}
+                     for label in ('Close-up', 'Full scale')]
+            return render_to_string('monitoring/_dock.html', {
+                'pane': {'row': {'card': card, 'flip': {}, 'zoom': views, 'pane': True, 'ns': 'pane-'},
+                         'pane_unit': card.unit, 'close_url': '#'},
+                'pane_poll_url': '#', 'poll_seconds': 15})
+        openers = {card.unit.pk: {'page': '#', 'into': '', 'open': card.unit.code == 'HA-R02'} for card in cards}
         return render_to_string('monitoring/_grid.html', {
-            'rows': [{'card': card, 'flip': {'page': '#', 'poll': '#'}} for card in cards], 'band': read.band(cards),
+            'openers': openers,
+            'rows': [{'card': card, 'flip': {'page': '#', 'poll': '#'}, 'open': openers[card.unit.pk]} for card in cards],
+            'band': read.band(cards),
             'modes': [{'label': label, 'url': '#', 'current': label == 'Small', 'id': label.lower()}
                       for label in ('Small', 'Simple', 'Detailed')],
             'computed_at': NOW.replace(tzinfo=None), 'count_line': '20 of 25 units shown'})
@@ -288,7 +305,8 @@ def _wall(language):
 
 PAGES = {'meal': _meal, 'stock': _stock, 'water': _water, 'card-en': lambda: _card('en'), 'card-nb': lambda: _card('nb'),
          'matrix': _matrix, 'approve': _approve, 'tabs': _tabs, 'overview': _overview,
-         'wall-small-en': lambda: _wall('en'), 'wall-small-tr': lambda: _wall('tr')}
+         'wall-small-en': lambda: _wall('en'), 'wall-small-tr': lambda: _wall('tr'),
+         'dock-big-tr': lambda: _wall('tr', pane='HA-R02')}
 
 
 def rendered():

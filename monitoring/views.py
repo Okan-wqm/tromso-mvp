@@ -31,7 +31,7 @@ from farm.models import ProductionDepartment, Site, System, Tank
 from farm.stock.views import VIEW
 
 from . import read
-from .cards import builtin, resolve, validate
+from .cards import builtin, catalogue, resolve, validate
 from .models import CardTemplate, CardWidth, MonitorBoard
 
 POLL = 'monitoring:cards'
@@ -312,10 +312,12 @@ PREVIEW_BYTES = 65536
 @require_POST
 @permission_required('monitoring.change_cardtemplate', raise_exception=True)
 def preview(request):
-    """The designer's preview: {layout, unit, name?, state?} as JSON; answers {html, problems}. The layout is checked by
-    the validator first (an error draws nothing), then the same card read and the same _card.html as the wall draw it for
-    that one unit, with the previewer's own rights. Nothing is written and nothing is logged. `state` forces the frame's
-    state for a look at it; it is accepted here only, and the card says it is a preview."""
+    """The designer's preview: {layout, unit, name?, state?, measure?} as JSON; answers {html, problems}. The layout is
+    checked by the validator first, with the measure the form has now ([width, height] in card units: a fitted
+    template, whose card is drawn fitted; none: a card that flows): an error draws nothing, then the same card read
+    and the same _card.html as the wall draw it for that one unit, with the previewer's own rights. Nothing is written
+    and nothing is logged. `state` forces the frame's state for a look at it; it is accepted here only, and the card
+    says it is a preview."""
     if len(request.body) > PREVIEW_BYTES:
         return JsonResponse({'error': 'too large'}, status=413)
     try:
@@ -324,13 +326,21 @@ def preview(request):
     except (ValueError, KeyError, TypeError, Tank.DoesNotExist):
         return JsonResponse({'error': 'bad request'}, status=400)
     layout = asked.get('layout')
-    problems = validate.validate(layout)
+    # (a fitted template's measure, as the form has it now: the card is then drawn fitted, at that measure)
+    measure = asked.get('measure')
+    if measure is not None:
+        if not (isinstance(measure, list) and len(measure) == 2 and all(type(each) is int for each in measure)
+                and catalogue.MEASURE_W[0] <= measure[0] <= catalogue.MEASURE_W[1]
+                and catalogue.MEASURE_H[0] <= measure[1] <= catalogue.MEASURE_H[1]):
+            return JsonResponse({'error': 'bad request'}, status=400)
+        measure = tuple(measure)
+    problems = validate.validate(layout, measure)
     found = [problem.as_data() for problem in problems]
     if any(problem.severity == validate.ERROR for problem in problems):
         return JsonResponse({'html': '', 'problems': found})
     name = str(asked.get('name') or '').strip()[:100] or _('New template')
-    chosen = resolve.Resolved(SimpleNamespace(pk='', shown_name=name, expanded_id=None), validate.upgrade(layout),
-                              resolve.PREVIEW)
+    chosen = resolve.Resolved(SimpleNamespace(pk='', shown_name=name, expanded_id=None, measure=measure),
+                              validate.upgrade(layout), resolve.PREVIEW)
     try:
         cards = read.cards([unit], request.user, resolve.Choice(preview=chosen), read.ALL)
     except read.Unavailable:

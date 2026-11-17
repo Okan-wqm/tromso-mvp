@@ -22,11 +22,15 @@ const SERVED: [string, string, string][] = [['/css/', resolve('static/css'), 'te
 const PAGES = resolve('frontend/test/pages');
 const SHEETS = ['fonts', 'tokens', 'base', 'ui', 'app', 'components', 'monitor', 'card-grid', 'tw'];
 
-function page(language: string): string {
+/** The wall's page; `pane`: with the pane of a unit gone into in its dock (frontend/test/pages/dock-big-tr.html, the
+ *  dock's own markup around the unit's Big card). */
+function page(language: string, pane = false): string {
   const part = readFileSync(join(PAGES, `wall-small-${language}.html`), 'utf8');
+  const docked = pane ? readFileSync(join(PAGES, 'dock-big-tr.html'), 'utf8') : '';
   return `<!doctype html><html lang="${language}" data-theme="fjord" data-wall><head><meta charset="utf-8"><title>wall</title>
 ${SHEETS.map((name) => `<link rel="stylesheet" href="/css/${name}.css">`).join('')}<script type="module" src="/js/wall.js"></script></head>
 <body><div class="shell"><aside class="rail" id="rail"></aside><div class="console"><header class="topbar"></header><main class="content">
+<aside class="monitor-dock" id="monitor-dock" data-mw="48" data-mh="61">${docked}</aside>
 <div class="monitor-grid" data-card-width="2">${part}</div>
 <div id="monitor-announce" data-states="critical warning blind unjudged note ok empty"></div></main></div></div></body></html>`;
 }
@@ -34,8 +38,11 @@ ${SHEETS.map((name) => `<link rel="stylesheet" href="/css/${name}.css">`).join('
 function serve(): Promise<Server> {
   const server = createServer((request, response) => {
     const url = (request.url ?? '').split('?')[0] ?? '';
-    const language = /^\/(en|tr)$/.exec(url);
-    if (language) return void response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }).end(page(language[1] ?? 'en'));
+    const language = /^\/(en|tr)(-pane)?$/.exec(url);
+    if (language) {
+      return void response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+        .end(page(language[1] ?? 'en', language[2] !== undefined));
+    }
     for (const [prefix, root, type] of SERVED) {
       const file = join(root, url.slice(prefix.length));
       if (url.startsWith(prefix) && file.startsWith(root) && existsSync(file)) {
@@ -102,6 +109,10 @@ function look(tab: Page): Promise<Seen> {
         const said = `${code}: "${(node.textContent ?? '').trim().slice(0, 40)}"`;
         if (cutOff(node) && !node.title) seen.cut.push(said);
       }
+      // (the head's right side, the withdrawal, the flip link and the state, never runs over the unit's code)
+      const title = card.querySelector('h3')?.getBoundingClientRect();
+      const side = card.querySelector('.monitor-card-state')?.getBoundingClientRect();
+      if (title && side && side.left < title.right - 0.5) seen.never.push(`${code}: the head's right side runs over the code`);
       // (the code is measured by its heading: its link is an inline box a little higher than the line it stands on)
       for (const node of Array.from(card.querySelectorAll<HTMLElement>('h3, dt, dd b, .monitor-state'))) {
         // (a figure stays inside its own tile: it never runs under its neighbour either)
@@ -144,6 +155,80 @@ async function ages(tab: Page): Promise<string[]> {
       }
     }
     return wrong;
+  });
+}
+
+/** The marks of the pH windows on the screen that touch one another: a border's word over the other's, a word over
+ *  the water's mark (the 1C report's weak point). [] when none does. */
+async function touching(tab: Page): Promise<string[]> {
+  return tab.evaluate(() => {
+    const wrong: string[] = [];
+    for (const card of Array.from(document.querySelectorAll<HTMLElement>('.monitor-grid .monitor-card.is-fit'))) {
+      const box = card.getBoundingClientRect();
+      if (box.right <= 0 || box.left >= innerWidth || box.bottom <= 0 || box.top >= innerHeight) continue;   // another page
+      const code = card.querySelector('h3')?.textContent?.trim() ?? '';
+      for (const picture of Array.from(card.querySelectorAll<SVGSVGElement>('svg.monitor-ph-window'))) {
+        const frame = picture.getBoundingClientRect();
+        const marks = Array.from(picture.querySelectorAll<SVGGraphicsElement>('text, circle'))
+          .map((mark) => ({ said: (mark.textContent ?? '').trim() || 'the mark', at: mark.getBoundingClientRect() }));
+        for (const mark of marks) {
+          if (mark.said !== 'the mark' && (mark.at.left < frame.left - 0.5 || mark.at.right > frame.right + 0.5)) {
+            wrong.push(`${code}: "${mark.said}" leaves the picture`);
+          }
+        }
+        for (let first = 0; first < marks.length; first += 1) {
+          for (let second = first + 1; second < marks.length; second += 1) {
+            const a = marks[first];
+            const b = marks[second];
+            if (a && b && a.at.left < b.at.right && b.at.left < a.at.right) wrong.push(`${code}: "${a.said}" touches "${b.said}"`);
+          }
+        }
+      }
+    }
+    return wrong;
+  });
+}
+
+/** What the pane in the dock looks like beside the wall. */
+interface Docked {
+  mode: string; left: number; right: number; top: number; bottom: number; cardsRight: number; bandBottom: number;
+  unit: number; smallest: number; spills: string[]; cut: string[]; chart: [number, number]; card: [number, number];
+}
+async function docked(tab: Page): Promise<Docked> {
+  return tab.evaluate(() => {
+    const pane = document.getElementById('monitor-dock') as HTMLElement;
+    const at = pane.getBoundingClientRect();
+    const card = pane.querySelector<HTMLElement>('.monitor-card') as HTMLElement;
+    const box = card.getBoundingClientRect();
+    const found = { mode: pane.dataset.dock ?? '', left: at.left, right: at.right, top: at.top, bottom: at.bottom,
+                    cardsRight: 0, bandBottom: (document.querySelector('.monitor-band') as HTMLElement).getBoundingClientRect().bottom,
+                    unit: Number.parseFloat(getComputedStyle(card.firstElementChild as Element).fontSize), smallest: 1000,
+                    spills: [] as string[], cut: [] as string[], chart: [0, 0] as [number, number],
+                    card: [box.width, box.height] as [number, number] };
+    for (const small of Array.from(document.querySelectorAll<HTMLElement>('.monitor-grid > .monitor-card'))) {
+      const rect = small.getBoundingClientRect();
+      if (rect.bottom <= 1 || rect.top >= innerHeight - 1) continue;
+      found.cardsRight = Math.max(found.cardsRight, rect.right);
+    }
+    const chart = card.querySelector('svg.monitor-chart-svg')?.getBoundingClientRect();
+    if (chart) found.chart = [chart.width, chart.height];
+    for (const node of Array.from(pane.querySelectorAll<HTMLElement>('*'))) {
+      if (node.closest('svg') || node.closest('.sr-only')) continue;
+      const own = getComputedStyle(node);
+      if (own.display === 'none' || own.display === 'contents') continue;
+      const rect = node.getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) continue;
+      const inside = node.matches('h3 a') ? node.parentElement?.getBoundingClientRect() ?? rect : rect;
+      const out = Math.max(inside.right - at.right, inside.bottom - at.bottom, at.left - inside.left, at.top - inside.top);
+      if (out > 1.5) found.spills.push(`${node.tagName.toLowerCase()}.${node.className} by ${Math.round(out)} px`);
+      const text = Array.from(node.childNodes).some((child) => child.nodeType === 3 && (child.textContent ?? '').trim() !== '');
+      if (!text) continue;
+      found.smallest = Math.min(found.smallest, Number.parseFloat(own.fontSize));
+      if (own.overflowX !== 'visible' && node.scrollWidth > node.clientWidth + 1 && !node.title) {
+        found.cut.push((node.textContent ?? '').trim().slice(0, 40));
+      }
+    }
+    return found;
   });
 }
 
@@ -199,8 +284,57 @@ test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, asyn
         assert.equal(seen.indicatorHidden, true, 'one page: no page indicator');
         assert.deepEqual(seen.tallyCut, [], 'the band\'s clock and tally are whole');
         assert.deepEqual(await ages(tab), [], 'where it came from and how old it is stand under every figure');
+        assert.deepEqual(await touching(tab), [], 'the words of a pH window never touch one another or the mark');
       });
     }
+
+    for (const [width, height] of [[3440, 1440], [5120, 1440], [1920, 1080]] as const) {
+      await t.test(`going into a tank at ${width}x${height}: the Big card beside the overview, both whole`, async () => {
+        await open(tab, origin, 'tr-pane', width, height);
+        const pane = await docked(tab);
+        assert.equal(pane.mode, 'beside');
+        // beside the cards and under the band: nothing of the overview lies under the pane
+        assert.ok(pane.left >= pane.cardsRight - 0.5, `the pane starts at ${pane.left}, the cards end at ${pane.cardsRight}`);
+        assert.ok(pane.top >= pane.bandBottom - 0.5 && pane.bottom <= height + 0.5 && pane.right <= width + 0.5);
+        // the Big card at a unit that can be read, its chart the dominant picture, nothing cut or outside
+        assert.ok(pane.unit >= 14 && pane.smallest >= 11, `unit ${pane.unit}, smallest text ${pane.smallest}`);
+        assert.ok(pane.chart[0] > 0.8 * pane.card[0] && pane.chart[1] > 0.35 * pane.card[1], `chart ${pane.chart} in card ${pane.card}`);
+        assert.deepEqual([pane.spills, pane.cut], [[], []]);
+        // the overview is alive beside it: the same cards in the same order, only narrower, each still whole
+        const seen = await look(tab);
+        assert.equal(seen.cards, 20);
+        assert.deepEqual([seen.spills, seen.cut, seen.never], [[], [], []]);
+        assert.ok(seen.smallest >= 11, `the smallest text is ${seen.smallest} px`);
+        assert.equal(seen.pageScrolls, false);
+        assert.deepEqual(await ages(tab), []);
+        assert.deepEqual(await touching(tab), []);
+        // the open card is marked among the others
+        assert.equal(await tab.locator('.monitor-grid > .monitor-card.is-open').count(), 1);
+        // closing (the pane leaves the dock) gives the cards the whole width back
+        const before = await tab.evaluate(() => (document.querySelector('.monitor-grid > .monitor-card') as HTMLElement).getBoundingClientRect().width);
+        await tab.evaluate(() => {
+          document.querySelector('#monitor-dock .monitor-window')?.remove();
+          document.dispatchEvent(new CustomEvent('dock:changed'));
+        });
+        await tab.waitForTimeout(100);
+        const after = await look(tab);
+        const width2 = await tab.evaluate(() => {
+          const cards = Array.from(document.querySelectorAll<HTMLElement>('.monitor-grid > .monitor-card'));
+          return Math.max(...cards.map((card) => card.getBoundingClientRect().right));
+        });
+        assert.ok(width2 > width - 40, `the cards reach ${width2} of ${width}`);
+        assert.deepEqual([after.cards, after.onScreen, after.pages], [20, 20, '1']);
+        assert.ok(before > 0);
+      });
+    }
+
+    await t.test('a window too low for a readable card beside the cards: the pane lies over them, never hidden', async () => {
+      await open(tab, origin, 'tr-pane', 1280, 720);
+      const pane = await docked(tab);
+      assert.equal(pane.mode, 'full');
+      assert.ok(pane.right - pane.left > 0.9 * 1280, `the pane is ${pane.right - pane.left} px wide`);
+      assert.ok(pane.card[0] > 0 && pane.card[1] > 0);
+    });
 
     for (const [width, height] of [[3440, 1440], [5120, 1440], [2560, 1440], [3840, 2160]] as const) {
       await t.test(`twenty-four cards are one screen at ${width}x${height}, the age under every figure`, async () => {
@@ -229,6 +363,7 @@ test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, asyn
       assert.ok(Number(first.pages) > 1, `${first.pages} pages`);
       assert.ok(first.smallest >= 11, `the smallest text is ${first.smallest} px`);
       assert.deepEqual([first.cut, first.never, first.spills], [[], [], []]);
+      assert.equal(first.pageScrolls, false, 'the cards of the other pages never make the screen itself scroll');
       assert.deepEqual(await ages(tab), []);
       assert.equal(first.indicatorHidden, false);
       assert.equal(first.indicator, `${first.page} / ${first.pages}`);
@@ -249,6 +384,65 @@ test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, asyn
       await tab.locator('[data-page-turn="1"]').click();
       await tab.waitForTimeout(50);
       assert.equal((await look(tab)).page, '2');
+    });
+
+    await t.test('on a paged wall: Home goes to the worst card, a chip turns to its card, a poll keeps the focus', async () => {
+      await open(tab, origin, 'en', 1280, 720);
+      const first = await look(tab);
+      const worstPage = Number(first.page);                       // the wall opened on the page of HA-R02 (critical)
+      const jump = tab.locator('#pages-worst');
+      assert.equal(await jump.isHidden(), true, 'on the worst card\'s page there is nowhere to jump');
+      // another page: the band says where the worst card is, and Home is the one key to it
+      const other = worstPage === 1 ? 'PageDown' : 'PageUp';
+      await tab.keyboard.press(other);
+      await tab.waitForTimeout(50);
+      assert.notEqual(Number((await look(tab)).page), worstPage);
+      assert.equal(await jump.isVisible(), true);
+      assert.equal((await jump.locator('[data-page-worst-text]').textContent())?.trim(), String(worstPage));
+      assert.equal(await jump.getAttribute('data-state'), 'critical');
+      await tab.keyboard.press('Home');
+      await tab.waitForTimeout(50);
+      assert.equal(Number((await look(tab)).page), worstPage);
+      assert.equal(await tab.evaluate(() => document.activeElement?.closest('.monitor-card')?.querySelector('h3')?.textContent?.trim()), 'HA-R02');
+      assert.equal(await jump.isHidden(), true);
+      // the button does the same as the key
+      await tab.keyboard.press(other);
+      await tab.waitForTimeout(50);
+      await jump.click();
+      await tab.waitForTimeout(50);
+      assert.equal(Number((await look(tab)).page), worstPage);
+      // a chip's code turns to the page of its card (review R8): from the last page to the warning card's
+      const pages = Number(first.pages);
+      for (let turn = 0; turn < pages; turn += 1) await tab.keyboard.press('PageDown');
+      await tab.waitForTimeout(50);
+      assert.equal(Number((await look(tab)).page), pages);
+      const chip = tab.locator('.monitor-strip a', { hasText: 'HA-K02' }).first();
+      const target = await chip.evaluate((link: HTMLAnchorElement) => {
+        const card = document.getElementById(new URL(link.href).hash.slice(1)) as HTMLElement;
+        const grid = card.parentElement as HTMLElement;
+        const index = Array.from(grid.querySelectorAll(':scope > .monitor-card')).indexOf(card);
+        return Math.floor(index / Number(grid.dataset.per)) + 1;
+      });
+      await chip.click();
+      await tab.waitForTimeout(50);
+      assert.equal(Number((await look(tab)).page), target);
+      // a poll replaces the whole band (its page indicator comes hidden from the server): the button that had the
+      // focus has it again, and the page shown is the same
+      for (let turn = 0; turn < pages; turn += 1) await tab.keyboard.press('PageDown');
+      await tab.locator('#pages-prev').focus();
+      await tab.evaluate(() => {
+        const grid = document.querySelector('.monitor-grid') as HTMLElement;
+        const band = grid.querySelector('.monitor-band') as HTMLElement;
+        const fresh = band.cloneNode(true) as HTMLElement;
+        (fresh.querySelector('[data-pages]') as HTMLElement).hidden = true;         // as the server prints it
+        (fresh.querySelector('[data-pages-text]') as HTMLElement).textContent = '';
+        band.replaceWith(fresh);
+        grid.dispatchEvent(new CustomEvent('poll:merged', { bubbles: true, detail: { replaced: [{ old: band, node: fresh }], inserted: [], removed: [] } }));
+      });
+      await tab.waitForTimeout(50);
+      assert.equal(await tab.evaluate(() => document.activeElement?.id), 'pages-prev');
+      const kept = await look(tab);
+      assert.deepEqual([Number(kept.page), kept.indicator], [pages, `${pages} / ${pages}`]);
     });
   } finally {
     await browser.close();

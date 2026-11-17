@@ -81,3 +81,30 @@ test('a page holds the same cards whatever happens: the page of a card, and the 
   assert.equal(worstPage(['ok', 'note', 'empty'], 2, order), 1);
   assert.equal(worstPage([], 5, order), 1);
 });
+
+test('the pane beside the cards is one cell of the wall of full-height cards, or lies over them', () => {
+  for (const screen of ['3440x1440', '5120x1440', '2560x1440', '3840x2160', '1920x1080']) {
+    const big = named(`big x 20 on ${screen}`);
+    const found = dock(big.width, big.height, big.gap, big.mw, big.mh, big.pad_x, big.pad_y);
+    // as wide as a card of the all-big wall of this screen (never more than half of it), at that card's unit
+    const cell = (big.width - (big.cols - 1) * big.gap) / big.cols;
+    assert.ok(Math.abs(found.width - Math.min(cell, big.width / 2)) < 1e-6, screen);
+    assert.equal(found.beside, true, screen);
+    // and the small cards still have a readable unit in the room that is left
+    const small = named(`small x 20 on ${screen}`);
+    const left = slots(20, small.width - found.width - small.gap, small.height, small.gap, small.mw, small.mh, FLOOR,
+                       small.pad_x, small.pad_y);
+    assert.ok(left.u >= FLOOR - 1e-6, `${screen}: ${left.u}`);
+  }
+  // a window too low for a readable full-height card: the pane lies over the cards, it is never dropped
+  const low = named('small x 20 on 1280x720');
+  assert.equal(dock(low.width, low.height, low.gap, 48, 61, low.pad_x, low.pad_y).beside, false);
+  assert.ok(fillUnit(low.width, low.height, 48, 61) < FLOOR);
+});
+
+test('the worst card, its page and its state', () => {
+  const order = ['critical', 'warning', 'blind'];
+  assert.deepEqual(worst(['ok', 'ok', 'warning', 'ok', 'ok', 'critical', 'ok'], 2, order), { index: 5, page: 3, state: 'critical' });
+  assert.deepEqual(worst(['ok', 'blind', 'warning'], 2, order), { index: 2, page: 2, state: 'warning' });
+  assert.equal(worst(['ok', 'note'], 2, order), null);
+});

@@ -24,3 +24,8 @@ class LayoutPagesTests(SimpleTestCase):
             self.assertIn('class="monitor-ph-window', pages[name])
         self.assertIn('lang=', pages['card-nb.html'])
         self.assertNotEqual(pages['wall-small-en.html'], pages['wall-small-tr.html'])
+        # the pane of a unit gone into: the dock's own markup around its Big card
+        self.assertIn('class="monitor-window monitor-pane"', pages['dock-big-tr.html'])
+        self.assertIn('is-fit mw-48 mh-61', pages['dock-big-tr.html'])
+        self.assertIn('class="monitor-chart-svg', pages['dock-big-tr.html'])
+        self.assertIn('id="open-', pages['wall-small-tr.html'])

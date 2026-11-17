@@ -7,17 +7,24 @@
    the state is from, in its title). Line two: a source that could not be read, then the FIRST reason of the state in
    short (monitoring/read.py Brief: the value against the bound it is past) and how many more there are; every reason
    is there in full for a screen reader and in the titles, and on the card the flip link shows. A card with no reason
-   says its fish there. {% endcomment %}{% with fit=chosen.fit_classes %}
-<article class="monitor-card monitor-{{ state.key }} {{ fit.0 }}" data-key="card:{{ unit.pk }}" data-state="{{ state.key }}"{% if state.stale %} data-stale{% endif %} data-template="{{ chosen.template.pk|default:'' }}"{% if chosen.fill %} data-fill{% endif %}{% if row.preview %} data-preview{% endif %} id="card-{{ unit.pk }}" aria-labelledby="card-title-{{ unit.pk }}">
+   says its fish there.
+   GOING INTO A TANK (owner decision 7): on a card that is the overview's (fitted, not a full-height one; `row.open`,
+   monitoring/views.py _openers) the unit's code is the link that opens its Big card in the pane beside the cards
+   (`?focus=`; frontend/windows.ts docks it without a page load), and closes it again on the card that is open, which
+   is outlined. A full-height card (the Big one, in the pane or on a wall of them) keeps the code's link to the unit's
+   page and says IN SIGHT what the small card only has room to say in a title (review R11: a wall has no pointer): the
+   department beside the name, and at its foot what the state is from and which template draws it. The card in the
+   pane is a second card of its unit on the page: its ids carry `row.ns`. {% endcomment %}{% with fit=chosen.fit_classes %}
+<article class="monitor-card monitor-{{ state.key }} {{ fit.0 }}{% if row.open.open %} is-open{% endif %}" data-key="card:{{ unit.pk }}" data-state="{{ state.key }}"{% if state.stale %} data-stale{% endif %} data-template="{{ chosen.template.pk|default:'' }}"{% if chosen.fill %} data-fill{% endif %}{% if row.preview %} data-preview{% endif %} id="{{ row.ns }}card-{{ unit.pk }}" aria-labelledby="{{ row.ns }}card-title-{{ unit.pk }}">
   <header class="monitor-card-head tw:items-baseline tw:min-w-0">
     <div class="tw:flex tw:items-baseline tw:gap-3 tw:min-w-0">
-      <h3 id="card-title-{{ unit.pk }}" class="tw:m-0 tw:text-u-xl tw:font-semibold tw:whitespace-nowrap"><a class="tw:text-ink-1 tw:no-underline" href="{% url 'farm:production_units' %}?unit={{ unit.pk }}">{{ unit.code }}</a></h3>
-      <p class="tw:m-0 tw:truncate tw:text-u-s tw:text-ink-3" title="{{ unit.name }}{% if unit.production_department %} · {{ unit.production_department.name }}{% endif %} · {% trans "Template" %}: {{ chosen.name }} · {{ chosen.because }}">{{ unit.name }}</p>
+      <h3 id="{{ row.ns }}card-title-{{ unit.pk }}" class="tw:m-0 tw:text-u-xl tw:font-semibold tw:whitespace-nowrap">{% if row.open %}<a class="monitor-open tw:text-ink-1 tw:no-underline" id="open-{{ unit.pk }}" href="{{ row.open.page }}" data-dock="{{ unit.pk }}" data-dock-code="{{ unit.code }}" aria-expanded="{{ row.open.open|yesno:"true,false" }}" title="{% if row.open.open %}{% trans "Close the big card" %}{% else %}{% trans "Open the big card beside the overview" %}{% endif %}">{{ unit.code }}</a>{% else %}<a class="tw:text-ink-1 tw:no-underline" href="{% url 'farm:production_units' %}?unit={{ unit.pk }}">{{ unit.code }}</a>{% endif %}</h3>
+      <p class="tw:m-0 tw:truncate tw:text-u-s tw:text-ink-3" title="{{ unit.name }}{% if unit.production_department %} · {{ unit.production_department.name }}{% endif %} · {% trans "Template" %}: {{ chosen.name }} · {{ chosen.because }}">{{ unit.name }}{% if chosen.fill and unit.production_department %} · {{ unit.production_department.name }}{% endif %}</p>
     </div>
     <div class="monitor-card-state tw:flex-nowrap tw:min-w-0 tw:items-baseline tw:gap-3">
       {% if unit.status != "active" %}<span class="monitor-status tw:truncate tw:text-u-s tw:font-semibold tw:text-ink-2" title="{{ unit.get_status_display }}">{{ unit.get_status_display }}</span>{% endif %}
       {% if card.withdrawal %}<span class="monitor-withdrawal tw:shrink-0 tw:text-u-s tw:text-ink-2" title="{% trans "Withdrawal" %}: {% for block in card.withdrawal %}{{ block.batch.code }}: {{ block|harvest_from }} {% endfor %}">{% trans "Withdrawal" %} · {% withdrawal_end card %}</span>{% endif %}
-      {% if chosen.flip_to %}<a class="monitor-flip tw:shrink-0 tw:text-u-s tw:text-ink-3" id="flip-{{ unit.pk }}" href="{{ row.flip.page }}" data-poll-url="{{ row.flip.poll }}">{{ chosen.flip_to.shown_name }}</a>{% endif %}
+      {% if chosen.flip_to and not row.pane %}<a class="monitor-flip tw:shrink-0 tw:text-u-s tw:text-ink-3" id="flip-{{ unit.pk }}" href="{{ row.flip.page }}" data-poll-url="{{ row.flip.poll }}">{{ chosen.flip_to.shown_name }}</a>{% endif %}
       <span class="tw:shrink-0" title="{% trans "State from" %}: {% for name in state.basis %}{% if name == "stock" %}{% trans "Fish" %}{% elif name == "feeding" %}{% trans "Feeding" %}{% elif name == "water" %}{% trans "Water" %}{% else %}{% trans "Health" %}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}">{% include "monitoring/_state_word.html" with classes="tw:whitespace-nowrap tw:font-semibold tw:text-u-l" %}</span>
     </div>
   </header>
@@ -28,5 +35,6 @@
     {% elif stock %}<p class="monitor-card-fish tw:m-0 tw:text-ink-3">{% with species=stock.shares.0.batch.species %}{{ species.local_name|default:species.common_name }}{% endwith %} · {% blocktrans trimmed with fish=stock.count|fish %}{{ fish }} fish{% endblocktrans %} · {{ stock.biomass_kg|kilos }} · {{ stock.density|density }}</p>{% endif %}
   </div>
   <div class="card-grid {{ fit.1 }}">{% for view in card.widgets %}<div class="w w-{{ view.type }} {{ view.place }}">{% if view.hidden %}{% if view.hidden == "feeding" %}{% include "monitoring/_card_hidden.html" with section=_("Feeding") fit=True %}{% elif view.hidden == "water" %}{% include "monitoring/_card_hidden.html" with section=_("Water") fit=True %}{% elif view.hidden == "health" %}{% include "monitoring/_card_hidden.html" with section=_("Health") fit=True %}{% else %}{% include "monitoring/_card_hidden.html" with section=_("Tasks") fit=True %}{% endif %}{% elif view.failed %}<p class="monitor-hidden tw:m-0 tw:truncate tw:self-center tw:text-u-s tw:text-ink-2">{% trans "no data" %}</p>{% else %}{% include view.renderer %}{% endif %}</div>{% endfor %}</div>
+  {% if chosen.fill %}<p class="monitor-card-basis tw:m-0 tw:truncate tw:text-u-s tw:text-ink-3">{% trans "State from" %}: {% for name in state.basis %}{% if name == "stock" %}{% trans "Fish" %}{% elif name == "feeding" %}{% trans "Feeding" %}{% elif name == "water" %}{% trans "Water" %}{% else %}{% trans "Health" %}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %} · {% trans "Template" %}: {{ chosen.name }} · {{ chosen.because }}</p>{% endif %}
 </article>
 {% endwith %}

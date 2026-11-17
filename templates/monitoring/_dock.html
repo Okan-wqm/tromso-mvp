@@ -1,0 +1,13 @@
+{% load i18n %}{% comment %} The pane beside the cards: one unit's Big card (monitoring/_pane.html), with the one line that names it and closes it.
+   Rendered by the server when the address has a focus (`pane`: monitoring.views._pane), and once more empty as the
+   skeleton frontend/windows.ts fills when a card is opened with script ([data-dock-title], the close link's href and
+   the body's poll address are then the script's, from the page's own address). The existing window (frontend/windows.ts),
+   docked: no title bar to drag, Escape or the link closes it, and its body is polled by frontend/poll.ts. The close
+   link is a link: without script it is the page without the focus. {% endcomment %}
+<section class="monitor-window monitor-pane" role="region" tabindex="-1"{% if pane %} aria-label="{% blocktrans trimmed with unit=pane.pane_unit.code %}Focus: {{ unit }}{% endblocktrans %}" data-dock-unit="{{ pane.pane_unit.pk }}"{% endif %}>
+  <header class="monitor-dock-bar tw:flex tw:items-baseline tw:justify-between tw:gap-4 tw:min-w-0 tw:whitespace-nowrap tw:text-u-s">
+    <h2 class="tw:m-0 tw:truncate tw:[font:inherit] tw:text-ink-3" data-dock-title>{% if pane %}{% blocktrans trimmed with unit=pane.pane_unit.code %}Focus: {{ unit }}{% endblocktrans %}{% endif %}</h2>
+    <a class="monitor-dock-close tw:shrink-0 tw:font-semibold tw:text-ink-1 tw:no-underline"{% if pane %} id="dock-close"{% endif %} data-dock-close href="{% if pane %}{{ pane.close_url }}{% endif %}" title="{% trans "Close the big card (Esc)" %}"><span aria-hidden="true">×</span> {% trans "Close" %}</a>
+  </header>
+  <div class="monitor-window-body" data-window-body{% if pane %} data-poll="{{ pane_poll_url }}" data-poll-every="{{ poll_seconds }}" data-poll-merge="data-key" data-poll-state="live" data-stale-text="{% trans "Not updated: the server cannot be reached or cannot read the cards. This may be out of date." %}" data-gone-text="{% trans "Signed out, or no longer available" %}"{% endif %}>{% if pane %}{% include "monitoring/_pane.html" with row=pane.row %}{% else %}<p class="muted">{% trans "Loading…" %}</p>{% endif %}</div>
+</section>

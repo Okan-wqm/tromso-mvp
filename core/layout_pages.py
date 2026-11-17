@@ -281,7 +281,8 @@ def _wall(language):
                                    ph_scale=(6.4, 8.6)))
         return render_to_string('monitoring/_grid.html', {
             'rows': [{'card': card, 'flip': {'page': '#', 'poll': '#'}} for card in cards], 'band': read.band(cards),
-            'modes': [{'label': label, 'url': '#', 'current': label == 'Small'} for label in ('Small', 'Simple', 'Detailed')],
+            'modes': [{'label': label, 'url': '#', 'current': label == 'Small', 'id': label.lower()}
+                      for label in ('Small', 'Simple', 'Detailed')],
             'computed_at': NOW.replace(tzinfo=None), 'count_line': '20 of 25 units shown'})
 
 

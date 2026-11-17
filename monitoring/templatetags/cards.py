@@ -42,9 +42,9 @@ def tile(card, view):
 
 
 @register.simple_tag
-def ph_window(card):
-    """The pH window of a card (render.PhWindow)."""
-    return render.ph_window(card)
+def ph_window(card, view=None):
+    """The pH window of a card (render.PhWindow), its words placed for the width its widget has."""
+    return render.ph_window(card, view)
 
 
 @register.simple_tag
@@ -58,6 +58,13 @@ def withdrawal_end(card):
         return harvest_from(None)
     last = max(blocks, key=lambda block: block.until)
     return harvest_from(last.until, getattr(last, 'approximate', False), shown=lambda day: f'{day:%d.%m}')
+
+
+@register.simple_tag
+def opener(openers, card):
+    """How the band's chip of a card opens its unit ({page, open, into}: monitoring/views.py _openers), or None when
+    the screen's cards are not the kind that open a pane."""
+    return (openers or {}).get(card.unit.pk)
 
 
 @register.simple_tag

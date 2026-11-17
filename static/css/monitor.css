@@ -227,13 +227,49 @@ html[data-wall] .monitor-actions { gap: calc(.3 * var(--wu)); }
 html[data-wall] .monitor-actions .button { min-width: 0; min-height: 0; height: calc(1.55 * var(--wu)); padding: 0 calc(.45 * var(--wu)); font-size: var(--wu); }
 html[data-wall] .monitor-action-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 html[data-wall] .monitor-grid:has(> .is-fit) .monitor-card { display: flex; flex-direction: column; overflow: hidden; }
-html[data-wall] .monitor-grid .monitor-card.is-fit { container-type: size; padding: calc(var(--wall-pad) * .6) calc(var(--wall-pad) * 1.1); border-radius: 4px; }
-html[data-wall] .monitor-grid .monitor-card.is-fit > * { --u: min(calc(100cqi / var(--mw)), calc(100cqh / var(--mh))); flex: none; }
+/* A card drawn AT THE SIZE OF ITS PLACE: a cell of the wall, the dock (the pane of the unit gone into) and the
+   designer's preview of a fitted template: one look in the three (`--fitted` names them once). */
+:is(html[data-wall] .monitor-grid, .monitor-dock, .designer-preview.is-fitted) .monitor-card.is-fit { container-type: size; display: flex; flex-direction: column; overflow: hidden; padding: calc(var(--wall-pad, 10px) * .6) calc(var(--wall-pad, 10px) * 1.1); border-radius: 4px; }
+:is(html[data-wall] .monitor-grid, .monitor-dock, .designer-preview.is-fitted) .monitor-card.is-fit > * { --u: min(calc(100cqi / var(--mw)), calc(100cqh / var(--mh))); flex: none; }
 /* The line under a figure (where it came from, how old it is) is part of the card at every size: the template's
    measure holds it (review R1). Nothing on a wall hides it; a cell too low for the card turns pages (wall.ts). */
 /* (a card's widgets stack below 30 rem of card: a fitted card on a wall keeps its template's twelve columns) */
-html[data-wall] .monitor-grid .is-fit .card-grid { flex: 1 1 0; min-height: 0; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: repeat(var(--gr), minmax(0, 1fr)); grid-auto-rows: 0; }
-html[data-wall] .monitor-grid .is-fit .card-grid > .w { grid-column: calc(var(--x) + 1) / span var(--w); grid-row: calc(var(--y) + 1) / span var(--h); }
+:is(html[data-wall] .monitor-grid, .monitor-dock, .designer-preview.is-fitted) .is-fit .card-grid { flex: 1 1 0; min-height: 0; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: repeat(var(--gr), minmax(0, 1fr)); grid-auto-rows: 0; }
+:is(html[data-wall] .monitor-grid, .monitor-dock, .designer-preview.is-fitted) .is-fit .card-grid > .w { grid-column: calc(var(--x) + 1) / span var(--w); grid-row: calc(var(--y) + 1) / span var(--h); }
+/* The card that is open in the pane, among the overview's: an outline, not a tone (a tone is a state's). Its code is
+   the link that opens it: it looks like the code it is, and says what it does when it has the focus or the pointer. */
+.monitor-card.is-open { outline: 2px solid var(--action); outline-offset: -2px; }
+.monitor-open:hover, .monitor-open:focus-visible { text-decoration: underline; text-decoration-thickness: .06em; text-underline-offset: .12em; }
+
+/* ---- the dock: the pane of the unit gone into (templates/monitoring/_dock.html; frontend/windows.ts) ---------------
+   The existing window, docked: no bar to drag, no frame of its own; the Big card in it is drawn at the size of its
+   place, as on a wall. On the desk page it stands above the cards at the Big template's own proportion, never under
+   the unit at which its small text is 11 px (a narrow screen scrolls it sideways rather than shrink the type). On a
+   wall it is fixed at the right of the screen under the band; frontend/wall.ts gives it the width of one full-height
+   card of this screen (--dock), the cards the room beside it (--dock-space) and its top (--dock-top); a screen too
+   small for a readable card beside the overview gets the pane over the cards instead (data-dock="full"), never a
+   hidden one. */
+.monitor-dock { margin: 0 0 1rem; font-size: 15px; }
+.monitor-dock:empty { display: none; }
+.monitor-dock .monitor-window { position: static; z-index: auto; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: .25em; width: auto; height: auto; min-width: 0; min-height: 0; max-width: 46rem; max-height: none; overflow: visible; resize: none; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.monitor-dock .monitor-window:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; box-shadow: none; }
+.monitor-dock .monitor-window-body { min-height: 0; padding: 0; overflow: auto hidden; }
+.monitor-dock .monitor-window-body > .monitor-card.is-fit { aspect-ratio: var(--mw) / var(--mh); min-width: calc(var(--mw) * var(--u-floor, 14px) + 2em); }
+.monitor-dock .monitor-dock-bar { padding: 0 .2em; }
+.monitor-dock .monitor-dock-close:hover, .monitor-dock .monitor-dock-close:focus-visible { text-decoration: underline; }
+html[data-wall] .monitor-dock { position: fixed; top: var(--dock-top, calc(var(--wall-pad) + var(--band) + var(--wall-gap))); right: var(--wall-pad); bottom: var(--wall-pad); z-index: 2; display: grid; width: var(--dock, 33vw); margin: 0; font-size: var(--wu); }
+html[data-wall] .monitor-dock:empty { display: none; }
+html[data-wall] .monitor-dock .monitor-window { max-width: none; }
+html[data-wall] .monitor-dock .monitor-window-body { overflow: hidden; }
+html[data-wall] .monitor-dock .monitor-window-body > .monitor-card.is-fit { aspect-ratio: auto; height: 100%; min-width: 0; }
+html[data-wall] .monitor-dock[data-dock="full"] { left: var(--wall-pad); z-index: 5; width: auto; background: var(--surface-canvas); }
+html[data-wall] .monitor-grid:has(> .is-fit) { padding-right: var(--dock-space, 0px); }
+html[data-wall] .monitor-band { margin-right: calc(-1 * var(--dock-space, 0px)); }
+/* The way to the page of the worst card (frontend/wall.ts shows it while that card is on another page). */
+.monitor-band .monitor-pages-worst { display: inline-flex; }
+.monitor-band .monitor-pages-worst[hidden] { display: none; }
+.monitor-band .monitor-pages-worst[data-state="critical"] { color: var(--crit-text); }
+.monitor-band .monitor-pages-worst[data-state="warning"] { color: var(--warn-text); }
 /* (a card that flows, on a wall of fitted cards, a mixed board: it scrolls inside its cell rather than be cut silently) */
 html[data-wall] .monitor-grid:has(> .is-fit) .monitor-card:not(.is-fit) { overflow: auto; }
 html[data-wall] .monitor-grid:has(> .is-fit):is([data-poll-state="stale"], [data-poll-state="gone"])::before { position: fixed; inset: var(--wall-pad) 30% auto 30%; z-index: 4; display: grid; place-items: center; min-height: var(--band); margin: 0; padding: 0 1em; font-size: var(--wu); }
@@ -243,15 +279,15 @@ html[data-wall] .monitor-grid:has(> .is-fit):is([data-poll-state="stale"], [data
    are the sunken grey, the safe stretch is --zone-safe; a region takes the critical tint only while the water is in
    it. The water is ink; hollow and dashed when a value it is drawn from is old (a shape, never a tone alone). */
 .monitor-ph-window { display: block; width: 100%; height: calc(var(--h, 2) * var(--row, 1.75rem)); min-height: 0; overflow: hidden; font-family: var(--font-text); }
-html[data-wall] .monitor-grid .is-fit .monitor-ph-window { height: 100%; }
+:is(html[data-wall] .monitor-grid, .monitor-dock, .designer-preview.is-fitted) .is-fit .monitor-ph-window { height: 100%; }
 .monitor-ph-window .chart-region { stroke: none; }
 .monitor-ph-window .chart-region-co2, .monitor-ph-window .chart-region-nh3 { fill: var(--surface-sunken); }
 .monitor-ph-window .chart-region-safe { fill: var(--zone-safe); }
 .monitor-ph-window text { font-size: .8em; }
-.monitor-ph-window .chart-name { fill: var(--text-2); text-anchor: end; dominant-baseline: central; }
-.monitor-ph-window .chart-name-nh3 { text-anchor: start; }
-.monitor-ph-window .chart-name.is-inside { text-anchor: start; }
-.monitor-ph-window .chart-name-nh3.is-inside { text-anchor: end; }
+/* (where a word stands and which way it runs from there is the server's rule: monitoring/cards/render.py place_names) */
+.monitor-ph-window .chart-name { fill: var(--text-2); text-anchor: start; dominant-baseline: central; }
+.monitor-ph-window .chart-name.is-end { text-anchor: end; }
+.monitor-ph-window .chart-name.is-middle { text-anchor: middle; }
 .monitor-ph-window .chart-water { fill: var(--text-1); stroke: var(--surface-sheet); stroke-width: 2.5; }
 .monitor-ph-window.is-old .chart-water { fill: var(--surface-sheet); stroke: var(--text-1); stroke-width: 2; stroke-dasharray: 3 2.5; }
 .monitor-ph-window.is-old .chart-region { opacity: .55; }
@@ -326,6 +362,10 @@ html[data-wall] .monitor-grid .is-fit .monitor-ph-window { height: 100%; }
 .designer-order ol { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin: 0; padding-left: 1.25rem; }
 .designer-problems ul { margin: .25rem 0; padding-left: 1.25rem; }
 .designer-preview { --card-min: 26rem; max-width: calc(var(--card-min) * 1.05); }
+/* A fitted template's preview: the card at its measure's own proportion, as a cell of a wall draws it, at the width
+   chosen (never under the unit at which its small text is 11 px: the preview then scrolls sideways). */
+.designer-preview.is-fitted { display: block; max-width: none; overflow-x: auto; }
+.designer-preview.is-fitted > .monitor-card.is-fit { width: max(var(--card-min), calc(var(--mw) * 14px + 2em)); aspect-ratio: var(--mw) / var(--mh); }
 .designer-preview-failed { margin: 0; padding: .375rem .75rem; border: 1px dashed var(--crit); border-radius: 4px; color: var(--crit-text); font-weight: 700; }
 .designer-json textarea { width: 100%; font-family: inherit; }
 @media (forced-colors: active) { .designer-item[aria-pressed="true"] { border-color: Highlight; } }

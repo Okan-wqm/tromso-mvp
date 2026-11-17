@@ -149,8 +149,8 @@ def _uuid(value):
 @dataclass(frozen=True)
 class Params:
     """What a page's address chooses: filters, occupancy (stocked by default), the all-cards mode, the cards that
-    differ from it (`flip`), the units picked by hand and the board. A value that names nothing is dropped, so a stale
-    link shows what it can."""
+    differ from it (`flip`), the units picked by hand, the board, the charts' view and the unit gone into (`focus`: its
+    Big card in the pane beside the cards). A value that names nothing is dropped, so a stale link shows what it can."""
     site: str = ''
     department: str = ''
     system: str = ''
@@ -164,6 +164,7 @@ class Params:
     wall: bool = False
     chart: str = ''                     # '' (the close view) or 'full': the view of every chart of the screen
     zoom: frozenset = frozenset()       # the units whose chart is drawn in the OTHER view
+    focus: str = ''                     # the unit whose Big card stands in the pane beside the cards ("" : none)
 
     @classmethod
     def from_query(cls, query):
@@ -178,14 +179,15 @@ class Params:
             flip=frozenset(_uuid(item) for item in query.get('flip', '').split(',') if _uuid(item)),
             board=_uuid(query.get('board', '')), wall=query.get('wall', '') == '1',
             chart=CHART_FULL if query.get('chart', '') == CHART_FULL else '',
-            zoom=frozenset(_uuid(item) for item in query.get('zoom', '').split(',') if _uuid(item)))
+            zoom=frozenset(_uuid(item) for item in query.get('zoom', '').split(',') if _uuid(item)),
+            focus=_uuid(query.get('focus', '')))
 
     def canonical(self, **changes):
         """The address's query, one spelling for one state (sorted, defaults left out): what the change token and the
         fragment's address are built on. `changes` replace fields first."""
         merged = {**self.__dict__, **changes}
         pairs = []
-        for name in ('board', 'chart', 'department', 'kind', 'mode', 'q', 'site', 'system'):
+        for name in ('board', 'chart', 'department', 'focus', 'kind', 'mode', 'q', 'site', 'system'):
             if merged[name]:
                 pairs.append((name, merged[name]))
         if merged['wall']:

@@ -37,6 +37,14 @@
   </div>
 </form>
 
+{% comment %} The pane of the unit gone into (`?focus=<unit>`: its Big card, monitoring.views._pane), BEFORE the cards in the page (it is
+   what the person asked for; a wall docks it at the right of the screen and frontend/wall.ts gives it the width of one
+   full-height card, static/css/monitor.css "the dock"). With script frontend/windows.ts opens, replaces and closes it
+   without a page load, from the skeleton below and the two fragments' addresses here; the measure is the Big
+   template's, so the room is kept before the card has come. {% endcomment %}
+<aside class="monitor-dock" id="monitor-dock" aria-label="{% trans "Focus" %}" data-param="focus" data-pane-url="{% url 'monitoring:pane' %}" data-grid-url="{% url 'monitoring:cards' %}" data-every="{{ poll_seconds }}" data-mw="{{ big_measure.0 }}" data-mh="{{ big_measure.1 }}" data-title-text="{% trans "Focus: {unit}" %}" data-stale-text="{% trans "Not updated: the server cannot be reached or cannot read the cards. This may be out of date." %}" data-gone-text="{% trans "Signed out, or no longer available" %}">{% if pane %}{% include "monitoring/_dock.html" %}{% endif %}</aside>
+<template id="monitor-dock-template">{% include "monitoring/_dock.html" with pane=None %}</template>
+
 <div class="monitor-grid" data-card-width="{{ card_width }}" data-poll="{{ poll_url }}" data-poll-every="{{ poll_seconds }}" data-poll-merge="data-key" data-poll-state="live" data-stale-text="{% trans "Not updated: the server cannot be reached or cannot read the cards. This may be out of date." %}" data-gone-text="{% trans "Signed out, or no longer available" %}" data-updated-text="{% trans "Updated again." %}">{% include "monitoring/_grid.html" %}</div>
 
 {% comment %} What frontend/announce.ts says aloud when a card gets worse: two live regions beside the grid, never inside it

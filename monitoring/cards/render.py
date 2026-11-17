@@ -294,7 +294,8 @@ class PhWindow:
     there is no picture."""
     label: str = ''          # the picture's name: every number of it in words
     regions: tuple = ()      # (key, x, width): 'co2', 'safe', 'nh3'
-    names: tuple = ()        # (key, text, x, inside): a border's number, or what is missing on that side
+    names: tuple = ()        # (key, text, x, anchor): a border's number, or what is missing ('co2', 'nh3', 'band');
+                             # placed by `place_names`, never over each other or the water's mark
     water: str = ''
     zones: tuple = ()        # the regions the water is in: 'co2', 'nh3'
     old: bool = False
@@ -307,7 +308,155 @@ def _pc(value):
     return f'{value:.1f}'
 
 
-def ph_window(card):
+# ---- where the pH window's words stand ---------------------------------------------------------------------------
+# Lengths are per cent of the picture. A word's width is not known to the server (the browser sets the type), so it is
+# reckoned from its letters: a letter of the window's small text (0.8 of the card's unit) is at most NAME_EM of it wide
+# in the product's face, and the picture is as wide as the widget's columns of the card. The browser layout test holds
+# the reckoning to the real boxes (frontend/test/wall.browser.test.ts: no two marks of a window touch).
+NAME_EM = 0.6
+NAME_SIZE = 0.8
+NAME_GAP = 1.2          # between a border and its word, and the least between two words
+MARK_HALF = 2.4         # half of the water's mark, with its halo
+NAME_EDGE = 0.6         # a word never starts or ends nearer the picture's edge
+FLOW_UNITS = 26.0       # the width, in units of its text, of a card that flows (no measure): its least on a desk
+
+
+def letter_pc(card, view=None):
+    """How wide one letter of the pH window's words is, in per cent of the picture, on this card: from the template's
+    measure (a fitted card is `measure_w` units wide) and the columns the widget takes."""
+    measure = card.template.measure
+    units = (measure[0] if measure else FLOW_UNITS) * (view.w if view is not None else catalogue.COLUMNS) / catalogue.COLUMNS
+    return 100 * NAME_SIZE * NAME_EM / max(units, 1)
+
+
+def place_names(left, right, water, co2, nh3, band, letter, off=''):
+    """((key, text, x, anchor), ...): where the pH window's words stand, by rule and never over one another, over the
+    water's mark or outside the picture. `left`, `right`: the two borders (per cent); `water`: the mark's place, None
+    when the pH is off the scale (`off`: the arrow's text at that end is then in the way); `co2`, `nh3`: (text,
+    at_border) or None: a border's number, which stands AT its border, or with at_border False what is missing or
+    everywhere on that side, which stands at that end of the picture; `band`: the texts (long first) saying that no
+    alkalinity band is set, for the stretch between the borders, or (); `letter`: a letter's width (letter_pc).
+
+    The ways a border's word can stand, best first:
+      0. in its own region, against its border;
+      1. between the borders, against its border, when the stretch between them holds it;
+      2. in its own region, moved away from its border past whatever stands in the way (the mark, the other word);
+      3. between the borders against its border although it runs on past the other border.
+    A word with no border (at_border False) stands at its end of the picture (0), or moved inwards past what stands in
+    the way (2). Of every pair of ways in which nothing touches, the pair whose worse way is best is taken (then the
+    better other way, then CO₂'s). When no pair fits, the word of the border nearer the water stands alone, and the
+    other's number is in the picture's name only (ph_window says every number there). The CO₂ word is always left of
+    the NH₃ word. The band's words stand in the middle of the widest free run between the borders when one holds
+    them, the short form when only it fits."""
+    def wide(text_):
+        return len(text_) * letter
+
+    blocked = []
+    if water is not None:
+        blocked.append((water - MARK_HALF, water + MARK_HALF))
+    elif off:
+        blocked.append((0.0, NAME_EDGE + wide(off)) if off[0] == '◀' else (100 - NAME_EDGE - wide(off), 100.0))
+
+    def apart(span, other):
+        return span[1] + NAME_GAP <= other[0] + 1e-9 or other[1] + NAME_GAP <= span[0] + 1e-9
+
+    def free(span, others):
+        return (span[0] >= NAME_EDGE - 1e-9 and span[1] <= 100 - NAME_EDGE + 1e-9
+                and all(apart(span, other) for other in others))
+
+    def moved(start, width, others, step):
+        """The span of `width` nearest `start` in the direction `step` (-1 leftwards: `start` is then its END) that
+        nothing of `others` touches, or None when the picture ends first."""
+        for _ in range(len(others) + 2):
+            span = (start - width, start) if step < 0 else (start, start + width)
+            hit = [other for other in others if not apart(span, other)]
+            if not hit:
+                return span if free(span, ()) else None
+            start = min(other[0] for other in hit) - NAME_GAP if step < 0 else max(other[1] for other in hit) + NAME_GAP
+        return None
+
+    def stand(key, word, way, others):
+        """(x, anchor, span) of a side's word standing in `way` (0 to 3) beside `others`, or None."""
+        said, at_border = word
+        width = wide(said)
+        leftwards = key == 'co2'                     # the CO₂ region lies left of its border, the NH₃ region right
+        border = left if leftwards else right
+        if not at_border:                            # at its end of the picture, running inwards
+            start = NAME_GAP if leftwards else 100 - NAME_GAP
+            if way == 0:
+                span = (start, start + width) if leftwards else (start - width, start)
+            elif way == 2:
+                span = moved(start, width, others, 1 if leftwards else -1)
+            else:
+                span = None
+            anchor = 'start' if leftwards else 'end'
+        elif way in (0, 2):                          # in its own region
+            start = border - NAME_GAP if leftwards else border + NAME_GAP
+            if way == 0:
+                span = (start - width, start) if leftwards else (start, start + width)
+            else:
+                span = moved(start, width, others, -1 if leftwards else 1)
+            anchor = 'end' if leftwards else 'start'
+        else:                                        # between the borders
+            start = border + NAME_GAP if leftwards else border - NAME_GAP
+            span = (start, start + width) if leftwards else (start - width, start)
+            if way == 1 and not (span[1] <= right and span[0] >= left):
+                span = None
+            anchor = 'start' if leftwards else 'end'
+        if span is None or not free(span, others):
+            return None
+        return (span[0] if anchor == 'start' else span[1]), anchor, span
+
+    def chosen():
+        if co2 is None or nh3 is None:
+            key, word = ('co2', co2) if nh3 is None else ('nh3', nh3)
+            found = None if word is None else next(
+                (place for place in (stand(key, word, way, blocked) for way in range(4)) if place), None)
+            return (found, None) if key == 'co2' else (None, found)
+        pairs = sorted(((a, b) for a in range(4) for b in range(4)), key=lambda pair: (max(pair), sum(pair), pair[0]))
+        for way_a, way_b in pairs:
+            # (a word that moves, moves past the other one: so each is tried standing first)
+            for co2_first in (True, False):
+                if co2_first:
+                    a = stand('co2', co2, way_a, blocked)
+                    b = a and stand('nh3', nh3, way_b, [*blocked, a[2]])
+                else:
+                    b = stand('nh3', nh3, way_b, blocked)
+                    a = b and stand('co2', co2, way_a, [*blocked, b[2]])
+                if a and b and a[2][1] <= b[2][0]:
+                    return a, b
+        # no pair fits: the word of the border nearer the water alone (CO₂'s when neither is, or there is no mark)
+        near_nh3 = water is not None and abs(water - right) < abs(water - left)
+        for key, word in ((('nh3', nh3), ('co2', co2)) if near_nh3 else (('co2', co2), ('nh3', nh3))):
+            for way in range(4):
+                found = stand(key, word, way, blocked)
+                if found:
+                    return (found, None) if key == 'co2' else (None, found)
+        return None, None
+
+    a, b = chosen()
+    names, taken = [], list(blocked)
+    for key, word, place in (('co2', co2, a), ('nh3', nh3, b)):
+        if place is not None:
+            names.append((key, word[0], _pc(place[0]), place[1]))
+            taken.append(place[2])
+    if band and right > left:
+        # the free runs between the borders, widest first
+        edges = sorted((max(start, left), min(end, right)) for start, end in taken if end > left and start < right)
+        runs, at = [], left
+        for start, end in edges:
+            runs.append((at, start))
+            at = max(at, end)
+        runs.append((at, right))
+        start, end = max(runs, key=lambda run: run[1] - run[0])
+        for text_ in band:
+            if end - start >= wide(text_) + 2 * NAME_GAP:
+                names.append(('band', text_, _pc((start + end) / 2), 'middle'))
+                break
+    return tuple(names)
+
+
+def ph_window(card, view=None):
     """The PhWindow of a card, from its chart (the chemistry core's analysis: the two borders as pH, and whether the
     water is past each). Nothing is judged here: a region is where the core's border says it is, the water is "in" a
     region when the core says it is past that border, and the stretch between the borders is called safe only when the
@@ -328,11 +477,6 @@ def ph_window(card):
     def at(ph):
         return (min(max(ph, low), high) - low) / (high - low) * 100
 
-    def under(start, end):
-        return start - 2 < water < end + 2
-
-    # (a border's number never lies under the water's mark: it goes to the other side of its border, and when the mark
-    # is on the border itself, past the mark)
 
     co2, nh3, water = analysis.co2, analysis.nh3, at(analysis.water.ph)
     left = 100.0 if co2.everywhere else at(co2.ph) if co2.ph is not None else 0.0
@@ -354,46 +498,49 @@ def ph_window(card):
     if off:
         off_text = (f'◀ {number(analysis.water.ph, 2)}' if off == 'low' else f'{number(analysis.water.ph, 2)} ▶')
         said.append(gettext('off the scale (%(low)s to %(high)s)') % {'low': number(low, 1), 'high': number(high, 1)})
-    names = []
+    # each side's word: a border's number AT its border (when the border is on the scale), or what is missing or
+    # everywhere on that side, at that end; where they stand is place_names' rule
+    co2_word = nh3_word = None
     if co2.everywhere:
-        names.append(('co2', 'CO₂', _pc(1.2), True))
+        co2_word = ('CO₂', False)
         said.append(gettext('CO₂ is past its limit at every pH'))
     elif co2.ph is not None:
         if left > 0:
-            outside = left >= 17 and not under(left - 15, left)
-            names.append(('co2', f'CO₂ {number(co2.ph, 2)}',
-                          _pc(left - 1.2 if outside else max(left + 1.2, water + 2.6 if under(left, left) else 0)),
-                          not outside))
+            co2_word = (f'CO₂ {number(co2.ph, 2)}', True)
         said.append(gettext('CO₂ passes its limit below pH %(ph)s') % {'ph': number(co2.ph, 2)})
     elif 'co2_limit_mg_l' not in chart.limits:
-        names.append(('co2', gettext('no CO₂ limit'), _pc(1.2), True))
+        co2_word = (gettext('no CO₂ limit'), False)
         said.append(gettext('no CO₂ limit for these fish'))
     else:
         said.append(gettext('CO₂ does not reach its limit'))
     if nh3.everywhere:
-        names.append(('nh3', 'NH₃', _pc(98.8), True))
+        nh3_word = ('NH₃', False)
         said.append(gettext('NH₃ is past its limit at every pH'))
     elif nh3.ph is not None:
         if right < 100:
-            outside = right <= 83 and not under(right, right + 15)
-            names.append(('nh3', f'{number(nh3.ph, 2)} NH₃',
-                          _pc(right + 1.2 if outside else min(right - 1.2, water - 2.6 if under(right, right) else 100)),
-                          not outside))
+            nh3_word = (f'{number(nh3.ph, 2)} NH₃', True)
         said.append(gettext('NH₃ passes its limit above pH %(ph)s') % {'ph': number(nh3.ph, 2)})
     elif 'nh3_n_limit_mg_l' not in chart.limits:
-        names.append(('nh3', gettext('no NH₃ limit'), _pc(98.8), True))
+        nh3_word = (gettext('no NH₃ limit'), False)
         said.append(gettext('no NH₃ limit for these fish'))
     elif nh3.status == Status.NOT_MEASURED:
-        names.append(('nh3', gettext('no TAN'), _pc(98.8), True))
+        nh3_word = (gettext('no TAN'), False)
         said.append(gettext('NH₃ not assessed: no TAN'))
     else:
         said.append(gettext('NH₃ does not reach its limit'))
+    # (review R6) no alkalinity limit row: the stretch between the borders is not drawn safe, and the window says why
+    # in words, in the picture where they fit and always in its name
+    band = ()
+    if analysis.limits.alkalinity_low_mg_l is None or analysis.limits.alkalinity_high_mg_l is None:
+        band = (gettext('no alkalinity band'), gettext('no alk. band'))
+        said.append(gettext('no alkalinity band for these fish'))
+    names = place_names(left, right, None if off else water, co2_word, nh3_word, band, letter_pc(card, view), off_text)
     if chart.old:
         said.append(gettext('last known position, old: %(values)s') % {
             'values': ', '.join(str(parameters.get(item.field).short) for item in chart.old)})
     label = gettext('pH window, %(unit)s: %(said)s') % {'unit': card.unit.code, 'said': '; '.join(said)}
     zones = tuple(key for key, border in (('co2', co2), ('nh3', nh3)) if border.status == Status.CRITICAL)
-    return PhWindow(label, tuple(regions), tuple(names), _pc(water), zones, bool(chart.old), off=off, off_text=off_text)
+    return PhWindow(label, tuple(regions), names, _pc(water), zones, bool(chart.old), off=off, off_text=off_text)
 
 
 # ---- the unit's chart as a picture of the card's own size ---------------------------------------------------------

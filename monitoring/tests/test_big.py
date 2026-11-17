@@ -15,8 +15,12 @@ from .test_small import SmallCase, card_of, nodes, text
 
 PAGE, CARDS = reverse('monitoring:monitor'), reverse('monitoring:cards')
 BIG = {'mode': 'big'}
-# Raise it only with a reason; a card that grows is a wall that slows.
-BIG_CARD_BYTES = 26000
+# What one Big card may weigh in the page, in bytes. Set from REAL cards (2026-11-17, a copy of the development data,
+# `?mode=big` in Turkish, 20 stocked units: 19,272 to 29,120 bytes a card, the median 27,217; the heaviest, HA-R02,
+# has fourteen value rows, two reasons and both regions drawn), with about a twentieth of room: the mock-up's 21.6 KB
+# was a card of fewer rows and no arrival times. A wall of 20 is then about 0.6 MB before compression (the page weighed
+# 572 KB). Raise it only with a reason; a card that grows is a wall that slows.
+BIG_CARD_BYTES = 30500
 
 
 class BigCase(SmallCase):
@@ -244,10 +248,17 @@ class BigCardTests(BigCase):
         self.assertNotIn('chart-region-nh3', ' '.join(' '.join(each.classes) for each in drawn.walk()))
 
     def test_a_big_card_stays_within_its_weight(self):
-        """What one Big card may weigh in the page (the mock-up's was 21.6 KB): pinned from what these cards weigh."""
+        """What one Big card may weigh in the page: the bound is a real Turkish card's (BIG_CARD_BYTES), and the card
+        weighed here is as full as that one: Turkish, every value the water form takes a row, two reasons, both
+        regions drawn."""
         import re
-        self.good_water(oxygen_mg_l='5', ph='5.9')
+        from core.models import Profile
+        Profile.objects.update_or_create(user=self.reader, defaults={'language': 'tr'})
+        self.good_water(oxygen_mg_l='5', ph='5.9', oxygen_saturation_pct='48.0', co2_mg_l='18', nitrite_n_mg_l='0.05',
+                        nitrate_n_mg_l='40', tgp_pct='101', salinity_ppt='0.2', turbidity_ntu='3')
         html = self.page()
+        self.assertIn('lang="tr"', html)
         card = re.search(rf'<article[^>]*card:{self.t2.pk}.*?</article>', html, re.S).group(0)
+        self.assertGreaterEqual(card.count('monitor-row '), 12)                # a row for every value
         self.assertLessEqual(len(card.encode()), BIG_CARD_BYTES)
-        self.assertGreater(len(card.encode()), 8000)
+        self.assertGreater(len(card.encode()), 20000)                          # and it IS a full card that is weighed

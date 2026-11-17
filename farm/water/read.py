@@ -470,6 +470,9 @@ class Reading:
     through: object = None         # the Reading in the other oxygen unit it was judged as (Context.judge), else None
     why_no_limit: str = ''      # with status No limit: no fish in the unit that day, or no limit for their species
     provenance: str = ''        # a worked-out value: the formula version (and ionic strength) it was worked out by
+    # A value stored converted (a pH measured on another scale than NBS): what was measured, in the few words every page
+    # prints visibly beside the stored number (farm/_water_value.html; review R6); the whole sentence is `provenance`.
+    measured: str = ''
 
     @property
     def at(self):
@@ -725,6 +728,7 @@ class Context:
         if observation.sample is not None and observation.sample.ph_scale and parameters.PH in found:
             # A pH measured on another scale is stored on the NBS scale; the reading says what was measured.
             found[parameters.PH].provenance = str(messages.ph_measured(observation.sample))
+            found[parameters.PH].measured = str(messages.ph_measured_short(observation.sample))
         salinity = self.salinity_for(observation)
         if observation.get(TAN) is not None:
             found.update(self._ammonia(observation, salinity))

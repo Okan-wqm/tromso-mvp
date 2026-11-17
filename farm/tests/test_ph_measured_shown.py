@@ -25,7 +25,7 @@ class ShownTests(SeaTestCase):
         self.record(ph='7.95', temperature_c='12', salinity_ppt='34', alkalinity_mg_l='115', tan_mg_l='1.000')
 
     def test_the_reading_carries_the_visible_words(self):
-        reading = read.unit_water([self.sea])[self.sea.pk]['ph']
+        reading = read.unit_water([self.sea])[self.sea.pk].get('ph')
         self.assertEqual(str(reading.measured), 'measured 7.95 on the total scale')
         self.assertIn('Measured 7.95 on the total scale; put on the NBS scale by formula 3', reading.provenance)
 
@@ -44,7 +44,7 @@ class ShownTests(SeaTestCase):
 
     def test_an_nbs_ph_says_nothing(self):
         self.record(ph='7.80', ph_scale='nbs', temperature_c='12', salinity_ppt='34', hours=0)
-        self.assertEqual(read.unit_water([self.sea])[self.sea.pk]['ph'].measured, '')
+        self.assertEqual(read.unit_water([self.sea])[self.sea.pk].get('ph').measured, '')
         page = self.client.get(reverse('farm:water'), {'unit': self.sea.pk})
         self.assertNotContains(page, 'wq-measured')
         history = self.client.get(reverse('farm:water'), {'unit': self.sea.pk, 'view': 'history'})

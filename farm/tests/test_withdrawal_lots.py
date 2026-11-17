@@ -30,6 +30,7 @@ from ..models import (Batch, Feed, HandlingAcknowledgement, Medicine, MedicineWi
                       WithdrawalAcknowledgement)
 from ..stock import services as stock_services
 from ..stock.dates import shown_date
+from .helpers import going_on
 from .test_harvest_inside_withdrawal import HarvestInsideTestCase
 from .test_stock import make_unit
 from .test_withdrawal_cleaner_fish import CleanerWithdrawalTestCase
@@ -45,8 +46,13 @@ class LotsTestCase(HarvestInsideTestCase):
         self.bath = self.medicine(days=7)
 
     def move(self, batch, source, target, days_ago, count=500, **fields):
-        return stock_services.record_transfer(self.user, source=source, batch=batch, day=self.day(days_ago),
-                                              legs=[(target, count)], reason='density', **fields)
+        if 'withdrawal_ack' in fields:
+            return stock_services.record_transfer(self.user, source=source, batch=batch, day=self.day(days_ago),
+                                                  legs=[(target, count)], reason='density', **fields)
+        # A move that combines held fish with fish that are not held is asked about (the owner's decision 8,
+        # farm/tests/test_withdrawal_combined.py): ticked here.
+        return going_on(stock_services.record_transfer, self.user, source=source, batch=batch, day=self.day(days_ago),
+                        legs=[(target, count)], reason='density', **fields)
 
     def ends(self, unit, day=None):
         """[(the batch held, the first day it may be harvested)] of the unit's own withdrawal line."""
@@ -146,7 +152,7 @@ class Case2SplitDuringOrAfterTheCourseTests(LotsTestCase):
     def test_fish_moved_out_on_the_first_course_day_are_held_and_the_day_before_it_are_not(self):
         self.move(self.a, self.t1, self.t2, 5, 300)                                 # the first course day: no time
         # The day before: these fish are out of the course's reach, which the guard asks about (they were held).
-        change = self.change_of(self.move, self.a, self.t1, self.t3, 6, 300)
+        change = self.change_of(self.move, self.a, self.t1, self.t3, 6, 300, withdrawal_ack=None)
         self.assertEqual([(each.batch.code, each.unit.code, each.freed) for each in change.released],
                          [(self.a.code, 'T-03', True)])
         self.move(self.a, self.t1, self.t3, 6, 300, withdrawal_ack=change.fingerprint)
@@ -368,7 +374,7 @@ class Case7And8TheGuardTests(LotsTestCase):
                          [(self.b.code, 'T-02', True)])
 
     def test_a_move_dated_before_the_course_that_takes_fish_out_of_its_reach_is_asked_about(self):
-        change = self.change_of(self.move, self.a, self.t1, self.t4, 7, 300)        # the day before the bath
+        change = self.change_of(self.move, self.a, self.t1, self.t4, 7, 300, withdrawal_ack=None)   # before the bath
         self.assertEqual([(each.batch.code, each.unit.code, each.freed) for each in change.released],
                          [(self.a.code, 'T-04', True)])
         self.move(self.a, self.t1, self.t4, 7, 300, withdrawal_ack=change.fingerprint)
@@ -376,11 +382,15 @@ class Case7And8TheGuardTests(LotsTestCase):
         self.assertEqual(self.ends(self.t1), [(self.a.code, self.until)])
 
     def test_a_move_of_fish_that_were_never_held_asks_nothing(self):
-        self.move(self.b, self.t2, self.t4, 0, 200)             # B's untreated fish to an empty tank, today
+        self.move(self.b, self.t2, self.t4, 0, 200, withdrawal_ack=None)   # B's untreated fish to an empty tank
         self.assertFalse(WithdrawalAcknowledgement.objects.exists())
+        self.assertFalse(HandlingAcknowledgement.objects.exists())
         self.assertEqual(self.ends(self.t4), [])
-        self.move(self.a, self.t1, self.t4, 0, 200)             # held fish in beside them: held there, not released
+        # Held fish in beside them: nobody is released; that B now waits with them is said at the move (the owner's
+        # decision 8, farm/tests/test_withdrawal_combined.py) and ticked by `move`.
+        self.move(self.a, self.t1, self.t4, 0, 200)
         self.assertFalse(WithdrawalAcknowledgement.objects.exists())
+        self.assertEqual([row.batch for row in HandlingAcknowledgement.objects.all()], [self.b])
         self.assertEqual(self.ends(self.t4), [(self.a.code, self.until)])
 
 
@@ -474,8 +484,8 @@ class Case10CleanerFishTests(CleanerWithdrawalTestCase):
                       f'{shown_date(self.until)}): keep them out of the harvest.', result.notes)
         self.assertEqual(check.earliest(self.cage3, self.other_salmon).decides, '')
         # ... while C-01's own salmon, moved on, hold the unit they come into.
-        stock_services.record_transfer(self.user, source=self.cage, batch=self.salmon_batch, day=self.day(1),
-                                       legs=[(self.cage3, 100)], reason='density')
+        going_on(stock_services.record_transfer, self.user, source=self.cage, batch=self.salmon_batch,
+                 day=self.day(1), legs=[(self.cage3, 100)], reason='density')
         warnings = self.withdrawals(check.assess('harvest', self.cage3, self.today, self.other_salmon))
         self.assertCountEqual([(each.block.batch, each.block.until) for each in warnings],
                               [(self.salmon_batch, self.until), (self.other_salmon, self.until)])
@@ -501,8 +511,8 @@ class BudgetTests(LotsTestCase):
         batches = [self.a, *(self.stock(unit, count=1000, days_ago=9) for unit in units[1:])]
         self.treat(self.bath, 6, 6)
         for index in range(1, count):
-            stock_services.record_transfer(self.user, source=units[index - 1], batch=batches[index - 1],
-                                           day=self.day(5), legs=[(units[index], 100)], reason='density')
+            going_on(stock_services.record_transfer, self.user, source=units[index - 1], batch=batches[index - 1],
+                     day=self.day(5), legs=[(units[index], 100)], reason='density')
         return units
 
     def counted(self, call):

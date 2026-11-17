@@ -2082,11 +2082,18 @@ corrected temperature or a backdated transfer changes it at once:
   lot of production fish holds the unit as a whole, its cleaner fish too, and their hold follows them where they are
   moved; a held lot of cleaner fish never makes another lot held (sharing a unit with held cleaner fish carries no
   hold onward), and the harvest dialog of the production fish beside them says it as one note per cleaner batch with
-  its latest end: no warning, no acknowledgement, no change of the earliest date. The batches a reader loads are every batch the fish asked can have met
-  (`farm.stock.read.together` over `spans()`: one grouped query of the live ledger, whatever the number of units or
-  batches), and the moves are read with the presence in one query, so the units list, a drawer, the plans, the
-  cards, the Treatments list and a guard cost the same for 6 units as for 24
-  (`farm/tests/test_withdrawal_lots.py`, the ten cases of the rule and the recorded counts);
+  its latest end: no warning, no acknowledgement, no change of the earliest date.
+  **What a reader loads is bounded by the holds in force, not by the farm's history** (`Reader`): the courses that
+  are not provably over (a medicine whose rows are all in days, one of them for every species, is over by the
+  calendar; a degree-day row or a species that may have no row needs the fish read), the batches they can have
+  exposed, and, of the withdrawals still in force in the window asked, the batches they can have reached
+  (`farm.stock.read.reach` over `spans()`: one grouped query of the live ledger says who was where). A batch that
+  only shared a unit long before, or with fish that were never held, is not read. A course of UNKNOWN end is in
+  force until it is given one, however old, and its fish are read. The queries do not grow with the units or the
+  batches (the units list, a drawer, the plans, the cards, the Treatments list and a guard cost the same for 6
+  units as for 24: `farm/tests/test_withdrawal_lots.py`, the ten cases of the rule and the recorded counts), and
+  the batches read and locked do not grow with the generations of fish long gone
+  (`farm/tests/test_withdrawal_combined.py`, `HistoryTests`);
 - **per species**: the medicine's row for the batch's species, else its row for every species, else the end is
   unknown (see Medicines); the margin is applied to both values;
 - **days**: day 1 is the day after the last treatment day, the first day the fish may be harvested is the last
@@ -2123,8 +2130,23 @@ batch that was not treated itself), and the write guard (`snapshot`, `change`): 
 question names the batch and the unit ("B-2026-002 in T-03 is held today (…) and would no longer be held …"), and a
 move the write itself records or voids is followed, so a move dated before the course that takes fish out of its
 reach, and the void of the move that had brought fish beside held fish, are asked about where the fish are after it;
-a move of fish that were never held asks nothing. A write about some units locks every batch their fish can have
-met (`lock_fish`), since it can move the withdrawal of a batch that was never in them.
+a move of fish that were never held asks nothing.
+**The spread is said at the move** (the owner's decisions 7 and 8 of 16.11.2026: fish moved into a tank that holds
+fish are one group with them, whoever is combined waits for the others' withdrawal, wherever those fish go; it is
+said when it is made, and the move is allowed). A transfer, a split, a grading or a stocking that combines held fish
+with fish that are not held, in either direction, is asked about by the same box: "B-2026-002 in T-02 will wait for
+the harvest with B-2026-001, the held fish it is combined with in T-02: harvest from 18.11.2026. …" ("… and the end
+of that withdrawal is not known." for an unknown end), once for every lot the move newly holds, also the lots fish
+went on to when the move is dated in the past. Going on stores a handling acknowledgement on the operation (the batch
+that now waits, the end, the withdrawal's source, the sentence) and a critical log line. It is asked when the
+dialog is sent, not when it opens: the tanks are chosen in it (`farm/tests/test_withdrawal_combined.py`).
+**Locks.** A write locks every batch whose withdrawal it can change (`farm.stock.services.lock_fish`, which every
+stock operation, void, treatment, feeding, sample and medicine row goes through): its own fish, the batches its
+fish can have reached since its day (a move joins fish), and the batches the withdrawals of its fish hold; the
+batches in one statement in primary-key order, then the units. So a move of held fish into T-02 and a harvest, at the
+same moment, of fish that went on from T-02 to T-03 take turns and the later sees the earlier
+(`farm/tests/test_withdrawal_locks.py`: two real transactions, both orders). It is bounded by the day of the write
+and the holds in force, not by the history.
 **What blocks a delete** (`held_reached`): a unit, a loop or a species waits while a lot held today would be moved
 by it: the unit holds such a lot; the withdrawal's batch was exposed in it (without the unit the course reached
 nobody); or, for a degree-day withdrawal, its batch was in the unit since the course's last day (its water counts for
@@ -2132,8 +2154,11 @@ the end: the open question above). An empty unit that was never treated is no lo
 a batch that was once in it; for a day-based medicine neither is the untreated sibling tank.
 **Landing this changes what stored courses hold, with no record changed** (worked out on read): a tank split off
 before a course loses its withdrawal; a unit whose fish shared a unit with held fish and moved on, or that held fish
-passed through, gains one until the same end. `manage.py check_withdrawal` lists the fish held now, unit by unit, and
-every harvest inside a withdrawal: run it after landing and read both lists.
+passed through, gains one until the same end. **The landing carries a before and an after listing**: `manage.py check_withdrawal --listing` writes the fish
+held now (unit, batch, end, about, the course or feeding, why) and every harvest inside a withdrawal as sorted,
+tab-separated lines with no ids, made for a diff. It reads only what the rule before and the rule after both have,
+so the same command file runs on a checkout of the old rule: the listing of the data before the landing and the
+listing after it are kept with the landing notes, and their diff is what the landing changed.
 
 Where it shows: the health records give it to the shared handling check through the registry of
 `farm/handling/withdrawal.py` (`blocks(unit, day)`: a block per batch held in the unit and cause, `until` the first day the fish

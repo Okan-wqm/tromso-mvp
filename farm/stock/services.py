@@ -141,12 +141,21 @@ def locked(model, pks):
 
 
 def lock_fish(unit_ids, first=None, also=()):
-    """Locks the fish of `unit_ids` from the day `first` on (None: every batch they ever held), in the order a stock operation locks them (batches, then
-    units), and returns ({unit id: unit}, the batch ids): the fish a write about these units can reach, which the
-    withdrawal guard works the withdrawals of (fish that were in a unit at any moment of a day, as the withdrawal asks:
-    Presence.during_between, review F-03). `also`: batches locked with them whether or not they are found there (an
-    operation's own). Which batches were there is read before the units are locked and read
-    again after: a batch that arrived in between is locked too (cross-review 2, 7). That late lock is the one taken
+    """Locks the fish a write about `unit_ids` from the day `first` on (None: of any day) can reach, in the order a
+    stock operation locks them (batches, in one statement in primary-key order, then units), and returns ({unit id:
+    unit}, the ids of the batches in the units): the fish the withdrawal guard works the withdrawals of (fish that
+    were in a unit at any moment of a day, as the withdrawal asks: Presence.during_between, review F-03). `also`:
+    batches locked with them whether or not they are found there (an operation's own).
+
+    **What is locked is every batch whose medicine withdrawal the write can change** (flow fault S-03; `_reach`): a
+    withdrawal holds the fish that shared a unit with held fish wherever they went, so a move of held fish into T-02
+    changes the withdrawal of a batch that was in T-02 and is harvested from T-03 at that moment. Both writes take
+    that batch's lock, in the same order, so they take turns and the later one sees the earlier (review of S-03, F-2;
+    `farm/tests/test_withdrawal_locks.py`, two real transactions). It is bounded by the time a hold is in force and
+    by the day of the write, never by the farm's history (F-3).
+
+    Which batches those are is read before the units are locked and read again after: one that came into reach in
+    between is locked too (cross-review 2, 7). That late lock is the one taken
     after a unit's: the operation that brought the batch has committed (it is read), so only an operation begun since,
     holding the batch and waiting for one of these units, can cross it; the database sees that deadlock and fails one of
     the two whole, nothing written, and the person sends it again (cross-review 3, 5)."""
@@ -155,29 +164,39 @@ def lock_fish(unit_ids, first=None, also=()):
         return {batch_id for unit_id in unit_ids for batch_id in presence.batches.get(unit_id, ())
                 if first is None or presence.during_between(unit_id, batch_id, first, date.max)}
 
-    # With every batch their fish can have met (read.together): a withdrawal holds the fish that shared a unit with
-    # held fish wherever they went (flow fault S-03), so a write about these units can move the withdrawal of a batch
-    # that was never in them, and a harvest of that batch must take turns with it.
-    batch_ids = read.together(present() | set(also))
+    here = present() | set(also)
+    batch_ids = _reach(unit_ids, here, first)
     locked(Batch, batch_ids)
     units = locked(Tank, set(unit_ids))
-    arrived = read.together(present()) - batch_ids
+    again = present() | set(also)
+    arrived = _reach(unit_ids, again, first) - batch_ids
     if arrived:
         locked(Batch, arrived)
-    return units, batch_ids | arrived
+    return units, here | again
+
+
+def _reach(unit_ids, batch_ids, first):
+    """`batch_ids` (the fish in `unit_ids` from `first` on, and an operation's own) and every batch whose withdrawal a
+    write about them can change: the batches their fish can have reached since that day (read.downstream: a move
+    joins the fish of its units, and what joined them since), and the batches the withdrawals of these fish hold
+    (farm.health.withdrawal.held_with: a course, a sample or a medicine's row changes the end of every lot its
+    withdrawal holds, wherever those fish are)."""
+    found = read.spans()
+    return (set(batch_ids) | read.downstream(found, unit_ids, first)
+            | withdrawal.held_with(batch_ids, first, found))
 
 
 def _locked_for(kind, day, batch_ids, unit_ids):
     """Step 1: ({batch id: batch}, {unit id: unit}) of an operation, locked: the batches, then the units, each in
-    primary-key order. An operation whose handling check asks for a medicine withdrawal (a harvest) is held by the
-    withdrawal of EVERY batch in its unit, whichever batch it names (farm/handling/check.py, flow fault S-02): the
-    batches that share the unit from its day on are locked with its own, as a treatment locks its fish (`lock_fish`), so
-    the harvest and a write that creates or lengthens a withdrawal of any of them take turns, and the later one sees
-    the earlier. Only the operation's own batches are returned: the others are locked, not written."""
-    if KIND_OF_OPERATION.get(kind) != check.WITHDRAWAL_KIND:
-        return locked(Batch, batch_ids), locked(Tank, unit_ids)
-    units, _sharing = lock_fish(unit_ids, day, also=batch_ids)
-    return locked(Batch, batch_ids), units
+    primary-key order. Every operation locks the fish it can reach as a treatment locks its fish (`lock_fish`): the
+    batches in its units from its day on (a harvest is held by the withdrawal of EVERY batch in its unit, whichever
+    batch it names: farm/handling/check.py, flow fault S-02) and the batches whose withdrawal it can change (a move
+    joins fish, S-03). So a harvest and a write that creates, lengthens or carries a withdrawal to any of them take
+    turns, and the later one sees the earlier. Only the operation's own batches are returned to be written; `sharing`
+    is the ids of every batch in its units from its day on (its own among them): the fish the withdrawal guard is
+    asked of, so that a batch stocked or moved in beside held fish is seen (the new batch has no id yet)."""
+    units, sharing = lock_fish(unit_ids, day, also=batch_ids)
+    return locked(Batch, batch_ids), units, sharing
 
 
 def _already(token):
@@ -199,8 +218,9 @@ def _commit(user, kind, day, entries, *, notes='', ack=False, size_mix_ack=False
     `ack` and `size_mix_ack` are the person's ticks of the two questions of step 5 (above the max biomass, batches of
     different sizes): a tick not needed is not stored."""
     with transaction.atomic():
-        batches, units = _locked_for(kind, day, {entry.batch.pk for entry in entries if entry.batch is not None},
-                                     {entry.unit.pk for entry in entries})
+        batches, units, sharing = _locked_for(kind, day,
+                                              {entry.batch.pk for entry in entries if entry.batch is not None},
+                                              {entry.unit.pk for entry in entries})
         _already(token)
         _check_static(kind, day, entries, batches, units, new_batch, opening)
         if health_event is not None:
@@ -270,9 +290,9 @@ def _commit(user, kind, day, entries, *, notes='', ack=False, size_mix_ack=False
 
         # A stock operation moves fish into or out of a course's units and days, or voids them: through the withdrawal
         # guard (a harvest it records itself is asked about by its own handling check).
-        return withdrawal.guarded(user, set(batches), earliest_today(units.values()),
+        return withdrawal.guarded(user, set(batches) | sharing, earliest_today(units.values()),
                                   lambda: write(batches), seen=withdrawal_ack,
-                                  exclude_operation=lambda operation: operation.pk)
+                                  exclude_operation=lambda operation: operation.pk, combining=True)
 
 
 def _handling(user, kind, day, entries, batches, units, seen):
@@ -983,8 +1003,8 @@ def void(user, operation, reason, withdrawal_ack=None, ack=False, size_mix_ack=F
     with transaction.atomic():
         operation = StockOperation.all_objects.select_for_update().get(pk=operation.pk)
         lines = list(operation.movements.select_related('unit', 'batch'))
-        batches = locked(Batch, {line.batch_id for line in lines})
-        units = locked(Tank, {line.unit_id for line in lines})
+        batches, units, sharing = _locked_for(operation.kind, operation.date, {line.batch_id for line in lines},
+                                              {line.unit_id for line in lines})
 
         def write():
             before = read.unit_counts(list(units))
@@ -1014,4 +1034,5 @@ def void(user, operation, reason, withdrawal_ack=None, ack=False, size_mix_ack=F
             return operation
 
         # The fish leave or come back to the units and days of a course: through the withdrawal guard.
-        return withdrawal.guarded(user, set(batches), earliest_today(units.values()), write, seen=withdrawal_ack)
+        return withdrawal.guarded(user, set(batches) | sharing, earliest_today(units.values()), write,
+                                  seen=withdrawal_ack)

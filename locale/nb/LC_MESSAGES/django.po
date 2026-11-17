@@ -53,6 +53,22 @@ msgstr ""
 "tilbakeholdelsestid etter denne endringen: fisken kan gå til mat."
 
 #, python-format
+msgid ""
+"%(batch)s in %(unit)s will wait for the harvest with %(with)s, the held fish it is combined with "
+"in %(where)s, and the end of that withdrawal is not known. %(withdrawal)s"
+msgstr ""
+"%(batch)s i %(unit)s venter på slakt sammen med %(with)s, den tilbakeholdte fisken den er slått "
+"sammen med i %(where)s, og slutten på den tilbakeholdelsestiden er ikke kjent. %(withdrawal)s"
+
+#, python-format
+msgid ""
+"%(batch)s in %(unit)s will wait for the harvest with %(with)s, the held fish it is combined with "
+"in %(where)s: %(end)s. %(withdrawal)s"
+msgstr ""
+"%(batch)s i %(unit)s venter på slakt sammen med %(with)s, den tilbakeholdte fisken den er slått "
+"sammen med i %(where)s: %(end)s. %(withdrawal)s"
+
+#, python-format
 msgid "%(batch)s is %(species)s; the protocol is for %(protocol_species)s."
 msgstr "%(batch)s er %(species)s; protokollen er for %(protocol_species)s."
 
@@ -17542,7 +17558,7 @@ msgstr "g/kg"
 
 #, python-format
 msgid "given medicated feed in %(units)s"
-msgstr "fikk medisinfôr i %(units)s"
+msgstr "som fikk medisinfôr i %(units)s"
 
 msgid "granted without approval"
 msgstr "innvilges uten godkjenning"
@@ -18339,7 +18355,7 @@ msgstr "totalt sulfid %(value)s µg/L som S"
 
 #, python-format
 msgid "treated in %(units)s"
-msgstr "behandlet i %(units)s"
+msgstr "som ble behandlet i %(units)s"
 
 msgid "treatment"
 msgstr "behandling"

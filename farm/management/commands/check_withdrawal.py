@@ -21,10 +21,47 @@ class Command(BaseCommand):
             'every harvest already recorded inside a withdrawal (medicated fish that may have gone to food), however it '
             'came to, and whether someone acknowledged it.')
 
+    def add_arguments(self, parser):
+        parser.add_argument('--listing', action='store_true', help=(
+            'Write the same two lists as stable, sorted, tab-separated lines and nothing else: "held" (unit, batch, '
+            'end, about, the withdrawal\'s source, why) and "inside" (the harvest\'s day, unit, batch, fish, the '
+            'batch the withdrawal is of, end, about, source). Made to be compared with a diff: run it before and '
+            'after a change of the rule (a landing) on the same data and keep both files with the landing.'))
+
     def handle(self, *args, **options):
         with translation.override('en'):
+            if options['listing']:
+                return self.listing()
             self.held_now()
             self.harvested_inside()
+
+    def listing(self):
+        """The two lists as lines that say the same for the same facts whatever the wording of the pages: ids are not
+        written (codes and days are), the lines are sorted, and only what both the batch rule and the lots rule
+        have is read (`of_units`, `harvests_inside`), so this file runs unchanged on a checkout of the rule before
+        S-03 for the "before" listing."""
+        units = list(Tank.objects.select_related('production_department__site').order_by('code'))
+        stocked = [unit for unit in units if unit.pk in read.stock_of(units)]
+        held = withdrawal.of_units(stocked)
+        codes = dict(Batch.all_objects.values_list('pk', 'code'))
+
+        def end(until):
+            return until.isoformat() if until is not None else 'unknown'
+
+        def source(item):
+            found = item.source
+            day = found.start_date if hasattr(found, 'start_date') else found.date
+            return f'{found._meta.model_name} of {day.isoformat()}'
+
+        lines = [('held', unit.code, codes[item.batch_id], end(item.until), 'about' if item.estimated else '',
+                  source(item), withdrawal.describe(item))
+                 for unit in stocked for item in held.get(unit.pk, [])]
+        lines += [('inside', each.line.operation.date.isoformat(), each.line.unit.code, each.line.batch.code,
+                   str(each.fish), each.batch.code, end(each.until), 'about' if each.approximate else '',
+                   source(each.withdrawal))
+                  for each in withdrawal.harvests_inside()]
+        for line in sorted(lines):
+            self.stdout.write('\t'.join(line))
 
     def held_now(self):
         units = list(Tank.objects.select_related('production_department__site').order_by('code'))

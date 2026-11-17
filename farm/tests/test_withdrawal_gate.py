@@ -56,9 +56,8 @@ class OneRunTests(HarvestInsideTestCase):
     def test_an_acknowledged_transfer_keeps_the_new_units_status_and_its_log(self):
         """The review's probe: the first run's in-memory status change was lost on the second run."""
         t3 = make_unit('T-03', self.hall, status=Tank.Status.PREPARING)
-        b2 = self.stock(self.t2)
+        self.stock(self.t2)
         self.treat(self.medicine(days=7), 6, 6)              # T-01 (self.batch) treated 6 days ago
-        self.assertIsNotNone(b2)
 
         # S-03, rule D: fish moved out of T-01 on a day before the course are out of its reach, so this move frees
         # fish held today, which the guard asks about. (Under the old rule the question came from a harvest of b2 out

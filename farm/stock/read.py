@@ -119,46 +119,73 @@ def batches_ever_in(unit_ids):
 def spans():
     """{(unit id, batch id): (the day of its first live line, the day of its last; None while fish of the batch are
     in the unit)}: when each batch was in each unit, roughly (a gap between two stays is not seen), for the whole live
-    ledger in ONE grouped query. What `together` and `in_units` are asked of, so that a reader of the medicine
-    withdrawal finds the fish a hold can have travelled between without a query per unit or per batch."""
+    ledger in ONE grouped query. What `in_units`, `between` and `reach` are asked of, so that a reader of the medicine
+    withdrawal finds the fish a hold can have reached without a query per unit or per batch, and without loading the
+    ledger of a batch no hold can have reached."""
     rows = (StockMovement.objects.filter(operation__is_deleted=False).order_by().values('unit_id', 'batch_id')
             .annotate(first=Min('operation__date'), last=Max('operation__date'), fish=Sum('count_delta')))
     return {(row['unit_id'], row['batch_id']): (row['first'], None if row['fish'] > 0 else row['last'])
             for row in rows}
 
 
-def _meet(one, other):
-    """Whether two spans share a day."""
-    return (other[1] is None or one[0] <= other[1]) and (one[1] is None or other[0] <= one[1])
-
-
 def in_units(found, unit_ids, day=None):
     """The batches of `found` (`spans()`) that were in one of `unit_ids`: ever, or with `day` on a day their span
     there covers (never fewer than Presence.batches_during says)."""
+    return between(found, unit_ids, day, day) if day is not None else {
+        batch_id for unit_id, batch_id in found if unit_id in set(unit_ids)}
+
+
+def between(found, unit_ids, first, last):
+    """The batches of `found` (`spans()`) whose span in one of `unit_ids` shares a day with `first`..`last`."""
     unit_ids = set(unit_ids)
-    return {batch_id for (unit_id, batch_id), (first, last) in found.items()
-            if unit_id in unit_ids and (day is None or (first <= day and (last is None or day <= last)))}
+    return {batch_id for (unit_id, batch_id), (began, ended) in found.items()
+            if unit_id in unit_ids and began <= last and (ended is None or first <= ended)}
 
 
-def together(batch_ids, found=None):
-    """`batch_ids` and every batch their fish can have met: a batch that was in a unit while one of them was (their
-    spans there share a day), and so on from batch to batch. A medicine withdrawal travels with the fish and through
-    the units they share (farm/health/withdrawal.py, the lots), so the fish a reader must load, and a write must lock,
-    are these and not only the batches asked. Never fewer than can be reached; more when two stays only look
-    overlapping. `found`: `spans()` when the caller has them (else one query)."""
-    found = spans() if found is None else found
+def reach(found, seeds, until=None):
+    """The batches fish held from `seeds` ([(unit id, batch id, day)]) can have reached before `until` (None: with no
+    end), by the spans alone (`found`: `spans()`): a lot (a batch in a unit) is reached from the day held fish can
+    have been in it; from then on every batch whose span in that unit is still running is reached there (they share the
+    unit), and every other unit the lot's batch is still in, or comes into (its fish may have been moved there). Never
+    fewer than the medicine withdrawal's walk reaches (farm.health.withdrawal.Reader._walk, which reads the moves and
+    the days exactly); more, since a span does not say which fish moved. What a reader loads beyond the exposed
+    batches, and what a write locks: bounded by the time a hold is in force, not by the farm's history."""
     of_batch, of_unit = defaultdict(list), defaultdict(list)
-    for (unit_id, batch_id), span in found.items():
-        of_batch[batch_id].append((unit_id, span))
-        of_unit[unit_id].append((batch_id, span))
-    reached, waiting = set(batch_ids), list(batch_ids)
+    for unit_id, batch_id in found:
+        of_batch[batch_id].append(unit_id)
+        of_unit[unit_id].append(batch_id)
+    since, waiting = {}, []
+
+    def take(unit_id, batch_id, day):
+        span = found.get((unit_id, batch_id))
+        if span is None:
+            return
+        day = max(day, span[0])
+        if (span[1] is not None and span[1] < day) or (until is not None and day >= until):
+            return
+        if (unit_id, batch_id) not in since or day < since[(unit_id, batch_id)]:
+            since[(unit_id, batch_id)] = day
+            waiting.append((unit_id, batch_id))
+
+    for seed in seeds:
+        take(*seed)
     while waiting:
-        for unit_id, span in of_batch.get(waiting.pop(), ()):
-            for other, theirs in of_unit[unit_id]:
-                if other not in reached and _meet(span, theirs):
-                    reached.add(other)
-                    waiting.append(other)
-    return reached
+        unit_id, batch_id = waiting.pop()
+        day = since[(unit_id, batch_id)]
+        for other in of_unit[unit_id]:
+            take(unit_id, other, day)
+        for where in of_batch[batch_id]:
+            take(where, batch_id, day)
+    return {batch_id for _unit_id, batch_id in since}
+
+
+def downstream(found, unit_ids, first=None):
+    """The batches a write about `unit_ids` dated `first` (None: of any day) can join to or part from the fish there:
+    those in the units from that day on and every batch they can have reached since (`reach`). A move of held fish
+    into a unit holds the fish of that unit wherever they went afterwards, so a write locks these."""
+    unit_ids = set(unit_ids)
+    day = first or min((began for began, _ended in found.values()), default=None)
+    return reach(found, [(unit_id, batch_id, day) for unit_id, batch_id in found if unit_id in unit_ids]) if day else set()
 
 
 class Presence:
@@ -226,6 +253,19 @@ class Presence:
                 presence.transfers.add((operation_id, pair, source, unit_id, batch_id))
         presence.days = sorted({row[2] for row in rows})
         return presence
+
+    def add(self, other):
+        """Takes in the lines of other batches (a Presence `of_batches(moves=True)` of batches this one has not)."""
+        self.timelines.update(other.timelines)
+        self.arrived.update(other.arrived)
+        for batch_id, unit_ids in other.units.items():
+            self.units[batch_id] |= unit_ids
+        for unit_id, batch_ids in other.batches.items():
+            self.batches[unit_id] |= batch_ids
+        for day, moves in other.moves.items():
+            self.moves[day].extend(moves)
+        self.transfers |= other.transfers
+        self.days = sorted({*self.days, *other.days})
 
     def count_at_end(self, unit_id, batch_id, day):
         """The fish of the batch in the unit after every line dated `day` or before."""

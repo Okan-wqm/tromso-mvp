@@ -55,6 +55,22 @@ msgstr ""
 "ilaç arınma süresiyle tutulmayacak: balıklar gıdaya gidebilir."
 
 #, python-format
+msgid ""
+"%(batch)s in %(unit)s will wait for the harvest with %(with)s, the held fish it is combined with "
+"in %(where)s, and the end of that withdrawal is not known. %(withdrawal)s"
+msgstr ""
+"%(unit)s içindeki %(batch)s, %(where)s içinde birleştirildiği tutulan %(with)s partisiyle "
+"birlikte hasat için bekleyecek ve bu arınma süresinin sonu bilinmiyor. %(withdrawal)s"
+
+#, python-format
+msgid ""
+"%(batch)s in %(unit)s will wait for the harvest with %(with)s, the held fish it is combined with "
+"in %(where)s: %(end)s. %(withdrawal)s"
+msgstr ""
+"%(unit)s içindeki %(batch)s, %(where)s içinde birleştirildiği tutulan %(with)s partisiyle "
+"birlikte hasat için bekleyecek: %(end)s. %(withdrawal)s"
+
+#, python-format
 msgid "%(batch)s is %(species)s; the protocol is for %(protocol_species)s."
 msgstr "%(batch)s partisi %(species)s; protokol ise %(protocol_species)s için."
 
@@ -17568,7 +17584,7 @@ msgstr "g/kg"
 
 #, python-format
 msgid "given medicated feed in %(units)s"
-msgstr "%(units)s içinde ilaçlı yem verildi"
+msgstr "%(units)s içinde ilaçlı yem verilen parti"
 
 msgid "granted without approval"
 msgstr "onaysız verilir"
@@ -18365,7 +18381,7 @@ msgstr "toplam sülfür %(value)s µg/L S olarak"
 
 #, python-format
 msgid "treated in %(units)s"
-msgstr "%(units)s içinde tedavi edildi"
+msgstr "%(units)s içinde tedavi edilen parti"
 
 msgid "treatment"
 msgstr "tedavi"

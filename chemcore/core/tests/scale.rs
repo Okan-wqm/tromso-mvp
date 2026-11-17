@@ -167,11 +167,7 @@ fn only_sea_water_takes_another_scale() {
             );
         }
         assert_eq!(converted(20.0, Origin::SaltAdded, scale), Err(ChemError::SeawaterScale));
-        for (salinity, origin) in [
-            (5.0, Origin::Unknown),
-            (35.0, Origin::Seawater),
-            (30.0, Origin::SaltAdded),
-        ] {
+        for (salinity, origin) in [(5.0, Origin::Unknown), (35.0, Origin::Seawater)] {
             assert!(converted(salinity, origin, scale).is_ok(), "S {salinity} {origin:?}");
         }
         assert_eq!(
@@ -187,6 +183,56 @@ fn only_sea_water_takes_another_scale() {
     // Formula 1 (golden v1's, never the application's) takes them from 5 ‰ too, with its own offset.
     assert!(c::equilibria(12.0, 35.0).is_ok_and(|eq| s::converts(&eq, PhScale::Total)));
     assert!(c::equilibria(12.0, 3.0).is_ok_and(|eq| !s::converts(&eq, PhScale::Total)));
+}
+
+#[test]
+fn a_salt_added_water_never_takes_another_scale() {
+    // The independent review of 2026-11-16, R4. Fresh water salted with NaCl has no sulfate and no fluoride, at any
+    // salinity (the module's rule). Past the Davies limit (about 28.4 ‰ as NaCl) its constants are worked out by the
+    // sea path, for want of another, and `converts` took that for sea water: S 29, 30 and 35 were converted with sea
+    // water's sulfate (12 °C, total 8.00 -> 8.1372 at S 30). It is refused at every salinity, both ways; the NBS pH,
+    // the default, is the pH itself as before.
+    let salted = |salinity: f64| {
+        let ions = Ions {
+            origin: Origin::SaltAdded,
+            ..Ions::default()
+        };
+        f::equilibria_v3(12.0, salinity, Some(80.0), ions)
+    };
+    for salinity in [5.0, 20.0, 28.0, 28.4, 28.5, 29.0, 30.0, 35.0, 40.0] {
+        let eq = salted(salinity);
+        assert!(eq.is_ok(), "S {salinity}");
+        for scale in [PhScale::Total, PhScale::Seawater, PhScale::Free] {
+            assert!(eq.is_ok_and(|eq| !s::converts(&eq, scale)), "S {salinity} {scale:?}");
+            assert_eq!(
+                eq.and_then(|eq| s::ph_nbs(&eq, 8.0, scale)),
+                Err(ChemError::SeawaterScale),
+                "S {salinity} {scale:?}"
+            );
+            assert_eq!(
+                eq.and_then(|eq| s::ph_on(&eq, 8.0, scale)),
+                Err(ChemError::SeawaterScale),
+                "S {salinity} {scale:?}"
+            );
+        }
+        assert!(eq.is_ok_and(|eq| s::converts(&eq, PhScale::Nbs)));
+        assert_eq!(eq.and_then(|eq| s::ph_nbs(&eq, 8.0, PhScale::Nbs)), Ok(8.0));
+    }
+    // The water the review measured is one the sea path works out (past the Davies limit): the refusal is the
+    // origin's, not the path's.
+    assert!(salted(30.0).is_ok_and(|eq| eq.sea_weight >= 1.0 && eq.origin == Origin::SaltAdded));
+    assert!(salted(20.0).is_ok_and(|eq| eq.sea_weight <= 0.0));
+    // Sea water, said or not, is converted as before.
+    for origin in [Origin::Unknown, Origin::Seawater] {
+        let ions = Ions {
+            origin,
+            ..Ions::default()
+        };
+        for salinity in [29.0, 30.0, 35.0] {
+            let eq = f::equilibria_v3(12.0, salinity, Some(80.0), ions);
+            assert!(eq.is_ok_and(|eq| s::converts(&eq, PhScale::Total)), "S {salinity} {origin:?}");
+        }
+    }
 }
 
 #[test]

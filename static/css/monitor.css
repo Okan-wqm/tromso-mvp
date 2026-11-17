@@ -436,3 +436,8 @@ html[data-wall] .monitor-grid:has(> .is-fit):is([data-poll-state="stale"], [data
 /* The rows of a fitted card's water share its height: a row is one line of text and no taller than its share. */
 .is-fit .monitor-rows { line-height: 1; }
 .is-fit .w-dosing p { line-height: 1.2; }
+/* The head of a fitted card is one line that never runs over itself: the code keeps its width, the name gives way
+   first (to nothing: it is whole in its title), then the right side from its withdrawal's end (review of the Turkish
+   wall, 2026-11-17: the withdrawal's wording ran over the code). */
+.monitor-card.is-fit .monitor-card-head { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, auto); align-items: baseline; gap: 0 .75em; }
+.monitor-card.is-fit .monitor-card-name { display: contents; }

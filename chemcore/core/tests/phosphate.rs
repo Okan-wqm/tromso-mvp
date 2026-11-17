@@ -339,3 +339,79 @@ fn the_charts_co2_curve_is_the_judged_one() {
         assert!(checked > g::SAMPLES / 2, "S {salinity}: {checked} points checked");
     }
 }
+
+/// The chart of a fresh water at 12 °C, alkalinity 80, pH 7.00, with a CO₂ limit of 15 mg/L and this phosphate.
+fn chart_with(phosphate: Option<f64>) -> Result<g::Geometry<'static>, g::GeometryError> {
+    let sample = Water {
+        temperature_c: 12.0,
+        salinity_ppt: 0.0,
+        ph: 7.0,
+        alkalinity_mg_l: 80.0,
+        tan_mg_l: None,
+        total_sulfide_ug_l: None,
+        calcium_mg_l: None,
+        oxygen_mg_l: None,
+        conductivity_25_us_cm: None,
+        hardness_mg_l: None,
+        origin: Origin::Unknown,
+        formula: 3,
+        phosphate_p_mg_l: phosphate,
+    };
+    let limits = Limits {
+        co2_mg_l: Some(15.0),
+        ..Limits::default()
+    };
+    let layers = g::Layers {
+        co2: true,
+        ..g::Layers::default()
+    };
+    g::geometry(&sample, &limits, None, 1.0, layers, None, &[], &[])
+}
+
+#[test]
+fn a_co2_curve_that_bends_back_is_said() {
+    // The independent review of 2026-11-16, R9. With a phosphate the judged CO₂ curve is drawn row by row of the
+    // alkalinity in the water's own DIC, which near an alkalinity of 0 falls before it rises: 12 °C, S 0, P 30 mg/L,
+    // limit 15 mg/L: (DIC 0.2148, alkalinity 0) -> (0.1914, 0.0625) -> rising. The chart said nothing; now a note
+    // (`co2.bends_back`) says it, exactly when the drawn curve does it (`geometry::bends_back`).
+    let chart = a::ChartBox {
+        dic: 6.0,
+        alkalinity: 6.0,
+        dic_step: 1.0,
+        alkalinity_step: 1.0,
+    };
+    let limit = 15.0 / c::MG_CO2_PER_MMOL;
+    let curve = water(12.0, 0.0, 80.0, Some(30.0)).map(|eq| g::co2_curve_judged(&eq, limit, &chart));
+    assert!(matches!(curve, Ok(Ok(_))));
+    let Ok(Ok((points, _leaves_top))) = curve else {
+        return;
+    };
+    let start: Vec<(f64, f64)> = points.iter().take(3).copied().collect();
+    assert!(
+        matches!(start.as_slice(), [one, two, three]
+            if (one.0 - 0.2148).abs() < 5e-5 && one.1 == 0.0
+                && (two.0 - 0.1914).abs() < 5e-5 && (two.1 - 0.0625).abs() < 1e-12
+                && three.0 > two.0),
+        "{start:?}"
+    );
+    assert!(g::bends_back(&points));
+    let noted = |phosphate: Option<f64>| chart_with(phosphate).map(|shape| shape.notes.contains(&"co2.bends_back"));
+    assert_eq!(noted(Some(30.0)), Ok(true));
+    // Without a phosphate the curve is the one it was (one ratio, DIC rising with the alkalinity): never the note.
+    assert_eq!(noted(None), Ok(false));
+    // The note is there exactly when the drawn curve bends back, whatever the phosphate.
+    for phosphate in [0.01, 0.5, 1.0, 3.0, 10.0, 30.0, 100.0] {
+        let bends = water(12.0, 0.0, 80.0, Some(phosphate))
+            .map(|eq| g::co2_curve_judged(&eq, limit, &chart).map(|(points, _)| g::bends_back(&points)));
+        assert!(matches!(bends, Ok(Ok(_))), "P {phosphate}");
+        let Ok(Ok(bends)) = bends else { continue };
+        // P 100 at alkalinity 80 and pH 7 is a water that cannot be: no chart, so no note to compare.
+        if let Ok(found) = noted(Some(phosphate)) {
+            assert_eq!(found, bends, "P {phosphate}");
+        }
+    }
+    // A curve that only rises does not bend back; one point or none neither.
+    assert!(!g::bends_back(&[(0.1, 0.0), (0.2, 0.5), (0.2, 1.0)]));
+    assert!(g::bends_back(&[(0.2, 0.0), (0.1, 0.5), (0.3, 1.0)]));
+    assert!(!g::bends_back(&[(0.2, 0.0)]) && !g::bends_back(&[]));
+}

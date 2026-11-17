@@ -82,7 +82,7 @@ class GeometryParityTests(SimpleTestCase):
 class NotesTests(SimpleTestCase):
     def test_every_code_the_core_gives_has_its_words(self):
         from ..water import messages
-        codes = {'co2.no_limit', 'safe.no_band', 'safe.empty_band', 'safe.no_tan', 'safe.no_nh3_limit',
+        codes = {'co2.no_limit', 'co2.bends_back', 'safe.no_band', 'safe.empty_band', 'safe.no_tan', 'safe.no_nh3_limit',
                  'safe.no_co2_limit', 'safe.no_h2s_limit', 'safe.h2s_not_assessed', 'safe.no_safe_ph',
                  'omega.out_of_range', 'nh3.no_tan', 'nh3.no_limit', 'nh3.not_reached', 'nh3.cannot_reach',
                  'h2s.no_sulfide', 'h2s.no_limit', 'h2s.not_reached', 'h2s.cannot_reach'}

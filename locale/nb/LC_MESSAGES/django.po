@@ -1902,6 +1902,13 @@ msgstr ""
 "En kortmal plasserer elementer på et overvåkingskort; kortets ramme (enheten, tilstanden og "
 "hvorfor) vises alltid."
 
+msgid ""
+"A card’s pH window is drawn on the scale of its unit’s water type. A pH beyond the scale is shown"
+" as an arrow and the number."
+msgstr ""
+"pH-vinduet på et kort tegnes på skalaen for enhetens vanntype. En pH utenfor skalaen vises som en"
+" pil og tallet."
+
 #, python-format
 msgid "A channel has at most %(num)d calibration."
 msgid_plural "A channel has at most %(num)d calibrations."
@@ -2292,6 +2299,9 @@ msgstr "Et notat er på høyst %(count)d tegn."
 
 msgid "A notice is filed at once: it has no later deadline."
 msgstr "En melding sendes straks: den har ingen senere frist."
+
+msgid "A pH lies between 0 and 14."
+msgstr "En pH ligger mellom 0 og 14."
 
 #, python-format
 msgid "A page shows at most %(days)s day: the first day was moved."
@@ -4831,6 +4841,12 @@ msgstr "Lukke %(kind)s · %(place)s · %(period)s uten å sende inn?"
 msgid "Close it"
 msgstr "Lukk den"
 
+msgid "Close the big card"
+msgstr "Lukk det store kortet"
+
+msgid "Close the big card (Esc)"
+msgstr "Lukk det store kortet (Esc)"
+
 msgid "Close without filing"
 msgstr "Lukk uten innsending"
 
@@ -6859,6 +6875,17 @@ msgstr "Gjennomstrømming"
 msgid "Fluidised bed"
 msgstr "Fluidisert sjikt"
 
+msgid "Focus"
+msgstr "Fokus"
+
+#, python-format
+msgid "Focus: %(unit)s"
+msgstr "Fokus: %(unit)s"
+
+#, python-brace-format
+msgid "Focus: {unit}"
+msgstr "Fokus: {unit}"
+
 msgid "Food fish (matfisk)"
 msgstr "Matfisk"
 
@@ -7043,6 +7070,9 @@ msgstr "Fra ende til ende; hver ende er en halvsirkel like bred som karet."
 
 msgid "From lokalitetsnummer"
 msgstr "Fra lokalitetsnummer"
+
+msgid "From pH"
+msgstr "Fra pH"
 
 msgid "From the backup or the system’s channel"
 msgstr "Fra reserven eller systemets kanal"
@@ -10224,6 +10254,9 @@ msgstr "Ett bestillingspunkt per vare."
 msgid "One row per water parameter is made by the platform; it is changed, never added or deleted."
 msgstr "Plattformen lager én rad per vannparameter; den endres, legges aldri til eller slettes."
 
+msgid "One row per water type is made by the platform; it is changed, never added or deleted."
+msgstr "Plattformen lager én rad per vanntype; den endres, men legges aldri til eller slettes."
+
 #, python-format
 msgid ""
 "One row per weight band, from its lower weight up to, not including, its upper one; the bands "
@@ -10406,6 +10439,9 @@ msgstr "Åpen siden %(since)s: lukkes på Oppmøte-siden"
 
 msgid "Open the PDF"
 msgstr "Åpne PDF-en"
+
+msgid "Open the big card beside the overview"
+msgstr "Åpne det store kortet ved siden av oversikten"
 
 msgid "Open the draft"
 msgstr "Åpne utkastet"
@@ -10739,6 +10775,9 @@ msgstr "Side %(page)s"
 
 msgid "Page label"
 msgstr "Sidetall"
+
+msgid "Page of the worst card (Home)"
+msgstr "Siden med det verste kortet (Home)"
 
 msgid "Page(s)"
 msgstr "Side(r)"
@@ -12152,6 +12191,9 @@ msgstr "Si hvorfor når det er en annen grunn, og bare da."
 
 msgid "Say why: a tank that leaves, or is replaced, is registered with its reason."
 msgstr "Skriv hvorfor: et kar som går ut eller byttes ut, registreres med begrunnelsen."
+
+msgid "Scale"
+msgstr "Skala"
 
 msgid "Scale loss"
 msgstr "Skjelltap"
@@ -14197,6 +14239,13 @@ msgstr "Oppsettet som tekst"
 msgid "The leave was shortened."
 msgstr "Permisjonen ble forkortet."
 
+msgid ""
+"The left end of the pH window on the cards of units with this water. A pH below it is shown as an"
+" arrow and the number, never as a mark on the end."
+msgstr ""
+"Venstre ende av pH-vinduet på kortene til enheter med dette vannet. En pH under den vises som en "
+"pil og tallet, aldri som et merke på enden."
+
 #, python-format
 msgid "The level %(label)s of %(factor)s has two different values."
 msgstr "Nivået %(label)s av %(factor)s har to ulike verdier."
@@ -14392,6 +14441,10 @@ msgstr "pH-grensene går oppover: kritisk under, advarsel under, advarsel over, 
 #, python-format
 msgid "The pH window cannot be drawn: %(why)s."
 msgstr "pH-vinduet kan ikke tegnes: %(why)s."
+
+#, python-format
+msgid "The pH window cannot be drawn: no scale is set for %(water)s."
+msgstr "pH-vinduet kan ikke tegnes: ingen skala er satt for %(water)s."
 
 msgid "The page could not be shown. Try again, and tell an administrator if it happens again."
 msgstr "Siden kunne ikke vises. Prøv igjen, og si fra til en administrator hvis det skjer igjen."
@@ -14655,6 +14708,13 @@ msgstr ""
 "Resultatet av en følsomhetsundersøkelse i uken (lakselusforskriften § 10 d): når, laboratoriet, "
 "virkestoffet og resultatet. Lagres atskilt fra rapporten."
 
+msgid ""
+"The right end. Choose the two ends so that the pH the water is kept at and the pH at which CO₂ "
+"and NH₃ pass their limits lie between them; at least half a pH unit apart."
+msgstr ""
+"Høyre ende. Velg de to endene slik at pH-en vannet holdes på, og pH-en der CO₂ og NH₃ passerer "
+"grensene sine, ligger mellom dem; minst en halv pH-enhet fra hverandre."
+
 #, python-format
 msgid "The role of group %(name)s is not one of the four."
 msgstr "Rollen til gruppe %(name)s er ikke en av de fire."
@@ -14682,6 +14742,9 @@ msgstr "Saltholdigheten er antatt: ferskvann."
 
 msgid "The salinity is fresh water’s."
 msgstr "Saliniteten er ferskvannets."
+
+msgid "The scale must span at least half a pH unit, from the lower end to the higher."
+msgstr "Skalaen må spenne over minst en halv pH-enhet, fra den nedre enden til den øvre."
 
 #, python-format
 msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."
@@ -15406,6 +15469,15 @@ msgid "This item already has a lot with this number."
 msgstr "Denne varen har allerede et parti med dette nummeret."
 
 #, python-format
+msgid ""
+"This layout cannot be a fitted card: there is no fitted look for %(widgets)s, which would be cut."
+" Remove them on the Design tab, or leave the width and the height empty for a card that flows."
+msgstr ""
+"Dette oppsettet kan ikke være et tilpasset kort: %(widgets)s har ikke noe tilpasset utseende og "
+"ville bli kuttet. Fjern dem på fanen Design, eller la bredden og høyden stå tomme for et kort som"
+" flyter."
+
+#, python-format
 msgid "This layout is of an unknown version (%(version)s)."
 msgstr "Dette oppsettet har en ukjent versjon (%(version)s)."
 
@@ -15687,6 +15759,9 @@ msgstr "Til lagerplass"
 
 msgid "To lokalitetsnummer"
 msgstr "Til lokalitetsnummer"
+
+msgid "To pH"
+msgstr "Til pH"
 
 msgid "To read before it starts"
 msgstr "Les før det starter"
@@ -16735,6 +16810,34 @@ msgid "Widget %(widget)s: %(label)s cannot be placed yet."
 msgstr "Elementet %(widget)s: %(label)s kan ikke plasseres ennå."
 
 #, python-format
+msgid ""
+"Widget %(widget)s: %(label)s has no fitted look and would be cut on a fitted card. Remove it, or "
+"leave the card’s width and height empty."
+msgstr ""
+"Element %(widget)s: %(label)s har ikke noe tilpasset utseende og ville bli kuttet på et tilpasset"
+" kort. Fjern det, eller la kortets bredde og høyde stå tomme."
+
+#, python-format
+msgid "Widget %(widget)s: %(label)s is made for a fitted card. Give the template a width and a height."
+msgstr "Element %(widget)s: %(label)s er laget for et tilpasset kort. Gi malen en bredde og en høyde."
+
+#, python-format
+msgid ""
+"Widget %(widget)s: at this measure its place is about %(has)s units high and %(label)s needs "
+"%(needs)s: give it more rows, or the card more height."
+msgstr ""
+"Element %(widget)s: med dette målet er plassen omtrent %(has)s enheter høy, og %(label)s trenger "
+"%(needs)s: gi det flere rader, eller kortet mer høyde."
+
+#, python-format
+msgid ""
+"Widget %(widget)s: at this measure its place is about %(has)s units wide and %(label)s needs "
+"%(needs)s: give it more columns, or the card more width."
+msgstr ""
+"Element %(widget)s: med dette målet er plassen omtrent %(has)s enheter bred, og %(label)s trenger"
+" %(needs)s: gi det flere kolonner, eller kortet mer bredde."
+
+#, python-format
 msgid "Widget %(widget)s: choose the water parameter it shows (and, if not the middle, its point)."
 msgstr "Elementet %(widget)s: velg vannparameteren det viser (og, hvis ikke midten, punktet)."
 
@@ -17074,6 +17177,9 @@ msgstr "en ukjent slutt"
 
 msgid "an unknown facility"
 msgstr "et ukjent slakteri"
+
+msgid "and"
+msgstr "og"
 
 #, python-format
 msgid "and %(count)s more: all reports"
@@ -18069,6 +18175,12 @@ msgstr "ingen TAN"
 msgid "no active middle sampling point"
 msgstr "ingen aktivt prøvepunkt i midten"
 
+msgid "no alk. band"
+msgstr "ingen alk.-bånd"
+
+msgid "no alkalinity band"
+msgstr "ingen alkalitetsbånd"
+
 msgid "no alkalinity band for these fish"
 msgstr "ingen alkalitetsgrense for denne fisken"
 
@@ -18292,6 +18404,12 @@ msgstr "pH-sensor"
 
 msgid "pH window"
 msgstr "pH-vindu"
+
+msgid "pH window scale"
+msgstr "pH-vinduets skala"
+
+msgid "pH window scales"
+msgstr "pH-vinduets skalaer"
 
 #, python-format
 msgid "pH window, %(unit)s: %(said)s"

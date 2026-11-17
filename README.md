@@ -778,8 +778,16 @@ alkalinity, the temperature and the salinity; owner decision 2: a probe's value 
 state is what the readings say, as before, so a card can say OK while its pH window shows the water in the CO₂ region;
 that changes when the calculated CO₂ becomes a judged value (after the chemistry branch has landed).
 The **pH window** (`monitoring.cards.render.ph_window`, drawn by the server as an SVG in percentages, with no script and
-no style attribute) is the Deffeyes chart's one-line slice at the unit's own alkalinity, on the scale pH 6.4 to 8.6
-(`catalogue.PH_WINDOW`, the same on every card): left of one border the CO₂ is past its limit, right of the other the
+no style attribute) is the Deffeyes chart's one-line slice at the unit's own alkalinity, on the scale the farm has set for the unit's
+WATER TYPE (owner decision 15, 2026-11-16: `monitoring.PhWindowScale`, one row for each of the product's water types,
+freshwater, saltwater and brackish, the class a unit's water already has (`Tank.water_type`); seeded by migration 0007
+with the 6.4 to 8.6 the code held; changed on **Setup › Reference data › pH window scales** (`/ph-window-scales/`, its
+own right to read and to change, never added or deleted: a CHECK keeps one row per water type, the ends between 0 and
+14 and at least half a pH unit apart); the card read fetches the rows ONCE for a wall whose cards draw the window
+(`read.ph_scales`, no query per card, none for a wall without the window); a water whose row is gone says "The pH
+window cannot be drawn: no scale is set for freshwater." and no number of the code stands in). A pH beyond the scale
+is an arrow and the number at that end ("◀ 6.10"), never a mark drawn on the end, and the picture's name says the
+scale. Left of one border the CO₂ is past its limit, right of the other the
 NH₃ is, each border with its pH; the mark is the unit's pH. A region is grey and takes the critical tint only while the
 water is in it (the core says so: past that border); the stretch between the borders is green only when the core has a
 safe zone at all (every limit it needs is set) and the limits judge the unit's alkalinity inside its band; a missing
@@ -848,6 +856,50 @@ wall out again after every poll and resize, and without it the cards stand four 
 toolbar's two buttons (leave the wall, full screen) stand at the band's right end as icons. On the desk page a fitted
 card is at least 34 rem wide and as high as it needs.
 
+The window's WORDS (a border's pH, "no NH₃ limit", "no TAN") are placed by one rule, `render.place_names`, and never
+stand over one another, over the water's mark or outside the picture: a border's word stands in its own region
+against its border; else between the borders against it, when the stretch holds it; else in its own region moved past
+what stands in the way; the CO₂ word is always left of the NH₃ word; when no pair of places fits, the word of the
+border nearer the water stands alone and the other's number is in the picture's name. The server does not know a
+word's width, so it reckons it from its letters and the card's measure (`letter_pc`); the browser layout test holds
+that to the real boxes (no two marks of a window touch, on every screen it lays out). When the farm has set no
+alkalinity limit row the stretch between the borders is not drawn safe and the window says why in words ("no
+alkalinity band", its short form where only that fits, and always in the picture's name: review R6).
+
+**Going into a tank: the pane** (Phase 1D; owner decision 7: "in the small one, when an alarm comes they go INTO it
+and look"). On a card of the overview (a fitted card that is not a full-height one: the Small card) the unit's CODE is
+a link, `?focus=<unit>`: the page then draws that unit's Big card in a pane (`#monitor-dock`,
+`templates/monitoring/_dock.html`) and marks the card that is open with an outline; the link of the open card, the
+pane's "Close" link and Escape close it. It is a link, so it works without script (the pane stands before the cards in
+the page); with script `frontend/windows.ts` DOCKS the existing window: it opens, replaces (one tank at a time) and
+closes the pane without a page load, the address follows (`history.replaceState`, the page's own query with `focus`
+set or taken out), the pane's body is polled at its own fragment (`monitoring:pane`,
+`/operations/monitoring/pane/?focus=…`: the Big card keyed as a card of the grid, 204 while nothing changed, 404 when
+the unit is gone, which closes the pane) and the grid is asked again at once with the same query, so `focus` is part of
+the canonical address (`Params.focus`) and every later poll of the grid carries it. The overview stays alive beside the
+pane: `frontend/wall.ts` gives the pane the width of ONE cell of a wall of full-height cards on this screen
+(`frontend/wall/slots.ts dock`, at most half the screen) and the cards the room that is left, by the same slot rule
+(they only get narrower or turn pages: the order is the same and a card never moves); a window too low for a readable
+Big card beside the cards gets the pane OVER the cards (`data-dock="full"`), never a hidden one. The band's chips open
+the unit they name where the cards are small ones (and turn the wall to that card's page); on a wall of full-height
+cards a chip turns to its card's page. The switch to Big drops the focus (the pane is the way into one tank from an
+overview). The card in the pane is a second card of its unit on the page, so its ids carry a `pane-` prefix; its code
+links to the unit's page, and it says IN SIGHT what the Small card only has room to say in a title (review R11: a wall
+has no pointer): the department beside the name, and at its foot what the state is from and which template draws it.
+The Small card keeps the oxygen's saturation beside its label when the mg/L is old (R11). Cost: the pane is one unit's
+card read (the same `read.cards`, 48 reads at most), on the page with a focus and at each of its own polls that finds
+a change.
+
+**The keys of a wall** (`frontend/wall.ts`, `frontend/windows.ts`): PageDown and PageUp turn the page; **Home** goes
+to the page of the worst card (critical, then warning, then no recent data) and puts the focus on that card's link, so
+Enter opens it; Escape closes the pane and gives the focus back to the open card's link; Tab and Enter do what they do
+on links (every switch is a link). A poll keeps the page shown; while the worst card is on another page the band's page
+indicator shows a third button (its state's shape and "→ 3": the page), so a card that became critical elsewhere is
+one key or one click away. Every link and button of the band has an id (`pages-prev`, `pages-next`, `pages-worst`,
+`mode-…`, `charts-…`, `chip-<unit>`, `band-more`): a poll replaces the whole band, and the control that had the focus
+gets it back (poll.ts by id; wall.ts once more after it has shown the page indicator, which the server prints hidden:
+review R8).
+
 **Boards** (Setup › Facility structure › Monitoring boards, `/monitoring-boards/`). A board is a
 named, shared wall screen: a name (unique among the live boards in any case), a description, the template its cards are drawn
 with by default (empty: the rules decide; it ranks below the rules, as its default mode did), its card width (compact,
@@ -885,6 +937,16 @@ the time is Python and template work, not the database: the change token is what
 screen would first bound the feeding walk (`project` reads every feeding of the lineage) or cache the rendered card, never the other
 way round. The queries stay equal from 6 to 100 units (pinned at 6 and 24 in `monitoring/tests/test_budget.py`). `CONN_MAX_AGE` is
 left alone: the queries are a tenth of the time, so there is no evidence for it.
+
+**A fitted template in the designer** (Phase 1D, review R7). Each widget has its LOOKS (`catalogue.WidgetSpec.looks`):
+value, water table, pH window, chart, dosing, points and stock have a fitted look; fish, feeding, health, tasks,
+experiments, the bar and the chart button have none. The validator takes the template's measure
+(`validate.validate(layout, measure)`): on a fitted card a widget with no fitted look is an ERROR that names it (it
+would be cut on a wall without a word), as is a layout of more than 24 rows; a place too low or too narrow for what
+the widget prints there (`fit_units`, reckoned from the measure: advice, the preview is the proof) and, on a card that
+flows, a widget made for a fitted one, are warnings. The form refuses the measure with the sentence ("This layout
+cannot be a fitted card: there is no fitted look for Fish, Feeding …"); the designer's preview sends the form's
+measure, shows the same problems and draws the card FITTED at the measure's own proportion (`.designer-preview.is-fitted`).
 
 **Card templates: the widget catalogue and the validator** (`monitoring/cards/`). A card will be a fixed **frame** (the unit,
 its state word, shape and reasons, the withdrawal, what the state is from, the flip link: never data, so no template can

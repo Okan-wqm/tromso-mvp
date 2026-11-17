@@ -1911,6 +1911,13 @@ msgstr ""
 "Bir kart şablonu, izleme kartına bileşenler yerleştirir; kartın çerçevesi (birim, durumu ve "
 "nedeni) her zaman gösterilir."
 
+msgid ""
+"A card’s pH window is drawn on the scale of its unit’s water type. A pH beyond the scale is shown"
+" as an arrow and the number."
+msgstr ""
+"Bir kartın pH penceresi, biriminin su tipinin ölçeğinde çizilir. Ölçeğin dışındaki bir pH, ok ve "
+"sayı olarak gösterilir."
+
 #, python-format
 msgid "A channel has at most %(num)d calibration."
 msgid_plural "A channel has at most %(num)d calibrations."
@@ -2302,6 +2309,9 @@ msgstr "Bir not en çok %(count)d karakterdir."
 
 msgid "A notice is filed at once: it has no later deadline."
 msgstr "Bildirim hemen verilir: daha sonraki bir son tarihi yoktur."
+
+msgid "A pH lies between 0 and 14."
+msgstr "pH 0 ile 14 arasındadır."
 
 #, python-format
 msgid "A page shows at most %(days)s day: the first day was moved."
@@ -4848,6 +4858,12 @@ msgstr "%(kind)s · %(place)s · %(period)s bildirilmeden kapatılsın mı?"
 msgid "Close it"
 msgstr "Kapat"
 
+msgid "Close the big card"
+msgstr "Büyük kartı kapat"
+
+msgid "Close the big card (Esc)"
+msgstr "Büyük kartı kapat (Esc)"
+
 msgid "Close without filing"
 msgstr "Bildirmeden kapat"
 
@@ -6880,6 +6896,17 @@ msgstr "Akışlı sistem"
 msgid "Fluidised bed"
 msgstr "Akışkan yatak"
 
+msgid "Focus"
+msgstr "Odak"
+
+#, python-format
+msgid "Focus: %(unit)s"
+msgstr "Odak: %(unit)s"
+
+#, python-brace-format
+msgid "Focus: {unit}"
+msgstr "Odak: {unit}"
+
 msgid "Food fish (matfisk)"
 msgstr "Pazar balığı (matfisk)"
 
@@ -7064,6 +7091,9 @@ msgstr "Uçtan uca; her uç, tank genişliğinde bir yarım dairedir."
 
 msgid "From lokalitetsnummer"
 msgstr "Çıkış lokalitetsnummer"
+
+msgid "From pH"
+msgstr "Başlangıç pH"
 
 msgid "From the backup or the system’s channel"
 msgstr "Yedekten veya sistemin kanalından"
@@ -10245,6 +10275,9 @@ msgstr "Kalem başına bir yeniden sipariş seviyesi."
 msgid "One row per water parameter is made by the platform; it is changed, never added or deleted."
 msgstr "Platform her su parametresi için bir satır oluşturur; değiştirilir, asla eklenmez ya da silinmez."
 
+msgid "One row per water type is made by the platform; it is changed, never added or deleted."
+msgstr "Platform her su tipi için bir satır oluşturur; satır değiştirilir, eklenmez ve silinmez."
+
 #, python-format
 msgid ""
 "One row per weight band, from its lower weight up to, not including, its upper one; the bands "
@@ -10429,6 +10462,9 @@ msgstr "%(since)s tarihinden beri açık: Yoklama sayfasında kapatılacak"
 
 msgid "Open the PDF"
 msgstr "PDF’i aç"
+
+msgid "Open the big card beside the overview"
+msgstr "Büyük kartı genel görünümün yanında aç"
 
 msgid "Open the draft"
 msgstr "Taslağı aç"
@@ -10762,6 +10798,9 @@ msgstr "Sayfa %(page)s"
 
 msgid "Page label"
 msgstr "Sayfa etiketi"
+
+msgid "Page of the worst card (Home)"
+msgstr "En kötü kartın sayfası (Home)"
 
 msgid "Page(s)"
 msgstr "Sayfa(lar)"
@@ -12177,6 +12216,9 @@ msgstr "Başka bir nedense nedenini yazın, yalnızca o zaman."
 
 msgid "Say why: a tank that leaves, or is replaced, is registered with its reason."
 msgstr "Nedenini yazın: ayrılan veya değiştirilen bir tank gerekçesiyle kaydedilir."
+
+msgid "Scale"
+msgstr "Ölçek"
 
 msgid "Scale loss"
 msgstr "Pul kaybı"
@@ -14223,6 +14265,13 @@ msgstr "Metin olarak yerleşim"
 msgid "The leave was shortened."
 msgstr "İzin kısaltıldı."
 
+msgid ""
+"The left end of the pH window on the cards of units with this water. A pH below it is shown as an"
+" arrow and the number, never as a mark on the end."
+msgstr ""
+"Bu suya sahip birimlerin kartlarındaki pH penceresinin sol ucu. Bunun altındaki bir pH, uçta bir "
+"işaret olarak değil, ok ve sayı olarak gösterilir."
+
 #, python-format
 msgid "The level %(label)s of %(factor)s has two different values."
 msgstr "%(factor)s faktörünün %(label)s düzeyinin iki farklı değeri var."
@@ -14420,6 +14469,10 @@ msgstr "pH sınırları yukarı doğru gider: kritik alt, uyarı alt, uyarı üs
 #, python-format
 msgid "The pH window cannot be drawn: %(why)s."
 msgstr "pH penceresi çizilemiyor: %(why)s."
+
+#, python-format
+msgid "The pH window cannot be drawn: no scale is set for %(water)s."
+msgstr "pH penceresi çizilemiyor: %(water)s için ölçek tanımlanmamış."
 
 msgid "The page could not be shown. Try again, and tell an administrator if it happens again."
 msgstr "Sayfa gösterilemedi. Yeniden deneyin; tekrar olursa bir yöneticiye bildirin."
@@ -14683,6 +14736,13 @@ msgstr ""
 "Haftadaki bir duyarlılık testinin sonucu (lakselusforskriften § 10 d): ne zaman, laboratuvar, "
 "etken madde ve sonuç. Rapordan ayrı kaydedilir."
 
+msgid ""
+"The right end. Choose the two ends so that the pH the water is kept at and the pH at which CO₂ "
+"and NH₃ pass their limits lie between them; at least half a pH unit apart."
+msgstr ""
+"Sağ uç. İki ucu, suyun tutulduğu pH ile CO₂ ve NH₃'ün sınırlarını aştığı pH aralarında kalacak "
+"şekilde seçin; aralarında en az yarım pH birimi olmalıdır."
+
 #, python-format
 msgid "The role of group %(name)s is not one of the four."
 msgstr "%(name)s grubunun rolü dört roldan biri değil."
@@ -14708,6 +14768,9 @@ msgstr "Tuzluluk varsayıldı: tatlı su."
 
 msgid "The salinity is fresh water’s."
 msgstr "Tuzluluk tatlı suyunkidir."
+
+msgid "The scale must span at least half a pH unit, from the lower end to the higher."
+msgstr "Ölçek, alt uçtan üst uca en az yarım pH birimi kapsamalıdır."
 
 #, python-format
 msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."
@@ -15440,6 +15503,14 @@ msgid "This item already has a lot with this number."
 msgstr "Bu kalemin bu numarada bir lotu zaten var."
 
 #, python-format
+msgid ""
+"This layout cannot be a fitted card: there is no fitted look for %(widgets)s, which would be cut."
+" Remove them on the Design tab, or leave the width and the height empty for a card that flows."
+msgstr ""
+"Bu düzen sığdırılmış bir kart olamaz: %(widgets)s için sığdırılmış görünüm yok, kesilirlerdi. "
+"Bunları Tasarım sekmesinde kaldırın ya da akan bir kart için genişliği ve yüksekliği boş bırakın."
+
+#, python-format
 msgid "This layout is of an unknown version (%(version)s)."
 msgstr "Bu yerleşimin sürümü bilinmiyor (%(version)s)."
 
@@ -15718,6 +15789,9 @@ msgstr "Hedef yer"
 
 msgid "To lokalitetsnummer"
 msgstr "Varış lokalitetsnummer"
+
+msgid "To pH"
+msgstr "Bitiş pH"
 
 msgid "To read before it starts"
 msgstr "Başlamadan önce okunacaklar"
@@ -16763,6 +16837,36 @@ msgid "Widget %(widget)s: %(label)s cannot be placed yet."
 msgstr "%(widget)s bileşeni: %(label)s henüz yerleştirilemez."
 
 #, python-format
+msgid ""
+"Widget %(widget)s: %(label)s has no fitted look and would be cut on a fitted card. Remove it, or "
+"leave the card’s width and height empty."
+msgstr ""
+"Bileşen %(widget)s: %(label)s için sığdırılmış görünüm yok, sığdırılmış bir kartta kesilirdi. "
+"Kaldırın ya da kartın genişliğini ve yüksekliğini boş bırakın."
+
+#, python-format
+msgid "Widget %(widget)s: %(label)s is made for a fitted card. Give the template a width and a height."
+msgstr ""
+"Bileşen %(widget)s: %(label)s sığdırılmış bir kart için yapılmıştır. Şablona bir genişlik ve bir "
+"yükseklik verin."
+
+#, python-format
+msgid ""
+"Widget %(widget)s: at this measure its place is about %(has)s units high and %(label)s needs "
+"%(needs)s: give it more rows, or the card more height."
+msgstr ""
+"Bileşen %(widget)s: bu ölçüde yeri yaklaşık %(has)s birim yüksekliğinde, %(label)s ise %(needs)s "
+"gerektirir: daha fazla satır ya da karta daha fazla yükseklik verin."
+
+#, python-format
+msgid ""
+"Widget %(widget)s: at this measure its place is about %(has)s units wide and %(label)s needs "
+"%(needs)s: give it more columns, or the card more width."
+msgstr ""
+"Bileşen %(widget)s: bu ölçüde yeri yaklaşık %(has)s birim genişliğinde, %(label)s ise %(needs)s "
+"gerektirir: daha fazla sütun ya da karta daha fazla genişlik verin."
+
+#, python-format
 msgid "Widget %(widget)s: choose the water parameter it shows (and, if not the middle, its point)."
 msgstr "%(widget)s bileşeni: göstereceği su parametresini (ve orta nokta değilse noktasını) seçin."
 
@@ -17100,6 +17204,9 @@ msgstr "bilinmeyen bir bitiş"
 
 msgid "an unknown facility"
 msgstr "bilinmeyen bir tesis"
+
+msgid "and"
+msgstr "ve"
 
 #, python-format
 msgid "and %(count)s more: all reports"
@@ -18097,6 +18204,12 @@ msgstr "TAN yok"
 msgid "no active middle sampling point"
 msgstr "etkin orta örnekleme noktası yok"
 
+msgid "no alk. band"
+msgstr "alk. bandı yok"
+
+msgid "no alkalinity band"
+msgstr "alkalinite bandı yok"
+
 msgid "no alkalinity band for these fish"
 msgstr "bu balıklar için alkalinite bandı yok"
 
@@ -18320,6 +18433,12 @@ msgstr "pH sensörü"
 
 msgid "pH window"
 msgstr "pH penceresi"
+
+msgid "pH window scale"
+msgstr "pH penceresi ölçeği"
+
+msgid "pH window scales"
+msgstr "pH penceresi ölçekleri"
 
 #, python-format
 msgid "pH window, %(unit)s: %(said)s"

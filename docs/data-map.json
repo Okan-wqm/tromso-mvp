@@ -2617,7 +2617,9 @@
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
+        "farm/tests/test_withdrawal_ceiling.py",
         "farm/tests/test_withdrawal_cleaner_fish.py",
+        "farm/tests/test_withdrawal_combined.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_guard.py",
         "farm/tests/test_withdrawal_lots.py",
@@ -2931,6 +2933,19 @@
           "why": ""
         },
         {
+          "name": "unknown_withdrawal_days",
+          "field": "unknown_withdrawal_days",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "PlatformSettingsForm › Records"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
           "name": "clock_tolerance_seconds",
           "field": "clock_tolerance_seconds",
           "type": "integer",
@@ -2967,6 +2982,12 @@
         },
         {
           "name": "chk_platform_settings_clock_tolerance",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_platform_settings_unknown_withdrawal",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -3024,6 +3045,7 @@
           "fields": {
             "correction_window_days": "Records",
             "second_approval_withdrawal": "Records",
+            "unknown_withdrawal_days": "Records",
             "clock_tolerance_seconds": "Clocks",
             "version": ""
           }
@@ -3046,6 +3068,7 @@
         "farm/tests/helpers.py",
         "farm/tests/test_harvest_inside_withdrawal.py",
         "farm/tests/test_second_approval_said_first.py",
+        "farm/tests/test_withdrawal_ceiling.py",
         "alarms/tests/test_freshness.py",
         "alarms/tests/test_reference.py"
       ]
@@ -6265,6 +6288,7 @@
         "farm/tests/test_stock.py",
         "farm/tests/test_window_refusals.py",
         "farm/tests/test_withdrawal_clocks.py",
+        "farm/tests/test_withdrawal_combined.py",
         "farm/tests/test_withdrawal_lots.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_compute.py",
@@ -9848,6 +9872,7 @@
         "farm/tests/test_size_mix_review.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_suppliers.py",
+        "farm/tests/test_withdrawal_ceiling.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
         "farm/tests/test_withdrawal_guard.py",
@@ -10236,6 +10261,8 @@
         "farm/tests/test_migration_feeding_acknowledgement.py",
         "farm/tests/test_migration_purging.py",
         "farm/tests/test_withdrawal_cleaner_fish.py",
+        "farm/tests/test_withdrawal_combined.py",
+        "farm/tests/test_withdrawal_locks.py",
         "farm/tests/test_withdrawal_lots.py",
         "farm/tests/test_withdrawal_same_day.py",
         "farm/tests/test_withdrawal_shared_unit.py",
@@ -12501,6 +12528,7 @@
         "farm/tests/test_migration_withdrawals.py",
         "farm/tests/test_withdrawal_cleaner_fish.py",
         "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_locks.py",
         "farm/tests/test_withdrawal_lots.py"
       ]
     },
@@ -12974,6 +13002,7 @@
         "farm/tests/test_row_list_refused.py",
         "farm/tests/test_species.py",
         "farm/tests/test_withdrawal_cleaner_fish.py",
+        "farm/tests/test_withdrawal_locks.py",
         "farm/tests/test_withdrawal_lots.py",
         "farm/tests/test_withdrawal_wording.py",
         "reports/tests/test_lice.py",
@@ -13541,6 +13570,7 @@
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
         "farm/tests/test_withdrawal_clocks.py",
+        "farm/tests/test_withdrawal_locks.py",
         "inventory/tests/helpers.py",
         "inventory/tests/test_pages.py",
         "reports/tests/helpers.py",
@@ -15258,6 +15288,7 @@
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
         "farm/tests/test_withdrawal_clocks.py",
+        "farm/tests/test_withdrawal_locks.py",
         "inventory/tests/helpers.py",
         "reports/tests/helpers.py",
         "reports/tests/test_due.py",
@@ -16386,6 +16417,7 @@
         "farm/tests/test_species.py",
         "farm/tests/test_species_size_limit.py",
         "farm/tests/test_stock.py",
+        "farm/tests/test_withdrawal_ceiling.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
         "knowledge/tests/test_documents.py",
@@ -16946,6 +16978,7 @@
         "farm/tests/test_window_refusals.py",
         "farm/tests/test_withdrawal_cleaner_fish.py",
         "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_locks.py",
         "farm/tests/test_withdrawal_shared_unit.py",
         "reports/tests/test_cleaner.py",
         "experiments/tests/test_overview.py"
@@ -17491,6 +17524,7 @@
         "farm/tests/test_size_mix_review.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_window_refusals.py",
+        "farm/tests/test_withdrawal_combined.py",
         "farm/tests/test_withdrawal_gate.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_notices.py",
@@ -22692,6 +22726,8 @@
       "tests": [
         "farm/tests/test_emptied_unit.py",
         "farm/tests/test_harvest_inside_withdrawal.py",
+        "farm/tests/test_withdrawal_ceiling.py",
+        "farm/tests/test_withdrawal_combined.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_guard.py",
         "farm/tests/test_withdrawal_lots.py",

@@ -328,6 +328,38 @@ test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, asyn
       });
     }
 
+    await t.test('a band of three lines keeps its first line on the screen and the cards whole under it', async () => {
+      await open(tab, origin, 'tr', 1920, 1080);
+      const lines = async (): Promise<{ cut: string[]; height: number; rows: number }> => tab.evaluate(() => {
+        const band = document.querySelector('.monitor-band') as HTMLElement;
+        const box = band.getBoundingClientRect();
+        const cut: string[] = [];
+        const tops = new Set<number>();
+        for (const node of Array.from(band.querySelectorAll<HTMLElement>('.monitor-head, .monitor-tally li, .monitor-strip li'))) {
+          const rect = node.getBoundingClientRect();
+          tops.add(Math.round(rect.top));
+          if (rect.top < Math.max(box.top, 0) - 0.5 || rect.bottom > box.bottom + 0.5) cut.push((node.textContent ?? '').trim().slice(0, 30));
+        }
+        return { cut, height: box.height, rows: tops.size };
+      });
+      const before = await lines();
+      assert.deepEqual(before.cut, []);
+      // more chips than two lines hold (a hall-wide alarm in a long language)
+      await tab.evaluate(() => {
+        const strip = document.querySelector('.monitor-strip') as HTMLElement;
+        const chip = strip.querySelector('li') as HTMLElement;
+        for (let more = 0; more < 6; more += 1) strip.append(chip.cloneNode(true));
+        window.dispatchEvent(new Event('resize'));
+      });
+      await tab.waitForTimeout(150);
+      const after = await lines();
+      assert.ok(after.rows > before.rows && after.height > before.height + 10, `${after.rows} lines, ${after.height} px`);
+      assert.deepEqual(after.cut, [], 'no line of the band lies outside it');
+      const seen = await look(tab);
+      assert.deepEqual([seen.spills, seen.cut, seen.never], [[], [], []]);
+      assert.equal(seen.pageScrolls, false);
+    });
+
     await t.test('a window too low for a readable card beside the cards: the pane lies over them, never hidden', async () => {
       await open(tab, origin, 'tr-pane', 1280, 720);
       const pane = await docked(tab);

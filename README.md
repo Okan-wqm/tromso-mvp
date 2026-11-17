@@ -887,7 +887,7 @@ overview). The card in the pane is a second card of its unit on the page, so its
 links to the unit's page, and it says IN SIGHT what the Small card only has room to say in a title (review R11: a wall
 has no pointer): the department beside the name, and at its foot what the state is from and which template draws it.
 The Small card keeps the oxygen's saturation beside its label when the mg/L is old (R11). Cost: the pane is one unit's
-card read (the same `read.cards`, 48 reads at most), on the page with a focus and at each of its own polls that finds
+card read (the same `read.cards`, 43 reads), on the page with a focus and at each of its own polls that finds
 a change.
 
 **The keys of a wall** (`frontend/wall.ts`, `frontend/windows.ts`): PageDown and PageUp turn the page; **Home** goes
@@ -1016,8 +1016,12 @@ The unit's **chart** is one more source (`chart`, optional, worked out from the 
 who may read the water): `water.calculation.charts_of` for the cards whose template shows it (the pH window, a value bound
 to the calculated CO₂) and for no other card, from the water the card read already holds (no sample and no sampling point
 is read again) and ONE read of the fish and their limits for all those cards (`water.read.limits_of`). A wall of Small
-cards costs 42 reads at 6, 24 and 200 units (measured 2026-11-13, pinned in `RecordedCountsTests`: three more than
-Simple's 39). A chart that cannot be read leaves the cards: "Could not be read: Deffeyes chart" on the frame and "no data"
+cards costs 43 reads at 6, 24 and 200 units (42 measured 2026-11-13, three more than Simple's 39; one more since
+2026-11-17, the pH window's scales, read once for the wall), a wall of Big cards 43 too (measured 2026-11-17: Small's
+42 without the scales, and every active point's water for the card's other points), and the pane of a unit gone into
+is one Big card's read; all pinned in `RecordedCountsTests`. A Big card weighs up to 30,500 bytes in the page (real
+Turkish cards on a copy of the development data, 2026-11-17: 19,272 to 29,120 bytes; a wall of 20 is about 0.6 MB
+before compression), a Small one up to 6,800. A chart that cannot be read leaves the cards: "Could not be read: Deffeyes chart" on the frame and "no data"
 in its widgets.
 
 **How a card is drawn** (`monitoring/cards/render.py`, `templates/monitoring/_card.html`, `templates/monitoring/widgets/`). The

@@ -1514,18 +1514,34 @@ without values it shows its defaults.
     where the water's conductivity, its own or the point's latest fresh one, is past the Davies range) is "Cannot be
     evaluated" (`Status.UNEVALUATED`, between warning and OK) where the fish have a limit for it: the unit is never OK
     behind it; the water page, the monitoring card and the overview's "Needs attention" say "… cannot be evaluated:
-    <reason>" (`messages.unevaluated`), and the alarms raise a warning for the unit (below, Alarms). No fallback basis.
+    <reason>" (`messages.unevaluated`), and the alarms raise a warning for the unit (below, Alarms).
+    **Judged on the limits' basis** (decision of 2026-11-18 on the re-check's RC-3; `read.Context._ammonia_on_basis`):
+    the judged NH₃ is the larger of the basis the limits were set on and the activity-corrected value, and the basis
+    needs no conductivity (`fresh::limits_basis`: the temperature, the salinity and the origin only;
+    `farm/tests/test_core_refusal.py` holds the basis without the ions equal to the basis with them). So a refused
+    water's NH₃ is the basis's NH₃-N, at least the judged value, shown with "at least: the limits' basis": past a limit it
+    is that limit's status and alarm (critical past the critical limit; the verifier's water, pH 9.00 and TAN 5 at
+    12 °C, is critical, where it was a warning), inside the limits "Cannot be evaluated". The "cannot be evaluated"
+    sentence and the unit's system warning stay beside it either way. Only where the core gives no basis either is
+    there no value. A refused value never ends a limit alarm.
+    **The page and the alarm agree** (RC-2): a unit whose own NH₃ the core refused and whose loop's fresh sample is
+    critical is critical on its page (`read.worst_fresh`), on its card and in its alarms (`alarms.sources.decided`).
   - *A value is typed only when the form says so* (V-B; `CalculatorForm._loaded`). A value equal to the one carried
     beside the field (`ph_loaded`, `phosphate_loaded`) is loaded, and stays loaded on its stored scale when "Values
     from" is changed to a unit that has none; a different one is typed. An address that carries none is refused a scale
     or unit where the unit now offers another value: a loaded pH or phosphate is never converted twice.
-  - *A salt-added unit makes its loop salt-added for the pH-scale rule* (V-C; `read.scale_origin`): the loop's sample,
-    its row of a round and the calculator loaded from it refuse a seawater scale. `common_origin`, which gives the
+  - *A salt-added unit makes its loop salt-added for the pH-scale rule* (V-C; `read.scale_origin` over `read.one_water`:
+    the units given and every live unit of their systems). One water, one answer at every point of it: the loop point,
+    each unit's middle point and its other own points (the re-check's RC-1: B-02, which says nothing, in a loop with the
+    salt-added B-01, took a total-scale 7.95 as 8.09 at its own point). The sample, its row of a round and the
+    calculator loaded from the loop or from any of its units refuse a seawater scale. `common_origin`, which gives the
     constants, is unchanged, so no worked-out number moves.
   - *One upper bound as PO₄* (V-F): 306.61 (`parameters.PO4_HIGH`, the last two-decimal PO₄ at most 100 as P) at the
     sample, the round and the calculator, in one sentence; the check now holds the entry and the stored P together
     within the rounding (farm 0046).
-  - *A sample's NH₃ catches what the gate catches* (V-G): an arithmetic error of the core is said, never a failed page.
+  - *A sample's NH₃ catches what the gate catches* (V-G): an arithmetic error of the core is said, never a failed page;
+    so do the pH-scale rule of the sample door (`services.on_nbs`) and of the calculator (`CalculatorForm._ph_scale`).
+  - *The history's "Only warnings and criticals" keeps a sample that cannot be evaluated* (the re-check's RC-5).
   - Left as the verification says: V-D (farm 0045 and 0046 add their check validated, an exclusive lock on
     `water_measurements` while each chunk is scanned: land with the server stopped; going back past 0045 keeps the P
     and loses the PO₄ entry), V-E (the phosphate sentence is one per list, above it), V-H (the chrono advisory of
@@ -3813,8 +3829,12 @@ from which device, how late) is logged. The server side is built; the push trans
   is a configuration warning on its site (F16); a judged value the chemistry core refuses to work out (the NH₃ of a water
   whose conductivity is past the Davies range) is a warning on its site, "<unit>: <value> cannot be evaluated: <the
   core's reason>" (subject `system:unit:<id>:value_unevaluated:<parameter>`, its on-delay counted from the value's time),
-  restored once the value is worked out again or nothing judges it; the value's own limit alarm, when open, is not
-  cleared by it, and a pass that could not read the unit ends nothing. A system alarm reaches its site's recipient rules; a farm-wide one the
+  ended on evidence only: "restored" once the value is worked out again, "the water limit was removed" or "no fish in
+  the unit any more" once nothing judges it; a later TAN without its pH, or the refused sample leaving the 30-day
+  window, ends nothing (RC-4). Beside it the value's own limit levels judge its limits' basis, which needs no
+  conductivity and which the judged value is never below (critical past the critical limit, RC-3), or another fresh
+  value of the unit's water that judged it on the page (RC-2); a refused value never clears a limit level, and a pass
+  that could not read the unit ends nothing. A system alarm reaches its site's recipient rules; a farm-wide one the
   company-wide rules, and where no rule reaches it by site, every rule its severity reaches: it never reaches nobody (F8).
 - **Who is notified**: the alarm recipient rules (a tab: a site or every site, a production department or every one, the
   least severity, a level 0 to 9, a role or one person, only while on shift by the HR roster (`hr.read.on_shift`, the

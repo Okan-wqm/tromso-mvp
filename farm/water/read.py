@@ -111,9 +111,23 @@ def assumed_salinity(water_types):
 
 def common_origin(units):
     """The water origin of units (Tank.water_origin; cross review F3): theirs when they all say the same, else '' (not
-    said: a salinity of 1 to 5 permil is taken as diluted sea water)."""
+    said: a salinity of 1 to 5 permil is taken as diluted sea water). What the constants of a water are worked out
+    with; whether a pH on a seawater scale is taken is `scale_origin`'s."""
     origins = {unit.water_origin for unit in units}
     return origins.pop() if len(origins) == 1 else ''
+
+
+def scale_origin(units):
+    """The water origin of units for the pH-scale rule (a pH on the total, the seawater or the free scale is taken for
+    sea water only, never for fresh water with salt added: chemcore/core/src/scale.rs): salt added as soon as ONE of
+    them says so, whatever the others say or leave unsaid; else `common_origin`. One water: salt added to a part of a
+    loop is in all of it, and "not said" is the side that converts. The verification of 2026-11-18, V-C: a loop of a
+    salt-added unit and one that says nothing took a total-scale 7.95 as 8.09. THE place it is decided: the sample
+    door and the round (services.on_nbs) and the calculator loaded from a unit or a loop
+    (calculation.scale_origin_of). The constants themselves stay `common_origin`'s: no worked-out number moves."""
+    if any(unit.water_origin == Tank.WaterOrigin.SALT_ADDED for unit in units):
+        return Tank.WaterOrigin.SALT_ADDED.value
+    return common_origin(units)
 
 
 def assumed_salinities(points):

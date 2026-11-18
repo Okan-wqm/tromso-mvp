@@ -88,8 +88,10 @@ class MixedLoopTests(SeaTestCase):
     """A loop whose units do not all say the same origin (the verification of 2026-11-18, V-C): a salt-added unit in it
     makes its water salt-added (the refusing side), never "not said" (the converting side). The verifier's loop of B-01
     (salt added) and B-02 (not said, a new unit's default) stored a total-scale 7.95 as 8.09 at S 29 and 30 and as
-    8.08 at S 35 at its loop point, while the own point of B-01 refused. Decided where the origin of a point's water
-    is (read.common_origin), so the sample door, the round and the calculator loaded from the loop all follow."""
+    8.08 at S 35 at its loop point, while the own point of B-01 refused. Decided in one place beside the origin of a
+    point's water (read.scale_origin), so the sample door, the round and the calculator loaded from the loop all
+    follow. The constants of the loop's water stay read.common_origin's ("not said" where the units differ, cross
+    review F3: farm/tests/test_water_origin.py), so no worked-out number moves."""
 
     def setUp(self):
         super().setUp()
@@ -109,9 +111,12 @@ class MixedLoopTests(SeaTestCase):
                                 (('seawater', ''), ''), (('seawater', 'seawater'), 'seawater'), (('', ''), ''),
                                 ((), '')):
             with self.subTest(origins=origins):
-                self.assertEqual(read.common_origin([unit(origin) for origin in origins]), wanted)
-        self.assertEqual(calculation.origin_of(self.mixed), 'salt_added')
-        self.assertEqual(calculation.origin_of(self.loop_point), 'salt_added')
+                self.assertEqual(read.scale_origin([unit(origin) for origin in origins]), wanted)
+        for owner in (self.mixed, self.loop_point):
+            self.assertEqual((calculation.scale_origin_of(owner), calculation.origin_of(owner)), ('salt_added', ''))
+        self.assertEqual((calculation.scale_origin_of(self.b1), calculation.scale_origin_of(self.b2)),
+                         ('salt_added', ''))
+        self.assertEqual(calculation.scale_origin_of(self.sea), 'seawater')
 
     def test_the_loops_sample_is_refused_at_every_salinity(self):
         for hours, salinity in enumerate(SALINITIES, start=1):
@@ -143,14 +148,23 @@ class MixedLoopTests(SeaTestCase):
         self.assertEqual(list(errors), [self.loop_point])
         self.assertIn(NOT_SEA, str(errors[self.loop_point]))
 
-    def test_the_calculator_loaded_from_the_loop_is_salt_added_and_refuses_the_scale(self):
+    def test_the_calculator_loaded_from_the_loop_refuses_the_scale(self):
         self.record(point=self.loop_point, ph='7.80', ph_scale='nbs', temperature_c='12', salinity_ppt='30')
         url = reverse('farm:water_calculator')
         page = self.client.get(url, {'point': f'system:{self.mixed.pk}'}, follow=True)
-        self.assertEqual(page.context['form'].cleaned_data['water_origin'], 'salt_added')
+        self.assertEqual(page.context['form'].cleaned_data['water_origin'], '')       # the constants': not said
         sent = dict(parse_qsl(page.redirect_chain[-1][0].split('?', 1)[1], keep_blank_values=True))
-        for salinity in ('29', '30', '35'):
-            with self.subTest(salinity=salinity):
-                typed = self.client.get(url, {**sent, 'ph': '7.95', 'ph_scale': 'total', 'salinity_ppt': salinity})
-                self.assertEqual(typed.context['form'].errors['ph_scale'], [NOT_SEA])
-                self.assertIsNone(typed.context['result'])
+        for name in ('farm:water_calculator', 'farm:water_calculator_results', 'farm:water_calculator_report'):
+            for salinity in ('29', '30', '35'):
+                with self.subTest(view=name, salinity=salinity):
+                    typed = self.client.get(reverse(name),
+                                            {**sent, 'ph': '7.95', 'ph_scale': 'total', 'salinity_ppt': salinity})
+                    self.assertEqual(typed.context['form'].errors['ph_scale'], [NOT_SEA])
+                    self.assertIsNone(typed.context['result'])
+                    self.assertIsNone(typed.context['ph_conversion'])
+        # Typed on the NBS scale it is worked out as before; an origin said on the form stands, as for any water.
+        plain = self.client.get(url, {**sent, 'ph': '7.95', 'salinity_ppt': '30'})
+        self.assertEqual(plain.context['form'].errors, {})
+        said = self.client.get(url, {**sent, 'ph': '7.95', 'ph_scale': 'total', 'salinity_ppt': '30',
+                                     'water_origin': 'seawater'})
+        self.assertEqual(said.context['ph_conversion']['code'], 'total')

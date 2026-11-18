@@ -368,9 +368,20 @@ def points_for(owner):
 def origin_of(owner):
     """Where the salt of a unit's, a system's or a sampling point's water comes from (read.common_origin of its units, a
     point's those it serves as its samples' NH3 takes them; '' not said)."""
+    return read.common_origin(_units_of(owner))
+
+
+def scale_origin_of(owner):
+    """The origin of a unit's, a system's or a sampling point's water for the pH-scale rule (read.scale_origin of the
+    same units: salt added as soon as one of them says so)."""
+    return read.scale_origin(_units_of(owner))
+
+
+def _units_of(owner):
+    """The units whose water a unit, a system or a sampling point is (a point's: those it serves)."""
     if isinstance(owner, SamplingPoint):
-        return read.common_origin(read.Context._served([owner])[owner.pk])
-    return read.common_origin(owner.tanks.all() if isinstance(owner, System) else [owner])
+        return read.Context._served([owner])[owner.pk]
+    return list(owner.tanks.all()) if isinstance(owner, System) else [owner]
 
 
 def _water_types(owner):

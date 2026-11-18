@@ -34,7 +34,7 @@ from farm.stock import dates
 from farm.stock.services import AlreadyRecorded, lock_fish
 
 from . import chemistry, messages, parameters
-from .read import POINT_RELATED, Context, common_origin, oxygen_basis
+from .read import POINT_RELATED, Context, oxygen_basis, scale_origin
 
 # What the activity log shows of a sample: where it was taken, its source, its values and its notes (and its
 # time, which the entry carries).
@@ -125,7 +125,7 @@ def on_nbs(point, values, scale):
                if values.get(code) is None}
     if missing:
         raise ValidationError(missing)
-    origin = common_origin(Context._served([point])[point.pk])
+    origin = scale_origin(Context._served([point])[point.pk])        # salt added as soon as one unit says so (V-C)
     try:
         equilibria = chemistry.water_equilibria(float(values[parameters.TEMPERATURE]),
                                                 float(values[parameters.SALINITY]), water_origin=origin)

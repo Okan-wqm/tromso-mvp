@@ -288,6 +288,43 @@ class IntegrityTests(CombinedTestCase):
                           'stocking that combined fish with held fish.'])
 
 
+class VoidTests(CombinedTestCase):
+    """Verification V-2: a void that combines held fish with fish that are not held asks like a move."""
+
+    def test_voiding_the_move_that_had_emptied_a_tank_held_fish_then_came_into_asks(self):
+        out = self.transfer(self.b, self.t2, [(self.t3, 3000)], days_ago=4)          # all B leaves T-02
+        self.transfer(self.a, self.t1, [(self.t2, 500)], days_ago=3)                 # held A into the empty T-02
+        self.assertFalse(HandlingAcknowledgement.objects.exists())
+        change = self.change_of(stock_services.void, self.user, out, 'never happened')
+        self.assertEqual([(each.batch.code, each.unit.code, each.until) for each in change.combined],
+                         [(self.b.code, 'T-02', self.until)])
+        self.assertIn(f'{self.b.code} in T-02 will wait for the harvest with {self.a.code}, the held fish it is '
+                      'combined with in T-02: harvest from ', change.messages()[0])
+        self.assertFalse(StockOperation.all_objects.get(pk=out.pk).is_deleted)       # nothing written yet
+        stock_services.void(self.user, out, 'never happened', withdrawal_ack=change.fingerprint)
+        self.assertTrue(StockOperation.all_objects.get(pk=out.pk).is_deleted)
+        row = HandlingAcknowledgement.objects.get()
+        self.assertEqual((row.operation_id, row.warning, row.batch, row.withdrawal_until),
+                         (out.pk, 'withdrawal', self.b, self.until))
+        self.assertTrue(AuditLog.objects.filter(entity_type='stock operation', entity_id=str(out.pk),
+                                                severity='critical').exists())
+        self.assertEqual(integrity.problems(), [])
+
+    def test_voiding_the_cull_that_had_emptied_the_held_tank_other_fish_then_came_into_asks(self):
+        cull = self.going_on(stock_services.record_cull, self.user, unit=self.t1, batch=self.a, day=self.day(5),
+                             count=2000, reason='deformed')
+        self.transfer(self.b, self.t2, [(self.t1, 500)], days_ago=4)                 # into the emptied T-01: free
+        self.assertEqual(self.held(self.t1), [])
+        change = self.change_of(stock_services.void, self.user, cull, 'they lived')
+        self.assertIn((self.b.code, 'T-01', self.until),
+                      [(each.batch.code, each.unit.code, each.until) for each in change.combined])
+
+    def test_a_void_that_combines_nobody_asks_nothing(self):
+        out = self.transfer(self.b, self.t2, [(self.t3, 500)], days_ago=4)
+        stock_services.void(self.user, out, 'never happened')
+        self.assertFalse(HandlingAcknowledgement.objects.exists())
+
+
 class ChainSentenceTests(CombinedTestCase):
     """Verification V-8: C is held because it shared T-03 with B, and B only because it shared T-02 with A, treated in
     T-01. The sentence names the tank shared, the batch shared with, and the ORIGINAL treated batch and tank as the

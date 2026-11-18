@@ -5,12 +5,19 @@ core works such a water out by the sea path, for want of another, and took that 
 total-scale 7.95 at 12 °C was stored as 8.09 at S 29 and 30 and as 8.08 at S 35 (the core: S 30, total 8.00 -> 8.1372),
 against the module's own rule and the words of its refusal. Now the core's one rule (chemcore/core/src/scale.rs
 `converts`) refuses it by its origin, so the sample, the round and the calculator all say the reason."""
+import uuid
+from types import SimpleNamespace
+from urllib.parse import parse_qsl
+
 from django.test import SimpleTestCase
 from django.urls import reverse
+from django.utils import timezone
 
-from ..models import WaterMeasurement
-from ..water import native
+from ..models import System, Tank, WaterMeasurement
+from ..water import calculation, native, read
+from .helpers import point_of
 from .test_ph_scale import NOT_SEA, SeaTestCase
+from .test_stock import make_unit
 
 SALINITIES = ('5', '20', '28', '29', '30', '35', '40')
 
@@ -75,3 +82,75 @@ class DoorTests(SeaTestCase):
                 plain = self.client.get(reverse('farm:water_calculator'), {**water, 'salinity_ppt': salinity})
                 self.assertEqual(plain.context['form'].errors, {})
                 self.assertAlmostEqual(plain.context['analysis'].water.ph, 7.95, delta=1e-12)
+
+
+class MixedLoopTests(SeaTestCase):
+    """A loop whose units do not all say the same origin (the verification of 2026-11-18, V-C): a salt-added unit in it
+    makes its water salt-added (the refusing side), never "not said" (the converting side). The verifier's loop of B-01
+    (salt added) and B-02 (not said, a new unit's default) stored a total-scale 7.95 as 8.09 at S 29 and 30 and as
+    8.08 at S 35 at its loop point, while the own point of B-01 refused. Decided where the origin of a point's water
+    is (read.common_origin), so the sample door, the round and the calculator loaded from the loop all follow."""
+
+    def setUp(self):
+        super().setUp()
+        self.mixed = System.objects.create(name='RAS 2', code='R2', site=self.bergen, production_department=self.hall)
+        self.b1 = make_unit('B-01', self.hall, system=self.mixed)
+        self.b2 = make_unit('B-02', self.hall, system=self.mixed)
+        Tank.objects.filter(pk=self.b1.pk).update(water_type='brackish', water_origin='salt_added')
+        Tank.objects.filter(pk=self.b2.pk).update(water_type='brackish')
+        self.b1.refresh_from_db()
+        self.b2.refresh_from_db()
+        self.loop_point = point_of(self.mixed)
+
+    def test_the_origin_of_units_that_do_not_agree(self):
+        unit = lambda origin: SimpleNamespace(water_origin=origin)      # noqa: E731
+        for origins, wanted in ((('salt_added', ''), 'salt_added'), (('', 'salt_added'), 'salt_added'),
+                                (('salt_added', 'seawater'), 'salt_added'), (('salt_added', 'salt_added'), 'salt_added'),
+                                (('seawater', ''), ''), (('seawater', 'seawater'), 'seawater'), (('', ''), ''),
+                                ((), '')):
+            with self.subTest(origins=origins):
+                self.assertEqual(read.common_origin([unit(origin) for origin in origins]), wanted)
+        self.assertEqual(calculation.origin_of(self.mixed), 'salt_added')
+        self.assertEqual(calculation.origin_of(self.loop_point), 'salt_added')
+
+    def test_the_loops_sample_is_refused_at_every_salinity(self):
+        for hours, salinity in enumerate(SALINITIES, start=1):
+            for scale in ('total', 'sws', 'free'):
+                with self.subTest(salinity=salinity, scale=scale):
+                    self.assertEqual(self.refused(point=self.loop_point, ph='7.95', ph_scale=scale, temperature_c='12',
+                                                  salinity_ppt=salinity, hours=hours), {'ph_scale': [NOT_SEA]})
+        self.assertEqual(WaterMeasurement.objects.count(), 0)
+        sample = self.record(point=self.loop_point, ph='7.95', ph_scale='nbs', temperature_c='12', salinity_ppt='30')
+        self.assertEqual((str(sample.ph), sample.ph_scale), ('7.95', ''))
+
+    def test_the_round_refuses_the_loops_row_and_stores_nothing(self):
+        url = f'{reverse("farm:water_round")}?site={self.bergen.pk}&columns=temperature_c&columns=ph&columns=salinity_ppt'
+        page = self.client.get(url)
+        points = [row.point for row in page.context['rows']]
+        self.assertIn(self.loop_point, points)
+        local = timezone.localtime(self.ago(hours=1)).strftime('%Y-%m-%dT%H:%M')
+        data = {'token': str(uuid.uuid4()), 'measured_at': local, 'source': 'manual', 'ph_scale': 'total'}
+        for point in points:
+            for code in ('temperature_c', 'ph', 'salinity_ppt'):
+                data[f'point-{point.pk}-{code}'] = ''
+        for point in (self.sea_point, self.loop_point):
+            data.update({f'point-{point.pk}-ph': '7.95', f'point-{point.pk}-temperature_c': '12',
+                         f'point-{point.pk}-salinity_ppt': '30'})
+        response = self.client.post(url, data, headers={'X-Modal': '1'})
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(WaterMeasurement.objects.count(), 0)
+        errors = {row.point: dict(row.errors) for row in response.context['rows'] if row.errors}
+        self.assertEqual(list(errors), [self.loop_point])
+        self.assertIn(NOT_SEA, str(errors[self.loop_point]))
+
+    def test_the_calculator_loaded_from_the_loop_is_salt_added_and_refuses_the_scale(self):
+        self.record(point=self.loop_point, ph='7.80', ph_scale='nbs', temperature_c='12', salinity_ppt='30')
+        url = reverse('farm:water_calculator')
+        page = self.client.get(url, {'point': f'system:{self.mixed.pk}'}, follow=True)
+        self.assertEqual(page.context['form'].cleaned_data['water_origin'], 'salt_added')
+        sent = dict(parse_qsl(page.redirect_chain[-1][0].split('?', 1)[1], keep_blank_values=True))
+        for salinity in ('29', '30', '35'):
+            with self.subTest(salinity=salinity):
+                typed = self.client.get(url, {**sent, 'ph': '7.95', 'ph_scale': 'total', 'salinity_ppt': salinity})
+                self.assertEqual(typed.context['form'].errors['ph_scale'], [NOT_SEA])
+                self.assertIsNone(typed.context['result'])

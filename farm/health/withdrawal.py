@@ -1051,7 +1051,8 @@ class Released:
 
 @dataclass(frozen=True)
 class Combined:
-    """Fish that were not held and are held after a stock operation, because it combines them with held fish (the
+    """Fish that wait longer for the harvest after a stock operation, because it combines them with held fish: fish
+    that were not held, and fish held to an earlier end than the hold they now share (the
     owner's decisions 7 and 8 of 16.11.2026: fish moved into a tank that already holds fish are one group with them,
     whoever is combined waits for the others' withdrawal, wherever those fish go; it is SAID at the move, and the move
     is allowed). Asked like every warning of the guard, by a tick; stored as a handling acknowledgement of the
@@ -1254,18 +1255,35 @@ def _held_again(before, after):
     return [HeldAgain(batches[batch_id], units[unit_id], hold) for (unit_id, batch_id), hold in found]
 
 
+def _cause(hold):
+    """Which withdrawal a Hold is of: its cause (the course, the medicated feeding) and the batch it was worked out
+    for."""
+    return source_key(hold.source), hold.withdrawal.batch_id
+
+
 def _combined(before, after, came_from):
-    """[Combined]: the lots with fish after a stock operation that a withdrawal holds now and whose fish no
-    withdrawal held before it (neither the lot itself nor a lot the operation moved fish out of into it): held fish
-    were moved in beside them, they were moved in beside held fish, or they went on from a unit that now counts as
-    shared (a move dated in the past). One per lot, with the withdrawal that holds it longest."""
+    """[Combined]: the lots with fish after a stock operation that now wait for a withdrawal their fish did not wait
+    for before it, and wait LONGER by it. "Their fish before" are the lot's own and those of a lot the operation moved
+    fish out of into it. So:
+    - fish no withdrawal held (held fish were moved in beside them, they were moved in beside held fish, or they went
+      on from a unit that now counts as shared: a move dated in the past);
+    - fish that were held already, to an EARLIER end, and are combined with a longer or an unknown hold, in either
+      direction (verification V-1: B waited until tomorrow, and after the move for two months, and nothing was said).
+    Held fish moved alone, fish combined with a hold that ends no later than their own, and an end that only moved
+    (the same withdrawal, other water) are not said. One per lot, with the new withdrawal that holds it longest."""
     found = []
     for lot in sorted(after.held, key=str):
-        if lot not in after.stocked or lot in before.held:
+        if lot not in after.stocked:
             continue
-        if any(each in before.held for each in came_from.get(lot, ())):
+        prior = [hold for each in (lot, *sorted(came_from.get(lot, ()), key=str)) for hold in before.held.get(each, ())]
+        known = {_cause(hold) for hold in prior}
+        new = [hold for hold in after.held[lot] if _cause(hold) not in known]
+        if not new:
             continue
-        found.append((lot, max(after.held[lot], key=_rank)))
+        longest = max(new, key=_rank)
+        if prior and not _later(longest.until, _end(prior)):
+            continue
+        found.append((lot, longest))
     batches = Batch.all_objects.in_bulk({batch_id for (_unit, batch_id), _hold in found})
     units = Tank.all_objects.in_bulk({unit_id for (unit_id, _batch), _hold in found})
     return [Combined(batches[batch_id], units[unit_id], hold) for (unit_id, batch_id), hold in found]

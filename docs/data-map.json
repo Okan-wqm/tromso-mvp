@@ -193,6 +193,7 @@
       "tests": [
         "farm/tests/test_migration_feeding_acknowledgement.py",
         "farm/tests/test_migration_purging.py",
+        "farm/tests/test_withdrawal_combined.py",
         "sensors/tests/test_alarms.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_migration.py",
@@ -9874,6 +9875,7 @@
         "farm/tests/test_stock.py",
         "farm/tests/test_suppliers.py",
         "farm/tests/test_withdrawal_ceiling.py",
+        "farm/tests/test_withdrawal_combined.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
         "farm/tests/test_withdrawal_guard.py",
@@ -9903,7 +9905,7 @@
       "app": "farm",
       "model": "HandlingAcknowledgement",
       "table": "handling_acknowledgements",
-      "description": "One warning a person went on past when recording a handling (a harvest, a transfer, a grading, a treatment): a medicine withdrawal in force, or too short a fast.",
+      "description": "One warning a person went on past when recording a handling (a harvest, a transfer, a grading, a treatment): a medicine withdrawal in force, or too short a fast; and, as a withdrawal row on the move that made it (a transfer, a split, a grading, or a stocking, which is no handling: `kind` is None there), the fish a move combined with held fish, which now wait with them (the owner's decision 8; farm.stock.integrity knows both).",
       "columns": [
         {
           "name": "id",
@@ -10261,6 +10263,7 @@
         "farm/tests/test_lice_reason.py",
         "farm/tests/test_migration_feeding_acknowledgement.py",
         "farm/tests/test_migration_purging.py",
+        "farm/tests/test_withdrawal_ceiling.py",
         "farm/tests/test_withdrawal_cleaner_fish.py",
         "farm/tests/test_withdrawal_combined.py",
         "farm/tests/test_withdrawal_locks.py",
@@ -22393,7 +22396,7 @@
       "app": "farm",
       "model": "WithdrawalAcknowledgement",
       "table": "withdrawal_acknowledgements",
-      "description": "One warning a person went on past when a write changed a medicine withdrawal (the withdrawal guard, farm.health.withdrawal.guarded, which every such write goes through: a treatment, its last day or void, a medicated feeding or its void, a medicine's withdrawal rows, a water sample, a stock operation): a harvest already recorded now lies inside a withdrawal (`harvested`, naming the harvest), or fish held today are freed by it (`released`).",
+      "description": "One warning a person went on past when a write changed a medicine withdrawal (the withdrawal guard, farm.health.withdrawal.guarded, which every such write goes through: a treatment, its last day or void, a medicated feeding or its void, a medicine's withdrawal rows, a water sample, a stock operation): a harvest already recorded now lies inside a withdrawal (`harvested`, naming the harvest), fish held today are freed by it (`released`), or fish that had been let go are held again by it (`held`: a longer ceiling for the ends without a rule).",
       "columns": [
         {
           "name": "id",
@@ -22472,7 +22475,8 @@
           "null": false,
           "choices": [
             "harvested",
-            "released"
+            "released",
+            "held"
           ],
           "link": null,
           "on_form": [],

@@ -35,7 +35,7 @@ A person said they saw an alarm: when, from which device (the id the app sends; 
 - **how it works**: The mobile app will acknowledge through the same service (alarms.services.acknowledge).
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarm_acknowledgements
 - **constraints**: uq_alarm_acknowledgements_once (unique: alarm, user); chk_alarm_acknowledgements_app (check)
-- **tests that mention it**: `farm/tests/test_migration_feeding_acknowledgement.py`, `farm/tests/test_migration_purging.py`, `sensors/tests/test_alarms.py` and 3 more
+- **tests that mention it**: `farm/tests/test_migration_feeding_acknowledgement.py`, `farm/tests/test_migration_purging.py`, `farm/tests/test_withdrawal_combined.py` and 4 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -998,7 +998,7 @@ A feed the farm uses: its maker, what it is made for, its pellet and its analysi
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › feeds
 - **forms**: `FeedForm`
 - **constraints**: uq_feeds_code_live (unique: code); uq_feeds_name_live (unique: name); chk_feeds_code (check); chk_feeds_feed_type (check); chk_feeds_feed_form (check); chk_feeds_buoyancy (check); chk_feeds_status (check); chk_feeds_pellet_size (check); chk_feeds_protein_pct (check); chk_feeds_fat_pct (check); chk_feeds_nfe_pct (check); chk_feeds_fibre_pct (check); chk_feeds_ash_pct (check); chk_feeds_moisture_pct (check); chk_feeds_phosphorus_pct (check); chk_feeds_gross_energy_mj_kg (check); chk_feeds_digestible_energy_mj_kg (check); chk_feeds_fractions (check); chk_feeds_phosphorus_in_ash (check); chk_feeds_digestible_energy (check); chk_feeds_price (check); chk_feeds_price_currency (check)
-- **tests that mention it**: `core/tests_erasure.py`, `core/tests_private_log.py`, `core/tests_workspaces.py` and 36 more
+- **tests that mention it**: `core/tests_erasure.py`, `core/tests_private_log.py`, `core/tests_workspaces.py` and 37 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1035,7 +1035,7 @@ A feed the farm uses: its maker, what it is made for, its pellet and its analysi
 <a id="farmhandlingacknowledgement"></a>
 ### farm.HandlingAcknowledgement (`handling_acknowledgements`)
 
-One warning a person went on past when recording a handling (a harvest, a transfer, a grading, a treatment): a medicine withdrawal in force, or too short a fast.
+One warning a person went on past when recording a handling (a harvest, a transfer, a grading, a treatment): a medicine withdrawal in force, or too short a fast; and, as a withdrawal row on the move that made it (a transfer, a split, a grading, or a stocking, which is no handling: `kind` is None there), the fish a move combined with held fish, which now wait with them (the owner's decision 8; farm.stock.integrity knows both).
 
 - **create**: farm:stock_harvest (`/operations/units/<uuid:pk>/harvest/`); farm:stock_transfer (`/operations/units/<uuid:pk>/transfer/`); farm:stock_grading (`/operations/units/<uuid:pk>/grading/`); farm:treatment_record (`/operations/health/treatments/new/`)
 - **edit**: none, by design: never edited: what the person was shown stays as it was
@@ -1044,7 +1044,7 @@ One warning a person went on past when recording a handling (a harvest, a transf
 - **how it works**: One row for each warning the person went on past, written with the operation or the treatment it was given for. The pages show that a warning was acknowledged (its kind in a tooltip on Harvested), not the values it kept.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › handling_acknowledgements
 - **constraints**: chk_handling_acknowledgements_warning (check); chk_handling_acknowledgements_shape (check); chk_handling_acknowledgements_fasted (check); chk_handling_acknowledgements_fasted_degree_days (check); chk_handling_acknowledgements_one_record (check); uq_handling_acknowledgements_one_fast (unique: operation)
-- **tests that mention it**: `farm/tests/test_fast_of_the_unit.py`, `farm/tests/test_fasting_sentence.py`, `farm/tests/test_fix_seed_size_mix.py` and 12 more
+- **tests that mention it**: `farm/tests/test_fast_of_the_unit.py`, `farm/tests/test_fasting_sentence.py`, `farm/tests/test_fix_seed_size_mix.py` and 13 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2068,7 +2068,7 @@ Where a water sample is taken: a named place on one unit, one system’s loop or
 <a id="farmwithdrawalacknowledgement"></a>
 ### farm.WithdrawalAcknowledgement (`withdrawal_acknowledgements`)
 
-One warning a person went on past when a write changed a medicine withdrawal (the withdrawal guard, farm.health.withdrawal.guarded, which every such write goes through: a treatment, its last day or void, a medicated feeding or its void, a medicine's withdrawal rows, a water sample, a stock operation): a harvest already recorded now lies inside a withdrawal (`harvested`, naming the harvest), or fish held today are freed by it (`released`).
+One warning a person went on past when a write changed a medicine withdrawal (the withdrawal guard, farm.health.withdrawal.guarded, which every such write goes through: a treatment, its last day or void, a medicated feeding or its void, a medicine's withdrawal rows, a water sample, a stock operation): a harvest already recorded now lies inside a withdrawal (`harvested`, naming the harvest), fish held today are freed by it (`released`), or fish that had been let go are held again by it (`held`: a longer ceiling for the ends without a rule).
 
 - **create**: farm:treatment_record (`/operations/health/treatments/new/`); farm:treatment_last_day (`/operations/health/treatments/<uuid:pk>/last-day/`); farm:treatment_void (`/operations/health/treatments/<uuid:pk>/void/`); farm:feeding_record (`/operations/units/<uuid:pk>/feeding/`); farm:feeding_void (`/operations/feeding/void/<uuid:pk>/`); farm:water_record (`/operations/water/record/`); farm:water_round (`/operations/water/round/`); farm:water_void (`/operations/water/void/<uuid:pk>/`); farm:stock_harvest (`/operations/units/<uuid:pk>/harvest/`); farm:stock_transfer (`/operations/units/<uuid:pk>/transfer/`); farm:stock_void (`/operations/units/void/<uuid:pk>/`); farm:medicine_withdrawals (`/medicines/<uuid:pk>/withdrawals/`)
 - **edit**: none, by design: append-only (a database trigger): what the person went on past stays as it was

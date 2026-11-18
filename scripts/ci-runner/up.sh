@@ -22,8 +22,9 @@ REPO=$(repository)
 private=$(gh api "repos/$REPO" --jq .private)
 [ "$private" = true ] || { echo "farm-ci: $REPO is not a private repository: no runner is started for it" >&2; exit 1; }
 
+online() { case "$state" in *" online "*) return 0 ;; esac; return 1; }
 state=$(registered)
-if [ "$(docker inspect -f '{{.State.Running}}' "$RUNNER" 2>/dev/null)" = true ] && [ "${state#* }" != "${state#* online }" ]; then
+if [ "$(docker inspect -f '{{.State.Running}}' "$RUNNER" 2>/dev/null)" = true ] && online; then
   echo "farm-ci: $RUNNER is already running and online for $REPO"
   exit 0
 fi
@@ -48,7 +49,7 @@ gh api -X POST "repos/$REPO/actions/runners/registration-token" --jq .token \
 
 for _ in $(seq 1 60); do
   state=$(registered)
-  if [ "${state#* }" != "${state#* online }" ]; then
+  if online; then
     echo "farm-ci: $RUNNER is online for $REPO (labels self-hosted, linux, x64, farm); stop it with scripts/ci-runner/down.sh"
     exit 0
   fi

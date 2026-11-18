@@ -287,7 +287,12 @@ class Reader:
     `first=LIFE`: from the first day that can matter to the batches asked (their earliest harvest, the earliest
     course that can have exposed them, the first day of the correction window): a write guard, which compares the
     harvests of their whole life and everything a record dated in the window can reach.
+    `back` (with LIFE): a day the write reaches back to that the batches' own records do not tell (a write of
+    reference data is not a dated record: a feed made Medicated holds fish from its first feeding, a longer ceiling
+    from the oldest course without a rule), so the read starts there at the latest.
     `also`: treatments the caller will ask `of_treatment` of whatever their end (the Treatments list).
+    `ceiling`: the days an end without a rule holds, in the place of the setting (what the longest setting could
+    hold: `guarded_ceiling`).
 
     **Whose today** (the owner's decision of 12.11.2026: everything is read on the site's own day). Fish are read on
     today of the site they are on NOW: a unit's own withdrawal line, the harvest check and the Treatments list all make
@@ -300,17 +305,18 @@ class Reader:
     nothing where the course was given on that site; it makes a guard, whose day can be an earlier one, see a course
     begun today on the later clock (`holds`), which it did not."""
 
-    def __init__(self, batch_ids, today, spans=None, first=None, last=None, also=()):
+    def __init__(self, batch_ids, today, spans=None, first=None, last=None, also=(), back=None, ceiling=None):
         self.asked, self.today = set(batch_ids), today
         self.spans = stock_read.spans() if spans is None else spans
-        self._withdrawals = self._lots = self._ceiling = None
+        self._withdrawals = self._lots = None
+        self._ceiling = ceiling
         # A day beyond: a course begun today on a later clock has begun (`there`).
         self.last = max(today, last or today) + DAY
         every = list(Treatment.objects.filter(medicine__isnull=False, start_date__lte=self.last)
                      .select_related('medicine').prefetch_related('units').order_by('start_date', 'pk'))
         self.rows = {}                                 # medicine id -> its withdrawal rows
         self.load_rows({each.medicine_id for each in [*every, *also] if each.medicine_id})
-        self.first = self._life(every) if first is LIFE else (today if first is None else first)
+        self.first = self._life(every, back) if first is LIFE else (today if first is None else first)
         self.in_feed = [each for each in every if each.method == TreatmentMethod.IN_FEED]
         self.listed = {each.pk for each in also}
         self.treatments = [each for each in every if each.pk in self.listed or not self._over(each)]
@@ -366,13 +372,16 @@ class Reader:
         last = held.treatment.end_date if held.treatment is not None else held.feeding.date
         return replace(held, gives_up=last + (self.ceiling + 1) * DAY)
 
-    def _life(self, treatments):
+    def _life(self, treatments, back=None):
         """The first day that can matter to the batches asked: their earliest live harvest, the first day of the
         earliest course that can have exposed them (by the spans), and the first day a record can still be dated on
         (the correction window): a course, a feeding or a move entered now for a day in the window holds fish from
         that day, also fish of other batches and their harvests, and both snapshots of a guard must read from before
-        it."""
+        it. The window bounds a DATED record only: a write of reference data changes withdrawals from a day of its
+        own (`back`), and a read that began later would hide the harvests it puts inside one (verification V-6)."""
         days = [self.today - correction_window_days() * DAY]
+        if back is not None:
+            days.append(back)
         harvested = (StockMovement.objects.filter(kind=MovementKind.HARVEST, operation__is_deleted=False,
                                                   batch_id__in=self.asked)
                      .order_by('operation__date').values_list('operation__date', flat=True).first())
@@ -1084,6 +1093,42 @@ class Combined:
 
 
 @dataclass(frozen=True)
+class HeldAgain:
+    """Fish that are not held today and are held after a change of the rule of how long an end without a rule holds
+    (rule 8; a longer ceiling: a course that had given up holds again, verification V-7). Asked like every warning of
+    the guard, stored as a withdrawal acknowledgement (`held`) and logged critical. Nobody's fish go to food by it
+    (the harvests it puts inside the withdrawal are asked about beside it), so the second-person setting does not
+    apply to it alone."""
+    batch: object
+    unit: object
+    withdrawal: Hold                      # the Hold on the lot after the change, with how it came to
+
+    warning = WithdrawalWarning.HELD
+    harvest = None
+
+    @property
+    def until(self):
+        return self.withdrawal.until
+
+    @property
+    def approximate(self):
+        return self.withdrawal.estimated
+
+    @property
+    def reason(self):
+        return describe(self.withdrawal)
+
+    def key(self):
+        return (f'held:{self.batch.pk}:{self.unit.pk}:{self.until}:{self.approximate}:'
+                f'{source_key(self.withdrawal.source)}:{self.reason}')
+
+    def message(self):
+        return _('%(batch)s in %(unit)s is not held today and would be held again by a medicine withdrawal after '
+                 'this change, and the end of that withdrawal is not known. %(withdrawal)s') % {
+            'batch': self.batch.code, 'unit': self.unit.code, 'withdrawal': self.reason}
+
+
+@dataclass(frozen=True)
 class Snapshot:
     """The withdrawals of some fish as the stored facts give them now: the harvests inside one (by identity), the
     withdrawals that hold each lot today (`held`: {(unit id, batch id): [Hold]}), the lots with fish now (`stocked`),
@@ -1097,13 +1142,13 @@ class Snapshot:
     since: object = LIFE
 
 
-def snapshot(batch_ids, today, since=LIFE):
+def snapshot(batch_ids, today, since=LIFE, back=None):
     """The Snapshot of the fish `batch_ids` on `today`, read from `since` (default: the first day that can matter to
-    them, Reader's LIFE; the guard reads its second snapshot from the first one's day, so the two compare the same
-    days)."""
+    them, Reader's LIFE, and `back` when the write reaches further back; the guard reads its second snapshot from the
+    first one's day, so the two compare the same days)."""
     if not batch_ids:
         return Snapshot({}, {})
-    reader = Reader(batch_ids, today, first=since)
+    reader = Reader(batch_ids, today, first=since, back=back)
     held = defaultdict(list)
     for hold in reader.lots():
         if reader.current(hold):          # held now, by the reader's rule for several clocks: the guards read it too
@@ -1140,10 +1185,11 @@ class Change:
     harvested: list = field(default_factory=list)
     released: list = field(default_factory=list)
     combined: list = field(default_factory=list)
+    held_again: list = field(default_factory=list)
 
     @property
     def warnings(self):
-        return self.harvested + self.released + self.combined
+        return self.harvested + self.released + self.combined + self.held_again
 
     @property
     def fingerprint(self):
@@ -1160,7 +1206,7 @@ class Change:
         return check.second_person_text() if check.needs_second_person(self) else ''
 
 
-def change(before, after, exclude_operation=None, combining=False):
+def change(before, after, exclude_operation=None, combining=False, holding=False):
     """The Change between two snapshots, `after` read over `before`'s batches at least (`guarded`). A harvest the write
     itself records is left out: the harvest's own handling check asks about the withdrawal in force on its day.
 
@@ -1194,7 +1240,18 @@ def change(before, after, exclude_operation=None, combining=False):
     units = Tank.all_objects.in_bulk({unit_id for (unit_id, _batch), *_rest in found})
     released = [Released(batches[batch_id], old, until_after, freed, units[unit_id])
                 for (unit_id, batch_id), old, until_after, freed in found]
-    return Change(harvested, released, _combined(before, after, came_from) if combining else [])
+    return Change(harvested, released, _combined(before, after, came_from) if combining else [],
+                  _held_again(before, after) if holding else [])
+
+
+def _held_again(before, after):
+    """[HeldAgain]: the lots with fish that no withdrawal held before a change of the ceiling and one holds after it.
+    One per lot, with the withdrawal that holds it longest."""
+    found = [(lot, max(after.held[lot], key=_rank)) for lot in sorted(after.held, key=str)
+             if lot in after.stocked and lot not in before.held]
+    batches = Batch.all_objects.in_bulk({batch_id for (_unit, batch_id), _hold in found})
+    units = Tank.all_objects.in_bulk({unit_id for (unit_id, _batch), _hold in found})
+    return [HeldAgain(batches[batch_id], units[unit_id], hold) for (unit_id, batch_id), hold in found]
 
 
 def _combined(before, after, came_from):
@@ -1230,7 +1287,8 @@ class WithdrawalChanged(ValidationError):
 FIELD = 'withdrawal_ack'
 
 
-def guarded(user, batch_ids, today, write, *, seen=None, record_of=None, exclude_operation=None, combining=False):
+def guarded(user, batch_ids, today, write, *, seen=None, record_of=None, exclude_operation=None, combining=False,
+            back=None, holding=False):
     """THE one function every write that can create, grow, shorten or end a medicine withdrawal goes through (a
     treatment, its last day and its void, a medicated feeding and its void, a medicine's withdrawal rows, a water
     sample and its void, a stock operation and its void, a feed's type, a species' assumed temperature, a sampling
@@ -1247,18 +1305,20 @@ def guarded(user, batch_ids, today, write, *, seen=None, record_of=None, exclude
     log entry on it with what was acknowledged; the second-person hook is asked as for every withdrawal warning.
     `exclude_operation(result)`: a harvest the write itself records (its own handling check asks). `combining`: the
     write is a stock operation, which also asks when it combines held fish with fish that are not held, in either
-    direction (`Combined`; the owner's decision 8: it is said at the move, and the move is allowed). Returns what
-    `write()` returned."""
+    direction (`Combined`; the owner's decision 8: it is said at the move, and the move is allowed). `back`: the first
+    day the write can change a withdrawal from, when it is not a dated record the correction window bounds (reference
+    data: `guarded_units`, `guarded_ceiling`); both snapshots read from it. `holding`: the write is a change of the
+    ceiling, which also asks when it holds fish again (`HeldAgain`). Returns what `write()` returned."""
     batch_ids = set(batch_ids)
     seen = seen or ''
-    before = snapshot(batch_ids, today)
+    before = snapshot(batch_ids, today, back=back)
     with gate.opened('withdrawal guard'), transaction.atomic():
         result = write()
         excluded = exclude_operation(result) if exclude_operation else None
         # Read again over everything read before (a write that parts fish, a move voided, must not lose them from
         # the comparison) and whatever the write joined to it.
         found = change(before, snapshot(batch_ids | before.scope, today, before.since), excluded,
-                       combining=combining)
+                       combining=combining, holding=holding)
         if found.warnings or seen:
             if seen != found.fingerprint and not found.warnings:
                 raise WithdrawalChanged(found, {FIELD: _('The warnings changed since the form was shown: read them '
@@ -1283,7 +1343,7 @@ def _acknowledge(user, record, found):
             warning=warning.warning, batch=warning.batch,
             harvest_id=warning.line.operation_id if warning.warning == WithdrawalWarning.HARVESTED else None,
             source=source_key(warning.withdrawal.source), until=warning.until, approximate=warning.approximate, reason=warning.reason[:500])
-        for warning in [*found.harvested, *found.released]])
+        for warning in [*found.harvested, *found.released, *found.held_again]])
     # Fish a stock operation combined with held fish: the operation's own handling acknowledgement, one per lot.
     HandlingAcknowledgement.objects.bulk_create([
         HandlingAcknowledgement(
@@ -1388,15 +1448,24 @@ def provider(units, day):
 
 def unresolved(today=None):
     """[(Batch, Withdrawal)]: the unresolved old courses (rule 8): every live course with a medicine, and every
-    medicated feeding no in-feed course covers, whose withdrawal for a batch it reached has an unknown end and has
+    medicated feeding no in-feed course covers, whose withdrawal for a batch it reached has no rule to end by and has
     given up by `today` (default the company's). They hold nobody any more; the Treatments page and check_withdrawal
-    list them with what gives each an end (`unresolved_text`). Only the batches whose end can be unknown are read:
-    a species without a row of the medicine, or a degree-day row for a species without an assumed temperature."""
+    list them with what gives each an end (`unresolved_text`). A degree-day withdrawal is never one of them: it holds
+    until it can be counted (decision 11)."""
     today = today or local_today()
+    # A last day before this has given up: last + days + 1 <= today.
+    return without_a_rule(today, today - unknown_withdrawal_days() * DAY)
+
+
+def without_a_rule(today, before=None):
+    """[(Batch, Withdrawal)]: every live course with a medicine that has no withdrawal row for the species of a batch
+    it reached, and every medicated feeding no in-feed course covers, with the batch: the withdrawals whose end is
+    unknown for want of a rule, which the ceiling of rule 8 bounds. `before`: only those whose last day is before it
+    (None: of any age). Only the batches of a species without a row of the medicine are read."""
     days = unknown_withdrawal_days()
-    before = today - days * DAY                        # a last day before this has given up: last + days + 1 <= today
     spans = stock_read.spans()
-    treatments = list(Treatment.objects.filter(medicine__isnull=False, end_date__lt=before)
+    old = {} if before is None else {'end_date__lt': before}
+    treatments = list(Treatment.objects.filter(medicine__isnull=False, **old)
                       .select_related('medicine').prefetch_related('units').order_by('start_date', 'pk'))
     rows = defaultdict(list)
     for row in MedicineWithdrawal.objects.filter(medicine__in={each.medicine_id for each in treatments}):
@@ -1405,23 +1474,19 @@ def unresolved(today=None):
                                            each.end_date) for each in treatments}
     batches = Batch.all_objects.select_related('species').in_bulk({pk for ids in reached.values() for pk in ids})
 
-    def may_be_unknown(treatment, batch):
-        rule = rule_for(rows[treatment.medicine_id], batch.species_id)
-        return rule is None or (rule.degree_days is not None and not batch.species.withdrawal_temperature_c)
-
-    wanted = {each.pk: {pk for pk in reached[each.pk] if may_be_unknown(each, batches[pk])} for each in treatments}
+    wanted = {each.pk: {pk for pk in reached[each.pk]
+                        if rule_for(rows[each.medicine_id], batches[pk].species_id) is None} for each in treatments}
     listed = [each for each in treatments if wanted[each.pk]]
     found = []
     if listed:
         reader = Reader({pk for each in listed for pk in wanted[each.pk]}, today, spans, also=listed)
         for treatment in listed:
             for batch_id in sorted(wanted[treatment.pk] & reader.treated(treatment), key=str):
-                held = reader.of_treatment(treatment, batch_id)
-                if held.until is None:
-                    found.append((batches[batch_id], held))
+                found.append((batches[batch_id], reader.of_treatment(treatment, batch_id)))
     in_feed = list(Treatment.objects.filter(medicine__isnull=False, method=TreatmentMethod.IN_FEED)
                    .prefetch_related('units'))
-    records = [record for record in FeedingRecord.objects.filter(feed__feed_type=FeedType.MEDICATED, date__lt=before)
+    old = {} if before is None else {'date__lt': before}
+    records = [record for record in FeedingRecord.objects.filter(feed__feed_type=FeedType.MEDICATED, **old)
                .select_related('feed', 'unit') if not any(covers(treatment, record) for treatment in in_feed)]
     if records:
         parts = feeding_read.split_of(records)
@@ -1440,24 +1505,38 @@ def unresolved_text(batch, held):
 
 
 def guarded_ceiling(user, write, seen=None):
-    """A change of the platform owner's setting of how long an unknown end holds fish (rule 8): through the guard, over
-    the fish an unknown end holds today, which are locked first (their batches, as every write locks them). Made
-    shorter, it frees some of them: asked. Made longer, it holds fish again that had been let go: not asked (as a
-    longer withdrawal row is not)."""
+    """A change of the platform owner's setting of how long an end without a rule holds fish (rule 8): a change of a
+    rule, through the guard. Made shorter, it frees fish held today: asked. Made longer, it holds fish again that had
+    been let go, and brings the harvests recorded since they were let go inside the withdrawal: asked too
+    (verification V-7), each stored and logged as critical.
+
+    The fish asked of are every batch such a withdrawal can hold at the longest setting there is (the new value is
+    not known before the write): the courses and feedings without a rule of any age (`without_a_rule`), walked with
+    that ceiling from the oldest of them. Those batches are locked first, as every write locks them, and both
+    snapshots read from that oldest day, not from the correction window's (a setting is not a dated record)."""
+    from core.models import UNKNOWN_WITHDRAWAL_DAYS
     from farm.stock.services import locked
     today = local_today()
     with transaction.atomic():
-        reader = Reader(set(), today)
-        batch_ids = {hold.batch_id for hold in reader.lots() if hold.until is None and reader.current(hold)}
+        known = [held for _batch, held in without_a_rule(today)]
+        if not known:
+            return guarded(user, set(), today, write, seen=seen)
+        back = min(held.start for held in known)
+        reader = Reader({held.batch_id for held in known}, today, first=back, ceiling=UNKNOWN_WITHDRAWAL_DAYS[1])
+        batch_ids = {hold.batch_id for hold in reader.lots() if hold.rule is None}
         locked(Batch, batch_ids)
-        return guarded(user, batch_ids, today, write, seen=seen)
+        return guarded(user, batch_ids, today, write, seen=seen, back=back, holding=True)
 
 
 def guarded_units(user, unit_ids, first, write, seen=None):
     """A write about reference data the withdrawals of the fish in `unit_ids` (from the day `first` on; None: every fish they ever held) are worked out
     from (a feed's type, a species' assumed temperature, a sampling point): those fish are locked as a stock operation
-    locks them, and the write goes through the guard."""
+    locks them, and the write goes through the guard. Such a record is not dated: the guard reads from the day it
+    reaches those fish (`first`; None: the day the first of them came into a unit), however long ago, so that every
+    recorded harvest the write puts inside a withdrawal is asked about (verification V-6)."""
     from farm.stock.services import lock_fish
     units, batch_ids = lock_fish(set(unit_ids), first) if unit_ids else ({}, set())
     today = earliest_today(units.values())
-    return guarded(user, batch_ids, today, write, seen=seen)
+    if first is None and batch_ids:
+        first = min(began for (_unit, batch_id), (began, _ended) in stock_read.spans().items() if batch_id in batch_ids)
+    return guarded(user, batch_ids, today, write, seen=seen, back=first)

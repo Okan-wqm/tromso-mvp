@@ -739,7 +739,7 @@ class CalculatorForm(forms.Form):
                 **{name: value if value in (None, '') or isinstance(value, str) else float(value)
                    for name, value in calculation.ions_of(data).items()})
             taken = equilibria.takes_ph_scale(scale)
-        except ValueError:
+        except (ValueError, ArithmeticError):      # what the gate catches (deffeyes.unworkable)
             taken = False
         if not taken:
             self.add_error('ph_scale', messages.PH_NOT_SEA)

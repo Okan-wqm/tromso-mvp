@@ -125,12 +125,12 @@ def on_nbs(point, values, scale):
                if values.get(code) is None}
     if missing:
         raise ValidationError(missing)
-    origin = scale_origin(Context._served([point])[point.pk])        # salt added as soon as one unit says so (V-C)
+    origin = scale_origin(Context._served([point])[point.pk])       # salt added as soon as one unit of its water says so
     try:
         equilibria = chemistry.water_equilibria(float(values[parameters.TEMPERATURE]),
                                                 float(values[parameters.SALINITY]), water_origin=origin)
         taken = equilibria.takes_ph_scale(scale)
-    except ValueError:                       # a water the core cannot work out is not one it converts a pH for
+    except (ValueError, ArithmeticError):    # a water the core cannot work out is not one it converts a pH for
         taken = False
     if not taken:
         raise ValidationError({'ph_scale': str(messages.PH_NOT_SEA)})

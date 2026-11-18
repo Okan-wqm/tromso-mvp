@@ -16,6 +16,7 @@ from decimal import Decimal
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
 from django.urls import reverse
+from django.utils import translation
 
 from core.models import AuditLog, PlatformSettings
 
@@ -232,12 +233,11 @@ class DegreeDaysTests(CeilingTestCase):
         self.assertFalse(WithdrawalAcknowledgement.objects.exists())
 
 
-class CeilingChangedTests(CeilingTestCase):
-    """A course 170 days ago with no row holds O in T-02 (the ceiling is 180)."""
+class SettingTestCase(CeilingTestCase):
+    """The platform owner edits the setting on its page."""
 
     def setUp(self):
         super().setUp()
-        self.old_course(170)
         self.user.groups.add(role('Platform owner', 'view_platformsettings', 'change_platformsettings'))
         self.row = PlatformSettings.get()
 
@@ -245,6 +245,102 @@ class CeilingChangedTests(CeilingTestCase):
         data = {'correction_window_days': self.row.correction_window_days, 'clock_tolerance_seconds': 300,
                 'unknown_withdrawal_days': days, 'version': PlatformSettings.get().version, **more}
         return self.client.post(reverse('core:platformsettings_edit', args=[self.row.pk]), data)
+
+
+class CeilingMadeLongerTests(SettingTestCase):
+    """A course 200 days ago with no row gave up 20 days ago (the ceiling is 180): O in T-02 is free. A longer ceiling
+    is a change of the rule too (verification of S-03, V-7): it holds those fish again, and a harvest recorded since
+    the course gave up lies inside the withdrawal after it. Both are asked, stored and logged as critical."""
+
+    def setUp(self):
+        super().setUp()
+        self.course = self.old_course(200)
+
+    def harvest(self, days_ago=10):
+        return stock_services.record_harvest(self.user, unit=self.t2, batch=self.o, day=self.day(days_ago), count=100,
+                                             measured_weight_kg=Decimal('13'), facility=self.facility)
+
+    def again(self, batch, unit):
+        return f'{batch.code} in {unit} is not held today and would be held again by a medicine withdrawal'
+
+    def test_it_asks_about_the_harvest_it_brings_inside_and_stores_the_answer(self):
+        harvest = self.harvest()                                         # free that day: no tick, no row
+        self.assertFalse(HandlingAcknowledgement.objects.exists())
+        refused = self.edit(365)
+        self.assertEqual(refused.status_code, 422)
+        self.assertContains(refused, 'lies inside this withdrawal (end unknown): medicated fish may have gone to food.',
+                            status_code=422)
+        self.assertContains(refused, self.again(self.o, 'T-02'), status_code=422)
+        self.assertContains(refused, 'name="withdrawal_ack"', status_code=422)
+        self.assertEqual(PlatformSettings.get().unknown_withdrawal_days, 180)       # nothing saved
+        self.assertEqual(self.ends(self.t2), [])
+        change = refused.context['withdrawal_change']
+        self.assertEqual([found.operation_id for found in change.harvested], [harvest.pk])
+        self.assertEqual(self.edit(365, withdrawal_ack=change.fingerprint).status_code, 302)
+        self.assertEqual(PlatformSettings.get().unknown_withdrawal_days, 365)
+        self.assertEqual(self.ends(self.t2), [(self.o.pk, None)])
+        self.assertEqual(self.listed(), [])
+        self.assertCountEqual(
+            WithdrawalAcknowledgement.objects.values_list('warning', 'batch', 'harvest', 'record_type', 'source'),
+            [('harvested', self.o.pk, harvest.pk, 'platform settings', f'treatment:{self.course.pk}'),
+             ('held', self.o.pk, None, 'platform settings', f'treatment:{self.course.pk}')])
+        entry = AuditLog.objects.get(entity_type='platform settings', severity='critical')
+        said = entry.changes['Withdrawal warnings acknowledged'][1]
+        self.assertIn('lies inside this withdrawal (end unknown)', said)
+        self.assertIn(self.again(self.o, 'T-02'), said)
+        out = self.command()
+        self.assertIn('Acknowledged when the platform settings was recorded.', out)
+        self.assertNotIn('Not acknowledged', out)
+        self.assertNotIn('Unresolved old course', out)
+
+    def test_it_asks_before_it_holds_fish_again_the_shared_ones_too(self):
+        with correction_window(3650):                                    # O's fish went in beside A while held
+            going_on(stock_services.record_transfer, self.user, source=self.t2, batch=self.o, day=self.day(8),
+                     legs=[(self.t1, 500)], reason='density')
+        self.assertEqual(self.ends(self.t1), [])                         # not held then (given up): nothing asked
+        refused = self.edit(365)
+        self.assertEqual(refused.status_code, 422)
+        change = refused.context['withdrawal_change']
+        self.assertEqual(sorted((each.batch.code, each.unit.code) for each in change.held_again),
+                         sorted([(self.a.code, 'T-01'), (self.o.code, 'T-01'), (self.o.code, 'T-02')]))
+        self.assertEqual((change.harvested, change.released), ([], []))
+        for batch, unit in ((self.a, 'T-01'), (self.o, 'T-01'), (self.o, 'T-02')):
+            self.assertContains(refused, self.again(batch, unit), status_code=422)
+        self.assertEqual(PlatformSettings.get().unknown_withdrawal_days, 180)
+        self.assertEqual(self.edit(365, withdrawal_ack=change.fingerprint).status_code, 302)
+        self.assertCountEqual(WithdrawalAcknowledgement.objects.values_list('warning', 'batch', 'record_type'),
+                              [('held', self.a.pk, 'platform settings'), ('held', self.o.pk, 'platform settings'),
+                               ('held', self.o.pk, 'platform settings')])
+        self.assertTrue(AuditLog.objects.filter(entity_type='platform settings', severity='critical').exists())
+        self.assertCountEqual(self.ends(self.t1), [(self.o.pk, None)])
+        self.assertEqual(self.ends(self.t2), [(self.o.pk, None)])
+
+    def test_a_harvest_older_than_the_correction_window_is_asked_about_too(self):
+        with correction_window(3650):
+            self.old_course(700, self.course.medicine)                   # gave up 520 days ago
+            harvest = self.harvest(days_ago=400)                         # 300 days after it: free then
+        change = self.edit(365).context['withdrawal_change']
+        self.assertEqual([found.operation_id for found in change.harvested], [harvest.pk])
+
+    def test_a_longer_ceiling_that_holds_nobody_again_asks_nothing(self):
+        self.assertEqual(self.edit(190).status_code, 302)                # 200 days ago: still given up
+        self.assertEqual(PlatformSettings.get().unknown_withdrawal_days, 190)
+        self.assertFalse(WithdrawalAcknowledgement.objects.exists())
+        self.assertEqual(self.ends(self.t2), [])
+
+    def test_the_question_is_translated(self):
+        change = self.edit(365).context['withdrawal_change']
+        for language, words in (('nb', 'holdes tilbake igjen'), ('tr', 'yeniden')):
+            with translation.override(language):
+                self.assertIn(words, change.messages()[0], language)
+
+
+class CeilingChangedTests(SettingTestCase):
+    """A course 170 days ago with no row holds O in T-02 (the ceiling is 180)."""
+
+    def setUp(self):
+        super().setUp()
+        self.old_course(170)
 
     def test_making_it_shorter_asks_before_it_frees_fish_held_today(self):
         refused = self.edit(100)

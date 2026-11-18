@@ -138,7 +138,10 @@ def _shape():
 
 class HandlingAcknowledgement(models.Model):
     """One warning a person went on past when recording a handling (a harvest, a transfer, a grading, a
-    treatment): a medicine withdrawal in force, or too short a fast. It keeps what they were shown, the
+    treatment): a medicine withdrawal in force, or too short a fast; and, as a withdrawal row on the move that made it
+    (a transfer, a split, a grading, or a stocking, which is no handling: `kind` is None there), the fish a move
+    combined with held fish, which now wait with them (the owner's decision 8; farm.stock.integrity knows both). It
+    keeps what they were shown, the
     withdrawal's end and reason, or the hours (and for a harvest's purging the degree-days) fasted against what the
     rule asked for, so the record says
     what was known at the time. It belongs to the stock operation or to the treatment it was given for, exactly
@@ -200,7 +203,8 @@ class HandlingAcknowledgement(models.Model):
 
     @property
     def kind(self):
-        """The handling it was given for: the operation's kind, or a treatment."""
+        """The handling it was given for: the operation's kind, or a treatment; None on a stocking (the row of fish
+        combined with held fish)."""
         if self.treatment_id:
             return HandlingKind.TREATMENT
         return KIND_OF_OPERATION.get(self.operation.kind)

@@ -42,6 +42,16 @@ PH_SCALE_SALINITY = 5
 PH_SCALE_COLUMNS = ['ph_scale', 'ph_as_measured', 'ph_converted_formula']
 
 
+class PhosphateUnit(models.TextChoices):
+    """The units a phosphate may be entered in besides phosphorus (PO₄-P, mg/L as P). A sample's `phosphate_p_mg_l` is
+    always as P; one entered as PO₄ is put on P when it is written (farm/water/services.py, by the molar masses of
+    farm/water/parameters.py) and keeps what was entered beside it (`phosphate_unit`, `phosphate_as_measured`)."""
+    PO4 = parameters.AS_PO4, _('as PO₄ (mg/L of phosphate)')
+
+
+PHOSPHATE_UNIT_COLUMNS = ['phosphate_unit', 'phosphate_as_measured']
+
+
 # The samples of live points of live owners. A deleted unit, system or piece of equipment keeps its points, and
 # a point its samples, out of sight, and they come back with the owner when it is restored (core.softdelete:
 # the links keep them, DO_NOTHING).
@@ -84,6 +94,12 @@ def _sample_checks():
                        temperature_c__isnull=False, salinity_ppt__isnull=False,
                        salinity_ppt__gte=PH_SCALE_SALINITY)),
         name='chk_water_measurements_ph_scale'))
+    checks.append(models.CheckConstraint(
+        # A phosphate entered in another unit: its unit, what was entered and the phosphorus stored; or none of them (P).
+        condition=(Q(phosphate_unit='', phosphate_as_measured__isnull=True)
+                   | Q(phosphate_unit__in=PhosphateUnit.values, phosphate_as_measured__isnull=False,
+                       phosphate_as_measured__gte=0, phosphate_p_mg_l__isnull=False)),
+        name='chk_water_measurements_phosphate_unit'))
     oxygen = Q(oxygen_mg_l__isnull=False) | Q(oxygen_saturation_pct__isnull=False)
     for code, prefix in BASIS.items():
         parameter = parameters.get(code)
@@ -192,6 +208,14 @@ class WaterMeasurement(AuditedModel):
         decimal_places=parameters.get('ph').decimals, null=True, blank=True)
     ph_converted_formula = models.PositiveSmallIntegerField(_('Formula the pH was put on the NBS scale by'), null=True,
                                                             blank=True)
+    # The provenance of a phosphate entered in another unit than P (PhosphateUnit): `phosphate_p_mg_l` holds it as
+    # phosphorus, as every phosphate is stored, shown and worked out; these keep the unit and the value as entered, so
+    # nothing is converted out of sight (the independent review of 2026-11-16, R3). Empty for a phosphate entered as P.
+    phosphate_unit = models.CharField(_('Unit the phosphate was entered in'), max_length=3, blank=True,
+                                      choices=PhosphateUnit.choices)
+    phosphate_as_measured = models.DecimalField(
+        _('Phosphate as entered, in its own unit'), max_digits=parameters.get('phosphate_p_mg_l').max_digits,
+        decimal_places=parameters.get('phosphate_p_mg_l').decimals, null=True, blank=True)
     notes = models.CharField(_('Notes'), max_length=500, blank=True)
     void_reason = models.CharField(_('Reason for voiding'), max_length=500, blank=True)
 

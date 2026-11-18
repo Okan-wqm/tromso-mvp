@@ -311,6 +311,10 @@ def _calculator_data(query):
     return data, True
 
 
+# What a loaded value says of how it was measured, by field (farm/water/messages.py; '' when stored as measured).
+STORED = {parameters.PH: words.ph_stored, parameters.PHOSPHATE: words.phosphate_measured_short}
+
+
 def _source(form, owner):
     """Where the values came from, field by field: what the unit or loop offers, whether the form still has it,
     its time and status; and the measured fields it has no value for."""
@@ -323,8 +327,9 @@ def _source(form, owner):
         sample = getattr(getattr(offer.reading, 'sample', None), 'sample', None)
         rows.append({'label': field.label, 'value': value, 'decimals': field.decimal_places, 'offer': offer,
                      'changed': entered.get(name) != value,
-                     # a pH measured on another scale: what was measured, and that the value here is the stored NBS one
-                     'measured': words.ph_stored(sample) if name == 'ph' and sample is not None else ''})
+                     # a pH measured on another scale, a phosphate entered as PO₄: what was measured, and that the value
+                     # here is the stored one (NBS, as P)
+                     'measured': STORED[name](sample) if name in STORED and sample is not None else ''})
     missing = [form.fields[name].label for name in calculation.MEASURED_FIELDS if name not in offers]
     return {'point': owner, 'rows': rows, 'missing': missing}
 
@@ -496,7 +501,7 @@ def record_round(request):
     rows = [RoundRowForm(data, point=point, columns=columns, water=water.get(point.pk), assumed=assumed.get(point.pk))
             for point in points]
     context = _context(heading=_('Water round'), scope=scope, header=header, rows=rows,
-                       ph_column=parameters.PH in columns,
+                       ph_column=parameters.PH in columns, phosphate_column=parameters.PHOSPHATE in columns,
                        columns=[parameters.get(code) for code in columns], site=site,
                        back_url=page_url(site=site.pk if site else ''))
     if data is not None and points:
@@ -509,7 +514,8 @@ def record_round(request):
                     source=header.cleaned_data['source'], token=header.cleaned_data['token'],
                     withdrawal_ack=header.cleaned_data['withdrawal_ack'],
                     rows=[(row.point, row.entered(), row.cleaned_data['notes']) for row in entered],
-                    require_basis=True, ph_scale=header.cleaned_data.get('ph_scale') or services.NBS)
+                    require_basis=True, ph_scale=header.cleaned_data.get('ph_scale') or services.NBS,
+                    phosphate_unit=header.cleaned_data.get('phosphate_unit') or services.AS_P)
             except AlreadyRecorded:
                 return done(request, context['back_url'])
             except ValidationError as error:

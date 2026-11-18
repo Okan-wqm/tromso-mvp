@@ -2605,6 +2605,7 @@
         "farm/tests/test_migration_altitude.py",
         "farm/tests/test_opening_balance.py",
         "farm/tests/test_ph_scale.py",
+        "farm/tests/test_phosphate_unit.py",
         "farm/tests/test_private_contacts.py",
         "farm/tests/test_production_departments.py",
         "farm/tests/test_protocols.py",
@@ -3210,15 +3211,19 @@
         "core/tests_account_mail.py",
         "core/tests_matrix_notes.py",
         "farm/tests/test_calculator.py",
+        "farm/tests/test_calculator_loaded_ph.py",
         "farm/tests/test_cleaner_ration.py",
+        "farm/tests/test_core_refusal.py",
         "farm/tests/test_deffeyes.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_feeding.py",
         "farm/tests/test_feeds.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_ph_measured_shown.py",
         "farm/tests/test_ph_scale.py",
         "farm/tests/test_phosphate.py",
+        "farm/tests/test_phosphate_unit.py",
         "farm/tests/test_plan_form_notice.py",
         "farm/tests/test_private_contacts.py",
         "farm/tests/test_protocols.py",
@@ -19840,6 +19845,7 @@
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_ration.py",
+        "farm/tests/test_core_refusal.py",
         "farm/tests/test_escape_delivery.py",
         "farm/tests/test_fast_of_the_unit.py",
         "farm/tests/test_feeding.py",
@@ -21710,6 +21716,33 @@
           "why": "a pH measured on another scale than NBS: what was measured and the formula the server put it on the NBS scale by, with the scale chosen on the form (farm/water/services.on_nbs)"
         },
         {
+          "name": "phosphate_unit",
+          "field": "phosphate_unit",
+          "type": "varchar(3)",
+          "null": false,
+          "choices": [
+            "po4"
+          ],
+          "link": null,
+          "on_form": [
+            "WaterSampleForm",
+            "RoundForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "phosphate_as_measured",
+          "field": "phosphate_as_measured",
+          "type": "numeric(5, 2)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "a phosphate entered as PO₄: what was entered, kept beside the phosphorus the server stores, with the unit chosen on the form (farm/water/services.as_p)"
+        },
+        {
           "name": "notes",
           "field": "notes",
           "type": "varchar(500)",
@@ -21853,6 +21886,12 @@
           "conditional": false
         },
         {
+          "name": "chk_water_measurements_phosphate_unit",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
           "name": "chk_water_measurements_oxygen_basis_temperature",
           "kind": "check",
           "fields": [],
@@ -21951,6 +21990,7 @@
             "measured_at": "",
             "source": "",
             "ph_scale": "",
+            "phosphate_unit": "",
             "notes": ""
           }
         },
@@ -21961,7 +22001,8 @@
             "token": "",
             "measured_at": "",
             "source": "",
-            "ph_scale": ""
+            "ph_scale": "",
+            "phosphate_unit": ""
           }
         },
         {
@@ -22000,7 +22041,9 @@
         "farm/tests/test_health.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_ph_scale.py",
+        "farm/tests/test_ph_scale_salt_added.py",
         "farm/tests/test_phosphate.py",
+        "farm/tests/test_phosphate_unit.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_ionic_inputs.py",

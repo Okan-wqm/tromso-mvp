@@ -729,6 +729,10 @@ class Context:
             # A pH measured on another scale is stored on the NBS scale; the reading says what was measured.
             found[parameters.PH].provenance = str(messages.ph_measured(observation.sample))
             found[parameters.PH].measured = str(messages.ph_measured_short(observation.sample))
+        if observation.sample is not None and observation.sample.phosphate_unit and parameters.PHOSPHATE in found:
+            # A phosphate entered as PO₄ is stored as P; the reading says what was entered.
+            found[parameters.PHOSPHATE].provenance = str(messages.phosphate_measured(observation.sample))
+            found[parameters.PHOSPHATE].measured = str(messages.phosphate_measured_short(observation.sample))
         salinity = self.salinity_for(observation)
         if observation.get(TAN) is not None:
             found.update(self._ammonia(observation, salinity))

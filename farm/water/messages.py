@@ -1,10 +1,12 @@
 """The words of the water-chemistry core's codes (owner amendment B2: the core is language-free; the browser receives
 finished words). One table: code -> the msgid the chart always used, so the EN, TR and NB catalogues carry over
 unchanged. farm/tests/test_native_geometry.py checks that every code the core gives has its words here."""
+from decimal import ROUND_HALF_UP, Decimal
+
 from django.utils.formats import number_format
 from django.utils.translation import gettext_lazy as _
 
-from . import native
+from . import native, parameters
 
 NOTES = {
     'co2.no_limit': _('CO₂: no limit given.'),
@@ -83,6 +85,56 @@ def ph_stored(sample):
         return ''
     return _('%(measured)s, stored as %(nbs)s NBS') % {'measured': ph_measured_short(sample),
                                                        'nbs': number_format(sample.ph, 2)}
+
+
+# The calculator: another unit chosen on the unchanged phosphate a unit or a loop gave it (as PH_LOADED).
+PHOSPHATE_LOADED = _('Phosphate %(value)s is the value loaded from %(point)s: it is as P already (a stored phosphate '
+                     'always is) and is not converted again. Leave the unit at P, or type the phosphate as it was '
+                     'reported with its unit.')
+
+
+def _rounded(value, decimals):
+    """A Decimal as the language writes it, ROUNDED to `decimals` (number_format alone cuts a Decimal's further digits
+    off: 5.0062 would read 5.00 and 15.3499 15.34)."""
+    return number_format(value.quantize(Decimal(1).scaleb(-decimals), rounding=ROUND_HALF_UP), decimals)
+
+
+def phosphate_range(as_p):
+    """Why a phosphate is refused once it is put on P: the range is the phosphorus's whatever unit it was typed in."""
+    parameter = parameters.get(parameters.PHOSPHATE)
+    return _('As P this is %(value)s mg/L: a phosphate is between %(low)s and %(high)s mg/L as P (up to %(most)s as '
+             'PO₄). Check the value and its unit.') % {
+        'value': _rounded(as_p, 2), 'low': parameter.low, 'high': parameter.high,
+        'most': _rounded(parameters.phosphate_as_po4(parameter.high), 2)}
+
+
+def phosphate_measured_short(sample):
+    """What a sample's phosphate was entered as, when not as P, as the few visible words beside the stored P ('' for a
+    phosphate entered as P); `phosphate_measured` is the whole sentence."""
+    if not sample.phosphate_unit:
+        return ''
+    return _('entered as %(value)s mg/L PO₄') % {'value': number_format(sample.phosphate_as_measured, 2)}
+
+
+def phosphate_measured(sample):
+    """What a sample's phosphate was entered as, when not as P, in words ('' for a phosphate entered as P): said beside
+    the P wherever it is shown (a reading's provenance)."""
+    if not sample.phosphate_unit:
+        return ''
+    return _('Entered as %(value)s mg/L as PO₄; stored as phosphorus (PO₄-P), divided by %(factor)s (the molar masses '
+             'of PO₄ and P).') % {'value': number_format(sample.phosphate_as_measured, 2),
+                                  'factor': _rounded(parameters.PO4_PER_P, 3)}
+
+
+def phosphate_used(equilibria):
+    """The sentence beside every recipe and simulator step worked out with a phosphate: which phosphate, as P and as
+    PO₄ (the two numbers a kit may show: a reader sees at once whether the right one went in), and that a wrong one
+    changes the dose; '' for a water without one (the independent review of 2026-11-16, R3)."""
+    if not equilibria.phosphate > 0:
+        return ''
+    as_p = Decimal(repr(equilibria.phosphate * 1000 * native.MG_P_PER_MMOL))
+    return _('Worked out with phosphate %(p)s mg/L as P (%(po4)s as PO₄): a wrong phosphate changes this dose.') % {
+        'p': _rounded(as_p, 2), 'po4': _rounded(parameters.phosphate_as_po4(as_p), 2)}
 
 
 def ph_measured(sample):

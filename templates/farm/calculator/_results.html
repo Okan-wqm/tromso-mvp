@@ -57,6 +57,7 @@
   <section class="calc-card calc-recipes" aria-labelledby="calc-recipes-title">
     <h3 class="calc-card-title" id="calc-recipes-title">{% trans "Dosing recipes" %}{% if result.recipes %} ({{ result.recipes|length }}){% endif %}</h3>
     {% if result.recipes %}
+    {% if result.phosphate_note %}<p class="calc-note wq-value wq-warning" data-phosphate-used>{{ result.phosphate_note }}</p>{% endif %}
     <ol class="calc-recipe-list">
       {% for recipe in result.recipes %}
       <li class="calc-recipe{% if recipe.below_air %} is-flagged{% endif %}">

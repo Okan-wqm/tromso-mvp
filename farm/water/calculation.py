@@ -28,7 +28,7 @@ from django.utils.translation import gettext_lazy as _
 
 from ..models import SamplingPoint, System
 from ..models.water_point import site_of
-from . import charts, chemistry, deffeyes, dosing, native, parameters, read
+from . import charts, chemistry, deffeyes, dosing, messages, native, parameters, read
 from .evaluate import Status, judge as judge_bounds
 
 # The calculator's fields a unit or a loop measures, by the parameter they are.
@@ -122,6 +122,14 @@ class Calculation:
     steps: list = field(default_factory=list)       # [JudgedStep], the water first
     steps_note: str = ''
     air_co2_mg_l: float = 0.0
+
+    @property
+    def phosphate_note(self):
+        """With a phosphate given, the sentence said beside every recipe and beside the simulator's steps: the phosphate
+        they were worked out with, as P and as PO₄, and that a wrong one changes the dose (the independent review of
+        2026-11-16, R3: a PO₄ reading typed as P is 3.07 times too much, and nothing beside a dose said it depended on
+        the phosphate); '' without one."""
+        return messages.phosphate_used(self.analysis.equilibria)
 
     @property
     def final(self):

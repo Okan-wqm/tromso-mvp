@@ -7,6 +7,7 @@
   <h3 class="calc-card-title" id="calc-simulator-title">{% trans "Dosing simulator" %}</h3>
   <p class="calc-card-help">{% trans "The water after each amount, added in the order of the list, mixed through and closed to the air while it mixes. Amounts are of the pure substance." %}</p>
   {% if result.steps_note %}<p class="calc-note">{{ result.steps_note }}</p>{% endif %}
+  {% if result.steps and result.phosphate_note %}<p class="calc-note wq-value wq-warning" data-phosphate-used>{{ result.phosphate_note }}</p>{% endif %}
   {% if result.steps %}
   {% with tan=analysis.water.tan_mg_l sulfide=analysis.water.total_sulfide_ug_l %}
   <div class="table-wrap">

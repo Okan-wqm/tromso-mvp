@@ -3710,6 +3710,14 @@ msgstr "Alan"
 msgid "Area not set: the stricter limit applies (Facility › Sites)"
 msgstr "Bölge girilmemiş: daha sıkı sınır geçerli (Tesis › Sahalar)"
 
+#, python-format
+msgid ""
+"As P this is %(value)s mg/L: a phosphate is between %(low)s and %(high)s mg/L as P (up to "
+"%(most)s as PO₄). Check the value and its unit."
+msgstr ""
+"P olarak bu %(value)s mg/L eder: fosfat, P olarak %(low)s ile %(high)s mg/L arasındadır (PO₄ "
+"olarak en çok %(most)s). Değeri ve birimini kontrol edin."
+
 msgid ""
 "As a pH meter or kit calibrated with NBS/NIST buffers reads it, at the water’s own temperature. A"
 " total-scale pH (a seawater sensor calibrated with TRIS) reads 0.10 to 0.14 lower in water of 5 "
@@ -4278,6 +4286,15 @@ msgstr "CO₂ toksik (> %(limit)s mg/L)"
 msgid "CO₂, HCO₃⁻ and CO₃²⁻ against pH"
 msgstr "pH’ye göre CO₂, HCO₃⁻ ve CO₃²⁻"
 
+msgid ""
+"CO₂: near an alkalinity of 0 the curve bends back. With the phosphate given the water’s own DIC "
+"falls before it rises there (a pH under about 4.7, where the phosphate holds negative "
+"alkalinity); no fish water is in that corner."
+msgstr ""
+"CO₂: alkalinite 0’a yakınken eğri geri kıvrılır. Girilen fosfatla suyun kendi DIC’i orada "
+"yükselmeden önce düşer (yaklaşık 4,7’nin altındaki pH’da fosfat negatif alkalinite tutar); o "
+"köşede balık suyu bulunmaz."
+
 msgid "CO₂: no limit given."
 msgstr "CO₂: sınır verilmedi."
 
@@ -4718,6 +4735,9 @@ msgstr "Genel sekmesinde türü seçin; boyutları burada görünür."
 
 msgid "Choose the location to count."
 msgstr "Sayılacak yeri seçin."
+
+msgid "Choose the phosphate’s unit."
+msgstr "Fosfatın birimini seçin."
 
 msgid "Choose the shape; the measures it is worked out from appear with it."
 msgstr "Şekli seçin; hacmin hesaplandığı ölçüler onunla birlikte görünür."
@@ -6070,6 +6090,14 @@ msgid "Enter the email address on your account. We will send you a link to set a
 msgstr ""
 "Hesabınızdaki e-posta adresini girin. Yeni bir parola belirlemeniz için size bir bağlantı "
 "göndereceğiz."
+
+#, python-format
+msgid ""
+"Entered as %(value)s mg/L as PO₄; stored as phosphorus (PO₄-P), divided by %(factor)s (the molar "
+"masses of PO₄ and P)."
+msgstr ""
+"%(value)s mg/L PO₄ olarak girildi; fosfor (PO₄-P) olarak saklandı, %(factor)s’e bölünerek (PO₄ ve"
+" P’nin mol kütleleri)."
 
 msgid "Entered by hand"
 msgstr "Elle girildi"
@@ -10561,15 +10589,19 @@ msgid "Origin"
 msgstr "Köken"
 
 msgid ""
-"Orthophosphate as phosphorus. A kit that reads PO₄³⁻: divide by 3.07. Phosphate is part of the "
-"alkalinity a titration measures: with it the calculator and a unit’s chart count its buffer in "
-"the DIC, in the water’s own CO₂ and in what a dose or a stripping does. The judged CO₂ never "
-"falls because of it. Empty: not counted, as before."
+"Orthophosphate. Choose its unit beside it: a kit that reads PO₄³⁻ shows 3.07 times the number as "
+"P (PO₄-P). A PO₄ reading entered as P counts 3.07 times too much phosphate, and every recipe and "
+"dose worked out with it is wrong. Phosphate is part of the alkalinity a titration measures: with "
+"it the calculator and a unit’s chart count its buffer in the DIC, in the water’s own CO₂ and in "
+"what a dose or a stripping does. The judged CO₂ never falls because of it. Empty: not counted, as"
+" before."
 msgstr ""
-"Fosfor cinsinden ortofosfat. PO₄³⁻ okuyan bir kit: 3,07’ye bölün. Fosfat, titrasyonun ölçtüğü "
-"alkalinitenin bir parçasıdır: girildiğinde hesap makinesi ve ünite grafiği onun tamponunu DIC’te,"
-" suyun kendi CO₂’sinde ve bir dozun ya da gaz gidermenin etkisinde hesaba katar. Değerlendirilen "
-"CO₂ bu yüzden hiçbir zaman düşmez. Boş: eskisi gibi hesaba katılmaz."
+"Ortofosfat. Birimini yanından seçin: PO₄³⁻ okuyan bir kit, P (PO₄-P) olarak sayının 3,07 katını "
+"gösterir. P olarak girilen bir PO₄ okuması 3,07 kat fazla fosfat sayar ve onunla hesaplanan her "
+"reçete ve doz yanlış olur. Fosfat, titrasyonun ölçtüğü alkalinitenin bir parçasıdır: girildiğinde"
+" hesaplayıcı ve birimin grafiği onun tamponunu DIC’de, suyun kendi CO₂’sinde ve bir dozun veya "
+"sıyırmanın etkisinde hesaba katar. Değerlendirilen CO₂ bu yüzden asla düşmez. Boş: önceki gibi, "
+"hesaba katılmaz."
 
 msgid "Oslo time, as the authority keeps it."
 msgstr "Oslo saati, kurumun tuttuğu gibi."
@@ -10901,8 +10933,27 @@ msgstr "Faz"
 msgid "Phone"
 msgstr "Telefon"
 
+#, python-format
+msgid ""
+"Phosphate %(value)s is the value loaded from %(point)s: it is as P already (a stored phosphate "
+"always is) and is not converted again. Leave the unit at P, or type the phosphate as it was "
+"reported with its unit."
+msgstr ""
+"Fosfat %(value)s, %(point)s kaynağından yüklenen değerdir: zaten P olarak (saklanan fosfat her "
+"zaman öyledir) ve yeniden dönüştürülmez. Birimi P olarak bırakın veya fosfatı bildirildiği "
+"haliyle, birimiyle birlikte yazın."
+
 msgid "Phosphate (mg/L PO₄ as P)"
 msgstr "Fosfat (mg/L PO₄, P olarak)"
+
+msgid "Phosphate (mg/L, in the unit chosen beside it)"
+msgstr "Fosfat (mg/L, yanında seçilen birimde)"
+
+msgid "Phosphate as entered, in its own unit"
+msgstr "Girildiği haliyle fosfat, kendi biriminde"
+
+msgid "Phosphate unit"
+msgstr "Fosfat birimi"
 
 msgid "Phosphorus (%)"
 msgstr "Fosfor (%)"
@@ -15049,6 +15100,20 @@ msgstr "Birim çarpanı, 0 dışında bir sayıdır."
 msgid "The unit the instrument sends, when it differs from the quantity’s."
 msgstr "Parametreninkinden farklıysa cihazın gönderdiği birim."
 
+msgid ""
+"The unit the phosphate above is in. As PO₄ the number is 3.07 times the number as P: everything "
+"is worked out with it as P, and every dose says the phosphate it was worked out with."
+msgstr ""
+"Yukarıdaki fosfatın birimi. PO₄ olarak sayı, P olarak sayının 3,07 katıdır: her şey P olarak "
+"hesaplanır ve her doz hangi fosfatla hesaplandığını söyler."
+
+msgid ""
+"The unit the round’s phosphates are in. As PO₄ the number is 3.07 times the number as P: each is "
+"put on P when stored, with what was entered kept beside it."
+msgstr ""
+"Turdaki fosfatların birimi. PO₄ olarak sayı, P olarak sayının 3,07 katıdır: her biri saklanırken "
+"P’ye çevrilir, girilen değer yanında tutulur."
+
 msgid "The unit was removed"
 msgstr "Ünite kaldırıldı"
 
@@ -15964,6 +16029,9 @@ msgstr "Düzeylerinin birimi"
 msgid "Unit offset"
 msgstr "Birim ofseti"
 
+msgid "Unit the phosphate was entered in"
+msgstr "Fosfatın girildiği birim"
+
 msgid "Unit, system or equipment"
 msgstr "Birim, sistem veya ekipman"
 
@@ -16455,6 +16523,15 @@ msgstr ""
 "Veri alım servisinin her sensör kanalı hakkında hatırladıkları: son değeri, ölü bandın ölçüldüğü "
 "son saklanan değer ve o zamandan beri saklanmayan değerler."
 
+msgid ""
+"What the kit or the laboratory reports. As PO₄ the number is 3.07 times the number as P: it is "
+"put on P when stored, with what was entered kept beside it. The wrong unit is a 3.07-fold error "
+"in every dose worked out with the phosphate."
+msgstr ""
+"Kitin veya laboratuvarın bildirdiği birim. PO₄ olarak sayı, P olarak sayının 3,07 katıdır: "
+"saklanırken P’ye çevrilir, girilen değer yanında tutulur. Yanlış birim, fosfatla hesaplanan her "
+"dozda 3,07 katlık bir hatadır."
+
 msgid "What the person can open and change. Without a role they see only the overview."
 msgstr "Kişinin neleri açıp değiştirebileceği. Rolü yoksa yalnızca genel bakışı görür."
 
@@ -16845,6 +16922,12 @@ msgstr ""
 msgid "Worked out from the values"
 msgstr "Değerlerden hesaplanan"
 
+#, python-format
+msgid "Worked out with phosphate %(p)s mg/L as P (%(po4)s as PO₄): a wrong phosphate changes this dose."
+msgstr ""
+"Fosfat %(p)s mg/L P olarak (%(po4)s PO₄ olarak) alınarak hesaplandı: yanlış bir fosfat bu dozu "
+"değiştirir."
+
 msgid "Working"
 msgstr "Çalışan"
 
@@ -17123,6 +17206,15 @@ msgstr "ve %(count)s tane daha: tüm raporlar"
 #, python-format
 msgid "and %(kilos)s to the cleaner fish"
 msgstr "ve temizleyici balığa %(kilos)s"
+
+msgid "as P (PO₄-P): mg/L of phosphorus"
+msgstr "P olarak (PO₄-P): mg/L fosfor"
+
+msgid "as PO₄ (mg/L of phosphate)"
+msgstr "PO₄ olarak (mg/L fosfat)"
+
+msgid "as PO₄: mg/L of phosphate"
+msgstr "PO₄ olarak: mg/L fosfat"
 
 msgid "as for food fish"
 msgstr "besi balığı gibi"
@@ -17674,6 +17766,10 @@ msgstr "sonu bilinmiyor"
 
 msgid "ended"
 msgstr "sona erdi"
+
+#, python-format
+msgid "entered as %(value)s mg/L PO₄"
+msgstr "%(value)s mg/L PO₄ olarak girildi"
 
 msgid "equals"
 msgstr "eşittir"

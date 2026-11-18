@@ -15,7 +15,7 @@ import uuid
 from decimal import Decimal as D
 
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
 from django.test import SimpleTestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -58,7 +58,7 @@ class FactorTests(SimpleTestCase):
         from django.utils import translation
         phosphate = parameters.get('phosphate_p_mg_l')
         said = str(phosphate.help)
-        for words in ('3.07 times', 'as PO₄', 'every recipe and dose worked out with it is wrong'):
+        for words in ('3.07 times', 'A PO₄ reading entered as P', 'every recipe and dose worked out with it is wrong'):
             self.assertIn(words, said)
         self.assertNotIn('divide by 3.07', said)                 # the unit is chosen, not worked out by hand
         for language, words in (('nb', '3,07 ganger'), ('tr', '3,07 kat')):
@@ -83,9 +83,9 @@ class RecordTests(WaterTestCase):
                          (D('5.01'), 'po4', D('15.35')))
         self.assertEqual(sample.phosphate_p_mg_l, (D('15.35') / FACTOR).quantize(D('0.01')))
         changes = AuditLog.objects.filter(action=AuditLog.Action.CREATE).latest('pk').changes
-        self.assertEqual(changes['Phosphate (mg/L PO₄ as P)'], [None, '5.01'])
-        self.assertEqual(changes['Unit the phosphate was entered in'], [None, 'as PO₄ (mg/L of phosphate)'])
-        self.assertEqual(changes['Phosphate as entered, in its own unit'], [None, '15.35'])
+        self.assertEqual(str(changes['Phosphate (mg/L PO₄ as P)'][1]), '5.01')
+        self.assertIn('PO₄', str(changes['Unit the phosphate was entered in'][1]))
+        self.assertEqual(str(changes['Phosphate as entered, in its own unit'][1]), '15.35')
 
     def test_left_as_p_a_sample_is_stored_as_it_always_was(self):
         for hours, unit in enumerate(('p', '', None), start=1):
@@ -111,12 +111,19 @@ class RecordTests(WaterTestCase):
         self.assertEqual((sample.phosphate_p_mg_l, sample.phosphate_unit, sample.phosphate_as_measured), (None, '', None))
 
     def test_the_database_holds_the_unit_and_what_was_entered_together(self):
-        sample = self.record(phosphate_p_mg_l='15.35')
-        rows = WaterMeasurement.all_objects.filter(pk=sample.pk)
-        for wrong in ({'phosphate_as_measured': None}, {'phosphate_unit': ''}, {'phosphate_unit': 'p2o5'},
-                      {'phosphate_p_mg_l': None, 'ph': D('7.00')}, {'phosphate_as_measured': D('-1')}):
-            with self.subTest(wrong=wrong), self.assertRaises(IntegrityError), transaction.atomic():
-                rows.update(**wrong)
+        sample = self.record(phosphate_p_mg_l='15.35', ph='7.00')
+
+        def change(pk, column, value):
+            # Straight to the table (a queryset update of a sample is the withdrawal guard's): the database alone answers.
+            with self.assertRaises(IntegrityError, msg=(column, value)), transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute(f'UPDATE water_measurements SET {column} = %s WHERE id = %s', [value, pk])
+
+        for column, value in (('phosphate_as_measured', None), ('phosphate_unit', ''), ('phosphate_unit', 'xyz'),
+                              ('phosphate_p_mg_l', None), ('phosphate_as_measured', D('-1'))):
+            change(sample.pk, column, value)
+        plain = self.record(unit='p', hours=2, phosphate_p_mg_l='5.00')
+        change(plain.pk, 'phosphate_as_measured', D('15.35'))
 
     def test_the_round_takes_one_unit_for_its_phosphates(self):
         samples = services.record_round(

@@ -3704,6 +3704,14 @@ msgstr "Område"
 msgid "Area not set: the stricter limit applies (Facility › Sites)"
 msgstr "Område ikke satt: den strengeste grensen gjelder (Anlegg › Lokaliteter)"
 
+#, python-format
+msgid ""
+"As P this is %(value)s mg/L: a phosphate is between %(low)s and %(high)s mg/L as P (up to "
+"%(most)s as PO₄). Check the value and its unit."
+msgstr ""
+"Som P er dette %(value)s mg/L: et fosfat er mellom %(low)s og %(high)s mg/L som P (opptil "
+"%(most)s som PO₄). Kontroller verdien og enheten."
+
 msgid ""
 "As a pH meter or kit calibrated with NBS/NIST buffers reads it, at the water’s own temperature. A"
 " total-scale pH (a seawater sensor calibrated with TRIS) reads 0.10 to 0.14 lower in water of 5 "
@@ -4271,6 +4279,15 @@ msgstr "CO₂ giftig (> %(limit)s mg/L)"
 msgid "CO₂, HCO₃⁻ and CO₃²⁻ against pH"
 msgstr "CO₂, HCO₃⁻ og CO₃²⁻ mot pH"
 
+msgid ""
+"CO₂: near an alkalinity of 0 the curve bends back. With the phosphate given the water’s own DIC "
+"falls before it rises there (a pH under about 4.7, where the phosphate holds negative "
+"alkalinity); no fish water is in that corner."
+msgstr ""
+"CO₂: nær en alkalitet på 0 bøyer kurven tilbake. Med det oppgitte fosfatet synker vannets egen "
+"DIC før den stiger der (en pH under ca. 4,7, der fosfatet holder negativ alkalitet); ingen fisk "
+"lever i vann i det hjørnet."
+
 msgid "CO₂: no limit given."
 msgstr "CO₂: ingen grense oppgitt."
 
@@ -4709,6 +4726,9 @@ msgstr "Velg typen på fanen Generelt; målene vises her."
 
 msgid "Choose the location to count."
 msgstr "Velg lagerplassen som skal telles."
+
+msgid "Choose the phosphate’s unit."
+msgstr "Velg enheten for fosfatet."
 
 msgid "Choose the shape; the measures it is worked out from appear with it."
 msgstr "Velg formen; målene volumet beregnes ut fra, vises sammen med den."
@@ -6058,6 +6078,14 @@ msgstr "Skriv inn dagen i måneden."
 
 msgid "Enter the email address on your account. We will send you a link to set a new password."
 msgstr "Skriv inn e-postadressen på kontoen din. Vi sender deg en lenke for å velge nytt passord."
+
+#, python-format
+msgid ""
+"Entered as %(value)s mg/L as PO₄; stored as phosphorus (PO₄-P), divided by %(factor)s (the molar "
+"masses of PO₄ and P)."
+msgstr ""
+"Angitt som %(value)s mg/L som PO₄; lagret som fosfor (PO₄-P), delt på %(factor)s (molmassene til "
+"PO₄ og P)."
 
 msgid "Entered by hand"
 msgstr "Lagt inn for hånd"
@@ -10540,15 +10568,19 @@ msgid "Origin"
 msgstr "Opprinnelse"
 
 msgid ""
-"Orthophosphate as phosphorus. A kit that reads PO₄³⁻: divide by 3.07. Phosphate is part of the "
-"alkalinity a titration measures: with it the calculator and a unit’s chart count its buffer in "
-"the DIC, in the water’s own CO₂ and in what a dose or a stripping does. The judged CO₂ never "
-"falls because of it. Empty: not counted, as before."
+"Orthophosphate. Choose its unit beside it: a kit that reads PO₄³⁻ shows 3.07 times the number as "
+"P (PO₄-P). A PO₄ reading entered as P counts 3.07 times too much phosphate, and every recipe and "
+"dose worked out with it is wrong. Phosphate is part of the alkalinity a titration measures: with "
+"it the calculator and a unit’s chart count its buffer in the DIC, in the water’s own CO₂ and in "
+"what a dose or a stripping does. The judged CO₂ never falls because of it. Empty: not counted, as"
+" before."
 msgstr ""
-"Ortofosfat som fosfor. Et sett som måler PO₄³⁻: del på 3,07. Fosfat er en del av alkaliteten en "
-"titrering måler: med det regner kalkulatoren og en enhets diagram bufferen med i DIC, i vannets "
-"egen CO₂ og i hva en dose eller en avgassing gjør. Vurdert CO₂ blir aldri lavere av det. Tomt: "
-"ikke regnet med, som før."
+"Ortofosfat. Velg enheten ved siden av: et sett som måler PO₄³⁻ viser 3,07 ganger tallet som P "
+"(PO₄-P). En PO₄-avlesning angitt som P gir 3,07 ganger for mye fosfat, og alle oppskrifter og "
+"doser som regnes ut med den blir feil. Fosfat er en del av alkaliteten en titrering måler: med "
+"det regner kalkulatoren og enhetens diagram bufferen med i DIC, i vannets egen CO₂ og i hva en "
+"dose eller en avlufting gjør. Den vurderte CO₂ synker aldri på grunn av det. Tomt: ikke regnet "
+"med, som før."
 
 msgid "Oslo time, as the authority keeps it."
 msgstr "Oslo-tid, slik myndigheten fører den."
@@ -10878,8 +10910,27 @@ msgstr "Fase"
 msgid "Phone"
 msgstr "Telefon"
 
+#, python-format
+msgid ""
+"Phosphate %(value)s is the value loaded from %(point)s: it is as P already (a stored phosphate "
+"always is) and is not converted again. Leave the unit at P, or type the phosphate as it was "
+"reported with its unit."
+msgstr ""
+"Fosfat %(value)s er verdien som ble hentet fra %(point)s: den er allerede som P (et lagret fosfat"
+" er alltid det) og regnes ikke om igjen. La enheten stå på P, eller skriv inn fosfatet slik det "
+"ble oppgitt, med enheten sin."
+
 msgid "Phosphate (mg/L PO₄ as P)"
 msgstr "Fosfat (mg/L PO₄ som P)"
+
+msgid "Phosphate (mg/L, in the unit chosen beside it)"
+msgstr "Fosfat (mg/L, i enheten valgt ved siden av)"
+
+msgid "Phosphate as entered, in its own unit"
+msgstr "Fosfat slik det ble angitt, i sin egen enhet"
+
+msgid "Phosphate unit"
+msgstr "Fosfatenhet"
 
 msgid "Phosphorus (%)"
 msgstr "Fosfor (%)"
@@ -15024,6 +15075,20 @@ msgstr "Enhetsfaktoren er et tall forskjellig fra 0."
 msgid "The unit the instrument sends, when it differs from the quantity’s."
 msgstr "Enheten instrumentet sender, når den avviker fra parameterens."
 
+msgid ""
+"The unit the phosphate above is in. As PO₄ the number is 3.07 times the number as P: everything "
+"is worked out with it as P, and every dose says the phosphate it was worked out with."
+msgstr ""
+"Enheten fosfatet over er i. Som PO₄ er tallet 3,07 ganger tallet som P: alt regnes ut med det som"
+" P, og hver dose sier hvilket fosfat den er regnet ut med."
+
+msgid ""
+"The unit the round’s phosphates are in. As PO₄ the number is 3.07 times the number as P: each is "
+"put on P when stored, with what was entered kept beside it."
+msgstr ""
+"Enheten rundens fosfatverdier er i. Som PO₄ er tallet 3,07 ganger tallet som P: hver verdi regnes"
+" om til P når den lagres, og det som ble angitt beholdes ved siden av."
+
 msgid "The unit was removed"
 msgstr "Enheten ble fjernet"
 
@@ -15936,6 +16001,9 @@ msgstr "Enhet for nivåene"
 msgid "Unit offset"
 msgstr "Enhetsforskyvning"
 
+msgid "Unit the phosphate was entered in"
+msgstr "Enheten fosfatet ble angitt i"
+
 msgid "Unit, system or equipment"
 msgstr "Enhet, system eller utstyr"
 
@@ -16427,6 +16495,15 @@ msgstr ""
 "Hva innhentingstjenesten husker om hver sensorkanal: siste verdi, den sist lagrede verdien "
 "dødbåndet måles fra, og verdiene som ikke er lagret siden."
 
+msgid ""
+"What the kit or the laboratory reports. As PO₄ the number is 3.07 times the number as P: it is "
+"put on P when stored, with what was entered kept beside it. The wrong unit is a 3.07-fold error "
+"in every dose worked out with the phosphate."
+msgstr ""
+"Det settet eller laboratoriet oppgir. Som PO₄ er tallet 3,07 ganger tallet som P: det regnes om "
+"til P når det lagres, og det som ble angitt beholdes ved siden av. Feil enhet er en 3,07 ganger "
+"for stor eller liten verdi i hver dose som regnes ut med fosfatet."
+
 msgid "What the person can open and change. Without a role they see only the overview."
 msgstr "Hva personen kan åpne og endre. Uten rolle ser vedkommende bare oversikten."
 
@@ -16820,6 +16897,10 @@ msgstr ""
 msgid "Worked out from the values"
 msgstr "Regnet ut fra verdiene"
 
+#, python-format
+msgid "Worked out with phosphate %(p)s mg/L as P (%(po4)s as PO₄): a wrong phosphate changes this dose."
+msgstr "Regnet ut med fosfat %(p)s mg/L som P (%(po4)s som PO₄): feil fosfat endrer denne dosen."
+
 msgid "Working"
 msgstr "Jobber"
 
@@ -17100,6 +17181,15 @@ msgstr "og %(count)s til: alle rapporter"
 #, python-format
 msgid "and %(kilos)s to the cleaner fish"
 msgstr "og %(kilos)s til rensefisken"
+
+msgid "as P (PO₄-P): mg/L of phosphorus"
+msgstr "som P (PO₄-P): mg/L fosfor"
+
+msgid "as PO₄ (mg/L of phosphate)"
+msgstr "som PO₄ (mg/L fosfat)"
+
+msgid "as PO₄: mg/L of phosphate"
+msgstr "som PO₄: mg/L fosfat"
 
 msgid "as for food fish"
 msgstr "som for matfisk"
@@ -17651,6 +17741,10 @@ msgstr "slutt ukjent"
 
 msgid "ended"
 msgstr "avsluttet"
+
+#, python-format
+msgid "entered as %(value)s mg/L PO₄"
+msgstr "angitt som %(value)s mg/L PO₄"
 
 msgid "equals"
 msgstr "er lik"

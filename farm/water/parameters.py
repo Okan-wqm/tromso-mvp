@@ -103,12 +103,14 @@ MEASURED = [
                  'fresh water the ionic strength is taken from it (Russell 1976).')),
     _parameter('turbidity_ntu', _('Turbidity (NTU)'), _('Turbidity (NTU)'), 1, 0, 4000, 'other'),
     # Optional, and nothing changes without it (the independent check of 2026-11-09, hypothesis 12a; owner 2026-11-10;
-    # chemcore/findings/phosphate.md). 3.07: PO₄ 94.9714 over P 30.973762.
+    # chemcore/findings/phosphate.md). Stored as P; where it is typed its unit is chosen (PO4_PER_P below; the
+    # independent review of 2026-11-16, R3: a PO₄ reading typed as P was taken by every dose). 3.07: PO₄ over P.
     _parameter('phosphate_p_mg_l', _('Phosphate (mg/L PO₄ as P)'), _('PO₄-P (mg/L)'), 2, 0, 100, 'other',
-               _('Orthophosphate as phosphorus. A kit that reads PO₄³⁻: divide by 3.07. Phosphate is part of the '
-                 'alkalinity a titration measures: with it the calculator and a unit’s chart count its buffer in the '
-                 'DIC, in the water’s own CO₂ and in what a dose or a stripping does. The judged CO₂ never falls '
-                 'because of it. Empty: not counted, as before.')),
+               _('Orthophosphate. Choose its unit beside it: a kit that reads PO₄³⁻ shows 3.07 times the number as P '
+                 '(PO₄-P). A PO₄ reading entered as P counts 3.07 times too much phosphate, and every recipe and dose '
+                 'worked out with it is wrong. Phosphate is part of the alkalinity a titration measures: with it the '
+                 'calculator and a unit’s chart count its buffer in the DIC, in the water’s own CO₂ and in what a '
+                 'dose or a stripping does. The judged CO₂ never falls because of it. Empty: not counted, as before.')),
 ]
 
 # Worked out on read from the same sample (farm/water/chemistry.py), never stored. NH₃-N takes limits;
@@ -132,6 +134,29 @@ SAME_QUANTITY = {OXYGEN_MG_L: OXYGEN_PCT, OXYGEN_PCT: OXYGEN_MG_L}
 
 def get(code):
     return BY_CODE[code]
+
+
+# ---- the phosphate's unit ---------------------------------------------------------------------------------------
+# A phosphate is stored, shown and worked out as phosphorus (PO₄-P, mg/L as P). A kit or a laboratory may report it as
+# phosphate (mg/L PO₄): the same water is PO4_PER_P times the number. Where a phosphate is typed its unit is chosen and
+# a value as PO₄ is put on P HERE, the one place, by the molar masses: P 30.973762 (the core's, chemcore MG_P_PER_MMOL;
+# farm/tests/test_phosphate_unit.py holds the two together) and PO₄ 94.9714 (P and four O of 15.9994). A unit
+# conversion of an input, not chemistry: the core takes P only.
+PHOSPHATE = 'phosphate_p_mg_l'
+AS_P, AS_PO4 = 'p', 'po4'
+P_G_PER_MOL = Decimal('30.973762')
+PO4_G_PER_MOL = Decimal('94.9714')
+PO4_PER_P = PO4_G_PER_MOL / P_G_PER_MOL          # 3.0662...: "3.07" in the words
+
+
+def phosphate_as_p(value, unit):
+    """A phosphate typed in `unit` (AS_P, AS_PO4) as mg/L of phosphorus, not rounded; KeyError for another unit."""
+    return {AS_P: lambda: value, AS_PO4: lambda: value / PO4_PER_P}[unit]()
+
+
+def phosphate_as_po4(value):
+    """A phosphate as P (mg/L) as mg/L of PO₄, not rounded: what a page says beside the P."""
+    return value * PO4_PER_P
 
 
 def in_group(key):

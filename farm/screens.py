@@ -177,7 +177,10 @@ SCREENS = {
                  **{column: computed('a pH measured on another scale than NBS: what was measured and the formula the '
                                      'server put it on the NBS scale by, with the scale chosen on the form '
                                      '(farm/water/services.on_nbs)')
-                    for column in ('ph_as_measured', 'ph_converted_formula')}},
+                    for column in ('ph_as_measured', 'ph_converted_formula')},
+                 'phosphate_as_measured': computed('a phosphate entered as PO₄: what was entered, kept beside the '
+                                                   'phosphorus the server stores, with the unit chosen on the form '
+                                                   '(farm/water/services.as_p)')},
     ),
 
     # --- health ---

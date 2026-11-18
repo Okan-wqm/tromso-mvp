@@ -267,6 +267,27 @@ class WholeSentenceTests(CombinedTestCase):
                 self.assertIn(words, change.messages()[0].split('. ')[0], language)
 
 
+class IntegrityTests(CombinedTestCase):
+    """Verification V-4: the acknowledgement of a combination belongs to the move that made it: a transfer, a split, a
+    grading, or a STOCKING, which is not a handling. `check_stock` reported every combined stocking as a fault."""
+
+    def test_a_combined_stocking_is_not_a_fault_and_a_row_on_another_operation_still_is(self):
+        self.assertEqual(integrity.problems(), [])
+        self.going_on(self.transfer, self.a, self.t1, [(self.t2, 500)])
+        self.going_on(stock_services.record_input, self.user, species=self.salmon, input_stage='smolt',
+                      origin='purchased', day=self.today, lines=[(self.t1, 200, Decimal(125))], supplier=self.supplier)
+        self.assertEqual(sorted(row.operation.kind for row in HandlingAcknowledgement.objects.all()),
+                         ['input', 'transfer'])
+        self.assertEqual(integrity.problems(), [])
+        died = stock_services.record_mortality(self.user, unit=self.t1, batch=self.a, day=self.today, count=5,
+                                               cause='disease')
+        row = HandlingAcknowledgement.objects.create(operation=died, warning='withdrawal', batch=self.a,
+                                                     withdrawal_until=self.until, withdrawal_reason='x')
+        self.assertEqual(integrity.problems(),
+                         [f'Acknowledgement {row.pk} belongs to a mortality, which is not a handling, nor a '
+                          'stocking that combined fish with held fish.'])
+
+
 class SentenceTests(CombinedTestCase):
     """Review F-5: in Norwegian and Turkish the bracket read as if the fish that only SHARED the unit were treated."""
 

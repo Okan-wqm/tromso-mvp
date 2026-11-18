@@ -112,3 +112,18 @@ class DoorTests(WaterTestCase):
                 self.assertContains(self.client.get(reverse('farm:water_unit_chart', args=[self.t1.pk])), words)
                 self.assertContains(self.client.get(reverse('farm:water_calculator'),
                                                     {**WATER, 'ph': '7,2'}), words)
+
+
+class ArithmeticRefusalTests(WaterTestCase):
+    """A sample's NH₃ catches what the gate catches (verification V-G): an arithmetic error of the core (a division by
+    zero, an overflow) is a refusal said in words, as a ValueError is, never a page that fails."""
+
+    def test_an_arithmetic_error_of_the_core_is_said_in_the_place_of_the_nh3(self):
+        from unittest import mock
+        from ..water import chemistry, read
+        self.sample(self.t1, ph='7.20', temperature_c='12.0', salinity_ppt='0.0', tan_mg_l='1.000')
+        for error in (ZeroDivisionError('float division by zero'), OverflowError('math range error')):
+            with self.subTest(error=error), mock.patch.object(chemistry, 'water_equilibria', side_effect=error):
+                reading = read.unit_water([self.t1])[self.t1.pk].get('nh3_n_mg_l')
+                self.assertIsNone(reading.value)
+                self.assertEqual(str(reading.note), f'Cannot be worked out: {error}.')

@@ -12,7 +12,7 @@ gave NaHCO₃ 2.14 + NaOH 14.96 g/m³ where 8.59 + 11.89 is right, a real pH of 
 (b) Every recipe and simulator step worked out with a phosphate says so beside the result, in both units.
 (c) The help names the 3.07-fold slip."""
 import uuid
-from decimal import Decimal as D
+from decimal import ROUND_HALF_UP, Decimal as D
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, connection, transaction
@@ -124,6 +124,54 @@ class RecordTests(WaterTestCase):
             change(sample.pk, column, value)
         plain = self.record(unit='p', hours=2, phosphate_p_mg_l='5.00')
         change(plain.pk, 'phosphate_as_measured', D('15.35'))
+
+    def test_the_database_holds_what_was_entered_and_the_phosphorus_together(self):
+        """The verification of 2026-11-18, V-F: 15.35 as PO₄ beside a P of 99 passed the check. What was entered, put on
+        P by the factor, is the stored P within its rounding (half a step of the column)."""
+        sample = self.record(phosphate_p_mg_l='15.35', ph='7.00')          # 5.00621: stored 5.01
+
+        def change(value, refused):
+            try:
+                with transaction.atomic(), connection.cursor() as cursor:
+                    cursor.execute('UPDATE water_measurements SET phosphate_p_mg_l = %s WHERE id = %s',
+                                   [value, sample.pk])
+                    transaction.set_rollback(True)
+            except IntegrityError as error:
+                self.assertTrue(refused, value)
+                self.assertIn('chk_water_measurements_phosphate_unit', str(error))
+            else:
+                self.assertFalse(refused, value)
+
+        for value, refused in ((D('99'), True), (D('15.35'), True), (D('5.02'), True), (D('5.00'), True),
+                               (D('0'), True), (D('5.01'), False)):
+            change(value, refused)
+
+    def test_every_value_the_door_stores_passes_the_check(self):
+        for hours, entered in enumerate(('0.01', '0.02', '0.05', '1.55', '3.07', '15.35', '99.99', '306.60', '306.61'),
+                                        start=1):
+            with self.subTest(entered=entered):
+                sample = self.record(phosphate_p_mg_l=entered, hours=hours)
+                self.assertEqual(sample.phosphate_p_mg_l, (D(entered) / FACTOR).quantize(D('0.01'), ROUND_HALF_UP))
+
+    def test_the_two_doors_agree_on_the_most_as_po4(self):
+        """V-F: the calculator refused 306.62 as PO₄ with "up to 306.62 as PO₄" while the sample door stored 306.62 and
+        306.63 as 100.00. One bound (parameters.PO4_HIGH, 306.61: the last two-decimal PO₄ that is at most 100 as P)
+        and one sentence at both."""
+        self.assertEqual(parameters.PO4_HIGH, D('306.61'))
+        self.assertLessEqual(parameters.PO4_HIGH / FACTOR, 100)
+        self.assertGreater((parameters.PO4_HIGH + D('0.01')) / FACTOR, 100)
+        water = {'temperature_c': '12', 'salinity_ppt': '0', 'alkalinity_mg_l': '80', 'ph': '7.00', 'drawn': '1',
+                 'phosphate_unit': 'po4'}
+        url = reverse('farm:water_calculator')
+        self.assertEqual(self.record(phosphate_p_mg_l='306.61').phosphate_p_mg_l, D('100.00'))
+        self.assertEqual(self.client.get(url, {**water, 'phosphate_p_mg_l': '306.61'}).context['form'].errors, {})
+        for hours, entered in enumerate(('306.62', '306.63', '307'), start=2):
+            with self.subTest(entered=entered):
+                door = self.refused_record(phosphate_p_mg_l=entered, hours=hours)
+                page = self.client.get(url, {**water, 'phosphate_p_mg_l': entered})
+                self.assertEqual(door, {'phosphate_p_mg_l': page.context['form'].errors['phosphate_p_mg_l']})
+                self.assertIn('(up to 306.61 as PO₄)', door['phosphate_p_mg_l'][0])
+        self.assertEqual(WaterMeasurement.objects.count(), 1)
 
     def test_the_round_takes_one_unit_for_its_phosphates(self):
         samples = services.record_round(

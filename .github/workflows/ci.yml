@@ -19,7 +19,8 @@
 #   - the runner empties the checkout before and after every job and removes what a job left in Docker
 #     (scripts/ci-runner/job-clean.sh, a hook of the runner, in no workflow's hands);
 #   - everything a job names in Docker starts with farm-ci-job- (containers, networks, volumes) or farm-ci- (images, the
-#     image builder), nothing is published on a fixed port of the machine, and nothing is pruned but by those names;
+#     image builder), no port of the machine is published (a step reaches the database service and the broker at
+#     their own addresses on Docker's network), and nothing is pruned but by those names;
 #   - there is no sudo, and nothing is cached on GitHub: npm's, pip's and cargo's files, Node, Python, the Rust
 #     toolchain and the image builder's layers stay on the runner's volumes.
 name: CI
@@ -200,7 +201,8 @@ jobs:
     defaults:
       run:
         working-directory: sensors-ingest
-    # On a port Docker picks (job.services.db.ports): the machine's own ports belong to the development setup.
+    # No port is published: the machine's ports belong to the development setup, and in Docker Desktop a published port
+    # is not on an address a step could use. The steps reach the server at its own address on Docker's network.
     services:
       db:
         image: timescale/timescaledb:2.17.2-pg17
@@ -208,7 +210,6 @@ jobs:
           POSTGRES_USER: balik
           POSTGRES_PASSWORD: ci-throwaway-not-a-secret
           POSTGRES_DB: sensors_ingest_test
-        ports: ["5432"]
         options: >-
           --health-cmd "pg_isready -h 127.0.0.1 -U balik"
           --health-interval 5s --health-timeout 5s --health-retries 30
@@ -227,6 +228,13 @@ jobs:
           rustup toolchain install "$channel" --profile minimal --component clippy --component rustfmt
           rustc --version
           echo "CARGO_TARGET_DIR=$FARM_CI_CACHE/target/sensors-ingest" >> "$GITHUB_ENV"
+      - name: The database server's address on Docker's network
+        env:
+          SERVER: ${{ job.services.db.id }}
+        run: |
+          address=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$SERVER")
+          [ -n "$address" ] || { echo "::error::the database server has no address"; exit 1; }
+          echo "DB_HOST=$address" >> "$GITHUB_ENV"
       - run: cargo fmt --check
       - run: cargo clippy --locked --all-targets -- -D warnings
 
@@ -269,9 +277,9 @@ jobs:
         working-directory: .
         env:
           IMAGE: ${{ steps.image.outputs.tag }}
-          DB_PORT: ${{ job.services.db.ports['5432'] }}
+          DB_NETWORK: ${{ job.services.db.network }}
         run: |
-          docker run --rm --name farm-ci-job-migrate --network host -v "$PWD:/app" -w /app -e DB_HOST=127.0.0.1 -e DB_PORT \
+          docker run --rm --name farm-ci-job-migrate --network "$DB_NETWORK" -v "$PWD:/app" -w /app -e DB_HOST -e DB_PORT=5432 \
             -e DB_NAME=sensors_ingest_test -e DB_USER=balik -e DB_PASSWORD "$IMAGE" python manage.py migrate --no-input
       # No port of the machine is published (127.0.0.1:1883 is the development broker's there): the tests reach the
       # broker at its own address on Docker's network, port 1883.
@@ -297,7 +305,7 @@ jobs:
           echo "TEST_MQTT_HOST=$broker" >> "$GITHUB_ENV"
       - name: cargo test (unit, property, database and broker tests)
         env:
-          TEST_DATABASE_URL: host=127.0.0.1 port=${{ job.services.db.ports['5432'] }} user=balik password=ci-throwaway-not-a-secret dbname=sensors_ingest_test
+          TEST_DATABASE_URL: host=${{ env.DB_HOST }} port=5432 user=balik password=ci-throwaway-not-a-secret dbname=sensors_ingest_test
           REQUIRE_DB: "1"
         run: cargo test --locked --all-targets
 

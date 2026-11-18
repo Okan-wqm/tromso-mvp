@@ -74,7 +74,8 @@ class TakeTurnsTests(TransactionTestCase):
 
         `waited` is read from the database (`blocked`): a session with a lock asked for and not granted. A write that
         is merely slow is not waiting (verification V-9: the thread still being alive after three seconds counted as
-        waiting, also where the two writes had no lock in common)."""
+        waiting, also where the two writes had no lock in common). Waiting alone proves nothing (a write can wait
+        after it has read): each test asserts what the later write saw."""
         reached, go, done = threading.Event(), threading.Event(), {}
         read = withdrawal.snapshot
 
@@ -211,16 +212,17 @@ class TwoHopsTests(TakeTurnsTests):
         return done, [found.operation_id for found in withdrawal.harvests_inside()]
 
     def test_without_the_reach_the_two_writes_do_not_wait_and_the_harvest_goes_unseen(self):
-        """What the lock is for, shown by taking it away: the tests above cannot pass without `_reach`."""
+        """What the lock is for, shown by taking it away: the tests above cannot pass without `_reach`. (The move
+        still comes to wait at its very end: the acknowledgement row it stores names the harvested batch, a foreign
+        key the harvest's lock holds. By then it has read, and seen no harvest: a wait is no proof, what the later
+        write SAW is.)"""
         done, inside = self.unseen(mock.patch.object(
             stock_services, '_reach', lambda unit_ids, batch_ids, first: set(batch_ids)))
-        self.assertFalse(done['waited'])
         self.assertEqual((done['first'].kind, done['second'].kind), ('harvest', 'transfer'))
         self.assertEqual(inside, [done['first'].pk])                   # inside a withdrawal, and nobody was asked
         self.assertFalse(HandlingAcknowledgement.objects.filter(operation=done['first']).exists())
 
     def test_without_the_batches_downstream_neither(self):
         done, inside = self.unseen(mock.patch.object(stock_read, 'downstream', lambda found, unit_ids, first=None: set()))
-        self.assertFalse(done['waited'])
         self.assertEqual((done['first'].kind, done['second'].kind), ('harvest', 'transfer'))
         self.assertEqual(inside, [done['first'].pk])

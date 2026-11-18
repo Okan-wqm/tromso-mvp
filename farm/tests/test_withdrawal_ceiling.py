@@ -4,12 +4,16 @@ another, counted from the course's last day (the medicated feeding's day).
 
 Inside the ceiling it holds and spreads as any other hold. After it the fish are not held (no warning, no delete
 block), and the course is listed as an unresolved old course on the Treatments page and by `check_withdrawal`, with
-what the farm must enter to give it an end. The three records that make an unknown end: a medicine with no
-withdrawal row, a medicated feeding with no treatment, a degree-day end with no temperature. Changing the ceiling is a
-rule change: the guard asks when it would free fish held today; the data layer refuses it anywhere else."""
+what the farm must enter to give it an end. The two records it covers: a medicine with no withdrawal row for the
+species, a medicated feeding with no treatment. **It does not apply to a degree-day withdrawal** (decision 11 of
+18.11.2026, following decision 9): degree-days that are short, or cannot be counted for want of a temperature, hold
+until the farm records the water temperature or sets the species' assumed temperature, as they always did.
+Changing the ceiling is a rule change: the guard asks when a shorter one would free fish held today, and when a longer
+one would hold fish again or bring a recorded harvest inside a withdrawal; the data layer refuses it anywhere else."""
 import io
 from decimal import Decimal
 
+from django.core.exceptions import ValidationError
 from django.core.management import call_command
 from django.urls import reverse
 
@@ -19,7 +23,7 @@ from .. import withdrawal_gate
 from ..feeding import services as feeding_services
 from ..handling import check
 from ..health import withdrawal
-from ..models import Feed, WithdrawalAcknowledgement
+from ..models import Feed, HandlingAcknowledgement, WithdrawalAcknowledgement
 from ..stock import services as stock_services
 from .helpers import correction_window, going_on, role
 from .test_harvest_inside_withdrawal import HarvestInsideTestCase
@@ -103,13 +107,13 @@ class UnknownEndCeilingTests(CeilingTestCase):
         self.assertEqual(self.listed(), [(self.o.code, record)])
         self.assertIn('Record the treatment under Health › Treatments.', self.command())
 
-    def test_degree_days_that_cannot_be_counted_give_up_and_say_the_species_temperature(self):
+    def test_degree_days_that_cannot_be_counted_hold_whatever_their_age_and_say_what_gives_an_end(self):
         self.assertIsNone(self.salmon.withdrawal_temperature_c)
-        course = self.old_course(200, self.medicine(name='Slice vet.', degree_days=500))
-        self.assertEqual(self.ends(self.t2), [])
-        self.assertEqual(self.listed(), [(self.o.code, course)])
-        [(batch, held)] = withdrawal.unresolved()
-        text = withdrawal.unresolved_text(batch, held)
+        self.old_course(200, self.medicine(name='Slice vet.', degree_days=500))
+        [held] = self.held(self.t2)
+        self.assertEqual((held.batch_id, held.until, held.gives_up), (self.o.pk, None, None))
+        self.assertEqual(self.listed(), [])
+        text = withdrawal.describe(held)
         self.assertIn('The end cannot be worked out: record the water temperature.', text)
         self.assertIn('Or set the assumed water temperature of Atlantic salmon in Reference data › Species', text)
 
@@ -126,6 +130,106 @@ class UnknownEndCeilingTests(CeilingTestCase):
         self.assertContains(page, f'{self.o.code}: No row, bath from ')
         self.assertContains(page, 'add it in Reference data › Medicines.')
         self.assertContains(page, 'older than 180 days')
+
+
+class DegreeDaysTests(CeilingTestCase):
+    """Decision 11: the ceiling never frees a degree-day withdrawal. The verifier's schedule (V-5): Slice, 500
+    degree-days, given 185 days ago in C-01; 2 °C measured every day until 32 days ago (306 of 500 counted), nothing
+    since; the species has no assumed temperature. Main holds these fish, end unknown, until a temperature is recorded."""
+
+    def setUp(self):
+        super().setUp()
+        self.tank = make_unit('C-01', self.hall)
+        self.slice = self.medicine(name='Slice vet.', degree_days=500)
+        with correction_window(3650):
+            self.p = self.stock(self.tank, count=3000, days_ago=300)
+            self.course = self.going_on(self.treat, self.slice, 185, 185, units=[self.tank])
+
+    def cold(self):
+        for days_ago in range(32, 185):
+            self.temperature(self.tank, days_ago, '2')
+
+    def harvest(self, **fields):
+        return stock_services.record_harvest(self.user, unit=self.tank, batch=self.p, day=self.today, count=50,
+                                             measured_weight_kg=Decimal('6'), facility=self.facility, **fields)
+
+    def assert_held_as_main_holds_it(self):
+        self.assertEqual(self.ends(self.tank), [(self.p.pk, None)])                 # the unit's line
+        self.assertEqual(self.ends(self.tank, self.day(-400)), [(self.p.pk, None)])   # and no day it gives up
+        result = check.assess('harvest', self.tank, self.today, self.p)             # the harvest dialog
+        [warning] = [each for each in result.warnings if each.warning == 'withdrawal']
+        self.assertEqual((warning.block.batch, warning.block.until), (self.p, None))
+        self.assertTrue(any(note.startswith('Earliest suitable harvest date: not known.') for note in result.notes),
+                        result.notes)
+        self.assertNotIn('No medicine withdrawal in force.', result.notes)
+        [reason] = self.tank.withdrawal_blockers()                                  # the delete block
+        self.assertIn(self.p.code, reason)
+        with self.assertRaises(ValidationError) as refused:                         # the harvest without the tick
+            self.harvest()
+        self.assertEqual(refused.exception.message_dict,
+                         {'handling_ack': ['Tick the box to go on despite these warnings.']})
+        self.assertEqual(self.listed(), [])                                         # not an unresolved old course
+        out = self.command()
+        self.assertIn(f'C-01 · {self.p.code}: end unknown. Slice vet., bath from ', out)
+        self.assertIn('The end cannot be worked out: record the water temperature.', out)
+        self.assertIn('Or set the assumed water temperature of Atlantic salmon in Reference data › Species', out)
+        self.assertNotIn('Unresolved old course', out)
+        self.assertIn('No harvest lies inside a medicine withdrawal.', out)
+
+    def test_the_verifiers_cold_course_is_held_on_every_reader(self):
+        self.cold()
+        self.assert_held_as_main_holds_it()
+        [held] = self.held(self.tank)
+        self.assertEqual((held.estimated, held.remaining_degree_days, held.gives_up), (True, Decimal('194'), None))
+
+    def test_its_harvest_goes_on_only_past_the_tick_and_is_stored_and_listed(self):
+        self.cold()
+        seen = check.assess('harvest', self.tank, self.today, self.p).fingerprint
+        operation = self.harvest(handling_ack=seen)
+        row = HandlingAcknowledgement.objects.get()
+        self.assertEqual((row.operation, row.warning, row.batch, row.withdrawal_until),
+                         (operation, 'withdrawal', self.p, None))
+        out = self.command()
+        self.assertIn('lies inside a withdrawal (end unknown)', out)
+        self.assertIn('Acknowledged when the harvest was recorded.', out)
+
+    def test_the_treatments_page_holds_it_and_says_what_gives_it_an_end(self):
+        self.cold()
+        self.user.groups.add(role('Treatments reader', 'view_treatment'))
+        page = self.client.get(reverse('farm:treatments'))
+        self.assertNotContains(page, 'Unresolved old courses')
+        self.assertContains(page, 'class="over-text"')                               # held today
+        self.assertContains(page, 'The end cannot be worked out: record the water temperature.')
+        self.assertContains(page, 'Or set the assumed water temperature of Atlantic salmon in Reference data › Species')
+
+    def test_one_sample_gives_it_an_end_as_it_did(self):
+        self.cold()
+        self.temperature(self.tank, 1, '2')
+        [held] = self.held(self.tank)
+        self.assertEqual((held.until, held.estimated), (self.day(-96), True))      # 192 to go at 2 °C: 96 days
+        self.assertNotIn('Or set the assumed water temperature', withdrawal.describe(held))
+
+    def test_a_mean_of_zero_degrees_is_held_too(self):
+        for days_ago in range(0, 9):                                                # sea water in winter, every day
+            self.temperature(self.tank, days_ago, '0')
+        self.assert_held_as_main_holds_it()
+
+    def test_a_mean_below_zero_is_held_too(self):
+        for days_ago in range(0, 9):
+            self.temperature(self.tank, days_ago, '-0.5')
+        self.assert_held_as_main_holds_it()
+
+    def test_no_temperature_at_all_is_held_too(self):
+        self.assert_held_as_main_holds_it()
+
+    def test_the_ceiling_made_shorter_asks_nothing_of_it(self):
+        self.user.groups.add(role('Platform owner', 'view_platformsettings', 'change_platformsettings'))
+        row = PlatformSettings.get()
+        data = {'correction_window_days': row.correction_window_days, 'clock_tolerance_seconds': 300,
+                'unknown_withdrawal_days': 30, 'version': row.version}
+        self.assertEqual(self.client.post(reverse('core:platformsettings_edit', args=[row.pk]), data).status_code, 302)
+        self.assertEqual(self.ends(self.tank), [(self.p.pk, None)])
+        self.assertFalse(WithdrawalAcknowledgement.objects.exists())
 
 
 class CeilingChangedTests(CeilingTestCase):

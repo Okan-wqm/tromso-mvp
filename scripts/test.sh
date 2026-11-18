@@ -32,6 +32,9 @@
 # the project's requirements (hashed), the water-chemistry core built from this checkout (chemcore/: no server starts
 # without it, README, Water-chemistry core) and tblib. What it is built from and its tag (a hash of all of that, so a
 # change to the core or to a requirement builds a new one) are scripts/testrunner/image.sh's, which CI builds it by too.
+# CI gives the run names and an image of its own (TEST_NAME_PREFIX in the place of balik-test, TEST_IMAGE an image it has
+# just built by image.sh's definition under its own name): on the machine its runner shares with the developers, nobody
+# takes a CI run's containers for a developer's, and CI replaces nobody's image (README, CI and dependency updates).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 export MSYS_NO_PATHCONV=1
@@ -43,11 +46,12 @@ SUITE=${SUITE:-1}
 DB_PASSWORD=${TEST_DB_PASSWORD:-balik}
 PG_IMAGE=timescale/timescaledb:2.17.2-pg17
 RUN=${RUN_ID:-$(date +%Y%m%d%H%M%S)-$$}
-DB=balik-test-db-$RUN
-NET=balik-test-$RUN
-TESTS=balik-test-run-$RUN
+NAMES=${TEST_NAME_PREFIX:-balik-test}
+DB=$NAMES-db-$RUN
+NET=$NAMES-$RUN
+TESTS=$NAMES-run-$RUN
 
-IMAGE=$(sh scripts/testrunner/image.sh build)
+IMAGE=${TEST_IMAGE:-$(sh scripts/testrunner/image.sh build)}
 
 cleanup() {
   trap '' INT TERM HUP                      # a second signal does not cut the cleaning short

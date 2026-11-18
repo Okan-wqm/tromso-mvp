@@ -10,6 +10,11 @@ from . import native, parameters
 
 NOTES = {
     'co2.no_limit': _('CO₂: no limit given.'),
+    # With a phosphate the judged CO₂ curve is drawn in the water's own DIC, which near an alkalinity of 0 falls before
+    # it rises (chemcore/core/src/geometry.rs co2_curve_judged, bends_back; the independent review of 2026-11-16, R9).
+    'co2.bends_back': _('CO₂: near an alkalinity of 0 the curve bends back. With the phosphate given the water’s own '
+                        'DIC falls before it rises there (a pH under about 4.7, where the phosphate holds negative '
+                        'alkalinity); no fish water is in that corner.'),
     'safe.no_band': _('Safe zone: not drawn without the alkalinity band.'),
     'safe.empty_band': _('Safe zone: not drawn, the alkalinity band is empty (its high end is not above its low end).'),
     'safe.no_tan': _('Safe zone: not drawn without the TAN.'),

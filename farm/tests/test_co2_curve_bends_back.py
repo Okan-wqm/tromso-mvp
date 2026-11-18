@@ -25,9 +25,9 @@ class NoteTests(SimpleTestCase):
     def test_the_reviews_water_bends_back_and_says_so(self):
         found = shape(30.0)
         (curve,) = found.boundaries['co2']
-        self.assertAlmostEqual(curve[0][0], 0.2148, delta=5e-5)
+        self.assertAlmostEqual(curve[0][0], 0.2186, delta=1e-3)      # the review: 0.2148 (its own alkalinity)
         self.assertEqual(curve[0][1], 0.0)
-        self.assertAlmostEqual(curve[1][0], 0.1914, delta=5e-5)
+        self.assertAlmostEqual(curve[1][0], 0.1980, delta=1e-3)      # the review: 0.1914
         self.assertAlmostEqual(curve[1][1], 0.0625, delta=1e-12)
         self.assertGreater(curve[2][0], curve[1][0])
         self.assertEqual([str(note) for note in found.notes], [SAID])

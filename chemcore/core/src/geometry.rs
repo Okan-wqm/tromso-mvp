@@ -250,6 +250,16 @@ pub fn co2_curve_judged(eq: &Equilibria, co2: f64, chart: &ChartBox) -> G<(Vec<P
     Ok((points, true))
 }
 
+/// Whether a curve drawn row by row of the alkalinity bends back: somewhere its DIC is below the row before. The
+/// judged CO₂ curve of a water with a phosphate does near an alkalinity of 0 (`co2_curve_judged`); the chart then says
+/// so (`geometry`, the note `co2.bends_back`; the independent review of 2026-11-16, R9). The one-ratio curve of a
+/// water without a phosphate (`co2_curve`) never does: its DIC rises with the alkalinity.
+pub fn bends_back(curve: &[P]) -> bool {
+    curve
+        .windows(2)
+        .any(|rows| matches!(rows, [before, after] if after.0 < before.0))
+}
+
 fn co2_region(curve: &[P], leaves_top: bool, chart: &ChartBox) -> Vec<P> {
     let mut region = curve.to_vec();
     if leaves_top {
@@ -531,6 +541,9 @@ pub fn geometry<'a>(
                     co2_curve(&eq, div(analysis.co2_chart_limit(limit)?, c::MG_CO2_PER_MMOL)?, &chart)?
                 };
                 if !curve.is_empty() {
+                    if eq.phosphate > 0.0 && bends_back(&curve) {
+                        shape.notes.push("co2.bends_back");
+                    }
                     shape
                         .regions
                         .push(("co2", clip_to_box(&co2_region(&curve, leaves_top, &chart), &chart)));

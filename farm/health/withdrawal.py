@@ -1083,9 +1083,23 @@ class Combined:
                 f'{source_key(self.withdrawal.source)}:{self.withdrawal.via_unit}:{self.withdrawal.via_batch}')
 
     def message(self):
-        params = {'batch': self.batch.code, 'unit': self.unit.code, 'with': self.withdrawal.via_batch,
-                  'where': self.withdrawal.via_unit, 'end': harvest_from(self.until, self.approximate),
-                  'withdrawal': describe(self.withdrawal.withdrawal)}
+        """Who the fish wait with: the held fish they are combined with and where; or, when the operation made them
+        exposed themselves (fish moved or stocked into the treated unit dated on a course day, and where those fish
+        went since: there is no other batch to name), the fish treated there. Never a sentence with an empty name
+        (verification V-3)."""
+        hold = self.withdrawal
+        params = {'batch': self.batch.code, 'unit': self.unit.code, 'with': hold.via_batch,
+                  'where': hold.via_unit, 'end': harvest_from(self.until, self.approximate),
+                  'withdrawal': describe(hold.withdrawal), 'units': ', '.join(hold.treated_in)}
+        if not hold.shared:
+            if hold.feeding is not None:
+                return _('%(batch)s in %(unit)s will wait for the harvest with the fish given medicated feed in '
+                         '%(units)s, and the end of that withdrawal is not known. %(withdrawal)s') % params
+            if self.until is None:
+                return _('%(batch)s in %(unit)s will wait for the harvest with the fish treated in %(units)s, and the '
+                         'end of that withdrawal is not known. %(withdrawal)s') % params
+            return _('%(batch)s in %(unit)s will wait for the harvest with the fish treated in %(units)s: %(end)s. '
+                     '%(withdrawal)s') % params
         if self.until is None:
             return _('%(batch)s in %(unit)s will wait for the harvest with %(with)s, the held fish it is combined with '
                      'in %(where)s, and the end of that withdrawal is not known. %(withdrawal)s') % params

@@ -500,10 +500,14 @@ class Reading:
     provenance: str = ''        # a worked-out value: the formula version (and ionic strength) it was worked out by
     # A value stored converted (a pH measured on another scale than NBS): what was measured, in the few words every page
     # prints visibly beside the stored number (farm/_water_value.html; review R6); the whole sentence is `provenance`.
+    # A refused NH₃ judged on the limits' basis alone says so the same way ("at least: the limits' basis", RC-3).
     measured: str = ''
     # A worked-out value the chemistry core REFUSED to work out (its own reason, in its words; '' otherwise). Where the
     # fish have a limit for it (`limits`, set by Context.judge) it is "cannot be evaluated", never "not measured": the
     # unit's state says so and the alarm source raises a warning for the unit (the verification of 2026-11-18, V-A).
+    # Its `value`, when it has one, is the limits' basis alone, at least the judged value (Context._ammonia_on_basis):
+    # judged past a limit it is that limit's status, else "cannot be evaluated"; it is never evidence that an alarm is
+    # over (alarms/sources.py clear_evidence).
     refused: str = ''
 
     @property
@@ -807,12 +811,13 @@ class Context:
             return {NH3_N.code: Reading(NH3_N, None, observation, True, self._same_source_missing(observation))}
         if salinity is None:
             return {NH3_N.code: Reading(NH3_N, None, observation, True, self._salinity_missing())}
+        inputs = self.ionic_inputs_for(observation)
         try:
-            equilibria = chemistry.water_equilibria(float(temperature), float(salinity),
-                                                    **self.ionic_inputs_for(observation))
+            equilibria = chemistry.water_equilibria(float(temperature), float(salinity), **inputs)
         except (ValueError, ArithmeticError) as error:      # what the gate catches (deffeyes.unworkable): e.g. a
             # conductivity beyond the fresh path's range (Davies, I > 0.5), a division by zero, an overflow
-            return {NH3_N.code: Reading(NH3_N, None, observation, True, messages.refused(error), refused=str(error))}
+            return {NH3_N.code: self._ammonia_on_basis(observation, error, tan, ph, temperature, salinity,
+                                                       inputs.get('water_origin') or '')}
         # The judged share: the larger of the basis the limits were set on and the activity-corrected (cross review
         # F1); the corrected NH3-N is said beside it, never judged.
         share = Decimal(equilibria.nh3_share(float(ph)))
@@ -822,6 +827,35 @@ class Context:
                                       messages.judged('nh3', equilibria.nh3_basis, corrected, equilibria))))
         return {NH3_N.code: Reading(NH3_N, nh3, observation, True, provenance=said),
                 NH4_N.code: Reading(NH4_N, (tan - nh3).quantize(NH4_N.step), observation, True, provenance=said)}
+
+    @staticmethod
+    def nh3_basis_share(temperature, salinity, ph, water_origin):
+        """The NH₃ share on the basis the limits were set on alone, or None when the core cannot give it either. The basis
+        is a function of the temperature, the salinity and the water's origin only (chemcore/core/src/fresh.rs
+        `limits_basis`: the ideal water, the sea-water tables' convention, or their blend by the salinity), never of the
+        conductivity, the alkalinity or the hardness, so it is worked out without them (farm/tests/test_core_refusal.py
+        holds it equal to the basis of the same water with them, wherever the core works that water out)."""
+        try:
+            return Decimal(chemistry.water_equilibria(float(temperature), float(salinity), water_origin=water_origin)
+                           .nh3_share_limits(float(ph)))
+        except (ValueError, ArithmeticError):
+            return None
+
+    def _ammonia_on_basis(self, observation, error, tan, ph, temperature, salinity, water_origin):
+        """The NH₃ of a TAN sample whose water the core refuses to work out (`error`, its reason: e.g. a conductivity past
+        the Davies range). The judged NH₃ is the larger of the limits' basis and the activity-corrected value (cross
+        review F1), so it is never below the basis, which needs no conductivity (`nh3_basis_share`): the reading is the
+        basis's NH₃-N, at least the judged value, judged by the limits as any value is (Context.judge: past a limit it
+        is that, critical past the critical one; else it cannot be evaluated) and it keeps the refusal (`refused`), so the
+        unit says beside it that the corrected value cannot be worked out (the re-check of 2026-11-18, RC-3: a water
+        known to be past the critical limit on its basis was alarmed a warning). Without a basis either: no value,
+        refused."""
+        share = self.nh3_basis_share(temperature, salinity, ph, water_origin)
+        if share is None:
+            return Reading(NH3_N, None, observation, True, messages.refused(error), refused=str(error))
+        return Reading(NH3_N, (tan * share).quantize(NH3_N.step), observation, True,
+                       f'{messages.refused(error)} {messages.ON_BASIS}', measured=str(messages.BASIS_ONLY),
+                       refused=str(error))
 
     def _oxygen(self, observation, temperature, salinity):
         mg_l, percent = observation.get(OXYGEN_MG_L), observation.get(OXYGEN_PCT)
@@ -871,8 +905,9 @@ class Context:
         if reading.code not in LIMITED or reading.value is None:
             reading.status = reading.judged = Status.NOT_MEASURED if reading.value is None else Status.NO_LIMIT
             if reading.refused and reading.code in LIMITED:
-                # The core refused to work it out: where a limit row would judge it, it cannot be evaluated (V-A),
-                # fresh or old (the last word there is about the water); with no fish or no row nothing is judged.
+                # The core refused to work it out, its basis too: where a limit row would judge it, it cannot be
+                # evaluated (V-A), fresh or old (the last word there is about the water); with no fish or no row
+                # nothing is judged.
                 rows = []
                 for species_id, water_type in self.exposures(for_point or reading.sample.point, day):
                     row = self.limits.applying(species_id, reading.code, water_type)
@@ -901,6 +936,11 @@ class Context:
             if converted.derived:               # said only where a conversion was made, not the sample's own value
                 said = self._judged_through(converted)
                 reading.note = f'{reading.note} {said}' if reading.note else said
+        if reading.refused and reading.limits and reading.judged not in ALERTS:
+            # Refused, its value the limits' basis alone (`_ammonia_on_basis`): the judged value is never below it, so
+            # past a limit it is that limit's status (critical past the critical one, the re-check's RC-3); inside
+            # them what it is for the fish is not known: it cannot be evaluated, never OK.
+            reading.judged = Status.UNEVALUATED
         reading.status = reading.judged
         if reading.judged == Status.NO_LIMIT:
             reading.why_no_limit = self._why_no_limit(exposures)

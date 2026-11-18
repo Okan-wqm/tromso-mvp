@@ -237,7 +237,10 @@ def _history(request, site, place):
         before=timezone.make_aware(datetime.combine(end + timedelta(days=1), time.min), zone))
     alerts_only = request.GET.get('alerts') == '1'
     if alerts_only:
-        rows = [row for row in read.history(list(samples)) if not row.sample.is_deleted and row.status in ALERTS]
+        # A sample whose judged value cannot be evaluated is one of them (shown as a warning, never OK: the re-check of
+        # 2026-11-18, RC-5, found it dropped here).
+        rows = [row for row in read.history(list(samples))
+                if not row.sample.is_deleted and row.status in (*ALERTS, Status.UNEVALUATED)]
         page = Paginator(rows, PAGE_SIZE).get_page(request.GET.get('page'))
     else:
         page = Paginator(samples, PAGE_SIZE).get_page(request.GET.get('page'))

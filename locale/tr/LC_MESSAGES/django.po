@@ -8234,6 +8234,13 @@ msgstr "İşe giriş tarihi"
 msgid "Judged as %(value)s %(unit)s."
 msgstr "%(value)s %(unit)s olarak değerlendirildi."
 
+msgid ""
+"Judged on the basis the limits were set on alone, which needs no conductivity: the judged value "
+"is at least this; the activity-corrected value is not known."
+msgstr ""
+"Yalnızca sınır değerlerinin konduğu temelde değerlendirildi; bu temel iletkenlik gerektirmez: "
+"değerlendirilen değer en az budur; aktiviteye göre düzeltilmiş değer bilinmiyor."
+
 msgid "Juveniles"
 msgstr "Juvenil"
 
@@ -17261,6 +17268,9 @@ msgstr "en az alkalinitenin verdiği"
 
 msgid "at least that of the hardness and the alkalinity"
 msgstr "en az sertlik ve alkalinitenin verdiği"
+
+msgid "at least: the limits’ basis"
+msgstr "en az: sınır değerlerinin temeli"
 
 msgid "at once"
 msgstr "derhal"

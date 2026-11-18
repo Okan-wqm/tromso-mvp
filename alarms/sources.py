@@ -85,12 +85,14 @@ UNJUDGED = (Status.NO_LIMIT, Status.NOT_MEASURED)
 
 
 def _summary(point, reading):
-    """'T-01 · Middle: pH (NBS scale) 5.50 (critical)', in English at rest."""
+    """'T-01 · Middle: pH (NBS scale) 5.50 (critical)', in English at rest. A reading without a value of its own that
+    another fresh value judged (`decided`) names that value."""
     owner = point.owner
     with audit.source_language():
         label = str(parameters.get(reading.code).label)
         status = str(Status(reading.judged).label).lower()
-        return f'{getattr(owner, "code", owner)} · {point.name}: {label} {reading.value} ({status})'
+        value = reading.value if reading.value is not None else reading.worse.value
+        return f'{getattr(owner, "code", owner)} · {point.name}: {label} {value} ({status})'
 
 
 def _where(point):
@@ -103,11 +105,22 @@ def slot_of(code):
     return OXYGEN if code in parameters.SAME_QUANTITY else code
 
 
+def decided(reading):
+    """Whether a reading takes part in the limit levels: it has a value (a refused NH₃ judged on its limits' basis
+    alone has one, farm/water/read.py `_ammonia_on_basis`), or another fresh value judged it (`Reading.worse`,
+    read.worst_fresh): the judgement the water page shows is the one the alarm raises, never a lower one (the re-check
+    of 2026-11-18, RC-2: a unit whose own NH₃ the core refused, judged critical by its loop's fresh sample on the page,
+    had only the "cannot be evaluated" warning)."""
+    return reading.value is not None or reading.worse is not None
+
+
 def _slots(found):
-    """{slot: the reading that decides it}: per quantity of a unit's water, its limited reading judged worst."""
+    """{slot: the reading that decides it}: per quantity of a unit's water, its limited reading judged worst (`decided`
+    ones only: a reading without a value nothing judged raises nothing here; a refused one is the alarm system's
+    warning, `_refused_subjects`)."""
     slots = {}
     for reading in found.readings.values():
-        if reading.code in LIMITED and reading.value is not None:
+        if reading.code in LIMITED and decided(reading):
             slot = slot_of(reading.code)
             if slot not in slots or RANK[reading.judged] < RANK[slots[slot].judged]:
                 slots[slot] = reading
@@ -127,7 +140,7 @@ def judged_clear(reading, rules):
     oxygen unit where it was judged so: a level clears only when every one of them is clear even so. Never a second
     rule."""
     found = []
-    for each in (reading, *(other for other in reading.deciding if other.value is not None)):
+    for each in (each for each in (reading, *reading.deciding) if each.value is not None):
         found += _moved(each, rules) + (_moved(each.through, rules) if each.through is not None else [])
     return worst(found) if found else reading.judged
 
@@ -143,9 +156,12 @@ def seen_at(reading, now):
 def clear_evidence(reading, severity, rules, last_bad_at, now):
     """Whether this pass's reading says the level is over: fresh, taken after the last value that held it (an older value
     that is the newest again, its bad successor voided or its probe taken out, says nothing new: alarm plan, defect 4),
-    and clear of it by the deadband. Times are `seen_at`, the same clamp as the raise."""
+    and clear of it by the deadband. Times are `seen_at`, the same clamp as the raise. A value the chemistry core refused
+    to work out (`Reading.refused`: no value, or its limits' basis alone, a value the judged one is at least) says
+    nothing of the level being over."""
     decider = reading.worse or reading
-    return (reading.status != Status.STALE and (last_bad_at is None or seen_at(decider, now) > last_bad_at)
+    return (reading.status != Status.STALE and not reading.refused
+            and (last_bad_at is None or seen_at(decider, now) > last_bad_at)
             and judged_clear(reading, rules) not in HOLDS[severity])
 
 
@@ -361,10 +377,16 @@ def _refused_subjects(units, found_water, unevaluated, failed, now):
     """A value the limits would judge that the chemistry core refuses to work out (read.Reading.unevaluated: a
     conductivity past the Davies range makes the NH₃ of a TAN sample one) is never silent (the verification of
     2026-11-18, V-A): per unit and worked-out value, a warning of the alarm system on the unit's site, "<unit>: <value>
-    cannot be evaluated: <the core's reason>", its on-delay counted from the value's time as a limit's is. It is restored
-    once the value is worked out again (the limit's own levels then judge it) or nothing judges it any more; a pass that
-    could not read the unit or the live values ends nothing. The value's own limit alarm, when one is open, stays as it
-    is: a value that cannot be worked out is no evidence that it is over (`_slots` takes no reading without a value)."""
+    cannot be evaluated: <the core's reason>", its on-delay counted from the value's time as a limit's is. It ends on
+    evidence only, with the cause that is true: "restored" once the value is worked out again (the limit's own levels
+    then judge it), "the water limit was removed" or "no fish in the unit any more" once nothing judges it (`_unjudged`,
+    the limit levels' own rule). A later sample that gives no value (a TAN without its pH) or the refused sample leaving
+    the window (`read.WINDOW`) says nothing of the water, so it stays open, as a limit alarm does (the re-check of
+    2026-11-18, RC-4: both ended it "restored"); a pass that could not read the unit or the live values ends nothing.
+    Beside it the value's own limit levels judge what is known:
+    its limits' basis, which needs no conductivity and which the judged value is never below (a critical past the
+    critical limit, the re-check of 2026-11-18, RC-3), or another fresh value of the place (`decided`); an open one is
+    never cleared by a refused value (`clear_evidence`)."""
     subjects = []
     for unit in units:
         found = found_water.get(unit.pk)
@@ -374,10 +396,15 @@ def _refused_subjects(units, found_water, unevaluated, failed, now):
             holds = reading is not None and reading.unevaluated
             with audit.source_language():
                 summary = f'{unit.code}: {water_messages.unevaluated(reading)}'[:SUMMARY_LENGTH] if holds else ''
-            subjects.append(system_subject(
+            worked_out = reading is not None and reading.value is not None and not reading.refused
+            subject = system_subject(
                 f'unit:{unit.pk}:{VALUE_UNEVALUATED}:{code}', holds, Severity.WARNING, summary, now, parameter=code,
                 where=_unit_where(unit), bad_at=seen_at(reading, now) if holds else None,
-                clear_ok=looked and not failed and not holds))
+                clear_ok=looked and not failed and worked_out)
+            if reading is not None and reading.refused and not holds:      # refused, and nothing judges it any more
+                unjudged = _unjudged(reading)
+                subject.structural, subject.detail = unjudged.get('structural', ''), unjudged.get('detail')
+            subjects.append(subject)
     return subjects
 
 

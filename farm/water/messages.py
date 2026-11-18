@@ -58,6 +58,13 @@ def refused(error):
     return _('Cannot be worked out: %(why)s.') % {'why': error}
 
 
+# A judged NH₃ the core refuses to work out, judged on the limits' basis alone (read.Context._ammonia_on_basis; the
+# re-check of 2026-11-18, RC-3): the sentence beside the refusal, and the few visible words beside the number.
+ON_BASIS = _('Judged on the basis the limits were set on alone, which needs no conductivity: the judged value is at '
+             'least this; the activity-corrected value is not known.')
+BASIS_ONLY = _('at least: the limits’ basis')
+
+
 def unevaluated(reading):
     """What a page and an alarm say of a value the limits would judge that the core refused to work out
     (read.Reading.refused, its reason): the one wording of it (the verification of 2026-11-18, V-A)."""

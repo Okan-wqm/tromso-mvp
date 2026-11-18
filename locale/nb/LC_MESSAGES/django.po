@@ -8208,6 +8208,13 @@ msgstr "Begynte"
 msgid "Judged as %(value)s %(unit)s."
 msgstr "Vurdert som %(value)s %(unit)s."
 
+msgid ""
+"Judged on the basis the limits were set on alone, which needs no conductivity: the judged value "
+"is at least this; the activity-corrected value is not known."
+msgstr ""
+"Vurdert bare på grunnlaget grenseverdiene ble satt på, som ikke trenger ledningsevne: den "
+"vurderte verdien er minst denne; den aktivitetskorrigerte verdien er ukjent."
+
 msgid "Juveniles"
 msgstr "Ungfisk"
 
@@ -17236,6 +17243,9 @@ msgstr "minst alkalitetens"
 
 msgid "at least that of the hardness and the alkalinity"
 msgstr "minst hardhetens og alkalitetens"
+
+msgid "at least: the limits’ basis"
+msgstr "minst: grenseverdienes grunnlag"
 
 msgid "at once"
 msgstr "straks"

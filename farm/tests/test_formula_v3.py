@@ -128,11 +128,15 @@ class ReadTests(WaterTestCase):
         self.assertEqual(self.nh3().provenance,
                          'Formula 3: ionic strength 0.0000, none measured, taken as 0 (the safe side).')
 
-    def test_a_conductivity_beyond_the_fresh_path_says_why_and_nothing_is_shown(self):
+    def test_a_conductivity_beyond_the_fresh_path_says_why_and_the_basis_alone_is_shown(self):
+        """The core refuses the activity correction; the limits' basis needs no conductivity, and the judged NH3 is never
+        below it (the re-check of 2026-11-18, RC-3): the value is the basis's, the ideal water's here, and says so."""
         self.sample(hours=2, tan_mg_l='2', ph='7.5', temperature_c='12', conductivity_25_us_cm='50000')
         nh3 = self.nh3()
-        self.assertIsNone(nh3.value)
+        self.assertEqual(nh3.value, (D(2) * D(native.equilibria(12.0, 0.0).nh3_share(7.5))).quantize(D('0.0001')))
         self.assertIn('ionic strength above 0.5', nh3.note)
+        self.assertIn('ionic strength above 0.5', nh3.refused)
+        self.assertEqual(nh3.measured, 'at least: the limits’ basis')
 
 
 class CalculatorTests(WaterTestCase):

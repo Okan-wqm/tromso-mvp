@@ -116,7 +116,7 @@ class UnknownEndCeilingTests(CeilingTestCase):
         self.assertEqual(self.listed(), [])
         text = withdrawal.describe(held)
         self.assertIn('The end cannot be worked out: record the water temperature.', text)
-        self.assertIn('Or set the assumed water temperature of Atlantic salmon in Reference data › Species', text)
+        self.assertIn('are counted as 0 °C: set the species’ assumed temperature in Reference data › Species.', text)
 
     def test_a_course_with_a_known_end_is_never_listed_however_old(self):
         self.old_course(700, self.medicine(days=7))
@@ -173,7 +173,7 @@ class DegreeDaysTests(CeilingTestCase):
         out = self.command()
         self.assertIn(f'C-01 · {self.p.code}: end unknown. Slice vet., bath from ', out)
         self.assertIn('The end cannot be worked out: record the water temperature.', out)
-        self.assertIn('Or set the assumed water temperature of Atlantic salmon in Reference data › Species', out)
+        self.assertIn('are counted as 0 °C: set the species’ assumed temperature in Reference data › Species.', out)
         self.assertNotIn('Unresolved old course', out)
         self.assertIn('No harvest lies inside a medicine withdrawal.', out)
 
@@ -201,14 +201,22 @@ class DegreeDaysTests(CeilingTestCase):
         self.assertNotContains(page, 'Unresolved old courses')
         self.assertContains(page, 'class="over-text"')                               # held today
         self.assertContains(page, 'The end cannot be worked out: record the water temperature.')
-        self.assertContains(page, 'Or set the assumed water temperature of Atlantic salmon in Reference data › Species')
+        self.assertContains(page, 'are counted as 0 °C: set the species’ assumed temperature in Reference data › Species.')
 
     def test_one_sample_gives_it_an_end_as_it_did(self):
         self.cold()
         self.temperature(self.tank, 1, '2')
         [held] = self.held(self.tank)
         self.assertEqual((held.until, held.estimated), (self.day(-96), True))      # 192 to go at 2 °C: 96 days
-        self.assertNotIn('Or set the assumed water temperature', withdrawal.describe(held))
+        self.assertNotIn('The end cannot be worked out', withdrawal.describe(held))
+
+    def test_a_course_that_ended_today_with_nothing_to_project_at_says_both_records_that_give_an_end(self):
+        self.going_on(self.treat, self.slice, 0, 0, units=[self.t2])     # no day to count yet, none measured
+        [held] = self.held(self.t2)
+        self.assertEqual((held.until, held.days_without_temperature, held.gives_up), (None, 0, None))
+        self.assertIn('The end cannot be worked out: record the water temperature. Or set the assumed water '
+                      'temperature of Atlantic salmon in Reference data › Species: the days without a measured '
+                      'temperature then count.', withdrawal.describe(held))
 
     def test_a_mean_of_zero_degrees_is_held_too(self):
         for days_ago in range(0, 9):                                                # sea water in winter, every day

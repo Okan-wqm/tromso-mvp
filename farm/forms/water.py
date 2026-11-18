@@ -721,9 +721,10 @@ class CalculatorForm(forms.Form):
             self.add_error('ph_scale', messages.LOADED_UNSAID % {
                 'value': 'pH {}'.format(formats.number_format(data['ph'], 2)), 'point': unsaid})
             return
-        # Values from a unit or a loop one of whose units says salt added, the origin here "not said" (a loop whose
-        # units do not agree loads so): salt added for this rule, never the converting side (read.scale_origin; the
-        # verification of 2026-11-18, V-C). An origin said on the form stands, as for any water.
+        # Values from a unit or a loop whose water one unit says is salt added (a unit's loop counts: one water), the
+        # origin here "not said" (a loop whose units do not agree, or a unit of it that says nothing, loads so): salt
+        # added for this rule, never the converting side (read.scale_origin; the verification of 2026-11-18, V-C, and
+        # its re-check, RC-1). An origin said on the form stands, as for any water.
         owner = find_owner(data.get('loaded') or '')
         if owner is not None and not data.get('water_origin') \
                 and calculation.scale_origin_of(owner) == Tank.WaterOrigin.SALT_ADDED:

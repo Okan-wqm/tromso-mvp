@@ -373,7 +373,7 @@ def origin_of(owner):
 
 def scale_origin_of(owner):
     """The origin of a unit's, a system's or a sampling point's water for the pH-scale rule (read.scale_origin of the
-    same units: salt added as soon as one of them says so)."""
+    same units: salt added as soon as one unit of their water, a unit of their loop too, says so)."""
     return read.scale_origin(_units_of(owner))
 
 

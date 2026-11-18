@@ -119,15 +119,29 @@ def common_origin(units):
 
 def scale_origin(units):
     """The water origin of units for the pH-scale rule (a pH on the total, the seawater or the free scale is taken for
-    sea water only, never for fresh water with salt added: chemcore/core/src/scale.rs): salt added as soon as ONE of
-    them says so, whatever the others say or leave unsaid; else `common_origin`. One water: salt added to a part of a
-    loop is in all of it, and "not said" is the side that converts. The verification of 2026-11-18, V-C: a loop of a
-    salt-added unit and one that says nothing took a total-scale 7.95 as 8.09. THE place it is decided: the sample
-    door and the round (services.on_nbs) and the calculator loaded from a unit or a loop
-    (calculation.scale_origin_of). The constants themselves stay `common_origin`'s: no worked-out number moves."""
-    if any(unit.water_origin == Tank.WaterOrigin.SALT_ADDED for unit in units):
+    sea water only, never for fresh water with salt added: chemcore/core/src/scale.rs): salt added as soon as ONE unit
+    of their water says so (`one_water`: they and every live unit of their systems), whatever the others say or leave
+    unsaid; else `common_origin` of them. One water: salt added to a part of a loop is in all of it, so every point of
+    that water answers alike, the loop's, each unit's middle point and its other own points (the verification of
+    2026-11-18, V-C, and its re-check RC-1: a loop of a salt-added unit and one that says nothing took a total-scale
+    7.95 as 8.09, first at the loop point, then at the other unit's own point), and "not said" is the side that
+    converts. THE place it is decided: the sample door and the round (services.on_nbs) and the calculator loaded from
+    a unit, a loop or a point (calculation.scale_origin_of). The constants themselves stay `common_origin`'s: no
+    worked-out number moves."""
+    if any(unit.water_origin == Tank.WaterOrigin.SALT_ADDED for unit in one_water(units)):
         return Tank.WaterOrigin.SALT_ADDED.value
     return common_origin(units)
+
+
+def one_water(units):
+    """The units whose water `units` are part of: they and every live unit of the systems they are in (a loop's water is
+    one water, whichever of its points it is sampled at). A unit in no system is its own water. One query at most."""
+    units = list(units)
+    systems = {unit.system_id for unit in units if getattr(unit, 'system_id', None)}
+    if not systems:
+        return units
+    given = {unit.pk for unit in units}
+    return [*units, *(unit for unit in Tank.objects.filter(system__in=systems).order_by('code') if unit.pk not in given)]
 
 
 def assumed_salinities(points):

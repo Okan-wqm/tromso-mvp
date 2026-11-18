@@ -1403,7 +1403,8 @@ def describe(withdrawal):
         **params, 'rule': withdrawal.rule.text()}
     if withdrawal.until is None:
         text += ' ' + _('The end cannot be worked out: record the water temperature.')
-        if withdrawal.assumed_temperature is None:      # the other record that gives it an end (rule 5)
+        # The other record that gives it an end (rule 5); with past days uncounted, the sentence about them says it.
+        if withdrawal.assumed_temperature is None and not withdrawal.days_without_temperature:
             text += ' ' + _('Or set the assumed water temperature of %(species)s in Reference data › Species: the '
                             'days without a measured temperature then count.') % {
                 'species': withdrawal.species.common_name}

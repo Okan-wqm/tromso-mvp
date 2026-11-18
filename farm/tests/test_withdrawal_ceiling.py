@@ -149,7 +149,7 @@ class CeilingChangedTests(CeilingTestCase):
         self.assertContains(refused, 'name="withdrawal_ack"', status_code=422)
         self.assertEqual(PlatformSettings.get().unknown_withdrawal_days, 180)
         self.assertEqual(self.ends(self.t2), [(self.o.pk, None)])
-        fingerprint = refused.context['form'].withdrawal_change.fingerprint
+        fingerprint = refused.context['withdrawal_change'].fingerprint
         self.assertEqual(self.edit(100, withdrawal_ack=fingerprint).status_code, 302)
         self.assertEqual(PlatformSettings.get().unknown_withdrawal_days, 100)
         self.assertEqual(self.ends(self.t2), [])

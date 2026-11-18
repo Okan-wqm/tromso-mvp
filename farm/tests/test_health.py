@@ -209,7 +209,8 @@ class WithdrawalTests(HealthTestCase):
         [held] = self.held()
         self.assertEqual((held.until, held.estimated, held.days_without_temperature, held.projected_at_assumed),
                          (None, True, 5, False))
-        self.assertTrue(held.holds_on(self.day(-400)))
+        self.assertTrue(held.holds_on(self.day(-170)))                  # to the ceiling of an unknown end (rule 8)
+        self.assertFalse(held.holds_on(self.day(-400)))
         self.assertIn('record the water temperature', withdrawal.describe(held))
         self.assertIn('5 days without a measured water temperature are counted as 0 °C: set the species’ assumed '
                       'temperature in Reference data › Species.', withdrawal.describe(held))
@@ -316,7 +317,10 @@ class WithdrawalTests(HealthTestCase):
         self.withdraw(medicine, self.trout, days=4)               # a row, but for another species
         self.treat(medicine, 3, 3)
         [held] = self.held()
-        self.assertEqual((held.until, held.rule, held.holds_on(self.day(-400))), (None, None, True))
+        # Unknown: it holds, to the day the platform owner's setting gives (rule 8, the owner's decision 10: 180 days
+        # after the course's last day, where it held without end before), and no longer.
+        self.assertEqual((held.until, held.rule, held.holds_on(self.day(-170))), (None, None, True))
+        self.assertFalse(held.holds_on(self.day(-400)))
         text = withdrawal.describe(held)
         self.assertIn('No withdrawal is recorded for Atlantic salmon of Salmosan vet.: add it in Reference data › '
                       'Medicines.', text)

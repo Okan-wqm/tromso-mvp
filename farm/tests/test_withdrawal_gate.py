@@ -166,7 +166,9 @@ class DataLayerTests(HarvestInsideTestCase):
             'Treatment': None, 'Treatment_units': None, 'FeedingRecord': None, 'WaterMeasurement': None,
             'MedicineWithdrawal': None, 'StockOperation': None, 'StockMovement': None, 'Feed': ('feed_type',),
             'Species': ('withdrawal_temperature_c',),
-            'SamplingPoint': ('is_active', 'kind', 'unit', 'system', 'equipment')})
+            'SamplingPoint': ('is_active', 'kind', 'unit', 'system', 'equipment'),
+            # how long an unknown end holds fish (withdrawal rule 8, the owner's decision 10)
+            'PlatformSettings': ('unknown_withdrawal_days',)})
         self.assertEqual({model.__name__: set(rules) for model, rules in gate.CONDITIONAL.items()}, {
             'System': {'is_deleted'}, 'Tank': {'is_deleted', 'system'}, 'Species': {'is_deleted'},
             'SamplingPoint': {'is_deleted'}})

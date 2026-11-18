@@ -760,7 +760,8 @@ class Context:
         try:
             equilibria = chemistry.water_equilibria(float(temperature), float(salinity),
                                                     **self.ionic_inputs_for(observation))
-        except ValueError as error:          # e.g. a conductivity beyond the fresh path's range (Davies, I > 0.5)
+        except (ValueError, ArithmeticError) as error:      # what the gate catches (deffeyes.unworkable): e.g. a
+            # conductivity beyond the fresh path's range (Davies, I > 0.5), a division by zero, an overflow
             return {NH3_N.code: Reading(NH3_N, None, observation, True, messages.refused(error))}
         # The judged share: the larger of the basis the limits were set on and the activity-corrected (cross review
         # F1); the corrected NH3-N is said beside it, never judged.

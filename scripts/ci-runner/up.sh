@@ -9,8 +9,10 @@
 # goes into the container through a pipe: no file, no variable, no output holds it).
 # It REFUSES a repository that is not private: a self-hosted runner runs whatever a workflow says, on this machine, and
 # on a public repository anybody's pull request is such a workflow.
-# One container, so one job at a time. The container holds memory while it waits (README says how much); down.sh frees
-# it, and the jobs pushed meanwhile wait on GitHub (a day at most) until the next up.sh.
+# One container, so one job at a time, held to 4 processors and 6 GB (CI_RUNNER_CPUS, CI_RUNNER_MEMORY): the machine is
+# shared. The containers a job starts are beside it, not inside it; the workflow bounds those (WORKERS, the builder).
+# The container holds memory while it waits (README says how much); down.sh frees it, and the jobs pushed meanwhile
+# wait on GitHub (a day at most) until the next up.sh.
 set -euo pipefail
 cd "$(dirname "$0")"
 . ./common.sh
@@ -36,6 +38,7 @@ for volume in $VOLUMES; do docker volume create "$volume" >/dev/null; done
 WORK=$(docker volume inspect -f '{{.Mountpoint}}' farm-ci-work)
 
 docker run -d --name "$RUNNER" --network host --tmpfs /run/farm-ci:mode=0700 \
+  --cpus "${CI_RUNNER_CPUS:-4}" --memory "${CI_RUNNER_MEMORY:-6g}" \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v "farm-ci-work:$WORK" -v farm-ci-cache:/var/cache/farm-ci -v farm-ci-toolcache:/opt/hostedtoolcache \
   -e RUNNER_URL="https://github.com/$REPO" -e RUNNER_NAME="$RUNNER" -e RUNNER_WORK="$WORK" \

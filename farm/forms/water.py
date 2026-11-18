@@ -687,6 +687,11 @@ class CalculatorForm(forms.Form):
                 self.add_error('phosphate_unit', messages.PHOSPHATE_LOADED % {
                     'value': formats.number_format(value, 2), 'point': source})
                 return
+            unsaid = self.loaded_unsaid(data, parameters.PHOSPHATE)
+            if unsaid is not None:
+                self.add_error('phosphate_unit', messages.LOADED_UNSAID % {
+                    'value': 'PO₄-P {}'.format(formats.number_format(value, 2)), 'point': unsaid})
+                return
             value = parameters.phosphate_as_p(value, unit)
         if not parameters.get(parameters.PHOSPHATE).plausible(value):
             self.add_error(parameters.PHOSPHATE, messages.phosphate_range(value))
@@ -711,6 +716,11 @@ class CalculatorForm(forms.Form):
             self.add_error('ph_scale', messages.PH_LOADED % {'ph': formats.number_format(data['ph'], 2),
                                                              'point': source})
             return
+        unsaid = self.loaded_unsaid(data, 'ph')
+        if unsaid is not None:
+            self.add_error('ph_scale', messages.LOADED_UNSAID % {
+                'value': 'pH {}'.format(formats.number_format(data['ph'], 2)), 'point': unsaid})
+            return
         if any(data.get(name) is None for name in ('ph', 'temperature_c', 'salinity_ppt')):
             return
         try:
@@ -734,20 +744,53 @@ class CalculatorForm(forms.Form):
         set when the unit was chosen), or, for an address without one, the value the unit named by `loaded` offers
         now (farm/water/calculation.offers, at the field's precision). A value typed over the loaded one is a new
         measurement, not this."""
+        return self._loaded(data, name)[0]
+
+    def loaded_unsaid(self, data, name):
+        """The unit or loop (its code) a value MAY be the stored one of while the form does not say it was typed, else
+        None: the address carries no loaded value beside it (an old or hand-made link; the browser's always does) and
+        the unit named by `loaded` gives the field another value now (a newer sample since). Not taken for typed: a
+        value is typed only when the form says so (the verification of 2026-11-18, V-B)."""
+        return self._loaded(data, name)[1]
+
+    def _loaded(self, data, name):
+        """(the source of an unchanged loaded value or None, the source of one that may be loaded or None): the one
+        rule of `unchanged_loaded` and `loaded_unsaid`.
+        - The form carries the value a unit or a loop last gave the field (LOADED's hidden field; kept when "Values
+          from" is changed to a unit that gives none, views._calculator_data): the same value is the loaded one, another
+          was typed over it.
+        - It carries none: typed, where nothing was loaded or the unit named by `loaded` gives the field no value; the
+          loaded one where that unit offers this very value; not said where it offers another."""
         value = data.get(name)
         if value is None:
-            return None
+            return None, None
         owner = find_owner(data.get('loaded') or '')
-        source = _('a unit or a loop') if owner is None else owner.code
-        if data.get(self.LOADED[name][0]) == value:
-            return source
-        if owner is None:
-            return None
-        offer = calculation.offers(owner).get(name)
-        if offer is None or offer.value is None:
-            return None
-        step = Decimal(1).scaleb(-self.fields[name].decimal_places)
-        return source if offer.value.quantize(step) == value else None
+        offer = None if owner is None else calculation.offers(owner).get(name)
+        offered = None if offer is None or offer.value is None else offer.value.quantize(
+            Decimal(1).scaleb(-self.fields[name].decimal_places))
+        # The unit's code only where the value can be its own: one kept from the unit chosen before is not.
+        source = owner.code if offered is not None else _('a unit or a loop')
+        carried = data.get(self.LOADED[name][0])
+        if carried is not None:
+            return (source if carried == value else None), None
+        if offered is None:
+            return None, None
+        return (source, None) if offered == value else (None, source)
+
+    @classmethod
+    def kept_loaded(cls, query, name):
+        """Whether the value of field `name` in an address (a QueryDict, as sent) is still the one a unit or a loop
+        gave it (`_loaded`, without the scale's rule): what "Values from" changed to a unit that gives the field no
+        value keeps as loaded, on its stored scale, never as a typed value (views._calculator_data)."""
+        form = cls(query)
+        values = {}
+        for field in (name, cls.LOADED[name][0]):
+            try:
+                values[field] = form.fields[field].clean(query.get(field))
+            except forms.ValidationError:
+                values[field] = None
+        values['loaded'] = query.get('loaded', '')
+        return form._loaded(values, name)[0] is not None
 
     def _ph_order(self, data):
         """The pH bounds go up: critical below, warning below, warning above, critical above, each given one not

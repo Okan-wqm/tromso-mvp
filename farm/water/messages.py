@@ -102,6 +102,12 @@ def ph_stored(sample):
 PHOSPHATE_LOADED = _('Phosphate %(value)s is the value loaded from %(point)s: it is as P already (a stored phosphate '
                      'always is) and is not converted again. Leave the unit at P, or type the phosphate as it was '
                      'reported with its unit.')
+# The calculator: another scale or unit on a value that a unit or a loop may have given, where the address does not
+# carry what was loaded (an old or hand-made link) and the unit offers another value now: it is not taken for typed
+# (CalculatorForm.loaded_unsaid; the verification of 2026-11-18, V-B).
+LOADED_UNSAID = _('%(value)s may be the value stored for %(point)s, already converted: this address does not say it '
+                  'was typed. Leave the scale or the unit as loaded, or choose %(point)s again under “Values from” and '
+                  'type the value as it was measured.')
 
 
 def _rounded(value, decimals):

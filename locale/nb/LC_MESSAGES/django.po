@@ -1624,6 +1624,16 @@ msgid "%(value)s kg/m³"
 msgstr "%(value)s kg/m³"
 
 #, python-format
+msgid ""
+"%(value)s may be the value stored for %(point)s, already converted: this address does not say it "
+"was typed. Leave the scale or the unit as loaded, or choose %(point)s again under “Values from” "
+"and type the value as it was measured."
+msgstr ""
+"%(value)s kan være verdien som er lagret for %(point)s, allerede omregnet: denne adressen sier "
+"ikke at den ble skrevet inn. La skalaen eller enheten stå som den ble lastet, eller velg "
+"%(point)s på nytt under «Verdier fra» og skriv inn verdien slik den ble målt."
+
+#, python-format
 msgid "%(value)s per fish"
 msgstr "%(value)s per fisk"
 

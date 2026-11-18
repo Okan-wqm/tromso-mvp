@@ -297,15 +297,21 @@ def _calculator_data(query):
     owner = find_owner(chosen)
     if owner is not None:
         offers = calculation.offers(owner)
+        # Asked of the address as it came, before the new unit's values go in: the values still those of the unit
+        # chosen before.
+        kept = {name for name in CalculatorForm.LOADED
+                if name not in offers and CalculatorForm.DRAWN in query and CalculatorForm.kept_loaded(query, name)}
         CalculatorForm.fill(data, offers)
         for name, (carried, scale, stored) in CalculatorForm.LOADED.items():
-            if name in offers:
+            if name in offers or name in kept:
                 # A stored pH is on the NBS scale, whatever was chosen and whatever it was measured on; the value goes
-                # with it, so another scale on it is refused, never a second conversion (review R2).
+                # with it, so another scale on it is refused, never a second conversion (review R2). So does one the
+                # new unit has none of, left in the field from the unit chosen before: still a stored value, not a
+                # typed one (the verification of 2026-11-18, V-B: its `ph_loaded` was emptied and it was converted).
                 data[scale] = stored
                 data[carried] = data[name]
             else:
-                data[carried] = ''
+                data[carried] = ''                 # nothing loaded: what stands in the field was typed, with its scale
         data['water_origin'] = calculation.origin_of(owner)       # the unit's (cross review F3)
     data['loaded'] = chosen
     return data, True

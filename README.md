@@ -1483,6 +1483,32 @@ without values it shows its defaults.
   says so. Checked against PyCO2SYS 1.8.3.4 and seacarb 3.4.2 over 0 to 40 °C by 5 to 40 ‰ (72 cells): the free and the
   seawater-scale pH of a total-scale pH within 8.9e-15 and 2.4e-7 pH; the NBS leg is the core's own conversion (−0.069
   to +0.055 pH against CO2SYS's, as every NBS pH), which cancels in what the water's own constants work out.
+- **After the independent review of 2026-11-16** (`F:\dev\balik-notes\chem-v3\REVIEW.md`; R5, R7, R8 and R10 are the
+  owner's to decide):
+  - *A water the core refuses is said in words at every door* (R1). A stored value inside its parameter's range can
+    still give a water the core refuses (a conductivity past the Davies range on a water below 5 ‰: 40 000 µS/cm at
+    S 0). One gate, `deffeyes.why_impossible`, which the calculator's form, a unit's chart, a replay frame and the
+    trail ask before they work a water out, says the core's own refusal first (`deffeyes.unworkable`), in the one
+    wording a sample's NH₃ has (`messages.refused`: "Cannot be worked out: …"). The pages answer 200 and say why there
+    is no chart or no result; the trail lists the hour with its reason (`unworkable`).
+  - *A loaded pH is never converted twice* (R2). The calculator loads a unit's pH as NBS, carries the loaded value
+    beside the field (`ph_loaded`, `CalculatorForm.LOADED`) and says "measured 7.95 on the total scale, stored as 8.08
+    NBS"; another scale on the unchanged loaded value is refused with the reason. A pH typed over it is converted.
+  - *Salt-added water never takes a seawater scale* (R4): refused by its origin at every salinity, also past the Davies
+    limit (about 28.4 ‰ as NaCl) where the core works its constants out by the sea path (`scale::converts`).
+  - *A converted value says what was measured in visible text* (R6): `Reading.measured`, printed beside the stored
+    number by `farm/_water_value.html` ("measured 7.95 on the total scale"; "entered as 15.35 mg/L PO₄").
+  - *The phosphate says its unit, and every dose says its phosphate* (R3). Where a phosphate is typed (the sample
+    form, the round, the calculator) its unit is chosen: "as P (PO₄-P)", the default, or "as PO₄", which is put on P
+    at that door by the molar masses (`parameters.PO4_PER_P`, 94.9714 / 30.973762 = 3.066; the one place). A sample
+    keeps what was entered (`phosphate_unit`, `phosphate_as_measured`; `chk_water_measurements_phosphate_unit`); the
+    range is the phosphorus's whatever the unit; a phosphate loaded into the calculator is as P and is not converted
+    again. Beside every recipe and beside the simulator's steps: "Worked out with phosphate 5.01 mg/L as P (15.35 as
+    PO₄): a wrong phosphate changes this dose." The help names the 3.07-fold slip. (True P 5 typed as 15.35 with the
+    unit left at P gave NaHCO₃ 2.14 + NaOH 14.96 g/m³ where 8.59 + 11.89 is right.) A sensor's phosphate channel is as
+    P, as before.
+  - *A CO₂ curve that bends back says so* (R9): with a phosphate the judged CO₂ curve bends back near an alkalinity of
+    0; the chart's note `co2.bends_back` says it exactly when the drawn curve does (`geometry::bends_back`).
 - **The optional phosphate** (PO₄-P, mg/L as P; the independent check's hypothesis 12a, owner 2026-11-10;
   `chemcore/findings/phosphate.md`): phosphate is part of the alkalinity a titration measures, [HPO₄²⁻] + 2 [PO₄³⁻] −
   [H₃PO₄] (Dickson 1981's definition as Dickson, Sabine & Christian 2007 give it, ch. 2), with Millero's (1995)

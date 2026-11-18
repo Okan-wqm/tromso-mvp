@@ -26,6 +26,7 @@ from .. import withdrawal_gate
 from ..feeding import services as feeding_services
 from ..handling import check
 from ..health import services, withdrawal
+from ..health.withdrawal import WithdrawalChanged
 from ..models import (Batch, Feed, HandlingAcknowledgement, Medicine, MedicineWithdrawal, Treatment,
                       WithdrawalAcknowledgement)
 from ..stock import services as stock_services
@@ -45,14 +46,26 @@ class LotsTestCase(HarvestInsideTestCase):
         self.t3, self.t4 = make_unit('T-03', self.hall), make_unit('T-04', self.hall)
         self.bath = self.medicine(days=7)
 
-    def move(self, batch, source, target, days_ago, count=500, **fields):
-        if 'withdrawal_ack' in fields:
+    def move(self, batch, source, target, days_ago, count=500, combines=(), **fields):
+        """A transfer. `combines`: the lots [(batch, unit code)] the move must be ASKED about, because it combines
+        them with held fish (the owner's decision 8, farm/tests/test_withdrawal_combined.py); the question is then
+        ticked. A question the test does not expect fails it, and so does an expected one that is not asked: nothing
+        is ticked silently (verification V-10). A harvest brought inside or fish released are never expected here."""
+        def record(**more):
             return stock_services.record_transfer(self.user, source=source, batch=batch, day=self.day(days_ago),
-                                                  legs=[(target, count)], reason='density', **fields)
-        # A move that combines held fish with fish that are not held is asked about (the owner's decision 8,
-        # farm/tests/test_withdrawal_combined.py): ticked here.
-        return going_on(stock_services.record_transfer, self.user, source=source, batch=batch, day=self.day(days_ago),
-                        legs=[(target, count)], reason='density', **fields)
+                                                  legs=[(target, count)], reason='density', **fields, **more)
+        if 'withdrawal_ack' in fields:
+            return record()
+        expected = sorted((each.code, unit) for each, unit in combines)
+        try:
+            operation = record()
+        except WithdrawalChanged as asked:
+            found = asked.change
+            self.assertEqual((sorted((each.batch.code, each.unit.code) for each in found.combined),
+                              found.harvested, found.released), (expected, [], []), found.messages())
+            return record(withdrawal_ack=found.fingerprint)
+        self.assertEqual(expected, [], 'the move was expected to ask about the fish it combines, and did not')
+        return operation
 
     def ends(self, unit, day=None):
         """[(the batch held, the first day it may be harvested)] of the unit's own withdrawal line."""

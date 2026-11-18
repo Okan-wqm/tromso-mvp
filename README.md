@@ -3789,7 +3789,11 @@ from which device, how late) is logged. The server side is built; the push trans
   alarm from the pass it fails in until it passes again; the water step reads all units at once and, when that fails, each
   on its own, and evaluates each on its own, so a unit that cannot be read or evaluated raises its own critical alarm on
   its site ("could not be evaluated") and every other unit goes on; a unit with fish and no point to read its own water at
-  is a configuration warning on its site (F16). A system alarm reaches its site's recipient rules; a farm-wide one the
+  is a configuration warning on its site (F16); a judged value the chemistry core refuses to work out (the NH₃ of a water
+  whose conductivity is past the Davies range) is a warning on its site, "<unit>: <value> cannot be evaluated: <the
+  core's reason>" (subject `system:unit:<id>:value_unevaluated:<parameter>`, its on-delay counted from the value's time),
+  restored once the value is worked out again or nothing judges it; the value's own limit alarm, when open, is not
+  cleared by it, and a pass that could not read the unit ends nothing. A system alarm reaches its site's recipient rules; a farm-wide one the
   company-wide rules, and where no rule reaches it by site, every rule its severity reaches: it never reaches nobody (F8).
 - **Who is notified**: the alarm recipient rules (a tab: a site or every site, a production department or every one, the
   least severity, a level 0 to 9, a role or one person, only while on shift by the HR roster (`hr.read.on_shift`, the

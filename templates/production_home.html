@@ -16,7 +16,7 @@
   {% if at_once %}<span class="ui-chip" data-status="warning">{% include "icons/_icon.html" with name="clock" %}{% blocktrans trimmed count count=at_once %}{{ count }} notice due at once{% plural %}{{ count }} notices due at once{% endblocktrans %}</span>{% endif %}
   {% if not_set_up %}<span class="ui-chip" data-status="warning">{% include "icons/_icon.html" with name="alert" %}{% blocktrans trimmed count count=not_set_up %}{{ count }} site not set up for reports{% plural %}{{ count }} sites not set up for reports{% endblocktrans %}</span>{% endif %}
   {% if unmeasured %}<span class="ui-chip" data-status="warning">{% include "icons/_icon.html" with name="alert" %}{% blocktrans trimmed count count=unmeasured %}{{ count }} stocked unit without a water sample{% plural %}{{ count }} stocked units without a water sample{% endblocktrans %}</span>{% endif %}
-  {% if not water.critical and not water.warning and not late_tasks and not late_reports and not at_once and not not_set_up and not unmeasured %}<span class="ui-chip" data-status="ok">{% include "icons/_icon.html" with name="check-circle" %}<span>{% trans "Nothing needs attention" %}</span></span>{% endif %}
+  {% if not water.critical and not water.warning and not late_tasks and not late_reports and not at_once and not not_set_up and not unmeasured and not water.unevaluated %}<span class="ui-chip" data-status="ok">{% include "icons/_icon.html" with name="check-circle" %}<span>{% trans "Nothing needs attention" %}</span></span>{% endif %}
 </div>
 {% endif %}{% endblock %}
 {% block head_actions %}{% if record_url %}

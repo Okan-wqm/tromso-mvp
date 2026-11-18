@@ -58,6 +58,12 @@ def refused(error):
     return _('Cannot be worked out: %(why)s.') % {'why': error}
 
 
+def unevaluated(reading):
+    """What a page and an alarm say of a value the limits would judge that the core refused to work out
+    (read.Reading.refused, its reason): the one wording of it (the verification of 2026-11-18, V-A)."""
+    return _('%(label)s cannot be evaluated: %(why)s.') % {'label': reading.parameter.label, 'why': reading.refused}
+
+
 # The scales a pH may be measured on besides NBS, as a sentence says them (the core's codes, chemcore/core/src/scale.rs).
 PH_SCALES = {
     'total': _('total scale'),

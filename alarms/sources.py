@@ -23,7 +23,7 @@ from core import audit
 from farm.models import Tank, WaterLimit
 from farm.stock import read as stock_read
 from farm.models.water_point import site_of
-from farm.water import parameters, read as water_read
+from farm.water import messages as water_messages, parameters, read as water_read
 from farm.water.read import LIMITED, OXYGEN
 from farm.water.evaluate import ALERTS, RANK, Status, judge, worst
 from sensors import clock as sensor_clock
@@ -33,6 +33,7 @@ from . import clock, services
 from .models import Alarm, AlarmSubjectState, ClearCause, Severity, Source
 
 logger = logging.getLogger(__name__)
+SUMMARY_LENGTH = Alarm._meta.get_field('summary').max_length
 
 
 # ---- the sensor rules ------------------------------------------------------------------------------------------------
@@ -239,13 +240,15 @@ def settle(subjects, now, rules):
     return len(raises), len(clears)
 
 
-def system_subject(name, holds, severity, summary, now, *, parameter=None, where=None):
+def system_subject(name, holds, severity, summary, now, *, parameter=None, where=None, bad_at=None, clear_ok=None):
     """A subject of the alarm system itself (source 'system', subject `system:<name>`, the alarm's `parameter` what it is
     about, the name by default): raised while `holds`, restored once it no longer does, for the severity's off-delay.
     `where` ({site, production_department}) is set where one applies, so a site's recipient rules reach it
-    (alarms/routing.py); without it the alarm is the whole farm's."""
+    (alarms/routing.py); without it the alarm is the whole farm's. `bad_at`: the time the on-delay runs from (the pass's
+    by default); `clear_ok`: whether this pass may say it is over (by default whenever it does not hold; False where
+    the pass could not look, so nothing ends blind)."""
     parameter = parameter or name
-    return Subject(f'system:{name}', holds, not holds, now, severity, lambda: {
+    return Subject(f'system:{name}', holds, not holds if clear_ok is None else clear_ok, bad_at or now, severity, lambda: {
         'at': now, 'severity': severity, 'summary': summary, 'source': Source.SYSTEM, 'parameter': parameter,
         **(where or {})}, cause=ClearCause.RESTORED)
 
@@ -261,6 +264,9 @@ ALARM_RULES = 'alarm_rules'
 UNIT_UNEVALUATED = 'unit_unevaluated'
 STEP_FAILED = 'step_failed'
 NO_WATER_POINT = 'no_water_point'
+VALUE_UNEVALUATED = 'value_unevaluated'
+# The judged values the chemistry core works out (and so can refuse to): the un-ionised ammonia.
+WORKED_OUT = tuple(code for code in water_read.DERIVED if code in LIMITED)
 DEVICE_CLOCK = 'device_clock'
 
 
@@ -351,6 +357,30 @@ def _removed_limit(reading):
                        f'by {who} {row.deleted_at.isoformat() if row.deleted_at else ""}'.strip()}
 
 
+def _refused_subjects(units, found_water, unevaluated, failed, now):
+    """A value the limits would judge that the chemistry core refuses to work out (read.Reading.unevaluated: a
+    conductivity past the Davies range makes the NH₃ of a TAN sample one) is never silent (the verification of
+    2026-11-18, V-A): per unit and worked-out value, a warning of the alarm system on the unit's site, "<unit>: <value>
+    cannot be evaluated: <the core's reason>", its on-delay counted from the value's time as a limit's is. It is restored
+    once the value is worked out again (the limit's own levels then judge it) or nothing judges it any more; a pass that
+    could not read the unit or the live values ends nothing. The value's own limit alarm, when one is open, stays as it
+    is: a value that cannot be worked out is no evidence that it is over (`_slots` takes no reading without a value)."""
+    subjects = []
+    for unit in units:
+        found = found_water.get(unit.pk)
+        looked = found is not None and found.point is not None and unit.pk not in unevaluated
+        for code in WORKED_OUT:
+            reading = found.get(code) if looked else None
+            holds = reading is not None and reading.unevaluated
+            with audit.source_language():
+                summary = f'{unit.code}: {water_messages.unevaluated(reading)}'[:SUMMARY_LENGTH] if holds else ''
+            subjects.append(system_subject(
+                f'unit:{unit.pk}:{VALUE_UNEVALUATED}:{code}', holds, Severity.WARNING, summary, now, parameter=code,
+                where=_unit_where(unit), bad_at=seen_at(reading, now) if holds else None,
+                clear_ok=looked and not failed and not holds))
+    return subjects
+
+
 def water(now, rules):
     """Raises and clears the water limits' levels at `now` (alarms.rules `rules`), and the system alarms of live sources
     that cannot be read and of units that cannot be evaluated: (opened, cleared). While the live sources cannot be read
@@ -387,6 +417,7 @@ def water(now, rules):
     subjects += [system_subject(f'unit:{unit.pk}:{NO_WATER_POINT}', unit.pk in stocked, Severity.WARNING, _text(_(
         '%(unit)s holds fish and has no active sampling point for its own water: its water raises no alarm until it '
         'has one.'), unit=unit.code), now, parameter=NO_WATER_POINT, where=_unit_where(unit)) for unit in units]
+    subjects += _refused_subjects(units, found_water, unevaluated, failed, now)
     # A unit whose water is read no more (no point to read it at, the parameter gone) keeps its alarm open: nothing says it
     # is over. A unit removed has nothing left to judge: its alarms end (cause "unit removed").
     return settle(subjects + _removed(units, now), now, rules)

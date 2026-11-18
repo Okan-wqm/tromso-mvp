@@ -846,6 +846,10 @@ msgid "%(label)s + %(margin)s %% safety margin = %(used)s"
 msgstr "%(label)s + %(margin)s %% güvenlik payı = %(used)s"
 
 #, python-format
+msgid "%(label)s cannot be evaluated: %(why)s."
+msgstr "%(label)s değerlendirilemiyor: %(why)s."
+
+#, python-format
 msgid "%(label)s deleted with it"
 msgstr "%(label)s da birlikte silinir"
 
@@ -4400,6 +4404,9 @@ msgstr "İptal eden"
 
 msgid "Cannibalism"
 msgstr "Kanibalizm"
+
+msgid "Cannot be evaluated"
+msgstr "Değerlendirilemiyor"
 
 #, python-format
 msgid "Cannot be worked out: %(why)s."

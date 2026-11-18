@@ -473,6 +473,15 @@ class Reading:
     # A value stored converted (a pH measured on another scale than NBS): what was measured, in the few words every page
     # prints visibly beside the stored number (farm/_water_value.html; review R6); the whole sentence is `provenance`.
     measured: str = ''
+    # A worked-out value the chemistry core REFUSED to work out (its own reason, in its words; '' otherwise). Where the
+    # fish have a limit for it (`limits`, set by Context.judge) it is "cannot be evaluated", never "not measured": the
+    # unit's state says so and the alarm source raises a warning for the unit (the verification of 2026-11-18, V-A).
+    refused: str = ''
+
+    @property
+    def unevaluated(self):
+        """Whether the limits would judge this value and the core refused to work it out."""
+        return bool(self.refused and self.limits)
 
     @property
     def at(self):
@@ -535,15 +544,17 @@ class PointWater:
         ("critical, no recent data": never hidden by a fresh OK of another parameter, never "No limit"); else the worst
         fresh judgement; Stale when a value with a limit grew old and nothing fresh is judged; else No limit or Not
         measured."""
-        judged = [status for status in counted if status in (Status.CRITICAL, Status.WARNING, Status.OK)]
+        judged = [status for status in counted
+                  if status in (Status.CRITICAL, Status.WARNING, Status.UNEVALUATED, Status.OK)]
         if judged:
             return worst(judged)
         return Status.STALE if Status.STALE in counted else worst(counted)
 
     @staticmethod
     def _as_counted(status, judged):
-        """A value's status as a point counts it: an old critical or warning value keeps its judgement."""
-        return judged if status == Status.STALE and judged in ALERTS else status
+        """A value's status as a point counts it: an old critical or warning value keeps its judgement, and so does an
+        old one that cannot be evaluated (never OK behind a fresh value of another parameter)."""
+        return judged if status == Status.STALE and judged in (*ALERTS, Status.UNEVALUATED) else status
 
     def _counted(self):
         return [self._as_counted(reading.status, reading.judged) for reading in self.readings.values()
@@ -581,6 +592,17 @@ class PointWater:
         there are no fish nothing is judged, so the caller asks only where there are fish."""
         return [reading for reading in self.readings.values()
                 if reading.code in LIMITED and reading.value is not None and reading.uncovered]
+
+    @property
+    def unevaluated(self):
+        """The values the limits would judge that the chemistry core refused to work out (`Reading.unevaluated`), fresh
+        or old, in reading order: what the water page, the card, the overview and the alarm say cannot be evaluated."""
+        return [reading for reading in self.readings.values() if reading.code in LIMITED and reading.unevaluated]
+
+    @property
+    def why_unevaluated(self):
+        """[sentence] of `unevaluated`: 'NH₃ … cannot be evaluated: <the core's reason>.' (messages.unevaluated)."""
+        return [messages.unevaluated(reading) for reading in self.unevaluated]
 
     @property
     def alerts(self):
@@ -762,7 +784,7 @@ class Context:
                                                     **self.ionic_inputs_for(observation))
         except (ValueError, ArithmeticError) as error:      # what the gate catches (deffeyes.unworkable): e.g. a
             # conductivity beyond the fresh path's range (Davies, I > 0.5), a division by zero, an overflow
-            return {NH3_N.code: Reading(NH3_N, None, observation, True, messages.refused(error))}
+            return {NH3_N.code: Reading(NH3_N, None, observation, True, messages.refused(error), refused=str(error))}
         # The judged share: the larger of the basis the limits were set on and the activity-corrected (cross review
         # F1); the corrected NH3-N is said beside it, never judged.
         share = Decimal(equilibria.nh3_share(float(ph)))
@@ -820,6 +842,18 @@ class Context:
         unit's fish), else the point it was measured at."""
         if reading.code not in LIMITED or reading.value is None:
             reading.status = reading.judged = Status.NOT_MEASURED if reading.value is None else Status.NO_LIMIT
+            if reading.refused and reading.code in LIMITED:
+                # The core refused to work it out: where a limit row would judge it, it cannot be evaluated (V-A),
+                # fresh or old (the last word there is about the water); with no fish or no row nothing is judged.
+                rows = []
+                for species_id, water_type in self.exposures(for_point or reading.sample.point, day):
+                    row = self.limits.applying(species_id, reading.code, water_type)
+                    if row is not None and row not in rows:
+                        rows.append(row)
+                if rows:
+                    reading.limits, reading.status, reading.judged = rows, Status.UNEVALUATED, Status.UNEVALUATED
+                    if now is not None and not reading.fresh(now):
+                        reading.status = Status.STALE
             return reading
         exposures = self.exposures(for_point or reading.sample.point, day)
         reading.judged, reading.limits = self.limits.assess(reading.code, reading.value, exposures)

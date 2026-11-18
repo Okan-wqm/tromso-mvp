@@ -522,8 +522,8 @@ def state_of(card):
 def _ladder(card):
     """The one roll-up of a card, a ladder whose thresholds are the owners' and none invented here:
     1. critical: a water value judged critical, fresh or old (an old one says its age, and the card is marked old);
-    2. warning: a value judged a warning (fresh or old, the same), the unit over its capacity, an estimate that says
-       weigh now;
+    2. warning: a value judged a warning (fresh or old, the same), a judged value the chemistry core refuses to work
+       out ("cannot be evaluated", with its reason), the unit over its capacity, an estimate that says weigh now;
     3. blind: a stocked unit whose temperature or oxygen is missing or older than its freshness (a fresh pH hides a
        three-day-old oxygen in the water's own status: that status ranks OK above stale), with no middle point, or whose
        live sensors could not be read; never OK, never red; not worked out when the water is hidden (the card says so);
@@ -543,6 +543,9 @@ def _ladder(card):
     critical, warning, old = _alerts(middle, card.now)
     if critical:
         return State(CRITICAL, tuple(critical), basis, tuple(text for text in old if text in critical))
+    # A value the limits would judge that the chemistry core refuses to work out (PointWater.unevaluated): a warning
+    # with the core's reason, as its alarm is (alarms/sources.py; the verification of 2026-11-18, V-A), never OK.
+    warning += [str(text) for text in (middle.why_unevaluated if middle is not None else ())]
     if card.stock.over_capacity:
         warning.append(_('Over capacity'))
     if card.drift == 'now':

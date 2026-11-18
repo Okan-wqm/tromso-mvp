@@ -609,8 +609,8 @@ def overview(user):
     """The production overview's water, read once as this page reads it (`_latest`: every point it lists, an outlet too), so
     the two cannot disagree: its counts of points, critical and warning points, the rows of the points with a critical or
     warning value measured at them (`point_status`, what the counts count), the critical first and each group in the page's
-    order, at most OVERVIEW_ALERTS of them; and the tile of the points with a critical value. None for a person who may not
-    read the water."""
+    order, at most OVERVIEW_ALERTS of them; the rows with a value that cannot be evaluated; and the tile of the points with
+    a critical value. None for a person who may not read the water."""
     if not user.has_perm(VIEW):
         return None
     latest = _latest(None)
@@ -628,6 +628,9 @@ def overview(user):
                   if unit.pk in stocked and not any(row['water'].readings for row in rows)]
     return {'points': latest['point_count'], 'critical': latest['critical_count'], 'warning': latest['warning_count'],
             'unmeasured': unmeasured, 'window_days': read.WINDOW.days,
+            # The rows whose judged value the chemistry core refuses to work out (PointWater.unevaluated: said on this
+            # page beside the row's status): not "nothing needs attention" (the verification of 2026-11-18, V-A).
+            'unevaluated': [row for row in latest['rows'] if row['point'] is not None and row['water'].unevaluated],
             'alerts': alerting[:OVERVIEW_ALERTS], 'more': max(len(alerting) - OVERVIEW_ALERTS, 0),
             'sensors_failed': latest['sensors_failed'], 'url': page_url(),
             'tiles': [{'label': _('Sampling points with a critical water value'), 'count': latest['critical_count'],

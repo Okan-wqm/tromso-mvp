@@ -62,7 +62,7 @@
       <h2 id="attention-title" class="tw:m-0 tw:text-h2">{% trans "Needs attention" %}</h2>
       {% if water %}<p class="ui-safety tw:m-0 tw:sm:justify-self-end">{% include "icons/_icon.html" with name="alert" %}{% trans "Nobody is alerted: critical values are shown here, not sent." %}</p>{% else %}<span></span>{% endif %}
       {% if water.sensors_failed %}<p class="notice notice-warning tw:m-0 tw:sm:col-span-2" role="status">{% trans "The live sensor values could not be read: the values below come from the water samples only." %}</p>{% endif %}
-      {% if water.alerts or late_tasks or upcoming.late or upcoming.late_duties or at_once or not_set_up or unmeasured %}
+      {% if water.alerts or water.unevaluated or late_tasks or upcoming.late or upcoming.late_duties or at_once or not_set_up or unmeasured %}
       <ul class="ui-sheet tw:m-0 tw:p-0 tw:list-none tw:divide-y tw:divide-hair tw:overflow-hidden tw:sm:col-span-2" role="list">
         {% for row in water.alerts %}{% with point=row.point owner=row.owner status=row.water.point_status %}
         <li class="tw:grid tw:gap-x-4 tw:gap-y-2 tw:py-2 tw:pr-3 tw:pl-4 tw:grid-cols-[minmax(0,1fr)_auto] tw:items-center tw:xl:grid-cols-[minmax(0,19rem)_minmax(0,1fr)_auto] {% if status == "critical" %}tw:[box-shadow:var(--edge-crit)]{% else %}tw:[box-shadow:var(--edge-warn)]{% endif %}" data-attention="water">
@@ -78,6 +78,13 @@
           <a class="ui-btn tw:min-h-8 tw:px-3 tw:text-small tw:col-start-2 tw:row-start-1 tw:row-span-2 tw:self-center tw:justify-self-end tw:xl:col-start-3 tw:xl:row-span-1 tw:coarse:min-h-12" href="{{ row.history_url }}">{% trans "History" %}</a>
         </li>
         {% endwith %}{% endfor %}
+        {% for row in water.unevaluated %}
+        <li class="tw:grid tw:gap-x-4 tw:gap-y-2 tw:py-2 tw:pr-3 tw:pl-4 tw:[box-shadow:var(--edge-warn)] tw:grid-cols-[minmax(0,1fr)_auto] tw:items-center tw:xl:grid-cols-[minmax(0,19rem)_minmax(0,1fr)_auto]" data-attention="unevaluated">
+          <span class="tw:flex tw:flex-wrap tw:items-center tw:gap-x-2 tw:gap-y-1 tw:col-start-1">{% include "farm/_water_chip.html" with status="unevaluated" %}<b>{{ row.owner.code }}</b></span>
+          <span class="tw:min-w-0 tw:col-start-1 tw:text-small tw:text-ink-2 tw:xl:col-start-2 tw:xl:row-start-1">{% for why in row.water.why_unevaluated %}{{ why }}{% if not forloop.last %} {% endif %}{% endfor %}</span>
+          <a class="ui-btn tw:min-h-8 tw:px-3 tw:text-small tw:col-start-2 tw:row-start-1 tw:row-span-2 tw:self-center tw:justify-self-end tw:xl:col-start-3 tw:xl:row-span-1 tw:coarse:min-h-12" href="{{ water.url }}">{% trans "Water chemistry" %}</a>
+        </li>
+        {% endfor %}
         {% if water.more %}
         <li class="tw:px-4"><a class="tw:inline-flex tw:items-center tw:min-h-10 tw:coarse:min-h-12 tw:text-small tw:font-semibold" href="{{ water.url }}">{% blocktrans trimmed count count=water.more %}{{ count }} more sampling point on Water chemistry{% plural %}{{ count }} more sampling points on Water chemistry{% endblocktrans %}</a></li>
         {% endif %}

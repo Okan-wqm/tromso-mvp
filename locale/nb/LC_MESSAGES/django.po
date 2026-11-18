@@ -843,6 +843,10 @@ msgid "%(label)s + %(margin)s %% safety margin = %(used)s"
 msgstr "%(label)s + %(margin)s %% sikkerhetsmargin = %(used)s"
 
 #, python-format
+msgid "%(label)s cannot be evaluated: %(why)s."
+msgstr "%(label)s kan ikke vurderes: %(why)s."
+
+#, python-format
 msgid "%(label)s deleted with it"
 msgstr "%(label)s som slettes sammen med den"
 
@@ -4393,6 +4397,9 @@ msgstr "Avlyst av"
 
 msgid "Cannibalism"
 msgstr "Kannibalisme"
+
+msgid "Cannot be evaluated"
+msgstr "Kan ikke vurderes"
 
 #, python-format
 msgid "Cannot be worked out: %(why)s."

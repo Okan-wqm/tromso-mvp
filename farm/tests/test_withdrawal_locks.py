@@ -6,7 +6,8 @@ inside a withdrawal with no warning, no acknowledgement and no critical line.
 
 Both writes now lock every batch whose withdrawal they can change (farm.stock.services.lock_fish), the batches in one
 statement in primary-key order before any unit: checked here with two REAL transactions on two connections, in both
-orders, and by the lock statements each write sends."""
+orders, and by the lock statements each write sends. The second class is the schedule in which that lock comes from
+the reach alone (verification V-9), with the two mutants that show the race when it is cut out."""
 import threading
 import time as clock
 from decimal import Decimal
@@ -23,7 +24,7 @@ from ..health import services as health_services, withdrawal
 from ..health.withdrawal import WithdrawalChanged
 from ..models import (HandlingAcknowledgement, Medicine, MedicineWithdrawal, ProductionDepartment, Site,
                       StockMovement)
-from ..stock import services as stock_services
+from ..stock import read as stock_read, services as stock_services
 from ..stock.dates import local_today
 from .helpers import make_facility
 from .test_stock import make_species, make_unit, stock_fish
@@ -68,8 +69,12 @@ class TakeTurnsTests(TransactionTestCase):
 
     def one_after_the_other(self, first, second):
         """Runs `first` in a thread up to its first reading of the withdrawals (inside its transaction, its locks
-        taken), starts `second` in another, sees that it WAITS, lets the first finish, and returns what each did:
-        {'first': result or error, 'second': ..., 'waited': whether the second was still waiting}."""
+        taken), starts `second` in another, sees whether it WAITS FOR A LOCK, lets the first finish, and returns what
+        each did: {'first': result or error, 'second': ..., 'waited': whether the second was blocked on a lock}.
+
+        `waited` is read from the database (`blocked`): a session with a lock asked for and not granted. A write that
+        is merely slow is not waiting (verification V-9: the thread still being alive after three seconds counted as
+        waiting, also where the two writes had no lock in common)."""
         reached, go, done = threading.Event(), threading.Event(), {}
         read = withdrawal.snapshot
 
@@ -93,12 +98,38 @@ class TakeTurnsTests(TransactionTestCase):
             one.start()
             self.assertTrue(reached.wait(30), 'the first write never reached its guard')
             two.start()
-            clock.sleep(3)                                     # the second reaches its locks meanwhile
-            done['waited'] = two.is_alive()
+            done['waited'] = self.blocked(two)
             go.set()
             one.join(60)
             two.join(60)
         return done
+
+    def blocked(self, thread, seconds=60):
+        """Whether the write running in `thread` comes to wait for a lock another session holds: True as soon as the
+        database shows a lock asked for and not granted; False when the thread ends without ever waiting (or never
+        waits within `seconds`)."""
+        deadline = clock.monotonic() + seconds
+        while clock.monotonic() < deadline:
+            with connection.cursor() as cursor:
+                cursor.execute('SELECT count(*) FROM pg_locks WHERE NOT granted AND pid <> pg_backend_pid()')
+                if cursor.fetchone()[0]:
+                    return True
+            if not thread.is_alive():
+                return False
+            clock.sleep(0.05)
+        return False
+
+    def locks(self, job):
+        """(the first statement that locks batches, whether it comes before any lock of a unit) of a write."""
+        with CaptureQueriesContext(connection) as queries:
+            try:
+                job()
+            except (ValidationError, WithdrawalChanged):
+                pass
+        found = [query['sql'] for query in queries.captured_queries if 'FOR UPDATE' in query['sql']]
+        batches = next(index for index, sql in enumerate(found) if 'FROM "batches"' in sql)
+        units = next(index for index, sql in enumerate(found) if 'FROM "tanks"' in sql)
+        return found[batches], batches < units
 
     def answered(self):
         """The tick of the move's own question (it combines held fish with B: asked), read beforehand; nothing is
@@ -134,19 +165,62 @@ class TakeTurnsTests(TransactionTestCase):
     def test_both_lock_the_harvested_batch_first_in_one_statement_before_any_unit(self):
         """The order that keeps two such writes from a deadlock: each takes its batches in ONE statement, in
         primary-key order, and only then its units."""
-        def locks(job):
-            with CaptureQueriesContext(connection) as queries:
-                try:
-                    job()
-                except (ValidationError, WithdrawalChanged):
-                    pass
-            found = [query['sql'] for query in queries.captured_queries if 'FOR UPDATE' in query['sql']]
-            batches = next(index for index, sql in enumerate(found) if 'FROM "batches"' in sql)
-            units = next(index for index, sql in enumerate(found) if 'FROM "tanks"' in sql)
-            return found[batches], batches < units
-
         for job in (self.move, self.harvest):
-            statement, first = locks(job)
+            statement, first = self.locks(job)
             self.assertIn(self.b.pk.hex, statement.replace('-', ''))
             self.assertIn('ORDER BY', statement)
             self.assertTrue(first)
+
+
+class TwoHopsTests(TakeTurnsTests):
+    """The verifier's schedule (V-9): as above, and C in T-04; 200 of the B fish of T-03 went on to T-04 yesterday and
+    300 of C went on to T-05 today. The harvest: C out of T-05, today. C was never in a unit of the move (T-01, T-02)
+    nor in T-03, so the only lock the two writes have in common is the one `_reach` adds (read.downstream): with it
+    cut out, the tests of this class fail, and the last two show what happens then."""
+
+    def setUp(self):
+        super().setUp()
+        hall = self.t1.production_department
+        self.t4, self.t5 = make_unit('T-04', hall), make_unit('T-05', hall)
+        self.c = stock_fish(self.user, self.t4, 3000, '125', 9, species=self.a.species)
+        stock_services.record_transfer(self.user, source=self.t3, batch=self.b, day=self.day(1),
+                                       legs=[(self.t4, 200)], reason='density')
+        stock_services.record_transfer(self.user, source=self.t4, batch=self.c, day=self.today,
+                                       legs=[(self.t5, 300)], reason='density')
+
+    def harvest(self, **fields):
+        return stock_services.record_harvest(self.user, unit=self.t5, batch=self.c, day=self.today, count=100,
+                                             measured_weight_kg=Decimal('13'), facility=self.facility, **fields)
+
+    def test_the_harvested_batch_was_never_in_a_unit_of_the_move(self):
+        presence = stock_read.Presence.of_batches({self.c.pk})
+        self.assertEqual(set(presence.units[self.c.pk]), {self.t4.pk, self.t5.pk})
+
+    def test_both_lock_the_harvested_batch_first_in_one_statement_before_any_unit(self):
+        for job in (self.move, self.harvest):
+            statement, first = self.locks(job)
+            self.assertIn(self.c.pk.hex, statement.replace('-', ''))
+            self.assertTrue(first)
+
+    def unseen(self, cut):
+        """The harvest first, then the move, with a part of the reach cut out: what each did, and the harvests left
+        inside a withdrawal with no acknowledgement."""
+        seen = self.answered()
+        with cut:
+            done = self.one_after_the_other(self.harvest, lambda: self.move(withdrawal_ack=seen))
+        return done, [found.operation_id for found in withdrawal.harvests_inside()]
+
+    def test_without_the_reach_the_two_writes_do_not_wait_and_the_harvest_goes_unseen(self):
+        """What the lock is for, shown by taking it away: the tests above cannot pass without `_reach`."""
+        done, inside = self.unseen(mock.patch.object(
+            stock_services, '_reach', lambda unit_ids, batch_ids, first: set(batch_ids)))
+        self.assertFalse(done['waited'])
+        self.assertEqual((done['first'].kind, done['second'].kind), ('harvest', 'transfer'))
+        self.assertEqual(inside, [done['first'].pk])                   # inside a withdrawal, and nobody was asked
+        self.assertFalse(HandlingAcknowledgement.objects.filter(operation=done['first']).exists())
+
+    def test_without_the_batches_downstream_neither(self):
+        done, inside = self.unseen(mock.patch.object(stock_read, 'downstream', lambda found, unit_ids, first=None: set()))
+        self.assertFalse(done['waited'])
+        self.assertEqual((done['first'].kind, done['second'].kind), ('harvest', 'transfer'))
+        self.assertEqual(inside, [done['first'].pk])

@@ -188,6 +188,85 @@ class AlreadyHeldTests(CombinedTestCase):
         self.assertTrue(c.pk)
 
 
+EMPTY_NAME = re.compile(r'\s[,.:;)]|[(]\s|[(][)]|\s\s')
+
+
+class WholeSentenceTests(CombinedTestCase):
+    """Verification V-3: fish brought into the TREATED tank on a course day (a move or a stocking dated in the past) are
+    exposed themselves, and the question read "... will wait for the harvest with , the held fish it is combined with in
+    :". No sentence with an empty name may be asked, stored or logged: every schedule here is read for one, in the
+    question, the acknowledgement rows and the critical line."""
+
+    def whole(self, call, *args, **kwargs):
+        """Goes on past the question of a write; every sentence asked, stored and logged is whole. Returns the change."""
+        change = self.change_of(call, *args, **kwargs)
+        call(*args, withdrawal_ack=change.fingerprint, **kwargs)
+        said = change.messages()
+        said += [row.withdrawal_reason for row in HandlingAcknowledgement.objects.all()]
+        said += [row.reason for row in WithdrawalAcknowledgement.objects.all()]
+        said += [entry.changes['Withdrawal warnings acknowledged'][1]
+                 for entry in AuditLog.objects.filter(severity='critical')
+                 if 'Withdrawal warnings acknowledged' in entry.changes]
+        self.assertGreaterEqual(len(said), 3)
+        for text in said:
+            self.assertTrue(text.strip())
+            self.assertIsNone(EMPTY_NAME.search(text), text)
+        return change
+
+    def stock_into(self, unit, days_ago=0, **fields):
+        return stock_services.record_input(self.user, species=self.salmon, input_stage='smolt', origin='purchased',
+                                           day=self.day(days_ago), lines=[(unit, 200, Decimal(125))],
+                                           supplier=self.supplier, **fields)
+
+    def test_fish_moved_into_the_treated_tank_on_a_course_day_wait_with_the_fish_treated_there(self):
+        change = self.whole(self.transfer, self.b, self.t2, [(self.t1, 500)], days_ago=6)
+        self.assertEqual([(each.batch.code, each.unit.code, each.until) for each in change.combined],
+                         [(self.b.code, 'T-01', self.until)])
+        sentence = (f'{self.b.code} in T-01 will wait for the harvest with the fish treated in T-01: harvest from '
+                    f'{shown_date(self.until)}. Salmosan vet., bath from ')
+        self.assertIn(sentence, change.messages()[0])
+        self.assertIn(sentence, HandlingAcknowledgement.objects.get().withdrawal_reason)
+        self.assertIn(sentence, AuditLog.objects.get(severity='critical').changes['Withdrawal warnings acknowledged'][1])
+
+    def test_a_batch_stocked_into_the_treated_tank_on_a_course_day_waits_with_the_fish_treated_there(self):
+        change = self.whole(self.stock_into, self.t1, days_ago=6)
+        new = Batch.objects.exclude(pk__in=[self.a.pk, self.b.pk]).get()
+        self.assertIn(f'{new.code} in T-01 will wait for the harvest with the fish treated in T-01: harvest from ',
+                      HandlingAcknowledgement.objects.get().withdrawal_reason)
+        self.assertEqual(len(change.combined), 1)
+
+    def test_with_an_unknown_end_and_with_medicated_feed(self):
+        self.going_on(self.treat, self.medicine(name='No row'), 4, 4)
+        change = self.whole(self.transfer, self.b, self.t2, [(self.t1, 500)], days_ago=4)
+        self.assertIn(f'{self.b.code} in T-01 will wait for the harvest with the fish treated in T-01, and the end of '
+                      'that withdrawal is not known. No row, bath from ', change.messages()[0])
+        feed = Feed.objects.create(name='Medisinfor', code='MED-1', feed_type='medicated')
+        c = self.stock(self.t3, count=1000, days_ago=8)
+        self.going_on(feeding_services.record_feeding, self.user, unit=self.t3, day=self.day(2), feed=feed,
+                      amount_kg=Decimal('2'))
+        d = self.stock(self.t4, count=1000, days_ago=8)
+        change = self.whole(stock_services.record_transfer, self.user, source=self.t4, batch=d, day=self.day(3),
+                            legs=[(self.t3, 100)], reason='density')
+        self.assertIn(f'{d.code} in T-03 will wait for the harvest with the fish given medicated feed in T-03, and the '
+                      'end of that withdrawal is not known.', change.messages()[0])
+        self.assertTrue(c.pk)
+
+    def test_the_sentences_of_the_other_combinations_are_whole_too(self):
+        self.whole(self.transfer, self.a, self.t1, [(self.t2, 500)])                  # held in beside not held
+        c = self.stock(self.t3, count=1000, days_ago=8)
+        self.whole(self.transfer, c, self.t3, [(self.t2, 100)])                       # not held in beside held
+        d = self.stock(self.t4, count=1000, days_ago=8)
+        self.whole(self.transfer, c, self.t2, [(self.t4, 50)])                        # the chain: C was only combined
+        self.whole(self.stock_into, self.t4)                                          # a stocking beside them
+        self.assertTrue(d.pk)
+
+    def test_the_sentences_are_translated(self):
+        change = self.change_of(self.transfer, self.b, self.t2, [(self.t1, 500)], days_ago=6)
+        for language, words in (('nb', 'behandlet i T-01'), ('tr', 'T-01 içinde tedavi edilen')):
+            with translation.override(language):
+                self.assertIn(words, change.messages()[0].split('. ')[0], language)
+
+
 class SentenceTests(CombinedTestCase):
     """Review F-5: in Norwegian and Turkish the bracket read as if the fish that only SHARED the unit were treated."""
 

@@ -288,6 +288,63 @@ class IntegrityTests(CombinedTestCase):
                           'stocking that combined fish with held fish.'])
 
 
+class ChainSentenceTests(CombinedTestCase):
+    """Verification V-8: C is held because it shared T-03 with B, and B only because it shared T-02 with A, treated in
+    T-01. The sentence names the tank shared, the batch shared with, and the ORIGINAL treated batch and tank as the
+    source: B was never treated and never in T-01; A was never in T-03."""
+
+    def setUp(self):
+        super().setUp()
+        self.c = self.stock(self.t3, count=3000, days_ago=9)
+
+    def chain(self):
+        self.going_on(self.transfer, self.a, self.t1, [(self.t2, 300)], days_ago=5)
+        self.going_on(self.transfer, self.b, self.t2, [(self.t3, 300)], days_ago=4)
+        return {held.batch_id: held for held in self.held(self.t3)}
+
+    def test_the_unit_line_names_the_batch_shared_with_and_the_treated_batch_as_the_source(self):
+        holds = self.chain()
+        a, b = self.a.code, self.b.code
+        self.assertIn(f'These fish shared T-02 with {a} (treated in T-01).', withdrawal.describe(holds[self.b.pk]))
+        said = withdrawal.describe(holds[self.c.pk])
+        self.assertIn(f'These fish shared T-03 with {b}, which waits with {a} (treated in T-01).', said)
+        self.assertNotIn(f'{b} (treated', said)
+        with translation.override('nb'):
+            self.assertIn(f'Denne fisken delte T-03 med {b}, som venter sammen med {a} (som ble behandlet i T-01).',
+                          withdrawal.describe(holds[self.c.pk]))
+        with translation.override('tr'):
+            self.assertIn(f'Bu balıklar T-03 birimini {b} ile paylaştı; o parti de {a} (T-01 içinde tedavi edilen '
+                          'parti) ile birlikte bekliyor.', withdrawal.describe(holds[self.c.pk]))
+
+    def test_the_stored_reason_of_the_harvest_follows_the_page(self):
+        self.chain()
+        seen = withdrawal.check.assess('harvest', self.t3, self.today, self.c).fingerprint
+        stock_services.record_harvest(self.user, unit=self.t3, batch=self.c, day=self.today, count=100,
+                                      measured_weight_kg=Decimal('13'), facility=self.facility, handling_ack=seen)
+        row = HandlingAcknowledgement.objects.get(operation__kind='harvest', batch=self.c)
+        self.assertIn(f'These fish shared T-03 with {self.b.code}, which waits with {self.a.code} (treated in T-01).',
+                      row.withdrawal_reason)
+
+    def test_the_guards_harvest_question_does_not_put_the_treated_batch_in_a_tank_it_was_never_in(self):
+        self.transfer(self.b, self.t2, [(self.t3, 500)], days_ago=2)                 # B joins C in T-03: nobody held
+        harvest = stock_services.record_harvest(self.user, unit=self.t3, batch=self.c, day=self.day(1), count=100,
+                                                measured_weight_kg=Decimal('13'), facility=self.facility)
+        change = self.change_of(self.transfer, self.a, self.t1, [(self.t2, 500)], days_ago=3)
+        [found] = [each for each in change.harvested if each.line.batch_id == self.c.pk]
+        self.assertEqual(found.operation_id, harvest.pk)
+        a, b = self.a.code, self.b.code
+        self.assertIn(f'The withdrawal is of {a}: the fish harvested shared T-03 with {b}, which waits with {a}, and '
+                      'the fish of one unit cannot be told apart.', found.message())
+        self.assertNotIn('which was in T-03 with the fish harvested', found.message())
+        for language, words in (('nb', 'som venter sammen med'), ('tr', 'ile birlikte bekliyor')):
+            with translation.override(language):
+                self.assertIn(words, found.message(), language)
+        self.transfer(self.a, self.t1, [(self.t2, 500)], days_ago=3, withdrawal_ack=change.fingerprint)
+        out = io.StringIO()
+        call_command('check_withdrawal', stdout=out)
+        self.assertIn(f'lies inside a withdrawal of {a}, through T-03 shared with {b} (', out.getvalue())
+
+
 class SentenceTests(CombinedTestCase):
     """Review F-5: in Norwegian and Turkish the bracket read as if the fish that only SHARED the unit were treated."""
 

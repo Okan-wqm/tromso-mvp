@@ -692,11 +692,11 @@ class CalculatorForm(forms.Form):
                 self.add_error('phosphate_unit', messages.LOADED_UNSAID % {
                     'value': 'PO₄-P {}'.format(formats.number_format(value, 2)), 'point': unsaid})
                 return
-            value = parameters.phosphate_as_p(value, unit)
-        if not parameters.get(parameters.PHOSPHATE).plausible(value):
-            self.add_error(parameters.PHOSPHATE, messages.phosphate_range(value))
+        as_p = parameters.phosphate_as_p(value, unit)
+        if not parameters.phosphate_in_range(value, unit):        # the one bound of every door (parameters.PO4_HIGH)
+            self.add_error(parameters.PHOSPHATE, messages.phosphate_range(as_p))
             return
-        data[parameters.PHOSPHATE] = value
+        data[parameters.PHOSPHATE] = as_p
 
     # What a pH given on another scale than NBS is on the NBS scale ({'given', 'scale', 'nbs', 'formula'}), else None:
     # the calculation takes the NBS pH itself (not rounded), and the page says the conversion.

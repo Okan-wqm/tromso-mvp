@@ -122,7 +122,7 @@ def phosphate_range(as_p):
     return _('As P this is %(value)s mg/L: a phosphate is between %(low)s and %(high)s mg/L as P (up to %(most)s as '
              'PO₄). Check the value and its unit.') % {
         'value': _rounded(as_p, 2), 'low': parameter.low, 'high': parameter.high,
-        'most': _rounded(parameters.phosphate_as_po4(parameter.high), 2)}
+        'most': _rounded(parameters.PO4_HIGH, 2)}
 
 
 def phosphate_measured_short(sample):

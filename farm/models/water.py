@@ -96,9 +96,14 @@ def _sample_checks():
         name='chk_water_measurements_ph_scale'))
     checks.append(models.CheckConstraint(
         # A phosphate entered in another unit: its unit, what was entered and the phosphorus stored; or none of them (P).
+        # The two numbers agree: what was entered, put on P by its unit's factor, is the stored P within its rounding
+        # (parameters.PER_P_CHECKED, P_ROUNDING; the verification of 2026-11-18, V-F: 15.35 as PO₄ stood beside 99).
         condition=(Q(phosphate_unit='', phosphate_as_measured__isnull=True)
-                   | Q(phosphate_unit__in=PhosphateUnit.values, phosphate_as_measured__isnull=False,
-                       phosphate_as_measured__gte=0, phosphate_p_mg_l__isnull=False)),
+                   | _any(Q(phosphate_unit=unit, phosphate_as_measured__isnull=False, phosphate_as_measured__gte=0,
+                            phosphate_p_mg_l__isnull=False,
+                            phosphate_p_mg_l__gte=F('phosphate_as_measured') / factor - parameters.P_ROUNDING,
+                            phosphate_p_mg_l__lte=F('phosphate_as_measured') / factor + parameters.P_ROUNDING)
+                          for unit, factor in parameters.PER_P_CHECKED.items() if unit in PhosphateUnit.values)),
         name='chk_water_measurements_phosphate_unit'))
     oxygen = Q(oxygen_mg_l__isnull=False) | Q(oxygen_saturation_pct__isnull=False)
     for code, prefix in BASIS.items():

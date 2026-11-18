@@ -11,7 +11,7 @@ How long a value says something about the water now is not the code's: it is the
 (farm/water/freshness.py, farm.WaterFreshness; cross review F10).
 The ranges are argued in the bug document (Water chemistry, the plausibility table)."""
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import ROUND_DOWN, Decimal
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -147,11 +147,30 @@ AS_P, AS_PO4 = 'p', 'po4'
 P_G_PER_MOL = Decimal('30.973762')
 PO4_G_PER_MOL = Decimal('94.9714')
 PO4_PER_P = PO4_G_PER_MOL / P_G_PER_MOL          # 3.0662...: "3.07" in the words
+# The most a phosphate may be as PO₄: the last value at the column's precision that is at most the phosphorus's range
+# as P (306.61: 306.62 is 100.00037 as P). THE bound of every door where a phosphate is typed as PO₄ (the sample, the
+# round, the calculator: `phosphate_in_range`) and the number their one sentence says (messages.phosphate_range; the
+# verification of 2026-11-18, V-F: the sample door rounded first and stored 306.62 and 306.63 as 100.00, the
+# calculator refused 306.62 saying "up to 306.62").
+PO4_HIGH = (BY_CODE[PHOSPHATE].high * PO4_PER_P).quantize(BY_CODE[PHOSPHATE].step, rounding=ROUND_DOWN)
+# What the database holds a sample's entry and its stored P together by (farm.models.water: the check
+# chk_water_measurements_phosphate_unit): per unit, the factor at seven decimals (its error is under 0.000002 mg/L as P
+# over the range), and half a step of the column, the rounding of the stored P, with a hundredth of a step to spare.
+PER_P_CHECKED = {AS_PO4: PO4_PER_P.quantize(Decimal('0.0000001'))}
+P_ROUNDING = BY_CODE[PHOSPHATE].step * Decimal('0.51')
 
 
 def phosphate_as_p(value, unit):
     """A phosphate typed in `unit` (AS_P, AS_PO4) as mg/L of phosphorus, not rounded; KeyError for another unit."""
     return {AS_P: lambda: value, AS_PO4: lambda: value / PO4_PER_P}[unit]()
+
+
+def phosphate_in_range(value, unit):
+    """Whether a phosphate typed in `unit` is inside the phosphorus's range: as P the parameter's own, as PO₄ from 0
+    to PO4_HIGH (the same range, said in the unit it was typed in, so no rounding moves the bound)."""
+    if unit == AS_P:
+        return BY_CODE[PHOSPHATE].plausible(value)
+    return {AS_PO4: lambda: 0 <= value <= PO4_HIGH}[unit]()
 
 
 def phosphate_as_po4(value):

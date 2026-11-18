@@ -147,8 +147,9 @@ def as_p(values, unit):
     the column's precision; what was entered and its unit are the provenance (the independent review of 2026-11-16,
     R3: a PO₄ reading typed as P is 3.07 times too much in every dose). As P, or no phosphate: the values as they are
     and no provenance. Refused (ValidationError, a dict of field to message) for an unknown unit, and for a value
-    below 0, with more decimals than the column keeps, or outside the phosphorus's range once converted: the range is
-    the phosphorus's whatever the unit."""
+    below 0, with more decimals than the column keeps, or outside the phosphorus's range: the range is the
+    phosphorus's whatever the unit (parameters.phosphate_in_range: as PO₄ up to PO4_HIGH, the bound the calculator
+    has too)."""
     if unit in (AS_P, '', None):
         return values, {}
     if unit not in PhosphateUnit.values:
@@ -161,8 +162,8 @@ def as_p(values, unit):
         raise ValidationError({parameters.PHOSPHATE: _('At most %(decimals)d decimals.') % {
             'decimals': parameter.decimals}})
     converted = parameters.phosphate_as_p(entered, unit).quantize(parameter.step, rounding=ROUND_HALF_UP)
-    if entered < 0 or not parameter.plausible(converted):
-        raise ValidationError({parameters.PHOSPHATE: messages.phosphate_range(converted)})
+    if not parameters.phosphate_in_range(entered, unit):          # the one bound of every door (parameters.PO4_HIGH)
+        raise ValidationError({parameters.PHOSPHATE: str(messages.phosphate_range(converted))})
     return ({**values, parameters.PHOSPHATE: converted}, {'phosphate_unit': unit, 'phosphate_as_measured': entered})
 
 

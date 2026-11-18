@@ -22,7 +22,8 @@ The rules, for a batch b and a treatment T with a medicine:
    C. A unit is held as a whole: a batch that is in a unit at any moment of a day a held lot is in it is held there
       from that day, to the same end, and stays held after either moves on (they can no longer be told apart; the
       owner's example: tank C held to 23.11). The unit's line names the batch and says how: "These fish shared T-03
-      with B-2026-001 (treated in T-01)."
+      with B-2026-001 (treated in T-01)."; and when that batch was itself only held by sharing, the treated batch as
+      the source: "These fish shared T-03 with B-2026-002, which waits with B-2026-001 (treated in T-01)."
    D. Not held: fish of b that left the treated unit before T's first day, or were never in it, in a unit no held
       fish came into. A lot ends the day its last fish leave the unit (it still holds that day: a harvest of that
       day lies inside); fish of the same batch that come into the unit later are another lot.
@@ -220,9 +221,10 @@ class Hold:
     """A lot a withdrawal holds: the fish of one batch (`batch_id`) in one unit over one stay, from the day they became
     held there (`since`) to the day the last of them left the unit (`left`; None: they are there). `via_unit` and
     `via_batch` (codes) say how fish that were not exposed themselves came to be held: the unit they shared with held
-    fish, and whose; '' for the exposed fish and the lots they were moved into. `treated_in`: the codes of the units
-    the withdrawal's batch was exposed in (`exposed_in`: their ids). Everything else is the withdrawal's (its end, its
-    cause, its rule)."""
+    fish, and whose; '' for the exposed fish and the lots they were moved into. `chain`: the fish they shared it with
+    were themselves held only by sharing a unit (they were never treated, and need not have been in a treated unit).
+    `treated_in`: the codes of the units the withdrawal's batch (`of_batch`: its code) was exposed in (`exposed_in`:
+    their ids): the source of the hold. Everything else is the withdrawal's (its end, its cause, its rule)."""
     withdrawal: Withdrawal
     unit_id: object
     batch_id: object
@@ -232,6 +234,8 @@ class Hold:
     via_batch: str = ''
     treated_in: tuple = ()
     exposed_in: frozenset = frozenset()
+    chain: bool = False
+    of_batch: str = ''
 
     def __getattr__(self, name):
         if name.startswith('__'):
@@ -554,8 +558,8 @@ class Reader:
         a lot is held or still to be exposed; on each day, to a fixpoint (the order within a day is not read): the
         exposed fish (A), the lots fish of a held lot were moved into (B), every batch in a unit a held lot is in
         (C; never from a cleaner-fish lot: the owner's decision 6). A lot whose last fish left by the end of the day ends
-        with that day. `via`: (unit id, batch id) of the held lot a shared lot met; None along the exposed fish's own
-        path."""
+        with that day. `via`: (unit id, batch id, whether that lot was itself held only by sharing) of the held lot a
+        shared lot met; None along the exposed fish's own path."""
         presence, batch_id, end = self.presence, withdrawal.batch_id, withdrawal.ends
         exposed_on = defaultdict(list)
         for unit_id, days in seeds.items():
@@ -580,7 +584,7 @@ class Reader:
                         continue
                     for other in presence.batches.get(unit_id, ()):
                         if (unit_id, other) not in held and presence.during(unit_id, other, day):
-                            held[(unit_id, other)] = (day, (unit_id, holder))
+                            held[(unit_id, other)] = (day, (unit_id, holder, held[(unit_id, holder)][1] is not None))
                             grown = True
             for lot in [lot for lot in held if presence.count_at_end(*lot, day) <= 0]:
                 since, via = held.pop(lot)
@@ -597,7 +601,7 @@ class Reader:
                 for unit_id, batch_id, since, left, via in self._walk(withdrawal, seeds):
                     hold = Hold(withdrawal, unit_id, batch_id, since, left,
                                 self.units[via[0]].code if via else '', self.batches[via[1]].code if via else '',
-                                codes, frozenset(seeds))
+                                codes, frozenset(seeds), bool(via and via[2]), self.batches[withdrawal.batch_id].code)
                     self._lots.append(hold)
                     self._by_unit[unit_id].append(hold)
                     self._by_lot[(unit_id, batch_id)].append(hold)
@@ -926,13 +930,23 @@ class HarvestInside:
         return text
 
     @property
+    def chained(self):
+        """Whether the fish harvested are held through a batch that was itself only held by sharing a unit (not the
+        withdrawal's own batch): the withdrawal's batch need never have been in a unit with them."""
+        return self.hold is not None and self.hold.chain and self.hold.via_batch != self.batch.code
+
+    @property
     def beside(self):
-        """Whether the withdrawal's own batch was in the harvested unit with the fish harvested (else they met it, or
-        fish held with it, in another unit before)."""
-        return self.hold is None or self.hold.via_unit in ('', self.line.unit.code)
+        """Whether the withdrawal's own batch was in the harvested unit with the fish harvested (else they met it in
+        another unit before, or met fish held with it: `chained`)."""
+        return self.hold is None or (not self.chained and self.hold.via_unit in ('', self.line.unit.code))
 
     def through(self):
         """How a withdrawal of another batch came to hold the fish harvested."""
+        if self.chained:
+            return _('The withdrawal is of %(held)s: the fish harvested shared %(unit)s with %(with)s, which waits '
+                     'with %(held)s, and the fish of one unit cannot be told apart.') % {
+                'held': self.batch.code, 'unit': self.hold.via_unit, 'with': self.hold.via_batch}
         if self.beside:
             return _('The withdrawal is of %(held)s, which was in %(unit)s with the fish harvested: the fish of '
                      'one unit cannot be told apart.') % {'held': self.batch.code, 'unit': self.line.unit.code}
@@ -1463,6 +1477,10 @@ def _held_how(hold):
         how = _('given medicated feed in %(units)s') % {'units': units}
     else:
         how = _('treated in %(units)s') % {'units': units}
+    if hold.chain and hold.via_batch != hold.of_batch:
+        # The batch they shared the unit with was never treated: it waits with the treated batch, the source.
+        return _('These fish shared %(unit)s with %(batch)s, which waits with %(source)s (%(how)s).') % {
+            'unit': hold.via_unit, 'batch': hold.via_batch, 'source': hold.of_batch, 'how': how}
     return _('These fish shared %(unit)s with %(batch)s (%(how)s).') % {
         'unit': hold.via_unit, 'batch': hold.via_batch, 'how': how}
 

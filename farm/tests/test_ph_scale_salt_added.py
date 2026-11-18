@@ -105,7 +105,7 @@ class MixedLoopTests(SeaTestCase):
         self.loop_point = point_of(self.mixed)
 
     def test_the_origin_of_units_that_do_not_agree(self):
-        unit = lambda origin: SimpleNamespace(water_origin=origin)      # noqa: E731
+        unit = lambda origin: SimpleNamespace(water_origin=origin, system_id=None)      # noqa: E731
         for origins, wanted in ((('salt_added', ''), 'salt_added'), (('', 'salt_added'), 'salt_added'),
                                 (('salt_added', 'seawater'), 'salt_added'), (('salt_added', 'salt_added'), 'salt_added'),
                                 (('seawater', ''), ''), (('seawater', 'seawater'), 'seawater'), (('', ''), ''),
@@ -114,9 +114,78 @@ class MixedLoopTests(SeaTestCase):
                 self.assertEqual(read.scale_origin([unit(origin) for origin in origins]), wanted)
         for owner in (self.mixed, self.loop_point):
             self.assertEqual((calculation.scale_origin_of(owner), calculation.origin_of(owner)), ('salt_added', ''))
-        self.assertEqual((calculation.scale_origin_of(self.b1), calculation.scale_origin_of(self.b2)),
-                         ('salt_added', ''))
         self.assertEqual(calculation.scale_origin_of(self.sea), 'seawater')
+
+    def test_every_point_of_the_loops_water_says_salt_added(self):
+        """One water, one answer (the re-check of 2026-11-18, RC-1): B-02 says nothing, but it is in B-01's loop, so its
+        own middle point and its other own points answer as the loop point and B-01's do (before: B-02 and its points
+        said "not said" and converted). The constants are each owner's own (`origin_of`: B-02's water is "not said", as
+        it was), so no worked-out number moves."""
+        points = [self.loop_point, *(point_of(unit, kind) for unit in (self.b1, self.b2)
+                                     for kind in ('middle', 'inlet', 'side_outlet', 'bottom_drain'))]
+        for owner in (self.mixed, self.b1, self.b2, *points):
+            with self.subTest(owner=str(owner)):
+                self.assertEqual(calculation.scale_origin_of(owner), 'salt_added')
+        self.assertEqual((calculation.origin_of(self.b1), calculation.origin_of(self.b2)), ('salt_added', ''))
+
+    def test_a_unit_outside_the_loop_and_a_removed_unit_are_not_its_water(self):
+        alone = make_unit('B-03', self.hall)
+        Tank.objects.filter(pk=alone.pk).update(water_type='brackish')
+        alone.refresh_from_db()
+        self.assertEqual(calculation.scale_origin_of(alone), '')
+        # The salt-added unit removed: nothing live in the loop says salt added any more.
+        Tank.all_objects.filter(pk=self.b1.pk).update(is_deleted=True)
+        self.assertEqual((calculation.scale_origin_of(self.b2), calculation.scale_origin_of(point_of(self.b2)),
+                          calculation.scale_origin_of(self.loop_point)), ('', '', ''))
+
+    def test_the_other_units_own_point_refuses_it_at_every_salinity(self):
+        """The re-check's door (RC-1): a total-scale 7.95 at 12 °C at B-02's own middle point was stored as 8.09 at S 29
+        and 30 and as 8.08 at S 35, in the same water as B-01, whose own point refused. Now every point of it refuses."""
+        hours = 0
+        for point in (point_of(self.b2), point_of(self.b2, 'side_outlet'), point_of(self.b1), self.loop_point):
+            for salinity in ('29', '30', '35'):
+                for scale in ('total', 'sws', 'free'):
+                    hours += 1
+                    with self.subTest(point=str(point), salinity=salinity, scale=scale):
+                        self.assertEqual(self.refused(point=point, ph='7.95', ph_scale=scale, temperature_c='12',
+                                                      salinity_ppt=salinity, hours=hours), {'ph_scale': [NOT_SEA]})
+        self.assertEqual(WaterMeasurement.objects.count(), 0)
+        sample = self.record(point=point_of(self.b2), ph='7.95', ph_scale='nbs', temperature_c='12', salinity_ppt='30')
+        self.assertEqual((str(sample.ph), sample.ph_scale), ('7.95', ''))
+
+    def test_the_round_refuses_the_other_units_row(self):
+        b2 = point_of(self.b2)
+        url = f'{reverse("farm:water_round")}?site={self.bergen.pk}&columns=temperature_c&columns=ph&columns=salinity_ppt'
+        points = [row.point for row in self.client.get(url).context['rows']]
+        self.assertIn(b2, points)
+        local = timezone.localtime(self.ago(hours=1)).strftime('%Y-%m-%dT%H:%M')
+        data = {'token': str(uuid.uuid4()), 'measured_at': local, 'source': 'manual', 'ph_scale': 'total'}
+        for point in points:
+            for code in ('temperature_c', 'ph', 'salinity_ppt'):
+                data[f'point-{point.pk}-{code}'] = ''
+        for point in (self.sea_point, b2):
+            data.update({f'point-{point.pk}-ph': '7.95', f'point-{point.pk}-temperature_c': '12',
+                         f'point-{point.pk}-salinity_ppt': '30'})
+        response = self.client.post(url, data, headers={'X-Modal': '1'})
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(WaterMeasurement.objects.count(), 0)
+        errors = {row.point: dict(row.errors) for row in response.context['rows'] if row.errors}
+        self.assertEqual(list(errors), [b2])
+        self.assertIn(NOT_SEA, str(errors[b2]))
+
+    def test_the_calculator_loaded_from_the_other_unit_refuses_the_scale(self):
+        """Loaded from B-02 (8.0872 before: converted, no error)."""
+        self.record(point=point_of(self.b2), ph='7.80', ph_scale='nbs', temperature_c='12', salinity_ppt='30')
+        url = reverse('farm:water_calculator')
+        page = self.client.get(url, {'point': f'tank:{self.b2.pk}'}, follow=True)
+        self.assertEqual(page.context['form'].cleaned_data['water_origin'], '')       # the constants': not said
+        sent = dict(parse_qsl(page.redirect_chain[-1][0].split('?', 1)[1], keep_blank_values=True))
+        for name in ('farm:water_calculator', 'farm:water_calculator_results', 'farm:water_calculator_report'):
+            with self.subTest(view=name):
+                typed = self.client.get(reverse(name), {**sent, 'ph': '7.95', 'ph_scale': 'total', 'salinity_ppt': '30'})
+                self.assertEqual(typed.context['form'].errors['ph_scale'], [NOT_SEA])
+                self.assertIsNone(typed.context['result'])
+                self.assertIsNone(typed.context['ph_conversion'])
 
     def test_the_loops_sample_is_refused_at_every_salinity(self):
         for hours, salinity in enumerate(SALINITIES, start=1):

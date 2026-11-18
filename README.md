@@ -2075,7 +2075,11 @@ corrected temperature or a backdated transfer changes it at once:
   that come into the unit later are another lot. The order of the operations within a day is not read (a move has no
   time): fish that leave a unit on the day held fish come into it are held too (over-warned, never under-warned).
   When fish are held only because they shared a unit, every place says so by name: "These fish shared T-03 with
-  B-2026-001 (treated in T-01)."; fish held in a unit they were not treated in: "These fish were treated in T-01."
+  B-2026-001 (treated in T-01)."; when the batch they shared it with was itself only held by sharing, the sentence
+  names it and the ORIGINAL treated batch and tank as the source, and never says a batch was treated, or in a tank,
+  that was not: "These fish shared T-03 with B-2026-002, which waits with B-2026-001 (treated in T-01)." (the
+  guard's harvest question the same way: "… the fish harvested shared T-03 with B-2026-002, which waits with
+  B-2026-001 …"); fish held in a unit they were not treated in: "These fish were treated in T-01."
   (the unit's line, the harvest warning, its stored acknowledgement, the critical log line, `check_withdrawal`).
   A unit's line says each cause once per batch with its latest end; while the exposed fish of a cause are in the
   unit their line stands for every fish in it. **Cleaner fish** (the owner, 16.11.2026; `check.held_apart`): a held
@@ -2157,16 +2161,29 @@ said when it is made, and the move is allowed). A transfer, a split, a grading o
 with fish that are not held, in either direction, is asked about by the same box: "B-2026-002 in T-02 will wait for
 the harvest with B-2026-001, the held fish it is combined with in T-02: harvest from 18.11.2026. …" ("… and the end
 of that withdrawal is not known." for an unknown end), once for every lot the move newly holds, also the lots fish
-went on to when the move is dated in the past. Going on stores a handling acknowledgement on the operation (the batch
-that now waits, the end, the withdrawal's source, the sentence) and a critical log line. It is asked when the
+went on to when the move is dated in the past. **Fish that were held already, to an earlier end, are told too** when
+the move combines them with a longer or an unknown hold, in either direction (they now wait longer: a batch held
+until tomorrow moved in beside fish held for two months); fish combined with a hold that ends no later than their
+own are not asked about. Fish moved or stocked INTO the treated tank dated on a course day are exposed themselves,
+and the sentence names no other batch: "B-2026-002 in T-01 will wait for the harvest with the fish treated in T-01:
+…". **A void asks the same way** when it combines held fish with fish that are not (the void of the move that had
+emptied a tank held fish then came into, of the cull that had emptied the held tank). Going on stores a handling
+acknowledgement on the operation (the batch
+that now waits, the end, the withdrawal's source, the sentence) and a critical log line; `check_stock` knows such a
+row on a transfer, a grading or a stocking (a stocking is not a handling; a withdrawal row on any other operation
+is still reported). It is asked when the
 dialog is sent, not when it opens: the tanks are chosen in it (`farm/tests/test_withdrawal_combined.py`).
 **Locks.** A write locks every batch whose withdrawal it can change (`farm.stock.services.lock_fish`, which every
 stock operation, void, treatment, feeding, sample and medicine row goes through): its own fish, the batches its
 fish can have reached since its day (a move joins fish), and the batches the withdrawals of its fish hold; the
 batches in one statement in primary-key order, then the units. So a move of held fish into T-02 and a harvest, at the
 same moment, of fish that went on from T-02 to T-03 take turns and the later sees the earlier
-(`farm/tests/test_withdrawal_locks.py`: two real transactions, both orders). It is bounded by the day of the write
-and the holds in force, not by the history.
+(`farm/tests/test_withdrawal_locks.py`: two real transactions, both orders; also where the harvested batch was
+never in a unit of the move and the lock in common comes from the reach alone, with the two mutants that show the
+unseen harvest when the reach is cut out). It is bounded by the day of the write and the holds in force, not by the
+history. A write of reference data (a feed's type, a species' assumed temperature, a sampling point, the ceiling) is
+not a dated record: its guard reads from the day it reaches the fish, however long ago, so every recorded harvest it
+puts inside a withdrawal is asked about; a dated record's guard reads from the first day of the correction window.
 **What blocks a delete** (`held_reached`): a unit, a loop or a species waits while a lot held today would be moved
 by it: the unit holds such a lot; the withdrawal's batch was exposed in it (without the unit the course reached
 nobody); or, for a degree-day withdrawal, its batch was in the unit since the course's last day (its water counts for

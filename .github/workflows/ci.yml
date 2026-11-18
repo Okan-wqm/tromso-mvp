@@ -2,15 +2,26 @@
 #   python    the browser build (static/js, which `check` asks for), then scripts/test.sh with CHECKS=1: the project
 #             checks (the linter first: ruff, errors only, ruff.toml), in the test runner's image
 #             (scripts/testrunner/image.sh) on a TimescaleDB server of its own, then
-#             the catalogs must be unchanged. On a pull request that is all (SUITE=0, minutes); the whole suite (an
-#             hour or more on a hosted runner) runs on a push to main, nightly and by hand
+#             the catalogs must be unchanged. On a pull request that is all (SUITE=0, minutes); the whole suite
+#             runs on a push to main, nightly and by hand
 #   frontend  npm ci, the Tailwind build checked against the committed static/css/tw.css, the browser build (tsc, Tailwind)
 #             and the TypeScript tests (npm test)
 #   rust      sensors-ingest: rustfmt, clippy, the tests against the real schema and a broker, cargo deny, THIRD_PARTY
 #   chemcore  chemcore/scripts/test.sh in the chemcore-tools stage of docker/testrunner.Dockerfile
 #   security  pip-audit, the Python licence gate, npm audit
-# No secret is used: the database passwords are throwaway values that live only inside a job, and the layer cache is
-# GitHub's own (the job's token, nothing configured).
+# No secret is used: the database passwords are throwaway values that live only inside a job.
+#
+# The jobs run on the repository's own runner (scripts/ci-runner: one container on the owner's machine, labels
+# self-hosted, linux, x64, farm), one at a time, not on GitHub's hosted machines. That machine is not new for every job
+# and it is shared with the development setup, so:
+#   - a job never runs for Dependabot or for a pull request from another repository (every job's `if`): the runner runs
+#     what the workflow and the branch say, and only the owner's own pushes may say it there;
+#   - the runner empties the checkout before and after every job and removes what a job left in Docker
+#     (scripts/ci-runner/job-clean.sh, a hook of the runner, in no workflow's hands);
+#   - everything a job names in Docker starts with farm-ci-job- (containers, networks, volumes) or farm-ci- (images, the
+#     image builder), nothing is published on a fixed port of the machine, and nothing is pruned but by those names;
+#   - there is no sudo, and nothing is cached on GitHub: npm's, pip's and cargo's files, Node, Python, the Rust
+#     toolchain and the image builder's layers stay on the runner's volumes.
 name: CI
 
 on:
@@ -19,7 +30,7 @@ on:
   pull_request:
     branches: [main]
   # Nightly at 06:30 UTC: after 06:00, as monitoring's golden-card tests (G-03) fail before 06:00 UTC until their fix
-  # lands on main.
+  # lands on main. It runs when the runner is up (scripts/ci-runner/up.sh); a job nobody takes waits a day, then fails.
   schedule:
     - cron: "30 6 * * *"
   workflow_dispatch:
@@ -40,12 +51,29 @@ env:
   # account's artifact storage ("Artifact storage quota has been hit"). A job keeps its image build's record only when
   # that build failed, for 3 days (the step "Build record of the failed image build"); the job summary stays.
   DOCKER_BUILD_RECORD_UPLOAD: "false"
+  # The image builder of this CI (docker/setup-buildx-action in three jobs): a BuildKit container that lives for the
+  # job, its layers kept between jobs in the volume buildx_buildkit_farm-ci0_state, which BuildKit itself keeps
+  # under this size. The machine's own build cache, the developers', is neither read nor written.
+  BUILDER: farm-ci
+  BUILDER_CONFIG: |
+    [worker.oci]
+      gc = true
+      maxUsedSpace = "12GB"
+  # The machine is shared: the builder compiles (the chemistry core, in the image) on at most 4 processors and 4 GB.
+  BUILDER_LIMITS: |
+    cpu-period=100000
+    cpu-quota=400000
+    memory=4g
 
 jobs:
   # One job on every event, only SUITE differs: 0 on a pull request (the checks), 1 otherwise (the checks and the suite).
   python:
     name: ${{ github.event_name == 'pull_request' && 'Django checks' || 'Django checks and the whole suite' }}
-    runs-on: ubuntu-24.04
+    # Never Dependabot's code, never another repository's, on the owner's machine (the same line in every job).
+    if: >-
+      github.actor != 'dependabot[bot]' && github.event.pull_request.user.login != 'dependabot[bot]'
+      && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, linux, x64, farm]
     timeout-minutes: ${{ github.event_name == 'pull_request' && 30 || 150 }}
     env:
       SUITE: ${{ github.event_name == 'pull_request' && '0' || '1' }}
@@ -59,18 +87,24 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
       - name: Browser build (npm ci, npm run build)
         run: |
           npm ci
           npm run build
 
       # The image scripts/test.sh runs the tests in, as scripts/testrunner/image.sh defines it (Dockerfile, stage,
-      # context, tag), built here with its layers cached between runs, so the script finds it and builds nothing.
+      # context, the hash in its tag), built here on every run under a name of CI's own (farm-ci-testrunner): the
+      # developers' image of the same hash, on the same machine, is neither trusted nor replaced.
       - name: Test runner image (scripts/testrunner/image.sh)
         id: image
-        run: sh scripts/testrunner/image.sh >> "$GITHUB_OUTPUT"
+        run: sh scripts/testrunner/image.sh | sed 's/^tag=[^:]*:/tag=farm-ci-testrunner:/' >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          name: ${{ env.BUILDER }}
+          keep-state: true
+          cache-binary: false
+          buildkitd-config-inline: ${{ env.BUILDER_CONFIG }}
+          driver-opts: ${{ env.BUILDER_LIMITS }}
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         id: build
         with:
@@ -80,8 +114,6 @@ jobs:
           tags: ${{ steps.image.outputs.tag }}
           load: true
           push: false
-          cache-from: type=gha,scope=testrunner
-          cache-to: type=gha,mode=max,scope=testrunner
       # Only when the build failed (the workflow's DOCKER_BUILD_RECORD_UPLOAD): its record (BuildKit's logs and trace, for
       # Docker Desktop's Builds view), kept 3 days. Neither step can fail the job or hide the build's own failure.
       - name: Build record of the failed image build
@@ -96,15 +128,24 @@ jobs:
           path: ${{ runner.temp }}/build-record.dockerbuild
           retention-days: 3
           if-no-files-found: ignore
+      # A hosted machine was thrown away with its images; here each new hash would leave an image (some 400 MB) for
+      # good. Only CI's own tags of that one name, never the one just built, and never by force.
+      - name: Older images of this CI (farm-ci-testrunner, by name)
+        env:
+          IMAGE: ${{ steps.image.outputs.tag }}
+        run: |
+          docker images --format '{{.Repository}}:{{.Tag}}' farm-ci-testrunner | grep -vxF "$IMAGE" | xargs -r docker rmi || true
 
       # The database server is the one scripts/test.sh starts (timescale/timescaledb:2.17.2-pg17, data in memory, the
       # job scheduler off, fsync off): a GitHub service container cannot be given those server options, and the
-      # parallel run needs the scheduler off (README, Tests).
+      # parallel run needs the scheduler off (README, Tests). Its containers and network are named farm-ci-job-*.
       - name: Project checks, and the whole suite unless SUITE=0 (scripts/test.sh)
         env:
           CHECKS: "1"
-          WORKERS: "4"
+          WORKERS: "3"
           DB_TMPFS: 4g
+          TEST_NAME_PREFIX: farm-ci-job
+          TEST_IMAGE: ${{ steps.image.outputs.tag }}
         run: |
           TEST_DB_PASSWORD=$(openssl rand -hex 16)
           export TEST_DB_PASSWORD
@@ -116,10 +157,18 @@ jobs:
             echo "::error::locale/*/django.po are stale: run manage.py update_catalogs and commit the result"
             exit 1
           fi
+      # Also after a failure or a cancellation: the containers, networks and volumes this job named (farm-ci-job-*).
+      - name: Nothing of this job is left in Docker
+        if: always()
+        working-directory: .
+        run: /opt/farm-ci/job-clean.sh docker
 
   frontend:
     name: Browser code (tsc build and TypeScript tests)
-    runs-on: ubuntu-24.04
+    if: >-
+      github.actor != 'dependabot[bot]' && github.event.pull_request.user.login != 'dependabot[bot]'
+      && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, linux, x64, farm]
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -128,7 +177,6 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
       - run: npm ci
       # static/css/tw.css is committed: it must be what frontend/tailwind.css and the templates build now (checked before
       # the build below writes it again).
@@ -136,20 +184,23 @@ jobs:
         run: npm run check:css
       - name: Build (tsc -p tsconfig.json, then the Tailwind build)
         run: npm run build
-      # The designer's browser test drives the runner's own Chrome (/usr/bin/google-chrome). Ubuntu 24.04 limits
-      # unprivileged user namespaces, which Chrome's sandbox needs.
-      - name: Allow Chrome's sandbox
-        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      # The browser tests drive the runner's own Chrome (/usr/bin/google-chrome, in the runner's image). Nothing is set
+      # on the machine for it: the hosted Ubuntu needed a kernel setting changed for Chrome, this runner's kernel has no
+      # such setting, and a job has no sudo here.
       - name: TypeScript tests (npm test)
         run: npm test
 
   rust:
     name: sensors-ingest (fmt, clippy, tests, deny)
-    runs-on: ubuntu-24.04
+    if: >-
+      github.actor != 'dependabot[bot]' && github.event.pull_request.user.login != 'dependabot[bot]'
+      && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, linux, x64, farm]
     timeout-minutes: 45
     defaults:
       run:
         working-directory: sensors-ingest
+    # On a port Docker picks (job.services.db.ports): the machine's own ports belong to the development setup.
     services:
       db:
         image: timescale/timescaledb:2.17.2-pg17
@@ -157,7 +208,7 @@ jobs:
           POSTGRES_USER: balik
           POSTGRES_PASSWORD: ci-throwaway-not-a-secret
           POSTGRES_DB: sensors_ingest_test
-        ports: ["5432:5432"]
+        ports: ["5432"]
         options: >-
           --health-cmd "pg_isready -h 127.0.0.1 -U balik"
           --health-interval 5s --health-timeout 5s --health-retries 30
@@ -168,14 +219,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # The toolchains, cargo's registry and the build folder are on the runner's cache volume (FARM_CI_CACHE, set by
+      # the runner's image), kept between jobs as a developer's are; the checkout itself is emptied after every job.
       - name: Toolchain of rust-toolchain.toml
         run: |
           channel=$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)
           rustup toolchain install "$channel" --profile minimal --component clippy --component rustfmt
           rustc --version
-      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
-        with:
-          workspaces: sensors-ingest
+          echo "CARGO_TARGET_DIR=$FARM_CI_CACHE/target/sensors-ingest" >> "$GITHUB_ENV"
       - run: cargo fmt --check
       - run: cargo clippy --locked --all-targets -- -D warnings
 
@@ -184,8 +235,14 @@ jobs:
       - name: Test runner image (scripts/testrunner/image.sh)
         id: image
         working-directory: .
-        run: sh scripts/testrunner/image.sh >> "$GITHUB_OUTPUT"
+        run: sh scripts/testrunner/image.sh | sed 's/^tag=[^:]*:/tag=farm-ci-testrunner:/' >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          name: ${{ env.BUILDER }}
+          keep-state: true
+          cache-binary: false
+          buildkitd-config-inline: ${{ env.BUILDER_CONFIG }}
+          driver-opts: ${{ env.BUILDER_LIMITS }}
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         id: build
         with:
@@ -195,8 +252,6 @@ jobs:
           tags: ${{ steps.image.outputs.tag }}
           load: true
           push: false
-          # the python job writes this cache; reading it only, two jobs never race to write it
-          cache-from: type=gha,scope=testrunner
       # as in the python job: the record of a failed build only, 3 days, never failing the job
       - name: Build record of the failed image build
         if: failure() && steps.build.outcome == 'failure'
@@ -214,42 +269,53 @@ jobs:
         working-directory: .
         env:
           IMAGE: ${{ steps.image.outputs.tag }}
+          DB_PORT: ${{ job.services.db.ports['5432'] }}
         run: |
-          docker run --rm --network host -v "$PWD:/app" -w /app -e DB_HOST=127.0.0.1 -e DB_PORT=5432 \
+          docker run --rm --name farm-ci-job-migrate --network host -v "$PWD:/app" -w /app -e DB_HOST=127.0.0.1 -e DB_PORT \
             -e DB_NAME=sensors_ingest_test -e DB_USER=balik -e DB_PASSWORD "$IMAGE" python manage.py migrate --no-input
+      # No port of the machine is published (127.0.0.1:1883 is the development broker's there): the tests reach the
+      # broker at its own address on Docker's network, port 1883.
       - name: Broker (Mosquitto, users ingest and dev)
         working-directory: .
         run: |
           MOSQ=eclipse-mosquitto:2.0.20@sha256:21421af7b32bf9ce508e9090c8eb13bb81f410ca778dc205506180a6f862d0eb
-          docker volume create si-test-broker-auth
-          docker run --rm -v si-test-broker-auth:/mosquitto/auth "$MOSQ" sh -c '
+          docker volume create farm-ci-job-broker-auth
+          docker run --rm --name farm-ci-job-broker-setup -v farm-ci-job-broker-auth:/mosquitto/auth "$MOSQ" sh -c '
             mosquitto_passwd -c -b /mosquitto/auth/passwd ingest ingest-pw 2>/dev/null
             mosquitto_passwd -b /mosquitto/auth/passwd dev dev-pw 2>/dev/null
             printf "user ingest\ntopic read #\nuser dev\ntopic write #\n" > /mosquitto/auth/acl
             chown -R mosquitto:mosquitto /mosquitto/auth && chmod 0700 /mosquitto/auth/passwd /mosquitto/auth/acl'
-          docker run -d --name broker -p 127.0.0.1:1883:1883 -v "$PWD/sensors-ingest/mosquitto:/mosquitto/config:ro" \
-            -v si-test-broker-auth:/mosquitto/auth --tmpfs /mosquitto/data --entrypoint sh "$MOSQ" \
+          docker run -d --name farm-ci-job-broker -v "$PWD/sensors-ingest/mosquitto:/mosquitto/config:ro" \
+            -v farm-ci-job-broker-auth:/mosquitto/auth --tmpfs /mosquitto/data --entrypoint sh "$MOSQ" \
             /mosquitto/config/entrypoint.sh
+          broker=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' farm-ci-job-broker)
+          [ -n "$broker" ] || { echo "::error::the broker has no address"; exit 1; }
           for _ in $(seq 1 30); do
-            (exec 3<>/dev/tcp/127.0.0.1/1883) 2>/dev/null && break
+            (exec 3<>"/dev/tcp/$broker/1883") 2>/dev/null && break
             sleep 1
           done
+          echo "TEST_MQTT_HOST=$broker" >> "$GITHUB_ENV"
       - name: cargo test (unit, property, database and broker tests)
         env:
-          TEST_DATABASE_URL: host=127.0.0.1 port=5432 user=balik password=ci-throwaway-not-a-secret dbname=sensors_ingest_test
-          TEST_MQTT_HOST: 127.0.0.1
+          TEST_DATABASE_URL: host=127.0.0.1 port=${{ job.services.db.ports['5432'] }} user=balik password=ci-throwaway-not-a-secret dbname=sensors_ingest_test
           REQUIRE_DB: "1"
         run: cargo test --locked --all-targets
 
+      # cargo's programs stay on the runner between jobs: the version is asked for, not only the program.
       - name: cargo deny (licences, bans, sources, advisories)
         run: |
-          command -v cargo-deny >/dev/null || cargo install --locked cargo-deny@0.20.2
+          [ "$(cargo deny --version 2>/dev/null)" = "cargo-deny 0.20.2" ] || cargo install --locked --force cargo-deny@0.20.2
           cargo deny --locked check
       - name: THIRD_PARTY matches Cargo.lock
         run: |
           cargo metadata --format-version 1 --locked --filter-platform x86_64-unknown-linux-gnu > "$RUNNER_TEMP/meta.json"
           python3 -I tests/third_party.py "$RUNNER_TEMP/meta.json" > "$RUNNER_TEMP/THIRD_PARTY"
           diff -u THIRD_PARTY "$RUNNER_TEMP/THIRD_PARTY" || { echo "::error::sensors-ingest/THIRD_PARTY is out of date"; exit 1; }
+      # Also after a failure or a cancellation: the containers, networks and volumes this job named (farm-ci-job-*).
+      - name: Nothing of this job is left in Docker
+        if: always()
+        working-directory: .
+        run: /opt/farm-ci/job-clean.sh docker
 
   # The water-chemistry core's gates, chemcore/scripts/test.sh (rustfmt, clippy, cargo test, libm the chemistry's only
   # dependency, no WebAssembly, cargo deny with advisories, THIRD_PARTY, docker/requirements.lock naming the pins of
@@ -258,26 +324,31 @@ jobs:
   # holds the wheel.
   chemcore:
     name: chemcore (chemcore/scripts/test.sh)
-    runs-on: ubuntu-24.04
+    if: >-
+      github.actor != 'dependabot[bot]' && github.event.pull_request.user.login != 'dependabot[bot]'
+      && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, linux, x64, farm]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          name: ${{ env.BUILDER }}
+          keep-state: true
+          cache-binary: false
+          buildkitd-config-inline: ${{ env.BUILDER_CONFIG }}
+          driver-opts: ${{ env.BUILDER_LIMITS }}
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         id: build
         with:
           context: .
           file: docker/testrunner.Dockerfile
           target: chemcore-tools
-          tags: chemcore-tools:ci
+          tags: farm-ci-chemcore-tools:ci
           load: true
           push: false
-          cache-from: |
-            type=gha,scope=chemcore-tools
-            type=gha,scope=testrunner
-          cache-to: type=gha,mode=max,scope=chemcore-tools
       # as in the python job: the record of a failed build only, 3 days, never failing the job
       - name: Build record of the failed image build
         if: failure() && steps.build.outcome == 'failure'
@@ -292,11 +363,21 @@ jobs:
           retention-days: 3
           if-no-files-found: ignore
       - name: The gates (chemcore/scripts/test.sh)
-        run: docker run --rm -v "$PWD:/repo" -w /repo chemcore-tools:ci sh chemcore/scripts/test.sh
+        run: >-
+          docker run --rm --name farm-ci-job-chemcore --cpus 4 -e CARGO_BUILD_JOBS=4 -v "$PWD:/repo" -w /repo farm-ci-chemcore-tools:ci
+          sh chemcore/scripts/test.sh
+      # Also after a failure or a cancellation: the containers, networks and volumes this job named (farm-ci-job-*).
+      - name: Nothing of this job is left in Docker
+        if: always()
+        working-directory: .
+        run: /opt/farm-ci/job-clean.sh docker
 
   security:
     name: Advisories and licences
-    runs-on: ubuntu-24.04
+    if: >-
+      github.actor != 'dependabot[bot]' && github.event.pull_request.user.login != 'dependabot[bot]'
+      && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, linux, x64, farm]
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -305,10 +386,6 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
-          cache-dependency-path: |
-            requirements.txt
-            scripts/testrunner/requirements.txt
       - name: Tools (a virtual environment of their own)
         run: |
           python -m venv "$RUNNER_TEMP/tools"
@@ -339,6 +416,5 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
       - name: npm audit (high and critical)
         run: npm audit --omit=dev --audit-level=high

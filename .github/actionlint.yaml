@@ -1,0 +1,4 @@
+# actionlint (README, CI and dependency updates): the label of the repository's own runner (scripts/ci-runner).
+self-hosted-runner:
+  labels:
+    - farm

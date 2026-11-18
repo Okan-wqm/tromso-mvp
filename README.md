@@ -1509,6 +1509,27 @@ without values it shows its defaults.
     P, as before.
   - *A CO₂ curve that bends back says so* (R9): with a phosphate the judged CO₂ curve bends back near an alkalinity of
     0; the chart's note `co2.bends_back` says it exactly when the drawn curve does (`geometry::bends_back`).
+- **After the verification of those fixes** (2026-11-18, the last part of the same REVIEW.md):
+  - *A water the core refuses is never silent* (V-A). A judged value the core refuses to work out (a TAN sample's NH₃
+    where the water's conductivity, its own or the point's latest fresh one, is past the Davies range) is "Cannot be
+    evaluated" (`Status.UNEVALUATED`, between warning and OK) where the fish have a limit for it: the unit is never OK
+    behind it; the water page, the monitoring card and the overview's "Needs attention" say "… cannot be evaluated:
+    <reason>" (`messages.unevaluated`), and the alarms raise a warning for the unit (below, Alarms). No fallback basis.
+  - *A value is typed only when the form says so* (V-B; `CalculatorForm._loaded`). A value equal to the one carried
+    beside the field (`ph_loaded`, `phosphate_loaded`) is loaded, and stays loaded on its stored scale when "Values
+    from" is changed to a unit that has none; a different one is typed. An address that carries none is refused a scale
+    or unit where the unit now offers another value: a loaded pH or phosphate is never converted twice.
+  - *A salt-added unit makes its loop salt-added for the pH-scale rule* (V-C; `read.scale_origin`): the loop's sample,
+    its row of a round and the calculator loaded from it refuse a seawater scale. `common_origin`, which gives the
+    constants, is unchanged, so no worked-out number moves.
+  - *One upper bound as PO₄* (V-F): 306.61 (`parameters.PO4_HIGH`, the last two-decimal PO₄ at most 100 as P) at the
+    sample, the round and the calculator, in one sentence; the check now holds the entry and the stored P together
+    within the rounding (farm 0046).
+  - *A sample's NH₃ catches what the gate catches* (V-G): an arithmetic error of the core is said, never a failed page.
+  - Left as the verification says: V-D (farm 0045 and 0046 add their check validated, an exclusive lock on
+    `water_measurements` while each chunk is scanned: land with the server stopped; going back past 0045 keeps the P
+    and loses the PO₄ entry), V-E (the phosphate sentence is one per list, above it), V-H (the chrono advisory of
+    `sensors-ingest`: a dated ignore on main, not on this branch).
 - **The optional phosphate** (PO₄-P, mg/L as P; the independent check's hypothesis 12a, owner 2026-11-10;
   `chemcore/findings/phosphate.md`): phosphate is part of the alkalinity a titration measures, [HPO₄²⁻] + 2 [PO₄³⁻] −
   [H₃PO₄] (Dickson 1981's definition as Dickson, Sabine & Christian 2007 give it, ch. 2), with Millero's (1995)

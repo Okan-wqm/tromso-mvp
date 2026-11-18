@@ -358,3 +358,22 @@ class CardsTests(MonitoringCase):
         self.assertIn('Fasting before the harvest', card.lines[0]['why'])
         self.assertEqual(card.state.key, 'note')
         self.assertTrue(any('Fasting before the harvest' in reason for reason in card.state.reasons))
+
+
+class RefusedWaterCardTests(MonitoringCase):
+    """A stocked unit whose judged NH₃ the core refuses to work out (a conductivity past the Davies range) is never an
+    OK card: a warning that says the value cannot be evaluated, with the core's reason (verification V-A)."""
+
+    def test_the_card_is_a_warning_and_says_the_value_cannot_be_evaluated(self):
+        self.limit('nh3_n_mg_l', critical_high='0.025', warning_high='0.0125')
+        self.limit('oxygen_mg_l', critical_low=6, warning_low=7)
+        self.limit('temperature_c', warning_high=15, critical_high=18)
+        self.sample(self.t2, hours=1, temperature_c='12.0', oxygen_mg_l='9', ph='9.00', salinity_ppt='0.0',
+                    alkalinity_mg_l='80', tan_mg_l='5.000', conductivity_25_us_cm='40000')
+        units = read.units_for(read.Params())
+        cards = read.cards(units, self.reader, chosen({unit.pk: 'simple' for unit in units}), 'stocked')
+        state = {card.unit.code: card.state for card in cards}['T-02']
+        self.assertEqual(state.key, 'warning')
+        self.assertEqual([reason for reason in state.reasons if 'cannot be evaluated' in reason], [
+            'Un-ionised ammonia (mg/L NH₃ as N) cannot be evaluated: ionic strength above 0.5: outside the range of '
+            'the Davies equation (a conductivity in mS/cm, or a sea water without its salinity?).'])

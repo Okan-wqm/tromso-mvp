@@ -183,7 +183,7 @@ class Case3And4SharedUnitTests(LotsTestCase):
         self.until = self.day(-2)
 
     def test_case_3_treated_fish_moved_in_beside_an_untreated_batch_hold_the_unit_and_the_cause_is_named(self):
-        self.move(self.a, self.t1, self.t2, 4)
+        self.move(self.a, self.t1, self.t2, 4, combines=[(self.b, 'T-02')])
         self.assertEqual(self.ends(self.t2), [(self.a.code, self.until)])
         self.assertIn('These fish were treated in T-01.', withdrawal.describe(self.held(self.t2)[0]))
         for batch in (self.a, self.b):
@@ -194,7 +194,7 @@ class Case3And4SharedUnitTests(LotsTestCase):
     def test_case_4_the_owners_example_untreated_fish_that_shared_the_held_unit_stay_held_after_they_move_on(self):
         """Tank A treated and held; 500 untreated fish of tank B moved into A; those 500 moved on to tank C before
         the end: tank C is held to the same end (the owner, 14.11.2026)."""
-        self.move(self.b, self.t2, self.t1, 4)                                      # 500 of B into the held T-01
+        self.move(self.b, self.t2, self.t1, 4, combines=[(self.b, 'T-01')])   # 500 of B into the held T-01
         self.move(self.b, self.t1, self.t3, 2)                                      # and on to the empty T-03
         self.assertEqual(self.ends(self.t3), [(self.b.code, self.until)])
         self.assertEqual(self.ends(self.t3, self.day(-1)), [(self.b.code, self.until)])     # to the same end
@@ -224,7 +224,7 @@ class Case3And4SharedUnitTests(LotsTestCase):
         self.assertEqual(self.t2.withdrawal_blockers(), [])
 
     def test_the_dialog_of_the_unit_they_moved_on_to_warns_and_takes_its_box(self):
-        self.move(self.b, self.t2, self.t1, 4)
+        self.move(self.b, self.t2, self.t1, 4, combines=[(self.b, 'T-01')])
         self.move(self.b, self.t1, self.t3, 2)
         shown = self.client.get(reverse('farm:stock_harvest', args=[self.t3.pk]))
         self.assertContains(shown, f'medicine withdrawal of {self.b.code}')
@@ -233,7 +233,7 @@ class Case3And4SharedUnitTests(LotsTestCase):
         self.assertNotContains(shown, 'No medicine withdrawal in force.')
 
     def test_v02_held_fish_that_pass_through_a_unit_hold_its_fish_after_the_day_too(self):
-        self.move(self.a, self.t1, self.t2, 4)                                      # into T-02 beside B
+        self.move(self.a, self.t1, self.t2, 4, combines=[(self.b, 'T-02')])   # into T-02 beside B
         self.move(self.a, self.t2, self.t3, 4)                                      # and out again the same day
         self.assertEqual(self.ends(self.t2, self.day(4)), [(self.a.code, self.until)])
         self.assertEqual(self.ends(self.t2), [(self.b.code, self.until)])           # the day after, and today
@@ -242,7 +242,7 @@ class Case3And4SharedUnitTests(LotsTestCase):
         self.assertEqual(self.ends(self.t3), [(self.a.code, self.until)])
 
     def test_v01_fish_that_pass_through_the_bathed_unit_on_the_bath_day_are_held_and_not_their_batch(self):
-        self.move(self.b, self.t2, self.t1, 6)                                      # 500 of B into T-01 on the bath day
+        self.move(self.b, self.t2, self.t1, 6, combines=[(self.b, 'T-01')])   # 500 of B into T-01 on the bath day
         self.move(self.b, self.t1, self.t3, 6)                                      # and on to T-03 the same day
         self.assertEqual(self.ends(self.t3), [(self.b.code, self.until)])           # they were bathed
         self.assertEqual(self.ends(self.t2), [])                                    # the 2,500 that never moved
@@ -250,7 +250,7 @@ class Case3And4SharedUnitTests(LotsTestCase):
         self.assertIn('2 of 3 units with fish are under a medicine withdrawal.', self.command())
 
     def test_a_harvest_on_the_last_day_of_the_lot_is_inside(self):
-        self.move(self.b, self.t2, self.t1, 4)
+        self.move(self.b, self.t2, self.t1, 4, combines=[(self.b, 'T-01')])
         self.move(self.b, self.t1, self.t3, 2)
         operation = self.harvest_of(self.t3, self.b, count=500, everything=True)    # T-03 is empty after it
         [found] = withdrawal.harvests_inside()
@@ -281,7 +281,7 @@ class TwoTreatmentsMeetTests(LotsTestCase):
         self.treat(self.medicine(name='Alpha Max', days=14), 5, 5, units=[self.t2])
         self.short, self.long = self.day(-2), self.day(-10)
         self.move(self.a, self.t1, self.t3, 3)
-        self.move(self.b, self.t2, self.t3, 3)
+        self.move(self.b, self.t2, self.t3, 3, combines=[(self.a, 'T-03')])    # A now waits for B's longer end
 
     def test_the_later_end_decides_for_the_unit_and_both_causes_are_said(self):
         self.assertCountEqual(self.ends(self.t3), [(self.a.code, self.short), (self.b.code, self.long)])
@@ -302,7 +302,7 @@ class Case5And6UnknownEndTests(LotsTestCase):
         b = self.stock(self.t2, count=3000, days_ago=9)
         self.move(self.a, self.t1, self.t3, 7, 300)                                 # split off before the course
         self.treat(self.medicine(name='No row'), 5, 5)
-        self.move(self.a, self.t1, self.t2, 3)                                      # after it, beside B
+        self.move(self.a, self.t1, self.t2, 3, combines=[(b, 'T-02')])   # after it, beside B
         self.move(b, self.t2, self.t4, 2)                                           # B's fish move on
         self.assertEqual(self.ends(self.t1), [(self.a.code, None)])
         self.assertEqual(self.ends(self.t2), [(self.a.code, None)])
@@ -318,7 +318,7 @@ class Case5And6UnknownEndTests(LotsTestCase):
         self.move(self.a, self.t1, self.t3, 7, 300)                                 # split off before the feeding
         feed = Feed.objects.create(name='Medisinfôr', code='MED-1', feed_type='medicated')
         feeding_services.record_feeding(self.user, unit=self.t1, day=self.day(5), feed=feed, amount_kg=Decimal('2'))
-        self.move(self.a, self.t1, self.t2, 3)
+        self.move(self.a, self.t1, self.t2, 3, combines=[(b, 'T-02')])
         self.move(b, self.t2, self.t4, 2)
         self.assertEqual(self.ends(self.t1), [(self.a.code, None)])
         self.assertEqual(self.ends(self.t2), [(self.a.code, None)])
@@ -340,7 +340,7 @@ class Case7And8TheGuardTests(LotsTestCase):
         self.b = self.stock(self.t2, count=3000, days_ago=9)
         self.treatment = self.treat(self.bath, 6, 6)
         self.until = self.day(-2)
-        self.move_in = self.move(self.b, self.t2, self.t1, 4)
+        self.move_in = self.move(self.b, self.t2, self.t1, 4, combines=[(self.b, 'T-01')])
         self.move_on = self.move(self.b, self.t1, self.t3, 2)
 
     def test_case_7_voiding_the_course_asks_about_every_lot_it_frees_by_batch_and_unit(self):
@@ -402,7 +402,7 @@ class Case7And8TheGuardTests(LotsTestCase):
         self.assertEqual(self.ends(self.t4), [])
         # Held fish in beside them: nobody is released; that B now waits with them is said at the move (the owner's
         # decision 8, farm/tests/test_withdrawal_combined.py) and ticked by `move`.
-        self.move(self.a, self.t1, self.t4, 0, 200)
+        self.move(self.a, self.t1, self.t4, 0, 200, combines=[(self.b, 'T-04')])
         self.assertFalse(WithdrawalAcknowledgement.objects.exists())
         self.assertEqual(HandlingAcknowledgement.objects.count(), asked + 1)
         self.assertEqual(HandlingAcknowledgement.objects.order_by('pk').last().batch, self.b)

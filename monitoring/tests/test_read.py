@@ -362,18 +362,46 @@ class CardsTests(MonitoringCase):
 
 class RefusedWaterCardTests(MonitoringCase):
     """A stocked unit whose judged NH₃ the core refuses to work out (a conductivity past the Davies range) is never an
-    OK card: a warning that says the value cannot be evaluated, with the core's reason (verification V-A)."""
+    OK card: it says the value cannot be evaluated, with the core's reason (verification V-A), as a warning where the
+    limits' basis is inside the limits, and beside the critical where the basis is past the critical limit (the
+    re-check's RC-3: the judged NH₃ is never below its basis, which needs no conductivity)."""
+    SAID = ('Un-ionised ammonia (mg/L NH₃ as N) cannot be evaluated: ionic strength above 0.5: outside the range of the '
+            'Davies equation (a conductivity in mS/cm, or a sea water without its salinity?).')
 
-    def test_the_card_is_a_warning_and_says_the_value_cannot_be_evaluated(self):
+    def state(self, **water):
         self.limit('nh3_n_mg_l', critical_high='0.025', warning_high='0.0125')
         self.limit('oxygen_mg_l', critical_low=6, warning_low=7)
         self.limit('temperature_c', warning_high=15, critical_high=18)
-        self.sample(self.t2, hours=1, temperature_c='12.0', oxygen_mg_l='9', ph='9.00', salinity_ppt='0.0',
-                    alkalinity_mg_l='80', tan_mg_l='5.000', conductivity_25_us_cm='40000')
+        self.sample(self.t2, hours=1, temperature_c='12.0', oxygen_mg_l='9', salinity_ppt='0.0', alkalinity_mg_l='80',
+                    conductivity_25_us_cm='40000', **water)
         units = read.units_for(read.Params())
         cards = read.cards(units, self.reader, chosen({unit.pk: 'simple' for unit in units}), 'stocked')
-        state = {card.unit.code: card.state for card in cards}['T-02']
+        return {card.unit.code: card.state for card in cards}['T-02']
+
+    def test_the_card_is_a_warning_and_says_the_value_cannot_be_evaluated(self):
+        state = self.state(ph='7.00', tan_mg_l='0.500')
         self.assertEqual(state.key, 'warning')
-        self.assertEqual([reason for reason in state.reasons if 'cannot be evaluated' in reason], [
-            'Un-ionised ammonia (mg/L NH₃ as N) cannot be evaluated: ionic strength above 0.5: outside the range of '
-            'the Davies equation (a conductivity in mS/cm, or a sea water without its salinity?).'])
+        self.assertEqual([reason for reason in state.reasons if 'cannot be evaluated' in reason], [self.SAID])
+
+    def test_past_the_critical_limit_on_its_basis_the_card_is_critical_and_says_it(self):
+        state = self.state(ph='9.00', tan_mg_l='5.000')
+        self.assertEqual(state.key, 'critical')
+        self.assertEqual([str(reason) for reason in state.reasons],
+                         ['Un-ionised ammonia (mg/L NH₃ as N): Critical', self.SAID])
+
+
+class RefusedWaterLadderTests(SimpleTestCase):
+    def test_a_value_less_reading_another_fresh_value_judged_critical_makes_the_card_critical(self):
+        """The re-check's RC-2 on the card: the unit's own NH₃ refused without a value, its loop's fresh value critical
+        (read.worst_fresh): the page says critical, the alarm raises it, and so does the card."""
+        loop = SimpleNamespace(name='Loop', kind='middle')
+        worse = reading('nh3_n_mg_l', 0.8924, status=Status.CRITICAL, point=loop)
+        own = reading('nh3_n_mg_l', 0, status=Status.CRITICAL)
+        own.value, own.worse, own.refused, own.limits = None, worse, 'ionic strength above 0.5', [object()]
+        state = card(water=(water(reading('temperature_c', 9), reading('oxygen_mg_l', 9), own),)).state
+        self.assertEqual(state.key, 'critical')
+        self.assertEqual(len(state.reasons), 2)
+        self.assertTrue(state.reasons[0].startswith('Un-ionised ammonia (mg/L NH₃ as N) ('), state.reasons)
+        self.assertTrue(str(state.reasons[0]).endswith(': Critical'), state.reasons)
+        self.assertEqual(str(state.reasons[1]),
+                         'Un-ionised ammonia (mg/L NH₃ as N) cannot be evaluated: ionic strength above 0.5.')

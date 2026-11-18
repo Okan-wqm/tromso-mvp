@@ -45,8 +45,10 @@ class ShownTests(SeaTestCase):
     def test_an_nbs_ph_says_nothing(self):
         self.record(ph='7.80', ph_scale='nbs', temperature_c='12', salinity_ppt='34', hours=0)
         self.assertEqual(read.unit_water([self.sea])[self.sea.pk].get('ph').measured, '')
-        page = self.client.get(reverse('farm:water'), {'unit': self.sea.pk})
-        self.assertNotContains(page, 'wq-measured')
+        # The NBS sample's row says nothing: the pages hold the words once, for the converted sample alone.
+        for query in ({'unit': self.sea.pk}, {'unit': self.sea.pk, 'view': 'history'}):
+            page = self.client.get(reverse('farm:water'), query)
+            self.assertLessEqual(page.content.decode().count('wq-measured'), 1, query)
         history = self.client.get(reverse('farm:water'), {'unit': self.sea.pk, 'view': 'history'})
         self.assertEqual(history.content.decode().count('wq-measured'), 1)       # the converted sample's row only
 

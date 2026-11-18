@@ -2118,19 +2118,26 @@ corrected temperature or a backdated transfer changes it at once:
 - **medicated feed** (a feed of the type Medicated) fed to a batch on a day no live in-feed treatment of the unit
   covers holds it with an unknown end until the treatment is recorded or the feeding voided; the feeding dialog
   says so when such a feeding is recorded.
-- **an unknown end holds for a number of days only** (the owner's decision of 17.11.2026). Three records make an
-  end unknown: a medicine with no withdrawal row for the species (give it one in Reference data › Medicines), a
-  medicated feeding no in-feed treatment covers (record the treatment under Health › Treatments, or void the
-  feeding), and degree-days that can be neither counted nor projected (record the water temperature, or set the
-  species' assumed temperature in Reference data › Species: the only way once the fish are gone). Such a withdrawal
+- **an end unknown for want of a rule holds for a number of days only** (the owner's decision of 17.11.2026). Two
+  records leave a withdrawal with nothing to end by: a medicine with no withdrawal row for the species (give it one
+  in Reference data › Medicines) and a medicated feeding no in-feed treatment covers (record the treatment under
+  Health › Treatments, or void the feeding). Such a withdrawal
   holds, and spreads as any other, to the day set in **Platform settings › An unknown withdrawal end holds for
   (days)** after the course's last day (180 until the platform owner sets another; 1 to 3650). After it the fish are
   not held: no warning, no delete block. The course is then listed under **Unresolved old courses** at the top of
   the Treatments page and by `check_withdrawal` ("Unresolved old course · B-2024-003: …"), each with what gives it
-  an end (`withdrawal.unresolved`). A change of the setting is a rule change: it goes through the withdrawal guard
-  (`guarded_ceiling`), which asks before a shorter one frees fish held today, the data layer refuses it anywhere
-  else (`farm/withdrawal_gate.py`), and it is logged with its old and new value
-  (`farm/tests/test_withdrawal_ceiling.py`). It also bounds what a reader loads for old courses of unknown end;
+  an end (`withdrawal.unresolved`). **The ceiling never applies to a degree-day withdrawal** (decision of
+  18.11.2026, following "degree-days stay as they are"): degree-days that are short, or can be neither counted nor
+  projected (no temperature lately and no assumed temperature, or a mean of 0 °C or below), hold the fish however
+  old the course is, exactly as before the ceiling existed, until the farm records the water temperature or sets
+  the species' assumed temperature in Reference data › Species (the only way once the fish are gone); the unit's
+  line, the harvest dialog, the Treatments page and `check_withdrawal` say both. A change of the setting is a rule
+  change: it goes through the withdrawal guard (`guarded_ceiling`), which asks before a shorter one frees fish held
+  today, and before a longer one holds fish again that had been let go or brings a harvest recorded meanwhile
+  inside a withdrawal (each answer stored and logged as critical; asked of every course without a rule, of any
+  age), the data layer refuses it anywhere else (`farm/withdrawal_gate.py`), and it is logged with its old and new
+  value (`farm/tests/test_withdrawal_ceiling.py`). It also bounds what a reader loads for old courses without a
+  rule (a course with a degree-day row is read for as long as it holds);
 
 A withdrawal holds the fish from the treatment's first day (or the medicated feeding's day) to the day before
 the first harvest day; a day before the treatment is not held.

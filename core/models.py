@@ -333,7 +333,8 @@ class PlatformSettings(AuditedModel):
       31 days until the owner sets another). A record older than that stays as it is.
     - Whether a second person must approve the acknowledgement of a medicine-withdrawal warning before what it was given
       for counts (F-164); other critical acknowledgements may join it.
-    - How long a medicine withdrawal whose END IS UNKNOWN holds fish (the owner's decision of 17.11.2026): the days
+    - How long a medicine withdrawal whose END IS UNKNOWN for want of a rule (no withdrawal row, medicated feed with no
+      treatment; never a degree-day withdrawal) holds fish (the owner's decision of 17.11.2026): the days
       after the course's last day (or the medicated feeding's day), 180 until the owner sets another. After them the
       fish are not held and the course is listed as unresolved (farm/health/withdrawal.py, rule 8). A change of it
       goes through the withdrawal guard, which asks when it would free fish held today.

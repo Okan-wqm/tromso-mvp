@@ -54,14 +54,18 @@ The rules, for a batch b and a treatment T with a medicine:
 6. **Medicated feed** (a feed of the type Medicated) that fed b on a day no live in-feed treatment of its unit
    covers holds b with an unknown end until such a treatment is recorded or the feeding is voided.
 7. A voided treatment holds nothing (it is not live).
-8. **An unknown end holds for a number of days only** (the owner's decision of 17.11.2026; the platform owner's
-   setting "An unknown withdrawal end holds for (days)", 180 until they set another): a withdrawal whose end is
-   unknown (rule 0: no row for the species; rule 5: degree-days with nothing to count or project at; rule 6: medicated
-   feed with no treatment) holds, and spreads as any other hold, to the day that many days after the course's last
-   day (the medicated feeding's day). From the next day (`gives_up`) the fish are NOT held: no warning, nothing
-   blocked. The course is then listed as an unresolved old course on the Treatments page and by `check_withdrawal`
-   (`unresolved`), with what must be entered to give it an end. A change of the setting is a change of a rule: it
-   goes through the guard (`guarded_ceiling`), which asks when it would free fish held today.
+8. **An end unknown for want of a rule holds for a number of days only** (the owner's decision 10 of 17.11.2026; the
+   platform owner's setting "An unknown withdrawal end holds for (days)", 180 until they set another): a withdrawal
+   that has no rule to end by (rule 0: no row for the species; rule 6: medicated feed with no treatment) holds, and
+   spreads as any other hold, to the day that many days after the course's last day (the medicated feeding's day).
+   From the next day (`gives_up`) the fish are NOT held: no warning, nothing blocked. The course is then listed as an
+   unresolved old course on the Treatments page and by `check_withdrawal` (`unresolved`), with what must be entered
+   to give it an end. **It never applies to a degree-day withdrawal** (decision 11 of 18.11.2026, following decision
+   9): degree-days that are short, or cannot be counted or projected for want of a temperature (rule 5: also a mean
+   of 0 °C or below), hold until the farm records the water temperature or sets the species' assumed temperature,
+   however old the course is; the unit's line and `describe` say both. A change of the setting is a change of a
+   rule: it goes through the guard (`guarded_ceiling`), which asks when a shorter one would free fish held today, and
+   when a longer one would hold fish again or bring a recorded harvest inside a withdrawal.
 
 `until` is the first day b may be harvested; a withdrawal holds from the treatment's first day (or the
 medicated feeding's day) to the day before `until`: a day before the treatment is not held. The health module
@@ -197,8 +201,9 @@ class Withdrawal:
 
     @property
     def ends(self):
-        """The first day it no longer holds: the first day the batch may be harvested, or for an unknown end the day
-        it gives up (rule 8); None only for an unknown end read without the setting."""
+        """The first day it no longer holds: the first day the batch may be harvested, or for an end unknown for want
+        of a rule the day it gives up (rule 8). None: no such day is known, it holds on: degree-days that cannot be
+        counted or projected (rule 5), which never give up."""
         return self.until if self.until is not None else self.gives_up
 
     def holds_on(self, day):
@@ -276,8 +281,9 @@ class Reader:
       more query.
     So a batch that only shared a unit with fish that were never held, or long after a hold ended, is not read. One
     grouped query (`spans`: its answer, when the caller has it) says who was where; the number of queries does not
-    grow with the units or the batches. A course of unknown end (no withdrawal row, an uncovered medicated feeding,
-    degree-days with no temperature) is in force for the days of rule 8, and its fish are read for as long.
+    grow with the units or the batches. A course with no rule to end by (no withdrawal row, an uncovered medicated
+    feeding) is in force for the days of rule 8, and its fish are read for as long; degree-days that cannot be counted
+    hold, and are read, until they can (a course with a degree-day row is never left out by its age).
     `first=LIFE`: from the first day that can matter to the batches asked (their earliest harvest, the earliest
     course that can have exposed them, the first day of the correction window): a write guard, which compares the
     harvests of their whole life and everything a record dated in the window can reach.
@@ -351,8 +357,11 @@ class Reader:
         return treatment.end_date + (longest + 1) * DAY <= self.first
 
     def _bounded(self, held):
-        """A withdrawal of unknown end with the day it gives up (rule 8); any other as it is."""
-        if held.until is not None:
+        """A withdrawal whose end is unknown for want of a rule (no withdrawal row for the species, a medicated
+        feeding no course covers) with the day it gives up (rule 8); any other as it is. A degree-day withdrawal never
+        gives up (the owner's decisions 9 and 11): its end is not reached yet, or cannot be counted until a temperature
+        is recorded, and its fish stay held as they always were."""
+        if held.until is not None or held.rule is not None:
             return held
         last = held.treatment.end_date if held.treatment is not None else held.feeding.date
         return replace(held, gives_up=last + (self.ceiling + 1) * DAY)
@@ -498,7 +507,7 @@ class Reader:
                 for batch_id in sorted(exposed, key=str):
                     held = self.of_treatment(treatment, batch_id)
                     # in force in the window, or after it; or a course the caller lists whatever its end
-                    if held.ends > self.first or treatment.pk in self.listed:
+                    if held.ends is None or held.ends > self.first or treatment.pk in self.listed:
                         found.append(held)
                         self._seeds.append(exposed[batch_id])
             for held in self.uncovered_feedings():
@@ -1334,6 +1343,10 @@ def describe(withdrawal):
         **params, 'rule': withdrawal.rule.text()}
     if withdrawal.until is None:
         text += ' ' + _('The end cannot be worked out: record the water temperature.')
+        if withdrawal.assumed_temperature is None:      # the other record that gives it an end (rule 5)
+            text += ' ' + _('Or set the assumed water temperature of %(species)s in Reference data › Species: the '
+                            'days without a measured temperature then count.') % {
+                'species': withdrawal.species.common_name}
     elif withdrawal.projected_at_assumed:
         text += ' ' + projected_sentence(withdrawal.assumed_temperature)
     elif withdrawal.estimated:
@@ -1422,13 +1435,8 @@ def unresolved(today=None):
 
 def unresolved_text(batch, held):
     """An unresolved old course as the Treatments page and check_withdrawal say it: the batch, the course and why its
-    end is unknown, which says what to enter (`describe`); for degree-days that could not be counted, also the
-    species' assumed temperature, which gives an end when the fish are gone and no temperature can be recorded."""
-    text = f'{batch.code}: {describe(held)}'
-    if held.rule is not None:
-        text += ' ' + _('Or set the assumed water temperature of %(species)s in Reference data › Species: the days '
-                        'without a measured temperature then count.') % {'species': batch.species.common_name}
-    return text
+    end is unknown, which says what to enter (`describe`)."""
+    return f'{batch.code}: {describe(held)}'
 
 
 def guarded_ceiling(user, write, seen=None):

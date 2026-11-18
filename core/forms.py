@@ -171,12 +171,15 @@ class PlatformSettingsForm(TabbedForm):
                                             'That approval is not built yet: while this is ticked, every such step is '
                                             'refused, so nobody goes on alone.'),
             'unknown_withdrawal_days': _('How many days after a course’s last day a medicine withdrawal whose end is '
-                                         'unknown (a medicine with no withdrawal recorded, medicated feed with no '
-                                         'treatment, degree-days with no water temperature) holds the fish. After '
-                                         'them the fish are no longer held, and the course is listed as unresolved '
-                                         'on the Treatments page until it is given an end. 1 to 3650; 180 until you '
-                                         'set another. Making it shorter asks first when it would free fish held '
-                                         'today.'),
+                                         'unknown because nothing says how long it lasts (a medicine with no '
+                                         'withdrawal recorded for the species, medicated feed with no treatment) '
+                                         'holds the fish. After them the fish are no longer held, and the course is '
+                                         'listed as unresolved on the Treatments page until it is given an end. A '
+                                         'withdrawal in degree-days is never let go this way: it holds until the water '
+                                         'temperature is recorded or the species’ assumed temperature is set. 1 to '
+                                         '3650; 180 until you set another. A change that would free fish held today, '
+                                         'hold fish again or bring a recorded harvest inside a withdrawal asks '
+                                         'first.'),
             'clock_tolerance_seconds': _('How far ahead of the server’s clock a water value may be stamped and still '
                                          'count as fresh (a device or tablet clock a little fast). A value further ahead, '
                                          'up to an hour, still decides its unit’s status and its alarm, but is not shown '

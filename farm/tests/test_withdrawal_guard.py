@@ -26,10 +26,12 @@ from ..health import services, withdrawal
 from ..health.withdrawal import WithdrawalChanged
 from ..models import Feed, WaterMeasurement, WithdrawalAcknowledgement
 from ..models.site import zone_of
+from ..resources.feed import FeedResource
 from ..stock import services as stock_services
 from ..water import services as water_services
-from .helpers import point_of, rows_data
+from .helpers import correction_window, point_of, rows_data
 from .test_harvest_inside_withdrawal import HarvestInsideTestCase
+from .test_stock import make_unit
 
 
 class GuardTestCase(HarvestInsideTestCase):
@@ -152,6 +154,47 @@ class FreedFishTests(GuardTestCase):
         record = self.feed(1)
         change = self.asked(feeding_services.void_feeding, self.user, record, 'Wrong feed')
         self.assertEqual([freed.batch for freed in change.released], [self.batch])
+
+
+class FeedMadeMedicatedTests(GuardTestCase):
+    """A feed's type is not a dated record: made Medicated, every feeding of it no in-feed course covers holds fish from
+    its own day, however long ago, and the guard asks about EVERY recorded harvest that puts inside a withdrawal, also
+    those older than the correction window (verification of S-03, V-6: reading from the window's first day hid one that
+    main asks about)."""
+
+    def test_it_asks_about_every_harvest_it_puts_inside_also_one_older_than_the_window(self):
+        feed = Feed.objects.create(name='Grower X', code='GRX', feed_type='grower')
+        harvests = []
+        for index, harvest_ago in enumerate((80, 20)):                  # the window is 31 days
+            shared, fed = make_unit(f'F-{index}1', self.hall), make_unit(f'F-{index}2', self.hall)
+            with correction_window(3650):
+                b = self.stock(shared, count=3000, days_ago=120)
+                x = self.stock(fed, count=3000, days_ago=120)
+                feeding_services.record_feeding(self.user, unit=fed, day=self.day(100), feed=feed,
+                                                amount_kg=Decimal('2'))
+                stock_services.record_transfer(self.user, source=fed, batch=x, day=self.day(90),
+                                               legs=[(shared, 500)], reason='density')     # the fed fish join B
+                seen = check.assess('harvest', shared, self.day(harvest_ago), b).fingerprint
+                harvests.append(stock_services.record_harvest(
+                    self.user, unit=shared, batch=b, day=self.day(harvest_ago), count=100,
+                    measured_weight_kg=Decimal('13'), facility=self.facility, handling_ack=seen or None))
+        self.assertFalse(WithdrawalAcknowledgement.objects.exists())
+
+        def write():
+            Feed.objects.filter(pk=feed.pk).update(feed_type='medicated')
+            return feed
+        unit_ids, first = FeedResource.reached(None, feed)
+        change = self.asked(withdrawal.guarded_units, self.user, unit_ids, first, write)
+        self.assertCountEqual([found.operation_id for found in change.harvested], [each.pk for each in harvests])
+        self.assertEqual(Feed.objects.get(pk=feed.pk).feed_type, 'grower')              # nothing written yet
+        withdrawal.guarded_units(self.user, unit_ids, first, write, seen=change.fingerprint)
+        self.assertEqual(Feed.objects.get(pk=feed.pk).feed_type, 'medicated')
+        self.assertCountEqual(WithdrawalAcknowledgement.objects.values_list('harvest_id', 'warning'),
+                              [(each.pk, 'harvested') for each in harvests])
+        out = io.StringIO()
+        call_command('check_withdrawal', stdout=out)
+        self.assertIn('2 harvests lie inside a medicine withdrawal.', out.getvalue())
+        self.assertNotIn('Not acknowledged', out.getvalue())
 
 
 class CheckWithdrawalLabelTests(GuardTestCase):

@@ -56,6 +56,14 @@ msgstr ""
 
 #, python-format
 msgid ""
+"%(batch)s in %(unit)s is not held today and would be held again by a medicine withdrawal after "
+"this change, and the end of that withdrawal is not known. %(withdrawal)s"
+msgstr ""
+"%(unit)s içindeki %(batch)s bugün tutulmuyor ve bu değişiklikten sonra bir ilaç arınma süresiyle "
+"yeniden tutulacak; bu arınma süresinin sonu bilinmiyor. %(withdrawal)s"
+
+#, python-format
+msgid ""
 "%(batch)s in %(unit)s will wait for the harvest with %(with)s, the held fish it is combined with "
 "in %(where)s, and the end of that withdrawal is not known. %(withdrawal)s"
 msgstr ""
@@ -69,6 +77,30 @@ msgid ""
 msgstr ""
 "%(unit)s içindeki %(batch)s, %(where)s içinde birleştirildiği tutulan %(with)s partisiyle "
 "birlikte hasat için bekleyecek: %(end)s. %(withdrawal)s"
+
+#, python-format
+msgid ""
+"%(batch)s in %(unit)s will wait for the harvest with the fish given medicated feed in %(units)s, "
+"and the end of that withdrawal is not known. %(withdrawal)s"
+msgstr ""
+"%(unit)s içindeki %(batch)s, %(units)s içinde ilaçlı yem verilen balıklarla birlikte hasat için "
+"bekleyecek ve bu arınma süresinin sonu bilinmiyor. %(withdrawal)s"
+
+#, python-format
+msgid ""
+"%(batch)s in %(unit)s will wait for the harvest with the fish treated in %(units)s, and the end "
+"of that withdrawal is not known. %(withdrawal)s"
+msgstr ""
+"%(unit)s içindeki %(batch)s, %(units)s içinde tedavi edilen balıklarla birlikte hasat için "
+"bekleyecek ve bu arınma süresinin sonu bilinmiyor. %(withdrawal)s"
+
+#, python-format
+msgid ""
+"%(batch)s in %(unit)s will wait for the harvest with the fish treated in %(units)s: %(end)s. "
+"%(withdrawal)s"
+msgstr ""
+"%(unit)s içindeki %(batch)s, %(units)s içinde tedavi edilen balıklarla birlikte hasat için "
+"bekleyecek: %(end)s. %(withdrawal)s"
 
 #, python-format
 msgid "%(batch)s is %(species)s; the protocol is for %(protocol_species)s."
@@ -6640,6 +6672,9 @@ msgctxt "task category"
 msgid "Fish health"
 msgstr "Balık sağlığı"
 
+msgid "Fish held again by a withdrawal"
+msgstr "Arınma süresiyle yeniden tutulan balık"
+
 msgid "Fish injured"
 msgstr "Yaralı balık"
 
@@ -7558,17 +7593,22 @@ msgid "How long the value must be back inside the limit, by the deadband, before
 msgstr "Alarm kapanmadan önce değerin, ölü bant kadar, limitin içinde ne kadar kalması gerektiği."
 
 msgid ""
-"How many days after a course’s last day a medicine withdrawal whose end is unknown (a medicine "
-"with no withdrawal recorded, medicated feed with no treatment, degree-days with no water "
-"temperature) holds the fish. After them the fish are no longer held, and the course is listed as "
-"unresolved on the Treatments page until it is given an end. 1 to 3650; 180 until you set another."
-" Making it shorter asks first when it would free fish held today."
+"How many days after a course’s last day a medicine withdrawal whose end is unknown because "
+"nothing says how long it lasts (a medicine with no withdrawal recorded for the species, medicated"
+" feed with no treatment) holds the fish. After them the fish are no longer held, and the course "
+"is listed as unresolved on the Treatments page until it is given an end. A withdrawal in degree-"
+"days is never let go this way: it holds until the water temperature is recorded or the species’ "
+"assumed temperature is set. 1 to 3650; 180 until you set another. A change that would free fish "
+"held today, hold fish again or bring a recorded harvest inside a withdrawal asks first."
 msgstr ""
-"Sonu bilinmeyen bir ilaç arınma süresinin (arınma süresi kaydedilmemiş bir ilaç, tedavisi olmayan"
-" ilaçlı yem, su sıcaklığı olmayan derece-gün) balıkları kürün son gününden sonra kaç gün tuttuğu."
-" Bu günlerden sonra balıklar artık tutulmaz ve kür, bir son verilene kadar Tedaviler sayfasında "
-"çözülmemiş olarak listelenir. 1 ile 3650 arası; siz başka bir değer verene kadar 180. Kısaltmak, "
-"bugün tutulan balıkları serbest bırakacaksa önce sorar."
+"Ne kadar süreceğini söyleyen bir şey olmadığı için sonu bilinmeyen bir ilaç arınma süresinin (tür"
+" için arınma süresi kaydedilmemiş bir ilaç, tedavisi olmayan ilaçlı yem) balıkları kürün son "
+"gününden sonra kaç gün tuttuğu. Bu günlerden sonra balıklar artık tutulmaz ve kür, bir son "
+"verilene kadar Tedaviler sayfasında çözülmemiş olarak listelenir. Derece-gün cinsinden bir arınma"
+" süresi asla bu yolla bırakılmaz: su sıcaklığı kaydedilene veya türün varsayılan sıcaklığı "
+"girilene kadar tutar. 1 ile 3650 arası; siz başka bir değer verene kadar 180. Bugün tutulan "
+"balıkları serbest bırakacak, balıkları yeniden tutacak veya kayıtlı bir hasadı bir arınma "
+"süresinin içine sokacak bir değişiklik önce sorar."
 
 msgid ""
 "How many days back a daily record (a stock operation, a feeding, a water sample, a movement of "
@@ -15044,6 +15084,15 @@ msgstr ""
 "Bekleme süresi %(held)s partisine aittir: hasat edilen balıklar daha önce %(unit)s birimini "
 "%(with)s ile paylaştı ve aynı birimdeki balıklar birbirinden ayrılamaz."
 
+#, python-format
+msgid ""
+"The withdrawal is of %(held)s: the fish harvested shared %(unit)s with %(with)s, which waits with"
+" %(held)s, and the fish of one unit cannot be told apart."
+msgstr ""
+"Bekleme süresi %(held)s partisine aittir: hasat edilen balıklar %(unit)s birimini %(with)s ile "
+"paylaştı; o parti de %(held)s ile birlikte bekliyor ve aynı birimdeki balıklar birbirinden "
+"ayrılamaz."
+
 msgid ""
 "The withdrawal is the product’s, as its SPC states it per species, in degree-days, days or both, "
 "with your own safety margin on top; nothing is filled in for you. A treatment counts it from its "
@@ -15150,6 +15199,12 @@ msgstr ""
 #, python-format
 msgid "These fish shared %(unit)s with %(batch)s (%(how)s)."
 msgstr "Bu balıklar %(unit)s birimini %(batch)s ile paylaştı (%(how)s)."
+
+#, python-format
+msgid "These fish shared %(unit)s with %(batch)s, which waits with %(source)s (%(how)s)."
+msgstr ""
+"Bu balıklar %(unit)s birimini %(batch)s ile paylaştı; o parti de %(source)s (%(how)s) ile "
+"birlikte bekliyor."
 
 #, python-format
 msgid "These fish were given the medicated feed in %(units)s."

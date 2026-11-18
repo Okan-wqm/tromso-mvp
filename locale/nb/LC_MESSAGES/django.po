@@ -54,6 +54,15 @@ msgstr ""
 
 #, python-format
 msgid ""
+"%(batch)s in %(unit)s is not held today and would be held again by a medicine withdrawal after "
+"this change, and the end of that withdrawal is not known. %(withdrawal)s"
+msgstr ""
+"%(batch)s i %(unit)s holdes ikke tilbake i dag og vil holdes tilbake igjen av en "
+"tilbakeholdelsestid etter denne endringen, og slutten på den tilbakeholdelsestiden er ikke kjent."
+" %(withdrawal)s"
+
+#, python-format
+msgid ""
 "%(batch)s in %(unit)s will wait for the harvest with %(with)s, the held fish it is combined with "
 "in %(where)s, and the end of that withdrawal is not known. %(withdrawal)s"
 msgstr ""
@@ -67,6 +76,30 @@ msgid ""
 msgstr ""
 "%(batch)s i %(unit)s venter på slakt sammen med %(with)s, den tilbakeholdte fisken den er slått "
 "sammen med i %(where)s: %(end)s. %(withdrawal)s"
+
+#, python-format
+msgid ""
+"%(batch)s in %(unit)s will wait for the harvest with the fish given medicated feed in %(units)s, "
+"and the end of that withdrawal is not known. %(withdrawal)s"
+msgstr ""
+"%(batch)s i %(unit)s venter på slakt sammen med fisken som fikk medisinfôr i %(units)s, og "
+"slutten på den tilbakeholdelsestiden er ikke kjent. %(withdrawal)s"
+
+#, python-format
+msgid ""
+"%(batch)s in %(unit)s will wait for the harvest with the fish treated in %(units)s, and the end "
+"of that withdrawal is not known. %(withdrawal)s"
+msgstr ""
+"%(batch)s i %(unit)s venter på slakt sammen med fisken som ble behandlet i %(units)s, og slutten "
+"på den tilbakeholdelsestiden er ikke kjent. %(withdrawal)s"
+
+#, python-format
+msgid ""
+"%(batch)s in %(unit)s will wait for the harvest with the fish treated in %(units)s: %(end)s. "
+"%(withdrawal)s"
+msgstr ""
+"%(batch)s i %(unit)s venter på slakt sammen med fisken som ble behandlet i %(units)s: %(end)s. "
+"%(withdrawal)s"
 
 #, python-format
 msgid "%(batch)s is %(species)s; the protocol is for %(protocol_species)s."
@@ -6624,6 +6657,9 @@ msgctxt "task category"
 msgid "Fish health"
 msgstr "Fiskehelse"
 
+msgid "Fish held again by a withdrawal"
+msgstr "Fisk holdt tilbake igjen av en tilbakeholdelsestid"
+
 msgid "Fish injured"
 msgstr "Skadde fisk"
 
@@ -7535,18 +7571,22 @@ msgid "How long the value must be back inside the limit, by the deadband, before
 msgstr "Hvor lenge verdien må være tilbake innenfor grensen, med dødbåndet, før alarmen oppheves."
 
 msgid ""
-"How many days after a course’s last day a medicine withdrawal whose end is unknown (a medicine "
-"with no withdrawal recorded, medicated feed with no treatment, degree-days with no water "
-"temperature) holds the fish. After them the fish are no longer held, and the course is listed as "
-"unresolved on the Treatments page until it is given an end. 1 to 3650; 180 until you set another."
-" Making it shorter asks first when it would free fish held today."
+"How many days after a course’s last day a medicine withdrawal whose end is unknown because "
+"nothing says how long it lasts (a medicine with no withdrawal recorded for the species, medicated"
+" feed with no treatment) holds the fish. After them the fish are no longer held, and the course "
+"is listed as unresolved on the Treatments page until it is given an end. A withdrawal in degree-"
+"days is never let go this way: it holds until the water temperature is recorded or the species’ "
+"assumed temperature is set. 1 to 3650; 180 until you set another. A change that would free fish "
+"held today, hold fish again or bring a recorded harvest inside a withdrawal asks first."
 msgstr ""
-"Hvor mange dager etter behandlingens siste dag en tilbakeholdelsestid med ukjent slutt (et "
-"legemiddel uten registrert tilbakeholdelsestid, medisinfôr uten behandling, døgngrader uten "
-"vanntemperatur) holder fisken tilbake. Etter dem holdes fisken ikke lenger tilbake, og "
-"behandlingen står som uavklart på siden Behandlinger til den får en slutt. 1 til 3650; 180 til du"
-" setter en annen. Gjør du den kortere, spørres det først når det ville frigi fisk som holdes "
-"tilbake i dag."
+"Hvor mange dager etter behandlingens siste dag en tilbakeholdelsestid med ukjent slutt fordi "
+"ingenting sier hvor lenge den varer (et legemiddel uten registrert tilbakeholdelsestid for arten,"
+" medisinfôr uten behandling) holder fisken tilbake. Etter dem holdes fisken ikke lenger tilbake, "
+"og behandlingen står som uavklart på siden Behandlinger til den får en slutt. En "
+"tilbakeholdelsestid i døgngrader slippes aldri på denne måten: den holder til vanntemperaturen er"
+" registrert eller artens antatte temperatur er satt. 1 til 3650; 180 til du setter en annen. En "
+"endring som ville frigi fisk som holdes tilbake i dag, holde fisk tilbake igjen eller legge en "
+"registrert slakting inn i en tilbakeholdelsestid, spør først."
 
 msgid ""
 "How many days back a daily record (a stock operation, a feeding, a water sample, a movement of "
@@ -15014,6 +15054,14 @@ msgstr ""
 "Tilbakeholdelsestiden gjelder %(held)s: fisken som ble høstet, delte %(unit)s med %(with)s "
 "tidligere, og fisk i samme enhet kan ikke skilles fra hverandre."
 
+#, python-format
+msgid ""
+"The withdrawal is of %(held)s: the fish harvested shared %(unit)s with %(with)s, which waits with"
+" %(held)s, and the fish of one unit cannot be told apart."
+msgstr ""
+"Tilbakeholdelsestiden gjelder %(held)s: fisken som ble høstet, delte %(unit)s med %(with)s, som "
+"venter sammen med %(held)s, og fisk i samme enhet kan ikke skilles fra hverandre."
+
 msgid ""
 "The withdrawal is the product’s, as its SPC states it per species, in degree-days, days or both, "
 "with your own safety margin on top; nothing is filled in for you. A treatment counts it from its "
@@ -15119,6 +15167,10 @@ msgstr ""
 #, python-format
 msgid "These fish shared %(unit)s with %(batch)s (%(how)s)."
 msgstr "Denne fisken delte %(unit)s med %(batch)s (%(how)s)."
+
+#, python-format
+msgid "These fish shared %(unit)s with %(batch)s, which waits with %(source)s (%(how)s)."
+msgstr "Denne fisken delte %(unit)s med %(batch)s, som venter sammen med %(source)s (%(how)s)."
 
 #, python-format
 msgid "These fish were given the medicated feed in %(units)s."

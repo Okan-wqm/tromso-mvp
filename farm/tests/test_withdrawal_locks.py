@@ -30,6 +30,19 @@ from .helpers import make_facility
 from .test_stock import make_species, make_unit, stock_fish
 
 
+def outcome(value):
+    """What a write did, for an assertion's message: the kind of the operation it recorded, or how it was refused."""
+    if isinstance(value, WithdrawalChanged):
+        found = value.change
+        return (f'asked {value.message_dict}: harvested {len(found.harvested)}, released {len(found.released)}, '
+                f'combined {[(each.batch.code, each.unit.code) for each in found.combined]}')
+    if isinstance(value, ValidationError):
+        return f'refused {value.message_dict}'
+    if isinstance(value, Exception):
+        return f'failed {type(value).__name__}: {value}'
+    return value.kind
+
+
 class TakeTurnsTests(TransactionTestCase):
     """T-01: A, bathed 6 days ago (harvest from 2 days ahead). T-02: B, never treated; 500 of B went on to T-03 two days
     ago. The move: 500 of A into T-02, dated 3 days ago, which holds B in T-02 and in T-03. The harvest: B out of
@@ -218,11 +231,11 @@ class TwoHopsTests(TakeTurnsTests):
         write SAW is.)"""
         done, inside = self.unseen(mock.patch.object(
             stock_services, '_reach', lambda unit_ids, batch_ids, first: set(batch_ids)))
-        self.assertEqual((done['first'].kind, done['second'].kind), ('harvest', 'transfer'))
+        self.assertEqual((outcome(done['first']), outcome(done['second'])), ('harvest', 'transfer'))
         self.assertEqual(inside, [done['first'].pk])                   # inside a withdrawal, and nobody was asked
         self.assertFalse(HandlingAcknowledgement.objects.filter(operation=done['first']).exists())
 
     def test_without_the_batches_downstream_neither(self):
         done, inside = self.unseen(mock.patch.object(stock_read, 'downstream', lambda found, unit_ids, first=None: set()))
-        self.assertEqual((done['first'].kind, done['second'].kind), ('harvest', 'transfer'))
+        self.assertEqual((outcome(done['first']), outcome(done['second'])), ('harvest', 'transfer'))
         self.assertEqual(inside, [done['first'].pk])

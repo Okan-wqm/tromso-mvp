@@ -2159,7 +2159,8 @@
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_pages.py",
-        "alarms/tests/test_reference.py"
+        "alarms/tests/test_reference.py",
+        "alarms/tests/test_refused_water.py"
       ]
     },
     {
@@ -3249,7 +3250,8 @@
         "experiments/tests/test_placements.py",
         "monitoring/tests/test_designer.py",
         "monitoring/tests/test_pages.py",
-        "monitoring/tests/test_template_pages.py"
+        "monitoring/tests/test_template_pages.py",
+        "alarms/tests/test_refused_water.py"
       ]
     },
     {
@@ -18789,6 +18791,7 @@
         "farm/tests/test_equipment.py",
         "farm/tests/test_health.py",
         "farm/tests/test_migration_points.py",
+        "farm/tests/test_ph_scale_salt_added.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
         "farm/tests/test_suppliers.py",
@@ -19844,6 +19847,7 @@
         "core/test_languages.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
+        "farm/tests/test_calculator_loaded_ph.py",
         "farm/tests/test_cleaner_ration.py",
         "farm/tests/test_core_refusal.py",
         "farm/tests/test_escape_delivery.py",
@@ -19856,6 +19860,7 @@
         "farm/tests/test_migration_feeding_acknowledgement.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_ph_scale.py",
+        "farm/tests/test_ph_scale_salt_added.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_site_structure.py",
         "farm/tests/test_species_size_limit.py",
@@ -21242,7 +21247,8 @@
         "monitoring/tests/__init__.py",
         "monitoring/tests/test_extras.py",
         "alarms/tests/__init__.py",
-        "alarms/tests/test_cross_review.py"
+        "alarms/tests/test_cross_review.py",
+        "alarms/tests/test_refused_water.py"
       ]
     },
     {

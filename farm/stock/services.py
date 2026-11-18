@@ -1033,6 +1033,7 @@ def void(user, operation, reason, withdrawal_ack=None, ack=False, size_mix_ack=F
                         audit.record_delete(user, batch)
             return operation
 
-        # The fish leave or come back to the units and days of a course: through the withdrawal guard.
+        # The fish leave or come back to the units and days of a course: through the withdrawal guard, which also
+        # asks when the void combines held fish with fish that are not held, as a move does (the owner's decision 8).
         return withdrawal.guarded(user, set(batches) | sharing, earliest_today(units.values()), write,
-                                  seen=withdrawal_ack)
+                                  seen=withdrawal_ack, combining=True)

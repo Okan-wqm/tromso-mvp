@@ -200,7 +200,8 @@ impl Equilibria {
     }
     /// The plausibility warnings of its inputs, as codes (cross review F5): 'conductivity_salinity',
     /// 'conductivity_above_ions', 'conductivity_below_ions', 'seawater_conductivity'; and 'nh3_past_guard', the water
-    /// above 30 °C or 35 ‰, past the range the NH₃ judgement's guard holds over (the K_NH4 panel, 2026-11-10).
+    /// above 30 °C or 35 ‰, past the range the NH₃ judgement's guard holds over (the K_NH4 panel, 2026-11-10); and
+    /// 'below_fitted_temp', the water below 0 °C, where the constants are extrapolated (the audit of 2026-11-19, F10).
     #[getter]
     fn warnings(&self) -> Vec<&'static str> {
         [
@@ -209,6 +210,7 @@ impl Equilibria {
             (f::CONDUCTIVITY_BELOW_IONS, "conductivity_below_ions"),
             (f::SEAWATER_CONDUCTIVITY, "seawater_conductivity"),
             (f::NH3_PAST_GUARD, "nh3_past_guard"),
+            (f::BELOW_FITTED_TEMP, "below_fitted_temp"),
         ]
         .into_iter()
         .filter(|(bit, _code)| self.0.warnings & bit != 0)

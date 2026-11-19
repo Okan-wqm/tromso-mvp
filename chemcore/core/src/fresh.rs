@@ -200,6 +200,19 @@ pub const NH3_PAST_GUARD: u8 = 16;
 pub const NH3_GUARD_MAX_TEMP_C: f64 = 30.0;
 /// See `NH3_GUARD_MAX_TEMP_C`.
 pub const NH3_GUARD_MAX_SALINITY: f64 = 35.0;
+/// The water is colder than `FITTED_FROM_TEMP_C`: the constants are extrapolated there. Said with every value worked
+/// out from the water, never a refusal (the water-chemistry audit of 2026-11-19, F10).
+pub const BELOW_FITTED_TEMP: u8 = 32;
+/// The coldest water (°C) the constants were fitted from: Millero et al. (2006)'s K1 and K2 and Dickson's (1990) KSO₄
+/// and KB from 0 °C; the ammonium constants from warmer water still (Khoo et al. 1977's measurements and Yao & Millero's
+/// 1995 fit of them from 5 °C; only Clegg & Whitfield 1995 reach −2 °C), Mucci's (1983) Ksp from 5 °C (Ω is said with
+/// its own range). A
+/// temperature is taken from −3 °C (farm/water/parameters.py: sea water at Tromsø goes below 0 °C), so below this one
+/// `plausibility` says `BELOW_FITTED_TEMP`, the bound itself quiet. The judged values stay on the safe side there: at
+/// −1.9 °C and S 30 to 34 the judged NH₃ is 11.7 to 14.4 % above Clegg & Whitfield (1995, fitted from −2 °C), the judged
+/// CO₂ 18 to 21 % above PyCO2SYS (the audit's out/09_cold.txt): a missing sentence, not a wrong number. A validity bound
+/// of cited constants, code on purpose (as `NH3_GUARD_MAX_TEMP_C`).
+pub const FITTED_FROM_TEMP_C: f64 = 0.0;
 /// The ionic strength per µS/cm a water may have: NaCl's `IONIC_PER_MICROSIEMENS_NACL` to Russell's
 /// `IONIC_PER_MICROSIEMENS`, each widened by Russell's scatter of about ±30 % (as the cross review quotes it; the paper
 /// itself was not read): 0.7 × 8.4e-6 and 1.3 × 1.6e-5.
@@ -244,12 +257,17 @@ pub fn practical_salinity(conductivity_25_us_cm: f64) -> R {
 
 /// The warnings of a water's inputs (the constants above, or-ed): never a refusal, said beside every value worked out
 /// from it (`Equilibria::warnings`). A water above `NH3_GUARD_MAX_TEMP_C` or `NH3_GUARD_MAX_SALINITY` is past the NH₃
-/// guard (`NH3_PAST_GUARD`); of the ionic inputs only a conductivity can disagree, so without one none of theirs.
+/// guard (`NH3_PAST_GUARD`), one below `FITTED_FROM_TEMP_C` below the constants' fits (`BELOW_FITTED_TEMP`); of the
+/// ionic inputs only a conductivity can disagree, so without one none of theirs.
 pub fn plausibility(temp_c: f64, salinity: f64, alkalinity_mg_l: Option<f64>, ions: Ions) -> Result<u8, ChemError> {
     let salinity = finite(salinity)?;
+    let temp_c = finite(temp_c)?;
     let mut warnings = 0;
-    if finite(temp_c)? > NH3_GUARD_MAX_TEMP_C || salinity > NH3_GUARD_MAX_SALINITY {
+    if temp_c > NH3_GUARD_MAX_TEMP_C || salinity > NH3_GUARD_MAX_SALINITY {
         warnings |= NH3_PAST_GUARD;
+    }
+    if temp_c < FITTED_FROM_TEMP_C {
+        warnings |= BELOW_FITTED_TEMP;
     }
     let Some(kappa) = present(ions.conductivity_25_us_cm)? else {
         return Ok(warnings);

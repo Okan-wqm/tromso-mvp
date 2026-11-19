@@ -202,6 +202,9 @@ WARNINGS = {
                         'checked over (0 to 30 °C, up to 35 ‰); the NH₃ shown may read low against Clegg & Whitfield '
                         '(1995), by about 1 % at 35 °C and 6 % at 40 °C in sea water of 35 ‰. Keep a margin to the '
                         'limit.'),
+    # The water-chemistry audit of 2026-11-19, F10 (chemcore/core/src/fresh.rs FITTED_FROM_TEMP_C).
+    'below_fitted_temp': _('Below 0 °C: the chemistry’s constants are fitted from 0 °C or above, so these values are '
+                           'extrapolated. The judged NH₃ and CO₂ stay on the safe side there (they read high, not low).'),
 }
 
 

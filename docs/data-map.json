@@ -1805,7 +1805,7 @@
       "app": "alarms",
       "model": "AlarmSubjectState",
       "table": "alarm_subject_state",
-      "description": "The one mutable row of an alarm subject (a unit's parameter at a level: `water:unit:<unit>:<slot>:<severity>`, never the point that stands for the unit, so a point replaced keeps the subject: cross review F7; or one of the alarm system's own, `system:<name>`): the timers of its lifecycle, kept in the database so a restart loses none: since when the condition holds without an alarm yet (the on-delay, counted from the first offending value's time), since when it is over while the alarm is open (the off-delay), the time of the last value that held it, and the alarm open now.",
+      "description": "The one mutable row of an alarm subject (a unit's parameter at a level: `water:unit:<unit>:<slot>:<severity>`, never the point that stands for the unit, so a point replaced keeps the subject: cross review F7; or one of the alarm system's own, `system:<name>`): the timers of its lifecycle, kept in the database so a restart loses none: since when the condition holds without an alarm yet (the on-delay, counted from the first offending value's time), since when it is over while the alarm is open (the off-delay), the time of the last value that held it, whether the unit's own value held it, and the alarm open now.",
       "columns": [
         {
           "name": "key",
@@ -1867,6 +1867,17 @@
           "why": "the timers and the open alarm the loop keeps per subject (alarms/sources.py advance)"
         },
         {
+          "name": "own_held",
+          "field": "own_held",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the timers and the open alarm the loop keeps per subject (alarms/sources.py advance)"
+        },
+        {
           "name": "updated_at",
           "field": "updated_at",
           "type": "timestamp with time zone",
@@ -1916,7 +1927,8 @@
       },
       "tests": [
         "alarms/tests/test_cross_review.py",
-        "alarms/tests/test_defects.py"
+        "alarms/tests/test_defects.py",
+        "alarms/tests/test_who_ends_a_level.py"
       ]
     },
     {
@@ -2160,7 +2172,8 @@
         "alarms/tests/test_defects.py",
         "alarms/tests/test_pages.py",
         "alarms/tests/test_reference.py",
-        "alarms/tests/test_refused_water.py"
+        "alarms/tests/test_refused_water.py",
+        "alarms/tests/test_who_ends_a_level.py"
       ]
     },
     {

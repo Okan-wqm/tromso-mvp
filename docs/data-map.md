@@ -230,14 +230,14 @@ How an alarm of a severity behaves, one row per severity (a person with the righ
 <a id="alarmsalarmsubjectstate"></a>
 ### alarms.AlarmSubjectState (`alarm_subject_state`)
 
-The one mutable row of an alarm subject (a unit's parameter at a level: `water:unit:<unit>:<slot>:<severity>`, never the point that stands for the unit, so a point replaced keeps the subject: cross review F7; or one of the alarm system's own, `system:<name>`): the timers of its lifecycle, kept in the database so a restart loses none: since when the condition holds without an alarm yet (the on-delay, counted from the first offending value's time), since when it is over while the alarm is open (the off-delay), the time of the last value that held it, and the alarm open now.
+The one mutable row of an alarm subject (a unit's parameter at a level: `water:unit:<unit>:<slot>:<severity>`, never the point that stands for the unit, so a point replaced keeps the subject: cross review F7; or one of the alarm system's own, `system:<name>`): the timers of its lifecycle, kept in the database so a restart loses none: since when the condition holds without an alarm yet (the on-delay, counted from the first offending value's time), since when it is over while the alarm is open (the off-delay), the time of the last value that held it, whether the unit's own value held it, and the alarm open now.
 
 - **create**: none, by design: written by manage.py run_alarms (alarms/engine.py)
 - **edit**: none, by design: only the loop moves a subject's timers and its open alarm
 - **delete**: none, by design: a subject's row is kept: its timers survive a restart
 - **read**: none, by design: the loop's own memory; the alarms it opened are on the Alarms page
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarm_subject_state
-- **tests that mention it**: `alarms/tests/test_cross_review.py`, `alarms/tests/test_defects.py`
+- **tests that mention it**: `alarms/tests/test_cross_review.py`, `alarms/tests/test_defects.py`, `alarms/tests/test_who_ends_a_level.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -246,6 +246,7 @@ The one mutable row of an alarm subject (a unit's parameter at a level: `water:u
 | pending_since | timestamp with time zone | yes |  | system: the timers and the open alarm the loop keeps per subject (alarms/sources.py advance) |
 | clear_since | timestamp with time zone | yes |  | system: the timers and the open alarm the loop keeps per subject (alarms/sources.py advance) |
 | last_bad_at | timestamp with time zone | yes |  | system: the timers and the open alarm the loop keeps per subject (alarms/sources.py advance) |
+| own_held | boolean |  |  | system: the timers and the open alarm the loop keeps per subject (alarms/sources.py advance) |
 | updated_at | timestamp with time zone |  |  | system: author, time, version or delete mark |
 
 <a id="alarmsalarm"></a>
@@ -259,7 +260,7 @@ One time a condition held: a sensor rule's event (mirrored from sensors.AlarmEve
 - **read**: alarms.views.alarm_list (`/alarms/`); alarms.views.alarm_detail (`/alarms/<int:pk>/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarms
 - **constraints**: chk_alarms_source (check); chk_alarms_severity (check); chk_alarms_shape (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_alarms.py`, `alarms/tests/__init__.py` and 7 more
+- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_alarms.py`, `alarms/tests/__init__.py` and 8 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

@@ -11,9 +11,27 @@
   moved by the parameter's deadband toward danger, for the severity's off-delay (alarms.rules: the user's rows). A value
   that only goes stale never clears it (an alarm does not end by going blind); a unit with no fish or no limit any more
   clears it at once (structural). The timers are the subjects' rows (AlarmSubjectState), so a restart loses none.
+  WHICH VALUE CAN END A LEVEL (the verification of FIX3, F3-1 and F3-7; one rule, `clear_evidence` over the row's
+  `own_held`). The unit's own value is one measured at the unit's own points; another value is one of the rest of its
+  water: its system's loop standing in for it (read.latest), or another fresh value that judged it worse
+  (read.worst_fresh, `worse`).
+  A level remembers whether the unit's own value held it (`own_held`: set while its own value holds it, forgotten once
+  its own value is judged clear of it, or when no alarm is open and nothing holds).
+  - Raised by the unit's own value: only the unit's own evidence ends it. An own full sample clear of it (newer than
+    the last bad value, and every other fresh value clear too) ends it "returned"; an own sample that gives no value (a
+    TAN without its pH), another point's OK value, nothing new, or the bad sample voided (an older value newest again,
+    defect 4) end nothing: the unit's own NH₃ is not known to be over.
+  - Raised by another value (its own value clear or value-less): the values that judge it end it. Another point's newer
+    OK value ends it "returned" when its own value is clear or value-less (F3-1); an own full OK sample ends it only
+    when the other values are clear too (worst_fresh keeps a fresh bad one); an own value-less sample changes nothing;
+    nothing new ends nothing; the bad sample voided ends it only where a value taken after it is clear (an older value
+    newest again is no evidence, defect 4).
+  - Either way: another bad value holds it (worst_fresh); a refused value is never evidence; a value that only goes
+    stale never ends it; the limit removed or no fish end it with that cause (`_unjudged`).
 Where an alarm is (its site, its production department) is set when it opens, for the recipient rules."""
 import logging
 from dataclasses import dataclass
+from functools import partial
 
 from django.db import transaction
 from django.db.models import Q
@@ -164,13 +182,16 @@ def seen_at(reading, now):
     return min(reading.at, now)
 
 
-def clear_evidence(reading, severity, rules, last_bad_at, now):
+def clear_evidence(reading, severity, rules, last_bad_at, now, own_held=False, unit_id=None):
     """Whether this pass's reading says the level is over: fresh, taken after the last value that held it (an older value
     that is the newest again, its bad successor voided or its probe taken out, says nothing new: alarm plan, defect 4),
     and clear of it by the deadband. Times are `seen_at`, the same clamp as the raise. A value the chemistry core refused
     to work out (`Reading.refused`: no value, or its limits' basis alone, a value the judged one is at least) says
     nothing of the level being over. A reading without a value of its own is judged by its water's other values
-    (`known`): their newest is the one taken after the last bad value, or nothing is evidence."""
+    (`known`), their newest the one taken after the last bad value. A level the unit's own value holds (`own_held`, the
+    rule at the top: F3-7) takes the unit's own value as evidence and nothing else."""
+    if own_held and not (reading.value is not None and own(reading, unit_id)):
+        return False                    # raised by the unit's own value: only its own value says it is over
     decider = reading.worse or (reading if reading.value is not None else max(known(reading), key=lambda each: each.at,
                                                                               default=None))
     if decider is None:
@@ -216,7 +237,7 @@ def advance(state, holds, clear_ok, bad_at, severity, rules, now, structural=Fal
     return step
 
 
-STATE_FIELDS = ['open_alarm', 'pending_since', 'clear_since', 'last_bad_at', 'updated_at']
+STATE_FIELDS = ['open_alarm', 'pending_since', 'clear_since', 'last_bad_at', 'own_held', 'updated_at']
 
 
 def _states(keys):
@@ -225,7 +246,7 @@ def _states(keys):
 
 
 def _snapshot(state):
-    return state.open_alarm_id, state.pending_since, state.clear_since, state.last_bad_at
+    return state.open_alarm_id, state.pending_since, state.clear_since, state.last_bad_at, state.own_held
 
 
 @dataclass
@@ -243,6 +264,7 @@ class Subject:
     structural: str = ''
     detail: object = None          # () -> {label: text} the clearance's log entry adds (what changed), or None
     on_delay: object = None        # a timedelta standing for the severity's on-delay (a device clock behind), or None
+    note: object = None            # (row) -> None: what the subject remembers on its row this pass, before its evidence
 
 
 def settle(subjects, now, rules):
@@ -253,6 +275,8 @@ def settle(subjects, now, rules):
     for subject in subjects:
         state = states.setdefault(subject.key, AlarmSubjectState(key=subject.key))
         before[subject.key] = _snapshot(state)
+        if subject.note is not None:
+            subject.note(state)
         clear_ok = subject.clear_ok(state) if callable(subject.clear_ok) else subject.clear_ok
         done = advance(state, subject.holds, clear_ok, subject.bad_at, subject.severity, rules, now,
                        structural=bool(subject.structural), on_delay=subject.on_delay)
@@ -262,7 +286,7 @@ def settle(subjects, now, rules):
             clears.append((state, subject.structural or subject.cause, subject.detail))
     services.clear_many([(state.open_alarm, now, cause, detail() if detail else None) for state, cause, detail in clears])
     for state, _cause, _detail in clears:
-        state.open_alarm, state.clear_since = None, None
+        state.open_alarm, state.clear_since, state.own_held = None, None, False
     for key, alarm in services.raise_many(raises).items():
         states[key].open_alarm, states[key].pending_since = alarm, None
     changed = [state for key, state in states.items() if key in before and _snapshot(state) != before[key]]
@@ -349,19 +373,40 @@ def _removed(units, now):
 
 def _water_subjects(found, failed, rules, now):
     """The water subjects of one unit's PointWater: per quantity, a warning and a critical level."""
-    subjects = []
+    subjects, unit_id = [], found.point.unit_id
     for slot, reading in _slots(found).items():
         for severity in HOLDS:
             subjects.append(Subject(
-                water_key(found.point.unit_id, slot, severity), reading.judged in HOLDS[severity],
+                water_key(unit_id, slot, severity), reading.judged in HOLDS[severity],
                 lambda state, severity=severity, reading=reading: not failed and clear_evidence(
-                    reading, severity, rules, state.last_bad_at, now),
+                    reading, severity, rules, state.last_bad_at, now, own_held=state.own_held, unit_id=unit_id),
                 seen_at(reading.worse or reading, now), severity,
                 lambda point=found.point, severity=severity, reading=reading: {
                     'at': now, 'severity': severity, 'summary': _summary(point, reading), 'source': Source.WATER_LIMIT,
                     'point': point, 'parameter': reading.code, **_where(point)},
-                **_unjudged(reading)))
+                **_unjudged(reading), note=partial(_note_own, reading, severity, rules, unit_id)))
     return subjects
+
+
+def own(reading, unit_id):
+    """Whether a value was measured at the unit's own points (the rule at the top)."""
+    return reading.point is not None and getattr(reading.point, 'unit_id', None) == unit_id
+
+
+def _note_own(reading, severity, rules, unit_id, state):
+    """What a level remembers of who holds it (the rule at the top: `own_held`): the unit's own value holding it sets it;
+    the unit's own value judged clear of it (by the deadband, as `judged_clear`) forgets it, and so does a level with no
+    alarm open that nothing holds. An own sample that gives no value, or a refused one inside the limits, says nothing."""
+    holds = reading.judged in HOLDS[severity]
+    decider = reading.worse or reading
+    if holds and decider.value is not None and own(decider, unit_id):
+        state.own_held = True
+    elif not holds and state.open_alarm_id is None:
+        state.own_held = False
+    elif own(reading, unit_id) and reading.value is not None and not reading.refused and worst(
+            _moved(reading, rules) + (_moved(reading.through, rules) if reading.through is not None else [])
+    ) not in HOLDS[severity]:
+        state.own_held = False
 
 
 def _unjudged(reading):

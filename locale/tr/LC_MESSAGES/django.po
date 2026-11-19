@@ -10104,6 +10104,14 @@ msgid "Not stated in the text saved; unverified (Q6)"
 msgstr "Kaydedilen metinde belirtilmemiş; doğrulanmadı (Q6)"
 
 #, python-format
+msgid ""
+"Not suitable for a live delivery — medicine withdrawal of %(batch)s: %(end)s. Fish sold alive may"
+" be eaten."
+msgstr ""
+"Canlı teslimata uygun değil — %(batch)s için ilaç bekleme süresi: %(end)s. Canlı satılan balıklar"
+" yenebilir."
+
+#, python-format
 msgid "Not suitable for harvest — medicine withdrawal of %(batch)s: %(end)s."
 msgstr "Hasada uygun değil — %(batch)s için ilaç bekleme süresi: %(end)s."
 

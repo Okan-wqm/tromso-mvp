@@ -37,7 +37,12 @@ into formula 3 itself, formula 1's values in these files never moved; chemcore/f
   of 5, 10, 28.5 and 35 permil. FORMAT 3: a block was added; the two blocks recorded before keep their bytes.
 - 2026-11-10, the refusal of a water that cannot be (ImpossibleWaterError; the same check, claim 9): every water of the
   corpus is possible, so no value moved (both blocks have the bytes of the recording before); the manifest names the
-  new core."""
+  new core.
+
+Not recorded again since: on 2026-11-19 formula 4 became the application's (chemcore/core/src/formula4.rs; golden v4
+beside this one), so the blocks `scales` and `phosphate`, which took the application's formula by default, name formula
+3 here: their bytes are the ones recorded, and this file's hash is no longer the manifest's `recorder_sha256` (the
+manifest is the recording's, left as it was)."""
 import gzip
 import hashlib
 import io
@@ -129,7 +134,7 @@ def record_all():
     scales = []
     for temp_c in TEMPERATURES:
         for salinity in SCALE_SALINITIES:
-            eq = n.water_equilibria(temp_c, salinity)
+            eq = n.water_equilibria(temp_c, salinity, formula=3)
             scales.append({'temp_c': temp_c, 'salinity': salinity, 'ph_offset': eq.ph_offset,
                            'nbs_of': {scale: [eq.ph_nbs(ph, scale) for ph in PHS] for scale in n.PH_SCALES}})
     phosphate = []
@@ -137,7 +142,7 @@ def record_all():
         for salinity in PHOSPHATE_SALINITIES:
             for alkalinity in ALKALINITIES:
                 for given in PHOSPHATES:
-                    eq = n.water_equilibria(temp_c, salinity, alkalinity, phosphate_p_mg_l=given)
+                    eq = n.water_equilibria(temp_c, salinity, alkalinity, phosphate_p_mg_l=given, formula=3)
                     meq = alkalinity / n.MG_CACO3_PER_MEQ
                     at_ph = []
                     for ph in PHS:

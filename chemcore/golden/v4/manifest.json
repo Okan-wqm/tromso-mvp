@@ -1,0 +1,34 @@
+{
+  "beside": "v3",
+  "blocks": {
+    "analyses": {
+      "bytes": 78765,
+      "records": 1980,
+      "sha256": "79dd8843dd59355ebc5aedb34c91e0a5109217a1c0b694042f21f71065bb6204"
+    },
+    "phosphate": {
+      "bytes": 45468,
+      "records": 180,
+      "sha256": "988dda9c86961bd8fd478797acf8212345e834b0ca530bb169e7734200017ae3"
+    },
+    "scales": {
+      "bytes": 1801,
+      "records": 24,
+      "sha256": "d6ba99734c1225875d0d309ca2a5580c20922cb8a6286d27c425eb1c088bee49"
+    },
+    "waters": {
+      "bytes": 207728,
+      "records": 1980,
+      "sha256": "9faa6fb28fe63fc7f3b9772b3ec24490ef1760bd18f5462dcbef908165aa7d59"
+    }
+  },
+  "core": {
+    "core_hash": "f401aeb4a4b49800",
+    "formula_version": 4,
+    "version": "0.1.0"
+  },
+  "format": 1,
+  "golden_version": "v4",
+  "recorder_sha256": "2ee3e882a358fdeeacb3792a4d12ec27ebd3ce3963172ccde8b970e14bd04847",
+  "what": "Formula 4 (the application\u2019s since 2026-11-19): formula 3 with the NBS step of Millero (1986, table 7: 0.1306 + 0.00073 S at 25 \u00b0C, 0.75 of the bisulfate term\u2019s temperature change), the K_NH4 of Clegg & Whitfield (1995, eq. 18) fresh to sea, and Rule S: from 5 permil the judged NH3 and CO2 are the best estimate at the pH plus and minus 0.03 (US EPA 1989), up to 1 permil formula 3\u2019s ideal water, blended between. Golden v3\u2019s corpus."
+}

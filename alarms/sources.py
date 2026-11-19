@@ -164,9 +164,11 @@ def _slots(found):
 
 
 def _moved(reading, rules):
-    """The judgements of a reading's value moved by its parameter's deadband both ways, through its own rows."""
+    """The judgements of a reading's value moved by its parameter's deadband both ways, through its own rows: the value
+    the limits judge (`Reading.judged_value`, unrounded where it was worked out; the audit of 2026-11-19, F3)."""
     band = rules.deadband(reading.code)
-    return [judge(value, row) for row in reading.limits for value in (reading.value - band, reading.value + band)]
+    value = reading.judged_value
+    return [judge(moved, row) for row in reading.limits for moved in (value - band, value + band)]
 
 
 def judged_clear(reading, rules):

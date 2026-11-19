@@ -513,6 +513,15 @@ class Reading:
     # from its system (`last_own`; decision of 2026-11-19 on the verification's F3-9): it keeps the status, and the page,
     # the card and the alarm say "last own value …, measure this unit".
     last_own: object = None
+    # A worked-out value as it was worked out, before `value` was rounded to the parameter's decimals for display: what
+    # the limits judge (`judged_value`; the water-chemistry audit of 2026-11-19, F3: a true 0.01034 mg/L NH₃-N read
+    # 0.0103 and was OK against a limit of 0.0103). None for a measured value, which is judged as entered.
+    exact: Decimal | None = None
+
+    @property
+    def judged_value(self):
+        """The value the limits judge: the unrounded one where it was worked out (`exact`), else `value`."""
+        return self.exact if self.exact is not None else self.value
 
     @property
     def unevaluated(self):
@@ -837,12 +846,15 @@ class Context:
         # The judged share: the larger of the basis the limits were set on and the activity-corrected (cross review
         # F1); the corrected NH3-N is said beside it, never judged.
         share = Decimal(equilibria.nh3_share(float(ph)))
-        nh3 = (tan * share).quantize(NH3_N.step)
+        # Judged unrounded, shown at four decimals (`Reading.exact`; the audit of 2026-11-19, F3).
+        exact = tan * share
+        nh3 = exact.quantize(NH3_N.step)
         corrected = (tan * Decimal(equilibria.nh3_share_corrected(float(ph)))).quantize(NH3_N.step)
         said = ' '.join(filter(None, (str(messages.provenance(equilibria)),
                                       messages.judged('nh3', equilibria.nh3_basis, corrected, equilibria))))
-        return {NH3_N.code: Reading(NH3_N, nh3, observation, True, provenance=said),
-                NH4_N.code: Reading(NH4_N, (tan - nh3).quantize(NH4_N.step), observation, True, provenance=said)}
+        return {NH3_N.code: Reading(NH3_N, nh3, observation, True, provenance=said, exact=exact),
+                NH4_N.code: Reading(NH4_N, (tan - exact).quantize(NH4_N.step), observation, True, provenance=said,
+                                    exact=tan - exact)}
 
     @staticmethod
     def nh3_basis_share(temperature, salinity, ph, water_origin):
@@ -871,7 +883,7 @@ class Context:
             return Reading(NH3_N, None, observation, True, messages.refused(error), refused=str(error))
         return Reading(NH3_N, (tan * share).quantize(NH3_N.step), observation, True,
                        f'{messages.refused(error)} {messages.ON_BASIS}', measured=str(messages.BASIS_ONLY),
-                       refused=str(error))
+                       refused=str(error), exact=tan * share)
 
     def _oxygen(self, observation, temperature, salinity):
         mg_l, percent = observation.get(OXYGEN_MG_L), observation.get(OXYGEN_PCT)
@@ -895,12 +907,15 @@ class Context:
             note = f'{note} {_("At sea-level pressure: the site has no altitude.")}'
         note = ' '.join([note, *self._basis_said(observation)])
         said = _('Formula %(formula)d.') % {'formula': chemistry.FORMULA_VERSION}
+        # Judged unrounded, shown at the parameter's decimals (`Reading.exact`; the audit of 2026-11-19, F3).
         if missing == OXYGEN_PCT:
-            value = (100 * mg_l / solubility).quantize(parameters.get(OXYGEN_PCT).step)
-            return {OXYGEN_PCT: Reading(parameters.get(OXYGEN_PCT), value, observation, True, note, provenance=said)}
+            exact = 100 * mg_l / solubility
+            return {OXYGEN_PCT: Reading(parameters.get(OXYGEN_PCT), exact.quantize(parameters.get(OXYGEN_PCT).step),
+                                        observation, True, note, provenance=said, exact=exact)}
         if missing == OXYGEN_MG_L:
-            value = (percent * solubility / 100).quantize(parameters.get(OXYGEN_MG_L).step)
-            return {OXYGEN_MG_L: Reading(parameters.get(OXYGEN_MG_L), value, observation, True, note, provenance=said)}
+            exact = percent * solubility / 100
+            return {OXYGEN_MG_L: Reading(parameters.get(OXYGEN_MG_L), exact.quantize(parameters.get(OXYGEN_MG_L).step),
+                                         observation, True, note, provenance=said, exact=exact)}
         expected = percent * solubility / 100
         if expected and abs(mg_l - expected) / expected > OXYGEN_TOLERANCE:
             note = _('The mg/L and the % disagree by more than 10 % at this temperature and salinity: check the '
@@ -935,7 +950,7 @@ class Context:
                         reading.status = Status.STALE
             return reading
         exposures = self.exposures(for_point or reading.sample.point, day)
-        reading.judged, reading.limits = self.limits.assess(reading.code, reading.value, exposures)
+        reading.judged, reading.limits = self.limits.assess(reading.code, reading.judged_value, exposures)
         reading.uncovered = self.limits.uncovered(reading.code, exposures)
         other = parameters.SAME_QUANTITY.get(reading.code)
         through = [(species_id, water_type) for species_id, water_type in exposures
@@ -943,7 +958,7 @@ class Context:
             if other else []
         converted = self._in_other_unit(reading, temperature) if through else None
         if converted is not None:
-            status, rows = self.limits.assess(other, converted.value, through)
+            status, rows = self.limits.assess(other, converted.judged_value, through)
             converted.limits, converted.judged = rows, status
             reading.through = converted
             reading.judged = status if reading.judged == Status.NO_LIMIT else worst([reading.judged, status])

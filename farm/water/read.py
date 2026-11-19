@@ -260,6 +260,41 @@ def as_parameter(code, value):
     return Decimal(repr(float(value))).quantize(parameters.get(code).step)
 
 
+def ph_on_nbs(ph, scale, temperature, salinity, origin):
+    """(the pH on the NBS scale at the pH column's decimals, the formula version) of a pH measured on `scale` (a PhScale
+    code) in water of this temperature and salinity, its salt from `origin` (`scale_origin`); None where the core takes
+    no pH on that scale (fresh water, salt added, below 5 ‰: Equilibria.takes_ph_scale) or cannot work the water out.
+    THE conversion of every pH: a typed sample's (services.on_nbs) and a sensor's (Context.sensor_ph)."""
+    try:
+        equilibria = chemistry.water_equilibria(float(temperature), float(salinity), water_origin=origin)
+        if not equilibria.takes_ph_scale(scale):
+            return None
+        converted = equilibria.ph_nbs(float(ph), scale)
+    except (ValueError, ArithmeticError):    # a water the core cannot work out is not one it converts a pH for
+        return None
+    return Decimal(repr(converted)).quantize(parameters.get(parameters.PH).step), equilibria.formula
+
+
+@dataclass(frozen=True)
+class SensorPh:
+    """A sensor's pH whose channel is on another scale than NBS, or whose scale changed (owner decision 1 of 2026-11-17;
+    the water-chemistry audit of 2026-11-19, F1): what the probe gave (`as_measured`), on which scale ('' NBS) and since
+    when that scale holds; once put on the NBS scale (`Context.sensor_ph`) the temperature, the salinity and the formula
+    it was converted with; else why it was not (`refused`). Until it is converted its Observation holds no pH at all:
+    the unconverted number is never a value."""
+    scale: str
+    as_measured: Decimal
+    since: datetime | None = None
+    temperature: Decimal | None = None
+    salinity: Decimal | None = None
+    formula: int | None = None
+    refused: str = ''
+
+    @property
+    def converted(self):
+        return self.formula is not None
+
+
 @dataclass(frozen=True)
 class Observation:
     """The values one source gave at a point at one moment: a sample (manual or lab: `sample` is the WaterMeasurement), a
@@ -275,6 +310,7 @@ class Observation:
     is_deleted: bool = False
     sample: WaterMeasurement | None = None
     basis: dict = field(default_factory=dict)     # code -> Basis: what a sample's oxygen is worked out with
+    ph: SensorPh | None = None                    # a sensor's pH not on the NBS scale as sent (SensorPh)
 
     @classmethod
     def of_sample(cls, sample):
@@ -283,14 +319,28 @@ class Observation:
 
     @classmethod
     def of_sensor(cls, point, value, origin):
-        """A sensor's value (sources.SensorValue) as the water parameter's Decimal, at its decimals."""
-        return cls(point, value.at, origin, {value.code: as_parameter(value.code, value.value)},
-                   channel_no=value.channel_no, role=value.role, fresh_for=value.fresh_for)
+        """A sensor's value (sources.SensorValue) as the water parameter's Decimal, at its decimals. A pH from a channel
+        on another scale than NBS holds no pH until `Context.sensor_ph` puts it on the NBS scale; one measured before its
+        channel's scale changed holds none at all (its scale is not known): `ph` says which and why."""
+        found = as_parameter(value.code, value.value)
+        ph = None
+        if value.code == parameters.PH and (value.ph_scale or value.ph_scale_from is not None):
+            if value.ph_scale_from is not None and value.at < value.ph_scale_from:
+                ph = SensorPh(value.ph_scale, found, value.ph_scale_from, refused=str(messages.ph_scale_changed(
+                    local_time(value.ph_scale_from, point))))
+            elif value.ph_scale:
+                ph = SensorPh(value.ph_scale, found, value.ph_scale_from,
+                              refused=str(messages.ph_sensor_refused('unconverted', value.ph_scale)))
+            if ph is not None:
+                found = None
+        return cls(point, value.at, origin, {value.code: found}, channel_no=value.channel_no, role=value.role,
+                   fresh_for=value.fresh_for, ph=ph)
 
     @classmethod
     def combined(cls, observations):
         """The sensor values a derived value is worked out from: their values together, at the oldest one's time, from
-        the first one's point and origin, fresh as long as the least fresh of them."""
+        the first one's point and origin, fresh as long as the least fresh of them, with the pH's conversion (`ph`) of
+        the one that has it."""
         first = observations[0]
         measured = {}
         for each in observations:
@@ -298,7 +348,8 @@ class Observation:
         oldest = min(observations, key=lambda each: each.at)
         ends = [each.at + timedelta(seconds=each.fresh_for) for each in observations if each.fresh_for is not None]
         fresh_for = int((min(ends) - oldest.at).total_seconds()) if ends else None
-        return cls(first.point, oldest.at, first.origin, measured, fresh_for=fresh_for)
+        ph = next((each.ph for each in observations if each.ph is not None), None)
+        return cls(first.point, oldest.at, first.origin, measured, fresh_for=fresh_for, ph=ph)
 
     @property
     def measured_at(self):
@@ -569,6 +620,32 @@ class Reading:
         return is_fresh(self.parameter, self.at, now, self.sample.fresh_for)
 
 
+def reading_of(code, observation):
+    """The Reading of one measured value of an observation, saying what was measured where it was put on another scale
+    or unit: a sample's pH measured on another scale than NBS, a sample's phosphate entered as PO₄, a sensor's pH put on
+    the NBS scale (`Observation.ph`). A sensor's pH that could not be put on it has no value and keeps the reason
+    (`refused`): where the fish have a pH limit it cannot be evaluated (Context.judge), never shown unconverted."""
+    reading = Reading(parameters.get(code), observation.get(code), observation)
+    sample = observation.sample
+    if code == parameters.PH and sample is not None and sample.ph_scale:
+        # A pH measured on another scale is stored on the NBS scale; the reading says what was measured.
+        reading.provenance = str(messages.ph_measured(sample))
+        reading.measured = str(messages.ph_measured_short(sample))
+    elif code == parameters.PH and observation.ph is not None:
+        ph = observation.ph
+        if ph.converted:
+            reading.provenance = str(messages.ph_sensor_converted(ph))
+            reading.measured = str(messages.ph_measured_words(ph.as_measured, ph.scale))
+        else:
+            reading.note = str(messages.ph_not_converted(ph.refused))
+            reading.refused = ph.refused
+    if code == parameters.PHOSPHATE and sample is not None and sample.phosphate_unit:
+        # A phosphate entered as PO₄ is stored as P; the reading says what was entered.
+        reading.provenance = str(messages.phosphate_measured(sample))
+        reading.measured = str(messages.phosphate_measured_short(sample))
+    return reading
+
+
 @dataclass
 class PointWater:
     """The latest readings of one sampling point, by parameter code; `point` is None for a unit that has no
@@ -799,19 +876,49 @@ class Context:
                 return found.value
         return assumed_salinity(self.water_types(point))
 
+    # -- a sensor's pH on another scale --
+    def sensor_ph(self, observation, fresh_live, now):
+        """A sensor's pH observation put on the NBS scale (owner decision 1 of 2026-11-17; the water-chemistry audit of
+        2026-11-19, F1), exactly as a typed sample's (`ph_on_nbs`): with the place's fresh temperature from the sensors
+        (`fresh_live`, {code: the newest fresh live Observation}, as a sensor's TAN takes its pH and temperature) and
+        the salinity of the same moment (`salinity_for`: a fresh sensor's, else the point's fresh sample's, else 0 in
+        fresh water), for sea water of 5 ‰ or more only (`scale_origin`), while the pH is fresh at `now`. Otherwise
+        the observation keeps no pH and says why (`SensorPh.refused`). An observation that needs nothing is returned as
+        it is."""
+        ph = observation.ph
+        if ph is None or ph.converted or not ph.scale or observation.get(parameters.PH) is not None \
+                or (ph.since is not None and observation.at < ph.since):
+            return observation
+
+        def refused(why):
+            return replace(observation, ph=replace(ph, refused=str(messages.ph_sensor_refused(why, ph.scale))))
+
+        if not is_fresh(parameters.get(parameters.PH), observation.at, now, observation.fresh_for):
+            return refused('stale')
+        temperature = fresh_live.get(parameters.TEMPERATURE)
+        if temperature is None or temperature.get(parameters.TEMPERATURE) is None:
+            return refused('temperature')
+        salinity_observation = fresh_live.get(parameters.SALINITY)
+        together = Observation.combined([observation, temperature, *([salinity_observation]
+                                                                    if salinity_observation is not None else [])])
+        salinity = self.salinity_for(together)
+        if salinity is None:
+            return refused('salinity')
+        temperature = temperature.get(parameters.TEMPERATURE)
+        served = self.served.get(observation.point.pk)
+        origin = scale_origin(served if served is not None else Context._served([observation.point])[observation.point.pk])
+        found = ph_on_nbs(ph.as_measured, ph.scale, temperature, salinity, origin)
+        if found is None:
+            return refused('not_sea')
+        converted, formula = found
+        return replace(observation, measured={parameters.PH: converted},
+                       ph=replace(ph, temperature=temperature, salinity=salinity, formula=formula, refused=''))
+
     # -- one observation's readings --
     def readings(self, observation):
         """{code: Reading} of a sample or an Observation: what was measured and what follows from it."""
         observation = observe(observation)
-        found = {code: Reading(parameters.get(code), value, observation) for code, value in observation.values().items()}
-        if observation.sample is not None and observation.sample.ph_scale and parameters.PH in found:
-            # A pH measured on another scale is stored on the NBS scale; the reading says what was measured.
-            found[parameters.PH].provenance = str(messages.ph_measured(observation.sample))
-            found[parameters.PH].measured = str(messages.ph_measured_short(observation.sample))
-        if observation.sample is not None and observation.sample.phosphate_unit and parameters.PHOSPHATE in found:
-            # A phosphate entered as PO₄ is stored as P; the reading says what was entered.
-            found[parameters.PHOSPHATE].provenance = str(messages.phosphate_measured(observation.sample))
-            found[parameters.PHOSPHATE].measured = str(messages.phosphate_measured_short(observation.sample))
+        found = {code: reading_of(code, observation) for code in observation.values()}
         salinity = self.salinity_for(observation)
         if observation.get(TAN) is not None:
             found.update(self._ammonia(observation, salinity))
@@ -833,13 +940,20 @@ class Context:
     @staticmethod
     def _ph_scale_said(observation):
         """What an NH₃ worked out from a pH measured on another scale than NBS says beside it (the audit of 2026-11-19,
-        F11: judged on the NBS scale, the safe side): a typed sample's; '' for an NBS pH."""
+        F11: judged on the NBS scale, the safe side): a typed sample's or a sensor's; '' for an NBS pH."""
         if observation.sample is not None and observation.sample.ph_scale:
             return messages.judged_on_nbs(observation.sample.ph_scale)
+        if observation.ph is not None and observation.ph.converted:
+            return messages.judged_on_nbs(observation.ph.scale)
         return ''
 
     def _ammonia(self, observation, salinity):
         ph, temperature, tan = (observation.get(code) for code in (parameters.PH, parameters.TEMPERATURE, TAN))
+        if ph is None and observation.ph is not None and observation.ph.refused:
+            # The sensor's pH could not be put on the NBS scale: the NH₃ is not known, and where the fish have an NH₃
+            # limit it cannot be evaluated (the reason said), never worked out from the unconverted number.
+            return {NH3_N.code: Reading(NH3_N, None, observation, True, str(messages.nh3_ph_not_converted(
+                observation.ph.refused)), refused=observation.ph.refused)}
         if ph is None or temperature is None:
             return {NH3_N.code: Reading(NH3_N, None, observation, True, self._same_source_missing(observation))}
         if salinity is None:
@@ -1142,8 +1256,7 @@ def _candidates(code, live, fresh_live, manuals, context):
     """[Reading] of `code` in one tier, in the order a tie goes: its sensors' values (`live`), the value worked out from
     the tier's fresh sensor values (the other oxygen unit: only from fresh ones), and its points' latest samples
     (`manuals`, one {code: Reading} per point)."""
-    parameter = parameters.get(code)
-    found = [Reading(parameter, each.get(code), each) for each in live.get(code, [])]
+    found = [reading_of(code, each) for each in live.get(code, [])]
     other = parameters.SAME_QUANTITY.get(code)
     if other and fresh_live.get(other) is not None and fresh_live.get(parameters.TEMPERATURE) is not None:
         worked = context.readings(Observation.combined([fresh_live[other], fresh_live[parameters.TEMPERATURE],
@@ -1166,6 +1279,14 @@ def _resolve(own_live, own_manual, system_live, system_manual, context, now):
     read."""
     fresh_own, fresh_system = _fresh_live(own_live, now), _fresh_live(system_live, now)
     fresh_live = {code: fresh_own.get(code) or fresh_system.get(code) for code in {*own_live, *system_live}}
+    if any(each.ph is not None for live in (own_live, system_live) for each in live.get(parameters.PH, [])):
+        # A sensor pH on another scale than NBS, put on it with the place's fresh temperature and salinity (F1), before
+        # anything reads it: the pH shown and judged, and the pH a sensor's TAN is worked out with.
+        own_live, system_live = ({**live, parameters.PH: [context.sensor_ph(each, fresh_live, now)
+                                                          for each in live.get(parameters.PH, [])]}
+                                 for live in (own_live, system_live))
+        fresh_own, fresh_system = _fresh_live(own_live, now), _fresh_live(system_live, now)
+        fresh_live = {code: fresh_own.get(code) or fresh_system.get(code) for code in {*own_live, *system_live}}
     chosen, candidates = {}, {}
     for code in parameters.COLUMNS:
         tiers = [_candidates(code, own_live, fresh_own, own_manual, context),

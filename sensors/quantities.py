@@ -22,11 +22,17 @@ from django.utils.translation import gettext_lazy as _
 from farm.water import parameters
 
 ALL, DEADBAND = 'all', 'deadband'
-# A sensor's pH is taken as it comes (farm/tests/test_ph_scale.py; README, the pH's scale): the ingest stores what the
-# device sends, and putting a pH on the NBS scale needs the temperature and the salinity of the same moment.
-PH_SCALE_NOTE = _('A pH channel is on the NBS scale (a probe calibrated with NBS/NIST buffers). A sensor that reports on '
-                  'the total scale (calibrated with TRIS) is not converted here: its pH reads 0.10 to 0.14 low in sea '
-                  'water and the NH₃ worked out from it 20 to 27 % low. Record such a pH as a sample with its scale.')
+# A sensor's pH is stored as the device sends it, on its channel's pH scale (sensors.Channel.ph_scale; owner decision 1
+# of 2026-11-17, the water-chemistry audit of 2026-11-19, F1), and put on the NBS scale where the water is read
+# (farm/water/read.py Context.sensor_ph), with the temperature and the salinity of the same moment.
+PH_SCALE_NOTE = _('A pH channel says the scale its probe reports on (its pH scale). A probe calibrated with TRIS (most '
+                  'sea-water ISFET and optical sensors) reports on the total scale, 0.10 to 0.14 lower than NBS in sea '
+                  'water: taken as NBS its NH₃ would read 20 to 27 % low.')
+PH_SCALE_HELP = _('The scale the probe reports its pH on: NBS (calibrated with NBS/NIST buffers), or the total (TRIS), '
+                  'seawater or free scale. Other than NBS, each value is put on the NBS scale where the water is worked '
+                  'out, with a fresh temperature from the sensors and the salinity of the same moment, for sea water of '
+                  '5 ‰ or more; otherwise the pH and its NH₃ cannot be evaluated, and the page says why. Changing it: '
+                  'what the probe measured before is used nowhere after (its scale is not known).')
 
 
 @dataclass(frozen=True)

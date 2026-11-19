@@ -36,6 +36,13 @@ class PhScale(models.TextChoices):
     FREE = 'free', _('Free scale')
 
 
+# The scale a pH is on unless said otherwise: as a meter calibrated with NBS/NIST buffers reads it. With the others, the
+# choices of every place a pH's scale is said: a typed pH's (farm/forms/water.py) and a sensor pH channel's
+# (sensors.Channel.ph_scale).
+NBS = 'nbs'
+PH_SCALE_CHOICES = [(NBS, _('NBS (a meter calibrated with NBS/NIST buffers)')), *PhScale.choices]
+
+
 # The least salinity (‰) a pH on another scale than NBS is taken for: sea water, the core's SEA_FROM
 # (farm/tests/test_ph_scale.py holds the two together).
 PH_SCALE_SALINITY = 5

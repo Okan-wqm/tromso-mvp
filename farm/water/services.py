@@ -17,7 +17,7 @@ A failure raises ValidationError, a dict of field to message: 'measured_at', 'po
 code, 'reason' or NON_FIELD_ERRORS; for a round, a row's errors are under ('row', index). Nothing is
 written."""
 import uuid
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import ROUND_HALF_UP
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import transaction
@@ -28,19 +28,18 @@ from core import audit
 from core.models import AuditLog, EntryKey
 from farm.health import withdrawal
 from farm.models import Equipment, SamplingPoint, System, Tank, WaterMeasurement
-from farm.models.water import BASIS_COLUMNS, PH_SCALE_COLUMNS, PHOSPHATE_UNIT_COLUMNS, PhosphateUnit, PhScale
+from farm.models.water import BASIS_COLUMNS, NBS, PH_SCALE_COLUMNS, PHOSPHATE_UNIT_COLUMNS, PhosphateUnit, PhScale
 from farm.models.water_point import EQUIPMENT, SYSTEM, UNIT, local_time, site_of
 from farm.stock import dates
 from farm.stock.services import AlreadyRecorded, lock_fish
 
-from . import chemistry, messages, parameters
-from .read import POINT_RELATED, Context, oxygen_basis, scale_origin
+from . import messages, parameters
+from .read import POINT_RELATED, Context, oxygen_basis, ph_on_nbs, scale_origin
 
 # What the activity log shows of a sample: where it was taken, its source, its values and its notes (and its
 # time, which the entry carries).
 LOGGED = ['point', 'source', *parameters.COLUMNS, *BASIS_COLUMNS, *PH_SCALE_COLUMNS, *PHOSPHATE_UNIT_COLUMNS, 'notes']
-# The scale a pH is on unless said otherwise: as a meter calibrated with NBS/NIST buffers reads it.
-NBS = 'nbs'
+# The scale a pH is on unless said otherwise, NBS: farm.models.water's (services.NBS, as the forms name it).
 # The unit a phosphate is in unless said otherwise: phosphorus (PO₄-P, mg/L as P), as it is stored.
 AS_P = parameters.AS_P
 # The most rows a round takes (a hall's points; the form shows them all on one page).
@@ -126,18 +125,13 @@ def on_nbs(point, values, scale):
     if missing:
         raise ValidationError(missing)
     origin = scale_origin(Context._served([point])[point.pk])       # salt added as soon as one unit of its water says so
-    try:
-        equilibria = chemistry.water_equilibria(float(values[parameters.TEMPERATURE]),
-                                                float(values[parameters.SALINITY]), water_origin=origin)
-        taken = equilibria.takes_ph_scale(scale)
-    except (ValueError, ArithmeticError):    # a water the core cannot work out is not one it converts a pH for
-        taken = False
-    if not taken:
+    # The one conversion, a sensor's too (read.ph_on_nbs); None where the core takes no pH on that scale.
+    found = ph_on_nbs(values[parameters.PH], scale, values[parameters.TEMPERATURE], values[parameters.SALINITY], origin)
+    if found is None:
         raise ValidationError({'ph_scale': str(messages.PH_NOT_SEA)})
-    step = parameters.get(parameters.PH).step
-    converted = Decimal(repr(equilibria.ph_nbs(float(values[parameters.PH]), scale))).quantize(step)
+    converted, formula = found
     return ({**values, parameters.PH: converted},
-            {'ph_scale': scale, 'ph_as_measured': values[parameters.PH], 'ph_converted_formula': equilibria.formula})
+            {'ph_scale': scale, 'ph_as_measured': values[parameters.PH], 'ph_converted_formula': formula})
 
 
 def as_p(values, unit):

@@ -25,7 +25,7 @@ from core.widgets import MomentInput
 from ..models import (Equipment, ProductionDepartment, SamplingPoint, Site, Species, System, Tank, WaterFreshness,
                       WaterLimit, WaterMeasurement)
 from ..models.site import ALTITUDE_HIGH, ALTITUDE_LOW, zone_of
-from ..models.water import BOUNDS, PhosphateUnit, PhScale
+from ..models.water import BOUNDS, PH_SCALE_CHOICES, PhosphateUnit
 from ..models.water_point import EQUIPMENT, SYSTEM, UNIT, PointKind, owner_type_of, site_of
 from ..templatetags.water import limit_text, source
 from ..water import calculation, chemistry, deffeyes, dosing, messages, parameters, read, services
@@ -34,8 +34,7 @@ from .stock import DECIMAL, ServiceErrors, VoidForm
 
 NOTES = forms.Textarea(attrs={'rows': 2})
 # The scale a pH was measured on (farm/water/services.on_nbs; the core's codes and order, native.PH_SCALES): NBS unless
-# said, and then nothing changes.
-PH_SCALE_CHOICES = [(services.NBS, _('NBS (a meter calibrated with NBS/NIST buffers)')), *PhScale.choices]
+# said, and then nothing changes. PH_SCALE_CHOICES is farm.models.water's (a sensor pH channel's are the same).
 
 
 def ph_scale_field(help_text):

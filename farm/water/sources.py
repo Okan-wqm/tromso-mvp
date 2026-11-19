@@ -14,6 +14,9 @@ A provider is an object with three methods:
         the targets with a channel of the parameter bound there at some time in the range (one cheap ask, so a series
         never asks per moment for a place nothing was bound to).
 
+A pH value carries its channel's scale and the moment that scale holds from (SensorValue): the provider says what the
+channel is set to, the farm decides what the value is on the NBS scale (farm/water/read.py, Context.sensor_ph).
+
 A provider that raises is left out of the answer and the answer says so (`failed`): the pages then say that the live
 values could not be read, and show what the samples give. Each provider runs in its own savepoint, so a database error
 inside it cannot spoil the caller's transaction."""
@@ -35,13 +38,17 @@ _providers = []
 @dataclass(frozen=True)
 class SensorValue:
     """One channel's value of one water parameter: the value in the parameter's unit, when it was measured, how long it
-    counts as fresh (seconds), the channel's role at its target and its number."""
+    counts as fresh (seconds), the channel's role at its target and its number. A pH channel's value says its channel's
+    scale (`ph_scale`: '' for NBS, else a farm.models.water.PhScale code) and since when that scale holds
+    (`ph_scale_from`: None, since the channel was made): farm/water/read.py puts it on the NBS scale, never here."""
     code: str
     value: float
     at: datetime
     fresh_for: int
     role: str
     channel_no: int
+    ph_scale: str = ''
+    ph_scale_from: datetime | None = None
 
 
 @dataclass(frozen=True)

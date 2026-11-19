@@ -34,9 +34,12 @@ from django.utils import timezone
 from farm.models import Equipment, SamplingPoint, System, Tank, WaterMeasurement
 from farm.models.site import zone_of
 from farm.models.water_point import PointKind, site_of
-from farm.water import calculation, deffeyes, parameters
+from farm.models.water import NBS
+from farm.water import calculation, deffeyes, messages, parameters
 from farm.water.evaluate import is_fresh
-from farm.water.read import OWN_WATER_KINDS, WINDOW, Series as WaterSeries, as_parameter, assumed_salinity, choose
+from farm.water.parameters import PH
+from farm.water.read import (OWN_WATER_KINDS, WINDOW, Series as WaterSeries, as_parameter, assumed_salinity, choose,
+                             ph_on_nbs)
 
 from . import quantities
 from .models import Binding, Calibration, Channel, ChannelState, DeviceState, Reduction
@@ -110,6 +113,8 @@ class Segment:
     fresh_s: int
     reduced: bool                 # deadband: a stored row may stand for messages up to a heartbeat before it
     moved_in: bool                # the binding started inside the window (a move or a first binding)
+    ph_scale: str = ''            # a pH channel's scale when not NBS (sensors.Channel.ph_scale), else ''
+    ph_scale_from: datetime | None = None    # when that pH channel's scale changed (its values from before: none)
 
 
 def places(target):
@@ -166,16 +171,25 @@ def segments(target, quantity, start, end):
 
 def segments_for(conditions, quantity, start, end):
     """[Segment] of the channels of `quantity` bound by `conditions` ([(Q over bindings, origin)]) between start and
-    end, in the order they count."""
+    end, in the order they count. A pH channel's segment starts no earlier than its last change of pH scale
+    (`Channel.ph_scale_from`): what it measured before is on a scale not known any more, and is drawn and used nowhere
+    (the water-chemistry audit of 2026-11-19, F1); it says its scale when not NBS (`Segment.ph_scale`)."""
     found = []
     for rank, (condition, origin) in enumerate(conditions):
         bindings = (Binding.objects.visible().filter(condition, channel__quantity=quantity, valid_from__lt=end)
                     .filter(Q(valid_to__isnull=True) | Q(valid_to__gt=start)).select_related('channel'))
         for binding in bindings:
+            channel = binding.channel
+            begin, finish = max(binding.valid_from, start), min(binding.valid_to or end, end)
+            scale, since = '', None
+            if channel.quantity == PH:
+                scale, since = ('' if channel.ph_scale == NBS else channel.ph_scale), channel.ph_scale_from
+                begin = max(begin, since) if since is not None else begin
+            if begin >= finish:
+                continue
             found.append((rank, ROLE_RANK.get(binding.role, 2), Segment(
-                binding.channel.channel_no, max(binding.valid_from, start), min(binding.valid_to or end, end),
-                binding.role, origin, binding.channel.fresh_s, binding.channel.reduction == Reduction.DEADBAND,
-                binding.valid_from > start)))
+                channel.channel_no, begin, finish, binding.role, origin, channel.fresh_s,
+                channel.reduction == Reduction.DEADBAND, binding.valid_from > start, scale, since)))
     found.sort(key=lambda item: (item[0], item[1], item[2].start))
     return [segment for _rank, _role, segment in found]
 
@@ -200,7 +214,7 @@ class Bucket:
 @dataclass(frozen=True)
 class Marker:
     at: datetime
-    kind: str                    # 'move' or 'calibration'
+    kind: str                    # 'move', 'calibration' or 'ph_scale' (a pH channel's scale changed)
     channel_no: int
 
 
@@ -318,11 +332,14 @@ def series(target, quantity, start, end, *, max_points=MAX_POINTS, now=None):
                   gaps(buckets, start, end, now), segments=found, reduced=any(s.reduced for s in found))
     chart.samples = _samples(target, quantity, start, end)
     channel_nos = {segment.channel_no for segment in found}
+    scale_changes = {(segment.ph_scale_from, segment.channel_no) for segment in found
+                     if segment.ph_scale_from is not None and start < segment.ph_scale_from < end}
     chart.markers = sorted(
         [Marker(segment.start, 'move', segment.channel_no) for segment in found if segment.moved_in]
         + [Marker(at, 'calibration', number) for at, number in Calibration.objects.filter(
             channel__channel_no__in=channel_nos, valid_from__gt=start, valid_from__lt=end)
-           .values_list('valid_from', 'channel__channel_no')], key=lambda marker: marker.at)
+           .values_list('valid_from', 'channel__channel_no')]
+        + [Marker(at, 'ph_scale', number) for at, number in scale_changes], key=lambda marker: marker.at)
     return chart
 
 
@@ -403,6 +420,8 @@ class FrameInput:
     origin: str                   # 'sensor', 'system_sensor', 'manual', 'assumed'
     age_s: float                  # seconds between its measurement and the frame
     channel_no: int | None = None
+    ph_scale: str = ''            # a pH from a channel on another scale: that scale (`value` is then on NBS)
+    as_measured: float | None = None    # such a pH as the probe measured it
 
 
 @dataclass(frozen=True)
@@ -573,7 +592,9 @@ def deffeyes_frames(target, start, end, step, cursor=0, size=PAGE):
     fresh manual or lab sample), else of its system's, else (salinity only) the fresh-water assumption, else missing; never a value from after the frame, never one carried
     past its freshness, never one in between. A frame with every required input has the whole diagram of that water
     (A8: farm/water/deffeyes.py's figure with the fish's limits, as the unit's chart draws it), in one box for the page
-    (it holds every point of the page); frames whose diagram reads exactly the same values share one figure."""
+    (it holds every point of the page); frames whose diagram reads exactly the same values share one figure. A pH from
+    a channel on another scale than NBS is put on the NBS scale with the frame's own temperature and salinity, as the
+    live view does (`_on_nbs`); where it cannot be, the frame has no pH and no diagram, and `impossible` says why."""
     if end <= start:
         raise ValueError('The end comes after the start.')
     step = replay_step(step)
@@ -593,6 +614,7 @@ def deffeyes_frames(target, start, end, step, cursor=0, size=PAGE):
     assumed = assumed_salinity(_water_types(target))
     limits = {name: float(offer.value) for name, offer in calculation.chart_limits(calculation.fish_limits(target)).items()}
     water_origin = calculation.origin_of(target)  # one a page, as the unit's chart (round 2, R1)
+    ph_origin = calculation.scale_origin_of(target)    # whether a pH on another scale is taken (read.scale_origin)
     found = Frames(target, start, end, step, tier, total, cursor, cursor + count if cursor + count < total else None)
     waters = []
     for slot in range(count):
@@ -609,7 +631,8 @@ def deffeyes_frames(target, start, end, step, cursor=0, size=PAGE):
                 ts, value = rows[(index, slot)]
                 if at - ts <= timedelta(seconds=segment.fresh_s):
                     candidates[rank].append(Candidate(ts, FrameInput(
-                        float(as_parameter(code, value)), segment.origin, (at - ts).total_seconds(), segment.channel_no)))
+                        float(as_parameter(code, value)), segment.origin, (at - ts).total_seconds(), segment.channel_no,
+                        segment.ph_scale)))
             for rank, (_conditions, tier_points) in enumerate(tiered):
                 for point in tier_points:
                     sample = manual[code].latest(point.pk, at, WINDOW)
@@ -625,7 +648,16 @@ def deffeyes_frames(target, start, end, step, cursor=0, size=PAGE):
             elif code in calculation.REQUIRED:
                 missing.append(code)
         analysis, impossible = None, ''
-        if not missing:
+        if inputs.get(PH) is not None and inputs[PH].ph_scale:
+            # A pH on another scale than NBS, put on it with the frame's own temperature and salinity, as the live
+            # view does (farm/water/read.py Context.sensor_ph); where it cannot be, no diagram and the reason, never the
+            # unconverted number.
+            converted, impossible = _on_nbs(inputs[PH], inputs, ph_origin)
+            if converted is None:
+                del inputs[PH]
+            else:
+                inputs[PH] = converted
+        if not missing and not impossible:
             analysis, impossible = frame_analysis(
                 {**{code: item.value for code, item in inputs.items()}, 'water_origin': water_origin}, limits)
         waters.append((at, inputs, tuple(missing), impossible, analysis))
@@ -636,6 +668,20 @@ def deffeyes_frames(target, start, end, step, cursor=0, size=PAGE):
                                                          analysis.co2_mg_l)
         found.frames.append(Frame(at, inputs, point, missing, impossible, index))
     return found
+
+
+def _on_nbs(found, inputs, origin):
+    """(FrameInput of the pH on the NBS scale, '') of a frame's pH from a channel on another scale (`found.ph_scale`),
+    put on it with the frame's own temperature and salinity (`inputs`) by the one conversion (farm.water.read.ph_on_nbs);
+    (None, why) where it cannot be: no temperature or salinity at the frame, or water that takes no such pH."""
+    temperature, salinity = inputs.get(parameters.TEMPERATURE), inputs.get(parameters.SALINITY)
+    why = 'temperature' if temperature is None else 'salinity' if salinity is None else ''
+    if not why:
+        converted = ph_on_nbs(found.value, found.ph_scale, temperature.value, salinity.value, origin)
+        if converted is not None:
+            return replace(found, value=float(converted[0]), as_measured=found.value), ''
+        why = 'not_sea'
+    return None, str(messages.unevaluated_ph(messages.ph_sensor_refused(why, found.ph_scale)))
 
 
 def frame_analysis(values, limits):

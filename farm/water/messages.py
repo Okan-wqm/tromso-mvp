@@ -87,13 +87,68 @@ PH_LOADED = _('pH %(ph)s is the value loaded from %(point)s: it is on the NBS sc
               'is not converted again. Leave the scale at NBS, or type the pH as it was measured with its scale.')
 
 
+def ph_measured_words(value, scale):
+    """'measured 7.95 on the total scale': a pH measured on another scale than NBS, as the few visible words beside the
+    NBS number (a typed sample's, `ph_measured_short`, and a sensor's)."""
+    return _('measured %(value)s on the %(scale)s') % {'value': number_format(value, 2), 'scale': PH_SCALES[scale]}
+
+
 def ph_measured_short(sample):
     """What a sample's pH was measured as, when on another scale than NBS, as the few visible words beside the NBS
     number ('' for an NBS pH); `ph_measured` is the whole sentence."""
     if not sample.ph_scale:
         return ''
-    return _('measured %(value)s on the %(scale)s') % {'value': number_format(sample.ph_as_measured, 2),
-                                                        'scale': PH_SCALES[sample.ph_scale]}
+    return ph_measured_words(sample.ph_as_measured, sample.ph_scale)
+
+
+# A sensor's pH on another scale than NBS (owner decision 1 of 2026-11-17; the water-chemistry audit of 2026-11-19, F1;
+# farm/water/read.py Context.sensor_ph): put on the NBS scale where the water is read, or why not, in the words a page
+# says after "pH (NBS scale) cannot be evaluated:" (`unevaluated`).
+PH_SENSOR_REFUSED = {
+    'unconverted': _('a pH on the %(scale)s is not put on the NBS scale here'),
+    'stale': _('a pH on the %(scale)s is put on the NBS scale only while it is fresh, and it is no longer fresh'),
+    'temperature': _('a pH on the %(scale)s is put on the NBS scale with a fresh temperature from the sensors, and there '
+                     'is none'),
+    'salinity': _('a pH on the %(scale)s is put on the NBS scale with the salinity of the same moment, and none was '
+                  'measured here in the days before'),
+    'not_sea': _('a pH on the %(scale)s is taken for sea water of 5 ‰ or more only (not fresh water with salt added); '
+                 'set the channel’s pH scale to NBS if the probe is calibrated with NBS/NIST buffers'),
+}
+
+
+def ph_sensor_refused(why, scale):
+    """Why a sensor's pH on `scale` was not put on the NBS scale (PH_SENSOR_REFUSED's key `why`)."""
+    return PH_SENSOR_REFUSED[why] % {'scale': PH_SCALES[scale]}
+
+
+def ph_scale_changed(moment):
+    """Why a sensor's pH measured before its channel's pH scale was changed (at `moment`, on the site's clock) is used
+    nowhere: the scale it was measured on is not known any more."""
+    return _('measured before the channel’s pH scale was changed (%(time)s): the scale it was measured on is not '
+             'known') % {'time': moment.strftime('%d.%m.%Y %H:%M')}
+
+
+def unevaluated_ph(why):
+    """Why a moment of a replay or a trail has no diagram: its sensor pH could not be put on the NBS scale."""
+    return _('No diagram: the sensor’s pH cannot be put on the NBS scale (%(why)s).') % {'why': why}
+
+
+def ph_not_converted(why):
+    """The note of a sensor's pH that was not put on the NBS scale (`why`: ph_sensor_refused or ph_scale_changed)."""
+    return _('Not shown: %(why)s.') % {'why': why}
+
+
+def nh3_ph_not_converted(why):
+    """The note of an NH₃ not worked out because the sensor's pH could not be put on the NBS scale."""
+    return _('Not worked out: the sensor’s pH cannot be used (%(why)s).') % {'why': why}
+
+
+def ph_sensor_converted(ph):
+    """What a sensor's pH put on the NBS scale says beside it (read.SensorPh, converted)."""
+    return _('Measured %(value)s on the %(scale)s by the sensor; put on the NBS scale by formula %(formula)d with '
+             '%(temperature)s °C and %(salinity)s ‰ of the same moment.') % {
+        'value': number_format(ph.as_measured, 2), 'scale': PH_SCALES[ph.scale], 'formula': ph.formula,
+        'temperature': number_format(ph.temperature, 1), 'salinity': number_format(ph.salinity, 1)}
 
 
 def ph_stored(sample):

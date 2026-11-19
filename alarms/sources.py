@@ -34,6 +34,7 @@
 Where an alarm is (its site, its production department) is set when it opens, for the recipient rules."""
 import logging
 from dataclasses import dataclass
+from datetime import timedelta
 from functools import partial
 
 from django.db import transaction
@@ -329,8 +330,11 @@ UNIT_UNEVALUATED = 'unit_unevaluated'
 STEP_FAILED = 'step_failed'
 NO_WATER_POINT = 'no_water_point'
 VALUE_UNEVALUATED = 'value_unevaluated'
-# The judged values the chemistry core works out (and so can refuse to): the un-ionised ammonia.
-WORKED_OUT = tuple(code for code in water_read.DERIVED if code in LIMITED)
+# Every value the limits judge: each may come without a number for a stated reason (read.Reading.refused): a worked-out
+# one the chemistry core refused (the NH₃), a sensor pH that could not be put on the NBS scale (the water-chemistry
+# audit of 2026-11-19, F1 and its review's M1: it was silent), and any value a later refusal comes to. A value that is
+# never refused costs a subject that never holds (no row is written for it).
+REFUSABLE = tuple(parameter.code for parameter in parameters.LIMITED)
 DEVICE_CLOCK = 'device_clock'
 
 
@@ -449,11 +453,30 @@ def _removed_limit(reading):
                        f'by {who} {row.deleted_at.isoformat() if row.deleted_at else ""}'.strip()}
 
 
+def _unevaluated_since(reading, now):
+    """When a value that cannot be evaluated starts its warning's on-delay: its own time (`seen_at`). A sensor pH measured
+    before its channel's pH scale was changed (read.SensorPh.since; an NH₃ worked out with it too) was not refused
+    before the change, and the probe's next value, due while that one would still be fresh, is read on the new scale:
+    so it starts once that value would have gone stale, never before the change, and None (it does not hold) until
+    then. A change of scale does not raise and end a warning in the minute the next value takes (the review of the
+    water-chemistry audit, M1); a probe that sends nothing after it is warned of as soon as its value would be stale."""
+    ph = reading.sample.ph
+    if ph is None or ph.since is None or reading.at >= ph.since:
+        return seen_at(reading, now)
+    if reading.fresh(now):
+        return None
+    stale_at = reading.at + timedelta(seconds=reading.sample.fresh_for or 0)
+    return min(max(ph.since, stale_at), now)
+
+
 def _refused_subjects(units, found_water, unevaluated, failed, now):
-    """A value the limits would judge that the chemistry core refuses to work out (read.Reading.unevaluated: a
-    conductivity past the Davies range makes the NH₃ of a TAN sample one) is never silent (the verification of
-    2026-11-18, V-A): per unit and worked-out value, a warning of the alarm system on the unit's site, "<unit>: <value>
-    cannot be evaluated: <the core's reason>", its on-delay counted from the value's time as a limit's is. It ends on
+    """A value the limits would judge that comes without a number for a stated reason (read.Reading.unevaluated: a
+    conductivity past the Davies range makes the NH₃ of a TAN sample one; a sensor pH on the total scale without a
+    temperature of its moment makes the pH one) is never silent (the verification of 2026-11-18, V-A; the review of the
+    water-chemistry audit, M1): per unit and value the limits judge (`REFUSABLE`), a warning of the alarm system on the
+    unit's site, "<unit>: <value> cannot be evaluated: <the reason>", its on-delay counted from the value's time as a
+    limit's is (for a sensor pH from before its channel's scale changed, once it would have gone stale:
+    `_unevaluated_since`). It ends on
     evidence only, with the cause that is true: "restored" once the value is worked out again (the limit's own levels
     then judge it), "the water limit was removed" or "no fish in the unit any more" once nothing judges it (`_unjudged`,
     the limit levels' own rule). A later sample that gives no value (a TAN without its pH) or the refused sample leaving
@@ -467,15 +490,18 @@ def _refused_subjects(units, found_water, unevaluated, failed, now):
     for unit in units:
         found = found_water.get(unit.pk)
         looked = found is not None and found.point is not None and unit.pk not in unevaluated
-        for code in WORKED_OUT:
+        for code in REFUSABLE:
             reading = found.get(code) if looked else None
-            holds = reading is not None and reading.unevaluated
-            with audit.source_language():
-                summary = f'{unit.code}: {water_messages.unevaluated(reading)}'[:SUMMARY_LENGTH] if holds else ''
+            since = _unevaluated_since(reading, now) if reading is not None and reading.unevaluated else None
+            holds = since is not None
+            summary = ''
+            if holds:
+                with audit.source_language():
+                    summary = f'{unit.code}: {water_messages.unevaluated(reading)}'[:SUMMARY_LENGTH]
             worked_out = reading is not None and reading.value is not None and not reading.refused
             subject = system_subject(
                 f'unit:{unit.pk}:{VALUE_UNEVALUATED}:{code}', holds, Severity.WARNING, summary, now, parameter=code,
-                where=_unit_where(unit), bad_at=seen_at(reading, now) if holds else None,
+                where=_unit_where(unit), bad_at=since,
                 clear_ok=looked and not failed and worked_out)
             if reading is not None and reading.refused and not holds:      # refused, and nothing judges it any more
                 unjudged = _unjudged(reading)

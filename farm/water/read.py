@@ -1063,10 +1063,14 @@ class Context:
                 # evaluated (V-A), fresh or old (the last word there is about the water); with no fish or no row
                 # nothing is judged.
                 rows = []
-                for species_id, water_type in self.exposures(for_point or reading.sample.point, day):
+                exposures = self.exposures(for_point or reading.sample.point, day)
+                for species_id, water_type in exposures:
                     row = self.limits.applying(species_id, reading.code, water_type)
                     if row is not None and row not in rows:
                         rows.append(row)
+                # The fish no row judges it for: a limit removed ends its "cannot be evaluated" warning with that
+                # cause (alarms/sources.py `_unjudged`), as it ends a judged value's levels.
+                reading.uncovered = self.limits.uncovered(reading.code, exposures)
                 if rows:
                     reading.limits, reading.status, reading.judged = rows, Status.UNEVALUATED, Status.UNEVALUATED
                     if now is not None and not reading.fresh(now):

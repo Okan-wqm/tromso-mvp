@@ -201,7 +201,9 @@ pub const NH3_PAST_GUARD: u8 = 16;
 /// The two are validity bounds of cited constants, where what was checked against the sources ends, not limits a farm
 /// sets: they are code on purpose, not user-editable reference data (the house rule "never hard-code a limit a farm
 /// would want to change" is about a farm's own thresholds; editing these would only hide, or invent, a warning about
-/// the chemistry). They move only with a guard held over a wider range.
+/// the chemistry). They move only with a guard held over a wider range. Formula 4 (`crate::formula4`) says the same
+/// warning at the same bounds: its judged NH₃ and CO₂ keep their margin over its best estimate past them
+/// (chemcore/core/tests/formula4.rs), but nothing of it was computed or checked above 30 °C.
 pub const NH3_GUARD_MAX_TEMP_C: f64 = 30.0;
 /// See `NH3_GUARD_MAX_TEMP_C`.
 pub const NH3_GUARD_MAX_SALINITY: f64 = 35.0;
@@ -393,7 +395,7 @@ pub fn fresh_equilibria(
 /// product of water (`chemistry::kw_total` at S 0, the 2007 Guide's), so that it stays formula 1's fresh water at S 0
 /// bit for bit and a judged CO₂, the larger of the basis's and the water's own, never falls below formula 1's. The water's
 /// own constants take Millero's Kw (`fresh_at`).
-fn ideal_water(temp_c: f64, salinity: f64, origin: Origin) -> Result<Equilibria, ChemError> {
+pub(crate) fn ideal_water(temp_c: f64, salinity: f64, origin: Origin) -> Result<Equilibria, ChemError> {
     let ideal = fresh_at(temp_c, salinity, 0.0, Source::Nothing, origin)?;
     checked(Equilibria {
         kw: kw_total(temp_c, 0.0)?,
@@ -403,7 +405,7 @@ fn ideal_water(temp_c: f64, salinity: f64, origin: Origin) -> Result<Equilibria,
 
 /// The fresh path's equilibria at an ionic strength (mol/L; 0: every activity 1, the ideal water). A salt-added water
 /// holds no seawater boron (NaCl carries none).
-fn fresh_at(
+pub(crate) fn fresh_at(
     temp_c: f64,
     salinity: f64,
     strength: f64,
@@ -528,7 +530,7 @@ pub fn pk_nh4_seawater(temp_c: f64, salinity: f64) -> R {
     Ok(0.09018 + div(2729.92, t + KELVIN)? + (0.1552 - 0.0003142 * t) * strength)
 }
 
-fn checked(eq: Equilibria) -> Result<Equilibria, ChemError> {
+pub(crate) fn checked(eq: Equilibria) -> Result<Equilibria, ChemError> {
     for value in [
         eq.ph_offset,
         eq.k1,
@@ -558,7 +560,7 @@ pub fn sea_equilibria(temp_c: f64, salinity: f64) -> Result<Equilibria, ChemErro
 }
 
 /// A constant of the band: the geometric blend of the fresh and the sea path's, `weight` the sea's.
-fn blend(fresh: f64, sea: f64, weight: f64) -> R {
+pub(crate) fn blend(fresh: f64, sea: f64, weight: f64) -> R {
     exp((1.0 - weight) * ln(fresh)? + weight * ln(sea)?)
 }
 
@@ -591,7 +593,7 @@ pub fn equilibria_v3(
 /// log γ_z = z² log γ₁, so 10^(2, 4, 6 log γ₁) under the three. In the band, the geometric blend with the sea path's
 /// weight. The phosphate is not added to the ionic strength (a conductivity already counts it; 10 mg/L as P is about
 /// 0.0005 mol/L). None, or 0: the equilibria as they are, nothing computed; a negative one is refused.
-fn with_phosphate(eq: Equilibria, phosphate_p_mg_l: Option<f64>) -> Result<Equilibria, ChemError> {
+pub(crate) fn with_phosphate(eq: Equilibria, phosphate_p_mg_l: Option<f64>) -> Result<Equilibria, ChemError> {
     let Some(given) = present(phosphate_p_mg_l)? else {
         return Ok(eq);
     };
@@ -689,8 +691,8 @@ fn constants_v3(temp_c: f64, salinity: f64, alkalinity_mg_l: Option<f64>, ions: 
 }
 
 /// The equilibria of a water by a formula version: 1 (golden v1: the salinity alone, ε = 79; the ions and the phosphate
-/// are not read) or
-/// 3 (`equilibria_v3`); any other is refused (`ChemError::UnknownFormula`).
+/// are not read), 3 (`equilibria_v3`) or 4 (`crate::formula4::equilibria_v4`, the application's); any other is refused
+/// (`ChemError::UnknownFormula`).
 pub fn water_equilibria(
     formula: u32,
     temp_c: f64,
@@ -701,6 +703,7 @@ pub fn water_equilibria(
     match formula {
         1 => c::equilibria(temp_c, salinity),
         3 => equilibria_v3(temp_c, salinity, alkalinity_mg_l, ions),
+        4 => crate::formula4::equilibria_v4(temp_c, salinity, alkalinity_mg_l, ions),
         _ => Err(ChemError::UnknownFormula),
     }
 }

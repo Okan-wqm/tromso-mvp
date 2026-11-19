@@ -232,6 +232,43 @@ pub fn pk_nh4(temp_c: f64, salinity: f64) -> R {
     Ok(-log10(k_nh4_sws(temp_c, salinity)?)?)
 }
 
+/// pK of NH₄⁺ in pure water: Clegg & Whitfield (1995), Geochim. Cosmochim. Acta 59: 2403, table 13 (the footnote of
+/// eq. 12 and 18), pK°(T) = 9.244605 − 2729.33 (1/298.15 − 1/T), T in K: 9.2446 at 25 °C (Bates & Pinching 1949:
+/// 9.245). Formula 4's fresh path (`crate::formula4`).
+pub fn pk_nh4_cw95_pure(temp_c: f64) -> R {
+    let t = finite(temp_c)? + KELVIN;
+    Ok(9.244605 - 2729.33 * (1.0 / 298.15 - div(1.0, t)?))
+}
+
+/// pK of NH₄⁺ in sea water on the TOTAL hydrogen ion scale, MOLAL (mol per kg of water): Clegg & Whitfield (1995),
+/// eq. 18 with table 13 (b1 to b15), fitted to their Pitzer model's pKa* from −2 to 40 °C and S 0 to 40 within
+/// ±0.00015: pK = pK°(T) + (b1 + b2/T) S^0.25 + (b3 + b4 √T + b5 T + b6/T) S^0.5 + (b7 + b8 √T + b9 T + b10/T)
+/// S^1.5 + (b11 + b12 √T + b13/T) S² + (b14 + b15/T) S^2.5. The coefficients as the paper's table 13 prints them (read in its
+/// text extraction for the water-chemistry audit of 2026-11-19; b9 −1.471361e-4, where Xu, Pierrot & Cai 2017, eq. 10,
+/// print −1.471316e-4) and as PyCO2SYS 1.8.3.4 takes them (its numbers were compared, its code not read:
+/// chemcore/core/tests/nh3_guard.rs, to 1e-12; b8 0.0090226468 as there, the extraction showing 0.009022646). At S 0
+/// it is `pk_nh4_cw95_pure`. Formula 4's best estimate of K_NH4, fresh water to the sea (the audit's consensus, point
+/// 4; `crate::formula4`).
+pub fn pk_nh4_cw95_total(temp_c: f64, salinity: f64) -> R {
+    let s = finite(salinity)?;
+    let t = finite(temp_c)? + KELVIN;
+    let root = sqrt(t)?;
+    Ok(pk_nh4_cw95_pure(temp_c)?
+        + (0.04203362 - div(11.24742, t)?) * pow(s, 0.25)?
+        + (-13.6416 + 1.176949 * root - 0.02860785 * t + div(545.4834, t)?) * sqrt(s)?
+        + (-0.1462507 + 0.0090226468 * root - 0.0001471361 * t + div(10.5425, t)?) * pow(s, 1.5)?
+        + (0.004669309 - 0.0001691742 * root - div(0.5677934, t)?) * s * s
+        + (-0.00002354039 + div(0.009698623, t)?) * pow(s, 2.5)?)
+}
+
+/// K_NH4 of Clegg & Whitfield (1995) as the core holds its constants: per kg of solution (the molal value × (1 −
+/// 0.001005 S), Millero 1995, eq. 62) on the free scale (over [H⁺]total / [H⁺]free, `free_to_total`: Dickson's 1990
+/// KSO₄). At S 0, 10^−pK° (every scale the free one). Formula 4 (`crate::formula4`).
+pub fn k_nh4_cw95(temp_c: f64, salinity: f64) -> R {
+    let molal = pow(10.0, -pk_nh4_cw95_total(temp_c, salinity)?)?;
+    div(molal * (1.0 - 0.001005 * salinity), free_to_total(temp_c, salinity)?)
+}
+
 /// First dissociation constant of hydrogen sulfide, total scale: Millero, Plese & Fernandez (1988), Limnol. Oceanogr.
 /// 33: 269 (as in Millero 1995): pK 6.98 in fresh water and 6.51 in sea water at 25 °C. Fresh to sea water.
 pub fn k_h2s_total(temp_c: f64, salinity: f64) -> R {
@@ -412,7 +449,7 @@ pub struct Equilibria {
     /// (mol/kg)².
     pub ksp_calcite: f64,
     pub ksp_aragonite: f64,
-    /// The formula version (crate::FORMULA_VERSION; 1 or 3).
+    /// The formula version (crate::FORMULA_VERSION; 1, 3 or 4).
     pub formula: u32,
     /// The ionic strength. From the salinity (sea water; formula 1 always, 0 at S ≤ 0) it is DOE (1994)'s, in mol per
     /// kg of water (molal): 0.7014 at S 34, which is 0.695 mol/L. The fresh path's estimates (`crate::fresh`: the

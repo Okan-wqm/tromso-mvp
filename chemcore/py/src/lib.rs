@@ -4,6 +4,7 @@
 use chemcore_core::analysis as a;
 use chemcore_core::chemistry as c;
 use chemcore_core::dosing as d;
+use chemcore_core::formula4 as f4;
 use chemcore_core::fresh as f;
 use chemcore_core::geometry as g;
 use chemcore_core::num::ChemError;
@@ -39,7 +40,7 @@ fn err(error: ChemError) -> PyErr {
         ChemError::ZeroDivision => PyZeroDivisionError::new_err("float division by zero"),
         ChemError::Overflow => PyOverflowError::new_err("math range error"),
         ChemError::NonFinite => NonFiniteError::new_err("not a finite number"),
-        ChemError::UnknownFormula => PyValueError::new_err("unknown formula version (the core has 1 and 3)"),
+        ChemError::UnknownFormula => PyValueError::new_err("unknown formula version (the core has 1, 3 and 4)"),
         ChemError::ImpossibleWater => ImpossibleWaterError::new_err(
             "no water has this pH and alkalinity: the hydroxide and the borate of the pH, and the phosphate given, alone \
              are at least the alkalinity (or a DIC below 0 was given)",
@@ -453,6 +454,8 @@ of_temperature_and_salinity!(
     kb_total,
     k_nh4_sws,
     pk_nh4,
+    k_nh4_cw95,
+    pk_nh4_cw95_total,
     k_h2s_total,
     k1p_sws,
     k2p_sws,
@@ -615,6 +618,50 @@ fn equilibria_v3(
     )
     .map(Equilibria)
     .map_err(err)
+}
+
+/// The formula 4 equilibria of a water, its provenance with it (chemcore/core/src/formula4.rs; see `water_equilibria`).
+#[pyfunction]
+#[pyo3(signature = (temp_c, salinity, alkalinity_mg_l=None, conductivity_25_us_cm=None, hardness_mg_l=None, water_origin="",
+                    phosphate_p_mg_l=None))]
+fn equilibria_v4(
+    temp_c: f64,
+    salinity: f64,
+    alkalinity_mg_l: Option<f64>,
+    conductivity_25_us_cm: Option<f64>,
+    hardness_mg_l: Option<f64>,
+    water_origin: &str,
+    phosphate_p_mg_l: Option<f64>,
+) -> PyResult<Equilibria> {
+    f4::equilibria_v4(
+        temp_c,
+        salinity,
+        alkalinity_mg_l,
+        ions(conductivity_25_us_cm, hardness_mg_l, water_origin, phosphate_p_mg_l)?,
+    )
+    .map(Equilibria)
+    .map_err(err)
+}
+
+/// pK of NH4+ in pure water by Clegg & Whitfield (1995), table 13 (formula 4's fresh path).
+#[pyfunction]
+fn pk_nh4_cw95_pure(temp_c: f64) -> PyResult<f64> {
+    inputs(&[temp_c])?;
+    ok(c::pk_nh4_cw95_pure(temp_c))
+}
+
+/// Formula 4's sea path pH free - pH NBS at a temperature and salinity (Millero 1986's step, chemcore/core/src/formula4.rs).
+#[pyfunction]
+fn ph_offset_v4(temp_c: f64, salinity: f64) -> PyResult<f64> {
+    inputs(&[temp_c, salinity])?;
+    ok(f4::ph_offset(temp_c, salinity))
+}
+
+/// pH NBS - pH total (molal) at 25 °C of formula 4's step, D(S) (Millero 1986, table 7).
+#[pyfunction]
+fn nbs_minus_total_25(salinity: f64) -> PyResult<f64> {
+    inputs(&[salinity])?;
+    ok(f4::nbs_minus_total_25(salinity))
 }
 
 /// The equilibria of a water by a formula version (the application's by default): what every chemistry of a water
@@ -1324,6 +1371,7 @@ fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("IONIC_PER_MICROSIEMENS", f::IONIC_PER_MICROSIEMENS)?;
     module.add("IONIC_PER_MICROSIEMENS_NACL", f::IONIC_PER_MICROSIEMENS_NACL)?;
     module.add("FORMULAS", chemcore_core::FORMULAS.to_vec())?;
+    module.add("PH_UNCERTAINTY", f4::PH_UNCERTAINTY)?;
     module.add_class::<Equilibria>()?;
     module.add_function(wrap_pyfunction!(version, module)?)?;
     module.add_function(wrap_pyfunction!(formula_version, module)?)?;
@@ -1344,6 +1392,11 @@ fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
         wrap_pyfunction!(kw_free, module)?,
         wrap_pyfunction!(kb_total, module)?,
         wrap_pyfunction!(k_nh4_sws, module)?,
+        wrap_pyfunction!(k_nh4_cw95, module)?,
+        wrap_pyfunction!(pk_nh4_cw95_total, module)?,
+        wrap_pyfunction!(pk_nh4_cw95_pure, module)?,
+        wrap_pyfunction!(ph_offset_v4, module)?,
+        wrap_pyfunction!(nbs_minus_total_25, module)?,
         wrap_pyfunction!(pk_nh4, module)?,
         wrap_pyfunction!(k_h2s_total, module)?,
         wrap_pyfunction!(k1p_sws, module)?,
@@ -1390,6 +1443,7 @@ fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
         wrap_pyfunction!(water_density, module)?,
         wrap_pyfunction!(debye_huckel_a, module)?,
         wrap_pyfunction!(equilibria_v3, module)?,
+        wrap_pyfunction!(equilibria_v4, module)?,
         wrap_pyfunction!(water_equilibria, module)?,
     ] {
         module.add_function(function)?;

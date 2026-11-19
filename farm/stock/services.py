@@ -912,8 +912,10 @@ def record_grading(user, *, source, batch, day, outputs, remainder_avg_weight_g=
     stays the same, the size class is on the line (owner decision Q6). One transaction for all outputs."""
     _destinations(source, [unit for unit, _count, _weight, _size in outputs])
     with transaction.atomic():
-        locked(Batch, {batch.pk})
-        locked(Tank, {source.pk, *(unit.pk for unit, *_rest in outputs)})
+        # The locks `_commit` takes, taken here first (the count that stays is read under them), in the order of every
+        # write: the batches it can reach in one statement, then the units (verification of 27e554e, W-3: its own batch
+        # and units first, then the reach, could cross another write's order into a deadlock).
+        lock_fish([source.pk, *(unit.pk for unit, *_rest in outputs)], day, also={batch.pk})
         staying = read.share_on(source.pk, batch.pk, day).count - sum(count for _unit, count, *_rest in outputs)
         if staying > 0 and remainder_avg_weight_g is None:
             raise ValidationError({'avg_weight_g': _('%(count)s fish stay in %(unit)s: weigh them too.') % {

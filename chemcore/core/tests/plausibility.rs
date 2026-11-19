@@ -79,3 +79,29 @@ fn the_nh3_judgement_past_its_guard_is_warned_never_refused() {
     // Formula 1 says no warning (golden v1 holds none).
     assert!(f::water_equilibria(1, 35.0, 40.0, None, Ions::default()).is_ok_and(|eq| eq.warnings == 0));
 }
+
+#[test]
+fn a_water_below_the_constants_fits_is_warned_never_refused() {
+    // The water-chemistry audit of 2026-11-19, F10: a temperature is taken from −3 °C, the constants are fitted from
+    // 0 °C. Below it a warning is said with every value; 0 °C itself is quiet.
+    assert_eq!((f::BELOW_FITTED_TEMP, f::FITTED_FROM_TEMP_C), (32, 0.0));
+    let bits = |temp_c: f64, salinity: f64| f::plausibility(temp_c, salinity, None, Ions::default());
+    for (temp_c, salinity) in [(0.0, 0.0), (0.0, 34.0), (12.0, 34.0)] {
+        assert_eq!(bits(temp_c, salinity), Ok(0), "{temp_c} °C, S {salinity}");
+    }
+    for (temp_c, salinity) in [(-0.1, 34.0), (-1.9, 30.0), (-3.0, 0.0), (-3.0, 35.0)] {
+        assert_eq!(
+            bits(temp_c, salinity),
+            Ok(f::BELOW_FITTED_TEMP),
+            "{temp_c} °C, S {salinity}"
+        );
+    }
+    // Beside the NH₃ guard's (or-ed, neither hides the other).
+    assert_eq!(bits(-1.0, 36.0), Ok(f::BELOW_FITTED_TEMP | f::NH3_PAST_GUARD));
+    // Never a refusal: the water is worked out, its NH₃ judged, the warning with it. Formula 1 says none.
+    let cold = f::equilibria_v3(-1.9, 34.0, Some(115.0), Ions::default());
+    assert!(cold.is_ok_and(
+        |eq| eq.warnings == f::BELOW_FITTED_TEMP && eq.nh3_share(8.0).is_ok_and(|share| share > 0.0 && share < 1.0)
+    ));
+    assert!(f::water_equilibria(1, -1.9, 34.0, None, Ions::default()).is_ok_and(|eq| eq.warnings == 0));
+}

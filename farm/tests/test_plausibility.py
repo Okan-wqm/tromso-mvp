@@ -146,3 +146,39 @@ class ReportTests(WaterTestCase):
                 self.assertContains(page, 'NH₃: above 30 °C or a salinity of 35 ‰')
                 cool = self.client.get(reverse(name), {**water, 'temperature_c': '30'})
                 self.assertNotContains(cool, 'NH₃: above 30 °C or a salinity of 35 ‰')
+
+
+class BelowFittedTemperatureTests(WaterTestCase):
+    """The water-chemistry audit of 2026-11-19, F10: a temperature is taken from −3 °C (sea water at Tromsø goes below
+    0 °C), the constants are fitted from 0 °C. Below it every value worked out from the water says so; 0 °C itself is
+    quiet. A warning, never a refusal: the judged values stay on the safe side there (the audit's out/09_cold.txt)."""
+
+    def test_below_0_degrees_only(self):
+        for temp_c, salinity in ((0.0, 0.0), (0.0, 34.0), (12.0, 34.0)):
+            with self.subTest(temp_c=temp_c, salinity=salinity):
+                self.assertNotIn('below_fitted_temp', native.water_equilibria(temp_c, salinity, 115.0).warnings)
+        for temp_c, salinity in ((-0.1, 34.0), (-1.9, 30.0), (-3.0, 0.0)):
+            with self.subTest(temp_c=temp_c, salinity=salinity):
+                self.assertEqual(native.water_equilibria(temp_c, salinity, 115.0).warnings, ['below_fitted_temp'])
+        self.assertEqual(native.water_equilibria(-1.9, 34.0, formula=1).warnings, [])      # formula 1 has none
+
+    def test_said_with_a_samples_nh3_in_three_languages_and_still_judged(self):
+        self.sample(hours=2, tan_mg_l='2', ph='7.8', temperature_c='-1.5', salinity_ppt='34')
+        nh3 = read.latest([self.mid1])[self.mid1.pk].get('nh3_n_mg_l')
+        self.assertIsNotNone(nh3.value)                                     # worked out and judged all the same
+        self.assertIn('Below 0 °C', nh3.provenance)
+        self.assertIn('fitted from 0 °C', nh3.provenance)
+        english = str(messages.WARNINGS['below_fitted_temp'])
+        for language in ('nb', 'tr'):
+            with self.subTest(language=language), translation.override(language):
+                words = str(messages.WARNINGS['below_fitted_temp'])
+                self.assertNotEqual(words, english)
+                self.assertIn('0 °C', words)
+
+    def test_the_calculator_says_it(self):
+        water = {'temperature_c': '-1.5', 'ph': '7.8', 'salinity_ppt': '34', 'alkalinity_mg_l': '115',
+                 'tan_mg_l': '1', 'drawn': '1'}
+        for name in ('farm:water_calculator', 'farm:water_calculator_report'):
+            with self.subTest(page=name):
+                self.assertContains(self.client.get(reverse(name), water), 'Below 0 °C')
+                self.assertNotContains(self.client.get(reverse(name), {**water, 'temperature_c': '0'}), 'Below 0 °C')

@@ -1298,20 +1298,33 @@ def _combined(before, after, came_from):
     - fish that were held already, to an EARLIER end, and are combined with a longer or an unknown hold, in either
       direction (verification V-1: B waited until tomorrow, and after the move for two months, and nothing was said).
     Held fish moved alone, fish combined with a hold that ends no later than their own, and an end that only moved
-    (the same withdrawal, other water) are not said. One per lot, with the new withdrawal that holds it longest."""
+    (the same withdrawal, other water) are not said. One per lot, with the new withdrawal that holds it longest.
+
+    The fish of a lot after the operation are GROUPS, each asked about on its own, whatever their batch (verification
+    of 27e554e, W-1): the lot's own fish (when it had fish before the operation, or when none came into it by a move:
+    a stocking, fish that went on from a unit that now counts as shared) and the fish of each lot the operation moved
+    fish out of into it. A lot is a batch in a unit, so held fish moved in beside fish of their OWN batch that are not
+    held (a split before the course merged back, decision 7's sibling tank moved into its held part) used to hide them
+    behind the arriving fish's cause: the same batch is now asked exactly as another batch is (decision 8)."""
     found = []
     for lot in sorted(after.held, key=str):
         if lot not in after.stocked:
             continue
-        prior = [hold for each in (lot, *sorted(came_from.get(lot, ()), key=str)) for hold in before.held.get(each, ())]
-        known = {_cause(hold) for hold in prior}
-        new = [hold for hold in after.held[lot] if _cause(hold) not in known]
-        if not new:
-            continue
-        longest = max(new, key=_rank)
-        if prior and not _later(longest.until, _end(prior)):
-            continue
-        found.append((lot, longest))
+        arrived = sorted(came_from.get(lot, ()), key=str)
+        groups = ([lot] if lot in before.stocked or not arrived else []) + arrived
+        waiting = []
+        for group in groups:
+            prior = list(before.held.get(group, ()))
+            known = {_cause(hold) for hold in prior}
+            new = [hold for hold in after.held[lot] if _cause(hold) not in known]
+            if not new:
+                continue
+            longest = max(new, key=_rank)
+            if prior and not _later(longest.until, _end(prior)):
+                continue
+            waiting.append(longest)
+        if waiting:
+            found.append((lot, max(waiting, key=_rank)))
     batches = Batch.all_objects.in_bulk({batch_id for (_unit, batch_id), _hold in found})
     units = Tank.all_objects.in_bulk({unit_id for (unit_id, _batch), _hold in found})
     return [Combined(batches[batch_id], units[unit_id], hold) for (unit_id, batch_id), hold in found]

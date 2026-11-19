@@ -579,8 +579,10 @@ class AlarmRuleForm(TabbedForm):
         widgets = {'threshold': forms.TextInput(attrs=DECIMAL), 'hysteresis': forms.TextInput(attrs=DECIMAL)}
         help_texts = {
             'quantity': gettext_lazy('Instead of one channel: every active channel of this quantity.'),
-            'threshold': gettext_lazy('In the quantity’s unit; for a rate, the change over the time below. A pH channel’s '
-                                      'values are compared as its probe measures them, on the channel’s own pH scale.'),
+            'threshold': gettext_lazy('In the quantity’s unit; for a rate, the change over the time below. A water value, '
+                                      'a pH among them, takes no above or below here: the water limits judge its level '
+                                      '(a pH on the NBS scale). A rate of pH is about the same on every scale, and does '
+                                      'not compare a value with one from before the channel’s pH scale was changed.'),
             'for_s': gettext_lazy('Above or below: every value of this time must be past the threshold. No fresh value: '
                                   'this long past the channel’s freshness. A rate: the change over this time.'),
             'hysteresis': gettext_lazy('An open alarm closes only once the value is back past the threshold by this much.'),

@@ -18,7 +18,7 @@ from farm.tests.helpers import role
 
 from alarms.models import Acknowledgement
 from sensors import alarms, bindings
-from sensors.models import AlarmEvent, AlarmRule, ChannelState, DeviceState
+from sensors.models import AlarmEvent, AlarmRule, Channel, ChannelState, DeviceState
 
 from . import SensorsCase, make_channel, make_device
 
@@ -242,3 +242,48 @@ class PlaceTests(AlarmCase):
         self.state(self.orp, 460)
         alarms.evaluate()
         self.assertEqual(AlarmEvent.objects.count(), 1)
+
+
+class PhScaleRateTests(AlarmCase):
+    """A rate rule on a pH channel whose scale was changed (the review of the water-chemistry audit of 2026-11-19, C1):
+    a reading from before the change is on another scale, so the rate never compares a value with it. The same water,
+    7.95 on the total scale then 8.08 on the NBS scale, is no move of 0.13; a move after the change is one."""
+
+    def setUp(self):
+        super().setUp()
+        self.ph = make_channel(self.device, 'ph', code='PH-T', ph_scale='total')
+        bindings.move(self.user, self.ph, timezone.now() - timedelta(days=1), system=self.ras)
+        AlarmRule.objects.create(kind='rate', severity='warning', channel=self.ph, threshold=0.1, for_s=600)
+
+    def changed(self, seconds_ago):
+        """The channel put on the NBS scale `seconds_ago` (the moment as `Channel.save` records it)."""
+        Channel.objects.filter(pk=self.ph.pk).update(ph_scale='nbs',
+                                                     ph_scale_from=timezone.now() - timedelta(seconds=seconds_ago))
+
+    def test_a_reading_from_before_the_change_is_not_compared(self):
+        self.readings(self.ph, [(600, 7.95)])
+        self.changed(300)
+        self.state(self.ph, 8.08, seconds=1)
+        alarms.evaluate()
+        self.assertFalse(AlarmEvent.objects.exists())
+
+    def test_a_move_after_the_change_still_opens_the_event(self):
+        self.readings(self.ph, [(1500, 7.95), (600, 7.75)])
+        self.changed(1200)
+        self.state(self.ph, 8.08, seconds=1)
+        alarms.evaluate()
+        self.assertEqual(AlarmEvent.objects.filter(channel_no=self.ph.channel_no).count(), 1)
+
+    def test_a_channel_whose_scale_never_changed_compares_as_before(self):
+        self.readings(self.ph, [(600, 7.95)])
+        self.state(self.ph, 8.08, seconds=1)
+        alarms.evaluate()
+        self.assertEqual(AlarmEvent.objects.filter(channel_no=self.ph.channel_no).count(), 1)
+
+    def test_the_rules_help_says_the_water_limits_judge_a_ph_level(self):
+        """No sensor rule compares a pH level (above or below on a water value is refused: AlarmRule.clean); the help
+        says so instead of suggesting the values are compared on the channel's scale."""
+        from sensors.forms import AlarmRuleForm
+        said = str(AlarmRuleForm().fields['threshold'].help_text)
+        self.assertIn('takes no above or below here: the water limits judge its level (a pH on the NBS scale)', said)
+        self.assertNotIn('compared as its probe measures them', said)

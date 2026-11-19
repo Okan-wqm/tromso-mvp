@@ -8,6 +8,9 @@ Per active rule and each channel it covers (its channel, or every active channel
 - above / below: every clean value of the last `for_s` seconds (and the current one) past the threshold; the event
   closes when the value is back past the threshold by the hysteresis;
 - rate: the value moved more than the threshold since the value `for_s` seconds ago.
+A pH channel's readings from before its pH scale was changed (`Channel.ph_scale_from`) are on another scale: a rate does
+not compare a value with one of them, and a time above or below does not read them (the review of the water-chemistry
+audit of 2026-11-19, C1: the same water, 7.95 total then 8.08 NBS, read as a move of 0.13).
 An event opens once per rule and channel (a unique index), keeps its furthest value, and closes when the rule no longer
 holds.
 
@@ -21,6 +24,8 @@ from datetime import timedelta
 
 from django.db import connection, transaction
 from django.utils import timezone
+
+from farm.water.parameters import PH
 
 from . import read
 from .models import AlarmEvent, AlarmKind, AlarmRule, Binding, Channel, ChannelStatus
@@ -61,8 +66,11 @@ def _holds(rule, channel, state, online, now, opened, binding):
         return not online, value
     if value is None or not state.fresh:
         return opened, value                    # nothing new to judge: an open event stays as it is
+    scale_from = channel.ph_scale_from if channel.quantity == PH else None
     if rule.kind == AlarmKind.RATE:
         before = read.value_at(channel.channel_no, now - timedelta(seconds=rule.for_s))
+        if before is not None and scale_from is not None and before[0] < scale_from:
+            before = None                       # on the scale before the change: no change of the water to compare
         return before is not None and binding.took(before[0]) and abs(value - before[1]) > rule.threshold, value
     high = rule.kind == AlarmKind.HIGH
     if opened:
@@ -70,7 +78,8 @@ def _holds(rule, channel, state, online, now, opened, binding):
         return (value > limit) if high else (value < limit), value
     past = value > rule.threshold if high else value < rule.threshold
     if past and rule.for_s:
-        low, top = _extremes(channel.channel_no, max(now - timedelta(seconds=rule.for_s), binding.valid_from))
+        low, top = _extremes(channel.channel_no, max(filter(None, (now - timedelta(seconds=rule.for_s),
+                                                                   binding.valid_from, scale_from))))
         past = (low is not None and low > rule.threshold) if high else (top is not None and top < rule.threshold)
     return past, value
 

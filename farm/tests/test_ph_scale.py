@@ -378,11 +378,13 @@ class CalculatorTests(SeaTestCase):
 
 
 class SensorTests(WaterTestCase):
-    def test_a_ph_channel_is_nbs_and_says_so(self):
-        """A sensor's pH is not converted (the ingest stores what the device sends, and a conversion needs the
-        temperature and the salinity of the same moment): a pH channel is on the NBS scale, and its quantity says it."""
+    def test_a_ph_channel_says_its_scale(self):
+        """The ingest stores what the device sends; a pH channel says the scale its probe reports on (NBS unless set
+        otherwise) and the water reads it on the NBS scale (farm/tests/test_sensor_ph_scale.py): the stored pH quantity
+        is NBS, and the channel's form says what a total-scale probe taken as NBS would do."""
         from sensors import quantities
         ph = quantities.get('ph')
         self.assertEqual(str(ph.label), 'pH (NBS scale)')
-        self.assertIn('not converted', str(quantities.PH_SCALE_NOTE))
-        self.assertIn('NBS', str(quantities.PH_SCALE_NOTE))
+        self.assertIn('total scale', str(quantities.PH_SCALE_NOTE))
+        self.assertIn('NBS', str(quantities.PH_SCALE_HELP))
+        self.assertIn('is put on the NBS scale', str(quantities.PH_SCALE_HELP))

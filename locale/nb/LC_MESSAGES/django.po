@@ -17235,6 +17235,10 @@ msgid "at %(point)s"
 msgstr "ved %(point)s"
 
 #, python-format
+msgid "at least %(value)s"
+msgstr "minst %(value)s"
+
+#, python-format
 msgid "at least every %(seconds)s s"
 msgstr "minst hvert %(seconds)s s"
 

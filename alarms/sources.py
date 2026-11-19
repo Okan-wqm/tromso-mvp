@@ -86,12 +86,15 @@ UNJUDGED = (Status.NO_LIMIT, Status.NOT_MEASURED)
 
 def _summary(point, reading):
     """'T-01 · Middle: pH (NBS scale) 5.50 (critical)', in English at rest. A reading without a value of its own that
-    another fresh value judged (`decided`) names that value."""
+    another fresh value judged (`decided`) names that value; a refused one judged on its limits' basis says "at least"
+    before it, as the page does."""
     owner = point.owner
     with audit.source_language():
         label = str(parameters.get(reading.code).label)
         status = str(Status(reading.judged).label).lower()
         value = reading.value if reading.value is not None else reading.worse.value
+        if reading.value is not None and reading.refused:      # its limits' basis alone, as the page says it (F3-5)
+            value = _('at least %(value)s') % {'value': value}
         return f'{getattr(owner, "code", owner)} · {point.name}: {label} {value} ({status})'
 
 
@@ -110,14 +113,22 @@ def decided(reading):
     alone has one, farm/water/read.py `_ammonia_on_basis`), or another fresh value judged it (`Reading.worse`,
     read.worst_fresh): the judgement the water page shows is the one the alarm raises, never a lower one (the re-check
     of 2026-11-18, RC-2: a unit whose own NH₃ the core refused, judged critical by its loop's fresh sample on the page,
-    had only the "cannot be evaluated" warning)."""
-    return reading.value is not None or reading.worse is not None
+    had only the "cannot be evaluated" warning), or it has other fresh values of its water that take part in its status
+    (`Reading.deciding`): its levels stay judged by them, so a level another value raised ends when that water
+    recovers (the verification of FIX3, F3-1: T-02's own TAN without a pH, critical by its loop's sample, stayed
+    critical after the loop's next sample was OK, while its page said "not measured")."""
+    return reading.value is not None or reading.worse is not None or bool(known(reading))
+
+
+def known(reading):
+    """The values that take part in a value-less reading's status: its place's other fresh values that have one."""
+    return [each for each in reading.deciding if each.value is not None]
 
 
 def _slots(found):
     """{slot: the reading that decides it}: per quantity of a unit's water, its limited reading judged worst (`decided`
-    ones only: a reading without a value nothing judged raises nothing here; a refused one is the alarm system's
-    warning, `_refused_subjects`)."""
+    ones only: a reading without a value and no other value of its water raises nothing here; a refused one is the
+    alarm system's warning too, `_refused_subjects`)."""
     slots = {}
     for reading in found.readings.values():
         if reading.code in LIMITED and decided(reading):
@@ -158,8 +169,12 @@ def clear_evidence(reading, severity, rules, last_bad_at, now):
     that is the newest again, its bad successor voided or its probe taken out, says nothing new: alarm plan, defect 4),
     and clear of it by the deadband. Times are `seen_at`, the same clamp as the raise. A value the chemistry core refused
     to work out (`Reading.refused`: no value, or its limits' basis alone, a value the judged one is at least) says
-    nothing of the level being over."""
-    decider = reading.worse or reading
+    nothing of the level being over. A reading without a value of its own is judged by its water's other values
+    (`known`): their newest is the one taken after the last bad value, or nothing is evidence."""
+    decider = reading.worse or (reading if reading.value is not None else max(known(reading), key=lambda each: each.at,
+                                                                              default=None))
+    if decider is None:
+        return False
     return (reading.status != Status.STALE and not reading.refused
             and (last_bad_at is None or seen_at(decider, now) > last_bad_at)
             and judged_clear(reading, rules) not in HOLDS[severity])
@@ -351,7 +366,14 @@ def _water_subjects(found, failed, rules, now):
 
 def _unjudged(reading):
     """Why a reading's levels are no longer judged, when they are not: the fish have no limit row for it any more (a limit
-    removed: the clearance names the row and who removed it, cross review F12), or there are no fish."""
+    removed: the clearance names the row and who removed it, cross review F12), or there are no fish. A reading without a
+    value of its own is judged through its water's other values (`known`): no longer judged only when none of them is
+    (its own "not measured" is no cause: F3-1). A refused one without a value says it itself: no limit row judged it."""
+    if reading.value is None and not reading.refused:
+        judged_by = known(reading)
+        if not judged_by or any(each.judged not in UNJUDGED for each in judged_by):
+            return {}
+        reading = judged_by[0]
     if reading.judged not in UNJUDGED:
         return {}
     if reading.uncovered:

@@ -17260,6 +17260,10 @@ msgid "at %(point)s"
 msgstr "%(point)s noktasında"
 
 #, python-format
+msgid "at least %(value)s"
+msgstr "en az %(value)s"
+
+#, python-format
 msgid "at least every %(seconds)s s"
 msgstr "en az %(seconds)s sn’de bir"
 

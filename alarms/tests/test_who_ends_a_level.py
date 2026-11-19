@@ -9,8 +9,12 @@ Who raised (12 h ago, raised by three passes):
 - OTHER_TAN: the loop's full sample 0.8924, T-02's own newest a TAN without a pH (no value of its own: F3-1);
 - OTHER_OK: the loop's full sample 0.8924, T-02's own newest a full sample inside the limits (0.0011).
 - STAND_IN: the loop's full sample 0.8924 standing in for T-02, which has no sample of its own (read.latest).
+Each also as OPEN WHEN 0014 LANDS (`<raiser>_landed`, F3-8): raised, then every row's `own_held` false as the
+migration leaves it, then the first pass after landing works it out.
 What came next (6 h ago): an own full sample OK or critical, an own TAN without a pH, the loop OK or critical, an own
-TAN without a pH then the loop OK (F3-1 / S4b; for OWN the probe S9 of F3-7), nothing, the bad sample voided."""
+TAN without a pH then the loop OK (F3-1 / S4b; for OWN the probe S9 of F3-7), nothing, the bad sample voided; and, on a
+timeline raised 200 h ago, the bad value going stale (NH₃ 168 h) while the loop's OK sample stands in (F3-9, decision
+of 2026-11-19: a value measured on the unit is confirmed over only by measuring the unit again)."""
 from datetime import timedelta
 
 from farm.tests.test_water import WaterTestCase
@@ -25,8 +29,11 @@ LOW = {**WATER, 'ph': '7.00', 'tan_mg_l': '0.500'}
 TAN_ONLY = {'tan_mg_l': '5.000'}
 NH3 = 'nh3_n_mg_l'
 OPEN = 'open'
-RAISERS = ('own', 'other_tan', 'other_ok', 'stand_in')
-EVENTS = ('own_ok', 'own_bad', 'own_tan', 'loop_ok', 'loop_bad', 'own_tan_then_loop_ok', 'nothing', 'void')
+BASE = ('own', 'other_tan', 'other_ok', 'stand_in')
+RAISERS = (*BASE, *(f'{raiser}_landed' for raiser in BASE))
+EVENTS = ('own_ok', 'own_bad', 'own_tan', 'loop_ok', 'loop_bad', 'own_tan_then_loop_ok', 'nothing', 'void',
+          'stale_then_loop_ok')
+STALE = 'stale_then_loop_ok'
 EXPECTED = {
     # Raised by T-02's own value: only T-02's own evidence ends it.
     ('own', 'own_ok'): 'returned', ('own', 'own_bad'): OPEN, ('own', 'own_tan'): OPEN, ('own', 'loop_ok'): OPEN,
@@ -44,7 +51,12 @@ EXPECTED = {
     ('stand_in', 'own_ok'): OPEN, ('stand_in', 'own_bad'): OPEN, ('stand_in', 'own_tan'): OPEN,
     ('stand_in', 'loop_ok'): 'returned', ('stand_in', 'loop_bad'): OPEN,
     ('stand_in', 'own_tan_then_loop_ok'): 'returned', ('stand_in', 'nothing'): OPEN, ('stand_in', 'void'): OPEN,
+    # The bad value stale, the loop's OK value standing in: a value measured on T-02 holds (F3-9); the loop's ends.
+    ('own', STALE): OPEN, ('other_tan', STALE): 'returned', ('other_ok', STALE): 'returned',
+    ('stand_in', STALE): 'returned',
 }
+# Open when 0014 lands: the same outcome as raised after it.
+EXPECTED.update({(f'{raiser}_landed', event): outcome for (raiser, event), outcome in list(EXPECTED.items())})
 
 
 class WhoEndsALevelCase(WaterTestCase):
@@ -64,14 +76,19 @@ class WhoEndsALevelCase(WaterTestCase):
     def own_held(self):
         return AlarmSubjectState.objects.get(key=water_key(self.t2.pk, NH3, 'critical')).own_held
 
-    def raise_by(self, raiser):
-        if raiser == 'own':
-            bad = self.sample(self.t2, hours=12, **WATER)
+    def raise_by(self, raiser, hours=12):
+        base, landed = raiser.removesuffix('_landed'), raiser.endswith('_landed')
+        if base == 'own':
+            bad = self.sample(self.t2, hours=hours, **WATER)
         else:
-            bad = self.sample(self.loop, hours=12, **WATER)
-            if raiser != 'stand_in':
-                self.sample(self.t2, hours=11, **(TAN_ONLY if raiser == 'other_tan' else LOW))
-        self.passes(-700, -699, -640)
+            bad = self.sample(self.loop, hours=hours, **WATER)
+            if base != 'stand_in':
+                self.sample(self.t2, hours=hours - 1, **(TAN_ONLY if base == 'other_tan' else LOW))
+        start = -60 * hours
+        self.passes(start + 20, start + 21, start + 80)
+        if landed:                  # alarms 0014 lands: every row's own_held false; the next pass works it out
+            AlarmSubjectState.objects.update(own_held=False)
+            self.passes(start + 90)
         self.assertEqual([(alarm.severity, alarm.clearance_or_none) for alarm in self.state()],
                          [('critical', None), ('warning', None)])
         return bad
@@ -98,6 +115,10 @@ class WhoEndsALevelCase(WaterTestCase):
             self.sample(self.loop, hours=5, **LOW)
         elif event == 'void':
             water_services.void(self.user, bad, 'a typo')
+        elif event == STALE:
+            self.sample(self.loop, hours=2, **LOW)
+            self.passes(-110, -109, -50, 0, 600)
+            return
         self.passes(-350, -349, -290, -230, 0, 600)
 
     def outcome(self):
@@ -114,10 +135,17 @@ class MatrixTests(WhoEndsALevelCase):
     def test_the_matrix_is_whole(self):
         self.assertEqual(set(EXPECTED), {(raiser, event) for raiser in RAISERS for event in EVENTS})
 
+    def test_0014_leaves_who_raised_it_to_the_first_pass(self):
+        """F3-8: the migration adds the column and decides nothing (it set every open level true, which kept a level the
+        loop raised for a unit without a sample of its own open after the loop recovered)."""
+        import importlib
+        migration = importlib.import_module('alarms.migrations.0014_subject_own_held').Migration
+        self.assertEqual([type(operation).__name__ for operation in migration.operations], ['AddField'])
+
 
 def _cell(raiser, event):
     def test(self):
-        bad = self.raise_by(raiser)
+        bad = self.raise_by(raiser, hours=200 if event == STALE else 12)
         self.then(event, bad)
         self.assertEqual(self.outcome(), EXPECTED[raiser, event])
     test.__doc__ = f'Raised by {raiser}, then {event}: {EXPECTED[raiser, event]}.'
@@ -127,7 +155,7 @@ def _cell(raiser, event):
 def _remembers(raiser):
     def test(self):
         self.raise_by(raiser)
-        self.assertEqual(self.own_held(), raiser == 'own')
+        self.assertEqual(self.own_held(), raiser.removesuffix('_landed') == 'own')
     test.__doc__ = f'Raised by {raiser}: the row says whether the unit’s own value holds it.'
     return test
 
@@ -166,3 +194,65 @@ class NamedTests(WhoEndsALevelCase):
         self.sample(self.t2, hours=1, **LOW)
         self.passes(0, 1, 30, 60, 600)
         self.assertEqual(self.outcome(), 'returned')
+
+
+class LastOwnTests(WhoEndsALevelCase):
+    """F3-9, decision of 2026-11-19: T-02's own critical (0.8924) goes stale and the loop's OK sample (0.0011) stands in.
+    The level stays open, and the page, the card and the alarm agree: critical, with T-02's last own value marked stale
+    beside the loop's and "measure this unit" (read.last_own)."""
+    SAID = 'last own value 0.8924 critical on '
+    TAIL = ', no recent data: measure this unit'
+
+    def stale_own(self, raise_first=True):
+        self.sample(self.t2, hours=200, **WATER)
+        if raise_first:
+            self.passes(-11980, -11979, -11920)
+        self.sample(self.loop, hours=2, **LOW)
+        self.passes(-110, -109, -50, 0)
+
+    def test_the_page_the_card_and_the_alarm_say_the_same(self):
+        from django.urls import reverse
+        from monitoring import read as monitoring_read
+        from monitoring.tests import chosen
+        self.stale_own()
+        self.assertEqual(self.outcome(), OPEN)
+        reading = self.unit_water(self.t2).get(NH3)
+        self.assertEqual((str(reading.value), reading.status, str(reading.last_own.value), reading.last_own.status),
+                         ('0.0011', 'critical', '0.8924', 'stale'))
+        self.assertTrue(reading.last_own_said.startswith(self.SAID) and reading.last_own_said.endswith(self.TAIL))
+        page = self.client.get(reverse('farm:water'))
+        row = next(row for row in page.context['rows'] if row['owner'] == self.t2)
+        self.assertEqual(row['water'].status, 'critical')
+        self.assertContains(page, 'wq-last-own')
+        self.assertContains(page, self.TAIL)
+        from core.models import Profile
+        from farm.tests.helpers import role
+        from monitoring.tests import ALL_RIGHTS
+        reader = self.user.__class__.objects.create_user('reader', 'r@example.com', 'x')
+        reader.groups.add(role('reader role', *ALL_RIGHTS))
+        card = monitoring_read.cards([self.t2], reader, chosen({self.t2.pk: 'simple'}))[0]
+        state = monitoring_read.state_of(card)
+        self.assertEqual(state.key, 'critical')
+        self.assertTrue(any(str(reason).endswith(self.TAIL) for reason in state.reasons), state.reasons)
+        for language, words in (('nb', 'mål denne enheten'), ('tr', 'bu birimi ölçün')):
+            with self.subTest(language=language):
+                Profile.objects.update_or_create(user=self.user, defaults={'language': language})
+                self.assertContains(self.client.get(reverse('farm:water')), words)
+
+    def test_a_level_raised_in_that_state_says_it(self):
+        """Nothing raised while the own value was fresh (the loop of passes was not running): raised now, its summary
+        says the last own value and "measure this unit"."""
+        self.stale_own(raise_first=False)
+        summaries = {alarm.severity: alarm.summary for alarm in self.levels()}
+        self.assertEqual(set(summaries), {'critical', 'warning'})
+        for summary in summaries.values():
+            self.assertTrue(summary.startswith(f'T-02 · Middle: Un-ionised ammonia (mg/L NH₃ as N) 0.0011 (critical); '
+                                               f'{self.SAID}'), summary)
+            self.assertTrue(summary.endswith(self.TAIL), summary)
+
+    def test_a_fresh_own_sample_ends_it(self):
+        self.stale_own()
+        self.sample(self.t2, hours=1, **LOW)
+        self.passes(1, 2, 70)
+        self.assertEqual(self.outcome(), 'returned')
+        self.assertIsNone(self.unit_water(self.t2).get(NH3).last_own)

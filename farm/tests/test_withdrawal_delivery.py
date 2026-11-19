@@ -26,13 +26,13 @@ LOGGED = 'Handling warnings acknowledged'
 
 
 class LeavingTestCase(HarvestInsideTestCase):
-    """T-01: A, 2,000 fish, bathed 2 days ago (7 days: harvest from 5 days ahead)."""
+    """T-01: A, 2,000 fish, bathed 2 days ago (7 days: harvest from 6 days ahead)."""
 
     def setUp(self):
         super().setUp()
         self.a = self.batch
         self.treat(self.medicine(days=7), 2, 2)
-        self.until = self.day(-5)
+        self.until = self.day(-6)
 
     def deliver(self, count=400, **fields):
         return stock_services.record_delivery(self.user, unit=self.t1, batch=self.a, day=self.today, count=count,

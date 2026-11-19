@@ -14,6 +14,7 @@ from core.models import AuditLog
 from core.testing import FrozenClock
 from farm.models import Tank
 from farm.tests.helpers import point_of, role
+from farm.tests.test_sensor_ph_scale import CORE_REFUSED, core_refuses_the_conversion
 from farm.tests.test_stock import make_unit
 from farm.water import read as water_read, services as water_services, sources
 
@@ -171,6 +172,18 @@ class ReplayTests(SeaWaterCase):
         self.assertTrue(all('ph' in frame.missing for frame in before))
         self.assertTrue(all(frame.inputs['ph'].value == self.nbs() for frame in after))
 
+    def test_a_frame_whose_water_the_core_cannot_work_out_says_the_cores_reason(self):
+        self.steady()
+        with core_refuses_the_conversion():
+            frames = read.deffeyes_frames(self.sea, START + timedelta(minutes=5), START + timedelta(minutes=25),
+                                          timedelta(minutes=5))
+        self.assertTrue(frames.frames)
+        for frame in frames.frames:
+            with self.subTest(at=frame.at):
+                self.assertNotIn('ph', frame.inputs)
+                self.assertIn(f'cannot work this water out: {CORE_REFUSED}', frame.impossible)
+                self.assertNotIn('sea water of 5 ‰', frame.impossible)
+
 
 class TrailTests(SeaWaterCase):
     def test_an_hours_ph_is_put_on_the_nbs_scale(self):
@@ -186,6 +199,16 @@ class TrailTests(SeaWaterCase):
         self.assertEqual(found.points, [])
         self.assertEqual(len(found.unworkable), 2)
         self.assertTrue(all('not fresh water with salt added' in why for _at, why in found.unworkable))
+
+    def test_where_the_core_cannot_work_the_water_out_the_hour_says_the_cores_reason(self):
+        """The review of the water-chemistry audit, C5: it said "not sea water" for every failed conversion."""
+        self.steady(minutes=180)
+        with core_refuses_the_conversion():
+            found = trail.trail(self.sea, START, START + timedelta(hours=2))
+        self.assertEqual(found.points, [])
+        self.assertEqual([why for _at, why in found.unworkable], [
+            'No diagram: the sensor’s pH cannot be put on the NBS scale (a pH on the total scale is put on the NBS scale '
+            f'by the chemistry core, which cannot work this water out: {CORE_REFUSED}).'] * 2)
 
 
 class LiveTests(SeaWaterCase):

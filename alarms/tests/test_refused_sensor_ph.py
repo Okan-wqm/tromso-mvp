@@ -94,7 +94,7 @@ class WarningTests(RefusedSensorPhCase):
         arrived = opened_at + timedelta(seconds=30)
         self.send(self.temperature, 12.0, arrived)
         reading = self.ph_reading(arrived)
-        self.assertEqual(reading.value, water_read.ph_on_nbs(6.00, 'total', 12.0, 34.0, 'seawater')[0])
+        self.assertEqual(reading.value, water_read.ph_on_nbs(6.00, 'total', 12.0, 34.0, 'seawater').value)
         self.assertLess(reading.value, 6.20)                                   # 6.13 NBS: critical
         for seconds in (0, 1, self.off_delay.total_seconds() + 1):
             self.run_pass(arrived + timedelta(seconds=seconds))
@@ -157,7 +157,7 @@ class ScaleChangeTests(RefusedSensorPhCase):
         for channel, value in ((self.tris, 7.95), (self.temperature, 12.0), (self.salinity, 34.0)):
             self.send(channel, value, measured)
         self.assertEqual(self.ph_reading(self.now).value, water_read.ph_on_nbs(7.95, 'total', 12.0, 34.0,
-                                                                               'seawater')[0])
+                                                                               'seawater').value)
         channel = Channel.objects.get(pk=self.tris.pk)
         channel.ph_scale = 'nbs'                                            # the probe recalibrated with NBS buffers
         channel.save()

@@ -260,19 +260,35 @@ def as_parameter(code, value):
     return Decimal(repr(float(value))).quantize(parameters.get(code).step)
 
 
+@dataclass(frozen=True)
+class OnNbs:
+    """What `ph_on_nbs` gives: the pH on the NBS scale at the pH column's decimals (`value`) and the formula version it
+    was put on it by; or no value and why not (`refused`, a key of messages.PH_SENSOR_REFUSED): 'not_sea' where the
+    core takes no pH on that scale (fresh water, salt added, below 5 ‰: Equilibria.takes_ph_scale), 'core' where it
+    cannot work the water out at all, its own reason in `error` (the review of the water-chemistry audit, C5: such a
+    water was said to be "not sea water")."""
+    value: Decimal | None = None
+    formula: int | None = None
+    refused: str = ''
+    error: str = ''
+
+    def said(self, scale):
+        """Why a pH on `scale` was not put on the NBS scale, in the words after "cannot be evaluated:"."""
+        return messages.ph_sensor_refused(self.refused, scale, self.error)
+
+
 def ph_on_nbs(ph, scale, temperature, salinity, origin):
-    """(the pH on the NBS scale at the pH column's decimals, the formula version) of a pH measured on `scale` (a PhScale
-    code) in water of this temperature and salinity, its salt from `origin` (`scale_origin`); None where the core takes
-    no pH on that scale (fresh water, salt added, below 5 ‰: Equilibria.takes_ph_scale) or cannot work the water out.
-    THE conversion of every pH: a typed sample's (services.on_nbs) and a sensor's (Context.sensor_ph)."""
+    """The OnNbs of a pH measured on `scale` (a PhScale code) in water of this temperature and salinity, its salt from
+    `origin` (`scale_origin`): its value on the NBS scale, or why there is none. THE conversion of every pH: a typed
+    sample's (services.on_nbs), a sensor's (Context.sensor_ph), a replay frame's and a trail hour's."""
     try:
         equilibria = chemistry.water_equilibria(float(temperature), float(salinity), water_origin=origin)
         if not equilibria.takes_ph_scale(scale):
-            return None
+            return OnNbs(refused='not_sea')
         converted = equilibria.ph_nbs(float(ph), scale)
-    except (ValueError, ArithmeticError):    # a water the core cannot work out is not one it converts a pH for
-        return None
-    return Decimal(repr(converted)).quantize(parameters.get(parameters.PH).step), equilibria.formula
+    except (ValueError, ArithmeticError) as error:      # a water the core cannot work out: its own reason
+        return OnNbs(refused='core', error=str(error))
+    return OnNbs(Decimal(repr(converted)).quantize(parameters.get(parameters.PH).step), equilibria.formula)
 
 
 @dataclass(frozen=True)
@@ -895,8 +911,8 @@ class Context:
                 or (ph.since is not None and observation.at < ph.since):
             return observation
 
-        def refused(why):
-            return replace(observation, ph=replace(ph, refused=str(messages.ph_sensor_refused(why, ph.scale))))
+        def refused(why, error=''):
+            return replace(observation, ph=replace(ph, refused=str(messages.ph_sensor_refused(why, ph.scale, error))))
 
         if not is_fresh(parameters.get(parameters.PH), observation.at, now, observation.fresh_for):
             return refused('stale')
@@ -918,11 +934,10 @@ class Context:
         served = self.served.get(observation.point.pk)
         origin = scale_origin(served if served is not None else Context._served([observation.point])[observation.point.pk])
         found = ph_on_nbs(ph.as_measured, ph.scale, temperature, salinity, origin)
-        if found is None:
-            return refused('not_sea')
-        converted, formula = found
-        return replace(observation, measured={parameters.PH: converted},
-                       ph=replace(ph, temperature=temperature, salinity=salinity, formula=formula, refused='',
+        if found.value is None:
+            return refused(found.refused, found.error)
+        return replace(observation, measured={parameters.PH: found.value},
+                       ph=replace(ph, temperature=temperature, salinity=salinity, formula=found.formula, refused='',
                                   temperature_from=said))
 
     # -- one observation's readings --

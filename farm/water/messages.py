@@ -113,12 +113,16 @@ PH_SENSOR_REFUSED = {
                   'measured here in the days before'),
     'not_sea': _('a pH on the %(scale)s is taken for sea water of 5 ‰ or more only (not fresh water with salt added); '
                  'set the channel’s pH scale to NBS if the probe is calibrated with NBS/NIST buffers'),
+    # The core refused the water itself (read.OnNbs; the review of the water-chemistry audit, C5): its own reason.
+    'core': _('a pH on the %(scale)s is put on the NBS scale by the chemistry core, which cannot work this water out: '
+              '%(why)s'),
 }
 
 
-def ph_sensor_refused(why, scale):
-    """Why a sensor's pH on `scale` was not put on the NBS scale (PH_SENSOR_REFUSED's key `why`)."""
-    return PH_SENSOR_REFUSED[why] % {'scale': PH_SCALES[scale]}
+def ph_sensor_refused(why, scale, error=''):
+    """Why a sensor's pH on `scale` was not put on the NBS scale (PH_SENSOR_REFUSED's key `why`; `error`, the core's own
+    reason where it refused the water: 'core')."""
+    return PH_SENSOR_REFUSED[why] % {'scale': PH_SCALES[scale], 'why': error}
 
 
 def ph_scale_changed(moment):

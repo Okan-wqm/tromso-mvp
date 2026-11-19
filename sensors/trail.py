@@ -116,14 +116,14 @@ def trail(owner, start, end):
             continue
         if parameters.PH in scales:
             # The hour's pH from a channel on another scale than NBS, put on it with the hour's temperature and salinity
-            # (the one conversion, farm.water.read.ph_on_nbs); where it cannot be, the hour is not drawn and says why.
+            # (the one conversion, farm.water.read.ph_on_nbs); where it cannot be, the hour is not drawn and says why:
+            # not sea water, or the core's own reason (the review of the audit, C5).
             converted = water_read.ph_on_nbs(values[parameters.PH], scales[parameters.PH],
                                              values[parameters.TEMPERATURE], values[parameters.SALINITY], ph_origin)
-            if converted is None:
-                found.unworkable.append((at, str(messages.unevaluated_ph(
-                    messages.ph_sensor_refused('not_sea', scales[parameters.PH])))))
+            if converted.value is None:
+                found.unworkable.append((at, str(messages.unevaluated_ph(converted.said(scales[parameters.PH])))))
                 continue
-            values[parameters.PH] = float(converted[0])
+            values[parameters.PH] = float(converted.value)
         water = (values[parameters.TEMPERATURE], values[parameters.SALINITY], values['alkalinity_mg_l'])
         ions = {**{code: values.get(code) for code in IONS}, 'water_origin': origin}
         try:

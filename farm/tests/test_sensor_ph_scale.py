@@ -14,6 +14,7 @@ any more (a probe recalibrated, or a setting put right), so those values are use
 nor on the new: they cannot be evaluated, said so, until the probe's next value."""
 from datetime import timedelta
 from decimal import Decimal as D
+from unittest import mock
 
 from ..models import Tank
 from ..water import native, read, services, sources
@@ -24,6 +25,21 @@ from .test_stock import make_unit
 from .test_water_sources import FakeProvider
 
 TOTAL = 'total'
+# A reason the chemistry core gives for a water it cannot work out, stood in (the review of the water-chemistry audit,
+# C5): whatever water it refuses, the pH says the core's reason, never "not sea water".
+CORE_REFUSED = 'the water is outside what the constants hold for'
+
+
+def core_refuses_the_conversion():
+    """The core refuses the water a pH is put on the NBS scale in (read.ph_on_nbs: a temperature, a salinity and the
+    water's origin alone), and works every other water out as it does."""
+    real = read.chemistry.water_equilibria
+
+    def equilibria(*args, **kwargs):
+        if len(args) == 2 and set(kwargs) == {'water_origin'}:
+            raise ValueError(CORE_REFUSED)
+        return real(*args, **kwargs)
+    return mock.patch.object(read.chemistry, 'water_equilibria', side_effect=equilibria)
 
 
 class SensorPhCase(SeaTestCase):
@@ -100,9 +116,8 @@ class TrisProbeTests(SensorPhCase):
             with self.subTest(ph=ph, temperature=temperature, salinity=salinity):
                 values = {'ph': D(str(ph)), 'temperature_c': D(str(temperature)), 'salinity_ppt': D(str(salinity))}
                 stored, _measured = services.on_nbs(self.typed_point, values, TOTAL)
-                converted, formula = read.ph_on_nbs(D(str(ph)), TOTAL, D(str(temperature)), D(str(salinity)),
-                                                    'seawater')
-                self.assertEqual((converted, formula), (stored['ph'], 3))
+                found = read.ph_on_nbs(D(str(ph)), TOTAL, D(str(temperature)), D(str(salinity)), 'seawater')
+                self.assertEqual((found.value, found.formula, found.refused), (stored['ph'], 3, ''))
 
     def test_the_seawater_and_free_scales_too(self):
         for scale in ('sws', 'free'):
@@ -198,6 +213,20 @@ class NotConvertedTests(SensorPhCase):
         self.assertIn('no longer fresh', ph.refused)
         self.assertEqual(ph.status, Status.STALE)
         self.assertEqual(ph.judged, Status.UNEVALUATED)
+
+    def test_a_water_the_core_cannot_work_out_says_the_cores_reason(self):
+        """The review of the audit, C5: a sea water the core refuses is not "not sea water"; the pH, its NH₃ and a typed
+        sample of that water say the core's own reason."""
+        self.limits(self.sea)
+        self.probe(self.sea_point)
+        with core_refuses_the_conversion():
+            water = self.water(self.sea_point)
+            refused = self.refused(ph='7.95', temperature_c='12.0', salinity_ppt='34.0')
+        self.assertUnevaluated(water, f'cannot work this water out: {CORE_REFUSED}')
+        self.assertNotIn('sea water of 5 ‰', water.get('ph').refused)
+        self.assertEqual(refused, {'ph_scale': [f'Cannot be worked out: {CORE_REFUSED}.']})
+        # The same water and the same channel without the refusal: converted.
+        self.assertEqual(self.water(self.sea_point).get('ph').value, D('8.08'))
 
     def test_a_typed_ph_still_counts_beside_it(self):
         """The newest fresh value is the probe's, which cannot be evaluated; a worse fresh sample still decides the

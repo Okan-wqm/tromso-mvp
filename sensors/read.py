@@ -684,15 +684,16 @@ def deffeyes_frames(target, start, end, step, cursor=0, size=PAGE):
 def _on_nbs(found, inputs, origin):
     """(FrameInput of the pH on the NBS scale, '') of a frame's pH from a channel on another scale (`found.ph_scale`),
     put on it with the frame's own temperature and salinity (`inputs`) by the one conversion (farm.water.read.ph_on_nbs);
-    (None, why) where it cannot be: no temperature or salinity at the frame, or water that takes no such pH."""
+    (None, why) where it cannot be: no temperature or salinity at the frame, water that takes no such pH, or water the
+    core cannot work out (its own reason)."""
     temperature, salinity = inputs.get(parameters.TEMPERATURE), inputs.get(parameters.SALINITY)
     why = 'temperature' if temperature is None else 'salinity' if salinity is None else ''
-    if not why:
-        converted = ph_on_nbs(found.value, found.ph_scale, temperature.value, salinity.value, origin)
-        if converted is not None:
-            return replace(found, value=float(converted[0]), as_measured=found.value), ''
-        why = 'not_sea'
-    return None, str(messages.unevaluated_ph(messages.ph_sensor_refused(why, found.ph_scale)))
+    if why:
+        return None, str(messages.unevaluated_ph(messages.ph_sensor_refused(why, found.ph_scale)))
+    converted = ph_on_nbs(found.value, found.ph_scale, temperature.value, salinity.value, origin)
+    if converted.value is None:
+        return None, str(messages.unevaluated_ph(converted.said(found.ph_scale)))
+    return replace(found, value=float(converted.value), as_measured=found.value), ''
 
 
 def frame_analysis(values, limits):

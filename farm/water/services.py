@@ -125,13 +125,14 @@ def on_nbs(point, values, scale):
     if missing:
         raise ValidationError(missing)
     origin = scale_origin(Context._served([point])[point.pk])       # salt added as soon as one unit of its water says so
-    # The one conversion, a sensor's too (read.ph_on_nbs); None where the core takes no pH on that scale.
+    # The one conversion, a sensor's too (read.ph_on_nbs): refused where the core takes no pH on that scale, or with the
+    # core's own reason where it cannot work the water out at all (the review of the audit, C5).
     found = ph_on_nbs(values[parameters.PH], scale, values[parameters.TEMPERATURE], values[parameters.SALINITY], origin)
-    if found is None:
-        raise ValidationError({'ph_scale': str(messages.PH_NOT_SEA)})
-    converted, formula = found
-    return ({**values, parameters.PH: converted},
-            {'ph_scale': scale, 'ph_as_measured': values[parameters.PH], 'ph_converted_formula': formula})
+    if found.value is None:
+        raise ValidationError({'ph_scale': str(messages.PH_NOT_SEA if found.refused == 'not_sea'
+                                               else messages.refused(found.error))})
+    return ({**values, parameters.PH: found.value},
+            {'ph_scale': scale, 'ph_as_measured': values[parameters.PH], 'ph_converted_formula': found.formula})
 
 
 def as_p(values, unit):

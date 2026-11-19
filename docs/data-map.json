@@ -2640,11 +2640,13 @@
         "farm/tests/test_withdrawal_ceiling.py",
         "farm/tests/test_withdrawal_cleaner_fish.py",
         "farm/tests/test_withdrawal_combined.py",
+        "farm/tests/test_withdrawal_delivery.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_guard.py",
         "farm/tests/test_withdrawal_lots.py",
         "farm/tests/test_withdrawal_rule_change.py",
         "farm/tests/test_withdrawal_shared_unit.py",
+        "farm/tests/test_withdrawal_spread_matrix.py",
         "farm/tests/test_withdrawal_wording.py",
         "knowledge/tests/test_documents.py",
         "knowledge/tests/test_entries.py",
@@ -6319,6 +6321,7 @@
         "farm/tests/test_withdrawal_clocks.py",
         "farm/tests/test_withdrawal_combined.py",
         "farm/tests/test_withdrawal_lots.py",
+        "farm/tests/test_withdrawal_spread_matrix.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_compute.py",
         "reports/tests/test_cross_review.py",
@@ -6475,7 +6478,8 @@
         "left_out": false
       },
       "tests": [
-        "farm/tests/test_escape_delivery.py"
+        "farm/tests/test_escape_delivery.py",
+        "farm/tests/test_withdrawal_delivery.py"
       ]
     },
     {
@@ -10293,10 +10297,12 @@
         "farm/tests/test_withdrawal_ceiling.py",
         "farm/tests/test_withdrawal_cleaner_fish.py",
         "farm/tests/test_withdrawal_combined.py",
+        "farm/tests/test_withdrawal_delivery.py",
         "farm/tests/test_withdrawal_locks.py",
         "farm/tests/test_withdrawal_lots.py",
         "farm/tests/test_withdrawal_same_day.py",
         "farm/tests/test_withdrawal_shared_unit.py",
+        "farm/tests/test_withdrawal_spread_matrix.py",
         "farm/tests/test_withdrawal_wording.py"
       ]
     },
@@ -17556,7 +17562,9 @@
         "farm/tests/test_stock.py",
         "farm/tests/test_window_refusals.py",
         "farm/tests/test_withdrawal_combined.py",
+        "farm/tests/test_withdrawal_delivery.py",
         "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_spread_matrix.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_tabs.py",

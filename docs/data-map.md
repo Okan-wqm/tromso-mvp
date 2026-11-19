@@ -317,7 +317,7 @@ Who did what to which record, with old and new values.
 - **how it works**: A record's own rows are also shown on the History tab of its edit page.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log (never shown: changes)
 - **constraints**: chk_audit_log_severity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 111 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 113 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -662,7 +662,7 @@ A group of fish that came in together: its identity and origin, no counts.
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › batches
 - **forms**: `BatchDetailsForm`, `BatchInputForm`, `OpeningBalanceForm`
 - **constraints**: uq_batches_code (unique: code); chk_batches_code (check); chk_batches_stage (check); chk_batches_origin (check); chk_batches_supplier (check); chk_batches_provenance (check); chk_batches_origin_provenance (check); chk_batches_year_class (check); chk_batches_harvest_after_input (check)
-- **tests that mention it**: `core/test_datamap.py`, `farm/tests/test_batch_details.py`, `farm/tests/test_cleaner_fish.py` and 20 more
+- **tests that mention it**: `core/test_datamap.py`, `farm/tests/test_batch_details.py`, `farm/tests/test_cleaner_fish.py` and 21 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -701,7 +701,7 @@ Where live fish were delivered out of the company (a customer's site, a sale of 
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › delivery_records
 - **forms**: `DeliveryForm`
 - **constraints**: chk_delivery_records_destination (check); chk_delivery_records_site_number (check)
-- **tests that mention it**: `farm/tests/test_escape_delivery.py`
+- **tests that mention it**: `farm/tests/test_escape_delivery.py`, `farm/tests/test_withdrawal_delivery.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1045,7 +1045,7 @@ One warning a person went on past when recording a handling (a harvest, a transf
 - **how it works**: One row for each warning the person went on past, written with the operation or the treatment it was given for. The pages show that a warning was acknowledged (its kind in a tooltip on Harvested), not the values it kept.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › handling_acknowledgements
 - **constraints**: chk_handling_acknowledgements_warning (check); chk_handling_acknowledgements_shape (check); chk_handling_acknowledgements_fasted (check); chk_handling_acknowledgements_fasted_degree_days (check); chk_handling_acknowledgements_one_record (check); uq_handling_acknowledgements_one_fast (unique: operation)
-- **tests that mention it**: `farm/tests/test_fast_of_the_unit.py`, `farm/tests/test_fasting_sentence.py`, `farm/tests/test_fix_seed_size_mix.py` and 13 more
+- **tests that mention it**: `farm/tests/test_fast_of_the_unit.py`, `farm/tests/test_fasting_sentence.py`, `farm/tests/test_fix_seed_size_mix.py` and 15 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1652,7 +1652,7 @@ One thing a person did to the stock (a stocking, a mortality, a weighing), the u
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › stock_operations
 - **forms**: `MortalityForm`, `CullForm`, `WeighingForm`, `TransferForm`, `LegForm`, `GradingForm`, `OutputForm`, `HarvestForm`, `DeliveryForm`, `EscapeForm`, `InputLineForm`, `StockVoidForm`
 - **constraints**: chk_stock_operations_kind (check); chk_stock_operations_void_reason (check); chk_stock_operations_ack_on_arrival (check); chk_stock_operations_size_mix_ack_on_arrival (check); chk_stock_operations_health_event (check)
-- **tests that mention it**: `core/tests_entry_key.py`, `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py` and 21 more
+- **tests that mention it**: `core/tests_entry_key.py`, `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py` and 23 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

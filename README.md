@@ -2352,7 +2352,12 @@ until tomorrow moved in beside fish held for two months); fish combined with a h
 own are not asked about. Fish moved or stocked INTO the treated tank dated on a course day are exposed themselves,
 and the sentence names no other batch: "B-2026-002 in T-01 will wait for the harvest with the fish treated in T-01:
 …". **A void asks the same way** when it combines held fish with fish that are not (the void of the move that had
-emptied a tank held fish then came into, of the cull that had emptied the held tank). Going on stores a handling
+emptied a tank held fish then came into, of the cull that had emptied the held tank). **Whatever the batch**: fish
+of the SAME batch are asked about exactly as another batch's (a split before the course merged back into the held
+tank, held fish moved into the tank split off before it, a sibling tank of decision 7 moved into its held part):
+the fish already in the tank and the fish each move brings in are asked about each on their own
+(`farm/tests/test_withdrawal_spread_matrix.py`: same or other batch, held side or not-held side moving in, by a
+transfer, split, grading, stocking and void). Going on stores a handling
 acknowledgement on the operation (the batch
 that now waits, the end, the withdrawal's source, the sentence) and a critical log line; `check_stock` knows such a
 row on a transfer, a grading or a stocking (a stocking is not a handling; a withdrawal row on any other operation
@@ -2365,7 +2370,9 @@ batches in one statement in primary-key order, then the units. So a move of held
 same moment, of fish that went on from T-02 to T-03 take turns and the later sees the earlier
 (`farm/tests/test_withdrawal_locks.py`: two real transactions, both orders; also where the harvested batch was
 never in a unit of the move and the lock in common comes from the reach alone, with the two mutants that show the
-unseen harvest when the reach is cut out). It is bounded by the day of the write and the holds in force, not by the
+unseen harvest when the reach is cut out; a sample in the treated tank today locks fish held by sharing elsewhere
+through the holds alone, and a grading takes these locks first, as every write does). It is bounded by the day of
+the write and the holds in force, not by the
 history. A write of reference data (a feed's type, a species' assumed temperature, a sampling point, the ceiling) is
 not a dated record: its guard reads from the day it reaches the fish, however long ago, so every recorded harvest it
 puts inside a withdrawal is asked about; a dated record's guard reads from the first day of the correction window.

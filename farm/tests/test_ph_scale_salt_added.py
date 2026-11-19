@@ -48,7 +48,8 @@ class CoreTests(SimpleTestCase):
             for salinity in (29.0, 30.0, 35.0):
                 eq = native.water_equilibria(12.0, salinity, 80.0, water_origin=origin)
                 self.assertTrue(eq.takes_ph_scale('total'))
-        self.assertAlmostEqual(native.water_equilibria(12.0, 30.0, 80.0).ph_nbs(8.0, 'total'), 8.1372, delta=0.0001)
+        # formula 4's step (formula 3's own conversion gave 8.1372)
+        self.assertAlmostEqual(native.water_equilibria(12.0, 30.0, 80.0).ph_nbs(8.0, 'total'), 8.1124, delta=0.0001)
 
 
 class DoorTests(SeaTestCase):
@@ -65,7 +66,7 @@ class DoorTests(SeaTestCase):
         self.assertEqual((str(sample.ph), sample.ph_scale, sample.ph_as_measured), ('7.95', '', None))
 
     def test_the_sea_unit_beside_it_is_converted_as_before(self):
-        for hours, (salinity, stored) in enumerate((('29', '8.09'), ('30', '8.09'), ('35', '8.08')), start=1):
+        for hours, (salinity, stored) in enumerate((('29', '8.06'), ('30', '8.06'), ('35', '8.06')), start=1):
             sample = self.record(ph='7.95', temperature_c='12', salinity_ppt=salinity, hours=hours)
             self.assertEqual((str(sample.ph), sample.ph_scale), (stored, 'total'))
 

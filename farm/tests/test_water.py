@@ -522,9 +522,12 @@ class DerivedTests(WaterTestCase):
         self.limit('nh3_n_mg_l', warning_high='0.01', critical_high='0.02')
         self.sample(hours=2, tan_mg_l='2', ph='7.5', temperature_c='12')
         nh3, nh4 = self.reading('nh3_n_mg_l'), self.reading('nh4_n_mg_l')
-        expected = D(2) * D(chemistry.nh3_fraction(7.5, 12, 0))          # fresh water: salinity 0
+        # Fresh water, nothing measured (ionic strength 0): formula 4 judges the larger of formula 3's ideal water and the
+        # best estimate, which here is Clegg & Whitfield's pure-water K, 0.25 % above the ideal's at 12 °C (formula 3:
+        # 0.0136, the ideal water, chemistry.nh3_fraction(7.5, 12, 0)).
+        expected = D(2) * D(chemistry.water_equilibria(12.0, 0.0).nh3_share(7.5))
         self.assertEqual((nh3.value, nh3.derived), (expected.quantize(D('0.0001')), True))
-        self.assertEqual(nh3.value, D('0.0136'))                          # 0.68 % of 2 mg/L
+        self.assertEqual(nh3.value, D('0.0137'))                          # 0.68 % of 2 mg/L
         self.assertEqual(nh3.status, Status.WARNING)
         self.assertEqual(nh4.value, D('1.986'))
         self.sample(hours=1, tan_mg_l='2', ph='7.5')                      # no temperature in the newer sample

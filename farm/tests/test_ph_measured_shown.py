@@ -27,16 +27,16 @@ class ShownTests(SeaTestCase):
     def test_the_reading_carries_the_visible_words(self):
         reading = read.unit_water([self.sea])[self.sea.pk].get('ph')
         self.assertEqual(str(reading.measured), 'measured 7.95 on the total scale')
-        self.assertIn('Measured 7.95 on the total scale; put on the NBS scale by formula 3', reading.provenance)
+        self.assertIn('Measured 7.95 on the total scale; put on the NBS scale by formula 4', reading.provenance)
 
     def test_the_water_page_and_the_history_say_it_beside_the_nbs_number(self):
         for query in ({'unit': self.sea.pk}, {'unit': self.sea.pk, 'view': 'history'}, {}):
             with self.subTest(query=query):
                 page = self.client.get(reverse('farm:water'), query)
                 self.assertContains(page, VISIBLE)
-                self.assertRegex(text(page), r'8\.08\s*measured 7\.95 on the total scale')
+                self.assertRegex(text(page), r'8\.06\s*measured 7\.95 on the total scale')
                 # ... and the tooltip keeps the whole sentence.
-                self.assertContains(page, 'Measured 7.95 on the total scale; put on the NBS scale by formula 3')
+                self.assertContains(page, 'Measured 7.95 on the total scale; put on the NBS scale by formula 4')
 
     def test_the_units_chart_window_says_it(self):
         page = self.client.get(reverse('farm:water_unit_chart', args=[self.sea.pk]))

@@ -279,9 +279,9 @@ class GoldenV3Tests(SimpleTestCase):
                         self.assertAlmostEqual(omega[name], expected, delta=1e-11)
         self.assertEqual(held, 2 * 5 * 5 * 6 * 3 * 10)        # both formulas, 5 pH, 5 salinities from 5 ‰, 180 waters each
 
-    def test_the_application_reads_formula_3_and_formula_1_is_still_golden_v1s(self):
+    def test_formula_3_is_read_by_name_and_formula_1_is_still_golden_v1s(self):
         self.assertIs(chemistry.water_equilibria, native.water_equilibria)
-        self.assertEqual(chemistry.water_equilibria(12.0, 0.0, 80.0), native.equilibria_v3(12.0, 0.0, 80.0))
+        self.assertEqual(chemistry.water_equilibria(12.0, 0.0, 80.0, formula=3), native.equilibria_v3(12.0, 0.0, 80.0))
         self.assertEqual(chemistry.water_equilibria(12.0, 0.0, 80.0, formula=1), native.equilibria(12.0, 0.0))
         self.assertEqual(chemistry.equilibria(12.0, 0.0).ph_offset, 0.0)
 

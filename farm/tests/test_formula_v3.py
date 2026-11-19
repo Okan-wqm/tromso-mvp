@@ -18,20 +18,22 @@ from .helpers import role
 from .test_water import WaterTestCase
 
 ROOT = Path(settings.BASE_DIR)
-JUDGED = ('NH₃ judged on the basis its limits were set on (to 1 ‰ the ideal water, every activity 1, as Emerson et al. '
-          '1975; from 5 ‰ the free-scale pKa of Khoo et al. 1977, eq. 11, applied to the meter’s NBS pH without '
-          'converting it, which reads more NH₃ than a converted pH would: the safe side, on purpose; salt-added water: '
-          'the ideal throughout), the larger; activity-corrected %s mg/L.')
+# Formula 4's words (the application's since 2026-11-19; farm/tests/test_formula_v4.py): fresh water is judged as formula
+# 3 judged it, so these tests of formula 3's fresh water hold for the application, worked out and said by formula 4.
+JUDGED = ('NH₃ judged on the safe side (to 1 ‰ the ideal water, every activity 1, as Emerson et al. 1975; from 5 ‰ the '
+          'best estimate at the pH + 0.03, the uncertainty of a pH reading (US EPA 1989), about 7 %% above it; blended '
+          'between; salt-added water: the ideal throughout), the larger of it and the best estimate; best estimate %s '
+          'mg/L.')
 LIMITS = deffeyes.Limits(nh3_n_mg_l=0.0103, co2_mg_l=15.0, h2s_ug_l=2.0, alkalinity_low_mg_l=50.0,
                          alkalinity_high_mg_l=150.0)
 
 
 class FormulaTests(SimpleTestCase):
-    def test_the_application_works_out_formula_3(self):
-        self.assertEqual(native.formula_version(), 3)
-        self.assertEqual(native.FORMULA_VERSION, 3)
-        self.assertEqual(native.FORMULAS, (1, 3))
-        self.assertEqual(deffeyes.Water(12.0, 0.0, 7.0, 80.0).formula, 3)
+    def test_formula_3_is_still_worked_out_by_name(self):
+        # The application's is formula 4 since 2026-11-19 (farm/tests/test_formula_v4.py).
+        self.assertEqual(native.FORMULAS, (1, 3, 4))
+        self.assertEqual(deffeyes.Water(12.0, 0.0, 7.0, 80.0, formula=3).formula, 3)
+        self.assertEqual(chemistry.water_equilibria(12.0, 3.0, 80.0, formula=3), native.equilibria_v3(12.0, 3.0, 80.0))
 
     def test_an_analysis_takes_the_waters_own_ionic_strength_and_says_so(self):
         water = deffeyes.Water(12.0, 0.0, 7.0, 80.0, tan_mg_l=0.5, conductivity_25_us_cm=300.0)
@@ -39,8 +41,8 @@ class FormulaTests(SimpleTestCase):
         eq = analysis.equilibria
         self.assertEqual(eq, chemistry.water_equilibria(12.0, 0.0, 80.0, conductivity_25_us_cm=300.0))
         self.assertEqual((eq.formula, eq.ionic_strength, eq.strength_source, eq.sea_weight),
-                         (3, 1.6e-5 * 300.0, 'conductivity', 0.0))
-        self.assertEqual(analysis.provenance, 'Formula 3: ionic strength 0.0048, from the conductivity at 25 °C.')
+                         (4, 1.6e-5 * 300.0, 'conductivity', 0.0))
+        self.assertEqual(analysis.provenance, 'Formula 4: ionic strength 0.0048, from the conductivity at 25 °C.')
         ideal = deffeyes.analyse(deffeyes.Water(12.0, 0.0, 7.0, 80.0, tan_mg_l=0.5, formula=1), LIMITS)
         # The activity-corrected values are lower; the judged ones are the larger, here the ideal (cross review F1).
         self.assertLess(analysis.co2_corrected_mg_l, ideal.co2_mg_l)
@@ -59,7 +61,7 @@ class FormulaTests(SimpleTestCase):
     def test_the_band_says_its_seawater_share(self):
         eq = chemistry.water_equilibria(12.0, 3.0, 80.0)
         self.assertEqual(messages.provenance(eq),
-                         'Formula 3: ionic strength 0.0599, from the salinity; 50 % seawater constants (assumes sea '
+                         'Formula 4: ionic strength 0.0599, from the salinity; 50 % seawater constants (assumes sea '
                          'water’s ion composition; salt-added fresh water may read low CO₂: say the unit’s water origin).')
 
     def test_dosing_and_the_saturation_follow_the_waters_own_equilibria(self):
@@ -113,21 +115,25 @@ class ReadTests(WaterTestCase):
         corrected = (D(2) * D(eq.nh3_share_corrected(7.5))).quantize(D('0.0001'))
         self.assertLess(corrected, nh3.value)
         self.assertEqual(nh3.provenance,
-                         'Formula 3: ionic strength 0.0072, from the conductivity at 25 °C. ' + JUDGED % corrected)
+                         'Formula 4: ionic strength 0.0072, from the conductivity at 25 °C. ' + JUDGED % corrected)
         page = self.client.get(reverse('farm:water'))
-        self.assertContains(page, 'Formula 3: ionic strength 0.0072, from the conductivity at 25 °C.')
+        self.assertContains(page, 'Formula 4: ionic strength 0.0072, from the conductivity at 25 °C.')
 
     def test_with_nothing_measured_the_ammonia_is_formula_1s_ideal_water_and_says_so(self):
         self.sample(hours=2, tan_mg_l='2', ph='7.5', temperature_c='12')
         nh3 = self.nh3()
-        self.assertEqual(nh3.value, (D(2) * D(native.equilibria(12.0, 0.0).nh3_share(7.5))).quantize(D('0.0001')))
-        self.assertEqual(nh3.provenance, 'Formula 3: ionic strength 0.0000, none measured, taken as 0 (the safe side).')
+        # Formula 4 judges the larger of the ideal water and the best estimate, Clegg & Whitfield's pure-water K here
+        # (0.25 % above formula 1's and 3's ideal water at 12 °C: 0.0137 against 0.0136).
+        ideal = (D(2) * D(native.equilibria(12.0, 0.0).nh3_share(7.5))).quantize(D('0.0001'))
+        self.assertEqual(nh3.value, (D(2) * D(native.water_equilibria(12.0, 0.0).nh3_share(7.5))).quantize(D('0.0001')))
+        self.assertEqual((ideal, nh3.value), (D('0.0136'), D('0.0137')))
+        self.assertEqual(nh3.provenance, 'Formula 4: ionic strength 0.0000, none measured, taken as 0 (the safe side).')
 
     def test_a_stale_alkalinity_never_enters(self):
         self.sample(hours=24 * 20, alkalinity_mg_l='120')               # older than its 14 days
         self.sample(hours=2, tan_mg_l='2', ph='7.5', temperature_c='12')
         self.assertEqual(self.nh3().provenance,
-                         'Formula 3: ionic strength 0.0000, none measured, taken as 0 (the safe side).')
+                         'Formula 4: ionic strength 0.0000, none measured, taken as 0 (the safe side).')
 
     def test_a_conductivity_beyond_the_fresh_path_says_why_and_the_basis_alone_is_shown(self):
         """The core refuses the activity correction; the limits' basis needs no conductivity, and the judged NH3 is never
@@ -137,7 +143,7 @@ class ReadTests(WaterTestCase):
         self.assertEqual(nh3.value, (D(2) * D(native.equilibria(12.0, 0.0).nh3_share(7.5))).quantize(D('0.0001')))
         self.assertIn('ionic strength above 0.5', nh3.note)
         self.assertIn('ionic strength above 0.5', nh3.refused)
-        self.assertEqual(nh3.measured, 'at least: the limits’ basis')
+        self.assertEqual(nh3.measured, 'at least: the safe-side basis')
 
 
 class CalculatorTests(WaterTestCase):
@@ -151,5 +157,5 @@ class CalculatorTests(WaterTestCase):
         self.assertEqual(page.status_code, 200)
         self.assertEqual(page.context['analysis'].equilibria.strength_source, 'hardness')
         self.assertContains(page, 'Ionic strength')
-        self.assertContains(page, 'data-formula="3"')
+        self.assertContains(page, 'data-formula="4"')
         self.assertContains(page, 'at least that of the hardness and the alkalinity')

@@ -90,8 +90,8 @@ class ReadingTests(RefusedWaterCase):
         self.assertEqual((reading.value, reading.status, reading.judged), (on_basis(WATER), 'critical', 'critical'))
         self.assertIn(WHY, reading.refused)
         self.assertIn(f'Cannot be worked out: {WHY}', str(reading.note))
-        self.assertIn('Judged on the basis the limits were set on alone', str(reading.note))
-        self.assertEqual(reading.measured, 'at least: the limits’ basis')
+        self.assertIn('Judged on the safe-side basis alone', str(reading.note))
+        self.assertEqual(reading.measured, 'at least: the safe-side basis')
         self.assertEqual(water.status, 'critical')
         # The refusal stays said beside it: the unit's "cannot be evaluated".
         self.assertEqual([each.code for each in water.unevaluated], [NH3])
@@ -351,7 +351,7 @@ class PageTests(RefusedWaterCase):
         self.assertIn('wq-unevaluated', body)
         self.assertIn('<span>Cannot be evaluated</span>', body)
         self.assertIn(self.SAID, body)
-        self.assertIn('at least: the limits’ basis', body)
+        self.assertIn('at least: the safe-side basis', body)
 
     def test_past_the_critical_limit_on_its_basis_the_page_says_critical_and_the_reason(self):
         self.refuse(self.t2, water=WATER)
@@ -360,7 +360,7 @@ class PageTests(RefusedWaterCase):
         self.assertEqual(row['water'].status, 'critical')
         body = page.content.decode()
         self.assertIn(self.SAID, body)
-        self.assertIn('at least: the limits’ basis', body)
+        self.assertIn('at least: the safe-side basis', body)
 
     def test_the_historys_alerts_only_keeps_the_refused_sample(self):
         """RC-5: "Only warnings and criticals" dropped the sample whose NH₃ cannot be evaluated."""
@@ -374,8 +374,8 @@ class PageTests(RefusedWaterCase):
 
     def test_in_norwegian_and_turkish(self):
         self.refuse(self.t2)
-        for language, said, basis in (('nb', 'Kan ikke vurderes', 'minst: grenseverdienes grunnlag'),
-                                      ('tr', 'Değerlendirilemiyor', 'en az: sınır değerlerinin temeli')):
+        for language, said, basis in (('nb', 'Kan ikke vurderes', 'minst: grunnlaget for den sikre siden'),
+                                      ('tr', 'Değerlendirilemiyor', 'en az: güvenli taraftaki temel')):
             with self.subTest(language=language):
                 Profile.objects.update_or_create(user=self.user, defaults={'language': language})
                 page = self.client.get(reverse('farm:water'))

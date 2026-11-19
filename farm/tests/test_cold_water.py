@@ -124,8 +124,10 @@ class AmmoniaTests(SimpleTestCase):
             for conductivity in (100.0, 500.0, 1000.0):
                 eq = chemistry.water_equilibria(temp_c, 0.0, 80.0, conductivity_25_us_cm=conductivity)
                 gamma = 10 ** davies(temp_c, 1.6e-5 * conductivity, 1)
-                k = chemistry.k_nh4_sws(temp_c, 0)
-                expected = k / (k + 10 ** -7.5 / gamma)
+                # Formula 4's best estimate takes Clegg & Whitfield's (1995) pure-water K_NH4; the judged share stays the
+                # ideal water's, formula 3's (Yao & Millero's K at S 0).
+                best, k = native.k_nh4_cw95(temp_c, 0), chemistry.k_nh4_sws(temp_c, 0)
+                expected = best / (best + 10 ** -7.5 / gamma)
                 with self.subTest(temp_c=temp_c, conductivity=conductivity):
                     self.assertAlmostEqual(eq.nh3_share_corrected(7.5) / expected, 1, delta=0.001)
                     self.assertAlmostEqual(eq.nh3_share(7.5) / (k / (k + 10 ** -7.5)), 1, delta=1e-12)

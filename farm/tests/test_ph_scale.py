@@ -28,8 +28,8 @@ from .test_stock import make_unit
 from .test_water import WaterTestCase
 
 HELP = ('As a pH meter or kit calibrated with NBS/NIST buffers reads it, at the water’s own temperature. A total-scale '
-        'pH (a seawater sensor calibrated with TRIS) reads 0.10 to 0.14 lower in water of 5 to 35 ‰: typed here as NBS, '
-        'the NH₃ worked out is 20 to 27 % too low.')
+        'pH (a seawater sensor calibrated with TRIS) reads 0.09 to 0.15 lower in water of 5 to 35 ‰: typed here as NBS, '
+        'the NH₃ worked out is 19 to 28 % too low.')
 NOT_SEA = ('A pH on this scale is taken for sea water of 5 ‰ or more only (not fresh water with salt added): give the '
            'pH a meter calibrated with NBS/NIST buffers reads.')
 NEEDED = 'Needed with a pH on another scale than NBS: the conversion takes the temperature and the salinity of the same sample.'
@@ -44,8 +44,8 @@ class HelpTests(SimpleTestCase):
         ph = parameters.get('ph')
         self.assertEqual(str(ph.label), 'pH (NBS scale)')
         self.assertEqual(str(ph.help), HELP)
-        for language, words in (('nb', ('NBS/NIST', 'TRIS', '0,10', '0,14', '5 til 35 ‰', '20 til 27 %')),
-                                ('tr', ('NBS/NIST', 'TRIS', '0,10', '0,14', '5–35 ‰', '% 20–27'))):
+        for language, words in (('nb', ('NBS/NIST', 'TRIS', '0,09', '0,15', '5 til 35 ‰', '19 til 28 %')),
+                                ('tr', ('NBS/NIST', 'TRIS', '0,09', '0,15', '5–35 ‰', '% 19–28'))):
             with self.subTest(language=language), translation.override(language):
                 said = str(ph.help)
                 self.assertNotEqual(said, HELP)
@@ -53,9 +53,9 @@ class HelpTests(SimpleTestCase):
                     self.assertIn(word, said)
 
     def test_the_numbers_in_the_help_are_the_cores_own(self):
-        """By the core's own factors (formula 3) over 5 to 35 ‰ and 0 to 30 °C: the NBS pH less the total-scale pH,
-        log10([H⁺]total / [H⁺]free) less the offset free − NBS, is 0.10 to 0.14; a total-scale pH of 8 typed as NBS
-        makes the judged NH₃ 20 to 27 % lower than at the NBS pH the water really has."""
+        """By the core's own factors (formula 4: Millero's step) over 5 to 35 ‰ and 0 to 30 °C: the NBS pH less the total-scale pH,
+        log10([H⁺]total / [H⁺]free) less the offset free − NBS, is 0.09 to 0.15; a total-scale pH of 8 typed as NBS
+        makes the judged NH₃ 19 to 28 % lower than at the NBS pH the water really has."""
         apart, low = [], []
         for salinity in (5.0, 10.0, 20.0, 30.0, 35.0):
             for temp_c in (0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0):
@@ -63,8 +63,8 @@ class HelpTests(SimpleTestCase):
                 difference = math.log10(native.free_to_total(temp_c, salinity)) - eq.ph_offset
                 apart.append(difference)
                 low.append(1 - eq.nh3_share(8.0) / eq.nh3_share(8.0 + difference))
-        self.assertEqual((round(min(apart), 2), round(max(apart), 2)), (0.10, 0.14))
-        self.assertEqual((round(100 * min(low)), round(100 * max(low))), (20, 27))
+        self.assertEqual((round(min(apart), 2), round(max(apart), 2)), (0.09, 0.15))
+        self.assertEqual((round(100 * min(low)), round(100 * max(low))), (19, 28))
 
 
 class ConversionTests(SimpleTestCase):
@@ -87,7 +87,8 @@ class ConversionTests(SimpleTestCase):
         self.assertEqual(eq.ph_nbs(7.95, 'total'), 7.95 + total - eq.ph_offset)
         self.assertEqual(eq.ph_nbs(7.95, 'sws'), 7.95 + sws - eq.ph_offset)
         self.assertEqual(eq.ph_nbs(7.95, 'free'), 7.95 - eq.ph_offset)
-        self.assertAlmostEqual(eq.ph_nbs(7.95, 'total'), 8.0845, delta=0.001)       # 0.135 above, at 12 °C and 34 ‰
+        # 0.111 above, at 12 °C and 34 ‰ (formula 4: Millero's step; formula 3's own conversion gave 8.0845)
+        self.assertAlmostEqual(eq.ph_nbs(7.95, 'total'), 8.0614, delta=0.001)
         self.assertAlmostEqual(eq.ph_on(eq.ph_nbs(7.95, 'total'), 'total'), 7.95, delta=1e-12)
         # The free [H⁺] the water's own constants then take is the total-scale pH's by the published definition: the
         # core's in-house NBS conversion cancels.
@@ -138,16 +139,16 @@ class RecordTests(SeaTestCase):
     def test_a_total_scale_ph_is_stored_on_the_nbs_scale_with_what_was_measured(self):
         sample = self.record(ph='7.95', temperature_c='12', salinity_ppt='34', tan_mg_l='1')
         wanted = D(str(round(nbs(7.95, 'total', 12.0, 34.0), 2)))
-        self.assertEqual(wanted, D('8.08'))
+        self.assertEqual(wanted, D('8.06'))
         stored = WaterMeasurement.objects.get(pk=sample.pk)
         self.assertEqual((stored.ph, stored.ph_scale, stored.ph_as_measured, stored.ph_converted_formula),
-                         (wanted, 'total', D('7.95'), 3))
+                         (wanted, 'total', D('7.95'), 4))
         # The activity log holds both.
         changes = AuditLog.objects.get().changes
-        self.assertEqual(str(changes['PH (NBS scale)'][1]), '8.08')                      # the log's capfirst
+        self.assertEqual(str(changes['PH (NBS scale)'][1]), '8.06')                      # the log's capfirst
         self.assertEqual(str(changes['PH as measured, on its own scale'][1]), '7.95')
         self.assertIn('otal', str(changes['Scale the pH was measured on'][1]))
-        self.assertEqual(str(changes['Formula the pH was put on the NBS scale by'][1]), '3')
+        self.assertEqual(str(changes['Formula the pH was put on the NBS scale by'][1]), '4')
 
     def test_every_scale(self):
         for hours, scale in enumerate(('total', 'sws', 'free'), start=1):
@@ -212,7 +213,7 @@ class RecordTests(SeaTestCase):
         samples = services.record_round(self.user, measured_at=self.ago(hours=1), source='manual', rows=rows,
                                         ph_scale='total')
         by_point = {sample.point_id: sample for sample in samples}
-        self.assertEqual((by_point[self.sea_point.pk].ph, by_point[self.sea_point.pk].ph_scale), (D('8.08'), 'total'))
+        self.assertEqual((by_point[self.sea_point.pk].ph, by_point[self.sea_point.pk].ph_scale), (D('8.06'), 'total'))
         self.assertEqual((by_point[self.mid1.pk].ph, by_point[self.mid1.pk].ph_scale), (None, ''))
         with self.assertRaises(ValidationError) as caught:
             services.record_round(self.user, measured_at=self.ago(hours=2), source='manual', ph_scale='total',
@@ -226,13 +227,13 @@ class ReadTests(SeaTestCase):
         self.record(ph='7.95', temperature_c='12', salinity_ppt='34', tan_mg_l='1')
         water = read.latest([self.sea_point])[self.sea_point.pk]
         ph = water.get('ph')
-        self.assertEqual(ph.value, D('8.08'))
-        self.assertEqual(ph.provenance, 'Measured 7.95 on the total scale; put on the NBS scale by formula 3 with the '
+        self.assertEqual(ph.value, D('8.06'))
+        self.assertEqual(ph.provenance, 'Measured 7.95 on the total scale; put on the NBS scale by formula 4 with the '
                                         'sample’s 12.0 °C and 34.0 ‰.')
         # Its NH₃ is the NH₃ of the NBS pH, a quarter more than the reading typed as NBS would have given.
         eq = native.water_equilibria(12.0, 34.0)
         nh3 = water.get('nh3_n_mg_l').value
-        self.assertEqual(nh3, D(str(eq.nh3_share(8.08))).quantize(D('0.0001')))
+        self.assertEqual(nh3, D(str(eq.nh3_share(8.06))).quantize(D('0.0001')))
         self.assertGreater(float(nh3) / eq.nh3_share(7.95), 1.25)
 
     def test_an_nbs_reading_says_nothing(self):
@@ -265,7 +266,7 @@ class PageTests(SeaTestCase):
                 page = self.client.get(reverse(name))
                 self.assertEqual(page.status_code, 200)
                 self.assertContains(page, 'calibrated with NBS/NIST buffers')
-                self.assertContains(page, 'typed here as NBS, the NH₃ worked out is 20 to 27 % too low')
+                self.assertContains(page, 'typed here as NBS, the NH₃ worked out is 19 to 28 % too low')
                 self.assertContains(page, 'name="ph_scale"')
                 self.assertContains(page, 'Total scale (calibrated with TRIS)')
 
@@ -282,7 +283,7 @@ class PageTests(SeaTestCase):
         response = self.post(url, self.record_data(ph='7.95', ph_scale='total', temperature_c='12', salinity_ppt='34'))
         self.assertEqual(response.status_code, 204, getattr(response, 'context', None) and response.context['form'].errors)
         sample = WaterMeasurement.objects.get()
-        self.assertEqual((sample.ph, sample.ph_scale, sample.ph_as_measured), (D('8.08'), 'total', D('7.95')))
+        self.assertEqual((sample.ph, sample.ph_scale, sample.ph_as_measured), (D('8.06'), 'total', D('7.95')))
         response = self.post(url, self.record_data(ph='7.95', ph_scale='total', temperature_c='12'))
         self.assertEqual(response.status_code, 422)
         self.assertEqual(response.context['form'].errors['salinity_ppt'], [NEEDED])
@@ -310,7 +311,7 @@ class PageTests(SeaTestCase):
                      f'point-{self.sea_point.pk}-salinity_ppt': '34'})
         self.assertEqual(self.post(url, data).status_code, 204)
         sample = WaterMeasurement.objects.get()
-        self.assertEqual((sample.ph, sample.ph_scale, sample.ph_as_measured), (D('8.08'), 'total', D('7.95')))
+        self.assertEqual((sample.ph, sample.ph_scale, sample.ph_as_measured), (D('8.06'), 'total', D('7.95')))
         data.update({'token': str(uuid.uuid4()), f'point-{self.sea_point.pk}-salinity_ppt': '',
                      'measured_at': timezone.localtime(self.ago(hours=2)).strftime('%Y-%m-%dT%H:%M')})
         response = self.post(url, data)
@@ -322,9 +323,9 @@ class PageTests(SeaTestCase):
         self.record(ph='7.95', temperature_c='12', salinity_ppt='34')
         for query in ({'unit': self.sea.pk}, {'unit': self.sea.pk, 'view': 'history'}):
             page = self.client.get(reverse('farm:water'), query)
-            self.assertContains(page, 'Measured 7.95 on the total scale; put on the NBS scale by formula 3',
+            self.assertContains(page, 'Measured 7.95 on the total scale; put on the NBS scale by formula 4',
                                 msg_prefix=str(query))
-            self.assertContains(page, '8.08', msg_prefix=str(query))
+            self.assertContains(page, '8.06', msg_prefix=str(query))
 
 
 class CalculatorTests(SeaTestCase):
@@ -344,14 +345,14 @@ class CalculatorTests(SeaTestCase):
         wanted = nbs(7.95, 'total', 12.0, 34.0)
         for name in ('farm:water_calculator', 'farm:water_calculator_report'):
             with self.subTest(page=name):
-                given, as_nbs = self.page(name, ph='7.95', ph_scale='total'), self.page(name, ph='8.08')
+                given, as_nbs = self.page(name, ph='7.95', ph_scale='total'), self.page(name, ph='8.06')
                 self.assertEqual(given.status_code, 200)
                 # Not rounded on the way: the calculator takes the converted pH itself.
                 self.assertAlmostEqual(given.context['analysis'].nh3_n_mg_l,
                                        1.0 * native.water_equilibria(12.0, 34.0, 115.0).nh3_share(wanted), delta=1e-12)
                 self.assertAlmostEqual(given.context['analysis'].nh3_n_mg_l, as_nbs.context['analysis'].nh3_n_mg_l,
-                                       delta=0.02 * as_nbs.context['analysis'].nh3_n_mg_l)    # 8.0845 against 8.08
-                self.assertContains(given, 'pH 7.95 on the total scale is 8.08 on the NBS scale')
+                                       delta=0.02 * as_nbs.context['analysis'].nh3_n_mg_l)    # 8.0614 against 8.06
+                self.assertContains(given, 'pH 7.95 on the total scale is 8.06 on the NBS scale')
                 self.assertNotContains(as_nbs, 'on the total scale is')
 
     def test_it_is_refused_outside_sea_water_with_the_reason(self):
@@ -366,7 +367,7 @@ class CalculatorTests(SeaTestCase):
         page = self.client.get(reverse('farm:water_calculator'),
                                {**self.WATER, 'ph': '7.50', 'ph_scale': 'total', 'point': f'tank:{self.sea.pk}'}, follow=True)
         form = page.context['form']
-        self.assertEqual((form.cleaned_data['ph'], form.cleaned_data['ph_scale']), (D('8.08'), 'nbs'))
+        self.assertEqual((form.cleaned_data['ph'], form.cleaned_data['ph_scale']), (D('8.06'), 'nbs'))
         self.assertIsNone(page.context['ph_conversion'])
 
     def test_in_three_languages(self):

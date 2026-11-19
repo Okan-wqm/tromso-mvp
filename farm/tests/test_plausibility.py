@@ -97,9 +97,9 @@ class NH3PastGuardTests(SimpleTestCase):
         eq = native.water_equilibria(35.0, 35.0, 115.0)
         self.assertGreater(eq.nh3_share(8.0), 0)                           # the NH₃ is still worked out and judged
         said = messages.provenance(eq)
-        self.assertIn('NH₃: above 30 °C or a salinity of 35 ‰', said)
-        self.assertIn('may read low', said)
-        self.assertNotIn('NH₃: above 30 °C', messages.provenance(native.water_equilibria(30.0, 35.0, 115.0)))
+        self.assertIn('NH₃ and CO₂: above 30 °C or a salinity of 35 ‰', said)
+        self.assertIn('the best estimate itself was not checked there', said)
+        self.assertNotIn('above 30 °C', messages.provenance(native.water_equilibria(30.0, 35.0, 115.0)))
         english = str(messages.WARNINGS['nh3_past_guard'])
         for language in ('nb', 'tr'):
             with self.subTest(language=language), translation.override(language):
@@ -123,7 +123,7 @@ class ReadTests(WaterTestCase):
         self.sample(hours=2, tan_mg_l='2', ph='7.5', temperature_c='31', alkalinity_mg_l='80')
         nh3 = read.latest([self.mid1])[self.mid1.pk].get('nh3_n_mg_l')
         self.assertIsNotNone(nh3.value)                                    # judged all the same
-        self.assertIn('NH₃: above 30 °C or a salinity of 35 ‰', nh3.provenance)
+        self.assertIn('NH₃ and CO₂: above 30 °C or a salinity of 35 ‰', nh3.provenance)
 
 
 class ReportTests(WaterTestCase):
@@ -132,9 +132,9 @@ class ReportTests(WaterTestCase):
             'temperature_c': '12', 'ph': '7', 'salinity_ppt': '0', 'alkalinity_mg_l': '80',
             'conductivity_25_us_cm': '20000', 'drawn': '1'})
         self.assertEqual(page.status_code, 200)
-        self.assertContains(page, 'Formula 3: ionic strength 0.3200')
+        self.assertContains(page, 'Formula 4: ionic strength 0.3200')
         self.assertContains(page, 'Check the salinity')
-        self.assertContains(page, 'CO₂ judged on the basis its limits were set on')
+        self.assertContains(page, 'CO₂ judged on the safe side')
 
     def test_the_calculator_and_its_report_say_the_nh3_guard_warning(self):
         water = {'temperature_c': '32', 'ph': '7', 'salinity_ppt': '0', 'alkalinity_mg_l': '80', 'tan_mg_l': '1',
@@ -143,9 +143,9 @@ class ReportTests(WaterTestCase):
             with self.subTest(page=name):
                 page = self.client.get(reverse(name), water)
                 self.assertEqual(page.status_code, 200)
-                self.assertContains(page, 'NH₃: above 30 °C or a salinity of 35 ‰')
+                self.assertContains(page, 'NH₃ and CO₂: above 30 °C or a salinity of 35 ‰')
                 cool = self.client.get(reverse(name), {**water, 'temperature_c': '30'})
-                self.assertNotContains(cool, 'NH₃: above 30 °C or a salinity of 35 ‰')
+                self.assertNotContains(cool, 'NH₃ and CO₂: above 30 °C or a salinity of 35 ‰')
 
 
 class BelowFittedTemperatureTests(WaterTestCase):

@@ -77,8 +77,9 @@ class OriginTests(SimpleTestCase):
         water = deffeyes.Water(12.0, 3.0, 7.5, 80.0, tan_mg_l=0.5, water_origin='salt_added')
         found = deffeyes.analyse(water, deffeyes.Limits(nh3_n_mg_l=0.0103, co2_mg_l=15.0))
         self.assertEqual(found.equilibria.water_origin, 'salt_added')
-        # Judged on the larger: the ideal water (no seawater boron) against the corrected.
-        ideal = native.water_equilibria(12.0, 0.0)
+        # Judged on the larger: the ideal water (no seawater boron) against the corrected (formula 3's ideal water: formula
+        # 4's with nothing measured judges its best estimate, Clegg & Whitfield's pure-water K, 0.25 % above it at 12 °C).
+        ideal = native.water_equilibria(12.0, 0.0, formula=3)
         self.assertGreaterEqual(found.equilibria.nh3_share(7.5), ideal.nh3_share(7.5))
         self.assertEqual(found.nh3_basis, 'limits')
         self.assertEqual(native.alkalinity_floor(12.0, 3.0, 10.5, 80.0, water_origin='salt_added'),

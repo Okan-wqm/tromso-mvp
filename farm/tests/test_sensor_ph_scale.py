@@ -99,11 +99,11 @@ class TrisProbeTests(SensorPhCase):
                 self.assertEqual(sensed.get(code).value, typed.get(code).value)
                 self.assertEqual(sensed.get(code).judged_value, typed.get(code).judged_value)
                 self.assertEqual(sensed.get(code).judged, typed.get(code).judged)
-        self.assertEqual(sensed.get('ph').value, D('8.08'))
+        self.assertEqual(sensed.get('ph').value, D('8.06'))
         self.assertEqual(sensed.get('nh3_n_mg_l').judged, Status.WARNING)
         # What was measured is said beside the NBS number, as for a typed sample.
         self.assertEqual(sensed.get('ph').measured, 'measured 7.95 on the total scale')
-        self.assertIn('Measured 7.95 on the total scale by the sensor; put on the NBS scale by formula 3 with '
+        self.assertIn('Measured 7.95 on the total scale by the sensor; put on the NBS scale by formula 4 with '
                       '12.0 °C and 34.0 ‰', sensed.get('ph').provenance)
         self.assertIn('The pH was measured on the total scale', sensed.get('nh3_n_mg_l').provenance)
         # Taken as NBS, as before, it read low: the NH₃-N of 7.95 itself is a quarter lower.
@@ -117,7 +117,7 @@ class TrisProbeTests(SensorPhCase):
                 values = {'ph': D(str(ph)), 'temperature_c': D(str(temperature)), 'salinity_ppt': D(str(salinity))}
                 stored, _measured = services.on_nbs(self.typed_point, values, TOTAL)
                 found = read.ph_on_nbs(D(str(ph)), TOTAL, D(str(temperature)), D(str(salinity)), 'seawater')
-                self.assertEqual((found.value, found.formula, found.refused), (stored['ph'], 3, ''))
+                self.assertEqual((found.value, found.formula, found.refused), (stored['ph'], 4, ''))
 
     def test_the_seawater_and_free_scales_too(self):
         for scale in ('sws', 'free'):
@@ -182,9 +182,9 @@ class NotConvertedTests(SensorPhCase):
         self.record(point=self.typed_point, ph='7.95', temperature_c='12.0', salinity_ppt='34.0')
         ph = self.water(self.sea_point).get('ph')
         self.assertEqual((ph.value, ph.refused, ph.judged), (self.water(self.typed_point).get('ph').value, '', 'ok'))
-        self.assertEqual(ph.value, D('8.08'))
+        self.assertEqual(ph.value, D('8.06'))
         self.assertEqual(ph.provenance, 'Measured 7.95 on the total scale by the sensor; put on the NBS scale by formula '
-                                        f'3 with 12.0 °C and 34.0 ‰ of the same moment. The temperature is manual, '
+                                        f'4 with 12.0 °C and 34.0 ‰ of the same moment. The temperature is manual, '
                                         f'{sample.measured_at:%d.%m.%Y %H:%M}.')
 
     def test_without_a_temperature_fresh_at_its_time_it_cannot_be_evaluated(self):
@@ -202,7 +202,7 @@ class NotConvertedTests(SensorPhCase):
         self.assertUnevaluated(self.water(self.sea_point), 'the salinity')
         # A sample's fresh salinity at the point is the water's salinity (as for a sensor's TAN).
         self.sample(point=self.sea_point, hours=2, salinity_ppt='34.0')
-        self.assertEqual(self.water(self.sea_point).get('ph').value, D('8.08'))
+        self.assertEqual(self.water(self.sea_point).get('ph').value, D('8.06'))
 
     def test_a_ph_no_longer_fresh(self):
         self.limits(self.sea)
@@ -226,7 +226,7 @@ class NotConvertedTests(SensorPhCase):
         self.assertNotIn('sea water of 5 ‰', water.get('ph').refused)
         self.assertEqual(refused, {'ph_scale': [f'Cannot be worked out: {CORE_REFUSED}.']})
         # The same water and the same channel without the refusal: converted.
-        self.assertEqual(self.water(self.sea_point).get('ph').value, D('8.08'))
+        self.assertEqual(self.water(self.sea_point).get('ph').value, D('8.06'))
 
     def test_a_typed_ph_still_counts_beside_it(self):
         """The newest fresh value is the probe's, which cannot be evaluated; a worse fresh sample still decides the
@@ -254,7 +254,7 @@ class ScaleChangedTests(SensorPhCase):
 
     def test_the_next_value_is_converted_on_the_new_scale(self):
         self.probe(self.sea_point, ph_scale_from=self.now - timedelta(seconds=60))
-        self.assertEqual(self.water(self.sea_point).get('ph').value, D('8.08'))
+        self.assertEqual(self.water(self.sea_point).get('ph').value, D('8.06'))
 
     def test_a_channel_put_back_on_nbs_neither_takes_its_older_values(self):
         self.probe(self.sea_point, ph=8.08, scale='', ph_scale_from=self.now - timedelta(seconds=5))
@@ -270,4 +270,4 @@ class ScaleChangedTests(SensorPhCase):
         """`latest(at=...)` reads each sensor's value at the moment (value_at): converted as the live one."""
         self.probe(self.sea_point)
         at = self.now - timedelta(seconds=1)
-        self.assertEqual(read.latest([self.sea_point], at=at)[self.sea_point.pk].get('ph').value, D('8.08'))
+        self.assertEqual(read.latest([self.sea_point], at=at)[self.sea_point.pk].get('ph').value, D('8.06'))

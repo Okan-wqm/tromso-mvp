@@ -3,7 +3,10 @@ against the primary papers, F:\\dev\\balik-notes\\chem-audit-fable\\PAPERS-CHECK
 (1977)'s eq. 11 (p. 285), a constant on the free hydrogen ion scale (their eq. 7, p. 283) and molal (Table III, p. 288),
 applied to the meter's NBS pH without converting it: the safe side. Not "as Bower & Bidwell 1978": their tables take
 Whitfield's (1974) values and never cite Khoo; and no paper says the tables take an NBS pH. Words only: no number
-moves."""
+moves.
+
+Formula 4 (2026-11-19) replaced that basis in salt water by the best estimate at the pH + 0.03 (Rule S): the words now say
+so, and never name Khoo or Bower & Bidwell as the basis."""
 from django.utils import translation
 
 from ..water import messages, read
@@ -14,10 +17,9 @@ class BasisWordsTests(SeaTestCase):
     def test_a_sea_samples_nh3_says_what_its_basis_is(self):
         self.record(ph_scale='nbs', ph='7.80', temperature_c='4', salinity_ppt='34', tan_mg_l='1')
         said = read.latest([self.sea_point])[self.sea_point.pk].get('nh3_n_mg_l').provenance
-        self.assertIn('from 5 ‰ the free-scale pKa of Khoo et al. 1977, eq. 11, applied to the meter’s NBS pH without '
-                      'converting it', said)
+        self.assertIn('from 5 ‰ the best estimate at the pH + 0.03, the uncertainty of a pH reading (US EPA 1989)', said)
         self.assertIn('the safe side', said)
-        for wrong in ('Bower & Bidwell', 'sea-water tables', 'pKa on the NBS pH'):
+        for wrong in ('Bower & Bidwell', 'sea-water tables', 'pKa on the NBS pH', 'Khoo'):
             with self.subTest(wrong=wrong):
                 self.assertNotIn(wrong, said)
 
@@ -27,5 +29,6 @@ class BasisWordsTests(SeaTestCase):
             with self.subTest(language=language), translation.override(language):
                 words = str(messages.JUDGED['nh3', 'limits'])
                 self.assertNotEqual(words, english)
-                self.assertIn('Khoo', words)
+                self.assertIn('EPA 1989', words)
+                self.assertNotIn('Khoo', words)
                 self.assertNotIn('Bower', words)

@@ -686,8 +686,8 @@ class CalculatorPageTests(TestCase):
         html = response.content.decode()
         for text in ('Water Quality Management Chart', '<svg class="deffeyes-chart"', 'Carbon dioxide (CO₂)',
                      'NH₃ toxic (pH &gt; 7.99)', 'CO₂ toxic (&gt; 15 mg/L)', 'H₂S toxic (pH &lt; 5.93)',
-                     '1.987 mmol/L', '19.62 mg/L', '17.12 mg/L', 'wq-critical', 'data-formula="3"'):
-            # formula 3; NH₃ and CO₂ judged on the larger, the limits' basis (cross review F1): CO₂ 19.62 mg/L, the
+                     '1.987 mmol/L', '19.62 mg/L', '17.12 mg/L', 'wq-critical', 'data-formula="4"'):
+            # formula 4 (fresh water judged as formula 3 judged it); NH₃ and CO₂ judged on the larger, the limits' basis (cross review F1): CO₂ 19.62 mg/L, the
             # activity-corrected 17.12 said beside it
             self.assertIn(text, html)
         self.assertContains(response, f'href="{self.url}" aria-current="page"')

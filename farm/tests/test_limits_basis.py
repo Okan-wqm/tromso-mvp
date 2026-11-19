@@ -93,9 +93,9 @@ class FreshWaterTests(SimpleTestCase):
     def test_the_provenance_says_which_judged_and_the_corrected_value(self):
         water = deffeyes.Water(12.0, 0.0, 7.5, 80.0, tan_mg_l=0.5, conductivity_25_us_cm=1000.0)
         found = deffeyes.analyse(water, LIMITS)
-        self.assertIn('NH₃ judged on the basis its limits were set on', found.nh3_judged)
-        self.assertIn('activity-corrected', found.nh3_judged)
-        self.assertIn('CO₂ judged on the basis its limits were set on', found.co2_judged)
+        self.assertIn('NH₃ judged on the safe side', found.nh3_judged)
+        self.assertIn('best estimate', found.nh3_judged)
+        self.assertIn('CO₂ judged on the safe side', found.co2_judged)
         # Formula 1 is the limits' basis itself: nothing more to say.
         one = deffeyes.analyse(deffeyes.Water(12.0, 0.0, 7.5, 80.0, tan_mg_l=0.5, formula=1), LIMITS)
         self.assertEqual((one.nh3_judged, one.co2_judged), ('', ''))
@@ -103,7 +103,7 @@ class FreshWaterTests(SimpleTestCase):
         self.assertEqual((one.co2_corrected_mg_l, one.nh3_corrected_n_mg_l), (one.co2_mg_l, one.nh3_n_mg_l))
         self.assertEqual((one.co2_basis, one.nh3_basis), ('limits', 'limits'))
         self.assertEqual(messages.judged('nh3', 'corrected', 0.001, found.equilibria),
-                         'NH₃ judged on its activity-corrected value, the larger here.')
+                         'NH₃ judged on its best estimate, the larger here.')
 
 
 class SeaWaterTests(SimpleTestCase):
@@ -114,7 +114,8 @@ class SeaWaterTests(SimpleTestCase):
     I = 19.9273 S / (1000 − 1.005109 S) the molal ionic strength of sea water. It is not the US EPA 1989 saltwater
     criteria's own speciation (Whitfield's model through Hampson's program, a linear temperature term: the K_NH4 panel
     of 2026-11-10; chemcore/core/src/fresh.rs pk_nh4_seawater says the differences). The CO2 basis there stays formula
-    1's seawater constants."""
+    1's seawater constants. Formula 3's, by name: formula 4 (the application's since 2026-11-19) judges sea water on its
+    best estimate at the pH ± 0.03 (farm/tests/test_formula_v4.py, chemcore/core/tests/formula4.rs)."""
 
     @staticmethod
     def khoo(temp_c, salinity):
@@ -128,7 +129,7 @@ class SeaWaterTests(SimpleTestCase):
     def test_the_sea_nh3_basis_is_khoos_pka_on_the_nbs_ph(self):
         for temp_c in (2.0, 12.0, 25.0):
             for salinity in (5.0, 20.0, 35.0):
-                eq = native.water_equilibria(temp_c, salinity, 115.0)
+                eq = native.water_equilibria(temp_c, salinity, 115.0, formula=3)
                 with self.subTest(temp_c=temp_c, salinity=salinity):
                     for ph in (7.6, 8.0):
                         basis = eq.nh3_share_limits(ph)
@@ -150,17 +151,17 @@ class SeaWaterTests(SimpleTestCase):
         for temp_c in (2.0, 12.0, 25.0):
             with self.subTest(temp_c=temp_c):
                 for edge in (1.0, 5.0):
-                    below = native.water_equilibria(temp_c, edge - 1e-9, 115.0).nh3_share_limits(8.0)
-                    above = native.water_equilibria(temp_c, edge + 1e-9, 115.0).nh3_share_limits(8.0)
+                    below = native.water_equilibria(temp_c, edge - 1e-9, 115.0, formula=3).nh3_share_limits(8.0)
+                    above = native.water_equilibria(temp_c, edge + 1e-9, 115.0, formula=3).nh3_share_limits(8.0)
                     self.assertAlmostEqual(above / below, 1, delta=1e-7)
-                at_five = native.water_equilibria(temp_c, 5.0, 115.0).nh3_share_limits(8.0)
-                ideal = native.water_equilibria(temp_c, 0.0).nh3_share(8.0)
+                at_five = native.water_equilibria(temp_c, 5.0, 115.0, formula=3).nh3_share_limits(8.0)
+                ideal = native.water_equilibria(temp_c, 0.0, formula=3).nh3_share(8.0)
                 self.assertAlmostEqual(at_five / ideal, 1, delta=0.04)
 
     def test_the_co2_basis_at_sea_stays_formula_1s(self):
         meq = 115.0 / chemistry.MG_CACO3_PER_MEQ
         for temp_c in (2.0, 25.0):
-            eq, one = native.water_equilibria(temp_c, 35.0, 115.0), native.equilibria(temp_c, 35.0)
+            eq, one = native.water_equilibria(temp_c, 35.0, 115.0, formula=3), native.equilibria(temp_c, 35.0)
             own = eq.co2(eq.dic(meq, 8.0), 8.0)
             self.assertEqual(eq.co2_judged(meq, 8.0)[0], max(own, one.co2(one.dic(meq, 8.0), 8.0)))
 
@@ -191,6 +192,6 @@ class ReadTests(WaterTestCase):
         nh3 = self.reading('nh3_n_mg_l')
         self.assertEqual(nh3.value, judged)
         self.assertEqual(nh3.status, Status.CRITICAL)
-        self.assertIn('NH₃ judged on the basis its limits were set on', nh3.provenance)
-        self.assertIn(f'activity-corrected {corrected}', nh3.provenance.replace(',', '.'))
+        self.assertIn('NH₃ judged on the safe side', nh3.provenance)
+        self.assertIn(f'best estimate {corrected}', nh3.provenance.replace(',', '.'))
         self.assertEqual(self.reading('nh4_n_mg_l').value, (D(2) - judged).quantize(D('0.001')))

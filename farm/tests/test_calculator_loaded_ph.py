@@ -4,7 +4,10 @@ sample of total-scale 7.95 at 12 °C and 34 ‰, stored as 8.08. Loaded into the
 with the scale then set to "total" on the unchanged value, the calculator took 8.08 for a total-scale pH and worked
 with 8.2145: NH₃-N +35 %, CO₂ −29.7 % (the unsafe side), and said nothing. Now the loaded value is carried beside the
 pH (`ph_loaded`), the page says what was measured and that the value is NBS, and another scale on the unchanged
-loaded value is refused with the reason; a pH typed over it is a new measurement and is converted as any other."""
+loaded value is refused with the reason; a pH typed over it is a new measurement and is converted as any other.
+
+Since formula 4 (Millero's step, 2026-11-19) a total-scale 7.95 at 12 °C and 34 ‰ is stored as 8.06: the unit's sample
+here is total-scale 7.97, stored as 8.08 as in the review, and 8.08 taken for a total-scale pH works with 8.1914."""
 from decimal import Decimal as D
 from urllib.parse import parse_qsl
 
@@ -18,7 +21,7 @@ from .helpers import point_of
 from .test_ph_scale import SeaTestCase
 from .test_stock import make_unit
 
-SAID = 'measured 7.95 on the total scale, stored as 8.08 NBS'
+SAID = 'measured 7.97 on the total scale, stored as 8.08 NBS'
 REFUSED = ('pH 8.08 is the value loaded from S-01: it is on the NBS scale already (a stored pH always is) and is not '
            'converted again. Leave the scale at NBS, or type the pH as it was measured with its scale.')
 WATER = {'temperature_c': '12', 'salinity_ppt': '34', 'alkalinity_mg_l': '115', 'tan_mg_l': '1', 'drawn': '1'}
@@ -27,7 +30,7 @@ WATER = {'temperature_c': '12', 'salinity_ppt': '34', 'alkalinity_mg_l': '115', 
 class LoadedPhTests(SeaTestCase):
     def setUp(self):
         super().setUp()
-        self.record(ph='7.95', temperature_c='12', salinity_ppt='34', alkalinity_mg_l='115', tan_mg_l='1.000')
+        self.record(ph='7.97', temperature_c='12', salinity_ppt='34', alkalinity_mg_l='115', tan_mg_l='1.000')
         self.owner = f'tank:{self.sea.pk}'
         self.url = reverse('farm:water_calculator')
 
@@ -46,7 +49,7 @@ class LoadedPhTests(SeaTestCase):
                          (D('8.08'), 'nbs', D('8.08')))
         self.assertIsNone(page.context['ph_conversion'])
         self.assertAlmostEqual(page.context['analysis'].water.ph, 8.08, delta=1e-12)
-        self.assertAlmostEqual(page.context['analysis'].nh3_n_mg_l, 0.02001, delta=0.00001)
+        self.assertAlmostEqual(page.context['analysis'].nh3_n_mg_l, 0.01941, delta=0.00001)     # formula 4's judged
         self.assertContains(page, SAID)
         row = next(row for row in page.context['source']['rows'] if row['offer'].field == 'ph')
         self.assertEqual(str(row['measured']), SAID)
@@ -61,13 +64,13 @@ class LoadedPhTests(SeaTestCase):
                 self.assertIsNone(page.context['result'])
                 self.assertIsNone(page.context['ph_conversion'])
                 self.assertContains(page, 'is on the NBS scale already')
-                self.assertNotContains(page, '8.21')
+                self.assertNotContains(page, '8.19')
 
     def test_8_08_never_becomes_8_2145(self):
         """Every way the unchanged loaded value can come back with another scale: the address the browser sends, the
         review's own address (without `ph_loaded`), the unit no longer chosen, the live parts and the report."""
         wrong = native.water_equilibria(12.0, 34.0, 115.0).ph_nbs(8.08, 'total')
-        self.assertAlmostEqual(wrong, 8.2145, delta=0.0001)
+        self.assertAlmostEqual(wrong, 8.1914, delta=0.0001)
         sent = self.loaded(ph_scale='total')
         review = {**WATER, 'ph': '8.08', 'ph_scale': 'total', 'point': self.owner, 'loaded': self.owner}
         unchosen = {**sent, 'point': ''}
@@ -98,7 +101,7 @@ class LoadedPhTests(SeaTestCase):
     def test_a_typed_ph_without_a_unit_is_converted_as_before(self):
         page = self.client.get(self.url, {**WATER, 'ph': '8.08', 'ph_scale': 'total'})
         self.assertEqual(page.context['form'].errors, {})
-        self.assertAlmostEqual(page.context['analysis'].water.ph, 8.2145, delta=0.0001)
+        self.assertAlmostEqual(page.context['analysis'].water.ph, 8.1914, delta=0.0001)
 
     def test_a_unit_without_a_ph_loads_none_and_carries_none(self):
         page = self.client.get(self.url, {**WATER, 'ph': '8.08', 'ph_scale': 'total', 'point': f'tank:{self.t1.pk}'},
@@ -164,10 +167,10 @@ class ChangedUnitTests(SeaTestCase):
                 self.assertIsNone(page.context['analysis'])
                 self.assertIsNone(page.context['result'])
                 self.assertIsNone(page.context['ph_conversion'])
-                self.assertNotContains(page, '8.21')
+                self.assertNotContains(page, '8.19')
 
     def ph(self):
-        self.record(ph='7.95', temperature_c='12', salinity_ppt='34', alkalinity_mg_l='115', tan_mg_l='1.000')
+        self.record(ph='7.97', temperature_c='12', salinity_ppt='34', alkalinity_mg_l='115', tan_mg_l='1.000')
         return self.load({**WATER, 'ph': '7.50', 'point': self.a})
 
     def test_the_loaded_ph_stays_loaded_when_the_unit_is_changed_to_one_without_a_ph(self):

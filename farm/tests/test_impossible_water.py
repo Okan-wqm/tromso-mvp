@@ -14,8 +14,12 @@ from django.test import SimpleTestCase
 from ..water import chemistry, deffeyes, native
 
 MEQ = native.MG_CACO3_PER_MEQ
-ODD = (40.0, 40.0, 9.0, 0.5 * MEQ)                 # the independent check's water
-ODD_WATER = {'temperature_c': 40.0, 'salinity_ppt': 40.0, 'ph': 9.0, 'alkalinity_mg_l': 0.5 * MEQ, 'tan_mg_l': 0.5}
+# The independent check's water, 40 °C, S 40, 0.5 meq/L at pH 9.0 (ODD_V1): impossible by formula 1 and 3. Formula 4's
+# NBS step (Millero 1986, extrapolated to 40 °C) puts its pH 9.0 floor at 0.497 meq/L, just below it, so the application's
+# refusal is held at pH 9.1, where the floor is 0.557 meq/L.
+ODD_V1 = (40.0, 40.0, 9.0, 0.5 * MEQ)
+ODD = (40.0, 40.0, 9.1, 0.5 * MEQ)
+ODD_WATER = {'temperature_c': 40.0, 'salinity_ppt': 40.0, 'ph': 9.1, 'alkalinity_mg_l': 0.5 * MEQ, 'tan_mg_l': 0.5}
 LIMITS = {'nh3_n_mg_l': 0.0103, 'co2_mg_l': 15.0, 'alkalinity_low_mg_l': 50.0, 'alkalinity_high_mg_l': 150.0}
 CONCENTRATIONS = ('dic', 'co2_mg_l', 'co2_corrected_mg_l')
 
@@ -38,8 +42,8 @@ class CoreRefusalTests(SimpleTestCase):
 
     def test_the_equilibria_refuse_it(self):
         eq = chemistry.water_equilibria(40.0, 40.0, 0.5 * MEQ)
-        for call in (lambda: eq.dic(0.5, 9.0), lambda: eq.co2_judged(0.5, 9.0), lambda: eq.co2(-0.0167, 9.0),
-                     lambda: eq.carbonate(-0.0167, 9.0)):
+        for call in (lambda: eq.dic(0.5, 9.1), lambda: eq.co2_judged(0.5, 9.1), lambda: eq.co2(-0.0167, 9.1),
+                     lambda: eq.carbonate(-0.0167, 9.1)):
             with self.assertRaises(native.ImpossibleWaterError):
                 call()
         self.assertIsNone(eq.ph_at(-0.0167, 0.5))                   # as before: no pH gives such a water
@@ -53,7 +57,7 @@ class CoreRefusalTests(SimpleTestCase):
                      lambda: native.safe_zone(ODD_WATER, LIMITS, (6.0, 6.0, 1.0, 1.0)),
                      lambda: native.safe_zone_gaps(ODD_WATER, LIMITS),
                      lambda: native.judge_step(ODD_WATER, LIMITS, 8.0, 2.0),
-                     lambda: native.simulate(eq, (-0.0167, 0.5), 9.0, [('naoh', 10.0)], 1.0)):
+                     lambda: native.simulate(eq, (-0.0167, 0.5), 9.1, [('naoh', 10.0)], 1.0)):
             with self.assertRaises(native.ImpossibleWaterError):
                 call()
 
@@ -66,10 +70,10 @@ class CoreRefusalTests(SimpleTestCase):
         self.assertEqual(steps[1][4:6], (None, None))
 
     def test_formula_1_still_returns_what_golden_v1_holds(self):
-        found = native.analyse(*ODD, formula=1)
+        found = native.analyse(*ODD_V1, formula=1)
         self.assertAlmostEqual(found['dic'], -0.023300501402556982, delta=1e-13)       # the core before this change
         self.assertLess(found['co2_mg_l'], 0.0)
-        self.assertIsNotNone(native.why_impossible(*ODD, formula=1))
+        self.assertIsNotNone(native.why_impossible(*ODD_V1, formula=1))
         self.assertLess(native.equilibria(40.0, 40.0).dic(0.5, 9.0), 0.0)
 
 

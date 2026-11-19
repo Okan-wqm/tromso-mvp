@@ -37,27 +37,29 @@ class SeaWordsTests(SeaTestCase):
         return read.latest([point])[point.pk].get('nh3_n_mg_l')
 
     def test_the_corrected_value_says_what_it_rests_on(self):
-        """F6, in a sea sample's NH₃ title; a fresh water's does not say it."""
+        """F6, in a sea sample's NH₃ title; a fresh water's does not say it. Since formula 4 the words say what the best
+        estimate rests on (Millero's step, Clegg & Whitfield's constant: `BEST_SEA`)."""
         self.record(ph_scale='nbs', ph='7.80', temperature_c='4', salinity_ppt='34', tan_mg_l='1')
         said = self.nh3(self.sea_point).provenance
-        self.assertIn(str(messages.CORRECTED_SEA), said)
+        self.assertIn(str(messages.BEST_SEA), said)
         self.sample(hours=1, tan_mg_l='1', ph='7.5', temperature_c='12', conductivity_25_us_cm='500')
         fresh = self.nh3(self.mid1).provenance
-        self.assertIn('NH₃ judged on the basis its limits were set on', fresh)
-        self.assertNotIn(str(messages.CORRECTED_SEA), fresh)
+        self.assertIn('NH₃ judged on the safe side', fresh)
+        self.assertNotIn(str(messages.BEST_SEA), fresh)
 
     def test_an_nh3_from_a_total_scale_ph_says_it_is_judged_on_the_safe_side(self):
-        """F11: the pH was put on the NBS scale and the NH₃ judged on the limits' basis: the safe side,
-        said beside the NH₃. A pH typed as NBS says nothing of it."""
+        """F11: the pH was put on the NBS scale and the NH₃ judged on the safe side, said beside the NH₃ (formula 4: at
+        that pH + 0.03). A pH typed as NBS says nothing of it."""
         self.record(ph='7.95', temperature_c='12', salinity_ppt='34', tan_mg_l='1')
         nh3 = self.nh3(self.sea_point)
-        self.assertIn('The pH was measured on the total scale: the NH₃ is judged on the NBS scale', nh3.provenance)
+        self.assertIn('The pH was measured on the total scale and put on the NBS scale by Millero’s (1986) step: the NH₃ '
+                      'is judged at that pH + 0.03', nh3.provenance)
         self.assertIn('the safe side', nh3.provenance)
         self.record(ph_scale='nbs', ph='8.08', temperature_c='12', salinity_ppt='34', tan_mg_l='1', hours=0)
         self.assertNotIn('The pH was measured on the', self.nh3(self.sea_point).provenance)
 
     def test_the_words_are_in_three_languages(self):
-        for words in (messages.CORRECTED_SEA, messages.JUDGED_ON_NBS):
+        for words in (messages.BEST_SEA, messages.JUDGED_ON_NBS):
             english = str(words)
             for language in ('nb', 'tr'):
                 with self.subTest(words=english[:30], language=language), translation.override(language):

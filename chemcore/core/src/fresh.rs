@@ -23,7 +23,12 @@
 //! (an unmeasured ion only adds to it), so an estimate below it is taken as the bound: a salinity of 0.01 ‰ never drops
 //! a water's bicarbonate. With nothing measured (S 0, no alkalinity) the ionic strength is 0, v1's ideal water.
 //!
-//! Concentrations per litre are taken as per kg (a fresh water's density is 1 within 0.3 %).
+//! Concentrations per litre are taken as per kg (a fresh water's density is 1 within 0.3 %). Sea water is treated the
+//! same way although its density is about 1.026 (the water-chemistry audit of 2026-11-19, F9): the alkalinity, the DIC
+//! and the phosphate per litre against constants and totals per kg (boron, Kw / [H⁺]). Measured against PyCO2SYS given
+//! the alkalinity as if per kg (the density taken as 1) instead of per kg by the EOS-80 density, its CO₂ moves by 0.000
+//! to +0.143 % (the audit's grid: 4 to 16 °C, S 5 to 34, pH 6.8 to 8.0); the NH₃ not at all (its share is a ratio, TAN and NH₃-N both per
+//! litre). Only Mucci's Ksp is put per litre (× ρ², for Ω).
 //!
 //! Davies (1962), Ion Association, p. 41: log γ = −A z² (√I / (1 + √I) − 0.3 I), valid to I ≈ 0.5. A is the
 //! Debye–Hückel constant of the water's temperature (`debye_huckel_a`: its dielectric constant by Malmberg & Maryott

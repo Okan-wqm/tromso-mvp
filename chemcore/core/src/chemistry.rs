@@ -405,7 +405,10 @@ pub struct Equilibria {
     pub ksp_aragonite: f64,
     /// The formula version (crate::FORMULA_VERSION; 1 or 3).
     pub formula: u32,
-    /// mol/L; formula 1: the salinity's (DOE 1994), 0 at S ≤ 0.
+    /// The ionic strength. From the salinity (sea water; formula 1 always, 0 at S ≤ 0) it is DOE (1994)'s, in mol per
+    /// kg of water (molal): 0.7014 at S 34, which is 0.695 mol/L. The fresh path's estimates (`crate::fresh`: the
+    /// conductivity, the hardness, the alkalinity) are per litre, taken as per kg (a fresh water's density is 1 within
+    /// 0.3 %). Not mol/L in sea water (the water-chemistry audit of 2026-11-19, F8).
     pub ionic_strength: f64,
     pub source: Source,
     /// The seawater path's share of the constants, 0 to 1 (formula 1: always 1).

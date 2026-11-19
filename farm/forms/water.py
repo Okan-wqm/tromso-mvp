@@ -745,7 +745,8 @@ class CalculatorForm(forms.Form):
             self.add_error('ph_scale', messages.PH_NOT_SEA)
             return
         self.ph_conversion = {'given': data['ph'], 'scale': messages.PH_SCALES[scale], 'code': scale,
-                              'nbs': equilibria.ph_nbs(float(data['ph']), scale), 'formula': equilibria.formula}
+                              'nbs': equilibria.ph_nbs(float(data['ph']), scale), 'formula': equilibria.formula,
+                              'judged': messages.judged_on_nbs(scale)}
 
     def unchanged_loaded(self, data, name):
         """What gave the field its value (a unit's or a loop's code; "a unit or a loop" when it is gone) when the value

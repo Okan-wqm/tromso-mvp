@@ -830,6 +830,14 @@ class Context:
             return _('Needs a fresh pH and temperature from the sensors with the sensor’s TAN.')
         return _('Needs the pH and the temperature of the same sample.')
 
+    @staticmethod
+    def _ph_scale_said(observation):
+        """What an NH₃ worked out from a pH measured on another scale than NBS says beside it (the audit of 2026-11-19,
+        F11: judged on the NBS scale, the safe side): a typed sample's; '' for an NBS pH."""
+        if observation.sample is not None and observation.sample.ph_scale:
+            return messages.judged_on_nbs(observation.sample.ph_scale)
+        return ''
+
     def _ammonia(self, observation, salinity):
         ph, temperature, tan = (observation.get(code) for code in (parameters.PH, parameters.TEMPERATURE, TAN))
         if ph is None or temperature is None:
@@ -851,7 +859,8 @@ class Context:
         nh3 = exact.quantize(NH3_N.step)
         corrected = (tan * Decimal(equilibria.nh3_share_corrected(float(ph)))).quantize(NH3_N.step)
         said = ' '.join(filter(None, (str(messages.provenance(equilibria)),
-                                      messages.judged('nh3', equilibria.nh3_basis, corrected, equilibria))))
+                                      messages.judged('nh3', equilibria.nh3_basis, corrected, equilibria),
+                                      self._ph_scale_said(observation))))
         return {NH3_N.code: Reading(NH3_N, nh3, observation, True, provenance=said, exact=exact),
                 NH4_N.code: Reading(NH4_N, (tan - exact).quantize(NH4_N.step), observation, True, provenance=said,
                                     exact=tan - exact)}

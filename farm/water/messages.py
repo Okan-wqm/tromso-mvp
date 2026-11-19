@@ -252,17 +252,48 @@ JUDGED_WITHOUT_PHOSPHATE = _('CO₂ judged without the phosphate: the larger of 
                              '%(value)s mg/L.')
 
 
+# The activity-corrected NH₃ of a water with seawater constants (the water-chemistry audit of 2026-11-19, F6): it rests
+# on the core's own NBS conversion in salt water (chemcore/core/src/chemistry.rs sws_to_nbs_with), which reads 7.6 to
+# 15.7 % below Clegg & Whitfield (1995) with CO2SYS's fH from 16 to 0 °C at S 34; the judged value 10 to 15 % above.
+CORRECTED_SEA = _('In salt water the activity-corrected NH₃ rests on this application’s own conversion of the NBS pH: '
+                  'in cold sea water it reads up to about 16 % below the published references (the judged value about '
+                  '10 to 15 % above them). It is information, not the better value.')
+# An NH₃ worked out from a pH measured on the total, seawater or free scale (the audit of 2026-11-19, F11; a typed
+# sample's or a sensor's): put on the NBS scale and judged on the limits' basis (a free-scale constant on the
+# unconverted NBS pH, `JUDGED`), 13 to 25 % above the NH₃ that pH gives exactly (Clegg & Whitfield 1995; the audit's
+# section 3.4).
+JUDGED_ON_NBS = _('The pH was measured on the %(scale)s: the NH₃ is judged on the NBS scale, with a free-scale constant '
+                  'applied to that NBS pH without converting it, which is the safe side: it reads about 13 to 25 %% '
+                  'more NH₃ than this pH gives worked out exactly, and more than the activity-corrected value.')
+
+
 def judged(kind, basis, corrected, equilibria):
     """Which value judged a water's NH3 ('nh3') or CO2 ('co2'), with the activity-corrected value beside it, in words;
     '' for formula 1 (its own value is the limits' basis), for the ideal water (an ionic strength of 0 in fresh water:
-    the two are one) or without a value. KeyError for an unknown kind or basis."""
+    the two are one) or without a value. An NH₃ of a water with seawater constants says what its corrected value rests
+    on (`CORRECTED_SEA`). KeyError for an unknown kind or basis."""
     if kind == 'co2' and equilibria.formula != 1 and equilibria.phosphate > 0 and corrected is not None:
         return str(JUDGED_WITHOUT_PHOSPHATE % {'value': number_format(corrected, JUDGED_DECIMALS[kind])})
     words = JUDGED[kind, basis]
     ideal = equilibria.ionic_strength == 0 and equilibria.sea_weight == 0
     if equilibria.formula == 1 or ideal or corrected is None:
         return ''
-    return str(words % {'value': number_format(corrected, JUDGED_DECIMALS[kind])} if basis == 'limits' else words)
+    said = str(words % {'value': number_format(corrected, JUDGED_DECIMALS[kind])} if basis == 'limits' else words)
+    if kind == 'nh3' and equilibria.sea_weight > 0:
+        said = f'{said} {CORRECTED_SEA}'
+    return said
+
+
+def judged_on_nbs(scale):
+    """What an NH₃ worked out from a pH measured on another scale than NBS says beside it (`JUDGED_ON_NBS`)."""
+    return str(JUDGED_ON_NBS % {'scale': PH_SCALES[scale]})
+
+
+def ionic_strength_unit(equilibria):
+    """The unit of a water's ionic strength as a page says it (the audit of 2026-11-19, F8): per kg of water where it
+    is the salinity's (DOE 1994, molal: sea water, and a fresh water given only its salinity), per litre where it is
+    the fresh path's estimate from the conductivity, the hardness or the alkalinity (taken as per kg)."""
+    return 'mol/kg H₂O' if equilibria.strength_source in ('salinity', 'seawater') else 'mol/L'
 
 
 def last_own(reading):

@@ -89,7 +89,8 @@ MEASURED = [
                              'reads NH₃: divide by 1.22. The toxic NH₃ is worked out from this, the pH and the '
                              'temperature of the same sample.')),
     _parameter('nitrite_n_mg_l', _('Nitrite (mg/L NO₂ as N)'), _('NO₂-N (mg/L)'), 3, 0, 100, 'nitrogen',
-               _('As nitrogen. A kit that reads NO₂⁻: divide by 3.29.')),
+               # 46.0055 / 14.0067 = 3.2845 (the water-chemistry audit of 2026-11-19, F7; it said 3.29).
+               _('As nitrogen. A kit that reads NO₂⁻: divide by 3.28.')),
     _parameter('nitrate_n_mg_l', _('Nitrate (mg/L NO₃ as N)'), _('NO₃-N (mg/L)'), 1, 0, 1000, 'nitrogen',
                _('As nitrogen. A kit that reads NO₃⁻: divide by 4.43.')),
     _parameter('tgp_pct', _('Total gas pressure (% of barometric pressure)'), _('TGP (%)'), 1, 50, 200, 'other',

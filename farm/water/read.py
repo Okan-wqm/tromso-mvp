@@ -289,6 +289,9 @@ class SensorPh:
     salinity: Decimal | None = None
     formula: int | None = None
     refused: str = ''
+    # Where the temperature it was converted with came from when not a fresh sensor's: 'manual, 19.11.2026 10:00'
+    # (Basis.said; the review of the water-chemistry audit, C2), else ''.
+    temperature_from: str = ''
 
     @property
     def converted(self):
@@ -877,14 +880,16 @@ class Context:
         return assumed_salinity(self.water_types(point))
 
     # -- a sensor's pH on another scale --
-    def sensor_ph(self, observation, fresh_live, now):
+    def sensor_ph(self, observation, fresh_live, now, temperature=None):
         """A sensor's pH observation put on the NBS scale (owner decision 1 of 2026-11-17; the water-chemistry audit of
         2026-11-19, F1), exactly as a typed sample's (`ph_on_nbs`): with the place's fresh temperature from the sensors
-        (`fresh_live`, {code: the newest fresh live Observation}, as a sensor's TAN takes its pH and temperature) and
-        the salinity of the same moment (`salinity_for`: a fresh sensor's, else the point's fresh sample's, else 0 in
-        fresh water), for sea water of 5 ‰ or more only (`scale_origin`), while the pH is fresh at `now`. Otherwise
-        the observation keeps no pH and says why (`SensorPh.refused`). An observation that needs nothing is returned as
-        it is."""
+        (`fresh_live`, {code: the newest fresh live Observation}, as a sensor's TAN takes its pH and temperature), else
+        the place's chosen `temperature` (a Reading: a sample's, or a sensor's no longer fresh now) where it is fresh AT
+        the pH's own time (`fresh_at`, as the oxygen's other unit takes the point's temperature, `_in_other_unit`; the
+        replay and the trail convert with a sample's temperature too: the review of the audit, C2), and the salinity of
+        the same moment (`salinity_for`: a fresh sensor's, else the point's fresh sample's, else 0 in fresh water), for
+        sea water of 5 ‰ or more only (`scale_origin`), while the pH is fresh at `now`. Otherwise the observation keeps
+        no pH and says why (`SensorPh.refused`). An observation that needs nothing is returned as it is."""
         ph = observation.ph
         if ph is None or ph.converted or not ph.scale or observation.get(parameters.PH) is not None \
                 or (ph.since is not None and observation.at < ph.since):
@@ -895,16 +900,21 @@ class Context:
 
         if not is_fresh(parameters.get(parameters.PH), observation.at, now, observation.fresh_for):
             return refused('stale')
-        temperature = fresh_live.get(parameters.TEMPERATURE)
-        if temperature is None or temperature.get(parameters.TEMPERATURE) is None:
-            return refused('temperature')
+        sensed, said = fresh_live.get(parameters.TEMPERATURE), ''
+        if sensed is None or sensed.get(parameters.TEMPERATURE) is None:
+            if temperature is None or temperature.value is None or not fresh_at(temperature, observation.at):
+                return refused('temperature')
+            # The place's temperature fresh at the pH's time, alone (never the rest of its sample), saying where from.
+            sensed = replace(temperature.sample, measured={parameters.TEMPERATURE: temperature.value})
+            said = Basis(temperature.value, temperature.origin, temperature.sample.channel_no,
+                         temperature.at).said(observation.point)
         salinity_observation = fresh_live.get(parameters.SALINITY)
-        together = Observation.combined([observation, temperature, *([salinity_observation]
-                                                                    if salinity_observation is not None else [])])
+        together = Observation.combined([observation, sensed, *([salinity_observation]
+                                                               if salinity_observation is not None else [])])
         salinity = self.salinity_for(together)
         if salinity is None:
             return refused('salinity')
-        temperature = temperature.get(parameters.TEMPERATURE)
+        temperature = sensed.get(parameters.TEMPERATURE)
         served = self.served.get(observation.point.pk)
         origin = scale_origin(served if served is not None else Context._served([observation.point])[observation.point.pk])
         found = ph_on_nbs(ph.as_measured, ph.scale, temperature, salinity, origin)
@@ -912,7 +922,8 @@ class Context:
             return refused('not_sea')
         converted, formula = found
         return replace(observation, measured={parameters.PH: converted},
-                       ph=replace(ph, temperature=temperature, salinity=salinity, formula=formula, refused=''))
+                       ph=replace(ph, temperature=temperature, salinity=salinity, formula=formula, refused='',
+                                  temperature_from=said))
 
     # -- one observation's readings --
     def readings(self, observation):
@@ -1285,8 +1296,12 @@ def _resolve(own_live, own_manual, system_live, system_manual, context, now):
     fresh_live = {code: fresh_own.get(code) or fresh_system.get(code) for code in {*own_live, *system_live}}
     if any(each.ph is not None for live in (own_live, system_live) for each in live.get(parameters.PH, [])):
         # A sensor pH on another scale than NBS, put on it with the place's fresh temperature and salinity (F1), before
-        # anything reads it: the pH shown and judged, and the pH a sensor's TAN is worked out with.
-        own_live, system_live = ({**live, parameters.PH: [context.sensor_ph(each, fresh_live, now)
+        # anything reads it: the pH shown and judged, and the pH a sensor's TAN is worked out with. Without a fresh
+        # sensor temperature, the place's temperature chosen as every value is (A9), where fresh at the pH's time (C2).
+        temperature = choose([_candidates(parameters.TEMPERATURE, own_live, fresh_own, own_manual, context),
+                              _candidates(parameters.TEMPERATURE, system_live, fresh_system, system_manual, context)],
+                             now, lambda reading: reading.fresh(now))
+        own_live, system_live = ({**live, parameters.PH: [context.sensor_ph(each, fresh_live, now, temperature)
                                                           for each in live.get(parameters.PH, [])]}
                                  for live in (own_live, system_live))
         fresh_own, fresh_system = _fresh_live(own_live, now), _fresh_live(system_live, now)

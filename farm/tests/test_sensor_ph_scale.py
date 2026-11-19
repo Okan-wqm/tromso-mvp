@@ -4,9 +4,10 @@ A probe calibrated with TRIS (ISFET and spectrophotometric sea-water sensors are
 NBS, its pH read 0.10 to 0.14 low in sea water and the judged NH₃ 5 to 16 % below the exact value: the unsafe side. A
 pH channel now says its scale (`sensors.Channel.ph_scale`, NBS by default) and a value on another scale is put on the
 NBS scale where the water is read (farm/water/read.py), exactly as a typed sample is (`read.ph_on_nbs`, the one
-conversion `services.on_nbs` takes too): with a fresh temperature from the sensors and the salinity of the same moment,
-for sea water of 5 ‰ or more only. Otherwise the pH and everything worked out from it cannot be evaluated, and the
-reason is said: the unconverted number is never shown nor used.
+conversion `services.on_nbs` takes too): with a fresh temperature from the sensors (else the place's sample temperature
+fresh at the pH's time, as the oxygen's other unit takes it) and the salinity of the same moment, for sea water of 5 ‰
+or more only. Otherwise the pH and everything worked out from it cannot be evaluated, and the reason is said: the
+unconverted number is never shown nor used.
 
 A channel whose scale changed (`ph_scale_from`, set when it changes): what it measured before is on a scale not known
 any more (a probe recalibrated, or a setting put right), so those values are used nowhere, neither on the old scale
@@ -156,11 +157,29 @@ class NotConvertedTests(SensorPhCase):
         self.assertIsNone(ph.value)
         self.assertIn('not fresh water with salt added', ph.refused)
 
-    def test_without_a_fresh_sensor_temperature(self):
+    def test_without_a_sensor_temperature_a_samples_fresh_at_its_time_converts_it(self):
+        """The review of the audit, C2: as the oxygen's other unit, the replay and the trail, a probe without a fresh
+        sensor temperature is put on the NBS scale with the place's sample temperature fresh at the pH's time, and says
+        where that temperature came from. The same water typed as a total-scale sample gives the same pH."""
         self.limits(self.sea)
-        self.sample(point=self.sea_point, hours=1, temperature_c='12.0')        # a sample's temperature is not enough
+        sample = self.sample(point=self.sea_point, hours=1, temperature_c='12.0')
+        self.probe(self.sea_point, temperature=None, tan=None)
+        self.record(point=self.typed_point, ph='7.95', temperature_c='12.0', salinity_ppt='34.0')
+        ph = self.water(self.sea_point).get('ph')
+        self.assertEqual((ph.value, ph.refused, ph.judged), (self.water(self.typed_point).get('ph').value, '', 'ok'))
+        self.assertEqual(ph.value, D('8.08'))
+        self.assertEqual(ph.provenance, 'Measured 7.95 on the total scale by the sensor; put on the NBS scale by formula '
+                                        f'3 with 12.0 °C and 34.0 ‰ of the same moment. The temperature is manual, '
+                                        f'{sample.measured_at:%d.%m.%Y %H:%M}.')
+
+    def test_without_a_temperature_fresh_at_its_time_it_cannot_be_evaluated(self):
+        """No sensor temperature and the sample's no longer fresh (a temperature is fresh for 24 hours): refused, never
+        converted with an old temperature nor shown unconverted."""
+        self.limits(self.sea)
+        self.sample(point=self.sea_point, hours=25, temperature_c='12.0')
         self.probe(self.sea_point, temperature=None)
-        self.assertUnevaluated(self.water(self.sea_point), 'a fresh temperature from the sensors')
+        self.assertUnevaluated(self.water(self.sea_point), 'with a temperature of its moment, a sensor’s or a sample’s, '
+                                                           'and none is fresh then')
 
     def test_without_a_salinity(self):
         self.limits(self.sea)

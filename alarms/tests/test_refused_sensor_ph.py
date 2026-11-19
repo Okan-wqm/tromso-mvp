@@ -115,15 +115,17 @@ class WarningTests(RefusedSensorPhCase):
         self.assertEqual(self.opened(), [])
 
     def test_an_open_low_ph_alarm_is_not_cleared_by_the_refused_value(self):
-        """Converted while the temperature is fresh: the critical opens. The temperature then goes stale (a sensor
-        temperature is fresh for 3 minutes, the pH for 15): the pH is refused, the critical stays open (a refused value
-        is no evidence that a level is over) and the warning says why the pH cannot be evaluated."""
+        """Converted while the temperature is fresh: the critical opens. The temperature probe then stops (a sensor
+        temperature is fresh for 3 minutes) and the pH probe goes on: its next value has no temperature fresh at its
+        time, so it is refused; the critical stays open (a refused value is no evidence that a level is over) and the
+        warning says why the pH cannot be evaluated."""
         measured = self.now - timedelta(seconds=10)
         for channel, value in ((self.tris, 6.00), (self.temperature, 12.0), (self.salinity, 34.0)):
             self.send(channel, value, measured)
         self.run_pass(self.now)
         critical = Alarm.objects.get(source='water_limit', severity='critical')
         later = self.now + timedelta(minutes=5)
+        self.send(self.tris, 7.95, later - timedelta(seconds=10))
         self.assertEqual(self.ph_reading(later).refused, refused('temperature'))
         for seconds in (0, 1, 60, 120):
             self.run_pass(later + timedelta(seconds=seconds))

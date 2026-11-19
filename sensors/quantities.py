@@ -30,8 +30,8 @@ PH_SCALE_NOTE = _('A pH channel says the scale its probe reports on (its pH scal
                   'water: taken as NBS its NH₃ would read 20 to 27 % low.')
 PH_SCALE_HELP = _('The scale the probe reports its pH on: NBS (calibrated with NBS/NIST buffers), or the total (TRIS), '
                   'seawater or free scale. Other than NBS, each value is put on the NBS scale where the water is worked '
-                  'out, with a fresh temperature from the sensors and the salinity of the same moment, for sea water of '
-                  '5 ‰ or more; otherwise the pH and its NH₃ cannot be evaluated, and the page says why. Changing it: '
+                  'out, with the temperature (a sensor’s, else a sample’s fresh then) and the salinity of the same '
+                  'moment, for sea water of 5 ‰ or more; otherwise the pH and its NH₃ cannot be evaluated, and the page says why. Changing it: '
                   'what the probe measured before is used nowhere after (its scale is not known).')
 
 

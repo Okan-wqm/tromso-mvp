@@ -107,8 +107,8 @@ def ph_measured_short(sample):
 PH_SENSOR_REFUSED = {
     'unconverted': _('a pH on the %(scale)s is not put on the NBS scale here'),
     'stale': _('a pH on the %(scale)s is put on the NBS scale only while it is fresh, and it is no longer fresh'),
-    'temperature': _('a pH on the %(scale)s is put on the NBS scale with a fresh temperature from the sensors, and there '
-                     'is none'),
+    'temperature': _('a pH on the %(scale)s is put on the NBS scale with a temperature of its moment, a sensor’s or a '
+                     'sample’s, and none is fresh then'),
     'salinity': _('a pH on the %(scale)s is put on the NBS scale with the salinity of the same moment, and none was '
                   'measured here in the days before'),
     'not_sea': _('a pH on the %(scale)s is taken for sea water of 5 ‰ or more only (not fresh water with salt added); '
@@ -144,11 +144,16 @@ def nh3_ph_not_converted(why):
 
 
 def ph_sensor_converted(ph):
-    """What a sensor's pH put on the NBS scale says beside it (read.SensorPh, converted)."""
-    return _('Measured %(value)s on the %(scale)s by the sensor; put on the NBS scale by formula %(formula)d with '
+    """What a sensor's pH put on the NBS scale says beside it (read.SensorPh, converted), and where its temperature came
+    from when not a fresh sensor's (`temperature_from`: a sample's, as the oxygen's basis says it)."""
+    said = _('Measured %(value)s on the %(scale)s by the sensor; put on the NBS scale by formula %(formula)d with '
              '%(temperature)s °C and %(salinity)s ‰ of the same moment.') % {
         'value': number_format(ph.as_measured, 2), 'scale': PH_SCALES[ph.scale], 'formula': ph.formula,
         'temperature': number_format(ph.temperature, 1), 'salinity': number_format(ph.salinity, 1)}
+    if not ph.temperature_from:
+        return said
+    source = _('The temperature is %(source)s.') % {'source': ph.temperature_from}
+    return f'{said} {source}'
 
 
 def ph_stored(sample):

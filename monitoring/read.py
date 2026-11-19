@@ -493,8 +493,10 @@ def _alerts(middle, now):
     alerts = list(middle.alerts if middle is not None else ())
     listed = {id(reading.sample) for reading, _judged, _stale in alerts if not reading.derived}
     for reading, judged, stale in alerts:
-        if reading.value is None or (reading.derived and id(reading.sample) in listed):
-            continue                                # a derived value is no second reason beside its own measurement
+        if (reading.value is None and reading.worse is None) or (reading.derived and id(reading.sample) in listed):
+            continue                                # a derived value is no second reason beside its own measurement; a
+            # value-less one counts where another fresh value judged it (read.worst_fresh), as the page and the alarm
+            # count it (the re-check of 2026-11-18, RC-2: a refused NH₃ judged critical by its loop's sample)
         status = Status(judged).label
         label = reading.parameter.label
         where = reading.decided_at
@@ -521,9 +523,10 @@ def state_of(card):
 
 def _ladder(card):
     """The one roll-up of a card, a ladder whose thresholds are the owners' and none invented here:
-    1. critical: a water value judged critical, fresh or old (an old one says its age, and the card is marked old);
-    2. warning: a value judged a warning (fresh or old, the same), the unit over its capacity, an estimate that says
-       weigh now;
+    1. critical: a water value judged critical, fresh or old (an old one says its age, and the card is marked old),
+       with a judged value the chemistry core refuses to work out said beside it;
+    2. warning: a value judged a warning (fresh or old, the same), a judged value the chemistry core refuses to work
+       out ("cannot be evaluated", with its reason), the unit over its capacity, an estimate that says weigh now;
     3. blind: a stocked unit whose temperature or oxygen is missing or older than its freshness (a fresh pH hides a
        three-day-old oxygen in the water's own status: that status ranks OK above stale), with no middle point, or whose
        live sensors could not be read; never OK, never red; not worked out when the water is hidden (the card says so);
@@ -541,8 +544,15 @@ def _ladder(card):
     note = []
     middle = _middle(card)                  # the unit's own water: a detailed card's other points do not change its state
     critical, warning, old = _alerts(middle, card.now)
+    # A value the limits would judge that the chemistry core refuses to work out (PointWater.unevaluated): said with the
+    # core's reason, as its alarm is (alarms/sources.py; the verification of 2026-11-18, V-A), never OK: beside a
+    # critical (its limits' basis past the critical limit, the re-check's RC-3), else a warning.
+    unevaluated = [str(text) for text in (middle.why_unevaluated if middle is not None else ())]
+    # A status the unit's own stale value keeps while its system's value stands in (read.last_own, F3-9): said beside it.
+    unevaluated += [str(text) for text in (middle.why_last_own if middle is not None else ())]
     if critical:
-        return State(CRITICAL, tuple(critical), basis, tuple(text for text in old if text in critical))
+        return State(CRITICAL, (*critical, *unevaluated), basis, tuple(text for text in old if text in critical))
+    warning += unevaluated
     if card.stock.over_capacity:
         warning.append(_('Over capacity'))
     if card.drift == 'now':

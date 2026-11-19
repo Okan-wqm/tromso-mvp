@@ -22,6 +22,11 @@ from django.utils.translation import gettext_lazy as _
 from farm.water import parameters
 
 ALL, DEADBAND = 'all', 'deadband'
+# A sensor's pH is taken as it comes (farm/tests/test_ph_scale.py; README, the pH's scale): the ingest stores what the
+# device sends, and putting a pH on the NBS scale needs the temperature and the salinity of the same moment.
+PH_SCALE_NOTE = _('A pH channel is on the NBS scale (a probe calibrated with NBS/NIST buffers). A sensor that reports on '
+                  'the total scale (calibrated with TRIS) is not converted here: its pH reads 0.10 to 0.14 low in sea '
+                  'water and the NH₃ worked out from it 20 to 27 % low. Record such a pH as a sample with its scale.')
 
 
 @dataclass(frozen=True)
@@ -56,7 +61,8 @@ def _d(value):
 WATER_UNITS = {
     'temperature_c': '°C', 'oxygen_mg_l': 'mg/L', 'oxygen_saturation_pct': '%', 'ph': 'pH', 'alkalinity_mg_l': 'mg/L',
     'co2_mg_l': 'mg/L', 'tan_mg_l': 'mg/L', 'nitrite_n_mg_l': 'mg/L', 'nitrate_n_mg_l': 'mg/L', 'tgp_pct': '%',
-    'salinity_ppt': '‰', 'turbidity_ntu': 'NTU',
+    'salinity_ppt': '‰', 'turbidity_ntu': 'NTU', 'hardness_mg_l': 'mg/L', 'conductivity_25_us_cm': 'µS/cm',
+    'phosphate_p_mg_l': 'mg/L',
 }
 # (deadband, heartbeat seconds, reduction) of each water parameter.
 WATER_DEFAULTS = {
@@ -72,6 +78,9 @@ WATER_DEFAULTS = {
     'tgp_pct': ('0.5', 300, DEADBAND),
     'salinity_ppt': ('0.2', 600, DEADBAND),
     'turbidity_ntu': ('1', 600, DEADBAND),
+    'hardness_mg_l': ('1', 3600, DEADBAND),
+    'conductivity_25_us_cm': ('5', 300, DEADBAND),
+    'phosphate_p_mg_l': ('0.05', 3600, DEADBAND),
 }
 
 WATER = [
@@ -81,7 +90,10 @@ WATER = [
     for parameter in parameters.MEASURED
 ]
 PROCESS = [
-    Quantity('conductivity_us_cm', _('Conductivity (µS/cm)'), 'µS/cm', _d(1), _d(5), 300, _d(0), _d(100000)),
+    # At the water's own temperature: the chemistry never reads it (only the compensated water parameter,
+    # conductivity_25_us_cm, cross review F8).
+    Quantity('conductivity_us_cm', _('Conductivity at the water’s temperature (µS/cm, not compensated)'), 'µS/cm', _d(1),
+             _d(5), 300, _d(0), _d(100000)),
     Quantity('orp_mv', _('Redox potential, ORP (mV)'), 'mV', _d(1), _d(5), 300, _d(-1000), _d(1000)),
     Quantity('flow_m3_h', _('Flow (m³/h)'), 'm³/h', _d('0.01'), _d(10), 300, _d(0), _d(1000)),
     Quantity('level_mm', _('Level (mm)'), 'mm', _d(1), _d(5), 300, _d(0), _d(10000)),

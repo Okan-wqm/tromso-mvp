@@ -28,11 +28,12 @@ from django.utils.translation import gettext_lazy as _
 
 from ..models import SamplingPoint, System
 from ..models.water_point import site_of
-from . import charts, chemistry, deffeyes, dosing, native, parameters, read
+from . import charts, chemistry, deffeyes, dosing, messages, native, parameters, read
 from .evaluate import Status, judge as judge_bounds
 
 # The calculator's fields a unit or a loop measures, by the parameter they are.
-MEASURED_FIELDS = ['temperature_c', 'ph', 'salinity_ppt', 'alkalinity_mg_l', 'tan_mg_l', 'oxygen_mg_l']
+MEASURED_FIELDS = ['temperature_c', 'ph', 'salinity_ppt', 'alkalinity_mg_l', 'tan_mg_l', 'oxygen_mg_l',
+                   'conductivity_25_us_cm', 'hardness_mg_l', 'phosphate_p_mg_l']
 # The pH bounds, the field each fills and how the strictest of several species' is picked.
 PH_BOUNDS = [('ph_critical_low', 'critical_low', max), ('ph_warning_low', 'warning_low', max),
              ('ph_warning_high', 'warning_high', min), ('ph_critical_high', 'critical_high', min)]
@@ -93,7 +94,9 @@ def inputs_from(values):
         temperature_c=values['temperature_c'], salinity_ppt=values['salinity_ppt'], ph=values['ph'],
         alkalinity_mg_l=values['alkalinity_mg_l'], tan_mg_l=values.get('tan_mg_l'),
         total_sulfide_ug_l=values.get('total_sulfide_ug_l'), calcium_mg_l=values.get('calcium_mg_l'),
-        oxygen_mg_l=values.get('oxygen_mg_l'))
+        oxygen_mg_l=values.get('oxygen_mg_l'), conductivity_25_us_cm=values.get('conductivity_25_us_cm'),
+        hardness_mg_l=values.get('hardness_mg_l'), water_origin=values.get('water_origin') or '',
+        phosphate_p_mg_l=values.get('phosphate_p_mg_l'))
     limits = deffeyes.Limits(
         nh3_n_mg_l=values.get('nh3_n_limit_mg_l'), co2_mg_l=values.get('co2_limit_mg_l'),
         h2s_ug_l=values.get('h2s_limit_ug_l'), alkalinity_low_mg_l=values.get('alkalinity_low_mg_l'),
@@ -119,6 +122,14 @@ class Calculation:
     steps: list = field(default_factory=list)       # [JudgedStep], the water first
     steps_note: str = ''
     air_co2_mg_l: float = 0.0
+
+    @property
+    def phosphate_note(self):
+        """With a phosphate given, the sentence said beside every recipe and beside the simulator's steps: the phosphate
+        they were worked out with, as P and as PO₄, and that a wrong one changes the dose (the independent review of
+        2026-11-16, R3: a PO₄ reading typed as P is 3.07 times too much, and nothing beside a dose said it depended on
+        the phosphate); '' without one."""
+        return messages.phosphate_used(self.analysis.equilibria)
 
     @property
     def final(self):
@@ -162,8 +173,7 @@ def calculate(water, limits, target, pressure, layers, chosen=(), volume=None, a
     elif len(reagents) < 2:
         calculation.recipes_note = _('A recipe takes two reagents: choose at least two (the Reagents tab).')
     else:
-        calculation.recipes = dosing.recipes(start, end, chosen, volume,
-                                             (water.temperature_c, water.salinity_ppt, air))
+        calculation.recipes = dosing.recipes(start, end, chosen, volume, (eq, air))
         if not calculation.recipes:
             calculation.recipes_note = _('No two of the chosen reagents reach the target: choose others.')
     if amounts:
@@ -241,7 +251,7 @@ def fish_limits(owner):
 # ---- a unit's own chart ---------------------------------------------------------------------------------------
 # What a unit's chart must have, in the order they are listed when missing.
 REQUIRED = ['temperature_c', 'ph', 'alkalinity_mg_l', 'salinity_ppt']
-OPTIONAL = ['tan_mg_l', 'oxygen_mg_l']
+OPTIONAL = ['tan_mg_l', 'oxygen_mg_l', 'conductivity_25_us_cm', 'hardness_mg_l', 'phosphate_p_mg_l']
 # The limits a unit's chart takes from the fish, by the calculator field they fill.
 LIMIT_FIELDS = ['nh3_n_limit_mg_l', 'co2_limit_mg_l', 'alkalinity_low_mg_l', 'alkalinity_high_mg_l']
 
@@ -318,8 +328,9 @@ def chart_of(unit, point=None, now=None, at=None):
     missing = [parameters.get(name).label for name in REQUIRED if name not in values]
     if missing:
         return Refusal(unit, point, missing, points, sensors_failed=failed)
+    values['water_origin'] = origin_of(unit)
     why = deffeyes.why_impossible(values['temperature_c'], values['salinity_ppt'], values['ph'],
-                                  values['alkalinity_mg_l'])
+                                  values['alkalinity_mg_l'], **ions_of(values))
     if why:
         return Refusal(unit, point, [], points, impossible=why, sensors_failed=failed)
     if 'altitude_m' in found:
@@ -334,6 +345,13 @@ def chart_of(unit, point=None, now=None, at=None):
     return UnitChart(unit, point, now, ordered, limits, made, assumed, absent, points, sensors_failed=failed)
 
 
+def ions_of(values):
+    """The conductivity at 25 °C and the hardness of field values (None when absent), and the water's origin ('' not
+    said): what a water's equilibria read besides its alkalinity and salinity (formula 3)."""
+    return {**{name: values.get(name) for name in ('conductivity_25_us_cm', 'hardness_mg_l', 'phosphate_p_mg_l')},
+            'water_origin': values.get('water_origin') or ''}
+
+
 def chart_limits(offered):
     """{field: Offer} of the limits a unit's chart is drawn with (LIMIT_FIELDS), of those offered."""
     return {name: offered[name] for name in LIMIT_FIELDS if name in offered}
@@ -345,6 +363,25 @@ def points_for(owner):
         found = SamplingPoint.objects.filter(system=owner, is_active=True).with_owners()
         return tuple(sorted(found, key=lambda point: (point.kind != read.MIDDLE, point.name)))
     return tuple(read.points_of([owner])[owner.pk])
+
+
+def origin_of(owner):
+    """Where the salt of a unit's, a system's or a sampling point's water comes from (read.common_origin of its units, a
+    point's those it serves as its samples' NH3 takes them; '' not said)."""
+    return read.common_origin(_units_of(owner))
+
+
+def scale_origin_of(owner):
+    """The origin of a unit's, a system's or a sampling point's water for the pH-scale rule (read.scale_origin of the
+    same units: salt added as soon as one unit of their water, a unit of their loop too, says so)."""
+    return read.scale_origin(_units_of(owner))
+
+
+def _units_of(owner):
+    """The units whose water a unit, a system or a sampling point is (a point's: those it serves)."""
+    if isinstance(owner, SamplingPoint):
+        return read.Context._served([owner])[owner.pk]
+    return list(owner.tanks.all()) if isinstance(owner, System) else [owner]
 
 
 def _water_types(owner):

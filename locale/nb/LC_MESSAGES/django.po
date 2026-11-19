@@ -892,6 +892,10 @@ msgid "%(label)s + %(margin)s %% safety margin = %(used)s"
 msgstr "%(label)s + %(margin)s %% sikkerhetsmargin = %(used)s"
 
 #, python-format
+msgid "%(label)s cannot be evaluated: %(why)s."
+msgstr "%(label)s kan ikke vurderes: %(why)s."
+
+#, python-format
 msgid "%(label)s deleted with it"
 msgstr "%(label)s som slettes sammen med den"
 
@@ -984,6 +988,10 @@ msgstr[1] "%(meals)s måltider"
 #, python-format
 msgid "%(meals)s × %(meal)s"
 msgstr "%(meals)s × %(meal)s"
+
+#, python-format
+msgid "%(measured)s, stored as %(nbs)s NBS"
+msgstr "%(measured)s, lagret som %(nbs)s NBS"
 
 #, python-format
 msgid "%(medicine)s has no strength (Reference data › Medicines)."
@@ -1205,6 +1213,30 @@ msgstr "%(replicate)s: siste dag kommer på eller etter første dag."
 #, python-format
 msgid "%(rule)s at %(time)s"
 msgstr "%(rule)s kl. %(time)s"
+
+#, python-format
+msgid ""
+"%(said)s (assumes sea water’s ion composition; salt-added fresh water may read low CO₂: say the "
+"unit’s water origin)"
+msgstr ""
+"%(said)s (forutsetter sjøvannets ionesammensetning; ferskvann tilsatt salt kan vise for lav CO₂: "
+"oppgi enhetens vannopprinnelse)"
+
+#, python-format
+msgid "%(said)s; %(share)d %% seawater constants"
+msgstr "%(said)s; %(share)d %% sjøvannskonstanter"
+
+#, python-format
+msgid "%(said)s; phosphate %(phosphate)s mg/L as P counted in the alkalinity"
+msgstr "%(said)s; fosfat %(phosphate)s mg/L som P regnet med i alkaliteten"
+
+#, python-format
+msgid "%(said)s; salt-added fresh water past the Davies range, worked out as sea water"
+msgstr "%(said)s; ferskvann tilsatt salt utenfor Davies-området, beregnet som sjøvann"
+
+#, python-format
+msgid "%(said)s; salt-added fresh water, its ions taken as NaCl"
+msgstr "%(said)s; ferskvann tilsatt salt, ionene regnet som NaCl"
 
 #, python-format
 msgid "%(seconds)d s"
@@ -1639,6 +1671,16 @@ msgstr "%(value)s kg"
 #, python-format
 msgid "%(value)s kg/m³"
 msgstr "%(value)s kg/m³"
+
+#, python-format
+msgid ""
+"%(value)s may be the value stored for %(point)s, already converted: this address does not say it "
+"was typed. Leave the scale or the unit as loaded, or choose %(point)s again under “Values from” "
+"and type the value as it was measured."
+msgstr ""
+"%(value)s kan være verdien som er lagret for %(point)s, allerede omregnet: denne adressen sier "
+"ikke at den ble skrevet inn. La skalaen eller enheten stå som den ble lastet, eller velg "
+"%(point)s på nytt under «Verdier fra» og skriv inn verdien slik den ble målt."
 
 #, python-format
 msgid "%(value)s per fish"
@@ -2309,6 +2351,25 @@ msgstr "Et notat er på høyst %(count)d tegn."
 
 msgid "A notice is filed at once: it has no later deadline."
 msgstr "En melding sendes straks: den har ingen senere frist."
+
+#, python-format
+msgid ""
+"A pH channel is on the NBS scale (a probe calibrated with NBS/NIST buffers). A sensor that "
+"reports on the total scale (calibrated with TRIS) is not converted here: its pH reads 0.10 to "
+"0.14 low in sea water and the NH₃ worked out from it 20 to 27 % low. Record such a pH as a sample"
+" with its scale."
+msgstr ""
+"En pH-kanal er på NBS-skalaen (en sonde kalibrert med NBS/NIST-buffere). En sensor som måler på "
+"totalskalaen (kalibrert med TRIS) blir ikke regnet om her: pH viser 0,10 til 0,14 for lavt i "
+"sjøvann, og NH₃ beregnet fra den 20 til 27 % for lavt. Registrer en slik pH som en prøve med "
+"skalaen sin."
+
+msgid ""
+"A pH on this scale is taken for sea water of 5 ‰ or more only (not fresh water with salt added): "
+"give the pH a meter calibrated with NBS/NIST buffers reads."
+msgstr ""
+"En pH på denne skalaen tas bare for sjøvann på 5 ‰ eller mer (ikke ferskvann tilsatt salt): oppgi"
+" pH slik et meter kalibrert med NBS/NIST-buffere viser den."
 
 #, python-format
 msgid "A page shows at most %(days)s day: the first day was moved."
@@ -3723,8 +3784,22 @@ msgstr "Område"
 msgid "Area not set: the stricter limit applies (Facility › Sites)"
 msgstr "Område ikke satt: den strengeste grensen gjelder (Anlegg › Lokaliteter)"
 
-msgid "As a pH meter or kit reads it."
-msgstr "Slik et pH-meter eller et sett leser den."
+#, python-format
+msgid ""
+"As P this is %(value)s mg/L: a phosphate is between %(low)s and %(high)s mg/L as P (up to "
+"%(most)s as PO₄). Check the value and its unit."
+msgstr ""
+"Som P er dette %(value)s mg/L: et fosfat er mellom %(low)s og %(high)s mg/L som P (opptil "
+"%(most)s som PO₄). Kontroller verdien og enheten."
+
+msgid ""
+"As a pH meter or kit calibrated with NBS/NIST buffers reads it, at the water’s own temperature. A"
+" total-scale pH (a seawater sensor calibrated with TRIS) reads 0.10 to 0.14 lower in water of 5 "
+"to 35 ‰: typed here as NBS, the NH₃ worked out is 20 to 27 % too low."
+msgstr ""
+"Slik et pH-meter eller sett kalibrert med NBS/NIST-buffere viser den, ved vannets egen "
+"temperatur. En pH på totalskalaen (en sjøvannssensor kalibrert med TRIS) viser 0,10 til 0,14 "
+"lavere i vann på 5 til 35 ‰: skrevet inn her som NBS blir beregnet NH₃ 20 til 27 % for lav."
 
 msgid ""
 "As an oxygen meter shows it; above 100 % with added oxygen. With the temperature, the mg/L is "
@@ -3861,6 +3936,14 @@ msgid ""
 msgstr ""
 "Ved denne pH-en er alkaliteten over %(floor)s mg/L som CaCO₃: hydroksid og borat alene utgjør så "
 "mye."
+
+#, python-format
+msgid ""
+"At this pH the alkalinity is above %(floor)s mg/L as CaCO₃: the hydroxide, the borate and the "
+"phosphate given alone are that much."
+msgstr ""
+"Ved denne pH er alkaliteten over %(floor)s mg/L som CaCO₃: hydroksidet, boratet og det oppgitte "
+"fosfatet alene er så mye."
 
 msgid "Attached"
 msgstr "Fastsittende"
@@ -4229,6 +4312,34 @@ msgstr "CO₂"
 msgid "CO₂ (mg/L)"
 msgstr "CO₂ (mg/L)"
 
+msgid "CO₂ activity-corrected (information, not judged)"
+msgstr "CO₂ aktivitetskorrigert (informasjon, ikke vurdert)"
+
+msgid "CO₂ judged on its activity-corrected value, the larger here."
+msgstr "CO₂ vurdert etter den aktivitetskorrigerte verdien, som er størst her."
+
+#, python-format
+msgid ""
+"CO₂ judged on the basis its limits were set on (to 1 ‰ the ideal water, every activity 1, as "
+"Standard Methods 4500-CO₂ D; from 5 ‰ formula 1’s seawater constants; salt-added water: the ideal"
+" throughout), the larger; activity-corrected %(value)s mg/L."
+msgstr ""
+"CO₂ vurdert på grunnlaget grenseverdiene ble satt på (til 1 ‰ ideelt vann, alle aktiviteter 1, "
+"som Standard Methods 4500-CO₂ D; fra 5 ‰ formel 1s sjøvannskonstanter; vann tilsatt salt: ideelt "
+"hele veien), den største; aktivitetskorrigert %(value)s mg/L."
+
+#, python-format
+msgid ""
+"CO₂ judged without the phosphate: the larger of the basis its limits were set on and the "
+"activity-corrected value, neither counting the phosphate’s alkalinity (Standard Methods 4500-CO₂ "
+"D takes all the alkalinity as carbonate’s), so it is never below what it was before the phosphate"
+" was given. With the phosphate counted, the water’s own CO₂ is %(value)s mg/L."
+msgstr ""
+"CO₂ vurdert uten fosfatet: den største av grunnlaget grensene ble satt på og den "
+"aktivitetskorrigerte verdien, ingen av dem med fosfatets alkalitet (Standard Methods 4500-CO₂ D "
+"regner all alkalitet som karbonat), så den er aldri lavere enn før fosfatet ble oppgitt. Med "
+"fosfatet regnet med er vannets egen CO₂ %(value)s mg/L."
+
 msgid "CO₂ limit"
 msgstr "CO₂-grense"
 
@@ -4247,6 +4358,15 @@ msgstr "CO₂ giftig (> %(limit)s mg/L)"
 
 msgid "CO₂, HCO₃⁻ and CO₃²⁻ against pH"
 msgstr "CO₂, HCO₃⁻ og CO₃²⁻ mot pH"
+
+msgid ""
+"CO₂: near an alkalinity of 0 the curve bends back. With the phosphate given the water’s own DIC "
+"falls before it rises there (a pH under about 4.7, where the phosphate holds negative "
+"alkalinity); no fish water is in that corner."
+msgstr ""
+"CO₂: nær en alkalitet på 0 bøyer kurven tilbake. Med det oppgitte fosfatet synker vannets egen "
+"DIC før den stiger der (en pH under ca. 4,7, der fosfatet holder negativ alkalitet); ingen fisk "
+"lever i vann i det hjørnet."
 
 msgid "CO₂: no limit given."
 msgstr "CO₂: ingen grense oppgitt."
@@ -4274,6 +4394,13 @@ msgstr "Kalsitt- og aragonittmetning mot pH"
 
 msgid "Calcium (mg/L Ca²⁺)"
 msgstr "Kalsium (mg/L Ca²⁺)"
+
+msgid ""
+"Calcium and magnesium together, as CaCO₃. A kit in dGH: multiply by 17.85. With the alkalinity it"
+" gives the fresh water’s ionic strength when no conductivity is measured."
+msgstr ""
+"Kalsium og magnesium samlet, som CaCO₃. Et sett i dGH: gang med 17,85. Sammen med alkaliteten gir"
+" den ferskvannets ionestyrke når ingen ledningsevne er målt."
 
 msgid "Calcium carbonate"
 msgstr "Kalsiumkarbonat"
@@ -4346,6 +4473,13 @@ msgstr "Avlyst av"
 
 msgid "Cannibalism"
 msgstr "Kannibalisme"
+
+msgid "Cannot be evaluated"
+msgstr "Kan ikke vurderes"
+
+#, python-format
+msgid "Cannot be worked out: %(why)s."
+msgstr "Kan ikke regnes ut: %(why)s."
 
 msgid "Capacity"
 msgstr "Kapasitet"
@@ -4490,6 +4624,35 @@ msgstr "Diagrammer"
 msgid "Check"
 msgstr "Sjekk"
 
+msgid ""
+"Check the conductivity and the salinity: they disagree beyond what any water from NaCl brine to a"
+" hard fresh water allows (one of them mistyped, uncompensated, or from another point?)."
+msgstr ""
+"Kontroller ledningsevnen og saliniteten: de stemmer ikke overens utover det noe vann fra NaCl-"
+"lake til hardt ferskvann tillater (en av dem feilskrevet, ikke kompensert eller fra et annet "
+"punkt?)."
+
+msgid ""
+"Check the conductivity: it gives fewer ions than the hardness and the alkalinity need (not "
+"compensated to 25 °C, or in the wrong unit?); theirs is used."
+msgstr ""
+"Kontroller ledningsevnen: den gir færre ioner enn hardheten og alkaliniteten krever (ikke "
+"kompensert til 25 °C, eller feil enhet?); deres brukes."
+
+msgid ""
+"Check the conductivity: it gives over 30 times the ions the hardness and the alkalinity account "
+"for (salt added, or mS/cm typed as µS/cm?)."
+msgstr ""
+"Kontroller ledningsevnen: den gir over 30 ganger de ionene hardheten og alkaliniteten står for "
+"(tilsatt salt, eller mS/cm skrevet som µS/cm?)."
+
+msgid ""
+"Check the salinity: the conductivity is that of sea water of 5 ‰ or more (PSS-78) on a water "
+"without a salinity; give the salinity, or the unit’s water origin."
+msgstr ""
+"Kontroller saliniteten: ledningsevnen er som sjøvann på 5 ‰ eller mer (PSS-78) i vann uten "
+"salinitet; oppgi saliniteten, eller enhetens vannopprinnelse."
+
 msgid "Check your email"
 msgstr "Sjekk e-posten din"
 
@@ -4534,6 +4697,9 @@ msgstr "Velg en helsehendelse på lokaliteten til disse enhetene."
 
 msgid "Choose a health event of the site."
 msgstr "Velg en helsehendelse på lokaliteten."
+
+msgid "Choose a pH scale."
+msgstr "Velg en pH-skala."
 
 msgid "Choose a person"
 msgstr "Velg en person"
@@ -4643,6 +4809,9 @@ msgstr "Velg typen på fanen Generelt; målene vises her."
 
 msgid "Choose the location to count."
 msgstr "Velg lagerplassen som skal telles."
+
+msgid "Choose the phosphate’s unit."
+msgstr "Velg enheten for fosfatet."
 
 msgid "Choose the shape; the measures it is worked out from appear with it."
 msgstr "Velg formen; målene volumet beregnes ut fra, vises sammen med den."
@@ -4888,8 +5057,11 @@ msgstr "Tilstand"
 msgid "Conductivity"
 msgstr "Ledningsevne"
 
-msgid "Conductivity (µS/cm)"
-msgstr "Ledningsevne (µS/cm)"
+msgid "Conductivity at 25 °C (µS/cm, temperature-compensated)"
+msgstr "Ledningsevne ved 25 °C (µS/cm, temperaturkompensert)"
+
+msgid "Conductivity at the water’s temperature (µS/cm, not compensated)"
+msgstr "Ledningsevne ved vannets temperatur (µS/cm, ikke kompensert)"
 
 msgid "Configuration epoch"
 msgstr "Konfigurasjonsepoke"
@@ -5788,6 +5960,9 @@ msgstr ""
 "F.eks. «registrert i feil enhet». Prøven blir stående i historikken, gjennomstreket, med denne "
 "årsaken."
 
+msgid "EC 25 °C (µS/cm)"
+msgstr "EC 25 °C (µS/cm)"
+
 msgid "EPDM"
 msgstr "EPDM"
 
@@ -5986,6 +6161,14 @@ msgstr "Skriv inn dagen i måneden."
 
 msgid "Enter the email address on your account. We will send you a link to set a new password."
 msgstr "Skriv inn e-postadressen på kontoen din. Vi sender deg en lenke for å velge nytt passord."
+
+#, python-format
+msgid ""
+"Entered as %(value)s mg/L as PO₄; stored as phosphorus (PO₄-P), divided by %(factor)s (the molar "
+"masses of PO₄ and P)."
+msgstr ""
+"Angitt som %(value)s mg/L som PO₄; lagret som fosfor (PO₄-P), delt på %(factor)s (molmassene til "
+"PO₄ og P)."
 
 msgid "Entered by hand"
 msgstr "Lagt inn for hånd"
@@ -6876,6 +7059,17 @@ msgstr "Skjema, frist og kanal er ikke bekreftet (Q8). Ikke bygget."
 msgid "Format version"
 msgstr "Formatversjon"
 
+#, python-format
+msgid "Formula %(formula)d."
+msgstr "Formel %(formula)d."
+
+#, python-format
+msgid "Formula %(formula)d: ionic strength %(strength)s, %(source)s"
+msgstr "Formel %(formula)d: ionestyrke %(strength)s, %(source)s"
+
+msgid "Formula the pH was put on the NBS scale by"
+msgstr "Formelen pH ble satt på NBS-skalaen med"
+
 msgid "Found at"
 msgstr "Funnet"
 
@@ -6890,6 +7084,9 @@ msgstr "Francisellose"
 
 msgid "Free carbon dioxide, from a CO₂ probe or a titration."
 msgstr "Fri karbondioksid, fra en CO₂-sonde eller en titrering."
+
+msgid "Free scale"
+msgstr "Fri skala"
 
 msgid "Freeboard (m)"
 msgstr "Fribord (m)"
@@ -6911,6 +7108,16 @@ msgstr "Fersk i (sekunder)"
 
 msgid "Fresh water"
 msgstr "Ferskvann"
+
+msgid "Fresh water with salt added"
+msgstr "Ferskvann tilsatt salt"
+
+msgid ""
+"Fresh water with salt added (NaCl) is worked out without sea water’s ions, its ionic strength as "
+"NaCl’s; not said, a salinity of 1 to 5 ‰ is taken as diluted sea water."
+msgstr ""
+"Ferskvann tilsatt salt (NaCl) beregnes uten sjøvannets ioner, med ionestyrken til NaCl; ikke "
+"oppgitt regnes en salinitet på 1 til 5 ‰ som fortynnet sjøvann."
 
 msgid "Freshness"
 msgstr "Ferskhet"
@@ -7337,6 +7544,9 @@ msgstr "Bekreftede håndteringsadvarsler"
 
 msgid "Happened on"
 msgstr "Skjedde"
+
+msgid "Hardness (mg/L)"
+msgstr "Hardhet (mg/L)"
 
 msgid "Harvest"
 msgstr "Høsting"
@@ -7862,6 +8072,9 @@ msgstr ""
 msgid "Invited"
 msgstr "Invitert"
 
+msgid "Ionic strength"
+msgstr "Ionestyrke"
+
 msgid "Is the diagnosis suspected or confirmed?"
 msgstr "Er diagnosen mistenkt eller bekreftet?"
 
@@ -8081,6 +8294,13 @@ msgstr "Begynte"
 #, python-format
 msgid "Judged as %(value)s %(unit)s."
 msgstr "Vurdert som %(value)s %(unit)s."
+
+msgid ""
+"Judged on the basis the limits were set on alone, which needs no conductivity: the judged value "
+"is at least this; the activity-corrected value is not known."
+msgstr ""
+"Vurdert bare på grunnlaget grenseverdiene ble satt på, som ikke trenger ledningsevne: den "
+"vurderte verdien er minst denne; den aktivitetskorrigerte verdien er ukjent."
 
 msgid "Juveniles"
 msgstr "Ungfisk"
@@ -8619,6 +8839,14 @@ msgstr "Måltider per dag"
 msgid "Measured"
 msgstr "Målt"
 
+#, python-format
+msgid ""
+"Measured %(value)s on the %(scale)s; put on the NBS scale by formula %(formula)d with the "
+"sample’s %(temperature)s °C and %(salinity)s ‰."
+msgstr ""
+"Målt %(value)s på %(scale)s; satt på NBS-skalaen med formel %(formula)d og prøvens "
+"%(temperature)s °C og %(salinity)s ‰."
+
 msgid "Measured at"
 msgstr "Målt"
 
@@ -8880,6 +9108,9 @@ msgstr "Kommune"
 msgid "My tasks"
 msgstr "Mine oppgaver"
 
+msgid "NBS (a meter calibrated with NBS/NIST buffers)"
+msgstr "NBS (et meter kalibrert med NBS/NIST-buffere)"
+
 msgid ""
 "NH₃ and NH₄⁺ together, as nitrogen. A kit that reads NH₄⁺: divide by 1.29; one that reads NH₃: "
 "divide by 1.22. The toxic NH₃ is worked out from this, the pH and the temperature of the same "
@@ -8890,6 +9121,19 @@ msgstr ""
 
 msgid "NH₃ and NH₄⁺ together, as nitrogen. The NH₃ limit is drawn from it."
 msgstr "NH₃ og NH₄⁺ sammen, som nitrogen. NH₃-grensen tegnes ut fra den."
+
+msgid "NH₃ judged on its activity-corrected value, the larger here."
+msgstr "NH₃ vurdert etter den aktivitetskorrigerte verdien, som er størst her."
+
+#, python-format
+msgid ""
+"NH₃ judged on the basis its limits were set on (to 1 ‰ the ideal water, every activity 1, as "
+"Emerson et al. 1975; from 5 ‰ Khoo et al. 1977’s pKa on the NBS pH, as Bower & Bidwell 1978; "
+"salt-added water: the ideal throughout), the larger; activity-corrected %(value)s mg/L."
+msgstr ""
+"NH₃ vurdert på grunnlaget grenseverdiene ble satt på (til 1 ‰ ideelt vann, alle aktiviteter 1, "
+"som Emerson mfl. 1975; fra 5 ‰ pKa fra Khoo mfl. 1977 på NBS-pH, som Bower & Bidwell 1978; vann "
+"tilsatt salt: ideelt hele veien), den største; aktivitetskorrigert %(value)s mg/L."
 
 msgid "NH₃ share of TAN at the border"
 msgstr "NH₃-andelen av TAN ved grensen"
@@ -8910,11 +9154,24 @@ msgstr "NH₃-N"
 msgid "NH₃-N (mg/L)"
 msgstr "NH₃-N (mg/L)"
 
+msgid "NH₃-N activity-corrected (information, not judged)"
+msgstr "NH₃-N aktivitetskorrigert (informasjon, ikke vurdert)"
+
 msgid "NH₃-N limit"
 msgstr "NH₃-N-grense"
 
 msgid "NH₃-N limit (mg/L as N)"
 msgstr "NH₃-N-grense (mg/L som N)"
+
+msgid ""
+"NH₃: above 30 °C or a salinity of 35 ‰ the water is outside the range the NH₃ judgement was "
+"checked over (0 to 30 °C, up to 35 ‰); the NH₃ shown may read low against Clegg & Whitfield "
+"(1995), by about 1 % at 35 °C and 6 % at 40 °C in sea water of 35 ‰. Keep a margin to the limit."
+msgstr ""
+"NH₃: over 30 °C eller en salinitet på 35 ‰ er vannet utenfor området NH₃-vurderingen er "
+"kontrollert for (0 til 30 °C, opptil 35 ‰); vist NH₃ kan være for lav sammenlignet med Clegg & "
+"Whitfield (1995), med omtrent 1 % ved 35 °C og 6 % ved 40 °C i sjøvann på 35 ‰. Hold margin til "
+"grensen."
 
 msgid "NH₃: give the TAN."
 msgstr "NH₃: oppgi TAN."
@@ -8970,6 +9227,13 @@ msgstr ""
 
 msgid "Natural gas"
 msgstr "Naturgass"
+
+msgid ""
+"Needed with a pH on another scale than NBS: the conversion takes the temperature and the salinity"
+" of the same sample."
+msgstr ""
+"Trengs sammen med en pH på en annen skala enn NBS: omregningen bruker temperaturen og saliniteten"
+" fra samme prøve."
 
 msgid "Needed with the oxygen: no fresh salinity here at that time to work the other unit out with."
 msgstr ""
@@ -9801,6 +10065,9 @@ msgstr "Ikke registrert"
 msgid "Not reviewed yet. AI agents will act on reviewed entries only."
 msgstr "Ikke gjennomgått ennå. KI-agentene vil bare handle på gjennomgåtte oppføringer."
 
+msgid "Not said"
+msgstr "Ikke oppgitt"
+
 msgid "Not saved; unverified"
 msgstr "Ikke lagret; ikke bekreftet"
 
@@ -10419,6 +10686,21 @@ msgstr "Organisasjonskart"
 msgid "Origin"
 msgstr "Opprinnelse"
 
+msgid ""
+"Orthophosphate. Choose its unit beside it: a kit that reads PO₄³⁻ shows 3.07 times the number as "
+"P (PO₄-P). A PO₄ reading entered as P counts 3.07 times too much phosphate, and every recipe and "
+"dose worked out with it is wrong. Phosphate is part of the alkalinity a titration measures: with "
+"it the calculator and a unit’s chart count its buffer in the DIC, in the water’s own CO₂ and in "
+"what a dose or a stripping does. The judged CO₂ never falls because of it. Empty: not counted, as"
+" before."
+msgstr ""
+"Ortofosfat. Velg enheten ved siden av: et sett som måler PO₄³⁻ viser 3,07 ganger tallet som P "
+"(PO₄-P). En PO₄-avlesning angitt som P gir 3,07 ganger for mye fosfat, og alle oppskrifter og "
+"doser som regnes ut med den blir feil. Fosfat er en del av alkaliteten en titrering måler: med "
+"det regner kalkulatoren og enhetens diagram bufferen med i DIC, i vannets egen CO₂ og i hva en "
+"dose eller en avlufting gjør. Den vurderte CO₂ synker aldri på grunn av det. Tomt: ikke regnet "
+"med, som før."
+
 msgid "Oslo time, as the authority keeps it."
 msgstr "Oslo-tid, slik myndigheten fører den."
 
@@ -10570,6 +10852,9 @@ msgstr "PDF-fil"
 
 msgid "POST /api/slakt/v1/utfort, or the Altinn form \"Gjennomført slakting av oppdrettsfisk\""
 msgstr "POST /api/slakt/v1/utfort, eller Altinn-skjemaet «Gjennomført slakting av oppdrettsfisk»"
+
+msgid "PO₄-P (mg/L)"
+msgstr "PO₄-P (mg/L)"
 
 msgid "PSU is the same number: 0 in fresh water, about 35 in the sea."
 msgstr "PSU er samme tall: 0 i ferskvann, omkring 35 i sjøen."
@@ -10743,6 +11028,28 @@ msgstr "Fase"
 
 msgid "Phone"
 msgstr "Telefon"
+
+#, python-format
+msgid ""
+"Phosphate %(value)s is the value loaded from %(point)s: it is as P already (a stored phosphate "
+"always is) and is not converted again. Leave the unit at P, or type the phosphate as it was "
+"reported with its unit."
+msgstr ""
+"Fosfat %(value)s er verdien som ble hentet fra %(point)s: den er allerede som P (et lagret fosfat"
+" er alltid det) og regnes ikke om igjen. La enheten stå på P, eller skriv inn fosfatet slik det "
+"ble oppgitt, med enheten sin."
+
+msgid "Phosphate (mg/L PO₄ as P)"
+msgstr "Fosfat (mg/L PO₄ som P)"
+
+msgid "Phosphate (mg/L, in the unit chosen beside it)"
+msgstr "Fosfat (mg/L, i enheten valgt ved siden av)"
+
+msgid "Phosphate as entered, in its own unit"
+msgstr "Fosfat slik det ble angitt, i sin egen enhet"
+
+msgid "Phosphate unit"
+msgstr "Fosfatenhet"
 
 msgid "Phosphorus (%)"
 msgstr "Fosfor (%)"
@@ -12004,6 +12311,9 @@ msgstr "Skriv hvorfor: et kar som går ut eller byttes ut, registreres med begru
 msgid "Scale loss"
 msgstr "Skjelltap"
 
+msgid "Scale the pH was measured on"
+msgstr "Skalaen pH ble målt på"
+
 msgid "Scheduled"
 msgstr "Planlagte"
 
@@ -12030,6 +12340,9 @@ msgstr "Sjøtemperatur (°C)"
 
 msgid "Sea water"
 msgstr "Sjøvann"
+
+msgid "Sea water or diluted sea water"
+msgstr "Sjøvann eller fortynnet sjøvann"
 
 msgid "Sea-lice count"
 msgstr "Lusetelling"
@@ -12168,6 +12481,9 @@ msgstr "Søk etter enhet, fiskegruppe eller art"
 
 msgid "Search vector"
 msgstr "Søkevektor"
+
+msgid "Seawater scale (SWS)"
+msgstr "Sjøvannsskala (SWS)"
 
 msgid "Seaweed"
 msgstr "Tang og tare"
@@ -12735,6 +13051,15 @@ msgstr "Arter og fiskevekter kan legges til når fôret er opprettet."
 
 msgid "Species it takes"
 msgstr "Arter det tar imot"
+
+msgid ""
+"Specific conductance: the meter’s reading compensated to 25 °C (the meter’s temperature "
+"compensation on, referred to 25 °C, not 20 °C). A reading at the water’s own temperature is not "
+"this value. In fresh water the ionic strength is taken from it (Russell 1976)."
+msgstr ""
+"Spesifikk ledningsevne: målerens avlesning kompensert til 25 °C (målerens temperaturkompensasjon "
+"på, med 25 °C som referanse, ikke 20 °C). En avlesning ved vannets egen temperatur er ikke denne "
+"verdien. I ferskvann tas ionestyrken fra den (Russell 1976)."
 
 msgid "Specific feeding rate: the share of the body weight fed a day"
 msgstr "Spesifikk fôringsrate: andelen av kroppsvekten som fôres per dag"
@@ -14516,6 +14841,32 @@ msgstr "Saliniteten er fra %(source)s."
 msgid "The salinity is fresh water’s."
 msgstr "Saliniteten er ferskvannets."
 
+msgid ""
+"The scale the pH above was measured on. Other than NBS: for sea water of 5 ‰ or more; the chart "
+"and every value are then worked out and drawn on the NBS scale. The target pH and the pH limits "
+"are NBS."
+msgstr ""
+"Skalaen pH-verdien over ble målt på. Annet enn NBS: for sjøvann på 5 ‰ eller mer; diagrammet og "
+"alle verdier blir da beregnet og tegnet på NBS-skalaen. Mål-pH og pH-grensene er NBS."
+
+msgid ""
+"The scale the pH was measured on. Other than NBS (a seawater sensor calibrated with TRIS reads on"
+" the total scale): for sea water of 5 ‰ or more, with the temperature and the salinity of the "
+"same sample. The pH is then stored and shown on the NBS scale, with what was measured beside it."
+msgstr ""
+"Skalaen pH ble målt på. Annet enn NBS (en sjøvannssensor kalibrert med TRIS måler på "
+"totalskalaen): for sjøvann på 5 ‰ eller mer, med temperaturen og saliniteten fra samme prøve. pH "
+"lagres og vises da på NBS-skalaen, med det som ble målt ved siden av."
+
+msgid ""
+"The scale the round’s pHs were measured on. Other than NBS: for sea water of 5 ‰ or more, each "
+"row with its own temperature and salinity; the pH is stored and shown on the NBS scale, with what"
+" was measured beside it."
+msgstr ""
+"Skalaen rundens pH-verdier ble målt på. Annet enn NBS: for sjøvann på 5 ‰ eller mer, hver rad med"
+" sin egen temperatur og salinitet; pH lagres og vises på NBS-skalaen, med det som ble målt ved "
+"siden av."
+
 #, python-format
 msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."
 msgstr "Lusetellingen %(date)s i %(unit)s ville stått uten fisk: annuller den først."
@@ -14856,6 +15207,20 @@ msgstr "Enhetsfaktoren er et tall forskjellig fra 0."
 
 msgid "The unit the instrument sends, when it differs from the quantity’s."
 msgstr "Enheten instrumentet sender, når den avviker fra parameterens."
+
+msgid ""
+"The unit the phosphate above is in. As PO₄ the number is 3.07 times the number as P: everything "
+"is worked out with it as P, and every dose says the phosphate it was worked out with."
+msgstr ""
+"Enheten fosfatet over er i. Som PO₄ er tallet 3,07 ganger tallet som P: alt regnes ut med det som"
+" P, og hver dose sier hvilket fosfat den er regnet ut med."
+
+msgid ""
+"The unit the round’s phosphates are in. As PO₄ the number is 3.07 times the number as P: each is "
+"put on P when stored, with what was entered kept beside it."
+msgstr ""
+"Enheten rundens fosfatverdier er i. Som PO₄ er tallet 3,07 ganger tallet som P: hver verdi regnes"
+" om til P når den lagres, og det som ble angitt beholdes ved siden av."
 
 msgid "The unit was removed"
 msgstr "Enheten ble fjernet"
@@ -15605,6 +15970,12 @@ msgstr "Totalt areal (m²)"
 msgid "Total gas pressure (% of barometric pressure)"
 msgstr "Totalt gasstrykk (% av lufttrykket)"
 
+msgid "Total hardness (mg/L as CaCO₃)"
+msgstr "Total hardhet (mg/L som CaCO₃)"
+
+msgid "Total scale (calibrated with TRIS)"
+msgstr "Totalskala (kalibrert med TRIS)"
+
 msgid "Total sulfide (µg/L as S)"
 msgstr "Totalt sulfid (µg/L som S)"
 
@@ -15794,6 +16165,9 @@ msgstr "Enhet for nivåene"
 
 msgid "Unit offset"
 msgstr "Enhetsforskyvning"
+
+msgid "Unit the phosphate was entered in"
+msgstr "Enheten fosfatet ble angitt i"
 
 msgid "Unit, system or equipment"
 msgstr "Enhet, system eller utstyr"
@@ -16090,6 +16464,9 @@ msgstr "Vanngrense"
 msgid "Water limits"
 msgstr "Vanngrenser"
 
+msgid "Water origin"
+msgstr "Vannopprinnelse"
+
 msgid "Water points with a warning"
 msgstr "Prøvepunkter med advarsel"
 
@@ -16286,6 +16663,15 @@ msgstr ""
 "Hva innhentingstjenesten husker om hver sensorkanal: siste verdi, den sist lagrede verdien "
 "dødbåndet måles fra, og verdiene som ikke er lagret siden."
 
+msgid ""
+"What the kit or the laboratory reports. As PO₄ the number is 3.07 times the number as P: it is "
+"put on P when stored, with what was entered kept beside it. The wrong unit is a 3.07-fold error "
+"in every dose worked out with the phosphate."
+msgstr ""
+"Det settet eller laboratoriet oppgir. Som PO₄ er tallet 3,07 ganger tallet som P: det regnes om "
+"til P når det lagres, og det som ble angitt beholdes ved siden av. Feil enhet er en 3,07 ganger "
+"for stor eller liten verdi i hver dose som regnes ut med fosfatet."
+
 msgid "What the person can open and change. Without a role they see only the overview."
 msgstr "Hva personen kan åpne og endre. Uten rolle ser vedkommende bare oversikten."
 
@@ -16432,6 +16818,15 @@ msgstr "Hvor jobben gjøres: en hel lokalitet, en produksjonsavdeling, et system
 
 msgid "Where the knowledge comes from: every entry has exactly one source."
 msgstr "Hvor kunnskapen kommer fra: hver oppføring har nøyaktig én kilde."
+
+msgid ""
+"Where the salt in its water comes from. Fresh water with salt added (NaCl, for smolt or against "
+"disease) is worked out without sea water’s ions; not said, a salinity of 1 to 5 ‰ is taken as "
+"diluted sea water."
+msgstr ""
+"Hvor saltet i vannet kommer fra. Ferskvann tilsatt salt (NaCl, for smolt eller mot sykdom) "
+"beregnes uten sjøvannets ioner; ikke oppgitt regnes en salinitet på 1 til 5 ‰ som fortynnet "
+"sjøvann."
 
 msgid "Where the value comes from, e.g. “the vet, November 2026”."
 msgstr "Hvor verdien kommer fra, f.eks. «veterinæren, november 2026»."
@@ -16670,6 +17065,10 @@ msgstr ""
 msgid "Worked out from the values"
 msgstr "Regnet ut fra verdiene"
 
+#, python-format
+msgid "Worked out with phosphate %(p)s mg/L as P (%(po4)s as PO₄): a wrong phosphate changes this dose."
+msgstr "Regnet ut med fosfat %(p)s mg/L som P (%(po4)s som PO₄): feil fosfat endrer denne dosen."
+
 msgid "Working"
 msgstr "Jobber"
 
@@ -16856,6 +17255,9 @@ msgstr "en sjølokalitet med laksefisk (plikten følger fisken, ikke produksjons
 msgid "a site with cleaner-fish broodstock"
 msgstr "en lokalitet med rensefiskstamfisk"
 
+msgid "a unit or a loop"
+msgstr "en enhet eller en sløyfe"
+
 msgid "activity log"
 msgstr "aktivitetslogg"
 
@@ -16948,6 +17350,15 @@ msgstr "og %(count)s til: alle rapporter"
 msgid "and %(kilos)s to the cleaner fish"
 msgstr "og %(kilos)s til rensefisken"
 
+msgid "as P (PO₄-P): mg/L of phosphorus"
+msgstr "som P (PO₄-P): mg/L fosfor"
+
+msgid "as PO₄ (mg/L of phosphate)"
+msgstr "som PO₄ (mg/L fosfat)"
+
+msgid "as PO₄: mg/L of phosphate"
+msgstr "som PO₄: mg/L fosfat"
+
 msgid "as for food fish"
 msgstr "som for matfisk"
 
@@ -16968,8 +17379,21 @@ msgid "at %(point)s"
 msgstr "ved %(point)s"
 
 #, python-format
+msgid "at least %(value)s"
+msgstr "minst %(value)s"
+
+#, python-format
 msgid "at least every %(seconds)s s"
 msgstr "minst hvert %(seconds)s s"
+
+msgid "at least that of the alkalinity"
+msgstr "minst alkalitetens"
+
+msgid "at least that of the hardness and the alkalinity"
+msgstr "minst hardhetens og alkalitetens"
+
+msgid "at least: the limits’ basis"
+msgstr "minst: grenseverdienes grunnlag"
 
 msgid "at once"
 msgstr "straks"
@@ -17493,6 +17917,10 @@ msgstr "slutt ukjent"
 msgid "ended"
 msgstr "avsluttet"
 
+#, python-format
+msgid "entered as %(value)s mg/L PO₄"
+msgstr "angitt som %(value)s mg/L PO₄"
+
 msgid "equals"
 msgstr "er lik"
 
@@ -17636,6 +18064,9 @@ msgstr "byttet på denne siden"
 msgid "found %(time)s"
 msgstr "funnet %(time)s"
 
+msgid "free scale"
+msgstr "den frie skalaen"
+
 msgid "fresh water"
 msgstr "ferskvann"
 
@@ -17657,6 +18088,12 @@ msgstr "fra %(start)s til %(end)s"
 #, python-format
 msgid "from %(weight)s g"
 msgstr "fra %(weight)s g"
+
+msgid "from the conductivity at 25 °C"
+msgstr "fra ledningsevnen ved 25 °C"
+
+msgid "from the salinity"
+msgstr "fra saliniteten"
 
 msgid "g"
 msgstr "g"
@@ -17789,6 +18226,10 @@ msgstr "kunnskapsoppføring"
 msgid "lab"
 msgstr "laboratorium"
 
+#, python-format
+msgid "last own value %(value)s %(status)s on %(time)s, no recent data: measure this unit"
+msgstr "siste egne verdi %(value)s %(status)s %(time)s, ingen nye data: mål denne enheten"
+
 msgid "leave outside these days"
 msgstr "permisjon utenfor disse dagene"
 
@@ -17836,6 +18277,10 @@ msgstr "maskert"
 
 msgid "meals done"
 msgstr "måltidene er gitt"
+
+#, python-format
+msgid "measured %(value)s on the %(scale)s"
+msgstr "målt %(value)s på %(scale)s"
 
 msgid "medicine"
 msgstr "legemiddel"
@@ -17982,6 +18427,9 @@ msgstr "ingen"
 msgid "none fresh now: enter it"
 msgstr "ingen fersk nå: skriv den inn"
 
+msgid "none measured, taken as 0 (the safe side)"
+msgstr "ingenting målt, satt til 0 (den sikre siden)"
+
 msgid "not enforced by the database"
 msgstr "ikke håndhevet av databasen"
 
@@ -18024,6 +18472,9 @@ msgid "of %(total)s unit"
 msgid_plural "of %(total)s units"
 msgstr[0] "av %(total)s enhet"
 msgstr[1] "av %(total)s enheter"
+
+msgid "of sea water of this salinity"
+msgstr "sjøvannets ved denne saliniteten"
 
 msgid "off"
 msgstr "fri"
@@ -18077,11 +18528,32 @@ msgstr "s. %(page)s"
 msgid "pH"
 msgstr "pH"
 
+#, python-format
+msgid ""
+"pH %(given)s on the %(scale)s is %(nbs)s on the NBS scale (formula %(formula)s): every value and "
+"the chart are worked out and drawn on the NBS scale."
+msgstr ""
+"pH %(given)s på %(scale)s er %(nbs)s på NBS-skalaen (formel %(formula)s): alle verdier og "
+"diagrammet er beregnet og tegnet på NBS-skalaen."
+
+#, python-format
+msgid ""
+"pH %(ph)s is the value loaded from %(point)s: it is on the NBS scale already (a stored pH always "
+"is) and is not converted again. Leave the scale at NBS, or type the pH as it was measured with "
+"its scale."
+msgstr ""
+"pH %(ph)s er verdien som ble hentet fra %(point)s: den er allerede på NBS-skalaen (en lagret pH "
+"er alltid det) og regnes ikke om igjen. La skalaen stå på NBS, eller skriv inn pH-en slik den ble"
+" målt, med skalaen sin."
+
 msgid "pH (NBS scale)"
 msgstr "pH (NBS-skala)"
 
 msgid "pH (NBS)"
 msgstr "pH (NBS)"
+
+msgid "pH as measured, on its own scale"
+msgstr "pH slik den ble målt, på sin egen skala"
 
 msgid "pH border, toxic above"
 msgstr "pH-grense, giftig over"
@@ -18094,6 +18566,9 @@ msgstr "pH-isolinjer"
 
 msgid "pH margin to the border"
 msgstr "pH-margin til grensen"
+
+msgid "pH scale"
+msgstr "pH-skala"
 
 msgid "pH sensor"
 msgstr "pH-sensor"
@@ -18260,6 +18735,9 @@ msgstr "lusetelling"
 
 msgid "sea-lice counts"
 msgstr "lusetellinger"
+
+msgid "seawater scale (SWS)"
+msgstr "sjøvannsskalaen (SWS)"
 
 msgid "seconds"
 msgstr "sekunder"
@@ -18456,6 +18934,9 @@ msgstr "til %(unit)s"
 #, python-format
 msgid "to the cleaner fish %(kilos)s"
 msgstr "til rensefisken %(kilos)s"
+
+msgid "total scale"
+msgstr "totalskalaen"
 
 #, python-format
 msgid "total sulfide %(value)s µg/L as S"

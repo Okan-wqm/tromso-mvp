@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('farm', '0039_fasting_acknowledgement_feeding'),
+        ('farm', '0046_phosphate_entry_agrees'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

@@ -179,6 +179,7 @@ class ChannelForm(CodedFormMixin, TabbedForm):
         field_classes = {'address': AddressField}
         localized_fields = ['unit_factor', 'unit_offset', 'deadband', 'range_min', 'range_max']
         help_texts = {
+            'quantity': quantities.PH_SCALE_NOTE,
             'value_path': gettext_lazy('One object per message: a JSON pointer to this channel’s value, e.g. '
                                        '/tags/o2/value.'),
             'item_name': gettext_lazy('A list of items: the name the item of this channel has, e.g. do.'),

@@ -184,10 +184,12 @@ pub fn carbonate_plot(analysis: &a::Analysis, water: &a::Water) -> Result<Plot, 
     })
 }
 
-/// log10 Ω of a water: Ω = [Ca²⁺] [CO₃²⁻] / Ksp, concentrations per litre (WQ-32).
+/// log10 Ω of a water: Ω = [Ca²⁺] [CO₃²⁻] / Ksp, the concentrations per litre (WQ-32) and so the Ksp too
+/// (`Equilibria::ksp_per_litre`: Mucci's per-kg² Ksp times the square of the sea water's density; formula 1 the per-kg
+/// Ksp as it is).
 pub fn saturation_index(eq: &Equilibria, dic: f64, ph: f64, calcium_mg_l: f64, ksp: f64) -> Result<f64, ChemError> {
     let product = div(calcium_mg_l, c::MG_CALCIUM_PER_MOL)? * eq.carbonate(dic, ph)? / 1000.0;
-    log10(div(product, ksp)?)
+    log10(div(product, eq.ksp_per_litre(ksp)?)?)
 }
 
 /// The calcite and aragonite saturation index against pH at the water's DIC; None without the calcium or outside

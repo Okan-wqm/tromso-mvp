@@ -128,8 +128,8 @@ class AlarmSubjectState(models.Model):
     system's own, `system:<name>`): the
     timers of its lifecycle, kept in the database so a restart loses none: since when the condition holds without an
     alarm yet (the on-delay, counted from the first offending value's time), since when it is over while the alarm is open
-    (the off-delay), the time of the last value that held it, and the alarm open now. Not history: the alarms, their
-    clearances and the activity log are."""
+    (the off-delay), the time of the last value that held it, whether the unit's own value held it, and the alarm
+    open now. Not history: the alarms, their clearances and the activity log are."""
 
     key = models.CharField(primary_key=True, max_length=200)
     # Unique: an alarm is the open alarm of one subject at most; a raise sets it only where it is empty
@@ -139,6 +139,9 @@ class AlarmSubjectState(models.Model):
     pending_since = models.DateTimeField(null=True, blank=True)
     clear_since = models.DateTimeField(null=True, blank=True)
     last_bad_at = models.DateTimeField(null=True, blank=True)
+    # Whether the unit's own value holds the level (a water subject: alarms/sources.py, which value can end a level):
+    # then only the unit's own evidence ends it, never another point's value (the verification of FIX3, F3-7).
+    own_held = models.BooleanField(default=False, db_default=False)     # db_default: services._set_open inserts rows raw
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

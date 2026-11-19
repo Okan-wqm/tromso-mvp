@@ -25,6 +25,10 @@ def formula_version():
     return chemcore.formula_version()
 
 
+FORMULA_VERSION = chemcore.formula_version()          # the formula every value of the application is worked out by
+FORMULAS = tuple(chemcore.FORMULAS)                   # the formulas the core can still work out (1, 3)
+
+
 def core_hash():
     return chemcore.core_hash()
 
@@ -58,12 +62,22 @@ def handshake_problems():
 
 # ---- the chemistry (chemcore/core/src/chemistry.rs), under the names farm/water/chemistry.py gives them ----------
 NonFiniteError = chemcore.NonFiniteError
+# A water that cannot be (its alkalinity at or below the floor of its pH, or a DIC below 0): formula 3 refuses it at every
+# door, never a negative concentration; a ValueError. The pages say the reason first (deffeyes.why_impossible, the same rule).
+ImpossibleWaterError = chemcore.ImpossibleWaterError
+# A pH on a seawater scale (total, seawater, free) for a water that is not sea water of 5 permil or more: never
+# converted on an assumption; a ValueError. The forms and the write path say the reason first (Equilibria.takes_ph_scale).
+SeawaterScaleError = chemcore.SeawaterScaleError
+# The scales a pH may be given on, the default (NBS: the pH itself) first (chemcore/core/src/scale.rs); a pH on another
+# is put on the NBS scale by Equilibria.ph_nbs before anything is worked out from it.
+PH_SCALES = tuple(chemcore.PH_SCALES)
 Equilibria = chemcore.Equilibria
 KELVIN = chemcore.KELVIN
 MG_CACO3_PER_MEQ = chemcore.MG_CACO3_PER_MEQ
 MG_CO2_PER_MMOL = chemcore.MG_CO2_PER_MMOL
 MG_CALCIUM_PER_MOL = chemcore.MG_CALCIUM_PER_MOL
 H2S_PER_S = chemcore.H2S_PER_S
+MG_P_PER_MMOL = chemcore.MG_P_PER_MMOL    # PO₄-P, mg/L as P, per mmol/L of phosphate (P 30.973762)
 SOLVER_PH = chemcore.SOLVER_PH
 AIR_CO2 = chemcore.AIR_CO2
 equilibria = chemcore.equilibria
@@ -81,11 +95,17 @@ sws_to_nbs = chemcore.sws_to_nbs
 ph_free = chemcore.ph_free
 k1_sws = chemcore.k1_sws
 k2_sws = chemcore.k2_sws
-kw_total = chemcore.kw_total
+kw_total = chemcore.kw_total            # formula 1's: the 2007 Guide's total-scale value (Millero's constant less 0.015)
+kw_sws = chemcore.kw_sws                # formula 3's: Millero (1995) on his seawater scale; at S 0 pure water's
+kw_free = chemcore.kw_free              # ... over [H+]SWS / [H+]free, as formula 3's Equilibria hold it
 kb_total = chemcore.kb_total
 k_nh4_sws = chemcore.k_nh4_sws
 pk_nh4 = chemcore.pk_nh4
 k_h2s_total = chemcore.k_h2s_total
+# Phosphoric acid (Millero 1995, seawater scale; pure water's at S 0): only a water with a phosphate given reads them.
+k1p_sws = chemcore.k1p_sws
+k2p_sws = chemcore.k2p_sws
+k3p_sws = chemcore.k3p_sws
 ksp_calcite = chemcore.ksp_calcite
 ksp_aragonite = chemcore.ksp_aragonite
 nh3_fraction = chemcore.nh3_fraction
@@ -94,6 +114,7 @@ vapour_pressure_atm = chemcore.vapour_pressure_atm
 oxygen_solubility = chemcore.oxygen_solubility
 k0_co2 = chemcore.k0_co2
 co2_from_air = chemcore.co2_from_air
+seawater_density = chemcore.seawater_density      # EOS-80 at one atmosphere, kg/L: formula 3's Ω takes the Ksp per litre
 
 # ---- the analysis of a water (chemcore/core/src/analysis.rs) ---------------------------------------------------
 ChartTooLargeError = chemcore.ChartTooLargeError
@@ -127,10 +148,21 @@ judge_step = chemcore.judge_step
 bands = chemcore.bands
 saturation_index = chemcore.saturation_index
 
-# ---- I2, fresh water's ionic strength (chemcore/core/src/fresh.rs): golden v3 beside v1, NOT used by the application
-# until the owner decides (chemcore/findings/I2-comparison.md); the application reads `equilibria` (v1).
-FRESH_BELOW = chemcore.FRESH_BELOW
+# ---- formula 3, the application's (chemcore/core/src/fresh.rs; chemcore/findings/I2-comparison.md): fresh water's own
+# ionic strength, the Debye-Hückel A of the temperature, the band from 1 to 5 permil. Every chemistry of a water starts
+# from `water_equilibria` (the formula of FORMULA_VERSION by default); `equilibria` is formula 1, golden v1's, kept so a
+# value shown before can be worked out again exactly, never called by the application.
+FRESH_UP_TO = chemcore.FRESH_UP_TO
+SEA_FROM = chemcore.SEA_FROM
+sea_weight = chemcore.sea_weight
 DAVIES_MAX = chemcore.DAVIES_MAX
+IONIC_PER_MICROSIEMENS = chemcore.IONIC_PER_MICROSIEMENS              # Russell 1976: natural (bicarbonate) waters
+IONIC_PER_MICROSIEMENS_NACL = chemcore.IONIC_PER_MICROSIEMENS_NACL    # NaCl: a salt-added water (cross review F4)
 fresh_ionic_strength = chemcore.fresh_ionic_strength
+practical_salinity = chemcore.practical_salinity          # PSS-78 at 25 °C (cross review F5)
 davies_log_gamma = chemcore.davies_log_gamma
+dielectric_constant = chemcore.dielectric_constant
+water_density = chemcore.water_density
+debye_huckel_a = chemcore.debye_huckel_a
 equilibria_v3 = chemcore.equilibria_v3
+water_equilibria = chemcore.water_equilibria

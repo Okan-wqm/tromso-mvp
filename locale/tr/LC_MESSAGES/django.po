@@ -894,6 +894,10 @@ msgid "%(label)s + %(margin)s %% safety margin = %(used)s"
 msgstr "%(label)s + %(margin)s %% güvenlik payı = %(used)s"
 
 #, python-format
+msgid "%(label)s cannot be evaluated: %(why)s."
+msgstr "%(label)s değerlendirilemiyor: %(why)s."
+
+#, python-format
 msgid "%(label)s deleted with it"
 msgstr "%(label)s da birlikte silinir"
 
@@ -986,6 +990,10 @@ msgstr[1] "%(meals)s öğün"
 #, python-format
 msgid "%(meals)s × %(meal)s"
 msgstr "%(meals)s × %(meal)s"
+
+#, python-format
+msgid "%(measured)s, stored as %(nbs)s NBS"
+msgstr "%(measured)s, %(nbs)s NBS olarak saklandı"
 
 #, python-format
 msgid "%(medicine)s has no strength (Reference data › Medicines)."
@@ -1208,6 +1216,30 @@ msgstr "%(replicate)s: son gün ilk günde veya ondan sonra gelir."
 #, python-format
 msgid "%(rule)s at %(time)s"
 msgstr "%(rule)s, saat %(time)s"
+
+#, python-format
+msgid ""
+"%(said)s (assumes sea water’s ion composition; salt-added fresh water may read low CO₂: say the "
+"unit’s water origin)"
+msgstr ""
+"%(said)s (deniz suyunun iyon bileşimini varsayar; tuz eklenmiş tatlı suda CO₂ düşük çıkabilir: "
+"ünitenin su kökenini belirtin)"
+
+#, python-format
+msgid "%(said)s; %(share)d %% seawater constants"
+msgstr "%(said)s; %%%(share)d deniz suyu sabitleri"
+
+#, python-format
+msgid "%(said)s; phosphate %(phosphate)s mg/L as P counted in the alkalinity"
+msgstr "%(said)s; %(phosphate)s mg/L (P olarak) fosfat alkaliniteye sayıldı"
+
+#, python-format
+msgid "%(said)s; salt-added fresh water past the Davies range, worked out as sea water"
+msgstr "%(said)s; Davies aralığının ötesinde tuz eklenmiş tatlı su, deniz suyu gibi hesaplandı"
+
+#, python-format
+msgid "%(said)s; salt-added fresh water, its ions taken as NaCl"
+msgstr "%(said)s; tuz eklenmiş tatlı su, iyonları NaCl olarak alındı"
 
 #, python-format
 msgid "%(seconds)d s"
@@ -1648,6 +1680,16 @@ msgstr "%(value)s kg"
 #, python-format
 msgid "%(value)s kg/m³"
 msgstr "%(value)s kg/m³"
+
+#, python-format
+msgid ""
+"%(value)s may be the value stored for %(point)s, already converted: this address does not say it "
+"was typed. Leave the scale or the unit as loaded, or choose %(point)s again under “Values from” "
+"and type the value as it was measured."
+msgstr ""
+"%(value)s, %(point)s için saklanan ve zaten dönüştürülmüş değer olabilir: bu adres onun elle "
+"yazıldığını söylemiyor. Ölçeği veya birimi yüklendiği gibi bırakın ya da “Değerlerin kaynağı” "
+"altında %(point)s seçimini yeniden yapıp değeri ölçüldüğü gibi yazın."
 
 #, python-format
 msgid "%(value)s per fish"
@@ -2316,6 +2358,25 @@ msgstr "Bir not en çok %(count)d karakterdir."
 
 msgid "A notice is filed at once: it has no later deadline."
 msgstr "Bildirim hemen verilir: daha sonraki bir son tarihi yoktur."
+
+#, python-format
+msgid ""
+"A pH channel is on the NBS scale (a probe calibrated with NBS/NIST buffers). A sensor that "
+"reports on the total scale (calibrated with TRIS) is not converted here: its pH reads 0.10 to "
+"0.14 low in sea water and the NH₃ worked out from it 20 to 27 % low. Record such a pH as a sample"
+" with its scale."
+msgstr ""
+"Bir pH kanalı NBS ölçeğindedir (NBS/NIST tamponlarıyla kalibre edilmiş prob). Toplam ölçekte "
+"okuyan (TRIS ile kalibre edilmiş) bir sensör burada çevrilmez: pH’ı deniz suyunda 0,10–0,14 "
+"düşük, ondan hesaplanan NH₃ ise % 20–27 düşük okunur. Böyle bir pH’ı ölçeğiyle birlikte numune "
+"olarak kaydedin."
+
+msgid ""
+"A pH on this scale is taken for sea water of 5 ‰ or more only (not fresh water with salt added): "
+"give the pH a meter calibrated with NBS/NIST buffers reads."
+msgstr ""
+"Bu ölçekteki pH yalnızca 5 ‰ ve üzeri deniz suyu için kabul edilir (tuz eklenmiş tatlı su için "
+"değil): NBS/NIST tamponlarıyla kalibre edilmiş bir ölçerin okuduğu pH’ı girin."
 
 #, python-format
 msgid "A page shows at most %(days)s day: the first day was moved."
@@ -3728,8 +3789,22 @@ msgstr "Alan"
 msgid "Area not set: the stricter limit applies (Facility › Sites)"
 msgstr "Bölge girilmemiş: daha sıkı sınır geçerli (Tesis › Sahalar)"
 
-msgid "As a pH meter or kit reads it."
-msgstr "pH metrenin veya kitin okuduğu gibi."
+#, python-format
+msgid ""
+"As P this is %(value)s mg/L: a phosphate is between %(low)s and %(high)s mg/L as P (up to "
+"%(most)s as PO₄). Check the value and its unit."
+msgstr ""
+"P olarak bu %(value)s mg/L eder: fosfat, P olarak %(low)s ile %(high)s mg/L arasındadır (PO₄ "
+"olarak en çok %(most)s). Değeri ve birimini kontrol edin."
+
+msgid ""
+"As a pH meter or kit calibrated with NBS/NIST buffers reads it, at the water’s own temperature. A"
+" total-scale pH (a seawater sensor calibrated with TRIS) reads 0.10 to 0.14 lower in water of 5 "
+"to 35 ‰: typed here as NBS, the NH₃ worked out is 20 to 27 % too low."
+msgstr ""
+"NBS/NIST tamponlarıyla kalibre edilmiş bir pH ölçerin veya kitin, suyun kendi sıcaklığında "
+"okuduğu değer. Toplam ölçekli bir pH (TRIS ile kalibre edilmiş deniz suyu sensörü) 5–35 ‰ suda "
+"0,10–0,14 daha düşük okur: buraya NBS olarak yazılırsa hesaplanan NH₃ % 20–27 düşük çıkar."
 
 msgid ""
 "As an oxygen meter shows it; above 100 % with added oxygen. With the temperature, the mg/L is "
@@ -3862,6 +3937,14 @@ msgid ""
 "At this pH the alkalinity is above %(floor)s mg/L as CaCO₃: the hydroxide and borate alone are "
 "that much."
 msgstr "Bu pH'de alkalinite %(floor)s mg/L CaCO₃'ün üstündedir: yalnızca hidroksit ve borat bu kadardır."
+
+#, python-format
+msgid ""
+"At this pH the alkalinity is above %(floor)s mg/L as CaCO₃: the hydroxide, the borate and the "
+"phosphate given alone are that much."
+msgstr ""
+"Bu pH’ta alkalinite %(floor)s mg/L (CaCO₃ olarak) değerinin üzerindedir: yalnızca hidroksit, "
+"borat ve girilen fosfat bu kadar eder."
 
 msgid "Attached"
 msgstr "Tutunmuş"
@@ -4235,6 +4318,34 @@ msgstr "CO₂"
 msgid "CO₂ (mg/L)"
 msgstr "CO₂ (mg/L)"
 
+msgid "CO₂ activity-corrected (information, not judged)"
+msgstr "CO₂ aktiviteye göre düzeltilmiş (bilgi, değerlendirmede kullanılmaz)"
+
+msgid "CO₂ judged on its activity-corrected value, the larger here."
+msgstr "CO₂, burada daha büyük olan aktiviteye göre düzeltilmiş değeriyle değerlendirildi."
+
+#, python-format
+msgid ""
+"CO₂ judged on the basis its limits were set on (to 1 ‰ the ideal water, every activity 1, as "
+"Standard Methods 4500-CO₂ D; from 5 ‰ formula 1’s seawater constants; salt-added water: the ideal"
+" throughout), the larger; activity-corrected %(value)s mg/L."
+msgstr ""
+"CO₂, sınır değerlerinin konduğu temelde değerlendirildi (1 ‰'ye kadar ideal su, tüm aktiviteler "
+"1, Standard Methods 4500-CO₂ D gibi; 5 ‰'den itibaren formül 1'in deniz suyu sabitleri; tuz "
+"eklenmiş suda baştan sona ideal), büyük olan; aktiviteye göre düzeltilmiş %(value)s mg/L."
+
+#, python-format
+msgid ""
+"CO₂ judged without the phosphate: the larger of the basis its limits were set on and the "
+"activity-corrected value, neither counting the phosphate’s alkalinity (Standard Methods 4500-CO₂ "
+"D takes all the alkalinity as carbonate’s), so it is never below what it was before the phosphate"
+" was given. With the phosphate counted, the water’s own CO₂ is %(value)s mg/L."
+msgstr ""
+"CO₂ fosfatsız değerlendirildi: sınırların konduğu temel ile aktivite düzeltmeli değerin büyüğü; "
+"ikisi de fosfatın alkalinitesini saymaz (Standard Methods 4500-CO₂ D bütün alkaliniteyi karbonat "
+"sayar), bu yüzden fosfat girilmeden önceki değerin altına hiç düşmez. Fosfat sayıldığında suyun "
+"kendi CO₂’si %(value)s mg/L."
+
 msgid "CO₂ limit"
 msgstr "CO₂ sınırı"
 
@@ -4253,6 +4364,15 @@ msgstr "CO₂ toksik (> %(limit)s mg/L)"
 
 msgid "CO₂, HCO₃⁻ and CO₃²⁻ against pH"
 msgstr "pH’ye göre CO₂, HCO₃⁻ ve CO₃²⁻"
+
+msgid ""
+"CO₂: near an alkalinity of 0 the curve bends back. With the phosphate given the water’s own DIC "
+"falls before it rises there (a pH under about 4.7, where the phosphate holds negative "
+"alkalinity); no fish water is in that corner."
+msgstr ""
+"CO₂: alkalinite 0’a yakınken eğri geri kıvrılır. Girilen fosfatla suyun kendi DIC’i orada "
+"yükselmeden önce düşer (yaklaşık 4,7’nin altındaki pH’da fosfat negatif alkalinite tutar); o "
+"köşede balık suyu bulunmaz."
 
 msgid "CO₂: no limit given."
 msgstr "CO₂: sınır verilmedi."
@@ -4280,6 +4400,13 @@ msgstr "pH’ye göre kalsit ve aragonit doygunluğu"
 
 msgid "Calcium (mg/L Ca²⁺)"
 msgstr "Kalsiyum (mg/L Ca²⁺)"
+
+msgid ""
+"Calcium and magnesium together, as CaCO₃. A kit in dGH: multiply by 17.85. With the alkalinity it"
+" gives the fresh water’s ionic strength when no conductivity is measured."
+msgstr ""
+"Kalsiyum ve magnezyum birlikte, CaCO₃ olarak. dGH okuyan bir kit: 17,85 ile çarpın. Alkaliniteyle"
+" birlikte, iletkenlik ölçülmediğinde tatlı suyun iyonik şiddetini verir."
 
 msgid "Calcium carbonate"
 msgstr "Kalsiyum karbonat"
@@ -4352,6 +4479,13 @@ msgstr "İptal eden"
 
 msgid "Cannibalism"
 msgstr "Kanibalizm"
+
+msgid "Cannot be evaluated"
+msgstr "Değerlendirilemiyor"
+
+#, python-format
+msgid "Cannot be worked out: %(why)s."
+msgstr "Hesaplanamıyor: %(why)s."
 
 msgid "Capacity"
 msgstr "Kapasite"
@@ -4498,6 +4632,35 @@ msgstr "Grafikler"
 msgid "Check"
 msgstr "Kontrol"
 
+msgid ""
+"Check the conductivity and the salinity: they disagree beyond what any water from NaCl brine to a"
+" hard fresh water allows (one of them mistyped, uncompensated, or from another point?)."
+msgstr ""
+"İletkenliği ve tuzluluğu kontrol edin: NaCl tuzlu suyundan sert tatlı suya kadar hiçbir suyun "
+"izin vermeyeceği ölçüde uyuşmuyorlar (biri yanlış mı yazıldı, düzeltilmemiş mi, yoksa başka bir "
+"noktadan mı?)."
+
+msgid ""
+"Check the conductivity: it gives fewer ions than the hardness and the alkalinity need (not "
+"compensated to 25 °C, or in the wrong unit?); theirs is used."
+msgstr ""
+"İletkenliği kontrol edin: sertlik ve alkalinitenin gerektirdiğinden daha az iyon veriyor (25 "
+"°C'ye göre düzeltilmemiş mi, yanlış birimde mi?); onlarınki kullanıldı."
+
+msgid ""
+"Check the conductivity: it gives over 30 times the ions the hardness and the alkalinity account "
+"for (salt added, or mS/cm typed as µS/cm?)."
+msgstr ""
+"İletkenliği kontrol edin: sertlik ve alkalinitenin açıkladığı iyonların 30 katından fazlasını "
+"veriyor (tuz mu eklendi, yoksa mS/cm, µS/cm olarak mı yazıldı?)."
+
+msgid ""
+"Check the salinity: the conductivity is that of sea water of 5 ‰ or more (PSS-78) on a water "
+"without a salinity; give the salinity, or the unit’s water origin."
+msgstr ""
+"Tuzluluğu kontrol edin: tuzluluğu girilmemiş bir suda iletkenlik 5 ‰ veya daha tuzlu deniz "
+"suyununki kadar (PSS-78); tuzluluğu ya da ünitenin su kökenini girin."
+
 msgid "Check your email"
 msgstr "E-postanızı kontrol edin"
 
@@ -4542,6 +4705,9 @@ msgstr "Bu birimlerin sahasına ait bir sağlık olayı seçin."
 
 msgid "Choose a health event of the site."
 msgstr "Sahanın bir sağlık olayını seçin."
+
+msgid "Choose a pH scale."
+msgstr "Bir pH ölçeği seçin."
 
 msgid "Choose a person"
 msgstr "Bir kişi seçin"
@@ -4651,6 +4817,9 @@ msgstr "Genel sekmesinde türü seçin; boyutları burada görünür."
 
 msgid "Choose the location to count."
 msgstr "Sayılacak yeri seçin."
+
+msgid "Choose the phosphate’s unit."
+msgstr "Fosfatın birimini seçin."
 
 msgid "Choose the shape; the measures it is worked out from appear with it."
 msgstr "Şekli seçin; hacmin hesaplandığı ölçüler onunla birlikte görünür."
@@ -4902,8 +5071,11 @@ msgstr "Durum"
 msgid "Conductivity"
 msgstr "İletkenlik"
 
-msgid "Conductivity (µS/cm)"
-msgstr "İletkenlik (µS/cm)"
+msgid "Conductivity at 25 °C (µS/cm, temperature-compensated)"
+msgstr "25 °C'de iletkenlik (µS/cm, sıcaklık telafili)"
+
+msgid "Conductivity at the water’s temperature (µS/cm, not compensated)"
+msgstr "Suyun kendi sıcaklığında iletkenlik (µS/cm, telafisiz)"
 
 msgid "Configuration epoch"
 msgstr "Yapılandırma dönemi"
@@ -5796,6 +5968,9 @@ msgid ""
 "reason."
 msgstr "Örn. “yanlış birime girildi”. Numune geçmişte üstü çizili olarak, bu nedenle birlikte kalır."
 
+msgid "EC 25 °C (µS/cm)"
+msgstr "EC 25 °C (µS/cm)"
+
 msgid "EPDM"
 msgstr "EPDM"
 
@@ -5997,6 +6172,14 @@ msgid "Enter the email address on your account. We will send you a link to set a
 msgstr ""
 "Hesabınızdaki e-posta adresini girin. Yeni bir parola belirlemeniz için size bir bağlantı "
 "göndereceğiz."
+
+#, python-format
+msgid ""
+"Entered as %(value)s mg/L as PO₄; stored as phosphorus (PO₄-P), divided by %(factor)s (the molar "
+"masses of PO₄ and P)."
+msgstr ""
+"%(value)s mg/L PO₄ olarak girildi; fosfor (PO₄-P) olarak saklandı, %(factor)s’e bölünerek (PO₄ ve"
+" P’nin mol kütleleri)."
 
 msgid "Entered by hand"
 msgstr "Elle girildi"
@@ -6894,6 +7077,17 @@ msgstr "Form, son tarih ve kanal doğrulanmadı (Q8). Yapılmadı."
 msgid "Format version"
 msgstr "Biçim sürümü"
 
+#, python-format
+msgid "Formula %(formula)d."
+msgstr "Formül %(formula)d."
+
+#, python-format
+msgid "Formula %(formula)d: ionic strength %(strength)s, %(source)s"
+msgstr "Formül %(formula)d: iyonik şiddet %(strength)s, %(source)s"
+
+msgid "Formula the pH was put on the NBS scale by"
+msgstr "pH’ı NBS ölçeğine çeviren formül"
+
 msgid "Found at"
 msgstr "Bulunma zamanı"
 
@@ -6908,6 +7102,9 @@ msgstr "Francisellozis"
 
 msgid "Free carbon dioxide, from a CO₂ probe or a titration."
 msgstr "Serbest karbondioksit; bir CO₂ probundan veya titrasyonla."
+
+msgid "Free scale"
+msgstr "Serbest ölçek"
 
 msgid "Freeboard (m)"
 msgstr "Hava payı (m)"
@@ -6929,6 +7126,16 @@ msgstr "Güncellik süresi (saniye)"
 
 msgid "Fresh water"
 msgstr "Tatlı su"
+
+msgid "Fresh water with salt added"
+msgstr "Tuz eklenmiş tatlı su"
+
+msgid ""
+"Fresh water with salt added (NaCl) is worked out without sea water’s ions, its ionic strength as "
+"NaCl’s; not said, a salinity of 1 to 5 ‰ is taken as diluted sea water."
+msgstr ""
+"Tuz (NaCl) eklenmiş tatlı su, deniz suyunun iyonları olmadan, iyonik şiddeti NaCl'ninki olarak "
+"hesaplanır; belirtilmezse 1–5 ‰ tuzluluk seyreltilmiş deniz suyu sayılır."
 
 msgid "Freshness"
 msgstr "Tazelik"
@@ -7355,6 +7562,9 @@ msgstr "Onaylanan elleçleme uyarıları"
 
 msgid "Happened on"
 msgstr "Olduğu gün"
+
+msgid "Hardness (mg/L)"
+msgstr "Sertlik (mg/L)"
 
 msgid "Harvest"
 msgstr "Hasat"
@@ -7887,6 +8097,9 @@ msgstr ""
 msgid "Invited"
 msgstr "Davet edildi"
 
+msgid "Ionic strength"
+msgstr "İyonik şiddet"
+
 msgid "Is the diagnosis suspected or confirmed?"
 msgstr "Tanı şüpheli mi, doğrulanmış mı?"
 
@@ -8106,6 +8319,13 @@ msgstr "İşe giriş tarihi"
 #, python-format
 msgid "Judged as %(value)s %(unit)s."
 msgstr "%(value)s %(unit)s olarak değerlendirildi."
+
+msgid ""
+"Judged on the basis the limits were set on alone, which needs no conductivity: the judged value "
+"is at least this; the activity-corrected value is not known."
+msgstr ""
+"Yalnızca sınır değerlerinin konduğu temelde değerlendirildi; bu temel iletkenlik gerektirmez: "
+"değerlendirilen değer en az budur; aktiviteye göre düzeltilmiş değer bilinmiyor."
 
 msgid "Juveniles"
 msgstr "Juvenil"
@@ -8644,6 +8864,14 @@ msgstr "Günlük öğün"
 msgid "Measured"
 msgstr "Ölçülen"
 
+#, python-format
+msgid ""
+"Measured %(value)s on the %(scale)s; put on the NBS scale by formula %(formula)d with the "
+"sample’s %(temperature)s °C and %(salinity)s ‰."
+msgstr ""
+"%(scale)s %(value)s ölçüldü; formül %(formula)d ve numunenin %(temperature)s °C ile %(salinity)s "
+"‰ değerleriyle NBS ölçeğine çevrildi."
+
 msgid "Measured at"
 msgstr "Ölçüm zamanı"
 
@@ -8907,6 +9135,9 @@ msgstr "Belediye"
 msgid "My tasks"
 msgstr "Görevlerim"
 
+msgid "NBS (a meter calibrated with NBS/NIST buffers)"
+msgstr "NBS (NBS/NIST tamponlarıyla kalibre edilmiş ölçer)"
+
 msgid ""
 "NH₃ and NH₄⁺ together, as nitrogen. A kit that reads NH₄⁺: divide by 1.29; one that reads NH₃: "
 "divide by 1.22. The toxic NH₃ is worked out from this, the pH and the temperature of the same "
@@ -8917,6 +9148,20 @@ msgstr ""
 
 msgid "NH₃ and NH₄⁺ together, as nitrogen. The NH₃ limit is drawn from it."
 msgstr "NH₃ ve NH₄⁺ birlikte, azot olarak. NH₃ sınırı buna göre çizilir."
+
+msgid "NH₃ judged on its activity-corrected value, the larger here."
+msgstr "NH₃, burada daha büyük olan aktiviteye göre düzeltilmiş değeriyle değerlendirildi."
+
+#, python-format
+msgid ""
+"NH₃ judged on the basis its limits were set on (to 1 ‰ the ideal water, every activity 1, as "
+"Emerson et al. 1975; from 5 ‰ Khoo et al. 1977’s pKa on the NBS pH, as Bower & Bidwell 1978; "
+"salt-added water: the ideal throughout), the larger; activity-corrected %(value)s mg/L."
+msgstr ""
+"NH₃, sınır değerlerinin konduğu temelde değerlendirildi (1 ‰'ye kadar ideal su, tüm aktiviteler "
+"1, Emerson ve ark. 1975 gibi; 5 ‰'den itibaren NBS pH'ı üzerinde Khoo ve ark. 1977 pKa'sı, Bower "
+"& Bidwell 1978 gibi; tuz eklenmiş suda baştan sona ideal), büyük olan; aktiviteye göre "
+"düzeltilmiş %(value)s mg/L."
 
 msgid "NH₃ share of TAN at the border"
 msgstr "Sınırda TAN içindeki NH₃ payı"
@@ -8937,11 +9182,23 @@ msgstr "NH₃-N"
 msgid "NH₃-N (mg/L)"
 msgstr "NH₃-N (mg/L)"
 
+msgid "NH₃-N activity-corrected (information, not judged)"
+msgstr "NH₃-N aktiviteye göre düzeltilmiş (bilgi, değerlendirmede kullanılmaz)"
+
 msgid "NH₃-N limit"
 msgstr "NH₃-N sınırı"
 
 msgid "NH₃-N limit (mg/L as N)"
 msgstr "NH₃-N sınırı (mg/L N olarak)"
+
+msgid ""
+"NH₃: above 30 °C or a salinity of 35 ‰ the water is outside the range the NH₃ judgement was "
+"checked over (0 to 30 °C, up to 35 ‰); the NH₃ shown may read low against Clegg & Whitfield "
+"(1995), by about 1 % at 35 °C and 6 % at 40 °C in sea water of 35 ‰. Keep a margin to the limit."
+msgstr ""
+"NH₃: 30 °C’nin veya 35 ‰ tuzluluğun üzerinde su, NH₃ değerlendirmesinin denetlendiği aralığın "
+"(0–30 °C, 35 ‰’e kadar) dışındadır; gösterilen NH₃, Clegg & Whitfield (1995)’e göre düşük "
+"okunabilir: 35 ‰ deniz suyunda 35 °C’de yaklaşık % 1, 40 °C’de yaklaşık % 6. Sınıra pay bırakın."
 
 msgid "NH₃: give the TAN."
 msgstr "NH₃: TAN'ı verin."
@@ -8997,6 +9254,13 @@ msgstr ""
 
 msgid "Natural gas"
 msgstr "Doğal gaz"
+
+msgid ""
+"Needed with a pH on another scale than NBS: the conversion takes the temperature and the salinity"
+" of the same sample."
+msgstr ""
+"NBS dışındaki bir ölçekte pH girildiğinde gerekir: çevirme, aynı numunenin sıcaklığını ve "
+"tuzluluğunu kullanır."
 
 msgid "Needed with the oxygen: no fresh salinity here at that time to work the other unit out with."
 msgstr "Oksijenle gerekli: diğer birimi hesaplamak için o zamanda burada güncel tuzluluk yok."
@@ -9818,6 +10082,9 @@ msgstr "Kaydedilmedi"
 msgid "Not reviewed yet. AI agents will act on reviewed entries only."
 msgstr "Henüz incelenmedi. Yapay zekâ ajanları yalnızca incelenmiş kayıtlara göre hareket edecek."
 
+msgid "Not said"
+msgstr "Belirtilmedi"
+
 msgid "Not saved; unverified"
 msgstr "Kaydedilmedi; doğrulanmadı"
 
@@ -10439,6 +10706,21 @@ msgstr "Organizasyon şeması"
 msgid "Origin"
 msgstr "Köken"
 
+msgid ""
+"Orthophosphate. Choose its unit beside it: a kit that reads PO₄³⁻ shows 3.07 times the number as "
+"P (PO₄-P). A PO₄ reading entered as P counts 3.07 times too much phosphate, and every recipe and "
+"dose worked out with it is wrong. Phosphate is part of the alkalinity a titration measures: with "
+"it the calculator and a unit’s chart count its buffer in the DIC, in the water’s own CO₂ and in "
+"what a dose or a stripping does. The judged CO₂ never falls because of it. Empty: not counted, as"
+" before."
+msgstr ""
+"Ortofosfat. Birimini yanından seçin: PO₄³⁻ okuyan bir kit, P (PO₄-P) olarak sayının 3,07 katını "
+"gösterir. P olarak girilen bir PO₄ okuması 3,07 kat fazla fosfat sayar ve onunla hesaplanan her "
+"reçete ve doz yanlış olur. Fosfat, titrasyonun ölçtüğü alkalinitenin bir parçasıdır: girildiğinde"
+" hesaplayıcı ve birimin grafiği onun tamponunu DIC’de, suyun kendi CO₂’sinde ve bir dozun veya "
+"sıyırmanın etkisinde hesaba katar. Değerlendirilen CO₂ bu yüzden asla düşmez. Boş: önceki gibi, "
+"hesaba katılmaz."
+
 msgid "Oslo time, as the authority keeps it."
 msgstr "Oslo saati, kurumun tuttuğu gibi."
 
@@ -10590,6 +10872,9 @@ msgstr "PDF dosyası"
 
 msgid "POST /api/slakt/v1/utfort, or the Altinn form \"Gjennomført slakting av oppdrettsfisk\""
 msgstr "POST /api/slakt/v1/utfort veya Altinn formu \"Gjennomført slakting av oppdrettsfisk\""
+
+msgid "PO₄-P (mg/L)"
+msgstr "PO₄-P (mg/L)"
 
 msgid "PSU is the same number: 0 in fresh water, about 35 in the sea."
 msgstr "PSU aynı sayıdır: tatlı suda 0, denizde yaklaşık 35."
@@ -10765,6 +11050,28 @@ msgstr "Faz"
 
 msgid "Phone"
 msgstr "Telefon"
+
+#, python-format
+msgid ""
+"Phosphate %(value)s is the value loaded from %(point)s: it is as P already (a stored phosphate "
+"always is) and is not converted again. Leave the unit at P, or type the phosphate as it was "
+"reported with its unit."
+msgstr ""
+"Fosfat %(value)s, %(point)s kaynağından yüklenen değerdir: zaten P olarak (saklanan fosfat her "
+"zaman öyledir) ve yeniden dönüştürülmez. Birimi P olarak bırakın veya fosfatı bildirildiği "
+"haliyle, birimiyle birlikte yazın."
+
+msgid "Phosphate (mg/L PO₄ as P)"
+msgstr "Fosfat (mg/L PO₄, P olarak)"
+
+msgid "Phosphate (mg/L, in the unit chosen beside it)"
+msgstr "Fosfat (mg/L, yanında seçilen birimde)"
+
+msgid "Phosphate as entered, in its own unit"
+msgstr "Girildiği haliyle fosfat, kendi biriminde"
+
+msgid "Phosphate unit"
+msgstr "Fosfat birimi"
 
 msgid "Phosphorus (%)"
 msgstr "Fosfor (%)"
@@ -12026,6 +12333,9 @@ msgstr "Nedenini yazın: ayrılan veya değiştirilen bir tank gerekçesiyle kay
 msgid "Scale loss"
 msgstr "Pul kaybı"
 
+msgid "Scale the pH was measured on"
+msgstr "pH’ın ölçüldüğü ölçek"
+
 msgid "Scheduled"
 msgstr "Planlı"
 
@@ -12052,6 +12362,9 @@ msgstr "Deniz sıcaklığı (°C)"
 
 msgid "Sea water"
 msgstr "Deniz suyu"
+
+msgid "Sea water or diluted sea water"
+msgstr "Deniz suyu veya seyreltilmiş deniz suyu"
 
 msgid "Sea-lice count"
 msgstr "Deniz biti sayımı"
@@ -12190,6 +12503,9 @@ msgstr "Birim, parti veya balık türü ara"
 
 msgid "Search vector"
 msgstr "Arama vektörü"
+
+msgid "Seawater scale (SWS)"
+msgstr "Deniz suyu ölçeği (SWS)"
 
 msgid "Seaweed"
 msgstr "Deniz yosunu"
@@ -12757,6 +13073,15 @@ msgstr "Balık türleri ve balık ağırlıkları yem oluşturulduktan sonra ekl
 
 msgid "Species it takes"
 msgstr "Aldığı türler"
+
+msgid ""
+"Specific conductance: the meter’s reading compensated to 25 °C (the meter’s temperature "
+"compensation on, referred to 25 °C, not 20 °C). A reading at the water’s own temperature is not "
+"this value. In fresh water the ionic strength is taken from it (Russell 1976)."
+msgstr ""
+"Özgül iletkenlik: ölçerin 25 °C'ye telafi edilmiş okuması (ölçerin sıcaklık telafisi açık, "
+"referans 25 °C, 20 °C değil). Suyun kendi sıcaklığındaki okuma bu değer değildir. Tatlı suda "
+"iyonik şiddet bundan alınır (Russell 1976)."
 
 msgid "Specific feeding rate: the share of the body weight fed a day"
 msgstr "Spesifik yemleme oranı: günde verilen yemin vücut ağırlığına oranı"
@@ -14539,6 +14864,31 @@ msgstr "Tuzluluk: %(source)s."
 msgid "The salinity is fresh water’s."
 msgstr "Tuzluluk tatlı suyunkidir."
 
+msgid ""
+"The scale the pH above was measured on. Other than NBS: for sea water of 5 ‰ or more; the chart "
+"and every value are then worked out and drawn on the NBS scale. The target pH and the pH limits "
+"are NBS."
+msgstr ""
+"Yukarıdaki pH’ın ölçüldüğü ölçek. NBS dışında: 5 ‰ ve üzeri deniz suyu için; grafik ve bütün "
+"değerler o zaman NBS ölçeğinde hesaplanıp çizilir. Hedef pH ve pH sınırları NBS’tir."
+
+msgid ""
+"The scale the pH was measured on. Other than NBS (a seawater sensor calibrated with TRIS reads on"
+" the total scale): for sea water of 5 ‰ or more, with the temperature and the salinity of the "
+"same sample. The pH is then stored and shown on the NBS scale, with what was measured beside it."
+msgstr ""
+"pH’ın ölçüldüğü ölçek. NBS dışında (TRIS ile kalibre edilmiş bir deniz suyu sensörü toplam "
+"ölçekte okur): 5 ‰ ve üzeri deniz suyu için, aynı numunenin sıcaklığı ve tuzluluğuyla birlikte. "
+"pH o zaman NBS ölçeğinde saklanır ve gösterilir; ölçülen değer yanında durur."
+
+msgid ""
+"The scale the round’s pHs were measured on. Other than NBS: for sea water of 5 ‰ or more, each "
+"row with its own temperature and salinity; the pH is stored and shown on the NBS scale, with what"
+" was measured beside it."
+msgstr ""
+"Turdaki pH’ların ölçüldüğü ölçek. NBS dışında: 5 ‰ ve üzeri deniz suyu için, her satır kendi "
+"sıcaklığı ve tuzluluğuyla; pH NBS ölçeğinde saklanır ve gösterilir, ölçülen değer yanında durur."
+
 #, python-format
 msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."
 msgstr "%(unit)s birimindeki %(date)s tarihli deniz biti sayımının balığı kalmaz: önce onu iptal edin."
@@ -14881,6 +15231,20 @@ msgstr "Birim çarpanı, 0 dışında bir sayıdır."
 
 msgid "The unit the instrument sends, when it differs from the quantity’s."
 msgstr "Parametreninkinden farklıysa cihazın gönderdiği birim."
+
+msgid ""
+"The unit the phosphate above is in. As PO₄ the number is 3.07 times the number as P: everything "
+"is worked out with it as P, and every dose says the phosphate it was worked out with."
+msgstr ""
+"Yukarıdaki fosfatın birimi. PO₄ olarak sayı, P olarak sayının 3,07 katıdır: her şey P olarak "
+"hesaplanır ve her doz hangi fosfatla hesaplandığını söyler."
+
+msgid ""
+"The unit the round’s phosphates are in. As PO₄ the number is 3.07 times the number as P: each is "
+"put on P when stored, with what was entered kept beside it."
+msgstr ""
+"Turdaki fosfatların birimi. PO₄ olarak sayı, P olarak sayının 3,07 katıdır: her biri saklanırken "
+"P’ye çevrilir, girilen değer yanında tutulur."
 
 msgid "The unit was removed"
 msgstr "Ünite kaldırıldı"
@@ -15636,6 +16000,12 @@ msgstr "Toplam alan (m²)"
 msgid "Total gas pressure (% of barometric pressure)"
 msgstr "Toplam gaz basıncı (barometrik basıncın %'si)"
 
+msgid "Total hardness (mg/L as CaCO₃)"
+msgstr "Toplam sertlik (mg/L CaCO₃ olarak)"
+
+msgid "Total scale (calibrated with TRIS)"
+msgstr "Toplam ölçek (TRIS ile kalibre)"
+
 msgid "Total sulfide (µg/L as S)"
 msgstr "Toplam sülfür (µg/L S olarak)"
 
@@ -15825,6 +16195,9 @@ msgstr "Düzeylerinin birimi"
 
 msgid "Unit offset"
 msgstr "Birim ofseti"
+
+msgid "Unit the phosphate was entered in"
+msgstr "Fosfatın girildiği birim"
 
 msgid "Unit, system or equipment"
 msgstr "Birim, sistem veya ekipman"
@@ -16121,6 +16494,9 @@ msgstr "Su limiti"
 msgid "Water limits"
 msgstr "Su sınırları"
 
+msgid "Water origin"
+msgstr "Su kökeni"
+
 msgid "Water points with a warning"
 msgstr "Uyarı veren numune noktaları"
 
@@ -16317,6 +16693,15 @@ msgstr ""
 "Veri alım servisinin her sensör kanalı hakkında hatırladıkları: son değeri, ölü bandın ölçüldüğü "
 "son saklanan değer ve o zamandan beri saklanmayan değerler."
 
+msgid ""
+"What the kit or the laboratory reports. As PO₄ the number is 3.07 times the number as P: it is "
+"put on P when stored, with what was entered kept beside it. The wrong unit is a 3.07-fold error "
+"in every dose worked out with the phosphate."
+msgstr ""
+"Kitin veya laboratuvarın bildirdiği birim. PO₄ olarak sayı, P olarak sayının 3,07 katıdır: "
+"saklanırken P’ye çevrilir, girilen değer yanında tutulur. Yanlış birim, fosfatla hesaplanan her "
+"dozda 3,07 katlık bir hatadır."
+
 msgid "What the person can open and change. Without a role they see only the overview."
 msgstr "Kişinin neleri açıp değiştirebileceği. Rolü yoksa yalnızca genel bakışı görür."
 
@@ -16462,6 +16847,15 @@ msgstr "İşin yapıldığı yer: bütün bir saha, bir üretim departmanı, bir
 
 msgid "Where the knowledge comes from: every entry has exactly one source."
 msgstr "Bilginin geldiği yer: her kaydın tam olarak bir kaynağı vardır."
+
+msgid ""
+"Where the salt in its water comes from. Fresh water with salt added (NaCl, for smolt or against "
+"disease) is worked out without sea water’s ions; not said, a salinity of 1 to 5 ‰ is taken as "
+"diluted sea water."
+msgstr ""
+"Sudaki tuzun nereden geldiği. Tuz (NaCl) eklenmiş tatlı su (smolt için veya hastalığa karşı) "
+"deniz suyunun iyonları olmadan hesaplanır; belirtilmezse 1–5 ‰ tuzluluk seyreltilmiş deniz suyu "
+"sayılır."
 
 msgid "Where the value comes from, e.g. “the vet, November 2026”."
 msgstr "Değerin kaynağı, örn. “veteriner, Kasım 2026”."
@@ -16698,6 +17092,12 @@ msgstr ""
 msgid "Worked out from the values"
 msgstr "Değerlerden hesaplanan"
 
+#, python-format
+msgid "Worked out with phosphate %(p)s mg/L as P (%(po4)s as PO₄): a wrong phosphate changes this dose."
+msgstr ""
+"Fosfat %(p)s mg/L P olarak (%(po4)s PO₄ olarak) alınarak hesaplandı: yanlış bir fosfat bu dozu "
+"değiştirir."
+
 msgid "Working"
 msgstr "Çalışan"
 
@@ -16882,6 +17282,9 @@ msgstr "salmonid bulunan bir deniz lokasyonu (yükümlülük balığı izler, ü
 msgid "a site with cleaner-fish broodstock"
 msgstr "temizleyici balık damızlığı olan bir lokasyon"
 
+msgid "a unit or a loop"
+msgstr "bir birim veya döngü"
+
 msgid "activity log"
 msgstr "etkinlik günlüğü"
 
@@ -16974,6 +17377,15 @@ msgstr "ve %(count)s tane daha: tüm raporlar"
 msgid "and %(kilos)s to the cleaner fish"
 msgstr "ve temizleyici balığa %(kilos)s"
 
+msgid "as P (PO₄-P): mg/L of phosphorus"
+msgstr "P olarak (PO₄-P): mg/L fosfor"
+
+msgid "as PO₄ (mg/L of phosphate)"
+msgstr "PO₄ olarak (mg/L fosfat)"
+
+msgid "as PO₄: mg/L of phosphate"
+msgstr "PO₄ olarak: mg/L fosfat"
+
 msgid "as for food fish"
 msgstr "besi balığı gibi"
 
@@ -16994,8 +17406,21 @@ msgid "at %(point)s"
 msgstr "%(point)s noktasında"
 
 #, python-format
+msgid "at least %(value)s"
+msgstr "en az %(value)s"
+
+#, python-format
 msgid "at least every %(seconds)s s"
 msgstr "en az %(seconds)s sn’de bir"
+
+msgid "at least that of the alkalinity"
+msgstr "en az alkalinitenin verdiği"
+
+msgid "at least that of the hardness and the alkalinity"
+msgstr "en az sertlik ve alkalinitenin verdiği"
+
+msgid "at least: the limits’ basis"
+msgstr "en az: sınır değerlerinin temeli"
 
 msgid "at once"
 msgstr "derhal"
@@ -17519,6 +17944,10 @@ msgstr "sonu bilinmiyor"
 msgid "ended"
 msgstr "sona erdi"
 
+#, python-format
+msgid "entered as %(value)s mg/L PO₄"
+msgstr "%(value)s mg/L PO₄ olarak girildi"
+
 msgid "equals"
 msgstr "eşittir"
 
@@ -17664,6 +18093,9 @@ msgstr "bu sayfada değiştirildi"
 msgid "found %(time)s"
 msgstr "saat %(time)s’te bulundu"
 
+msgid "free scale"
+msgstr "serbest ölçekte"
+
 msgid "fresh water"
 msgstr "tatlı su"
 
@@ -17685,6 +18117,12 @@ msgstr "%(start)s – %(end)s"
 #, python-format
 msgid "from %(weight)s g"
 msgstr "%(weight)s g ve üstü"
+
+msgid "from the conductivity at 25 °C"
+msgstr "25 °C'deki iletkenlikten"
+
+msgid "from the salinity"
+msgstr "tuzluluktan"
 
 msgid "g"
 msgstr "g"
@@ -17817,6 +18255,10 @@ msgstr "bilgi kaydı"
 msgid "lab"
 msgstr "laboratuvar"
 
+#, python-format
+msgid "last own value %(value)s %(status)s on %(time)s, no recent data: measure this unit"
+msgstr "son kendi değeri %(value)s %(status)s (%(time)s), yeni veri yok: bu birimi ölçün"
+
 msgid "leave outside these days"
 msgstr "bu günlerin dışında izin"
 
@@ -17864,6 +18306,10 @@ msgstr "gizli"
 
 msgid "meals done"
 msgstr "öğünler tamamlandı"
+
+#, python-format
+msgid "measured %(value)s on the %(scale)s"
+msgstr "%(scale)s %(value)s ölçüldü"
 
 msgid "medicine"
 msgstr "ilaç"
@@ -18010,6 +18456,9 @@ msgstr "yok"
 msgid "none fresh now: enter it"
 msgstr "şu an güncel değer yok: girin"
 
+msgid "none measured, taken as 0 (the safe side)"
+msgstr "hiçbir şey ölçülmemiş, 0 alındı (ihtiyatlı taraf)"
+
 msgid "not enforced by the database"
 msgstr "veritabanı tarafından zorunlu kılınmıyor"
 
@@ -18052,6 +18501,9 @@ msgid "of %(total)s unit"
 msgid_plural "of %(total)s units"
 msgstr[0] "%(total)s birimden"
 msgstr[1] "%(total)s birimden"
+
+msgid "of sea water of this salinity"
+msgstr "bu tuzluluktaki deniz suyununki"
 
 msgid "off"
 msgstr "izinli"
@@ -18105,11 +18557,32 @@ msgstr "s. %(page)s"
 msgid "pH"
 msgstr "pH"
 
+#, python-format
+msgid ""
+"pH %(given)s on the %(scale)s is %(nbs)s on the NBS scale (formula %(formula)s): every value and "
+"the chart are worked out and drawn on the NBS scale."
+msgstr ""
+"pH %(scale)s %(given)s, NBS ölçeğinde %(nbs)s (formül %(formula)s): bütün değerler ve grafik NBS "
+"ölçeğinde hesaplanıp çizilir."
+
+#, python-format
+msgid ""
+"pH %(ph)s is the value loaded from %(point)s: it is on the NBS scale already (a stored pH always "
+"is) and is not converted again. Leave the scale at NBS, or type the pH as it was measured with "
+"its scale."
+msgstr ""
+"pH %(ph)s, %(point)s kaynağından yüklenen değerdir: zaten NBS ölçeğinde (saklanan pH her zaman "
+"öyledir) ve yeniden dönüştürülmez. Ölçeği NBS olarak bırakın veya pH’ı ölçüldüğü haliyle, "
+"ölçeğiyle birlikte yazın."
+
 msgid "pH (NBS scale)"
 msgstr "pH (NBS ölçeği)"
 
 msgid "pH (NBS)"
 msgstr "pH (NBS)"
+
+msgid "pH as measured, on its own scale"
+msgstr "Ölçüldüğü hâliyle pH, kendi ölçeğinde"
 
 msgid "pH border, toxic above"
 msgstr "pH sınırı, üstünde toksik"
@@ -18122,6 +18595,9 @@ msgstr "pH eş çizgileri"
 
 msgid "pH margin to the border"
 msgstr "Sınıra pH payı"
+
+msgid "pH scale"
+msgstr "pH ölçeği"
 
 msgid "pH sensor"
 msgstr "pH sensörü"
@@ -18288,6 +18764,9 @@ msgstr "deniz biti sayımı"
 
 msgid "sea-lice counts"
 msgstr "deniz biti sayımları"
+
+msgid "seawater scale (SWS)"
+msgstr "deniz suyu ölçeğinde (SWS)"
 
 msgid "seconds"
 msgstr "saniye"
@@ -18484,6 +18963,9 @@ msgstr "%(unit)s birimine"
 #, python-format
 msgid "to the cleaner fish %(kilos)s"
 msgstr "temizleyici balığa %(kilos)s"
+
+msgid "total scale"
+msgstr "toplam ölçekte"
 
 #, python-format
 msgid "total sulfide %(value)s µg/L as S"

@@ -247,7 +247,10 @@ def chart_links(tally, ours, theirs):
         tally.add('chart.isoline_start', 'chart_point', intercept, at_zero, case)
         tally.add('chart.isoline_end', 'chart_point', slope * dic_end + intercept, at_end, case)
     from farm.water import deffeyes as d
-    analysis = d.analyse(d.Water(**water), d.Limits(**limits), d.Target(**ours['target']) if ours['target'] else None)
+    # By formula 1, as everything here (golden v1's records, `eq`): the comparison with the source is formula 1's, and
+    # its edge cases hold waters below their alkalinity floor, which formula 3 refuses (ImpossibleWaterError).
+    analysis = d.analyse(d.Water(**{**water, 'formula': 1}), d.Limits(**limits),
+                         d.Target(**ours['target']) if ours['target'] else None)
     tally.add('chart.safe_zone_drawn', 'exact', bool(d.safe_zone(analysis, d.box_of(analysis))),
               theirs['safe_zone'] is not None, case, extra=theirs['safe_zone'])
     if theirs['safe_zone'] and a['nh3']['ph'] is not None:

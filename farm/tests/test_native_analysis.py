@@ -32,8 +32,8 @@ def parity():
 
 def analyse(record):
     target = record['target'] or {}
-    result = native.analyse(**record['water'], **record['limits'], target_ph=target.get('ph'),
-                            target_alkalinity_mg_l=target.get('alkalinity_mg_l'), pressure=record['pressure'])
+    result = native.analyse(**record['water'], **record['limits'], target_ph=target.get('ph'),   # golden v1: formula 1
+                            target_alkalinity_mg_l=target.get('alkalinity_mg_l'), pressure=record['pressure'], formula=1)
     del result['equilibria']
     return result
 
@@ -53,7 +53,7 @@ class AnalysisParityTests(SimpleTestCase):
         self.assertEqual(found[:5], [])
 
     def test_the_analysis_carries_the_waters_equilibria(self):
-        result = native.analyse(12.0, 1.0, 7.0, 80.0)
+        result = native.analyse(12.0, 1.0, 7.0, 80.0, formula=1)
         self.assertEqual(result['equilibria'], native.equilibria(12.0, 1.0))
         self.assertEqual((result['nh3']['status'], result['co2']['status'], result['h2s']['status']),
                          ('not_measured', 'no_limit', 'not_measured'))
@@ -66,9 +66,9 @@ class FloorAndBoxTests(SimpleTestCase):
             if edge['kind'] != 'floor':
                 continue
             args = (edge['temp_c'], edge['salinity'], edge['ph'])
-            floor = native.alkalinity_floor(*args)
+            floor = native.alkalinity_floor(*args, formula=1)
             self.assertLessEqual(abs(floor - edge['floor']), 1e-12 + 1e-12 * abs(floor))
-            impossible = native.why_impossible(*args, edge['alkalinity_mg_l'])
+            impossible = native.why_impossible(*args, edge['alkalinity_mg_l'], formula=1)
             if abs(edge['alkalinity_mg_l'] - edge['floor']) <= 1e-12 + 1e-12 * abs(edge['floor']):
                 # A tie: an alkalinity on the floor or one ulp beside it. Two libms put the floor a last bit apart,
                 # so the decision there may flip; such cases are listed, never hidden.

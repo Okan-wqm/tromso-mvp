@@ -55,5 +55,6 @@ fn the_hash_is_sixteen_lower_hex_digits() {
 #[test]
 fn versions_are_stated() {
     assert_eq!(chemcore_core::VERSION, env!("CARGO_PKG_VERSION"));
-    assert_eq!(chemcore_core::FORMULA_VERSION, 1);
+    assert_eq!(chemcore_core::FORMULA_VERSION, 3);
+    assert_eq!(chemcore_core::FORMULAS, [1, 3]);
 }

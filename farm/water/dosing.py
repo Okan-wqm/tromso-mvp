@@ -119,7 +119,7 @@ def at_target(start, end):
 
 def recipes(start, end, chosen, volume=None, air=None):
     """The recipes from the water to the target with the chosen reagents (keys), practical ones first, at most
-    MAX_RECIPES; none when the water is at the target. `air`: (temperature, salinity, the air's CO₂ in mg/L) to flag
+    MAX_RECIPES; none when the water is at the target. `air`: (the water's Equilibria, the air's CO₂ in mg/L) to flag
     a recipe whose stripping would end below the air's CO₂ whichever of its doses goes first."""
     return [Recipe([Dose(BY_KEY[key], concentration, grams, delta_dic, delta_alkalinity)
                     for key, concentration, grams, delta_dic, delta_alkalinity in made['doses']],
@@ -163,9 +163,10 @@ class Step:
 
 def simulate(eq, start, ph, amounts, volume, air_co2_mg_l=None):
     """The water after each amount (grams by reagent key) added in turn to `volume` m³, in REAGENTS' order (the
-    source's), from `start` (DIC, alkalinity) at `ph`; a stripping step that takes the CO₂ below `air_co2_mg_l` is
-    flagged; [] without an amount (the core's)."""
+    source's), from `start` (DIC, alkalinity) at `ph`, with the water's equilibria `eq` throughout (its ionic strength
+    is the water's before the doses: a dose's own ions are not added to it); a stripping step that takes the CO₂ below
+    `air_co2_mg_l` is flagged; [] without an amount (the core's)."""
     return [Step(None if key is None else BY_KEY[key], *rest)
-            for key, *rest in native.simulate(eq.temp_c, eq.salinity, tuple(start), ph,
+            for key, *rest in native.simulate(eq, tuple(start), ph,
                                               [(key, grams) for key, grams in amounts.items() if grams is not None],
                                               volume, air_co2_mg_l)]

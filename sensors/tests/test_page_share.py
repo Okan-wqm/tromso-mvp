@@ -25,7 +25,10 @@ class InvarianceTests(SimpleTestCase):
         without TAN, sulfide, calcium, limits and a target, drawn in one page box: the same diagram but the point."""
         rng = random.Random(20261108)
         for _case in range(300):
+            # A conductivity at 25 °C above what the alkalinity's ions need, so the ionic strength (formula 3) is the
+            # same for both: the diagram reads the alkalinity only through the equilibria (page_figures keys on them).
             common = dict(temperature_c=rng.uniform(0, 35), salinity_ppt=rng.choice([0.0, 0.2, rng.uniform(0, 45)]),
+                          conductivity_25_us_cm=rng.uniform(600, 3000),
                           tan_mg_l=rng.choice([None, rng.uniform(0.01, 8)]),
                           total_sulfide_ug_l=rng.choice([None, rng.uniform(0.1, 400)]),
                           calcium_mg_l=rng.choice([None, rng.uniform(5, 500)]))

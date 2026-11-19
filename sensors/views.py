@@ -195,7 +195,8 @@ def live(request):
 @permission_required((READ, 'farm.view_watermeasurement'), raise_exception=True)
 def trail_points(request):
     """The trail of a unit's or a system's water on the Deffeyes diagram over a preset time (A4), hour by hour, as JSON
-    for the card designer's chart: the hours drawn and the hours without every input. It joins the sensors and the water
+    for the card designer's chart: the hours drawn, the hours without every input, the hours whose pH and alkalinity
+    cannot go together and the hours whose water the core refuses, each with its reason (never drawn). It joins the sensors and the water
     samples, so it needs the right to read both."""
     target = place_of(request.GET.get('target'))
     if not isinstance(target, (Tank, System)):
@@ -207,7 +208,9 @@ def trail_points(request):
         'points': [{'at': point.at.isoformat(), 'temperature_c': point.temperature_c, 'ph': point.ph,
                     'alkalinity_mg_l': point.alkalinity_mg_l, 'salinity_ppt': point.salinity_ppt, 'dic': point.dic,
                     'alkalinity_meq': point.alkalinity_meq} for point in found.points],
-        'missing': [moment.isoformat() for moment in found.missing]})
+        'missing': [moment.isoformat() for moment in found.missing],
+        'impossible': [moment.isoformat() for moment in found.impossible],
+        'unworkable': [{'at': moment.isoformat(), 'why': why} for moment, why in found.unworkable]})
 
 
 # ---- moving a whole device (a portable probe) ------------------------------------------------------------------

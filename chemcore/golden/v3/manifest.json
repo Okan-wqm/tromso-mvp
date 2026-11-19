@@ -1,19 +1,34 @@
 {
   "beside": "v1",
   "blocks": {
+    "analyses": {
+      "bytes": 116955,
+      "records": 1980,
+      "sha256": "d08a9fae7e6305b0ab3df70d9976f54845771370850b0af202a8412fd402074d"
+    },
+    "phosphate": {
+      "bytes": 45469,
+      "records": 180,
+      "sha256": "1d82a4dd95fb1d10b07a5c09908e952d9e306577049e7d3a110a8b1946d62acc"
+    },
+    "scales": {
+      "bytes": 1800,
+      "records": 24,
+      "sha256": "f46bdce5fcc21cd33470c6123b9d3a0f2f92f9de66c3ed01c7257ebd2d402f29"
+    },
     "waters": {
-      "bytes": 81982,
-      "records": 882,
-      "sha256": "e1e6a1a1fef8cda90e23bf9e6a9c1a16940be014a392c9d27b8918e0d9e1c509"
+      "bytes": 359278,
+      "records": 1980,
+      "sha256": "72c3ed35f8f7566b439981222b6d3e8c610babdc8e6218d40715e3c1702eb555"
     }
   },
   "core": {
-    "core_hash": "e9092a315d7cdbfb",
-    "formula_version": 1,
+    "core_hash": "6c5b702dea46c018",
+    "formula_version": 3,
     "version": "0.1.0"
   },
-  "format": 1,
+  "format": 4,
   "golden_version": "v3",
-  "recorder_sha256": "c01215fc1017c0a837e3bc95b974fdf78d4ac11bd309b423198e2f44f13648f6",
-  "what": "I2: fresh water ionic strength (conductivity, hardness and alkalinity, salinity, alkalinity) with Davies activities below a salinity of 5; v1 from 5 on. Not used by the application."
+  "recorder_sha256": "8d7c24a1201da8f8e42340fcbba4fdc7c4e4370b2494e12735f9e8728f541c06",
+  "what": "Formula 3 (the application\u2019s): I1, the Debye-H\u00fcckel A of the temperature; I2, fresh water ionic strength (the conductivity at 25 \u00b0C or the salinity, not below the hardness and alkalinity or the alkalinity) with Davies activities up to 1 permil, the seawater constants from 5, blended between. Beside formula 1 (golden v1)."
 }

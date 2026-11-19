@@ -94,3 +94,21 @@ class ReportsTruthTests(OverviewTestCase):
         card = card_of(html, 'reports-due')
         self.assertIn('1 due at once', card)
         self.assertNotIn('None overdue', card)
+
+
+class RefusedWaterTests(OverviewTestCase):
+    """A stocked unit whose judged NH₃ the core refuses to work out needs attention, with the reason (verification
+    V-A): it was "Nothing needs attention" while the same water without its conductivity was 36 times the limit."""
+
+    def test_a_unit_whose_nh3_cannot_be_evaluated_needs_attention(self):
+        self.stock(self.t2)
+        self.limit('nh3_n_mg_l', critical_high='0.025', warning_high='0.0125')
+        self.sample(self.t2, ph='9.00', temperature_c='12.0', salinity_ppt='0.0', alkalinity_mg_l='80',
+                    tan_mg_l='5.000', conductivity_25_us_cm='40000')
+        html = self.page()
+        attention = section(html, 'Needs attention')
+        self.assertNotIn('Nothing needs attention', html)
+        self.assertIn('data-attention="unevaluated"', attention)
+        self.assertIn('T-02', attention)
+        self.assertIn('Un-ionised ammonia (mg/L NH₃ as N) cannot be evaluated: ionic strength above 0.5', attention)
+        self.assertIn(reverse('farm:water'), attention)

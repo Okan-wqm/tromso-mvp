@@ -208,6 +208,9 @@ NOT_INPUT_COLUMNS = {
     ('tanks', 'status'): 'not read: the fish in a unit are its stock lines',
     ('tanks', 'kind'): 'the kind of unit, not its water',
     ('tanks', 'water_type'): 'the salinity assumed where none was measured, never the temperature',
+    ('tanks', 'water_origin'): 'where the unit\'s salt comes from: it chooses the constants a sample\'s NH₃ is worked '
+                               'out with (formula 3; farm.water.read common_origin), never a temperature or its '
+                               'degree-days',
     ('tanks', 'volume_m3'): 'a measure', ('tanks', 'water_volume_m3'): 'a measure',
     ('tanks', 'max_biomass_kg'): 'a capacity',
     ('tanks', 'production_department_id'): 'gives the site\'s clock; a unit with stock records stays on its site '

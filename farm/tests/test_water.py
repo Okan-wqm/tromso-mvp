@@ -539,7 +539,7 @@ class DerivedTests(WaterTestCase):
         self.assertEqual(self.reading('nh3_n_mg_l').note,
                          'Needs the salinity: none was measured here in the 7 days before.')
         self.sample(hours=24 * 5, salinity_ppt='35')
-        expected = (D(1) * D(chemistry.nh3_fraction(8, 10, 35))).quantize(D('0.0001'))
+        expected = (D(1) * D(chemistry.water_equilibria(10, 35).nh3_share(8))).quantize(D('0.0001'))
         self.assertEqual(self.reading('nh3_n_mg_l').value, expected)
 
     def test_oxygen_saturation_from_mg_l_at_the_sites_altitude_and_the_other_way_round(self):

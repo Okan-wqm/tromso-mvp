@@ -22,7 +22,7 @@ from core.models import Profile
 
 from ..forms.water import CalculatorForm
 from ..models import ProductionDepartment, SamplingPoint, Site, System, Tank, WaterLimit, WaterMeasurement
-from ..water import calculation, charts, chemistry, deffeyes, dosing, parameters, services
+from ..water import calculation, charts, chemistry, deffeyes, dosing, native, parameters, services
 from ..water.deffeyes import Limits, Target, Water, analyse
 from ..water.evaluate import Status
 from .helpers import make_species, point_of, role, stock_fish
@@ -165,7 +165,7 @@ class ReagentTests(SimpleTestCase):
         def co2(point):
             return eq.co2(point[0], eq.ph_at(*point)) * chemistry.MG_CO2_PER_MMOL
 
-        below_air = (12, 1, air)            # the water's temperature and salinity, the air's CO₂: the core judges
+        below_air = (eq, air)               # the water's equilibria, the air's CO₂: the core judges
 
         # Stripping and acid to DIC 1.55, alkalinity 1.40: stripping first ends at 0.34 mg/L, acid first and
         # stripping last at the target's 6.7: it can be done.
@@ -331,7 +331,7 @@ class SimulatorTests(SimpleTestCase):
         self.assertEqual(result.change['ph'], acid.step.ph - water.step.ph)
 
     def test_a_dose_that_only_moves_the_ph_is_judged(self):
-        # 120 g NaOH in 1 m³ reaches pH 11.25 with no TAN, no sulfide and CO₂ well inside its limit: nothing but
+        # 120 g NaOH in 1 m³ reaches pH 11.30 (formula 3; 11.25 by formula 1) with no TAN, no sulfide and CO₂ well inside its limit: nothing but
         # its pH says so (the verifier's case; the source marked a pH outside 6.5 to 8.5 red, OnDemandPanel.tsx).
         bounds = calculation.PhBounds(6.5, 7.0, 8.0, 8.5)
         for grams, expected in ((12, Status.OK), (15, Status.WARNING), (17, Status.CRITICAL), (120, Status.CRITICAL)):
@@ -341,7 +341,7 @@ class SimulatorTests(SimpleTestCase):
             judged = result.steps[-1]
             with self.subTest(grams=grams):
                 self.assertEqual(judged.ph_status, expected)
-        self.assertAlmostEqual(judged.step.ph, 11.25, delta=0.01)
+        self.assertAlmostEqual(judged.step.ph, 11.30, delta=0.01)
         self.assertEqual(judged.co2.status, Status.OK)
         self.assertEqual((judged.nh3.status, judged.h2s.status), (Status.NOT_MEASURED, Status.NOT_MEASURED))
         # Without bounds a step is not judged, never taken for ok.
@@ -584,6 +584,30 @@ class CalculatorPageTests(TestCase):
         self.assertIn('ph', page.context['form'].errors)
         self.assertIsNone(page.context['chart'])
 
+    def test_a_water_that_cannot_be_comes_back_with_its_reason_on_every_page(self):
+        """The core refuses a pH and an alkalinity no water has (native.ImpossibleWaterError); the form refuses them
+        first, by the same rule, so the page, its live parts and the report say why and never fail."""
+        odd = self.query(temperature_c='10', salinity_ppt='0.2', ph='11', alkalinity_mg_l='3')
+        with self.assertRaises(native.ImpossibleWaterError):
+            deffeyes.analyse(Water(10.0, 0.2, 11.0, 3.0))
+        for url in (self.url, self.results_url, self.report_url):
+            with self.subTest(url=url):
+                response = self.client.get(url, odd)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn('alkalinity_mg_l', response.context['form'].errors)
+                self.assertContains(response, 'At this pH the alkalinity is above')
+                self.assertIsNone(response.context['result'])
+        # The target likewise, on its own field.
+        target = self.query(target_ph='11.5', target_alkalinity_mg_l='20')
+        with self.assertRaises(native.ImpossibleWaterError):
+            deffeyes.analyse(Water(12.0, 1.0, 7.0, 80.0), target=Target(11.5, 20.0))
+        for url in (self.url, self.results_url, self.report_url):
+            with self.subTest(url=url, target=True):
+                response = self.client.get(url, target)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn('target_alkalinity_mg_l', response.context['form'].errors)
+                self.assertContains(response, 'At this pH the alkalinity is above')
+
     def test_the_recipes_and_the_dosing_layer(self):
         response = self.client.get(self.results_url, self.query())
         recipes = response.context['result'].recipes
@@ -606,15 +630,15 @@ class CalculatorPageTests(TestCase):
 
     def test_the_simulator_marks_a_ph_no_fish_lives_in(self):
         html = self.client.get(self.results_url, self.query(dose_naoh='120')).content.decode()
-        self.assertRegex(html, r'<td class="num wq-value wq-critical">11\.25<span class="sr-only"> \(Critical\)')
+        self.assertRegex(html, r'<td class="num wq-value wq-critical">11\.30<span class="sr-only"> \(Critical\)')
         self.assertRegex(html, r'<td class="num wq-value wq-ok">7\.00<span')                  # the water itself
         warning = self.client.get(self.results_url, self.query(dose_naoh='15')).content.decode()
-        self.assertRegex(warning, r'<td class="num wq-value wq-warning">8\.17<span')
+        self.assertRegex(warning, r'<td class="num wq-value wq-warning">8\.19<span')        # formula 3 (8.17 by 1)
         # The bounds are the form's: with no bound given the step is not judged.
         cleared = self.query(dose_naoh='120', ph_critical_low='', ph_warning_low='', ph_warning_high='',
                              ph_critical_high='')
         self.assertRegex(self.client.get(self.results_url, cleared).content.decode(),
-                         r'<td class="num wq-value wq-no_limit">11\.25<span')
+                         r'<td class="num wq-value wq-no_limit">11\.30<span')
 
     def test_the_ph_bounds_go_up(self):
         response = self.client.get(self.results_url, self.query(ph_critical_low='7', ph_warning_low='6'))
@@ -664,8 +688,8 @@ class CalculatorPageTests(TestCase):
 
     def test_it_speaks_each_language(self):
         for language, words in {
-            'tr': ('%100', '1,982 mmol/L', 'pH 7,0'),
-            'nb': ('100 %', '1,982 mmol/L', 'pH 7,0'),
+            'tr': ('%100', '1,987 mmol/L', 'pH 7,0'),
+            'nb': ('100 %', '1,987 mmol/L', 'pH 7,0'),
         }.items():
             Profile.objects.update_or_create(user=self.user, defaults={'language': language})
             for url in (self.url, self.results_url, self.report_url):
@@ -740,7 +764,10 @@ class ValuesFromAUnitTests(UnitWaterCase):
         self.assertContains(response, 'its fish have no such bound')
         bounds = response.context['result'] and response.context['form'].inputs()['ph_bounds']
         self.assertEqual(bounds, calculation.PhBounds(6.8, 7.0, None, 8.2))
-        self.assertEqual(source['missing'], ['Dissolved oxygen (mg/L O₂)'])
+        self.assertEqual(source['missing'], ['Dissolved oxygen (mg/L O₂)',
+                                             'Conductivity at 25 °C (µS/cm, temperature-compensated)',
+                                             'Total hardness (mg/L as CaCO₃)',
+                                             'Phosphate (mg/L, in the unit chosen beside it)'])
         self.assertContains(response, 'The latest values of T-01')
         self.assertContains(response, 'Atlantic salmon: warning above 0.0100, critical above 0.0200')
         self.assertEqual(response.context['analysis'].water.ph, 7.12)
@@ -912,6 +939,14 @@ class UnitChartTests(UnitWaterCase):
         self.assertEqual(refused.impossible, deffeyes.why_impossible(10, 0.2, 11, 3))
         self.assertFalse(deffeyes.possible(10, 0.2, 11, 3))
         self.assertTrue(deffeyes.possible(10, 0.2, 7.2, 90))
+        # The core itself refuses that water (the correction of 2026-11-10): the chart's refusal comes first, by the
+        # same rule, and the window says the reason.
+        with self.assertRaises(native.ImpossibleWaterError):
+            deffeyes.analyse(Water(10.0, 0.2, 11.0, 3.0))
+        page = self.client.get(reverse('farm:water_unit_chart', args=[odd.pk]))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'At this pH the alkalinity is above')
+        self.assertNotContains(page, '<svg')
 
     def test_the_loops_temperature_stands_in_when_the_unit_has_none_of_its_own(self):
         """Owner rule A9 (2026-11-07) replaces the decision of 2026-11-04 (the chart refused a loop's temperature)."""

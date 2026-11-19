@@ -27,6 +27,31 @@ class Source(models.TextChoices):
     LAB = 'lab', _('Laboratory')
 
 
+class PhScale(models.TextChoices):
+    """The scales a pH may be measured on besides NBS (the core's codes, chemcore/core/src/scale.rs). A sample's `ph` is
+    always on the NBS scale; one measured on another scale is put on it when it is written (farm/water/services.py) and
+    keeps what was measured beside it (`ph_scale`, `ph_as_measured`, `ph_converted_formula`)."""
+    TOTAL = 'total', _('Total scale (calibrated with TRIS)')
+    SWS = 'sws', _('Seawater scale (SWS)')
+    FREE = 'free', _('Free scale')
+
+
+# The least salinity (‰) a pH on another scale than NBS is taken for: sea water, the core's SEA_FROM
+# (farm/tests/test_ph_scale.py holds the two together).
+PH_SCALE_SALINITY = 5
+PH_SCALE_COLUMNS = ['ph_scale', 'ph_as_measured', 'ph_converted_formula']
+
+
+class PhosphateUnit(models.TextChoices):
+    """The units a phosphate may be entered in besides phosphorus (PO₄-P, mg/L as P). A sample's `phosphate_p_mg_l` is
+    always as P; one entered as PO₄ is put on P when it is written (farm/water/services.py, by the molar masses of
+    farm/water/parameters.py) and keeps what was entered beside it (`phosphate_unit`, `phosphate_as_measured`)."""
+    PO4 = parameters.AS_PO4, _('as PO₄ (mg/L of phosphate)')
+
+
+PHOSPHATE_UNIT_COLUMNS = ['phosphate_unit', 'phosphate_as_measured']
+
+
 # The samples of live points of live owners. A deleted unit, system or piece of equipment keeps its points, and
 # a point its samples, out of sight, and they come back with the owner when it is restored (core.softdelete:
 # the links keep them, DO_NOTHING).
@@ -59,6 +84,27 @@ def _sample_checks():
             condition=Q(**{f'{column}__isnull': True}) | Q(**{f'{column}__gte': parameter.low,
                                                               f'{column}__lte': parameter.high}),
             name=f'chk_water_measurements_{column}'))
+    ph = parameters.get('ph')
+    checks.append(models.CheckConstraint(
+        # A pH measured on another scale: its scale, what was measured (in the pH's range), the formula it was converted
+        # by, the NBS pH and the temperature and salinity the conversion took, in sea water; or none of them (NBS).
+        condition=(Q(ph_scale='', ph_as_measured__isnull=True, ph_converted_formula__isnull=True)
+                   | Q(ph_scale__in=PhScale.values, ph_as_measured__isnull=False, ph_as_measured__gte=ph.low,
+                       ph_as_measured__lte=ph.high, ph_converted_formula__isnull=False, ph__isnull=False,
+                       temperature_c__isnull=False, salinity_ppt__isnull=False,
+                       salinity_ppt__gte=PH_SCALE_SALINITY)),
+        name='chk_water_measurements_ph_scale'))
+    checks.append(models.CheckConstraint(
+        # A phosphate entered in another unit: its unit, what was entered and the phosphorus stored; or none of them (P).
+        # The two numbers agree: what was entered, put on P by its unit's factor, is the stored P within its rounding
+        # (parameters.PER_P_CHECKED, P_ROUNDING; the verification of 2026-11-18, V-F: 15.35 as PO₄ stood beside 99).
+        condition=(Q(phosphate_unit='', phosphate_as_measured__isnull=True)
+                   | _any(Q(phosphate_unit=unit, phosphate_as_measured__isnull=False, phosphate_as_measured__gte=0,
+                            phosphate_p_mg_l__isnull=False,
+                            phosphate_p_mg_l__gte=F('phosphate_as_measured') / factor - parameters.P_ROUNDING,
+                            phosphate_p_mg_l__lte=F('phosphate_as_measured') / factor + parameters.P_ROUNDING)
+                          for unit, factor in parameters.PER_P_CHECKED.items() if unit in PhosphateUnit.values)),
+        name='chk_water_measurements_phosphate_unit'))
     oxygen = Q(oxygen_mg_l__isnull=False) | Q(oxygen_saturation_pct__isnull=False)
     for code, prefix in BASIS.items():
         parameter = parameters.get(code)
@@ -130,13 +176,16 @@ class WaterMeasurement(AuditedModel):
     oxygen_saturation_pct = parameters.get('oxygen_saturation_pct').field()
     ph = parameters.get('ph').field()
     alkalinity_mg_l = parameters.get('alkalinity_mg_l').field()
+    hardness_mg_l = parameters.get('hardness_mg_l').field()
     co2_mg_l = parameters.get('co2_mg_l').field()
     tan_mg_l = parameters.get('tan_mg_l').field()
     nitrite_n_mg_l = parameters.get('nitrite_n_mg_l').field()
     nitrate_n_mg_l = parameters.get('nitrate_n_mg_l').field()
     tgp_pct = parameters.get('tgp_pct').field()
     salinity_ppt = parameters.get('salinity_ppt').field()
+    conductivity_25_us_cm = parameters.get('conductivity_25_us_cm').field()
     turbidity_ntu = parameters.get('turbidity_ntu').field()
+    phosphate_p_mg_l = parameters.get('phosphate_p_mg_l').field()
     # The provenance of an oxygen entered without its own temperature or salinity (BASIS): the value the server found
     # fresh at the sample's point and time when it was written (farm/water/read.oxygen_basis), where it came from (the
     # sensor's channel, or the time of the sample it was), and when it was measured; never a measurement of this sample.
@@ -154,6 +203,24 @@ class WaterMeasurement(AuditedModel):
                                                     choices=BasisSource.choices)
     oxygen_basis_salinity_channel = models.PositiveIntegerField(_('Sensor channel of the oxygen’s salinity'), null=True, blank=True)
     oxygen_basis_salinity_at = models.DateTimeField(_('When the oxygen’s salinity was measured'), null=True, blank=True)
+    # The provenance of a pH measured on another scale than NBS (PhScale): `ph` holds it on the NBS scale, as every pH
+    # is stored, shown and judged; these keep the scale, the value as measured and the formula version the conversion
+    # was made by (with the sample's own temperature and salinity), so nothing is converted out of sight. Empty for a
+    # pH read on the NBS scale.
+    ph_scale = models.CharField(_('Scale the pH was measured on'), max_length=5, blank=True, choices=PhScale.choices)
+    ph_as_measured = models.DecimalField(
+        _('pH as measured, on its own scale'), max_digits=parameters.get('ph').max_digits,
+        decimal_places=parameters.get('ph').decimals, null=True, blank=True)
+    ph_converted_formula = models.PositiveSmallIntegerField(_('Formula the pH was put on the NBS scale by'), null=True,
+                                                            blank=True)
+    # The provenance of a phosphate entered in another unit than P (PhosphateUnit): `phosphate_p_mg_l` holds it as
+    # phosphorus, as every phosphate is stored, shown and worked out; these keep the unit and the value as entered, so
+    # nothing is converted out of sight (the independent review of 2026-11-16, R3). Empty for a phosphate entered as P.
+    phosphate_unit = models.CharField(_('Unit the phosphate was entered in'), max_length=3, blank=True,
+                                      choices=PhosphateUnit.choices)
+    phosphate_as_measured = models.DecimalField(
+        _('Phosphate as entered, in its own unit'), max_digits=parameters.get('phosphate_p_mg_l').max_digits,
+        decimal_places=parameters.get('phosphate_p_mg_l').decimals, null=True, blank=True)
     notes = models.CharField(_('Notes'), max_length=500, blank=True)
     void_reason = models.CharField(_('Reason for voiding'), max_length=500, blank=True)
 
@@ -249,10 +316,10 @@ class WaterLimit(AuditedModel):
                                 verbose_name=_('Species'))
     parameter = models.CharField(_('Parameter'), max_length=30, choices=LIMIT_CHOICES)
     water_type = models.CharField(_('Water type'), max_length=20, choices=WATER_CHOICES, default=ANY_WATER)
-    critical_low = models.DecimalField(_('Critical below'), max_digits=8, decimal_places=4, null=True, blank=True)
-    warning_low = models.DecimalField(_('Warning below'), max_digits=8, decimal_places=4, null=True, blank=True)
-    warning_high = models.DecimalField(_('Warning above'), max_digits=8, decimal_places=4, null=True, blank=True)
-    critical_high = models.DecimalField(_('Critical above'), max_digits=8, decimal_places=4, null=True, blank=True)
+    critical_low = models.DecimalField(_('Critical below'), max_digits=10, decimal_places=4, null=True, blank=True)
+    warning_low = models.DecimalField(_('Warning below'), max_digits=10, decimal_places=4, null=True, blank=True)
+    warning_high = models.DecimalField(_('Warning above'), max_digits=10, decimal_places=4, null=True, blank=True)
+    critical_high = models.DecimalField(_('Critical above'), max_digits=10, decimal_places=4, null=True, blank=True)
     reference = models.CharField(_('Source of the values'), max_length=300, blank=True)
 
     class Meta:

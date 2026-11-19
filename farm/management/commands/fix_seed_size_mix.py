@@ -61,6 +61,31 @@ CLEANER_MOVES = (('TG-M02', 'TG-M03'),)
 NS = uuid.UUID('0b8e7f62-3a4d-4c1e-9d3b-6a1f2e5c7d90')
 
 
+def stored(queryset):
+    """`queryset` asking only for the columns the database holds, of its own table and of every table it joins with
+    select_related. The dry run may meet a database not migrated yet (F10): a column a pending migration adds to a table
+    the plan loads is not there, and a plain query names every column of the model. Such a column is left out (deferred),
+    whichever it is and whichever migration adds it; the plan reads none of them (reading one would ask the database for
+    it and fail, which the test on the old schema would show). On a migrated database nothing is left out."""
+    def joined(tree, prefix=''):
+        for name, below in tree.items():
+            yield prefix + name
+            yield from joined(below, f'{prefix}{name}__')
+
+    related = queryset.query.select_related
+    lacking = []
+    with connection.cursor() as cursor:
+        for path in ('', *(joined(related) if isinstance(related, dict) else ())):
+            model = queryset.model
+            for name in filter(None, path.split('__')):
+                model = model._meta.get_field(name).related_model
+            columns = {column.name for column in
+                       connection.introspection.get_table_description(cursor, model._meta.db_table)}
+            lacking += [f'{path}__{field.name}' if path else field.name for field in model._meta.concrete_fields
+                        if field.column not in columns]
+    return queryset.defer(*lacking) if lacking else queryset
+
+
 @dataclass
 class Leg:
     batch: object
@@ -157,8 +182,8 @@ class Command(DevCommand):
                 raise CommandError(f'--move-cleaner {source}:{destination}: {destination} is not a cage the plan moves '
                                    'salmon into.')
         cleaner_to = dict(cleaner_moves)
-        units = {unit.code: unit for unit in Tank.objects.select_related('production_department__site')
-                 .filter(code__in=[*source_codes, like_code, *(code for _batch, code, _name in moves)])}
+        units = {unit.code: unit for unit in stored(Tank.objects.select_related('production_department__site').filter(
+            code__in=[*source_codes, like_code, *(code for _batch, code, _name in moves)]))}
         missing = [code for code in [*source_codes, like_code] if code not in units]
         if missing:
             raise CommandError(f'No live unit {", ".join(missing)}.')
@@ -170,8 +195,8 @@ class Command(DevCommand):
         for unit in sources:
             if unit.production_department.site_id != site.pk:
                 raise CommandError(f'{unit.code} is not on {site.code}.')
-        batches = {batch.code: batch for batch in Batch.objects.filter(
-            code__in=[keep_code, *(code for code, _unit, _name in moves)])}
+        batches = {batch.code: batch for batch in stored(Batch.objects.filter(
+            code__in=[keep_code, *(code for code, _unit, _name in moves)]))}
         missing = [code for code in [keep_code, *(code for code, _unit, _name in moves)] if code not in batches]
         if missing:
             raise CommandError(f'No live batch {", ".join(missing)}.')
@@ -183,7 +208,7 @@ class Command(DevCommand):
         moved = {batches[code].pk: (unit, name) for code, unit, name in moves}
         present = (StockMovement.objects.filter(unit__in=sources, operation__is_deleted=False)
                    .values('unit_id', 'batch_id').annotate(fish=Sum('count_delta')).filter(fish__gt=0))
-        by_pk = Batch.all_objects.in_bulk({row['batch_id'] for row in present})
+        by_pk = stored(Batch.all_objects.all()).in_bulk({row['batch_id'] for row in present})
         going = []                                  # the cleaner fish's legs, after every salmon leg
         for row in sorted(present, key=lambda row: (row['unit_id'], by_pk[row['batch_id']].code)):
             unit = next(unit for unit in sources if unit.pk == row['unit_id'])

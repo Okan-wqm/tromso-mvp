@@ -211,6 +211,55 @@ pub fn co2_curve(eq: &Equilibria, co2: f64, chart: &ChartBox) -> G<(Vec<P>, bool
     Ok((points, leaves_top))
 }
 
+/// The curve where the JUDGED CO₂ (`Equilibria::co2_judged`: the largest of the limits' basis, the water's own and, with
+/// a phosphate, the water's own without it) is `co2` (mmol/L) inside the box, and whether it leaves at the top: for a
+/// water with a phosphate, whose judged CO₂ counts none, so that the judged and the own CO₂ are not in the one ratio the
+/// chart's curve is otherwise drawn by (`Equilibria::co2_chart_ratio`, `co2_curve`). Row by row of the alkalinity from 0
+/// to the box's top: the pH at which the judged CO₂ of that alkalinity is `co2` (`Equilibria::ph_where_co2`, the border
+/// every status takes) and the DIC the water's own constants give the alkalinity there (the chart is drawn in them).
+/// Near an alkalinity of 0 (a pH under about 4.7, where the phosphate holds negative alkalinity) the own DIC falls
+/// before it rises, and may lie right of the box: the curve then starts on the right edge where it comes in, and ends
+/// on it where it goes out (each crossing on the straight line between its two rows), else at the top.
+pub fn co2_curve_judged(eq: &Equilibria, co2: f64, chart: &ChartBox) -> G<(Vec<P>, bool)> {
+    let mut points: Vec<P> = Vec::with_capacity(SAMPLES + 2);
+    let mut before: Option<P> = None;
+    for step in 0..=SAMPLES {
+        let alkalinity = chart.alkalinity * step as f64 / SAMPLES as f64;
+        let Some(ph) = eq.ph_where_co2(alkalinity, co2)? else {
+            continue;
+        };
+        let point = (eq.dic_on_line(alkalinity, ph)?, alkalinity);
+        let inside = point.0 < chart.dic;
+        if let Some(last) = before {
+            if (last.0 < chart.dic) != inside {
+                let share = div(chart.dic - last.0, point.0 - last.0)?;
+                points.push((chart.dic, last.1 + share * (point.1 - last.1)));
+                if !inside {
+                    return Ok((points, false));
+                }
+            }
+        }
+        if inside {
+            points.push(point);
+        }
+        before = Some(point);
+    }
+    if points.len() < 2 {
+        return Ok((Vec::new(), false));
+    }
+    Ok((points, true))
+}
+
+/// Whether a curve drawn row by row of the alkalinity bends back: somewhere its DIC is below the row before. The
+/// judged CO₂ curve of a water with a phosphate does near an alkalinity of 0 (`co2_curve_judged`); the chart then says
+/// so (`geometry`, the note `co2.bends_back`; the independent review of 2026-11-16, R9). The one-ratio curve of a
+/// water without a phosphate (`co2_curve`) never does: its DIC rises with the alkalinity.
+pub fn bends_back(curve: &[P]) -> bool {
+    curve
+        .windows(2)
+        .any(|rows| matches!(rows, [before, after] if after.0 < before.0))
+}
+
 fn co2_region(curve: &[P], leaves_top: bool, chart: &ChartBox) -> Vec<P> {
     let mut region = curve.to_vec();
     if leaves_top {
@@ -262,7 +311,7 @@ pub fn safe_zone(analysis: &a::Analysis, limits: &a::Limits, chart: &ChartBox) -
     let top = analysis.nh3.ph.unwrap_or(a::PH_RANGE.1);
     let co2 = div(co2_mg, c::MG_CO2_PER_MMOL)?;
     let h2s = analysis.h2s.ph;
-    let co2_alkalinity = |ph: f64| -> Result<f64, ChemError> { eq.alkalinity(div(co2, eq.fractions(ph)?.0)?, ph) };
+    let co2_alkalinity = |ph: f64| -> Result<f64, ChemError> { eq.alkalinity_where_co2(co2, ph) };
     let floor = |alkalinity: f64| -> Result<f64, ChemError> {
         let mut most = a::PH_RANGE.0;
         if let Some(border) = eq.ph_where_co2(alkalinity, co2)? {
@@ -299,21 +348,23 @@ pub fn safe_zone(analysis: &a::Analysis, limits: &a::Limits, chart: &ChartBox) -
     if kept.len() < 2 {
         return Ok(Vec::new());
     }
+    // The zone's corners lie where the band's alkalinities meet the pH lines of its edges: geometry, not waters. A
+    // line may put a row at or below its floor (the chart's top pH above a low band: a DIC below 0), which the box cuts.
     let mut polygon = Vec::with_capacity(2 * kept.len());
     for &row in &kept {
-        polygon.push((eq.dic(row, top)?, row));
+        polygon.push((eq.dic_on_line(row, top)?, row));
     }
     for &row in kept.iter().rev() {
         let ph = if row == closes { top } else { floor(row)? };
-        polygon.push((eq.dic(row, ph)?, row));
+        polygon.push((eq.dic_on_line(row, ph)?, row));
     }
     Ok(clip_to_box(&polygon, chart))
 }
 
-/// The line Ω = 1 (calcium × carbonate = Ksp) inside the box, from just above that carbonate (the source's start) to
-/// the box's right edge.
+/// The line Ω = 1 (calcium × carbonate = Ksp, all per litre: `Equilibria::ksp_per_litre`, as the small chart's
+/// saturation index) inside the box, from just above that carbonate (the source's start) to the box's right edge.
 pub fn omega_line(eq: &Equilibria, calcium_mg_l: f64, ksp: f64, chart: &ChartBox) -> G<Vec<Vec<P>>> {
-    let carbonate = div(ksp, div(calcium_mg_l, c::MG_CALCIUM_PER_MOL)?)? * 1000.0;
+    let carbonate = div(eq.ksp_per_litre(ksp)?, div(calcium_mg_l, c::MG_CALCIUM_PER_MOL)?)? * 1000.0;
     let start = if carbonate + 0.01 >= 0.05 {
         carbonate + 0.01
     } else {
@@ -484,8 +535,15 @@ pub fn geometry<'a>(
     if layers.co2 {
         match limits.co2_mg_l {
             Some(limit) => {
-                let (curve, leaves_top) = co2_curve(&eq, div(limit, c::MG_CO2_PER_MMOL)?, &chart)?;
+                let (curve, leaves_top) = if eq.phosphate > 0.0 {
+                    co2_curve_judged(&eq, div(limit, c::MG_CO2_PER_MMOL)?, &chart)?
+                } else {
+                    co2_curve(&eq, div(analysis.co2_chart_limit(limit)?, c::MG_CO2_PER_MMOL)?, &chart)?
+                };
                 if !curve.is_empty() {
+                    if eq.phosphate > 0.0 && bends_back(&curve) {
+                        shape.notes.push("co2.bends_back");
+                    }
                     shape
                         .regions
                         .push(("co2", clip_to_box(&co2_region(&curve, leaves_top, &chart), &chart)));

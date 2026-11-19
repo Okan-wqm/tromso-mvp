@@ -230,14 +230,14 @@ How an alarm of a severity behaves, one row per severity (a person with the righ
 <a id="alarmsalarmsubjectstate"></a>
 ### alarms.AlarmSubjectState (`alarm_subject_state`)
 
-The one mutable row of an alarm subject (a unit's parameter at a level: `water:unit:<unit>:<slot>:<severity>`, never the point that stands for the unit, so a point replaced keeps the subject: cross review F7; or one of the alarm system's own, `system:<name>`): the timers of its lifecycle, kept in the database so a restart loses none: since when the condition holds without an alarm yet (the on-delay, counted from the first offending value's time), since when it is over while the alarm is open (the off-delay), the time of the last value that held it, and the alarm open now.
+The one mutable row of an alarm subject (a unit's parameter at a level: `water:unit:<unit>:<slot>:<severity>`, never the point that stands for the unit, so a point replaced keeps the subject: cross review F7; or one of the alarm system's own, `system:<name>`): the timers of its lifecycle, kept in the database so a restart loses none: since when the condition holds without an alarm yet (the on-delay, counted from the first offending value's time), since when it is over while the alarm is open (the off-delay), the time of the last value that held it, whether the unit's own value held it, and the alarm open now.
 
 - **create**: none, by design: written by manage.py run_alarms (alarms/engine.py)
 - **edit**: none, by design: only the loop moves a subject's timers and its open alarm
 - **delete**: none, by design: a subject's row is kept: its timers survive a restart
 - **read**: none, by design: the loop's own memory; the alarms it opened are on the Alarms page
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarm_subject_state
-- **tests that mention it**: `alarms/tests/test_cross_review.py`, `alarms/tests/test_defects.py`
+- **tests that mention it**: `alarms/tests/test_cross_review.py`, `alarms/tests/test_defects.py`, `alarms/tests/test_who_ends_a_level.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -246,6 +246,7 @@ The one mutable row of an alarm subject (a unit's parameter at a level: `water:u
 | pending_since | timestamp with time zone | yes |  | system: the timers and the open alarm the loop keeps per subject (alarms/sources.py advance) |
 | clear_since | timestamp with time zone | yes |  | system: the timers and the open alarm the loop keeps per subject (alarms/sources.py advance) |
 | last_bad_at | timestamp with time zone | yes |  | system: the timers and the open alarm the loop keeps per subject (alarms/sources.py advance) |
+| own_held | boolean |  |  | system: the timers and the open alarm the loop keeps per subject (alarms/sources.py advance) |
 | updated_at | timestamp with time zone |  |  | system: author, time, version or delete mark |
 
 <a id="alarmsalarm"></a>
@@ -259,7 +260,7 @@ One time a condition held: a sensor rule's event (mirrored from sensors.AlarmEve
 - **read**: alarms.views.alarm_list (`/alarms/`); alarms.views.alarm_detail (`/alarms/<int:pk>/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarms
 - **constraints**: chk_alarms_source (check); chk_alarms_severity (check); chk_alarms_shape (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_alarms.py`, `alarms/tests/__init__.py` and 6 more
+- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_alarms.py`, `alarms/tests/__init__.py` and 8 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -316,7 +317,7 @@ Who did what to which record, with old and new values.
 - **how it works**: A record's own rows are also shown on the History tab of its edit page.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log (never shown: changes)
 - **constraints**: chk_audit_log_severity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 109 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 111 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -395,7 +396,7 @@ What the platform keeps about a person beyond Django's account.
 - **how it works**: Today the profile holds the language only: chosen with the language switcher, or on the Users tab.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › profiles
 - **forms**: `UserForm`
-- **tests that mention it**: `core/test_languages.py`, `core/tests_account_mail.py`, `core/tests_matrix_notes.py` and 34 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_account_mail.py`, `core/tests_matrix_notes.py` and 42 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1768,7 +1769,7 @@ A production system of a site: a RAS, a pond, a cage line, a hatchery.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › systems
 - **forms**: `SystemForm`
 - **constraints**: uq_systems_site_code_live (unique: site, code); chk_systems_total_volume (check); chk_systems_max_biomass (check); chk_systems_not_its_own_parent (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_calculator.py` and 26 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_calculator.py` and 27 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1803,8 +1804,8 @@ A unit fish are held in: a tank, a pond or a cage.
 - **read**: units tab (`/tanks/`)
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › tanks
 - **forms**: `TankForm`
-- **constraints**: uq_tanks_code_live (unique: code); uq_tanks_regulatory_unit_id_live (unique: production_department, regulatory_unit_id); chk_tanks_kind (check); chk_tanks_status (check); chk_tanks_water_type (check); chk_tanks_shape_by_kind (check); chk_tanks_material_by_kind (check); chk_tanks_pond_type_by_kind (check); chk_tanks_liner_type_by_kind (check); chk_tanks_water_source_by_kind (check); chk_tanks_cage_type_by_kind (check); chk_tanks_frame_type_by_kind (check); chk_tanks_net_material_by_kind (check); chk_tanks_tank_required (check); chk_tanks_pond_required (check); chk_tanks_cage_required (check); chk_tanks_diameter_by_shape (check); chk_tanks_length_by_shape (check); chk_tanks_stated_volume_m3_by_shape (check); chk_tanks_width_by_shape (check); chk_tanks_square_sides (check); chk_tanks_long_side_first (check); chk_tanks_water_depth (check); chk_tanks_max_depth (check); chk_tanks_liner_by_pond_type (check); chk_tanks_liner_thickness (check); chk_tanks_submersion (check); chk_tanks_diameter_range (check); chk_tanks_length_range (check); chk_tanks_width_range (check); chk_tanks_stated_volume_m3_range (check); chk_tanks_depth_range (check); chk_tanks_surface_area_m2_range (check); chk_tanks_max_depth_range (check); chk_tanks_mesh_size_mm_range (check); chk_tanks_max_submersion_depth_range (check); chk_tanks_max_density_kg_m3_range (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_workspaces.py` and 35 more
+- **constraints**: uq_tanks_code_live (unique: code); uq_tanks_regulatory_unit_id_live (unique: production_department, regulatory_unit_id); chk_tanks_kind (check); chk_tanks_status (check); chk_tanks_water_type (check); chk_tanks_water_origin (check); chk_tanks_shape_by_kind (check); chk_tanks_material_by_kind (check); chk_tanks_pond_type_by_kind (check); chk_tanks_liner_type_by_kind (check); chk_tanks_water_source_by_kind (check); chk_tanks_cage_type_by_kind (check); chk_tanks_frame_type_by_kind (check); chk_tanks_net_material_by_kind (check); chk_tanks_tank_required (check); chk_tanks_pond_required (check); chk_tanks_cage_required (check); chk_tanks_diameter_by_shape (check); chk_tanks_length_by_shape (check); chk_tanks_stated_volume_m3_by_shape (check); chk_tanks_width_by_shape (check); chk_tanks_square_sides (check); chk_tanks_long_side_first (check); chk_tanks_water_depth (check); chk_tanks_max_depth (check); chk_tanks_liner_by_pond_type (check); chk_tanks_liner_thickness (check); chk_tanks_submersion (check); chk_tanks_diameter_range (check); chk_tanks_length_range (check); chk_tanks_width_range (check); chk_tanks_stated_volume_m3_range (check); chk_tanks_depth_range (check); chk_tanks_surface_area_m2_range (check); chk_tanks_max_depth_range (check); chk_tanks_mesh_size_mm_range (check); chk_tanks_max_submersion_depth_range (check); chk_tanks_max_density_kg_m3_range (check)
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_workspaces.py` and 41 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1826,6 +1827,7 @@ A unit fish are held in: a tank, a pond or a cage.
 | status_changed_at | timestamp with time zone | yes |  | system: not editable: set by the code |
 | status_reason | varchar(500) |  |  | TankForm › General |
 | water_type | varchar(20) |  |  | TankForm › General |
+| water_origin | varchar(12) |  |  | TankForm › General |
 | regulatory_unit_id | varchar(50) |  |  | TankForm › General |
 | shape | varchar(20) |  |  | TankForm |
 | material | varchar(20) |  |  | TankForm |
@@ -1928,7 +1930,7 @@ How long a value of a water parameter says something about the water now (hours)
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › water_freshness
 - **forms**: `WaterFreshnessForm`
 - **constraints**: uq_water_freshness_parameter (unique: parameter); chk_water_freshness_hours (check); chk_water_freshness_kept (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `alarms/tests/test_freshness.py`
+- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_phosphate.py`, `farm/tests/test_water_ionic_inputs.py` and 1 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1956,7 +1958,7 @@ The water a species is kept in: for one parameter, the bounds outside which a va
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › water_limits
 - **forms**: `WaterLimitForm`
 - **constraints**: uq_water_limits_live (unique: species, parameter, water_type); chk_water_limits_parameter (check); chk_water_limits_water_type (check); chk_water_limits_any_bound (check); chk_water_limits_critical_low (check); chk_water_limits_warning_low (check); chk_water_limits_warning_high (check); chk_water_limits_critical_high (check); chk_water_limits_order (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_calculator.py` and 6 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_calculator.py` and 7 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1972,10 +1974,10 @@ The water a species is kept in: for one parameter, the bounds outside which a va
 | species_id | uuid |  | species (CASCADE) | WaterLimitForm › Limit |
 | parameter | varchar(30) |  |  | WaterLimitForm › Limit |
 | water_type | varchar(20) |  |  | WaterLimitForm › Limit |
-| critical_low | numeric(8, 4) | yes |  | WaterLimitForm › Limit |
-| warning_low | numeric(8, 4) | yes |  | WaterLimitForm › Limit |
-| warning_high | numeric(8, 4) | yes |  | WaterLimitForm › Limit |
-| critical_high | numeric(8, 4) | yes |  | WaterLimitForm › Limit |
+| critical_low | numeric(10, 4) | yes |  | WaterLimitForm › Limit |
+| warning_low | numeric(10, 4) | yes |  | WaterLimitForm › Limit |
+| warning_high | numeric(10, 4) | yes |  | WaterLimitForm › Limit |
+| critical_high | numeric(10, 4) | yes |  | WaterLimitForm › Limit |
 | reference | varchar(300) |  |  | WaterLimitForm › Limit |
 
 <a id="farmwatermeasurement"></a>
@@ -1989,8 +1991,8 @@ A water sample: what a person measured at one sampling point (a place on a unit,
 - **read**: farm.water.views.water_page (`/operations/water/`); farm.stock.views.production_units (`/operations/units/`)
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › water_measurements
 - **forms**: `WaterSampleForm`, `RoundForm`, `RoundRowForm`, `SampleVoidForm`
-- **constraints**: chk_water_measurements_any_value (check); chk_water_measurements_source (check); chk_water_measurements_void_reason (check); chk_water_measurements_temperature_c (check); chk_water_measurements_oxygen_mg_l (check); chk_water_measurements_oxygen_saturation_pct (check); chk_water_measurements_ph (check); chk_water_measurements_alkalinity_mg_l (check); chk_water_measurements_co2_mg_l (check); chk_water_measurements_tan_mg_l (check); chk_water_measurements_nitrite_n_mg_l (check); chk_water_measurements_nitrate_n_mg_l (check); chk_water_measurements_tgp_pct (check); chk_water_measurements_salinity_ppt (check); chk_water_measurements_turbidity_ntu (check); chk_water_measurements_oxygen_basis_temperature (check); chk_water_measurements_oxygen_basis_salinity (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 16 more
+- **constraints**: chk_water_measurements_any_value (check); chk_water_measurements_source (check); chk_water_measurements_void_reason (check); chk_water_measurements_temperature_c (check); chk_water_measurements_oxygen_mg_l (check); chk_water_measurements_oxygen_saturation_pct (check); chk_water_measurements_ph (check); chk_water_measurements_alkalinity_mg_l (check); chk_water_measurements_hardness_mg_l (check); chk_water_measurements_co2_mg_l (check); chk_water_measurements_tan_mg_l (check); chk_water_measurements_nitrite_n_mg_l (check); chk_water_measurements_nitrate_n_mg_l (check); chk_water_measurements_tgp_pct (check); chk_water_measurements_salinity_ppt (check); chk_water_measurements_conductivity_25_us_cm (check); chk_water_measurements_turbidity_ntu (check); chk_water_measurements_phosphate_p_mg_l (check); chk_water_measurements_ph_scale (check); chk_water_measurements_phosphate_unit (check); chk_water_measurements_oxygen_basis_temperature (check); chk_water_measurements_oxygen_basis_salinity (check)
+- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 21 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2011,13 +2013,16 @@ A water sample: what a person measured at one sampling point (a place on a unit,
 | oxygen_saturation_pct | numeric(4, 1) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | ph | numeric(4, 2) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | alkalinity_mg_l | numeric(4, 0) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
+| hardness_mg_l | numeric(5, 0) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | co2_mg_l | numeric(4, 1) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | tan_mg_l | numeric(6, 3) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | nitrite_n_mg_l | numeric(6, 3) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | nitrate_n_mg_l | numeric(5, 1) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | tgp_pct | numeric(4, 1) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | salinity_ppt | numeric(3, 1) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
+| conductivity_25_us_cm | numeric(6, 0) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | turbidity_ntu | numeric(5, 1) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
+| phosphate_p_mg_l | numeric(5, 2) | yes |  | dynamic: one field for each water parameter (farm.forms.water.MEASURED) |
 | oxygen_basis_temperature_c | numeric(3, 1) | yes |  | computed: what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis) |
 | oxygen_basis_temperature_source | varchar(20) |  |  | computed: what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis) |
 | oxygen_basis_temperature_channel | integer | yes |  | computed: what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis) |
@@ -2026,6 +2031,11 @@ A water sample: what a person measured at one sampling point (a place on a unit,
 | oxygen_basis_salinity_source | varchar(20) |  |  | computed: what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis) |
 | oxygen_basis_salinity_channel | integer | yes |  | computed: what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis) |
 | oxygen_basis_salinity_at | timestamp with time zone | yes |  | computed: what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis) |
+| ph_scale | varchar(5) |  |  | WaterSampleForm, RoundForm |
+| ph_as_measured | numeric(4, 2) | yes |  | computed: a pH measured on another scale than NBS: what was measured and the formula the server put it on the NBS scale by, with the scale chosen on the form (farm/water/services.on_nbs) |
+| ph_converted_formula | smallint | yes |  | computed: a pH measured on another scale than NBS: what was measured and the formula the server put it on the NBS scale by, with the scale chosen on the form (farm/water/services.on_nbs) |
+| phosphate_unit | varchar(3) |  |  | WaterSampleForm, RoundForm |
+| phosphate_as_measured | numeric(5, 2) | yes |  | computed: a phosphate entered as PO₄: what was entered, kept beside the phosphorus the server stores, with the unit chosen on the form (farm/water/services.as_p) |
 | notes | varchar(500) |  |  | WaterSampleForm, RoundRowForm |
 | void_reason | varchar(500) |  |  | SampleVoidForm.reason |
 

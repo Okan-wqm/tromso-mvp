@@ -396,7 +396,9 @@ pub struct Step {
 }
 
 /// The water after each amount (grams by reagent key) added in turn to `volume` m³, in the reagents' order, from
-/// `start` at `ph`; a stripping step that takes the CO₂ below `air_co2_mg_l` is flagged; [] without an amount.
+/// `start` at `ph`; a stripping step that takes the CO₂ below `air_co2_mg_l` is flagged; [] without an amount. A start
+/// that is no water (its pH and alkalinity cannot go together, or its DIC is below 0) is refused
+/// (`ChemError::ImpossibleWater`; formula 1 never did); a dose that takes more than there is gives a step without a pH.
 pub fn simulate(
     eq: &Equilibria,
     start: (f64, f64),
@@ -419,13 +421,14 @@ pub fn simulate(
         return Ok(Vec::new());
     }
     let (mut dic, mut alkalinity) = start;
+    eq.require_water(alkalinity, ph)?;
     let mut steps = vec![Step {
         reagent: None,
         grams: 0.0,
         dic,
         alkalinity,
         ph: Some(ph),
-        co2_mg_l: Some(eq.co2(dic, ph)? * c::MG_CO2_PER_MMOL),
+        co2_mg_l: Some(eq.co2_judged(alkalinity, ph, eq.co2(dic, ph)?)?.0 * c::MG_CO2_PER_MMOL),
         below_air: false,
     }];
     for (reagent, grams) in doses {
@@ -444,8 +447,11 @@ pub fn simulate(
             });
             break;
         };
-        let co2 = eq.co2(dic, reached)? * c::MG_CO2_PER_MMOL;
-        let below = reagent.key == "degas" && air_co2_mg_l.is_some_and(|air| co2 < air);
+        // The air's CO₂ is a true concentration (Weiss 1974): stripping is held to it by the water's own CO₂; the step shows
+        // the judged CO₂ (Equilibria::co2_judged, cross review F1).
+        let own = eq.co2(dic, reached)?;
+        let co2 = eq.co2_judged(alkalinity, reached, own)?.0 * c::MG_CO2_PER_MMOL;
+        let below = reagent.key == "degas" && air_co2_mg_l.is_some_and(|air| own * c::MG_CO2_PER_MMOL < air);
         steps.push(Step {
             reagent: Some(reagent.key),
             grams,

@@ -38,6 +38,13 @@ class WaterType(models.TextChoices):
     BRACKISH = 'brackish', _('Brackish')
 
 
+class WaterOrigin(models.TextChoices):
+    """Where a unit's salt comes from (cross review F3): the water chemistry's band from 1 to 5 ‰ takes sea water's ions,
+    which fresh water salted with NaCl does not have (README, Water-chemistry core). Empty: not said."""
+    SEAWATER = 'seawater', _('Sea water or diluted sea water')
+    SALT_ADDED = 'salt_added', _('Fresh water with salt added')
+
+
 class Shape(models.TextChoices):
     CIRCULAR = 'circular', _('Circular')
     RECTANGULAR = 'rectangular', _('Rectangular')
@@ -283,6 +290,7 @@ def _constraints():
         _check('kind', Q(kind__in=Kind.values)),
         _check('status', Q(status__in=Status.values)),
         _check('water_type', Q(water_type__in=WaterType.values)),
+        _check('water_origin', Q(water_origin__in=['', *WaterOrigin.values])),
         *(_check(f'{name}_by_kind', Q(**{name: ''}) | _either(
             Q(kind=kind, **{f'{name}__in': values}) for kind, values in offered.items()))
           for name, offered in OFFERED.items()),
@@ -333,7 +341,7 @@ class Tank(CodedMixin, AuditedModel):
     equipment type, isActive, the stock mirrors, the maintenance dates, and the location, water flow
     and aeration JSON (no screen wrote them)."""
 
-    Kind, Status, WaterType, Shape, Material = Kind, Status, WaterType, Shape, Material
+    Kind, Status, WaterType, WaterOrigin, Shape, Material = Kind, Status, WaterType, WaterOrigin, Shape, Material
     PondType, Liner, WaterSource, CageType, Frame, NetMaterial = (
         PondType, Liner, WaterSource, CageType, Frame, NetMaterial)
 
@@ -352,6 +360,11 @@ class Tank(CodedMixin, AuditedModel):
     status_changed_at = models.DateTimeField(_('Status since'), null=True, blank=True, editable=False)
     status_reason = models.CharField(_('Reason for the status'), max_length=500, blank=True)
     water_type = models.CharField(_('Water type'), max_length=20, choices=WaterType.choices)
+    water_origin = models.CharField(
+        _('Water origin'), max_length=12, choices=WaterOrigin.choices, blank=True, default='',
+        help_text=_('Where the salt in its water comes from. Fresh water with salt added (NaCl, for smolt or against '
+                    'disease) is worked out without sea water’s ions; not said, a salinity of 1 to 5 ‰ is taken as '
+                    'diluted sea water.'))
     regulatory_unit_id = models.CharField(_('Regulatory unit ID'), max_length=50, blank=True)
 
     # Tanks and cages

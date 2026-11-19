@@ -1285,36 +1285,35 @@ are in the bug document, not in the database).
 
 **Worked out from a sample**, never stored (`farm/water/chemistry.py`, each pinned by a test against
 published values):
-- **NH₃-N** = TAN × K / (K + [H⁺]), with K the ammonium constant of Millero (1995) on the seawater scale,
-  converted to the free scale, and the pH (NBS) converted too, by the core's formula 3 (Water-chemistry core): in fresh
-  water with its own ionic strength, [H⁺] = 10^−pH / γH; with nothing measured it equals Emerson et al. (1975) within
-  0.002 pK up to 30 °C and 0.003 up to 40 °C (and their table within 0.6 % from 0 to 12 °C, `test_cold_water`). It needs
-  the pH and the temperature of the same
+- **NH₃-N** = TAN × K / (K + [H⁺]), with K the ammonium constant of Clegg & Whitfield (1995, eq. 18; their pure-water
+  pK in fresh water) converted to the free scale, and the pH (NBS) converted too, by the core's formula 4 (Water-chemistry
+  core): in fresh water with its own ionic strength, [H⁺] = 10^−pH / γH; in salt water by Millero's (1986) measured step
+  between the NBS and the seawater scales. It needs the pH and the temperature of the same
   sample; the salinity is the sample's, else its point's latest fresh at the sample's time (measured at or before it, within the salinity's 7 days: a stale salinity never enters a calculation), else its owner's middle
   point's, else 0 where every unit it concerns is in fresh water; otherwise the page says what is missing. The
   alkalinity, the conductivity at 25 °C and the hardness that give its ionic strength are found the same way (none
   found: an ionic strength of 0, the safe side). NH₄-N = TAN − NH₃-N is shown. Each worked-out value says the formula
-  it was worked out by in its title ("Formula 3: ionic strength 0.0072, from the conductivity at 25 °C."): nothing worked
+  it was worked out by in its title ("Formula 4: ionic strength 0.0072, from the conductivity at 25 °C."): nothing worked
   out is stored, so a past sample is shown by today's formula, and says so.
-  **The NH₃-N shown, judged and alarmed is the larger of two** (cross review F1, owner decision 2026-11-09, safety with live
-  fish): the share on the basis the limits were set on (up to 1 ‰ the ideal water, every activity 1, Emerson et al.
-  1975, as Piper et al. 1982 and US EPA 1985 used it; from 5 ‰ Khoo et al. 1977's eq. 11, a free-scale molal pKaˢ,
-  applied to the meter's NBS pH without converting it, the safe side (cross review round 2, S1, and the water-chemistry
-  audit of 2026-11-19, F5; neither Bower & Bidwell 1978's tables nor the US EPA 1989 saltwater criteria's own
-  speciation, Water-chemistry core); salt-added water: the ideal throughout) and formula 3's
-  activity-corrected share. The corrected NH₃-N is said in the title beside it ("NH₃ judged on the basis its limits were
-  set on ..., the larger; activity-corrected 0.0121 mg/L."); it is never judged. In fresh water the basis is always the
-  larger (at 12 °C, pH 7.5 the corrected NH₃ is 8.7 % lower at 500 µS/cm, 11.6 % at 1000 and 17.2 % at 3000), so the
-  status, the alarm and the safe TAN are those of the ideal share; in sea water Khoo's share is the larger too (at pH 8 formula
-  3's corrected share is 10 to 23 % below it at 35 ‰ from 25 to 2 °C, formula 1's 10 to 27 %).
-  **Above 30 °C or a salinity of 35 ‰ the NH₃ says a warning** in the same title ("NH₃: above 30 °C or a salinity of
-  35 ‰ the water is outside the range the NH₃ judgement was checked over ..."; the K_NH4 panel's decision of 2026-11-10):
-  the activity-corrected constant stays Yao & Millero's (1995), which is 0.17 to 8.8 % below Clegg & Whitfield's (1995)
-  from 5 ‰, and no judgement rests on it, because up to 30 °C and 35 ‰ the judged NH₃ is never below either
-  (`chemcore/core/tests/nh3_guard.rs`: 8 680 waters, tolerance 0, smallest margin +2.9 % at 30 °C and 35 ‰; within
-  0.5 % at a salinity of 0). Past that range it does fall below (−1.3 % at 35 °C, −5.6 % at 40 °C, 35 ‰), so the value
-  is still worked out and judged, with the warning; never refused. The two bounds are validity bounds of the cited
-  constants (`fresh::NH3_GUARD_MAX_TEMP_C`, `NH3_GUARD_MAX_SALINITY`), not farm limits, so they are not reference data.
+  **The NH₃-N shown, judged and alarmed is on the safe side of the best estimate** (formula 4's Rule S, the
+  water-chemistry audit of 2026-11-19 and the owner's decision; before it, cross review F1 and the owner's decision of
+  2026-11-09): up to 1 ‰ the ideal water, every activity 1, Emerson et al. (1975) as Piper et al. 1982 and US EPA 1985
+  used it, exactly as formula 3 had it; from 5 ‰ the best estimate at the pH + 0.03, the uncertainty of a pH reading
+  (US EPA 1989, p. 3), which is 7.2 % above the best estimate at every temperature; blended between; salt-added water:
+  the ideal throughout. The larger of it and the best estimate is judged (in fresh water the ideal is the larger as soon
+  as an ion is measured: at 12 °C, pH 7.5 the best estimate is 8.7 % lower at 500 µS/cm, 11.6 % at 1000 and 17.2 % at
+  3000; with nothing measured the two are within 0.5 %). The best estimate's NH₃-N is said in the title beside it ("NH₃
+  judged on the safe side ..., the larger of it and the best estimate; best estimate 0.0121 mg/L."); it is never judged.
+  Against formula 3 the judged NH₃ of brackish and sea water fell (S 5: 11 to 14 %, S 10: 8 to 12 %, S 20: 4 to 9 %,
+  S 34: 0 to 5 %, 0 to 30 °C): formula 3 judged it on Khoo et al.'s (1977) constant applied to the unconverted NBS pH,
+  whose margin over the best estimate was the size of pH NBS − pH free, never designed. Fresh water did not move.
+  **Above 30 °C or a salinity of 35 ‰ the NH₃ and the CO₂ say a warning** in the same title ("NH₃ and CO₂: above 30 °C or
+  a salinity of 35 ‰ the water is outside the range the formula was checked over ..."): the judged values keep their
+  margin over the best estimate there (`chemcore/core/tests/formula4.rs`), but nothing of formula 4 was computed or
+  checked above 30 °C (the step's temperature share is fitted from 0 to 30 °C, Millero's line held at S 35 above it).
+  The value is still worked out and judged, with the warning; never refused. The two bounds are validity bounds of the
+  cited constants (`fresh::NH3_GUARD_MAX_TEMP_C`, `NH3_GUARD_MAX_SALINITY`), not farm limits, so they are not reference
+  data.
 - **Oxygen saturation**: Benson & Krause (1984) as in Standard Methods 4500-O, corrected for the
   barometric pressure of the site's altitude (sea-level pressure, said so, when the site has none; the altitude is
   0 .. 5000 m (owner: no site lies below sea level, a minus sign is a slip), held by the form, the model and the
@@ -1449,13 +1448,23 @@ without values it shows its defaults.
   of carbonic acid of Millero, Graham, Huang, Bustos-Serrano & Pierrot (2006), fresh to sea water (the
   source calls them Millero 2010, WQ-39); Kw of Millero (1995) on his seawater scale (pure water's at a salinity of 0;
   formula 1 took the 2007 Guide's approximate total-scale value); KB of Dickson (1990)
-  with Uppström's (1974) boron; the ammonium constant of Millero (1995); KH₂S of Millero, Plese &
+  with Uppström's (1974) boron; the ammonium constant of Clegg & Whitfield (1995, eq. 18; formula 3 took Millero's
+  1995); KH₂S of Millero, Plese &
   Fernandez (1988); the Ksp of Mucci (1983); the CO₂ solubility of Weiss (1974); each converted to the free
   scale, the pH (NBS) too, as the source does. DIC = (alkalinity − [OH⁻] + [H⁺] − [B(OH)₄⁻]) / (α1 + 2 α2),
   CO₂ = DIC α0; NH₃-N = TAN K / (K + [H⁺]); H₂S = total sulfide × 34.08 / 32.07 × [H⁺] / (K + [H⁺]). A pH
   and an alkalinity that cannot go together (the hydroxide and the borate alone at or above the alkalinity) are refused:
   by the form and a unit's chart with the reason, and by the core itself (`ImpossibleWaterError`), by one rule.
-- **The ionic strength and the NBS pH** (formula 3 since 2026-11-09; the source's convention, formula 1, took the
+- **The NBS pH in salt water** (formula 4 since 2026-11-19, `chemcore/core/src/formula4.rs`): pH free − pH NBS is
+  Millero's (1986, table 7) measured pH NBS − pH total at 25 °C, the line 0.1306 + 0.00073 S through his S 5 to 35
+  points (held above 35), on the free scale by Dickson's bisulfate, moved in temperature by 0.75 of the bisulfate and
+  fluoride term (fitted to Takahashi et al.'s 1982 fH, 0 to 30 °C, S 30 to 36): within 0.004 pH of Millero's points and
+  0.0062 of Takahashi's fit (S 30 to 35, 0 to 30 °C). It replaced the in-house Davies-type conversion of formula 3,
+  described next, which was 0.024 pH off at 12 °C and 0.04 to 0.05 at 0 to 4 °C in salt water (the water-chemistry
+  audit's consensus, point 3). Below 5 ‰ the band blends the fresh path's Davies offset with this step (Millero's S 0
+  and 2.5 points). Nothing was measured below 25 °C under S 20.
+- **The ionic strength and the NBS pH** (formula 3 from 2026-11-09 to 2026-11-19, its fresh path still formula 4's; the
+  source's convention, formula 1, took the
   ionic strength from the salinity alone, so a fresh water was ideal): up to 1 ‰ the water's own ionic strength (the
   conductivity at 25 °C, else the salinity, never below the measured hardness and alkalinity's ions; none measured, 0)
   with Davies activity coefficients; from 5 ‰ the seawater constants; between, a blend (Water-chemistry core). A pH (NBS)
@@ -1467,7 +1476,8 @@ without values it shows its defaults.
 - **The pH's scale** (the K_NH4 panel's proposal, built by the owner's decision of 2026-11-11;
   `chemcore/core/src/scale.rs`, `chemcore/findings/pH-scale.md`): every pH stored, shown, judged and worked out from is
   on the NBS scale, what a meter calibrated with NBS/NIST buffers reads, and its field says so with the size of the
-  hazard (a total-scale pH reads 0.10 to 0.14 lower from 5 to 35 ‰; typed as NBS the NH₃ comes out 20 to 27 % too low).
+  hazard (a total-scale pH reads 0.09 to 0.15 lower from 5 to 35 ‰ and 0 to 30 °C by formula 4's step; typed as NBS
+  the NH₃ comes out 19 to 28 % too low).
   Where a pH is typed (Record water sample, a water round, the calculator) its **scale can be chosen**: NBS (the
   default: nothing changes, the golden files keep their bytes), total (a seawater sensor calibrated with TRIS),
   seawater (SWS) or free. A pH on another scale is put on the NBS scale by the core at that door: pH free = pH total +
@@ -1477,9 +1487,9 @@ without values it shows its defaults.
   by the form, the write path (`farm/water/services.on_nbs`) and the core (`SeawaterScaleError`). A sample keeps what
   was measured (`ph_scale`, `ph_as_measured`, `ph_converted_formula`; `chk_water_measurements_ph_scale` holds them
   together) and its reading says it wherever a value's title is shown (the latest values, the history, a monitoring
-  card): "Measured 7.95 on the total scale; put on the NBS scale by formula 3 with the sample's 12.0 °C and 34.0 ‰."
+  card): "Measured 7.95 on the total scale; put on the NBS scale by formula 4 with the sample's 12.0 °C and 34.0 ‰."
   The stored pH has the column's two decimals; the calculator converts without rounding and says "pH 7.95 on the
-  total scale is 8.08 on the NBS scale", its target pH and pH limits are NBS, and values taken from a unit are NBS. **No
+  total scale is 8.06 on the NBS scale" (formula 4; 8.08 by formula 3), its target pH and pH limits are NBS, and values taken from a unit are NBS. **No
   page holds a pH on another scale, so none can mix them.** A sensor's pH is put on the NBS scale by the same
   conversion, by its channel's pH scale (Sensors › Channels, *pH scale*; after the water-chemistry audit of 2026-11-19,
   below). Checked against PyCO2SYS 1.8.3.4 and seacarb 3.4.2 over 0 to 40 °C by 5 to 40 ‰ (72 cells): the free and the
@@ -1560,8 +1570,8 @@ without values it shows its defaults.
     the trail take it (the review's C2; the provenance then says "The temperature is manual, 19.11.2026 10:00."), and the
     salinity of the same moment (a fresh sensor's, else the point's fresh sample's, else 0 in fresh water), for sea water
     of 5 ‰ or more and never for fresh water with salt added, while the pH is fresh. It is then shown as the typed
-    sample's is ("measured 7.95 on the total scale" beside 8.08; "Measured 7.95 on the total scale by the sensor; put on
-    the NBS scale by formula 3 with 12.0 °C and 34.0 ‰ of the same moment."), and its NH₃ is the typed sample's: a TRIS
+    sample's is ("measured 7.95 on the total scale" beside 8.06; "Measured 7.95 on the total scale by the sensor; put on
+    the NBS scale by formula 4 with 12.0 °C and 34.0 ‰ of the same moment."), and its NH₃ is the typed sample's: a TRIS
     probe at 12 °C and S 34 gives the judged NH₃-N the same water typed as a total-scale sample gives. Otherwise (no
     temperature fresh at its time, no salinity, fresh or salt-added water, a water the core cannot work out at all,
     a pH no longer fresh) **the pH has no value and cannot be evaluated**, said with the reason (the core's own where it
@@ -1601,7 +1611,8 @@ without values it shows its defaults.
     total, seawater or free scale, typed or from a sensor, and the calculator with such a pH, say that it is judged on
     the NBS scale on the limits' basis (a free-scale constant on that NBS pH, unconverted), the safe side, about 13 to
     25 % above what that pH gives exactly
-    (F11).
+    (F11). Since formula 4 these words say what formula 4 does: the best estimate rests on Millero's step and Clegg &
+    Whitfield's constant, and the NH₃ is judged at the NBS pH + 0.03, about 7 % above it.
 - **The optional phosphate** (PO₄-P, mg/L as P; the independent check's hypothesis 12a, owner 2026-11-10;
   `chemcore/findings/phosphate.md`): phosphate is part of the alkalinity a titration measures, [HPO₄²⁻] + 2 [PO₄³⁻] −
   [H₃PO₄] (Dickson 1981's definition as Dickson, Sabine & Christian 2007 give it, ch. 2), with Millero's (1995)
@@ -1620,7 +1631,38 @@ without values it shows its defaults.
   the phosphate's alkalinity within 3.1e-14; in sea water the CO₂ a median of 7.0e-6 and at most 1.4e-3 apart (the
   per-litre bookkeeping, next to the floor), the pH after a dose within 1.0e-4; in ideal fresh water everything within
   1e-10. The fresh path with real ions (Davies) has no independent reference.
-- **NH₃ and CO₂ are judged on the larger of the limits' basis and the activity-corrected value** (cross review F1,
+- **Formula 4: the judged NH₃ and CO₂ on the safe side of one best estimate** (Rule S; the water-chemistry audit of
+  2026-11-19, its paper debate's consensus `F:\dev\balik-notes\chem-audit-fable\CONSENSUS.md` and the owner's decision
+  of the same day; `chemcore/core/src/formula4.rs`, `FORMULA_VERSION` 4; formula 3 and 1 still worked out by name). The
+  best estimate: Clegg & Whitfield's (1995) K_NH4 fresh to sea, the carbonate constants as before, the NBS step above.
+  The judged value, the same structure as below (the larger of a basis and the best estimate, so every border, status,
+  safe TAN and chart takes it unchanged), with another basis: up to 1 ‰ formula 3's ideal water unchanged (fresh water
+  is judged exactly as before: `chemcore/core/tests/formula4.rs`; only where nothing is measured, ionic strength 0, the
+  best estimate's pure-water K_NH4 may be up to 0.5 % above the ideal's at 0 °C and judges); from 5 ‰ the best estimate
+  at the pH + 0.03 for NH₃ and at the pH − 0.03 for CO₂ (the uncertainty of a pH reading: US EPA 1989, p. 3), so the
+  judged NH₃ is the best estimate's [NH₃]/[NH₄⁺] × 10^0.03 (+7.2 %) and the judged CO₂ +7.2 to +9 % above it at every
+  temperature; between, blended with the band's weight (no step at 1 or 5 ‰: S 0 to 40 by 0.05 ‰, at most 0.5 % a
+  step); salt-added water the ideal throughout. Held over the owner's MUST ranges, sea water S 5 to 40 at 0 to 30 °C and
+  land water at 8 to 30 °C (`formula4.rs`: 57 660 sea cells, NH₃ +7.15 % exactly, CO₂ at least +7.15 %; every land
+  cell at or above the best estimate); outside them the margin is the rule's and holds (tested −2 to 40 °C), the best
+  estimate itself is not checked above 30 °C (the warning `nh3_past_guard` says it). Against formula 3: the judged NH₃
+  of brackish and sea water falls 11 to 14 % at S 5, 8 to 12 % at S 10, 4 to 9 % at S 20, 0 to 5 % at S 34 (formula 3's
+  margin there was the size of pH NBS − pH free, never designed), and the judged CO₂, which formula 3 put up to 7.5 %
+  below the best estimate in 11 of 48 cells from 12 °C and S 5, is never below it. The owner's example, 12 °C, S 34,
+  pH 7.60, TAN 1 mg/L: best estimate 0.00608, judged 0.00651 (formula 3 judged 0.00672). The core was checked against
+  the debate's Python prototype (`F:\dev\balik-notes\chem-audit-fable\f4\compare.txt`): from 5 ‰ identical with the
+  decided line; below 5 ‰ the judged NH₃ up to 0.46 % apart (the prototype's ideal water took Clegg & Whitfield's
+  pure-water constant, the core keeps formula 3's), the CO₂ 0.002 %. Golden v4 (`chemcore/golden/v4`,
+  `record_golden_v4.py`, golden v3's corpus by formula 4) holds it bit for bit (`farm/tests/test_golden_v4.py`).
+  **Stored samples converted by an older formula**: a pH typed on the total, seawater or free scale was stored on the
+  NBS scale by the formula of its day (`ph_converted_formula`); formula 4's step moves such an NBS pH by up to 0.044
+  (−2 to 30 °C, S 5 to 40), so `manage.py rederive_ph` (`farm/water/rederive.py`; `--dry-run` reads only) converts them
+  again from what was measured, by the sample door's own conversion, each rewrite logged in the activity log with the
+  old and new NBS pH and the formula (samples are otherwise never edited); a sample the conversion now refuses is left
+  as it was and named. Running it again changes nothing. The check `farm.W001` (`manage.py check --database default`)
+  counts samples left on an older formula: run the command at landing, after the backup.
+- **NH₃ and CO₂ are judged on the larger of the limits' basis and the activity-corrected value** (formula 3; formula 4
+  keeps the rule and replaced the sea-water basis described here, above; cross review F1,
   owner 2026-11-09; `chemistry::Basis`, `fresh::limits_basis`): the NH₃-N, the CO₂, their statuses, borders and margins,
   the safe TAN, the NH₃ share, the target CO₂, the small NH₃ chart, the simulator's steps and the safe zone all take the
   larger; the activity-corrected NH₃-N and CO₂ are shown beside them as information ("not judged"), with a line saying

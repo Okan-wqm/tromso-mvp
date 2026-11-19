@@ -157,9 +157,10 @@ class Analysis:
 
     nh3_share_pct: float                     # NH₃ as a share of TAN at the water's pH, %
     h2s_share_pct: float                     # H₂S as a share of the total sulfide at the water's pH, %
-    # NH₃ and CO₂ are judged on the larger of the basis their limits were set on (formula 1: the ideal water in fresh
-    # water) and the activity-corrected value (cross review F1): co2_mg_l and nh3_n_mg_l above, their borders, the
-    # safe TAN and the shares are the judged ones; the corrected ones are information, said beside them.
+    # NH₃ and CO₂ are judged on the larger of the safe side (formula 4's Rule S: up to 1 ‰ the ideal water, from 5 ‰ the
+    # best estimate at the pH ± 0.03; chemcore/core/src/formula4.rs) and the best estimate (cross review F1): co2_mg_l
+    # and nh3_n_mg_l above, their borders, the safe TAN and the shares are the judged ones; the best estimates
+    # (`*_corrected_*`, the activity-corrected values) are information, said beside them.
     co2_corrected_mg_l: float
     co2_basis: str                          # 'limits' or 'corrected'
     nh3_corrected_n_mg_l: float | None

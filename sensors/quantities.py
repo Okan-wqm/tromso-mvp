@@ -26,8 +26,8 @@ ALL, DEADBAND = 'all', 'deadband'
 # of 2026-11-17, the water-chemistry audit of 2026-11-19, F1), and put on the NBS scale where the water is read
 # (farm/water/read.py Context.sensor_ph), with the temperature and the salinity of the same moment.
 PH_SCALE_NOTE = _('A pH channel says the scale its probe reports on (its pH scale). A probe calibrated with TRIS (most '
-                  'sea-water ISFET and optical sensors) reports on the total scale, 0.10 to 0.14 lower than NBS in sea '
-                  'water: taken as NBS its NH₃ would read 20 to 27 % low.')
+                  'sea-water ISFET and optical sensors) reports on the total scale, 0.09 to 0.15 lower than NBS in sea '
+                  'water: taken as NBS its NH₃ would read 19 to 28 % low.')
 PH_SCALE_HELP = _('The scale the probe reports its pH on: NBS (calibrated with NBS/NIST buffers), or the total (TRIS), '
                   'seawater or free scale. Other than NBS, each value is put on the NBS scale where the water is worked '
                   'out, with the temperature (a sensor’s, else a sample’s fresh then) and the salinity of the same '

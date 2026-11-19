@@ -9,7 +9,7 @@
     <div class="table-wrap table-wrap-bare">
       <table class="calc-values">
         <tr><th scope="row">{% trans "Un-ionised ammonia (NH₃-N)" %}</th><td class="num wq-value wq-{{ analysis.nh3.status }}">{{ analysis.nh3_n_mg_l|amount:4 }}{% if analysis.nh3_n_mg_l is not None %} mg/L{% endif %}</td></tr>
-        {% if analysis.nh3_judged %}<tr><th scope="row">{% trans "NH₃-N activity-corrected (information, not judged)" %}</th><td class="num">{{ analysis.nh3_corrected_n_mg_l|amount:4 }} mg/L</td></tr>{% endif %}
+        {% if analysis.nh3_judged %}<tr><th scope="row">{% trans "NH₃-N best estimate (information, not judged)" %}</th><td class="num">{{ analysis.nh3_corrected_n_mg_l|amount:4 }} mg/L</td></tr>{% endif %}
         <tr><th scope="row">{% trans "Most TAN at this pH" %}</th><td class="num">{% if analysis.safe_tan_mg_l is None %}—{% elif analysis.safe_tan_mg_l > 100 %}&gt; 100 mg/L{% else %}{{ analysis.safe_tan_mg_l|amount:2 }} mg/L{% endif %}</td></tr>
         {% include "farm/_deffeyes_border.html" with border=analysis.nh3 %}
         <tr><th scope="row">{% trans "NH₃ share of TAN at the border" %}</th><td class="num">{{ analysis.nh3_share_at_border_pct|percent:3 }}</td></tr>
@@ -35,7 +35,7 @@
     <div class="table-wrap table-wrap-bare">
       <table class="calc-values">
         <tr><th scope="row">{% trans "Carbon dioxide (CO₂)" %}</th><td class="num wq-value wq-{{ analysis.co2.status }}">{{ analysis.co2_mg_l|amount:2 }} mg/L<span class="sr-only"> ({{ analysis.co2.status|status_label }})</span></td></tr>
-        {% if analysis.co2_judged %}<tr><th scope="row">{% trans "CO₂ activity-corrected (information, not judged)" %}</th><td class="num">{{ analysis.co2_corrected_mg_l|amount:2 }} mg/L</td></tr>{% endif %}
+        {% if analysis.co2_judged %}<tr><th scope="row">{% trans "CO₂ best estimate (information, not judged)" %}</th><td class="num">{{ analysis.co2_corrected_mg_l|amount:2 }} mg/L</td></tr>{% endif %}
         {% include "farm/_deffeyes_border.html" with border=analysis.co2 %}
         <tr><th scope="row">{% trans "CO₂ the air leaves in it" %}</th><td class="num">{{ result.air_co2_mg_l|amount:2 }} mg/L</td></tr>
         <tr><th scope="row">{% trans "Alkalinity" %}</th><td class="num">{{ analysis.alkalinity_meq|amount:3 }} meq/L</td></tr>

@@ -75,8 +75,8 @@ MEASURED = [
                # The K_NH4 panel's decision of 2026-11-10, row 6. The numbers are the core's own factors over 5 to 35 ‰
                # and 0 to 30 °C (farm/tests/test_ph_scale.py holds them to it).
                _('As a pH meter or kit calibrated with NBS/NIST buffers reads it, at the water’s own temperature. A '
-                 'total-scale pH (a seawater sensor calibrated with TRIS) reads 0.10 to 0.14 lower in water of 5 to '
-                 '35 ‰: typed here as NBS, the NH₃ worked out is 20 to 27 % too low.')),
+                 'total-scale pH (a seawater sensor calibrated with TRIS) reads 0.09 to 0.15 lower in water of 5 to '
+                 '35 ‰: typed here as NBS, the NH₃ worked out is 19 to 28 % too low.')),
     _parameter('alkalinity_mg_l', _('Alkalinity (mg/L as CaCO₃)'), _('Alkalinity (mg/L)'), 0, 0, 1000, 'acid',
                _('Total alkalinity. A kit in dKH: multiply by 17.85.')),
     _parameter('hardness_mg_l', _('Total hardness (mg/L as CaCO₃)'), _('Hardness (mg/L)'), 0, 0, 10000, 'acid',

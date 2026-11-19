@@ -58,11 +58,11 @@ def refused(error):
     return _('Cannot be worked out: %(why)s.') % {'why': error}
 
 
-# A judged NH₃ the core refuses to work out, judged on the limits' basis alone (read.Context._ammonia_on_basis; the
+# A judged NH₃ the core refuses to work out, judged on the safe-side basis alone (read.Context._ammonia_on_basis; the
 # re-check of 2026-11-18, RC-3): the sentence beside the refusal, and the few visible words beside the number.
-ON_BASIS = _('Judged on the basis the limits were set on alone, which needs no conductivity: the judged value is at '
-             'least this; the activity-corrected value is not known.')
-BASIS_ONLY = _('at least: the limits’ basis')
+ON_BASIS = _('Judged on the safe-side basis alone, which needs no conductivity: the judged value is at least this; the '
+             'best estimate is not known.')
+BASIS_ONLY = _('at least: the safe-side basis')
 
 
 def unevaluated(reading):
@@ -249,9 +249,9 @@ STRENGTH_SOURCES = {
 
 
 # The plausibility warnings of a water's inputs (cross review F5; chemcore/core/src/fresh.rs plausibility): said beside
-# the value, never a refusal. 'nh3_past_guard' is the K_NH4 panel's (2026-11-10, row 3): the numbers in its words are
-# the core's NH3_GUARD_MAX_TEMP_C and NH3_GUARD_MAX_SALINITY and the guard test's (chemcore/core/tests/nh3_guard.rs:
-# −1.3 % at 35 °C, −5.6 % at 40 °C, S 35), which farm/tests/test_plausibility.py holds them to.
+# the value, never a refusal. 'nh3_past_guard' is the K_NH4 panel's (2026-11-10, row 3), its words formula 4's: the
+# numbers are the core's NH3_GUARD_MAX_TEMP_C and NH3_GUARD_MAX_SALINITY, the range formula 4 was checked over (its
+# margin holds past it: chemcore/core/tests/formula4.rs), which farm/tests/test_plausibility.py holds them to.
 WARNINGS = {
     'conductivity_salinity': _('Check the conductivity and the salinity: they disagree beyond what any water from NaCl '
                                'brine to a hard fresh water allows (one of them mistyped, uncompensated, or from '
@@ -262,10 +262,9 @@ WARNINGS = {
                                  '(not compensated to 25 °C, or in the wrong unit?); theirs is used.'),
     'seawater_conductivity': _('Check the salinity: the conductivity is that of sea water of 5 ‰ or more (PSS-78) on '
                                'a water without a salinity; give the salinity, or the unit’s water origin.'),
-    'nh3_past_guard': _('NH₃: above 30 °C or a salinity of 35 ‰ the water is outside the range the NH₃ judgement was '
-                        'checked over (0 to 30 °C, up to 35 ‰); the NH₃ shown may read low against Clegg & Whitfield '
-                        '(1995), by about 1 % at 35 °C and 6 % at 40 °C in sea water of 35 ‰. Keep a margin to the '
-                        'limit.'),
+    'nh3_past_guard': _('NH₃ and CO₂: above 30 °C or a salinity of 35 ‰ the water is outside the range the formula '
+                        'was checked over (0 to 30 °C, up to 35 ‰): the judged values keep their margin over the best '
+                        'estimate, but the best estimate itself was not checked there. Keep a margin to the limit.'),
     # The water-chemistry audit of 2026-11-19, F10 (chemcore/core/src/fresh.rs FITTED_FROM_TEMP_C).
     'below_fitted_temp': _('Below 0 °C: the chemistry’s constants are fitted from 0 °C or above, so these values are '
                            'extrapolated. The judged NH₃ and CO₂ stay on the safe side there (they read high, not low).'),
@@ -294,52 +293,48 @@ def provenance(equilibria):
     return ' '.join([f'{said}.', *(str(WARNINGS[code]) for code in equilibria.warnings)])
 
 
-# What judged a water's NH3 or CO2 against its limits (cross review F1; chemcore/core/src/chemistry.rs Basis): the
-# larger of the basis the limits were set on and the activity-corrected value.
+# What judged a water's NH3 or CO2 against its limits (chemcore/core/src/chemistry.rs Basis): formula 4's Rule S (the
+# water-chemistry audit of 2026-11-19 and the owner's decision; chemcore/core/src/formula4.rs): the safe side, the larger
+# of it and the best estimate. Up to 1 ‰ the ideal water as formula 3 had it; from 5 ‰ the best estimate at the pH + 0.03
+# (NH3) or − 0.03 (CO2), native.PH_UNCERTAINTY (farm/tests/test_formula_v4.py holds the words to it); blended between.
 JUDGED = {
-    # From 5 ‰: Khoo et al. 1977's eq. 11, a free-scale molal constant, on the NBS pH as measured (the water-chemistry
-    # audit of 2026-11-19, F5, and its paper check; chemcore/core/src/fresh.rs pk_nh4_seawater).
-    ('nh3', 'limits'): _('NH₃ judged on the basis its limits were set on (to 1 ‰ the ideal water, every activity 1, as '
-                         'Emerson et al. 1975; from 5 ‰ the free-scale pKa of Khoo et al. 1977, eq. 11, applied to the '
-                         'meter’s NBS pH without converting it, which reads more NH₃ than a converted pH would: the '
-                         'safe side, on purpose; salt-added water: the ideal throughout), the larger; activity-corrected '
-                         '%(value)s mg/L.'),
-    ('nh3', 'corrected'): _('NH₃ judged on its activity-corrected value, the larger here.'),
-    ('co2', 'limits'): _('CO₂ judged on the basis its limits were set on (to 1 ‰ the ideal water, every activity 1, as '
-                         'Standard Methods 4500-CO₂ D; from 5 ‰ formula 1’s seawater constants; salt-added water: '
-                         'the ideal throughout), the larger; activity-corrected %(value)s mg/L.'),
-    ('co2', 'corrected'): _('CO₂ judged on its activity-corrected value, the larger here.'),
+    ('nh3', 'limits'): _('NH₃ judged on the safe side (to 1 ‰ the ideal water, every activity 1, as Emerson et al. 1975; '
+                         'from 5 ‰ the best estimate at the pH + 0.03, the uncertainty of a pH reading (US EPA 1989), '
+                         'about 7 %% above it; blended between; salt-added water: the ideal throughout), the larger of it '
+                         'and the best estimate; best estimate %(value)s mg/L.'),
+    ('nh3', 'corrected'): _('NH₃ judged on its best estimate, the larger here.'),
+    ('co2', 'limits'): _('CO₂ judged on the safe side (to 1 ‰ the ideal water, every activity 1, as Standard Methods '
+                         '4500-CO₂ D; from 5 ‰ the best estimate at the pH − 0.03, the uncertainty of a pH reading (US EPA '
+                         '1989), about 7 to 9 %% above it; blended between; salt-added water: the ideal throughout), the '
+                         'larger of it and the best estimate; best estimate %(value)s mg/L.'),
+    ('co2', 'corrected'): _('CO₂ judged on its best estimate, the larger here.'),
 }
 JUDGED_DECIMALS = {'nh3': 4, 'co2': 2}
 # With a phosphate given (chemcore/core/src/chemistry.rs Equilibria::co2_judged): the judged CO₂ is the water's without
 # it, the water's own with it is said beside it.
-JUDGED_WITHOUT_PHOSPHATE = _('CO₂ judged without the phosphate: the larger of the basis its limits were set on and the '
-                             'activity-corrected value, neither counting the phosphate’s alkalinity (Standard Methods '
+JUDGED_WITHOUT_PHOSPHATE = _('CO₂ judged without the phosphate: the larger of the safe side and the best estimate, '
+                             'neither counting the phosphate’s alkalinity (Standard Methods '
                              '4500-CO₂ D takes all the alkalinity as carbonate’s), so it is never below what it was '
                              'before the phosphate was given. With the phosphate counted, the water’s own CO₂ is '
                              '%(value)s mg/L.')
 
 
-# The activity-corrected NH₃ of a water with seawater constants (the water-chemistry audit of 2026-11-19, F6): it rests
-# on the core's own NBS conversion in salt water (chemcore/core/src/chemistry.rs sws_to_nbs_with), which reads 7.6 to
-# 15.7 % below Clegg & Whitfield (1995) with CO2SYS's fH from 16 to 0 °C at S 34; the judged value 10 to 15 % above.
-CORRECTED_SEA = _('In salt water the activity-corrected NH₃ rests on this application’s own conversion of the NBS pH: '
-                  'in cold sea water it reads up to about 16 % below the published references (the judged value about '
-                  '10 to 15 % above them). It is information, not the better value.')
+# What the best estimate of an NH₃ with seawater constants rests on (formula 4; chemcore/core/src/formula4.rs): the NBS
+# pH taken by Millero's (1986) measured step and the ammonium constant of Clegg & Whitfield (1995). Formula 3's own
+# conversion read up to 16 % below the references in cold sea water (the audit of 2026-11-19, F6); formula 4 replaced it.
+BEST_SEA = _('In salt water the best estimate takes the NBS pH by Millero’s (1986) measured step and the ammonium '
+             'constant of Clegg & Whitfield (1995).')
 # An NH₃ worked out from a pH measured on the total, seawater or free scale (the audit of 2026-11-19, F11; a typed
-# sample's or a sensor's): put on the NBS scale and judged on the limits' basis (a free-scale constant on the
-# unconverted NBS pH, `JUDGED`), 13 to 25 % above the NH₃ that pH gives exactly (Clegg & Whitfield 1995; the audit's
-# section 3.4).
-JUDGED_ON_NBS = _('The pH was measured on the %(scale)s: the NH₃ is judged on the NBS scale, with a free-scale constant '
-                  'applied to that NBS pH without converting it, which is the safe side: it reads about 13 to 25 %% '
-                  'more NH₃ than this pH gives worked out exactly, and more than the activity-corrected value.')
+# sample's or a sensor's): put on the NBS scale by the same step and judged as every salt-water NH₃ is (`JUDGED`).
+JUDGED_ON_NBS = _('The pH was measured on the %(scale)s and put on the NBS scale by Millero’s (1986) step: the NH₃ is '
+                  'judged at that pH + 0.03, the uncertainty of a pH reading, about 7 %% above its best estimate.')
 
 
 def judged(kind, basis, corrected, equilibria):
-    """Which value judged a water's NH3 ('nh3') or CO2 ('co2'), with the activity-corrected value beside it, in words;
-    '' for formula 1 (its own value is the limits' basis), for the ideal water (an ionic strength of 0 in fresh water:
-    the two are one) or without a value. An NH₃ of a water with seawater constants says what its corrected value rests
-    on (`CORRECTED_SEA`). KeyError for an unknown kind or basis."""
+    """Which value judged a water's NH3 ('nh3') or CO2 ('co2'), with the best estimate beside it, in words; '' for formula
+    1 (its own value is the limits' basis), for the ideal water (an ionic strength of 0 in fresh water: the two are one,
+    within 0.5 %) or without a value. An NH₃ of a water with seawater constants says what its best estimate rests on
+    (`BEST_SEA`). KeyError for an unknown kind or basis."""
     if kind == 'co2' and equilibria.formula != 1 and equilibria.phosphate > 0 and corrected is not None:
         return str(JUDGED_WITHOUT_PHOSPHATE % {'value': number_format(corrected, JUDGED_DECIMALS[kind])})
     words = JUDGED[kind, basis]
@@ -348,7 +343,7 @@ def judged(kind, basis, corrected, equilibria):
         return ''
     said = str(words % {'value': number_format(corrected, JUDGED_DECIMALS[kind])} if basis == 'limits' else words)
     if kind == 'nh3' and equilibria.sea_weight > 0:
-        said = f'{said} {CORRECTED_SEA}'
+        said = f'{said} {BEST_SEA}'
     return said
 
 

@@ -26,7 +26,7 @@ def formula_version():
 
 
 FORMULA_VERSION = chemcore.formula_version()          # the formula every value of the application is worked out by
-FORMULAS = tuple(chemcore.FORMULAS)                   # the formulas the core can still work out (1, 3)
+FORMULAS = tuple(chemcore.FORMULAS)                   # the formulas the core can still work out (1, 3, 4)
 
 
 def core_hash():
@@ -99,8 +99,13 @@ kw_total = chemcore.kw_total            # formula 1's: the 2007 Guide's total-sc
 kw_sws = chemcore.kw_sws                # formula 3's: Millero (1995) on his seawater scale; at S 0 pure water's
 kw_free = chemcore.kw_free              # ... over [H+]SWS / [H+]free, as formula 3's Equilibria hold it
 kb_total = chemcore.kb_total
-k_nh4_sws = chemcore.k_nh4_sws
+k_nh4_sws = chemcore.k_nh4_sws          # formula 3's K_NH4 (Yao & Millero 1995)
 pk_nh4 = chemcore.pk_nh4
+# Formula 4's K_NH4, the best estimate fresh to sea: Clegg & Whitfield (1995) eq. 18 (total scale, molal) and its pure-water
+# pK; on the free scale per kg of solution as the core holds its constants.
+k_nh4_cw95 = chemcore.k_nh4_cw95
+pk_nh4_cw95_total = chemcore.pk_nh4_cw95_total
+pk_nh4_cw95_pure = chemcore.pk_nh4_cw95_pure
 k_h2s_total = chemcore.k_h2s_total
 # Phosphoric acid (Millero 1995, seawater scale; pure water's at S 0): only a water with a phosphate given reads them.
 k1p_sws = chemcore.k1p_sws
@@ -165,4 +170,12 @@ dielectric_constant = chemcore.dielectric_constant
 water_density = chemcore.water_density
 debye_huckel_a = chemcore.debye_huckel_a
 equilibria_v3 = chemcore.equilibria_v3
+
+# ---- formula 4, the application's (chemcore/core/src/formula4.rs): formula 3 with the NBS step of Millero (1986) in salt
+# water, Clegg & Whitfield's K_NH4 and Rule S: from 5 permil the judged NH3 and CO2 are the best estimate at the pH plus and
+# minus PH_UNCERTAINTY (0.03, US EPA 1989), up to 1 permil formula 3's ideal water, blended between.
+PH_UNCERTAINTY = chemcore.PH_UNCERTAINTY
+equilibria_v4 = chemcore.equilibria_v4
+ph_offset_v4 = chemcore.ph_offset_v4
+nbs_minus_total_25 = chemcore.nbs_minus_total_25
 water_equilibria = chemcore.water_equilibria

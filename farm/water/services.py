@@ -11,7 +11,9 @@ every void: the forms call these functions and the views show what they refuse o
 - A value: inside its parameter's plausible range and at its precision (farm/water/parameters.py); the
   database checks both again. At least one value per sample; nothing is required beyond that (WQ-08).
 - `void` is the undo, as for a stock operation: the sample stops counting and stays in the history with
-  its reason; a correction is a void and a new entry. Samples are never edited (WQ-12).
+  its reason; a correction is a void and a new entry. Samples are never edited (WQ-12), with one exception: after a
+  formula change the NBS pH of a pH measured on another scale is converted again from what was measured
+  (farm/water/rederive.py, `manage.py rederive_ph`), each rewrite logged with its old value.
 
 A failure raises ValidationError, a dict of field to message: 'measured_at', 'point', a parameter's
 code, 'reason' or NON_FIELD_ERRORS; for a round, a row's errors are under ('row', index). Nothing is

@@ -991,8 +991,8 @@ class Context:
             # conductivity beyond the fresh path's range (Davies, I > 0.5), a division by zero, an overflow
             return {NH3_N.code: self._ammonia_on_basis(observation, error, tan, ph, temperature, salinity,
                                                        inputs.get('water_origin') or '')}
-        # The judged share: the larger of the basis the limits were set on and the activity-corrected (cross review
-        # F1); the corrected NH3-N is said beside it, never judged.
+        # The judged share: the larger of the safe side (formula 4's Rule S) and the best estimate (cross review F1);
+        # the best estimate's NH3-N is said beside it, never judged.
         share = Decimal(equilibria.nh3_share(float(ph)))
         # Judged unrounded, shown at four decimals (`Reading.exact`; the audit of 2026-11-19, F3).
         exact = tan * share
@@ -1007,9 +1007,9 @@ class Context:
 
     @staticmethod
     def nh3_basis_share(temperature, salinity, ph, water_origin):
-        """The NH₃ share on the basis the limits were set on alone, or None when the core cannot give it either. The basis
-        is a function of the temperature, the salinity and the water's origin only (chemcore/core/src/fresh.rs
-        `limits_basis`: the ideal water, Khoo's free-scale constant on the NBS pH, or their blend by the salinity), never of the
+        """The NH₃ share on the safe-side basis alone, or None when the core cannot give it either. The basis is a
+        function of the temperature, the salinity and the water's origin only (chemcore/core/src/formula4.rs
+        `limits_basis`: the ideal water, the sea path's best estimate at the pH + 0.03, or their blend by the salinity), never of the
         conductivity, the alkalinity or the hardness, so it is worked out without them (farm/tests/test_core_refusal.py
         holds it equal to the basis of the same water with them, wherever the core works that water out)."""
         try:
@@ -1020,7 +1020,7 @@ class Context:
 
     def _ammonia_on_basis(self, observation, error, tan, ph, temperature, salinity, water_origin):
         """The NH₃ of a TAN sample whose water the core refuses to work out (`error`, its reason: e.g. a conductivity past
-        the Davies range). The judged NH₃ is the larger of the limits' basis and the activity-corrected value (cross
+        the Davies range). The judged NH₃ is the larger of the safe-side basis and the best estimate (cross
         review F1), so it is never below the basis, which needs no conductivity (`nh3_basis_share`): the reading is the
         basis's NH₃-N, at least the judged value, judged by the limits as any value is (Context.judge: past a limit it
         is that, critical past the critical one; else it cannot be evaluated) and it keeps the refusal (`refused`), so the

@@ -272,11 +272,15 @@ class WhatAWriteLocksTests(TestCase):
         return found[batches].replace('-', ''), batches < units
 
     def test_a_write_dated_today_about_the_treated_tank_locks_the_fish_its_withdrawal_holds_elsewhere(self):
-        """Verification V-9, `held_with`: after the move, A's withdrawal holds B in T-02 and in T-03. A water sample in
-        T-01 today can change A's end (a degree-day medicine) and so B's: it must lock B, which a harvest of B locks.
-        B is not in T-01 and the sample reaches nothing from today on (read.downstream), so only `held_with` brings B
-        in: with it cut out, B is not locked, and the sample and a harvest of B no longer take turns."""
+        """Verification V-9, `held_with`: after the move, A's withdrawal holds B in T-02 and in T-03; yesterday the
+        500 A went on from T-02 to T-04, so no fish of A is beside B today. A water sample in T-01 today can change A's
+        end (a degree-day medicine) and so B's: it must lock B, which a harvest of B locks. B was never in T-01 and the
+        fish of T-01 share no unit with B from today on (read.downstream), so only `held_with` brings B in: with it
+        cut out, B is not locked, and the sample and a harvest of B no longer take turns."""
         going_on(self.move)
+        t4 = make_unit('T-04', self.t1.production_department)
+        stock_services.record_transfer(self.user, source=self.t2, batch=self.a, day=self.day(1), legs=[(t4, 500)],
+                                       reason='density')
         site = self.t1.production_department.site
 
         def sample():

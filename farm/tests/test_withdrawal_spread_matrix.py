@@ -73,10 +73,10 @@ class MatrixTestCase(CombinedTestCase):
             if 'Withdrawal warnings acknowledged' in entry.changes)
         for message in messages.values():
             self.assertIn(message, logged)
-        for code, unit in expected:                                   # and the lot IS held, as it was said
+        for code, unit in expected:             # and the harvest of those fish waits for that end, as it was said
             batch = Batch.all_objects.get(code=code)
             unit = next(each for each in (self.t1, self.t2, self.t3, self.t4, self.t5) if each.code == unit)
-            self.assertIn(batch.pk, [held.batch_id for held in self.held(unit)])
+            self.assertEqual(check.earliest(unit, batch).day, self.until)
         return operation
 
 
@@ -136,7 +136,7 @@ class StockingTests(MatrixTestCase):
         self.assertEqual((row.operation.kind, row.batch, row.warning, row.withdrawal_until),
                          ('input', new, 'withdrawal', self.until))
         self.assertIn(f'{new.code} in T-01 will wait for the harvest with ', row.withdrawal_reason)
-        self.assertIn(new.pk, [held.batch_id for held in self.held(self.t1)])
+        self.assertEqual(check.earliest(self.t1, new).day, self.until)
 
 
 class VoidTests(MatrixTestCase):
@@ -186,7 +186,7 @@ class VerifierScheduleTests(MatrixTestCase):
     def test_h4_the_sibling_tank_of_decision_7_moved_into_its_held_part_and_back(self):
         self.transfer(self.b, self.t2, [(self.t5, 1000)], days_ago=8)          # B's sibling tank, before anything
         self.said([(self.b.code, 'T-02')], self.grade, self.a, self.t1, self.t2, days_ago=3)
-        self.assertNotIn(self.b.pk, [held.batch_id for held in self.held(self.t5)])   # decision 7: T-05 is free
+        self.assertEqual(check.earliest(self.t5, self.b).decides, '')                 # decision 7: T-05 is free
         self.said([(self.b.code, 'T-02')], self.transfer, self.b, self.t5, [(self.t2, 300)], days_ago=2)
         self.said([(self.b.code, 'T-05')], self.transfer, self.b, self.t2, [(self.t5, 100)], days_ago=1)
         self.refused_without_a_tick(self.t5, self.b)

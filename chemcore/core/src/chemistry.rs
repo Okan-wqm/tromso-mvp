@@ -469,7 +469,8 @@ impl Origin {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Basis {
     /// The basis the limits were set on (`crate::fresh::limits_basis`: up to 1 ‰ the ideal water, every activity 1, as
-    /// Emerson et al. 1975 and Standard Methods 4500-CO₂ D; from 5 ‰ Khoo et al. 1977's pKaˢ on the NBS pH for NH₃ and
+    /// Emerson et al. 1975 and Standard Methods 4500-CO₂ D; from 5 ‰ Khoo et al. 1977's free-scale molal pKaˢ (eq. 11)
+    /// applied to the NBS pH without conversion for NH₃ and
     /// formula 1's seawater constants for CO₂; blended between; a salt-added water the ideal throughout).
     Limits,
     /// The activity-corrected value of formula 3, the larger here.
@@ -496,8 +497,8 @@ pub struct LimitsBasis {
     pub kb: f64,
     pub boron: f64,
     pub k_nh4: f64,
-    /// The pH offset (free − NBS) of the NH₃ basis: from 5 ‰ the classic sea-water tables apply their pKa^s to the NBS
-    /// pH as measured (Bower & Bidwell 1978; `crate::fresh::pk_nh4_seawater`), so 0 there, while the CO₂ basis keeps
+    /// The pH offset (free − NBS) of the NH₃ basis: from 5 ‰ Khoo et al.'s free-scale pKa^s is applied to the NBS pH as
+    /// measured, not converted (`crate::fresh::pk_nh4_seawater`: the safe side), so 0 there, while the CO₂ basis keeps
     /// formula 1's offset (`ph_offset`).
     pub nh3_ph_offset: f64,
 }

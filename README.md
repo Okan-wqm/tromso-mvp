@@ -1297,9 +1297,10 @@ published values):
   out is stored, so a past sample is shown by today's formula, and says so.
   **The NH₃-N shown, judged and alarmed is the larger of two** (cross review F1, owner decision 2026-11-09, safety with live
   fish): the share on the basis the limits were set on (up to 1 ‰ the ideal water, every activity 1, Emerson et al.
-  1975, as Piper et al. 1982 and US EPA 1985 used it; from 5 ‰ Khoo et al. 1977's pKaˢ on the NBS pH, as Bower & Bidwell
-  1978 apply it for saltwater, cross review round 2, S1: the classic sea-water tables' convention, not the US EPA 1989
-  saltwater criteria's own speciation, Water-chemistry core; salt-added water: the ideal throughout) and formula 3's
+  1975, as Piper et al. 1982 and US EPA 1985 used it; from 5 ‰ Khoo et al. 1977's eq. 11, a free-scale molal pKaˢ,
+  applied to the meter's NBS pH without converting it, the safe side (cross review round 2, S1, and the water-chemistry
+  audit of 2026-11-19, F5; neither Bower & Bidwell 1978's tables nor the US EPA 1989 saltwater criteria's own
+  speciation, Water-chemistry core); salt-added water: the ideal throughout) and formula 3's
   activity-corrected share. The corrected NH₃-N is said in the title beside it ("NH₃ judged on the basis its limits were
   set on ..., the larger; activity-corrected 0.0121 mg/L."); it is never judged. In fresh water the basis is always the
   larger (at 12 °C, pH 7.5 the corrected NH₃ is 8.7 % lower at 500 µS/cm, 11.6 % at 1000 and 17.2 % at 3000), so the
@@ -1570,15 +1571,28 @@ without values it shows its defaults.
   larger; the activity-corrected NH₃-N and CO₂ are shown beside them as information ("not judged"), with a line saying
   which judged. The limits' basis is the ideal water up to 1 ‰ (every activity 1: Emerson et al. 1975's fraction, on
   which Piper et al. 1982 and US EPA 1985 set the NH₃ limits; Standard Methods 4500-CO₂ D's free CO₂), formula 1's
-  seawater constants from 5 ‰ for CO₂ and, for NH₃, the classic sea-water tables' convention from 5 ‰ (cross review
-  round 2, S1): a Khoo-type pKaˢ = 0.09018 + 2729.92/T + (0.1552 − 0.0003142 t) I (Emerson's temperature term with Khoo
-  et al. 1977's ionic term) on the NBS pH as measured, as Bower & Bidwell 1978 apply it (`fresh::pk_nh4_seawater`),
-  blended between as formula 3 blends; a salt-added water keeps the ideal throughout, past the Davies limit too.
+  seawater constants from 5 ‰ for CO₂ and, for NH₃ from 5 ‰ (cross review round 2, S1), Khoo, Culberson & Bates
+  (1977)'s eq. 11 (p. 285), pKaˢ = pK° + (0.1552 − 0.0003142 t) I with Emerson's pure-water pK° = 0.09018 + 2729.92/T
+  (`fresh::pk_nh4_seawater`), applied to the NBS pH as measured, blended between as formula 3 blends; a salt-added water
+  keeps the ideal throughout, past the Davies limit too.
+  **What that sea-water constant is** (the water-chemistry audit of 2026-11-19, F5, checked against the paper,
+  `F:\dev\balik-notes\chem-audit-fable\PAPERS-CHECK-A.md`): a constant on the free hydrogen ion scale (Khoo's eq. 7,
+  p. 283) and molal (Table III, p. 288), measured from 5 to 40 °C at S 20.31 to 44.55 (this form within −0.009 to
+  +0.011 of the 24 values). The application applies it to the meter's NBS pH without converting that pH to the free
+  scale; in sea water the NBS pH reads above the free pH, so the NH₃ reads higher than with a converted pH (6 to 20 % at
+  S 20 to 35): the safe side, on purpose, not "the true value". No paper says a sea-water table takes an NBS pH; that
+  toxicity tests calibrate with NBS buffers is US EPA 1989's statement (p. 2). At 12 °C and S 34 the judged NH₃ is
+  about 3 to 15 % above the best published estimates (depending on how the free scale is reached), and formula 3's
+  judged NH₃ is above formula 1's by about 25 % at 12 °C, 35 % at 4 °C and 41 % at 0 °C (S 34; about 4 % only near 30
+  to 35 °C), as `F:\dev\balik-notes\chem-v3\OWNER-DECISIONS.md` now says. It was described here before as "Khoo's pKa
+  on the NBS pH, as Bower & Bidwell 1978 apply it": Bower & Bidwell never cite Khoo; their tables take Whitfield's
+  (1974) 25 °C values per salinity band with a linear temperature term (Table 1, p. 1012; p. 1015). Against their
+  Table 5 this basis gives the same NH₃ at 12 °C and S 34 and less below it (−4.0 % at 4 °C, −7.5 % at 0 °C), their
+  linear term being the one that departs from the measurements (the audit's F12, for the owner).
   **What that sea-water basis is not** (the K_NH4 panel, 2026-11-10; it was earlier called "the saltwater criteria's
   convention" here): the US EPA 1989 saltwater ammonia criteria (EPA 440/5-88-004, pp. 1–2 and 27–28, eq. 4, read by
   the panel) did not use Khoo's pK. They used Hampson's (1977) program for Whitfield's (1974) seawater model with a
-  linear temperature term, 0.0324 (298 − T); only the convention is shared (a stoichiometric pK applied to the NBS meter
-  pH). Against our basis EPA's printed table gives 6.7 to 14.3 % more NH₃ at 0 to 5 °C (that linear term, which is
+  linear temperature term, 0.0324 (298 − T); what is shared is a stoichiometric pK applied to the NBS meter pH. Against our basis EPA's printed table gives 6.7 to 14.3 % more NH₃ at 0 to 5 °C (that linear term, which is
   8.1 % wrong in pure water at 0 °C) and agrees within 2 to 6 % at 10 to 25 °C; the EIFAC (1986) sea-water tables imply a
   pK inside our basis's span over each of their salinity bands at 10 to 30 °C, or up to 0.011 below it (NH₃ −2.6 to
   +6.7 % against the band edges). A limit taken from EPA 1989's own table for water of 0 to 5 °C was therefore set

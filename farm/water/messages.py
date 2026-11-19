@@ -233,9 +233,13 @@ def provenance(equilibria):
 # What judged a water's NH3 or CO2 against its limits (cross review F1; chemcore/core/src/chemistry.rs Basis): the
 # larger of the basis the limits were set on and the activity-corrected value.
 JUDGED = {
+    # From 5 ‰: Khoo et al. 1977's eq. 11, a free-scale molal constant, on the NBS pH as measured (the water-chemistry
+    # audit of 2026-11-19, F5, and its paper check; chemcore/core/src/fresh.rs pk_nh4_seawater).
     ('nh3', 'limits'): _('NH₃ judged on the basis its limits were set on (to 1 ‰ the ideal water, every activity 1, as '
-                         'Emerson et al. 1975; from 5 ‰ Khoo et al. 1977’s pKa on the NBS pH, as Bower & Bidwell 1978; '
-                         'salt-added water: the ideal throughout), the larger; activity-corrected %(value)s mg/L.'),
+                         'Emerson et al. 1975; from 5 ‰ the free-scale pKa of Khoo et al. 1977, eq. 11, applied to the '
+                         'meter’s NBS pH without converting it, which reads more NH₃ than a converted pH would: the '
+                         'safe side, on purpose; salt-added water: the ideal throughout), the larger; activity-corrected '
+                         '%(value)s mg/L.'),
     ('nh3', 'corrected'): _('NH₃ judged on its activity-corrected value, the larger here.'),
     ('co2', 'limits'): _('CO₂ judged on the basis its limits were set on (to 1 ‰ the ideal water, every activity 1, as '
                          'Standard Methods 4500-CO₂ D; from 5 ‰ formula 1’s seawater constants; salt-added water: '

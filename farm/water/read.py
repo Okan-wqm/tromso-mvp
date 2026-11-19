@@ -869,7 +869,7 @@ class Context:
     def nh3_basis_share(temperature, salinity, ph, water_origin):
         """The NH₃ share on the basis the limits were set on alone, or None when the core cannot give it either. The basis
         is a function of the temperature, the salinity and the water's origin only (chemcore/core/src/fresh.rs
-        `limits_basis`: the ideal water, the sea-water tables' convention, or their blend by the salinity), never of the
+        `limits_basis`: the ideal water, Khoo's free-scale constant on the NBS pH, or their blend by the salinity), never of the
         conductivity, the alkalinity or the hardness, so it is worked out without them (farm/tests/test_core_refusal.py
         holds it equal to the basis of the same water with them, wherever the core works that water out)."""
         try:

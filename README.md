@@ -1555,24 +1555,34 @@ without values it shows its defaults.
     optical sea-water probe reports; seawater; free). The ingest stores what the device sends. Where the water is read
     (`farm/water/read.py`: the latest values, the water at a past moment; the replay; the trail) a value on another scale
     is put on the NBS scale by the one conversion a typed sample takes (`read.ph_on_nbs`, which `services.on_nbs` calls
-    too), with the place's fresh temperature from the sensors (as a sensor's TAN takes its pH and temperature) and the
+    too), with the place's fresh temperature from the sensors (as a sensor's TAN takes its pH and temperature), else the
+    place's temperature (a sample's) where it is fresh at the pH's own time, as the oxygen's other unit, the replay and
+    the trail take it (the review's C2; the provenance then says "The temperature is manual, 19.11.2026 10:00."), and the
     salinity of the same moment (a fresh sensor's, else the point's fresh sample's, else 0 in fresh water), for sea water
     of 5 ‰ or more and never for fresh water with salt added, while the pH is fresh. It is then shown as the typed
     sample's is ("measured 7.95 on the total scale" beside 8.08; "Measured 7.95 on the total scale by the sensor; put on
     the NBS scale by formula 3 with 12.0 °C and 34.0 ‰ of the same moment."), and its NH₃ is the typed sample's: a TRIS
     probe at 12 °C and S 34 gives the judged NH₃-N the same water typed as a total-scale sample gives. Otherwise (no
-    fresh sensor temperature, no salinity, fresh or salt-added water, a pH no longer fresh) **the pH has no value and
-    cannot be evaluated**, said with the reason, and so is an NH₃ worked out from it; the unconverted number is shown and
-    used nowhere (a worse fresh sample still decides the status). The replay's frame has no pH and no diagram then,
-    with the reason; the trail's hour is unworkable with it. The sensor's own chart draws its values as measured and says
-    their scale beside the NBS samples. The alarm rules on a channel (Sensors › Alarm rules) compare its values as
-    measured, on its scale; the water limits' alarms judge the converted value.
+    temperature fresh at its time, no salinity, fresh or salt-added water, a water the core cannot work out at all,
+    a pH no longer fresh) **the pH has no value and cannot be evaluated**, said with the reason (the core's own where it
+    refused the water, never "not sea water": C5), and so is an NH₃ worked out from it; the unconverted number is shown
+    and used nowhere (a worse fresh sample still decides the status). **It is never silent for the alarms** (the
+    review's M1): the unit gets the alarm system's warning "<unit>: pH (NBS scale) cannot be evaluated: <why>" (Alarms,
+    below), as a refused NH₃ does. The replay's frame has no pH and no diagram then, with the reason; the trail's hour
+    is unworkable with it. The sensor's own chart draws its values as measured and says their scale beside the NBS
+    samples. The alarm rules on a channel (Sensors › Alarm rules) take no above or below on a pH (a water value: the
+    water limits judge its level, on the converted value); a rate is about the same on every scale and never compares a
+    value with one from before a change of scale (C1).
     *A change of a channel's scale* (whatever door saves it, `Channel.save`) records the moment (`ph_scale_from`). What
     the probe measured before is on a scale not known any more (a probe recalibrated, or a setting put right: the
     application cannot tell which), so **those values are used nowhere, neither on the old scale nor on the new**: the
     latest pH says "cannot be evaluated: measured before the channel's pH scale was changed" until the probe's next
-    value (minutes, at a pH channel's heartbeat), the past moments, the replay, the trail and the chart leave them out
-    (the chart marks the change). This is the safe side both ways: a total-scale reading taken as NBS reads NH₃ low,
+    value, the past moments, the replay, the trail and the chart leave them out (the chart marks the change, and a
+    window with values left out says "Channel #n's values before <the change> are not drawn: its pH scale was changed
+    then", even a window wholly before it, which draws nothing: C4). The alarm system's warning for such a value waits
+    while it would still be fresh (the probe's next value is due by then and is read on the new scale), so a change of
+    scale does not raise and end a warning; a probe that sends nothing after the change is warned of once its value
+    would be stale (`alarms/sources.py _unevaluated_since`). This is the safe side both ways: a total-scale reading taken as NBS reads NH₃ low,
     an NBS reading taken as total reads a low pH too high. The channel's form asks the scale (pH channels only; empty:
     as it is), its list and the live values say it, its edit page says when it was changed; the column, a database
     default for the ingest's inserts and the check `chk_sensors_channel_ph_scale` are sensors 0013.
@@ -4013,9 +4023,12 @@ from which device, how late) is logged. The server side is built; the push trans
   alarm from the pass it fails in until it passes again; the water step reads all units at once and, when that fails, each
   on its own, and evaluates each on its own, so a unit that cannot be read or evaluated raises its own critical alarm on
   its site ("could not be evaluated") and every other unit goes on; a unit with fish and no point to read its own water at
-  is a configuration warning on its site (F16); a judged value the chemistry core refuses to work out (the NH₃ of a water
-  whose conductivity is past the Davies range) is a warning on its site, "<unit>: <value> cannot be evaluated: <the
-  core's reason>" (subject `system:unit:<id>:value_unevaluated:<parameter>`, its on-delay counted from the value's time),
+  is a configuration warning on its site (F16); a judged value that comes without a number for a stated reason (the NH₃
+  of a water whose conductivity is past the Davies range, which the chemistry core refuses; a sensor pH on the total,
+  seawater or free scale that cannot be put on the NBS scale: the review of the water-chemistry audit, M1) is a warning
+  on its site, "<unit>: <value> cannot be evaluated: <the reason>" (subject
+  `system:unit:<id>:value_unevaluated:<parameter>`, one per value the limits judge, `REFUSABLE`; its on-delay counted
+  from the value's time, for a sensor pH from before its channel's scale changed from when that value would be stale),
   ended on evidence only: "restored" once the value is worked out again, "the water limit was removed" or "no fish in
   the unit any more" once nothing judges it; a later TAN without its pH, or the refused sample leaving the 30-day
   window, ends nothing (RC-4). Beside it the value's own limit levels judge its limits' basis, which needs no

@@ -2700,6 +2700,7 @@
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_operations.py",
         "sensors/tests/test_pages.py",
+        "sensors/tests/test_ph_scale.py",
         "sensors/tests/test_portable.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_cross_review.py",
@@ -19928,6 +19929,7 @@
         "farm/tests/test_ph_scale.py",
         "farm/tests/test_ph_scale_salt_added.py",
         "farm/tests/test_protocols.py",
+        "farm/tests/test_sensor_ph_scale.py",
         "farm/tests/test_site_structure.py",
         "farm/tests/test_species_size_limit.py",
         "farm/tests/test_stock.py",
@@ -19950,6 +19952,7 @@
         "monitoring/tests/test_golden.py",
         "monitoring/tests/test_token.py",
         "sensors/tests/test_pages.py",
+        "sensors/tests/test_ph_scale.py",
         "sensors/tests/test_portable.py",
         "sensors/tests/test_replay.py",
         "alarms/tests/test_cross_review.py"
@@ -36963,6 +36966,35 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "ph_scale",
+          "field": "ph_scale",
+          "type": "varchar(5)",
+          "null": false,
+          "choices": [
+            "nbs",
+            "total",
+            "sws",
+            "free"
+          ],
+          "link": null,
+          "on_form": [
+            "ChannelForm › Quantity and unit"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "ph_scale_from",
+          "field": "ph_scale_from",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -37064,6 +37096,12 @@
           "kind": "check",
           "fields": [],
           "conditional": false
+        },
+        {
+          "name": "chk_sensors_channel_ph_scale",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
         }
       ],
       "screens": {
@@ -37145,6 +37183,7 @@
             "item_name": "Source",
             "note": "Source",
             "quantity": "Quantity and unit",
+            "ph_scale": "Quantity and unit",
             "unit": "Quantity and unit",
             "unit_factor": "Quantity and unit",
             "unit_offset": "Quantity and unit",
@@ -37174,11 +37213,13 @@
       },
       "tests": [
         "core/tests_workspaces.py",
+        "farm/tests/test_sensor_ph_scale.py",
         "sensors/tests/__init__.py",
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_contract.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_pages.py",
+        "sensors/tests/test_ph_scale.py",
         "sensors/tests/test_portable.py",
         "sensors/tests/test_replay.py",
         "sensors/tests/test_schema.py"
@@ -37395,6 +37436,7 @@
         "sensors/tests/test_demo.py",
         "sensors/tests/test_history.py",
         "sensors/tests/test_operations.py",
+        "sensors/tests/test_ph_scale.py",
         "sensors/tests/test_portable.py",
         "sensors/tests/test_read.py",
         "alarms/tests/test_clock.py"
@@ -39963,6 +40005,7 @@
         "core/test_datamap.py",
         "core/test_text.py",
         "core/tests_workspaces.py",
+        "farm/tests/test_nh3_unrounded.py",
         "knowledge/tests/test_extraction.py",
         "experiments/tests/test_overview.py",
         "monitoring/tests/test_read.py",

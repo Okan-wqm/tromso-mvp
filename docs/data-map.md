@@ -317,7 +317,7 @@ Who did what to which record, with old and new values.
 - **how it works**: A record's own rows are also shown on the History tab of its edit page.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log (never shown: changes)
 - **constraints**: chk_audit_log_severity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 113 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 114 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1805,7 +1805,7 @@ A unit fish are held in: a tank, a pond or a cage.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › tanks
 - **forms**: `TankForm`
 - **constraints**: uq_tanks_code_live (unique: code); uq_tanks_regulatory_unit_id_live (unique: production_department, regulatory_unit_id); chk_tanks_kind (check); chk_tanks_status (check); chk_tanks_water_type (check); chk_tanks_water_origin (check); chk_tanks_shape_by_kind (check); chk_tanks_material_by_kind (check); chk_tanks_pond_type_by_kind (check); chk_tanks_liner_type_by_kind (check); chk_tanks_water_source_by_kind (check); chk_tanks_cage_type_by_kind (check); chk_tanks_frame_type_by_kind (check); chk_tanks_net_material_by_kind (check); chk_tanks_tank_required (check); chk_tanks_pond_required (check); chk_tanks_cage_required (check); chk_tanks_diameter_by_shape (check); chk_tanks_length_by_shape (check); chk_tanks_stated_volume_m3_by_shape (check); chk_tanks_width_by_shape (check); chk_tanks_square_sides (check); chk_tanks_long_side_first (check); chk_tanks_water_depth (check); chk_tanks_max_depth (check); chk_tanks_liner_by_pond_type (check); chk_tanks_liner_thickness (check); chk_tanks_submersion (check); chk_tanks_diameter_range (check); chk_tanks_length_range (check); chk_tanks_width_range (check); chk_tanks_stated_volume_m3_range (check); chk_tanks_depth_range (check); chk_tanks_surface_area_m2_range (check); chk_tanks_max_depth_range (check); chk_tanks_mesh_size_mm_range (check); chk_tanks_max_submersion_depth_range (check); chk_tanks_max_density_kg_m3_range (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_workspaces.py` and 41 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_workspaces.py` and 43 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3400,8 +3400,8 @@ One value a device sends: what it measures (a quantity of sensors/quantities.py)
 - **read**: channels tab (`/sensors/channels/`)
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Sensors › sensors_channel
 - **forms**: `ChannelForm`
-- **constraints**: uq_sensors_channel_code_live (unique: device, code); chk_sensors_channel_code (check); chk_sensors_channel_name (check); chk_sensors_channel_quantity (check); chk_sensors_channel_unit_factor (check); chk_sensors_channel_unit_offset (check); chk_sensors_channel_fresh_heartbeats (check); chk_sensors_channel_source (check); chk_sensors_channel_value_path (check); chk_sensors_channel_protocol (check); chk_sensors_channel_address (check); chk_sensors_channel_reduction (check); chk_sensors_channel_deadband (check); chk_sensors_channel_heartbeat (check); chk_sensors_channel_range (check); chk_sensors_channel_state (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/__init__.py`, `sensors/tests/test_bindings.py` and 6 more
+- **constraints**: uq_sensors_channel_code_live (unique: device, code); chk_sensors_channel_code (check); chk_sensors_channel_name (check); chk_sensors_channel_quantity (check); chk_sensors_channel_unit_factor (check); chk_sensors_channel_unit_offset (check); chk_sensors_channel_fresh_heartbeats (check); chk_sensors_channel_source (check); chk_sensors_channel_value_path (check); chk_sensors_channel_protocol (check); chk_sensors_channel_address (check); chk_sensors_channel_reduction (check); chk_sensors_channel_deadband (check); chk_sensors_channel_heartbeat (check); chk_sensors_channel_range (check); chk_sensors_channel_state (check); chk_sensors_channel_ph_scale (check)
+- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_sensor_ph_scale.py`, `sensors/tests/__init__.py` and 8 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3436,6 +3436,8 @@ One value a device sends: what it measures (a quantity of sensors/quantities.py)
 | range_max | double precision | yes |  | ChannelForm › Storing |
 | state | varchar(12) |  |  | ChannelForm › Storing |
 | note | text |  |  | ChannelForm › Source |
+| ph_scale | varchar(5) |  |  | ChannelForm › Quantity and unit |
+| ph_scale_from | timestamp with time zone | yes |  | system: not editable: set by the code |
 
 <a id="sensorschannelstate"></a>
 ### sensors.ChannelState (`sensors_channel_state`)
@@ -3448,7 +3450,7 @@ What the ingest service remembers of each sensor channel: its last value, the la
 - **read**: none, by design: read by the latest values (sensors/read.py)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Sensors › sensors_channel_state
 - **constraints**: chk_sensors_channel_state_run_n (check)
-- **tests that mention it**: `sensors/tests/test_alarms.py`, `sensors/tests/test_bindings.py`, `sensors/tests/test_contract.py` and 6 more
+- **tests that mention it**: `sensors/tests/test_alarms.py`, `sensors/tests/test_bindings.py`, `sensors/tests/test_contract.py` and 7 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3738,7 +3740,7 @@ One stored value of a channel at the device's time: the hypertable `sensors_read
 - **how it works**: A TimescaleDB hypertable; left out of the database viewer (billions of rows).
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: left out on purpose (config/database.py)
 - **constraints**: chk_sensors_reading_value (check); chk_sensors_reading_quality (check); chk_sensors_reading_run (check)
-- **tests that mention it**: `core/test_datamap.py`, `core/test_text.py`, `core/tests_workspaces.py` and 5 more
+- **tests that mention it**: `core/test_datamap.py`, `core/test_text.py`, `core/tests_workspaces.py` and 6 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

@@ -147,6 +147,8 @@ pub fn k1_sws(temp_c: f64, salinity: f64) -> R {
 }
 
 /// Second dissociation constant of carbonic acid, seawater scale, mol/kg: Millero et al. (2006). S 1–50, t 0–50 °C.
+/// The S^½ ln T term is the abstract's 3.3336; the paper's Table 5 prints 3.32254, a misprint: only 3.3336 meets its
+/// check value pK2 = 8.9636 at S 35, 25 °C (the water-chemistry audit's paper check of 2026-11-19, F13).
 pub fn k2_sws(temp_c: f64, salinity: f64) -> R {
     let t = temp_c + KELVIN;
     let root = sqrt(salinity)?;
@@ -180,9 +182,10 @@ pub fn kw_total(temp_c: f64, salinity: f64) -> R {
 }
 
 /// Ion product of water, seawater scale, (mol/kg)²: Millero (1995), Geochim. Cosmochim. Acta 59: 661, ln Kw =
-/// 148.9802 − 13847.26/T − 23.6521 ln T + (−5.977 + 118.67/T + 1.0495 ln T) S^½ − 0.01615 S (the paper itself was not
-/// opened: the constant term is the 2007 Guide's 148.9652 with the 0.015 its footnote 5 says it took from Millero's, the
-/// value PyCO2SYS and seacarb take). Check values: ln Kw = −30.419 at S 35, 25 °C (the Guide's −30.434 + 0.015); at S 0
+/// 148.9802 − 13847.26/T − 23.6521 ln T + (−5.977 + 118.67/T + 1.0495 ln T) S^½ − 0.01615 S, mol/kg-soln, as printed
+/// there (eq. 63, p. 670) and in Yao & Millero (1995), Aquat. Geochem. 1: 53, p. 83 (read for the water-chemistry audit's
+/// paper check of 2026-11-19, F13; before, it was rebuilt from the 2007 Guide's 148.9652 and the 0.015 its footnote 5
+/// says it took from Millero's: the same number). Check values: ln Kw = −30.419 at S 35, 25 °C (the Guide's −30.434 + 0.015); at S 0
 /// pure water's, pKw 13.9946 at 25 °C and 14.9412 at 0 °C (Harned & Owen 1958: 13.9965 and 14.9435). S 0–45, t 0–45 °C.
 /// Formula 3's (`kw_free`).
 pub fn kw_sws(temp_c: f64, salinity: f64) -> R {
@@ -210,8 +213,12 @@ pub fn kb_total(temp_c: f64, salinity: f64) -> R {
         + 0.053105 * root * t)
 }
 
-/// Ammonium dissociation constant, seawater scale: Millero (1995). S 0–40, t 0–40 °C; in fresh water within 0.002 pK
-/// of Emerson et al. (1975) up to 30 °C.
+/// Ammonium dissociation constant, seawater scale, mol/kg-soln: Yao & Millero (1995), appendix p. 84, as Millero (1995)
+/// eq. 76 (p. 671) prints it: a fit of Khoo et al. (1977) and Johansson & Wedborg (1980) forced through Bates &
+/// Pinching's infinite-dilution values, standard error 0.01 in pK. No range is printed (it said "S 0–40, t 0–40 °C"
+/// here before: the water-chemistry audit's paper check of 2026-11-19, F13): the data are S 20 to 45, 5 to 40 °C, the
+/// pure-water end fixed. Millero's printed example "pKNH₄ = 9.19" at S 35, 25 °C is not a check value (the equation
+/// gives 9.256). In fresh water within 0.002 pK of Emerson et al. (1975) up to 30 °C.
 pub fn k_nh4_sws(temp_c: f64, salinity: f64) -> R {
     let t = temp_c + KELVIN;
     let root = sqrt(salinity)?;
@@ -239,8 +246,10 @@ pub fn k_h2s_total(temp_c: f64, salinity: f64) -> R {
 /// Read in Dickson, Sabine & Christian (eds.) 2007, Guide to Best Practices for Ocean CO₂ Measurements, ch. 5, eq. (49),
 /// which prints it for the total scale with 0.015 taken from the constant term (115.525; its footnote 5: "to
 /// convert—approximately—from the SWS pH scale (including HF) used by Millero (1995)"). The term here is the Guide's
-/// plus that 0.015, Millero's own, as `kw_sws` (Millero's paper itself was not opened; PyCO2SYS and seacarb take the
-/// same numbers). Check value: the Guide's ln K1P = −3.71 at S 35, 25 °C (total scale). At S 0 it is pure water's:
+/// plus that 0.015, Millero's own, as `kw_sws`: Millero (1995) eq. 65 (p. 670) prints it so (the audit's paper check of
+/// 2026-11-19, F13; with eq. 66 and 67 for `k2p_sws` and `k3p_sws`). Yao & Millero (1995, p. 84) print 0.6971 for the
+/// S^½ term, a misprint: only 0.69171 gives the Guide's check value. PyCO2SYS and seacarb take the same numbers. Check
+/// value: the Guide's ln K1P = −3.71 at S 35, 25 °C (total scale). At S 0 it is pure water's:
 /// pK 2.148 at 25 °C. S 0–45, t 0–45 °C. Only a water with a phosphate given reads it (`crate::fresh`).
 pub fn k1p_sws(temp_c: f64, salinity: f64) -> R {
     let t = temp_c + KELVIN;

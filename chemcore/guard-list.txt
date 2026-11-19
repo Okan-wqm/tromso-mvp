@@ -4,6 +4,7 @@ name AIR_CO2
 name ALERT_PH
 name ALL_LAYERS
 name AT_TARGET
+name BELOW_FITTED_TEMP
 name BOUND_OVER_ESTIMATE
 name BY_KEY
 name CONDUCTIVITY_ABOVE_IONS
@@ -13,6 +14,7 @@ name DAVIES_MAX
 name DEBYE_HUCKEL
 name DEFAULT_REAGENTS
 name ESTIMATE_OVER_BOUND
+name FITTED_FROM_TEMP_C
 name FORMULA_VERSION
 name FRESH_UP_TO
 name H2S_PER_S
@@ -197,9 +199,11 @@ number 2.0695
 number 2.7081
 number 2.81197
 number 3.17556
+number 3.32254
 number 3.3336
 number 5.25588
 number 7.0261
+number 8.9636
 number 10.754
 number 10.811
 number 11.8571
@@ -300,7 +304,6 @@ number 1590.2
 number 1776.0
 number 2140.7
 number 2698.0
-number 2729.2
 number 2729.92
 number 2839.319
 number 2890.53

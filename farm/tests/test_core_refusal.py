@@ -166,20 +166,21 @@ class ArithmeticRefusalTests(WaterTestCase):
     def test_an_arithmetic_error_of_the_core_is_a_refused_scale_at_the_sample_door_and_the_calculator(self):
         """The siblings of the NH₃'s catch (the re-check of 2026-11-18, V-G): the pH-scale rule of the sample door
         (services.on_nbs) and of the calculator (CalculatorForm._ph_scale) asked the core inside a catch of ValueError
-        only. An arithmetic error is a scale refused with the reason, as a ValueError is, never a failed page."""
+        only. An arithmetic error is a scale refused with the reason, as a ValueError is, never a failed page. The
+        reason is the core's own, never "not sea water" (the review of the water-chemistry audit, C5)."""
         from unittest import mock
         from django.core.exceptions import ValidationError
-        from ..water import chemistry, messages
-        not_sea = str(messages.PH_NOT_SEA)
+        from ..water import chemistry
         for error in (ZeroDivisionError('float division by zero'), OverflowError('math range error')):
+            said = f'Cannot be worked out: {error}.'
             with self.subTest(error=error), mock.patch.object(chemistry, 'water_equilibria', side_effect=error):
                 with self.assertRaises(ValidationError) as caught:
                     services.record(self.user, point=self.mid1, measured_at=self.ago(hours=1), source='manual',
                                     values={'ph': D('7.95'), 'temperature_c': D('12.0'), 'salinity_ppt': D('34.0')},
                                     ph_scale='total')
-                self.assertEqual(caught.exception.message_dict, {'ph_scale': [not_sea]})
+                self.assertEqual(caught.exception.message_dict, {'ph_scale': [said]})
                 page = self.client.get(reverse('farm:water_calculator'), {
                     'temperature_c': '12', 'salinity_ppt': '34', 'alkalinity_mg_l': '115', 'ph': '7.95',
                     'ph_scale': 'total', 'tan_mg_l': '1', 'drawn': '1'})
                 self.assertEqual(page.status_code, 200)
-                self.assertEqual(page.context['form'].errors['ph_scale'], [not_sea])
+                self.assertEqual(page.context['form'].errors['ph_scale'], [said])

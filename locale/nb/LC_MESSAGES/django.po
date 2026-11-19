@@ -2354,15 +2354,20 @@ msgstr "En melding sendes straks: den har ingen senere frist."
 
 #, python-format
 msgid ""
-"A pH channel is on the NBS scale (a probe calibrated with NBS/NIST buffers). A sensor that "
-"reports on the total scale (calibrated with TRIS) is not converted here: its pH reads 0.10 to "
-"0.14 low in sea water and the NH₃ worked out from it 20 to 27 % low. Record such a pH as a sample"
-" with its scale."
+"A pH channel says the scale its probe reports on (its pH scale). A probe calibrated with TRIS "
+"(most sea-water ISFET and optical sensors) reports on the total scale, 0.10 to 0.14 lower than "
+"NBS in sea water: taken as NBS its NH₃ would read 20 to 27 % low."
 msgstr ""
-"En pH-kanal er på NBS-skalaen (en sonde kalibrert med NBS/NIST-buffere). En sensor som måler på "
-"totalskalaen (kalibrert med TRIS) blir ikke regnet om her: pH viser 0,10 til 0,14 for lavt i "
-"sjøvann, og NH₃ beregnet fra den 20 til 27 % for lavt. Registrer en slik pH som en prøve med "
-"skalaen sin."
+"En pH-kanal oppgir skalaen sonden måler på (pH-skalaen). En sonde kalibrert med TRIS (de fleste "
+"ISFET- og optiske sjøvannssensorer) måler på totalskalaen, 0,10 til 0,14 lavere enn NBS i "
+"sjøvann: tatt som NBS ville NH₃ blitt 20 til 27 % for lav."
+
+msgid ""
+"A pH channel’s scale was changed in this time: what it measured before is not drawn (its scale is"
+" not known)."
+msgstr ""
+"Skalaen til en pH-kanal ble endret i dette tidsrommet: det den målte før, tegnes ikke (skalaen er"
+" ikke kjent)."
 
 msgid ""
 "A pH on this scale is taken for sea water of 5 ‰ or more only (not fresh water with salt added): "
@@ -3820,8 +3825,12 @@ msgstr "Som gitt, på grammet (0,035 for 35 g)."
 msgid "As many tanks or systems as replicates; a system gives all its tanks to one replicate."
 msgstr "Like mange kar eller systemer som replikater; et system gir alle karene sine til ett replikat."
 
-msgid "As nitrogen. A kit that reads NO₂⁻: divide by 3.29."
-msgstr "Som nitrogen. Et sett som leser NO₂⁻: del på 3,29."
+#, python-format
+msgid "As measured, on its pH scale: %(scale)s"
+msgstr "Som målt, på pH-skalaen: %(scale)s"
+
+msgid "As nitrogen. A kit that reads NO₂⁻: divide by 3.28."
+msgstr "Som nitrogen. Et sett som leser NO₂⁻: del på 3,28."
 
 msgid "As nitrogen. A kit that reads NO₃⁻: divide by 4.43."
 msgstr "Som nitrogen. Et sett som leser NO₃⁻: del på 4,43."
@@ -4144,6 +4153,14 @@ msgstr "Før håndtering"
 
 msgid "Below"
 msgstr "Under"
+
+msgid ""
+"Below 0 °C: the chemistry’s constants are fitted from 0 °C or above, so these values are "
+"extrapolated. The judged NH₃ and CO₂ stay on the safe side there (they read high, not low)."
+msgstr ""
+"Under 0 °C: kjemiens konstanter er tilpasset fra 0 °C eller høyere, så disse verdiene er "
+"ekstrapolert. Vurdert NH₃ og CO₂ holder seg på den sikre siden der (de blir for høye, ikke for "
+"lave)."
 
 msgid "Below the limit it belongs to."
 msgstr "Under grensen den hører til."
@@ -4583,6 +4600,14 @@ msgstr "Endrer seg raskere enn"
 
 msgid "Channel"
 msgstr "Kanal"
+
+#, python-format
+msgid ""
+"Channel #%(number)d is drawn as its probe measured it, on the %(scale)s, not converted: the "
+"samples and the water pages are on the NBS scale."
+msgstr ""
+"Kanal #%(number)d tegnes slik sonden målte den, på %(scale)s, ikke regnet om: prøvene og "
+"vannsidene er på NBS-skalaen."
 
 #, python-format
 msgid ""
@@ -7968,14 +7993,27 @@ msgstr ""
 msgid "In progress"
 msgstr "Pågår"
 
+msgid ""
+"In salt water the activity-corrected NH₃ rests on this application’s own conversion of the NBS "
+"pH: in cold sea water it reads up to about 16 % below the published references (the judged value "
+"about 10 to 15 % above them). It is information, not the better value."
+msgstr ""
+"I saltvann bygger aktivitetskorrigert NH₃ på denne applikasjonens egen omregning av NBS-pH: i "
+"kaldt sjøvann blir den opptil omtrent 16 % lavere enn de publiserte referansene (den vurderte "
+"verdien omtrent 10 til 15 % høyere). Den er til informasjon, ikke den bedre verdien."
+
 msgid "In the library"
 msgstr "I biblioteket"
 
 msgid "In the parameter’s unit. 0: no deadband."
 msgstr "I parameterens enhet. 0: ikke noe dødbånd."
 
-msgid "In the quantity’s unit; for a rate, the change over the time below."
-msgstr "I parameterens enhet; for en endringsrate, endringen over tidsrommet nedenfor."
+msgid ""
+"In the quantity’s unit; for a rate, the change over the time below. A pH channel’s values are "
+"compared as its probe measures them, on the channel’s own pH scale."
+msgstr ""
+"I parameterens enhet; for en endringsrate, endringen over tidsrommet nedenfor. Verdiene til en "
+"pH-kanal sammenlignes slik sonden måler dem, på kanalens egen pH-skala."
 
 msgid "In time"
 msgstr "I tide"
@@ -8841,6 +8879,14 @@ msgstr "Målt"
 
 #, python-format
 msgid ""
+"Measured %(value)s on the %(scale)s by the sensor; put on the NBS scale by formula %(formula)d "
+"with %(temperature)s °C and %(salinity)s ‰ of the same moment."
+msgstr ""
+"Målt %(value)s på %(scale)s av sensoren; regnet om til NBS-skalaen med formel %(formula)d med "
+"%(temperature)s °C og %(salinity)s ‰ fra samme øyeblikk."
+
+#, python-format
+msgid ""
 "Measured %(value)s on the %(scale)s; put on the NBS scale by formula %(formula)d with the "
 "sample’s %(temperature)s °C and %(salinity)s ‰."
 msgstr ""
@@ -9128,12 +9174,16 @@ msgstr "NH₃ vurdert etter den aktivitetskorrigerte verdien, som er størst her
 #, python-format
 msgid ""
 "NH₃ judged on the basis its limits were set on (to 1 ‰ the ideal water, every activity 1, as "
-"Emerson et al. 1975; from 5 ‰ Khoo et al. 1977’s pKa on the NBS pH, as Bower & Bidwell 1978; "
-"salt-added water: the ideal throughout), the larger; activity-corrected %(value)s mg/L."
+"Emerson et al. 1975; from 5 ‰ the free-scale pKa of Khoo et al. 1977, eq. 11, applied to the "
+"meter’s NBS pH without converting it, which reads more NH₃ than a converted pH would: the safe "
+"side, on purpose; salt-added water: the ideal throughout), the larger; activity-corrected "
+"%(value)s mg/L."
 msgstr ""
 "NH₃ vurdert på grunnlaget grenseverdiene ble satt på (til 1 ‰ ideelt vann, alle aktiviteter 1, "
-"som Emerson mfl. 1975; fra 5 ‰ pKa fra Khoo mfl. 1977 på NBS-pH, som Bower & Bidwell 1978; vann "
-"tilsatt salt: ideelt hele veien), den største; aktivitetskorrigert %(value)s mg/L."
+"som Emerson mfl. 1975; fra 5 ‰ pKa på den frie skalaen fra Khoo mfl. 1977, lign. 11, brukt på "
+"målerens NBS-pH uten å regne den om, noe som gir mer NH₃ enn en omregnet pH ville gitt: den sikre"
+" siden, med vilje; vann tilsatt salt: ideelt hele veien), den største; aktivitetskorrigert "
+"%(value)s mg/L."
 
 msgid "NH₃ share of TAN at the border"
 msgstr "NH₃-andelen av TAN ved grensen"
@@ -9443,6 +9493,10 @@ msgstr "Ingen apparater publiserer på dette emnet"
 
 msgid "No diagnosis"
 msgstr "Ingen diagnose"
+
+#, python-format
+msgid "No diagram: the sensor’s pH cannot be put on the NBS scale (%(why)s)."
+msgstr "Ingen diagram: sensorens pH kan ikke regnes om til NBS-skalaen (%(why)s)."
 
 msgid "No expiry date recorded."
 msgstr "Ingen utløpsdato registrert."
@@ -10080,6 +10134,10 @@ msgstr "Ikke satt"
 msgid "Not set up for reports"
 msgstr "Ikke satt opp for rapporter"
 
+#, python-format
+msgid "Not shown: %(why)s."
+msgstr "Ikke vist: %(why)s."
+
 msgid "Not stated"
 msgstr "Ikke oppgitt"
 
@@ -10112,6 +10170,10 @@ msgstr "Ikke veid siden fisken kom inn."
 
 msgid "Not worked out: the TAN is no longer fresh."
 msgstr "Ikke regnet ut: TAN-verdien er ikke lenger fersk."
+
+#, python-format
+msgid "Not worked out: the sensor’s pH cannot be used (%(why)s)."
+msgstr "Ikke beregnet: sensorens pH kan ikke brukes (%(why)s)."
 
 msgid "Note"
 msgstr "Notat"
@@ -10403,6 +10465,9 @@ msgstr "Bare en innsendt rapport korrigeres: endre selve utkastet."
 
 msgid "Only a filed report is late or on time."
 msgstr "Bare en innsendt rapport er sen eller i tide."
+
+msgid "Only a pH channel has a pH scale other than NBS."
+msgstr "Bare en pH-kanal har en annen pH-skala enn NBS."
 
 msgid "Only a pending request can be changed."
 msgstr "Bare en ventende søknad kan endres."
@@ -12318,6 +12383,9 @@ msgstr "Skriv hvorfor: et kar som går ut eller byttes ut, registreres med begru
 
 msgid "Scale loss"
 msgstr "Skjelltap"
+
+msgid "Scale the pH is measured on"
+msgstr "Skalaen pH måles på"
 
 msgid "Scale the pH was measured on"
 msgstr "Skalaen pH ble målt på"
@@ -14562,6 +14630,23 @@ msgstr ""
 msgid "The pH bounds go up: critical below, warning below, warning above, critical above."
 msgstr "pH-grensene går oppover: kritisk under, advarsel under, advarsel over, kritisk over."
 
+#, python-format
+msgid ""
+"The pH scale was changed on %(time)s: what the probe measured before is used nowhere (its scale "
+"is not known)."
+msgstr "pH-skalaen ble endret %(time)s: det sonden målte før, brukes ingen steder (skalaen er ikke kjent)."
+
+#, python-format
+msgid ""
+"The pH was measured on the %(scale)s: the NH₃ is judged on the NBS scale, with a free-scale "
+"constant applied to that NBS pH without converting it, which is the safe side: it reads about 13 "
+"to 25 %% more NH₃ than this pH gives worked out exactly, and more than the activity-corrected "
+"value."
+msgstr ""
+"pH ble målt på %(scale)s: NH₃ vurderes på NBS-skalaen, med en konstant på den frie skalaen brukt "
+"på denne NBS-pH-en uten å regne den om, som er den sikre siden: den gir omtrent 13 til 25 %% mer "
+"NH₃ enn denne pH-en gir regnet nøyaktig, og mer enn den aktivitetskorrigerte verdien."
+
 msgid "The page could not be shown. Try again, and tell an administrator if it happens again."
 msgstr "Siden kunne ikke vises. Prøv igjen, og si fra til en administrator hvis det skjer igjen."
 
@@ -14865,6 +14950,20 @@ msgstr ""
 "Skalaen pH ble målt på. Annet enn NBS (en sjøvannssensor kalibrert med TRIS måler på "
 "totalskalaen): for sjøvann på 5 ‰ eller mer, med temperaturen og saliniteten fra samme prøve. pH "
 "lagres og vises da på NBS-skalaen, med det som ble målt ved siden av."
+
+msgid ""
+"The scale the probe reports its pH on: NBS (calibrated with NBS/NIST buffers), or the total "
+"(TRIS), seawater or free scale. Other than NBS, each value is put on the NBS scale where the "
+"water is worked out, with a fresh temperature from the sensors and the salinity of the same "
+"moment, for sea water of 5 ‰ or more; otherwise the pH and its NH₃ cannot be evaluated, and the "
+"page says why. Changing it: what the probe measured before is used nowhere after (its scale is "
+"not known)."
+msgstr ""
+"Skalaen sonden oppgir pH på: NBS (kalibrert med NBS/NIST-buffere), eller total- (TRIS), sjøvanns-"
+" eller den frie skalaen. Med en annen enn NBS regnes hver verdi om til NBS-skalaen der vannet "
+"beregnes, med en fersk temperatur fra sensorene og saliniteten fra samme øyeblikk, for sjøvann på"
+" 5 ‰ eller mer; ellers kan pH og NH₃ fra den ikke vurderes, og siden sier hvorfor. Endres den: "
+"det sonden målte før, brukes ingen steder etterpå (skalaen er ikke kjent)."
 
 msgid ""
 "The scale the round’s pHs were measured on. Other than NBS: for sea water of 5 ‰ or more, each "
@@ -16754,6 +16853,9 @@ msgstr "Når oksygenets salinitet ble målt"
 msgid "When the oxygen’s temperature was measured"
 msgstr "Når oksygenets temperatur ble målt"
 
+msgid "When the pH scale was changed"
+msgstr "Da pH-skalaen ble endret"
+
 msgid "When this is a part of other equipment, e.g. the pump of a filter unit."
 msgstr "Når dette er en del av annet utstyr, f.eks. pumpen i en filterenhet."
 
@@ -17254,6 +17356,38 @@ msgstr "en landlokalitet med utslippstillatelse"
 msgid "a land site with broodstock of salmon, trout, rainbow trout or cleaner fish"
 msgstr "en landlokalitet med stamfisk av laks, ørret, regnbueørret eller rensefisk"
 
+#, python-format
+msgid "a pH on the %(scale)s is not put on the NBS scale here"
+msgstr "en pH på %(scale)s regnes ikke om til NBS-skalaen her"
+
+#, python-format
+msgid "a pH on the %(scale)s is put on the NBS scale only while it is fresh, and it is no longer fresh"
+msgstr "en pH på %(scale)s regnes om til NBS-skalaen bare mens den er fersk, og den er ikke lenger fersk"
+
+#, python-format
+msgid ""
+"a pH on the %(scale)s is put on the NBS scale with a fresh temperature from the sensors, and "
+"there is none"
+msgstr ""
+"en pH på %(scale)s regnes om til NBS-skalaen med en fersk temperatur fra sensorene, og det finnes"
+" ingen"
+
+#, python-format
+msgid ""
+"a pH on the %(scale)s is put on the NBS scale with the salinity of the same moment, and none was "
+"measured here in the days before"
+msgstr ""
+"en pH på %(scale)s regnes om til NBS-skalaen med saliniteten fra samme øyeblikk, og ingen ble "
+"målt her i dagene før"
+
+#, python-format
+msgid ""
+"a pH on the %(scale)s is taken for sea water of 5 ‰ or more only (not fresh water with salt "
+"added); set the channel’s pH scale to NBS if the probe is calibrated with NBS/NIST buffers"
+msgstr ""
+"en pH på %(scale)s tas bare for sjøvann på 5 ‰ eller mer (ikke ferskvann tilsatt salt); sett "
+"kanalens pH-skala til NBS hvis sonden er kalibrert med NBS/NIST-buffere"
+
 msgid "a sea site with salmonids"
 msgstr "en sjølokalitet med laksefisk"
 
@@ -17493,6 +17627,10 @@ msgstr "kortmaler"
 
 msgid "cards of a monitoring board"
 msgstr "kort på et overvåkingspanel"
+
+#, python-format
+msgid "changed %(moment)s"
+msgstr "endret %(moment)s"
 
 msgid "changed here"
 msgstr "endret her"
@@ -18290,6 +18428,12 @@ msgstr "måltidene er gitt"
 msgid "measured %(value)s on the %(scale)s"
 msgstr "målt %(value)s på %(scale)s"
 
+#, python-format
+msgid ""
+"measured before the channel’s pH scale was changed (%(time)s): the scale it was measured on is "
+"not known"
+msgstr "målt før kanalens pH-skala ble endret (%(time)s): skalaen den ble målt på, er ikke kjent"
+
 msgid "medicine"
 msgstr "legemiddel"
 
@@ -18577,6 +18721,9 @@ msgstr "pH-margin til grensen"
 
 msgid "pH scale"
 msgstr "pH-skala"
+
+msgid "pH scale changed: the values before are not used"
+msgstr "pH-skala endret: verdiene før brukes ikke"
 
 msgid "pH sensor"
 msgstr "pH-sensor"

@@ -2361,15 +2361,18 @@ msgstr "Bildirim hemen verilir: daha sonraki bir son tarihi yoktur."
 
 #, python-format
 msgid ""
-"A pH channel is on the NBS scale (a probe calibrated with NBS/NIST buffers). A sensor that "
-"reports on the total scale (calibrated with TRIS) is not converted here: its pH reads 0.10 to "
-"0.14 low in sea water and the NH₃ worked out from it 20 to 27 % low. Record such a pH as a sample"
-" with its scale."
+"A pH channel says the scale its probe reports on (its pH scale). A probe calibrated with TRIS "
+"(most sea-water ISFET and optical sensors) reports on the total scale, 0.10 to 0.14 lower than "
+"NBS in sea water: taken as NBS its NH₃ would read 20 to 27 % low."
 msgstr ""
-"Bir pH kanalı NBS ölçeğindedir (NBS/NIST tamponlarıyla kalibre edilmiş prob). Toplam ölçekte "
-"okuyan (TRIS ile kalibre edilmiş) bir sensör burada çevrilmez: pH’ı deniz suyunda 0,10–0,14 "
-"düşük, ondan hesaplanan NH₃ ise % 20–27 düşük okunur. Böyle bir pH’ı ölçeğiyle birlikte numune "
-"olarak kaydedin."
+"Bir pH kanalı, probunun ölçtüğü ölçeği söyler (pH ölçeği). TRIS ile kalibre edilen bir prob "
+"(deniz suyu ISFET ve optik sensörlerinin çoğu) toplam ölçekte ölçer, deniz suyunda NBS’den 0,10 "
+"ile 0,14 daha düşük: NBS olarak alınırsa NH₃’ü % 20 ile % 27 düşük okunur."
+
+msgid ""
+"A pH channel’s scale was changed in this time: what it measured before is not drawn (its scale is"
+" not known)."
+msgstr "Bu sürede bir pH kanalının ölçeği değiştirildi: önceden ölçtükleri çizilmez (ölçeği bilinmiyor)."
 
 msgid ""
 "A pH on this scale is taken for sea water of 5 ‰ or more only (not fresh water with salt added): "
@@ -3825,8 +3828,12 @@ msgstr "Verildiği gibi, gram hassasiyetinde (35 g için 0,035)."
 msgid "As many tanks or systems as replicates; a system gives all its tanks to one replicate."
 msgstr "Tekrar sayısı kadar tank veya sistem; bir sistem tüm tanklarını tek bir tekrara verir."
 
-msgid "As nitrogen. A kit that reads NO₂⁻: divide by 3.29."
-msgstr "Azot olarak. NO₂⁻ okuyan bir kit: 3,29'a bölün."
+#, python-format
+msgid "As measured, on its pH scale: %(scale)s"
+msgstr "Ölçüldüğü gibi, kendi pH ölçeğinde: %(scale)s"
+
+msgid "As nitrogen. A kit that reads NO₂⁻: divide by 3.28."
+msgstr "Azot olarak. NO₂⁻ okuyan bir kit: 3,28’e bölün."
 
 msgid "As nitrogen. A kit that reads NO₃⁻: divide by 4.43."
 msgstr "Azot olarak. NO₃⁻ okuyan bir kit: 4,43'e bölün."
@@ -4145,6 +4152,14 @@ msgstr "Elleçlemeden önce"
 
 msgid "Below"
 msgstr "Altında"
+
+msgid ""
+"Below 0 °C: the chemistry’s constants are fitted from 0 °C or above, so these values are "
+"extrapolated. The judged NH₃ and CO₂ stay on the safe side there (they read high, not low)."
+msgstr ""
+"0 °C’nin altında: kimyanın sabitleri 0 °C ve üzerinden itibaren uydurulmuştur, bu yüzden bu "
+"değerler dışa değerlemedir. Değerlendirilen NH₃ ve CO₂ orada güvenli tarafta kalır (düşük değil, "
+"yüksek okunur)."
 
 msgid "Below the limit it belongs to."
 msgstr "Ait olduğu sınırın altında."
@@ -4589,6 +4604,14 @@ msgstr "Daha hızlı değişirse"
 
 msgid "Channel"
 msgstr "Kanal"
+
+#, python-format
+msgid ""
+"Channel #%(number)d is drawn as its probe measured it, on the %(scale)s, not converted: the "
+"samples and the water pages are on the NBS scale."
+msgstr ""
+"#%(number)d kanalı probunun ölçtüğü gibi, %(scale)s, dönüştürülmeden çizilir: numuneler ve su "
+"sayfaları NBS ölçeğindedir."
 
 #, python-format
 msgid ""
@@ -7991,14 +8014,28 @@ msgstr ""
 msgid "In progress"
 msgstr "Devam ediyor"
 
+msgid ""
+"In salt water the activity-corrected NH₃ rests on this application’s own conversion of the NBS "
+"pH: in cold sea water it reads up to about 16 % below the published references (the judged value "
+"about 10 to 15 % above them). It is information, not the better value."
+msgstr ""
+"Tuzlu suda aktiviteye göre düzeltilmiş NH₃, bu uygulamanın NBS pH’ını kendi dönüştürmesine "
+"dayanır: soğuk deniz suyunda yayımlanmış referansların yaklaşık % 16’ya kadar altında okunur "
+"(değerlendirilen değer onların yaklaşık % 10 ile % 15 üstünde). Bilgi içindir, daha iyi değer "
+"değildir."
+
 msgid "In the library"
 msgstr "Kütüphanede"
 
 msgid "In the parameter’s unit. 0: no deadband."
 msgstr "Parametrenin biriminde. 0: ölü bant yok."
 
-msgid "In the quantity’s unit; for a rate, the change over the time below."
-msgstr "Parametrenin biriminde; hız için aşağıdaki süre içindeki değişim."
+msgid ""
+"In the quantity’s unit; for a rate, the change over the time below. A pH channel’s values are "
+"compared as its probe measures them, on the channel’s own pH scale."
+msgstr ""
+"Büyüklüğün biriminde; bir hız için aşağıdaki süredeki değişim. Bir pH kanalının değerleri, "
+"probunun ölçtüğü gibi, kanalın kendi pH ölçeğinde karşılaştırılır."
 
 msgid "In time"
 msgstr "Zamanında"
@@ -8866,6 +8903,14 @@ msgstr "Ölçülen"
 
 #, python-format
 msgid ""
+"Measured %(value)s on the %(scale)s by the sensor; put on the NBS scale by formula %(formula)d "
+"with %(temperature)s °C and %(salinity)s ‰ of the same moment."
+msgstr ""
+"Sensör %(scale)s %(value)s ölçtü; aynı anın %(temperature)s °C ve %(salinity)s ‰ değerleriyle "
+"formül %(formula)d ile NBS ölçeğine dönüştürüldü."
+
+#, python-format
+msgid ""
 "Measured %(value)s on the %(scale)s; put on the NBS scale by formula %(formula)d with the "
 "sample’s %(temperature)s °C and %(salinity)s ‰."
 msgstr ""
@@ -9155,13 +9200,16 @@ msgstr "NH₃, burada daha büyük olan aktiviteye göre düzeltilmiş değeriyl
 #, python-format
 msgid ""
 "NH₃ judged on the basis its limits were set on (to 1 ‰ the ideal water, every activity 1, as "
-"Emerson et al. 1975; from 5 ‰ Khoo et al. 1977’s pKa on the NBS pH, as Bower & Bidwell 1978; "
-"salt-added water: the ideal throughout), the larger; activity-corrected %(value)s mg/L."
+"Emerson et al. 1975; from 5 ‰ the free-scale pKa of Khoo et al. 1977, eq. 11, applied to the "
+"meter’s NBS pH without converting it, which reads more NH₃ than a converted pH would: the safe "
+"side, on purpose; salt-added water: the ideal throughout), the larger; activity-corrected "
+"%(value)s mg/L."
 msgstr ""
-"NH₃, sınır değerlerinin konduğu temelde değerlendirildi (1 ‰'ye kadar ideal su, tüm aktiviteler "
-"1, Emerson ve ark. 1975 gibi; 5 ‰'den itibaren NBS pH'ı üzerinde Khoo ve ark. 1977 pKa'sı, Bower "
-"& Bidwell 1978 gibi; tuz eklenmiş suda baştan sona ideal), büyük olan; aktiviteye göre "
-"düzeltilmiş %(value)s mg/L."
+"NH₃, sınır değerlerinin konduğu temelde değerlendirildi (1 ‰’ye kadar ideal su, tüm aktiviteler "
+"1, Emerson ve ark. 1975 gibi; 5 ‰’den itibaren Khoo ve ark. 1977’nin serbest ölçekteki pKa’sı, "
+"denk. 11, ölçüm cihazının NBS pH’ına dönüştürülmeden uygulanır; bu, dönüştürülmüş bir pH’ın "
+"vereceğinden daha çok NH₃ verir: bilerek güvenli taraf; tuz eklenmiş suda baştan sona ideal), "
+"büyük olan; aktiviteye göre düzeltilmiş %(value)s mg/L."
 
 msgid "NH₃ share of TAN at the border"
 msgstr "Sınırda TAN içindeki NH₃ payı"
@@ -9466,6 +9514,10 @@ msgstr "Bu konuda yayın yapan cihaz yok"
 
 msgid "No diagnosis"
 msgstr "Tanı yok"
+
+#, python-format
+msgid "No diagram: the sensor’s pH cannot be put on the NBS scale (%(why)s)."
+msgstr "Diyagram yok: sensörün pH’ı NBS ölçeğine dönüştürülemiyor (%(why)s)."
 
 msgid "No expiry date recorded."
 msgstr "Son kullanma tarihi kaydedilmemiş."
@@ -10097,6 +10149,10 @@ msgstr "Girilmedi"
 msgid "Not set up for reports"
 msgstr "Raporlar için kurulmamış"
 
+#, python-format
+msgid "Not shown: %(why)s."
+msgstr "Gösterilmiyor: %(why)s."
+
 msgid "Not stated"
 msgstr "Belirtilmedi"
 
@@ -10129,6 +10185,10 @@ msgstr "Balıklar geldiğinden beri tartılmadı."
 
 msgid "Not worked out: the TAN is no longer fresh."
 msgstr "Hesaplanmadı: TAN değeri artık güncel değil."
+
+#, python-format
+msgid "Not worked out: the sensor’s pH cannot be used (%(why)s)."
+msgstr "Hesaplanmadı: sensörün pH’ı kullanılamıyor (%(why)s)."
 
 msgid "Note"
 msgstr "Not"
@@ -10423,6 +10483,9 @@ msgstr "Yalnızca sunulmuş bir rapor düzeltilir: taslağın kendisini değişt
 
 msgid "Only a filed report is late or on time."
 msgstr "Yalnızca bildirilmiş bir rapor geç veya zamanındadır."
+
+msgid "Only a pH channel has a pH scale other than NBS."
+msgstr "NBS dışında bir pH ölçeği yalnızca bir pH kanalında olabilir."
 
 msgid "Only a pending request can be changed."
 msgstr "Yalnızca bekleyen bir talep değiştirilebilir."
@@ -12340,6 +12403,9 @@ msgstr "Nedenini yazın: ayrılan veya değiştirilen bir tank gerekçesiyle kay
 
 msgid "Scale loss"
 msgstr "Pul kaybı"
+
+msgid "Scale the pH is measured on"
+msgstr "pH’ın ölçüldüğü ölçek"
 
 msgid "Scale the pH was measured on"
 msgstr "pH’ın ölçüldüğü ölçek"
@@ -14587,6 +14653,26 @@ msgstr ""
 msgid "The pH bounds go up: critical below, warning below, warning above, critical above."
 msgstr "pH sınırları yukarı doğru gider: kritik alt, uyarı alt, uyarı üst, kritik üst."
 
+#, python-format
+msgid ""
+"The pH scale was changed on %(time)s: what the probe measured before is used nowhere (its scale "
+"is not known)."
+msgstr ""
+"pH ölçeği %(time)s tarihinde değiştirildi: probun önceden ölçtükleri hiçbir yerde kullanılmaz "
+"(ölçeği bilinmiyor)."
+
+#, python-format
+msgid ""
+"The pH was measured on the %(scale)s: the NH₃ is judged on the NBS scale, with a free-scale "
+"constant applied to that NBS pH without converting it, which is the safe side: it reads about 13 "
+"to 25 %% more NH₃ than this pH gives worked out exactly, and more than the activity-corrected "
+"value."
+msgstr ""
+"pH %(scale)s ölçüldü: NH₃ NBS ölçeğinde, serbest ölçekteki bir sabitin bu NBS pH’ına "
+"dönüştürülmeden uygulanmasıyla değerlendirilir; bu güvenli taraftır: bu pH’tan tam olarak "
+"hesaplanandan yaklaşık %% 13 ile %% 25 daha çok NH₃ verir, aktiviteye göre düzeltilmiş değerden "
+"de fazla."
+
 msgid "The page could not be shown. Try again, and tell an administrator if it happens again."
 msgstr "Sayfa gösterilemedi. Yeniden deneyin; tekrar olursa bir yöneticiye bildirin."
 
@@ -14888,6 +14974,20 @@ msgstr ""
 "pH’ın ölçüldüğü ölçek. NBS dışında (TRIS ile kalibre edilmiş bir deniz suyu sensörü toplam "
 "ölçekte okur): 5 ‰ ve üzeri deniz suyu için, aynı numunenin sıcaklığı ve tuzluluğuyla birlikte. "
 "pH o zaman NBS ölçeğinde saklanır ve gösterilir; ölçülen değer yanında durur."
+
+msgid ""
+"The scale the probe reports its pH on: NBS (calibrated with NBS/NIST buffers), or the total "
+"(TRIS), seawater or free scale. Other than NBS, each value is put on the NBS scale where the "
+"water is worked out, with a fresh temperature from the sensors and the salinity of the same "
+"moment, for sea water of 5 ‰ or more; otherwise the pH and its NH₃ cannot be evaluated, and the "
+"page says why. Changing it: what the probe measured before is used nowhere after (its scale is "
+"not known)."
+msgstr ""
+"Probun pH’ı ölçtüğü ölçek: NBS (NBS/NIST tamponlarıyla kalibre edilmiş) ya da toplam (TRIS), "
+"deniz suyu veya serbest ölçek. NBS dışında her değer, suyun hesaplandığı yerde, sensörlerden taze"
+" bir sıcaklık ve aynı anın tuzluluğuyla NBS ölçeğine dönüştürülür, yalnızca 5 ‰ ve üzeri deniz "
+"suyu için; aksi halde pH ve ondan hesaplanan NH₃ değerlendirilemez ve sayfa nedenini söyler. "
+"Değiştirilirse: probun önceden ölçtükleri sonra hiçbir yerde kullanılmaz (ölçeği bilinmiyor)."
 
 msgid ""
 "The scale the round’s pHs were measured on. Other than NBS: for sea water of 5 ‰ or more, each "
@@ -16785,6 +16885,9 @@ msgstr "Oksijenin tuzluluğunun ölçüldüğü zaman"
 msgid "When the oxygen’s temperature was measured"
 msgstr "Oksijenin sıcaklığının ölçüldüğü zaman"
 
+msgid "When the pH scale was changed"
+msgstr "pH ölçeğinin değiştirildiği an"
+
 msgid "When this is a part of other equipment, e.g. the pump of a filter unit."
 msgstr "Bu, başka bir ekipmanın parçasıysa; örn. bir filtre ünitesinin pompası."
 
@@ -17281,6 +17384,36 @@ msgstr "deşarj izni olan bir kara lokasyonu"
 msgid "a land site with broodstock of salmon, trout, rainbow trout or cleaner fish"
 msgstr "somon, alabalık, gökkuşağı alabalığı veya temizleyici balık damızlığı olan bir kara lokasyonu"
 
+#, python-format
+msgid "a pH on the %(scale)s is not put on the NBS scale here"
+msgstr "%(scale)s ölçülen bir pH burada NBS ölçeğine dönüştürülmez"
+
+#, python-format
+msgid "a pH on the %(scale)s is put on the NBS scale only while it is fresh, and it is no longer fresh"
+msgstr "%(scale)s ölçülen bir pH yalnızca tazeyken NBS ölçeğine dönüştürülür ve artık taze değil"
+
+#, python-format
+msgid ""
+"a pH on the %(scale)s is put on the NBS scale with a fresh temperature from the sensors, and "
+"there is none"
+msgstr "%(scale)s ölçülen bir pH, sensörlerden taze bir sıcaklıkla NBS ölçeğine dönüştürülür ve hiç yok"
+
+#, python-format
+msgid ""
+"a pH on the %(scale)s is put on the NBS scale with the salinity of the same moment, and none was "
+"measured here in the days before"
+msgstr ""
+"%(scale)s ölçülen bir pH, aynı anın tuzluluğuyla NBS ölçeğine dönüştürülür ve burada önceki "
+"günlerde hiç ölçülmedi"
+
+#, python-format
+msgid ""
+"a pH on the %(scale)s is taken for sea water of 5 ‰ or more only (not fresh water with salt "
+"added); set the channel’s pH scale to NBS if the probe is calibrated with NBS/NIST buffers"
+msgstr ""
+"%(scale)s ölçülen bir pH yalnızca 5 ‰ ve üzeri deniz suyu için alınır (tuz eklenmiş tatlı su için"
+" değil); prob NBS/NIST tamponlarıyla kalibre edildiyse kanalın pH ölçeğini NBS yapın"
+
 msgid "a sea site with salmonids"
 msgstr "salmonid bulunan bir deniz lokasyonu"
 
@@ -17520,6 +17653,10 @@ msgstr "kart şablonları"
 
 msgid "cards of a monitoring board"
 msgstr "izleme panosu kartları"
+
+#, python-format
+msgid "changed %(moment)s"
+msgstr "%(moment)s değiştirildi"
 
 msgid "changed here"
 msgstr "burada değiştirildi"
@@ -18319,6 +18456,12 @@ msgstr "öğünler tamamlandı"
 msgid "measured %(value)s on the %(scale)s"
 msgstr "%(scale)s %(value)s ölçüldü"
 
+#, python-format
+msgid ""
+"measured before the channel’s pH scale was changed (%(time)s): the scale it was measured on is "
+"not known"
+msgstr "kanalın pH ölçeği değiştirilmeden önce ölçüldü (%(time)s): ölçüldüğü ölçek bilinmiyor"
+
 msgid "medicine"
 msgstr "ilaç"
 
@@ -18606,6 +18749,9 @@ msgstr "Sınıra pH payı"
 
 msgid "pH scale"
 msgstr "pH ölçeği"
+
+msgid "pH scale changed: the values before are not used"
+msgstr "pH ölçeği değiştirildi: önceki değerler kullanılmaz"
 
 msgid "pH sensor"
 msgstr "pH sensörü"

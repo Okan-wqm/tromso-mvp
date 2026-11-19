@@ -860,7 +860,7 @@ class PageTests(WaterTestCase):
         self.assertContains(form, 'class="modal-head"')
         self.assertContains(form, 'Atlantic salmon: critical below 60.0, warning below 80.0, warning above 110.0')
         self.assertContains(form, 'Nitrite (mg/L NO₂ as N)')
-        self.assertContains(form, 'A kit that reads NO₂⁻: divide by 3.29.')
+        self.assertContains(form, 'A kit that reads NO₂⁻: divide by 3.28.')
         response = self.post(url, self.record_data(temperature_c='8.5', oxygen_mg_l='10.2', notes='Morning'))
         self.assertEqual(response.status_code, 204)
         self.assertEqual(response['X-Modal-Redirect'], f'/operations/water/?unit={self.t1.pk}')

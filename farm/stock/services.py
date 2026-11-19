@@ -299,12 +299,15 @@ def _handling(user, kind, day, entries, batches, units, seen):
     """The handling check of a harvest, transfer or grading (farm/handling/check.py), on the source unit and
     batch, after the locks: with warnings, the person must have seen exactly these (`seen`, their
     fingerprint) and gone on; otherwise they are asked (again). None for other operations. A medicine withdrawal is
-    asked of the unit, of every batch in it, not of the source batch (the check's rule; `_locked_for` locks them)."""
+    asked of the unit, of every batch in it, not of the source batch (the check's rule; `_locked_for` locks them), for
+    the operations whose fish leave the farm and may be eaten: a harvest and a live delivery
+    (check.WITHDRAWAL_OPERATIONS, the owner's decision 12)."""
     handling = KIND_OF_OPERATION.get(kind)
     if handling is None:
         return None
     source = next(entry for entry in entries if entry.count_delta < 0)
-    assessment = check.assess(handling, units[source.unit.pk], day, batches[source.batch.pk], with_earliest=False)
+    assessment = check.assess(handling, units[source.unit.pk], day, batches[source.batch.pk], with_earliest=False,
+                              operation=kind)
     check.require_acknowledged(assessment, seen, user=user)
     return assessment
 
@@ -986,8 +989,9 @@ def record_delivery(user, *, unit, batch, day, count, destination, destination_s
                     measured_weight_kg=None, handling_ack=None, notes='', token=None, withdrawal_ack=None):
     """Live fish delivered out of the company, to `destination` (a customer, with the receiving site's lokalitetsnummer
     when it has one): they leave at the batch's average in the unit, their weighed kilos kept beside the book as a harvest's
-    are. Moving fish alive is a transport, so the handling check runs its fast (too short a fast); a medicine withdrawal is
-    a meat withdrawal and is asked for a harvest only."""
+    are. Moving fish alive is a transport, so the handling check runs its fast (too short a fast); fish sold alive may be
+    eaten, so a medicine withdrawal in force in the unit is asked as for a harvest (the owner's decision 12 of
+    19.11.2026: warned, ticked, stored and logged as critical, never blocked; check.WITHDRAWAL_OPERATIONS)."""
     if not destination.strip():
         raise ValidationError({'destination': _('Say who received the fish.')})
     _positive(count)

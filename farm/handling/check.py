@@ -8,9 +8,11 @@ harvested, transported, graded or treated, have they fasted long enough?
 The fish of a unit are one group (the batch named only says which fish an operation books). Pure reads of stored facts, inside the caller's
 transaction: the stock service runs it after its locks (a feeding of the unit takes turns with it).
 
-- Withdrawal (a harvest only: the fish go to food, to the slaughter facility the harvest names; a medicine
-  withdrawal is a meat withdrawal, so it means nothing when live fish are moved or graded, and a treatment during
-  a withdrawal harms nobody): every block the registry gives (farm/handling/withdrawal.py) for the UNIT whose
+- Withdrawal (a harvest and a live delivery: the fish leave the farm and may be eaten, slaughtered at the facility
+  the harvest names or sold alive (the owner's decision 12 of 19.11.2026: a live delivery of held fish is warned,
+  ticked, kept and logged exactly as a harvest is, never blocked; `WITHDRAWAL_OPERATIONS`). A medicine withdrawal is
+  a meat withdrawal, so it means nothing when live fish are moved or graded on the farm, and a treatment during a
+  withdrawal harms nobody): every block the registry gives (farm/handling/withdrawal.py) for the UNIT whose
   `until` is after the day, or unknown. **The withdrawal is the unit's, never the chosen batch's** (flow fault S-02;
   the owner, 14.11.2026: fish of two batches in one unit are one group): a net cannot separate the batches of a unit,
   so the withdrawal of any fish in it holds a harvest of it, whichever batch the dialog names; `in_force` takes no
@@ -53,6 +55,7 @@ from django.utils.translation import gettext as _
 from farm.feeding.read import handled, last_fed_at
 from farm.models import Batch, HandlingAcknowledgement, Treatment
 from farm.models.handling import AcknowledgedWarning, HandlingKind, HandlingRule, WithdrawalWarning
+from farm.models.stock import OperationKind
 from farm.stock.dates import local_today
 from farm.stock.read import Presence
 from farm.water.degree_days import BatchWater, degree_days_text, missing_sentence
@@ -60,21 +63,35 @@ from farm.water.degree_days import BatchWater, degree_days_text, missing_sentenc
 from . import fasting, withdrawal
 from .fasting import DAY, LOOKBACK_DAYS, asks_text, both_text, hours_text, shown_moment
 
-# The one handling a medicine withdrawal matters for: the fish go to food (a harvest names the slaughter facility).
-# Live fish that are moved or graded are not eaten: their medicine is no concern of the handling check.
+# The handling a medicine withdrawal matters for: the fish go to food (a harvest names the slaughter facility).
+# Live fish that are moved or graded on the farm are not eaten: their medicine is no concern of the handling check.
 WITHDRAWAL_KIND = HandlingKind.HARVEST
+# The stock operations whose fish leave the farm and may be eaten, so the withdrawal is asked of them: a harvest, and a
+# live delivery (fish sold alive; the owner's decision 12 of 19.11.2026). A delivery's fast is a transport's
+# (KIND_OF_OPERATION); its withdrawal is a harvest's, through the same check, box, rows and critical log line.
+WITHDRAWAL_OPERATIONS = frozenset({OperationKind.HARVEST, OperationKind.DELIVERY})
+
+
+def asks_withdrawal(kind, operation=None):
+    """Whether a handling of `kind` is asked about a medicine withdrawal: of the stock operation `operation` when it is
+    known (a harvest, a live delivery: `WITHDRAWAL_OPERATIONS`), else of the handling kind (a harvest)."""
+    return operation in WITHDRAWAL_OPERATIONS if operation is not None else kind == WITHDRAWAL_KIND
 
 
 def _date(day):
     return formats.date_format(day, 'DATE_FORMAT')
 
 
-def withdrawal_text(block):
-    """The withdrawal as a sentence, starting "Not suitable for harvest" (owner's words): it is only ever said
-    for a harvest. Its end in the one wording of every page (withdrawal.harvest_from): "… medicine withdrawal of
-    B-2026-001: harvest from 25.11.2026."."""
-    return _('Not suitable for harvest — medicine withdrawal of %(batch)s: %(end)s.') % {
-        'batch': block.batch.code, 'end': withdrawal.harvest_from(block.until, block.approximate)}
+def withdrawal_text(block, kind=WITHDRAWAL_KIND):
+    """The withdrawal as a sentence, starting "Not suitable for harvest" (owner's words) for a harvest, and "Not
+    suitable for a live delivery" for the other handling it is asked of (`WITHDRAWAL_OPERATIONS`: fish sold alive).
+    Its end in the one wording of every page (withdrawal.harvest_from): "… medicine withdrawal of B-2026-001: harvest
+    from 25.11.2026."."""
+    params = {'batch': block.batch.code, 'end': withdrawal.harvest_from(block.until, block.approximate)}
+    if kind != WITHDRAWAL_KIND:
+        return _('Not suitable for a live delivery — medicine withdrawal of %(batch)s: %(end)s. Fish sold alive may '
+                 'be eaten.') % params
+    return _('Not suitable for harvest — medicine withdrawal of %(batch)s: %(end)s.') % params
 
 
 def fed_when(fed, unit):
@@ -142,7 +159,7 @@ class HandlingWarning:
     def message(self):
         """The warning in the person's language (the activity log builds it in English)."""
         if self.warning == AcknowledgedWarning.WITHDRAWAL:
-            text = withdrawal_text(self.block)
+            text = withdrawal_text(self.block, self.kind)
             if self.shared:
                 text += ' ' + _('It holds every fish in %(unit)s: the fish of different batches in one unit cannot be '
                                 'told apart at a harvest.') % {'unit': self.unit.code}
@@ -203,14 +220,16 @@ def _batches_in(unit, day):
     return list(Batch.all_objects.filter(pk__in=handled(unit, day)).select_related('species').order_by('code'))
 
 
-def assess(kind, unit, day, batch=None, with_earliest=True):
+def assess(kind, unit, day, batch=None, with_earliest=True, operation=None):
     """The warnings and notes of handling the fish of `batch` (or every batch) in `unit` on `day`; for a harvest, with
-    the earliest suitable date among the notes (`with_earliest`: the save, which needs only the warnings, leaves it)."""
+    the earliest suitable date among the notes (`with_earliest`: the save, which needs only the warnings, leaves it).
+    `operation`: the stock operation the handling is, when known (a live delivery is a transport whose withdrawal is
+    asked: `asks_withdrawal`)."""
     result = Assessment(kind, unit, day, batch)
     # The fish of the unit are one group (S-01, S-02): the fast and the withdrawal are the unit's, whichever batch the
     # handling names; `batch` only says which fish the operation books.
     batches = _batches_in(unit, day)
-    if kind == WITHDRAWAL_KIND:
+    if asks_withdrawal(kind, operation):
         _withdrawal(result)
     _fasting(result, batches)
     if kind == WITHDRAWAL_KIND and with_earliest:

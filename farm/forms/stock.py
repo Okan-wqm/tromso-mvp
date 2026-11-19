@@ -20,7 +20,7 @@ from ..models import Batch, HandlingPlanItem, HealthEvent, SlaughterFacility, Sp
 from ..models.handling import HandlingKind
 from ..models.harvest import offered_facilities
 from ..models.stock import (
-    PROVENANCE_OF_ORIGIN, TAKES_FISH, CullReason, InputStage, MortalityCause, Origin, TransferReason,
+    PROVENANCE_OF_ORIGIN, TAKES_FISH, CullReason, InputStage, MortalityCause, OperationKind, Origin, TransferReason,
 )
 from ..models.supplier import SupplyCategory
 from ..stock import services
@@ -152,11 +152,12 @@ class AcknowledgeInput(forms.CheckboxInput):
         return data.get(name, '')
 
 
-def handling_ack_field(kind):
+def handling_ack_field(kind, operation=None):
     """The box to go on past the handling warnings shown; its value is their fingerprint (AcknowledgeInput). Only a
-    harvest can be warned of a medicine withdrawal, so only its box says that fish under one must not go to food."""
+    handling whose fish leave the farm (a harvest, a live delivery: check.asks_withdrawal) can be warned of a medicine
+    withdrawal, so only its box says that fish under one must not go to food."""
     stored = _('Going on is stored with what is shown here and logged as critical.')
-    if kind == HandlingKind.HARVEST:
+    if check.asks_withdrawal(kind, operation):
         stored = _('Fish under a medicine withdrawal must not go to food. Going on is stored with what is shown '
                    'here and logged as critical.')
     return forms.CharField(label=_('Go on despite these warnings'), required=False, widget=AcknowledgeInput,
@@ -169,10 +170,11 @@ class HandlingChecked:
     them, which the service reads (`handling_ack`)."""
 
     handling_kind = None
+    operation = None         # the stock operation, when its withdrawal is asked otherwise than its kind's (a delivery)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['handling_ack'] = handling_ack_field(self.handling_kind)
+        self.fields['handling_ack'] = handling_ack_field(self.handling_kind, self.operation)
         self._handling = None
 
     @property
@@ -190,7 +192,7 @@ class HandlingChecked:
                 self._handling = check.Assessment(self.handling_kind, self.unit, None, batch, notes=[
                     _('Choose the date first: the fast and the medicine withdrawal are checked for that day.')])
             else:
-                self._handling = check.assess(self.handling_kind, self.unit, day, batch)
+                self._handling = check.assess(self.handling_kind, self.unit, day, batch, operation=self.operation)
             self.fields['handling_ack'].widget.fingerprint = self._handling.fingerprint
         return self._handling
 
@@ -782,6 +784,7 @@ class DeliveryForm(HandlingChecked, OperationForm):
         help_text=_('Optional: the receiving site’s locality number (5 digits).'))
 
     handling_kind = HandlingKind.TRANSPORT
+    operation = OperationKind.DELIVERY       # fish sold alive: the withdrawal is asked (the owner's decision 12)
     field_order = ['batch', 'date', 'count', 'measured_weight_kg', 'destination', 'destination_site_number', 'notes']
 
     def save(self, user, rows=None):

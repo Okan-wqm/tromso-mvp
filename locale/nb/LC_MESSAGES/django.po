@@ -18078,6 +18078,10 @@ msgstr "kunnskapsoppføring"
 msgid "lab"
 msgstr "laboratorium"
 
+#, python-format
+msgid "last own value %(value)s %(status)s on %(time)s, no recent data: measure this unit"
+msgstr "siste egne verdi %(value)s %(status)s %(time)s, ingen nye data: mål denne enheten"
+
 msgid "leave outside these days"
 msgstr "permisjon utenfor disse dagene"
 

@@ -260,3 +260,15 @@ def judged(kind, basis, corrected, equilibria):
     if equilibria.formula == 1 or ideal or corrected is None:
         return ''
     return str(words % {'value': number_format(corrected, JUDGED_DECIMALS[kind])} if basis == 'limits' else words)
+
+
+def last_own(reading):
+    """What the page, the card and the alarm say of a unit's own last value that keeps its status while a value of its
+    system stands in (read.last_own; decision of 2026-11-19 on the verification's F3-9): "last own value 0.8924
+    critical on 02.11.2026 10:00, no recent data: measure this unit"."""
+    from ..models.water_point import local_time
+    from .evaluate import Status
+    return _('last own value %(value)s %(status)s on %(time)s, no recent data: measure this unit') % {
+        'value': number_format(reading.value, reading.parameter.decimals),
+        'status': str(Status(reading.judged).label).lower(),
+        'time': local_time(reading.at, reading.point).strftime('%d.%m.%Y %H:%M')}

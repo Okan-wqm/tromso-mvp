@@ -509,11 +509,20 @@ class Reading:
     # judged past a limit it is that limit's status, else "cannot be evaluated"; it is never evidence that an alarm is
     # over (alarms/sources.py clear_evidence).
     refused: str = ''
+    # The unit's own last value of the parameter, stale and judged critical or a warning, where the value shown stands in
+    # from its system (`last_own`; decision of 2026-11-19 on the verification's F3-9): it keeps the status, and the page,
+    # the card and the alarm say "last own value …, measure this unit".
+    last_own: object = None
 
     @property
     def unevaluated(self):
         """Whether the limits would judge this value and the core refused to work it out."""
         return bool(self.refused and self.limits)
+
+    @property
+    def last_own_said(self):
+        """The visible words beside the value of a status the unit's own stale value keeps (`last_own`), else ''."""
+        return messages.last_own(self.last_own) if self.last_own is not None else ''
 
     @property
     def at(self):
@@ -635,6 +644,13 @@ class PointWater:
     def why_unevaluated(self):
         """[sentence] of `unevaluated`: 'NH₃ … cannot be evaluated: <the core's reason>.' (messages.unevaluated)."""
         return [messages.unevaluated(reading) for reading in self.unevaluated]
+
+    @property
+    def why_last_own(self):
+        """['<label>: last own value … measure this unit'] of the values whose status the unit's own stale value keeps
+        (`Reading.last_own`): what the card says beside the status."""
+        return [f'{reading.parameter.label}: {messages.last_own(reading.last_own)}' for reading in self.readings.values()
+                if reading.last_own is not None]
 
     @property
     def alerts(self):
@@ -1275,6 +1291,7 @@ def latest(points, now=None, at=None):
     for point in points:
         where = places[point.pk]
         point_water = water[point.pk] = PointWater(point, sensors_failed=answer.failed, for_unit=where.for_unit)
+        own_ids = {each.pk for each in where.own}
         day = local_time(moment, point).date()
         resolved, candidates = _resolve(_live(where.own_targets, answer), [manual(each) for each in where.own],
                                         _live(where.system_targets, answer), [manual(each) for each in where.system],
@@ -1304,6 +1321,9 @@ def latest(points, now=None, at=None):
                         shown_here, *(each for each in here if each is not shown_here and each.fresh(moment))])]
                 reading.deciding = tuple(deciding)
                 worst_fresh(reading, deciding, moment)    # COMPUTED FOR THE PLACE the point stands for
+                if where.for_unit and reading.point is not None and reading.point.pk not in own_ids:
+                    last_own(reading, [judged(each) for each in found if each.value is not None and each.point is not None
+                                       and each.point.pk in own_ids], moment)
             point_water.readings[code] = reading
     return water
 
@@ -1336,6 +1356,24 @@ def oxygen_basis(rows, moment):
             else:
                 missing[index].append(code)
     return dict(found), dict(missing)
+
+
+def last_own(reading, own, now):
+    """Decision of 2026-11-19 on the verification of FIX3, F3-9: a value judged critical or a warning that was MEASURED ON
+    THE UNIT is confirmed over only by measuring the unit again. Where the value shown stands in from the unit's system
+    (A9: the unit has no fresh value of its own) and the unit's own newest value (`own`, judged for its fish) is stale
+    and worse, the reading keeps that judgement (so the page, the card and the alarm stay at it: alarms/sources.py, a
+    level the unit's own value holds) and says it: `last_own`, `worse` (the value that decides), and the note "last own
+    value …, no recent data: measure this unit" (messages.last_own). A fresh own value ends it (A9 shows it)."""
+    newest_own = max(own, key=lambda each: each.at, default=None)
+    if (newest_own is None or newest_own.fresh(now) or newest_own.judged not in ALERTS
+            or RANK[newest_own.judged] >= RANK[reading.judged]):
+        return reading
+    reading.judged = reading.status = newest_own.judged
+    reading.worse = reading.last_own = newest_own
+    said = str(messages.last_own(newest_own))
+    reading.note = f'{reading.note} {said}' if reading.note else said
+    return reading
 
 
 def worst_fresh(reading, others, now=None):

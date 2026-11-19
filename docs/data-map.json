@@ -3264,7 +3264,8 @@
         "monitoring/tests/test_designer.py",
         "monitoring/tests/test_pages.py",
         "monitoring/tests/test_template_pages.py",
-        "alarms/tests/test_refused_water.py"
+        "alarms/tests/test_refused_water.py",
+        "alarms/tests/test_who_ends_a_level.py"
       ]
     },
     {

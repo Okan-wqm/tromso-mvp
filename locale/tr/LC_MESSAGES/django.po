@@ -18105,6 +18105,10 @@ msgstr "bilgi kaydı"
 msgid "lab"
 msgstr "laboratuvar"
 
+#, python-format
+msgid "last own value %(value)s %(status)s on %(time)s, no recent data: measure this unit"
+msgstr "son kendi değeri %(value)s %(status)s (%(time)s), yeni veri yok: bu birimi ölçün"
+
 msgid "leave outside these days"
 msgstr "bu günlerin dışında izin"
 

@@ -28,6 +28,9 @@
     newest again is no evidence, defect 4).
   - Either way: another bad value holds it (worst_fresh); a refused value is never evidence; a value that only goes
     stale never ends it; the limit removed or no fish end it with that cause (`_unjudged`).
+  - The unit's own bad value gone stale while its system's value stands in (decision of 2026-11-19 on F3-9): the reading
+    keeps that status (read.last_own), so the page, the card and the level agree, and all say "last own value …, no
+    recent data: measure this unit"; only the unit's own fresh value ends it.
 Where an alarm is (its site, its production department) is set when it opens, for the recipient rules."""
 import logging
 from dataclasses import dataclass
@@ -105,7 +108,8 @@ UNJUDGED = (Status.NO_LIMIT, Status.NOT_MEASURED)
 def _summary(point, reading):
     """'T-01 · Middle: pH (NBS scale) 5.50 (critical)', in English at rest. A reading without a value of its own that
     another fresh value judged (`decided`) names that value; a refused one judged on its limits' basis says "at least"
-    before it, as the page does."""
+    before it, as the page does; one whose status the unit's own stale value keeps says "last own value …, measure this
+    unit" (read.last_own)."""
     owner = point.owner
     with audit.source_language():
         label = str(parameters.get(reading.code).label)
@@ -113,7 +117,10 @@ def _summary(point, reading):
         value = reading.value if reading.value is not None else reading.worse.value
         if reading.value is not None and reading.refused:      # its limits' basis alone, as the page says it (F3-5)
             value = _('at least %(value)s') % {'value': value}
-        return f'{getattr(owner, "code", owner)} · {point.name}: {label} {value} ({status})'
+        said = f'{getattr(owner, "code", owner)} · {point.name}: {label} {value} ({status})'
+        if reading.last_own is not None:        # the unit's own stale value keeps the level (read.last_own, F3-9)
+            said = f'{said}; {water_messages.last_own(reading.last_own)}'
+        return said[:SUMMARY_LENGTH]
 
 
 def _where(point):

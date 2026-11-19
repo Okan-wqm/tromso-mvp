@@ -548,6 +548,8 @@ def _ladder(card):
     # core's reason, as its alarm is (alarms/sources.py; the verification of 2026-11-18, V-A), never OK: beside a
     # critical (its limits' basis past the critical limit, the re-check's RC-3), else a warning.
     unevaluated = [str(text) for text in (middle.why_unevaluated if middle is not None else ())]
+    # A status the unit's own stale value keeps while its system's value stands in (read.last_own, F3-9): said beside it.
+    unevaluated += [str(text) for text in (middle.why_last_own if middle is not None else ())]
     if critical:
         return State(CRITICAL, (*critical, *unevaluated), basis, tuple(text for text in old if text in critical))
     warning += unevaluated

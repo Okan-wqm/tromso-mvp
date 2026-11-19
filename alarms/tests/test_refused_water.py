@@ -171,7 +171,7 @@ class AlarmTests(RefusedWaterCase):
         self.assertEqual(self.opened(), [('system', 'warning', NH3), ('water_limit', 'critical', NH3),
                                          ('water_limit', 'warning', NH3)])
         critical = self.open_alarms(source='water_limit', severity='critical').get()
-        self.assertEqual(critical.summary, f'T-02 · Middle: {LABEL} {on_basis(WATER)} (critical)')
+        self.assertEqual(critical.summary, f'T-02 · Middle: {LABEL} at least {on_basis(WATER)} (critical)')  # F3-5
         self.assertEqual(critical.point, self.mid2)
 
     def test_the_page_and_the_alarm_agree_when_another_fresh_value_decides(self):
@@ -199,6 +199,47 @@ class AlarmTests(RefusedWaterCase):
         critical = self.open_alarms(source='water_limit', severity='critical', summary__startswith='T-02').get()
         self.assertEqual(critical.summary, f'T-02 · Middle: {LABEL} 0.8924 (critical)')
         self.assertTrue(self.open_alarms(source='system', summary__startswith='T-02').exists())
+
+    def stuck(self, own_hours):
+        """The verification of FIX3, F3-1 (its probe Stuck.test_s4): T-02's own TAN without a pH (NH₃ "needs the pH": no
+        value, not refused), the loop's fresh full sample critical decides it; then the loop's next sample is OK."""
+        self.sample(self.loop, hours=6, **WATER)
+        self.sample(self.t2, hours=own_hours, tan_mg_l='5.000')
+        for minutes in (-290, -289, -230):
+            self.run_pass(minutes=minutes)
+        t2 = Alarm.objects.filter(source='water_limit', summary__startswith='T-02')
+        raised = t2.filter(clearance__isnull=True).order_by('severity')
+        said = f'T-02 · Middle: {LABEL} 0.8924 (critical)'
+        self.assertEqual([(alarm.severity, alarm.summary) for alarm in raised], [('critical', said), ('warning', said)])
+        self.sample(self.loop, hours=1, **LOW)
+        reading = self.unit_water(self.t2).get(NH3)
+        self.assertEqual((reading.value, reading.judged, reading.worse), (None, 'not_measured', None))
+        for minutes in (0, 1, 30, 60, 600, 3000):
+            self.run_pass(minutes=minutes)
+        # Ended once the water that raised them is back inside the limit, with that cause; never opened again.
+        self.assertEqual(sorted((alarm.severity, alarm.clearance.cause) for alarm in t2),
+                         [('critical', 'returned'), ('warning', 'returned')])
+        self.assertFalse(self.open_alarms(source='water_limit').exists())
+
+    def test_a_level_another_value_raised_ends_when_that_water_recovers(self):
+        self.stuck(own_hours=5)
+
+    def test_it_ends_too_when_the_units_own_value_less_sample_is_the_oldest(self):
+        """The own TAN-only sample older than the loop's critical one: the evidence is the loop's newer value's time."""
+        self.stuck(own_hours=7)
+
+    def test_it_ends_with_no_fish_only_when_the_waters_values_no_longer_judge_it(self):
+        """Its own "not measured" is no cause ("no fish" would be untrue): with the limit removed, the loop's values are
+        no longer judged, and the levels end "limit removed"."""
+        self.sample(self.loop, hours=6, **WATER)
+        self.sample(self.t2, hours=5, tan_mg_l='5.000')
+        for minutes in (-290, -289, -230):
+            self.run_pass(minutes=minutes)
+        WaterLimit.objects.all().delete()
+        self.run_pass(minutes=0)
+        causes = {alarm.clearance.cause for alarm in Alarm.objects.filter(source='water_limit',
+                                                                          summary__startswith='T-02')}
+        self.assertEqual(causes, {'limit_removed'})
 
     def test_it_ends_once_the_value_can_be_worked_out_and_the_limit_judges_it(self):
         self.refuse(self.t2, hours=2, water=WATER)

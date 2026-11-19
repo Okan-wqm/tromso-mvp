@@ -3833,8 +3833,10 @@ from which device, how late) is logged. The server side is built; the push trans
   the unit any more" once nothing judges it; a later TAN without its pH, or the refused sample leaving the 30-day
   window, ends nothing (RC-4). Beside it the value's own limit levels judge its limits' basis, which needs no
   conductivity and which the judged value is never below (critical past the critical limit, RC-3), or another fresh
-  value of the unit's water that judged it on the page (RC-2); a refused value never clears a limit level, and a pass
-  that could not read the unit ends nothing. A system alarm reaches its site's recipient rules; a farm-wide one the
+  value of the unit's water that judged it on the page (RC-2), and they stay judged by those values: a level
+  another value raised ends "back inside the limit" when that water recovers, though the unit's own newest value is
+  value-less (F3-1); its own "not measured" is never a "no fish" cause. The summary says "at least" before a basis
+  (F3-5). A refused value never clears a limit level, and a pass that could not read the unit ends nothing. A system alarm reaches its site's recipient rules; a farm-wide one the
   company-wide rules, and where no rule reaches it by site, every rule its severity reaches: it never reaches nobody (F8).
 - **Who is notified**: the alarm recipient rules (a tab: a site or every site, a production department or every one, the
   least severity, a level 0 to 9, a role or one person, only while on shift by the HR roster (`hr.read.on_shift`, the

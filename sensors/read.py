@@ -171,10 +171,18 @@ def segments(target, quantity, start, end):
 
 def segments_for(conditions, quantity, start, end):
     """[Segment] of the channels of `quantity` bound by `conditions` ([(Q over bindings, origin)]) between start and
-    end, in the order they count. A pH channel's segment starts no earlier than its last change of pH scale
-    (`Channel.ph_scale_from`): what it measured before is on a scale not known any more, and is drawn and used nowhere
-    (the water-chemistry audit of 2026-11-19, F1); it says its scale when not NBS (`Segment.ph_scale`)."""
-    found = []
+    end, in the order they count (`segments_and_cuts`)."""
+    return segments_and_cuts(conditions, quantity, start, end)[0]
+
+
+def segments_and_cuts(conditions, quantity, start, end):
+    """([Segment], [(channel number, the change)]): the segments of `segments_for` and the pH channels whose values in the
+    window from before their last change of pH scale were left out, each once (a chart says it even when nothing is
+    left to draw: the review of the water-chemistry audit, C4). A pH channel's segment starts no earlier than its last
+    change of pH scale (`Channel.ph_scale_from`): what it measured before is on a scale not known any more, and is
+    drawn and used nowhere (the water-chemistry audit of 2026-11-19, F1); it says its scale when not NBS
+    (`Segment.ph_scale`)."""
+    found, cuts = [], {}
     for rank, (condition, origin) in enumerate(conditions):
         bindings = (Binding.objects.visible().filter(condition, channel__quantity=quantity, valid_from__lt=end)
                     .filter(Q(valid_to__isnull=True) | Q(valid_to__gt=start)).select_related('channel'))
@@ -184,14 +192,16 @@ def segments_for(conditions, quantity, start, end):
             scale, since = '', None
             if channel.quantity == PH:
                 scale, since = ('' if channel.ph_scale == NBS else channel.ph_scale), channel.ph_scale_from
-                begin = max(begin, since) if since is not None else begin
+                if since is not None and since > begin:
+                    cuts[channel.channel_no, since] = None          # some of its time here is before the change
+                    begin = since
             if begin >= finish:
                 continue
             found.append((rank, ROLE_RANK.get(binding.role, 2), Segment(
                 channel.channel_no, begin, finish, binding.role, origin, channel.fresh_s,
                 channel.reduction == Reduction.DEADBAND, binding.valid_from > start, scale, since)))
     found.sort(key=lambda item: (item[0], item[1], item[2].start))
-    return [segment for _rank, _role, segment in found]
+    return [segment for _rank, _role, segment in found], list(cuts)
 
 
 # ---- the series -----------------------------------------------------------------------------------------------
@@ -233,6 +243,7 @@ class Chart:
     markers: list = field(default_factory=list)
     reduced: bool = False
     segments: list = field(default_factory=list)
+    cuts: list = field(default_factory=list)        # [(channel number, its pH scale's change)]: values left out before it
 
     @property
     def empty(self):
@@ -318,7 +329,7 @@ def series(target, quantity, start, end, *, max_points=MAX_POINTS, now=None):
     zone = zone_for(target)
     width = width_for(start, end, max_points)
     tier = tier_of(width)
-    found = segments(target, quantity, start, end)
+    found, cuts = segments_and_cuts(places(target)[0], quantity, start, end)
     chosen = {}
     for segment in found:
         for row in chart_rows(segment, width, tier, zone):
@@ -329,7 +340,7 @@ def series(target, quantity, start, end, *, max_points=MAX_POINTS, now=None):
                                    last, segment.channel_no, segment.role, segment.origin, segment.fresh_s)
     buckets = [chosen[begin] for begin in sorted(chosen)]
     chart = Chart(target, quantities.get(quantity), start, end, width, tier, zone, buckets,
-                  gaps(buckets, start, end, now), segments=found, reduced=any(s.reduced for s in found))
+                  gaps(buckets, start, end, now), segments=found, reduced=any(s.reduced for s in found), cuts=cuts)
     chart.samples = _samples(target, quantity, start, end)
     channel_nos = {segment.channel_no for segment in found}
     scale_changes = {(segment.ph_scale_from, segment.channel_no) for segment in found

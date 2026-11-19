@@ -119,7 +119,11 @@ def notes(chart):
         found.append(_('Channel #%(number)d is drawn as its probe measured it, on the %(scale)s, not converted: the '
                        'samples and the water pages are on the NBS scale.') % {
             'number': channel_no, 'scale': messages.PH_SCALES[scale]})
-    if any(marker.kind == 'ph_scale' for marker in chart.markers):
-        found.append(_('A pH channel’s scale was changed in this time: what it measured before is not drawn (its '
-                       'scale is not known).'))
+    for channel_no, changed in chart.cuts:
+        # Whether the change is inside the window or after it (a window wholly before it is blank: the review of the
+        # water-chemistry audit, C4), the chart says why those values are not drawn.
+        found.append(_('Channel #%(number)d’s values before %(time)s are not drawn: its pH scale was changed then, and '
+                       'the scale they were measured on is not known.') % {
+            'number': channel_no,
+            'time': formats.date_format(timezone.localtime(changed, chart.zone), 'DATETIME_FORMAT')})
     return found

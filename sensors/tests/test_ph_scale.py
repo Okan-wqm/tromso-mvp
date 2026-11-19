@@ -8,7 +8,7 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.db import connection
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import formats, timezone
 
 from core.models import AuditLog
 from core.testing import FrozenClock
@@ -210,8 +210,30 @@ class ChartTests(SeaWaterCase):
         self.assertIn('ph_scale', [marker.kind for marker in found.markers])
         notes = [str(note) for note in chart.notes(found)]
         self.assertTrue(any('drawn as its probe measured it, on the total scale' in note for note in notes))
-        self.assertTrue(any('what it measured before is not drawn' in note for note in notes))
+        self.assertIn(self.cut_note(START + timedelta(minutes=30)), notes)
         self.assertIn('pH scale changed', chart.draw(found, 'S-01'))
+
+    def cut_note(self, changed):
+        shown = formats.date_format(timezone.localtime(changed, tz.utc), 'DATETIME_FORMAT')
+        return (f'Channel #{self.ph.channel_no}’s values before {shown} are not drawn: its pH scale was changed then, '
+                'and the scale they were measured on is not known.')
+
+    def test_a_window_wholly_before_a_change_is_blank_and_says_why(self):
+        """The review of the water-chemistry audit, C4: a month's view from before the change drew nothing and said
+        nothing; it says why its values are not drawn, and draws none of them."""
+        self.steady()
+        changed = START + timedelta(hours=5)
+        Channel.objects.filter(pk=self.ph.pk).update(ph_scale_from=changed)
+        found = read.series(self.point, 'ph', START, START + timedelta(hours=2))
+        self.assertEqual((found.buckets, found.markers), ([], []))
+        self.assertEqual(found.cuts, [(self.ph.channel_no, changed)])
+        self.assertIn(self.cut_note(changed), [str(note) for note in chart.notes(found)])
+
+    def test_a_channel_whose_scale_never_changed_says_nothing_of_it(self):
+        self.steady()
+        found = read.series(self.point, 'ph', START, START + timedelta(hours=2))
+        self.assertEqual(found.cuts, [])
+        self.assertFalse(any('are not drawn' in str(note) for note in chart.notes(found)))
 
 
 class PageTests(SensorsCase):

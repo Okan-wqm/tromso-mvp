@@ -125,7 +125,13 @@ class TakeTurnsTests(TransactionTestCase):
         deadline = clock.monotonic() + seconds
         while clock.monotonic() < deadline:
             with connection.cursor() as cursor:
-                cursor.execute('SELECT count(*) FROM pg_locks WHERE NOT granted AND pid <> pg_backend_pid()')
+                # pg_locks is the whole server's: under --parallel the other workers' databases are on it, and their
+                # lock tests wait too (such a wait lets the first write go early: the later write may then see the
+                # earlier one, as the downstream mutant once did). Only a session of THIS database counts; a row wait
+                # is a wait for a transaction id, a lock with no database, so the session's database is asked.
+                cursor.execute('SELECT count(*) FROM pg_locks AS asked JOIN pg_stat_activity AS activity '
+                               'ON activity.pid = asked.pid WHERE NOT asked.granted AND asked.pid <> pg_backend_pid() '
+                               'AND activity.datname = current_database()')
                 if cursor.fetchone()[0]:
                     return True
             if not thread.is_alive():

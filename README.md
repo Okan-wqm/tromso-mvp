@@ -2037,9 +2037,13 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
   batches in a unit are the fewest). The rule is the species'
   own, else the one for every species; a grading takes the longer of the grading and the transport rule. No
   rule, or no feeding in the 31 days before (longer than any rule), is said, not warned.
-- *Medicine withdrawal* (**a harvest only**: the fish go to food, to the slaughter facility the harvest names; a
-  medicine withdrawal is a meat withdrawal, so it means nothing when live fish are moved or graded, where the
-  fast and the live-transfer facts are what matter, and a treatment during a withdrawal harms nobody): every block
+- *Medicine withdrawal* (**a harvest and a live delivery**: the fish leave the farm and may be eaten, slaughtered
+  at the facility the harvest names or sold alive; the owner's decision 12 of 19.11.2026: a live delivery of held
+  fish is warned through the same check, "Not suitable for a live delivery — medicine withdrawal of B-2026-001: …
+  Fish sold alive may be eaten.", ticked, stored as a handling acknowledgement and logged as critical, as a harvest
+  is, and never blocked; `check.WITHDRAWAL_OPERATIONS`. A medicine withdrawal is a meat withdrawal, so it means
+  nothing when live fish are moved or graded on the farm, where the fast and the live-transfer facts are what
+  matter, and a treatment during a withdrawal harms nobody): every block
   a registered provider gives for the **unit** whose end is after the day, or unknown (unknown is a warning, never
   clear). The withdrawal is the unit's, never the chosen batch's: a net cannot separate the batches of one unit, so
   the withdrawal of any fish in it holds a harvest of it, whichever batch the dialog names (`check.in_force(unit, day)`

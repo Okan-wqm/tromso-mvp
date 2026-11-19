@@ -1209,7 +1209,8 @@ TimescaleDB hypertable) and `water_limits`; the points are `water_sampling_point
 **The parameters** are a fixed list in code (`farm/water/parameters.py`), each with one unit and one
 basis in its label and its column's name, so a value can never be relabelled into another unit and
 nitrogen is always recorded as N (owner decision 3; the help of each field gives the kit conversions,
-NO₂⁻ ÷ 3.29, NO₃⁻ ÷ 4.43, NH₄⁺ ÷ 1.29). Each has a plausible range, which catches a typing slip and is a
+NO₂⁻ ÷ 3.28, NO₃⁻ ÷ 4.43, NH₄⁺ ÷ 1.29, NH₃ ÷ 1.22: each the ion's molar mass over nitrogen's; 46.0055 / 14.0067 =
+3.2845 for nitrite, which said 3.29 until the water-chemistry audit of 2026-11-19, F7). Each has a plausible range, which catches a typing slip and is a
 database check (the ranges are argued in the bug document), its precision and how long a value is fresh. The
 hardness and the conductivity compensated to 25 °C are the fresh water's ionic-strength inputs of the chemistry (formula 3,
 Water-chemistry core); a conductivity at the water's own temperature is the sensors' process quantity `conductivity_us_cm`
@@ -1479,9 +1480,9 @@ without values it shows its defaults.
   card): "Measured 7.95 on the total scale; put on the NBS scale by formula 3 with the sample's 12.0 °C and 34.0 ‰."
   The stored pH has the column's two decimals; the calculator converts without rounding and says "pH 7.95 on the
   total scale is 8.08 on the NBS scale", its target pH and pH limits are NBS, and values taken from a unit are NBS. **No
-  page holds a pH on another scale, so none can mix them.** A sensor's pH is not converted (the ingest stores what the
-  device sends; the conversion needs the temperature and salinity of the same moment): a pH channel is NBS and its form
-  says so. Checked against PyCO2SYS 1.8.3.4 and seacarb 3.4.2 over 0 to 40 °C by 5 to 40 ‰ (72 cells): the free and the
+  page holds a pH on another scale, so none can mix them.** A sensor's pH is put on the NBS scale by the same
+  conversion, by its channel's pH scale (Sensors › Channels, *pH scale*; after the water-chemistry audit of 2026-11-19,
+  below). Checked against PyCO2SYS 1.8.3.4 and seacarb 3.4.2 over 0 to 40 °C by 5 to 40 ‰ (72 cells): the free and the
   seawater-scale pH of a total-scale pH within 8.9e-15 and 2.4e-7 pH; the NBS leg is the core's own conversion (−0.069
   to +0.055 pH against CO2SYS's, as every NBS pH), which cancels in what the water's own constants work out.
 - **After the independent review of 2026-11-16** (`F:\dev\balik-notes\chem-v3\REVIEW.md`; R5, R7, R8 and R10 are the
@@ -1547,6 +1548,50 @@ without values it shows its defaults.
     `water_measurements` while each chunk is scanned: land with the server stopped; going back past 0045 keeps the P
     and loses the PO₄ entry), V-E (the phosphate sentence is one per list, above it), V-H (the chrono advisory of
     `sensors-ingest`: a dated ignore on main, not on this branch).
+- **After the water-chemistry audit of 2026-11-19** (`F:\dev\balik-notes\chem-audit-fable\AUDIT.md`; no constant and no
+  formula moved, the golden files keep their bytes; F2, a published NBS conversion in salt water, waits for the owner):
+  - *A sensor's pH has a scale* (F1, owner decision 1 of 2026-11-17). A pH channel says the scale its probe reports on
+    (`sensors.Channel.ph_scale`: NBS, the default for every channel there is; total, as a TRIS-calibrated ISFET or
+    optical sea-water probe reports; seawater; free). The ingest stores what the device sends. Where the water is read
+    (`farm/water/read.py`: the latest values, the water at a past moment; the replay; the trail) a value on another scale
+    is put on the NBS scale by the one conversion a typed sample takes (`read.ph_on_nbs`, which `services.on_nbs` calls
+    too), with the place's fresh temperature from the sensors (as a sensor's TAN takes its pH and temperature) and the
+    salinity of the same moment (a fresh sensor's, else the point's fresh sample's, else 0 in fresh water), for sea water
+    of 5 ‰ or more and never for fresh water with salt added, while the pH is fresh. It is then shown as the typed
+    sample's is ("measured 7.95 on the total scale" beside 8.08; "Measured 7.95 on the total scale by the sensor; put on
+    the NBS scale by formula 3 with 12.0 °C and 34.0 ‰ of the same moment."), and its NH₃ is the typed sample's: a TRIS
+    probe at 12 °C and S 34 gives the judged NH₃-N the same water typed as a total-scale sample gives. Otherwise (no
+    fresh sensor temperature, no salinity, fresh or salt-added water, a pH no longer fresh) **the pH has no value and
+    cannot be evaluated**, said with the reason, and so is an NH₃ worked out from it; the unconverted number is shown and
+    used nowhere (a worse fresh sample still decides the status). The replay's frame has no pH and no diagram then,
+    with the reason; the trail's hour is unworkable with it. The sensor's own chart draws its values as measured and says
+    their scale beside the NBS samples. The alarm rules on a channel (Sensors › Alarm rules) compare its values as
+    measured, on its scale; the water limits' alarms judge the converted value.
+    *A change of a channel's scale* (whatever door saves it, `Channel.save`) records the moment (`ph_scale_from`). What
+    the probe measured before is on a scale not known any more (a probe recalibrated, or a setting put right: the
+    application cannot tell which), so **those values are used nowhere, neither on the old scale nor on the new**: the
+    latest pH says "cannot be evaluated: measured before the channel's pH scale was changed" until the probe's next
+    value (minutes, at a pH channel's heartbeat), the past moments, the replay, the trail and the chart leave them out
+    (the chart marks the change). This is the safe side both ways: a total-scale reading taken as NBS reads NH₃ low,
+    an NBS reading taken as total reads a low pH too high. The channel's form asks the scale (pH channels only; empty:
+    as it is), its list and the live values say it, its edit page says when it was changed; the column, a database
+    default for the ingest's inserts and the check `chk_sensors_channel_ph_scale` are sensors 0013.
+  - *The NH₃-N is judged unrounded* (F3): the limits, the worst fresh value and the alarm's deadband test read the value
+    as worked out (`Reading.exact`, `judged_value`), the page shows it at four decimals. A true 0.01034 mg/L read 0.0103
+    and was OK against a limit of 0.0103; it is now a warning that reads 0.0103. The oxygen worked out in its other
+    unit is judged the same way.
+  - *Words* (F5 to F11): the sea-water basis says what it is (above); the activity-corrected NH₃ of a water with seawater
+    constants says it rests on the application's own NBS conversion and reads up to about 16 % below the published
+    references in cold sea water, information and not the better value (F6); a kit's nitrite is divided by 3.28 (F7);
+    the calculator gives the ionic strength in mol/kg H₂O where it is the salinity's (DOE 1994: 0.7014 at S 34 is
+    0.695 mol/L) and in mol/L where it is the fresh path's estimate (F8); the core's notes say that concentrations per
+    litre are taken as per kg in sea water too, which moves the CO₂ by at most +0.143 % and the NH₃ not at all (F9); a
+    water below 0 °C says that the constants are fitted from 0 °C and extrapolated there, the judged NH₃ and CO₂ on the
+    safe side (`fresh::BELOW_FITTED_TEMP`, code `below_fitted_temp`; F10); an NH₃ worked out from a pH measured on the
+    total, seawater or free scale, typed or from a sensor, and the calculator with such a pH, say that it is judged on
+    the NBS scale on the limits' basis (a free-scale constant on that NBS pH, unconverted), the safe side, about 13 to
+    25 % above what that pH gives exactly
+    (F11).
 - **The optional phosphate** (PO₄-P, mg/L as P; the independent check's hypothesis 12a, owner 2026-11-10;
   `chemcore/findings/phosphate.md`): phosphate is part of the alkalinity a titration measures, [HPO₄²⁻] + 2 [PO₄³⁻] −
   [H₃PO₄] (Dickson 1981's definition as Dickson, Sabine & Christian 2007 give it, ch. 2), with Millero's (1995)
@@ -3305,7 +3350,9 @@ What works:
   formats (how a kind of device writes its messages: one object with a value per channel, or a list of named items;
   where the device time and the sequence number are, as JSON pointers; no time: the receive time, flagged), Devices (one
   topic each, at a site (the site of where it is placed), optionally the instrument of a piece of equipment; offline after three intervals without a
-  message), Channels (what a value measures, from the quantity catalogue `sensors/quantities.py`; where it is in the
+  message), Channels (what a value measures, from the quantity catalogue `sensors/quantities.py`; a pH channel's pH
+  scale, NBS unless set, its values put on the NBS scale where the water is read and the ones from before a change of
+  scale used nowhere (Water chemistry, after the water-chemistry audit of 2026-11-19); where it is in the
   message; the unit conversion; how it is stored: every value, or a value that moves past the deadband and at least once
   per heartbeat; fresh for its own number of heartbeats (`fresh_heartbeats`, 3 by default, 1 to 20); a range outside which a value is stored but flagged and used nowhere;
   maintenance and retired states; calibrations as a list on the site's clock, applied by the ingest at the device time,

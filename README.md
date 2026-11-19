@@ -3836,7 +3836,20 @@ from which device, how late) is logged. The server side is built; the push trans
   value of the unit's water that judged it on the page (RC-2), and they stay judged by those values: a level
   another value raised ends "back inside the limit" when that water recovers, though the unit's own newest value is
   value-less (F3-1); its own "not measured" is never a "no fish" cause. The summary says "at least" before a basis
-  (F3-5). A refused value never clears a limit level, and a pass that could not read the unit ends nothing. A system alarm reaches its site's recipient rules; a farm-wide one the
+  (F3-5). A refused value never clears a limit level, and a pass that could not read the unit ends nothing.
+- **Which value can end a water limit level** (the verification of FIX3, F3-1 and F3-7; `alarms/sources.py`, the rule at
+  the top; `AlarmSubjectState.own_held`, alarms 0014). The unit's own value is one measured at its own points; another
+  value is one of the rest of its water (its loop standing in for it, or another fresh value that judged it worse). A level raised by the unit's own value ends only on the
+  unit's own evidence: an own full sample clear of it ends it "back inside the limit" (with every other fresh value clear
+  too); an own TAN without its pH, another point's OK value, nothing new, or the bad sample voided end nothing. A level
+  raised by another value (the unit's own value clear or value-less) ends when the values that judge it are clear:
+  another point's newer OK value ends it; an own full OK sample ends it only when the other values are clear too; an
+  own TAN without its pH changes nothing; the bad sample voided ends it only where a value taken after it is clear.
+  Either way another bad value holds it, a refused value is never evidence, a
+  value that only goes stale ends nothing, and the limit removed or no fish end it with that cause. Every combination is
+  a test: `alarms/tests/test_who_ends_a_level.py`. Levels open when 0014 lands are taken as held by the unit's own
+  value (the safe side).
+- A system alarm reaches its site's recipient rules; a farm-wide one the
   company-wide rules, and where no rule reaches it by site, every rule its severity reaches: it never reaches nobody (F8).
 - **Who is notified**: the alarm recipient rules (a tab: a site or every site, a production department or every one, the
   least severity, a level 0 to 9, a role or one person, only while on shift by the HR roster (`hr.read.on_shift`, the

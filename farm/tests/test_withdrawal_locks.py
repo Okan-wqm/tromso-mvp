@@ -10,13 +10,14 @@ orders, and by the lock statements each write sends. The second class is the sch
 the reach alone (verification V-9), with the two mutants that show the race when it is cut out."""
 import threading
 import time as clock
+from datetime import datetime, time
 from decimal import Decimal
 from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import connection, connections, transaction
-from django.test import TransactionTestCase
+from django.test import TestCase, TransactionTestCase
 from django.test.utils import CaptureQueriesContext
 
 from .. import withdrawal_gate
@@ -24,9 +25,11 @@ from ..health import services as health_services, withdrawal
 from ..health.withdrawal import WithdrawalChanged
 from ..models import (HandlingAcknowledgement, Medicine, MedicineWithdrawal, ProductionDepartment, Site,
                       StockMovement)
+from ..models.site import zone_of
 from ..stock import read as stock_read, services as stock_services
 from ..stock.dates import local_today
-from .helpers import make_facility
+from ..water import services as water_services
+from .helpers import going_on, make_facility, point_of
 from .test_stock import make_species, make_unit, stock_fish
 
 
@@ -245,3 +248,58 @@ class TwoHopsTests(TakeTurnsTests):
         done, inside = self.unseen(mock.patch.object(stock_read, 'downstream', lambda found, unit_ids, first=None: set()))
         self.assertEqual((outcome(done['first']), outcome(done['second'])), ('harvest', 'transfer'))
         self.assertEqual(inside, [done['first'].pk])
+
+
+class WhatAWriteLocksTests(TestCase):
+    """TakeTurnsTests' farm, in one transaction: the batches a write locks, read from the lock statements it sends (each
+    write rolled back). Not the race itself (TakeTurnsTests): which batches are in the one statement taken first."""
+    setUp = TakeTurnsTests.setUp
+    day = TakeTurnsTests.day
+    move = TakeTurnsTests.move
+
+    def first_batch_lock(self, job):
+        """(the first statement of the write that locks batches, without dashes; whether it comes before any lock of
+        a unit). The write is rolled back, whatever it did."""
+        with CaptureQueriesContext(connection) as queries, transaction.atomic():
+            try:
+                job()
+            except (ValidationError, WithdrawalChanged):
+                pass
+            transaction.set_rollback(True)
+        found = [query['sql'] for query in queries.captured_queries if 'FOR UPDATE' in query['sql']]
+        batches = next(index for index, sql in enumerate(found) if 'FROM "batches"' in sql)
+        units = next(index for index, sql in enumerate(found) if 'FROM "tanks"' in sql)
+        return found[batches].replace('-', ''), batches < units
+
+    def test_a_write_dated_today_about_the_treated_tank_locks_the_fish_its_withdrawal_holds_elsewhere(self):
+        """Verification V-9, `held_with`: after the move, A's withdrawal holds B in T-02 and in T-03. A water sample in
+        T-01 today can change A's end (a degree-day medicine) and so B's: it must lock B, which a harvest of B locks.
+        B is not in T-01 and the sample reaches nothing from today on (read.downstream), so only `held_with` brings B
+        in: with it cut out, B is not locked, and the sample and a harvest of B no longer take turns."""
+        going_on(self.move)
+        site = self.t1.production_department.site
+
+        def sample():
+            return water_services.record(self.user, point=point_of(self.t1), source='manual',
+                                         measured_at=datetime.combine(self.today, time(9), tzinfo=zone_of(site)),
+                                         values={'temperature_c': Decimal('8')})
+        statement, _first = self.first_batch_lock(sample)
+        self.assertIn(self.b.pk.hex, statement)
+        with mock.patch.object(withdrawal, 'held_with', lambda *args, **kwargs: set()):
+            statement, _first = self.first_batch_lock(sample)
+        self.assertIn(self.a.pk.hex, statement)
+        self.assertNotIn(self.b.pk.hex, statement)
+
+    def test_a_grading_locks_like_every_other_write(self):
+        """Verification W-3: a grading locked its own batch and its units first, then (in `_commit`) the batches it
+        can reach: the reverse of every other write's order, so a grading and a harvest of B crossing could deadlock.
+        Now it takes its batches, B among them, in one statement before any unit, as a transfer does."""
+        def grade():
+            return stock_services.record_grading(self.user, source=self.t1, batch=self.a, day=self.day(3),
+                                                 outputs=[(self.t2, 500, Decimal('130'), 'large')],
+                                                 remainder_avg_weight_g=Decimal('120'))
+        for job in (grade, self.move):
+            statement, first = self.first_batch_lock(job)
+            self.assertIn(self.b.pk.hex, statement)
+            self.assertIn('ORDER BY', statement)
+            self.assertTrue(first)

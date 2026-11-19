@@ -353,5 +353,6 @@ fn every_equilibria_says_its_formula_its_ionic_strength_and_where_it_came_from()
         f::water_equilibria(2, 12.0, 0.0, None, Ions::default()),
         Err(ChemError::UnknownFormula)
     );
-    assert_eq!(chemcore_core::FORMULA_VERSION, 3);
+    // formula 3 stays reproducible by name; the application's is formula 4 (crate::formula4)
+    assert_eq!(chemcore_core::FORMULA_VERSION, 4);
 }

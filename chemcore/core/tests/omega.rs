@@ -110,7 +110,7 @@ fn on_the_charts_omega_line_the_saturation_index_is_0() {
         dic_step: 1.0,
         alkalinity_step: 1.0,
     };
-    for formula in [1, 3] {
+    for formula in [1, 3, 4] {
         for (temp_c, salinity) in [(25.0, 35.0), (8.0, 20.0)] {
             let eq = f::water_equilibria(formula, temp_c, salinity, Some(115.0), Ions::default());
             assert!(eq.is_ok());

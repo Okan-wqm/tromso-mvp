@@ -32,7 +32,7 @@ fn the_codes_are_stable_and_nbs_is_the_default() {
 
 #[test]
 fn an_nbs_ph_is_itself_bit_for_bit_in_every_water() {
-    // The default changes nothing: fresh, brackish, salt-added and sea water, formula 1 and formula 3.
+    // The default changes nothing: fresh, brackish, salt-added and sea water, formula 1, 3 and 4.
     let mut waters = 0;
     for temp_c in [0.0, 2.0, 12.0, 25.0, 30.0, 40.0] {
         for salinity in [0.0, 0.5, 1.0, 3.0, 4.99, 5.0, 20.0, 35.0, 40.0] {
@@ -41,7 +41,7 @@ fn an_nbs_ph_is_itself_bit_for_bit_in_every_water() {
                     origin,
                     ..Ions::default()
                 };
-                for formula in [1, 3] {
+                for formula in [1, 3, 4] {
                     let eq = f::water_equilibria(formula, temp_c, salinity, Some(80.0), ions);
                     assert!(eq.is_ok(), "{temp_c} °C, S {salinity}");
                     for ph in [4.0, 6.5, 7.0, 7.123456789, 8.0, 8.5, 12.0] {
@@ -55,7 +55,7 @@ fn an_nbs_ph_is_itself_bit_for_bit_in_every_water() {
             }
         }
     }
-    assert_eq!(waters, 6 * 9 * 3 * 2);
+    assert_eq!(waters, 6 * 9 * 3 * 3);
 }
 
 #[test]

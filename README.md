@@ -3847,8 +3847,14 @@ from which device, how late) is logged. The server side is built; the push trans
   own TAN without its pH changes nothing; the bad sample voided ends it only where a value taken after it is clear.
   Either way another bad value holds it, a refused value is never evidence, a
   value that only goes stale ends nothing, and the limit removed or no fish end it with that cause. Every combination is
-  a test: `alarms/tests/test_who_ends_a_level.py`. Levels open when 0014 lands are taken as held by the unit's own
-  value (the safe side).
+  a test: `alarms/tests/test_who_ends_a_level.py`. 0014 decides nothing for the levels open when it lands: the first
+  pass works out who holds each (F3-8).
+  **Decision (2026-11-19, F3-9, under the owner's standing rule):** a critical or warning measured on the unit is
+  confirmed over only by measuring the unit again. When the unit's own bad value goes stale and its loop's OK value
+  stands in, the level stays open and keeps escalating, and the page, the card and the alarm agree: the unit is
+  critical (or warning), its last own value is shown marked stale beside the loop's value with "last own value 0.8924
+  critical on dd.mm.yyyy hh:mm, no recent data: measure this unit" (`read.last_own`, `messages.last_own`; nb, tr),
+  and a level raised in that state says the same in its summary.
 - A system alarm reaches its site's recipient rules; a farm-wide one the
   company-wide rules, and where no rule reaches it by site, every rule its severity reaches: it never reaches nobody (F8).
 - **Who is notified**: the alarm recipient rules (a tab: a site or every site, a production department or every one, the

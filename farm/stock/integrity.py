@@ -18,7 +18,7 @@ from farm.models import (
     ProductionDepartment,
     Species, StockMovement, StockOperation, Tank,
 )
-from farm.models.handling import KIND_OF_OPERATION
+from farm.models.handling import KIND_OF_OPERATION, AcknowledgedWarning
 from farm.models.harvest import FULFILLED_BY
 from farm.models.stock import MovementKind, OperationKind
 from farm.models.tank import NEEDS_FISH, NEEDS_NO_FISH
@@ -190,7 +190,9 @@ def _record_problems(operations, lines_of):
 def _harvest_problems(operations, lines_of):
     """What the harvest adds to an operation, checked across rows: every live harvest names where its fish
     went (one HarvestRecord) and no other kind of operation has a record; a plan item is fulfilled by an
-    operation of its kind, of its unit and batch; an acknowledgement belongs to a handling."""
+    operation of its kind, of its unit and batch; an acknowledgement belongs to a handling (a harvest, a transfer or
+    split, a delivery, a grading), and the acknowledgement of fish combined with held fish (a withdrawal row, the
+    owner's decision 8) to the move that combined them: one of those, or a STOCKING, which is not a handling."""
     found = []
     records = HarvestRecord.all_objects.select_related('operation').in_bulk()
     for operation in operations.values():
@@ -210,6 +212,9 @@ def _harvest_problems(operations, lines_of):
             found.append(f'Plan item {item.pk} names other fish than the {operation.kind} that fulfils it.')
     handled = set(KIND_OF_OPERATION)
     for row in HandlingAcknowledgement.objects.filter(operation__isnull=False).select_related('operation'):
-        if row.operation.kind not in handled:
-            found.append(f'Acknowledgement {row.pk} belongs to a {row.operation.kind}, which is not a handling.')
+        kind = row.operation.kind
+        combined = kind == OperationKind.INPUT and row.warning == AcknowledgedWarning.WITHDRAWAL
+        if kind not in handled and not combined:
+            found.append(f'Acknowledgement {row.pk} belongs to a {kind}, which is not a handling, nor a stocking '
+                         'that combined fish with held fish.')
     return found

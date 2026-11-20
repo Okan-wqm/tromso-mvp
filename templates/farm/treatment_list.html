@@ -48,6 +48,14 @@
   {% if record_url %}<a class="button button-inline" href="{{ record_url }}" data-modal>{% include "icons/_icon.html" with name="plus" %}{% trans "Record treatment" %}</a>{% endif %}
 </div>
 
+{% if unresolved %}
+<section class="notice notice-warning" aria-labelledby="unresolved-title">
+  <h2 class="section-title" id="unresolved-title">{% trans "Unresolved old courses" %}</h2>
+  <p>{% blocktrans trimmed count days=unknown_days %}The end of these withdrawals is unknown and the course is older than {{ days }} day: the fish are no longer held (Platform settings). Give each an end.{% plural %}The end of these withdrawals is unknown and the course is older than {{ days }} days: the fish are no longer held (Platform settings). Give each an end.{% endblocktrans %}</p>
+  <ul role="list">{% for text in unresolved %}<li>{{ text }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+
 <p class="units-count">{{ count_line }}</p>
 
 {% if not rows %}
@@ -83,7 +91,7 @@
         <td>{% for unit in treatment.units.all %}<span class="row-line">{{ unit.code }}{% if forloop.first and unit.production_department.site %}<span class="row-sub">{{ unit.production_department.site.name }}</span>{% endif %}</span>{% endfor %}</td>
         <td><span class="row-title">{% if treatment.medicine %}{{ treatment.medicine.name }}{% else %}{{ treatment.get_method_display }}{% endif %}</span><span class="row-sub">{% if treatment.medicine %}{{ treatment.get_method_display }} · {{ treatment.medicine.active_substance }} · {% endif %}{{ treatment.get_reason_display }}{% if treatment.bath_minutes %} · {% blocktrans trimmed with minutes=treatment.bath_minutes %}{{ minutes }} min{% endblocktrans %}{% endif %}</span>{% if treatment.health_event %}<span class="row-sub">{{ treatment.health_event }}</span>{% endif %}</td>
         <td class="nowrap">{% if treatment.dose_value is not None %}{{ treatment.dose_value|floatformat:"-3" }} {{ treatment.get_dose_unit_display }}{% else %}—{% endif %}{% if treatment.amount_value is not None %}<span class="row-sub">{{ treatment.amount_value|floatformat:"-3" }} {{ treatment.get_amount_unit_display }}</span>{% endif %}</td>
-        <td>{% for part in row.batches %}<span class="row-line"><strong>{{ part.batch.code }}</strong>{% if part.units %} ({{ part.units|join:", " }}){% endif %}{% if part.withdrawal %} · <span{% if part.held %} class="over-text"{% endif %} title="{{ part.withdrawal|withdrawal_reason }}">{{ part.withdrawal|held_until }}</span>{% endif %}</span>{% empty %}<span class="muted">{% trans "No fish found in these units on these days" %}</span>{% endfor %}</td>
+        <td>{% for part in row.batches %}<span class="row-line"><strong>{{ part.batch.code }}</strong>{% if part.where %} ({{ part.where|join:", " }}{% if part.shared %}, {% trans "shared a unit" %}{% endif %}){% endif %}{% if part.withdrawal %} · <span{% if part.held %} class="over-text"{% endif %} title="{{ part.withdrawal|withdrawal_reason }}">{{ part.withdrawal|held_until }}</span>{% endif %}</span>{% empty %}<span class="muted">{% trans "No fish found in these units on these days" %}</span>{% endfor %}</td>
         <td>{{ treatment.prescribed_by|default:"—" }}{% if treatment.prescription_ref %}<span class="row-sub">{{ treatment.prescription_ref }}</span>{% endif %}{% if treatment.vet %}<span class="row-sub">{{ treatment.vet.name }}</span>{% endif %}</td>
         <td>{{ treatment.created_by.get_username|default:"system" }}<span class="row-sub">{{ treatment.created_at|company_clock|date:"DATETIME_FORMAT" }}</span>{% if treatment.acknowledgements.all %}<span class="row-sub"><span class="badge badge-critical">{% trans "Handling warning acknowledged" %}</span></span>{% endif %}{% if treatment.notes %}<span class="row-sub">{{ treatment.notes }}</span>{% endif %}{% if treatment.is_deleted %}<span class="row-sub">{% blocktrans trimmed with reason=treatment.void_reason name=treatment.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>
         <td class="row-actions">{% if treatment.is_deleted %}<span class="badge badge-voided">{% trans "Voided" %}</span>{% else %}{% if row.last_day_url %}<a class="op-void" href="{{ row.last_day_url }}" data-modal>{% trans "Last day" %}</a>{% endif %}{% if row.void_url and treatment|unit_voidable %} <a class="op-void" href="{{ row.void_url }}" data-modal>{% trans "Void" %}</a>{% endif %}{% endif %}</td>

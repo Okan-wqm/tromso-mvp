@@ -21,7 +21,7 @@ from ..health import services as health_services, withdrawal
 from ..models import HandlingAcknowledgement, Medicine, MedicineWithdrawal, StockMovement
 from ..stock import services as stock_services
 from ..stock.dates import shown_date
-from .helpers import make_facility, role
+from .helpers import going_on, make_facility, role
 from .test_cleaner_fish import CleanerFishTestCase
 from .test_harvest import HARVEST_KEEPER
 
@@ -47,8 +47,8 @@ class CleanerWithdrawalTestCase(CleanerFishTestCase):
 
     def join(self, batch, count=200):
         """`count` fish of a bathed batch out of C-02 into C-01, 2 days ago."""
-        return stock_services.record_transfer(self.user, source=self.cage2, batch=batch, day=self.day(2),
-                                              legs=[(self.cage, count)], reason='density')
+        return going_on(stock_services.record_transfer, self.user, source=self.cage2, batch=batch, day=self.day(2),
+                        legs=[(self.cage, count)], reason='density')
 
     def note(self, batch):
         return (f'Cleaner fish in C-01 are in a medicine withdrawal ({batch.code}, harvest from '

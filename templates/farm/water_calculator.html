@@ -20,7 +20,7 @@
 
 <form method="get" action="{{ calculator_url }}" class="calc" data-live="{{ results_url }}" novalidate>
   <input type="hidden" name="{{ form.DRAWN }}" value="1">
-  {{ form.loaded }}
+  {{ form.loaded }}{{ form.ph_loaded }}{{ form.phosphate_loaded }}
   <section class="calc-source" aria-label="{% trans "Where the values come from" %}">
     <div class="calc-source-pick field">
       <label for="{{ form.point.id_for_label }}">{{ form.point.label }}</label>

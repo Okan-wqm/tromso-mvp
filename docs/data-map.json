@@ -193,6 +193,7 @@
       "tests": [
         "farm/tests/test_migration_feeding_acknowledgement.py",
         "farm/tests/test_migration_purging.py",
+        "farm/tests/test_withdrawal_combined.py",
         "sensors/tests/test_alarms.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_migration.py",
@@ -451,13 +452,16 @@
             "oxygen_saturation_pct",
             "ph",
             "alkalinity_mg_l",
+            "hardness_mg_l",
             "co2_mg_l",
             "tan_mg_l",
             "nitrite_n_mg_l",
             "nitrate_n_mg_l",
             "tgp_pct",
             "salinity_ppt",
+            "conductivity_25_us_cm",
             "turbidity_ntu",
+            "phosphate_p_mg_l",
             "nh3_n_mg_l"
           ],
           "link": null,
@@ -1802,7 +1806,7 @@
       "app": "alarms",
       "model": "AlarmSubjectState",
       "table": "alarm_subject_state",
-      "description": "The one mutable row of an alarm subject (a unit's parameter at a level: `water:unit:<unit>:<slot>:<severity>`, never the point that stands for the unit, so a point replaced keeps the subject: cross review F7; or one of the alarm system's own, `system:<name>`): the timers of its lifecycle, kept in the database so a restart loses none: since when the condition holds without an alarm yet (the on-delay, counted from the first offending value's time), since when it is over while the alarm is open (the off-delay), the time of the last value that held it, and the alarm open now.",
+      "description": "The one mutable row of an alarm subject (a unit's parameter at a level: `water:unit:<unit>:<slot>:<severity>`, never the point that stands for the unit, so a point replaced keeps the subject: cross review F7; or one of the alarm system's own, `system:<name>`): the timers of its lifecycle, kept in the database so a restart loses none: since when the condition holds without an alarm yet (the on-delay, counted from the first offending value's time), since when it is over while the alarm is open (the off-delay), the time of the last value that held it, whether the unit's own value held it, and the alarm open now.",
       "columns": [
         {
           "name": "key",
@@ -1864,6 +1868,17 @@
           "why": "the timers and the open alarm the loop keeps per subject (alarms/sources.py advance)"
         },
         {
+          "name": "own_held",
+          "field": "own_held",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the timers and the open alarm the loop keeps per subject (alarms/sources.py advance)"
+        },
+        {
           "name": "updated_at",
           "field": "updated_at",
           "type": "timestamp with time zone",
@@ -1913,7 +1928,8 @@
       },
       "tests": [
         "alarms/tests/test_cross_review.py",
-        "alarms/tests/test_defects.py"
+        "alarms/tests/test_defects.py",
+        "alarms/tests/test_who_ends_a_level.py"
       ]
     },
     {
@@ -2156,7 +2172,10 @@
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_pages.py",
-        "alarms/tests/test_reference.py"
+        "alarms/tests/test_reference.py",
+        "alarms/tests/test_refused_sensor_ph.py",
+        "alarms/tests/test_refused_water.py",
+        "alarms/tests/test_who_ends_a_level.py"
       ]
     },
     {
@@ -2601,9 +2620,12 @@
         "farm/tests/test_lice_reason.py",
         "farm/tests/test_migration_altitude.py",
         "farm/tests/test_opening_balance.py",
+        "farm/tests/test_ph_scale.py",
+        "farm/tests/test_phosphate_unit.py",
         "farm/tests/test_private_contacts.py",
         "farm/tests/test_production_departments.py",
         "farm/tests/test_protocols.py",
+        "farm/tests/test_rederive_ph.py",
         "farm/tests/test_restore.py",
         "farm/tests/test_site_structure.py",
         "farm/tests/test_sites.py",
@@ -2617,11 +2639,17 @@
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
+        "farm/tests/test_withdrawal_ceiling.py",
         "farm/tests/test_withdrawal_cleaner_fish.py",
+        "farm/tests/test_withdrawal_combined.py",
+        "farm/tests/test_withdrawal_delivery.py",
+        "farm/tests/test_withdrawal_delivery_after.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_guard.py",
+        "farm/tests/test_withdrawal_lots.py",
         "farm/tests/test_withdrawal_rule_change.py",
         "farm/tests/test_withdrawal_shared_unit.py",
+        "farm/tests/test_withdrawal_spread_matrix.py",
         "farm/tests/test_withdrawal_wording.py",
         "knowledge/tests/test_documents.py",
         "knowledge/tests/test_entries.py",
@@ -2676,6 +2704,7 @@
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_operations.py",
         "sensors/tests/test_pages.py",
+        "sensors/tests/test_ph_scale.py",
         "sensors/tests/test_portable.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_cross_review.py",
@@ -2931,6 +2960,19 @@
           "why": ""
         },
         {
+          "name": "unknown_withdrawal_days",
+          "field": "unknown_withdrawal_days",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "PlatformSettingsForm › Records"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
           "name": "clock_tolerance_seconds",
           "field": "clock_tolerance_seconds",
           "type": "integer",
@@ -2967,6 +3009,12 @@
         },
         {
           "name": "chk_platform_settings_clock_tolerance",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_platform_settings_unknown_withdrawal",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -3024,6 +3072,7 @@
           "fields": {
             "correction_window_days": "Records",
             "second_approval_withdrawal": "Records",
+            "unknown_withdrawal_days": "Records",
             "clock_tolerance_seconds": "Clocks",
             "version": ""
           }
@@ -3046,6 +3095,9 @@
         "farm/tests/helpers.py",
         "farm/tests/test_harvest_inside_withdrawal.py",
         "farm/tests/test_second_approval_said_first.py",
+        "farm/tests/test_withdrawal_ceiling.py",
+        "farm/tests/test_withdrawal_delivery_after.py",
+        "farm/tests/test_withdrawal_gate.py",
         "alarms/tests/test_freshness.py",
         "alarms/tests/test_reference.py"
       ]
@@ -3207,13 +3259,19 @@
         "core/tests_account_mail.py",
         "core/tests_matrix_notes.py",
         "farm/tests/test_calculator.py",
+        "farm/tests/test_calculator_loaded_ph.py",
         "farm/tests/test_cleaner_ration.py",
+        "farm/tests/test_core_refusal.py",
         "farm/tests/test_deffeyes.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_feeding.py",
         "farm/tests/test_feeds.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_ph_measured_shown.py",
+        "farm/tests/test_ph_scale.py",
+        "farm/tests/test_phosphate.py",
+        "farm/tests/test_phosphate_unit.py",
         "farm/tests/test_plan_form_notice.py",
         "farm/tests/test_private_contacts.py",
         "farm/tests/test_protocols.py",
@@ -3240,7 +3298,9 @@
         "monitoring/tests/test_big.py",
         "monitoring/tests/test_designer.py",
         "monitoring/tests/test_pages.py",
-        "monitoring/tests/test_template_pages.py"
+        "monitoring/tests/test_template_pages.py",
+        "alarms/tests/test_refused_water.py",
+        "alarms/tests/test_who_ends_a_level.py"
       ]
     },
     {
@@ -6266,6 +6326,9 @@
         "farm/tests/test_stock.py",
         "farm/tests/test_window_refusals.py",
         "farm/tests/test_withdrawal_clocks.py",
+        "farm/tests/test_withdrawal_combined.py",
+        "farm/tests/test_withdrawal_lots.py",
+        "farm/tests/test_withdrawal_spread_matrix.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_compute.py",
         "reports/tests/test_cross_review.py",
@@ -6422,7 +6485,8 @@
         "left_out": false
       },
       "tests": [
-        "farm/tests/test_escape_delivery.py"
+        "farm/tests/test_escape_delivery.py",
+        "farm/tests/test_withdrawal_delivery.py"
       ]
     },
     {
@@ -9848,9 +9912,13 @@
         "farm/tests/test_size_mix_review.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_suppliers.py",
+        "farm/tests/test_withdrawal_ceiling.py",
+        "farm/tests/test_withdrawal_combined.py",
+        "farm/tests/test_withdrawal_delivery.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
         "farm/tests/test_withdrawal_guard.py",
+        "farm/tests/test_withdrawal_lots.py",
         "knowledge/tests/test_entries.py",
         "knowledge/tests/test_search.py",
         "messaging/tests/test_pages.py",
@@ -9876,7 +9944,7 @@
       "app": "farm",
       "model": "HandlingAcknowledgement",
       "table": "handling_acknowledgements",
-      "description": "One warning a person went on past when recording a handling (a harvest, a transfer, a grading, a treatment): a medicine withdrawal in force, or too short a fast.",
+      "description": "One warning a person went on past when recording a handling (a harvest, a transfer, a grading, a treatment): a medicine withdrawal in force, or too short a fast; and, as a withdrawal row on the move that made it (a transfer, a split, a grading, or a stocking, which is no handling: `kind` is None there), the fish a move combined with held fish, which now wait with them (the owner's decision 8; farm.stock.integrity knows both).",
       "columns": [
         {
           "name": "id",
@@ -10234,9 +10302,16 @@
         "farm/tests/test_lice_reason.py",
         "farm/tests/test_migration_feeding_acknowledgement.py",
         "farm/tests/test_migration_purging.py",
+        "farm/tests/test_withdrawal_ceiling.py",
         "farm/tests/test_withdrawal_cleaner_fish.py",
+        "farm/tests/test_withdrawal_combined.py",
+        "farm/tests/test_withdrawal_delivery.py",
+        "farm/tests/test_withdrawal_delivery_after.py",
+        "farm/tests/test_withdrawal_locks.py",
+        "farm/tests/test_withdrawal_lots.py",
         "farm/tests/test_withdrawal_same_day.py",
         "farm/tests/test_withdrawal_shared_unit.py",
+        "farm/tests/test_withdrawal_spread_matrix.py",
         "farm/tests/test_withdrawal_wording.py"
       ]
     },
@@ -12498,7 +12573,9 @@
         "farm/tests/test_health.py",
         "farm/tests/test_migration_withdrawals.py",
         "farm/tests/test_withdrawal_cleaner_fish.py",
-        "farm/tests/test_withdrawal_gate.py"
+        "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_locks.py",
+        "farm/tests/test_withdrawal_lots.py"
       ]
     },
     {
@@ -12971,6 +13048,9 @@
         "farm/tests/test_row_list_refused.py",
         "farm/tests/test_species.py",
         "farm/tests/test_withdrawal_cleaner_fish.py",
+        "farm/tests/test_withdrawal_delivery.py",
+        "farm/tests/test_withdrawal_locks.py",
+        "farm/tests/test_withdrawal_lots.py",
         "farm/tests/test_withdrawal_wording.py",
         "reports/tests/test_lice.py",
         "monitoring/tests/test_read.py",
@@ -13538,6 +13618,7 @@
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
         "farm/tests/test_withdrawal_clocks.py",
+        "farm/tests/test_withdrawal_locks.py",
         "inventory/tests/helpers.py",
         "inventory/tests/test_pages.py",
         "reports/tests/helpers.py",
@@ -15255,6 +15336,7 @@
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
         "farm/tests/test_withdrawal_clocks.py",
+        "farm/tests/test_withdrawal_locks.py",
         "inventory/tests/helpers.py",
         "reports/tests/helpers.py",
         "reports/tests/test_due.py",
@@ -16383,6 +16465,7 @@
         "farm/tests/test_species.py",
         "farm/tests/test_species_size_limit.py",
         "farm/tests/test_stock.py",
+        "farm/tests/test_withdrawal_ceiling.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
         "knowledge/tests/test_documents.py",
@@ -16943,6 +17026,7 @@
         "farm/tests/test_window_refusals.py",
         "farm/tests/test_withdrawal_cleaner_fish.py",
         "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_locks.py",
         "farm/tests/test_withdrawal_shared_unit.py",
         "reports/tests/test_cleaner.py",
         "experiments/tests/test_overview.py"
@@ -17488,7 +17572,10 @@
         "farm/tests/test_size_mix_review.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_window_refusals.py",
+        "farm/tests/test_withdrawal_combined.py",
+        "farm/tests/test_withdrawal_delivery.py",
         "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_spread_matrix.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_tabs.py",
@@ -18781,6 +18868,7 @@
         "farm/tests/test_equipment.py",
         "farm/tests/test_health.py",
         "farm/tests/test_migration_points.py",
+        "farm/tests/test_ph_scale_salt_added.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
         "farm/tests/test_suppliers.py",
@@ -19054,6 +19142,22 @@
             "freshwater",
             "saltwater",
             "brackish"
+          ],
+          "link": null,
+          "on_form": [
+            "TankForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "water_origin",
+          "field": "water_origin",
+          "type": "varchar(12)",
+          "null": false,
+          "choices": [
+            "seawater",
+            "salt_added"
           ],
           "link": null,
           "on_form": [
@@ -19492,6 +19596,12 @@
           "conditional": false
         },
         {
+          "name": "chk_tanks_water_origin",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
           "name": "chk_tanks_shape_by_kind",
           "kind": "check",
           "fields": [],
@@ -19762,6 +19872,7 @@
             "status": "General",
             "status_reason": "General",
             "water_type": "General",
+            "water_origin": "General",
             "regulatory_unit_id": "General",
             "production_department": "Location",
             "system": "Location",
@@ -19813,8 +19924,10 @@
         "core/test_languages.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
+        "farm/tests/test_calculator_loaded_ph.py",
         "farm/tests/test_charts_of.py",
         "farm/tests/test_cleaner_ration.py",
+        "farm/tests/test_core_refusal.py",
         "farm/tests/test_escape_delivery.py",
         "farm/tests/test_fast_of_the_unit.py",
         "farm/tests/test_feeding.py",
@@ -19824,17 +19937,23 @@
         "farm/tests/test_lock_order.py",
         "farm/tests/test_migration_feeding_acknowledgement.py",
         "farm/tests/test_migration_points.py",
+        "farm/tests/test_ph_scale.py",
+        "farm/tests/test_ph_scale_salt_added.py",
         "farm/tests/test_protocols.py",
+        "farm/tests/test_rederive_ph.py",
+        "farm/tests/test_sensor_ph_scale.py",
         "farm/tests/test_site_structure.py",
         "farm/tests/test_species_size_limit.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
+        "farm/tests/test_water_origin.py",
         "farm/tests/test_water_oxygen_basis.py",
         "farm/tests/test_water_points.py",
         "farm/tests/test_water_resolver.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
+        "farm/tests/test_withdrawal_lots.py",
         "inventory/tests/test_services.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_deviations.py",
@@ -19845,7 +19964,9 @@
         "monitoring/tests/test_golden.py",
         "monitoring/tests/test_token.py",
         "sensors/tests/test_pages.py",
+        "sensors/tests/test_ph_scale.py",
         "sensors/tests/test_portable.py",
+        "sensors/tests/test_replay.py",
         "alarms/tests/test_cross_review.py"
       ]
     },
@@ -20534,8 +20655,10 @@
         "farm/tests/test_harvest_inside_withdrawal.py",
         "farm/tests/test_health.py",
         "farm/tests/test_second_approval_said_first.py",
+        "farm/tests/test_withdrawal_delivery_after.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
+        "farm/tests/test_withdrawal_lots.py",
         "farm/tests/test_withdrawal_shared_unit.py",
         "reports/tests/test_lice.py",
         "monitoring/tests/test_golden.py"
@@ -20669,13 +20792,16 @@
             "oxygen_saturation_pct",
             "ph",
             "alkalinity_mg_l",
+            "hardness_mg_l",
             "co2_mg_l",
             "tan_mg_l",
             "nitrite_n_mg_l",
             "nitrate_n_mg_l",
             "tgp_pct",
             "salinity_ppt",
+            "conductivity_25_us_cm",
             "turbidity_ntu",
+            "phosphate_p_mg_l",
             "nh3_n_mg_l",
             "nh4_n_mg_l"
           ],
@@ -20788,6 +20914,8 @@
       },
       "tests": [
         "core/tests_workspaces.py",
+        "farm/tests/test_phosphate.py",
+        "farm/tests/test_water_ionic_inputs.py",
         "alarms/tests/test_freshness.py"
       ]
     },
@@ -20936,13 +21064,16 @@
             "oxygen_saturation_pct",
             "ph",
             "alkalinity_mg_l",
+            "hardness_mg_l",
             "co2_mg_l",
             "tan_mg_l",
             "nitrite_n_mg_l",
             "nitrate_n_mg_l",
             "tgp_pct",
             "salinity_ppt",
+            "conductivity_25_us_cm",
             "turbidity_ntu",
+            "phosphate_p_mg_l",
             "nh3_n_mg_l"
           ],
           "link": null,
@@ -20973,7 +21104,7 @@
         {
           "name": "critical_low",
           "field": "critical_low",
-          "type": "numeric(8, 4)",
+          "type": "numeric(10, 4)",
           "null": true,
           "choices": [],
           "link": null,
@@ -20986,7 +21117,7 @@
         {
           "name": "warning_low",
           "field": "warning_low",
-          "type": "numeric(8, 4)",
+          "type": "numeric(10, 4)",
           "null": true,
           "choices": [],
           "link": null,
@@ -20999,7 +21130,7 @@
         {
           "name": "warning_high",
           "field": "warning_high",
-          "type": "numeric(8, 4)",
+          "type": "numeric(10, 4)",
           "null": true,
           "choices": [],
           "link": null,
@@ -21012,7 +21143,7 @@
         {
           "name": "critical_high",
           "field": "critical_high",
-          "type": "numeric(8, 4)",
+          "type": "numeric(10, 4)",
           "null": true,
           "choices": [],
           "link": null,
@@ -21204,7 +21335,9 @@
         "monitoring/tests/test_going_in.py",
         "monitoring/tests/test_small.py",
         "alarms/tests/__init__.py",
-        "alarms/tests/test_cross_review.py"
+        "alarms/tests/test_cross_review.py",
+        "alarms/tests/test_refused_sensor_ph.py",
+        "alarms/tests/test_refused_water.py"
       ]
     },
     {
@@ -21428,6 +21561,17 @@
           "why": "one field for each water parameter (farm.forms.water.MEASURED)"
         },
         {
+          "name": "hardness_mg_l",
+          "field": "hardness_mg_l",
+          "type": "numeric(5, 0)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "dynamic",
+          "why": "one field for each water parameter (farm.forms.water.MEASURED)"
+        },
+        {
           "name": "co2_mg_l",
           "field": "co2_mg_l",
           "type": "numeric(4, 1)",
@@ -21494,9 +21638,31 @@
           "why": "one field for each water parameter (farm.forms.water.MEASURED)"
         },
         {
+          "name": "conductivity_25_us_cm",
+          "field": "conductivity_25_us_cm",
+          "type": "numeric(6, 0)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "dynamic",
+          "why": "one field for each water parameter (farm.forms.water.MEASURED)"
+        },
+        {
           "name": "turbidity_ntu",
           "field": "turbidity_ntu",
           "type": "numeric(5, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "dynamic",
+          "why": "one field for each water parameter (farm.forms.water.MEASURED)"
+        },
+        {
+          "name": "phosphate_p_mg_l",
+          "field": "phosphate_p_mg_l",
+          "type": "numeric(5, 2)",
           "null": true,
           "choices": [],
           "link": null,
@@ -21605,6 +21771,73 @@
           "why": "what an oxygen without its own temperature or salinity is worked out with, found by the server at the sample’s point and time (farm/water/read.oxygen_basis)"
         },
         {
+          "name": "ph_scale",
+          "field": "ph_scale",
+          "type": "varchar(5)",
+          "null": false,
+          "choices": [
+            "total",
+            "sws",
+            "free"
+          ],
+          "link": null,
+          "on_form": [
+            "WaterSampleForm",
+            "RoundForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "ph_as_measured",
+          "field": "ph_as_measured",
+          "type": "numeric(4, 2)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "a pH measured on another scale than NBS: what was measured and the formula the server put it on the NBS scale by, with the scale chosen on the form (farm/water/services.on_nbs)"
+        },
+        {
+          "name": "ph_converted_formula",
+          "field": "ph_converted_formula",
+          "type": "smallint",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "a pH measured on another scale than NBS: what was measured and the formula the server put it on the NBS scale by, with the scale chosen on the form (farm/water/services.on_nbs)"
+        },
+        {
+          "name": "phosphate_unit",
+          "field": "phosphate_unit",
+          "type": "varchar(3)",
+          "null": false,
+          "choices": [
+            "po4"
+          ],
+          "link": null,
+          "on_form": [
+            "WaterSampleForm",
+            "RoundForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "phosphate_as_measured",
+          "field": "phosphate_as_measured",
+          "type": "numeric(5, 2)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "a phosphate entered as PO₄: what was entered, kept beside the phosphorus the server stores, with the unit chosen on the form (farm/water/services.as_p)"
+        },
+        {
           "name": "notes",
           "field": "notes",
           "type": "varchar(500)",
@@ -21682,6 +21915,12 @@
           "conditional": false
         },
         {
+          "name": "chk_water_measurements_hardness_mg_l",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
           "name": "chk_water_measurements_co2_mg_l",
           "kind": "check",
           "fields": [],
@@ -21718,7 +21957,31 @@
           "conditional": false
         },
         {
+          "name": "chk_water_measurements_conductivity_25_us_cm",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
           "name": "chk_water_measurements_turbidity_ntu",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_water_measurements_phosphate_p_mg_l",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_water_measurements_ph_scale",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_water_measurements_phosphate_unit",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -21821,6 +22084,8 @@
             "point": "",
             "measured_at": "",
             "source": "",
+            "ph_scale": "",
+            "phosphate_unit": "",
             "notes": ""
           }
         },
@@ -21830,7 +22095,9 @@
           "fields": {
             "token": "",
             "measured_at": "",
-            "source": ""
+            "source": "",
+            "ph_scale": "",
+            "phosphate_unit": ""
           }
         },
         {
@@ -21869,8 +22136,14 @@
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
         "farm/tests/test_migration_points.py",
+        "farm/tests/test_ph_scale.py",
+        "farm/tests/test_ph_scale_salt_added.py",
+        "farm/tests/test_phosphate.py",
+        "farm/tests/test_phosphate_unit.py",
         "farm/tests/test_protocols.py",
+        "farm/tests/test_rederive_ph.py",
         "farm/tests/test_water.py",
+        "farm/tests/test_water_ionic_inputs.py",
         "farm/tests/test_water_oxygen_basis.py",
         "farm/tests/test_water_points.py",
         "farm/tests/test_water_resolver.py",
@@ -22360,7 +22633,7 @@
       "app": "farm",
       "model": "WithdrawalAcknowledgement",
       "table": "withdrawal_acknowledgements",
-      "description": "One warning a person went on past when a write changed a medicine withdrawal (the withdrawal guard, farm.health.withdrawal.guarded, which every such write goes through: a treatment, its last day or void, a medicated feeding or its void, a medicine's withdrawal rows, a water sample, a stock operation): a harvest already recorded now lies inside a withdrawal (`harvested`, naming the harvest), or fish held today are freed by it (`released`).",
+      "description": "One warning a person went on past when a write changed a medicine withdrawal (the withdrawal guard, farm.health.withdrawal.guarded, which every such write goes through: a treatment, its last day or void, a medicated feeding or its void, a medicine's withdrawal rows, a water sample, a stock operation): a harvest already recorded now lies inside a withdrawal (`harvested`, naming the harvest), a live delivery already recorded does (`delivered`, naming the delivery in the same column: the owner's decision 13 of 19.11.2026, a live delivery is a harvest also after the fact), fish held today are freed by it (`released`), or fish that had been let go are held again by it (`held`: a longer ceiling for the ends without a rule).",
       "columns": [
         {
           "name": "id",
@@ -22439,7 +22712,9 @@
           "null": false,
           "choices": [
             "harvested",
-            "released"
+            "delivered",
+            "released",
+            "held"
           ],
           "link": null,
           "on_form": [],
@@ -22678,7 +22953,7 @@
           "why": "no page lists them yet: check_withdrawal reads them, and the write's critical log entry says what was acknowledged"
         }
       },
-      "note": "One row for each warning of the withdrawal guard (farm.health.withdrawal.guarded) the person went on past: a harvest already recorded brought inside a withdrawal, or fish held today freed by the write.",
+      "note": "One row for each warning of the withdrawal guard (farm.health.withdrawal.guarded) the person went on past: a harvest or a live delivery already recorded brought inside a withdrawal, fish held today freed by the write, or fish held again by a longer ceiling.",
       "forms": [],
       "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
       "soft_delete": false,
@@ -22694,8 +22969,12 @@
       "tests": [
         "farm/tests/test_emptied_unit.py",
         "farm/tests/test_harvest_inside_withdrawal.py",
+        "farm/tests/test_withdrawal_ceiling.py",
+        "farm/tests/test_withdrawal_combined.py",
+        "farm/tests/test_withdrawal_delivery_after.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_guard.py",
+        "farm/tests/test_withdrawal_lots.py",
         "farm/tests/test_withdrawal_shared_unit.py"
       ]
     },
@@ -35647,13 +35926,16 @@
             "oxygen_saturation_pct",
             "ph",
             "alkalinity_mg_l",
+            "hardness_mg_l",
             "co2_mg_l",
             "tan_mg_l",
             "nitrite_n_mg_l",
             "nitrate_n_mg_l",
             "tgp_pct",
             "salinity_ppt",
+            "conductivity_25_us_cm",
             "turbidity_ntu",
+            "phosphate_p_mg_l",
             "conductivity_us_cm",
             "orp_mv",
             "flow_m3_h",
@@ -36757,13 +37039,16 @@
             "oxygen_saturation_pct",
             "ph",
             "alkalinity_mg_l",
+            "hardness_mg_l",
             "co2_mg_l",
             "tan_mg_l",
             "nitrite_n_mg_l",
             "nitrate_n_mg_l",
             "tgp_pct",
             "salinity_ppt",
+            "conductivity_25_us_cm",
             "turbidity_ntu",
+            "phosphate_p_mg_l",
             "conductivity_us_cm",
             "orp_mv",
             "flow_m3_h",
@@ -37009,6 +37294,35 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "ph_scale",
+          "field": "ph_scale",
+          "type": "varchar(5)",
+          "null": false,
+          "choices": [
+            "nbs",
+            "total",
+            "sws",
+            "free"
+          ],
+          "link": null,
+          "on_form": [
+            "ChannelForm › Quantity and unit"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "ph_scale_from",
+          "field": "ph_scale_from",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -37110,6 +37424,12 @@
           "kind": "check",
           "fields": [],
           "conditional": false
+        },
+        {
+          "name": "chk_sensors_channel_ph_scale",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
         }
       ],
       "screens": {
@@ -37191,6 +37511,7 @@
             "item_name": "Source",
             "note": "Source",
             "quantity": "Quantity and unit",
+            "ph_scale": "Quantity and unit",
             "unit": "Quantity and unit",
             "unit_factor": "Quantity and unit",
             "unit_offset": "Quantity and unit",
@@ -37220,14 +37541,18 @@
       },
       "tests": [
         "core/tests_workspaces.py",
+        "farm/tests/test_sensor_ph_scale.py",
         "sensors/tests/__init__.py",
+        "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_contract.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_pages.py",
+        "sensors/tests/test_ph_scale.py",
         "sensors/tests/test_portable.py",
         "sensors/tests/test_replay.py",
-        "sensors/tests/test_schema.py"
+        "sensors/tests/test_schema.py",
+        "alarms/tests/test_refused_sensor_ph.py"
       ]
     },
     {
@@ -37441,9 +37766,11 @@
         "sensors/tests/test_demo.py",
         "sensors/tests/test_history.py",
         "sensors/tests/test_operations.py",
+        "sensors/tests/test_ph_scale.py",
         "sensors/tests/test_portable.py",
         "sensors/tests/test_read.py",
-        "alarms/tests/test_clock.py"
+        "alarms/tests/test_clock.py",
+        "alarms/tests/test_refused_sensor_ph.py"
       ]
     },
     {
@@ -40009,6 +40336,7 @@
         "core/test_datamap.py",
         "core/test_text.py",
         "core/tests_workspaces.py",
+        "farm/tests/test_nh3_unrounded.py",
         "knowledge/tests/test_extraction.py",
         "experiments/tests/test_overview.py",
         "monitoring/tests/test_read.py",

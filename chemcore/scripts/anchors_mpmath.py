@@ -74,7 +74,10 @@ def pk2(t, S):
             + (mp.mpf('-772.483') * mp.sqrt(S) - mp.mpf('20.051') * S) / T - mp.mpf('3.3336') * mp.sqrt(S) * ln(T))
 
 
-# -- Millero (1995) Geochim. Cosmochim. Acta 59: 661: Kw total scale; NH4+ seawater scale --
+# -- Kw as formula 1 takes it (the core's `kw_total`): Dickson, Sabine & Christian (2007), Guide to Best Practices, ch. 5,
+# eq. (62), the total scale: Millero's (1995, Geochim. Cosmochim. Acta 59: 661) seawater-scale constant 148.9802 less the
+# 0.015 of the Guide's footnote 5, an approximate shift (not Millero's own number; formula 3 takes his, `kw_sws`, which
+# has no anchor here). NH4+: Millero (1995), seawater scale --
 def kw(t, S):
     T = t + K
     return mp.exp(mp.mpf('148.9652') - mp.mpf('13847.26') / T - mp.mpf('23.6521') * ln(T)

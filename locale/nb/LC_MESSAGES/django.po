@@ -37,24 +37,73 @@ msgstr[0] "%(batch)s har ikke vært i %(units)s ennå: raden gjelder når den ko
 msgstr[1] "%(batch)s har ikke vært i %(units)s ennå: radene gjelder når den kommer dit."
 
 #, python-format
+msgid ""
+"%(batch)s in %(unit)s is held (%(withdrawal)s): after this change its withdrawal would end "
+"earlier, the fish may go to food from %(after)s instead of %(until)s."
+msgstr ""
+"%(batch)s i %(unit)s holdes tilbake (%(withdrawal)s): etter denne endringen slutter "
+"tilbakeholdelsestiden tidligere, fisken kan gå til mat fra %(after)s i stedet for %(until)s."
+
+#, python-format
+msgid ""
+"%(batch)s in %(unit)s is held today (%(withdrawal)s) and would no longer be held by a medicine "
+"withdrawal after this change: the fish could go to food."
+msgstr ""
+"%(batch)s i %(unit)s holdes tilbake i dag (%(withdrawal)s) og vil ikke lenger holdes av en "
+"tilbakeholdelsestid etter denne endringen: fisken kan gå til mat."
+
+#, python-format
+msgid ""
+"%(batch)s in %(unit)s is not held today and would be held again by a medicine withdrawal after "
+"this change, and the end of that withdrawal is not known. %(withdrawal)s"
+msgstr ""
+"%(batch)s i %(unit)s holdes ikke tilbake i dag og vil holdes tilbake igjen av en "
+"tilbakeholdelsestid etter denne endringen, og slutten på den tilbakeholdelsestiden er ikke kjent."
+" %(withdrawal)s"
+
+#, python-format
+msgid ""
+"%(batch)s in %(unit)s will wait for the harvest with %(with)s, the held fish it is combined with "
+"in %(where)s, and the end of that withdrawal is not known. %(withdrawal)s"
+msgstr ""
+"%(batch)s i %(unit)s venter på slakt sammen med %(with)s, den tilbakeholdte fisken den er slått "
+"sammen med i %(where)s, og slutten på den tilbakeholdelsestiden er ikke kjent. %(withdrawal)s"
+
+#, python-format
+msgid ""
+"%(batch)s in %(unit)s will wait for the harvest with %(with)s, the held fish it is combined with "
+"in %(where)s: %(end)s. %(withdrawal)s"
+msgstr ""
+"%(batch)s i %(unit)s venter på slakt sammen med %(with)s, den tilbakeholdte fisken den er slått "
+"sammen med i %(where)s: %(end)s. %(withdrawal)s"
+
+#, python-format
+msgid ""
+"%(batch)s in %(unit)s will wait for the harvest with the fish given medicated feed in %(units)s, "
+"and the end of that withdrawal is not known. %(withdrawal)s"
+msgstr ""
+"%(batch)s i %(unit)s venter på slakt sammen med fisken som fikk medisinfôr i %(units)s, og "
+"slutten på den tilbakeholdelsestiden er ikke kjent. %(withdrawal)s"
+
+#, python-format
+msgid ""
+"%(batch)s in %(unit)s will wait for the harvest with the fish treated in %(units)s, and the end "
+"of that withdrawal is not known. %(withdrawal)s"
+msgstr ""
+"%(batch)s i %(unit)s venter på slakt sammen med fisken som ble behandlet i %(units)s, og slutten "
+"på den tilbakeholdelsestiden er ikke kjent. %(withdrawal)s"
+
+#, python-format
+msgid ""
+"%(batch)s in %(unit)s will wait for the harvest with the fish treated in %(units)s: %(end)s. "
+"%(withdrawal)s"
+msgstr ""
+"%(batch)s i %(unit)s venter på slakt sammen med fisken som ble behandlet i %(units)s: %(end)s. "
+"%(withdrawal)s"
+
+#, python-format
 msgid "%(batch)s is %(species)s; the protocol is for %(protocol_species)s."
 msgstr "%(batch)s er %(species)s; protokollen er for %(protocol_species)s."
-
-#, python-format
-msgid ""
-"%(batch)s is held (%(withdrawal)s): after this change its withdrawal would end earlier, the fish "
-"may go to food from %(after)s instead of %(until)s."
-msgstr ""
-"%(batch)s holdes tilbake (%(withdrawal)s): etter denne endringen slutter tilbakeholdelsestiden "
-"tidligere, fisken kan gå til mat fra %(after)s i stedet for %(until)s."
-
-#, python-format
-msgid ""
-"%(batch)s is held today (%(withdrawal)s) and would no longer be held by a medicine withdrawal "
-"after this change: the fish could go to food."
-msgstr ""
-"%(batch)s holdes tilbake i dag (%(withdrawal)s) og vil ikke lenger holdes av en "
-"tilbakeholdelsestid etter denne endringen: fisken kan gå til mat."
 
 #, python-format
 msgid "%(batch)s was harvested on %(date)s: cleaner fish are culled, not harvested."
@@ -855,6 +904,10 @@ msgid "%(label)s + %(margin)s %% safety margin = %(used)s"
 msgstr "%(label)s + %(margin)s %% sikkerhetsmargin = %(used)s"
 
 #, python-format
+msgid "%(label)s cannot be evaluated: %(why)s."
+msgstr "%(label)s kan ikke vurderes: %(why)s."
+
+#, python-format
 msgid "%(label)s deleted with it"
 msgstr "%(label)s som slettes sammen med den"
 
@@ -951,6 +1004,10 @@ msgstr[1] "%(meals)s måltider"
 #, python-format
 msgid "%(meals)s × %(meal)s"
 msgstr "%(meals)s × %(meal)s"
+
+#, python-format
+msgid "%(measured)s, stored as %(nbs)s NBS"
+msgstr "%(measured)s, lagret som %(nbs)s NBS"
 
 #, python-format
 msgid "%(medicine)s has no strength (Reference data › Medicines)."
@@ -1172,6 +1229,30 @@ msgstr "%(replicate)s: siste dag kommer på eller etter første dag."
 #, python-format
 msgid "%(rule)s at %(time)s"
 msgstr "%(rule)s kl. %(time)s"
+
+#, python-format
+msgid ""
+"%(said)s (assumes sea water’s ion composition; salt-added fresh water may read low CO₂: say the "
+"unit’s water origin)"
+msgstr ""
+"%(said)s (forutsetter sjøvannets ionesammensetning; ferskvann tilsatt salt kan vise for lav CO₂: "
+"oppgi enhetens vannopprinnelse)"
+
+#, python-format
+msgid "%(said)s; %(share)d %% seawater constants"
+msgstr "%(said)s; %(share)d %% sjøvannskonstanter"
+
+#, python-format
+msgid "%(said)s; phosphate %(phosphate)s mg/L as P counted in the alkalinity"
+msgstr "%(said)s; fosfat %(phosphate)s mg/L som P regnet med i alkaliteten"
+
+#, python-format
+msgid "%(said)s; salt-added fresh water past the Davies range, worked out as sea water"
+msgstr "%(said)s; ferskvann tilsatt salt utenfor Davies-området, beregnet som sjøvann"
+
+#, python-format
+msgid "%(said)s; salt-added fresh water, its ions taken as NaCl"
+msgstr "%(said)s; ferskvann tilsatt salt, ionene regnet som NaCl"
 
 #, python-format
 msgid "%(seconds)d s"
@@ -1610,6 +1691,16 @@ msgstr "%(value)s kg"
 #, python-format
 msgid "%(value)s kg/m³"
 msgstr "%(value)s kg/m³"
+
+#, python-format
+msgid ""
+"%(value)s may be the value stored for %(point)s, already converted: this address does not say it "
+"was typed. Leave the scale or the unit as loaded, or choose %(point)s again under “Values from” "
+"and type the value as it was measured."
+msgstr ""
+"%(value)s kan være verdien som er lagret for %(point)s, allerede omregnet: denne adressen sier "
+"ikke at den ble skrevet inn. La skalaen eller enheten stå som den ble lastet, eller velg "
+"%(point)s på nytt under «Verdier fra» og skriv inn verdien slik den ble målt."
 
 #, python-format
 msgid "%(value)s per fish"
@@ -2254,6 +2345,20 @@ msgstr[1] "Tilbakeholdelsestider holder fiskegruppene %(batches)s, og dette flyt
 
 #, python-format
 msgid ""
+"A medicine withdrawal whose end is unknown holds the fish for %(days)s day after the course’s "
+"last day; after that the course is listed as unresolved on the Treatments page."
+msgid_plural ""
+"A medicine withdrawal whose end is unknown holds the fish for %(days)s days after the course’s "
+"last day; after that the course is listed as unresolved on the Treatments page."
+msgstr[0] ""
+"En tilbakeholdelsestid med ukjent slutt holder fisken tilbake i %(days)s dag etter behandlingens "
+"siste dag; deretter står behandlingen som uavklart på siden Behandlinger."
+msgstr[1] ""
+"En tilbakeholdelsestid med ukjent slutt holder fisken tilbake i %(days)s dager etter "
+"behandlingens siste dag; deretter står behandlingen som uavklart på siden Behandlinger."
+
+#, python-format
+msgid ""
 "A membrane (HDPE, PVC, EPDM) is %(low)s to %(high)s mm thick, concrete %(concrete_low)s to "
 "%(concrete_high)s mm."
 msgstr ""
@@ -2300,8 +2405,25 @@ msgstr "Et notat er på høyst %(count)d tegn."
 msgid "A notice is filed at once: it has no later deadline."
 msgstr "En melding sendes straks: den har ingen senere frist."
 
+#, python-format
+msgid ""
+"A pH channel says the scale its probe reports on (its pH scale). A probe calibrated with TRIS "
+"(most sea-water ISFET and optical sensors) reports on the total scale, 0.09 to 0.15 lower than "
+"NBS in sea water: taken as NBS its NH₃ would read 19 to 28 % low."
+msgstr ""
+"En pH-kanal oppgir skalaen sonden måler på (pH-skalaen). En sonde kalibrert med TRIS (de fleste "
+"ISFET- og optiske sjøvannssensorer) måler på totalskalaen, 0,09 til 0,15 lavere enn NBS i "
+"sjøvann: tatt som NBS ville NH₃ blitt 19 til 28 % for lav."
+
 msgid "A pH lies between 0 and 14."
 msgstr "En pH ligger mellom 0 og 14."
+
+msgid ""
+"A pH on this scale is taken for sea water of 5 ‰ or more only (not fresh water with salt added): "
+"give the pH a meter calibrated with NBS/NIST buffers reads."
+msgstr ""
+"En pH på denne skalaen tas bare for sjøvann på 5 ‰ eller mer (ikke ferskvann tilsatt salt): oppgi"
+" pH slik et meter kalibrert med NBS/NIST-buffere viser den."
 
 #, python-format
 msgid "A page shows at most %(days)s day: the first day was moved."
@@ -3466,6 +3588,9 @@ msgstr "En åpen alarm lukkes først når verdien er tilbake forbi terskelen med
 msgid "An organisation number is 9 digits."
 msgstr "Et organisasjonsnummer har 9 sifre."
 
+msgid "An unknown withdrawal end holds for (days)"
+msgstr "En ukjent slutt på tilbakeholdelsestiden holder i (dager)"
+
 msgid "Anaesthetic"
 msgstr "Bedøvelsesmiddel"
 
@@ -3725,8 +3850,22 @@ msgstr "Område ikke satt: den strengeste grensen gjelder (Anlegg › Lokalitete
 msgid "Arrived"
 msgstr "Kom"
 
-msgid "As a pH meter or kit reads it."
-msgstr "Slik et pH-meter eller et sett leser den."
+#, python-format
+msgid ""
+"As P this is %(value)s mg/L: a phosphate is between %(low)s and %(high)s mg/L as P (up to "
+"%(most)s as PO₄). Check the value and its unit."
+msgstr ""
+"Som P er dette %(value)s mg/L: et fosfat er mellom %(low)s og %(high)s mg/L som P (opptil "
+"%(most)s som PO₄). Kontroller verdien og enheten."
+
+msgid ""
+"As a pH meter or kit calibrated with NBS/NIST buffers reads it, at the water’s own temperature. A"
+" total-scale pH (a seawater sensor calibrated with TRIS) reads 0.09 to 0.15 lower in water of 5 "
+"to 35 ‰: typed here as NBS, the NH₃ worked out is 19 to 28 % too low."
+msgstr ""
+"Slik et pH-meter eller sett kalibrert med NBS/NIST-buffere viser den, ved vannets egen "
+"temperatur. En pH på totalskalaen (en sjøvannssensor kalibrert med TRIS) viser 0,09 til 0,15 "
+"lavere i vann på 5 til 35 ‰: skrevet inn her som NBS blir beregnet NH₃ 19 til 28 % for lav."
 
 msgid ""
 "As an oxygen meter shows it; above 100 % with added oxygen. With the temperature, the mg/L is "
@@ -3747,8 +3886,12 @@ msgstr "Som gitt, på grammet (0,035 for 35 g)."
 msgid "As many tanks or systems as replicates; a system gives all its tanks to one replicate."
 msgstr "Like mange kar eller systemer som replikater; et system gir alle karene sine til ett replikat."
 
-msgid "As nitrogen. A kit that reads NO₂⁻: divide by 3.29."
-msgstr "Som nitrogen. Et sett som leser NO₂⁻: del på 3,29."
+#, python-format
+msgid "As measured, on its pH scale: %(scale)s"
+msgstr "Som målt, på pH-skalaen: %(scale)s"
+
+msgid "As nitrogen. A kit that reads NO₂⁻: divide by 3.28."
+msgstr "Som nitrogen. Et sett som leser NO₂⁻: del på 3,28."
 
 msgid "As nitrogen. A kit that reads NO₃⁻: divide by 4.43."
 msgstr "Som nitrogen. Et sett som leser NO₃⁻: del på 4,43."
@@ -3863,6 +4006,14 @@ msgid ""
 msgstr ""
 "Ved denne pH-en er alkaliteten over %(floor)s mg/L som CaCO₃: hydroksid og borat alene utgjør så "
 "mye."
+
+#, python-format
+msgid ""
+"At this pH the alkalinity is above %(floor)s mg/L as CaCO₃: the hydroxide, the borate and the "
+"phosphate given alone are that much."
+msgstr ""
+"Ved denne pH er alkaliteten over %(floor)s mg/L som CaCO₃: hydroksidet, boratet og det oppgitte "
+"fosfatet alene er så mye."
 
 msgid "Attached"
 msgstr "Fastsittende"
@@ -4064,6 +4215,14 @@ msgstr "Før håndtering"
 msgid "Below"
 msgstr "Under"
 
+msgid ""
+"Below 0 °C: the chemistry’s constants are fitted from 0 °C or above, so these values are "
+"extrapolated. The judged NH₃ and CO₂ stay on the safe side there (they read high, not low)."
+msgstr ""
+"Under 0 °C: kjemiens konstanter er tilpasset fra 0 °C eller høyere, så disse verdiene er "
+"ekstrapolert. Vurdert NH₃ og CO₂ holder seg på den sikre siden der (de blir for høye, ikke for "
+"lave)."
+
 msgid "Below the limit it belongs to."
 msgstr "Under grensen den hører til."
 
@@ -4241,6 +4400,9 @@ msgstr "CO₂ (mg/L)"
 msgid "CO₂ > %(limit)s mg/L"
 msgstr "CO₂ > %(limit)s mg/L"
 
+msgid "CO₂ best estimate (information, not judged)"
+msgstr "CO₂ beste estimat (informasjon, ikke vurdert)"
+
 msgid "CO₂ calc."
 msgstr "CO₂ ber."
 
@@ -4252,6 +4414,33 @@ msgstr "CO₂ når ikke grensen"
 
 msgid "CO₂ is past its limit at every pH"
 msgstr "CO₂ er over grensen ved enhver pH"
+
+msgid "CO₂ judged on its best estimate, the larger here."
+msgstr "CO₂ vurdert etter det beste estimatet, som er størst her."
+
+#, python-format
+msgid ""
+"CO₂ judged on the safe side (to 1 ‰ the ideal water, every activity 1, as Standard Methods "
+"4500-CO₂ D; from 5 ‰ the best estimate at the pH − 0.03, the uncertainty of a pH reading (US EPA "
+"1989), about 7 to 9 %% above it; blended between; salt-added water: the ideal throughout), the "
+"larger of it and the best estimate; best estimate %(value)s mg/L."
+msgstr ""
+"CO₂ vurdert på den sikre siden (til 1 ‰ ideelt vann, alle aktiviteter 1, som Standard Methods "
+"4500-CO₂ D; fra 5 ‰ det beste estimatet ved pH − 0,03, usikkerheten i en pH-avlesning (US EPA "
+"1989), omtrent 7 til 9 %% over det; blandet mellom; vann tilsatt salt: ideelt hele veien), den "
+"største av den og det beste estimatet; beste estimat %(value)s mg/L."
+
+#, python-format
+msgid ""
+"CO₂ judged without the phosphate: the larger of the safe side and the best estimate, neither "
+"counting the phosphate’s alkalinity (Standard Methods 4500-CO₂ D takes all the alkalinity as "
+"carbonate’s), so it is never below what it was before the phosphate was given. With the phosphate"
+" counted, the water’s own CO₂ is %(value)s mg/L."
+msgstr ""
+"CO₂ vurdert uten fosfatet: den største av den sikre siden og det beste estimatet, ingen av dem "
+"med fosfatets alkalitet (Standard Methods 4500-CO₂ D regner all alkalitet som karbonat), så den "
+"er aldri lavere enn før fosfatet ble oppgitt. Med fosfatet regnet med er vannets egen CO₂ "
+"%(value)s mg/L."
 
 msgid "CO₂ limit"
 msgstr "CO₂-grense"
@@ -4282,6 +4471,15 @@ msgstr "CO₂ giftig (> %(limit)s mg/L)"
 msgid "CO₂, HCO₃⁻ and CO₃²⁻ against pH"
 msgstr "CO₂, HCO₃⁻ og CO₃²⁻ mot pH"
 
+msgid ""
+"CO₂: near an alkalinity of 0 the curve bends back. With the phosphate given the water’s own DIC "
+"falls before it rises there (a pH under about 4.7, where the phosphate holds negative "
+"alkalinity); no fish water is in that corner."
+msgstr ""
+"CO₂: nær en alkalitet på 0 bøyer kurven tilbake. Med det oppgitte fosfatet synker vannets egen "
+"DIC før den stiger der (en pH under ca. 4,7, der fosfatet holder negativ alkalitet); ingen fisk "
+"lever i vann i det hjørnet."
+
 msgid "CO₂: no limit given."
 msgstr "CO₂: ingen grense oppgitt."
 
@@ -4308,6 +4506,13 @@ msgstr "Kalsitt- og aragonittmetning mot pH"
 
 msgid "Calcium (mg/L Ca²⁺)"
 msgstr "Kalsium (mg/L Ca²⁺)"
+
+msgid ""
+"Calcium and magnesium together, as CaCO₃. A kit in dGH: multiply by 17.85. With the alkalinity it"
+" gives the fresh water’s ionic strength when no conductivity is measured."
+msgstr ""
+"Kalsium og magnesium samlet, som CaCO₃. Et sett i dGH: gang med 17,85. Sammen med alkaliteten gir"
+" den ferskvannets ionestyrke når ingen ledningsevne er målt."
 
 msgid "Calcium carbonate"
 msgstr "Kalsiumkarbonat"
@@ -4383,6 +4588,13 @@ msgstr "Avlyst av"
 
 msgid "Cannibalism"
 msgstr "Kannibalisme"
+
+msgid "Cannot be evaluated"
+msgstr "Kan ikke vurderes"
+
+#, python-format
+msgid "Cannot be worked out: %(why)s."
+msgstr "Kan ikke regnes ut: %(why)s."
 
 msgid "Capacity"
 msgstr "Kapasitet"
@@ -4501,6 +4713,22 @@ msgstr "Kanal"
 
 #, python-format
 msgid ""
+"Channel #%(number)d is drawn as its probe measured it, on the %(scale)s, not converted: the "
+"samples and the water pages are on the NBS scale."
+msgstr ""
+"Kanal #%(number)d tegnes slik sonden målte den, på %(scale)s, ikke regnet om: prøvene og "
+"vannsidene er på NBS-skalaen."
+
+#, python-format
+msgid ""
+"Channel #%(number)d’s values before %(time)s are not drawn: its pH scale was changed then, and "
+"the scale they were measured on is not known."
+msgstr ""
+"Verdiene til kanal #%(number)d før %(time)s tegnes ikke: pH-skalaen ble endret da, og skalaen de "
+"ble målt på er ikke kjent."
+
+#, python-format
+msgid ""
 "Channel %(code)s stores at least every %(heartbeat)d seconds, more often than the device would "
 "send: lengthen its heartbeat first."
 msgstr ""
@@ -4549,6 +4777,35 @@ msgstr "Diagrammer"
 msgid "Check"
 msgstr "Sjekk"
 
+msgid ""
+"Check the conductivity and the salinity: they disagree beyond what any water from NaCl brine to a"
+" hard fresh water allows (one of them mistyped, uncompensated, or from another point?)."
+msgstr ""
+"Kontroller ledningsevnen og saliniteten: de stemmer ikke overens utover det noe vann fra NaCl-"
+"lake til hardt ferskvann tillater (en av dem feilskrevet, ikke kompensert eller fra et annet "
+"punkt?)."
+
+msgid ""
+"Check the conductivity: it gives fewer ions than the hardness and the alkalinity need (not "
+"compensated to 25 °C, or in the wrong unit?); theirs is used."
+msgstr ""
+"Kontroller ledningsevnen: den gir færre ioner enn hardheten og alkaliniteten krever (ikke "
+"kompensert til 25 °C, eller feil enhet?); deres brukes."
+
+msgid ""
+"Check the conductivity: it gives over 30 times the ions the hardness and the alkalinity account "
+"for (salt added, or mS/cm typed as µS/cm?)."
+msgstr ""
+"Kontroller ledningsevnen: den gir over 30 ganger de ionene hardheten og alkaliniteten står for "
+"(tilsatt salt, eller mS/cm skrevet som µS/cm?)."
+
+msgid ""
+"Check the salinity: the conductivity is that of sea water of 5 ‰ or more (PSS-78) on a water "
+"without a salinity; give the salinity, or the unit’s water origin."
+msgstr ""
+"Kontroller saliniteten: ledningsevnen er som sjøvann på 5 ‰ eller mer (PSS-78) i vann uten "
+"salinitet; oppgi saliniteten, eller enhetens vannopprinnelse."
+
 msgid "Check your email"
 msgstr "Sjekk e-posten din"
 
@@ -4593,6 +4850,9 @@ msgstr "Velg en helsehendelse på lokaliteten til disse enhetene."
 
 msgid "Choose a health event of the site."
 msgstr "Velg en helsehendelse på lokaliteten."
+
+msgid "Choose a pH scale."
+msgstr "Velg en pH-skala."
 
 msgid "Choose a person"
 msgstr "Velg en person"
@@ -4702,6 +4962,9 @@ msgstr "Velg typen på fanen Generelt; målene vises her."
 
 msgid "Choose the location to count."
 msgstr "Velg lagerplassen som skal telles."
+
+msgid "Choose the phosphate’s unit."
+msgstr "Velg enheten for fosfatet."
 
 msgid "Choose the shape; the measures it is worked out from appear with it."
 msgstr "Velg formen; målene volumet beregnes ut fra, vises sammen med den."
@@ -4956,8 +5219,11 @@ msgstr "Tilstand"
 msgid "Conductivity"
 msgstr "Ledningsevne"
 
-msgid "Conductivity (µS/cm)"
-msgstr "Ledningsevne (µS/cm)"
+msgid "Conductivity at 25 °C (µS/cm, temperature-compensated)"
+msgstr "Ledningsevne ved 25 °C (µS/cm, temperaturkompensert)"
+
+msgid "Conductivity at the water’s temperature (µS/cm, not compensated)"
+msgstr "Ledningsevne ved vannets temperatur (µS/cm, ikke kompensert)"
 
 msgid "Configuration epoch"
 msgstr "Konfigurasjonsepoke"
@@ -5873,6 +6139,9 @@ msgstr ""
 "F.eks. «registrert i feil enhet». Prøven blir stående i historikken, gjennomstreket, med denne "
 "årsaken."
 
+msgid "EC 25 °C (µS/cm)"
+msgstr "EC 25 °C (µS/cm)"
+
 msgid "EPDM"
 msgstr "EPDM"
 
@@ -5931,6 +6200,13 @@ msgstr "Tidligste egnede høstedato: %(date)s."
 
 msgid "Earliest suitable harvest date: not known."
 msgstr "Tidligste egnede høstedato: ukjent."
+
+#, python-format
+msgid "Earliest suitable live delivery date: %(date)s."
+msgstr "Tidligste egnede dato for levende levering: %(date)s."
+
+msgid "Earliest suitable live delivery date: not known."
+msgstr "Tidligste egnede dato for levende levering: ukjent."
 
 msgid "Earthen"
 msgstr "Jord"
@@ -6071,6 +6347,14 @@ msgstr "Skriv inn dagen i måneden."
 
 msgid "Enter the email address on your account. We will send you a link to set a new password."
 msgstr "Skriv inn e-postadressen på kontoen din. Vi sender deg en lenke for å velge nytt passord."
+
+#, python-format
+msgid ""
+"Entered as %(value)s mg/L as PO₄; stored as phosphorus (PO₄-P), divided by %(factor)s (the molar "
+"masses of PO₄ and P)."
+msgstr ""
+"Angitt som %(value)s mg/L som PO₄; lagret som fosfor (PO₄-P), delt på %(factor)s (molmassene til "
+"PO₄ og P)."
 
 msgid "Entered by hand"
 msgstr "Lagt inn for hånd"
@@ -6742,6 +7026,9 @@ msgctxt "task category"
 msgid "Fish health"
 msgstr "Fiskehelse"
 
+msgid "Fish held again by a withdrawal"
+msgstr "Fisk holdt tilbake igjen av en tilbakeholdelsestid"
+
 msgid "Fish injured"
 msgstr "Skadde fisk"
 
@@ -6978,6 +7265,17 @@ msgstr "Skjema, frist og kanal er ikke bekreftet (Q8). Ikke bygget."
 msgid "Format version"
 msgstr "Formatversjon"
 
+#, python-format
+msgid "Formula %(formula)d."
+msgstr "Formel %(formula)d."
+
+#, python-format
+msgid "Formula %(formula)d: ionic strength %(strength)s, %(source)s"
+msgstr "Formel %(formula)d: ionestyrke %(strength)s, %(source)s"
+
+msgid "Formula the pH was put on the NBS scale by"
+msgstr "Formelen pH ble satt på NBS-skalaen med"
+
 msgid "Found at"
 msgstr "Funnet"
 
@@ -6992,6 +7290,9 @@ msgstr "Francisellose"
 
 msgid "Free carbon dioxide, from a CO₂ probe or a titration."
 msgstr "Fri karbondioksid, fra en CO₂-sonde eller en titrering."
+
+msgid "Free scale"
+msgstr "Fri skala"
 
 msgid "Freeboard (m)"
 msgstr "Fribord (m)"
@@ -7013,6 +7314,16 @@ msgstr "Fersk i (sekunder)"
 
 msgid "Fresh water"
 msgstr "Ferskvann"
+
+msgid "Fresh water with salt added"
+msgstr "Ferskvann tilsatt salt"
+
+msgid ""
+"Fresh water with salt added (NaCl) is worked out without sea water’s ions, its ionic strength as "
+"NaCl’s; not said, a salinity of 1 to 5 ‰ is taken as diluted sea water."
+msgstr ""
+"Ferskvann tilsatt salt (NaCl) beregnes uten sjøvannets ioner, med ionestyrken til NaCl; ikke "
+"oppgitt regnes en salinitet på 1 til 5 ‰ som fortynnet sjøvann."
 
 msgid "Freshness"
 msgstr "Ferskhet"
@@ -7446,6 +7757,9 @@ msgstr "Bekreftede håndteringsadvarsler"
 msgid "Happened on"
 msgstr "Skjedde"
 
+msgid "Hardness (mg/L)"
+msgstr "Hardhet (mg/L)"
+
 msgid "Harvest"
 msgstr "Høsting"
 
@@ -7469,6 +7783,9 @@ msgid ""
 msgstr ""
 "Slaktingen %(date)s fra %(unit)s (%(batch)s, %(fish)s fisk til %(facility)s) ligger innenfor "
 "denne tilbakeholdelsestiden (%(end)s): medisinert fisk kan ha gått til mat."
+
+msgid "Harvest or live delivery"
+msgstr "Høsting eller levende levering"
 
 msgid "Harvest plan"
 msgstr "Høsteplan"
@@ -7679,6 +7996,24 @@ msgid "How long the value must be back inside the limit, by the deadband, before
 msgstr "Hvor lenge verdien må være tilbake innenfor grensen, med dødbåndet, før alarmen oppheves."
 
 msgid ""
+"How many days after a course’s last day a medicine withdrawal whose end is unknown because "
+"nothing says how long it lasts (a medicine with no withdrawal recorded for the species, medicated"
+" feed with no treatment) holds the fish. After them the fish are no longer held, and the course "
+"is listed as unresolved on the Treatments page until it is given an end. A withdrawal in degree-"
+"days is never let go this way: it holds until the water temperature is recorded or the species’ "
+"assumed temperature is set. 1 to 3650; 180 until you set another. A change that would free fish "
+"held today, hold fish again or bring a recorded harvest inside a withdrawal asks first."
+msgstr ""
+"Hvor mange dager etter behandlingens siste dag en tilbakeholdelsestid med ukjent slutt fordi "
+"ingenting sier hvor lenge den varer (et legemiddel uten registrert tilbakeholdelsestid for arten,"
+" medisinfôr uten behandling) holder fisken tilbake. Etter dem holdes fisken ikke lenger tilbake, "
+"og behandlingen står som uavklart på siden Behandlinger til den får en slutt. En "
+"tilbakeholdelsestid i døgngrader slippes aldri på denne måten: den holder til vanntemperaturen er"
+" registrert eller artens antatte temperatur er satt. 1 til 3650; 180 til du setter en annen. En "
+"endring som ville frigi fisk som holdes tilbake i dag, holde fisk tilbake igjen eller legge en "
+"registrert slakting inn i en tilbakeholdelsestid, spør først."
+
+msgid ""
 "How many days back a daily record (a stock operation, a feeding, a water sample, a movement of "
 "the store, a plan, a treatment) may be dated, and how old a record may be voided. Older records "
 "stay as they are. 1 to 3650; 31 until you set another."
@@ -7855,6 +8190,13 @@ msgstr ""
 msgid "In progress"
 msgstr "Pågår"
 
+msgid ""
+"In salt water the best estimate takes the NBS pH by Millero’s (1986) measured step and the "
+"ammonium constant of Clegg & Whitfield (1995)."
+msgstr ""
+"I saltvann tar det beste estimatet NBS-pH med Milleros (1986) målte trinn og ammoniumkonstanten "
+"til Clegg & Whitfield (1995)."
+
 #, python-format
 msgid "In the CO₂ region: %(margin)s pH past the limit"
 msgstr "I CO₂-området: %(margin)s pH forbi grensen"
@@ -7869,8 +8211,16 @@ msgstr "I biblioteket"
 msgid "In the parameter’s unit. 0: no deadband."
 msgstr "I parameterens enhet. 0: ikke noe dødbånd."
 
-msgid "In the quantity’s unit; for a rate, the change over the time below."
-msgstr "I parameterens enhet; for en endringsrate, endringen over tidsrommet nedenfor."
+msgid ""
+"In the quantity’s unit; for a rate, the change over the time below. A water value, a pH among "
+"them, takes no above or below here: the water limits judge its level (a pH on the NBS scale). A "
+"rate of pH is about the same on every scale, and does not compare a value with one from before "
+"the channel’s pH scale was changed."
+msgstr ""
+"I parameterens enhet; for en endringsrate, endringen over tidsrommet nedenfor. En vannverdi, også"
+" en pH, tar ikke over eller under her: vanngrensene vurderer nivået (en pH på NBS-skalaen). En "
+"endringsrate for pH er omtrent den samme på alle skalaer, og sammenligner ikke en verdi med en "
+"fra før kanalens pH-skala ble endret."
 
 msgid "In the safe zone"
 msgstr "I den trygge sonen"
@@ -7974,6 +8324,9 @@ msgstr ""
 msgid "Invited"
 msgstr "Invitert"
 
+msgid "Ionic strength"
+msgstr "Ionestyrke"
+
 msgid "Is the diagnosis suspected or confirmed?"
 msgstr "Er diagnosen mistenkt eller bekreftet?"
 
@@ -8031,6 +8384,14 @@ msgid ""
 msgstr ""
 "Den holder all fisk i %(unit)s: fisk fra ulike fiskegrupper i samme enhet kan ikke skilles fra "
 "hverandre ved høsting."
+
+#, python-format
+msgid ""
+"It holds every fish in %(unit)s: the fish of different batches in one unit cannot be told apart "
+"when they are caught."
+msgstr ""
+"Den holder all fisk i %(unit)s: fisk fra ulike fiskegrupper i samme enhet kan ikke skilles fra "
+"hverandre når de fanges."
 
 msgid "It holds fish, and what it owes cannot be worked out: no report is listed as due for it."
 msgstr "Den har fisk, og hva den skylder kan ikke beregnes: ingen rapport er oppført som forfalt for den."
@@ -8193,6 +8554,13 @@ msgstr "Begynte"
 #, python-format
 msgid "Judged as %(value)s %(unit)s."
 msgstr "Vurdert som %(value)s %(unit)s."
+
+msgid ""
+"Judged on the safe-side basis alone, which needs no conductivity: the judged value is at least "
+"this; the best estimate is not known."
+msgstr ""
+"Vurdert bare på grunnlaget for den sikre siden, som ikke trenger ledningsevne: den vurderte "
+"verdien er minst denne; det beste estimatet er ukjent."
 
 msgid "Juveniles"
 msgstr "Ungfisk"
@@ -8507,6 +8875,18 @@ msgstr "Lenke sendt til"
 msgid "List what was delivered."
 msgstr "List opp det som ble levert."
 
+msgid "Live delivery inside a withdrawal"
+msgstr "Levende levering innenfor en tilbakeholdelsestid"
+
+#, python-format
+msgid ""
+"Live delivery of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside "
+"this withdrawal (%(end)s): medicated fish sold alive may have been eaten."
+msgstr ""
+"Den levende leveringen %(date)s fra %(unit)s (%(batch)s, %(fish)s fisk til %(facility)s) ligger "
+"innenfor denne tilbakeholdelsestiden (%(end)s): medisinert fisk som ble solgt levende, kan ha "
+"blitt spist."
+
 msgid "Live fish and eggs"
 msgstr "Levende fisk og rogn"
 
@@ -8737,6 +9117,22 @@ msgstr "Måltider per dag"
 
 msgid "Measured"
 msgstr "Målt"
+
+#, python-format
+msgid ""
+"Measured %(value)s on the %(scale)s by the sensor; put on the NBS scale by formula %(formula)d "
+"with %(temperature)s °C and %(salinity)s ‰ of the same moment."
+msgstr ""
+"Målt %(value)s på %(scale)s av sensoren; regnet om til NBS-skalaen med formel %(formula)d med "
+"%(temperature)s °C og %(salinity)s ‰ fra samme øyeblikk."
+
+#, python-format
+msgid ""
+"Measured %(value)s on the %(scale)s; put on the NBS scale by formula %(formula)d with the "
+"sample’s %(temperature)s °C and %(salinity)s ‰."
+msgstr ""
+"Målt %(value)s på %(scale)s; satt på NBS-skalaen med formel %(formula)d og prøvens "
+"%(temperature)s °C og %(salinity)s ‰."
 
 msgid "Measured at"
 msgstr "Målt"
@@ -9003,6 +9399,18 @@ msgstr "Kommune"
 msgid "My tasks"
 msgstr "Mine oppgaver"
 
+msgid "NBS (a meter calibrated with NBS/NIST buffers)"
+msgstr "NBS (et meter kalibrert med NBS/NIST-buffere)"
+
+msgid ""
+"NH₃ and CO₂: above 30 °C or a salinity of 35 ‰ the water is outside the range the formula was "
+"checked over (0 to 30 °C, up to 35 ‰): the judged values keep their margin over the best "
+"estimate, but the best estimate itself was not checked there. Keep a margin to the limit."
+msgstr ""
+"NH₃ og CO₂: over 30 °C eller en salinitet på 35 ‰ er vannet utenfor området formelen er "
+"kontrollert for (0 til 30 °C, opptil 35 ‰): de vurderte verdiene beholder marginen over det beste"
+" estimatet, men selve det beste estimatet er ikke kontrollert der. Hold margin til grensen."
+
 msgid ""
 "NH₃ and NH₄⁺ together, as nitrogen. A kit that reads NH₄⁺: divide by 1.29; one that reads NH₃: "
 "divide by 1.22. The toxic NH₃ is worked out from this, the pH and the temperature of the same "
@@ -9019,6 +9427,21 @@ msgstr "NH₃ når ikke grensen"
 
 msgid "NH₃ is past its limit at every pH"
 msgstr "NH₃ er over grensen ved enhver pH"
+
+msgid "NH₃ judged on its best estimate, the larger here."
+msgstr "NH₃ vurdert etter det beste estimatet, som er størst her."
+
+#, python-format
+msgid ""
+"NH₃ judged on the safe side (to 1 ‰ the ideal water, every activity 1, as Emerson et al. 1975; "
+"from 5 ‰ the best estimate at the pH + 0.03, the uncertainty of a pH reading (US EPA 1989), about"
+" 7 %% above it; blended between; salt-added water: the ideal throughout), the larger of it and "
+"the best estimate; best estimate %(value)s mg/L."
+msgstr ""
+"NH₃ vurdert på den sikre siden (til 1 ‰ ideelt vann, alle aktiviteter 1, som Emerson mfl. 1975; "
+"fra 5 ‰ det beste estimatet ved pH + 0,03, usikkerheten i en pH-avlesning (US EPA 1989), omtrent "
+"7 %% over det; blandet mellom; vann tilsatt salt: ideelt hele veien), den største av den og det "
+"beste estimatet; beste estimat %(value)s mg/L."
 
 msgid "NH₃ not assessed: no TAN"
 msgstr "NH₃ ikke vurdert: ingen TAN"
@@ -9049,6 +9472,9 @@ msgstr "NH₃-N (mg/L)"
 #, python-format
 msgid "NH₃-N > %(limit)s mg/L"
 msgstr "NH₃-N > %(limit)s mg/L"
+
+msgid "NH₃-N best estimate (information, not judged)"
+msgstr "NH₃-N beste estimat (informasjon, ikke vurdert)"
 
 msgid "NH₃-N limit"
 msgstr "NH₃-N-grense"
@@ -9122,6 +9548,13 @@ msgstr ""
 
 msgid "Natural gas"
 msgstr "Naturgass"
+
+msgid ""
+"Needed with a pH on another scale than NBS: the conversion takes the temperature and the salinity"
+" of the same sample."
+msgstr ""
+"Trengs sammen med en pH på en annen skala enn NBS: omregningen bruker temperaturen og saliniteten"
+" fra samme prøve."
 
 msgid "Needed with the oxygen: no fresh salinity here at that time to work the other unit out with."
 msgstr ""
@@ -9337,6 +9770,10 @@ msgstr "Ingen apparater publiserer på dette emnet"
 
 msgid "No diagnosis"
 msgstr "Ingen diagnose"
+
+#, python-format
+msgid "No diagram: the sensor’s pH cannot be put on the NBS scale (%(why)s)."
+msgstr "Ingen diagram: sensorens pH kan ikke regnes om til NBS-skalaen (%(why)s)."
 
 msgid "No dosing advice"
 msgstr "Ingen doseringsråd"
@@ -9972,6 +10409,9 @@ msgstr "Ikke registrert"
 msgid "Not reviewed yet. AI agents will act on reviewed entries only."
 msgstr "Ikke gjennomgått ennå. KI-agentene vil bare handle på gjennomgåtte oppføringer."
 
+msgid "Not said"
+msgstr "Ikke oppgitt"
+
 msgid "Not saved; unverified"
 msgstr "Ikke lagret; ikke bekreftet"
 
@@ -9984,11 +10424,23 @@ msgstr "Ikke satt"
 msgid "Not set up for reports"
 msgstr "Ikke satt opp for rapporter"
 
+#, python-format
+msgid "Not shown: %(why)s."
+msgstr "Ikke vist: %(why)s."
+
 msgid "Not stated"
 msgstr "Ikke oppgitt"
 
 msgid "Not stated in the text saved; unverified (Q6)"
 msgstr "Ikke oppgitt i den lagrede teksten; ikke bekreftet (Q6)"
+
+#, python-format
+msgid ""
+"Not suitable for a live delivery — medicine withdrawal of %(batch)s: %(end)s. Fish sold alive may"
+" be eaten."
+msgstr ""
+"Ikke egnet for levende levering — tilbakeholdelsestid for %(batch)s: %(end)s. Fisk som selges "
+"levende, kan bli spist."
 
 #, python-format
 msgid "Not suitable for harvest — medicine withdrawal of %(batch)s: %(end)s."
@@ -10012,6 +10464,10 @@ msgstr "Ikke beregnet: %(why)s."
 
 msgid "Not worked out: the TAN is no longer fresh."
 msgstr "Ikke regnet ut: TAN-verdien er ikke lenger fersk."
+
+#, python-format
+msgid "Not worked out: the sensor’s pH cannot be used (%(why)s)."
+msgstr "Ikke beregnet: sensorens pH kan ikke brukes (%(why)s)."
 
 msgid "Note"
 msgstr "Notat"
@@ -10310,6 +10766,9 @@ msgstr "Bare en innsendt rapport korrigeres: endre selve utkastet."
 msgid "Only a filed report is late or on time."
 msgstr "Bare en innsendt rapport er sen eller i tide."
 
+msgid "Only a pH channel has a pH scale other than NBS."
+msgstr "Bare en pH-kanal har en annen pH-skala enn NBS."
+
 msgid "Only a pending request can be changed."
 msgstr "Bare en ventende søknad kan endres."
 
@@ -10577,6 +11036,14 @@ msgstr "Valgfritt: hva som ble gjort eller funnet, f.eks. «2 døde fisk fjernet
 msgid "Optional; the batch number is given on saving."
 msgstr "Valgfritt; gruppenummeret gis ved lagring."
 
+#, python-format
+msgid ""
+"Or set the assumed water temperature of %(species)s in Reference data › Species: the days without"
+" a measured temperature then count."
+msgstr ""
+"Eller sett antatt vanntemperatur for %(species)s i Referansedata › Arter: da teller dagene uten "
+"målt temperatur."
+
 msgid "Or start one: New message writes to one person, a channel to a group."
 msgstr "Eller start en: Ny melding skriver til én person, en kanal til en gruppe."
 
@@ -10594,6 +11061,21 @@ msgstr "Organisasjonskart"
 
 msgid "Origin"
 msgstr "Opprinnelse"
+
+msgid ""
+"Orthophosphate. Choose its unit beside it: a kit that reads PO₄³⁻ shows 3.07 times the number as "
+"P (PO₄-P). A PO₄ reading entered as P counts 3.07 times too much phosphate, and every recipe and "
+"dose worked out with it is wrong. Phosphate is part of the alkalinity a titration measures: with "
+"it the calculator and a unit’s chart count its buffer in the DIC, in the water’s own CO₂ and in "
+"what a dose or a stripping does. The judged CO₂ never falls because of it. Empty: not counted, as"
+" before."
+msgstr ""
+"Ortofosfat. Velg enheten ved siden av: et sett som måler PO₄³⁻ viser 3,07 ganger tallet som P "
+"(PO₄-P). En PO₄-avlesning angitt som P gir 3,07 ganger for mye fosfat, og alle oppskrifter og "
+"doser som regnes ut med den blir feil. Fosfat er en del av alkaliteten en titrering måler: med "
+"det regner kalkulatoren og enhetens diagram bufferen med i DIC, i vannets egen CO₂ og i hva en "
+"dose eller en avlufting gjør. Den vurderte CO₂ synker aldri på grunn av det. Tomt: ikke regnet "
+"med, som før."
 
 msgid "Oslo time, as the authority keeps it."
 msgstr "Oslo-tid, slik myndigheten fører den."
@@ -10755,6 +11237,9 @@ msgstr "PDF-fil"
 
 msgid "POST /api/slakt/v1/utfort, or the Altinn form \"Gjennomført slakting av oppdrettsfisk\""
 msgstr "POST /api/slakt/v1/utfort, eller Altinn-skjemaet «Gjennomført slakting av oppdrettsfisk»"
+
+msgid "PO₄-P (mg/L)"
+msgstr "PO₄-P (mg/L)"
 
 msgid "PSU is the same number: 0 in fresh water, about 35 in the sea."
 msgstr "PSU er samme tall: 0 i ferskvann, omkring 35 i sjøen."
@@ -10931,6 +11416,28 @@ msgstr "Fase"
 
 msgid "Phone"
 msgstr "Telefon"
+
+#, python-format
+msgid ""
+"Phosphate %(value)s is the value loaded from %(point)s: it is as P already (a stored phosphate "
+"always is) and is not converted again. Leave the unit at P, or type the phosphate as it was "
+"reported with its unit."
+msgstr ""
+"Fosfat %(value)s er verdien som ble hentet fra %(point)s: den er allerede som P (et lagret fosfat"
+" er alltid det) og regnes ikke om igjen. La enheten stå på P, eller skriv inn fosfatet slik det "
+"ble oppgitt, med enheten sin."
+
+msgid "Phosphate (mg/L PO₄ as P)"
+msgstr "Fosfat (mg/L PO₄ som P)"
+
+msgid "Phosphate (mg/L, in the unit chosen beside it)"
+msgstr "Fosfat (mg/L, i enheten valgt ved siden av)"
+
+msgid "Phosphate as entered, in its own unit"
+msgstr "Fosfat slik det ble angitt, i sin egen enhet"
+
+msgid "Phosphate unit"
+msgstr "Fosfatenhet"
 
 msgid "Phosphorus (%)"
 msgstr "Fosfor (%)"
@@ -12198,6 +12705,12 @@ msgstr "Skala"
 msgid "Scale loss"
 msgstr "Skjelltap"
 
+msgid "Scale the pH is measured on"
+msgstr "Skalaen pH måles på"
+
+msgid "Scale the pH was measured on"
+msgstr "Skalaen pH ble målt på"
+
 msgid "Scheduled"
 msgstr "Planlagte"
 
@@ -12224,6 +12737,9 @@ msgstr "Sjøtemperatur (°C)"
 
 msgid "Sea water"
 msgstr "Sjøvann"
+
+msgid "Sea water or diluted sea water"
+msgstr "Sjøvann eller fortynnet sjøvann"
 
 msgid "Sea-lice count"
 msgstr "Lusetelling"
@@ -12362,6 +12878,9 @@ msgstr "Søk etter enhet, fiskegruppe eller art"
 
 msgid "Search vector"
 msgstr "Søkevektor"
+
+msgid "Seawater scale (SWS)"
+msgstr "Sjøvannsskala (SWS)"
 
 msgid "Seaweed"
 msgstr "Tang og tare"
@@ -12932,6 +13451,15 @@ msgstr "Arter og fiskevekter kan legges til når fôret er opprettet."
 
 msgid "Species it takes"
 msgstr "Arter det tar imot"
+
+msgid ""
+"Specific conductance: the meter’s reading compensated to 25 °C (the meter’s temperature "
+"compensation on, referred to 25 °C, not 20 °C). A reading at the water’s own temperature is not "
+"this value. In fresh water the ionic strength is taken from it (Russell 1976)."
+msgstr ""
+"Spesifikk ledningsevne: målerens avlesning kompensert til 25 °C (målerens temperaturkompensasjon "
+"på, med 25 °C som referanse, ikke 20 °C). En avlesning ved vannets egen temperatur er ikke denne "
+"verdien. I ferskvann tas ionestyrken fra den (Russell 1976)."
 
 msgid "Specific feeding rate: the share of the body weight fed a day"
 msgstr "Spesifikk fôringsrate: andelen av kroppsvekten som fôres per dag"
@@ -13882,6 +14410,20 @@ msgstr "Slutten kan ikke regnes ut: registrer vanntemperaturen."
 msgid "The end comes after the start."
 msgstr "Slutten kommer etter starten."
 
+#, python-format
+msgid ""
+"The end of these withdrawals is unknown and the course is older than %(days)s day: the fish are "
+"no longer held (Platform settings). Give each an end."
+msgid_plural ""
+"The end of these withdrawals is unknown and the course is older than %(days)s days: the fish are "
+"no longer held (Platform settings). Give each an end."
+msgstr[0] ""
+"Slutten på disse tilbakeholdelsestidene er ukjent, og behandlingen er eldre enn %(days)s dag: "
+"fisken holdes ikke lenger tilbake (Plattforminnstillinger). Gi hver av dem en slutt."
+msgstr[1] ""
+"Slutten på disse tilbakeholdelsestidene er ukjent, og behandlingen er eldre enn %(days)s dager: "
+"fisken holdes ikke lenger tilbake (Plattforminnstillinger). Gi hver av dem en slutt."
+
 msgid "The equipment is linked to this system already."
 msgstr "Utstyret er allerede knyttet til dette systemet."
 
@@ -13930,6 +14472,13 @@ msgid ""
 msgstr ""
 "Sultingen før hver type håndtering, per art eller for alle arter. Uten regel kontrolleres ikke "
 "sultingen."
+
+msgid "The fast decides."
+msgstr "Sultingen avgjør."
+
+#, python-format
+msgid "The fast decides: feeding must stop by %(date)s."
+msgstr "Sultingen avgjør: fôringen må stoppe senest %(date)s."
 
 msgid ""
 "The feed fed is read from the feeding records of the site's units and drawn from its lots first "
@@ -14438,6 +14987,27 @@ msgstr ""
 msgid "The pH bounds go up: critical below, warning below, warning above, critical above."
 msgstr "pH-grensene går oppover: kritisk under, advarsel under, advarsel over, kritisk over."
 
+msgid ""
+"The pH measured on another scale was put on the NBS scale again by the application’s formula "
+"(formula 4: Millero’s 1986 step between the scales); what was measured is unchanged."
+msgstr ""
+"pH-en målt på en annen skala ble regnet om til NBS-skalaen på nytt med applikasjonens formel "
+"(formel 4: Milleros trinn fra 1986 mellom skalaene); det som ble målt, er uendret."
+
+#, python-format
+msgid ""
+"The pH scale was changed on %(time)s: what the probe measured before is used nowhere (its scale "
+"is not known)."
+msgstr "pH-skalaen ble endret %(time)s: det sonden målte før, brukes ingen steder (skalaen er ikke kjent)."
+
+#, python-format
+msgid ""
+"The pH was measured on the %(scale)s and put on the NBS scale by Millero’s (1986) step: the NH₃ "
+"is judged at that pH + 0.03, the uncertainty of a pH reading, about 7 %% above its best estimate."
+msgstr ""
+"pH-en ble målt på %(scale)s og regnet om til NBS-skalaen med Milleros (1986) trinn: NH₃ vurderes "
+"ved den pH-en + 0,03, usikkerheten i en pH-avlesning, omtrent 7 %% over det beste estimatet."
+
 #, python-format
 msgid "The pH window cannot be drawn: %(why)s."
 msgstr "pH-vinduet kan ikke tegnes: %(why)s."
@@ -14745,6 +15315,47 @@ msgstr "Saliniteten er ferskvannets."
 
 msgid "The scale must span at least half a pH unit, from the lower end to the higher."
 msgstr "Skalaen må spenne over minst en halv pH-enhet, fra den nedre enden til den øvre."
+
+msgid ""
+"The scale the pH above was measured on. Other than NBS: for sea water of 5 ‰ or more; the chart "
+"and every value are then worked out and drawn on the NBS scale. The target pH and the pH limits "
+"are NBS."
+msgstr ""
+"Skalaen pH-verdien over ble målt på. Annet enn NBS: for sjøvann på 5 ‰ eller mer; diagrammet og "
+"alle verdier blir da beregnet og tegnet på NBS-skalaen. Mål-pH og pH-grensene er NBS."
+
+msgid ""
+"The scale the pH was measured on. Other than NBS (a seawater sensor calibrated with TRIS reads on"
+" the total scale): for sea water of 5 ‰ or more, with the temperature and the salinity of the "
+"same sample. The pH is then stored and shown on the NBS scale, with what was measured beside it."
+msgstr ""
+"Skalaen pH ble målt på. Annet enn NBS (en sjøvannssensor kalibrert med TRIS måler på "
+"totalskalaen): for sjøvann på 5 ‰ eller mer, med temperaturen og saliniteten fra samme prøve. pH "
+"lagres og vises da på NBS-skalaen, med det som ble målt ved siden av."
+
+msgid ""
+"The scale the probe reports its pH on: NBS (calibrated with NBS/NIST buffers), or the total "
+"(TRIS), seawater or free scale. Other than NBS, each value is put on the NBS scale where the "
+"water is worked out, with the temperature (a sensor’s, else a sample’s fresh then) and the "
+"salinity of the same moment, for sea water of 5 ‰ or more; otherwise the pH and its NH₃ cannot be"
+" evaluated, and the page says why. Changing it: what the probe measured before is used nowhere "
+"after (its scale is not known)."
+msgstr ""
+"Skalaen sonden oppgir pH på: NBS (kalibrert med NBS/NIST-buffere), eller total- (TRIS), sjøvanns-"
+" eller den frie skalaen. Med en annen enn NBS regnes hver verdi om til NBS-skalaen der vannet "
+"beregnes, med temperaturen (en sensors, ellers en prøves som er fersk da) og saliniteten fra "
+"samme øyeblikk, for sjøvann på 5 ‰ eller mer; ellers kan pH og NH₃ fra den ikke vurderes, og "
+"siden sier hvorfor. Endres den: det sonden målte før, brukes ingen steder etterpå (skalaen er "
+"ikke kjent)."
+
+msgid ""
+"The scale the round’s pHs were measured on. Other than NBS: for sea water of 5 ‰ or more, each "
+"row with its own temperature and salinity; the pH is stored and shown on the NBS scale, with what"
+" was measured beside it."
+msgstr ""
+"Skalaen rundens pH-verdier ble målt på. Annet enn NBS: for sjøvann på 5 ‰ eller mer, hver rad med"
+" sin egen temperatur og salinitet; pH lagres og vises på NBS-skalaen, med det som ble målt ved "
+"siden av."
 
 #, python-format
 msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."
@@ -15087,6 +15698,20 @@ msgstr "Enhetsfaktoren er et tall forskjellig fra 0."
 msgid "The unit the instrument sends, when it differs from the quantity’s."
 msgstr "Enheten instrumentet sender, når den avviker fra parameterens."
 
+msgid ""
+"The unit the phosphate above is in. As PO₄ the number is 3.07 times the number as P: everything "
+"is worked out with it as P, and every dose says the phosphate it was worked out with."
+msgstr ""
+"Enheten fosfatet over er i. Som PO₄ er tallet 3,07 ganger tallet som P: alt regnes ut med det som"
+" P, og hver dose sier hvilket fosfat den er regnet ut med."
+
+msgid ""
+"The unit the round’s phosphates are in. As PO₄ the number is 3.07 times the number as P: each is "
+"put on P when stored, with what was entered kept beside it."
+msgstr ""
+"Enheten rundens fosfatverdier er i. Som PO₄ er tallet 3,07 ganger tallet som P: hver verdi regnes"
+" om til P når den lagres, og det som ble angitt beholdes ved siden av."
+
 msgid "The unit was removed"
 msgstr "Enheten ble fjernet"
 
@@ -15270,11 +15895,51 @@ msgstr "Tilbakeholdelsestiden regnes fra den nye siste dagen; endringen logges."
 
 #, python-format
 msgid ""
+"The withdrawal is of %(held)s, which was in %(unit)s with the fish delivered: the fish of one "
+"unit cannot be told apart."
+msgstr ""
+"Tilbakeholdelsestiden gjelder %(held)s, som sto i %(unit)s sammen med fisken som ble levert: fisk"
+" i samme enhet kan ikke skilles fra hverandre."
+
+#, python-format
+msgid ""
 "The withdrawal is of %(held)s, which was in %(unit)s with the fish harvested: the fish of one "
 "unit cannot be told apart."
 msgstr ""
 "Tilbakeholdelsestiden gjelder %(held)s, som sto i %(unit)s sammen med fisken som ble høstet: fisk"
 " i samme enhet kan ikke skilles fra hverandre."
+
+#, python-format
+msgid ""
+"The withdrawal is of %(held)s: the fish delivered shared %(unit)s with %(with)s before, and the "
+"fish of one unit cannot be told apart."
+msgstr ""
+"Tilbakeholdelsestiden gjelder %(held)s: fisken som ble levert, delte %(unit)s med %(with)s "
+"tidligere, og fisk i samme enhet kan ikke skilles fra hverandre."
+
+#, python-format
+msgid ""
+"The withdrawal is of %(held)s: the fish delivered shared %(unit)s with %(with)s, which waits with"
+" %(held)s, and the fish of one unit cannot be told apart."
+msgstr ""
+"Tilbakeholdelsestiden gjelder %(held)s: fisken som ble levert, delte %(unit)s med %(with)s, som "
+"venter sammen med %(held)s, og fisk i samme enhet kan ikke skilles fra hverandre."
+
+#, python-format
+msgid ""
+"The withdrawal is of %(held)s: the fish harvested shared %(unit)s with %(with)s before, and the "
+"fish of one unit cannot be told apart."
+msgstr ""
+"Tilbakeholdelsestiden gjelder %(held)s: fisken som ble høstet, delte %(unit)s med %(with)s "
+"tidligere, og fisk i samme enhet kan ikke skilles fra hverandre."
+
+#, python-format
+msgid ""
+"The withdrawal is of %(held)s: the fish harvested shared %(unit)s with %(with)s, which waits with"
+" %(held)s, and the fish of one unit cannot be told apart."
+msgstr ""
+"Tilbakeholdelsestiden gjelder %(held)s: fisken som ble høstet, delte %(unit)s med %(with)s, som "
+"venter sammen med %(held)s, og fisk i samme enhet kan ikke skilles fra hverandre."
 
 msgid ""
 "The withdrawal is the product’s, as its SPC states it per species, in degree-days, days or both, "
@@ -15377,6 +16042,22 @@ msgid ""
 msgstr ""
 "Denne fisken av %(batch)s veier like mye som beholdningen har for %(unit)s %(date)s, eller mer: "
 "vei enheten først."
+
+#, python-format
+msgid "These fish shared %(unit)s with %(batch)s (%(how)s)."
+msgstr "Denne fisken delte %(unit)s med %(batch)s (%(how)s)."
+
+#, python-format
+msgid "These fish shared %(unit)s with %(batch)s, which waits with %(source)s (%(how)s)."
+msgstr "Denne fisken delte %(unit)s med %(batch)s, som venter sammen med %(source)s (%(how)s)."
+
+#, python-format
+msgid "These fish were given the medicated feed in %(units)s."
+msgstr "Denne fisken fikk medisinfôret i %(units)s."
+
+#, python-format
+msgid "These fish were treated in %(units)s."
+msgstr "Denne fisken ble behandlet i %(units)s."
 
 msgid ""
 "They keep the link, but it does not count while this is deleted; restoring it brings the link "
@@ -15815,6 +16496,12 @@ msgstr "Totalt areal (m²)"
 msgid "Total gas pressure (% of barometric pressure)"
 msgstr "Totalt gasstrykk (% av lufttrykket)"
 
+msgid "Total hardness (mg/L as CaCO₃)"
+msgstr "Total hardhet (mg/L som CaCO₃)"
+
+msgid "Total scale (calibrated with TRIS)"
+msgstr "Totalskala (kalibrert med TRIS)"
+
 msgid "Total sulfide (µg/L as S)"
 msgstr "Totalt sulfid (µg/L som S)"
 
@@ -16005,6 +16692,9 @@ msgstr "Enhet for nivåene"
 msgid "Unit offset"
 msgstr "Enhetsforskyvning"
 
+msgid "Unit the phosphate was entered in"
+msgstr "Enheten fosfatet ble angitt i"
+
 msgid "Unit, system or equipment"
 msgstr "Enhet, system eller utstyr"
 
@@ -16034,6 +16724,9 @@ msgstr "Ukjent"
 
 msgid "Unpaid: it is taken off the planned hours. At most 240, shorter than the shift."
 msgstr "Ubetalt: den trekkes fra de planlagte timene. Høyst 240, kortere enn skiftet."
+
+msgid "Unresolved old courses"
+msgstr "Uavklarte gamle behandlinger"
 
 msgid ""
 "Untick to pause it: its tasks from today on that nobody has started are removed, and none are "
@@ -16297,6 +16990,9 @@ msgstr "Vanngrense"
 msgid "Water limits"
 msgstr "Vanngrenser"
 
+msgid "Water origin"
+msgstr "Vannopprinnelse"
+
 msgid "Water points with a warning"
 msgstr "Prøvepunkter med advarsel"
 
@@ -16493,6 +17189,15 @@ msgstr ""
 "Hva innhentingstjenesten husker om hver sensorkanal: siste verdi, den sist lagrede verdien "
 "dødbåndet måles fra, og verdiene som ikke er lagret siden."
 
+msgid ""
+"What the kit or the laboratory reports. As PO₄ the number is 3.07 times the number as P: it is "
+"put on P when stored, with what was entered kept beside it. The wrong unit is a 3.07-fold error "
+"in every dose worked out with the phosphate."
+msgstr ""
+"Det settet eller laboratoriet oppgir. Som PO₄ er tallet 3,07 ganger tallet som P: det regnes om "
+"til P når det lagres, og det som ble angitt beholdes ved siden av. Feil enhet er en 3,07 ganger "
+"for stor eller liten verdi i hver dose som regnes ut med fosfatet."
+
 msgid "What the person can open and change. Without a role they see only the overview."
 msgstr "Hva personen kan åpne og endre. Uten rolle ser vedkommende bare oversikten."
 
@@ -16567,6 +17272,9 @@ msgstr "Når oksygenets salinitet ble målt"
 msgid "When the oxygen’s temperature was measured"
 msgstr "Når oksygenets temperatur ble målt"
 
+msgid "When the pH scale was changed"
+msgstr "Da pH-skalaen ble endret"
+
 msgid "When this is a part of other equipment, e.g. the pump of a filter unit."
 msgstr "Når dette er en del av annet utstyr, f.eks. pumpen i en filterenhet."
 
@@ -16639,6 +17347,15 @@ msgstr "Hvor jobben gjøres: en hel lokalitet, en produksjonsavdeling, et system
 
 msgid "Where the knowledge comes from: every entry has exactly one source."
 msgstr "Hvor kunnskapen kommer fra: hver oppføring har nøyaktig én kilde."
+
+msgid ""
+"Where the salt in its water comes from. Fresh water with salt added (NaCl, for smolt or against "
+"disease) is worked out without sea water’s ions; not said, a salinity of 1 to 5 ‰ is taken as "
+"diluted sea water."
+msgstr ""
+"Hvor saltet i vannet kommer fra. Ferskvann tilsatt salt (NaCl, for smolt eller mot sykdom) "
+"beregnes uten sjøvannets ioner; ikke oppgitt regnes en salinitet på 1 til 5 ‰ som fortynnet "
+"sjøvann."
 
 msgid "Where the value comes from, e.g. “the vet, November 2026”."
 msgstr "Hvor verdien kommer fra, f.eks. «veterinæren, november 2026»."
@@ -16908,6 +17625,10 @@ msgstr ""
 msgid "Worked out from the values"
 msgstr "Regnet ut fra verdiene"
 
+#, python-format
+msgid "Worked out with phosphate %(p)s mg/L as P (%(po4)s as PO₄): a wrong phosphate changes this dose."
+msgstr "Regnet ut med fosfat %(p)s mg/L som P (%(po4)s som PO₄): feil fosfat endrer denne dosen."
+
 msgid "Working"
 msgstr "Jobber"
 
@@ -17085,6 +17806,46 @@ msgstr "en landlokalitet med utslippstillatelse"
 msgid "a land site with broodstock of salmon, trout, rainbow trout or cleaner fish"
 msgstr "en landlokalitet med stamfisk av laks, ørret, regnbueørret eller rensefisk"
 
+#, python-format
+msgid "a pH on the %(scale)s is not put on the NBS scale here"
+msgstr "en pH på %(scale)s regnes ikke om til NBS-skalaen her"
+
+#, python-format
+msgid ""
+"a pH on the %(scale)s is put on the NBS scale by the chemistry core, which cannot work this water"
+" out: %(why)s"
+msgstr ""
+"en pH på %(scale)s regnes om til NBS-skalaen av kjemikjernen, som ikke kan regne ut dette vannet:"
+" %(why)s"
+
+#, python-format
+msgid "a pH on the %(scale)s is put on the NBS scale only while it is fresh, and it is no longer fresh"
+msgstr "en pH på %(scale)s regnes om til NBS-skalaen bare mens den er fersk, og den er ikke lenger fersk"
+
+#, python-format
+msgid ""
+"a pH on the %(scale)s is put on the NBS scale with a temperature of its moment, a sensor’s or a "
+"sample’s, and none is fresh then"
+msgstr ""
+"en pH på %(scale)s regnes om til NBS-skalaen med en temperatur fra samme øyeblikk, en sensors "
+"eller en prøves, og ingen er fersk da"
+
+#, python-format
+msgid ""
+"a pH on the %(scale)s is put on the NBS scale with the salinity of the same moment, and none was "
+"measured here in the days before"
+msgstr ""
+"en pH på %(scale)s regnes om til NBS-skalaen med saliniteten fra samme øyeblikk, og ingen ble "
+"målt her i dagene før"
+
+#, python-format
+msgid ""
+"a pH on the %(scale)s is taken for sea water of 5 ‰ or more only (not fresh water with salt "
+"added); set the channel’s pH scale to NBS if the probe is calibrated with NBS/NIST buffers"
+msgstr ""
+"en pH på %(scale)s tas bare for sjøvann på 5 ‰ eller mer (ikke ferskvann tilsatt salt); sett "
+"kanalens pH-skala til NBS hvis sonden er kalibrert med NBS/NIST-buffere"
+
 msgid "a sea site with salmonids"
 msgstr "en sjølokalitet med laksefisk"
 
@@ -17093,6 +17854,9 @@ msgstr "en sjølokalitet med laksefisk (plikten følger fisken, ikke produksjons
 
 msgid "a site with cleaner-fish broodstock"
 msgstr "en lokalitet med rensefiskstamfisk"
+
+msgid "a unit or a loop"
+msgstr "en enhet eller en sløyfe"
 
 msgid "activity log"
 msgstr "aktivitetslogg"
@@ -17178,6 +17942,9 @@ msgstr "en ukjent slutt"
 msgid "an unknown facility"
 msgstr "et ukjent slakteri"
 
+msgid "an unknown receiver"
+msgstr "en ukjent mottaker"
+
 msgid "and"
 msgstr "og"
 
@@ -17188,6 +17955,15 @@ msgstr "og %(count)s til: alle rapporter"
 #, python-format
 msgid "and %(kilos)s to the cleaner fish"
 msgstr "og %(kilos)s til rensefisken"
+
+msgid "as P (PO₄-P): mg/L of phosphorus"
+msgstr "som P (PO₄-P): mg/L fosfor"
+
+msgid "as PO₄ (mg/L of phosphate)"
+msgstr "som PO₄ (mg/L fosfat)"
+
+msgid "as PO₄: mg/L of phosphate"
+msgstr "som PO₄: mg/L fosfat"
 
 msgid "as for food fish"
 msgstr "som for matfisk"
@@ -17209,8 +17985,21 @@ msgid "at %(point)s"
 msgstr "ved %(point)s"
 
 #, python-format
+msgid "at least %(value)s"
+msgstr "minst %(value)s"
+
+#, python-format
 msgid "at least every %(seconds)s s"
 msgstr "minst hvert %(seconds)s s"
+
+msgid "at least that of the alkalinity"
+msgstr "minst alkalitetens"
+
+msgid "at least that of the hardness and the alkalinity"
+msgstr "minst hardhetens og alkalitetens"
+
+msgid "at least: the safe-side basis"
+msgstr "minst: grunnlaget for den sikre siden"
 
 msgid "at once"
 msgstr "straks"
@@ -17308,6 +18097,10 @@ msgstr "kortmaler"
 
 msgid "cards of a monitoring board"
 msgstr "kort på et overvåkingspanel"
+
+#, python-format
+msgid "changed %(moment)s"
+msgstr "endret %(moment)s"
 
 msgid "changed here"
 msgstr "endret her"
@@ -17748,6 +18541,10 @@ msgstr "slutt ukjent"
 msgid "ended"
 msgstr "avsluttet"
 
+#, python-format
+msgid "entered as %(value)s mg/L PO₄"
+msgstr "angitt som %(value)s mg/L PO₄"
+
 msgid "equals"
 msgstr "er lik"
 
@@ -17891,6 +18688,9 @@ msgstr "byttet på denne siden"
 msgid "found %(time)s"
 msgstr "funnet %(time)s"
 
+msgid "free scale"
+msgstr "den frie skalaen"
+
 msgid "fresh water"
 msgstr "ferskvann"
 
@@ -17913,6 +18713,12 @@ msgstr "fra %(start)s til %(end)s"
 msgid "from %(weight)s g"
 msgstr "fra %(weight)s g"
 
+msgid "from the conductivity at 25 °C"
+msgstr "fra ledningsevnen ved 25 °C"
+
+msgid "from the salinity"
+msgstr "fra saliniteten"
+
 msgid "full scale · axes from zero"
 msgstr "full skala · akser fra null"
 
@@ -17921,6 +18727,10 @@ msgstr "g"
 
 msgid "g/kg"
 msgstr "g/kg"
+
+#, python-format
+msgid "given medicated feed in %(units)s"
+msgstr "som fikk medisinfôr i %(units)s"
 
 msgid "granted without approval"
 msgstr "innvilges uten godkjenning"
@@ -18054,6 +18864,10 @@ msgstr "siste kjente posisjon"
 msgid "last known position, old: %(values)s"
 msgstr "siste kjente posisjon, gammelt: %(values)s"
 
+#, python-format
+msgid "last own value %(value)s %(status)s on %(time)s, no recent data: measure this unit"
+msgstr "siste egne verdi %(value)s %(status)s %(time)s, ingen nye data: mål denne enheten"
+
 msgid "leave outside these days"
 msgstr "permisjon utenfor disse dagene"
 
@@ -18101,6 +18915,16 @@ msgstr "maskert"
 
 msgid "meals done"
 msgstr "måltidene er gitt"
+
+#, python-format
+msgid "measured %(value)s on the %(scale)s"
+msgstr "målt %(value)s på %(scale)s"
+
+#, python-format
+msgid ""
+"measured before the channel’s pH scale was changed (%(time)s): the scale it was measured on is "
+"not known"
+msgstr "målt før kanalens pH-skala ble endret (%(time)s): skalaen den ble målt på, er ikke kjent"
 
 msgid "medicine"
 msgstr "legemiddel"
@@ -18278,6 +19102,9 @@ msgstr "ingen"
 msgid "none fresh now: enter it"
 msgstr "ingen fersk nå: skriv den inn"
 
+msgid "none measured, taken as 0 (the safe side)"
+msgstr "ingenting målt, satt til 0 (den sikre siden)"
+
 msgid "not enforced by the database"
 msgstr "ikke håndhevet av databasen"
 
@@ -18320,6 +19147,9 @@ msgid "of %(total)s unit"
 msgid_plural "of %(total)s units"
 msgstr[0] "av %(total)s enhet"
 msgstr[1] "av %(total)s enheter"
+
+msgid "of sea water of this salinity"
+msgstr "sjøvannets ved denne saliniteten"
 
 msgid "off"
 msgstr "fri"
@@ -18378,14 +19208,35 @@ msgid "pH"
 msgstr "pH"
 
 #, python-format
+msgid ""
+"pH %(given)s on the %(scale)s is %(nbs)s on the NBS scale (formula %(formula)s): every value and "
+"the chart are worked out and drawn on the NBS scale."
+msgstr ""
+"pH %(given)s på %(scale)s er %(nbs)s på NBS-skalaen (formel %(formula)s): alle verdier og "
+"diagrammet er beregnet og tegnet på NBS-skalaen."
+
+#, python-format
 msgid "pH %(ph)s"
 msgstr "pH %(ph)s"
+
+#, python-format
+msgid ""
+"pH %(ph)s is the value loaded from %(point)s: it is on the NBS scale already (a stored pH always "
+"is) and is not converted again. Leave the scale at NBS, or type the pH as it was measured with "
+"its scale."
+msgstr ""
+"pH %(ph)s er verdien som ble hentet fra %(point)s: den er allerede på NBS-skalaen (en lagret pH "
+"er alltid det) og regnes ikke om igjen. La skalaen stå på NBS, eller skriv inn pH-en slik den ble"
+" målt, med skalaen sin."
 
 msgid "pH (NBS scale)"
 msgstr "pH (NBS-skala)"
 
 msgid "pH (NBS)"
 msgstr "pH (NBS)"
+
+msgid "pH as measured, on its own scale"
+msgstr "pH slik den ble målt, på sin egen skala"
 
 msgid "pH border, toxic above"
 msgstr "pH-grense, giftig over"
@@ -18398,6 +19249,12 @@ msgstr "pH-isolinjer"
 
 msgid "pH margin to the border"
 msgstr "pH-margin til grensen"
+
+msgid "pH scale"
+msgstr "pH-skala"
+
+msgid "pH scale changed: the values before are not used"
+msgstr "pH-skala endret: verdiene før brukes ikke"
 
 msgid "pH sensor"
 msgstr "pH-sensor"
@@ -18584,6 +19441,9 @@ msgstr "lusetelling"
 msgid "sea-lice counts"
 msgstr "lusetellinger"
 
+msgid "seawater scale (SWS)"
+msgstr "sjøvannsskalaen (SWS)"
+
 msgid "seconds"
 msgstr "sekunder"
 
@@ -18607,6 +19467,9 @@ msgstr "sensoravlesning"
 
 msgid "sensor readings"
 msgstr "sensoravlesninger"
+
+msgid "shared a unit"
+msgstr "delte en enhet"
 
 msgid "shift"
 msgstr "skift"
@@ -18728,6 +19591,14 @@ msgstr "panelets standard"
 msgid "the close view is the full scale here: the water is far past a limit"
 msgstr "nærbildet er full skala her: vannet er langt forbi en grense"
 
+#, python-format
+msgid "the fish may leave the farm from %(date)s"
+msgstr "fisken kan forlate anlegget fra %(date)s"
+
+#, python-format
+msgid "the fish may leave the farm from about %(date)s"
+msgstr "fisken kan forlate anlegget fra omtrent %(date)s"
+
 msgid "the layout being designed"
 msgstr "oppsettet som utformes"
 
@@ -18786,9 +19657,16 @@ msgstr "til %(unit)s"
 msgid "to the cleaner fish %(kilos)s"
 msgstr "til rensefisken %(kilos)s"
 
+msgid "total scale"
+msgstr "totalskalaen"
+
 #, python-format
 msgid "total sulfide %(value)s µg/L as S"
 msgstr "totalt sulfid %(value)s µg/L som S"
+
+#, python-format
+msgid "treated in %(units)s"
+msgstr "som ble behandlet i %(units)s"
 
 msgid "treatment"
 msgstr "behandling"

@@ -87,7 +87,7 @@ class TankForm(CodedFormMixin, TabbedForm):
 
     tabs = [
         ('general', _('General'), ['name', 'code', 'kind', 'status', 'status_changed_at', 'status_reason',
-                                   'water_type', 'regulatory_unit_id']),
+                                   'water_type', 'water_origin', 'regulatory_unit_id']),
         ('location', _('Location'), ['production_department', 'system']),
         # Filled per form with the fields of the chosen kind.
         (DIMENSIONS, _('Dimensions'), []),
@@ -109,7 +109,7 @@ class TankForm(CodedFormMixin, TabbedForm):
     class Meta:
         model = Tank
         fields = [
-            'name', 'code', 'kind', 'status', 'status_reason', 'water_type', 'regulatory_unit_id',
+            'name', 'code', 'kind', 'status', 'status_reason', 'water_type', 'water_origin', 'regulatory_unit_id',
             'production_department', 'system', *KIND_FIELDS, 'depth', 'max_density_kg_m3', 'installation_date',
             'description', 'notes',
         ]
@@ -147,6 +147,7 @@ class TankForm(CodedFormMixin, TabbedForm):
     def _general(self, unit, adding):
         self.fields['kind'].choices = [('', _('Select a kind'))] + Kind.choices
         self.fields['water_type'].choices = [('', _('Select a water type'))] + Tank.WaterType.choices
+        self.fields['water_origin'].choices = [('', _('Not said'))] + Tank.WaterOrigin.choices
         status = self.fields['status']
         status.choices = [(value, Tank.Status(value).label) for value in unit.next_statuses()]
         status.help_text = STATUS_HELP_NEW if adding else STATUS_HELP

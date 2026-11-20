@@ -3,9 +3,12 @@ from django.core.validators import MaxValueValidator, MinValueValidator, RegexVa
 from django.db import models
 from django.db.models import ExpressionWrapper, F, Func, Q, Value
 from django.db.models.functions import Lower
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from core.models import CODE, CODE_MESSAGE, AuditedModel, CodedMixin
+from farm.models.water import NBS, PH_SCALE_CHOICES
+from farm.water.parameters import PH
 
 from .. import quantities
 from .device import Device
@@ -104,6 +107,13 @@ class Channel(CodedMixin, AuditedModel):
     range_max = models.FloatField(_('Range to'), null=True, blank=True)
     state = models.CharField(_('State'), max_length=12, choices=ChannelStatus.choices, default=ChannelStatus.ACTIVE)
     note = models.TextField(_('Note'), blank=True)
+    # A pH channel's scale (owner decision 1 of 2026-11-17; the water-chemistry audit of 2026-11-19, F1): what its
+    # probe's calibration puts its values on. Stored as sent; put on the NBS scale where the water is read
+    # (farm/water/read.py Context.sensor_ph). NBS for every other quantity.
+    ph_scale = models.CharField(_('Scale the pH is measured on'), max_length=5, choices=PH_SCALE_CHOICES, default=NBS, db_default=NBS)
+    # When the channel's pH scale was last changed (`save`): its values from before are on a scale not known any more
+    # and are used nowhere. None: the scale holds since the channel was made.
+    ph_scale_from = models.DateTimeField(_('When the pH scale was changed'), null=True, blank=True, editable=False)
 
     class Meta:
         db_table = 'sensors_channel'
@@ -146,10 +156,32 @@ class Channel(CodedMixin, AuditedModel):
                 name='chk_sensors_channel_range',
                 violation_error_message=_('Give both ends of the range, the first below the second, or neither.')),
             models.CheckConstraint(condition=Q(state__in=ChannelStatus.values), name='chk_sensors_channel_state'),
+            models.CheckConstraint(
+                condition=Q(ph_scale__in=[code for code, _label in PH_SCALE_CHOICES])
+                & (Q(quantity=PH) | Q(ph_scale=NBS, ph_scale_from__isnull=True)),
+                name='chk_sensors_channel_ph_scale',
+                violation_error_message=_('Only a pH channel has a pH scale other than NBS.')),
         ]
 
     def __str__(self):
         return f'{self.device.code} › {self.code}'
+
+    def save(self, *args, **kwargs):
+        """Saved with the moment its pH scale changed (`ph_scale_from`), whichever door it is saved through: the values
+        its probe measured before are on the old scale, which a value does not carry, so they are used nowhere after
+        (farm/water/read.py)."""
+        if not self._state.adding and self.quantity == PH:
+            stored = type(self).all_objects.filter(pk=self.pk).values_list('ph_scale', flat=True).first()
+            if stored is not None and stored != self.ph_scale:
+                self.ph_scale_from = timezone.now()
+                if kwargs.get('update_fields') is not None:
+                    kwargs['update_fields'] = {*kwargs['update_fields'], 'ph_scale_from'}
+        super().save(*args, **kwargs)
+
+    @property
+    def ph_scale_said(self):
+        """A pH channel's scale as the pages say it ('' for any other channel)."""
+        return self.get_ph_scale_display() if self.quantity == PH else ''
 
     @property
     def quantity_info(self):

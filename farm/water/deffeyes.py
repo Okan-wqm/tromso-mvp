@@ -66,7 +66,9 @@ ALL_LAYERS = frozenset(key for key, _label in LAYERS)
 @dataclass(frozen=True)
 class Water:
     """The water the chart is drawn for: what a sample holds. Units and bases are in the names; total
-    sulfide is as S."""
+    sulfide is as S; the conductivity is compensated to 25 °C. With the alkalinity (and the salinity) the conductivity
+    and the hardness give the water's ionic strength (formula 3, chemistry.water_equilibria); `formula` is the version it
+    is worked out by, the application's unless a recorder asks for another (golden v1: 1)."""
     temperature_c: float
     salinity_ppt: float
     ph: float
@@ -75,6 +77,13 @@ class Water:
     total_sulfide_ug_l: float | None = None
     calcium_mg_l: float | None = None
     oxygen_mg_l: float | None = None
+    conductivity_25_us_cm: float | None = None
+    hardness_mg_l: float | None = None
+    water_origin: str = ''        # '' not said, 'seawater', 'salt_added' (a unit's Tank.water_origin; cross review F3)
+    formula: int = chemistry.FORMULA_VERSION
+    # Orthophosphate, mg/L as P: its part of the alkalinity is counted (the water's own DIC and CO₂, every dose; never a
+    # lower judged CO₂). None: not given, and every result is what it was without the input.
+    phosphate_p_mg_l: float | None = None
 
 
 @dataclass(frozen=True)
@@ -148,12 +157,37 @@ class Analysis:
 
     nh3_share_pct: float                     # NH₃ as a share of TAN at the water's pH, %
     h2s_share_pct: float                     # H₂S as a share of the total sulfide at the water's pH, %
+    # NH₃ and CO₂ are judged on the larger of the safe side (formula 4's Rule S: up to 1 ‰ the ideal water, from 5 ‰ the
+    # best estimate at the pH ± 0.03; chemcore/core/src/formula4.rs) and the best estimate (cross review F1): co2_mg_l
+    # and nh3_n_mg_l above, their borders, the safe TAN and the shares are the judged ones; the best estimates
+    # (`*_corrected_*`, the activity-corrected values) are information, said beside them.
+    co2_corrected_mg_l: float
+    co2_basis: str                          # 'limits' or 'corrected'
+    nh3_corrected_n_mg_l: float | None
+    nh3_basis: str
+
+    @property
+    def provenance(self):
+        """What every value of the analysis was worked out by, in words: the formula version and the ionic strength."""
+        return messages.provenance(self.equilibria)
+
+    @property
+    def nh3_judged(self):
+        """Which value judged the NH₃ and the corrected one beside it, in words ('' without a TAN)."""
+        return messages.judged('nh3', self.nh3_basis, self.nh3_corrected_n_mg_l, self.equilibria)
+
+    @property
+    def co2_judged(self):
+        """Which value judged the CO₂ and the corrected one beside it, in words."""
+        return messages.judged('co2', self.co2_basis, self.co2_corrected_mg_l, self.equilibria)
 
 
 def analyse(water, limits=Limits(), target=None, pressure=1.0):
     """The values of a water against the limits (the core's analysis, chemcore/core/src/analysis.rs): DIC and CO₂ from
     the alkalinity and the pH, NH₃-N from the TAN, H₂S from the total sulfide, each limit as a pH border, the oxygen
-    saturation at `pressure` (atm)."""
+    saturation at `pressure` (atm). A water or a target whose pH and alkalinity cannot go together is refused by the core
+    (native.ImpossibleWaterError; formula 1 works it out, as golden v1 holds it): ask `why_impossible` first, as the
+    calculator's form, a unit's chart and a replay frame do, and say its reason."""
     found = native.analyse(
         **asdict(water), **asdict(limits), target_ph=None if target is None else target.ph,
         target_alkalinity_mg_l=None if target is None else target.alkalinity_mg_l, pressure=pressure)
@@ -162,25 +196,55 @@ def analyse(water, limits=Limits(), target=None, pressure=1.0):
     return Analysis(water=water, limits=limits, target=target, **found)
 
 
-def alkalinity_floor(temperature_c, salinity_ppt, ph):
+def alkalinity_floor(temperature_c, salinity_ppt, ph, **medium):
     """The alkalinity (mg/L as CaCO₃) a water of this pH has at least: hydroxide and borate are alkalinity too, so at a
-    high pH the alkalinity has a floor, below which the DIC would be negative."""
-    return native.alkalinity_floor(temperature_c, salinity_ppt, ph)
+    high pH the alkalinity has a floor, below which the DIC would be negative. `medium`: the water's alkalinity_mg_l,
+    conductivity_25_us_cm, hardness_mg_l and formula (formula 3's constants depend on its ions)."""
+    return native.alkalinity_floor(temperature_c, salinity_ppt, ph, **medium)
 
 
-def why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l):
-    """Why a water of this pH and alkalinity cannot be (its alkalinity at or below the floor of `alkalinity_floor`),
-    in the active language; '' when it can. The calculator's form and a unit's chart ask here."""
-    floor = native.why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l)
+def unworkable(temperature_c, salinity_ppt, alkalinity_mg_l=None, **ions):
+    """Why the core cannot work this water out at all, in the active language (messages.refused: the core's own
+    reason); '' when it can. A water outside what its formulas hold for is refused by the core at every door (a
+    ValueError: on the fresh path an ionic strength past the Davies equation's range, as a conductivity in mS/cm typed
+    as µS/cm gives; a value that is no number or below 0). Such a water can be stored (each value is inside its
+    parameter's range), so every page that works a stored or typed water out meets it: `why_impossible`, THE gate they
+    all ask first, says this reason (the independent review of 2026-11-16, R1: the unit's chart and the calculator
+    raised). `ions`: as `why_impossible`'s."""
+    try:
+        chemistry.water_equilibria(temperature_c, salinity_ppt, alkalinity_mg_l, **ions)
+    except (ValueError, ArithmeticError) as error:
+        return str(messages.refused(error))
+    return ''
+
+
+def why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l, **ions):
+    """Why a water of this pH and alkalinity cannot be worked out, in the active language; '' when it can: the core
+    refuses the water itself (`unworkable`), or its alkalinity is at or below the floor of its pH (`alkalinity_floor`).
+    The calculator's form, a unit's chart, a replay frame and the trail ask here before they work a water out; the
+    decision is the core's own (the equilibria it builds or refuses; its one rule of the floor, by which it refuses such
+    a water, native.ImpossibleWaterError), so a water with no reason here is never refused there, and no page meets a
+    refusal it has no words for. `ions`: its conductivity_25_us_cm, hardness_mg_l, phosphate_p_mg_l and water_origin,
+    and the formula."""
+    refused = unworkable(temperature_c, salinity_ppt, alkalinity_mg_l, **ions)
+    if refused:
+        return refused
+    try:
+        floor = native.why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l, **ions)
+    except (ValueError, ArithmeticError) as error:          # a pH that is no number
+        return str(messages.refused(error))
     if floor is None:
         return ''
+    if ions.get('phosphate_p_mg_l'):
+        return str(_('At this pH the alkalinity is above %(floor)s mg/L as CaCO₃: the hydroxide, the borate and the '
+                     'phosphate given alone are that much.') % {'floor': shown(floor, 1)})
     return str(_('At this pH the alkalinity is above %(floor)s mg/L as CaCO₃: the hydroxide and borate alone are '
                  'that much.') % {'floor': shown(floor, 1)})
 
 
-def possible(temperature_c, salinity_ppt, ph, alkalinity_mg_l):
+def possible(temperature_c, salinity_ppt, ph, alkalinity_mg_l, **ions):
     """Whether a water of this pH and alkalinity can be (`why_impossible` has nothing to say)."""
-    return not why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l)
+    return not why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l, **ions)
 
 
 # ---- the chart in its own units: DIC (mmol/L) across, alkalinity (meq/L) up --------------------------------

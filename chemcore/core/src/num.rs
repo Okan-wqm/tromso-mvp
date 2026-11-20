@@ -24,6 +24,15 @@ pub enum ChemError {
     NonFinite,
     /// Outside the range its formula holds for (the Davies equation of golden v3 above an ionic strength of 0.5).
     OutOfRange,
+    /// A formula version the core does not have (crate::FORMULAS).
+    UnknownFormula,
+    /// A water that cannot be: a pH and an alkalinity at or below the floor that pH has (its hydroxide and borate alone
+    /// are that much alkalinity), whose DIC, CO₂ and carbonate would be 0 or negative; or a negative DIC given. Formula
+    /// 3 refuses it at every door (`chemistry::Equilibria::possible`, the one rule); formula 1 never did (golden v1).
+    ImpossibleWater,
+    /// A pH on a seawater scale (total, seawater, free) given for a water that is not sea water of 5 ‰ or more worked
+    /// out by the sea path alone (`crate::scale`): never converted on an assumption.
+    SeawaterScale,
 }
 
 /// A number or the reason there is none.

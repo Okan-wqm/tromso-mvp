@@ -138,7 +138,9 @@ class AfternoonTests(FrozenClock, ClocksCase):
 
     def test_a_batch_split_over_two_clocks_is_shown_once_for_each_day_with_its_units(self):
         batch = self.stock(self.k1, count=1000, weight='100', days_ago=10)
-        self.move(batch, self.k1, self.t2, self.here - 5 * DAY, count=400)             # split before the course
+        # Split AFTER the course's day (S-03, rule B: the hold follows the fish that were in K-01 on it; a part split
+        # off before the course is not held at all, rule D: the test after this one).
+        self.move(batch, self.k1, self.t2, self.here - DAY, count=400)
         treatment = self.course(self.k1, self.there - 2 * DAY, self.there - 2 * DAY, days=1)   # free from the 11th
         held = self.assert_the_list_says_what_the_units_own_line_says(treatment, [self.k1, self.t2])
         self.assertEqual(held, {(batch.code, ('K-01',)): False, (batch.code, ('T-02',)): True})
@@ -147,21 +149,22 @@ class AfternoonTests(FrozenClock, ClocksCase):
         self.assertContains(page, f'<strong>{batch.code}</strong> (K-01) · ')
         self.assertContains(page, f'<strong>{batch.code}</strong> (T-02) · <span class="over-text"')
 
-    def test_a_course_given_today_on_the_later_clock_holds_the_other_part_from_its_own_first_day(self):
-        """Known and accepted (README, Health): the whole batch is held by a course given to a part of it, each part by
-        its own site's calendar. The part in Bergen is held from the 11th, the course's first day, and it is the 10th
-        there: the list shows its withdrawal and does not mark it held yet, as its unit's line and the harvest check
-        say. A write guard sees the course already (GuardsOnTwoClocksTests)."""
+    def test_a_course_given_today_on_the_later_clock_does_not_hold_the_part_split_off_before_it(self):
+        """S-03, rule D (before: "the whole batch is held by a course given to a part of it, each part by its own
+        site's calendar"): the part in Bergen left K-01 five days before the course, was never in it, and is not held:
+        not on the list, not on its unit's line, not at its harvest, and its unit is not blocked (a day-based
+        withdrawal). The guard's day is still the earlier one."""
         batch = self.stock(self.k1, count=1000, weight='100', days_ago=10)
         self.move(batch, self.k1, self.t2, self.here - 5 * DAY, count=400)
         treatment = self.course(self.k1, self.there, self.there, days=5)
         self.assertEqual(self.assert_the_list_says_what_the_units_own_line_says(treatment, [self.k1, self.t2]),
-                         {(batch.code, ('K-01',)): True, (batch.code, ('T-02',)): False})
-        self.assertEqual({part.units: part.withdrawal.until for part in self.parts(treatment)},
-                         {('K-01',): self.there + 6 * DAY, ('T-02',): self.there + 6 * DAY})
+                         {(batch.code, ()): True})
+        self.assertEqual([(part.where, part.withdrawal.until) for part in self.parts(treatment)],
+                         [(('K-01',), self.there + 6 * DAY)])
         self.assertEqual((self.harvest_warned(self.k1), self.harvest_warned(self.t2)), (['withdrawal'], []))
-        self.assertEqual(withdrawal._reached([self.t2.pk])[1], self.here)             # the guard's day, the 10th,
-        self.assertIn(batch.code, withdrawal.held_reached([self.t2.pk])[0])           # and it sees the course
+        self.assertEqual(withdrawal._reached([self.t2.pk])[1], self.here)             # the guard's day, the 10th
+        self.assertEqual(withdrawal.held_reached([self.t2.pk]), [])
+        self.assertIn(batch.code, withdrawal.held_reached([self.k1.pk])[0])
 
 
 class NightTests(FrozenClock, ClocksCase):
@@ -262,7 +265,7 @@ class GuardsOnTwoClocksTests(FrozenClock, ClocksCase):
                                           'note': ''}], 0, record=self.bath)
         refused = self.client.post(reverse('farm:medicine_withdrawals', args=[self.bath.pk]), data)
         self.assertEqual(refused.status_code, 422)
-        self.assertContains(refused, f'{self.fish.code} is held', status_code=422)
+        self.assertContains(refused, f'{self.fish.code} in OS-01 is held', status_code=422)   # the lot: batch, unit
         self.assertEqual(list(self.bath.withdrawals.values_list('days', flat=True)), [5])
 
     def test_voiding_the_course_begun_today_asks(self):

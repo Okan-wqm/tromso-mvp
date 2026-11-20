@@ -9,7 +9,7 @@ with the parameter's label, range and precision (farm/water/parameters.py). A sa
 (farm/models/water_point.py), chosen from the points grouped by their owner, and fixed when the dialog is
 opened from a unit or a loop that has one point to take it at."""
 import uuid
-from decimal import Decimal
+from decimal import ROUND_CEILING, Decimal
 
 from django import forms
 from django.db.models import Q
@@ -25,14 +25,51 @@ from core.widgets import MomentInput
 from ..models import (Equipment, ProductionDepartment, SamplingPoint, Site, Species, System, Tank, WaterFreshness,
                       WaterLimit, WaterMeasurement)
 from ..models.site import ALTITUDE_HIGH, ALTITUDE_LOW, zone_of
-from ..models.water import BOUNDS
+from ..models.water import BOUNDS, PH_SCALE_CHOICES, PhosphateUnit
 from ..models.water_point import EQUIPMENT, SYSTEM, UNIT, PointKind, owner_type_of, site_of
 from ..templatetags.water import limit_text, source
-from ..water import calculation, deffeyes, dosing, parameters, read, services
+from ..water import calculation, chemistry, deffeyes, dosing, messages, parameters, read, services
 from ..water.parameters import GROUPS, MEASURED
 from .stock import DECIMAL, ServiceErrors, VoidForm
 
 NOTES = forms.Textarea(attrs={'rows': 2})
+# The scale a pH was measured on (farm/water/services.on_nbs; the core's codes and order, native.PH_SCALES): NBS unless
+# said, and then nothing changes. PH_SCALE_CHOICES is farm.models.water's (a sensor pH channel's are the same).
+
+
+def ph_scale_field(help_text):
+    return forms.ChoiceField(label=_('pH scale'), choices=PH_SCALE_CHOICES, required=False, initial=services.NBS,
+                             help_text=help_text)
+
+
+PH_SCALE_HELP = _('The scale the pH was measured on. Other than NBS (a seawater sensor calibrated with TRIS reads on '
+                  'the total scale): for sea water of 5 ‰ or more, with the temperature and the salinity of the same '
+                  'sample. The pH is then stored and shown on the NBS scale, with what was measured beside it.')
+# The unit a phosphate was entered in (farm/water/services.as_p): as P unless said, and then nothing changes; as PO₄ it
+# is put on P at the door (the independent review of 2026-11-16, R3).
+PHOSPHATE_UNIT_CHOICES = [(services.AS_P, _('as P (PO₄-P): mg/L of phosphorus')),
+                          (PhosphateUnit.PO4.value, _('as PO₄: mg/L of phosphate'))]
+PHOSPHATE_UNIT_HELP = _('What the kit or the laboratory reports. As PO₄ the number is 3.07 times the number as P: it is '
+                        'put on P when stored, with what was entered kept beside it. The wrong unit is a 3.07-fold '
+                        'error in every dose worked out with the phosphate.')
+
+
+def phosphate_unit_field(help_text):
+    return forms.ChoiceField(label=_('Phosphate unit'), choices=PHOSPHATE_UNIT_CHOICES, required=False,
+                             initial=services.AS_P, help_text=help_text)
+
+
+def phosphate_field(help_text=''):
+    """The phosphate's field where its unit is chosen beside it: a number up to the phosphorus's range as PO₄ (the
+    range itself is the phosphorus's and is checked once the unit is known: services.as_p, CalculatorForm)."""
+    parameter = parameters.get(parameters.PHOSPHATE)
+    most = parameters.phosphate_as_po4(parameter.high).quantize(Decimal(1), rounding=ROUND_CEILING)
+    return number_field(_('Phosphate (mg/L, in the unit chosen beside it)'), parameter.low, most, parameter.decimals,
+                        help_text=help_text)
+
+
+# The fields that say the scale or the unit of a value, by the value they are of: shown right after it.
+SAID_WITH = {parameters.PH: 'ph_scale', parameters.PHOSPHATE: 'phosphate_unit'}
 # The columns a round shows unless others are chosen: the morning round's temperature and oxygen.
 ROUND_COLUMNS = ['temperature_c', 'oxygen_mg_l', 'oxygen_saturation_pct']
 
@@ -66,7 +103,10 @@ def now_on(zone):
 
 
 def value_field(parameter, help_text=''):
-    """The form field of one parameter: its label, range and precision, never required."""
+    """The form field of one parameter: its label, range and precision, never required (the phosphate: in the unit
+    chosen beside it, `phosphate_field`)."""
+    if parameter.code == parameters.PHOSPHATE:
+        return phosphate_field(help_text)
     return number_field(parameter.label, parameter.low, parameter.high, parameter.decimals, help_text=help_text)
 
 
@@ -147,6 +187,10 @@ class ValuesMixin:
         groups = []
         for key, label in GROUPS:
             fields = [self[parameter.code] for parameter in parameters.in_group(key) if parameter.code in self.fields]
+            # The pH's scale and the phosphate's unit right after the value they are of.
+            fields = [field for each in fields
+                      for field in ((each, self[SAID_WITH[each.name]])
+                                    if SAID_WITH.get(each.name) in self.fields else (each,))]
             if fields:
                 groups.append((label, fields))
         return groups
@@ -216,6 +260,8 @@ class WaterSampleForm(OxygenInputs, ValuesMixin, ServiceErrors, forms.Form):
                                  help_text=_('Date and time on the site’s clock.'))
     source = forms.ChoiceField(label=_('Source'), choices=WaterMeasurement.Source.choices,
                                initial=WaterMeasurement.Source.MANUAL)
+    ph_scale = ph_scale_field(PH_SCALE_HELP)
+    phosphate_unit = phosphate_unit_field(PHOSPHATE_UNIT_HELP)
     notes = forms.CharField(label=_('Notes'), max_length=500, required=False, widget=NOTES)
 
     service_fields = {}
@@ -244,7 +290,8 @@ class WaterSampleForm(OxygenInputs, ValuesMixin, ServiceErrors, forms.Form):
         self.fields['token'].initial = uuid.uuid4()
         self.fields['measured_at'].initial = now_on(clock(point or (points[0] if self.fixed else None)))
         self._offer(point or (points[0] if self.fixed else None))
-        self.order_fields(['point', 'measured_at', 'source', *(parameter.code for parameter in MEASURED), 'notes'])
+        self.order_fields(['point', 'measured_at', 'source', *(parameter.code for parameter in MEASURED), 'ph_scale',
+                           'phosphate_unit', 'notes'])
 
     def clean_point(self):
         point = find_point(self.cleaned_data['point'])
@@ -265,7 +312,9 @@ class WaterSampleForm(OxygenInputs, ValuesMixin, ServiceErrors, forms.Form):
         data = self.cleaned_data
         return services.record(user, point=data['point'], measured_at=data['measured_at'], source=data['source'],
                                values=self.entered(), notes=data['notes'], token=data['token'],
-                               require_basis=True, withdrawal_ack=data['withdrawal_ack'])
+                               require_basis=True, withdrawal_ack=data['withdrawal_ack'],
+                               ph_scale=data.get('ph_scale') or services.NBS,
+                               phosphate_unit=data.get('phosphate_unit') or services.AS_P)
 
 
 # ---- a round --------------------------------------------------------------------------------------------
@@ -347,6 +396,14 @@ class RoundForm(ServiceErrors, forms.Form):
     measured_at = SiteClockField(label=_('Measured at'), help_text=_('Date and time on the site’s clock.'))
     source = forms.ChoiceField(label=_('Source'), choices=WaterMeasurement.Source.choices,
                                initial=WaterMeasurement.Source.MANUAL)
+    # One scale for the round's pHs (shown with a pH column): each row is converted with its own temperature and salinity.
+    ph_scale = ph_scale_field(_('The scale the round’s pHs were measured on. Other than NBS: for sea water of 5 ‰ or '
+                                'more, each row with its own temperature and salinity; the pH is stored and shown on '
+                                'the NBS scale, with what was measured beside it.'))
+    # One unit for the round's phosphates (shown with a phosphate column).
+    phosphate_unit = phosphate_unit_field(_('The unit the round’s phosphates are in. As PO₄ the number is 3.07 times '
+                                            'the number as P: each is put on P when stored, with what was entered '
+                                            'kept beside it.'))
 
     service_fields = {}
 
@@ -450,6 +507,14 @@ def _measured(code, required=False, low=None, help_text=None):
 PH_FIELDS = ['ph_critical_low', 'ph_warning_low', 'ph_warning_high', 'ph_critical_high']
 
 
+def loaded_field(code):
+    """The hidden field beside a measured field of the calculator that carries the value a unit or a loop last gave it
+    (CalculatorForm.LOADED), at the parameter's range and precision, in the language as the field itself."""
+    parameter = parameters.get(code)
+    return forms.DecimalField(required=False, min_value=parameter.low, max_value=parameter.high,
+                              decimal_places=parameter.decimals, localize=True, widget=forms.HiddenInput)
+
+
 def dose_name(reagent):
     """A simulator field's name: the grams of a reagent."""
     return f'dose_{reagent.key}'
@@ -467,6 +532,10 @@ class CalculatorForm(forms.Form):
     loaded = forms.CharField(required=False, widget=forms.HiddenInput)
     temperature_c = _measured('temperature_c', required=True)
     ph = _measured('ph', required=True, low=4)
+    ph_loaded = loaded_field('ph')
+    ph_scale = ph_scale_field(_('The scale the pH above was measured on. Other than NBS: for sea water of 5 ‰ or more; '
+                                'the chart and every value are then worked out and drawn on the NBS scale. The target '
+                                'pH and the pH limits are NBS.'))
     salinity_ppt = _measured('salinity_ppt', required=True)
     alkalinity_mg_l = _measured('alkalinity_mg_l', required=True)
     tan_mg_l = _measured('tan_mg_l', help_text=_('NH₃ and NH₄⁺ together, as nitrogen. The NH₃ limit is drawn from '
@@ -476,6 +545,17 @@ class CalculatorForm(forms.Form):
         _('Sulfide as a laboratory or a methylene-blue kit reports it, as S. The H₂S is worked out from it, the '
           'pH, the temperature and the salinity.'))
     oxygen_mg_l = _measured('oxygen_mg_l', help_text=_('For the oxygen saturation.'))
+    conductivity_25_us_cm = _measured('conductivity_25_us_cm')
+    hardness_mg_l = _measured('hardness_mg_l')
+    phosphate_p_mg_l = phosphate_field(parameters.get(parameters.PHOSPHATE).help)
+    phosphate_loaded = loaded_field(parameters.PHOSPHATE)
+    phosphate_unit = phosphate_unit_field(_('The unit the phosphate above is in. As PO₄ the number is 3.07 times the '
+                                            'number as P: everything is worked out with it as P, and every dose says '
+                                            'the phosphate it was worked out with.'))
+    water_origin = forms.ChoiceField(
+        label=_('Water origin'), required=False, choices=[('', _('Not said')), *Tank.WaterOrigin.choices],
+        help_text=_('Fresh water with salt added (NaCl) is worked out without sea water’s ions, its ionic strength as '
+                    'NaCl’s; not said, a salinity of 1 to 5 ‰ is taken as diluted sea water.'))
     volume_m3 = number_field(_('Volume (m³)'), Decimal('0.01'), 1000000, 2,
                              _('The water the amounts are for: a tank or a loop. Empty: the doses per m³ only.'))
     calcium_mg_l = number_field(_('Calcium (mg/L Ca²⁺)'), 0, 2000, 1,
@@ -514,8 +594,9 @@ class CalculatorForm(forms.Form):
 
     DOSES = [dose_name(reagent) for reagent in dosing.REAGENTS]
     TABS = [
-        ('water', _('Water'), ['temperature_c', 'ph', 'salinity_ppt', 'alkalinity_mg_l', 'tan_mg_l',
-                               'total_sulfide_ug_l', 'oxygen_mg_l']),
+        ('water', _('Water'), ['temperature_c', 'ph', 'ph_scale', 'salinity_ppt', 'alkalinity_mg_l', 'tan_mg_l',
+                               'total_sulfide_ug_l', 'oxygen_mg_l', 'conductivity_25_us_cm', 'hardness_mg_l',
+                               'phosphate_p_mg_l', 'phosphate_unit', 'water_origin']),
         ('system', _('System'), ['volume_m3', 'calcium_mg_l', 'altitude_m']),
         ('target', _('Target'), ['target_ph', 'target_alkalinity_mg_l', 'alkalinity_low_mg_l', 'alkalinity_high_mg_l']),
         ('limits', _('Limits'), ['nh3_n_limit_mg_l', 'co2_limit_mg_l', 'h2s_limit_ug_l', *PH_FIELDS]),
@@ -523,10 +604,10 @@ class CalculatorForm(forms.Form):
         ('simulator', _('Simulator'), DOSES),
     ]
     DEFAULTS = {
-        'point': '', 'loaded': '',
-        'temperature_c': Decimal('12'), 'ph': Decimal('7.00'), 'salinity_ppt': Decimal('1'),
+        'point': '', 'loaded': '', 'ph_loaded': None, 'phosphate_loaded': None, 'phosphate_unit': services.AS_P,
+        'temperature_c': Decimal('12'), 'ph': Decimal('7.00'), 'ph_scale': services.NBS, 'salinity_ppt': Decimal('1'),
         'alkalinity_mg_l': Decimal('80'), 'tan_mg_l': Decimal('0.5'), 'total_sulfide_ug_l': Decimal('2'),
-        'oxygen_mg_l': None, 'volume_m3': Decimal('1'), 'calcium_mg_l': None, 'altitude_m': None,
+        'oxygen_mg_l': None, 'conductivity_25_us_cm': None, 'hardness_mg_l': None, 'phosphate_p_mg_l': None, 'water_origin': '', 'volume_m3': Decimal('1'), 'calcium_mg_l': None, 'altitude_m': None,
         'target_ph': Decimal('7.5'), 'target_alkalinity_mg_l': Decimal('100'),
         'alkalinity_low_mg_l': Decimal('50'), 'alkalinity_high_mg_l': Decimal('100'),
         'nh3_n_limit_mg_l': Decimal('0.0103'), 'co2_limit_mg_l': Decimal('15'), 'h2s_limit_ug_l': Decimal('2'),
@@ -540,6 +621,12 @@ class CalculatorForm(forms.Form):
     DRAWN = 'drawn'
     # The fields a choice of boxes is: unticked they are missing from the address.
     BOXES = ('reagents', 'layers')
+    # The values that are given with a scale or a unit (the pH, the phosphate), by field: (the hidden field that carries
+    # the value a unit or a loop last gave it, the scale's field, the scale a stored value is on). A stored value is on
+    # that scale already, whatever it was measured on: it is loaded with it, and another scale on the unchanged loaded
+    # value is refused, never converted a second time (`unchanged_loaded`; the independent review of 2026-11-16, R2).
+    LOADED = {'ph': ('ph_loaded', 'ph_scale', services.NBS),
+              parameters.PHOSPHATE: ('phosphate_loaded', 'phosphate_unit', services.AS_P)}
 
     def __init__(self, data=None, **kwargs):
         super().__init__(data, initial=self.DEFAULTS, **kwargs)
@@ -578,8 +665,143 @@ class CalculatorForm(forms.Form):
         if low is not None and high is not None and low >= high:
             self.add_error('alkalinity_high_mg_l', _('The band goes up: its high end is above its low end.'))
         self._ph_order(data)
+        self._phosphate(data)           # first: everything below reads the phosphate as P
+        self._ph_scale(data)
         self._possible(data)
         return data
+
+    def _phosphate(self, data):
+        """The water's phosphate as phosphorus when it was given as PO₄ (parameters.phosphate_as_p, not rounded: the
+        calculation takes it as it is), and the phosphorus inside its range whatever the unit. Left as P inside the
+        range nothing is touched. A phosphate loaded from a unit is its stored one, as P already: another unit on the
+        unchanged loaded value is refused, never converted a second time (as the pH's scale, `_ph_scale`)."""
+        unit = data.get('phosphate_unit') or services.AS_P
+        data['phosphate_unit'] = unit
+        value = data.get(parameters.PHOSPHATE)
+        if value is None:
+            return
+        if unit != services.AS_P:
+            source = self.unchanged_loaded(data, parameters.PHOSPHATE)
+            if source is not None:
+                self.add_error('phosphate_unit', messages.PHOSPHATE_LOADED % {
+                    'value': formats.number_format(value, 2), 'point': source})
+                return
+            unsaid = self.loaded_unsaid(data, parameters.PHOSPHATE)
+            if unsaid is not None:
+                self.add_error('phosphate_unit', messages.LOADED_UNSAID % {
+                    'value': 'PO₄-P {}'.format(formats.number_format(value, 2)), 'point': unsaid})
+                return
+        as_p = parameters.phosphate_as_p(value, unit)
+        if not parameters.phosphate_in_range(value, unit):        # the one bound of every door (parameters.PO4_HIGH)
+            self.add_error(parameters.PHOSPHATE, messages.phosphate_range(as_p))
+            return
+        data[parameters.PHOSPHATE] = as_p
+
+    # What a pH given on another scale than NBS is on the NBS scale ({'given', 'scale', 'nbs', 'formula'}), else None:
+    # the calculation takes the NBS pH itself (not rounded), and the page says the conversion.
+    ph_conversion = None
+
+    def _ph_scale(self, data):
+        """The water's pH on the NBS scale when it was given on another (the core's conversion, for sea water of 5 ‰ or
+        more only: refused with the reason elsewhere). Left at NBS nothing is touched."""
+        scale = data.get('ph_scale') or services.NBS
+        data['ph_scale'] = scale
+        if scale == services.NBS:
+            return
+        source = self.unchanged_loaded(data, 'ph')
+        if source is not None:
+            # The unit's stored pH, already NBS (measured on whichever scale): converting it would be a second
+            # conversion (8.08 from a total-scale 7.95 would become 8.2145: NH₃ +35 %, CO₂ −30 %).
+            self.add_error('ph_scale', messages.PH_LOADED % {'ph': formats.number_format(data['ph'], 2),
+                                                             'point': source})
+            return
+        unsaid = self.loaded_unsaid(data, 'ph')
+        if unsaid is not None:
+            self.add_error('ph_scale', messages.LOADED_UNSAID % {
+                'value': 'pH {}'.format(formats.number_format(data['ph'], 2)), 'point': unsaid})
+            return
+        # Values from a unit or a loop whose water one unit says is salt added (a unit's loop counts: one water), the
+        # origin here "not said" (a loop whose units do not agree, or a unit of it that says nothing, loads so): salt
+        # added for this rule, never the converting side (read.scale_origin; the verification of 2026-11-18, V-C, and
+        # its re-check, RC-1). An origin said on the form stands, as for any water.
+        owner = find_owner(data.get('loaded') or '')
+        if owner is not None and not data.get('water_origin') \
+                and calculation.scale_origin_of(owner) == Tank.WaterOrigin.SALT_ADDED:
+            self.add_error('ph_scale', messages.PH_NOT_SEA)
+            return
+        if any(data.get(name) is None for name in ('ph', 'temperature_c', 'salinity_ppt')):
+            return
+        try:
+            equilibria = chemistry.water_equilibria(
+                float(data['temperature_c']), float(data['salinity_ppt']),
+                None if data.get('alkalinity_mg_l') is None else float(data['alkalinity_mg_l']),
+                **{name: value if value in (None, '') or isinstance(value, str) else float(value)
+                   for name, value in calculation.ions_of(data).items()})
+            taken = equilibria.takes_ph_scale(scale)
+        except (ValueError, ArithmeticError) as error:      # what the gate catches (deffeyes.unworkable): the core's
+            # own reason, never "not sea water" (the review of the water-chemistry audit, C5)
+            self.add_error('ph_scale', str(messages.refused(error)))
+            return
+        if not taken:
+            self.add_error('ph_scale', messages.PH_NOT_SEA)
+            return
+        self.ph_conversion = {'given': data['ph'], 'scale': messages.PH_SCALES[scale], 'code': scale,
+                              'nbs': equilibria.ph_nbs(float(data['ph']), scale), 'formula': equilibria.formula,
+                              'judged': messages.judged_on_nbs(scale)}
+
+    def unchanged_loaded(self, data, name):
+        """What gave the field its value (a unit's or a loop's code; "a unit or a loop" when it is gone) when the value
+        is still the one loaded from it, else None: the value the address carries beside it (LOADED's hidden field,
+        set when the unit was chosen), or, for an address without one, the value the unit named by `loaded` offers
+        now (farm/water/calculation.offers, at the field's precision). A value typed over the loaded one is a new
+        measurement, not this."""
+        return self._loaded(data, name)[0]
+
+    def loaded_unsaid(self, data, name):
+        """The unit or loop (its code) a value MAY be the stored one of while the form does not say it was typed, else
+        None: the address carries no loaded value beside it (an old or hand-made link; the browser's always does) and
+        the unit named by `loaded` gives the field another value now (a newer sample since). Not taken for typed: a
+        value is typed only when the form says so (the verification of 2026-11-18, V-B)."""
+        return self._loaded(data, name)[1]
+
+    def _loaded(self, data, name):
+        """(the source of an unchanged loaded value or None, the source of one that may be loaded or None): the one
+        rule of `unchanged_loaded` and `loaded_unsaid`.
+        - The form carries the value a unit or a loop last gave the field (LOADED's hidden field; kept when "Values
+          from" is changed to a unit that gives none, views._calculator_data): the same value is the loaded one, another
+          was typed over it.
+        - It carries none: typed, where nothing was loaded or the unit named by `loaded` gives the field no value; the
+          loaded one where that unit offers this very value; not said where it offers another."""
+        value = data.get(name)
+        if value is None:
+            return None, None
+        owner = find_owner(data.get('loaded') or '')
+        offer = None if owner is None else calculation.offers(owner).get(name)
+        offered = None if offer is None or offer.value is None else offer.value.quantize(
+            Decimal(1).scaleb(-self.fields[name].decimal_places))
+        # The unit's code only where the value can be its own: one kept from the unit chosen before is not.
+        source = owner.code if offered is not None else _('a unit or a loop')
+        carried = data.get(self.LOADED[name][0])
+        if carried is not None:
+            return (source if carried == value else None), None
+        if offered is None:
+            return None, None
+        return (source, None) if offered == value else (None, source)
+
+    @classmethod
+    def kept_loaded(cls, query, name):
+        """Whether the value of field `name` in an address (a QueryDict, as sent) is still the one a unit or a loop
+        gave it (`_loaded`, without the scale's rule): what "Values from" changed to a unit that gives the field no
+        value keeps as loaded, on its stored scale, never as a typed value (views._calculator_data)."""
+        form = cls(query)
+        values = {}
+        for field in (name, cls.LOADED[name][0]):
+            try:
+                values[field] = form.fields[field].clean(query.get(field))
+            except forms.ValidationError:
+                values[field] = None
+        values['loaded'] = query.get('loaded', '')
+        return form._loaded(values, name)[0] is not None
 
     def _ph_order(self, data):
         """The pH bounds go up: critical below, warning below, warning above, critical above, each given one not
@@ -601,11 +823,19 @@ class CalculatorForm(forms.Form):
         values are in."""
         if data.get('temperature_c') is None or data.get('salinity_ppt') is None:
             return
+        # A water the core refuses itself (a conductivity past the fresh path's range): its reason, on no one field
+        # (deffeyes.unworkable, the first half of the gate below; review R1: the page raised).
+        refused = deffeyes.unworkable(data['temperature_c'], data['salinity_ppt'], data.get('alkalinity_mg_l'),
+                                      **calculation.ions_of(data))
+        if refused:
+            self.add_error(None, refused)
+            return
         for ph_name, alkalinity_name in (('ph', 'alkalinity_mg_l'), ('target_ph', 'target_alkalinity_mg_l')):
             if data.get(ph_name) is None or data.get(alkalinity_name) is None:
                 continue
-            why = deffeyes.why_impossible(data['temperature_c'], data['salinity_ppt'], data[ph_name],
-                                          data[alkalinity_name])
+            ph = self.ph_conversion['nbs'] if ph_name == 'ph' and self.ph_conversion else data[ph_name]
+            why = deffeyes.why_impossible(data['temperature_c'], data['salinity_ppt'], ph,
+                                          data[alkalinity_name], **calculation.ions_of(data))
             if why:
                 self.add_error(alkalinity_name, why)
 
@@ -616,6 +846,8 @@ class CalculatorForm(forms.Form):
     def inputs(self):
         """The keyword arguments of farm/water/calculation.calculate."""
         values = {name: float(value) if isinstance(value, Decimal) else value for name, value in self.values().items()}
+        if self.ph_conversion:
+            values['ph'] = self.ph_conversion['nbs']             # the water's pH on the NBS scale, as everything takes it
         mapped = calculation.inputs_from(values)
         amounts = {reagent.key: values[dose_name(reagent)] for reagent in dosing.REAGENTS
                    if values[dose_name(reagent)]}

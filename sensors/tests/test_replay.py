@@ -15,7 +15,7 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from core.testing import FrozenClock
-from farm.models import System
+from farm.models import System, Tank
 from farm.tests.helpers import point_of, role
 from farm.tests.test_stock import make_unit
 from farm.water import calculation, chemistry, deffeyes, read as water_read, services as water_services
@@ -134,6 +134,33 @@ class FrameTests(ReplayCase):
             self.assertEqual(frame.figure, 0)
             self.assertEqual(frames.figures[0], self.figure_at(frames, frame))
 
+    def test_a_salt_added_units_frames_are_worked_out_as_its_chart_works_them_out(self):
+        """Cross review round 2, R1: the replay takes the unit's water origin, as its chart does (calculation.origin_of):
+        a salt-added unit at 3 permil is worked out on the fresh path, never as diluted sea water."""
+        Tank.objects.filter(pk__in=[self.t1.pk, self.t2.pk]).update(water_origin='salt_added')
+        self.t1.refresh_from_db()
+        self.mid1.refresh_from_db()                 # its unit, as the database holds it now
+        water_services.record(self.user, point=self.mid1, measured_at=START - timedelta(hours=1), source='manual',
+                              values={'salinity_ppt': Decimal('3')})
+        self.steady()
+        frames = read.deffeyes_frames(self.t1, START + timedelta(minutes=5), START + timedelta(minutes=35),
+                                      timedelta(minutes=10))
+        for frame in frames.frames:
+            with self.subTest(at=frame.at):
+                chart = calculation.chart_of(frames.target, at=frame.at).calculation.analysis
+                self.assertEqual(chart.equilibria.water_origin, 'salt_added')
+                self.assertEqual(frame.inputs['salinity_ppt'].value, 3.0)
+                self.assertEqual(frame.point.co2_mg_l, chart.co2_mg_l)
+                self.assertEqual(frames.figures[frame.figure], self.figure_at(frames, frame))
+        # A sampling point of the unit takes its unit's origin too (read.Context._served), as its samples' NH3 does: each
+        # frame is its own inputs worked out as salt-added water.
+        at_point = read.deffeyes_frames(self.mid1, START + timedelta(minutes=5), START + timedelta(minutes=35),
+                                        timedelta(minutes=10))
+        for mine in at_point.frames:
+            made = calculation.inputs_from({**{code: item.value for code, item in mine.inputs.items()},
+                                            'water_origin': 'salt_added'})
+            self.assertEqual(mine.point.co2_mg_l, deffeyes.analyse(made['water']).co2_mg_l)
+
     def test_mixed_origins_are_named(self):
         self.steady()
         frame = read.deffeyes_frames(self.t1, START + timedelta(minutes=30), START + timedelta(minutes=31),
@@ -163,6 +190,23 @@ class FrameTests(ReplayCase):
         self.assertIsNone(frame.figure)
         self.assertEqual(frame.impossible, deffeyes.why_impossible(10.0, 0.0, 12.4, 100.0))
         self.assertTrue(frame.impossible)
+
+    def test_a_water_the_core_refuses_has_no_diagram_and_says_why(self):
+        """The review's R1: a stored conductivity past the Davies range on a fresh water. The frame says the core's
+        reason, as a unit's chart does; before, the page of frames raised."""
+        water_services.record(self.user, point=self.mid1, measured_at=START - timedelta(hours=1), source='manual',
+                              values={'conductivity_25_us_cm': Decimal('40000')})
+        insert(self.ph.channel_no, [(START, 7.2)])
+        insert(self.channel.channel_no, [(START, 12.0)])
+        frame = read.deffeyes_frames(self.t1, START, START + timedelta(minutes=1), timedelta(minutes=1)).frames[0]
+        self.assertEqual(frame.missing, ())
+        self.assertIsNone(frame.point)
+        self.assertIsNone(frame.figure)
+        self.assertEqual(frame.impossible, deffeyes.unworkable(12.0, 0.0, 100.0, conductivity_25_us_cm=40000.0))
+        self.assertIn('Cannot be worked out: ionic strength above 0.5', frame.impossible)
+        self.assertEqual(read.frame_analysis({'temperature_c': 12.0, 'salinity_ppt': 0.0, 'ph': 7.2, 'alkalinity_mg_l': 80.0,
+                                              'conductivity_25_us_cm': 40000.0, 'water_origin': ''}, {}),
+                         (None, frame.impossible))
 
     def test_a_moved_sensor_counts_for_the_tank_it_was_in(self):
         self.steady()

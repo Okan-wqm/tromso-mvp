@@ -42,7 +42,7 @@ from ..models.site import zone_of
 from ..models.water_point import EQUIPMENT, SYSTEM, UNIT, local_time, owner_type_of, site_of
 from ..stock.read import unit_counts
 from ..stock.services import AlreadyRecorded
-from . import calculation, parameters, read, services
+from . import calculation, messages as words, parameters, read, services
 from .evaluate import ALERTS, Status
 from .parameters import MEASURED, NH3_N
 
@@ -237,7 +237,10 @@ def _history(request, site, place):
         before=timezone.make_aware(datetime.combine(end + timedelta(days=1), time.min), zone))
     alerts_only = request.GET.get('alerts') == '1'
     if alerts_only:
-        rows = [row for row in read.history(list(samples)) if not row.sample.is_deleted and row.status in ALERTS]
+        # A sample whose judged value cannot be evaluated is one of them (shown as a warning, never OK: the re-check of
+        # 2026-11-18, RC-5, found it dropped here).
+        rows = [row for row in read.history(list(samples))
+                if not row.sample.is_deleted and row.status in (*ALERTS, Status.UNEVALUATED)]
         page = Paginator(rows, PAGE_SIZE).get_page(request.GET.get('page'))
     else:
         page = Paginator(samples, PAGE_SIZE).get_page(request.GET.get('page'))
@@ -296,9 +299,29 @@ def _calculator_data(query):
     data['point'] = chosen
     owner = find_owner(chosen)
     if owner is not None:
-        CalculatorForm.fill(data, calculation.offers(owner))
+        offers = calculation.offers(owner)
+        # Asked of the address as it came, before the new unit's values go in: the values still those of the unit
+        # chosen before.
+        kept = {name for name in CalculatorForm.LOADED
+                if name not in offers and CalculatorForm.DRAWN in query and CalculatorForm.kept_loaded(query, name)}
+        CalculatorForm.fill(data, offers)
+        for name, (carried, scale, stored) in CalculatorForm.LOADED.items():
+            if name in offers or name in kept:
+                # A stored pH is on the NBS scale, whatever was chosen and whatever it was measured on; the value goes
+                # with it, so another scale on it is refused, never a second conversion (review R2). So does one the
+                # new unit has none of, left in the field from the unit chosen before: still a stored value, not a
+                # typed one (the verification of 2026-11-18, V-B: its `ph_loaded` was emptied and it was converted).
+                data[scale] = stored
+                data[carried] = data[name]
+            else:
+                data[carried] = ''                 # nothing loaded: what stands in the field was typed, with its scale
+        data['water_origin'] = calculation.origin_of(owner)       # the unit's (cross review F3)
     data['loaded'] = chosen
     return data, True
+
+
+# What a loaded value says of how it was measured, by field (farm/water/messages.py; '' when stored as measured).
+STORED = {parameters.PH: words.ph_stored, parameters.PHOSPHATE: words.phosphate_measured_short}
 
 
 def _source(form, owner):
@@ -310,8 +333,12 @@ def _source(form, owner):
     for name, offer in offers.items():
         field = form.fields[name]
         value = None if offer.value is None else offer.value.quantize(Decimal(1).scaleb(-field.decimal_places))
+        sample = getattr(getattr(offer.reading, 'sample', None), 'sample', None)
         rows.append({'label': field.label, 'value': value, 'decimals': field.decimal_places, 'offer': offer,
-                     'changed': entered.get(name) != value})
+                     'changed': entered.get(name) != value,
+                     # a pH measured on another scale, a phosphate entered as PO₄: what was measured, and that the value
+                     # here is the stored one (NBS, as P)
+                     'measured': STORED[name](sample) if name in STORED and sample is not None else ''})
     missing = [form.fields[name].label for name in calculation.MEASURED_FIELDS if name not in offers]
     return {'point': owner, 'rows': rows, 'missing': missing}
 
@@ -327,6 +354,7 @@ def _calculator_context(request, data, all_layers=False):
     query = data.urlencode() if data else ''
     return _context(
         form=form, result=result, analysis=result.analysis if result else None,
+        ph_conversion=form.ph_conversion if result else None,
         chart=result.chart if result else None, source=_source(form, owner) if owner is not None else None,
         point_gone=bool(chosen) and owner is None, query=query,
         latest_url=page_url(), history_tab_url=page_url(view=HISTORY), calculator_url=reverse('farm:water_calculator'),
@@ -482,6 +510,7 @@ def record_round(request):
     rows = [RoundRowForm(data, point=point, columns=columns, water=water.get(point.pk), assumed=assumed.get(point.pk))
             for point in points]
     context = _context(heading=_('Water round'), scope=scope, header=header, rows=rows,
+                       ph_column=parameters.PH in columns, phosphate_column=parameters.PHOSPHATE in columns,
                        columns=[parameters.get(code) for code in columns], site=site,
                        back_url=page_url(site=site.pk if site else ''))
     if data is not None and points:
@@ -494,7 +523,8 @@ def record_round(request):
                     source=header.cleaned_data['source'], token=header.cleaned_data['token'],
                     withdrawal_ack=header.cleaned_data['withdrawal_ack'],
                     rows=[(row.point, row.entered(), row.cleaned_data['notes']) for row in entered],
-                    require_basis=True)
+                    require_basis=True, ph_scale=header.cleaned_data.get('ph_scale') or services.NBS,
+                    phosphate_unit=header.cleaned_data.get('phosphate_unit') or services.AS_P)
             except AlreadyRecorded:
                 return done(request, context['back_url'])
             except ValidationError as error:
@@ -588,8 +618,8 @@ def overview(user):
     """The production overview's water, read once as this page reads it (`_latest`: every point it lists, an outlet too), so
     the two cannot disagree: its counts of points, critical and warning points, the rows of the points with a critical or
     warning value measured at them (`point_status`, what the counts count), the critical first and each group in the page's
-    order, at most OVERVIEW_ALERTS of them; and the tile of the points with a critical value. None for a person who may not
-    read the water."""
+    order, at most OVERVIEW_ALERTS of them; the rows with a value that cannot be evaluated; and the tile of the points with
+    a critical value. None for a person who may not read the water."""
     if not user.has_perm(VIEW):
         return None
     latest = _latest(None)
@@ -607,6 +637,9 @@ def overview(user):
                   if unit.pk in stocked and not any(row['water'].readings for row in rows)]
     return {'points': latest['point_count'], 'critical': latest['critical_count'], 'warning': latest['warning_count'],
             'unmeasured': unmeasured, 'window_days': read.WINDOW.days,
+            # The rows whose judged value the chemistry core refuses to work out (PointWater.unevaluated: said on this
+            # page beside the row's status): not "nothing needs attention" (the verification of 2026-11-18, V-A).
+            'unevaluated': [row for row in latest['rows'] if row['point'] is not None and row['water'].unevaluated],
             'alerts': alerting[:OVERVIEW_ALERTS], 'more': max(len(alerting) - OVERVIEW_ALERTS, 0),
             'sensors_failed': latest['sensors_failed'], 'url': page_url(),
             'tiles': [{'label': _('Sampling points with a critical water value'), 'count': latest['critical_count'],

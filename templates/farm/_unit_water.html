@@ -13,7 +13,7 @@
       <tbody>
         {% for reading in water_readings %}
         <tr>
-          <th scope="row">{{ reading.parameter.label }}<span class="row-sub">{% blocktrans trimmed with age=reading.at|age %}{{ age }} ago{% endblocktrans %}{% for row in reading.limits %} · {{ row|limit_text }}{% empty %}{% if reading.status == "no_limit" %} · {{ reading.status|status_label }}{% endif %}{% endfor %}{% if reading.note %} · {{ reading.note }}{% endif %}</span></th>
+          <th scope="row">{{ reading.parameter.label }}<span class="row-sub">{% blocktrans trimmed with age=reading.at|age %}{{ age }} ago{% endblocktrans %}{% for row in reading.limits %} · {{ row|limit_text }}{% empty %}{% if reading.status == "no_limit" %} · {{ reading.status|status_label }}{% endif %}{% endfor %}{% if reading.provenance %} · {{ reading.provenance }}{% endif %}{% if reading.note %} · {{ reading.note }}{% endif %}</span></th>
           {% include "farm/_water_cell.html" with latest=True %}
         </tr>
         {% endfor %}

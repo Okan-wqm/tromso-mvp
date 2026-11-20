@@ -8,11 +8,14 @@ decided by farm/water/read.py, never here.
   the binding held (a probe moved here gives this place nothing until its first value here). Never the hypertable.
 - `value_at`: the channels bound there at any time up to the moment, and for each the newest clean reading at or before
   it taken while the binding held (a sensor moved away keeps its earlier values with the place it was in, and gives none
-  to the place it moved to before it came). One indexed row per binding."""
+  to the place it moved to before it came). One indexed row per binding.
+- A pH value says its channel's pH scale and since when it holds (`_scale`): the farm puts it on the NBS scale."""
 from django.db import connection
 from django.db.models import Q
 
+from farm.models.water import NBS
 from farm.water import sources
+from farm.water.parameters import PH
 
 from . import quantities
 from .models import Binding, ChannelState, ChannelStatus
@@ -36,6 +39,14 @@ def _target(binding):
     return (sources.POINT, binding.point_id) if binding.point_id else (sources.SYSTEM, binding.system_id)
 
 
+def _scale(channel):
+    """What a value of the channel says of its pH scale (sources.SensorValue): the channel's scale ('' for NBS) and since
+    when it holds. The farm puts the value on the NBS scale (farm/water/read.py), never here."""
+    if channel.quantity != PH:
+        return {}
+    return {'ph_scale': '' if channel.ph_scale == NBS else channel.ph_scale, 'ph_scale_from': channel.ph_scale_from}
+
+
 class SensorSource:
     def __repr__(self):
         return 'sensors'
@@ -54,7 +65,7 @@ class SensorSource:
             channel = binding.channel
             found.setdefault(_target(binding), {}).setdefault(channel.quantity, []).append(sources.SensorValue(
                 code=channel.quantity, value=state.last_value, at=state.last_value_ts, fresh_for=channel.fresh_s,
-                role=binding.role, channel_no=channel.channel_no))
+                role=binding.role, channel_no=channel.channel_no, **_scale(channel)))
         return found
 
     def bound(self, targets, code, since, until):
@@ -78,7 +89,7 @@ class SensorSource:
                 if row is not None and (key not in newest or row[0] > newest[key].at):
                     newest[key] = sources.SensorValue(code=code, value=row[1], at=row[0],
                                                       fresh_for=binding.channel.fresh_s, role=binding.role,
-                                                      channel_no=binding.channel.channel_no)
+                                                      channel_no=binding.channel.channel_no, **_scale(binding.channel))
         found = {}
         for (target, _channel_no), value in newest.items():
             found.setdefault(target, []).append(value)

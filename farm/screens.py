@@ -130,7 +130,8 @@ SCREENS = {
         read=gap('no page lists them yet: check_withdrawal reads them, and the write\'s critical log entry says what was '
                  'acknowledged'),
         note='One row for each warning of the withdrawal guard (farm.health.withdrawal.guarded) the person went on past: '
-             'a harvest already recorded brought inside a withdrawal, or fish held today freed by the write.',
+             'a harvest or a live delivery already recorded brought inside a withdrawal, fish held today freed by the '
+             'write, or fish held again by a longer ceiling.',
         columns={'*': computed('what the withdrawal guard found and the person was shown, stored when they went on')},
     ),
 
@@ -173,7 +174,14 @@ SCREENS = {
                     for parameter in MEASURED},
                  **{column: computed('what an oxygen without its own temperature or salinity is worked out with, found '
                                      'by the server at the sample’s point and time (farm/water/read.oxygen_basis)')
-                    for column in BASIS_COLUMNS}},
+                    for column in BASIS_COLUMNS},
+                 **{column: computed('a pH measured on another scale than NBS: what was measured and the formula the '
+                                     'server put it on the NBS scale by, with the scale chosen on the form '
+                                     '(farm/water/services.on_nbs)')
+                    for column in ('ph_as_measured', 'ph_converted_formula')},
+                 'phosphate_as_measured': computed('a phosphate entered as PO₄: what was entered, kept beside the '
+                                                   'phosphorus the server stores, with the unit chosen on the form '
+                                                   '(farm/water/services.as_p)')},
     ),
 
     # --- health ---

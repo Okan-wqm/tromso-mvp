@@ -56,14 +56,16 @@ class OneRunTests(HarvestInsideTestCase):
     def test_an_acknowledged_transfer_keeps_the_new_units_status_and_its_log(self):
         """The review's probe: the first run's in-memory status change was lost on the second run."""
         t3 = make_unit('T-03', self.hall, status=Tank.Status.PREPARING)
-        b2 = self.stock(self.t2)
+        self.stock(self.t2)
         self.treat(self.medicine(days=7), 6, 6)              # T-01 (self.batch) treated 6 days ago
-        stock_services.record_harvest(self.user, unit=self.t2, batch=b2, day=self.day(2), count=500,
-                                      measured_weight_kg=Decimal('600'), facility=self.facility)
 
+        # S-03, rule D: fish moved out of T-01 on a day before the course are out of its reach, so this move frees
+        # fish held today, which the guard asks about. (Under the old rule the question came from a harvest of b2 out
+        # of T-02, "inside" the withdrawal of the whole batch b2 once 100 of it were in T-01 on the course day: those
+        # fish of T-02 were never exposed, and that harvest is no longer inside.)
         def move(**ack):
-            return stock_services.record_transfer(self.user, source=self.t2, batch=b2, day=self.day(8),
-                                                  legs=[(self.t1, 100), (t3, 100)], reason='other', notes='Split',
+            return stock_services.record_transfer(self.user, source=self.t1, batch=self.batch, day=self.day(8),
+                                                  legs=[(self.t2, 100), (t3, 100)], reason='other', notes='Split',
                                                   ack=True, **ack)
 
         with self.assertRaises(WithdrawalChanged) as caught:
@@ -164,7 +166,9 @@ class DataLayerTests(HarvestInsideTestCase):
             'Treatment': None, 'Treatment_units': None, 'FeedingRecord': None, 'WaterMeasurement': None,
             'MedicineWithdrawal': None, 'StockOperation': None, 'StockMovement': None, 'Feed': ('feed_type',),
             'Species': ('withdrawal_temperature_c',),
-            'SamplingPoint': ('is_active', 'kind', 'unit', 'system', 'equipment')})
+            'SamplingPoint': ('is_active', 'kind', 'unit', 'system', 'equipment'),
+            # how long an unknown end holds fish (withdrawal rule 8, the owner's decision 10)
+            'PlatformSettings': ('unknown_withdrawal_days',)})
         self.assertEqual({model.__name__: set(rules) for model, rules in gate.CONDITIONAL.items()}, {
             'System': {'is_deleted'}, 'Tank': {'is_deleted', 'system'}, 'Species': {'is_deleted'},
             'SamplingPoint': {'is_deleted'}})

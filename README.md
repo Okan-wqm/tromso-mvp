@@ -259,6 +259,10 @@ Differences from the source:
   are in it; deleting a system takes its units out of it, logged.
 - Water type is required and has no default (the source defaulted to saltwater in one place and
   freshwater in another).
+- The water origin is optional (cross review F3, farm 0041, `chk_tanks_water_origin`): sea water or diluted sea water,
+  or fresh water with salt added (NaCl, for smolt or against disease). The water chemistry reads it (Water-chemistry
+  core): salt-added water is worked out without sea water's ions; not said, a salinity of 1 to 5 ‰ is taken as diluted
+  sea water and the value says so. A loop or a sampling point takes its units' origin when they all say the same.
 - The code is unique among live units. The regulatory unit ID is the locality's own number (merd 1 on two sites
   is two units): unique among the live units of a site, held by the database per production department and by the
   form across the site. A unit with stock records stays on its site, and so does a production department whose
@@ -667,7 +671,10 @@ after them (reason "other", the notes say why: a cage of cleaner fish alone is n
 (mortalities, weighings, the escape, the cages' feedings) was booked in the old cages, and the stock refuses a transfer
 that would leave them without their fish. One transaction, locks in the lock order, checked before it commits (the
 cages, `check_stock` finding nothing new); run again it does nothing; `--dry-run` only reads, in a read-only
-transaction. The run needs the database migrated.
+transaction. The run needs the database migrated. The dry run also reads a database not migrated yet: the units and
+batches of the plan are read with the columns the database holds (`stored`: a column a pending migration adds to their
+tables, the unit's water origin of farm 0041 for one, is left out, whichever it is), and the stock without the opening
+balances.
 
 **Batch details.** A batch's year class (årsklasse) and whether its fish are farmed or wild-caught are what the reports
 ask of a batch and what fish stocked before they were asked for do not have; stock is never edited, so the drawer's batch
@@ -1394,8 +1401,13 @@ TimescaleDB hypertable) and `water_limits`; the points are `water_sampling_point
 **The parameters** are a fixed list in code (`farm/water/parameters.py`), each with one unit and one
 basis in its label and its column's name, so a value can never be relabelled into another unit and
 nitrogen is always recorded as N (owner decision 3; the help of each field gives the kit conversions,
-NO₂⁻ ÷ 3.29, NO₃⁻ ÷ 4.43, NH₄⁺ ÷ 1.29). Each has a plausible range, which catches a typing slip and is a
-database check (the ranges are argued in the bug document), its precision and how long a value is fresh:
+NO₂⁻ ÷ 3.28, NO₃⁻ ÷ 4.43, NH₄⁺ ÷ 1.29, NH₃ ÷ 1.22: each the ion's molar mass over nitrogen's; 46.0055 / 14.0067 =
+3.2845 for nitrite, which said 3.29 until the water-chemistry audit of 2026-11-19, F7). Each has a plausible range, which catches a typing slip and is a
+database check (the ranges are argued in the bug document), its precision and how long a value is fresh. The
+hardness and the conductivity compensated to 25 °C are the fresh water's ionic-strength inputs of the chemistry (formula 3,
+Water-chemistry core); a conductivity at the water's own temperature is the sensors' process quantity `conductivity_us_cm`
+and the chemistry never reads it (cross review F8: a meter's temperature compensation on, referred to 25 °C). A limit's
+bounds hold 10 digits, 4 of them decimals, so a conductivity's limit fits:
 
 | Column | Label | Decimals | Plausible | Fresh |
 |---|---|---|---|---|
@@ -1404,12 +1416,14 @@ database check (the ranges are argued in the bug document), its precision and ho
 | `oxygen_saturation_pct` | Oxygen saturation (% of air saturation) | 1 | 0 … 400 | 24 h |
 | `ph` | pH (NBS scale) | 2 | 2 … 12 | 72 h |
 | `alkalinity_mg_l` | Alkalinity (mg/L as CaCO₃) | 0 | 0 … 1000 | 14 days |
+| `hardness_mg_l` | Total hardness (mg/L as CaCO₃) | 0 | 0 … 10000 | 14 days |
 | `co2_mg_l` | Carbon dioxide (mg/L free CO₂) | 1 | 0 … 200 | 72 h |
 | `tan_mg_l` | Total ammonia nitrogen (mg/L TAN as N) | 3 | 0 … 100 | 7 days |
 | `nitrite_n_mg_l` | Nitrite (mg/L NO₂ as N) | 3 | 0 … 100 | 7 days |
 | `nitrate_n_mg_l` | Nitrate (mg/L NO₃ as N) | 1 | 0 … 1000 | 14 days |
 | `tgp_pct` | Total gas pressure (% of barometric pressure) | 1 | 50 … 200 | 7 days |
 | `salinity_ppt` | Salinity (‰, g/kg) | 1 | 0 … 50 | 7 days |
+| `conductivity_25_us_cm` | Conductivity at 25 °C (µS/cm, temperature-compensated) | 0 | 0 … 100000 | 7 days |
 | `turbidity_ntu` | Turbidity (NTU) | 1 | 0 … 4000 | 7 days |
 
 **A sample** is one row: what a person measured at one point at one moment, a typed column per
@@ -1463,11 +1477,36 @@ are in the bug document, not in the database).
 
 **Worked out from a sample**, never stored (`farm/water/chemistry.py`, each pinned by a test against
 published values):
-- **NH₃-N** = TAN × K / (K + [H⁺]), with K the ammonium constant of Millero (1995) on the seawater scale,
-  converted to the free scale, and the pH (NBS) converted too, ported from the source's engine; in fresh
-  water it equals Emerson et al. (1975) within 0.002 pK up to 30 °C and 0.003 up to 40 °C. It needs the pH and the temperature of the same
+- **NH₃-N** = TAN × K / (K + [H⁺]), with K the ammonium constant of Clegg & Whitfield (1995, eq. 18; their pure-water
+  pK in fresh water) converted to the free scale, and the pH (NBS) converted too, by the core's formula 4 (Water-chemistry
+  core): in fresh water with its own ionic strength, [H⁺] = 10^−pH / γH; in salt water by Millero's (1986) measured step
+  between the NBS and the seawater scales. It needs the pH and the temperature of the same
   sample; the salinity is the sample's, else its point's latest fresh at the sample's time (measured at or before it, within the salinity's 7 days: a stale salinity never enters a calculation), else its owner's middle
-  point's, else 0 where every unit it concerns is in fresh water; otherwise the page says what is missing. NH₄-N = TAN − NH₃-N is shown.
+  point's, else 0 where every unit it concerns is in fresh water; otherwise the page says what is missing. The
+  alkalinity, the conductivity at 25 °C and the hardness that give its ionic strength are found the same way (none
+  found: an ionic strength of 0, the safe side). NH₄-N = TAN − NH₃-N is shown. Each worked-out value says the formula
+  it was worked out by in its title ("Formula 4: ionic strength 0.0072, from the conductivity at 25 °C."): nothing worked
+  out is stored, so a past sample is shown by today's formula, and says so.
+  **The NH₃-N shown, judged and alarmed is on the safe side of the best estimate** (formula 4's Rule S, the
+  water-chemistry audit of 2026-11-19 and the owner's decision; before it, cross review F1 and the owner's decision of
+  2026-11-09): up to 1 ‰ the ideal water, every activity 1, Emerson et al. (1975) as Piper et al. 1982 and US EPA 1985
+  used it, exactly as formula 3 had it; from 5 ‰ the best estimate at the pH + 0.03, the uncertainty of a pH reading
+  (US EPA 1989, p. 3), which is 7.2 % above the best estimate at every temperature; blended between; salt-added water:
+  the ideal throughout. The larger of it and the best estimate is judged (in fresh water the ideal is the larger as soon
+  as an ion is measured: at 12 °C, pH 7.5 the best estimate is 8.7 % lower at 500 µS/cm, 11.6 % at 1000 and 17.2 % at
+  3000; with nothing measured the two are within 0.5 %). The best estimate's NH₃-N is said in the title beside it ("NH₃
+  judged on the safe side ..., the larger of it and the best estimate; best estimate 0.0121 mg/L."); it is never judged.
+  Against formula 3 the judged NH₃ of brackish and sea water fell (S 5: 11 to 14 %, S 10: 8 to 12 %, S 20: 4 to 9 %,
+  S 34: 0 to 5 %, 0 to 30 °C): formula 3 judged it on Khoo et al.'s (1977) constant applied to the unconverted NBS pH,
+  whose margin over the best estimate was the size of pH NBS − pH free, never designed. Fresh water did not move, except where no ion is measured: there the judged NH₃ is
+  up to 0.5 % stricter than formula 3's (the best estimate is the larger), never looser; the CO₂ is unchanged.
+  **Above 30 °C or a salinity of 35 ‰ the NH₃ and the CO₂ say a warning** in the same title ("NH₃ and CO₂: above 30 °C or
+  a salinity of 35 ‰ the water is outside the range the formula was checked over ..."): the judged values keep their
+  margin over the best estimate there (`chemcore/core/tests/formula4.rs`), but nothing of formula 4 was computed or
+  checked above 30 °C (the step's temperature share is fitted from 0 to 30 °C, Millero's line held at S 35 above it).
+  The value is still worked out and judged, with the warning; never refused. The two bounds are validity bounds of the
+  cited constants (`fresh::NH3_GUARD_MAX_TEMP_C`, `NH3_GUARD_MAX_SALINITY`), not farm limits, so they are not reference
+  data.
 - **Oxygen saturation**: Benson & Krause (1984) as in Standard Methods 4500-O, corrected for the
   barometric pressure of the site's altitude (sea-level pressure, said so, when the site has none; the altitude is
   0 .. 5000 m (owner: no site lies below sea level, a minus sign is a slip), held by the form, the model and the
@@ -1496,7 +1535,7 @@ a filter by site), **History** (the samples, newest first, 50 a page, filtered b
 equipment and then by one of its points, dates, and "only warnings and criticals"; each value says which point
 it was taken at, coloured as judged now, worked-out values in italics; Void while the sample is in the window)
 and **Calculator** (below). **Record sample** opens the dialog (a sampling point chosen from the points grouped
-by what owns them, "T-01 › Middle"; date and time on the site's clock, source, the twelve values in four
+by what owns them, "T-01 › Middle"; date and time on the site's clock, source, the fourteen values in four
 groups, notes). Opened from a unit, a loop or a piece of equipment (`?unit=`, `?system=`, `?equipment=`) it
 offers that owner's active points with its middle point chosen, so a routine sample takes no more fields than
 before, and when the owner has only one point it is fixed; each field's help shows the limits of the fish
@@ -1560,7 +1599,8 @@ without values it shows its defaults.
   12.5 (every 0.5 labelled); the regions where NH₃ (above its border's isoline), H₂S (below its border's
   isoline) and CO₂ (below the curve where CO₂ = the limit) pass their limits; the safe zone (the band, between
   the NH₃ border and the higher of the CO₂ and H₂S borders); Ω = 1 for calcite and aragonite with the calcium
-  given, from 5 to 44 ‰ (Mucci's range); the water (a star) and the target (a cross); the dosing layer (one
+  given, from 5 to 44 ‰ (Mucci's range; the calcium and the carbonate per litre against the Ksp per litre, Mucci's
+  times the square of the sea water's density, Water-chemistry core); the water (a star) and the target (a cross); the dosing layer (one
   reagent chosen: its direction from the water; two: both, the wedge between them and their path to the
   target through the waypoint; more: a note) and the simulator's path, an arrow at each step. A note says
   why a layer asked for is not drawn; a region's name with its border (NH₃ toxic (pH > 8.04)) is in its
@@ -1599,19 +1639,276 @@ without values it shows its defaults.
   on), the simulator and the recipes, on a page of its own for A4 across.
 - **The chemistry** (`farm/water/chemistry.py`, one module with the ammonia and oxygen above): K1 and K2
   of carbonic acid of Millero, Graham, Huang, Bustos-Serrano & Pierrot (2006), fresh to sea water (the
-  source calls them Millero 2010, WQ-39); Kw of Millero (1995); KB of Dickson (1990)
-  with Uppström's (1974) boron; the ammonium constant of Millero (1995); KH₂S of Millero, Plese &
+  source calls them Millero 2010, WQ-39); Kw of Millero (1995) on his seawater scale (pure water's at a salinity of 0;
+  formula 1 took the 2007 Guide's approximate total-scale value); KB of Dickson (1990)
+  with Uppström's (1974) boron; the ammonium constant of Clegg & Whitfield (1995, eq. 18; formula 3 took Millero's
+  1995); KH₂S of Millero, Plese &
   Fernandez (1988); the Ksp of Mucci (1983); the CO₂ solubility of Weiss (1974); each converted to the free
   scale, the pH (NBS) too, as the source does. DIC = (alkalinity − [OH⁻] + [H⁺] − [B(OH)₄⁻]) / (α1 + 2 α2),
   CO₂ = DIC α0; NH₃-N = TAN K / (K + [H⁺]); H₂S = total sulfide × 34.08 / 32.07 × [H⁺] / (K + [H⁺]). A pH
-  and an alkalinity that cannot go together (the hydroxide alone above the alkalinity) are refused.
-- **Two conventions inherited from the source**, kept for consistency and stated here: the ionic strength
-  comes from the salinity, so at 0 ‰ the pH needs no activity correction while fresh water's own ions
-  would give it one; entering 0 instead of 0.3 ‰ gives 7 to 13 % more CO₂ and 5 to 9 % more NH₃ at 5 to
-  25 °C and pH 6.5 to 8.5, the safe side. And a pH (NBS) is put on the seawater scale with a Davies-type
-  activity coefficient, not CO2SYS's apparent coefficient of Takahashi et al. (1982): at 35 ‰ the two
-  differ by −0.07 pH at 0 °C, −0.058 at 5 °C, about 0 at 25 °C and +0.05 at 40 °C; at 5 °C the chart
-  shows about 12 % less NH₃ and 16 % more CO₂ than CO2SYS would.
+  and an alkalinity that cannot go together (the hydroxide and the borate alone at or above the alkalinity) are refused:
+  by the form and a unit's chart with the reason, and by the core itself (`ImpossibleWaterError`), by one rule.
+- **The NBS pH in salt water** (formula 4 since 2026-11-19, `chemcore/core/src/formula4.rs`): pH free − pH NBS is
+  Millero's (1986, table 7) measured pH NBS − pH total at 25 °C, the line 0.1306 + 0.00073 S through his S 5 to 35
+  points (held above 35), on the free scale by Dickson's bisulfate, moved in temperature by 0.75 of the bisulfate and
+  fluoride term (fitted to Takahashi et al.'s 1982 fH, 0 to 30 °C, S 30 to 36): within 0.004 pH of Millero's points and
+  0.0062 of Takahashi's fit (S 30 to 35, 0 to 30 °C). It replaced the in-house Davies-type conversion of formula 3,
+  described next, which was 0.024 pH off at 12 °C and 0.04 to 0.05 at 0 to 4 °C in salt water (the water-chemistry
+  audit's consensus, point 3). Below 5 ‰ the band blends the fresh path's Davies offset with this step (Millero's S 0
+  and 2.5 points). Nothing was measured below 25 °C under S 20.
+- **The ionic strength and the NBS pH** (formula 3 from 2026-11-09 to 2026-11-19, its fresh path still formula 4's; the
+  source's convention, formula 1, took the
+  ionic strength from the salinity alone, so a fresh water was ideal): up to 1 ‰ the water's own ionic strength (the
+  conductivity at 25 °C, else the salinity, never below the measured hardness and alkalinity's ions; none measured, 0)
+  with Davies activity coefficients; from 5 ‰ the seawater constants; between, a blend (Water-chemistry core). A pH (NBS)
+  is put on the seawater scale with a Davies-type activity coefficient whose Debye-Hückel A is the temperature's (an
+  in-house variant of Zeebe & Wolf-Gladrow's, not a published method; cross review F2), not CO2SYS's apparent coefficient of Takahashi et al. (1982): at 35 ‰ the two differ by −0.048 pH at 0 °C, −0.038 at
+  5 °C, +0.001 at 25 °C and +0.034 at 40 °C (formula 1, with a fixed ε of 79: −0.073, −0.058, +0.004, +0.051). Closer
+  to it at 20 to 35 ‰ for t ≤ 15 °C and at 35 ‰ at every temperature; not at 10 ‰ from 10 to 20 °C (B1.md; formula 4,
+  Takahashi's fH for 20 to 40 ‰, is the planned follow-up).
+- **The pH's scale** (the K_NH4 panel's proposal, built by the owner's decision of 2026-11-11;
+  `chemcore/core/src/scale.rs`, `chemcore/findings/pH-scale.md`): every pH stored, shown, judged and worked out from is
+  on the NBS scale, what a meter calibrated with NBS/NIST buffers reads, and its field says so with the size of the
+  hazard (a total-scale pH reads 0.09 to 0.15 lower from 5 to 35 ‰ and 0 to 30 °C by formula 4's step; typed as NBS
+  the NH₃ comes out 19 to 28 % too low).
+  Where a pH is typed (Record water sample, a water round, the calculator) its **scale can be chosen**: NBS (the
+  default: nothing changes, the golden files keep their bytes), total (a seawater sensor calibrated with TRIS),
+  seawater (SWS) or free. A pH on another scale is put on the NBS scale by the core at that door: pH free = pH total +
+  log₁₀(1 + ST/KS) (Dickson, Sabine & Christian 2007, ch. 2, eq. 15; the seawater scale with FT/KF too), less the
+  water's own offset free − NBS. Only for sea water (5 ‰ or more, the sea path's constants alone; not fresh water with
+  salt added) and only with the temperature and the salinity of the same sample; otherwise refused with the reason,
+  by the form, the write path (`farm/water/services.on_nbs`) and the core (`SeawaterScaleError`). A sample keeps what
+  was measured (`ph_scale`, `ph_as_measured`, `ph_converted_formula`; `chk_water_measurements_ph_scale` holds them
+  together) and its reading says it wherever a value's title is shown (the latest values, the history, a monitoring
+  card): "Measured 7.95 on the total scale; put on the NBS scale by formula 4 with the sample's 12.0 °C and 34.0 ‰."
+  The stored pH has the column's two decimals; the calculator converts without rounding and says "pH 7.95 on the
+  total scale is 8.06 on the NBS scale" (formula 4; 8.08 by formula 3), its target pH and pH limits are NBS, and values taken from a unit are NBS. **No
+  page holds a pH on another scale, so none can mix them.** A sensor's pH is put on the NBS scale by the same
+  conversion, by its channel's pH scale (Sensors › Channels, *pH scale*; after the water-chemistry audit of 2026-11-19,
+  below). Checked against PyCO2SYS 1.8.3.4 and seacarb 3.4.2 over 0 to 40 °C by 5 to 40 ‰ (72 cells): the free and the
+  seawater-scale pH of a total-scale pH within 8.9e-15 and 2.4e-7 pH; the NBS leg is the core's own conversion (−0.069
+  to +0.055 pH against CO2SYS's, as every NBS pH), which cancels in what the water's own constants work out.
+- **After the independent review of 2026-11-16** (`F:\dev\balik-notes\chem-v3\REVIEW.md`; R5, R7, R8 and R10 are the
+  owner's to decide):
+  - *A water the core refuses is said in words at every door* (R1). A stored value inside its parameter's range can
+    still give a water the core refuses (a conductivity past the Davies range on a water below 5 ‰: 40 000 µS/cm at
+    S 0). One gate, `deffeyes.why_impossible`, which the calculator's form, a unit's chart, a replay frame and the
+    trail ask before they work a water out, says the core's own refusal first (`deffeyes.unworkable`), in the one
+    wording a sample's NH₃ has (`messages.refused`: "Cannot be worked out: …"). The pages answer 200 and say why there
+    is no chart or no result; the trail lists the hour with its reason (`unworkable`).
+  - *A loaded pH is never converted twice* (R2). The calculator loads a unit's pH as NBS, carries the loaded value
+    beside the field (`ph_loaded`, `CalculatorForm.LOADED`) and says "measured 7.95 on the total scale, stored as 8.08
+    NBS"; another scale on the unchanged loaded value is refused with the reason. A pH typed over it is converted.
+  - *Salt-added water never takes a seawater scale* (R4): refused by its origin at every salinity, also past the Davies
+    limit (about 28.4 ‰ as NaCl) where the core works its constants out by the sea path (`scale::converts`).
+  - *A converted value says what was measured in visible text* (R6): `Reading.measured`, printed beside the stored
+    number by `farm/_water_value.html` ("measured 7.95 on the total scale"; "entered as 15.35 mg/L PO₄").
+  - *The phosphate says its unit, and every dose says its phosphate* (R3). Where a phosphate is typed (the sample
+    form, the round, the calculator) its unit is chosen: "as P (PO₄-P)", the default, or "as PO₄", which is put on P
+    at that door by the molar masses (`parameters.PO4_PER_P`, 94.9714 / 30.973762 = 3.066; the one place). A sample
+    keeps what was entered (`phosphate_unit`, `phosphate_as_measured`; `chk_water_measurements_phosphate_unit`); the
+    range is the phosphorus's whatever the unit; a phosphate loaded into the calculator is as P and is not converted
+    again. Beside every recipe and beside the simulator's steps: "Worked out with phosphate 5.01 mg/L as P (15.35 as
+    PO₄): a wrong phosphate changes this dose." The help names the 3.07-fold slip. (True P 5 typed as 15.35 with the
+    unit left at P gave NaHCO₃ 2.14 + NaOH 14.96 g/m³ where 8.59 + 11.89 is right.) A sensor's phosphate channel is as
+    P, as before.
+  - *A CO₂ curve that bends back says so* (R9): with a phosphate the judged CO₂ curve bends back near an alkalinity of
+    0; the chart's note `co2.bends_back` says it exactly when the drawn curve does (`geometry::bends_back`).
+- **After the verification of those fixes** (2026-11-18, the last part of the same REVIEW.md):
+  - *A water the core refuses is never silent* (V-A). A judged value the core refuses to work out (a TAN sample's NH₃
+    where the water's conductivity, its own or the point's latest fresh one, is past the Davies range) is "Cannot be
+    evaluated" (`Status.UNEVALUATED`, between warning and OK) where the fish have a limit for it: the unit is never OK
+    behind it; the water page, the monitoring card and the overview's "Needs attention" say "… cannot be evaluated:
+    <reason>" (`messages.unevaluated`), and the alarms raise a warning for the unit (below, Alarms).
+    **Judged on the limits' basis** (decision of 2026-11-18 on the re-check's RC-3; `read.Context._ammonia_on_basis`):
+    the judged NH₃ is the larger of the basis the limits were set on and the activity-corrected value, and the basis
+    needs no conductivity (`fresh::limits_basis`: the temperature, the salinity and the origin only;
+    `farm/tests/test_core_refusal.py` holds the basis without the ions equal to the basis with them). So a refused
+    water's NH₃ is the basis's NH₃-N, at least the judged value, shown with "at least: the limits' basis": past a limit it
+    is that limit's status and alarm (critical past the critical limit; the verifier's water, pH 9.00 and TAN 5 at
+    12 °C, is critical, where it was a warning), inside the limits "Cannot be evaluated". The "cannot be evaluated"
+    sentence and the unit's system warning stay beside it either way. Only where the core gives no basis either is
+    there no value. A refused value never ends a limit alarm.
+    **The page and the alarm agree** (RC-2): a unit whose own NH₃ the core refused and whose loop's fresh sample is
+    critical is critical on its page (`read.worst_fresh`), on its card and in its alarms (`alarms.sources.decided`).
+  - *A value is typed only when the form says so* (V-B; `CalculatorForm._loaded`). A value equal to the one carried
+    beside the field (`ph_loaded`, `phosphate_loaded`) is loaded, and stays loaded on its stored scale when "Values
+    from" is changed to a unit that has none; a different one is typed. An address that carries none is refused a scale
+    or unit where the unit now offers another value: a loaded pH or phosphate is never converted twice.
+  - *A salt-added unit makes its loop salt-added for the pH-scale rule* (V-C; `read.scale_origin` over `read.one_water`:
+    the units given and every live unit of their systems). One water, one answer at every point of it: the loop point,
+    each unit's middle point and its other own points (the re-check's RC-1: B-02, which says nothing, in a loop with the
+    salt-added B-01, took a total-scale 7.95 as 8.09 at its own point). The sample, its row of a round and the
+    calculator loaded from the loop or from any of its units refuse a seawater scale. `common_origin`, which gives the
+    constants, is unchanged, so no worked-out number moves.
+  - *One upper bound as PO₄* (V-F): 306.61 (`parameters.PO4_HIGH`, the last two-decimal PO₄ at most 100 as P) at the
+    sample, the round and the calculator, in one sentence; the check now holds the entry and the stored P together
+    within the rounding (farm 0046).
+  - *A sample's NH₃ catches what the gate catches* (V-G): an arithmetic error of the core is said, never a failed page;
+    so do the pH-scale rule of the sample door (`services.on_nbs`) and of the calculator (`CalculatorForm._ph_scale`).
+  - *The history's "Only warnings and criticals" keeps a sample that cannot be evaluated* (the re-check's RC-5).
+  - Left as the verification says: V-D (farm 0045 and 0046 add their check validated, an exclusive lock on
+    `water_measurements` while each chunk is scanned: land with the server stopped; going back past 0045 keeps the P
+    and loses the PO₄ entry), V-E (the phosphate sentence is one per list, above it), V-H (the chrono advisory of
+    `sensors-ingest`: a dated ignore on main, not on this branch).
+- **After the water-chemistry audit of 2026-11-19** (`F:\dev\balik-notes\chem-audit-fable\AUDIT.md`; no constant and no
+  formula moved, the golden files keep their bytes; F2, a published NBS conversion in salt water, waits for the owner):
+  - *A sensor's pH has a scale* (F1, owner decision 1 of 2026-11-17). A pH channel says the scale its probe reports on
+    (`sensors.Channel.ph_scale`: NBS, the default for every channel there is; total, as a TRIS-calibrated ISFET or
+    optical sea-water probe reports; seawater; free). The ingest stores what the device sends. Where the water is read
+    (`farm/water/read.py`: the latest values, the water at a past moment; the replay; the trail) a value on another scale
+    is put on the NBS scale by the one conversion a typed sample takes (`read.ph_on_nbs`, which `services.on_nbs` calls
+    too), with the place's fresh temperature from the sensors (as a sensor's TAN takes its pH and temperature), else the
+    place's temperature (a sample's) where it is fresh at the pH's own time, as the oxygen's other unit, the replay and
+    the trail take it (the review's C2; the provenance then says "The temperature is manual, 19.11.2026 10:00."), and the
+    salinity of the same moment (a fresh sensor's, else the point's fresh sample's, else 0 in fresh water), for sea water
+    of 5 ‰ or more and never for fresh water with salt added, while the pH is fresh. It is then shown as the typed
+    sample's is ("measured 7.95 on the total scale" beside 8.06; "Measured 7.95 on the total scale by the sensor; put on
+    the NBS scale by formula 4 with 12.0 °C and 34.0 ‰ of the same moment."), and its NH₃ is the typed sample's: a TRIS
+    probe at 12 °C and S 34 gives the judged NH₃-N the same water typed as a total-scale sample gives. Otherwise (no
+    temperature fresh at its time, no salinity, fresh or salt-added water, a water the core cannot work out at all,
+    a pH no longer fresh) **the pH has no value and cannot be evaluated**, said with the reason (the core's own where it
+    refused the water, never "not sea water": C5), and so is an NH₃ worked out from it; the unconverted number is shown
+    and used nowhere (a worse fresh sample still decides the status). **It is never silent for the alarms** (the
+    review's M1): the unit gets the alarm system's warning "<unit>: pH (NBS scale) cannot be evaluated: <why>" (Alarms,
+    below), as a refused NH₃ does. The replay's frame has no pH and no diagram then, with the reason; the trail's hour
+    is unworkable with it. The sensor's own chart draws its values as measured and says their scale beside the NBS
+    samples. The alarm rules on a channel (Sensors › Alarm rules) take no above or below on a pH (a water value: the
+    water limits judge its level, on the converted value); a rate is about the same on every scale and never compares a
+    value with one from before a change of scale (C1).
+    *A change of a channel's scale* (whatever door saves it, `Channel.save`) records the moment (`ph_scale_from`). What
+    the probe measured before is on a scale not known any more (a probe recalibrated, or a setting put right: the
+    application cannot tell which), so **those values are used nowhere, neither on the old scale nor on the new**: the
+    latest pH says "cannot be evaluated: measured before the channel's pH scale was changed" until the probe's next
+    value, the past moments, the replay, the trail and the chart leave them out (the chart marks the change, and a
+    window with values left out says "Channel #n's values before <the change> are not drawn: its pH scale was changed
+    then", even a window wholly before it, which draws nothing: C4). The alarm system's warning for such a value waits
+    while it would still be fresh (the probe's next value is due by then and is read on the new scale), so a change of
+    scale does not raise and end a warning; a probe that sends nothing after the change is warned of once its value
+    would be stale (`alarms/sources.py _unevaluated_since`). This is the safe side both ways: a total-scale reading taken as NBS reads NH₃ low,
+    an NBS reading taken as total reads a low pH too high. The channel's form asks the scale (pH channels only; empty:
+    as it is), its list and the live values say it, its edit page says when it was changed; the column, a database
+    default for the ingest's inserts and the check `chk_sensors_channel_ph_scale` are sensors 0013.
+  - *The NH₃-N is judged unrounded* (F3): the limits, the worst fresh value and the alarm's deadband test read the value
+    as worked out (`Reading.exact`, `judged_value`), the page shows it at four decimals. A true 0.01034 mg/L read 0.0103
+    and was OK against a limit of 0.0103; it is now a warning that reads 0.0103. The oxygen worked out in its other
+    unit is judged the same way.
+  - *Words* (F5 to F11): the sea-water basis says what it is (above); the activity-corrected NH₃ of a water with seawater
+    constants says it rests on the application's own NBS conversion and reads up to about 16 % below the published
+    references in cold sea water, information and not the better value (F6); a kit's nitrite is divided by 3.28 (F7);
+    the calculator gives the ionic strength in mol/kg H₂O where it is the salinity's (DOE 1994: 0.7014 at S 34 is
+    0.695 mol/L) and in mol/L where it is the fresh path's estimate (F8); the core's notes say that concentrations per
+    litre are taken as per kg in sea water too, which moves the CO₂ by at most +0.143 % and the NH₃ not at all (F9); a
+    water below 0 °C says that the constants are fitted from 0 °C and extrapolated there, the judged NH₃ and CO₂ on the
+    safe side (`fresh::BELOW_FITTED_TEMP`, code `below_fitted_temp`; F10); an NH₃ worked out from a pH measured on the
+    total, seawater or free scale, typed or from a sensor, and the calculator with such a pH, say that it is judged on
+    the NBS scale on the limits' basis (a free-scale constant on that NBS pH, unconverted), the safe side, about 13 to
+    25 % above what that pH gives exactly
+    (F11). Since formula 4 these words say what formula 4 does: the best estimate rests on Millero's step and Clegg &
+    Whitfield's constant, and the NH₃ is judged at the NBS pH + 0.03, about 7 % above it.
+- **The optional phosphate** (PO₄-P, mg/L as P; the independent check's hypothesis 12a, owner 2026-11-10;
+  `chemcore/findings/phosphate.md`): phosphate is part of the alkalinity a titration measures, [HPO₄²⁻] + 2 [PO₄³⁻] −
+  [H₃PO₄] (Dickson 1981's definition as Dickson, Sabine & Christian 2007 give it, ch. 2), with Millero's (1995)
+  constants (the Guide's ch. 5, eq. 49, 52, 55, its 0.015 put back; on the fresh path with Davies coefficients).
+  **Without the input nothing moves** (no constant is computed; the golden files keep their bytes). With it, a water
+  parameter like the others (record form, round, limits and freshness as reference data, a sensor quantity; the
+  calculator's field; a unit's chart, the replay and the trail take the unit's fresh value): the DIC and the water's own
+  CO₂ of a pH and an alkalinity are lower by it, and **every dose, recipe and simulator step meets its buffer** (before,
+  at 10 mg/L in fresh water the CO₂ after a base dose or a degassing came out 57 to 71 % too low and the pH 0.4 to 0.55
+  too high: the unsafe side). **A judged CO₂ never falls because a phosphate was given**: every CO₂ judgement, border
+  and the chart's CO₂ curve take the largest of the limits' basis, the water's own value without the phosphate and its
+  own with it, so a mistyped phosphate (PO₄ typed as P is 3.07 times too much) cannot hide CO₂; the own value with the
+  phosphate is said beside it ("CO₂ judged without the phosphate: …"). A pH and an alkalinity whose phosphate alone
+  is that much alkalinity are refused with the phosphate in the reason. The NH₃ does not read it. Checked against
+  PyCO2SYS 1.8.3.4 over 763 waters (S 0 to 35, 5 to 25 °C, 1 to 4 meq/L, pH 6.5 to 8, 1 to 30 mg/L): the constants and
+  the phosphate's alkalinity within 3.1e-14; in sea water the CO₂ a median of 7.0e-6 and at most 1.4e-3 apart (the
+  per-litre bookkeeping, next to the floor), the pH after a dose within 1.0e-4; in ideal fresh water everything within
+  1e-10. The fresh path with real ions (Davies) has no independent reference.
+- **Formula 4: the judged NH₃ and CO₂ on the safe side of one best estimate** (Rule S; the water-chemistry audit of
+  2026-11-19, its paper debate's consensus `F:\dev\balik-notes\chem-audit-fable\CONSENSUS.md` and the owner's decision
+  of the same day; `chemcore/core/src/formula4.rs`, `FORMULA_VERSION` 4; formula 3 and 1 still worked out by name). The
+  best estimate: Clegg & Whitfield's (1995) K_NH4 fresh to sea, the carbonate constants as before, the NBS step above.
+  The judged value, the same structure as below (the larger of a basis and the best estimate, so every border, status,
+  safe TAN and chart takes it unchanged), with another basis: up to 1 ‰ formula 3's ideal water unchanged (fresh water
+  is judged exactly as before: `chemcore/core/tests/formula4.rs`; only where nothing is measured, ionic strength 0, the
+  best estimate's pure-water K_NH4 may be up to 0.5 % above the ideal's at 0 °C and judges); from 5 ‰ the best estimate
+  at the pH + 0.03 for NH₃ and at the pH − 0.03 for CO₂ (the uncertainty of a pH reading: US EPA 1989, p. 3), so the
+  judged NH₃ is the best estimate's [NH₃]/[NH₄⁺] × 10^0.03 (+7.2 %) and the judged CO₂ +7.2 to +9 % above it at every
+  temperature; between, blended with the band's weight (no step at 1 or 5 ‰: S 0 to 40 by 0.05 ‰, at most 0.5 % a
+  step); salt-added water the ideal throughout. Held over the owner's MUST ranges, sea water S 5 to 40 at 0 to 30 °C and
+  land water at 8 to 30 °C (`formula4.rs`: 57 660 sea cells, NH₃ +7.15 % exactly, CO₂ at least +7.15 %; every land
+  cell at or above the best estimate); outside them the margin is the rule's and holds (tested −2 to 40 °C), the best
+  estimate itself is not checked above 30 °C (the warning `nh3_past_guard` says it). Against formula 3: the judged NH₃
+  of brackish and sea water falls 11 to 14 % at S 5, 8 to 12 % at S 10, 4 to 9 % at S 20, 0 to 5 % at S 34 (formula 3's
+  margin there was the size of pH NBS − pH free, never designed), and the judged CO₂, which formula 3 put up to 7.5 %
+  below the best estimate in 11 of 48 cells from 12 °C and S 5, is never below it. The owner's example, 12 °C, S 34,
+  pH 7.60, TAN 1 mg/L: best estimate 0.00608, judged 0.00651 (formula 3 judged 0.00672). The core was checked against
+  the debate's Python prototype (`F:\dev\balik-notes\chem-audit-fable\f4\compare.txt`): from 5 ‰ identical with the
+  decided line; below 5 ‰ the judged NH₃ up to 0.46 % apart (the prototype's ideal water took Clegg & Whitfield's
+  pure-water constant, the core keeps formula 3's), the CO₂ 0.002 %. Golden v4 (`chemcore/golden/v4`,
+  `record_golden_v4.py`, golden v3's corpus by formula 4) holds it bit for bit (`farm/tests/test_golden_v4.py`).
+  **Stored samples converted by an older formula**: a pH typed on the total, seawater or free scale was stored on the
+  NBS scale by the formula of its day (`ph_converted_formula`); formula 4's step moves such an NBS pH by up to 0.044
+  (−2 to 30 °C, S 5 to 40), so `manage.py rederive_ph` (`farm/water/rederive.py`; `--dry-run` reads only) converts them
+  again from what was measured, by the sample door's own conversion, each rewrite logged in the activity log with the
+  old and new NBS pH and the formula (samples are otherwise never edited); a sample the conversion now refuses is left
+  as it was and named. Running it again changes nothing. The check `farm.W001` (`manage.py check --database default`)
+  counts samples left on an older formula: run the command at landing, after the backup.
+- **NH₃ and CO₂ are judged on the larger of the limits' basis and the activity-corrected value** (formula 3; formula 4
+  keeps the rule and replaced the sea-water basis described here, above; cross review F1,
+  owner 2026-11-09; `chemistry::Basis`, `fresh::limits_basis`): the NH₃-N, the CO₂, their statuses, borders and margins,
+  the safe TAN, the NH₃ share, the target CO₂, the small NH₃ chart, the simulator's steps and the safe zone all take the
+  larger; the activity-corrected NH₃-N and CO₂ are shown beside them as information ("not judged"), with a line saying
+  which judged. The limits' basis is the ideal water up to 1 ‰ (every activity 1: Emerson et al. 1975's fraction, on
+  which Piper et al. 1982 and US EPA 1985 set the NH₃ limits; Standard Methods 4500-CO₂ D's free CO₂), formula 1's
+  seawater constants from 5 ‰ for CO₂ and, for NH₃ from 5 ‰ (cross review round 2, S1), Khoo, Culberson & Bates
+  (1977)'s eq. 11 (p. 285), pKaˢ = pK° + (0.1552 − 0.0003142 t) I with Emerson's pure-water pK° = 0.09018 + 2729.92/T
+  (`fresh::pk_nh4_seawater`), applied to the NBS pH as measured, blended between as formula 3 blends; a salt-added water
+  keeps the ideal throughout, past the Davies limit too.
+  **What that sea-water constant is** (the water-chemistry audit of 2026-11-19, F5, checked against the paper,
+  `F:\dev\balik-notes\chem-audit-fable\PAPERS-CHECK-A.md`): a constant on the free hydrogen ion scale (Khoo's eq. 7,
+  p. 283) and molal (Table III, p. 288), measured from 5 to 40 °C at S 20.31 to 44.55 (this form within −0.009 to
+  +0.011 of the 24 values). The application applies it to the meter's NBS pH without converting that pH to the free
+  scale; in sea water the NBS pH reads above the free pH, so the NH₃ reads higher than with a converted pH (6 to 20 % at
+  S 20 to 35): the safe side, on purpose, not "the true value". No paper says a sea-water table takes an NBS pH; that
+  toxicity tests calibrate with NBS buffers is US EPA 1989's statement (p. 2). At 12 °C and S 34 the judged NH₃ is
+  about 3 to 15 % above the best published estimates (depending on how the free scale is reached), and formula 3's
+  judged NH₃ is above formula 1's by about 25 % at 12 °C, 35 % at 4 °C and 41 % at 0 °C (S 34; about 4 % only near 30
+  to 35 °C), as `F:\dev\balik-notes\chem-v3\OWNER-DECISIONS.md` now says. It was described here before as "Khoo's pKa
+  on the NBS pH, as Bower & Bidwell 1978 apply it": Bower & Bidwell never cite Khoo; their tables take Whitfield's
+  (1974) 25 °C values per salinity band with a linear temperature term (Table 1, p. 1012; p. 1015). Against their
+  Table 5 this basis gives the same NH₃ at 12 °C and S 34 and less below it (−4.0 % at 4 °C, −7.5 % at 0 °C), their
+  linear term being the one that departs from the measurements (the audit's F12, for the owner).
+  **What that sea-water basis is not** (the K_NH4 panel, 2026-11-10; it was earlier called "the saltwater criteria's
+  convention" here): the US EPA 1989 saltwater ammonia criteria (EPA 440/5-88-004, pp. 1–2 and 27–28, eq. 4, read by
+  the panel) did not use Khoo's pK. They used Hampson's (1977) program for Whitfield's (1974) seawater model with a
+  linear temperature term, 0.0324 (298 − T); what is shared is a stoichiometric pK applied to the NBS meter pH. Against our basis EPA's printed table gives 6.7 to 14.3 % more NH₃ at 0 to 5 °C (that linear term, which is
+  8.1 % wrong in pure water at 0 °C) and agrees within 2 to 6 % at 10 to 25 °C; the EIFAC (1986) sea-water tables imply a
+  pK inside our basis's span over each of their salinity bands at 10 to 30 °C, or up to 0.011 below it (NH₃ −2.6 to
+  +6.7 % against the band edges). A limit taken from EPA 1989's own table for water of 0 to 5 °C was therefore set
+  with up to 14 % more NH₃ than this basis shows: documented, not copied (the panel's decision; no limit is seeded,
+  each is entered per species). Which convention a farm's own sea-water NH₃ limits follow is not known.
+  **The basis keeps formula 1's ion product of water** (the 2007 Guide's total-scale value, `chemistry::kw_total`),
+  while the water's own constants take Millero's (`fresh::ideal_water`): so the judged CO₂ never falls below formula
+  1's. Its size in fresh water (measured 2026-11-12 over 0 to 30 °C, 10 to 400 mg/L, pH 6 to 10, 1 953 possible
+  waters at a salinity of 0): the basis's CO₂ is the higher of the two, by at most 0.035 % up to pH 8.5 (30 °C, 10 mg/L;
+  0.009 % from 40 mg/L), 0.12 % up to pH 9, 0.45 % up to pH 9.5, and 4.1 % at pH 10 within 0.06 meq/L of the
+  alkalinity floor; the median is below 0.001 %. It is Kw's 1.51 % times the hydroxide's share of the alkalinity above
+  the floor. The independent check's "at most 0.13 % away from the floor" for the Kw correction itself did not hold
+  on its own grid: 22 of its 2 160 waters move more (18 at pH 9, 4 at pH 8.5), up to 0.40 % at least 0.2 meq/L above
+  the floor (40 °C, 40 ‰, 1 meq/L, pH 9) and 3.8 % within 0.04 meq/L of it; up to pH 8.5 in golden v3's waters the
+  move is below 0.09 %.
+  CO₂ needs the same rule: the salmonid CO₂ guidelines
+  rest partly on free CO₂ worked out from pH and alkalinity the ideal way (Standard Methods 4500-CO₂ D, which the
+  calculator is checked against), partly on probes; which basis each was set on was not verified study by study, so for
+  live fish the larger is taken. At 12 °C, 80 mg/L, pH 7.5 the corrected CO₂ is 8.8 % below the judged at 500 µS/cm,
+  11.7 % at 1000 and 17.5 % at 3000. At the calculator's example (12 °C, 1 ‰) the NH₃ border is 7.986 (formula 3's
+  corrected share alone 8.045) and the CO₂ 19.62 mg/L (corrected 17.12). The chart's CO₂ curve is drawn in the water's own
+  constants at the limit over the bicarbonate-range ratio of the basis's CO₂ to its own (K1 10^offset over the basis's, a
+  ratio of the equilibria alone, so a replay page still shares one diagram among frames equal but for pH and alkalinity):
+  the judged CO₂ along it within −0.74 to +0.38 % of the limit (the round-2 review's 165 888 boundary points, S 0 to
+  35 ‰, 2 to 25 °C, unsaid and salt-added); the statuses and borders are exact. The stripping
+  floor (the air's CO₂, a true concentration, Weiss 1974) is held against the water's own CO₂.
 - **The safe zone needs every limit it is bounded by**: without the TAN, the NH₃ limit, the CO₂ limit or
   the alkalinity band, or with a total sulfide but no H₂S limit, it is not drawn and a note says what is
   missing (a missing value is never taken for a safe one). Without a total sulfide it is drawn and named
@@ -1702,7 +1999,7 @@ Differences from the source (details in the bug document, WQ-01 to WQ-49):
   charts keep the water on them (WQ-42).
 - Not ported: sensors and their reading sources (their channels, the priority of a primary and a backup source,
   the inheritance of a site's values), charts and daily means,
-  notifications, H₂S as a sample parameter, hardness and the other lab
+  notifications, H₂S as a sample parameter, the other lab
   parameters, detection limits ("< 0.02"), attachments, limits per life stage or site, a sampling plan
   per unit, and a site's intake water. The rations read the latest water temperature from here and keep
   no copy of their own (WQ-02; `farm/feeding/temperature.py`).
@@ -2051,9 +2348,18 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
   batches in a unit are the fewest). The rule is the species'
   own, else the one for every species; a grading takes the longer of the grading and the transport rule. No
   rule, or no feeding in the 31 days before (longer than any rule), is said, not warned.
-- *Medicine withdrawal* (**a harvest only**: the fish go to food, to the slaughter facility the harvest names; a
-  medicine withdrawal is a meat withdrawal, so it means nothing when live fish are moved or graded, where the
-  fast and the live-transfer facts are what matter, and a treatment during a withdrawal harms nobody): every block
+- *Medicine withdrawal* (**a harvest and a live delivery**: the fish leave the farm and may be eaten, slaughtered
+  at the facility the harvest names or sold alive; the owner's decision 12 of 19.11.2026: a live delivery of held
+  fish is warned through the same check, "Not suitable for a live delivery — medicine withdrawal of B-2026-001: the
+  fish may leave the farm from 21.11.2026. Fish sold alive may be eaten.", ticked, stored as a handling
+  acknowledgement and logged as critical, as a harvest is, and never blocked; `check.WITHDRAWAL_OPERATIONS`. A
+  delivery's warning is in its own words, never "harvest from …" (`withdrawal.leave_from`, "from about …" when
+  projected, "end unknown"), its shared-unit sentence says the fish "cannot be told apart when they are caught", and
+  its dialog shows the earliest suitable date as a harvest's does (below; review of S-03 at 6776780, F-1). **A
+  live delivery is a harvest also after the fact** (the owner's decision 13 of 19.11.2026): a later write that puts a
+  recorded delivery inside a withdrawal asks as for a harvest (the withdrawal guard, below). A medicine withdrawal is a meat withdrawal, so it means
+  nothing when live fish are moved or graded on the farm, where the fast and the live-transfer facts are what
+  matter, and a treatment during a withdrawal harms nobody): every block
   a registered provider gives for the **unit** whose end is after the day, or unknown (unknown is a warning, never
   clear). The withdrawal is the unit's, never the chosen batch's: a net cannot separate the batches of one unit, so
   the withdrawal of any fish in it holds a harvest of it, whichever batch the dialog names (`check.in_force(unit, day)`
@@ -2064,10 +2370,12 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
   their withdrawals take turns (`farm/tests/test_withdrawal_shared_unit.py`). **A batch holds a unit on a day when it
   had fish there at any moment of that day** (`farm.stock.read.Presence.during`: at the end of the day before, or fish
   of it came in that day), so held fish that come into a unit and leave it again the same day still hold it that day:
-  the other batch's harvest out of it warns and takes its tick, and `check_withdrawal` lists it; the same question says
+  the other batch's harvest out of it warns and takes its tick, and `check_withdrawal` lists it, and the fish that were
+  beside them stay held to the same end after that day, wherever they go (the lots, flow fault S-03: Operations ›
+  Health, the medicine withdrawal); the same question says
   which fish a course reached (`farm/tests/test_withdrawal_same_day.py`; the stock books' `Presence.present`, the ends
-  of the days, is unchanged). **Cleaner fish beside the production fish are kept apart** (`check.held_apart`, until the
-  owner and the vet decide): their withdrawal is no warning on the production fish's harvest, no acknowledgement of
+  of the days, is unchanged). **Cleaner fish beside the production fish are kept apart** (`check.held_apart`; the
+  owner's decision of 16.11.2026): their withdrawal is no warning on the production fish's harvest, no acknowledgement of
   theirs and not their earliest date; the dialog says it as a note ("Cleaner fish in C-01 are in a medicine
   withdrawal (B-2026-004, harvest from 19.11.2026): keep them out of the harvest."), and the unit's own line still
   shows it (`farm/tests/test_withdrawal_cleaner_fish.py`). The health records register their provider in `farm/apps.py` (`farm/handling/withdrawal.py`:
@@ -2120,7 +2428,11 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
   suitable harvest date: 15 Nov 2026. Purging decides: feeding must stop by 11 Nov 2026." (a tie goes to the
   withdrawal; an unknown withdrawal end is "not known"). It is worked out from the parts above on read, nothing is
   stored; a plan dated before it is marked, and a harvest before it is a warning on the parts' terms, acknowledged and
-  logged as critical as before, never a block. A transfer and a grading do not say it.
+  logged as critical as before, never a block. A live delivery's dialog says it too, in its own words and with the
+  fast of a transport (the rule a delivery's fast is checked by) where a harvest has its purge: "Earliest suitable live
+  delivery date: 17.11.2026. Medicine withdrawal decides: the fish may leave the farm from 17.11.2026." or "… The fast
+  decides: feeding must stop by …" (`check.earliest(unit, batch, kind=transport)`). A transfer and a grading do not
+  say it.
 - *Production units*: a "Withdrawal" badge on a unit with a withdrawal in force today, and the drawer's
   **Harvest and handling** part: the check of a harvest today and the unit's open plans with their fasts.
 
@@ -2217,7 +2529,7 @@ day. The list filters by site, unit, batch, method, medicine, dates, "under with
 farm's window; it lifts the withdrawal). Nothing else is edited: a correction is a void and a new record.
 **The list reads the fish on the day of the site they are on now** (the owner's decision of 12.11.2026: everything
 is read on the site's own day, by the site's own clock; the company's day plays no part in whether fish are held).
-`farm.health.withdrawal.of_treatments` reads each batch a treatment reached on today of the site its fish are on now,
+`farm.health.withdrawal.of_treatments` reads each batch a treatment reached or holds on today of the site its held fish are on now,
 with the reader the unit's own withdrawal line and the harvest check use (`of_units`), asked that same day; which
 units share a day is said in one place (`site_days`). So the list's row, "Under withdrawal today", the day counts and
 the unit's own line are one answer:
@@ -2228,16 +2540,18 @@ the unit's own line are one answer:
   not freed a day early;
 - a batch moved between clocks is read on the day of where it is now, with every course it carries;
 - a batch that arrived today in a unit under a running course is in the course;
-- a batch whose fish are on sites of different days is shown once for each day, each part with its units and its own
-  answer (`B-001 (K-01) · … `, `B-001 (T-02) · …`);
-- fish that are nowhere any more (harvested out) are read on the day of the units the course was given in.
+- every batch is shown with the units its fish held by the course are in now (`B-001 (T-01, T-03) · …`), and one whose
+  held fish are on sites of different days once for each day, each part with its units and its own answer
+  (`B-001 (K-01) · … `, `B-001 (T-02) · …`);
+- fish that are nowhere any more (harvested out) are shown without a unit, not held, read on the day of the units the
+  course was given in.
 
 `farm/tests/test_withdrawal_clocks.py` asserts for each of these that the list says what the unit's own line says.
 **Known and accepted:** on the day fish move between clocks, the unit they left still names them on its own day (a
 batch counts in a unit on the day it leaves), so that day the list shows them as two parts, as the two units' lines
-do. And a course given today to the part of a batch on the later clock holds the whole batch, each part by its own
-site's calendar: the part on the earlier clock shows the withdrawal at once and is marked held when its own day
-reaches the course's first day, hours later. **The hard edge of the same rule** (the third review's case K; as on
+do. And fish of a course given today on the later clock that are moved the same day to the earlier clock are held
+by their own site's calendar: that part shows the withdrawal at once and is marked held when its own day reaches the
+course's first day, hours later (a part of the batch that was never in the course's units is not held at all: S-03). **The hard edge of the same rule** (the third review's case K; as on
 main, and the owner's rule applied as decided): the course is given today on a site whose clock is ahead (its first
 day is that site's today, say the 11th), and some of those very fish are moved the same day to a site whose clock is
 behind, where it is still the 10th. Exactly then, for the hours until the second site's own day reaches the course's
@@ -2255,14 +2569,54 @@ fish could be deleted and a medicine's withdrawal made shorter without the quest
 **The medicine withdrawal** is worked out on read, never stored (`farm/health/withdrawal.py`), so a void, a
 corrected temperature or a backdated transfer changes it at once:
 
-- it **follows the fish**: every live treatment with a medicine whose treated batches include the batch holds
-  it, wherever it is now; if only some of its units were treated, the whole batch is held;
+- it **holds the fish that were exposed, not their batch** (flow fault S-03; the owner, 14.11.2026). The reader works
+  out **lots** on read, nothing stored (`Reader.lots`; a lot is the fish of one batch in one unit over one stay):
+  - **A.** the fish of a batch that were in a treated unit at any moment of a day from the course's first day to its
+    last are exposed (also fish that passed through it that day);
+  - **B.** the hold follows them: a move out of a held lot holds the lot the fish go into, to the same end;
+  - **C.** a unit is held as a whole: every batch in a unit at any moment of a day a held lot is in it is held there
+    from that day, to the same end, and stays held after either moves on (the owner's example: tank A treated and held
+    to 23.11, 500 untreated fish of tank B moved into A and on to tank C before the end: tank C is held to 23.11);
+  - **D.** fish of the same batch that left the treated unit before the course's first day, or were never in it, are
+    not held: a tank split off before the course is free, on every page, and its harvest asks nothing;
+  - **E.** an unknown end (no withdrawal row; medicated feed without a treatment) holds the same fish.
+  A lot ends the day its last fish leave the unit and still holds that day (a harvest of that day lies inside); fish
+  that come into the unit later are another lot. The order of the operations within a day is not read (a move has no
+  time): fish that leave a unit on the day held fish come into it are held too (over-warned, never under-warned).
+  When fish are held only because they shared a unit, every place says so by name: "These fish shared T-03 with
+  B-2026-001 (treated in T-01)."; when the batch they shared it with was itself only held by sharing, the sentence
+  names it and the ORIGINAL treated batch and tank as the source, and never says a batch was treated, or in a tank,
+  that was not: "These fish shared T-03 with B-2026-002, which waits with B-2026-001 (treated in T-01)." (the
+  guard's harvest question the same way: "… the fish harvested shared T-03 with B-2026-002, which waits with
+  B-2026-001 …"); fish held in a unit they were not treated in: "These fish were treated in T-01."
+  (the unit's line, the harvest warning, its stored acknowledgement, the critical log line, `check_withdrawal`).
+  A unit's line says each cause once per batch with its latest end; while the exposed fish of a cause are in the
+  unit their line stands for every fish in it. **Cleaner fish** (the owner, 16.11.2026; `check.held_apart`): a held
+  lot of production fish holds the unit as a whole, its cleaner fish too, and their hold follows them where they are
+  moved; a held lot of cleaner fish never makes another lot held (sharing a unit with held cleaner fish carries no
+  hold onward), and the harvest dialog of the production fish beside them says it as one note per cleaner batch with
+  its latest end: no warning, no acknowledgement, no change of the earliest date.
+  **What a reader loads is bounded by the holds in force, not by the farm's history** (`Reader`): the courses that
+  are not provably over (a medicine whose rows are all in days, one of them for every species, is over by the
+  calendar; a degree-day row or a species that may have no row needs the fish read), the batches they can have
+  exposed, and, of the withdrawals still in force in the window asked, the batches they can have reached
+  (`farm.stock.read.reach` over `spans()`: one grouped query of the live ledger says who was where). A batch that
+  only shared a unit long before, or with fish that were never held, is not read. A course of UNKNOWN end is in
+  force for the days the platform owner set (below), and its fish are read for as long. The queries do not grow with the units or the
+  batches (the units list, a drawer, the plans, the cards, the Treatments list and a guard cost the same for 6
+  units as for 24: `farm/tests/test_withdrawal_lots.py`, the ten cases of the rule and the recorded counts), and
+  the batches read and locked do not grow with the generations of fish long gone
+  (`farm/tests/test_withdrawal_combined.py`, `HistoryTests`);
 - **per species**: the medicine's row for the batch's species, else its row for every species, else the end is
   unknown (see Medicines); the margin is applied to both values;
 - **days**: day 1 is the day after the last treatment day, the first day the fish may be harvested is the last
   day + the days + 1;
-- **degree-days**: the batch's daily mean water temperature is added up from the day after the last day until
-  it reaches the row's degree-days, the next day is the first harvest day. A unit's daily mean is the mean
+- **degree-days**: the EXPOSED batch's daily mean water temperature is added up from the day after the last day
+  until it reaches the row's degree-days, the next day is the first harvest day. **Open question for the farm's vet**
+  (decided for now, the safe side): the degrees are still those of the exposed batch in EVERY unit it is in (the
+  lowest counts), also a unit that was never treated, not those of the held fish alone; so an untreated sibling
+  tank's cold water still moves the end of the held fish, and for a degree-day medicine deleting that sibling tank
+  or its loop stays blocked (below). A unit's daily mean is the mean
   of that farm-local day's temperatures in the unit, else in its system's loop (the water samples, never a
   copy); with the batch in several units that day, the lowest counts. **A past day without a measured
   temperature counts at the batch species' assumed water temperature** (Reference data › Species; one query reads
@@ -2277,12 +2631,91 @@ corrected temperature or a backdated transfer changes it at once:
 - **medicated feed** (a feed of the type Medicated) fed to a batch on a day no live in-feed treatment of the unit
   covers holds it with an unknown end until the treatment is recorded or the feeding voided; the feeding dialog
   says so when such a feeding is recorded.
+- **an end unknown for want of a rule holds for a number of days only** (the owner's decision of 17.11.2026). Two
+  records leave a withdrawal with nothing to end by: a medicine with no withdrawal row for the species (give it one
+  in Reference data › Medicines) and a medicated feeding no in-feed treatment covers (record the treatment under
+  Health › Treatments, or void the feeding). Such a withdrawal
+  holds, and spreads as any other, to the day set in **Platform settings › An unknown withdrawal end holds for
+  (days)** after the course's last day (180 until the platform owner sets another; 1 to 3650). After it the fish are
+  not held: no warning, no delete block. The course is then listed under **Unresolved old courses** at the top of
+  the Treatments page and by `check_withdrawal` ("Unresolved old course · B-2024-003: …"), each with what gives it
+  an end (`withdrawal.unresolved`). **The ceiling never applies to a degree-day withdrawal** (decision of
+  18.11.2026, following "degree-days stay as they are"): degree-days that are short, or can be neither counted nor
+  projected (no temperature lately and no assumed temperature, or a mean of 0 °C or below), hold the fish however
+  old the course is, exactly as before the ceiling existed, until the farm records the water temperature or sets
+  the species' assumed temperature in Reference data › Species (the only way once the fish are gone); the unit's
+  line, the harvest dialog, the Treatments page and `check_withdrawal` say both. A change of the setting is a rule
+  change: it goes through the withdrawal guard (`guarded_ceiling`), which asks before a shorter one frees fish held
+  today, and before a longer one holds fish again that had been let go or brings a harvest recorded meanwhile
+  inside a withdrawal (each answer stored and logged as critical; asked of every course without a rule, of any
+  age), the data layer refuses it anywhere else (`farm/withdrawal_gate.py`), and it is logged with its old and new
+  value (`farm/tests/test_withdrawal_ceiling.py`). It also bounds what a reader loads for old courses without a
+  rule (a course with a degree-day row is read for as long as it holds);
 
-A withdrawal holds the batch from the treatment's first day (or the medicated feeding's day) to the day before
+A withdrawal holds the fish from the treatment's first day (or the medicated feeding's day) to the day before
 the first harvest day; a day before the treatment is not held.
 
+**Every reader asks the lots.** The unit's own line and the handling check (`of_units`, through the registry), the
+harvests inside a withdrawal (`_inside`: the lot of the harvested fish is held that day; `check_withdrawal` says "…
+inside a withdrawal of B-2026-001, through T-01 shared with B-2026-001" when the fish met it in another unit), the
+Treatments list (`of_treatments`: each batch with the units its held fish are in now, and ", shared a unit" for a
+batch that was not treated itself), and the write guard (`snapshot`, `change`): fish are **released lot by lot**, the
+question names the batch and the unit ("B-2026-002 in T-03 is held today (…) and would no longer be held …"), and a
+move the write itself records or voids is followed, so a move dated before the course that takes fish out of its
+reach, and the void of the move that had brought fish beside held fish, are asked about where the fish are after it;
+a move of fish that were never held asks nothing.
+**The spread is said at the move** (the owner's decisions 7 and 8 of 16.11.2026: fish moved into a tank that holds
+fish are one group with them, whoever is combined waits for the others' withdrawal, wherever those fish go; it is
+said when it is made, and the move is allowed). A transfer, a split, a grading or a stocking that combines held fish
+with fish that are not held, in either direction, is asked about by the same box: "B-2026-002 in T-02 will wait for
+the harvest with B-2026-001, the held fish it is combined with in T-02: harvest from 18.11.2026. …" ("… and the end
+of that withdrawal is not known." for an unknown end), once for every lot the move newly holds, also the lots fish
+went on to when the move is dated in the past. **Fish that were held already, to an earlier end, are told too** when
+the move combines them with a longer or an unknown hold, in either direction (they now wait longer: a batch held
+until tomorrow moved in beside fish held for two months); fish combined with a hold that ends no later than their
+own are not asked about. Fish moved or stocked INTO the treated tank dated on a course day are exposed themselves,
+and the sentence names no other batch: "B-2026-002 in T-01 will wait for the harvest with the fish treated in T-01:
+…". **A void asks the same way** when it combines held fish with fish that are not (the void of the move that had
+emptied a tank held fish then came into, of the cull that had emptied the held tank). **Whatever the batch**: fish
+of the SAME batch are asked about exactly as another batch's (a split before the course merged back into the held
+tank, held fish moved into the tank split off before it, a sibling tank of decision 7 moved into its held part):
+the fish already in the tank and the fish each move brings in are asked about each on their own
+(`farm/tests/test_withdrawal_spread_matrix.py`: same or other batch, held side or not-held side moving in, by a
+transfer, split, grading, stocking and void). Going on stores a handling
+acknowledgement on the operation (the batch
+that now waits, the end, the withdrawal's source, the sentence) and a critical log line; `check_stock` knows such a
+row on a transfer, a grading or a stocking (a stocking is not a handling; a withdrawal row on any other operation
+is still reported). It is asked when the
+dialog is sent, not when it opens: the tanks are chosen in it (`farm/tests/test_withdrawal_combined.py`).
+**Locks.** A write locks every batch whose withdrawal it can change (`farm.stock.services.lock_fish`, which every
+stock operation, void, treatment, feeding, sample and medicine row goes through): its own fish, the batches its
+fish can have reached since its day (a move joins fish), and the batches the withdrawals of its fish hold; the
+batches in one statement in primary-key order, then the units. So a move of held fish into T-02 and a harvest, at the
+same moment, of fish that went on from T-02 to T-03 take turns and the later sees the earlier
+(`farm/tests/test_withdrawal_locks.py`: two real transactions, both orders; also where the harvested batch was
+never in a unit of the move and the lock in common comes from the reach alone, with the two mutants that show the
+unseen harvest when the reach is cut out; a sample in the treated tank today locks fish held by sharing elsewhere
+through the holds alone, and a grading takes these locks first, as every write does). It is bounded by the day of
+the write and the holds in force, not by the
+history. A write of reference data (a feed's type, a species' assumed temperature, a sampling point, the ceiling) is
+not a dated record: its guard reads from the day it reaches the fish, however long ago, so every recorded harvest it
+puts inside a withdrawal is asked about; a dated record's guard reads from the first day of the correction window.
+**What blocks a delete** (`held_reached`): a unit, a loop or a species waits while a lot held today would be moved
+by it: the unit holds such a lot; the withdrawal's batch was exposed in it (without the unit the course reached
+nobody); or, for a degree-day withdrawal, its batch was in the unit since the course's last day (its water counts for
+the end: the open question above). An empty unit that was never treated is no longer blocked by a hold elsewhere on
+a batch that was once in it; for a day-based medicine neither is the untreated sibling tank.
+**Landing this changes what stored courses hold, with no record changed** (worked out on read): a tank split off
+before a course loses its withdrawal; a unit whose fish shared a unit with held fish and moved on, or that held fish
+passed through, gains one until the same end. **The landing carries a before and an after listing**: `manage.py check_withdrawal --listing` writes the fish
+held now (unit, batch, end, about, the course or feeding, why) and every harvest and live delivery inside a
+withdrawal (its line's kind, `harvest` or `delivery`, beside its unit and batch) as sorted,
+tab-separated lines with no ids, made for a diff. It reads only what the rule before and the rule after both have,
+so the same command file runs on a checkout of the old rule: the listing of the data before the landing and the
+listing after it are kept with the landing notes, and their diff is what the landing changed.
+
 Where it shows: the health records give it to the shared handling check through the registry of
-`farm/handling/withdrawal.py` (`blocks(unit, day)`: a block per batch and cause, `until` the first day the fish
+`farm/handling/withdrawal.py` (`blocks(unit, day)`: a block per batch held in the unit and cause, `until` the first day the fish
 may be harvested; the provider is registered in `farm/apps.py`). From there Production units marks the unit's
 row **Withdrawal** and the drawer's Harvest and handling section says **"Not suitable for harvest — medicine
 withdrawal of B-2026-001: harvest from 14.12.2026."** ("harvest from about …" when projected, "end unknown") with why, to everyone
@@ -2338,11 +2771,14 @@ Treatments (read, create, edit = change the last day, delete = void), Health eve
 void) and Sea-lice counts (read, create, delete = void), the last three under Production · Operations · Health.
 The admin shows voided treatments, events and counts and does not restore them. `manage.py check_withdrawal`
 works out every unit's withdrawal from scratch and lists the fish held, with the end and why, and then **every harvest
-already recorded inside a withdrawal** of its own batch or of a production batch that had fish in its unit at any moment of that day ("… lies inside a
-withdrawal of B-2026-001, in the same unit (harvest from …)"; medicated fish that may have gone to food), however it came to (a treatment entered
+and every live delivery already recorded inside a withdrawal** of its own batch or of a production batch that had fish in its unit at any moment of that day ("… lies inside a
+withdrawal of B-2026-001, in the same unit (harvest from …)"; "Live delivery of … (300 fish to Nordic Smolt AS) lies
+inside a withdrawal (the fish may leave the farm from …)"; medicated fish that may have gone to food), however it came to (a treatment entered
 after the harvest, a longer course, a corrected temperature, a medicine's withdrawal changed), each with whether someone
 acknowledged it or not: an acknowledgement counts only for the harvest, the batch and the withdrawal it names (when the
 harvest was recorded, or when the write that brought it inside was), never for another withdrawal of the same harvest.
+It ends with one count line of each, also when it is none ("No harvest lies inside a medicine withdrawal.", "1 live
+delivery lies inside a medicine withdrawal.").
 
 **The withdrawal guard** (audit F-195, F-188, F-196 and the three cross-reviews): every write that can create, grow, shorten
 or end a medicine withdrawal goes through one function, `farm.health.withdrawal.guarded`: a treatment, its last day and its
@@ -2371,7 +2807,13 @@ works them out again from what it left. It asks when the write
 
 - brings a harvest already recorded inside a withdrawal, or makes the withdrawal it lies inside end later than before
   (medicated fish may have gone to food: a treatment entered up to 31 days back, a longer course, a backdated medicated
-  feeding, a corrected temperature, a longer medicine withdrawal), or
+  feeding, a corrected temperature, a longer medicine withdrawal, a backdated move of held fish, a void, a longer
+  ceiling), or does any of that to a **live delivery** already recorded (the owner's decision 13 of 19.11.2026: its
+  fish left alive and may be eaten). Both are read by one rule (`_harvest_lines` reads every line of
+  `check.WITHDRAWAL_LINES`, `_inside` compares them) and asked in the same box: a delivery as "Live delivery of
+  16.11.2026 from T-01 (B-2026-001, 300 fish to Nordic Smolt AS) lies inside this withdrawal (the fish may leave the
+  farm from 22.11.2026): medicated fish sold alive may have been eaten.", stored as a `delivered` acknowledgement that
+  names the delivery (a `harvested` one names the harvest) and counted by the second-person setting as a harvest is, or
 - makes the withdrawal of fish held today end earlier, or ends it (a course voided or shortened, a medicine's withdrawal
   shortened, a medicated feeding voided, a temperature corrected): the message gives the old and the new end.
 
@@ -3179,7 +3621,9 @@ What works:
   formats (how a kind of device writes its messages: one object with a value per channel, or a list of named items;
   where the device time and the sequence number are, as JSON pointers; no time: the receive time, flagged), Devices (one
   topic each, at a site (the site of where it is placed), optionally the instrument of a piece of equipment; offline after three intervals without a
-  message), Channels (what a value measures, from the quantity catalogue `sensors/quantities.py`; where it is in the
+  message), Channels (what a value measures, from the quantity catalogue `sensors/quantities.py`; a pH channel's pH
+  scale, NBS unless set, its values put on the NBS scale where the water is read and the ones from before a change of
+  scale used nowhere (Water chemistry, after the water-chemistry audit of 2026-11-19); where it is in the
   message; the unit conversion; how it is stored: every value, or a value that moves past the deadband and at least once
   per heartbeat; fresh for its own number of heartbeats (`fresh_heartbeats`, 3 by default, 1 to 20); a range outside which a value is stored but flagged and used nowhere;
   maintenance and retired states; calibrations as a list on the site's clock, applied by the ingest at the device time,
@@ -3262,7 +3706,8 @@ the samples only. The ration's temperature takes a fresh sensor value at its mom
 A unit's or a system's Deffeyes can be drawn as it was at a past moment (`?at=` on the window's address, read by
 `core.dates.read_moment`, 1900-2100, else 400; the site's
 clock): the samples taken up to then and each channel's value then, from the bindings that held then. The hourly trail of
-a unit's point on the diagram is `sensors:trail` (JSON, from the hour rollup). The monitoring card's own buttons for
+a unit's point on the diagram is `sensors:trail` (JSON, from the hour rollup: `points`, the hours `missing` an input and
+the hours `impossible`, whose pH and alkalinity cannot go together, never drawn). The monitoring card's own buttons for
 these, for a place's charts (`sensors:target_charts`) and for binding a channel from a card (`sensors:binding_create`
 with `?channel=&target=`) are left to the card-template designer.
 
@@ -3820,7 +4265,8 @@ from which device, how late) is logged. The server side is built; the push trans
   the evaluation: the safest value of each field stands in (no on-delay, the longest off-delay, the shortest escalation,
   the most attempts) and a critical configuration alarm says so until the row is back (F6). The staleness thresholds the
   alarms depend on are rule data too (F10): how long a water value counts as fresh per parameter (Setup › Reference data ›
-  Water freshness, seeded with the hours the code held), the clock tolerance (Platform settings) and a sensor channel's
+  Water freshness, seeded with the hours the code held; the conductivity at 25 °C and the hardness by farm 0042, 7 and 14
+  days), the clock tolerance (Platform settings) and a sensor channel's
   fresh heartbeats; the ingest contract's hour (`evaluate.MAX_AHEAD`) is the contract's and stays. No number in the modules
   an alarm's decision reads is a threshold: a test reads them, each named exception with its reason.
 - **A device clock** that differs from the platform's is an alarm of its own (owner, 2026-11-09): the skew is measured per
@@ -3841,7 +4287,39 @@ from which device, how late) is logged. The server side is built; the push trans
   alarm from the pass it fails in until it passes again; the water step reads all units at once and, when that fails, each
   on its own, and evaluates each on its own, so a unit that cannot be read or evaluated raises its own critical alarm on
   its site ("could not be evaluated") and every other unit goes on; a unit with fish and no point to read its own water at
-  is a configuration warning on its site (F16). A system alarm reaches its site's recipient rules; a farm-wide one the
+  is a configuration warning on its site (F16); a judged value that comes without a number for a stated reason (the NH₃
+  of a water whose conductivity is past the Davies range, which the chemistry core refuses; a sensor pH on the total,
+  seawater or free scale that cannot be put on the NBS scale: the review of the water-chemistry audit, M1) is a warning
+  on its site, "<unit>: <value> cannot be evaluated: <the reason>" (subject
+  `system:unit:<id>:value_unevaluated:<parameter>`, one per value the limits judge, `REFUSABLE`; its on-delay counted
+  from the value's time, for a sensor pH from before its channel's scale changed from when that value would be stale),
+  ended on evidence only: "restored" once the value is worked out again, "the water limit was removed" or "no fish in
+  the unit any more" once nothing judges it; a later TAN without its pH, or the refused sample leaving the 30-day
+  window, ends nothing (RC-4). Beside it the value's own limit levels judge its limits' basis, which needs no
+  conductivity and which the judged value is never below (critical past the critical limit, RC-3), or another fresh
+  value of the unit's water that judged it on the page (RC-2), and they stay judged by those values: a level
+  another value raised ends "back inside the limit" when that water recovers, though the unit's own newest value is
+  value-less (F3-1); its own "not measured" is never a "no fish" cause. The summary says "at least" before a basis
+  (F3-5). A refused value never clears a limit level, and a pass that could not read the unit ends nothing.
+- **Which value can end a water limit level** (the verification of FIX3, F3-1 and F3-7; `alarms/sources.py`, the rule at
+  the top; `AlarmSubjectState.own_held`, alarms 0014). The unit's own value is one measured at its own points; another
+  value is one of the rest of its water (its loop standing in for it, or another fresh value that judged it worse). A level raised by the unit's own value ends only on the
+  unit's own evidence: an own full sample clear of it ends it "back inside the limit" (with every other fresh value clear
+  too); an own TAN without its pH, another point's OK value, nothing new, or the bad sample voided end nothing. A level
+  raised by another value (the unit's own value clear or value-less) ends when the values that judge it are clear:
+  another point's newer OK value ends it; an own full OK sample ends it only when the other values are clear too; an
+  own TAN without its pH changes nothing; the bad sample voided ends it only where a value taken after it is clear.
+  Either way another bad value holds it, a refused value is never evidence, a
+  value that only goes stale ends nothing, and the limit removed or no fish end it with that cause. Every combination is
+  a test: `alarms/tests/test_who_ends_a_level.py`. 0014 decides nothing for the levels open when it lands: the first
+  pass works out who holds each (F3-8).
+  **Decision (2026-11-19, F3-9, under the owner's standing rule):** a critical or warning measured on the unit is
+  confirmed over only by measuring the unit again. When the unit's own bad value goes stale and its loop's OK value
+  stands in, the level stays open and keeps escalating, and the page, the card and the alarm agree: the unit is
+  critical (or warning), its last own value is shown marked stale beside the loop's value with "last own value 0.8924
+  critical on dd.mm.yyyy hh:mm, no recent data: measure this unit" (`read.last_own`, `messages.last_own`; nb, tr),
+  and a level raised in that state says the same in its summary.
+- A system alarm reaches its site's recipient rules; a farm-wide one the
   company-wide rules, and where no rule reaches it by site, every rule its severity reaches: it never reaches nobody (F8).
 - **Who is notified**: the alarm recipient rules (a tab: a site or every site, a production department or every one, the
   least severity, a level 0 to 9, a role or one person, only while on shift by the HR roster (`hr.read.on_shift`, the
@@ -4196,8 +4674,9 @@ steps are in the scratchpad plan `chemcore/PLAN.md`; the state of each step is b
 - The handshake: `chemcore/EXPECTED` names the build the server accepts (version, formula version, a digest of the
   core's source). The system check `core.E001` (an Error) stops the server when the installed module differs.
   `chemcore/scripts/gen_expected.sh` writes the file from the built module; it is never edited by hand.
-- Errors are explicit: never a silent fallback, never a NaN shown as a number. Every formula carries its
-  literature source and validity range in the code.
+- Errors are explicit: never a silent fallback, never a NaN shown as a number, never a concentration below 0 (a water
+  that cannot be is refused: `ImpossibleWaterError`, below). Every formula carries its literature source and validity
+  range in the code.
 
 **Building from a clean machine** (Docker is the only requirement; native Windows builds are not supported: the
 development machine has no MSVC linker, and the owner chose container-only development):
@@ -4246,21 +4725,74 @@ temperature (a synthetic page: 54 different temperatures, 99 to 164 ms, 128 KB c
   names the formula modules' git blobs. `farm/tests/test_golden.py`: the recorder reproduces itself byte for byte and
   today's Python reproduces v1 bit for bit. v1 is never re-recorded silently; a version that changes results is v2,
   after the owner decides. `chemcore/tolerances.toml` holds the parity classes the Rust core will be held to.
-- *Golden v3* (`chemcore/golden/v3`, 82 KB; I2, owner amendment B5), beside v1 and **not used by the application**
-  until the owner decides: below a salinity of 5 a water's ionic strength comes from its conductivity (1.6e-5 per
-  µS/cm), else its hardness with its alkalinity, else its salinity, else its alkalinity alone, and its constants are
-  the fresh-water ones made concentration constants with Davies activity coefficients (`chemcore/core/src/fresh.rs`,
-  `native.equilibria_v3`); from 5 on it is v1 bit for bit. `chemcore/scripts/record_golden_v3.py` records it from the
-  core (882 waters: fresh, hard, brackish and sea, each source of the ionic strength, v1 and v3 side by side);
-  `farm/tests/test_golden_v3.py` holds the core to it bit for bit, Davies to the literature's values, and the
-  application to v1. The comparison for the owner, in Turkish, is `chemcore/findings/I2-comparison.md`: in fresh
-  water v3 shows 3 to 13 % less CO₂ and NH₃ share, and at the 5 ‰ boundary a salinity-only brackish water jumps by
-  6 % (the comparison recommends a boundary of 1 ‰). The fresh path refuses an ionic strength above 0.5, the Davies
-  limit (`DAVIES_MAX`, a ValueError that says so). Conditions before v3 is switched on (cross review 2026-11-09, in
-  the comparison): a temperature-dependent dielectric constant (I1) with Davies checked at 5 and 12 °C, since the
-  fixed 79 makes A 7.5 % too large at 12 °C and 15 % at 2 °C, so the 12 °C shifts in the comparison are about 7 to
-  8 % of themselves too large; only temperature-compensated (25 °C) conductivity read; conductivity and hardness
-  wired as inputs of the water.
+- *Formula 3 and golden v3* (`chemcore/golden/v3`, 480 KB; I1 and I2, owner amendment B5; **the application's since
+  2026-11-09**, `FORMULA_VERSION` 3). Every chemistry of a water starts from `chemistry.water_equilibria` (in Rust
+  `fresh::water_equilibria`; the analysis, the chart, the dosing, the simulator, the small charts, the replay, the trail
+  and a sample's NH₃ all take it), and every `Equilibria` says what it was worked out by: its `formula`, its
+  `ionic_strength`, the `strength_source` (conductivity, hardness, salinity, alkalinity, seawater, none) and the
+  `sea_weight`; the pages say it beside every worked-out value. Up to 1 ‰ (`FRESH_UP_TO`) the ionic strength is the
+  water's own: an estimate, the conductivity compensated to 25 °C (I = 1.6e-5 κ, Russell 1976) else the salinity's (DOE
+  1994), never below the lower bound of the ions measured (the hardness with the alkalinity, else the alkalinity alone),
+  0 with nothing measured (formula 1's ideal water); the constants are the thermodynamic ones made concentration
+  constants with Davies activity coefficients whose A is the temperature's (I1: ε of Malmberg & Maryott 1956, ρ of
+  Kell 1975; Hamer's 1968 table within 0.03 %). From 5 ‰ (`SEA_FROM`) they are formula 1's seawater constants, the NBS
+  conversion with the same A and Kw Millero's on his seawater scale (the corrections of 2026-11-10, below). Between, each constant is the geometric blend, the sea's weight linear in the salinity
+  (Millero et al. 2006 measured K1, K2 from S 1; Dickson's 1990 KSO₄ and KB hold from S 5): the old 5 ‰ boundary jumped
+  up to 25 % in CO₂, the band not at all. The band assumes sea water's ions (sulfate, fluoride, the Mg and Ca ion pairs in Millero's K1
+  and K2, borate): a unit may say its **water origin** (cross review F3, F4). Salt-added fresh water takes the fresh path up
+  to the Davies limit (S 28.39 ‰ as NaCl, or a conductivity of about 59 500 µS/cm; then the sea path, its constants and
+  corrected values jumping there, its judged NH₃ and CO₂ never dropping, the ideal basis kept on both sides), its ionic strength NaCl's (the salinity as NaCl's molality,
+  58.443 g/mol; the conductivity by NaCl's 8.4e-6 per µS/cm, from its molar conductivity of about 118.5 S cm²/mol at
+  0.01 mol/L, 25 °C, instead of Russell's 1.6e-5, which fits bicarbonate waters and overstates a NaCl water's ionic
+  strength about 1.9 times, its corrected NH₃ and CO₂ about 4 % low at 3000 µS/cm), no seawater boron: at 3 ‰ its CO₂ is 4.6 to
+  9.2 % above what the band gives. Not said, the band is kept and the provenance says "assumes sea water's ion
+  composition; salt-added fresh water may read low CO₂". **Plausibility warnings** (cross review F5; `fresh::plausibility`, on every
+  `Equilibria` as `warnings`), said after the provenance with the value, never a refusal: the conductivity against the
+  salinity (the salinity's ionic strength outside 5.9e-6 to 2.1e-5 per µS/cm, NaCl's 8.4e-6 to Russell's 1.6e-5 each
+  widened by Russell's ±30 % scatter); a conductivity with no salinity and the hardness measured giving over 30 times the
+  ionic strength of the hardness and alkalinity (in-house, round 2: world-average river water, Livingstone 1963, has
+  about 1.3, an intensive RAS 10 to 20), or giving less
+  than their bound by over 1.5 times (Russell's scatter; the bound is used); a sea water's conductivity on a fresh water
+  (a salinity under 1 ‰ with a conductivity PSS-78, UNESCO 1983 with Hill et al. 1986, reads as 5 ‰ or more, about
+  8 950 µS/cm: a hard fresh RAS at 2000 to 3000 µS/cm stays quiet). Each says what to check. The thresholds are documented constants: no reference table holds per-water constants. The fresh path refuses an ionic strength above 0.5, the Davies limit
+  (`DAVIES_MAX`; a sample's NH₃ then says why and shows nothing). The conductivity and the hardness are water parameters
+  (cross review F8: only the compensated conductivity is read; the sensors' `conductivity_us_cm`, at the water's own
+  temperature, never). Formula 1 is still worked out exactly, by name only (`formula=1`: golden v1, `FORMULAS` = 1, 3),
+  so a value shown before the switch can be reproduced; a test fails when an application module calls formula 1's
+  `equilibria`. `chemcore/scripts/record_golden_v3.py` records golden v3 from the core (1 980 waters, each with formula
+  1's and formula 3's constants and provenance, the CO₂, the NH₃ share and, from 5 ‰, log Ω at five pH, and the whole
+  analysis of each by both; each recording again is by the script, its reason in the script's docstring); `farm/tests/test_golden_v3.py`
+  holds the core to it bit for bit; `farm/tests/test_cold_water.py` holds formula 3 at 0 to 12 °C to Emerson et al.'s
+  table, the Plummer & Busenberg and Harned & Hamer constants and an independent implementation of the free CO₂. Every NH₃ and CO₂ judgement takes the larger of the basis the limits were set on and the activity-corrected
+  value (cross review F1: `Equilibria::nh3_share`, `ph_where_nh3`, `co2_judged`, `ph_where_co2`, `fresh::limits_basis`;
+  the corrected values beside them as information; `farm/tests/test_limits_basis.py`, `chemcore/core/tests/basis.rs`). The
+  comparison for the owner, in Turkish, with the jump table, the choice of the band and the before and after numbers
+  at 2, 5, 8 and 12 °C, is `chemcore/findings/I2-comparison.md`; I1 is in `chemcore/findings/B1.md`.
+- *Three corrections to formula 3* (2026-11-10, owner-approved after an independent check of the core against PyCO2SYS
+  1.8.3.4 and seacarb 3.4.2, numbers only; formula 3 had not left its branch, so they are in formula 3 itself and golden
+  v3 was recorded again by its script; formula 1 and golden v1 are untouched, each keeping its old behaviour by name).
+  **Kw**: formula 3's ion product of water is Millero's (1995) on his seawater scale (`kw_sws`, ln constant 148.9802)
+  over [H⁺]SWS / [H⁺]free (`kw_free`), as K1, K2 and KNH4 are converted, on the sea path (`fresh::sea_equilibria`), in
+  the band and on the fresh path, where at S 0 it is pure water's (pKw 13.995 at 25 °C). Formula 1's `kw_total` is the
+  2007 Guide's total-scale value (Dickson, Sabine & Christian 2007, ch. 5, eq. 62: Millero's constant less 0.015, a
+  sea-water approximation that leaves pKw 14.001 in pure water); its docstring had named Millero as the source. Kw
+  moved by −0.8 to +1.5 % in golden v3, formula 3's own CO₂ by at most +0.085 % there (pH 6.5 to 8.5); nearer the
+  alkalinity floor more (the change is Kw's times the hydroxide's share of what is above the floor: 0.4 % at 40 °C, S 40,
+  1 meq/L, pH 9). The basis the limits were set on keeps formula 1's Kw, so a judged CO₂ never falls below formula 1's.
+  **Ω**: the calcite and aragonite saturation takes the calcium (mg/L) and the carbonate (of a per-litre alkalinity) per
+  litre, and Mucci's Ksp is per kg², so formula 3 takes the Ksp per litre (`Equilibria::ksp_per_litre`: times the square
+  of `seawater_density`, the one-atmosphere EOS-80 of Millero & Poisson 1981, check values of UNESCO 1983), one
+  definition for the small chart's index and the chart's Ω = 1 line. Ω had been ρ² too high: it fell by 4.1 to 5.4 % at
+  S 35 and under 0.8 % at S 5. **A water that cannot be**: a pH whose hydroxide and borate alone are at least the
+  alkalinity (its DIC, CO₂ and carbonate would be 0 or negative; 40 °C, S 40, 0.5 meq/L, pH 9 gave a DIC of −0.017
+  mmol/L) is refused by the core at every door (`ChemError::ImpossibleWater`, in Python `native.ImpossibleWaterError`, a
+  ValueError): the analysis (the water and the target), the equilibria's `dic`, `co2_judged`, `co2` and `carbonate`,
+  the chart, the small charts, the safe zone, a judged step and the simulator's start. One rule,
+  `Equilibria::possible`, which `why_impossible` asks too, so the reason the calculator's form, a unit's chart and a
+  replay frame say and the core's refusal are one decision; the trail (`sensors:trail`) lists such an hour under
+  `impossible` and draws no point. The chart's own geometry still follows a pH line below its floor (the safe zone's
+  corners, the solver of a CO₂ border): those are not waters. Tests: `chemcore/core/tests/kw.rs`, `omega.rs`,
+  `impossible.rs`; `farm/tests/test_saturation.py`, `test_impossible_water.py`, `sensors/tests/test_impossible.py`.
 - *Anchors* (`chemcore/golden/anchors.json`): the constants and a carbonate chain at three waters, worked out at 50
   digits with mpmath (`chemcore/scripts/anchors_mpmath.py`, mpmath pinned by hash in `anchors.lock`, run once, never
   by the server) from the formulas typed from the papers, each paper's check value asserted first. Today's Python
@@ -4328,7 +4860,7 @@ unit's chart), each refusing a user without its permission.
 | S9 the rest: one batch call for a page's analyses and figures | open |
 | S9 the rest: a binary encoding of the figures | not needed now: a real 60 s page is 0.4 to 0.76 MB gzipped, under the 2 MB at which it would be built (the plan's 400 KB target is passed at 60 s) |
 | S10 the retirement audit: no formula left in a door (a test holds it), the dead doors gone, the docs | done; two definitions over the core's values stay in `farm/water/read.py` until `wip/fix-monitoring` lands (see Retired) |
-| I2 fresh-water ionic strength (golden v3 beside v1, the owner sees it before any switch) | v3 built and recorded, not switched: the comparison for the owner is `chemcore/findings/I2-comparison.md` |
+| I2 fresh-water ionic strength (golden v3 beside v1, the owner sees it before any switch) | switched (owner, 2026-11-09): formula 3 with I1 (A of the temperature), the band from 1 to 5 ‰, the conductivity at 25 °C and the hardness as water parameters; the comparison for the owner is `chemcore/findings/I2-comparison.md` |
 
 **The replay, measured** (development database, read only, 2000-frame pages on three units with live demo readings at
 about 1 Hz). Distinct (temperature, salinity, TAN), and so figures, per page: 140 to 215 at a 1 s step, 219 to 362 at
@@ -5150,7 +5682,8 @@ under the wrong kind, fails.
 | `private_log_values` | core | product | The conversion of migration `core/0011` again: plain values under private labels in the activity log made private (`--dry-run`) | The database administrator (docs/erasure.md) |
 | `erase_stranger_address` | core | product | Erases, on the data-protection officer's instruction, an address an invitation was mis-sent to: in `account_mails` and in the activity log's rows of the account (a dry run unless `--apply`; it checks only that no account has the address now) | The database administrator (docs/erasure.md, step 8) |
 | `check_stock` | farm | product | Folds the stock ledger from its first line and reports every broken rule; changes nothing | An operator |
-| `check_withdrawal` | farm | product | The withdrawals holding fish today, and harvests recorded inside one; changes nothing | An operator |
+| `rederive_ph` | farm | product | Puts the stored samples' pH measured on the total, seawater or free scale on the NBS scale again by the application's formula, from what was measured, each change logged with its old value (`--dry-run` reads only; check farm.W001) | The database administrator, at a formula change after the backup (Water chemistry, formula 4) |
+| `check_withdrawal` | farm | product | The withdrawals holding fish today, and harvests and live deliveries recorded inside one; changes nothing | An operator |
 | `check_inventory` | inventory | product | Every rule of the store from scratch; changes nothing | An operator |
 | `check_reports` | reports | product | Every report against its frozen content and its key; changes nothing | An operator |
 | `check_experiments` | experiments | product | Every started experiment against the rules the database cannot hold; changes nothing | An operator |

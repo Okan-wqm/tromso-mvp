@@ -41,10 +41,12 @@
         <caption>{% trans "Worked out from the values" %}</caption>
         <tbody>
           <tr><th scope="row">{% trans "Un-ionised ammonia (NH₃-N)" %}</th><td class="num wq-value wq-{{ analysis.nh3.status }}">{{ analysis.nh3_n_mg_l|amount:4 }}{% if analysis.nh3_n_mg_l is not None %} mg/L{% endif %} · {{ analysis.nh3.status|status_label }}</td></tr>
+          {% if analysis.nh3_judged %}<tr><th scope="row">{% trans "NH₃-N best estimate (information, not judged)" %}</th><td class="num">{{ analysis.nh3_corrected_n_mg_l|amount:4 }} mg/L · {{ analysis.nh3_judged }}</td></tr>{% endif %}
           {% include "farm/_deffeyes_border.html" with border=analysis.nh3 %}
           <tr><th scope="row">{% trans "H₂S (as H₂S)" %}</th><td class="num wq-value wq-{{ analysis.h2s.status }}">{{ analysis.h2s_ug_l|amount:2 }}{% if analysis.h2s_ug_l is not None %} µg/L{% endif %} · {{ analysis.h2s.status|status_label }}</td></tr>
           {% include "farm/_deffeyes_border.html" with border=analysis.h2s %}
           <tr><th scope="row">{% trans "Carbon dioxide (CO₂)" %}</th><td class="num wq-value wq-{{ analysis.co2.status }}">{{ analysis.co2_mg_l|amount:2 }} mg/L · {{ analysis.co2.status|status_label }}</td></tr>
+          {% if analysis.co2_judged %}<tr><th scope="row">{% trans "CO₂ best estimate (information, not judged)" %}</th><td class="num">{{ analysis.co2_corrected_mg_l|amount:2 }} mg/L · {{ analysis.co2_judged }}</td></tr>{% endif %}
           {% include "farm/_deffeyes_border.html" with border=analysis.co2 %}
           <tr><th scope="row">{% trans "Dissolved inorganic carbon (DIC)" %}</th><td class="num">{{ analysis.dic|amount:3 }} mmol/L</td></tr>
           {% if analysis.target %}<tr><th scope="row">{% trans "Target DIC" %}</th><td class="num">{{ analysis.target_dic|amount:3 }} mmol/L</td></tr>
@@ -52,6 +54,10 @@
           <tr><th scope="row">{% trans "Oxygen saturation" %}</th><td class="num">{{ analysis.oxygen_saturation_pct|percent:1 }}</td></tr>
         </tbody>
       </table>
+      {% include "farm/calculator/_ph_scale.html" %}
+      <p class="calc-note" data-formula="{{ analysis.equilibria.formula }}">{{ analysis.provenance }}</p>
+      {% if analysis.nh3_judged %}<p class="calc-note">{{ analysis.nh3_judged }}</p>{% endif %}
+      {% if analysis.co2_judged %}<p class="calc-note">{{ analysis.co2_judged }}</p>{% endif %}
     </div>
   </div>
   {% endwith %}

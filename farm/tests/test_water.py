@@ -522,9 +522,12 @@ class DerivedTests(WaterTestCase):
         self.limit('nh3_n_mg_l', warning_high='0.01', critical_high='0.02')
         self.sample(hours=2, tan_mg_l='2', ph='7.5', temperature_c='12')
         nh3, nh4 = self.reading('nh3_n_mg_l'), self.reading('nh4_n_mg_l')
-        expected = D(2) * D(chemistry.nh3_fraction(7.5, 12, 0))          # fresh water: salinity 0
+        # Fresh water, nothing measured (ionic strength 0): formula 4 judges the larger of formula 3's ideal water and the
+        # best estimate, which here is Clegg & Whitfield's pure-water K, 0.25 % above the ideal's at 12 °C (formula 3:
+        # 0.0136, the ideal water, chemistry.nh3_fraction(7.5, 12, 0)).
+        expected = D(2) * D(chemistry.water_equilibria(12.0, 0.0).nh3_share(7.5))
         self.assertEqual((nh3.value, nh3.derived), (expected.quantize(D('0.0001')), True))
-        self.assertEqual(nh3.value, D('0.0136'))                          # 0.68 % of 2 mg/L
+        self.assertEqual(nh3.value, D('0.0137'))                          # 0.68 % of 2 mg/L
         self.assertEqual(nh3.status, Status.WARNING)
         self.assertEqual(nh4.value, D('1.986'))
         self.sample(hours=1, tan_mg_l='2', ph='7.5')                      # no temperature in the newer sample
@@ -539,7 +542,7 @@ class DerivedTests(WaterTestCase):
         self.assertEqual(self.reading('nh3_n_mg_l').note,
                          'Needs the salinity: none was measured here in the 7 days before.')
         self.sample(hours=24 * 5, salinity_ppt='35')
-        expected = (D(1) * D(chemistry.nh3_fraction(8, 10, 35))).quantize(D('0.0001'))
+        expected = (D(1) * D(chemistry.water_equilibria(10, 35).nh3_share(8))).quantize(D('0.0001'))
         self.assertEqual(self.reading('nh3_n_mg_l').value, expected)
 
     def test_oxygen_saturation_from_mg_l_at_the_sites_altitude_and_the_other_way_round(self):
@@ -860,7 +863,7 @@ class PageTests(WaterTestCase):
         self.assertContains(form, 'class="modal-head"')
         self.assertContains(form, 'Atlantic salmon: critical below 60.0, warning below 80.0, warning above 110.0')
         self.assertContains(form, 'Nitrite (mg/L NO₂ as N)')
-        self.assertContains(form, 'A kit that reads NO₂⁻: divide by 3.29.')
+        self.assertContains(form, 'A kit that reads NO₂⁻: divide by 3.28.')
         response = self.post(url, self.record_data(temperature_c='8.5', oxygen_mg_l='10.2', notes='Morning'))
         self.assertEqual(response.status_code, 204)
         self.assertEqual(response['X-Modal-Redirect'], f'/operations/water/?unit={self.t1.pk}')

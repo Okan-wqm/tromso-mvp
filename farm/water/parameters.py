@@ -11,7 +11,7 @@ How long a value says something about the water now is not the code's: it is the
 (farm/water/freshness.py, farm.WaterFreshness; cross review F10).
 The ranges are argued in the bug document (Water chemistry, the plausibility table)."""
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import ROUND_DOWN, Decimal
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -72,9 +72,16 @@ MEASURED = [
                'oxygen', _('As an oxygen meter shows it; above 100 % with added oxygen. With the temperature, the mg/L '
                            'is worked out when it is not entered.')),
     _parameter('ph', _('pH (NBS scale)'), _('pH'), 2, 2, 12, 'acid',
-               _('As a pH meter or kit reads it.')),
+               # The K_NH4 panel's decision of 2026-11-10, row 6. The numbers are the core's own factors over 5 to 35 ‰
+               # and 0 to 30 °C (farm/tests/test_ph_scale.py holds them to it).
+               _('As a pH meter or kit calibrated with NBS/NIST buffers reads it, at the water’s own temperature. A '
+                 'total-scale pH (a seawater sensor calibrated with TRIS) reads 0.09 to 0.15 lower in water of 5 to '
+                 '35 ‰: typed here as NBS, the NH₃ worked out is 19 to 28 % too low.')),
     _parameter('alkalinity_mg_l', _('Alkalinity (mg/L as CaCO₃)'), _('Alkalinity (mg/L)'), 0, 0, 1000, 'acid',
                _('Total alkalinity. A kit in dKH: multiply by 17.85.')),
+    _parameter('hardness_mg_l', _('Total hardness (mg/L as CaCO₃)'), _('Hardness (mg/L)'), 0, 0, 10000, 'acid',
+               _('Calcium and magnesium together, as CaCO₃. A kit in dGH: multiply by 17.85. With the alkalinity it '
+                 'gives the fresh water’s ionic strength when no conductivity is measured.')),
     _parameter('co2_mg_l', _('Carbon dioxide (mg/L free CO₂)'), _('CO₂ (mg/L)'), 1, 0, 200, 'acid',
                _('Free carbon dioxide, from a CO₂ probe or a titration.')),
     _parameter('tan_mg_l', _('Total ammonia nitrogen (mg/L TAN as N)'), _('TAN (mg/L N)'), 3, 0, 100,
@@ -82,14 +89,29 @@ MEASURED = [
                              'reads NH₃: divide by 1.22. The toxic NH₃ is worked out from this, the pH and the '
                              'temperature of the same sample.')),
     _parameter('nitrite_n_mg_l', _('Nitrite (mg/L NO₂ as N)'), _('NO₂-N (mg/L)'), 3, 0, 100, 'nitrogen',
-               _('As nitrogen. A kit that reads NO₂⁻: divide by 3.29.')),
+               # 46.0055 / 14.0067 = 3.2845 (the water-chemistry audit of 2026-11-19, F7; it said 3.29).
+               _('As nitrogen. A kit that reads NO₂⁻: divide by 3.28.')),
     _parameter('nitrate_n_mg_l', _('Nitrate (mg/L NO₃ as N)'), _('NO₃-N (mg/L)'), 1, 0, 1000, 'nitrogen',
                _('As nitrogen. A kit that reads NO₃⁻: divide by 4.43.')),
     _parameter('tgp_pct', _('Total gas pressure (% of barometric pressure)'), _('TGP (%)'), 1, 50, 200, 'other',
                _('From a saturometer (total dissolved gas).')),
     _parameter('salinity_ppt', _('Salinity (‰, g/kg)'), _('Salinity (‰)'), 1, 0, 50, 'other',
                _('PSU is the same number: 0 in fresh water, about 35 in the sea.')),
+    _parameter('conductivity_25_us_cm', _('Conductivity at 25 °C (µS/cm, temperature-compensated)'),
+               _('EC 25 °C (µS/cm)'), 0, 0, 100000, 'other',
+               _('Specific conductance: the meter’s reading compensated to 25 °C (the meter’s temperature compensation '
+                 'on, referred to 25 °C, not 20 °C). A reading at the water’s own temperature is not this value. In '
+                 'fresh water the ionic strength is taken from it (Russell 1976).')),
     _parameter('turbidity_ntu', _('Turbidity (NTU)'), _('Turbidity (NTU)'), 1, 0, 4000, 'other'),
+    # Optional, and nothing changes without it (the independent check of 2026-11-09, hypothesis 12a; owner 2026-11-10;
+    # chemcore/findings/phosphate.md). Stored as P; where it is typed its unit is chosen (PO4_PER_P below; the
+    # independent review of 2026-11-16, R3: a PO₄ reading typed as P was taken by every dose). 3.07: PO₄ over P.
+    _parameter('phosphate_p_mg_l', _('Phosphate (mg/L PO₄ as P)'), _('PO₄-P (mg/L)'), 2, 0, 100, 'other',
+               _('Orthophosphate. Choose its unit beside it: a kit that reads PO₄³⁻ shows 3.07 times the number as P '
+                 '(PO₄-P). A PO₄ reading entered as P counts 3.07 times too much phosphate, and every recipe and dose '
+                 'worked out with it is wrong. Phosphate is part of the alkalinity a titration measures: with it the '
+                 'calculator and a unit’s chart count its buffer in the DIC, in the water’s own CO₂ and in what a '
+                 'dose or a stripping does. The judged CO₂ never falls because of it. Empty: not counted, as before.')),
 ]
 
 # Worked out on read from the same sample (farm/water/chemistry.py), never stored. NH₃-N takes limits;
@@ -113,6 +135,48 @@ SAME_QUANTITY = {OXYGEN_MG_L: OXYGEN_PCT, OXYGEN_PCT: OXYGEN_MG_L}
 
 def get(code):
     return BY_CODE[code]
+
+
+# ---- the phosphate's unit ---------------------------------------------------------------------------------------
+# A phosphate is stored, shown and worked out as phosphorus (PO₄-P, mg/L as P). A kit or a laboratory may report it as
+# phosphate (mg/L PO₄): the same water is PO4_PER_P times the number. Where a phosphate is typed its unit is chosen and
+# a value as PO₄ is put on P HERE, the one place, by the molar masses: P 30.973762 (the core's, chemcore MG_P_PER_MMOL;
+# farm/tests/test_phosphate_unit.py holds the two together) and PO₄ 94.9714 (P and four O of 15.9994). A unit
+# conversion of an input, not chemistry: the core takes P only.
+PHOSPHATE = 'phosphate_p_mg_l'
+AS_P, AS_PO4 = 'p', 'po4'
+P_G_PER_MOL = Decimal('30.973762')
+PO4_G_PER_MOL = Decimal('94.9714')
+PO4_PER_P = PO4_G_PER_MOL / P_G_PER_MOL          # 3.0662...: "3.07" in the words
+# The most a phosphate may be as PO₄: the last value at the column's precision that is at most the phosphorus's range
+# as P (306.61: 306.62 is 100.00037 as P). THE bound of every door where a phosphate is typed as PO₄ (the sample, the
+# round, the calculator: `phosphate_in_range`) and the number their one sentence says (messages.phosphate_range; the
+# verification of 2026-11-18, V-F: the sample door rounded first and stored 306.62 and 306.63 as 100.00, the
+# calculator refused 306.62 saying "up to 306.62").
+PO4_HIGH = (BY_CODE[PHOSPHATE].high * PO4_PER_P).quantize(BY_CODE[PHOSPHATE].step, rounding=ROUND_DOWN)
+# What the database holds a sample's entry and its stored P together by (farm.models.water: the check
+# chk_water_measurements_phosphate_unit): per unit, the factor at seven decimals (its error is under 0.000002 mg/L as P
+# over the range), and half a step of the column, the rounding of the stored P, with a hundredth of a step to spare.
+PER_P_CHECKED = {AS_PO4: PO4_PER_P.quantize(Decimal('0.0000001'))}
+P_ROUNDING = BY_CODE[PHOSPHATE].step * Decimal('0.51')
+
+
+def phosphate_as_p(value, unit):
+    """A phosphate typed in `unit` (AS_P, AS_PO4) as mg/L of phosphorus, not rounded; KeyError for another unit."""
+    return {AS_P: lambda: value, AS_PO4: lambda: value / PO4_PER_P}[unit]()
+
+
+def phosphate_in_range(value, unit):
+    """Whether a phosphate typed in `unit` is inside the phosphorus's range: as P the parameter's own, as PO₄ from 0
+    to PO4_HIGH (the same range, said in the unit it was typed in, so no rounding moves the bound)."""
+    if unit == AS_P:
+        return BY_CODE[PHOSPHATE].plausible(value)
+    return {AS_PO4: lambda: 0 <= value <= PO4_HIGH}[unit]()
+
+
+def phosphate_as_po4(value):
+    """A phosphate as P (mg/L) as mg/L of PO₄, not rounded: what a page says beside the P."""
+    return value * PO4_PER_P
 
 
 def in_group(key):

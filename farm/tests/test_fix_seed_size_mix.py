@@ -247,8 +247,8 @@ class LockOrderTests(SeedCagesTestCase):
         calls = []
         lock = services.lock_fish
         make = fix_seed_size_mix.Command.make_unit
-        with mock.patch.object(services, 'lock_fish', side_effect=lambda ids, *a: calls.append(('lock', set(ids)))
-                               or lock(ids, *a)), \
+        with mock.patch.object(services, 'lock_fish', side_effect=lambda ids, *a, **k: calls.append(('lock', set(ids)))
+                               or lock(ids, *a, **k)), \
                 mock.patch.object(fix_seed_size_mix.Command, 'make_unit', autospec=True,
                                   side_effect=lambda self_, *a: calls.append(('make', a[2])) or make(self_, *a)):
             self.command()

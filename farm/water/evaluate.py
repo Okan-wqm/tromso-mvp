@@ -29,6 +29,10 @@ class Status(models.TextChoices):
     """In order, worst first: the order "the worst of" reads."""
     CRITICAL = 'critical', _('Critical')
     WARNING = 'warning', _('Warning')
+    # A value the fish have a limit for that the chemistry core refuses to work out (read.Reading.refused: a
+    # conductivity past the Davies range): what it is for the fish is not known, so it is never OK and never silent
+    # (the verification of 2026-11-18, V-A). Below a judged warning, above OK.
+    UNEVALUATED = 'unevaluated', _('Cannot be evaluated')
     OK = 'ok', _('OK')
     NO_LIMIT = 'no_limit', _('No limit')
     STALE = 'stale', _('Stale')

@@ -16,6 +16,8 @@ from core.crud import DRAFT, CodedFormMixin, RowFormSet, TabbedForm, tab_fields
 from core.dates import on_clock
 from farm.models import Equipment, SamplingPoint, Site, System, Tank
 from farm.models.site import zone_of
+from farm.models.water import NBS
+from farm.water.parameters import PH
 from core.widgets import MomentInput
 
 from . import bindings, quantities
@@ -139,7 +141,7 @@ class DeviceForm(CodedFormMixin, TabbedForm):
 
 CHANNEL_TABS = [
     ('source', gettext_lazy('Source'), ['device', 'code', 'name', 'value_path', 'item_name', 'note']),
-    ('quantity', gettext_lazy('Quantity and unit'), ['quantity', 'unit', 'unit_factor', 'unit_offset']),
+    ('quantity', gettext_lazy('Quantity and unit'), ['quantity', 'ph_scale', 'unit', 'unit_factor', 'unit_offset']),
     ('address', gettext_lazy('Address'), ['address_protocol', 'address']),
     ('reduction', gettext_lazy('Storing'), ['reduction', 'deadband', 'heartbeat_s', 'fresh_heartbeats', 'range_min',
                                             'range_max', 'state']),
@@ -179,6 +181,8 @@ class ChannelForm(CodedFormMixin, TabbedForm):
         field_classes = {'address': AddressField}
         localized_fields = ['unit_factor', 'unit_offset', 'deadband', 'range_min', 'range_max']
         help_texts = {
+            'quantity': quantities.PH_SCALE_NOTE,
+            'ph_scale': quantities.PH_SCALE_HELP,
             'value_path': gettext_lazy('One object per message: a JSON pointer to this channel’s value, e.g. '
                                        '/tags/o2/value.'),
             'item_name': gettext_lazy('A list of items: the name the item of this channel has, e.g. do.'),
@@ -214,6 +218,19 @@ class ChannelForm(CodedFormMixin, TabbedForm):
         # Empty: as it is (a new channel: the platform's default, 3), so a form or a client that does not send it
         # changes nothing (cross review F10 made it the channel's own).
         self.fields['fresh_heartbeats'].required = False
+        # A pH scale is a pH channel's alone (chk_sensors_channel_ph_scale): asked while the quantity is pH or not chosen.
+        chosen = self.instance.quantity or (self.data.get(self.add_prefix('quantity')) if self.is_bound else None) \
+            or (self.draft or {}).get('quantity')
+        if chosen and chosen != PH:
+            del self.fields['ph_scale']
+        else:
+            # Empty: as it is (a new channel: NBS), so a form or a client that does not send it changes nothing.
+            self.fields['ph_scale'].required = False
+        if 'ph_scale' in self.fields and not adding and self.instance.ph_scale_from is not None:
+            self.tab_help['quantity'] = _('The pH scale was changed on %(time)s: what the probe measured before is used '
+                                          'nowhere (its scale is not known).') % {
+                'time': timezone.localtime(self.instance.ph_scale_from, zone_of(self.instance.device.site))
+                .strftime('%d.%m.%Y %H:%M')}
         if adding and self.draft is not None and self.draft.get(DRAFT) == 'quantity' \
                 and self.draft.get('quantity') in quantities.BY_CODE:
             for name, value in quantities.defaults(self.draft['quantity']).items():
@@ -232,6 +249,10 @@ class ChannelForm(CodedFormMixin, TabbedForm):
         if found is None:
             return self.instance.fresh_heartbeats if self.instance.fresh_heartbeats is not None else                 Channel._meta.get_field('fresh_heartbeats').default
         return found
+
+    def clean_ph_scale(self):
+        """Empty: the channel's scale as it is (NBS for a new one)."""
+        return self.cleaned_data.get('ph_scale') or self.instance.ph_scale or NBS
 
     def clean(self):
         cleaned = super().clean()
@@ -558,7 +579,10 @@ class AlarmRuleForm(TabbedForm):
         widgets = {'threshold': forms.TextInput(attrs=DECIMAL), 'hysteresis': forms.TextInput(attrs=DECIMAL)}
         help_texts = {
             'quantity': gettext_lazy('Instead of one channel: every active channel of this quantity.'),
-            'threshold': gettext_lazy('In the quantity’s unit; for a rate, the change over the time below.'),
+            'threshold': gettext_lazy('In the quantity’s unit; for a rate, the change over the time below. A water value, '
+                                      'a pH among them, takes no above or below here: the water limits judge its level '
+                                      '(a pH on the NBS scale). A rate of pH is about the same on every scale, and does '
+                                      'not compare a value with one from before the channel’s pH scale was changed.'),
             'for_s': gettext_lazy('Above or below: every value of this time must be past the threshold. No fresh value: '
                                   'this long past the channel’s freshness. A rate: the change over this time.'),
             'hysteresis': gettext_lazy('An open alarm closes only once the value is back past the threshold by this much.'),

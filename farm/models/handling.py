@@ -138,7 +138,10 @@ def _shape():
 
 class HandlingAcknowledgement(models.Model):
     """One warning a person went on past when recording a handling (a harvest, a transfer, a grading, a
-    treatment): a medicine withdrawal in force, or too short a fast. It keeps what they were shown, the
+    treatment): a medicine withdrawal in force, or too short a fast; and, as a withdrawal row on the move that made it
+    (a transfer, a split, a grading, or a stocking, which is no handling: `kind` is None there), the fish a move
+    combined with held fish, which now wait with them (the owner's decision 8; farm.stock.integrity knows both). It
+    keeps what they were shown, the
     withdrawal's end and reason, or the hours (and for a harvest's purging the degree-days) fasted against what the
     rule asked for, so the record says
     what was known at the time. It belongs to the stock operation or to the treatment it was given for, exactly
@@ -200,7 +203,8 @@ class HandlingAcknowledgement(models.Model):
 
     @property
     def kind(self):
-        """The handling it was given for: the operation's kind, or a treatment."""
+        """The handling it was given for: the operation's kind, or a treatment; None on a stocking (the row of fish
+        combined with held fish)."""
         if self.treatment_id:
             return HandlingKind.TREATMENT
         return KIND_OF_OPERATION.get(self.operation.kind)
@@ -209,14 +213,23 @@ class HandlingAcknowledgement(models.Model):
 class WithdrawalWarning(models.TextChoices):
     """What a change of a withdrawal does that a person must go on past (farm.health.withdrawal.guarded)."""
     HARVESTED = 'harvested', _('Harvest inside a withdrawal')
+    DELIVERED = 'delivered', _('Live delivery inside a withdrawal')
     RELEASED = 'released', _('Fish freed from a withdrawal')
+    HELD = 'held', _('Fish held again by a withdrawal')
+
+
+# The warnings that name the operation whose fish left the farm inside the withdrawal (`harvest`).
+NAMING_THE_HARVEST = (WithdrawalWarning.HARVESTED, WithdrawalWarning.DELIVERED)
 
 
 class WithdrawalAcknowledgement(models.Model):
     """One warning a person went on past when a write changed a medicine withdrawal (the withdrawal guard,
     farm.health.withdrawal.guarded, which every such write goes through: a treatment, its last day or void, a medicated
     feeding or its void, a medicine's withdrawal rows, a water sample, a stock operation): a harvest already recorded now
-    lies inside a withdrawal (`harvested`, naming the harvest), or fish held today are freed by it (`released`). It
+    lies inside a withdrawal (`harvested`, naming the harvest), a live delivery already recorded does (`delivered`,
+    naming the delivery in the same column: the owner's decision 13 of 19.11.2026, a live delivery is a harvest also
+    after the fact), fish held today are freed by it (`released`), or fish
+    that had been let go are held again by it (`held`: a longer ceiling for the ends without a rule). It
     names the write (`record_type`, `record_id`, `record_label`, as the activity log names records), the batch, the
     withdrawal (`source`: "treatment:<id>" or "feeding:<id>") and what was shown, and who went on and when. Append-only:
     the database refuses an edit or a delete (migration farm 0027); the write's log entry is critical."""
@@ -231,7 +244,7 @@ class WithdrawalAcknowledgement(models.Model):
     warning = models.CharField(_('Warning'), max_length=12, choices=WithdrawalWarning.choices)
     batch = models.ForeignKey(Batch, on_delete=models.PROTECT, related_name='+', verbose_name=_('Batch'))
     harvest = models.ForeignKey(StockOperation, null=True, blank=True, on_delete=models.PROTECT,
-                                related_name='withdrawal_findings', verbose_name=_('Harvest'))
+                                related_name='withdrawal_findings', verbose_name=_('Harvest or live delivery'))
     source = models.CharField(_('Withdrawal of'), max_length=80)
     until = models.DateField(_('Withdrawal until'), null=True, blank=True)       # None: unknown
     approximate = models.BooleanField(_('Withdrawal end estimated'), default=False)
@@ -245,10 +258,11 @@ class WithdrawalAcknowledgement(models.Model):
         constraints = [
             models.CheckConstraint(condition=Q(warning__in=WithdrawalWarning.values),
                                    name='chk_withdrawal_acknowledgements_warning'),
-            # A harvested row names the harvest inside the withdrawal; a released row names none.
+            # A harvested row names the harvest inside the withdrawal, a delivered row the live delivery; a released and
+            # a held row name none.
             models.CheckConstraint(
-                condition=Q(warning=WithdrawalWarning.HARVESTED, harvest__isnull=False)
-                | Q(warning=WithdrawalWarning.RELEASED, harvest__isnull=True),
+                condition=Q(warning__in=NAMING_THE_HARVEST, harvest__isnull=False)
+                | Q(warning__in=[WithdrawalWarning.RELEASED, WithdrawalWarning.HELD], harvest__isnull=True),
                 name='chk_withdrawal_acknowledgements_harvest'),
         ]
         indexes = [models.Index(fields=['harvest', 'batch'])]

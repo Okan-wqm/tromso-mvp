@@ -31,7 +31,12 @@ The functions, by what they answer:
   temperature for the rations and the withdrawal is read the same way, by `water_sources`.
 - Un-ionised ammonia needs the pH and the temperature of the TAN sample itself; the salinity is the
   sample's, else the point's latest within WINDOW before it, else its owner's middle point's, else 0 where
-  every unit it concerns is in fresh water; otherwise it is not worked out and the reason is shown. The
+  every unit it concerns is in fresh water; otherwise it is not worked out and the reason is shown. Its ionic
+  strength (formula 3, chemcore/findings/I2-comparison.md) is the water's: the alkalinity, the conductivity at 25 °C
+  and the hardness each the sample's, else the point's latest fresh at the sample's time, else its owner's middle
+  point's, as the salinity (none of them: an ionic strength of 0, formula 1's ideal water, the safe side). Every
+  worked-out value says the formula version it was worked out by (`Reading.provenance`); nothing worked out is stored,
+  so a past sample is shown by the formula of today and says so. The
   oxygen saturation needs the sample's temperature, the same salinity and the site's altitude (sea-level
   pressure when it has none, said so).
 - The fish a value is judged for are the species in its unit on the day it was measured, at any time of
@@ -69,11 +74,13 @@ from farm.models.water_point import FlowRole, PointKind, kinds_with, local_time,
 from farm.stock.dates import local_today
 from farm.stock.read import Presence
 
-from . import chemistry, parameters, sources
+from . import chemistry, messages, parameters, sources
 from . import freshness
 from .evaluate import ALERTS, MAX_AHEAD, RANK, Limits, Status, ahead, crossed as bound_crossed, is_fresh, worst
 from .parameters import NH3_N, NH4_N, OXYGEN_MG_L, OXYGEN_PCT, TAN
 
+# The water's ionic-strength inputs of a TAN sample's ammonia (formula 3): looked up as its salinity is.
+IONIC_INPUTS = ('alkalinity_mg_l', 'conductivity_25_us_cm', 'hardness_mg_l')
 # How far back the latest values, and a salinity for a sample without one, are looked for.
 WINDOW = timedelta(days=30)
 OXYGEN = 'oxygen'
@@ -101,6 +108,41 @@ def assumed_salinity(water_types):
     """The salinity (ppt) to use where none was measured: 0 when every unit concerned (`water_types`: their
     Tank.WaterType values) is in fresh water, else None, never a guess: the value is then not worked out."""
     return Decimal(0) if set(water_types) == {Tank.WaterType.FRESHWATER} else None
+
+
+def common_origin(units):
+    """The water origin of units (Tank.water_origin; cross review F3): theirs when they all say the same, else '' (not
+    said: a salinity of 1 to 5 permil is taken as diluted sea water). What the constants of a water are worked out
+    with; whether a pH on a seawater scale is taken is `scale_origin`'s."""
+    origins = {unit.water_origin for unit in units}
+    return origins.pop() if len(origins) == 1 else ''
+
+
+def scale_origin(units):
+    """The water origin of units for the pH-scale rule (a pH on the total, the seawater or the free scale is taken for
+    sea water only, never for fresh water with salt added: chemcore/core/src/scale.rs): salt added as soon as ONE unit
+    of their water says so (`one_water`: they and every live unit of their systems), whatever the others say or leave
+    unsaid; else `common_origin` of them. One water: salt added to a part of a loop is in all of it, so every point of
+    that water answers alike, the loop's, each unit's middle point and its other own points (the verification of
+    2026-11-18, V-C, and its re-check RC-1: a loop of a salt-added unit and one that says nothing took a total-scale
+    7.95 as 8.09, first at the loop point, then at the other unit's own point), and "not said" is the side that
+    converts. THE place it is decided: the sample door and the round (services.on_nbs) and the calculator loaded from
+    a unit, a loop or a point (calculation.scale_origin_of). The constants themselves stay `common_origin`'s: no
+    worked-out number moves."""
+    if any(unit.water_origin == Tank.WaterOrigin.SALT_ADDED for unit in one_water(units)):
+        return Tank.WaterOrigin.SALT_ADDED.value
+    return common_origin(units)
+
+
+def one_water(units):
+    """The units whose water `units` are part of: they and every live unit of the systems they are in (a loop's water is
+    one water, whichever of its points it is sampled at). A unit in no system is its own water. One query at most."""
+    units = list(units)
+    systems = {unit.system_id for unit in units if getattr(unit, 'system_id', None)}
+    if not systems:
+        return units
+    given = {unit.pk for unit in units}
+    return [*units, *(unit for unit in Tank.objects.filter(system__in=systems).order_by('code') if unit.pk not in given)]
 
 
 def assumed_salinities(points):
@@ -220,6 +262,60 @@ def as_parameter(code, value):
 
 
 @dataclass(frozen=True)
+class OnNbs:
+    """What `ph_on_nbs` gives: the pH on the NBS scale at the pH column's decimals (`value`) and the formula version it
+    was put on it by; or no value and why not (`refused`, a key of messages.PH_SENSOR_REFUSED): 'not_sea' where the
+    core takes no pH on that scale (fresh water, salt added, below 5 ‰: Equilibria.takes_ph_scale), 'core' where it
+    cannot work the water out at all, its own reason in `error` (the review of the water-chemistry audit, C5: such a
+    water was said to be "not sea water")."""
+    value: Decimal | None = None
+    formula: int | None = None
+    refused: str = ''
+    error: str = ''
+
+    def said(self, scale):
+        """Why a pH on `scale` was not put on the NBS scale, in the words after "cannot be evaluated:"."""
+        return messages.ph_sensor_refused(self.refused, scale, self.error)
+
+
+def ph_on_nbs(ph, scale, temperature, salinity, origin):
+    """The OnNbs of a pH measured on `scale` (a PhScale code) in water of this temperature and salinity, its salt from
+    `origin` (`scale_origin`): its value on the NBS scale, or why there is none. THE conversion of every pH: a typed
+    sample's (services.on_nbs), a sensor's (Context.sensor_ph), a replay frame's and a trail hour's."""
+    try:
+        equilibria = chemistry.water_equilibria(float(temperature), float(salinity), water_origin=origin)
+        if not equilibria.takes_ph_scale(scale):
+            return OnNbs(refused='not_sea')
+        converted = equilibria.ph_nbs(float(ph), scale)
+    except (ValueError, ArithmeticError) as error:      # a water the core cannot work out: its own reason
+        return OnNbs(refused='core', error=str(error))
+    return OnNbs(Decimal(repr(converted)).quantize(parameters.get(parameters.PH).step), equilibria.formula)
+
+
+@dataclass(frozen=True)
+class SensorPh:
+    """A sensor's pH whose channel is on another scale than NBS, or whose scale changed (owner decision 1 of 2026-11-17;
+    the water-chemistry audit of 2026-11-19, F1): what the probe gave (`as_measured`), on which scale ('' NBS) and since
+    when that scale holds; once put on the NBS scale (`Context.sensor_ph`) the temperature, the salinity and the formula
+    it was converted with; else why it was not (`refused`). Until it is converted its Observation holds no pH at all:
+    the unconverted number is never a value."""
+    scale: str
+    as_measured: Decimal
+    since: datetime | None = None
+    temperature: Decimal | None = None
+    salinity: Decimal | None = None
+    formula: int | None = None
+    refused: str = ''
+    # Where the temperature it was converted with came from when not a fresh sensor's: 'manual, 19.11.2026 10:00'
+    # (Basis.said; the review of the water-chemistry audit, C2), else ''.
+    temperature_from: str = ''
+
+    @property
+    def converted(self):
+        return self.formula is not None
+
+
+@dataclass(frozen=True)
 class Observation:
     """The values one source gave at a point at one moment: a sample (manual or lab: `sample` is the WaterMeasurement), a
     sensor channel's value, or the set of sensor values a derived value was worked out from (`at` then the oldest).
@@ -234,6 +330,7 @@ class Observation:
     is_deleted: bool = False
     sample: WaterMeasurement | None = None
     basis: dict = field(default_factory=dict)     # code -> Basis: what a sample's oxygen is worked out with
+    ph: SensorPh | None = None                    # a sensor's pH not on the NBS scale as sent (SensorPh)
 
     @classmethod
     def of_sample(cls, sample):
@@ -242,14 +339,28 @@ class Observation:
 
     @classmethod
     def of_sensor(cls, point, value, origin):
-        """A sensor's value (sources.SensorValue) as the water parameter's Decimal, at its decimals."""
-        return cls(point, value.at, origin, {value.code: as_parameter(value.code, value.value)},
-                   channel_no=value.channel_no, role=value.role, fresh_for=value.fresh_for)
+        """A sensor's value (sources.SensorValue) as the water parameter's Decimal, at its decimals. A pH from a channel
+        on another scale than NBS holds no pH until `Context.sensor_ph` puts it on the NBS scale; one measured before its
+        channel's scale changed holds none at all (its scale is not known): `ph` says which and why."""
+        found = as_parameter(value.code, value.value)
+        ph = None
+        if value.code == parameters.PH and (value.ph_scale or value.ph_scale_from is not None):
+            if value.ph_scale_from is not None and value.at < value.ph_scale_from:
+                ph = SensorPh(value.ph_scale, found, value.ph_scale_from, refused=str(messages.ph_scale_changed(
+                    local_time(value.ph_scale_from, point))))
+            elif value.ph_scale:
+                ph = SensorPh(value.ph_scale, found, value.ph_scale_from,
+                              refused=str(messages.ph_sensor_refused('unconverted', value.ph_scale)))
+            if ph is not None:
+                found = None
+        return cls(point, value.at, origin, {value.code: found}, channel_no=value.channel_no, role=value.role,
+                   fresh_for=value.fresh_for, ph=ph)
 
     @classmethod
     def combined(cls, observations):
         """The sensor values a derived value is worked out from: their values together, at the oldest one's time, from
-        the first one's point and origin, fresh as long as the least fresh of them."""
+        the first one's point and origin, fresh as long as the least fresh of them, with the pH's conversion (`ph`) of
+        the one that has it."""
         first = observations[0]
         measured = {}
         for each in observations:
@@ -257,7 +368,8 @@ class Observation:
         oldest = min(observations, key=lambda each: each.at)
         ends = [each.at + timedelta(seconds=each.fresh_for) for each in observations if each.fresh_for is not None]
         fresh_for = int((min(ends) - oldest.at).total_seconds()) if ends else None
-        return cls(first.point, oldest.at, first.origin, measured, fresh_for=fresh_for)
+        ph = next((each.ph for each in observations if each.ph is not None), None)
+        return cls(first.point, oldest.at, first.origin, measured, fresh_for=fresh_for, ph=ph)
 
     @property
     def measured_at(self):
@@ -456,6 +568,41 @@ class Reading:
     deciding: tuple = ()
     through: object = None         # the Reading in the other oxygen unit it was judged as (Context.judge), else None
     why_no_limit: str = ''      # with status No limit: no fish in the unit that day, or no limit for their species
+    provenance: str = ''        # a worked-out value: the formula version (and ionic strength) it was worked out by
+    # A value stored converted (a pH measured on another scale than NBS): what was measured, in the few words every page
+    # prints visibly beside the stored number (farm/_water_value.html; review R6); the whole sentence is `provenance`.
+    # A refused NH₃ judged on the limits' basis alone says so the same way ("at least: the limits' basis", RC-3).
+    measured: str = ''
+    # A worked-out value the chemistry core REFUSED to work out (its own reason, in its words; '' otherwise). Where the
+    # fish have a limit for it (`limits`, set by Context.judge) it is "cannot be evaluated", never "not measured": the
+    # unit's state says so and the alarm source raises a warning for the unit (the verification of 2026-11-18, V-A).
+    # Its `value`, when it has one, is the limits' basis alone, at least the judged value (Context._ammonia_on_basis):
+    # judged past a limit it is that limit's status, else "cannot be evaluated"; it is never evidence that an alarm is
+    # over (alarms/sources.py clear_evidence).
+    refused: str = ''
+    # The unit's own last value of the parameter, stale and judged critical or a warning, where the value shown stands in
+    # from its system (`last_own`; decision of 2026-11-19 on the verification's F3-9): it keeps the status, and the page,
+    # the card and the alarm say "last own value …, measure this unit".
+    last_own: object = None
+    # A worked-out value as it was worked out, before `value` was rounded to the parameter's decimals for display: what
+    # the limits judge (`judged_value`; the water-chemistry audit of 2026-11-19, F3: a true 0.01034 mg/L NH₃-N read
+    # 0.0103 and was OK against a limit of 0.0103). None for a measured value, which is judged as entered.
+    exact: Decimal | None = None
+
+    @property
+    def judged_value(self):
+        """The value the limits judge: the unrounded one where it was worked out (`exact`), else `value`."""
+        return self.exact if self.exact is not None else self.value
+
+    @property
+    def unevaluated(self):
+        """Whether the limits would judge this value and the core refused to work it out."""
+        return bool(self.refused and self.limits)
+
+    @property
+    def last_own_said(self):
+        """The visible words beside the value of a status the unit's own stale value keeps (`last_own`), else ''."""
+        return messages.last_own(self.last_own) if self.last_own is not None else ''
 
     @property
     def at(self):
@@ -493,6 +640,32 @@ class Reading:
         return is_fresh(self.parameter, self.at, now, self.sample.fresh_for)
 
 
+def reading_of(code, observation):
+    """The Reading of one measured value of an observation, saying what was measured where it was put on another scale
+    or unit: a sample's pH measured on another scale than NBS, a sample's phosphate entered as PO₄, a sensor's pH put on
+    the NBS scale (`Observation.ph`). A sensor's pH that could not be put on it has no value and keeps the reason
+    (`refused`): where the fish have a pH limit it cannot be evaluated (Context.judge), never shown unconverted."""
+    reading = Reading(parameters.get(code), observation.get(code), observation)
+    sample = observation.sample
+    if code == parameters.PH and sample is not None and sample.ph_scale:
+        # A pH measured on another scale is stored on the NBS scale; the reading says what was measured.
+        reading.provenance = str(messages.ph_measured(sample))
+        reading.measured = str(messages.ph_measured_short(sample))
+    elif code == parameters.PH and observation.ph is not None:
+        ph = observation.ph
+        if ph.converted:
+            reading.provenance = str(messages.ph_sensor_converted(ph))
+            reading.measured = str(messages.ph_measured_words(ph.as_measured, ph.scale))
+        else:
+            reading.note = str(messages.ph_not_converted(ph.refused))
+            reading.refused = ph.refused
+    if code == parameters.PHOSPHATE and sample is not None and sample.phosphate_unit:
+        # A phosphate entered as PO₄ is stored as P; the reading says what was entered.
+        reading.provenance = str(messages.phosphate_measured(sample))
+        reading.measured = str(messages.phosphate_measured_short(sample))
+    return reading
+
+
 @dataclass
 class PointWater:
     """The latest readings of one sampling point, by parameter code; `point` is None for a unit that has no
@@ -518,15 +691,17 @@ class PointWater:
         ("critical, no recent data": never hidden by a fresh OK of another parameter, never "No limit"); else the worst
         fresh judgement; Stale when a value with a limit grew old and nothing fresh is judged; else No limit or Not
         measured."""
-        judged = [status for status in counted if status in (Status.CRITICAL, Status.WARNING, Status.OK)]
+        judged = [status for status in counted
+                  if status in (Status.CRITICAL, Status.WARNING, Status.UNEVALUATED, Status.OK)]
         if judged:
             return worst(judged)
         return Status.STALE if Status.STALE in counted else worst(counted)
 
     @staticmethod
     def _as_counted(status, judged):
-        """A value's status as a point counts it: an old critical or warning value keeps its judgement."""
-        return judged if status == Status.STALE and judged in ALERTS else status
+        """A value's status as a point counts it: an old critical or warning value keeps its judgement, and so does an
+        old one that cannot be evaluated (never OK behind a fresh value of another parameter)."""
+        return judged if status == Status.STALE and judged in (*ALERTS, Status.UNEVALUATED) else status
 
     def _counted(self):
         return [self._as_counted(reading.status, reading.judged) for reading in self.readings.values()
@@ -564,6 +739,24 @@ class PointWater:
         there are no fish nothing is judged, so the caller asks only where there are fish."""
         return [reading for reading in self.readings.values()
                 if reading.code in LIMITED and reading.value is not None and reading.uncovered]
+
+    @property
+    def unevaluated(self):
+        """The values the limits would judge that the chemistry core refused to work out (`Reading.unevaluated`), fresh
+        or old, in reading order: what the water page, the card, the overview and the alarm say cannot be evaluated."""
+        return [reading for reading in self.readings.values() if reading.code in LIMITED and reading.unevaluated]
+
+    @property
+    def why_unevaluated(self):
+        """[sentence] of `unevaluated`: 'NH₃ … cannot be evaluated: <the core's reason>.' (messages.unevaluated)."""
+        return [messages.unevaluated(reading) for reading in self.unevaluated]
+
+    @property
+    def why_last_own(self):
+        """['<label>: last own value … measure this unit'] of the values whose status the unit's own stale value keeps
+        (`Reading.last_own`): what the card says beside the status."""
+        return [f'{reading.parameter.label}: {messages.last_own(reading.last_own)}' for reading in self.readings.values()
+                if reading.last_own is not None]
 
     @property
     def alerts(self):
@@ -609,9 +802,12 @@ class Context:
         self.limits = Limits(WaterLimit.objects.filter(species_id__in=species, species__is_deleted=False))
         if since is None:
             self.middles, self.salinity = {}, None
+            self._series_points, self._since, self._ionic = [], None, {}
             return
         self.middles = middle_points({point.owner.pk: point.owner for point in points}.values())
         self.salinity = Series([*points, *self.middles.values()], parameters.SALINITY, since - WINDOW)
+        self._series_points, self._since = [*points, *self.middles.values()], since - WINDOW
+        self._ionic = {}                                   # code -> Series, read once, when an ammonia needs it
 
     @staticmethod
     def _served(points):
@@ -645,6 +841,11 @@ class Context:
     def water_types(self, point):
         return {unit.water_type for unit in self.served[point.pk]}
 
+    def water_origin(self, point):
+        """Where the salt of the water at a point comes from (Tank.water_origin; cross review F3): its units' origin when
+        they all say the same, else '' (not said: a salinity of 1 to 5 permil is taken as diluted sea water)."""
+        return common_origin(self.served[point.pk])
+
     @staticmethod
     def _why_no_limit(exposures):
         """Why a value has no limit: no fish where it was taken that day, or no limit row for the fish there. The species
@@ -657,6 +858,31 @@ class Context:
         """[(species id, water type)] a value at this point on `day` is judged for."""
         return [(species_id, unit.water_type) for unit in self.served[point.pk]
                 for species_id in self.book.on(unit.pk, day)]
+
+    def _ionic_series(self, code):
+        if code not in self._ionic:
+            self._ionic[code] = Series(self._series_points, code, self._since)
+        return self._ionic[code]
+
+    def ionic_inputs_for(self, observation):
+        """{code: float or None} of the alkalinity, the conductivity at 25 °C and the hardness a TAN sample's ammonia is
+        worked out with (formula 3's ionic strength): each the observation's own, else its point's latest sample fresh
+        at its time (a stale value never enters, PLAN A9.3), else its owner's middle point's; None when there is none;
+        and 'water_origin', its units' (`water_origin`)."""
+        observation = observe(observation)
+        found = {}
+        for code in IONIC_INPUTS:
+            value = observation.get(code)
+            if value is None:
+                fresh = freshness.fresh_for(code)
+                for where in (observation.point, self.middles.get(observation.point.owner.pk)):
+                    hit = None if where is None else self._ionic_series(code).latest(where.pk, observation.at, fresh)
+                    if hit is not None and self._ionic_series(code).fresh(hit, observation.at):
+                        value = hit.value
+                        break
+            found[code] = None if value is None else float(value)
+        found['water_origin'] = self.water_origin(observation.point)
+        return found
 
     def salinity_for(self, observation):
         """The observation's salinity, else its point's latest sample fresh at its time (at or before it, within the
@@ -675,11 +901,56 @@ class Context:
                 return found.value
         return assumed_salinity(self.water_types(point))
 
+    # -- a sensor's pH on another scale --
+    def sensor_ph(self, observation, fresh_live, now, temperature=None):
+        """A sensor's pH observation put on the NBS scale (owner decision 1 of 2026-11-17; the water-chemistry audit of
+        2026-11-19, F1), exactly as a typed sample's (`ph_on_nbs`): with the place's fresh temperature from the sensors
+        (`fresh_live`, {code: the newest fresh live Observation}, as a sensor's TAN takes its pH and temperature), else
+        the place's chosen `temperature` (a Reading: a sample's, or a sensor's no longer fresh now) where it is fresh AT
+        the pH's own time (`fresh_at`, as the oxygen's other unit takes the point's temperature, `_in_other_unit`; the
+        replay and the trail convert with a sample's temperature too: the review of the audit, C2), and the salinity of
+        the same moment (`salinity_for`: a fresh sensor's, else the point's fresh sample's, else 0 in fresh water), for
+        sea water of 5 ‰ or more only (`scale_origin`), while the pH is fresh at `now`. Otherwise the observation keeps
+        no pH and says why (`SensorPh.refused`). An observation that needs nothing is returned as it is."""
+        ph = observation.ph
+        if ph is None or ph.converted or not ph.scale or observation.get(parameters.PH) is not None \
+                or (ph.since is not None and observation.at < ph.since):
+            return observation
+
+        def refused(why, error=''):
+            return replace(observation, ph=replace(ph, refused=str(messages.ph_sensor_refused(why, ph.scale, error))))
+
+        if not is_fresh(parameters.get(parameters.PH), observation.at, now, observation.fresh_for):
+            return refused('stale')
+        sensed, said = fresh_live.get(parameters.TEMPERATURE), ''
+        if sensed is None or sensed.get(parameters.TEMPERATURE) is None:
+            if temperature is None or temperature.value is None or not fresh_at(temperature, observation.at):
+                return refused('temperature')
+            # The place's temperature fresh at the pH's time, alone (never the rest of its sample), saying where from.
+            sensed = replace(temperature.sample, measured={parameters.TEMPERATURE: temperature.value})
+            said = Basis(temperature.value, temperature.origin, temperature.sample.channel_no,
+                         temperature.at).said(observation.point)
+        salinity_observation = fresh_live.get(parameters.SALINITY)
+        together = Observation.combined([observation, sensed, *([salinity_observation]
+                                                               if salinity_observation is not None else [])])
+        salinity = self.salinity_for(together)
+        if salinity is None:
+            return refused('salinity')
+        temperature = sensed.get(parameters.TEMPERATURE)
+        served = self.served.get(observation.point.pk)
+        origin = scale_origin(served if served is not None else Context._served([observation.point])[observation.point.pk])
+        found = ph_on_nbs(ph.as_measured, ph.scale, temperature, salinity, origin)
+        if found.value is None:
+            return refused(found.refused, found.error)
+        return replace(observation, measured={parameters.PH: found.value},
+                       ph=replace(ph, temperature=temperature, salinity=salinity, formula=found.formula, refused='',
+                                  temperature_from=said))
+
     # -- one observation's readings --
     def readings(self, observation):
         """{code: Reading} of a sample or an Observation: what was measured and what follows from it."""
         observation = observe(observation)
-        found = {code: Reading(parameters.get(code), value, observation) for code, value in observation.values().items()}
+        found = {code: reading_of(code, observation) for code in observation.values()}
         salinity = self.salinity_for(observation)
         if observation.get(TAN) is not None:
             found.update(self._ammonia(observation, salinity))
@@ -698,16 +969,76 @@ class Context:
             return _('Needs a fresh pH and temperature from the sensors with the sensor’s TAN.')
         return _('Needs the pH and the temperature of the same sample.')
 
+    @staticmethod
+    def _ph_scale_said(observation):
+        """What an NH₃ worked out from a pH measured on another scale than NBS says beside it (the audit of 2026-11-19,
+        F11: judged on the NBS scale, the safe side): a typed sample's or a sensor's; '' for an NBS pH."""
+        if observation.sample is not None and observation.sample.ph_scale:
+            return messages.judged_on_nbs(observation.sample.ph_scale)
+        if observation.ph is not None and observation.ph.converted:
+            return messages.judged_on_nbs(observation.ph.scale)
+        return ''
+
     def _ammonia(self, observation, salinity):
         ph, temperature, tan = (observation.get(code) for code in (parameters.PH, parameters.TEMPERATURE, TAN))
+        if ph is None and observation.ph is not None and observation.ph.refused:
+            # The sensor's pH could not be put on the NBS scale: the NH₃ is not known, and where the fish have an NH₃
+            # limit it cannot be evaluated (the reason said), never worked out from the unconverted number.
+            return {NH3_N.code: Reading(NH3_N, None, observation, True, str(messages.nh3_ph_not_converted(
+                observation.ph.refused)), refused=observation.ph.refused)}
         if ph is None or temperature is None:
             return {NH3_N.code: Reading(NH3_N, None, observation, True, self._same_source_missing(observation))}
         if salinity is None:
             return {NH3_N.code: Reading(NH3_N, None, observation, True, self._salinity_missing())}
-        share = Decimal(chemistry.nh3_fraction(float(ph), float(temperature), float(salinity)))
-        nh3 = (tan * share).quantize(NH3_N.step)
-        return {NH3_N.code: Reading(NH3_N, nh3, observation, True),
-                NH4_N.code: Reading(NH4_N, (tan - nh3).quantize(NH4_N.step), observation, True)}
+        inputs = self.ionic_inputs_for(observation)
+        try:
+            equilibria = chemistry.water_equilibria(float(temperature), float(salinity), **inputs)
+        except (ValueError, ArithmeticError) as error:      # what the gate catches (deffeyes.unworkable): e.g. a
+            # conductivity beyond the fresh path's range (Davies, I > 0.5), a division by zero, an overflow
+            return {NH3_N.code: self._ammonia_on_basis(observation, error, tan, ph, temperature, salinity,
+                                                       inputs.get('water_origin') or '')}
+        # The judged share: the larger of the safe side (formula 4's Rule S) and the best estimate (cross review F1);
+        # the best estimate's NH3-N is said beside it, never judged.
+        share = Decimal(equilibria.nh3_share(float(ph)))
+        # Judged unrounded, shown at four decimals (`Reading.exact`; the audit of 2026-11-19, F3).
+        exact = tan * share
+        nh3 = exact.quantize(NH3_N.step)
+        corrected = (tan * Decimal(equilibria.nh3_share_corrected(float(ph)))).quantize(NH3_N.step)
+        said = ' '.join(filter(None, (str(messages.provenance(equilibria)),
+                                      messages.judged('nh3', equilibria.nh3_basis, corrected, equilibria),
+                                      self._ph_scale_said(observation))))
+        return {NH3_N.code: Reading(NH3_N, nh3, observation, True, provenance=said, exact=exact),
+                NH4_N.code: Reading(NH4_N, (tan - exact).quantize(NH4_N.step), observation, True, provenance=said,
+                                    exact=tan - exact)}
+
+    @staticmethod
+    def nh3_basis_share(temperature, salinity, ph, water_origin):
+        """The NH₃ share on the safe-side basis alone, or None when the core cannot give it either. The basis is a
+        function of the temperature, the salinity and the water's origin only (chemcore/core/src/formula4.rs
+        `limits_basis`: the ideal water, the sea path's best estimate at the pH + 0.03, or their blend by the salinity), never of the
+        conductivity, the alkalinity or the hardness, so it is worked out without them (farm/tests/test_core_refusal.py
+        holds it equal to the basis of the same water with them, wherever the core works that water out)."""
+        try:
+            return Decimal(chemistry.water_equilibria(float(temperature), float(salinity), water_origin=water_origin)
+                           .nh3_share_limits(float(ph)))
+        except (ValueError, ArithmeticError):
+            return None
+
+    def _ammonia_on_basis(self, observation, error, tan, ph, temperature, salinity, water_origin):
+        """The NH₃ of a TAN sample whose water the core refuses to work out (`error`, its reason: e.g. a conductivity past
+        the Davies range). The judged NH₃ is the larger of the safe-side basis and the best estimate (cross
+        review F1), so it is never below the basis, which needs no conductivity (`nh3_basis_share`): the reading is the
+        basis's NH₃-N, at least the judged value, judged by the limits as any value is (Context.judge: past a limit it
+        is that, critical past the critical one; else it cannot be evaluated) and it keeps the refusal (`refused`), so the
+        unit says beside it that the corrected value cannot be worked out (the re-check of 2026-11-18, RC-3: a water
+        known to be past the critical limit on its basis was alarmed a warning). Without a basis either: no value,
+        refused."""
+        share = self.nh3_basis_share(temperature, salinity, ph, water_origin)
+        if share is None:
+            return Reading(NH3_N, None, observation, True, messages.refused(error), refused=str(error))
+        return Reading(NH3_N, (tan * share).quantize(NH3_N.step), observation, True,
+                       f'{messages.refused(error)} {messages.ON_BASIS}', measured=str(messages.BASIS_ONLY),
+                       refused=str(error), exact=tan * share)
 
     def _oxygen(self, observation, temperature, salinity):
         mg_l, percent = observation.get(OXYGEN_MG_L), observation.get(OXYGEN_PCT)
@@ -730,12 +1061,16 @@ class Context:
         if altitude is None:
             note = f'{note} {_("At sea-level pressure: the site has no altitude.")}'
         note = ' '.join([note, *self._basis_said(observation)])
+        said = _('Formula %(formula)d.') % {'formula': chemistry.FORMULA_VERSION}
+        # Judged unrounded, shown at the parameter's decimals (`Reading.exact`; the audit of 2026-11-19, F3).
         if missing == OXYGEN_PCT:
-            value = (100 * mg_l / solubility).quantize(parameters.get(OXYGEN_PCT).step)
-            return {OXYGEN_PCT: Reading(parameters.get(OXYGEN_PCT), value, observation, True, note)}
+            exact = 100 * mg_l / solubility
+            return {OXYGEN_PCT: Reading(parameters.get(OXYGEN_PCT), exact.quantize(parameters.get(OXYGEN_PCT).step),
+                                        observation, True, note, provenance=said, exact=exact)}
         if missing == OXYGEN_MG_L:
-            value = (percent * solubility / 100).quantize(parameters.get(OXYGEN_MG_L).step)
-            return {OXYGEN_MG_L: Reading(parameters.get(OXYGEN_MG_L), value, observation, True, note)}
+            exact = percent * solubility / 100
+            return {OXYGEN_MG_L: Reading(parameters.get(OXYGEN_MG_L), exact.quantize(parameters.get(OXYGEN_MG_L).step),
+                                         observation, True, note, provenance=said, exact=exact)}
         expected = percent * solubility / 100
         if expected and abs(mg_l - expected) / expected > OXYGEN_TOLERANCE:
             note = _('The mg/L and the % disagree by more than 10 % at this temperature and salinity: check the '
@@ -755,9 +1090,26 @@ class Context:
         unit's fish), else the point it was measured at."""
         if reading.code not in LIMITED or reading.value is None:
             reading.status = reading.judged = Status.NOT_MEASURED if reading.value is None else Status.NO_LIMIT
+            if reading.refused and reading.code in LIMITED:
+                # The core refused to work it out, its basis too: where a limit row would judge it, it cannot be
+                # evaluated (V-A), fresh or old (the last word there is about the water); with no fish or no row
+                # nothing is judged.
+                rows = []
+                exposures = self.exposures(for_point or reading.sample.point, day)
+                for species_id, water_type in exposures:
+                    row = self.limits.applying(species_id, reading.code, water_type)
+                    if row is not None and row not in rows:
+                        rows.append(row)
+                # The fish no row judges it for: a limit removed ends its "cannot be evaluated" warning with that
+                # cause (alarms/sources.py `_unjudged`), as it ends a judged value's levels.
+                reading.uncovered = self.limits.uncovered(reading.code, exposures)
+                if rows:
+                    reading.limits, reading.status, reading.judged = rows, Status.UNEVALUATED, Status.UNEVALUATED
+                    if now is not None and not reading.fresh(now):
+                        reading.status = Status.STALE
             return reading
         exposures = self.exposures(for_point or reading.sample.point, day)
-        reading.judged, reading.limits = self.limits.assess(reading.code, reading.value, exposures)
+        reading.judged, reading.limits = self.limits.assess(reading.code, reading.judged_value, exposures)
         reading.uncovered = self.limits.uncovered(reading.code, exposures)
         other = parameters.SAME_QUANTITY.get(reading.code)
         through = [(species_id, water_type) for species_id, water_type in exposures
@@ -765,7 +1117,7 @@ class Context:
             if other else []
         converted = self._in_other_unit(reading, temperature) if through else None
         if converted is not None:
-            status, rows = self.limits.assess(other, converted.value, through)
+            status, rows = self.limits.assess(other, converted.judged_value, through)
             converted.limits, converted.judged = rows, status
             reading.through = converted
             reading.judged = status if reading.judged == Status.NO_LIMIT else worst([reading.judged, status])
@@ -774,6 +1126,11 @@ class Context:
             if converted.derived:               # said only where a conversion was made, not the sample's own value
                 said = self._judged_through(converted)
                 reading.note = f'{reading.note} {said}' if reading.note else said
+        if reading.refused and reading.limits and reading.judged not in ALERTS:
+            # Refused, its value the limits' basis alone (`_ammonia_on_basis`): the judged value is never below it, so
+            # past a limit it is that limit's status (critical past the critical one, the re-check's RC-3); inside
+            # them what it is for the fish is not known: it cannot be evaluated, never OK.
+            reading.judged = Status.UNEVALUATED
         reading.status = reading.judged
         if reading.judged == Status.NO_LIMIT:
             reading.why_no_limit = self._why_no_limit(exposures)
@@ -935,8 +1292,7 @@ def _candidates(code, live, fresh_live, manuals, context):
     """[Reading] of `code` in one tier, in the order a tie goes: its sensors' values (`live`), the value worked out from
     the tier's fresh sensor values (the other oxygen unit: only from fresh ones), and its points' latest samples
     (`manuals`, one {code: Reading} per point)."""
-    parameter = parameters.get(code)
-    found = [Reading(parameter, each.get(code), each) for each in live.get(code, [])]
+    found = [reading_of(code, each) for each in live.get(code, [])]
     other = parameters.SAME_QUANTITY.get(code)
     if other and fresh_live.get(other) is not None and fresh_live.get(parameters.TEMPERATURE) is not None:
         worked = context.readings(Observation.combined([fresh_live[other], fresh_live[parameters.TEMPERATURE],
@@ -959,6 +1315,18 @@ def _resolve(own_live, own_manual, system_live, system_manual, context, now):
     read."""
     fresh_own, fresh_system = _fresh_live(own_live, now), _fresh_live(system_live, now)
     fresh_live = {code: fresh_own.get(code) or fresh_system.get(code) for code in {*own_live, *system_live}}
+    if any(each.ph is not None for live in (own_live, system_live) for each in live.get(parameters.PH, [])):
+        # A sensor pH on another scale than NBS, put on it with the place's fresh temperature and salinity (F1), before
+        # anything reads it: the pH shown and judged, and the pH a sensor's TAN is worked out with. Without a fresh
+        # sensor temperature, the place's temperature chosen as every value is (A9), where fresh at the pH's time (C2).
+        temperature = choose([_candidates(parameters.TEMPERATURE, own_live, fresh_own, own_manual, context),
+                              _candidates(parameters.TEMPERATURE, system_live, fresh_system, system_manual, context)],
+                             now, lambda reading: reading.fresh(now))
+        own_live, system_live = ({**live, parameters.PH: [context.sensor_ph(each, fresh_live, now, temperature)
+                                                          for each in live.get(parameters.PH, [])]}
+                                 for live in (own_live, system_live))
+        fresh_own, fresh_system = _fresh_live(own_live, now), _fresh_live(system_live, now)
+        fresh_live = {code: fresh_own.get(code) or fresh_system.get(code) for code in {*own_live, *system_live}}
     chosen, candidates = {}, {}
     for code in parameters.COLUMNS:
         tiers = [_candidates(code, own_live, fresh_own, own_manual, context),
@@ -1108,6 +1476,7 @@ def latest(points, now=None, at=None):
     for point in points:
         where = places[point.pk]
         point_water = water[point.pk] = PointWater(point, sensors_failed=answer.failed, for_unit=where.for_unit)
+        own_ids = {each.pk for each in where.own}
         day = local_time(moment, point).date()
         resolved, candidates = _resolve(_live(where.own_targets, answer), [manual(each) for each in where.own],
                                         _live(where.system_targets, answer), [manual(each) for each in where.system],
@@ -1137,6 +1506,9 @@ def latest(points, now=None, at=None):
                         shown_here, *(each for each in here if each is not shown_here and each.fresh(moment))])]
                 reading.deciding = tuple(deciding)
                 worst_fresh(reading, deciding, moment)    # COMPUTED FOR THE PLACE the point stands for
+                if where.for_unit and reading.point is not None and reading.point.pk not in own_ids:
+                    last_own(reading, [judged(each) for each in found if each.value is not None and each.point is not None
+                                       and each.point.pk in own_ids], moment)
             point_water.readings[code] = reading
     return water
 
@@ -1171,6 +1543,24 @@ def oxygen_basis(rows, moment):
     return dict(found), dict(missing)
 
 
+def last_own(reading, own, now):
+    """Decision of 2026-11-19 on the verification of FIX3, F3-9: a value judged critical or a warning that was MEASURED ON
+    THE UNIT is confirmed over only by measuring the unit again. Where the value shown stands in from the unit's system
+    (A9: the unit has no fresh value of its own) and the unit's own newest value (`own`, judged for its fish) is stale
+    and worse, the reading keeps that judgement (so the page, the card and the alarm stay at it: alarms/sources.py, a
+    level the unit's own value holds) and says it: `last_own`, `worse` (the value that decides), and the note "last own
+    value …, no recent data: measure this unit" (messages.last_own). A fresh own value ends it (A9 shows it)."""
+    newest_own = max(own, key=lambda each: each.at, default=None)
+    if (newest_own is None or newest_own.fresh(now) or newest_own.judged not in ALERTS
+            or RANK[newest_own.judged] >= RANK[reading.judged]):
+        return reading
+    reading.judged = reading.status = newest_own.judged
+    reading.worse = reading.last_own = newest_own
+    said = str(messages.last_own(newest_own))
+    reading.note = f'{reading.note} {said}' if reading.note else said
+    return reading
+
+
 def worst_fresh(reading, others, now=None):
     """Owner decision 2026-11-08 (the second cross review's P2): the value shown is A9's choice, but the status, and so
     the alarm, is the worst of every fresh value the place has (`others`: its own points' and its system's, judged for its
@@ -1199,14 +1589,15 @@ def crossed(reading):
     """Which value is past which bound, for a reading the limits judge critical or a warning: (the Reading whose value
     it is, the bound's name, the bound), or None when no one bound says it. The value is the worse fresh one when that
     decided the status (`worst_fresh`), the value in its other unit when a row on that unit judged it (the oxygen,
-    `Context.judge`), else the reading's own; the bound is the one `evaluate.judge` judged it by (evaluate.crossed).
+    `Context.judge`), else the reading's own; the bound is the one `evaluate.judge` judged it by (evaluate.crossed), on
+    the value the limits judged (`Reading.judged_value`: a worked-out value unrounded, as `Context.judge` judges it).
     For a short sentence beside the full reason (a monitoring card's one line, the band's chip): never a judgement."""
     source = reading.worse or reading
     for each in (source, source.through):
         if each is None or each.value is None:
             continue
         for row in each.limits:
-            found = bound_crossed(each.value, row)
+            found = bound_crossed(each.judged_value, row)
             if found is not None and found[0].startswith(str(reading.judged)):
                 return (each, *found)
     return None

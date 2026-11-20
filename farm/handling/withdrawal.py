@@ -37,6 +37,19 @@ def harvest_from(until, approximate=False, shown=None):
     return _('harvest from %(date)s') % {'date': day}
 
 
+def leave_from(until, approximate=False, shown=None):
+    """`harvest_from`'s words for fish that leave the farm ALIVE (a live delivery, the owner's decisions 12 and 13 of
+    19.11.2026): "harvest from" is read as a rule about slaughter by someone selling live fish, so a delivery's
+    warning says when the fish may leave the farm. The same day, the same "about" and the same "end unknown"; only the
+    words differ. "the fish may leave the farm from 25.11.2026"; "… from about 25.11.2026" when it is projected."""
+    if until is None:
+        return _('end unknown')
+    day = shown(until) if shown is not None else formats.date_format(until, 'DATE_FORMAT')
+    if approximate:
+        return _('the fish may leave the farm from about %(date)s') % {'date': day}
+    return _('the fish may leave the farm from %(date)s') % {'date': day}
+
+
 def held_until(until, approximate=False):
     """The Treatments list's words for a withdrawal's end, BOTH days (flow fault M-01 proposed both; review F-09): the
     last day the fish are held and, in the one wording (`harvest_from`), the first day they may be harvested: "until

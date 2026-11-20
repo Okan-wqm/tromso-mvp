@@ -9,7 +9,7 @@ from core import text
 
 from ..models.site import zone_of
 from ..models.water_point import site_of
-from ..water import parameters, read as water_read
+from ..water import messages, parameters, read as water_read
 from ..water.evaluate import ANY_WATER, Status
 from .stock import DASH, number
 
@@ -71,6 +71,12 @@ def sample_clock(sample):
 @register.filter
 def status_label(status):
     return Status(status).label
+
+
+@register.filter
+def ionic_strength_unit(equilibria):
+    """The unit of a water's ionic strength (messages.ionic_strength_unit): mol/kg H₂O or mol/L."""
+    return messages.ionic_strength_unit(equilibria)
 
 
 @register.filter

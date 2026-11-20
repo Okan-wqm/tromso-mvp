@@ -35,6 +35,20 @@ class CrossedTests(SimpleTestCase):
         self.assertIsNone(crossed(D(-1), limit(critical_high=4)))
         self.assertIsNone(crossed(D(7), limit()))
 
+    def test_a_worked_out_value_is_named_past_the_bound_its_unrounded_value_was_judged_by(self):
+        """Main's audit of 2026-11-19, F3: a worked-out value is judged unrounded (`Reading.exact`), so a true 0.01034
+        mg/L NH₃-N shown as 0.0103 is critical against a limit of 0.0103; the short sentence names that bound too,
+        never "no bound" beside a critical card."""
+        from django.utils import timezone
+
+        from ..water import parameters
+        observation = read.Observation(SimpleNamespace(name='Middle', kind='middle'), timezone.now(),
+                                       read.Origin.MANUAL, {})
+        reading = read.Reading(parameters.get('nh3_n_mg_l'), D('0.0103'), observation, True, exact=D('0.01034'))
+        reading.limits, reading.judged = [limit(critical_high='0.0103')], Status.CRITICAL
+        source, name, bound = read.crossed(reading)
+        self.assertEqual((source, name, bound), (reading, 'critical_high', D('0.0103')))
+
     def test_it_never_disagrees_with_judge(self):
         draw = random.Random(20261113)
         for _round in range(2000):

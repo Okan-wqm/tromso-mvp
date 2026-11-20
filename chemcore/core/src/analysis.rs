@@ -2,7 +2,8 @@
 //! floor, the chart's box), ported literally from golden v1's Python: DIC and CO₂ from the alkalinity and the pH, NH₃-N
 //! from the TAN, H₂S from the total sulfide, each limit as a pH border with its margin and status (the source's rule:
 //! past the border critical, within 0.2 pH a warning), the oxygen saturation at a pressure.
-use crate::chemistry::{self as c, Equilibria};
+use crate::chemistry::{self as c, Basis, Equilibria, Origin};
+use crate::fresh::{Ions, water_equilibria};
 use crate::num::{ChemError, R, div, finite};
 
 /// The chart's pH domain (the source's): a border inside it is shown as a number.
@@ -129,6 +130,28 @@ pub struct Water {
     pub total_sulfide_ug_l: Option<f64>,
     pub calcium_mg_l: Option<f64>,
     pub oxygen_mg_l: Option<f64>,
+    /// µS/cm compensated to 25 °C; with the hardness, the fresh water's ionic strength (formula 3, crate::fresh).
+    pub conductivity_25_us_cm: Option<f64>,
+    /// mg/L as CaCO₃.
+    pub hardness_mg_l: Option<f64>,
+    /// Where its salt came from (a unit's water origin; cross review F3).
+    pub origin: Origin,
+    /// The formula version the water is worked out by (crate::FORMULAS).
+    pub formula: u32,
+    /// Orthophosphate, mg/L as P (`crate::fresh::Ions::phosphate_p_mg_l`); None: not given.
+    pub phosphate_p_mg_l: Option<f64>,
+}
+
+impl Water {
+    /// The ions measured besides the alkalinity.
+    pub fn ions(&self) -> Ions {
+        Ions {
+            conductivity_25_us_cm: self.conductivity_25_us_cm,
+            hardness_mg_l: self.hardness_mg_l,
+            origin: self.origin,
+            phosphate_p_mg_l: self.phosphate_p_mg_l,
+        }
+    }
 }
 
 /// The values not to pass: NH₃-N mg/L as N, CO₂ mg/L, H₂S µg/L as H₂S; the alkalinity band, mg/L as CaCO₃.
@@ -153,12 +176,21 @@ pub struct Analysis {
     pub equilibria: Equilibria,
     pub alkalinity_meq: f64,
     pub dic: f64,
+    /// The CO₂ every judgement takes: the larger of the limits' basis and the activity-corrected CO₂ (`co2_basis`;
+    /// Equilibria::co2_judged, cross review F1).
     pub co2_mg_l: f64,
+    /// The activity-corrected CO₂ (formula 3), information beside the judged one.
+    pub co2_corrected_mg_l: f64,
+    pub co2_basis: Basis,
     pub co2: Border,
     pub target_alkalinity_meq: Option<f64>,
     pub target_dic: Option<f64>,
     pub target_co2_mg_l: Option<f64>,
+    /// The NH₃-N every judgement takes (Equilibria::nh3_share: the larger of the limits' basis and the corrected).
     pub nh3_n_mg_l: Option<f64>,
+    /// The activity-corrected NH₃-N (formula 3), information beside the judged one.
+    pub nh3_corrected_n_mg_l: Option<f64>,
+    pub nh3_basis: Basis,
     pub nh3: Border,
     /// The TAN that gives the NH₃-N limit at this pH.
     pub safe_tan_mg_l: Option<f64>,
@@ -178,11 +210,25 @@ pub struct Analysis {
     pub h2s_share_pct: f64,
 }
 
+impl Analysis {
+    /// The CO₂ limit (mg/L) the chart's CO₂ curve is drawn at in the water's own constants (the chart is drawn in them):
+    /// the limit over `Equilibria::co2_chart_ratio`, a ratio of the equilibria alone, so a replay page shares one diagram
+    /// among frames equal but for pH and alkalinity; along the curve the judged CO₂ is within about 1.5 % of the limit
+    /// (README, Water-chemistry core; the statuses and borders are exact). Formula 1: the limit.
+    pub fn co2_chart_limit(&self, limit: f64) -> R {
+        let ratio = self.equilibria.co2_chart_ratio()?;
+        Ok(if ratio > 1.0 { limit / ratio } else { limit })
+    }
+}
+
 fn finite_option(value: Option<f64>) -> Result<Option<f64>, ChemError> {
     value.map(finite).transpose()
 }
 
-/// The values of a water against the limits at a pressure (atm). Every input must be finite.
+/// The values of a water against the limits at a pressure (atm). Every input must be finite. A water, or a target,
+/// whose pH and alkalinity cannot go together is refused (`ChemError::ImpossibleWater`, by `Equilibria::dic`: the rule
+/// `why_impossible` asks too), never worked out with a DIC or a CO₂ below 0; formula 1 works it out as golden v1 holds
+/// it.
 pub fn analyse(water: &Water, limits: &Limits, target: Option<&Target>, pressure: f64) -> Result<Analysis, ChemError> {
     for value in [water.ph, water.alkalinity_mg_l, pressure] {
         finite(value)?;
@@ -192,6 +238,9 @@ pub fn analyse(water: &Water, limits: &Limits, target: Option<&Target>, pressure
         water.total_sulfide_ug_l,
         water.calcium_mg_l,
         water.oxygen_mg_l,
+        water.conductivity_25_us_cm,
+        water.hardness_mg_l,
+        water.phosphate_p_mg_l,
         limits.nh3_n_mg_l,
         limits.co2_mg_l,
         limits.h2s_ug_l,
@@ -204,7 +253,13 @@ pub fn analyse(water: &Water, limits: &Limits, target: Option<&Target>, pressure
         finite(target.ph)?;
         finite(target.alkalinity_mg_l)?;
     }
-    let eq = c::equilibria(water.temperature_c, water.salinity_ppt)?;
+    let eq = water_equilibria(
+        water.formula,
+        water.temperature_c,
+        water.salinity_ppt,
+        Some(water.alkalinity_mg_l),
+        water.ions(),
+    )?;
     let ph = water.ph;
     let alkalinity = div(water.alkalinity_mg_l, c::MG_CACO3_PER_MEQ)?;
     let dic = eq.dic(alkalinity, ph)?;
@@ -232,7 +287,7 @@ pub fn analyse(water: &Water, limits: &Limits, target: Option<&Target>, pressure
         let dic = eq.dic(alkalinity, target.ph)?;
         target_alkalinity = Some(alkalinity);
         target_dic = Some(dic);
-        target_co2 = Some(eq.co2(dic, target.ph)? * c::MG_CO2_PER_MMOL);
+        target_co2 = Some(eq.co2_judged(alkalinity, target.ph, eq.co2(dic, target.ph)?)?.0 * c::MG_CO2_PER_MMOL);
     }
 
     let (tan, nh3_limit) = (water.tan_mg_l, limits.nh3_n_mg_l);
@@ -272,17 +327,25 @@ pub fn analyse(water: &Water, limits: &Limits, target: Option<&Target>, pressure
         },
     );
 
+    let (co2_judged, co2_basis) = eq.co2_judged(alkalinity, ph, eq.co2(dic, ph)?)?;
     let solubility = c::oxygen_solubility(water.temperature_c, water.salinity_ppt, pressure)?;
     let analysis = Analysis {
         equilibria: eq,
         alkalinity_meq: alkalinity,
         dic,
-        co2_mg_l: eq.co2(dic, ph)? * c::MG_CO2_PER_MMOL,
+        co2_mg_l: co2_judged * c::MG_CO2_PER_MMOL,
+        co2_corrected_mg_l: eq.co2(dic, ph)? * c::MG_CO2_PER_MMOL,
+        co2_basis,
         co2,
         target_alkalinity_meq: target_alkalinity,
         target_dic,
         target_co2_mg_l: target_co2,
         nh3_n_mg_l: tan.map(|tan| tan * nh3_share),
+        nh3_corrected_n_mg_l: match tan {
+            Some(tan) => Some(tan * eq.nh3_share_corrected(ph)?),
+            None => None,
+        },
+        nh3_basis: eq.nh3_basis()?,
         nh3,
         safe_tan_mg_l: nh3_limit.map(|limit| div(limit, nh3_share)).transpose()?,
         nh3_share_at_border_pct: match (nh3.ph, nh3_limit, tan) {
@@ -306,23 +369,53 @@ pub fn analyse(water: &Water, limits: &Limits, target: Option<&Target>, pressure
     Ok(analysis)
 }
 
-/// The alkalinity (mg/L as CaCO₃) a water of this pH has at least: hydroxide and borate are alkalinity too, so at a
-/// high pH the alkalinity has a floor below which the DIC would be negative (WQ-38).
-pub fn alkalinity_floor(temperature_c: f64, salinity_ppt: f64, ph: f64) -> R {
-    finite(ph)?;
-    Ok(c::equilibria(temperature_c, salinity_ppt)?.isoline(ph)?.1 * c::MG_CACO3_PER_MEQ)
+/// What a water's equilibria are worked out from besides its temperature and salinity: the formula version, the
+/// alkalinity (mg/L as CaCO₃, if known) and the ions measured (formula 3's ionic strength).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Medium {
+    pub formula: u32,
+    pub alkalinity_mg_l: Option<f64>,
+    pub ions: Ions,
 }
 
-/// The floor when a water of this pH and alkalinity cannot be (its alkalinity at or below the floor), else None.
+/// The alkalinity (mg/L as CaCO₃) a water of this pH has at least: hydroxide and borate are alkalinity too, so at a
+/// high pH the alkalinity has a floor below which the DIC would be negative (WQ-38). In the medium given (formula 3's
+/// constants depend on the water's ions, its alkalinity among them).
+pub fn alkalinity_floor(temperature_c: f64, salinity_ppt: f64, ph: f64, medium: &Medium) -> R {
+    finite(ph)?;
+    let eq = water_equilibria(
+        medium.formula,
+        temperature_c,
+        salinity_ppt,
+        medium.alkalinity_mg_l,
+        medium.ions,
+    )?;
+    Ok(eq.isoline(ph)?.1 * c::MG_CACO3_PER_MEQ)
+}
+
+/// The floor (mg/L as CaCO₃) when a water of this pH and alkalinity cannot be (its alkalinity at or below the floor),
+/// else None: the reason the pages say. The decision is the core's one rule, `Equilibria::possible`, with the
+/// alkalinity in meq/L as the analysis takes it, so it has a reason exactly where the analysis and the equilibria refuse.
+/// Formula 1 refuses nothing, and its decision here stays golden v1's comparison in mg/L, bit for bit (its ties on the
+/// floor are listed by farm/tests/test_native_analysis.py).
 pub fn why_impossible(
     temperature_c: f64,
     salinity_ppt: f64,
     ph: f64,
     alkalinity_mg_l: f64,
+    formula: u32,
+    ions: Ions,
 ) -> Result<Option<f64>, ChemError> {
     finite(alkalinity_mg_l)?;
-    let floor = alkalinity_floor(temperature_c, salinity_ppt, ph)?;
-    Ok(if alkalinity_mg_l > floor { None } else { Some(floor) })
+    finite(ph)?;
+    let eq = water_equilibria(formula, temperature_c, salinity_ppt, Some(alkalinity_mg_l), ions)?;
+    let floor = eq.isoline(ph)?.1 * c::MG_CACO3_PER_MEQ;
+    let possible = if formula == 1 {
+        alkalinity_mg_l > floor
+    } else {
+        eq.possible(div(alkalinity_mg_l, c::MG_CACO3_PER_MEQ)?, ph)?
+    };
+    Ok(if possible { None } else { Some(floor) })
 }
 
 /// The axes' ends and their tick steps.

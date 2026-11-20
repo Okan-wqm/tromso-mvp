@@ -1,0 +1,53 @@
+"""The optional phosphate (farm/water/parameters.py phosphate_p_mg_l) among the quantities a channel and an alarm rule
+can be of: the choices, the two CHECKs and the generated `is_water` column with the new list."""
+
+from django.conf import settings
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ('sensors', '0011_water_ionic_inputs'),
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+    ]
+
+    operations = [
+        migrations.RemoveConstraint(
+            model_name='alarmrule',
+            name='chk_sensors_alarm_rule_quantity',
+        ),
+        migrations.RemoveConstraint(
+            model_name='channel',
+            name='chk_sensors_channel_quantity',
+        ),
+        migrations.AlterField(
+            model_name='alarmrule',
+            name='quantity',
+            field=models.CharField(blank=True, choices=[('temperature_c', 'Temperature (°C)'), ('oxygen_mg_l', 'Dissolved oxygen (mg/L O₂)'), ('oxygen_saturation_pct', 'Oxygen saturation (% of air saturation)'), ('ph', 'pH (NBS scale)'), ('alkalinity_mg_l', 'Alkalinity (mg/L as CaCO₃)'), ('hardness_mg_l', 'Total hardness (mg/L as CaCO₃)'), ('co2_mg_l', 'Carbon dioxide (mg/L free CO₂)'), ('tan_mg_l', 'Total ammonia nitrogen (mg/L TAN as N)'), ('nitrite_n_mg_l', 'Nitrite (mg/L NO₂ as N)'), ('nitrate_n_mg_l', 'Nitrate (mg/L NO₃ as N)'), ('tgp_pct', 'Total gas pressure (% of barometric pressure)'), ('salinity_ppt', 'Salinity (‰, g/kg)'), ('conductivity_25_us_cm', 'Conductivity at 25 °C (µS/cm, temperature-compensated)'), ('turbidity_ntu', 'Turbidity (NTU)'), ('phosphate_p_mg_l', 'Phosphate (mg/L PO₄ as P)'), ('conductivity_us_cm', 'Conductivity at the water’s temperature (µS/cm, not compensated)'), ('orp_mv', 'Redox potential, ORP (mV)'), ('flow_m3_h', 'Flow (m³/h)'), ('level_mm', 'Level (mm)'), ('pressure_bar', 'Pressure (bar)'), ('power_kw', 'Power (kW)'), ('current_a', 'Electric current (A)')], max_length=30, verbose_name='Every channel of'),
+        ),
+        # A generated column cannot be altered: dropped and added again with the new list (as sensors 0011; the binding
+        # trigger of 0004 reads it by name at run time, so it follows).
+        migrations.RemoveField(
+            model_name='channel',
+            name='is_water',
+        ),
+        migrations.AddField(
+            model_name='channel',
+            name='is_water',
+            field=models.GeneratedField(db_persist=True, expression=models.ExpressionWrapper(models.Q(('quantity__in', ['temperature_c', 'oxygen_mg_l', 'oxygen_saturation_pct', 'ph', 'alkalinity_mg_l', 'hardness_mg_l', 'co2_mg_l', 'tan_mg_l', 'nitrite_n_mg_l', 'nitrate_n_mg_l', 'tgp_pct', 'salinity_ppt', 'conductivity_25_us_cm', 'turbidity_ntu', 'phosphate_p_mg_l'])), output_field=models.BooleanField()), output_field=models.BooleanField(), verbose_name='Water quantity'),
+        ),
+        migrations.AlterField(
+            model_name='channel',
+            name='quantity',
+            field=models.CharField(choices=[('temperature_c', 'Temperature (°C)'), ('oxygen_mg_l', 'Dissolved oxygen (mg/L O₂)'), ('oxygen_saturation_pct', 'Oxygen saturation (% of air saturation)'), ('ph', 'pH (NBS scale)'), ('alkalinity_mg_l', 'Alkalinity (mg/L as CaCO₃)'), ('hardness_mg_l', 'Total hardness (mg/L as CaCO₃)'), ('co2_mg_l', 'Carbon dioxide (mg/L free CO₂)'), ('tan_mg_l', 'Total ammonia nitrogen (mg/L TAN as N)'), ('nitrite_n_mg_l', 'Nitrite (mg/L NO₂ as N)'), ('nitrate_n_mg_l', 'Nitrate (mg/L NO₃ as N)'), ('tgp_pct', 'Total gas pressure (% of barometric pressure)'), ('salinity_ppt', 'Salinity (‰, g/kg)'), ('conductivity_25_us_cm', 'Conductivity at 25 °C (µS/cm, temperature-compensated)'), ('turbidity_ntu', 'Turbidity (NTU)'), ('phosphate_p_mg_l', 'Phosphate (mg/L PO₄ as P)'), ('conductivity_us_cm', 'Conductivity at the water’s temperature (µS/cm, not compensated)'), ('orp_mv', 'Redox potential, ORP (mV)'), ('flow_m3_h', 'Flow (m³/h)'), ('level_mm', 'Level (mm)'), ('pressure_bar', 'Pressure (bar)'), ('power_kw', 'Power (kW)'), ('current_a', 'Electric current (A)')], max_length=30, verbose_name='Quantity'),
+        ),
+        migrations.AddConstraint(
+            model_name='alarmrule',
+            constraint=models.CheckConstraint(condition=models.Q(('quantity', ''), ('quantity__in', ['temperature_c', 'oxygen_mg_l', 'oxygen_saturation_pct', 'ph', 'alkalinity_mg_l', 'hardness_mg_l', 'co2_mg_l', 'tan_mg_l', 'nitrite_n_mg_l', 'nitrate_n_mg_l', 'tgp_pct', 'salinity_ppt', 'conductivity_25_us_cm', 'turbidity_ntu', 'phosphate_p_mg_l', 'conductivity_us_cm', 'orp_mv', 'flow_m3_h', 'level_mm', 'pressure_bar', 'power_kw', 'current_a']), _connector='OR'), name='chk_sensors_alarm_rule_quantity'),
+        ),
+        migrations.AddConstraint(
+            model_name='channel',
+            constraint=models.CheckConstraint(condition=models.Q(('quantity__in', ['temperature_c', 'oxygen_mg_l', 'oxygen_saturation_pct', 'ph', 'alkalinity_mg_l', 'hardness_mg_l', 'co2_mg_l', 'tan_mg_l', 'nitrite_n_mg_l', 'nitrate_n_mg_l', 'tgp_pct', 'salinity_ppt', 'conductivity_25_us_cm', 'turbidity_ntu', 'phosphate_p_mg_l', 'conductivity_us_cm', 'orp_mv', 'flow_m3_h', 'level_mm', 'pressure_bar', 'power_kw', 'current_a'])), name='chk_sensors_channel_quantity'),
+        ),
+    ]

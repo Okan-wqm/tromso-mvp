@@ -208,6 +208,9 @@ NOT_INPUT_COLUMNS = {
     ('tanks', 'status'): 'not read: the fish in a unit are its stock lines',
     ('tanks', 'kind'): 'the kind of unit, not its water',
     ('tanks', 'water_type'): 'the salinity assumed where none was measured, never the temperature',
+    ('tanks', 'water_origin'): 'where the unit\'s salt comes from: it chooses the constants a sample\'s NH₃ is worked '
+                               'out with (formula 3; farm.water.read common_origin), never a temperature or its '
+                               'degree-days',
     ('tanks', 'volume_m3'): 'a measure', ('tanks', 'water_volume_m3'): 'a measure',
     ('tanks', 'max_biomass_kg'): 'a capacity',
     ('tanks', 'production_department_id'): 'gives the site\'s clock; a unit with stock records stays on its site '
@@ -221,11 +224,16 @@ NOT_INPUT_TABLES = {
     'production_departments': 'the department gives the site',
     'medicines': 'a medicine\'s name and how it is given; its withdrawal is its rows (registered)',
     'harvest_records': 'where a harvest went: the facility named in the text, never whether the withdrawal holds it',
+    'delivery_records': 'whom a live delivery went to: the receiver named in the text, never whether the withdrawal '
+                        'holds it (written once with its operation, inside the guard; voided with it)',
     'slaughter_facilities': 'the facility named in the text',
     'opening_balances': 'written once with its stocking operation, inside the guard (the operation and its lines are '
                         'registered whole), never changed; voided with it',
     'equipment': 'a point\'s equipment, loaded with the point (with_owners): the withdrawal reads the middle points of '
                  'units and loops only',
+    'platform_settings': 'the correction window says how far back a guard READS (the first day a record can still be '
+                         'dated on, S-03 review F-3); how long an unknown end holds (unknown_withdrawal_days, rule 8) '
+                         'IS an input: registered by its field in farm/apps.py and changed only through the guard',
     'feeds': None,                           # registered (feed_type); its other columns are names
     'species': None,                         # registered (withdrawal_temperature_c); others are names
     'tanks': None, 'systems': None, 'water_sampling_points': None,
@@ -246,6 +254,10 @@ class RegistryCoverageTests(LoopTestCase):
         seen = check.assess('harvest', self.t1, self.day(1), self.batch).fingerprint      # under a withdrawal
         stock_services.record_harvest(self.user, unit=self.t1, batch=self.batch, day=self.day(1), count=10,
                                       measured_weight_kg=Decimal('12'), facility=self.facility, handling_ack=seen)
+        # A live delivery is read as a harvest is (the owner's decision 13): its line and its record are read too.
+        seen = check.assess('transport', self.t1, self.day(1), self.batch, operation='delivery').fingerprint
+        stock_services.record_delivery(self.user, unit=self.t1, batch=self.batch, day=self.day(1), count=10,
+                                       destination='Nordic Smolt AS', handling_ack=seen)
         with CaptureQueriesContext(connection) as queries:
             withdrawal.snapshot({self.batch.pk}, self.today)
             withdrawal.harvests_inside()

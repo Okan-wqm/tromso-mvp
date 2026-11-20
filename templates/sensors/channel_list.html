@@ -1,5 +1,5 @@
 {% extends "crud/list.html" %}
-{% load i18n %}
+{% load i18n dates %}
 {% comment %} Sensors › Setup › Channels (sensors.resources.ChannelResource): the values the devices send, with how each is
    stored. {% endcomment %}
 {% block search_placeholder %}{% trans "Search by code, name or device" %}{% endblock %}
@@ -23,7 +23,7 @@
       <tr>
         <td>{% if can_change %}<a class="row-title" href="{% url 'sensors:channel_edit' channel.pk %}" data-modal>{{ channel.code }}</a>{% else %}<span class="row-title">{{ channel.code }}</span>{% endif %}<span class="row-sub">{{ channel.name }} · #{{ channel.channel_no }}</span></td>
         <td>{{ channel.device.code }}</td>
-        <td>{{ channel.get_quantity_display }}</td>
+        <td>{{ channel.get_quantity_display }}{% if channel.ph_scale_said %}<span class="row-sub">{% trans "pH scale" %}: {{ channel.ph_scale_said }}{% if channel.ph_scale_from %} · {% blocktrans trimmed with moment=channel.ph_scale_from|site_clock:channel.device.site|date:"DATETIME_FORMAT" %}changed {{ moment }}{% endblocktrans %}{% endif %}</span>{% endif %}</td>
         <td>{% if channel.reduction == "all" %}{% trans "Every value" %}{% else %}{% blocktrans trimmed with deadband=channel.deadband|floatformat:"-4" %}Moves of {{ deadband }}{% endblocktrans %}{% endif %} · {% blocktrans trimmed with seconds=channel.heartbeat_s %}at least every {{ seconds }} s{% endblocktrans %}</td>
         <td>{{ channel.get_state_display }}</td>
         <td class="row-actions">{% include "sensors/_row_actions.html" with model="channel" obj=channel label=channel.code %}</td>

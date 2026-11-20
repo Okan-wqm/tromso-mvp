@@ -9,11 +9,13 @@
     <div class="table-wrap table-wrap-bare">
       <table class="calc-values">
         <tr><th scope="row">{% trans "Un-ionised ammonia (NH₃-N)" %}</th><td class="num wq-value wq-{{ analysis.nh3.status }}">{{ analysis.nh3_n_mg_l|amount:4 }}{% if analysis.nh3_n_mg_l is not None %} mg/L{% endif %}</td></tr>
+        {% if analysis.nh3_judged %}<tr><th scope="row">{% trans "NH₃-N best estimate (information, not judged)" %}</th><td class="num">{{ analysis.nh3_corrected_n_mg_l|amount:4 }} mg/L</td></tr>{% endif %}
         <tr><th scope="row">{% trans "Most TAN at this pH" %}</th><td class="num">{% if analysis.safe_tan_mg_l is None %}—{% elif analysis.safe_tan_mg_l > 100 %}&gt; 100 mg/L{% else %}{{ analysis.safe_tan_mg_l|amount:2 }} mg/L{% endif %}</td></tr>
         {% include "farm/_deffeyes_border.html" with border=analysis.nh3 %}
         <tr><th scope="row">{% trans "NH₃ share of TAN at the border" %}</th><td class="num">{{ analysis.nh3_share_at_border_pct|percent:3 }}</td></tr>
       </table>
     </div>
+    {% if analysis.nh3_judged %}<p class="calc-note" data-nh3-basis="{{ analysis.nh3_basis }}">{{ analysis.nh3_judged }}</p>{% endif %}
   </section>
 
   <section class="calc-card calc-status wq-card-{{ analysis.h2s.status }}" aria-labelledby="calc-h2s-title">
@@ -33,10 +35,12 @@
     <div class="table-wrap table-wrap-bare">
       <table class="calc-values">
         <tr><th scope="row">{% trans "Carbon dioxide (CO₂)" %}</th><td class="num wq-value wq-{{ analysis.co2.status }}">{{ analysis.co2_mg_l|amount:2 }} mg/L<span class="sr-only"> ({{ analysis.co2.status|status_label }})</span></td></tr>
+        {% if analysis.co2_judged %}<tr><th scope="row">{% trans "CO₂ best estimate (information, not judged)" %}</th><td class="num">{{ analysis.co2_corrected_mg_l|amount:2 }} mg/L</td></tr>{% endif %}
         {% include "farm/_deffeyes_border.html" with border=analysis.co2 %}
         <tr><th scope="row">{% trans "CO₂ the air leaves in it" %}</th><td class="num">{{ result.air_co2_mg_l|amount:2 }} mg/L</td></tr>
         <tr><th scope="row">{% trans "Alkalinity" %}</th><td class="num">{{ analysis.alkalinity_meq|amount:3 }} meq/L</td></tr>
         <tr><th scope="row">{% trans "Dissolved inorganic carbon (DIC)" %}</th><td class="num">{{ analysis.dic|amount:3 }} mmol/L</td></tr>
+        <tr><th scope="row">{% trans "Ionic strength" %}</th><td class="num">{{ analysis.equilibria.ionic_strength|amount:4 }} {{ analysis.equilibria|ionic_strength_unit }}</td></tr>
         {% if analysis.target %}
         <tr><th scope="row">{% trans "Target DIC" %}</th><td class="num">{{ analysis.target_dic|amount:3 }} mmol/L</td></tr>
         <tr><th scope="row">{% trans "Target CO₂" %}</th><td class="num">{{ analysis.target_co2_mg_l|amount:2 }} mg/L</td></tr>
@@ -45,11 +49,15 @@
         <tr><th scope="row">{% trans "Oxygen saturation" %}</th><td class="num">{{ analysis.oxygen_saturation_pct|percent:1 }}</td></tr>
       </table>
     </div>
+    {% include "farm/calculator/_ph_scale.html" %}
+    <p class="calc-note" data-formula="{{ analysis.equilibria.formula }}">{{ analysis.provenance }}</p>
+    {% if analysis.co2_judged %}<p class="calc-note" data-co2-basis="{{ analysis.co2_basis }}">{{ analysis.co2_judged }}</p>{% endif %}
   </section>
 
   <section class="calc-card calc-recipes" aria-labelledby="calc-recipes-title">
     <h3 class="calc-card-title" id="calc-recipes-title">{% trans "Dosing recipes" %}{% if result.recipes %} ({{ result.recipes|length }}){% endif %}</h3>
     {% if result.recipes %}
+    {% if result.phosphate_note %}<p class="calc-note wq-value wq-warning" data-phosphate-used>{{ result.phosphate_note }}</p>{% endif %}
     <ol class="calc-recipe-list">
       {% for recipe in result.recipes %}
       <li class="calc-recipe{% if recipe.below_air %} is-flagged{% endif %}">

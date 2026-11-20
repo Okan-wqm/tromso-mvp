@@ -73,7 +73,7 @@ class DosingParityTests(SimpleTestCase):
                                      json.loads(json.dumps({**layer, 'note': str(messages.dosing_note(layer['note']))})))
                     self.assertEqual(native.at_target(start, end), record['at_target'])
                 else:
-                    steps = native.simulate(record['temp_c'], record['salinity'], start, record['ph'],
+                    steps = native.simulate(native.equilibria(record['temp_c'], record['salinity']), start, record['ph'],
                                             list(record['amounts'].items()), record['volume'],
                                             native.co2_from_air(record['temp_c'], record['salinity'], 1.0))
                     golden = [[None if step['reagent'] is None else step['reagent']['key'], step['grams'], step['dic'],
@@ -88,7 +88,7 @@ class DosingParityTests(SimpleTestCase):
         eq = native.equilibria(12.0, 1.0)
         start = (eq.dic(80 / native.MG_CACO3_PER_MEQ, 7.0), 80 / native.MG_CACO3_PER_MEQ)
         end = (eq.dic(80 / native.MG_CACO3_PER_MEQ, 9.5), 80 / native.MG_CACO3_PER_MEQ)
-        air = (12.0, 1.0, native.co2_from_air(12.0, 1.0, 1.0))
+        air = (eq, native.co2_from_air(12.0, 1.0, 1.0))
         flagged = [recipe for recipe in native.recipes(start, end, ['nahco3', 'degas'], 1.0, air) if recipe['below_air']]
         self.assertEqual([[dose[0] for dose in recipe['doses']] for recipe in flagged], [['degas']])
         self.assertFalse(any(recipe['below_air'] for recipe in native.recipes(start, end, ['nahco3', 'degas'], 1.0)))

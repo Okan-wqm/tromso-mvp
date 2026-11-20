@@ -86,7 +86,7 @@ def plots(analysis):
 
 def saturation_index(eq, dic, ph, calcium_mg_l, ksp):
     """log10 Ω of a water: Ω = [Ca²⁺] [CO₃²⁻] / Ksp, concentrations per litre (WQ-32; the core's)."""
-    return native.saturation_index(eq.temp_c, eq.salinity, dic, ph, calcium_mg_l, ksp)
+    return native.saturation_index(eq, dic, ph, calcium_mg_l, ksp)
 
 
 # ---- the SVG --------------------------------------------------------------------------------------------

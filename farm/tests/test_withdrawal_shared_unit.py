@@ -18,6 +18,7 @@ from core.models import AuditLog
 from ..handling import check
 from ..models import HandlingAcknowledgement, StockMovement, Treatment, WithdrawalAcknowledgement
 from ..stock import services as stock_services
+from .helpers import going_on
 from .test_harvest_inside_withdrawal import HarvestInsideTestCase
 from .test_stock import make_unit
 
@@ -32,8 +33,8 @@ class SharedUnitTestCase(HarvestInsideTestCase):
 
     def move(self, days_ago, count=500):
         """`count` fish of A out of T-01 into T-02, beside B."""
-        return stock_services.record_transfer(self.user, source=self.t1, batch=self.a, day=self.day(days_ago),
-                                              legs=[(self.t2, count)], reason='density')
+        return going_on(stock_services.record_transfer, self.user, source=self.t1, batch=self.a,
+                        day=self.day(days_ago), legs=[(self.t2, count)], reason='density')
 
     def harvest_b(self, days_ago, count=100, kilos='13', **fields):
         return stock_services.record_harvest(self.user, unit=self.t2, batch=self.b, day=self.day(days_ago),
@@ -87,7 +88,7 @@ class HeldUnitTests(SharedUnitTestCase):
         self.assertEqual(self.client.post(url, {**data, 'handling_ack': fingerprint}).status_code, 302)
         line = StockMovement.objects.get(kind='harvest')
         self.assertEqual((line.batch, line.unit, line.count_delta), (self.b, self.t2, -100))
-        row = HandlingAcknowledgement.objects.get()
+        row = HandlingAcknowledgement.objects.get(operation=line.operation)     # the move in has its own (S-03, F-1)
         self.assertEqual((row.operation, row.warning, row.batch, row.withdrawal_until, row.withdrawal_source),
                          (line.operation, 'withdrawal', self.a, self.until, f'treatment:{self.treatment.pk}'))
         entry = AuditLog.objects.get(entity_type='stock operation', action='create', entity_id=str(line.operation_id))

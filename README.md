@@ -1306,7 +1306,8 @@ published values):
   judged on the safe side ..., the larger of it and the best estimate; best estimate 0.0121 mg/L."); it is never judged.
   Against formula 3 the judged NH₃ of brackish and sea water fell (S 5: 11 to 14 %, S 10: 8 to 12 %, S 20: 4 to 9 %,
   S 34: 0 to 5 %, 0 to 30 °C): formula 3 judged it on Khoo et al.'s (1977) constant applied to the unconverted NBS pH,
-  whose margin over the best estimate was the size of pH NBS − pH free, never designed. Fresh water did not move.
+  whose margin over the best estimate was the size of pH NBS − pH free, never designed. Fresh water did not move, except where no ion is measured: there the judged NH₃ is
+  up to 0.5 % stricter than formula 3's (the best estimate is the larger), never looser; the CO₂ is unchanged.
   **Above 30 °C or a salinity of 35 ‰ the NH₃ and the CO₂ say a warning** in the same title ("NH₃ and CO₂: above 30 °C or
   a salinity of 35 ‰ the water is outside the range the formula was checked over ..."): the judged values keep their
   margin over the best estimate there (`chemcore/core/tests/formula4.rs`), but nothing of formula 4 was computed or

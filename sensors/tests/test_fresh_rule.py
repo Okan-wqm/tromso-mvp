@@ -63,11 +63,19 @@ class FreshRuleCase(SensorsCase):
 
 
 class SeededTests(FreshRuleCase):
-    def test_every_quantity_the_limits_judge_has_its_default_rule_a_warning_at_the_freshness(self):
+    def test_every_quantity_the_limits_judge_has_its_default_rule_at_the_freshness(self):
         found = AlarmRule.objects.filter(is_default=True)
         self.assertEqual(sorted(rule.quantity for rule in found), sorted(quantities.JUDGED_CODES))
-        self.assertEqual({(rule.kind, rule.channel_id, rule.threshold, rule.for_s, rule.hysteresis, rule.severity,
-                           rule.is_active) for rule in found}, {('no_data', None, None, 0, 0.0, 'warning', True)})
+        self.assertEqual({(rule.kind, rule.channel_id, rule.threshold, rule.for_s, rule.hysteresis, rule.is_active)
+                          for rule in found}, {('no_data', None, None, 0, 0.0, True)})
+
+    def test_the_dissolved_oxygen_is_critical_every_other_quantity_a_warning(self):
+        """Owner decision of 2026-11-20: a dead oxygen probe is critical, in mg/L and in % alike."""
+        severities = dict(AlarmRule.objects.filter(is_default=True).values_list('quantity', 'severity'))
+        self.assertEqual({code for code, severity in severities.items() if severity == 'critical'},
+                         {parameters.OXYGEN_MG_L, parameters.OXYGEN_PCT})
+        self.assertEqual(set(severities.values()), {'critical', 'warning'})
+        self.assertEqual({code: quantities.default_severity(code) for code in quantities.JUDGED_CODES}, severities)
 
     def test_the_judged_quantities_are_derived_from_the_limits_and_hold_every_input_of_the_nh3(self):
         limited = {parameter.code for parameter in parameters.LIMITED}
@@ -82,6 +90,7 @@ class SeededTests(FreshRuleCase):
         is added later fails here until its migration seeds its rule."""
         migration = importlib.import_module('sensors.migrations.0014_default_no_data_rules')
         self.assertEqual(migration.JUDGED, quantities.JUDGED_CODES)
+        self.assertEqual(migration.CRITICAL, list(quantities.DEFAULT_CRITICAL))
 
 
 class DatabaseKeepsItTests(FreshRuleCase):
@@ -163,6 +172,23 @@ class HoldsTests(FreshRuleCase):
         alarms.evaluate(self.now)
         opened = {event.channel_no: event.rule.quantity for event in AlarmEvent.objects.filter(closed_at__isnull=True)}
         self.assertEqual(opened, {tris.channel_no: 'ph', oxygen.channel_no: 'oxygen_mg_l'})   # never sent; no flow rule
+
+    def test_a_silent_oxygen_probe_is_critical_a_silent_ph_probe_a_warning_also_on_a_channel_made_later(self):
+        """The rule is its quantity's: an oxygen channel made after the seeding raises the critical, the pH channel a
+        warning, each mirrored as an alarm of that severity (Company › Alarms)."""
+        from alarms import sources as alarm_sources
+        from alarms.models import Alarm
+        oxygen = make_channel(self.device, 'oxygen_mg_l', code='O2')
+        saturation = make_channel(self.device, 'oxygen_saturation_pct', code='O2-PCT')
+        for channel in (oxygen, saturation):
+            bindings.move(self.user, channel, self.now - timedelta(hours=1), system=self.ras)
+        self.send(self.ph, 7.5, self.now - timedelta(hours=1))
+        alarms.evaluate(self.now)
+        alarm_sources.sensor_events()
+        found = {alarm.sensor_event.channel_no: alarm.severity
+                 for alarm in Alarm.objects.filter(sensor_event__isnull=False).select_related('sensor_event')}
+        self.assertEqual(found, {oxygen.channel_no: 'critical', saturation.channel_no: 'critical',
+                                 self.ph.channel_no: 'warning'})
 
     def test_a_backlog_replayed_at_a_reconnect_keeps_it_open(self):
         """The ingest reconnects and a gateway delivers what it held: received now, measured an hour ago. The page says
@@ -326,19 +352,24 @@ class MigrationTests(TransactionTestCase):
         ph = default('ph').pk
         AlarmEvent.objects.create(rule_id=ph, channel_no=1, opened_at=timezone.now())
         AlarmRule.objects.filter(pk=default('tan_mg_l').pk).update(severity='critical', version=2)
+        AlarmRule.objects.filter(pk=default('oxygen_mg_l').pk).update(severity='warning', version=2)   # the farm's
         self.migrate(('sensors', '0013_channel_ph_scale'))
         with connection.cursor() as cursor:
             cursor.execute('SELECT id, quantity, severity FROM sensors_alarm_rule ORDER BY quantity')
             kept = cursor.fetchall()
         self.assertEqual([(quantity, severity) for _id, quantity, severity in kept],
-                         [('ph', 'warning'), ('tan_mg_l', 'critical')])
+                         [('oxygen_mg_l', 'warning'), ('ph', 'warning'), ('tan_mg_l', 'critical')])
         notes = AuditLog.objects.filter(entity_type='alarm rule', user_name='system').values_list('changes', flat=True)
         self.assertEqual(sorted(note['Note'][1] for note in notes),
                          ['sensors 0014 reversed: kept as an ordinary "No fresh value" rule, changed by a person since.',
+                          'sensors 0014 reversed: kept as an ordinary "No fresh value" rule, changed by a person since.',
                           'sensors 0014 reversed: kept as an ordinary "No fresh value" rule, its alarms are history.'])
         self.migrate(None)
         self.assertEqual(sorted(rule.quantity for rule in AlarmRule.objects.filter(is_default=True)),
                          sorted(quantities.JUDGED_CODES))
         self.assertEqual(default('ph').pk, ph)                         # marked again, no second rule
         self.assertEqual(default('tan_mg_l').severity, 'critical')
+        # Marked again, a farm's severity is never overwritten; one made again is seeded as the code says.
+        self.assertEqual((default('oxygen_mg_l').severity, default('oxygen_saturation_pct').severity),
+                         ('warning', 'critical'))
         self.assertEqual(AlarmRule.objects.count(), len(quantities.JUDGED_CODES))

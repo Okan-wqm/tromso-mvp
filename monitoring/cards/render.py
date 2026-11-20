@@ -99,6 +99,9 @@ class Face:
     note: str = ''           # what a worked-out value was worked out from and by (its formula), or why it could not be
     source: str = ''         # where it came from in ONE word: sensor, sample, calc. (the line under a fitted figure)
     age_short: str = ''      # how old, without "ago": 12 s, 5 min, 3 h, 7 d ('' when there is no reading)
+    # What was measured where the value is stored converted (a pH on another scale than NBS, a phosphate entered as PO₄)
+    # or is the safe-side basis alone: read.Reading.measured, the few words every page prints visibly beside the number.
+    measured: str = ''
 
 
 def age_text(seconds):
@@ -141,12 +144,17 @@ def face(reading, now, parameter=None):
     seconds = (now - reading.at).total_seconds()
     age = age_text(seconds)
     missing = reading.value is None
-    status = '' if missing else str(reading.old_alert or reading.status)
-    return Face(label, gettext('no data') if missing else water_value(reading.value, reading.code), status,
+    # A value the fish have a limit for that the chemistry core refused to work out (Reading.unevaluated) keeps its
+    # status even without a figure: it is "cannot be evaluated" in words, never "no data" (the water page's rule).
+    status = '' if missing and not reading.unevaluated else str(reading.old_alert or reading.status)
+    value = water_value(reading.value, reading.code) if not missing else (
+        str(Status.UNEVALUATED.label) if reading.unevaluated else gettext('no data'))
+    return Face(label, value, status,
                 str(Status(status).label) if status else '', origin, age,
                 not reading.fresh(now), missing, reading,
                 ' '.join(str(said) for said in (reading.note, reading.provenance) if said),
-                gettext('sample') if sample is not None else gettext('sensor'), age_short(seconds))
+                gettext('sample') if sample is not None else gettext('sensor'), age_short(seconds),
+                str(reading.measured or ''))
 
 
 def reading_at(card, code, point_kind):
@@ -242,6 +250,12 @@ def calculated(card, value):
     note = gettext('Calculated from the pH, the alkalinity, the temperature and the salinity.')
     if chart.assumed:
         note = '{} {}'.format(note, gettext('The salinity is assumed: fresh water.'))
+    # What it was worked out by (the formula and the ionic strength) and, for the CO₂, which value is the figure: the
+    # safe side the limits would judge, the best estimate said beside it (formula 4's Rule S; deffeyes.Analysis), as
+    # every page that shows a worked-out value says it.
+    analysis = chart.calculation.analysis
+    judged = analysis.co2_judged if value.figure == 'co2_mg_l' else ''
+    note = ' '.join(str(said) for said in (note, analysis.provenance, judged) if said)
     seconds = (card.now - min(measured)).total_seconds() if measured else None
     return Face(label, water_value(figure, value.shown_as), '', '', gettext('calculated'),
                 age_text(seconds) if measured else '', any(item.old for item in made_from), False, note=note,
@@ -282,9 +296,17 @@ def tile(card, view):
     beside = beside_alert = ''
     if twin is not None and twin.value is not None:
         beside = percent(twin.value, 1) if other == parameters.OXYGEN_PCT else f'{water_value(twin.value, other)} mg/L'
-        status = twin.old_alert or twin.status
-        beside_alert = str(status) if status in ALERTS else ''
-    return Tile(label, title, said, said.status if said.status in ALERTS else '', beside, beside_alert)
+        beside_alert = str(twin.old_alert or twin.status)
+    return Tile(label, title, said, alert_of(said.status), beside, alert_of(beside_alert))
+
+
+def alert_of(status):
+    """The state's shape and tone a value is drawn in: 'critical' or 'warning' as the limits judged it, 'warning' for a
+    value the chemistry core refused to work out where the fish have a limit ("cannot be evaluated": never OK, below a
+    judged warning, as the water page's chip and the unit's state take it), else ''."""
+    if status == Status.UNEVALUATED:
+        return str(Status.WARNING)
+    return str(status) if status in ALERTS else ''
 
 
 @dataclass(frozen=True)
@@ -614,8 +636,11 @@ def chart(card):
     if made is None:
         return DrawnChart(refused=gettext('no data'), title=gettext('The chart cannot be drawn'))
     if not isinstance(made, calculation.UnitChart):
+        # A water the chemistry core refuses (deffeyes.why_impossible: its own reason) is not a missing value.
+        first = (gettext('Not worked out: %(why)s.') if made.impossible else gettext('Missing: %(why)s.')) % {
+            'why': _refused(made)}
         return DrawnChart(refused=_refused(made), title=gettext('The chart cannot be drawn'),
-                          lines=(gettext('Missing: %(why)s.') % {'why': _refused(made)},
+                          lines=(first,
                                  gettext('Nothing is assumed for a missing value.')))
     analysis = made.calculation.analysis
     view = card.chart_view
@@ -704,7 +729,7 @@ def water_rows(card):
     rows = []
     for reading in water.readings.values():
         said = face(reading, card.now)
-        rows.append(WaterRow(said, bar(said), arrived(reading.at, card.now), said.status if said.status in ALERTS else ''))
+        rows.append(WaterRow(said, bar(said), arrived(reading.at, card.now), alert_of(said.status)))
     if not rows:
         return ()
     per = (len(rows) + 1) // 2 if len(rows) > WATER_ROWS else len(rows)

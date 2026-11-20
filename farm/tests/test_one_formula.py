@@ -104,7 +104,16 @@ NOT_CHEMISTRY = {
                                '_pairs': 'a flat array read as points (the scene)',
                                'render': 'the SVG in pixels (the scene)', '_arrow': 'an arrow head (the scene)',
                                '_star': 'the target star (the scene)',
-                               'shown': 'a number rounded to a few decimals as the language writes it (display)'},
+                               'shown': 'a number rounded to a few decimals as the language writes it (display)',
+                               # A monitoring card's picture (owner decisions 4 and 12): a window on the core's figure,
+                               # in per cent of the picture; every border, region and the water are the core's.
+                               'crossing': "where a polyline of the core's figure meets a height (the scene)",
+                               'close_window': "the close view's window on the core's figure (the scene)",
+                               '_simplify': 'points a pixel cannot show left out of a drawn line (the scene)',
+                               '_inside': "a point inside a polygon of the core's figure (the scene)",
+                               '_window_part': 'the part of a drawn segment inside the window (the scene)',
+                               '_step': 'the step of an axis (the scene)',
+                               'picture': "the card's picture in per cent of its size (the scene)"},
     'farm/water/dosing.py': {'Dose.mg_l': "mmol/L times the core's molar mass, the dose in g/m³ shown when no volume is "
                                           "given: the same product the core makes for the grams (dosing.rs), so the "
                                           "two cannot differ; moving it into the core would change the recorded shape "

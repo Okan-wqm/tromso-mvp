@@ -8,6 +8,8 @@ name BELOW_FITTED_TEMP
 name BISULFATE_SHARE
 name BOUND_OVER_ESTIMATE
 name BY_KEY
+name CARD_LAYERS
+name CO2_SPOTS
 name CONDUCTIVITY_ABOVE_IONS
 name CONDUCTIVITY_BELOW_IONS
 name CONDUCTIVITY_SALINITY
@@ -24,6 +26,7 @@ name IONIC_PER_MICROSIEMENS_NACL
 name LABEL_AT
 name LEFT_OUT_G
 name LINE_LENGTH
+name LOCATOR_MARK
 name MAX_RECIPES
 name MG_CACO3_PER_MEQ
 name MG_CACO3_PER_MMOL
@@ -39,6 +42,7 @@ name NBS_STEP_SLOPE
 name NH3_GUARD_MAX_SALINITY
 name NH3_GUARD_MAX_TEMP_C
 name NH3_PAST_GUARD
+name NH3_SPOTS
 name OMEGA_SALINITY
 name PH_RANGE
 name PH_UNCERTAINTY
@@ -52,12 +56,15 @@ name alkalinity_floor
 name alkalinity_where_co2
 name at_target
 name bends_back
+name border_at
 name box_of
 name by_key
 name carbonate_plot
+name card_figure
 name clip_polyline
 name clip_segment
 name clip_to_box
+name close_window
 name co2_chart_limit
 name co2_chart_ratio
 name co2_corrected
@@ -80,9 +87,11 @@ name free_to_total
 name fresh_equilibria
 name fresh_ionic_strength
 name from_code
+name full_window
 name h2s_assessed
 name h2s_plot
 name h2s_share
+name in_region
 name ionic_strength
 name isoline_colour
 name isoline_phs
@@ -154,6 +163,8 @@ name vapour_pressure_atm
 name water_density
 name water_equilibria
 name why_impossible
+name window_of
+name window_part
 number 2.8054253e-10
 number 1.0031e-09
 number 5.3875e-09

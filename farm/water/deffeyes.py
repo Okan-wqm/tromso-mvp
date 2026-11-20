@@ -749,7 +749,7 @@ def in_region(figure, key):
     return ring is not None and _inside(_pairs(ring), tuple(figure['point']))
 
 
-def _clip(segment, ends):
+def _window_part(segment, ends):
     """The part of a segment (x1, y1, x2, y2) inside a window (Liang-Barsky), or None."""
     x1, y1, x2, y2 = segment
     xa, xb, ya, yb = ends
@@ -813,7 +813,7 @@ def picture(figure, window, view=CLOSE, target_active=False):
     for ph, _labelled, *segment in figure['isolines']:
         if ph < 6 or ph > 9 or (ph * 4) % 1:
             continue
-        cut = _clip(segment, window.ends)
+        cut = _window_part(segment, window.ends)
         if cut is None:
             continue
         half = (ph * 2) % 1 == 0

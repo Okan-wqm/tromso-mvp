@@ -24,6 +24,7 @@ from ..models import Alarm, Severity
 
 PH = 'ph'
 SUMMARY = 'S-01: pH (NBS scale) cannot be evaluated: '
+SYSTEM, SENSOR_RULE = 'system', 'sensor_rule'
 
 
 def refused(why, scale='total'):
@@ -60,8 +61,16 @@ class RefusedSensorPhCase(SeaTestCase):
         return summary
 
     def opened(self):
+        """The open alarms of the water limits and the alarm system. The sensor rules' are left out: a channel of the
+        fixture that never sends (the temperature here) raises its default "No fresh value" warning (owner decision of
+        2026-11-20, sensors 0014), which StoppedProbeTests and sensors/tests/test_fresh_rule.py hold."""
         return sorted((alarm.source, alarm.severity, alarm.parameter)
-                      for alarm in Alarm.objects.filter(clearance__isnull=True))
+                      for alarm in Alarm.objects.filter(clearance__isnull=True).exclude(source=SENSOR_RULE))
+
+    def stopped(self):
+        """The open "No fresh value" warnings of the sensor rules: {channel number: summary}."""
+        return {alarm.sensor_event.channel_no: alarm.summary for alarm in Alarm.objects.filter(
+            clearance__isnull=True, source=SENSOR_RULE, sensor_event__rule__kind='no_data').select_related('sensor_event')}
 
     def ph_reading(self, at):
         return water_read.unit_water([self.sea], at)[self.sea.pk].get(PH)
@@ -80,7 +89,7 @@ class WarningTests(RefusedSensorPhCase):
         self.assertEqual(self.opened(), [])
         self.run_pass(measured + self.on_delay)
         self.assertEqual(self.opened(), [('system', 'warning', PH)])        # no limit alarm from the raw 6.00
-        alarm = Alarm.objects.get(clearance__isnull=True)
+        alarm = Alarm.objects.get(clearance__isnull=True, source=SYSTEM)
         self.assertEqual(alarm.summary, f'{SUMMARY}{refused("temperature")}.')
         self.assertEqual((alarm.site, alarm.production_department), (self.bergen, self.hall))
 
@@ -90,7 +99,7 @@ class WarningTests(RefusedSensorPhCase):
         self.send(self.salinity, 34.0, measured)
         opened_at = measured + self.on_delay
         self.run_pass(opened_at)
-        warning = Alarm.objects.get(clearance__isnull=True)
+        warning = Alarm.objects.get(clearance__isnull=True, source=SYSTEM)
         arrived = opened_at + timedelta(seconds=30)
         self.send(self.temperature, 12.0, arrived)
         reading = self.ph_reading(arrived)
@@ -107,7 +116,7 @@ class WarningTests(RefusedSensorPhCase):
         self.send(self.tris, 6.00, measured)
         self.send(self.salinity, 34.0, measured)
         self.run_pass(measured + self.on_delay)
-        warning = Alarm.objects.get(clearance__isnull=True)
+        warning = Alarm.objects.get(clearance__isnull=True, source=SYSTEM)
         WaterLimit.objects.filter(parameter=PH).delete()                     # nothing judges the pH any more
         self.run_pass(measured + self.on_delay + timedelta(seconds=1))
         self.assertFalse(read.is_open(warning))

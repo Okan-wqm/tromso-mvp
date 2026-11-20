@@ -3446,8 +3446,10 @@ What works:
 - **A probe that stops sending** (owner decision of 2026-11-20, the second review of the water-chemistry audit,
   question 3): every quantity the water limits judge (`quantities.JUDGED_CODES`: each one a limit can be set on,
   derived from `farm/water/parameters.py` LIMITED, which holds every input of the judged NH₃) has a **default "No
-  fresh value" rule**, seeded by sensors 0014, a warning, on every channel of the quantity, so the channels there are
-  and every channel made later, by any door, are covered by the rule's scope (no row per channel). It holds exactly
+  fresh value" rule**, seeded by sensors 0014 on every channel of the quantity, so the channels there are and every
+  channel made later, by any door, are covered by the rule's scope (no row per channel) and take its severity:
+  **critical for the dissolved oxygen** (mg/L and %), a warning for every other quantity (owner decision of
+  2026-11-20, `quantities.default_severity`; an existing rule a migration marks the default keeps its own). It holds exactly
   when the place's value is no longer fresh, at the channel's own freshness (its heartbeat times its fresh heartbeats,
   tuned per channel), counted as the page counts it (the older of the value's device time and its receipt: a backlog
   replayed at a reconnect keeps it open, as the page keeps saying "no recent data"): the page and the alarm agree to
@@ -4055,7 +4057,7 @@ from which device, how late) is logged. The server side is built; the push trans
 - **What raises an alarm** is judged where it is judged today (`alarms/sources.py`): the sensor alarm rules (each event of
   `sensors/alarms.py` is mirrored as an alarm and cleared when it closes, saying the rule, the channel and its place;
   among them the default "No fresh value" rule of every water quantity the limits judge, so a probe that stops sending
-  is a warning whatever its pH scale: Sensors) and the water limits: one read of every live
+  is a warning (critical for the dissolved oxygen) whatever its pH scale: Sensors) and the water limits: one read of every live
   unit's water (`farm/water/read.py` `unit_water`: its middle point, its other own points and its system standing in, the
   worst fresh value deciding), so an inlet raises nothing and a depth point or the loop raises its unit's alarm (alarm plan,
   defect 1). A water alarm's subject is the unit's quantity at a level (`water:unit:<unit>:<slot>:<severity>`), never the

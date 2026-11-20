@@ -2164,6 +2164,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_matrix_notes.py",
         "core/tests_workspaces.py",
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_fresh_rule.py",

@@ -157,8 +157,11 @@ class SmallCardTests(SmallCase):
             self.assertEqual([name for name in line.classes if 'truncate' in name or 'roomy' in name], [])
         self.assertNotIn('roomy', (Path(settings.BASE_DIR) / 'static/css/monitor.css').read_text(encoding='utf-8'))
         self.assertRegex(under[0].attrs['title'], r'^OK · .+ · 1 h ago$')
+        # ... and the formula and ionic strength it was worked out by (main's Analysis.provenance, formula 4)
         self.assertEqual(under[3].attrs['title'], 'calculated · 1 h ago · Calculated from the pH, the alkalinity, the '
-                                                  'temperature and the salinity. The salinity is assumed: fresh water.')
+                                                  'temperature and the salinity. The salinity is assumed: fresh water. '
+                                                  f'{chart.calculation.analysis.provenance}')
+        self.assertRegex(chart.calculation.analysis.provenance, r'^Formula 4: ionic strength ')
         # the pH window: a picture drawn by the server, in percentages, its name every number in words
         (window,) = nodes(card, 'monitor-ph-window')
         self.assertEqual((window.tag, window.classes, window.attrs.get('viewbox')), ('svg', ['monitor-ph-window'], None))

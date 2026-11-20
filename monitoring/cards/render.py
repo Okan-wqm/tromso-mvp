@@ -250,12 +250,11 @@ def calculated(card, value):
     note = gettext('Calculated from the pH, the alkalinity, the temperature and the salinity.')
     if chart.assumed:
         note = '{} {}'.format(note, gettext('The salinity is assumed: fresh water.'))
-    # What it was worked out by (the formula and the ionic strength) and, for the CO₂, which value is the figure: the
-    # safe side the limits would judge, the best estimate said beside it (formula 4's Rule S; deffeyes.Analysis), as
-    # every page that shows a worked-out value says it.
-    analysis = chart.calculation.analysis
-    judged = analysis.co2_judged if value.figure == 'co2_mg_l' else ''
-    note = ' '.join(str(said) for said in (note, analysis.provenance, judged) if said)
+    # What it was worked out by (the formula and the ionic strength), as every page that shows a worked-out value says
+    # it (Analysis.provenance). The figure is the core's judged CO₂ (formula 4's safe side); its best estimate and the
+    # sentence of which value judged it (Analysis.co2_judged, some 400 letters) stay on the unit's chart page and the
+    # calculator: a small card's weight is bounded (test_small) and the calculated CO₂ is not judged on a card yet.
+    note = ' '.join(str(said) for said in (note, chart.calculation.analysis.provenance) if said)
     seconds = (card.now - min(measured)).total_seconds() if measured else None
     return Face(label, water_value(figure, value.shown_as), '', '', gettext('calculated'),
                 age_text(seconds) if measured else '', any(item.old for item in made_from), False, note=note,
@@ -678,7 +677,10 @@ def chart(card):
         missing.append(gettext('NH₃ not assessed: no TAN'))
     if low is None or top is None:
         missing.append(gettext('no alkalinity band for these fish'))
-    first = 4.45 if not window.full else 2.7
+    # In the text's own em (its font is .8 of the picture's, static/css/monitor.css): in the close view the first note
+    # stands under the locator, whose box ends 3.4 of the picture's em down (_chart.html), so its letters start below
+    # it (at 4.45 they crossed the box's lower edge on every wall).
+    first = 5.3 if not window.full else 2.7
     notes = tuple((text_, f'{first + 1.35 * index:.2f}em') for index, text_ in enumerate(missing))
     said = []
     for item in made.inputs:

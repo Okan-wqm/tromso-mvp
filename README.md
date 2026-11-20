@@ -1049,8 +1049,9 @@ limit for that the chemistry core refused to work out says "Cannot be evaluated"
 basis figure, drawn in the warning's shape and tone (`alert_of`, as the water page's chip), its reason in the note and in the
 card's state; what was measured where a value is stored converted (a pH on another scale than NBS, a phosphate as PO₄, a
 basis-only NH₃: `Reading.measured`) stands visibly beside the source; a worked-out value's note says the formula and ionic
-strength it was worked out by (`Reading.provenance`; the calculated CO₂ also which value is the figure, formula 4's safe
-side, and its best estimate: `Analysis.co2_judged`). The water table keeps the
+strength it was worked out by (`Reading.provenance`, `Analysis.provenance`); the calculated CO₂'s figure is the core's
+judged one (formula 4's safe side), its best estimate is on the unit's chart page and the calculator, not on the card
+(its weight is bounded). The water table keeps the
 water page's own value markup and adds the origin and age under each value. A bar is the value against the four bounds of
 the limit that judged it, an SVG with `role="img"` named by the same sentence, its bands told apart by dash pattern as well as
 tone (no `<meter>`: browser colours, three cut points); without a limit it says so. A board's card width sets `--card-min`

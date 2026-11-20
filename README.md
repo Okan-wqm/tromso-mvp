@@ -1570,12 +1570,16 @@ without values it shows its defaults.
     place's temperature (a sample's) where it is fresh at the pH's own time, as the oxygen's other unit, the replay and
     the trail take it (the review's C2; the provenance then says "The temperature is manual, 19.11.2026 10:00."), and the
     salinity of the same moment (a fresh sensor's, else the point's fresh sample's, else 0 in fresh water), for sea water
-    of 5 ‰ or more and never for fresh water with salt added, while the pH is fresh. It is then shown as the typed
+    of 5 ‰ or more and never for fresh water with salt added. A pH no longer fresh is put on the NBS scale the same way
+    at its own moment, with the place's sensor temperature and salinity fresh THEN (each channel's value at that moment,
+    `read._at_moment`), never with today's, and is shown stale with its value and what the limits said of it, as an NBS
+    one is (owner decision of 2026-11-20: one behaviour for every scale); that its probe stopped is its default "No
+    fresh value" rule's to say (Sensors). It is then shown as the typed
     sample's is ("measured 7.95 on the total scale" beside 8.06; "Measured 7.95 on the total scale by the sensor; put on
     the NBS scale by formula 4 with 12.0 °C and 34.0 ‰ of the same moment."), and its NH₃ is the typed sample's: a TRIS
     probe at 12 °C and S 34 gives the judged NH₃-N the same water typed as a total-scale sample gives. Otherwise (no
-    temperature fresh at its time, no salinity, fresh or salt-added water, a water the core cannot work out at all,
-    a pH no longer fresh) **the pH has no value and cannot be evaluated**, said with the reason (the core's own where it
+    temperature fresh at its time, no salinity of its moment, fresh or salt-added water, a water the core cannot work
+    out at all; before 2026-11-20 also a pH only no longer fresh) **the pH has no value and cannot be evaluated**, said with the reason (the core's own where it
     refused the water, never "not sea water": C5), and so is an NH₃ worked out from it; the unconverted number is shown
     and used nowhere (a worse fresh sample still decides the status). **It is never silent for the alarms** (the
     review's M1): the unit gets the alarm system's warning "<unit>: pH (NBS scale) cannot be evaluated: <why>" (Alarms,
@@ -3439,6 +3443,25 @@ What works:
   Dead letters (what the ingest could not store, counted, the payload shown escaped as text and hex; resolved by a
   person, logged), Alarm rules and Alarm events (each event is an alarm of Company › Alarms, which notifies its recipients and keeps
   who acknowledged it; the Acknowledge button here writes that record).
+- **A probe that stops sending** (owner decision of 2026-11-20, the second review of the water-chemistry audit,
+  question 3): every quantity the water limits judge (`quantities.JUDGED_CODES`: each one a limit can be set on,
+  derived from `farm/water/parameters.py` LIMITED, which holds every input of the judged NH₃) has a **default "No
+  fresh value" rule**, seeded by sensors 0014, a warning, on every channel of the quantity, so the channels there are
+  and every channel made later, by any door, are covered by the rule's scope (no row per channel). It holds exactly
+  when the place's value is no longer fresh, at the channel's own freshness (its heartbeat times its fresh heartbeats,
+  tuned per channel), counted as the page counts it (the older of the value's device time and its receipt: a backlog
+  replayed at a reconnect keeps it open, as the page keeps saying "no recent data"): the page and the alarm agree to
+  the second, a restart or a change of a pH channel's scale opens or closes nothing, and the alarm closes with the
+  probe's next fresh value. Whatever the pH scale: a stale total-scale pH is no "cannot be evaluated" any more (Water
+  chemistry). The alarm says the rule, the channel and its place: "pH (NBS scale): No fresh value · PROBE-1 › PH:
+  S-01 › Middle". The farm sets its severity; it stays at the freshness (no time past it, no threshold), and switching
+  it off takes the Delete right on Alarm rules (said under the area in the role matrix) and a reason, logged as
+  critical; it is never deleted. The database holds all of it (the check `chk_sensors_alarm_rule_default`, one per
+  quantity `uq_sensors_alarm_rule_default`, the trigger `trg_sensors_alarm_rule_default_kept` against a delete, an
+  unmarking or a move to another quantity). A channel of such a quantity that no active "No fresh value" rule covers
+  (its default switched off and none of its own) is said above the Alarm rules list and by the check `sensors.W001`
+  (`manage.py check --database default`). Going back past sensors 0014 leaves the rules as ordinary ones (their
+  alarms are history); going forward again marks them the default once more.
 - **Administration**: Credentials (a publisher's sign-in at the broker; the secret is made on the server, shown once
   when made or replaced, stored only as Mosquitto's `$7$` PBKDF2-SHA512 hash, masked in the database viewer and never in
   the activity log).
@@ -3639,7 +3662,8 @@ the device.
   `demo/<code>`, eight water channels each covering every measured parameter together, bound to the tank's middle point
   or the system, a simulator credential with its secret shown once); it is idempotent, touches only what it made (found
   again by its connection's client id, its format's name and its credential's user name), and `--remove` deletes exactly that.
-- `manage.py check_sensors [--loop 60]` checks the alarm rules; `manage.py sensors_housekeeping` (daily) deletes dead
+- `manage.py check_sensors [--loop 60]` checks the alarm rules; `manage.py check --database default` warns of a channel of
+  a judged water quantity without an active "No fresh value" rule (`sensors.W001`); `manage.py sensors_housekeeping` (daily) deletes dead
   letters older than 90 days.
 - `manage.py bench_sensors --confirm-database NAME` writes synthetic readings into a database named on the command line
   (never a farm's) and prints the storage and read figures, the replay's page and its diagrams included (`--frames`,
@@ -4029,7 +4053,9 @@ The owner's answer (2026-11-06, F-091): alarms reach everyone's phone as push no
 from which device, how late) is logged. The server side is built; the push transport plugs in with the app.
 
 - **What raises an alarm** is judged where it is judged today (`alarms/sources.py`): the sensor alarm rules (each event of
-  `sensors/alarms.py` is mirrored as an alarm and cleared when it closes) and the water limits: one read of every live
+  `sensors/alarms.py` is mirrored as an alarm and cleared when it closes, saying the rule, the channel and its place;
+  among them the default "No fresh value" rule of every water quantity the limits judge, so a probe that stops sending
+  is a warning whatever its pH scale: Sensors) and the water limits: one read of every live
   unit's water (`farm/water/read.py` `unit_water`: its middle point, its other own points and its system standing in, the
   worst fresh value deciding), so an inlet raises nothing and a depth point or the loop raises its unit's alarm (alarm plan,
   defect 1). A water alarm's subject is the unit's quantity at a level (`water:unit:<unit>:<slot>:<severity>`), never the

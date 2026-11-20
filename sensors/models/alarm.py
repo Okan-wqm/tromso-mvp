@@ -49,10 +49,11 @@ class AlarmRule(AuditedModel):
     its pH scale, and a channel made later, by any door, is covered from its first pass (the rule is the quantity's, not a
     row per channel). It holds exactly when the place's value is no longer fresh, at the channel's own freshness (its
     heartbeat times its fresh heartbeats, which the farm tunes per channel): the page says "no recent data" and the alarm
-    opens at the same moment. The farm sets its severity; switching it off takes the Delete right on Alarm rules and a
-    reason (`off_reason`), logged as critical (sensors/resources.py). It is never deleted (a check and a trigger) and stays
-    a default rule (the trigger); a channel of such a quantity that no active rule covers is a system check's warning
-    (sensors.W001, sensors/checks.py)."""
+    opens at the same moment. It is seeded critical for the dissolved oxygen and a warning for every other quantity
+    (quantities.default_severity), so a channel made later has its quantity's; from then on the farm sets its severity.
+    Switching it off takes the Delete right on Alarm rules and a reason (`off_reason`), logged as critical
+    (sensors/resources.py). It is never deleted (a check and a trigger) and stays a default rule (the trigger); a channel
+    of such a quantity that no active rule covers is a system check's warning (sensors.W001, sensors/checks.py)."""
 
     channel = models.ForeignKey(Channel, null=True, blank=True, on_delete=models.CASCADE, related_name='alarm_rules',
                                 verbose_name=_('Channel'))

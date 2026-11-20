@@ -6,12 +6,14 @@ them: a check holds a default rule to what it is (no time past the freshness, no
 off only with a reason) and one per quantity, a trigger refuses deleting one, unmarking it or moving it to another
 quantity (as alarms 0006 keeps the severity rules).
 
-Seeded as alarms 0002 seeds the severity rules: a warning per quantity, from here on the farm's row. A quantity that
+Seeded as alarms 0002 seeds the severity rules, from here on the farm's row: critical for the dissolved oxygen (mg/L
+and %), a warning for every other quantity (owner decision of 2026-11-20, quantities.default_severity). A quantity that
 has an active, live "No fresh value" rule of the same shape already (every channel of it, nothing past the freshness)
-gets that one marked as its default instead of a second (two alarms for one probe), a row of the activity log (by
-'system') saying so, as alarms 0008 says a changed row. The quantities are written here as they are when this migration
-is made (quantities.JUDGED_CODES; a migration never reads live code: sensors/tests/test_fresh_rule.py holds them
-together, and a quantity added later seeds its own in its migration).
+gets that one marked as its default instead of a second (two alarms for one probe), keeping its own severity (the
+farm's setting is never overwritten), a row of the activity log (by 'system') saying so, as alarms 0008 says a changed
+row. The quantities and the critical ones are written here as they are when this migration is made
+(quantities.JUDGED_CODES and DEFAULT_CRITICAL; a migration never reads live code: sensors/tests/test_fresh_rule.py
+holds them together, and a quantity added later seeds its own in its migration).
 
 Going back removes the rules this made (every default rule but those it marked, read from its own log rows), so a
 migration further back that narrows the quantities a rule may name (sensors 0011, 0012) finds none of them; except one
@@ -27,6 +29,7 @@ from core.migrations._log import SYSTEM, entries, system_entry
 JUDGED = ['temperature_c', 'oxygen_mg_l', 'oxygen_saturation_pct', 'ph', 'alkalinity_mg_l', 'hardness_mg_l', 'co2_mg_l',
           'tan_mg_l', 'nitrite_n_mg_l', 'nitrate_n_mg_l', 'tgp_pct', 'salinity_ppt', 'conductivity_25_us_cm',
           'turbidity_ntu', 'phosphate_p_mg_l']
+CRITICAL = ['oxygen_mg_l', 'oxygen_saturation_pct']   # seeded critical; every other a warning
 ENTITY = 'alarm rule'                   # the activity log's name of the record (AlarmRuleResource.entity_type)
 MARKED = 'sensors 0014: made the default "No fresh value" rule of its quantity (owner decision of 2026-11-20).'
 KEPT = 'sensors 0014 reversed: kept as an ordinary "No fresh value" rule, {why}.'
@@ -63,8 +66,8 @@ def seed(apps, schema_editor):
                                      is_deleted=False, threshold__isnull=True, for_s=0, hysteresis=0)
                  .order_by('created_at', 'id').first())
         if found is None:
-            Rule.objects.create(quantity=code, kind='no_data', for_s=0, hysteresis=0, severity='warning',
-                                is_active=True, is_default=True)
+            Rule.objects.create(quantity=code, kind='no_data', for_s=0, hysteresis=0, is_active=True, is_default=True,
+                                severity='critical' if code in CRITICAL else 'warning')
             continue
         Rule.objects.filter(pk=found.pk).update(is_default=True)
         system_entry(schema_editor, ENTITY, found.pk, f'{code}: No fresh value',

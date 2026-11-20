@@ -6058,6 +6058,13 @@ msgstr "En erken uygun hasat tarihi: %(date)s."
 msgid "Earliest suitable harvest date: not known."
 msgstr "En erken uygun hasat tarihi: bilinmiyor."
 
+#, python-format
+msgid "Earliest suitable live delivery date: %(date)s."
+msgstr "Canlı teslimat için en erken uygun tarih: %(date)s."
+
+msgid "Earliest suitable live delivery date: not known."
+msgstr "Canlı teslimat için en erken uygun tarih: bilinmiyor."
+
 msgid "Earthen"
 msgstr "Toprak"
 
@@ -7619,6 +7626,9 @@ msgstr ""
 "%(unit)s biriminden %(date)s tarihli hasat (%(batch)s, %(facility)s tesisine %(fish)s balık) bu "
 "ilaç bekleme süresinin içinde kalıyor (%(end)s): ilaçlı balık gıdaya gitmiş olabilir."
 
+msgid "Harvest or live delivery"
+msgstr "Hasat veya canlı teslimat"
+
 msgid "Harvest plan"
 msgstr "Hasat planı"
 
@@ -8200,6 +8210,14 @@ msgstr ""
 "%(unit)s içindeki bütün balıkları tutar: aynı birimdeki farklı partilerin balıkları hasatta "
 "birbirinden ayrılamaz."
 
+#, python-format
+msgid ""
+"It holds every fish in %(unit)s: the fish of different batches in one unit cannot be told apart "
+"when they are caught."
+msgstr ""
+"%(unit)s içindeki bütün balıkları tutar: aynı birimdeki farklı partilerin balıkları yakalanırken "
+"birbirinden ayrılamaz."
+
 msgid "It holds fish, and what it owes cannot be worked out: no report is listed as due for it."
 msgstr ""
 "Balık barındırıyor ve ne borçlu olduğu hesaplanamıyor: onun için vadesi gelen hiçbir rapor "
@@ -8676,6 +8694,18 @@ msgstr "Bağlantının gönderildiği adres"
 
 msgid "List what was delivered."
 msgstr "Teslim edileni listeleyin."
+
+msgid "Live delivery inside a withdrawal"
+msgstr "Arınma süresi içinde canlı teslimat"
+
+#, python-format
+msgid ""
+"Live delivery of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside "
+"this withdrawal (%(end)s): medicated fish sold alive may have been eaten."
+msgstr ""
+"%(unit)s biriminden %(date)s tarihli canlı teslimat (%(batch)s, %(facility)s alıcısına %(fish)s "
+"balık) bu ilaç bekleme süresinin içinde kalıyor (%(end)s): canlı satılan ilaçlı balık yenmiş "
+"olabilir."
 
 msgid "Live fish and eggs"
 msgstr "Canlı balık ve yumurta"
@@ -14161,6 +14191,13 @@ msgstr ""
 "Her elleçleme türünden önceki aç bırakma, tür başına veya her tür için. Kural olmadan aç bırakma "
 "denetlenmez."
 
+msgid "The fast decides."
+msgstr "Aç bırakma belirler."
+
+#, python-format
+msgid "The fast decides: feeding must stop by %(date)s."
+msgstr "Aç bırakma belirler: yemleme en geç %(date)s tarihinde durmalı."
+
 msgid ""
 "The feed fed is read from the feeding records of the site's units and drawn from its lots first "
 "expired first out; what the book could not cover is fed beyond the recorded stock."
@@ -15552,11 +15589,36 @@ msgstr "Bekleme süresi yeni son günden sayılır; değişiklik günlüğe yaz�
 
 #, python-format
 msgid ""
+"The withdrawal is of %(held)s, which was in %(unit)s with the fish delivered: the fish of one "
+"unit cannot be told apart."
+msgstr ""
+"Bekleme süresi, teslim edilen balıklarla birlikte %(unit)s içinde bulunan %(held)s partisine "
+"aittir: aynı birimdeki balıklar birbirinden ayrılamaz."
+
+#, python-format
+msgid ""
 "The withdrawal is of %(held)s, which was in %(unit)s with the fish harvested: the fish of one "
 "unit cannot be told apart."
 msgstr ""
 "Bekleme süresi, hasat edilen balıklarla birlikte %(unit)s içinde bulunan %(held)s partisine "
 "aittir: aynı birimdeki balıklar birbirinden ayrılamaz."
+
+#, python-format
+msgid ""
+"The withdrawal is of %(held)s: the fish delivered shared %(unit)s with %(with)s before, and the "
+"fish of one unit cannot be told apart."
+msgstr ""
+"Bekleme süresi %(held)s partisine aittir: teslim edilen balıklar daha önce %(unit)s birimini "
+"%(with)s ile paylaştı ve aynı birimdeki balıklar birbirinden ayrılamaz."
+
+#, python-format
+msgid ""
+"The withdrawal is of %(held)s: the fish delivered shared %(unit)s with %(with)s, which waits with"
+" %(held)s, and the fish of one unit cannot be told apart."
+msgstr ""
+"Bekleme süresi %(held)s partisine aittir: teslim edilen balıklar %(unit)s birimini %(with)s ile "
+"paylaştı; o parti de %(held)s ile birlikte bekliyor ve aynı birimdeki balıklar birbirinden "
+"ayrılamaz."
 
 #, python-format
 msgid ""
@@ -17530,6 +17592,9 @@ msgstr "bilinmeyen bir bitiş"
 msgid "an unknown facility"
 msgstr "bilinmeyen bir tesis"
 
+msgid "an unknown receiver"
+msgstr "bilinmeyen bir alıcı"
+
 #, python-format
 msgid "and %(count)s more: all reports"
 msgstr "ve %(count)s tane daha: tüm raporlar"
@@ -19085,6 +19150,14 @@ msgstr "sonraki ayın 7’si"
 
 msgid "the board’s default"
 msgstr "panonun varsayılanı"
+
+#, python-format
+msgid "the fish may leave the farm from %(date)s"
+msgstr "balıklar %(date)s tarihinden itibaren çiftlikten çıkabilir"
+
+#, python-format
+msgid "the fish may leave the farm from about %(date)s"
+msgstr "balıklar yaklaşık %(date)s tarihinden itibaren çiftlikten çıkabilir"
 
 msgid "the layout being designed"
 msgstr "tasarlanan yerleşim"

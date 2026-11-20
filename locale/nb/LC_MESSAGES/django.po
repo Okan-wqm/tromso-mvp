@@ -6050,6 +6050,13 @@ msgstr "Tidligste egnede høstedato: %(date)s."
 msgid "Earliest suitable harvest date: not known."
 msgstr "Tidligste egnede høstedato: ukjent."
 
+#, python-format
+msgid "Earliest suitable live delivery date: %(date)s."
+msgstr "Tidligste egnede dato for levende levering: %(date)s."
+
+msgid "Earliest suitable live delivery date: not known."
+msgstr "Tidligste egnede dato for levende levering: ukjent."
+
 msgid "Earthen"
 msgstr "Jord"
 
@@ -7600,6 +7607,9 @@ msgstr ""
 "Slaktingen %(date)s fra %(unit)s (%(batch)s, %(fish)s fisk til %(facility)s) ligger innenfor "
 "denne tilbakeholdelsestiden (%(end)s): medisinert fisk kan ha gått til mat."
 
+msgid "Harvest or live delivery"
+msgstr "Høsting eller levende levering"
+
 msgid "Harvest plan"
 msgstr "Høsteplan"
 
@@ -8176,6 +8186,14 @@ msgstr ""
 "Den holder all fisk i %(unit)s: fisk fra ulike fiskegrupper i samme enhet kan ikke skilles fra "
 "hverandre ved høsting."
 
+#, python-format
+msgid ""
+"It holds every fish in %(unit)s: the fish of different batches in one unit cannot be told apart "
+"when they are caught."
+msgstr ""
+"Den holder all fisk i %(unit)s: fisk fra ulike fiskegrupper i samme enhet kan ikke skilles fra "
+"hverandre når de fanges."
+
 msgid "It holds fish, and what it owes cannot be worked out: no report is listed as due for it."
 msgstr "Den har fisk, og hva den skylder kan ikke beregnes: ingen rapport er oppført som forfalt for den."
 
@@ -8650,6 +8668,18 @@ msgstr "Lenke sendt til"
 
 msgid "List what was delivered."
 msgstr "List opp det som ble levert."
+
+msgid "Live delivery inside a withdrawal"
+msgstr "Levende levering innenfor en tilbakeholdelsestid"
+
+#, python-format
+msgid ""
+"Live delivery of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside "
+"this withdrawal (%(end)s): medicated fish sold alive may have been eaten."
+msgstr ""
+"Den levende leveringen %(date)s fra %(unit)s (%(batch)s, %(fish)s fisk til %(facility)s) ligger "
+"innenfor denne tilbakeholdelsestiden (%(end)s): medisinert fisk som ble solgt levende, kan ha "
+"blitt spist."
 
 msgid "Live fish and eggs"
 msgstr "Levende fisk og rogn"
@@ -14132,6 +14162,13 @@ msgstr ""
 "Sultingen før hver type håndtering, per art eller for alle arter. Uten regel kontrolleres ikke "
 "sultingen."
 
+msgid "The fast decides."
+msgstr "Sultingen avgjør."
+
+#, python-format
+msgid "The fast decides: feeding must stop by %(date)s."
+msgstr "Sultingen avgjør: fôringen må stoppe senest %(date)s."
+
 msgid ""
 "The feed fed is read from the feeding records of the site's units and drawn from its lots first "
 "expired first out; what the book could not cover is fed beyond the recorded stock."
@@ -15519,11 +15556,35 @@ msgstr "Tilbakeholdelsestiden regnes fra den nye siste dagen; endringen logges."
 
 #, python-format
 msgid ""
+"The withdrawal is of %(held)s, which was in %(unit)s with the fish delivered: the fish of one "
+"unit cannot be told apart."
+msgstr ""
+"Tilbakeholdelsestiden gjelder %(held)s, som sto i %(unit)s sammen med fisken som ble levert: fisk"
+" i samme enhet kan ikke skilles fra hverandre."
+
+#, python-format
+msgid ""
 "The withdrawal is of %(held)s, which was in %(unit)s with the fish harvested: the fish of one "
 "unit cannot be told apart."
 msgstr ""
 "Tilbakeholdelsestiden gjelder %(held)s, som sto i %(unit)s sammen med fisken som ble høstet: fisk"
 " i samme enhet kan ikke skilles fra hverandre."
+
+#, python-format
+msgid ""
+"The withdrawal is of %(held)s: the fish delivered shared %(unit)s with %(with)s before, and the "
+"fish of one unit cannot be told apart."
+msgstr ""
+"Tilbakeholdelsestiden gjelder %(held)s: fisken som ble levert, delte %(unit)s med %(with)s "
+"tidligere, og fisk i samme enhet kan ikke skilles fra hverandre."
+
+#, python-format
+msgid ""
+"The withdrawal is of %(held)s: the fish delivered shared %(unit)s with %(with)s, which waits with"
+" %(held)s, and the fish of one unit cannot be told apart."
+msgstr ""
+"Tilbakeholdelsestiden gjelder %(held)s: fisken som ble levert, delte %(unit)s med %(with)s, som "
+"venter sammen med %(held)s, og fisk i samme enhet kan ikke skilles fra hverandre."
 
 #, python-format
 msgid ""
@@ -17499,6 +17560,9 @@ msgstr "en ukjent slutt"
 msgid "an unknown facility"
 msgstr "et ukjent slakteri"
 
+msgid "an unknown receiver"
+msgstr "en ukjent mottaker"
+
 #, python-format
 msgid "and %(count)s more: all reports"
 msgstr "og %(count)s til: alle rapporter"
@@ -19052,6 +19116,14 @@ msgstr "den 7. i neste måned"
 
 msgid "the board’s default"
 msgstr "panelets standard"
+
+#, python-format
+msgid "the fish may leave the farm from %(date)s"
+msgstr "fisken kan forlate anlegget fra %(date)s"
+
+#, python-format
+msgid "the fish may leave the farm from about %(date)s"
+msgstr "fisken kan forlate anlegget fra omtrent %(date)s"
 
 msgid "the layout being designed"
 msgstr "oppsettet som utformes"

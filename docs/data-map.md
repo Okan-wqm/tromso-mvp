@@ -3772,7 +3772,7 @@ One stored value of a channel at the device's time: the hypertable `sensors_read
 - **how it works**: A TimescaleDB hypertable; left out of the database viewer (billions of rows).
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: left out on purpose (config/database.py)
 - **constraints**: chk_sensors_reading_value (check); chk_sensors_reading_quality (check); chk_sensors_reading_run (check)
-- **tests that mention it**: `core/test_datamap.py`, `core/test_text.py`, `core/tests_workspaces.py` and 6 more
+- **tests that mention it**: `core/test_datamap.py`, `core/test_text.py`, `core/tests_workspaces.py` and 7 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

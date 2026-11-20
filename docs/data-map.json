@@ -40337,6 +40337,7 @@
         "core/test_text.py",
         "core/tests_workspaces.py",
         "farm/tests/test_nh3_unrounded.py",
+        "farm/tests/test_water_crossed.py",
         "knowledge/tests/test_extraction.py",
         "experiments/tests/test_overview.py",
         "monitoring/tests/test_read.py",

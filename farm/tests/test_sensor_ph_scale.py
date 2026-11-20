@@ -204,13 +204,16 @@ class NotConvertedTests(SensorPhCase):
         self.sample(point=self.sea_point, hours=2, salinity_ppt='34.0')
         self.assertEqual(self.water(self.sea_point).get('ph').value, D('8.06'))
 
-    def test_a_ph_no_longer_fresh(self):
+    def test_a_ph_no_longer_fresh_without_a_temperature_of_its_moment(self):
+        """Owner decision of 2026-11-20: a pH no longer fresh is put on the NBS scale at its own moment (StaleTests);
+        where no temperature was fresh then (the temperature probe only came later), it is a refusal as for a fresh one,
+        never converted with today's temperature (PLAN A9.3). This test said "no longer fresh" before the decision."""
         self.limits(self.sea)
         self.on(self.sea_point, self.value('ph', 7.95, seconds=4000, ph_scale=TOTAL),
                 self.value('temperature_c', 12.0, channel_no=2), self.value('salinity_ppt', 34.0, channel_no=3))
         ph = self.water(self.sea_point).get('ph')
         self.assertIsNone(ph.value)
-        self.assertIn('no longer fresh', ph.refused)
+        self.assertIn('with a temperature of its moment, a sensor’s or a sample’s, and none is fresh then', ph.refused)
         self.assertEqual(ph.status, Status.STALE)
         self.assertEqual(ph.judged, Status.UNEVALUATED)
 
@@ -237,6 +240,81 @@ class NotConvertedTests(SensorPhCase):
         ph = self.water(self.sea_point).get('ph')
         self.assertIsNone(ph.value)
         self.assertEqual(ph.status, Status.WARNING)
+
+
+class StaleTests(SensorPhCase):
+    """Owner decision of 2026-11-20 (the second review of the water-chemistry audit, question 3): a sensor pH on the
+    total, seawater or free scale that is no longer fresh is treated as an NBS one. It is put on the NBS scale at its own
+    moment, with the place's sensor temperature and salinity fresh THEN (each channel's value at that moment), and shown
+    stale with its value and what the limits said of it; that its probe stopped is the channel's default "No fresh
+    value" rule's to say (sensors/tests/test_fresh_rule.py), not a "cannot be evaluated"."""
+
+    def past(self, point, *values):
+        """Values the channels sent earlier: in their history (value_at), not their newest."""
+        key = (sources.POINT, point.pk)
+        for item in values:
+            self.provider.history.setdefault(key, {}).setdefault(item.code, []).append(item)
+
+    def stopped(self, scale=TOTAL, ph=7.95, temperature_then=4.0):
+        """The pH probe stopped 4000 s ago (fresh for 900 s); the temperature and salinity probes go on sending, the
+        temperature 12.0 now and `temperature_then` when the pH was measured."""
+        self.on(self.sea_point, self.value('ph', ph, seconds=4000, ph_scale=scale),
+                self.value('temperature_c', 12.0, channel_no=2), self.value('salinity_ppt', 34.0, channel_no=3))
+        self.past(self.sea_point, self.value('temperature_c', temperature_then, seconds=4030, channel_no=2),
+                  self.value('salinity_ppt', 34.0, seconds=4030, channel_no=3))
+        return self.water(self.sea_point)
+
+    def test_it_is_put_on_the_nbs_scale_with_the_temperature_of_its_own_moment_and_shown_stale(self):
+        self.limits(self.sea)
+        water = self.stopped()
+        ph = water.get('ph')
+        then = read.ph_on_nbs(D('7.95'), TOTAL, D('4.0'), D('34.0'), 'seawater').value
+        now = read.ph_on_nbs(D('7.95'), TOTAL, D('12.0'), D('34.0'), 'seawater').value
+        self.assertNotEqual(then, now)                          # the moment's temperature, never today's
+        self.assertEqual((ph.value, ph.refused, ph.status, ph.judged, ph.unevaluated),
+                         (then, '', Status.STALE, Status.OK, False))
+        self.assertEqual(ph.measured, 'measured 7.95 on the total scale')
+        self.assertIn('with 4.0 °C and 34.0 ‰ of the same moment', ph.provenance)
+        self.assertEqual(water.why_unevaluated, [])
+
+    def test_it_is_shown_as_the_same_probe_on_nbs_is(self):
+        """One behaviour for every scale: the value, its status and its judgement, never "cannot be evaluated"."""
+        self.limits(self.sea)
+        tris = self.stopped().get('ph')
+        self.provider.now_values.clear()
+        self.provider.history.clear()
+        nbs = self.stopped(scale='', ph=8.08).get('ph')
+        self.assertEqual((tris.status, tris.judged, tris.unevaluated), (nbs.status, nbs.judged, nbs.unevaluated))
+        self.assertEqual((nbs.value, nbs.status, nbs.judged), (D('8.08'), Status.STALE, Status.OK))
+
+    def test_a_low_value_stays_what_the_limits_said_of_it(self):
+        """A stale value judged a warning is shown as old and as what it was (F-244), the TRIS probe's as the NBS one's;
+        the same water typed as a total-scale sample at that moment gives the same NBS value."""
+        self.limits(self.sea)
+        ph = self.stopped(ph=6.20).get('ph')
+        self.record(point=self.typed_point, ph='6.20', temperature_c='4.0', salinity_ppt='34.0')
+        self.assertEqual(ph.value, self.water(self.typed_point).get('ph').value)
+        self.assertLess(ph.value, D('6.50'))
+        self.assertEqual((ph.status, ph.judged, ph.old_alert), (Status.STALE, Status.WARNING, Status.WARNING))
+
+    def test_without_a_salinity_of_its_moment_it_is_a_refusal_as_for_a_fresh_one(self):
+        self.limits(self.sea)
+        self.on(self.sea_point, self.value('ph', 7.95, seconds=4000, ph_scale=TOTAL),
+                self.value('temperature_c', 12.0, channel_no=2))
+        self.past(self.sea_point, self.value('temperature_c', 4.0, seconds=4030, channel_no=2))
+        ph = self.water(self.sea_point).get('ph')
+        self.assertIsNone(ph.value)
+        self.assertIn('with the salinity of the same moment', ph.refused)
+        self.assertEqual((ph.status, ph.judged), (Status.STALE, Status.UNEVALUATED))
+
+    def test_the_water_at_a_past_moment_reads_it_the_same_way(self):
+        """`latest(at=...)`: a pH stale at that moment is put on the NBS scale at its own moment too."""
+        self.limits(self.sea)
+        self.stopped()
+        at = self.now - timedelta(seconds=2000)                 # the pH 2000 s old then, past its 900 s
+        ph = read.latest([self.sea_point], at=at)[self.sea_point.pk].get('ph')
+        self.assertEqual((ph.value, ph.status), (read.ph_on_nbs(D('7.95'), TOTAL, D('4.0'), D('34.0'),
+                                                                'seawater').value, Status.STALE))
 
 
 class ScaleChangedTests(SensorPhCase):

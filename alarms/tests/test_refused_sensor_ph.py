@@ -4,7 +4,8 @@ temperature of its moment, no salinity, water that is not sea water, a value fro
 the page says "pH (NBS scale) cannot be evaluated: <why>". Before the fix the alarm system's "cannot be evaluated"
 warning covered the NH₃ alone and a refused value judges no limit, so a TRIS probe reading a dangerously low pH raised no
 alarm at all, where the same probe left on NBS raised the critical. The warning now covers every value the limits judge
-(alarms/sources.py `REFUSABLE`).
+(alarms/sources.py `REFUSABLE`). A pH that is only no longer fresh is no refusal (owner decision of 2026-11-20): it is put
+on the NBS scale at its own moment and its probe's silence is its default "No fresh value" rule's (StoppedProbeTests).
 
 Real sensor channels (the sensors app's provider, not a stand-in) and the real alarm engine; a sea unit whose salmon
 have a pH limit."""
@@ -214,3 +215,71 @@ class CoverageTests(RefusedSensorPhCase):
                          {f'system:unit:{self.sea.pk}:value_unevaluated:{parameter.code}'
                           for parameter in parameters.LIMITED})
         self.assertFalse(any(subject.holds for subject in subjects))
+
+
+class StoppedProbeTests(RefusedSensorPhCase):
+    """Owner decision of 2026-11-20 (the second review of the water-chemistry audit, question 3): a pH probe that stops
+    sending is warned of by its channel's default "No fresh value" rule, whatever its scale, the moment its value is no
+    longer fresh; a stale pH on the total scale is put on the NBS scale at its own moment and shown stale, as an NBS one,
+    instead of the "cannot be evaluated" warning it raised before (that warning stays for a real refusal: WarningTests).
+    The same probe on NBS and on the total scale gives the same alarms at the same moments."""
+
+    def nbs_probe(self):
+        """The same probe set to NBS (the TRIS channel taken to the other unit)."""
+        nbs = make_channel(self.tris.device, PH, code='PH-N')
+        bindings.move(self.user, self.tris, point=self.salted_point, at=self.now - timedelta(hours=1))
+        bindings.move(self.user, nbs, point=self.sea_point, at=self.now - timedelta(hours=1))
+        return nbs
+
+    def stops(self, probe, value):
+        """The probe sends `value` (longer before now than the warning's on-delay) and then nothing; the temperature
+        and the salinity go on. What the alarms say at each pass: [(time since the value, the limits' and the system's
+        alarms, whether the probe's "No fresh value" warning is open)], and that warning's summary."""
+        measured = self.now - self.on_delay - timedelta(seconds=10)
+        stale = timedelta(seconds=Channel.objects.get(pk=probe.pk).fresh_s)
+        self.assertEqual(stale, timedelta(seconds=self.tris.fresh_s))       # 900 s: the same freshness either way
+        for channel, sent in ((probe, value), (self.temperature, 12.0), (self.salinity, 34.0)):
+            self.send(channel, sent, measured)
+        seen = []
+        for since in (self.now - measured, stale, stale + timedelta(seconds=1), stale + timedelta(minutes=1),
+                      stale + timedelta(minutes=30)):
+            at = measured + since
+            if since > self.now - measured:
+                self.send(self.temperature, 12.0, at)
+                self.send(self.salinity, 34.0, at)
+            self.run_pass(at)
+            seen.append((since, self.opened(), probe.channel_no in self.stopped()))
+        return seen, self.stopped().get(probe.channel_no, '')
+
+    def expected(self, opened):
+        stale = timedelta(seconds=self.tris.fresh_s)
+        return [(self.on_delay + timedelta(seconds=10), opened, False), (stale, opened, False),
+                (stale + timedelta(seconds=1), opened, True), (stale + timedelta(minutes=1), opened, True),
+                (stale + timedelta(minutes=30), opened, True)]
+
+    def test_a_stopped_tris_probe_raises_its_no_fresh_value_warning_and_no_cannot_be_evaluated(self):
+        seen, summary = self.stops(self.tris, 7.95)
+        self.assertEqual(seen, self.expected([]))
+        self.assertTrue(summary.startswith('pH (NBS scale): No fresh value · PROBE-1 › PH-T: S-01 › '), summary)
+        reading = self.ph_reading(self.now + timedelta(hours=1))
+        self.assertEqual((reading.value, reading.status, reading.unevaluated),
+                         (water_read.ph_on_nbs(7.95, 'total', 12.0, 34.0, 'seawater').value, 'stale', False))
+
+    def test_a_stopped_nbs_probe_raises_the_same(self):
+        nbs = self.nbs_probe()
+        seen, summary = self.stops(nbs, 8.08)
+        self.assertEqual(seen, self.expected([]))
+        self.assertTrue(summary.startswith('pH (NBS scale): No fresh value · PROBE-1 › PH-N: S-01 › '), summary)
+
+    def test_a_low_ph_raised_by_a_tris_probe_stays_open_when_it_stops_as_an_nbs_ones_does(self):
+        """6.00 on the total scale is 6.13 NBS at 12 °C and S 34: the critical and the warning open while it is fresh;
+        once the probe stops they stay open (a value that only goes stale ends nothing) beside its "No fresh value"
+        warning, never a "cannot be evaluated"."""
+        levels = [('water_limit', 'critical', PH), ('water_limit', 'warning', PH)]
+        seen, _summary = self.stops(self.tris, 6.00)
+        self.assertEqual(seen, self.expected(levels))
+
+    def test_the_same_low_ph_on_an_nbs_probe(self):
+        levels = [('water_limit', 'critical', PH), ('water_limit', 'warning', PH)]
+        seen, _summary = self.stops(self.nbs_probe(), 6.00)
+        self.assertEqual(seen, self.expected(levels))

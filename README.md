@@ -2151,9 +2151,14 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
   rule, or no feeding in the 31 days before (longer than any rule), is said, not warned.
 - *Medicine withdrawal* (**a harvest and a live delivery**: the fish leave the farm and may be eaten, slaughtered
   at the facility the harvest names or sold alive; the owner's decision 12 of 19.11.2026: a live delivery of held
-  fish is warned through the same check, "Not suitable for a live delivery — medicine withdrawal of B-2026-001: …
-  Fish sold alive may be eaten.", ticked, stored as a handling acknowledgement and logged as critical, as a harvest
-  is, and never blocked; `check.WITHDRAWAL_OPERATIONS`. A medicine withdrawal is a meat withdrawal, so it means
+  fish is warned through the same check, "Not suitable for a live delivery — medicine withdrawal of B-2026-001: the
+  fish may leave the farm from 21.11.2026. Fish sold alive may be eaten.", ticked, stored as a handling
+  acknowledgement and logged as critical, as a harvest is, and never blocked; `check.WITHDRAWAL_OPERATIONS`. A
+  delivery's warning is in its own words, never "harvest from …" (`withdrawal.leave_from`, "from about …" when
+  projected, "end unknown"), its shared-unit sentence says the fish "cannot be told apart when they are caught", and
+  its dialog shows the earliest suitable date as a harvest's does (below; review of S-03 at 6776780, F-1). **A
+  live delivery is a harvest also after the fact** (the owner's decision 13 of 19.11.2026): a later write that puts a
+  recorded delivery inside a withdrawal asks as for a harvest (the withdrawal guard, below). A medicine withdrawal is a meat withdrawal, so it means
   nothing when live fish are moved or graded on the farm, where the fast and the live-transfer facts are what
   matter, and a treatment during a withdrawal harms nobody): every block
   a registered provider gives for the **unit** whose end is after the day, or unknown (unknown is a warning, never
@@ -2224,7 +2229,11 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
   suitable harvest date: 15 Nov 2026. Purging decides: feeding must stop by 11 Nov 2026." (a tie goes to the
   withdrawal; an unknown withdrawal end is "not known"). It is worked out from the parts above on read, nothing is
   stored; a plan dated before it is marked, and a harvest before it is a warning on the parts' terms, acknowledged and
-  logged as critical as before, never a block. A transfer and a grading do not say it.
+  logged as critical as before, never a block. A live delivery's dialog says it too, in its own words and with the
+  fast of a transport (the rule a delivery's fast is checked by) where a harvest has its purge: "Earliest suitable live
+  delivery date: 17.11.2026. Medicine withdrawal decides: the fish may leave the farm from 17.11.2026." or "… The fast
+  decides: feeding must stop by …" (`check.earliest(unit, batch, kind=transport)`). A transfer and a grading do not
+  say it.
 - *Production units*: a "Withdrawal" badge on a unit with a withdrawal in force today, and the drawer's
   **Harvest and handling** part: the check of a harvest today and the unit's open plans with their fasts.
 
@@ -2500,7 +2509,8 @@ a batch that was once in it; for a day-based medicine neither is the untreated s
 **Landing this changes what stored courses hold, with no record changed** (worked out on read): a tank split off
 before a course loses its withdrawal; a unit whose fish shared a unit with held fish and moved on, or that held fish
 passed through, gains one until the same end. **The landing carries a before and an after listing**: `manage.py check_withdrawal --listing` writes the fish
-held now (unit, batch, end, about, the course or feeding, why) and every harvest inside a withdrawal as sorted,
+held now (unit, batch, end, about, the course or feeding, why) and every harvest and live delivery inside a
+withdrawal (its line's kind, `harvest` or `delivery`, beside its unit and batch) as sorted,
 tab-separated lines with no ids, made for a diff. It reads only what the rule before and the rule after both have,
 so the same command file runs on a checkout of the old rule: the listing of the data before the landing and the
 listing after it are kept with the landing notes, and their diff is what the landing changed.
@@ -2562,11 +2572,14 @@ Treatments (read, create, edit = change the last day, delete = void), Health eve
 void) and Sea-lice counts (read, create, delete = void), the last three under Production · Operations · Health.
 The admin shows voided treatments, events and counts and does not restore them. `manage.py check_withdrawal`
 works out every unit's withdrawal from scratch and lists the fish held, with the end and why, and then **every harvest
-already recorded inside a withdrawal** of its own batch or of a production batch that had fish in its unit at any moment of that day ("… lies inside a
-withdrawal of B-2026-001, in the same unit (harvest from …)"; medicated fish that may have gone to food), however it came to (a treatment entered
+and every live delivery already recorded inside a withdrawal** of its own batch or of a production batch that had fish in its unit at any moment of that day ("… lies inside a
+withdrawal of B-2026-001, in the same unit (harvest from …)"; "Live delivery of … (300 fish to Nordic Smolt AS) lies
+inside a withdrawal (the fish may leave the farm from …)"; medicated fish that may have gone to food), however it came to (a treatment entered
 after the harvest, a longer course, a corrected temperature, a medicine's withdrawal changed), each with whether someone
 acknowledged it or not: an acknowledgement counts only for the harvest, the batch and the withdrawal it names (when the
 harvest was recorded, or when the write that brought it inside was), never for another withdrawal of the same harvest.
+It ends with one count line of each, also when it is none ("No harvest lies inside a medicine withdrawal.", "1 live
+delivery lies inside a medicine withdrawal.").
 
 **The withdrawal guard** (audit F-195, F-188, F-196 and the three cross-reviews): every write that can create, grow, shorten
 or end a medicine withdrawal goes through one function, `farm.health.withdrawal.guarded`: a treatment, its last day and its
@@ -2595,7 +2608,13 @@ works them out again from what it left. It asks when the write
 
 - brings a harvest already recorded inside a withdrawal, or makes the withdrawal it lies inside end later than before
   (medicated fish may have gone to food: a treatment entered up to 31 days back, a longer course, a backdated medicated
-  feeding, a corrected temperature, a longer medicine withdrawal), or
+  feeding, a corrected temperature, a longer medicine withdrawal, a backdated move of held fish, a void, a longer
+  ceiling), or does any of that to a **live delivery** already recorded (the owner's decision 13 of 19.11.2026: its
+  fish left alive and may be eaten). Both are read by one rule (`_harvest_lines` reads every line of
+  `check.WITHDRAWAL_LINES`, `_inside` compares them) and asked in the same box: a delivery as "Live delivery of
+  16.11.2026 from T-01 (B-2026-001, 300 fish to Nordic Smolt AS) lies inside this withdrawal (the fish may leave the
+  farm from 22.11.2026): medicated fish sold alive may have been eaten.", stored as a `delivered` acknowledgement that
+  names the delivery (a `harvested` one names the harvest) and counted by the second-person setting as a harvest is, or
 - makes the withdrawal of fish held today end earlier, or ends it (a course voided or shortened, a medicine's withdrawal
   shortened, a medicated feeding voided, a temperature corrected): the message gives the old and the new end.
 
@@ -5452,7 +5471,7 @@ under the wrong kind, fails.
 | `erase_stranger_address` | core | product | Erases, on the data-protection officer's instruction, an address an invitation was mis-sent to: in `account_mails` and in the activity log's rows of the account (a dry run unless `--apply`; it checks only that no account has the address now) | The database administrator (docs/erasure.md, step 8) |
 | `check_stock` | farm | product | Folds the stock ledger from its first line and reports every broken rule; changes nothing | An operator |
 | `rederive_ph` | farm | product | Puts the stored samples' pH measured on the total, seawater or free scale on the NBS scale again by the application's formula, from what was measured, each change logged with its old value (`--dry-run` reads only; check farm.W001) | The database administrator, at a formula change after the backup (Water chemistry, formula 4) |
-| `check_withdrawal` | farm | product | The withdrawals holding fish today, and harvests recorded inside one; changes nothing | An operator |
+| `check_withdrawal` | farm | product | The withdrawals holding fish today, and harvests and live deliveries recorded inside one; changes nothing | An operator |
 | `check_inventory` | inventory | product | Every rule of the store from scratch; changes nothing | An operator |
 | `check_reports` | reports | product | Every report against its frozen content and its key; changes nothing | An operator |
 | `check_experiments` | experiments | product | Every started experiment against the rules the database cannot hold; changes nothing | An operator |

@@ -14,11 +14,14 @@ always makes a new batch (no "same batch"), and fish stocked are never held befo
 in"). The verifier's three schedules are kept by name (H3a, H3b, H4)."""
 from decimal import Decimal
 
+from django.core.exceptions import ValidationError
+
 from core.models import AuditLog
 
 from ..handling import check
 from ..models import Batch, HandlingAcknowledgement, StockOperation
 from ..stock import services as stock_services
+from .test_harvest_inside_withdrawal import ASKED
 from .test_stock import make_unit
 from .test_withdrawal_combined import CombinedTestCase
 
@@ -36,6 +39,24 @@ class MatrixTestCase(CombinedTestCase):
     def nothing_asked_since_the_split(self):
         """No acknowledgement but the split's own (it took fish out of the course's reach: asked and ticked)."""
         self.assertFalse(HandlingAcknowledgement.objects.exclude(operation=self.split).exists())
+
+    def refused_without_a_tick(self, unit, batch):
+        """A harvest of those fish is really refused without the tick (not only a fingerprint: review at 6776780,
+        F-4), for the withdrawal and its end as said at the move, and nothing is written; ticked, it goes on."""
+        seen = check.assess('harvest', unit, self.today, batch)
+        held = [each for each in seen.warnings if each.warning == 'withdrawal']
+        self.assertTrue(held)
+        self.assertEqual({each.block.until for each in held}, {self.until})
+        harvests = StockOperation.all_objects.filter(kind='harvest').count()
+        harvest = {'unit': unit, 'batch': batch, 'day': self.today, 'count': 10, 'measured_weight_kg': Decimal(2),
+                   'facility': self.facility}
+        with self.assertRaises(ValidationError) as refused:
+            stock_services.record_harvest(self.user, **harvest)
+        self.assertEqual(refused.exception.message_dict, {'handling_ack': [ASKED['withdrawal_ack'][0]]})
+        self.assertEqual(StockOperation.all_objects.filter(kind='harvest').count(), harvests)
+        operation = stock_services.record_harvest(self.user, handling_ack=seen.fingerprint, **harvest)
+        self.assertEqual({row.batch_id for row in HandlingAcknowledgement.objects.filter(
+            operation=operation, warning='withdrawal')}, {each.block.batch.pk for each in held})
 
     def grade(self, batch, source, target, days_ago=0, **fields):
         return stock_services.record_grading(self.user, source=source, batch=batch, day=self.day(days_ago),
@@ -136,6 +157,11 @@ class StockingTests(MatrixTestCase):
         self.assertEqual((row.operation.kind, row.batch, row.warning, row.withdrawal_until),
                          ('input', new, 'withdrawal', self.until))
         self.assertIn(f'{new.code} in T-01 will wait for the harvest with ', row.withdrawal_reason)
+        # The critical line with the same sentence, as `said` checks it for every other cell (review at 6776780, F-4).
+        [entry] = [entry for entry in AuditLog.objects.filter(entity_type='stock operation', severity='critical',
+                                                               entity_id=str(row.operation.pk))
+                   if 'Withdrawal warnings acknowledged' in entry.changes]
+        self.assertIn(row.withdrawal_reason, entry.changes['Withdrawal warnings acknowledged'][1])
         self.assertEqual(check.earliest(self.t1, new).day, self.until)
 
 
@@ -171,10 +197,6 @@ class VoidTests(MatrixTestCase):
 class VerifierScheduleTests(MatrixTestCase):
     """The verifier's schedules (REVIEW-S03, verification of 27e554e, W-1), each asked and, past the tick, held."""
 
-    def refused_without_a_tick(self, unit, batch):
-        seen = check.assess('harvest', unit, self.today, batch)
-        self.assertTrue(seen.fingerprint)                                       # a harvest there needs the box
-
     def test_h3a_the_split_before_the_course_merged_back_into_the_held_tank(self):
         self.said([(self.a.code, 'T-01')], self.transfer, self.a, self.t3, [(self.t1, 800)], days_ago=2)
         self.refused_without_a_tick(self.t1, self.a)
@@ -190,3 +212,35 @@ class VerifierScheduleTests(MatrixTestCase):
         self.said([(self.b.code, 'T-02')], self.transfer, self.b, self.t5, [(self.t2, 300)], days_ago=2)
         self.said([(self.b.code, 'T-05')], self.transfer, self.b, self.t2, [(self.t5, 100)], days_ago=1)
         self.refused_without_a_tick(self.t5, self.b)
+
+
+class SecondVerifierScheduleTests(MatrixTestCase):
+    """The probes of the verification of 6776780 the matrix did not have (review F-4: P1, P3, P4), each asked, stored,
+    logged and held as `said` checks every cell."""
+
+    def grade_many(self, batch, source, targets, days_ago=0, **fields):
+        return stock_services.record_grading(
+            self.user, source=source, batch=batch, day=self.day(days_ago),
+            outputs=[(unit, 200, Decimal(140), 'Large') for unit in targets], remainder_avg_weight_g=Decimal(120),
+            ack=True, size_mix_ack=True, **fields)
+
+    def test_p1_held_fish_into_a_tank_holding_a_mix_none_of_it_held(self):
+        """T-02 holds B and A that left T-01 before the course: held A moved in asks about both lots there."""
+        self.transfer(self.a, self.t3, [(self.t2, 300)], days_ago=7, ack=True, size_mix_ack=True)
+        self.assertEqual(self.held(self.t2), [])
+        self.said([(self.a.code, 'T-02'), (self.b.code, 'T-02')], self.transfer, self.a, self.t1, [(self.t2, 400)],
+                  ack=True, size_mix_ack=True)
+
+    def test_p3_a_grading_of_held_fish_into_four_tanks_asks_where_fish_wait_longer(self):
+        """Into B's tank, the A split off before the course, and two empty tanks: the two lots that now wait."""
+        self.said([(self.b.code, 'T-02'), (self.a.code, 'T-03')], self.grade_many, self.a, self.t1,
+                  [self.t2, self.t3, self.t4, self.t5])
+        self.assertEqual(self.held(self.t4)[0].until, self.until)        # the held fish moved alone: held, not asked
+        self.assertEqual(self.held(self.t5)[0].until, self.until)
+
+    def test_p4_a_backdated_move_asks_about_the_fish_where_they_went(self):
+        """T-03's A (not held) went on to T-04 yesterday; then held A are moved into T-03, dated two days ago: the fish
+        that were in T-03 then are asked about in T-04, where they are now."""
+        self.transfer(self.a, self.t3, [(self.t4, 800)], days_ago=1)
+        self.said([(self.a.code, 'T-04')], self.transfer, self.a, self.t1, [(self.t3, 300)], days_ago=2)
+        self.refused_without_a_tick(self.t4, self.a)

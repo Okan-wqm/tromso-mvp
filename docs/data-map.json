@@ -2166,6 +2166,7 @@
       "tests": [
         "core/tests_workspaces.py",
         "sensors/tests/test_alarms.py",
+        "sensors/tests/test_fresh_rule.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_clock.py",
@@ -2701,6 +2702,7 @@
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_bench.py",
         "sensors/tests/test_bindings.py",
+        "sensors/tests/test_fresh_rule.py",
         "sensors/tests/test_operations.py",
         "sensors/tests/test_pages.py",
         "sensors/tests/test_ph_scale.py",
@@ -18883,6 +18885,7 @@
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_demo.py",
+        "sensors/tests/test_fresh_rule.py",
         "sensors/tests/test_history.py",
         "sensors/tests/test_portable.py",
         "sensors/tests/test_read.py",
@@ -35461,6 +35464,7 @@
       "tests": [
         "core/tests_workspaces.py",
         "sensors/tests/test_alarms.py",
+        "sensors/tests/test_fresh_rule.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_pages.py"
@@ -35722,6 +35726,30 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "is_default",
+          "field": "is_default",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
+        },
+        {
+          "name": "off_reason",
+          "field": "off_reason",
+          "type": "varchar(300)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "AlarmRuleForm › Alarm rule"
+          ],
+          "how": "form",
+          "why": ""
         }
       ],
       "constraints": [
@@ -35760,6 +35788,20 @@
           "kind": "check",
           "fields": [],
           "conditional": false
+        },
+        {
+          "name": "chk_sensors_alarm_rule_default",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "uq_sensors_alarm_rule_default",
+          "kind": "unique",
+          "fields": [
+            "quantity"
+          ],
+          "conditional": true
         }
       ],
       "screens": {
@@ -35842,6 +35884,7 @@
             "hysteresis": "Alarm rule",
             "severity": "Alarm rule",
             "is_active": "Alarm rule",
+            "off_reason": "Alarm rule",
             "version": ""
           }
         }
@@ -35860,6 +35903,7 @@
       "tests": [
         "core/tests_workspaces.py",
         "sensors/tests/test_alarms.py",
+        "sensors/tests/test_fresh_rule.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_migration.py",
@@ -37232,6 +37276,7 @@
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_contract.py",
         "sensors/tests/test_demo.py",
+        "sensors/tests/test_fresh_rule.py",
         "sensors/tests/test_pages.py",
         "sensors/tests/test_ph_scale.py",
         "sensors/tests/test_portable.py",
@@ -37449,6 +37494,7 @@
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_contract.py",
         "sensors/tests/test_demo.py",
+        "sensors/tests/test_fresh_rule.py",
         "sensors/tests/test_history.py",
         "sensors/tests/test_operations.py",
         "sensors/tests/test_ph_scale.py",

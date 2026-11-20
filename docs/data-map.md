@@ -260,7 +260,7 @@ One time a condition held: a sensor rule's event (mirrored from sensors.AlarmEve
 - **read**: alarms.views.alarm_list (`/alarms/`); alarms.views.alarm_detail (`/alarms/<int:pk>/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarms
 - **constraints**: chk_alarms_source (check); chk_alarms_severity (check); chk_alarms_shape (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_alarms.py`, `alarms/tests/__init__.py` and 9 more
+- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_alarms.py`, `sensors/tests/test_fresh_rule.py` and 10 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -317,7 +317,7 @@ Who did what to which record, with old and new values.
 - **how it works**: A record's own rows are also shown on the History tab of its edit page.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log (never shown: changes)
 - **constraints**: chk_audit_log_severity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 116 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 117 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1769,7 +1769,7 @@ A production system of a site: a RAS, a pond, a cage line, a hatchery.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › systems
 - **forms**: `SystemForm`
 - **constraints**: uq_systems_site_code_live (unique: site, code); chk_systems_total_volume (check); chk_systems_max_biomass (check); chk_systems_not_its_own_parent (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_calculator.py` and 27 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_calculator.py` and 28 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3282,7 +3282,7 @@ A time a rule held for a channel: when it opened and closed and the furthest val
 - **read**: sensors.views.alarm_events (`/sensors/alarm-events/`); sensors.views.home (`/sensors/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Sensors › sensors_alarm_event
 - **constraints**: uq_sensors_alarm_event_open (unique: rule, channel_no); chk_sensors_alarm_event_period (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_alarms.py`, `alarms/tests/test_alarms.py` and 2 more
+- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_alarms.py`, `sensors/tests/test_fresh_rule.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3305,8 +3305,8 @@ When a channel needs a look: no fresh value, its device offline, above or below 
 - **read**: alarm rules tab (`/sensors/alarm-rules/`)
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Sensors › sensors_alarm_rule
 - **forms**: `AlarmRuleForm`
-- **constraints**: chk_sensors_alarm_rule_scope (check); chk_sensors_alarm_rule_kind (check); chk_sensors_alarm_rule_severity (check); chk_sensors_alarm_rule_quantity (check); chk_sensors_alarm_rule_threshold (check); chk_sensors_alarm_rule_numbers (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_alarms.py`, `alarms/tests/test_alarms.py` and 4 more
+- **constraints**: chk_sensors_alarm_rule_scope (check); chk_sensors_alarm_rule_kind (check); chk_sensors_alarm_rule_severity (check); chk_sensors_alarm_rule_quantity (check); chk_sensors_alarm_rule_threshold (check); chk_sensors_alarm_rule_numbers (check); chk_sensors_alarm_rule_default (check); uq_sensors_alarm_rule_default (unique: quantity)
+- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_alarms.py`, `sensors/tests/test_fresh_rule.py` and 5 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3327,6 +3327,8 @@ When a channel needs a look: no fresh value, its device offline, above or below 
 | hysteresis | double precision |  |  | AlarmRuleForm › Alarm rule |
 | severity | varchar(10) |  |  | AlarmRuleForm › Alarm rule |
 | is_active | boolean |  |  | AlarmRuleForm › Alarm rule |
+| is_default | boolean |  |  | system: not editable: set by the code |
+| off_reason | varchar(300) |  |  | AlarmRuleForm › Alarm rule |
 
 <a id="sensorsbinding"></a>
 ### sensors.Binding (`sensors_binding`)
@@ -3401,7 +3403,7 @@ One value a device sends: what it measures (a quantity of sensors/quantities.py)
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Sensors › sensors_channel
 - **forms**: `ChannelForm`
 - **constraints**: uq_sensors_channel_code_live (unique: device, code); chk_sensors_channel_code (check); chk_sensors_channel_name (check); chk_sensors_channel_quantity (check); chk_sensors_channel_unit_factor (check); chk_sensors_channel_unit_offset (check); chk_sensors_channel_fresh_heartbeats (check); chk_sensors_channel_source (check); chk_sensors_channel_value_path (check); chk_sensors_channel_protocol (check); chk_sensors_channel_address (check); chk_sensors_channel_reduction (check); chk_sensors_channel_deadband (check); chk_sensors_channel_heartbeat (check); chk_sensors_channel_range (check); chk_sensors_channel_state (check); chk_sensors_channel_ph_scale (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_sensor_ph_scale.py`, `sensors/tests/__init__.py` and 10 more
+- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_sensor_ph_scale.py`, `sensors/tests/__init__.py` and 11 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3450,7 +3452,7 @@ What the ingest service remembers of each sensor channel: its last value, the la
 - **read**: none, by design: read by the latest values (sensors/read.py)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Sensors › sensors_channel_state
 - **constraints**: chk_sensors_channel_state_run_n (check)
-- **tests that mention it**: `sensors/tests/test_alarms.py`, `sensors/tests/test_bindings.py`, `sensors/tests/test_contract.py` and 8 more
+- **tests that mention it**: `sensors/tests/test_alarms.py`, `sensors/tests/test_bindings.py`, `sensors/tests/test_contract.py` and 9 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

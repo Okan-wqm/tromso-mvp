@@ -111,6 +111,10 @@ ALL_QUANTITIES = [*WATER, *PROCESS]
 BY_CODE = {quantity.code: quantity for quantity in ALL_QUANTITIES}
 CODES = [quantity.code for quantity in ALL_QUANTITIES]
 WATER_CODES = [quantity.code for quantity in WATER]
+# The quantities the water limits judge: each one a limit can be set on (farm/water/parameters.py LIMITED; the NH₃ a
+# limit judges is worked out from them). A probe of one that stops sending is warned of by its default "No fresh value"
+# rule, whatever its pH scale (owner decision of 2026-11-20; sensors.AlarmRule.is_default, sensors 0014).
+JUDGED_CODES = [quantity.code for quantity in WATER if quantity.code in {parameter.code for parameter in parameters.LIMITED}]
 CHOICES = [(quantity.code, quantity.label) for quantity in ALL_QUANTITIES]
 
 

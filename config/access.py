@@ -128,8 +128,13 @@ AREAS = [
     # Dead letters: Read is their page, Edit marks one resolved (logged). The ingest writes them; nobody deletes one.
     Area(_('Dead letters'), 'sensors.DeadLetter', actions=('view', 'change')),
     # The sensors' alarm rules: read, create, edit, delete. Events: Read is their page, Edit acknowledges one (written as the
-    # alarms' acknowledgement, alarms/services.py; who is notified is Company › Alarms).
-    Area(_('Alarm rules'), 'sensors.AlarmRule'),
+    # alarms' acknowledgement, alarms/services.py; who is notified is Company › Alarms). The default "No fresh value" rule
+    # of each water quantity is never deleted: Delete is what switches one off (with a reason, logged as critical; owner
+    # decision of 2026-11-20, sensors/forms.py SWITCH_OFF), said under the area in the role matrix.
+    Area(_('Alarm rules'), 'sensors.AlarmRule',
+         note=_('Delete also switches off the default “No fresh value” rule of a water quantity (with a reason, logged '
+                'as critical): a probe of that quantity that stops sending then raises no alarm. A default rule is never '
+                'deleted.')),
     Area(_('Alarm events'), 'sensors.AlarmEvent', actions=('view', 'change')),
     # The broker credentials, a right apart from the devices: Create and Edit show a secret once (made, or replaced).
     Area(_('Sensor credentials'), 'sensors.Credential'),

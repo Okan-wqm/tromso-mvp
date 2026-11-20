@@ -3,7 +3,10 @@ their clean readings only, never a page. An event is a row the Sensors overview 
 app makes each one an alarm and notifies its recipients (Company › Alarms; nothing is sent until a transport is connected).
 
 Per active rule and each channel it covers (its channel, or every active channel of its quantity on an active device):
-- no data: no fresh value for `for_s` seconds past the channel's freshness;
+- no data: no fresh value for `for_s` seconds past the channel's freshness, counted as the page counts it (the older
+  of the value's device time and its receipt, read.State.fresh_from); the default rule of each quantity the water
+  limits judge (AlarmRule.is_default) holds at the freshness itself, so a probe that stops sending is warned of the
+  moment its place shows "no recent data", whatever its pH scale;
 - device offline: the channel's device sent nothing for three of its intervals;
 - above / below: every clean value of the last `for_s` seconds (and the current one) past the threshold; the event
   closes when the value is back past the threshold by the hysteresis;
@@ -27,7 +30,7 @@ from django.utils import timezone
 
 from farm.water.parameters import PH
 
-from . import read
+from . import quantities, read
 from .models import AlarmEvent, AlarmKind, AlarmRule, Binding, Channel, ChannelStatus
 from .models.binding import place_site
 from .quality import BAD_MASK
@@ -60,7 +63,10 @@ def _holds(rule, channel, state, online, now, opened, binding):
     hysteresis). `state` is already the place's (`_there`)."""
     value = state.value
     if rule.kind == AlarmKind.NO_DATA:
-        last = state.good_at or binding.valid_from                # nothing since it came: counted from then
+        # Counted from where the value's freshness is (State.fresh_from), so a backlog replayed at a reconnect, received
+        # now but measured long ago, keeps the rule holding as the page keeps saying "no recent data"; nothing since
+        # the channel came: from then.
+        last = state.fresh_from or binding.valid_from
         return now - last > timedelta(seconds=state.fresh_s + rule.for_s), value
     if rule.kind == AlarmKind.DEVICE_OFFLINE:
         return not online, value
@@ -144,6 +150,20 @@ def close_at_place(binding, at):
     """Closes the open events opened under `binding` at `at`: the channel left that place (a move, taken out)."""
     for event in AlarmEvent.objects.select_for_update(of=('self',)).filter(binding=binding, closed_at__isnull=True):
         close(event, at)
+
+
+def uncovered():
+    """The active channels on an active device of a quantity the water limits judge (quantities.JUDGED_CODES) that no
+    active "No fresh value" rule covers, its own or its quantity's (a default rule switched off, with its reason): a probe
+    of theirs that stops sending is warned of by nothing. The system check sensors.W001 and the Alarm rules page list
+    them. Two queries."""
+    rules = AlarmRule.objects.filter(kind=AlarmKind.NO_DATA, is_active=True)
+    quantities_covered = set(rules.filter(channel__isnull=True).values_list('quantity', flat=True))
+    return list(Channel.objects.filter(quantity__in=quantities.JUDGED_CODES, state=ChannelStatus.ACTIVE,
+                                       device__is_active=True)
+                .exclude(quantity__in=quantities_covered)
+                .exclude(pk__in=rules.filter(channel__isnull=False).values('channel_id'))
+                .select_related('device').order_by('device__code', 'code'))
 
 
 def open_events(site=None):

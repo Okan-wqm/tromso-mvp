@@ -1,8 +1,9 @@
 {% extends "crud/list.html" %}
 {% load i18n sensors %}
-{% comment %} Sensors › Operations › Alarm rules (sensors.resources.AlarmRuleResource). Shown, never sent. {% endcomment %}
+{% comment %} Sensors › Operations › Alarm rules (sensors.resources.AlarmRuleResource). A default rule (the "No fresh value" of a quantity the water limits judge) is switched off with a reason, never deleted; the channels no active "No fresh value" rule covers are said above the list (sensors.alarms.uncovered, the check sensors.W001). {% endcomment %}
 {% block search_placeholder %}{% trans "Search by channel or quantity" %}{% endblock %}
-{% block notice %}<p class="notice" role="status">{% trans "Each time a rule holds it is an alarm of Company › Alarms: its recipient rules say who is notified." %}</p>{% endblock %}
+{% block notice %}<p class="notice" role="status">{% trans "Each time a rule holds it is an alarm of Company › Alarms: its recipient rules say who is notified." %}</p>
+{% if uncovered %}<p class="notice notice-warning" role="alert">{% blocktrans count counter=uncovered|length %}One channel of a water quantity the limits judge has no active “No fresh value” rule: if its probe stops sending, nothing raises an alarm.{% plural %}{{ counter }} channels of a water quantity the limits judge have no active “No fresh value” rule: if their probes stop sending, nothing raises an alarm.{% endblocktrans %} {% for channel in uncovered %}{{ channel }} ({{ channel.get_quantity_display }}){% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}{% endblock %}
 {% block empty_text %}{% trans "A rule says when a channel needs a look: no fresh value, its device offline, a value above or below a threshold, or a change too fast." %}{% endblock %}
 {% block items %}
 <div class="table-wrap">
@@ -11,12 +12,12 @@
     <tbody>
       {% for rule in objects %}
       <tr>
-        <td><span class="row-title">{{ rule }}</span></td>
+        <td><span class="row-title">{{ rule }}</span>{% if rule.is_default %} <span class="badge">{% trans "Default" %}</span>{% endif %}</td>
         <td class="num">{{ rule.threshold|measured:rule.quantity_code }}</td>
-        <td class="num">{{ rule.for_s }}</td>
+        <td class="num">{% if rule.is_default %}{% trans "at the channel’s freshness" %}{% else %}{{ rule.for_s }}{% endif %}</td>
         <td>{{ rule.get_severity_display }}</td>
-        <td>{% if rule.is_active %}{% trans "Active" %}{% else %}<span class="badge badge-closed">{% trans "Inactive" %}</span>{% endif %}</td>
-        <td class="row-actions">{% include "sensors/_row_actions.html" with model="alarmrule" obj=rule label=rule %}</td>
+        <td>{% if rule.is_active %}{% trans "Active" %}{% else %}<span class="badge badge-closed">{% trans "Inactive" %}</span>{% if rule.off_reason %} <span class="muted">{{ rule.off_reason }}</span>{% endif %}{% endif %}</td>
+        <td class="row-actions">{% if rule.is_default %}{% include "sensors/_row_actions.html" with model="alarmrule" obj=rule label=rule can_delete=False %}{% else %}{% include "sensors/_row_actions.html" with model="alarmrule" obj=rule label=rule %}{% endif %}</td>
       </tr>
       {% endfor %}
     </tbody>

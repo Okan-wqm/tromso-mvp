@@ -72,10 +72,14 @@ def _department_of(channel, at):
 
 def mirror(event):
     """The alarm of a sensor rule's event, opened at the event's moment where its channel's device is (and cleared at once
-    when the event has closed already)."""
+    when the event has closed already). It says the rule, the channel and the place it was bound to ('pH (NBS scale): No
+    fresh value · PROBE-1 › PH: S-01 › Middle'), in English at rest: a rule of every channel of a quantity (a default
+    "No fresh value") names no channel itself."""
     channel = Channel.all_objects.select_related('device__site').filter(channel_no=event.channel_no).first()
     with audit.source_language():
-        summary = f'{event.rule}' + (f' · {channel.device.code}' if channel is not None else f' #{event.channel_no}')
+        where = (str(event.binding) if event.binding is not None
+                 else channel.device.code if channel is not None else f'#{event.channel_no}')
+        summary = f'{event.rule} · {where}'[:SUMMARY_LENGTH]
     alarm = services.open_alarm(
         at=event.opened_at, severity=event.rule.severity, summary=summary,
         site=channel.device.site if channel is not None else None,

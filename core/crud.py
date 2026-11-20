@@ -528,6 +528,13 @@ class Resource:
             return cls.snapshot(obj)
 
     @classmethod
+    def change_severity(cls, before, obj):
+        """The severity of the log entry of an edit, from the record as stored before it (`before`) and as saved (`obj`):
+        normal; an edit that turns off something protecting fish says critical (a default sensor alarm rule switched
+        off, sensors/resources.py), as the activity log shows apart."""
+        return AuditLog.Severity.NORMAL
+
+    @classmethod
     def after_save(cls, request, obj, created):
         """Runs inside the save transaction, after the audit row; e.g. invite a new user. A ValidationError raised here
         rolls the save back and is shown on the form (a rule checked under a lock the form could not hold: HR's
@@ -857,7 +864,8 @@ class UpdateView(FormView):
                             raise
                         raise Clashed from None
                     form.save_m2m()
-                    audit.record_update(request.user, obj, before, r.recorded(obj), entity_type=r.entity_type())
+                    audit.record_update(request.user, obj, before, r.recorded(obj), entity_type=r.entity_type(),
+                                        severity=r.change_severity(current, obj))
                     r.after_save(request, obj, created=False)
                     return obj
 

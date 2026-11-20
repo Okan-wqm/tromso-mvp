@@ -2643,6 +2643,7 @@
         "farm/tests/test_withdrawal_cleaner_fish.py",
         "farm/tests/test_withdrawal_combined.py",
         "farm/tests/test_withdrawal_delivery.py",
+        "farm/tests/test_withdrawal_delivery_after.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_guard.py",
         "farm/tests/test_withdrawal_lots.py",
@@ -3094,6 +3095,7 @@
         "farm/tests/test_harvest_inside_withdrawal.py",
         "farm/tests/test_second_approval_said_first.py",
         "farm/tests/test_withdrawal_ceiling.py",
+        "farm/tests/test_withdrawal_delivery_after.py",
         "farm/tests/test_withdrawal_gate.py",
         "alarms/tests/test_freshness.py",
         "alarms/tests/test_reference.py"
@@ -9910,6 +9912,7 @@
         "farm/tests/test_suppliers.py",
         "farm/tests/test_withdrawal_ceiling.py",
         "farm/tests/test_withdrawal_combined.py",
+        "farm/tests/test_withdrawal_delivery.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
         "farm/tests/test_withdrawal_guard.py",
@@ -10301,6 +10304,7 @@
         "farm/tests/test_withdrawal_cleaner_fish.py",
         "farm/tests/test_withdrawal_combined.py",
         "farm/tests/test_withdrawal_delivery.py",
+        "farm/tests/test_withdrawal_delivery_after.py",
         "farm/tests/test_withdrawal_locks.py",
         "farm/tests/test_withdrawal_lots.py",
         "farm/tests/test_withdrawal_same_day.py",
@@ -13042,6 +13046,7 @@
         "farm/tests/test_row_list_refused.py",
         "farm/tests/test_species.py",
         "farm/tests/test_withdrawal_cleaner_fish.py",
+        "farm/tests/test_withdrawal_delivery.py",
         "farm/tests/test_withdrawal_locks.py",
         "farm/tests/test_withdrawal_lots.py",
         "farm/tests/test_withdrawal_wording.py",
@@ -20646,6 +20651,7 @@
         "farm/tests/test_harvest_inside_withdrawal.py",
         "farm/tests/test_health.py",
         "farm/tests/test_second_approval_said_first.py",
+        "farm/tests/test_withdrawal_delivery_after.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
         "farm/tests/test_withdrawal_lots.py",
@@ -22617,7 +22623,7 @@
       "app": "farm",
       "model": "WithdrawalAcknowledgement",
       "table": "withdrawal_acknowledgements",
-      "description": "One warning a person went on past when a write changed a medicine withdrawal (the withdrawal guard, farm.health.withdrawal.guarded, which every such write goes through: a treatment, its last day or void, a medicated feeding or its void, a medicine's withdrawal rows, a water sample, a stock operation): a harvest already recorded now lies inside a withdrawal (`harvested`, naming the harvest), fish held today are freed by it (`released`), or fish that had been let go are held again by it (`held`: a longer ceiling for the ends without a rule).",
+      "description": "One warning a person went on past when a write changed a medicine withdrawal (the withdrawal guard, farm.health.withdrawal.guarded, which every such write goes through: a treatment, its last day or void, a medicated feeding or its void, a medicine's withdrawal rows, a water sample, a stock operation): a harvest already recorded now lies inside a withdrawal (`harvested`, naming the harvest), a live delivery already recorded does (`delivered`, naming the delivery in the same column: the owner's decision 13 of 19.11.2026, a live delivery is a harvest also after the fact), fish held today are freed by it (`released`), or fish that had been let go are held again by it (`held`: a longer ceiling for the ends without a rule).",
       "columns": [
         {
           "name": "id",
@@ -22696,6 +22702,7 @@
           "null": false,
           "choices": [
             "harvested",
+            "delivered",
             "released",
             "held"
           ],
@@ -22936,7 +22943,7 @@
           "why": "no page lists them yet: check_withdrawal reads them, and the write's critical log entry says what was acknowledged"
         }
       },
-      "note": "One row for each warning of the withdrawal guard (farm.health.withdrawal.guarded) the person went on past: a harvest already recorded brought inside a withdrawal, or fish held today freed by the write.",
+      "note": "One row for each warning of the withdrawal guard (farm.health.withdrawal.guarded) the person went on past: a harvest or a live delivery already recorded brought inside a withdrawal, fish held today freed by the write, or fish held again by a longer ceiling.",
       "forms": [],
       "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
       "soft_delete": false,
@@ -22954,6 +22961,7 @@
         "farm/tests/test_harvest_inside_withdrawal.py",
         "farm/tests/test_withdrawal_ceiling.py",
         "farm/tests/test_withdrawal_combined.py",
+        "farm/tests/test_withdrawal_delivery_after.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_guard.py",
         "farm/tests/test_withdrawal_lots.py",

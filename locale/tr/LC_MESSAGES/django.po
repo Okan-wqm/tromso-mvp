@@ -2071,6 +2071,13 @@ msgstr ""
 "%(value)s ölü bandı, %(quantity)s hassasiyetinden (%(step)s) daha incedir: daha küçük bir değişim"
 " gürültüdür."
 
+msgid ""
+"A default rule is the “No fresh value” of every channel of its quantity, at the channel’s own "
+"freshness; it is switched off with a reason, never deleted."
+msgstr ""
+"Varsayılan kural, parametresinin her kanalı için kanalın kendi tazelik süresinde geçerli olan "
+"“Güncel değer yok” kuralıdır; gerekçeyle kapatılır, asla silinmez."
+
 msgid "A delivery puts stock into a location."
 msgstr "Teslimat bir yere stok koyar."
 
@@ -5574,6 +5581,9 @@ msgstr "Varsayılan 15 mg/L, salmonidler için yaygın bir kılavuz değer."
 msgid "Default 2 µg/L, the US EPA criterion for un-ionised H₂S (1986)."
 msgstr "Varsayılan 2 µg/L, iyonize olmamış H₂S için ABD EPA ölçütü (1986)."
 
+msgid "Default rule"
+msgstr "Varsayılan kural"
+
 msgid "Defaults"
 msgstr "Varsayılanlar"
 
@@ -5618,6 +5628,15 @@ msgstr "Sil: %(name)s"
 #, python-format
 msgid "Delete %(object)s"
 msgstr "Sil: %(object)s"
+
+msgid ""
+"Delete also switches off the default “No fresh value” rule of a water quantity (with a reason, "
+"logged as critical): a probe of that quantity that stops sending then raises no alarm. A default "
+"rule is never deleted."
+msgstr ""
+"Sil yetkisi bir su parametresinin varsayılan “Güncel değer yok” kuralını da kapatır (gerekçeyle, "
+"kritik olarak günlüğe yazılır): o parametrenin veri göndermeyi bırakan bir sondası artık alarm "
+"vermez. Varsayılan kural asla silinmez."
 
 msgid "Delete message"
 msgstr "Mesajı sil"
@@ -9339,6 +9358,13 @@ msgid "Natural gas"
 msgstr "Doğal gaz"
 
 msgid ""
+"Needed to switch a default rule off: what then tells that a probe of this quantity stopped "
+"sending. Logged."
+msgstr ""
+"Varsayılan kuralı kapatmak için gereklidir: bu parametrenin bir sondasının veri göndermeyi "
+"bıraktığını o zaman neyin bildireceği. Günlüğe yazılır."
+
+msgid ""
 "Needed with a pH on another scale than NBS: the conversion takes the temperature and the salinity"
 " of the same sample."
 msgstr ""
@@ -10433,6 +10459,20 @@ msgstr ""
 
 msgid "One card per unit."
 msgstr "Birim başına bir kart."
+
+#, python-format
+msgid ""
+"One channel of a water quantity the limits judge has no active “No fresh value” rule: if its "
+"probe stops sending, nothing raises an alarm."
+msgid_plural ""
+"%(counter)s channels of a water quantity the limits judge have no active “No fresh value” rule: "
+"if their probes stop sending, nothing raises an alarm."
+msgstr[0] ""
+"Sınırların değerlendirdiği bir su parametresinin bir kanalında etkin “Güncel değer yok” kuralı "
+"yok: sondası veri göndermeyi bırakırsa hiçbir şey alarm vermez."
+msgstr[1] ""
+"Sınırların değerlendirdiği bir su parametresinin %(counter)s kanalında etkin “Güncel değer yok” "
+"kuralı yok: sondaları veri göndermeyi bırakırsa hiçbir şey alarm vermez."
 
 msgid "One county names 1 March of the next year, by e-mail (Møre og Romsdal, 2027)"
 msgstr "Bir ilçe, ertesi yılın 1 Mart’ını e-postayla belirtiyor (Møre og Romsdal, 2027)"
@@ -12421,6 +12461,13 @@ msgid "Say why it is voided."
 msgstr "Neden iptal edildiğini yazın."
 
 msgid ""
+"Say why the default rule is switched off: a probe of this quantity that stops sending is then "
+"warned of by nothing."
+msgstr ""
+"Varsayılan kuralın neden kapatıldığını yazın: bu parametrenin veri göndermeyi bırakan bir sondası"
+" artık hiçbir şeyle bildirilmez."
+
+msgid ""
 "Say why the tanks are placed by hand: a placement that is not randomised is registered with its "
 "reason."
 msgstr ""
@@ -13521,6 +13568,9 @@ msgstr "İsveççe"
 msgid "Switch panel"
 msgstr "Paneli değiştir"
 
+msgid "Switching a default rule off takes the Delete right on Alarm rules."
+msgstr "Varsayılan bir kuralı kapatmak, Alarm kuralları üzerinde Sil yetkisi gerektirir."
+
 msgid "System"
 msgstr "Sistem"
 
@@ -14047,6 +14097,16 @@ msgstr "Haftanın son tarih olan günleri."
 
 msgid "The deepest point cannot be shallower than the average depth."
 msgstr "En derin nokta ortalama derinlikten sığ olamaz."
+
+msgid ""
+"The default rule of this quantity: every channel of it raises this alarm once its value is no "
+"longer fresh (its heartbeat times its fresh heartbeats, set on the channel), whatever its pH "
+"scale. Its severity can be changed; switching it off takes the Delete right on Alarm rules and a "
+"reason."
+msgstr ""
+"Bu parametrenin varsayılan kuralı: değeri artık güncel olmadığında (kanalda ayarlanan nabız "
+"süresi çarpı taze kalma nabız sayısı) her kanalı, pH skalası ne olursa olsun, bu alarmı verir. "
+"Önemi değiştirilebilir; kapatmak Alarm kuralları üzerinde Sil yetkisi ve bir gerekçe gerektirir."
 
 #, python-format
 msgid "The degree-days are not reached in %(days)d days at these temperatures."
@@ -15930,6 +15990,9 @@ msgstr "Bu üretim departmanı hiçbir sahada değil; bir sahada olanı seçin."
 msgid "This production department is not on the site."
 msgstr "Bu üretim departmanı bu sahada değil."
 
+msgid "This quantity has its default rule already."
+msgstr "Bu parametrenin varsayılan kuralı zaten var."
+
 msgid "This removes it permanently. The activity log keeps a record that it was deleted."
 msgstr "Bu işlem kaydı kalıcı olarak kaldırır. Etkinlik günlüğü, silindiğine dair bir kayıt tutar."
 
@@ -17160,6 +17223,9 @@ msgstr "Neden"
 msgid "Why it is closed"
 msgstr "Neden kapatıldı"
 
+msgid "Why it is switched off"
+msgstr "Neden kapatıldı"
+
 msgid "Why the text could not be read"
 msgstr "Metnin neden okunamadığı"
 
@@ -17469,10 +17535,6 @@ msgstr ""
 "%(why)s"
 
 #, python-format
-msgid "a pH on the %(scale)s is put on the NBS scale only while it is fresh, and it is no longer fresh"
-msgstr "%(scale)s ölçülen bir pH yalnızca tazeyken NBS ölçeğine dönüştürülür ve artık taze değil"
-
-#, python-format
 msgid ""
 "a pH on the %(scale)s is put on the NBS scale with a temperature of its moment, a sensor’s or a "
 "sample’s, and none is fresh then"
@@ -17650,6 +17712,9 @@ msgstr "en az: güvenli taraftaki temel"
 
 msgid "at once"
 msgstr "derhal"
+
+msgid "at the channel’s freshness"
+msgstr "kanalın tazelik süresinde"
 
 msgid "attendance outside these days"
 msgstr "bu günlerin dışında devam kaydı"

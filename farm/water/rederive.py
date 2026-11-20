@@ -31,7 +31,7 @@ from core.models import AuditLog
 from farm import withdrawal_gate
 from farm.models import WaterMeasurement
 
-from . import chemistry, parameters
+from . import chemistry
 from .read import POINT_RELATED, Context, ph_on_nbs, scale_origin
 from .services import label
 

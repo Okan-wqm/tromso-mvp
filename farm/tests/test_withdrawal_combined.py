@@ -424,7 +424,7 @@ class ListingTests(CombinedTestCase):
             ['held', 'T-01', self.a.code, until, '', cause],
             ['held', 'T-03', self.b.code, until, '', cause]])
         self.assertEqual([line.split('\t') for line in lines if line.startswith('inside')], [
-            ['inside', day, 'T-03', self.b.code, '100', self.a.code, until, '', cause]])
+            ['inside', day, 'T-03', self.b.code, 'harvest', '100', self.a.code, until, '', cause]])
         again = io.StringIO()
         call_command('check_withdrawal', '--listing', stdout=again)
         self.assertEqual(again.getvalue(), out.getvalue())

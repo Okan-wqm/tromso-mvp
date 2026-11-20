@@ -224,6 +224,8 @@ NOT_INPUT_TABLES = {
     'production_departments': 'the department gives the site',
     'medicines': 'a medicine\'s name and how it is given; its withdrawal is its rows (registered)',
     'harvest_records': 'where a harvest went: the facility named in the text, never whether the withdrawal holds it',
+    'delivery_records': 'whom a live delivery went to: the receiver named in the text, never whether the withdrawal '
+                        'holds it (written once with its operation, inside the guard; voided with it)',
     'slaughter_facilities': 'the facility named in the text',
     'opening_balances': 'written once with its stocking operation, inside the guard (the operation and its lines are '
                         'registered whole), never changed; voided with it',
@@ -252,6 +254,10 @@ class RegistryCoverageTests(LoopTestCase):
         seen = check.assess('harvest', self.t1, self.day(1), self.batch).fingerprint      # under a withdrawal
         stock_services.record_harvest(self.user, unit=self.t1, batch=self.batch, day=self.day(1), count=10,
                                       measured_weight_kg=Decimal('12'), facility=self.facility, handling_ack=seen)
+        # A live delivery is read as a harvest is (the owner's decision 13): its line and its record are read too.
+        seen = check.assess('transport', self.t1, self.day(1), self.batch, operation='delivery').fingerprint
+        stock_services.record_delivery(self.user, unit=self.t1, batch=self.batch, day=self.day(1), count=10,
+                                       destination='Nordic Smolt AS', handling_ack=seen)
         with CaptureQueriesContext(connection) as queries:
             withdrawal.snapshot({self.batch.pk}, self.today)
             withdrawal.harvests_inside()

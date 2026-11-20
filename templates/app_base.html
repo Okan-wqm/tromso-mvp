@@ -130,7 +130,7 @@
     {% for entry in bottom_bar %}<a class="ui-bottombar-link" href="{{ entry.url }}"{% if entry.current %} aria-current="page"{% endif %}>{% include "icons/_icon.html" with name=entry.icon %}<span class="ui-bottombar-label">{{ entry.label }}</span>{% if entry.badge.text %}<span class="rail-badge">{{ entry.badge.text }}</span>{% endif %}</a>
     {% endfor %}<button type="button" class="ui-bottombar-link" data-nav-open aria-controls="rail" aria-expanded="false">{% include "icons/_icon.html" with name="menu" %}<span class="ui-bottombar-label">{% trans "More" %}</span></button>
   </nav>
-  <dialog class="modal" id="modal" aria-labelledby="modal-title" data-forbidden="{% trans "You do not have permission to do this." %}"><div data-modal-content></div></dialog>
+  <dialog class="modal" id="modal" closedby="any" aria-labelledby="modal-title" data-forbidden="{% trans "You do not have permission to do this." %}"><div data-modal-content></div></dialog>
   <script type="module" src="{% asset 'js/shell.js' %}"></script>
   <script type="module" src="{% asset 'js/components.js' %}"></script>
   <script type="module" src="{% asset 'js/poll.js' %}"></script>

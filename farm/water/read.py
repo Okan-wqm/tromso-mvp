@@ -59,6 +59,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
 from decimal import Decimal
+from functools import partial
 
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db import models
@@ -896,7 +897,7 @@ class Context:
         return assumed_salinity(self.water_types(point))
 
     # -- a sensor's pH on another scale --
-    def sensor_ph(self, observation, fresh_live, now, temperature=None):
+    def sensor_ph(self, observation, fresh_live, now, temperature=None, at_moment=None):
         """A sensor's pH observation put on the NBS scale (owner decision 1 of 2026-11-17; the water-chemistry audit of
         2026-11-19, F1), exactly as a typed sample's (`ph_on_nbs`): with the place's fresh temperature from the sensors
         (`fresh_live`, {code: the newest fresh live Observation}, as a sensor's TAN takes its pH and temperature), else
@@ -904,8 +905,12 @@ class Context:
         the pH's own time (`fresh_at`, as the oxygen's other unit takes the point's temperature, `_in_other_unit`; the
         replay and the trail convert with a sample's temperature too: the review of the audit, C2), and the salinity of
         the same moment (`salinity_for`: a fresh sensor's, else the point's fresh sample's, else 0 in fresh water), for
-        sea water of 5 ‰ or more only (`scale_origin`), while the pH is fresh at `now`. Otherwise the observation keeps
-        no pH and says why (`SensorPh.refused`). An observation that needs nothing is returned as it is."""
+        sea water of 5 ‰ or more only (`scale_origin`). A pH no longer fresh at `now` is put on it the same way at its
+        own moment, with the place's sensor values fresh THEN (`at_moment(its time)`, {code: Observation}) instead of
+        now's, and is shown stale as an NBS one is (owner decision of 2026-11-20: one behaviour for every scale; that its
+        probe stopped is the channel's default "No fresh value" rule's to say, sensors.AlarmRule.is_default). Otherwise
+        the observation keeps no pH and says why (`SensorPh.refused`). An observation that needs nothing is returned as
+        it is."""
         ph = observation.ph
         if ph is None or ph.converted or not ph.scale or observation.get(parameters.PH) is not None \
                 or (ph.since is not None and observation.at < ph.since):
@@ -915,7 +920,7 @@ class Context:
             return replace(observation, ph=replace(ph, refused=str(messages.ph_sensor_refused(why, ph.scale, error))))
 
         if not is_fresh(parameters.get(parameters.PH), observation.at, now, observation.fresh_for):
-            return refused('stale')
+            fresh_live = at_moment(observation.at) if at_moment is not None else {}
         sensed, said = fresh_live.get(parameters.TEMPERATURE), ''
         if sensed is None or sensed.get(parameters.TEMPERATURE) is None:
             if temperature is None or temperature.value is None or not fresh_at(temperature, observation.at):
@@ -1298,7 +1303,7 @@ def _candidates(code, live, fresh_live, manuals, context):
     return found
 
 
-def _resolve(own_live, own_manual, system_live, system_manual, context, now):
+def _resolve(own_live, own_manual, system_live, system_manual, context, now, at_moment=None):
     """{code: Reading} of one place's water, each parameter on its own, by owner rule A9 (`choose`): the newest of its OWN
     fresh values (`own_live`, its points' sensors, and `own_manual`, its points' latest samples, whatever the origin);
     only when it has none, the newest fresh value of its system (`system_live`, the system's sensors and those on its loop
@@ -1306,17 +1311,19 @@ def _resolve(own_live, own_manual, system_live, system_manual, context, now):
     (shown with its age, never used as fresh). A derived value follows the source of its base: NH3 and NH4 a live TAN's
     (worked out from fresh live values only) or the TAN sample's own. Returns (chosen, {code: every candidate of both
     tiers, fresh, stale or ahead of the clock, derived ones too}): what the worst fresh value and the point's own status
-    read."""
+    read. `at_moment(moment)` gives the place's sensor values fresh at a past moment (`_at_moment`), what a sensor pH no
+    longer fresh is put on the NBS scale with."""
     fresh_own, fresh_system = _fresh_live(own_live, now), _fresh_live(system_live, now)
     fresh_live = {code: fresh_own.get(code) or fresh_system.get(code) for code in {*own_live, *system_live}}
     if any(each.ph is not None for live in (own_live, system_live) for each in live.get(parameters.PH, [])):
         # A sensor pH on another scale than NBS, put on it with the place's fresh temperature and salinity (F1), before
         # anything reads it: the pH shown and judged, and the pH a sensor's TAN is worked out with. Without a fresh
         # sensor temperature, the place's temperature chosen as every value is (A9), where fresh at the pH's time (C2).
+        # One no longer fresh, with the place's sensor values of its own moment (owner decision of 2026-11-20).
         temperature = choose([_candidates(parameters.TEMPERATURE, own_live, fresh_own, own_manual, context),
                               _candidates(parameters.TEMPERATURE, system_live, fresh_system, system_manual, context)],
                              now, lambda reading: reading.fresh(now))
-        own_live, system_live = ({**live, parameters.PH: [context.sensor_ph(each, fresh_live, now, temperature)
+        own_live, system_live = ({**live, parameters.PH: [context.sensor_ph(each, fresh_live, now, temperature, at_moment)
                                                           for each in live.get(parameters.PH, [])]}
                                  for live in (own_live, system_live))
         fresh_own, fresh_system = _fresh_live(own_live, now), _fresh_live(system_live, now)
@@ -1474,7 +1481,7 @@ def latest(points, now=None, at=None):
         day = local_time(moment, point).date()
         resolved, candidates = _resolve(_live(where.own_targets, answer), [manual(each) for each in where.own],
                                         _live(where.system_targets, answer), [manual(each) for each in where.system],
-                                        context, moment)
+                                        context, moment, partial(_at_moment, where))
         temperature = resolved.get(parameters.TEMPERATURE)          # what an oxygen value is worked out with
         temperature = temperature if temperature is not None and temperature.fresh(moment) else None
 
@@ -1579,15 +1586,31 @@ def worst_fresh(reading, others, now=None):
     return reading
 
 
-def _values_at(targets, moment):
-    """The live sources' values of every measured parameter at a past moment, as one answer (sources.Answer)."""
+def _values_at(targets, moment, codes=parameters.COLUMNS):
+    """The live sources' values of every measured parameter (or of `codes`) at a past moment, as one answer
+    (sources.Answer)."""
     merged, failed = {}, False
-    for code in parameters.COLUMNS:
+    for code in codes:
         answer = sources.value_at(targets, code, moment)
         failed = failed or answer.failed
         for target, values in answer.values.items():
             merged.setdefault(target, {})[code] = values
     return sources.Answer(merged, failed)
+
+
+# What a sensor pH on another scale than NBS is put on the NBS scale with (Context.sensor_ph).
+PH_INPUTS = (parameters.TEMPERATURE, parameters.SALINITY)
+
+
+def _at_moment(where, moment):
+    """{code: Observation} of the place's (`where`, a Places) sensor temperature and salinity fresh AT `moment`, each
+    channel's value at it (sources.value_at), its own tier's before its system's (A9) as `_resolve` takes them now: what a
+    sensor pH no longer fresh is put on the NBS scale with at its own moment (owner decision of 2026-11-20). Asked only
+    for such a pH (one ask per input)."""
+    answer = _values_at([target for target, _origin, _point in (*where.own_targets, *where.system_targets)], moment,
+                        PH_INPUTS)
+    own, system = (_fresh_live(_live(targets, answer), moment) for targets in (where.own_targets, where.system_targets))
+    return {code: own.get(code) or system.get(code) for code in PH_INPUTS if own.get(code) or system.get(code)}
 
 
 def owner_water(owners, now=None):

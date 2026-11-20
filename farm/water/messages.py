@@ -106,7 +106,6 @@ def ph_measured_short(sample):
 # says after "pH (NBS scale) cannot be evaluated:" (`unevaluated`).
 PH_SENSOR_REFUSED = {
     'unconverted': _('a pH on the %(scale)s is not put on the NBS scale here'),
-    'stale': _('a pH on the %(scale)s is put on the NBS scale only while it is fresh, and it is no longer fresh'),
     'temperature': _('a pH on the %(scale)s is put on the NBS scale with a temperature of its moment, a sensor’s or a '
                      'sample’s, and none is fresh then'),
     'salinity': _('a pH on the %(scale)s is put on the NBS scale with the salinity of the same moment, and none was '

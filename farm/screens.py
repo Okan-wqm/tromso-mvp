@@ -130,7 +130,8 @@ SCREENS = {
         read=gap('no page lists them yet: check_withdrawal reads them, and the write\'s critical log entry says what was '
                  'acknowledged'),
         note='One row for each warning of the withdrawal guard (farm.health.withdrawal.guarded) the person went on past: '
-             'a harvest already recorded brought inside a withdrawal, or fish held today freed by the write.',
+             'a harvest or a live delivery already recorded brought inside a withdrawal, fish held today freed by the '
+             'write, or fish held again by a longer ceiling.',
         columns={'*': computed('what the withdrawal guard found and the person was shown, stored when they went on')},
     ),
 

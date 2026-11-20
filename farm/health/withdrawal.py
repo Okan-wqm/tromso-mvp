@@ -89,7 +89,7 @@ from core.models import AuditLog
 from farm import withdrawal_gate as gate
 from farm.feeding import read as feeding_read
 from farm.handling import check
-from farm.handling.withdrawal import WithdrawalBlock, harvest_from, source_key
+from farm.handling.withdrawal import WithdrawalBlock, harvest_from, leave_from, source_key
 from farm.models import (Batch, FeedingRecord, HandlingAcknowledgement, MedicineWithdrawal, StockMovement, Tank, Treatment,
                          WithdrawalAcknowledgement)
 from farm.models.feed import FeedType
@@ -377,7 +377,8 @@ class Reader:
         return replace(held, gives_up=last + (self.ceiling + 1) * DAY)
 
     def _life(self, treatments, back=None):
-        """The first day that can matter to the batches asked: their earliest live harvest, the first day of the
+        """The first day that can matter to the batches asked: their earliest live harvest or live delivery (the lines
+        `_harvest_lines` compares), the first day of the
         earliest course that can have exposed them (by the spans), and the first day a record can still be dated on
         (the correction window): a course, a feeding or a move entered now for a day in the window holds fish from
         that day, also fish of other batches and their harvests, and both snapshots of a guard must read from before
@@ -386,8 +387,8 @@ class Reader:
         days = [self.today - correction_window_days() * DAY]
         if back is not None:
             days.append(back)
-        harvested = (StockMovement.objects.filter(kind=MovementKind.HARVEST, operation__is_deleted=False,
-                                                  batch_id__in=self.asked)
+        harvested = (StockMovement.objects.filter(kind__in=sorted(check.WITHDRAWAL_LINES.values()),
+                                                  operation__is_deleted=False, batch_id__in=self.asked)
                      .order_by('operation__date').values_list('operation__date', flat=True).first())
         if harvested is not None:
             days.append(harvested)
@@ -852,7 +853,7 @@ def of_treatments(treatments):
     return found
 
 
-# ---- harvests already recorded inside a withdrawal (audit F-195) -----------------------------------------
+# ---- harvests (and live deliveries) already recorded inside a withdrawal (audit F-195) ---------------------
 @dataclass(frozen=True)
 class HarvestInside:
     """A harvest recorded on a day a withdrawal holds fish of its unit: its own batch, or a batch that shared the unit
@@ -862,16 +863,34 @@ class HarvestInside:
     temperature, a medicine's withdrawal changed); a harvest made while the withdrawal was known is warned of then
     (farm/handling/check.py). As a warning of a treatment's dialog it is acknowledged like the handling warnings
     (`warning`, `key`, `message`, and what the acknowledgement keeps: `operation_id`, `until`, `approximate`,
-    `reason`, and `batch`: the batch that is held, as the harvest's own acknowledgement names it)."""
-    line: object                          # the harvest's StockMovement: its operation, unit, batch, fish
+    `reason`, and `batch`: the batch that is held, as the harvest's own acknowledgement names it).
+
+    **A live delivery is a harvest here** (the owner's decision 13 of 19.11.2026): its fish left the farm alive and may
+    be eaten, so a delivery a later write puts inside a withdrawal is found, asked, stored and logged exactly as a
+    harvest is, by this same class (`line` is then the delivery's line; check.WITHDRAWAL_LINES says which lines are
+    such); only its words differ (`delivery`: "Live delivery of … to <destination> lies inside this withdrawal (the fish
+    may leave the farm from …)"), and its acknowledgement row is `delivered`, naming the delivery."""
+    line: object                          # the harvest's (the delivery's) StockMovement: its operation, unit, batch, fish
     withdrawal: Withdrawal
     held: object = None                   # the Batch the withdrawal is of; None: read as the harvest's own
     hold: Hold = None                     # the lot of the harvested fish the withdrawal holds, with how it came to
 
-    warning = WithdrawalWarning.HARVESTED
+    @property
+    def delivery(self):
+        """Whether the fish left alive (a live delivery), not harvested."""
+        return self.line.kind == MovementKind.DELIVERY
+
+    @property
+    def warning(self):
+        return WithdrawalWarning.DELIVERED if self.delivery else WithdrawalWarning.HARVESTED
 
     @property
     def operation_id(self):
+        return self.line.operation_id
+
+    @property
+    def harvest(self):
+        """The operation the acknowledgement names (its `harvest`): the harvest, or the live delivery."""
         return self.line.operation_id
 
     @property
@@ -892,8 +911,22 @@ class HarvestInside:
 
     @property
     def facility(self):
+        """The slaughter facility a harvest went to (None for a live delivery: `destination`)."""
         record = getattr(self.line.operation, 'harvest_record', None)
         return record.facility if record is not None else None
+
+    @property
+    def destination(self):
+        """Whom a live delivery went to ('' for a harvest, or a delivery without its record)."""
+        record = getattr(self.line.operation, 'delivery_record', None) if self.delivery else None
+        return record.destination if record is not None else ''
+
+    @property
+    def taken_to(self):
+        """Where the fish went, as the messages name it: the facility, or the delivery's receiver."""
+        if self.delivery:
+            return self.destination or _('an unknown receiver')
+        return self.facility.name if self.facility is not None else _('an unknown facility')
 
     @property
     def batch(self):
@@ -908,7 +941,7 @@ class HarvestInside:
     def key(self):
         """What the person saw, as text: a change in it asks them again. The withdrawal is named by what it says, not by
         its record's id: a write asked about and sent again makes a new record."""
-        return (f'harvested:{self.line.operation_id}:{self.line.batch_id}:{self.withdrawal.batch_id}:{self.until}:'
+        return (f'{self.warning}:{self.line.operation_id}:{self.line.batch_id}:{self.withdrawal.batch_id}:{self.until}:'
                 f'{self.approximate}:{self.reason}')
 
     def identity(self):
@@ -921,10 +954,15 @@ class HarvestInside:
         """The warning in the person's language (the activity log builds it in English)."""
         params = {'date': shown_date(self.line.operation.date), 'unit': self.line.unit.code,
                   'batch': self.line.batch.code, 'fish': formats.number_format(self.fish, force_grouping=True),
-                  'facility': self.facility.name if self.facility is not None else _('an unknown facility'),
-                  'end': harvest_from(self.until, self.approximate)}       # the one wording of a withdrawal's end
-        text = _('Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this '
-                 'withdrawal (%(end)s): medicated fish may have gone to food.') % params
+                  'facility': self.taken_to}
+        if self.delivery:                   # a live delivery's end in its own words (F-1): not "harvest from"
+            text = _('Live delivery of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside '
+                     'this withdrawal (%(end)s): medicated fish sold alive may have been eaten.') % {
+                **params, 'end': leave_from(self.until, self.approximate)}
+        else:
+            text = _('Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this '
+                     'withdrawal (%(end)s): medicated fish may have gone to food.') % {
+                **params, 'end': harvest_from(self.until, self.approximate)}   # the one wording of a withdrawal's end
         if not self.own:
             text += ' ' + self.through()
         return text
@@ -942,17 +980,25 @@ class HarvestInside:
         return self.hold is None or (not self.chained and self.hold.via_unit in ('', self.line.unit.code))
 
     def through(self):
-        """How a withdrawal of another batch came to hold the fish harvested."""
+        """How a withdrawal of another batch came to hold the fish harvested (delivered alive: `delivery`)."""
+        delivered = self.delivery
         if self.chained:
-            return _('The withdrawal is of %(held)s: the fish harvested shared %(unit)s with %(with)s, which waits '
-                     'with %(held)s, and the fish of one unit cannot be told apart.') % {
-                'held': self.batch.code, 'unit': self.hold.via_unit, 'with': self.hold.via_batch}
-        if self.beside:
-            return _('The withdrawal is of %(held)s, which was in %(unit)s with the fish harvested: the fish of '
-                     'one unit cannot be told apart.') % {'held': self.batch.code, 'unit': self.line.unit.code}
-        return _('The withdrawal is of %(held)s: the fish harvested shared %(unit)s with %(with)s before, and the fish '
-                 'of one unit cannot be told apart.') % {'held': self.batch.code, 'unit': self.hold.via_unit,
-                                                         'with': self.hold.via_batch}
+            text = (_('The withdrawal is of %(held)s: the fish delivered shared %(unit)s with %(with)s, which waits '
+                      'with %(held)s, and the fish of one unit cannot be told apart.') if delivered else
+                    _('The withdrawal is of %(held)s: the fish harvested shared %(unit)s with %(with)s, which waits '
+                      'with %(held)s, and the fish of one unit cannot be told apart.'))
+        elif self.beside:
+            text = (_('The withdrawal is of %(held)s, which was in %(unit)s with the fish delivered: the fish of '
+                      'one unit cannot be told apart.') if delivered else
+                    _('The withdrawal is of %(held)s, which was in %(unit)s with the fish harvested: the fish of '
+                      'one unit cannot be told apart.'))
+            return text % {'held': self.batch.code, 'unit': self.line.unit.code}
+        else:
+            text = (_('The withdrawal is of %(held)s: the fish delivered shared %(unit)s with %(with)s before, and '
+                      'the fish of one unit cannot be told apart.') if delivered else
+                    _('The withdrawal is of %(held)s: the fish harvested shared %(unit)s with %(with)s before, and '
+                      'the fish of one unit cannot be told apart.'))
+        return text % {'held': self.batch.code, 'unit': self.hold.via_unit, 'with': self.hold.via_batch}
 
     def same_harvest(self):
         """Which harvest of which batch it is, whatever the withdrawal's end."""
@@ -960,10 +1006,14 @@ class HarvestInside:
 
 
 def _harvest_lines(batch_ids=None, since=None, unit_ids=()):
-    """The live harvest lines (of `batch_ids`, and of any batch out of `unit_ids`; from `since`), with what a finding
-    names."""
-    lines = StockMovement.objects.filter(kind=MovementKind.HARVEST, operation__is_deleted=False).select_related(
-        'operation__harvest_record__facility', 'unit__production_department__site', 'batch')
+    """The live lines of the fish that left the farm and may be eaten: a harvest's and a live delivery's
+    (check.WITHDRAWAL_LINES, the owner's decisions 12 and 13), of `batch_ids`, and of any batch out of `unit_ids`; from
+    `since`; with what a finding names. THE one read of them every after-the-fact check goes through (the guard's
+    snapshots, check_withdrawal), so a delivery is never compared otherwise than a harvest."""
+    lines = StockMovement.objects.filter(kind__in=sorted(check.WITHDRAWAL_LINES.values()),
+                                         operation__is_deleted=False).select_related(
+        'operation__harvest_record__facility', 'operation__delivery_record', 'unit__production_department__site',
+        'batch')
     if batch_ids is not None:
         lines = lines.filter(Q(batch_id__in=batch_ids) | Q(unit_id__in=unit_ids))
     if since is not None:
@@ -972,7 +1022,8 @@ def _harvest_lines(batch_ids=None, since=None, unit_ids=()):
 
 
 def _inside(reader, lines):
-    """THE rule: a harvest lies inside a withdrawal that holds the lot of the harvested fish (their batch in their
+    """THE rule: a harvest (a live delivery: the owner's decision 13, `_harvest_lines`) lies inside a withdrawal that
+    holds the lot of the harvested fish (their batch in their
     unit) on the harvest's day (Hold.on: the lot is there, the day its last fish left too, and the withdrawal holds:
     from the treatment's first day, or the medicated feeding's, to the day before the fish may be harvested). The lots
     say which fish a withdrawal holds (rule 1): the exposed fish, where they were moved, and every batch that was in a
@@ -991,7 +1042,8 @@ def _inside(reader, lines):
 
 
 def harvests_inside():
-    """Every live harvest that lies inside a withdrawal that holds its fish, however it came to (check_withdrawal):
+    """Every live harvest and live delivery that lies inside a withdrawal that holds its fish, however it came to
+    (check_withdrawal; `_harvest_lines`):
     one reader per farm-local today of the harvested units (sites in different time zones), over the harvested
     batches (the reader loads the batches they can have met)."""
     every = _harvest_lines()
@@ -1182,7 +1234,8 @@ def snapshot(batch_ids, today, since=LIFE, back=None):
     for hold in reader.lots():
         if reader.current(hold):          # held now, by the reader's rule for several clocks: the guards read it too
             held[(hold.unit_id, hold.batch_id)].append(hold)
-    # The harvests of every batch read: a harvest of a batch that was never treated lies inside a withdrawal when its
+    # The harvests and live deliveries of every batch read: a harvest of a batch that was never treated lies inside a
+    # withdrawal when its
     # fish shared a unit with held fish (`_inside`).
     lines = _harvest_lines(reader.batch_ids, since=reader.first)
     stocked = frozenset(lot for lot, (_days, counts) in reader.presence.timelines.items() if counts[-1] > 0)
@@ -1208,8 +1261,9 @@ def _longest(withdrawals):
 
 @dataclass
 class Change:
-    """What a write did to the withdrawals of the fish it touched: the harvests it brought inside one, or whose
-    withdrawal it made end later than before (`harvested`; an acknowledgement covers the end it was given for), and the
+    """What a write did to the withdrawals of the fish it touched: the harvests and live deliveries it brought inside
+    one, or whose withdrawal it made end later than before (`harvested`, HarvestInside: a delivery is asked as a harvest
+    is, the owner's decision 13; an acknowledgement covers the end it was given for), and the
     held batches whose withdrawal it made end earlier or ended (`released`). Acknowledged through one box."""
     harvested: list = field(default_factory=list)
     released: list = field(default_factory=list)
@@ -1236,8 +1290,9 @@ class Change:
 
 
 def change(before, after, exclude_operation=None, combining=False, holding=False):
-    """The Change between two snapshots, `after` read over `before`'s batches at least (`guarded`). A harvest the write
-    itself records is left out: the harvest's own handling check asks about the withdrawal in force on its day.
+    """The Change between two snapshots, `after` read over `before`'s batches at least (`guarded`). A harvest (a live
+    delivery) the write itself records is left out: its own handling check asks about the withdrawal in force on its
+    day.
 
     A harvest that neither is of a batch read before nor lies inside a withdrawal of one is not this write's: the write
     only joined its fish to the fish asked (a move into their unit), and what was true of it before stays true.
@@ -1355,7 +1410,8 @@ def guarded(user, batch_ids, today, write, *, seen=None, record_of=None, exclude
 
     Inside the caller's transaction, after its locks, it works out the withdrawals of `batch_ids` (the fish the write can
     touch, on the farm's `today`) before the write, makes the write ONCE in a savepoint and works them out again from
-    what it left. When the write brings a recorded harvest inside a withdrawal (or makes one it is inside end later), or
+    what it left. When the write brings a recorded harvest or live delivery inside a withdrawal (or makes one it is
+    inside end later), or
     makes the withdrawal of fish held today end earlier, the person must have gone on past exactly this impact: `seen`
     is the fingerprint the write's own form carried (its box `withdrawal_ack`). Otherwise the savepoint is rolled back
     and the write refused (WithdrawalChanged, which carries what was found for the dialog). A `seen` that is not this
@@ -1400,7 +1456,7 @@ def _acknowledge(user, record, found):
         WithdrawalAcknowledgement(
             created_by=user, record_type=record_type, record_id=str(record.pk), record_label=label,
             warning=warning.warning, batch=warning.batch,
-            harvest_id=warning.line.operation_id if warning.warning == WithdrawalWarning.HARVESTED else None,
+            harvest_id=warning.harvest,                 # the harvest or live delivery inside; None for the others
             source=source_key(warning.withdrawal.source), until=warning.until, approximate=warning.approximate, reason=warning.reason[:500])
         for warning in [*found.harvested, *found.released, *found.held_again]])
     # Fish a stock operation combined with held fish: the operation's own handling acknowledgement, one per lot.

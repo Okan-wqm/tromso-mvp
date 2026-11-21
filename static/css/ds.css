@@ -128,9 +128,12 @@
   display: grid; gap: var(--space-1); min-width: 0;
   color: var(--text-2); font-size: var(--fs-small); font-weight: 600;
 }
+/* A group of filters inside a filter bar (a list's own filters form, the feeding records', the water pages'): one
+   wrapping row of controls with the bar's gap, never two controls touching. */
+:is(.toolbar-filter, .feeding-filters, .water-filters) { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); max-width: 100%; }
 /* (each at the specificity of the control rule above, so it wins by coming later) */
 :is(.ui-toolbar, .toolbar, .filter-bar, .monitor-filters, .feeding-filters, .water-filters, .date-filter, .water-date, .toolbar-filter) select:not([multiple]) {
-  width: auto; min-width: 10rem; max-width: 100%; padding-right: var(--space-6);
+  width: auto; min-width: min(10rem, 100%); max-width: 100%; padding-right: var(--space-6);
 }
 :is(.ui-toolbar, .toolbar, .filter-bar, .monitor-filters, .feeding-filters, .water-filters, .date-filter, .water-date) input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="search"]) { width: auto; max-width: 100%; }
 .search { position: relative; flex: 1 1 18rem; max-width: 28rem; }

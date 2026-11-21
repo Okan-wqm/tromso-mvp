@@ -341,9 +341,6 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
 }
 
 /* Filter next to the search box: it wraps and its fields never get wider than the page (a long option). */
-.toolbar-filter { max-width: 100%; }
-.toolbar-filter :is(select, input) { max-width: 100%; }
-.toolbar-filter select { min-width: 12rem; }
 
 /* A notice above a list */
 .notice {
@@ -431,7 +428,6 @@ td.wq-was-warning, .wq-value.wq-was-warning { color: var(--warn-text); font-weig
 .data-table tbody tr.is-voided td { color: var(--text-3); }
 .data-table tbody tr.is-voided td.wq { text-decoration: line-through; }
 .water-table th.num { white-space: nowrap; }
-.water-filters { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; }
 .water-date { display: inline-flex; align-items: center; gap: .375rem; color: var(--text-2); font-size: .875rem; }
 .water-point { margin: 0 0 .75rem; font-size: var(--fs-figure); }
 .round-scope { margin: 0 0 1.5rem; }
@@ -976,8 +972,6 @@ a.grid-name:hover { color: var(--action); text-decoration: underline; }
 
 /* Operations › Feeding records (templates/farm/feeding_list.html) and the feeding part of a unit's drawer.
    A voided feeding is struck through, as a voided stock operation is in the drawer. */
-.feeding-filters { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; }
-.feeding-filters select { min-width: 10rem; }
 .date-filter { display: inline-flex; align-items: center; gap: .375rem; color: var(--text-2); font-size: var(--fs-body); }
 .feeding-table td { vertical-align: top; }
 .data-table tbody tr.is-voided td { color: var(--text-3); }

@@ -301,7 +301,8 @@
    uses the room. A word longer than the line (a content hash, a key) breaks rather than widening the page.
      fluid  (the default) lists, tables, dashboards, monitoring: everything fills the width.
      wall   the monitoring wall: no chrome, the whole screen (monitor.css).
-     form   a record's form: the fields flow into as many columns as fit, none wider than a field needs; from 1280 px its
+     form   a record's form: the fields flow into as many columns as they fill (auto-fit: an unused column folds away, so
+            the fields spread over the width), none wider than a field needs; from 1280 px its
             sections (the tab list) stand beside it as an outline. Without sections the fields take the whole width.
      prose  long text: each block keeps a reading measure (about 70 characters) and the blocks flow into as many columns
             as fit, with the page's aside (.ui-aside) beside them from 1280 px: never one narrow column and a dead band. */
@@ -313,7 +314,7 @@
 .content[data-measure="form"] .tab-panel,
 .content[data-measure="form"] .form-actions { max-width: none; }
 .content[data-measure="form"] .form-grid:not(.form-grid-location) {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
 }
 .content[data-measure="form"] .form-grid:not(.form-grid-location) > .field:has(textarea) { grid-column: 1 / -1; }
 .content[data-measure="prose"] .prose-flow {

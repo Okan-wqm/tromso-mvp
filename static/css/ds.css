@@ -25,9 +25,10 @@
 
 /* =================================================================================================== Page head === */
 .ui-head { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3) var(--space-5); margin-bottom: var(--space-5); }
-.ui-head .page-title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); min-width: 0; }
+.ui-head .page-title { display: grid; grid-template-columns: auto minmax(0, auto); align-items: center; gap: var(--space-2) var(--space-3); min-width: 0; }
+.ui-head .page-title > :not(.ui-area) { grid-column: 2; }
+.ui-head .page-title > :not(.ui-area):first-child { grid-column: 1 / -1; }
 .ui-head h1 { margin: 0; font-family: var(--font-display); font-size: var(--fs-h1); font-weight: 600; line-height: 1.2; letter-spacing: -.01em; overflow-wrap: anywhere; }
-.ui-head .page-title > :is(.ui-head-status, .head-status) { flex-basis: 100%; }
 .ui-head-status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-1); }
 .ui-head-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-left: auto; }
 @media (max-width: 639px) {

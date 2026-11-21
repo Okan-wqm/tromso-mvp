@@ -134,10 +134,10 @@ html[data-wall] .monitor-units { display: none; }      /* the wall keeps its Ful
 .monitor-section { margin-top: .5rem; }
 .monitor-card:not(.is-fit) .monitor-reasons { margin: .375rem 0 0; padding-left: 1.125rem; }
 .monitor-card-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; margin-top: .75rem; }
-/* A figure never breaks inside itself ("15,8 / 30", "03.11.2 / 026"): its cell is at least 7.5 of the card's em wide (the
+/* A figure never breaks inside itself ("15,8 / 30", "03.11.2 / 026"): its cell is at least 6.5 of the card's em wide (the
    wall's larger type grows it too) and a figure breaks only between its words ("1,045 / kg"); a unit's code is one
    line, and the state beside it moves under it when the head is too narrow ("HA- / K01"). */
-.monitor-card .metrics { grid-template-columns: repeat(auto-fit, minmax(min(100%, 7.5em), 1fr)); }
+.monitor-card .metrics { grid-template-columns: repeat(auto-fit, minmax(min(100%, 6.5em), 1fr)); }
 .monitor-card:not(.is-fit) .metrics dd { overflow-wrap: normal; }
 .monitor-card:not(.is-fit) .monitor-card-head { flex-wrap: wrap; }
 .monitor-card:not(.is-fit) .monitor-card-head h3 { white-space: nowrap; }
@@ -459,3 +459,8 @@ html:not([data-wall]) .monitor-card .monitor-reasons > li { max-width: 100%; }
 html:not([data-wall]) .monitor-band .monitor-tally { flex: 1 1 auto; }
 html:not([data-wall]) .monitor-band .monitor-strip > li { min-width: 0; max-width: 100%; white-space: normal; }
 html:not([data-wall]) .monitor-band .monitor-strip > li > span { flex-wrap: wrap; }
+/* On a phone the filters stand two to a row, each control as wide as its half. */
+@media (max-width: 639px) {
+  .monitor-filters > label { flex: 1 1 9rem; }
+  .monitor-filters > label > :is(select, input):not([multiple]) { width: 100%; min-width: 0; }
+}

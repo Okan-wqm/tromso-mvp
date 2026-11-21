@@ -5,7 +5,8 @@
 #             the catalogs must be unchanged. On a pull request that is all (SUITE=0, minutes); the whole suite (an
 #             hour or more on a hosted runner) runs on a push to main, nightly and by hand
 #   frontend  npm ci, the Tailwind build checked against the committed static/css/tw.css, the tokens against tokens.json,
-#             the browser build (tokens, tsc, Tailwind) and the TypeScript tests (npm test)
+#             the design-system gate (npm run check:ds), the browser build (tokens, tsc, Tailwind) and the TypeScript
+#             tests (npm test)
 #   rust      sensors-ingest: rustfmt, clippy, the tests against the real schema and a broker, cargo deny, THIRD_PARTY
 #   chemcore  chemcore/scripts/test.sh in the chemcore-tools stage of docker/testrunner.Dockerfile
 #   security  pip-audit, the Python licence gate, npm audit
@@ -137,6 +138,10 @@ jobs:
       # docs/design/system/tokens.css and static/css/tokens.css are what tokens.json builds (scripts/tokens.mjs).
       - name: Tokens build is up to date (npm run check:tokens)
         run: npm run check:tokens
+      # No one-off style: colours only in tokens.css, the component layer on tokens only, and the raw sizes and the old
+      # class names held to docs/design/system/ds-ratchet.json, which only goes down (scripts/check-ds.mjs).
+      - name: Design-system gate (npm run check:ds)
+        run: npm run check:ds
       - name: Build (tsc -p tsconfig.json, then the Tailwind build)
         run: npm run build
       # The designer's browser test drives the runner's own Chrome (/usr/bin/google-chrome). Ubuntu 24.04 limits

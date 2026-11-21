@@ -8,6 +8,7 @@
     "check:tokens": "node scripts/tokens.mjs --check",
     "build:css": "node scripts/tailwind.mjs",
     "check:css": "node scripts/tailwind.mjs --check",
+    "check:ds": "node scripts/check-ds.mjs",
     "watch": "tsc -p tsconfig.json --watch",
     "check": "tsc -p tsconfig.json --noEmit",
     "test": "tsc -p tsconfig.test.json && node scripts/mark-esm.mjs && node --test \".build/test/**/*.test.js\""

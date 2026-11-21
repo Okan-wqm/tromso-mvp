@@ -18,6 +18,18 @@ from django.utils.translation import gettext_lazy as _, override
 
 SESSION_KEY = 'workspace'
 
+# The area hues of the design system (docs/design/system/README.md, Colour; the --area-* tokens): where a page sits, drawn
+# on its rail icon and its page head, never on data or a status. An entry without one of its own is neutral.
+AREAS = ('farm', 'water', 'feed', 'stock', 'neutral')
+
+
+def area_of(workspace, section, group, entry):
+    """The nearest area set: the entry's, its group's, its section's, its panel's; else neutral."""
+    area = entry.area or group.area or section.area or workspace.area or 'neutral'
+    if area not in AREAS:
+        raise ImproperlyConfigured(f'{entry.url_name}: area {area!r} is not one of {AREAS}')
+    return area
+
 
 @dataclass(frozen=True)
 class Badge:
@@ -46,6 +58,7 @@ class Entry:
                             # HR lines are left out for a person whose HR is all in Production). The address agrees with the
                             # menu: a line left out is refused at its address too (core.middleware.MenuAccessMiddleware)
     show_note: str = ''     # who is not offered it, in words: the role matrix says it under the area
+    area: str = ''          # its area hue (AREAS); '' takes its group's, section's or panel's
 
     def url(self):
         return reverse(self.url_name)
@@ -77,6 +90,7 @@ class Entry:
 class Group:
     label: str
     entries: list = field(default_factory=list)
+    area: str = ''
 
 
 @dataclass(frozen=True)
@@ -86,6 +100,7 @@ class Section:
     label: str
     groups: list = field(default_factory=list)
     collapsed: bool = False
+    area: str = ''
 
 
 @dataclass(frozen=True)
@@ -94,6 +109,7 @@ class Workspace:
     label: str
     sections: list = field(default_factory=list)
     always: bool = False    # offered to everyone; otherwise only to people who can use something in it
+    area: str = ''
 
     def offered_to(self, user):
         """Entries without a permission (the overview) are open to all, so they do not count."""
@@ -229,7 +245,8 @@ def rail(request):
             for group in section.groups:
                 shown = [
                     {'label': entry.label, 'url': entry.url(), 'icon': entry.icon,
-                     'current': entry.url() == current_url, 'badge': entry.badge_for(user)}
+                     'current': entry.url() == current_url, 'badge': entry.badge_for(user),
+                     'area': area_of(workspace, section, group, entry)}
                     for entry in group.entries if entry.shown_to(user, answers)
                 ]
                 if shown:
@@ -248,8 +265,24 @@ def rail(request):
     current = next((panel for panel in panels if panel['key'] == chosen), panels[0] if panels else None)
     sections = current['sections'] if current else []
     foot = getattr(settings, 'RAIL_FOOT', '')
+    here = page_place(request.path)
     return {'workspaces': panels, 'workspace': current, 'rail_sections': sections, 'bottom_bar': bottom_bar(sections),
-            'rail_foot': SimpleLazyObject(lambda: import_string(foot)(user)) if foot else ''}
+            'rail_foot': SimpleLazyObject(lambda: import_string(foot)(user)) if foot else '',
+            'page_area': here[0], 'page_icon': here[1]}
+
+
+def page_place(path):
+    """(area, icon) of the menu line a page belongs to, for its page head's area chip; ('neutral', '') for a page that
+    belongs to none."""
+    entry = entry_for(path)
+    if entry is None:
+        return 'neutral', ''
+    for workspace in workspaces():
+        for section in workspace.sections:
+            for group in section.groups:
+                if any(each is entry for each in group.entries):
+                    return area_of(workspace, section, group, entry), entry.icon
+    return 'neutral', ''
 
 
 def section_key(workspace, section):

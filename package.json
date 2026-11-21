@@ -1,9 +1,11 @@
 {
   "name": "balik-ciftligi-frontend",
   "private": true,
-  "description": "Sources of the browser code: the TypeScript, compiled into static/js (not committed), and the Tailwind source, built into static/css/tw.css (committed).",
+  "description": "Sources of the browser code: the TypeScript, compiled into static/js (not committed), the design tokens (docs/design/system/tokens.json, built into tokens.css, committed) and the Tailwind source, built into static/css/tw.css (committed).",
   "scripts": {
-    "build": "tsc -p tsconfig.json && node scripts/tailwind.mjs",
+    "build": "node scripts/tokens.mjs && tsc -p tsconfig.json && node scripts/tailwind.mjs",
+    "build:tokens": "node scripts/tokens.mjs",
+    "check:tokens": "node scripts/tokens.mjs --check",
     "build:css": "node scripts/tailwind.mjs",
     "check:css": "node scripts/tailwind.mjs --check",
     "watch": "tsc -p tsconfig.json --watch",

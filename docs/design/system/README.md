@@ -128,7 +128,7 @@ block `measure` of `app_base.html`); it never sets a page width of its own.
 |---|---|---|
 | `fluid` (the default) | lists, tables, dashboards, read pages, the calculator, monitoring | everything fills the width: tables to the edge, cards in more columns, a read page's sections side by side |
 | `wall` | monitoring `?wall=1` | no chrome, the whole screen; the cards per screen follow the wall's slot rule |
-| `form` | `crud/form.html` and every form built on it | the fields flow into as many columns of at least 17 rem as fit, none wider than 32 rem (a text area 75 ch); from 1280 px the form's sections (its tab list) stand beside it as a sticky outline |
+| `form` | `crud/form.html` and every form built on it | the fields flow into columns of at least 17 rem, as many as they fill (an unused column folds away, so they spread over the width), none wider than 32 rem (a text area 75 ch); from 1280 px the form's sections (its tab list) stand beside it as a sticky outline |
 | `prose` | long text (a document's text) | each block keeps a reading measure (70 ch) and the blocks flow into as many columns as fit, with the page's `ui-aside` (its outline) beside them from 1280 px |
 
 Neither `form` nor `prose` leaves a dead band: what a wider window adds becomes columns, never empty space.

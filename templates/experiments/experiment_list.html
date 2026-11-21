@@ -4,8 +4,8 @@
    team of, and the templates; filtered by status, site and species, searched by number, name and hypothesis. The
    counts are of the live groups and replicates.{% endcomment %}
 {% block above %}
-<nav class="view-tabs" aria-label="{% trans "Experiments" %}">
-  {% for value, label in views %}<a class="view-tab" href="?{% if value %}view={{ value }}{% endif %}"{% if view == value %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+<nav class="ui-tabs" aria-label="{% trans "Experiments" %}">
+  {% for value, label in views %}<a class="ui-tab" href="?{% if value %}view={{ value }}{% endif %}"{% if view == value %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
 </nav>
 {% endblock %}
 {% block search_placeholder %}{% trans "Search by number, name or hypothesis" %}{% endblock %}

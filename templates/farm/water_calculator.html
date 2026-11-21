@@ -30,8 +30,8 @@
   </section>
 
   <div class="calc-bar">
-    <div class="tabs calc-tabs" role="tablist" aria-label="{% trans "The calculator's values" %}" data-tabs hidden>
-      {% for tab in form.tabs %}<button type="button" role="tab" class="tab{% if tab.has_errors %} tab-error{% endif %}" data-tab="{{ tab.key }}">{{ tab.label }}{% if tab.has_errors %}<span class="sr-only"> {% trans "(has errors)" %}</span>{% endif %}</button>{% endfor %}
+    <div class="ui-tabs calc-tabs" role="tablist" aria-label="{% trans "The calculator's values" %}" data-tabs hidden>
+      {% for tab in form.tabs %}<button type="button" role="tab" class="ui-tab{% if tab.has_errors %} tab-error{% endif %}" data-tab="{{ tab.key }}">{{ tab.label }}{% if tab.has_errors %}<span class="sr-only"> {% trans "(has errors)" %}</span>{% endif %}</button>{% endfor %}
     </div>
     {% for tab in form.tabs %}
     <section class="tab-panel calc-panel" role="tabpanel" data-panel="{{ tab.key }}"{% if tab.has_errors %} data-has-errors{% endif %}>

@@ -1,7 +1,7 @@
 {% extends "crud/form.html" %}
 {% load i18n %}
 {# A storage location's form adds its reorder levels on a tab of their own, saved as a list (core.crud.RowList). #}
-{% block extra_tabs %}<button type="button" role="tab" class="tab" data-tab="reorder">{% trans "Reorder levels" %}</button>{% endblock %}
+{% block extra_tabs %}<button type="button" role="tab" class="ui-tab" data-tab="reorder">{% trans "Reorder levels" %}</button>{% endblock %}
 {% block extra_panels %}
 {% trans "Reorder levels" as panel_title %}
 {% trans "Below the reorder level of a feed in this location, the Storage overview says the stock is low. One row per feed. They are saved separately from the location details." as help %}

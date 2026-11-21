@@ -9,8 +9,8 @@
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
-<nav class="view-tabs" aria-label="{% trans "Records" %}">
-  {% for item in views %}<a class="view-tab" href="{{ item.url }}"{% if item.current %} aria-current="page"{% endif %}>{{ item.label }}</a>{% endfor %}
+<nav class="ui-tabs" aria-label="{% trans "Records" %}">
+  {% for item in views %}<a class="ui-tab" href="{{ item.url }}"{% if item.current %} aria-current="page"{% endif %}>{{ item.label }}</a>{% endfor %}
 </nav>
 {% if view == "days" %}{% include "farm/_feeding_days.html" %}{% else %}
 <div class="toolbar">

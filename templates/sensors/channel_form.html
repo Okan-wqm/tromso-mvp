@@ -2,7 +2,7 @@
 {% load i18n %}
 {% comment %} A channel's form adds its calibrations on a tab of their own, saved as a list (core.crud.RowList; needs the right to
    edit channels), and says on its Storing tab how long a value stays fresh. {% endcomment %}
-{% block extra_tabs %}<button type="button" role="tab" class="tab" data-tab="calibration">{% trans "Calibration" %}</button>{% endblock %}
+{% block extra_tabs %}<button type="button" role="tab" class="ui-tab" data-tab="calibration">{% trans "Calibration" %}</button>{% endblock %}
 {% block extra_panels %}
 {% if object %}
 <section class="tab-panel" role="tabpanel" data-panel="reduction">

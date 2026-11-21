@@ -4,10 +4,10 @@
    farm files with the authorities, each computed from the records; a filed one is kept as it was filed.{% endcomment %}
 {% block search_placeholder %}{% trans "Search by site, facility or receipt" %}{% endblock %}
 {% block above %}
-<nav class="view-tabs report-tabs" aria-label="{% trans "Kinds of report" %}">
+<nav class="ui-tabs report-tabs" aria-label="{% trans "Kinds of report" %}">
   {% for group in tabs %}
   {% if group.label %}<span class="view-tab-group">{{ group.label }}</span>{% endif %}
-  {% for tab in group.tabs %}<a class="view-tab" href="{{ tab.url }}"{% if tab.current %} aria-current="page"{% endif %}>{{ tab.label }}{% if tab.count %} <span class="view-count">{{ tab.count }}</span>{% endif %}</a>{% endfor %}
+  {% for tab in group.tabs %}<a class="ui-tab" href="{{ tab.url }}"{% if tab.current %} aria-current="page"{% endif %}>{{ tab.label }}{% if tab.count %} <span class="ui-count">{{ tab.count }}</span>{% endif %}</a>{% endfor %}
   {% endfor %}
 </nav>
 {% endblock %}

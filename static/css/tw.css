@@ -30,6 +30,9 @@
 .tw\:-mb-px {
   margin-bottom: -1px;
 }
+.tw\:contents {
+  display: contents;
+}
 .tw\:flex {
   display: flex;
 }

@@ -1283,7 +1283,7 @@ class PermissionTests(HarvestTestCase):
         self.as_role('view_harvestrecord', 'view_stockoperation')
         page = self.client.get(pages['farm.view_harvestrecord'])
         self.assertEqual(page.status_code, 200)
-        self.assertNotContains(page, 'class="view-tabs"')                   # one page: no strip of tabs
+        self.assertNotContains(page, 'class="ui-tabs"')                     # one page: no strip of tabs
         self.assertEqual(self.client.post(reverse('farm:handlingplanitem_create'), {}).status_code, 403)
         self.assertEqual([str(navigation.place(perm).path) for perm in pages], [
             'Production · Operations · Harvest', 'Production · Operations · Harvest',

@@ -10,11 +10,11 @@
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
 <div class="units-main">
-  <nav class="view-tabs" aria-label="{% trans "Tasks" %}">
+  <nav class="ui-tabs" aria-label="{% trans "Tasks" %}">
     {% for item in views %}
-    <a class="view-tab" href="{{ item.href }}"{% if item.current %} aria-current="page"{% endif %}>{{ item.label }}{% if item.count is not None %} <span class="view-count">{{ item.count }}</span>{% endif %}</a>
+    <a class="ui-tab" href="{{ item.href }}"{% if item.current %} aria-current="page"{% endif %}>{{ item.label }}{% if item.count is not None %} <span class="ui-count">{{ item.count }}</span>{% endif %}</a>
     {% endfor %}
-    {% if series_url %}<a class="view-tab" href="{{ series_url }}">{% trans "Recurring tasks" %}</a>{% endif %}
+    {% if series_url %}<a class="ui-tab" href="{{ series_url }}">{% trans "Recurring tasks" %}</a>{% endif %}
   </nav>
 
   <div class="toolbar units-toolbar">

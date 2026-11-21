@@ -5,15 +5,22 @@
 {% block title %}{% blocktrans trimmed with name=object %}Text of {{ name }}{% endblocktrans %}{% endblock %}
 {% block eyebrow %}{{ group }} · {{ title }}{% endblock %}
 {% block heading %}{{ object }}{% endblock %}
+{% block measure %}prose{% endblock %}
 {% block content %}
 <p class="op-context"><a href="{{ detail_url }}">{% trans "Back to the document" %}</a> · <span class="muted">{{ object.text_summary }}</span></p>
 <p class="panel-help">{% trans "The text as it was read from the PDF, without its layout. It is what the search finds and what the AI agents will read; a page without text is an image." %}</p>
+<nav class="ui-aside" aria-label="{% trans "Pages" %}">
+  <h2 class="section-title">{% trans "Pages" %}</h2>
+  <ul class="aside-links">{% for text_page in page.object_list %}<li><a href="#page-{{ text_page.number }}">{% blocktrans with page=text_page.number %}Page {{ page }}{% endblocktrans %}</a></li>{% endfor %}</ul>
+</nav>
+<div class="prose-flow">
 {% for text_page in page.object_list %}
 <article class="page-text" id="page-{{ text_page.number }}">
   <h2 class="section-title">{% blocktrans with page=text_page.number %}Page {{ page }}{% endblocktrans %}{% if text_page.label %} <span class="muted">{% blocktrans with label=text_page.label %}(printed as {{ label }}){% endblocktrans %}</span>{% endif %}</h2>
   {% if text_page.text %}<div class="page-body">{{ text_page.text }}</div>{% else %}<p class="muted">{% trans "No text on this page." %}</p>{% endif %}
 </article>
 {% endfor %}
+</div>
 {% if page.paginator.num_pages > 1 %}
 <nav class="pager list-pager" aria-label="{% trans "Pages" %}">
   <span>{% blocktrans trimmed with first=page.start_index last=page.end_index total=page.paginator.count %}{{ first }}–{{ last }} of {{ total }}{% endblocktrans %}</span>

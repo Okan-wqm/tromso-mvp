@@ -3,7 +3,9 @@
 // (core/layout_pages.py) and kept current by `manage.py layout_pages --check` (core/tests_layout_pages.py). Only the page's
 // frame (the shell's rail and content area) is written here. A page never scrolls sideways at a phone's, a tablet's or a
 // desktop's width; a wide table scrolls in its own frame and shows that more of it lies to a side; row actions stand apart;
-// a water value's origin and age stand on their own line under the value and break only between the two; nothing of a
+// a water value's origin and age stand on their own line under the value and break only between the two; the shell never
+// caps the width: a fluid page's content reaches the window's right edge (less the gutter) from a phone to the farm's
+// 5120 px wall monitor (docs/design/system/README.md, Width); nothing of a
 // monitoring card spills out of it, in Norwegian too; a form's one primary button comes last, on the row of the others.
 // The page loads the product's own typefaces (static/css/fonts.css, static/fonts), as app_base.html does: without them the
 // browser falls back to the machine's system-ui font (Segoe UI on Windows, DejaVu Sans on Linux, a much wider face), and
@@ -32,9 +34,9 @@ const part = (name: string): string => `<section id="part-${name}">${readFileSyn
 
 function page(): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>layout</title>
-<link rel="stylesheet" href="/css/fonts.css"><link rel="stylesheet" href="/css/tokens.css"><link rel="stylesheet" href="/css/base.css"><link rel="stylesheet" href="/css/ui.css"><link rel="stylesheet" href="/css/app.css"><link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/fonts.css"><link rel="stylesheet" href="/css/tokens.css"><link rel="stylesheet" href="/css/base.css"><link rel="stylesheet" href="/css/ui.css"><link rel="stylesheet" href="/css/app.css"><link rel="stylesheet" href="/css/components.css"><link rel="stylesheet" href="/css/ds.css">
 <link rel="stylesheet" href="/css/monitor.css"><link rel="stylesheet" href="/css/tw.css"></head><body><div class="shell"><aside class="rail" id="rail"><nav class="rail-nav"><a class="rail-link" id="rail-units" href="#"><svg class="icon"></svg><span class="rail-label">Production units</span></a></nav></aside><div class="console">
-<header class="topbar"><div class="title-block"><h1>Layout</h1></div></header><main class="content">${PARTS.map(part).join('\n')}</main></div></div></body></html>`;
+<header class="topbar"><div class="title-block"><h1>Layout</h1></div></header><main class="content" data-measure="fluid">${PARTS.map(part).join('\n')}</main></div></div></body></html>`;
 }
 
 // The page, static/css and static/fonts (fonts.css asks for ../fonts/*.woff2).
@@ -117,6 +119,24 @@ test('the page layout of the real templates', { skip: BROWSERS.length ? false : 
         assert.ok(matrix.shaded, 'the role matrix is in the same frame');
       });
     }
+
+    await t.test('the shell never caps the width: a fluid page reaches the right edge at every width up to 5120 px', async () => {
+      for (const width of [390, 1024, 1280, 1440, 1920, 2560, 3440, 5120]) {
+        await tab.setViewportSize({ width, height: width > 2560 ? 1440 : 900 });
+        await tab.waitForTimeout(50);
+        const edges = await tab.evaluate(() => {
+          const main = document.querySelector('main.content')!;
+          return { window: document.documentElement.clientWidth, main: main.getBoundingClientRect().right,
+            gutter: parseFloat(getComputedStyle(main).paddingRight),
+            frame: document.querySelector('#part-stock .table-wrap')!.getBoundingClientRect().right,
+            scroll: document.documentElement.scrollWidth };
+        });
+        assert.ok(Math.abs(edges.main - edges.window) <= 1, `at ${width} px the content ends at ${edges.main}, the window at ${edges.window}`);
+        assert.ok(Math.abs(edges.frame - (edges.window - edges.gutter)) <= 1,
+          `at ${width} px the stock table's frame ends at ${edges.frame}: ${edges.window - edges.gutter - edges.frame} px of dead band`);
+        assert.ok(edges.scroll <= edges.window, `at ${width} px the page is ${edges.scroll} px wide`);
+      }
+    });
 
     await t.test('the meal board shows every column without scrolling at 1440 px, and scrolled to its end at 1024 and 390 px nothing lies under its sticky columns', async () => {
       for (const width of [1440, 1024, 390]) {

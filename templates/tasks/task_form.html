@@ -3,7 +3,7 @@
 {% block extra_head %}<link rel="stylesheet" href="{% asset 'css/tasks.css' %}">{% endblock %}
 {% comment %} A task's form adds its checklist on a tab of its own, saved as a list (core.crud.RowList) until a line is
    ticked; after that the lines are shown as they are, ticked on the Tasks page.{% endcomment %}
-{% block extra_tabs %}<button type="button" role="tab" class="tab" data-tab="checklist">{% trans "Checklist" %}</button>{% endblock %}
+{% block extra_tabs %}<button type="button" role="tab" class="ui-tab" data-tab="checklist">{% trans "Checklist" %}</button>{% endblock %}
 {% block extra_panels %}
 {% if checklist_started %}
 <section class="tab-panel" data-panel="checklist" aria-labelledby="checklist-title">

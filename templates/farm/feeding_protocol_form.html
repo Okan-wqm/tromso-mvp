@@ -3,7 +3,7 @@
 {% comment %} A feeding protocol: its general fields (crud/form.html) and its feeding table on a tab of its own, a grid
    of weight bands by temperature columns saved as a whole (farm.resources.feeding_protocol.ProtocolTableView). Once
    the protocol is assigned the table is shown as it is, with Duplicate to change a copy.{% endcomment %}
-{% block extra_tabs %}<button type="button" role="tab" class="tab{% if bands.non_form_errors or table_form.errors %} tab-error{% endif %}" data-tab="table">{% trans "Feeding table" %}</button>{% endblock %}
+{% block extra_tabs %}<button type="button" role="tab" class="ui-tab{% if bands.non_form_errors or table_form.errors %} tab-error{% endif %}" data-tab="table">{% trans "Feeding table" %}</button>{% endblock %}
 {% block extra_panels %}
 <section class="tab-panel feeding-table" data-panel="table" aria-labelledby="table-title"{% if bands.non_form_errors or table_form.errors %} data-has-errors{% endif %}>
   <h3 class="panel-title" id="table-title">{% trans "Feeding table" %}</h3>

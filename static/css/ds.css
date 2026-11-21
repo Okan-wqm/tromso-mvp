@@ -1,0 +1,273 @@
+/* The design system's components (docs/design/system/README.md, "Components"): ONE rule set per pattern, read by every
+   page. Each pattern's canonical class is the design system's ui-* name; the older class names of the same pattern
+   (button, data-table, badge-*, the three tab styles, ...) are listed beside it, so a template not yet migrated takes
+   the same look without an edit, and `npm run check:ds` (scripts/check-ds.mjs) holds their count to a ratchet that only
+   goes down. Every colour, size, radius and shadow is a token (static/css/tokens.css); the pattern's old rules were
+   removed from base.css, ui.css, app.css and components.css, so nothing else defines them.
+   Loaded after components.css and before a page's own sheets and tw.css (templates/app_base.html, auth_base.html). */
+
+/* ======================================================================================================== Area ===
+   The area hue of a page or a menu line (data-area: farm, water, feed, stock, neutral; core.navigation): only on the
+   rail's icons, a page head's chip and a module icon, never on data or a status. */
+[data-area="farm"] { --area: var(--area-farm); --area-tint: var(--area-farm-tint); --area-rail: var(--area-farm-rail); }
+[data-area="water"] { --area: var(--area-water); --area-tint: var(--area-water-tint); --area-rail: var(--area-water-rail); }
+[data-area="feed"] { --area: var(--area-feed); --area-tint: var(--area-feed-tint); --area-rail: var(--area-feed-rail); }
+[data-area="stock"] { --area: var(--area-stock); --area-tint: var(--area-stock-tint); --area-rail: var(--area-stock-rail); }
+[data-area="neutral"] { --area: var(--area-neutral); --area-tint: var(--area-neutral-tint); --area-rail: var(--area-neutral-rail); }
+.rail-link[data-area] .icon { color: var(--area-rail); opacity: 1; }
+.ui-area {
+  display: inline-grid; place-items: center; flex: none;
+  width: var(--control-h); height: var(--control-h);
+  border-radius: var(--radius-control);
+  background: var(--area-tint); color: var(--area);
+}
+.ui-area .icon { width: var(--icon-rail); height: var(--icon-rail); stroke-width: 2; }
+
+/* =================================================================================================== Page head === */
+.ui-head { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3) var(--space-5); margin-bottom: var(--space-5); }
+.ui-head .page-title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); min-width: 0; }
+.ui-head h1 { margin: 0; font-family: var(--font-display); font-size: var(--fs-h1); font-weight: 600; line-height: 1.2; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.ui-head .page-title > :is(.ui-head-status, .head-status) { flex-basis: 100%; }
+.ui-head-status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-1); }
+.ui-head-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-left: auto; }
+@media (max-width: 639px) {
+  .ui-head h1 { font-size: var(--fs-wordmark); }
+  .ui-head-actions { margin-left: 0; }
+  .ui-head .ui-area { width: var(--chip-h); height: var(--chip-h); }
+  .ui-head .ui-area .icon { width: var(--icon-inline); height: var(--icon-inline); }
+}
+
+/* ===================================================================================================== Button ===
+   ui-btn: outlined secondary by default; data-variant="primary" (one per view), "danger", "link"; data-size="coarse".
+   Old names: .button is the primary, .button-ghost the secondary, .button-danger the danger. */
+:is(.ui-btn, .button, .filter-button) {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  width: auto; min-height: var(--control-h); margin: 0; padding: 0 var(--space-4);
+  border: 1px solid var(--line-control); border-radius: var(--radius-control);
+  background: var(--surface-sheet); color: var(--text-1);
+  font: inherit; font-size: var(--fs-body); font-weight: 600; line-height: 1.2; text-align: center; text-decoration: none;
+  cursor: pointer; transition: background-color .15s, border-color .15s;
+}
+:is(.ui-btn, .button, .filter-button):hover { background: var(--surface-sunken); color: var(--text-1); }
+:is(.ui-btn, .button, .filter-button) .icon { width: var(--icon-inline); height: var(--icon-inline); stroke-width: 2; }
+:is(.ui-btn[data-variant="primary"], .button:not(.button-ghost, .button-danger)) {
+  border-color: var(--primary); background: var(--primary); color: var(--on-primary);
+}
+:is(.ui-btn[data-variant="primary"], .button:not(.button-ghost, .button-danger)):hover { border-color: var(--primary-hover); background: var(--primary-hover); color: var(--on-primary); }
+:is(.ui-btn[data-variant="primary"], .button:not(.button-ghost, .button-danger)) .icon { color: var(--on-primary); }
+:is(.ui-btn[data-variant="danger"], .button-danger) { border-color: var(--crit); background: var(--crit); color: var(--on-crit); }
+:is(.ui-btn[data-variant="danger"], .button-danger):hover { border-color: var(--crit-text); background: var(--crit-text); color: var(--on-crit); }
+.ui-btn[data-variant="link"] { min-height: auto; padding: 0; border: 0; background: none; color: var(--action); text-decoration: underline; text-underline-offset: 3px; }
+.ui-btn[data-size="coarse"] { min-height: var(--control-h-coarse); }
+.ui-btn[data-size="coarse"][data-variant="primary"] { min-height: var(--primary-h-coarse); padding: 0 var(--space-5); }
+:is(.ui-btn, .button, .filter-button):is(:disabled, [disabled], [aria-disabled="true"]) { opacity: .5; cursor: not-allowed; }
+/* a pressed toggle (a filter's choice) */
+:is(.ui-btn, .filter-button)[aria-pressed="true"] { border-color: var(--action); background: var(--action-tint); color: var(--action); }
+@media (pointer: coarse) { :is(.ui-btn, .button, .filter-button) { min-height: var(--control-h-coarse); } }
+
+/* The square icon button (a row's pencil, a dialog's close) */
+.icon-button {
+  display: inline-grid; place-items: center; flex: none;
+  width: var(--control-h); height: var(--control-h); padding: 0;
+  border: 1px solid transparent; border-radius: var(--radius-control);
+  background: transparent; color: var(--text-2); cursor: pointer;
+}
+.icon-button:hover { background: var(--surface-sunken); color: var(--text-1); }
+.icon-button .icon { width: var(--icon-rail); height: var(--icon-rail); }
+.icon-button-danger:hover { background: var(--crit-tint); color: var(--crit-text); }
+
+/* ====================================================================================================== Field ===
+   One field markup for every form (templates/django/forms/field.html, registration/_field.html): .field holds the
+   label, the control, the help line and the errors. A control outside a form (a filter, a search) is a ui-control, or
+   any input or select in a ui-toolbar. */
+.field { min-width: 0; margin-bottom: var(--space-4); }
+.field label, .field > legend, .field-set > legend {
+  display: block; margin-bottom: var(--space-1); padding: 0;
+  font-size: var(--fs-label); font-weight: 600; line-height: 1.35; color: var(--text-1);
+}
+:is(.field input:not([type="checkbox"], [type="radio"], [type="hidden"]), .field select, .field textarea,
+    .ui-control, .ui-select, .search input,
+    :is(.ui-toolbar, .toolbar, .filters, .filter-bar, .filter-status, .feeding-filters, .water-filters, .date-filter, .water-date, .toolbar-filter, .monitor-filters, .calc-source-pick) :is(input:not([type="checkbox"], [type="radio"], [type="hidden"]), select)) {
+  width: 100%; min-height: var(--control-h); padding: 0 var(--space-3);
+  border: 1.5px solid var(--line-control); border-radius: var(--radius-control);
+  background: var(--surface-sheet); color: var(--text-1);
+  font: inherit; font-size: var(--fs-body); line-height: 1.3;
+  transition: border-color .15s;
+}
+.field textarea { min-height: calc(var(--control-h) * 2); padding: var(--space-2) var(--space-3); resize: vertical; }
+.field select[multiple] { padding: var(--space-1) var(--space-2); }
+:is(.field input, .field select, .field textarea, .ui-control, .ui-select, .search input, .ui-toolbar :is(input, select)):hover { border-color: var(--text-3); }
+:is(.field input, .field select, .field textarea, .ui-control, .ui-select, .search input,
+    :is(.ui-toolbar, .toolbar, .filters, .filter-bar, .filter-status, .feeding-filters, .water-filters, .date-filter, .water-date, .toolbar-filter, .monitor-filters, .calc-source-pick) :is(input, select)):focus {
+  outline: none; border-color: var(--action); box-shadow: var(--ring-focus);
+}
+.field.has-error :is(input, select, textarea), [aria-invalid="true"] { border-color: var(--crit); }
+.field input[type="checkbox"], .field input[type="radio"] { flex: none; width: 18px; height: 18px; margin: 0; padding: 0; accent-color: var(--action); }
+.help { margin: var(--space-1) 0 0; color: var(--text-3); font-size: var(--fs-small); line-height: 1.45; }
+.help ul { margin: 0; padding-left: var(--space-5); }
+.errorlist { margin: var(--space-1) 0 0; padding: 0; list-style: none; color: var(--crit-text); font-size: var(--fs-small); font-weight: 600; }
+.form-error {
+  margin: 0 0 var(--space-5); padding: var(--space-3) var(--space-4);
+  border-left: 4px solid var(--crit); border-radius: var(--radius-chip);
+  background: var(--crit-tint); color: var(--crit-text); font-size: var(--fs-body);
+}
+.form-error .errorlist { margin: 0; }
+@media (pointer: coarse) {
+  :is(.field input:not([type="checkbox"], [type="radio"]), .field select, .ui-control, .ui-select, .search input, .ui-toolbar :is(input, select)) { min-height: var(--control-h-coarse); }
+}
+
+/* ================================================================================================ Filter bar ===
+   ui-toolbar: the controls over a list or a board, on one wrapping row; a labelled control's label sits above it. */
+:is(.ui-toolbar, .toolbar, .filter-bar) {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+}
+:is(.ui-toolbar, .toolbar, .filter-bar) > :is(.ui-btn, .button):last-child { margin-left: auto; }
+:is(.ui-toolbar, .monitor-filters, .feeding-filters, .water-filters) label:has(> :is(select, input:not([type="checkbox"]))) {
+  display: grid; gap: var(--space-1); min-width: 0;
+  color: var(--text-2); font-size: var(--fs-small); font-weight: 600;
+}
+/* (each at the specificity of the control rule above, so it wins by coming later) */
+:is(.ui-toolbar, .toolbar, .filter-bar, .monitor-filters, .feeding-filters, .water-filters, .date-filter, .water-date, .toolbar-filter) select:not([multiple]) {
+  width: auto; min-width: 10rem; max-width: 100%; padding-right: var(--space-6);
+}
+:is(.ui-toolbar, .toolbar, .filter-bar, .monitor-filters, .feeding-filters, .water-filters, .date-filter, .water-date) input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="search"]) { width: auto; max-width: 100%; }
+.search { position: relative; flex: 1 1 18rem; max-width: 28rem; }
+.search .icon { position: absolute; left: var(--space-3); top: 50%; width: var(--icon-inline); height: var(--icon-inline); transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
+.search input:not([type="hidden"]) { padding-left: calc(var(--space-3) + var(--icon-inline) + var(--space-2)); }
+/* the design system's search box: the frame is the label, the input inside it is bare */
+.ui-search { display: inline-flex; align-items: center; gap: var(--space-2); flex: 1 1 16rem; min-width: 220px; max-width: 32rem; min-height: var(--control-h); padding: 0 var(--space-3); border: 1.5px solid var(--line-control); border-radius: var(--radius-control); background: var(--surface-sheet); color: var(--text-3); }
+.ui-search:focus-within { border-color: var(--action); box-shadow: var(--ring-focus); }
+.ui-search .icon { width: var(--icon-inline); height: var(--icon-inline); stroke-width: 2; }
+:is(.ui-search, .ui-toolbar .ui-search, .toolbar .ui-search) input:not([type="hidden"]) { flex: 1; width: auto; min-width: 0; min-height: calc(var(--control-h) - 3px); padding: 0; border: 0; background: none; box-shadow: none; }
+
+/* ====================================================================================================== Table ===
+   A real <table class="ui-table"> in a ui-table-wrap that scrolls inside itself and shades the edge it goes on past.
+   Old names: data-table in a table-wrap. */
+:is(.ui-table-wrap, .table-wrap) {
+  position: relative; overflow-x: auto;
+  border: 1px solid var(--line-hair); border-radius: var(--radius-object);
+  background:
+    linear-gradient(to right, var(--surface-sheet) 40%, transparent) left / 2.5rem 100% no-repeat local,
+    linear-gradient(to left, var(--surface-sheet) 40%, transparent) right / 2.5rem 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, color-mix(in srgb, var(--scrim) 60%, transparent), transparent) left / 1rem 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, color-mix(in srgb, var(--scrim) 60%, transparent), transparent) right / 1rem 100% no-repeat scroll,
+    var(--surface-sheet);
+  scrollbar-color: var(--line-control) transparent;
+  scrollbar-width: thin;
+}
+.table-wrap-bare { border: 0; border-radius: 0; background: none; }
+@media print { :is(.ui-table-wrap, .table-wrap) { overflow: visible; background: none; } }
+:is(.ui-table, .data-table) { width: 100%; border-collapse: separate; border-spacing: 0; font-size: var(--fs-body); }
+:is(.ui-table, .data-table) :is(th, td) { padding: 10px var(--space-3); border-bottom: 1px solid var(--line-hair); text-align: left; vertical-align: top; }
+:is(.ui-table, .data-table) thead th {
+  position: sticky; top: 0; z-index: 1;
+  background: var(--surface-sunken); color: var(--text-2);
+  font-size: var(--fs-head); font-weight: 600; line-height: 1.35; white-space: normal;
+}
+:is(.ui-table, .data-table) tbody th { color: var(--text-1); font-size: inherit; font-weight: 600; }
+:is(.ui-table, .data-table) tbody th a { color: var(--text-1); text-decoration: none; }
+:is(.ui-table, .data-table) tbody th a:hover { color: var(--action); text-decoration: underline; }
+:is(.ui-table, .data-table) tbody tr:last-child > * { border-bottom: 0; }
+:is(.ui-table, .data-table) tbody tr:hover > * { background: var(--surface-sunken); }
+:is(.ui-table, .data-table) :is(td, th).num, :is(.ui-table, .data-table) .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+:is(.ui-table, .data-table) .nowrap { white-space: nowrap; }
+.data-table tbody th .badge { margin-left: var(--space-2); }
+
+/* ======================================================================================================= Tabs ===
+   ui-tabs of ui-tab: buttons (role="tab", aria-selected) or links (aria-current="page"), one look. Old names: the
+   form's .tabs/.tab, the pages' .view-tabs/.view-tab. */
+:is(.ui-tabs, .tabs, .view-tabs) {
+  display: flex; flex-wrap: nowrap; gap: var(--space-1);
+  margin: 0 0 var(--space-4); border-bottom: 1px solid var(--line-hair);
+  overflow-x: auto; scrollbar-width: thin;
+}
+:is(.ui-tabs, .tabs, .view-tabs)[hidden] { display: none; }
+:is(.ui-tab, .tab, .view-tab) {
+  position: relative; display: inline-flex; align-items: center; gap: var(--space-2); flex: none;
+  min-height: 44px; margin: 0; padding: 0 var(--space-3);
+  border: 0; background: none; color: var(--text-2);
+  font: inherit; font-size: var(--fs-body); font-weight: 600; white-space: nowrap; text-decoration: none; cursor: pointer;
+}
+:is(.ui-tab, .tab, .view-tab):hover { color: var(--text-1); }
+:is(.ui-tab, .tab, .view-tab):is([aria-selected="true"], [aria-current="page"]) { color: var(--text-1); }
+:is(.ui-tab, .tab, .view-tab):is([aria-selected="true"], [aria-current="page"])::after {
+  content: ""; position: absolute; left: var(--space-2); right: var(--space-2); bottom: 0; height: 3px;
+  border-radius: var(--radius-chip) var(--radius-chip) 0 0; background: var(--action);
+}
+.view-tab-group { align-self: center; padding: 0 var(--space-2); color: var(--text-3); font-size: var(--fs-small); font-weight: 600; white-space: nowrap; }
+.tab-error::before {
+  content: ""; display: inline-block; width: 8px; height: 8px; margin-right: var(--space-1);
+  border-radius: var(--radius-pill); background: var(--crit);
+}
+/* a count beside a tab's name */
+:is(.ui-count, .view-count) {
+  display: inline-grid; place-items: center; min-width: var(--badge-h); height: var(--badge-h); padding: 0 6px;
+  border-radius: var(--radius-pill); background: var(--surface-sunken); color: var(--text-2);
+  font-size: var(--fs-caption); font-weight: 700;
+}
+:is(.ui-tab, .tab, .view-tab):is([aria-selected="true"], [aria-current="page"]) :is(.ui-count, .view-count) { background: var(--action-tint); color: var(--action); }
+
+/* ============================================================================================ Badge (chip) ===
+   ui-chip with data-status (ok, note, warning, critical, hold, neutral) or data-state (nodata, stale): glyph and word,
+   a ladder of fill weight. Old names: .badge with a .badge-<status> class, mapped here to the same tones. */
+:is(.ui-chip, .badge) {
+  display: inline-flex; align-items: center; gap: var(--space-1); flex: none;
+  min-height: var(--chip-h); padding: 0 var(--space-2);
+  border: 1px solid transparent; border-radius: var(--radius-chip);
+  background: var(--surface-sunken); color: var(--text-1);
+  font-size: var(--fs-head); font-weight: 600; line-height: 1.2; white-space: nowrap; vertical-align: middle;
+}
+:is(.ui-chip, .badge) .icon, .ui-chip .ui-icon { width: var(--icon-inline); height: var(--icon-inline); stroke-width: 2; }
+.ui-chip[data-status="ok"] { padding: 0; background: none; color: var(--ok); }
+.ui-chip[data-status="ok"] > span { color: var(--text-1); }
+.ui-chip[data-status="ok"] .icon { color: var(--ok); }
+:is(.ui-chip[data-status="note"], .badge-note, .badge-active, .badge-operational, .badge-harvesting, .badge-plan-planned, .badge-reviewed, .badge-done) {
+  border-color: var(--line-hair); background: var(--note-tint); color: var(--note-text);
+}
+:is(.ui-chip[data-status="neutral"], .badge-inactive, .badge-construction, .badge-standby, .badge-decommissioned, .badge-discontinued,
+    .badge-preparing, .badge-fallow, .badge-draft, .badge-plan-done, .badge-plan-cancelled, .badge-cancelled) {
+  background: var(--surface-sunken); color: var(--text-2);
+}
+.badge-plan-cancelled { text-decoration: line-through; }
+:is(.ui-chip[data-status="warning"], .badge-maintenance, .badge-repair, .badge-cleaning, .badge-suspended, .badge-voided, .badge-retired, .badge-plan-overdue,
+    .badge-state-forgotten) {
+  background: var(--warn-tint); color: var(--warn-text);
+}
+.ui-chip[data-status="warning"] .icon { color: var(--warn); }
+.ui-chip[data-status="critical"] { background: var(--crit); color: var(--on-crit); }
+.ui-chip[data-status="critical"] .icon { color: var(--on-crit); }
+:is(.badge-closed, .badge-offline, .badge-unsent, .badge-out_of_service, .badge-quarantine, .badge-blocked, .badge-critical, .badge-overdue) {
+  background: var(--crit-tint); color: var(--crit-text);
+}
+.badge-critical { font-weight: 700; }
+:is(.ui-chip[data-status="hold"]) { border-color: var(--line-control); background: none; color: var(--text-2); }
+.ui-chip[data-status="hold"] .icon { color: var(--text-2); }
+:is(.badge-admin, .badge-experimental, .badge-in_progress) { background: var(--action-tint); color: var(--action); }
+.ui-chip[data-state="nodata"] { border: 1px dashed var(--line-control); background: none; color: var(--text-2); }
+.ui-chip-wrap { white-space: normal; line-height: 1.3; padding-block: 3px; }
+
+/* ===================================================================================================== Stale ===
+   Old or assumed data: a second axis over any state, drawn with a hatch (never a hue), with its age in words. */
+:is(.ui-stale, .ui-chip[data-state="stale"]) {
+  border-color: var(--stale);
+  background: repeating-linear-gradient(135deg, var(--stale-tint) 0 4px, var(--surface-sheet) 4px 8px);
+  color: var(--stale-text);
+}
+.ui-chip[data-state="stale"] .icon { color: var(--stale-text); }
+.monitor-card[data-stale] { background-image: repeating-linear-gradient(135deg, var(--stale) 0 2px, transparent 2px 7px); background-repeat: no-repeat; background-size: 100% 6px; background-position: top; }
+
+/* ======================================================================================================= Card ===
+   ui-card: a framed sheet on the canvas. Flat; a card that is a link (a tile) is raised one step and outlined in the
+   action colour on hover. Old names: .card, .tile, .calc-card, .ui-sheet. */
+:is(.ui-card, .ui-sheet, .card, .tile, .calc-card) {
+  min-width: 0;
+  border: 1px solid var(--line-hair); border-radius: var(--radius-object);
+  background: var(--surface-sheet);
+}
+:is(.ui-card, .card, .tile) { padding: var(--space-5); }
+.calc-card { padding: var(--space-4); }
+:is(.card, .tile, a.ui-card) { box-shadow: var(--shadow-raised); }
+.card { display: flex; flex-direction: column; }
+.tile { display: flex; flex-direction: column; min-width: 11rem; padding: var(--space-4) var(--space-5); color: var(--text-1); text-decoration: none; }
+:is(.tile, a.ui-card):hover { border-color: var(--action); }

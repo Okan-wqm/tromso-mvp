@@ -340,7 +340,7 @@
   .content[data-measure="form"]:has(> .ui-tabs:not([hidden])) > .ui-tabs {
     grid-column: 1; grid-row: span 99; align-self: start;
     position: sticky; top: calc(var(--topbar-h) + var(--space-4));
-    flex-direction: column; gap: 0; overflow: visible;
+    flex-direction: column; flex-wrap: nowrap; gap: 0;
     margin: 0; padding: 0 0 0 var(--space-1); border-bottom: 0; border-left: 1px solid var(--line-hair);
   }
   .content[data-measure="form"]:has(> .ui-tabs:not([hidden])) > .ui-tabs .ui-tab { justify-content: flex-start; min-height: var(--control-h); white-space: normal; text-align: left; }

@@ -186,11 +186,12 @@
 
 /* ======================================================================================================= Tabs ===
    ui-tabs of ui-tab: buttons (role="tab", aria-selected) or links (aria-current="page"), one look. Old names: the
-   form's .tabs/.tab, the pages' .view-tabs/.view-tab. */
+   form's .tabs/.tab, the pages' .view-tabs/.view-tab. A strip too long for the row wraps onto another: every tab is
+   always on the screen, the current one and a form's tab with an error included (a strip that scrolled sideways hid
+   the current tab on a phone, with nothing to say that more lay beyond: review of 1a, finding 3). */
 :is(.ui-tabs, .tabs, .view-tabs) {
-  display: flex; flex-wrap: nowrap; gap: var(--space-1);
+  display: flex; flex-wrap: wrap; gap: 0 var(--space-1);
   margin: 0 0 var(--space-4); border-bottom: 1px solid var(--line-hair);
-  overflow-x: auto; scrollbar-width: thin;
 }
 :is(.ui-tabs, .tabs, .view-tabs)[hidden] { display: none; }
 :is(.ui-tab, .tab, .view-tab) {
@@ -278,8 +279,8 @@
 :is(.ui-card, .card, .tile) { padding: var(--space-5); }
 .calc-card { padding: var(--space-4); }
 :is(.card, .tile, a.ui-card) { box-shadow: var(--shadow-raised); }
-.card { display: flex; flex-direction: column; }
 /* a link card keeps the page's focus ring: its own shadow would otherwise replace it (WCAG 2.4.7) */
 :is(.card, .tile, a.ui-card):focus-visible { box-shadow: var(--ring-focus), var(--shadow-raised); }
+.card { display: flex; flex-direction: column; }
 .tile { display: flex; flex-direction: column; min-width: 11rem; padding: var(--space-4) var(--space-5); color: var(--text-1); text-decoration: none; }
 :is(.tile, a.ui-card):hover { border-color: var(--action); }

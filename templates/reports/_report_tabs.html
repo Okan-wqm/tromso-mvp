@@ -1,0 +1,9 @@
+{% load i18n %}{% comment %} The Reports page's strip of kinds (reports.resources._tabs): all the reports, the urgent notices and the scheduled
+   reports, a link tab each with the number of its reports due. Twelve tabs and two group names: on a phone the strip wraps
+   onto rows, so the current kind is on the screen (core/layout_pages.py draws it for the browser layout tests). {% endcomment %}
+<nav class="ui-tabs report-tabs" aria-label="{% trans "Kinds of report" %}">
+  {% for group in tabs %}
+  {% if group.label %}<span class="view-tab-group">{{ group.label }}</span>{% endif %}
+  {% for tab in group.tabs %}<a class="ui-tab" href="{{ tab.url }}"{% if tab.current %} aria-current="page"{% endif %}>{{ tab.label }}{% if tab.count %} <span class="ui-count">{{ tab.count }}</span>{% endif %}</a>{% endfor %}
+  {% endfor %}
+</nav>

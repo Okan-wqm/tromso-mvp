@@ -770,9 +770,11 @@ is shown 60.0; a sentence that sets such a value beside its bound never reads as
 would, it says the exact value with the fewest extra decimals that read past ("O₂ (%) 59.99 < critical limit 60.0"; at
 most three more decimals, then cut toward the side it is on; `farm.templatetags.water.value_past`, the one rule). The
 judgement is never changed, only the words: the same rule says the value in the bar's name ("O₂ (%) 59.99, critical;
-limits: critical below 60.0, …") and in the note an oxygen judged through its other unit keeps ("Judged as 59.99 %."), and a
-chip of units past the same bound says the lowest (or highest) of their unrounded values. The figure alone (a tile, a
-table cell) keeps the parameter's decimals. On a wall each row of the band is one line; on the desk page they wrap.
+limits: critical below 60.0, …"), in the note an oxygen judged through its other unit keeps ("Judged as 59.99 %.") and in
+the two notes the drawer prints right after a row's limits ("… reads 59.99 (…): the worst fresh value decides the
+status", "last own value 59.99 critical on …", which the alarm's summary carries too: `read.said_value`), and a chip of
+units past the same bound says the lowest (or highest) of their unrounded values. The figure alone (a tile, a table
+cell) keeps the parameter's decimals. On a wall each row of the band is one line; on the desk page they wrap.
 
 **The Small card and the screen's view** (owner decisions 5 and 7, 2026-11-12: wide monitors; a small card for the
 overview). `mode=small` is a VIEW of the screen: EVERY card of it is drawn with the built-in Small template, on a board or

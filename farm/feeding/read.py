@@ -330,7 +330,8 @@ def last_fed_of(asked, lines=None):
     the feedings of production fish in the units and days `fed_where` gives for each batch in the unit, on or before
     `day`; the latest of them decides (the least-fasted fish: they cannot be handled apart). A cleaner fish's feeding
     is not theirs. One ledger read (none when the caller holds the lines of these batches already: `lines`, a walk's),
-    indexed once (`Paths`), and one query of the feedings, for all the units asked."""
+    indexed once (`Paths`), and one query of the feedings, for all the units asked: each answer's record and moment
+    come from that one read, so a feeding voided or changed while it runs cannot break or split the answer."""
     asked = list(asked)
     found = {unit.pk: None for unit, _day, _ids, _since in asked}
     batch_ids = {batch_id for _unit, _day, ids, _since in asked for batch_id in ids}
@@ -341,39 +342,44 @@ def last_fed_of(asked, lines=None):
     every = [place for found_for in places.values() for place in found_for]
     if not every:
         return found
-    # The candidates as plain rows (a wall's thousands of feedings are never built as records), their moment by the one
-    # rule (`fed_moment`) on their unit's clock; then the winners as records, in one query.
+    # ONE read of the candidates, every column of each (a wall's thousands of feedings are never built as records): each
+    # weighed by the one rule (`fed_moment`) on its unit's clock, and only the winners built as records, from the very
+    # rows read. So a feeding voided, deleted or changed meanwhile can neither be missing from the answer nor disagree
+    # with its own moment: the answer is of that one snapshot, as when the records were read whole. (The units are read
+    # beside it: no feeding names a unit that is not there, the database refuses a hard delete of one.)
     unit_ids = {place.unit_id for place in every}
     units = Tank.all_objects.select_related('production_department__site').in_bulk(unit_ids)
+    rows = FeedingRecord.objects.filter(unit_id__in=unit_ids, target=FeedTarget.PRODUCTION,
+                                        date__gte=min(place.first for place in every),
+                                        date__lte=max(place.last for place in every))
+    columns = [column.attname for column in FeedingRecord._meta.concrete_fields]
+    at = {name: columns.index(name) for name in ('id', 'unit_id', 'date', 'time', 'created_at')}
     by_unit = defaultdict(list)
-    for pk, unit_id, day, clock, created in (
-            FeedingRecord.objects.filter(unit_id__in=unit_ids, target=FeedTarget.PRODUCTION,
-                                         date__gte=min(place.first for place in every),
-                                         date__lte=max(place.last for place in every))
-            .values_list('pk', 'unit_id', 'date', 'time', 'created_at')):
-        row = _Fed(pk, day, clock, created, units[unit_id])
-        by_unit[unit_id].append((row, fed_moment(row)))
-    winners = {}
+    for row in rows.values_list(*columns):
+        weighed = _Fed(row[at['id']], row[at['date']], row[at['time']], row[at['created_at']],
+                       units[row[at['unit_id']]], row)
+        by_unit[row[at['unit_id']]].append((weighed, fed_moment(weighed)))
     for unit_id, where in places.items():
-        counted = {row.pk: (row, moment) for place in where for row, moment in by_unit.get(place.unit_id, ())
-                   if place.first <= row.date <= place.last}
+        counted = {each.pk: (each, moment) for place in where for each, moment in by_unit.get(place.unit_id, ())
+                   if place.first <= each.date <= place.last}
         if counted:
-            winners[unit_id] = max(counted.values(), key=lambda each: (each[1], each[0].created_at))
-    records = (FeedingRecord.objects.select_related('unit__production_department__site')
-               .in_bulk([row.pk for row, _moment in winners.values()]))
-    for unit_id, (row, moment) in winners.items():
-        found[unit_id] = LastFed(moment, records[row.pk])
+            winner, moment = max(counted.values(), key=lambda each: (each[1], each[0].created_at))
+            record = FeedingRecord.from_db(rows.db, columns, winner.row)
+            record.unit = winner.unit
+            found[unit_id] = LastFed(moment, record)
     return found
 
 
 @dataclass(frozen=True)
 class _Fed:
-    """A feeding as `last_fed_of` weighs it: what `fed_moment` reads, and its entry time for a tie."""
+    """A feeding as `last_fed_of` weighs it: what `fed_moment` reads, its entry time for a tie, its unit, and `row`, all
+    its columns as read, from which a winner is built."""
     pk: object
     date: date
     time: time
     created_at: datetime
     unit: object
+    row: tuple
 
 
 def handled(unit, day):

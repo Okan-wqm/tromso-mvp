@@ -947,7 +947,7 @@ class SensorRationTemperatureTests(WorkedExampleTestCase):
 
         self.providers = {'many': Many(), 'one_by_one': FakeProvider()}
         target = (sources.POINT, point_of(self.t2).pk)
-        now = timezone.now()
+        now = self.pinned = timezone.now()
         for provider in self.providers.values():
             for hours in range(0, 24 * 18, 6):
                 value = sources.SensorValue(code='temperature_c', value=12.0 + (hours % 37) / 10,
@@ -957,10 +957,13 @@ class SensorRationTemperatureTests(WorkedExampleTestCase):
         self.sources = sources
 
     def figures(self, name):
+        """The figures with this provider, both read at ONE moment: today's temperature carries its age at `now`."""
         provider = self.providers[name]
         self.sources.register(provider)
         try:
-            return read.figures(stock_read.stock_of([self.t2]), details=[self.t2], ration=True)[self.t2.pk], provider
+            with mock.patch('django.utils.timezone.now', return_value=self.pinned):
+                found = read.figures(stock_read.stock_of([self.t2]), details=[self.t2], ration=True)[self.t2.pk]
+            return found, provider
         finally:
             self.sources.unregister(provider)
 

@@ -21,9 +21,9 @@ ROOT = Path(settings.BASE_DIR)
 # Formula 4's words (the application's since 2026-11-19; farm/tests/test_formula_v4.py): fresh water is judged as formula
 # 3 judged it, so these tests of formula 3's fresh water hold for the application, worked out and said by formula 4.
 JUDGED = ('NH₃ judged on the safe side (to 1 ‰ the ideal water, every activity 1, as Emerson et al. 1975; from 5 ‰ the '
-          'best estimate at the pH + 0.03, the uncertainty of a pH reading (US EPA 1989), about 7 %% above it; blended '
-          'between; salt-added water: the ideal throughout), the larger of it and the best estimate; best estimate %s '
-          'mg/L.')
+          'best estimate at the pH + 0.03, the uncertainty of a pH reading (US EPA 1989), up to about 7 %% above it, '
+          'less the higher the pH; blended between; salt-added water: the ideal throughout), the larger of it and the '
+          'best estimate; best estimate %s mg/L.')
 LIMITS = deffeyes.Limits(nh3_n_mg_l=0.0103, co2_mg_l=15.0, h2s_ug_l=2.0, alkalinity_low_mg_l=50.0,
                          alkalinity_high_mg_l=150.0)
 

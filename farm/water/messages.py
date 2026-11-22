@@ -297,16 +297,30 @@ def provenance(equilibria):
 # water-chemistry audit of 2026-11-19 and the owner's decision; chemcore/core/src/formula4.rs): the safe side, the larger
 # of it and the best estimate. Up to 1 ‰ the ideal water as formula 3 had it; from 5 ‰ the best estimate at the pH + 0.03
 # (NH3) or − 0.03 (CO2), native.PH_UNCERTAINTY (farm/tests/test_formula_v4.py holds the words to it); blended between.
+# The CO₂'s margin over the best estimate is 10^0.03 − 1 (7.152 %) only while the alkalinity is all bicarbonate: the
+# lower pH also takes borate and hydroxide out of the alkalinity, so the carbonate's share grows. As the core works it
+# out from 5 ‰ over everything the program accepts (T −3 to 40 °C, S 5 to 50 ‰, pH 2 to 12, alkalinity 0 to 1000 mg/L:
+# a sweep of 1.3 million waters, none of them on the best estimate): never below +7.1535 %, falling with the alkalinity
+# at every temperature, salinity and pH, and with no ceiling worth naming (+11 % at pH 8.2 and +19 % at pH 9 with 50
+# mg/L, +171 000 % beside the alkalinity floor), so the words give the floor and the direction and name no maximum
+# (farm/tests/test_formula_v4.py WordsTests runs the sweep, coarser, and holds the words to it).
+# The NH₃'s 10^0.03 is the ratio [NH₃]/[NH₄⁺] = r, not the NH₃-N: the share is r / (1 + r), so the judged NH₃-N is
+# (10^0.03 − 1) / (1 + 10^0.03 r) above the best estimate's (chemistry.rs nh3_share_corrected: K / (K + [H⁺]) at the pH +
+# 0.03). That is below +7.152 % wherever any of the TAN is NH₃ and falls as r grows with the pH, so the words say "up to
+# about 7 %, less the higher the pH" (a sweep of 241 595 waters, S 5 to 50, T −3 to 40 °C, pH 2 to 12: +7.1519 % at
+# pH 2, +0.013 % at pH 12, never rising with the pH, none off the best estimate's basis, the program within 3e-15 of
+# the closed form); the same for a pH put on the NBS scale (JUDGED_ON_NBS), which only moves the pH it starts from.
 JUDGED = {
     ('nh3', 'limits'): _('NH₃ judged on the safe side (to 1 ‰ the ideal water, every activity 1, as Emerson et al. 1975; '
                          'from 5 ‰ the best estimate at the pH + 0.03, the uncertainty of a pH reading (US EPA 1989), '
-                         'about 7 %% above it; blended between; salt-added water: the ideal throughout), the larger of it '
-                         'and the best estimate; best estimate %(value)s mg/L.'),
+                         'up to about 7 %% above it, less the higher the pH; blended between; salt-added water: the ideal '
+                         'throughout), the larger of it and the best estimate; best estimate %(value)s mg/L.'),
     ('nh3', 'corrected'): _('NH₃ judged on its best estimate, the larger here.'),
     ('co2', 'limits'): _('CO₂ judged on the safe side (to 1 ‰ the ideal water, every activity 1, as Standard Methods '
                          '4500-CO₂ D; from 5 ‰ the best estimate at the pH − 0.03, the uncertainty of a pH reading (US EPA '
-                         '1989), about 7 to 9 %% above it; blended between; salt-added water: the ideal throughout), the '
-                         'larger of it and the best estimate; best estimate %(value)s mg/L.'),
+                         '1989), at least 7 %% above it and more the lower the alkalinity; blended between; salt-added '
+                         'water: the ideal throughout), the larger of it and the best estimate; best estimate %(value)s '
+                         'mg/L.'),
     ('co2', 'corrected'): _('CO₂ judged on its best estimate, the larger here.'),
 }
 JUDGED_DECIMALS = {'nh3': 4, 'co2': 2}
@@ -327,7 +341,8 @@ BEST_SEA = _('In salt water the best estimate takes the NBS pH by Millero’s (1
 # An NH₃ worked out from a pH measured on the total, seawater or free scale (the audit of 2026-11-19, F11; a typed
 # sample's or a sensor's): put on the NBS scale by the same step and judged as every salt-water NH₃ is (`JUDGED`).
 JUDGED_ON_NBS = _('The pH was measured on the %(scale)s and put on the NBS scale by Millero’s (1986) step: the NH₃ is '
-                  'judged at that pH + 0.03, the uncertainty of a pH reading, about 7 %% above its best estimate.')
+                  'judged at that pH + 0.03, the uncertainty of a pH reading, up to about 7 %% above its best estimate, '
+                  'less the higher the pH.')
 
 
 def judged(kind, basis, corrected, equilibria):

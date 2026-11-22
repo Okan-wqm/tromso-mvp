@@ -4922,7 +4922,9 @@ without a redesign yet, and are redesigned one page at a time.
   not the design system's with only the app's block after it, or when the app's block sets a name the design system
   sets. Tokens v2 (2026-11-21) adds, in all five themes, the status roles `note` and `stale` (no hue: a note is told by
   its square, stale by a hatch), the area hues `area-farm`, `-water`, `-feed`, `-stock` and `-neutral` (each with a
-  tint and a rail variant), `shadow-raised` (elevation 1) and the type scale as `--fs-*` variables;
+  tint and a rail variant), `shadow-raised` (elevation 1) and the type scale as `--fs-*` variables, chart text included (`--fs-chart-*`: a
+  chart drawn in a viewBox divides them by its own scale, so its labels are the same size on screen at every width) and
+  chart colours that alias the status and area roles (`--chart-crit`, `--chart-water`, ...);
   `core/tests_contrast.py` measures every text pair (4.5:1) and shape (3:1) in every theme and keeps each area hue 30°
   from the status hues.
 - **Colour, two channels.** The area hues say where a page sits (`area` on its menu line in `config/navigation.py`,

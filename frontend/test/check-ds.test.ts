@@ -24,6 +24,9 @@ function gate(tree: Tree): { status: number | null; out: string } {
   return { status: run.status, out: `${run.stdout}${run.stderr}` };
 }
 
+/** A template's head: one `<link>` per sheet name, as the product's templates write them. */
+const page = (sheets: string[]): string => sheets.map((name) => `<link rel="stylesheet" href="{% asset 'css/${name}.css' %}">`).join('\n');
+
 const CLEAN = '.a { font-size: var(--fs-small); border-radius: var(--radius-chip); color: var(--text-1); }\n';
 const RATCHET = { css: { 'a.css': { fontSizes: 0, radii: 0 } }, legacy: {}, twArbitrarySizes: 0 };
 
@@ -53,6 +56,12 @@ test('a clean tree passes, and a planted fault of each kind fails it', async (t)
       ['an arbitrary Tailwind size', { css: { 'a.css': CLEAN }, templates: { 'p.html': '<p class="tw:text-[13px]">x</p>' }, ratchet: RATCHET }, 'up: templates: arbitrary Tailwind sizes: 1'],
       ['a count that went down with the ratchet left high',
         { css: { 'a.css': CLEAN }, ratchet: { ...RATCHET, css: { 'a.css': { fontSizes: 2, radii: 0 } } } }, 'down, lower the ratchet'],
+      ['a page that loads the pattern sheet after the sheets that refine it',
+        { css: { 'a.css': CLEAN }, templates: { 'p.html': page(['fonts', 'tokens', 'base', 'app', 'components', 'ds', 'tw']) }, ratchet: RATCHET }, 'p.html: app.css comes before ds.css'],
+      ['a page that loads the pattern sheet before base.css',
+        { css: { 'a.css': CLEAN }, templates: { 'p.html': page(['fonts', 'tokens', 'ds', 'base', 'components']) }, ratchet: RATCHET }, 'p.html: base.css comes after ds.css'],
+      ['a page that loads base.css and no pattern sheet',
+        { css: { 'a.css': CLEAN }, templates: { 'p.html': page(['fonts', 'tokens', 'base', 'components']) }, ratchet: RATCHET }, 'p.html: loads base.css but not ds.css'],
     ];
     for (const [name, tree, message] of faults) {
       await t.test(name, () => {
@@ -61,6 +70,13 @@ test('a clean tree passes, and a planted fault of each kind fails it', async (t)
         assert.ok(run.out.includes(message), `${name}: expected "${message}" in\n${run.out}`);
       });
     }
+    await t.test('the order of the product: fonts, tokens, base, ui, ds, app, components, the page sheets, tw; a page that only adds a sheet, and a comment that names one, pass', () => {
+      const run = gate({ css: { 'a.css': CLEAN }, ratchet: RATCHET, templates: {
+        'base.html': `${page(['fonts', 'tokens', 'base', 'ui', 'ds', 'app', 'components'])}{% block page_styles %}{% endblock %}${page(['tw'])}{# css/app.css would come first #}`,
+        'report.html': page(['fonts', 'tokens', 'base', 'ds', 'app', 'components']),
+        'hr.html': `{% block extra_head %}${page(['hr'])}{% endblock %}` } });
+      assert.equal(run.status, 0, run.out);
+    });
     await t.test('a raw size the ratchet still allows passes', () => {
       const run = gate({ css: { 'a.css': `${CLEAN}.b { font-size: 14px; }\n` }, ratchet: { ...RATCHET, css: { 'a.css': { fontSizes: 1, radii: 0 } } } });
       assert.equal(run.status, 0, run.out);

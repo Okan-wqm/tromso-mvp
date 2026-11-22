@@ -4,7 +4,11 @@
    the same look without an edit, and `npm run check:ds` (scripts/check-ds.mjs) holds their count to a ratchet that only
    goes down. Every colour, size, radius and shadow is a token (static/css/tokens.css); the pattern's old rules were
    removed from base.css, ui.css, app.css and components.css, so nothing else defines them.
-   Loaded after components.css and before a page's own sheets and tw.css (templates/app_base.html, auth_base.html). */
+   Loaded after base.css and ui.css and BEFORE app.css, components.css, a page's own sheets and tw.css (templates/app_base.html,
+   auth_base.html, the report page, 500.html): this sheet is the pattern's default, and a rule of a later sheet that
+   refines one element of a pattern (the rail's .rail-toggle, a report's .report-print or .report-table) wins by coming
+   later. Loaded after them, every such rule lost its tie to the pattern at equal specificity (review of 1a, finding 6);
+   `npm run check:ds` holds the order in every template that loads base.css. */
 
 /* ======================================================================================================== Area ===
    The area hue of a page or a menu line (data-area: farm, water, feed, stock, neutral; core.navigation): only on the

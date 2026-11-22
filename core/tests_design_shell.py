@@ -339,12 +339,19 @@ class WidthPolicyTests(TestCase):
         self.assertEqual(self.measure(reverse('monitoring:monitor')), 'fluid')
         self.assertEqual(self.measure(reverse('monitoring:monitor') + '?wall=1'), 'wall')
 
-    def test_the_component_layer_is_loaded_after_the_old_sheets(self):
-        for name in ('app_base.html', 'auth_base.html'):
+    def test_the_component_layer_comes_before_the_sheets_that_refine_it(self):
+        """ds.css holds each pattern's default; a rule of app.css, components.css or a page's own sheet for one element of a
+        pattern (the rail's .rail-toggle, a report's .report-print) wins by coming after it. Loaded after them, those rules
+        lost every tie to the pattern at equal specificity (review of 1a, findings 1 and 6). The standalone pages load it
+        too: without it the printed report had no table, button or card rules at all."""
+        for name in ('app_base.html', 'auth_base.html', 'farm/water_calculator_report.html', '500.html'):
             with self.subTest(template=name):
-                base = (ROOT / 'templates' / name).read_text(encoding='utf-8')
-                self.assertIn("css/ds.css", base)
-                self.assertLess(base.index("css/base.css"), base.index("css/ds.css"))
+                order = re.findall(r"css/([\w-]+)\.css", (ROOT / 'templates' / name).read_text(encoding='utf-8'))
+                self.assertIn('ds', order)
+                self.assertLess(order.index('base'), order.index('ds'))
+                for refining in ('app', 'components', 'auth'):
+                    if refining in order:
+                        self.assertLess(order.index('ds'), order.index(refining), f'{refining}.css must come after ds.css')
         app = (ROOT / 'templates' / 'app_base.html').read_text(encoding='utf-8')
-        self.assertLess(app.index("css/components.css"), app.index("css/ds.css"))
         self.assertLess(app.index("css/ds.css"), app.index("{% block page_styles %}"))
+        self.assertLess(app.index("{% block page_styles %}"), app.index("css/tw.css"))

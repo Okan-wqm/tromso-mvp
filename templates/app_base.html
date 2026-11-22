@@ -12,9 +12,10 @@
   <link rel="stylesheet" href="{% asset 'css/tokens.css' %}">
   <link rel="stylesheet" href="{% asset 'css/base.css' %}">
   <link rel="stylesheet" href="{% asset 'css/ui.css' %}">
+  {# The patterns first, the sheets that refine them after: a rule of app.css, components.css or a page's own sheet for one element of a pattern wins by coming later, never loses a tie to ds.css (npm run check:ds holds this order in every template that loads base.css). #}
+  <link rel="stylesheet" href="{% asset 'css/ds.css' %}">
   <link rel="stylesheet" href="{% asset 'css/app.css' %}">
   <link rel="stylesheet" href="{% asset 'css/components.css' %}">
-  <link rel="stylesheet" href="{% asset 'css/ds.css' %}">
   {% block page_styles %}{% endblock %}
   <link rel="stylesheet" href="{% asset 'css/tw.css' %}">
   {% block extra_head %}{% endblock %}

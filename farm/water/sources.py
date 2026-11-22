@@ -111,7 +111,9 @@ def value_at(targets, code, moment):
 def values_at(targets, code, moments):
     """The providers' values of one parameter at each of `moments`, for the targets: [Answer] in the moments' order,
     one ask of each provider for all of them (`value_at` per moment for a provider that cannot answer several). A
-    provider that raises is left out of every moment's answer, and each says so."""
+    provider that raises is left out of EVERY moment's answer, and each says so: one ask, one failure, not one moment's.
+    A reader that wants a failure to cost only the moments it hits asks again, moment by moment, for those whose answer
+    failed (`Series.prefetch` leaves them to `Series._live`)."""
     targets, moments = list(dict.fromkeys(targets)), list(moments)
     if not targets or not _providers or not moments:
         return [Answer({}) for _moment in moments]

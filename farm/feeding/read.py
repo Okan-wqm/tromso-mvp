@@ -134,7 +134,15 @@ def policy(units, batch_ids, first, now, read=()):
             found[(unit_id, day)] = book.at(units[unit_id], moment(unit_id, day))
         return found[(unit_id, day)]
 
-    book.prefetch(sorted({moment(unit_id, day) for unit_id, day in read if unit_id in units}))
+    def may_ask(unit_id, day):
+        """Whether the walk can ask that day's temperature at all: `Policy.basis` reads it only for a share with a
+        protocol in force that day, and a row reaches a unit's day only as the unit's own or as a whole batch's (a batch
+        in this unit that day: not known before the walk, so every row of a batch counts). A day no row covers is never
+        asked, whatever the fish weigh; the days left may still not be (the band is the weight's), and an unread day is
+        simply asked on its own (`Series._live`), with the same answer."""
+        return any(row.unit_id in (unit_id, None) and row.covers(day) for row in rows)
+
+    book.prefetch(sorted({moment(unit_id, day) for unit_id, day in read if unit_id in units and may_ask(unit_id, day)}))
 
     # The fasts planned harvests and transports ask for, from `first` to the units' today (one query).
     fasts = fasting.fasts(list(units.values()), first, max(today.values(), default=first))

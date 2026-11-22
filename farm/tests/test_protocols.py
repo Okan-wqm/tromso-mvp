@@ -33,7 +33,7 @@ from ..models import (
     WaterMeasurement,
 )
 from ..stock import read as stock_read, services as stock_services
-from ..stock.dates import local_today
+from ..stock.dates import end_of, local_today
 from ..stock.fold import Line, Op
 from ..water import services as water_services, sources
 from ..water.read import Found, Observation, Series
@@ -1058,3 +1058,66 @@ class SensorRationTemperatureTests(WorkedExampleTestCase):
         # the days differ from one another: a swapped or shifted answer could not pass for the right ones
         days = self.days('many')
         self.assertGreater(len({self.temperature_of(days, back).value_c for back in range(1, 12)}), 6)
+
+    def test_only_the_days_a_protocol_covers_are_read_ahead_and_each_is_asked_for_by_the_walk(self):
+        """The row of the protocol starts 8 days ago: a feeding day before it asks no temperature (no protocol, no
+        ration, `Policy.basis`), so none of those days' moments is read ahead; and every day the walk does ask was read
+        (none is asked of the sources a second time, on its own)."""
+        ProtocolAssignment.objects.filter(unit=self.t2).update(valid_from=self.day(8))
+        prefetched, asked = [], []
+        real_prefetch, real_at = TemperatureBook.prefetch, TemperatureBook.at
+
+        def prefetch(book, moments):
+            moments = list(moments)
+            prefetched.extend(moments)
+            return real_prefetch(book, moments)
+
+        def at(book, unit, moment):
+            asked.append(moment)
+            return real_at(book, unit, moment)
+        with mock.patch.object(TemperatureBook, 'prefetch', prefetch), mock.patch.object(TemperatureBook, 'at', at):
+            many, asks = self.figures('many')
+        wanted = {end_of(self.day(back), self.t2) for back in range(1, 9)} | {self.pinned}      # days 8 .. today
+        self.assertEqual(set(prefetched), wanted)
+        self.assertTrue(asked)
+        self.assertLessEqual(set(asked), wanted)
+        self.assertEqual(len(asks), 1, asks)
+        main, _asks = self.figures('one_by_one', as_main=True)
+        self.assertSame((many,), (main,))
+        self.assertEqual(self.days('many'), self.days('one_by_one', as_main=True))
+
+    def test_a_unit_with_no_protocol_in_force_reads_no_temperature_ahead(self):
+        ProtocolAssignment.objects.filter(unit=self.t2).update(valid_from=self.day(40), valid_until=self.day(30))
+        many, asks = self.figures('many')
+        self.assertEqual(asks, [])
+
+    def test_a_failed_ask_for_all_the_days_costs_nothing_each_day_is_asked_on_its_own(self):
+        """One failing ask fails every day of it together (`sources.values_at`); the walk then asks the days one by one,
+        as it always did, and a failure that was only that ask's changes no figure."""
+        self.providers['many'].values_at_broken = True
+        with self.assertLogs('farm.water.sources', 'ERROR'):
+            many, asked = self.figures('many')
+            days = self.days('many')
+        names = [ask[0] for ask in asked]
+        self.assertEqual(names.count('values_at'), 1)                  # the one failed ask ...
+        self.assertGreater(names.count('value_at'), 10)                # ... then the days, each on its own
+        main, _asks = self.figures('one_by_one', as_main=True)
+        self.assertSame((many,), (main,))
+        self.assertEqual(days, self.days('one_by_one', as_main=True))
+        self.assertIsNotNone(self.temperature_of(days, 3))
+
+    def test_a_failure_costs_only_the_moment_it_hits_as_before(self):
+        moment = end_of(self.day(3), self.t2)                          # the end of the day 3 days ago
+        for provider in self.providers.values():
+            provider.broken_at = {moment}
+        self.providers['many'].values_at_broken = True
+        with self.assertLogs('farm.water.sources', 'ERROR'):
+            many, days = self.figures('many')[0], self.days('many')
+            main_days = self.days('one_by_one', as_main=True)
+        self.assertEqual(days, main_days)
+        missing = [back for back in range(16) if days[(self.t2.pk, self.day(back))].shares[0].end.temperature is None]
+        self.assertEqual(missing, [3])                                 # that day alone has no sensor temperature
+        self.assertIsNotNone(self.temperature_of(days, 2))
+        self.assertIsNotNone(self.temperature_of(days, 4))
+        main, _asks = self.figures('one_by_one', as_main=True)
+        self.assertSame((many,), (main,))

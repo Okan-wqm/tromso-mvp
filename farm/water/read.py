@@ -504,38 +504,58 @@ class Series:
     def prefetch(self, moments):
         """Asks the live sources ONCE for every moment of `moments` not asked yet (sources.values_at), for every point of
         the series: a reader that knows the moments it will look up (the ration's days, farm/feeding/read.py) costs the
-        same queries for one moment or a hundred. What a moment's lookup finds is the same either way."""
+        same queries for one moment or a hundred. What a moment's lookup finds is the same either way.
+
+        One failing ask fails every moment of it together, so an answer that says a source failed is NOT kept: each of
+        those moments is asked on its own when it is looked up (`_live`, `sources.value_at`: the way it always was), and
+        a failure costs only the moments it really hits (one that was only that ask's costs none)."""
         if not self.live:
             return
         moments = [moment for moment in dict.fromkeys(moments) if moment not in self.asked]
         if not moments:
             return
-        targets = {pk: [(target, origin) for target, origin in found if target in self.bound]
-                   for pk, found in self.targets.items()}
+        targets = self._bound_targets()
         if not any(targets.values()):
             self.asked.update({moment: {} for moment in moments})
             return
         answers = sources.values_at([target for found in targets.values() for target, _origin in found], self.code,
                                     moments)
         for moment, answer in zip(moments, answers):
-            by_point = {}
-            for pk, found in targets.items():
-                values = []
-                for target, origin in found:
-                    for value in sources.ordered(answer.values.get(target, [])):
-                        if value.at <= moment:
-                            observed = Observation.of_sensor(self.points[pk], value, origin)
-                            values.append(Found(value.at, observed.get(self.code), value.fresh_for, origin,
-                                                self.points[pk]))
-                by_point[pk] = values
-            self.asked[moment] = by_point
+            if not answer.failed:
+                self._keep(moment, answer, targets)
+
+    def _bound_targets(self):
+        """{point id: [(target, origin)]}: each point's sensor targets that had a channel of the parameter bound."""
+        return {pk: [(target, origin) for target, origin in found if target in self.bound]
+                for pk, found in self.targets.items()}
+
+    def _keep(self, moment, answer, targets):
+        """Keeps the sensors' answer for `moment`: each point's values (Found, in sensor_targets' order, primary first)
+        at or before it."""
+        by_point = {}
+        for pk, found in targets.items():
+            values = []
+            for target, origin in found:
+                for value in sources.ordered(answer.values.get(target, [])):
+                    if value.at <= moment:
+                        observed = Observation.of_sensor(self.points[pk], value, origin)
+                        values.append(Found(value.at, observed.get(self.code), value.fresh_for, origin,
+                                            self.points[pk]))
+            by_point[pk] = values
+        self.asked[moment] = by_point
 
     def _live(self, point_id, moment, window):
         """The sensors' values of the point at the moment (Found, in sensor_targets' order, primary first), at most
-        `window` old. One ask of the live sources per moment for every point of the series (or one for every moment
-        `prefetch` was given), so the queries do not grow with the points."""
+        `window` old. One ask of the live sources per moment for every point of the series (`sources.value_at`), unless
+        `prefetch` was given the moment, so the queries do not grow with the points. An answer is kept even when a source
+        failed in it: a failing source is asked once per moment, as it always was."""
         if moment not in self.asked:
-            self.prefetch([moment])
+            targets = self._bound_targets()
+            if not any(targets.values()):
+                self.asked[moment] = {}
+                return []
+            self._keep(moment, sources.value_at([target for found in targets.values() for target, _origin in found],
+                                                self.code, moment), targets)
         return [found for found in self.asked[moment].get(point_id, []) if window is None or moment - found.at <= window]
 
     def candidates(self, point_id, moment, window):

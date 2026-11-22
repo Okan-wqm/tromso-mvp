@@ -1652,13 +1652,17 @@ without values it shows its defaults.
   source calls them Millero 2010, WQ-39); Kw of Millero (1995) on his seawater scale (pure water's at a salinity of 0;
   formula 1 took the 2007 Guide's approximate total-scale value); KB of Dickson (1990)
   with Uppström's (1974) boron; the ammonium constant of Clegg & Whitfield (1995, eq. 18; formula 3 took Millero's
-  1995) for the best estimate, while fresh and salt-added water are judged on the ideal water, which keeps Yao &
-  Millero's (1995) pure-water value (formula 4 below; the calculator's list of sources names both); KH₂S of Millero,
+  1995) for the best estimate, while fresh and salt-added water are judged on the larger of it and the ideal water,
+  which keeps Yao & Millero's (1995) pure-water value, and brackish water of 1 to 5 ‰ on the larger of the best
+  estimate and a blend of the two (`formula4.rs limits_basis`; formula 4 below; the calculator's list of sources, on
+  the page and in the report, says all of it); KH₂S of Millero,
   Plese & Fernandez (1988), whose measurements are in sea water of 5 to 40 ‰ at 5 to 25 °C (the paper's abstract): in
   fresh water, below 5 °C and above 25 °C the H₂S rests on the equation alone, checked against no second source (the
   tests hold its 25 °C values, 6.98 fresh and 6.51 at S 35; the H₂S audit of 2026-11-20 recalled two other fresh-water
   fits, Millero 1986 and Broderius & Smith 1977, that put pK₁ 0.03 to 0.13 lower at 5 to 12 °C, i.e. less H₂S, but
-  did not open them), and the calculator says so beside every H₂S it works out (`farm/calculator/_h2s_basis.html`); the
+  did not open them), and the calculator says so, once on the page, in its live part and in the report, beside every
+  number that rests on it: the H₂S of a total sulfide, and the most total sulfide an H₂S limit gives at the pH (the
+  calculator always has a limit, its default 2 µg/L; `farm/calculator/_h2s_basis.html`); the
   Ksp of Mucci (1983); the CO₂ solubility of Weiss (1974); each converted to the free
   scale, the pH (NBS) too, as the source does. DIC = (alkalinity − [OH⁻] + [H⁺] − [B(OH)₄⁻]) / (α1 + 2 α2),
   CO₂ = DIC α0; NH₃-N = TAN K / (K + [H⁺]); H₂S = total sulfide × 34.08 / 32.07 × [H⁺] / (K + [H⁺]). A pH
@@ -1849,10 +1853,18 @@ without values it shows its defaults.
   is judged exactly as before: `chemcore/core/tests/formula4.rs`; only where nothing is measured, ionic strength 0, the
   best estimate's pure-water K_NH4 may be up to 0.5 % above the ideal's at 0 °C and judges); from 5 ‰ the best estimate
   at the pH + 0.03 for NH₃ and at the pH − 0.03 for CO₂ (the uncertainty of a pH reading: US EPA 1989, p. 3), so the
-  judged NH₃ is the best estimate's [NH₃]/[NH₄⁺] × 10^0.03 (+7.2 %) and the judged CO₂ at least +7.2 % above it at every
-  temperature, more where the lower pH takes borate and hydroxide out of the alkalinity: up to +9.8 % to pH 8.2 and
-  +14.4 % at pH 9 with 50 mg/L as CaCO₃ (S 5 to 40, 0 to 30 °C), far more with an alkalinity near its floor (the page's
-  words say so; `farm/tests/test_formula_v4.py` holds them to the core's numbers); between, blended with the band's weight (no step at 1 or 5 ‰: S 0 to 40 by 0.05 ‰, at most 0.5 % a
+  judged NH₃ is the best estimate's [NH₃]/[NH₄⁺] × 10^0.03 (+7.2 %) and the judged CO₂ at least +7.15 % above it, more
+  where the lower pH takes borate and hydroxide out of the alkalinity (the carbonate's share grows). Over everything the
+  program accepts (T −3 to 40 °C, S 5 to 50 ‰, pH 2 to 12, alkalinity 0 to 1000 mg/L as CaCO₃; 1.32 million waters, none
+  judged on the best estimate) the judged CO₂ is never below +7.15 % (the least of the sweep, +7.1535 %, at S 5, −3 °C,
+  pH 5.8, 1000 mg/L), is lower the higher the alkalinity at every temperature, salinity and pH swept, and has no
+  maximum worth naming: +11.3 % at pH 8.2
+  and +19.1 % at pH 9 with 50 mg/L (S 50, 40 °C at most), +171 000 % beside the alkalinity floor. The page's words
+  therefore give the floor and the direction, "at least 7 % above it and more the lower the alkalinity", and no
+  maximum (they said "up to about 10 % at pH 8.2 and 14 % at pH 9 with 50 mg/L", false over that range, until the
+  verification of 2026-11-22, F2, and "about 7 to 9 %" before that). `farm/tests/test_formula_v4.py` runs the sweep
+  coarser (17 116 waters, its bounds read from `farm/water/parameters.py`) and holds the words to it; between, blended
+  with the band's weight (no step at 1 or 5 ‰: S 0 to 40 by 0.05 ‰, at most 0.5 % a
   step); salt-added water the ideal throughout. Held over the owner's MUST ranges, sea water S 5 to 40 at 0 to 30 °C and
   land water at 8 to 30 °C (`formula4.rs`: 57 660 sea cells, NH₃ +7.15 % exactly, CO₂ at least +7.15 %; every land
   cell at or above the best estimate); outside them the margin is the rule's and holds (tested −2 to 40 °C), the best

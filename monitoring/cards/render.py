@@ -17,9 +17,9 @@ from django.utils.translation import gettext
 from core import text
 from core.dates import company_zone
 from farm.templatetags.stock import number, percent
-from farm.templatetags.water import value_past, water_value
+from farm.templatetags.water import proof_of, reading_figure, water_value
 from farm.water import calculation, deffeyes, parameters, read as water_read
-from farm.water.evaluate import ALERTS, Status, crossed, judge
+from farm.water.evaluate import ALERTS, Status, judge
 
 from . import catalogue
 
@@ -147,7 +147,7 @@ def face(reading, now, parameter=None):
     # A value the fish have a limit for that the chemistry core refused to work out (Reading.unevaluated) keeps its
     # status even without a figure: it is "cannot be evaluated" in words, never "no data" (the water page's rule).
     status = '' if missing and not reading.unevaluated else str(reading.old_alert or reading.status)
-    value = water_value(reading.value, reading.code) if not missing else (
+    value = reading_figure(reading) if not missing else (
         str(Status.UNEVALUATED.label) if reading.unevaluated else gettext('no data'))
     return Face(label, value, status,
                 str(Status(status).label) if status else '', origin, age,
@@ -219,12 +219,8 @@ def bar(face):
                       for name, label in zip(BOUNDS, (gettext('critical below'), gettext('warning below'),
                                                       gettext('warning above'), gettext('critical above')))
                       if bounds[name] is not None)
-    # A worked-out value judged past a bound of this limit is said with the decimals that show which side it is on
-    # (value_past), as the card's reason says it: never "60.0, critical; limits: critical below 60.0".
-    past = crossed(reading.judged_value, limit)
-    value = face.value if past is None else value_past(reading, past[1], past[0].endswith('low'))
     sentence = gettext('%(label)s %(value)s, %(status)s; limits: %(limits)s') % {
-        'label': face.label, 'value': value, 'status': text.lower(face.status_label), 'limits': shown}
+        'label': face.label, 'value': face.value, 'status': text.lower(face.status_label), 'limits': shown}
     return Bar(tuple(bands), at(reading.value), sentence)
 
 
@@ -298,7 +294,8 @@ def tile(card, view):
     twin = reading_at(card, other, point) if other else None
     beside = beside_alert = ''
     if twin is not None and twin.value is not None:
-        beside = percent(twin.value, 1) if other == parameters.OXYGEN_PCT else f'{water_value(twin.value, other)} mg/L'
+        beside = (percent(*(proof_of(twin) or (twin.value, 1))) if other == parameters.OXYGEN_PCT
+                  else f'{reading_figure(twin)} mg/L')
         beside_alert = str(twin.old_alert or twin.status)
     return Tile(label, title, said, alert_of(said.status), beside, alert_of(beside_alert))
 

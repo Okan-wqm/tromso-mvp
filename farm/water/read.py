@@ -1603,18 +1603,24 @@ def crossed(reading):
     return None
 
 
+def past_bound(reading):
+    """(the bound's name, the bound) the reading's OWN value was judged past, or None: the nearest of them where its limit
+    rows (one per species) give several, so a figure that proves it past that one proves it past the rest on its side.
+    On the value the limits judged (`Reading.judged_value`: a worked-out value unrounded), by the bound `evaluate.judge`
+    judged it by, whatever the reading's status is (a value another value decides is not the value this one is past).
+    What `farm.templatetags.water.proof_of` proves a figure against; never a judgement."""
+    value = reading.judged_value
+    found = [each for each in (bound_crossed(value, row) for row in reading.limits) if each is not None]
+    return min(found, key=lambda each: abs(each[1] - value), default=None)
+
+
 def said_value(reading):
     """The reading's own value as a note beside the limits that judged it says it ("… reads 59.99 …", "last own value
     59.99 critical …", "Judged as 59.99 %."). A worked-out value is judged unrounded and shown rounded, so past a bound it
-    is said with the decimals that show the side it is on (`farm.templatetags.water.value_past`: never "reads 60.0" beside
-    "critical below 60.0"); any other value at its parameter's decimals, as it always was. Display only."""
-    from farm.templatetags.water import value_past, water_value      # they import this module
-    found = crossed(reading)
-    if found is not None and found[0] is reading:           # the value that is past the bound is this one's own
-        said = value_past(reading, found[2], found[1].endswith('low'))
-        if said != water_value(reading.value, reading.code):
-            return said
-    return number_format(reading.value, reading.parameter.decimals)
+    is said with the decimals that show the side it is on (`farm.templatetags.water.figure_past`: never "reads 60.0"
+    beside "critical below 60.0"); any other value at its parameter's decimals, as it always was. Display only."""
+    from farm.templatetags.water import figure_past      # it imports this module
+    return figure_past(reading) or number_format(reading.value, reading.parameter.decimals)
 
 
 def _values_at(targets, moment):

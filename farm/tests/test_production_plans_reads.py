@@ -10,6 +10,7 @@ days old, a unit emptied on the day and one filled on it, and purges in degree-d
 grow with its rows (verification of wip/plans-perf, finding 1)."""
 from datetime import date, datetime, time, timedelta, timezone as dt_timezone
 from decimal import Decimal
+from unittest import mock
 
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
@@ -423,3 +424,36 @@ class WaterOnAnotherClockWarmEarlyTests(WaterOnAnotherClockTests):
     says "free" where main holds the fish (alone: 2 + 4 x 5 = 22 degree-days)."""
     EARLY, LATE = '20', '2'
     MAIN_SAYS = check.PURGING
+
+
+class HoldingGivenTests(Fixtures, FeedingTestCase):
+    """`earliest_of(holding=...)`, the withdrawals a caller has read already: a unit it leaves out is an error, never a
+    unit without a withdrawal; None (no provider registered) holds nothing, as `earliest` alone (verification of
+    wip/plans-perf, finding 3). T-01 is held by a withdrawal in days, T-02 is not."""
+
+    def setUp(self):
+        super().setUp()
+        self.user.groups.add(role('Harvest keeper', *HARVEST_KEEPER))
+        self.t2_batch = self.stock(self.t2, count=600, weight='90', days_ago=15)
+        self.treat(self.medicine('Short vet.', days=5), [self.t1], 2)
+        self.pairs = [(self.t1, self.batch), (self.t2, self.t2_batch)]
+
+    def test_a_unit_left_out_of_the_holding_given_is_an_error_never_free(self):
+        holding = check.holding_of([self.t1, self.t2])
+        self.assertTrue(holding[self.t1.pk])
+        self.assertEqual(check.earliest_of(self.pairs, holding=holding)[(self.t1.pk, self.batch.pk)].decides,
+                         check.WITHDRAWAL)
+        with self.assertRaises(KeyError):
+            check.earliest_of(self.pairs, holding={self.t2.pk: holding[self.t2.pk]})
+
+    def test_with_no_provider_nothing_holds_as_alone_and_the_page_says_not_checked(self):
+        with mock.patch.object(check.withdrawal, 'blocks_of', return_value=None):
+            self.assertIsNone(check.holding_of([self.t1, self.t2]))
+            expected = {(unit.pk, batch.pk): main_earliest(unit, batch) for unit, batch in self.pairs}
+            self.assertEqual(expected[(self.t1.pk, self.batch.pk)].decides, '')
+            self.assertEqual(check.earliest_of(self.pairs, holding=None), expected)
+            self.assertEqual(check.earliest_of(self.pairs), expected)
+            rows = [row for row in self.client.get(reverse('farm:productionplan_list')).context['objects']
+                    if row['share']]
+        self.assertEqual({(row['unit'].pk, row['share'].batch.pk): (row['withdrawal'], row['earliest']) for row in rows},
+                         {key: (None, earliest) for key, earliest in expected.items()})

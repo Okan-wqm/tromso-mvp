@@ -260,8 +260,11 @@ Differences from the source:
 - Water type is required and has no default (the source defaulted to saltwater in one place and
   freshwater in another).
 - The water origin is optional (cross review F3, farm 0041, `chk_tanks_water_origin`): sea water or diluted sea water,
-  or fresh water with salt added (NaCl, for smolt or against disease). The water chemistry reads it (Water-chemistry
-  core): salt-added water is worked out without sea water's ions; not said, a salinity of 1 to 5 ‰ is taken as diluted
+  or fresh water with salt added (NaCl, for smolt or against disease). Fresh water with sea water or a sea-salt mix
+  added is diluted sea water, and the help texts of the unit and the calculator say so (its magnesium, calcium and
+  sulfate are sea water's; the salt-added water audit of 2026-11-20, `F:\dev\balik-notes\chem-audit-fable\SALT-ADDED.md`,
+  question 1; farm 0049). The water chemistry reads it (Water-chemistry core): salt-added water is worked out without
+  sea water's ions; not said, a salinity of 1 to 5 ‰ is taken as diluted
   sea water and the value says so. A loop or a sampling point takes its units' origin when they all say the same.
 - The code is unique among live units. The regulatory unit ID is the locality's own number (merd 1 on two sites
   is two units): unique among the live units of a site, held by the database per production department and by the
@@ -1649,8 +1652,14 @@ without values it shows its defaults.
   source calls them Millero 2010, WQ-39); Kw of Millero (1995) on his seawater scale (pure water's at a salinity of 0;
   formula 1 took the 2007 Guide's approximate total-scale value); KB of Dickson (1990)
   with Uppström's (1974) boron; the ammonium constant of Clegg & Whitfield (1995, eq. 18; formula 3 took Millero's
-  1995); KH₂S of Millero, Plese &
-  Fernandez (1988); the Ksp of Mucci (1983); the CO₂ solubility of Weiss (1974); each converted to the free
+  1995) for the best estimate, while fresh and salt-added water are judged on the ideal water, which keeps Yao &
+  Millero's (1995) pure-water value (formula 4 below; the calculator's list of sources names both); KH₂S of Millero,
+  Plese & Fernandez (1988), whose measurements are in sea water of 5 to 40 ‰ at 5 to 25 °C (the paper's abstract): in
+  fresh water, below 5 °C and above 25 °C the H₂S rests on the equation alone, checked against no second source (the
+  tests hold its 25 °C values, 6.98 fresh and 6.51 at S 35; the H₂S audit of 2026-11-20 recalled two other fresh-water
+  fits, Millero 1986 and Broderius & Smith 1977, that put pK₁ 0.03 to 0.13 lower at 5 to 12 °C, i.e. less H₂S, but
+  did not open them), and the calculator says so beside every H₂S it works out (`farm/calculator/_h2s_basis.html`); the
+  Ksp of Mucci (1983); the CO₂ solubility of Weiss (1974); each converted to the free
   scale, the pH (NBS) too, as the source does. DIC = (alkalinity − [OH⁻] + [H⁺] − [B(OH)₄⁻]) / (α1 + 2 α2),
   CO₂ = DIC α0; NH₃-N = TAN K / (K + [H⁺]); H₂S = total sulfide × 34.08 / 32.07 × [H⁺] / (K + [H⁺]). A pH
   and an alkalinity that cannot go together (the hydroxide and the borate alone at or above the alkalinity) are refused:
@@ -1840,8 +1849,10 @@ without values it shows its defaults.
   is judged exactly as before: `chemcore/core/tests/formula4.rs`; only where nothing is measured, ionic strength 0, the
   best estimate's pure-water K_NH4 may be up to 0.5 % above the ideal's at 0 °C and judges); from 5 ‰ the best estimate
   at the pH + 0.03 for NH₃ and at the pH − 0.03 for CO₂ (the uncertainty of a pH reading: US EPA 1989, p. 3), so the
-  judged NH₃ is the best estimate's [NH₃]/[NH₄⁺] × 10^0.03 (+7.2 %) and the judged CO₂ +7.2 to +9 % above it at every
-  temperature; between, blended with the band's weight (no step at 1 or 5 ‰: S 0 to 40 by 0.05 ‰, at most 0.5 % a
+  judged NH₃ is the best estimate's [NH₃]/[NH₄⁺] × 10^0.03 (+7.2 %) and the judged CO₂ at least +7.2 % above it at every
+  temperature, more where the lower pH takes borate and hydroxide out of the alkalinity: up to +9.8 % to pH 8.2 and
+  +14.4 % at pH 9 with 50 mg/L as CaCO₃ (S 5 to 40, 0 to 30 °C), far more with an alkalinity near its floor (the page's
+  words say so; `farm/tests/test_formula_v4.py` holds them to the core's numbers); between, blended with the band's weight (no step at 1 or 5 ‰: S 0 to 40 by 0.05 ‰, at most 0.5 % a
   step); salt-added water the ideal throughout. Held over the owner's MUST ranges, sea water S 5 to 40 at 0 to 30 °C and
   land water at 8 to 30 °C (`formula4.rs`: 57 660 sea cells, NH₃ +7.15 % exactly, CO₂ at least +7.15 %; every land
   cell at or above the best estimate); outside them the margin is the rule's and holds (tested −2 to 40 °C), the best
@@ -1860,7 +1871,9 @@ without values it shows its defaults.
   again from what was measured, by the sample door's own conversion, each rewrite logged in the activity log with the
   old and new NBS pH and the formula (samples are otherwise never edited); a sample the conversion now refuses is left
   as it was and named. Running it again changes nothing. The check `farm.W001` (`manage.py check --database default`)
-  counts samples left on an older formula: run the command at landing, after the backup.
+  counts samples left on an older formula: run the command at landing, after the backup. A sample the command refuses
+  stays counted, voided or not (voided samples are converted too); the hint says so and the way out: if the unit's
+  water origin is wrong, correct it and run the command again. There is no way to acknowledge such a sample yet.
 - **NH₃ and CO₂ are judged on the larger of the limits' basis and the activity-corrected value** (formula 3; formula 4
   keeps the rule and replaced the sea-water basis described here, above; cross review F1,
   owner 2026-11-09; `chemistry::Basis`, `fresh::limits_basis`): the NH₃-N, the CO₂, their statuses, borders and margins,
@@ -2384,8 +2397,9 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
   of the days, is unchanged). **Cleaner fish beside the production fish are kept apart** (`check.held_apart`; the
   owner's decision of 16.11.2026): their withdrawal is no warning on the production fish's harvest, no acknowledgement of
   theirs and not their earliest date; the dialog says it as a note ("Cleaner fish in C-01 are in a medicine
-  withdrawal (B-2026-004, harvest from 19.11.2026): keep them out of the harvest."), and the unit's own line still
-  shows it (`farm/tests/test_withdrawal_cleaner_fish.py`). The health records register their provider in `farm/apps.py` (`farm/handling/withdrawal.py`:
+  withdrawal (B-2026-004, harvest from 19.11.2026): keep them out of the harvest."; a live delivery's dialog in a
+  delivery's words, "… (B-2026-004, the fish may leave the farm from 19.11.2026): keep them out of the live
+  delivery."), and the unit's own line still shows it (`farm/tests/test_withdrawal_cleaner_fish.py`). The health records register their provider in `farm/apps.py` (`farm/handling/withdrawal.py`:
   `register(provider)`, `blocks(unit, day)`, `WithdrawalBlock(batch, until, approximate, reason, source)`; see
   Operations › Health). With no provider registered the harvest dialog would say "Medicine withdrawal not
   checked" and warn nothing.
@@ -2820,7 +2834,9 @@ works them out again from what it left. It asks when the write
   `check.WITHDRAWAL_LINES`, `_inside` compares them) and asked in the same box: a delivery as "Live delivery of
   16.11.2026 from T-01 (B-2026-001, 300 fish to Nordic Smolt AS) lies inside this withdrawal (the fish may leave the
   farm from 22.11.2026): medicated fish sold alive may have been eaten.", stored as a `delivered` acknowledgement that
-  names the delivery (a `harvested` one names the harvest) and counted by the second-person setting as a harvest is, or
+  names the delivery (a `harvested` one names the harvest) and counted by the second-person setting as a harvest is
+  (every kind of write that can do it, a water sample and the reference data among them:
+  `farm/tests/test_withdrawal_delivery_after.py`, `farm/tests/test_withdrawal_delivery_paths.py`), or
 - makes the withdrawal of fish held today end earlier, or ends it (a course voided or shortened, a medicine's withdrawal
   shortened, a medicated feeding voided, a temperature corrected): the message gives the old and the new end.
 
@@ -2829,7 +2845,9 @@ what was found with its box, `withdrawal_ack`, whose value (the impact's fingerp
 a tick acknowledges that write only; an impact that changed since it was shown is asked again. Going on keeps the write as
 it was made, stores a `WithdrawalAcknowledgement` per warning (the write, the batch, the withdrawal, the harvest, the end
 and what was shown; the database refuses an edit or a delete) and logs a critical entry on the record with the warnings.
-An acknowledgement covers the end it was given for: `check_withdrawal` says "Not acknowledged (acknowledged until …; now
+The database's CHECK holds that a `harvested` or `delivered` row names an operation; that it names one of its kind (a
+harvest, a live delivery: `models.handling.OPERATION_NAMED`) is a cross-table rule, which `check_stock` holds
+(`farm/stock/integrity.py`). An acknowledgement covers the end it was given for: `check_withdrawal` says "Not acknowledged (acknowledged until …; now
 …)" once a withdrawal ends later than that. A harvest the write records itself is asked about by its own handling check,
 not twice. Whether a second person must approve going on past a withdrawal is a setting of the platform owner's (owner
 answer, 2026-11-06); it is asked in one place, `farm.handling.check.second_person_must_approve(user, kinds, record)`, which

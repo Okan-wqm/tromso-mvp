@@ -103,10 +103,18 @@ Gradients belong to **brand surfaces** only — the rail, the monitoring wall, r
   13 px, tabular figures). A chart drawn in a viewBox (the Deffeyes chart, 600 units wide; the calculator's pH plots,
   400) takes one of a few widths as its card allows (the card is a size container: 640, 800, 960, 1200 px for the
   Deffeyes chart, 400, 480, 640, 800 for a plot), knows its scale (`--chart-scale`) and divides the chart steps by it,
-  so its text is the same size on screen from 1280 to 5120 px instead of growing with the window (a plot's 10-unit
-  ticks were 30 px wide at 5120 px). A monitoring card's chart is drawn in the card's own unit: its text takes the card
+  so its text keeps its size on screen instead of growing with the window (a plot's 10-unit ticks were 30 px wide at
+  5120 px). What that holds, measured (`frontend/test/cascade.browser.test.ts`): the **pH plots** are 12 to 15.6 px at
+  every card width from 200 px up to 5200 px (below the first step the plot fills its card and takes the scale of the
+  step under its width, 0.9 to 0.5); the **Deffeyes chart** is 12 to 13 px wherever its figure is 640 px or wider (the
+  calculator: a window of **768 to 5120 px**). Below that it fills its figure and its text shrinks with the window:
+  10 to 11 px at 600 px, 6 px at 390 px (main gave 5.9 px). That is not forced to 12 px: at the scale that gives 10.8 px
+  there (0.6) the pairs of overlapping labels went from 10 to 23 and a label was cut, and the other way, a chart a
+  phone pans sideways in a frame of its own (a 640 px chart in a 324 px window), is a design call for the calculator's
+  island (slice 2 of the frontend redesign, `F:\dev\balik-notes\frontend-redesign\CONSENSUS.md`). A monitoring card's chart is drawn in the card's own unit: its text takes the card
   steps `--fs-u-s`, `-m`, `-l`, `-xl` (0.8, 1, 1.25, 2.4 em), and its figure leaves room around the svg so no label on
-  an edge is cut.
+  an edge is cut; a Big card's chart text is 11.2 to 14 px at every window width, which is not wall legibility (20 arcmin
+  at the wall's distance, decision 9 of that plan): that is the wall slice's.
 - Chart colours come from the roles, never a new hue: `chart-crit`, `chart-warn`, `chart-ok`, `chart-note`,
   `chart-stale` (the status roles, for zones, limits and an old position), `chart-water` (the water area hue, for the
   water's own point and marker), `chart-ink`, `chart-tick-ink`, `chart-grid`; series that are only categories keep
@@ -133,8 +141,12 @@ Gradients belong to **brand surfaces** only — the rail, the monitoring wall, r
 ## Width
 
 The shell never caps the width: the content area reaches the window's right edge at every width, from a 390 px phone to
-the farm's 5120 × 1440 wall monitor. A page says how its content uses the room with `data-measure` on `<main>` (the
-block `measure` of `app_base.html`); it never sets a page width of its own.
+a 3840 × 2160 wall TV and the owner's 5120 × 1440 desk monitor. A page says how its content uses the room with
+`data-measure` on `<main>` (the block `measure` of `app_base.html`); it never sets a page width of its own.
+
+The farms' wall screens are standard 16:9 TVs, not the 5120 px monitor (owner, 2026-11-22): the wall's reference is a 55" TV
+of 3840 × 2160 at 3 m, checked also at 1920 × 1080; 5120 × 1440 is a desktop width that must not break. The wall slice adds
+the wall's own settings and legibility rules (decision 9 of that plan); this slice only holds the width.
 
 | Measure | Pages | At any width |
 |---|---|---|
@@ -145,7 +157,7 @@ block `measure` of `app_base.html`); it never sets a page width of its own.
 
 Neither `form` nor `prose` leaves a dead band: what a wider window adds becomes columns, never empty space.
 `frontend/test/layout.browser.test.ts` holds a fluid page's content to the window's right edge less the gutter at 390,
-1024, 1280, 1440, 1920, 2560, 3440 and 5120 px.
+1024, 1280, 1440, 1920, 2560, 3440, 3840 and 5120 px.
 
 ## Components
 
@@ -153,15 +165,22 @@ One rule set per pattern, in `static/css/ds.css`, read by every page; it reads o
 design system's `ui-*` class; the older class names of the same pattern are listed beside it in the same rule, so a
 template not yet migrated looks the same without an edit, and the gate below counts them down.
 
+**Load order.** `ds.css` is the pattern's default, so it is linked right after `base.css` and `ui.css` and BEFORE `app.css`,
+`components.css`, a page's own sheets and `tw.css` (`app_base.html`, `auth_base.html`, the printed report and `500.html`
+all link it, in that place). A rule of a later sheet for one element of a pattern (the rail's `.rail-toggle`, a report's
+`.report-print` and `.report-table`, a status chip's `.wq-status`) then wins by coming later; loaded after them, each lost its
+tie at equal specificity to the pattern (review of slice 1a, findings 1 and 6). The gate below fails on a template that
+links `base.css` and not `ds.css` in this place.
+
 | Pattern | Class | Variants and states | Older names drawn by it |
 |---|---|---|---|
 | Button | `ui-btn` | secondary (outlined) by default; `data-variant` `primary` (one per view), `danger`, `link`; `data-size="coarse"`; `aria-pressed`; disabled; 40 px, 48 on a coarse pointer | `button` (primary), `button-ghost` (secondary), `button-danger`, `filter-button`; `icon-button` is the square icon button |
 | Field | `.field` (label, control, `.help`, `.errorlist`), and `ui-control` for a control outside a form | 40 px controls, a 1.5 px `line-control` edge, the action ring on focus, a `crit` edge on error | every input, select and text area in `.field`, a `ui-toolbar`, `.search` and the old filter wrappers |
 | Filter bar | `ui-toolbar` | one wrapping row, a labelled control's label above it, the last button at the right | `toolbar`, `filter-bar`, `monitor-filters`, `feeding-filters`, `water-filters` |
 | Table | `ui-table` in `ui-table-wrap` | sunken head, rows with hover, `.num` right-aligned on one line; the frame scrolls and shades the side that goes on | `data-table` in `table-wrap` |
-| Tabs | `ui-tabs` of `ui-tab` | a button tab (`aria-selected`) and a link tab (`aria-current="page"`) look alike: the action underline; `ui-count` beside a name; `tab-error` | `tabs`/`tab`, `view-tabs`/`view-tab`, `view-count` (every template migrated) |
+| Tabs | `ui-tabs` of `ui-tab` | a button tab (`aria-selected`) and a link tab (`aria-current="page"`) look alike: the action underline; `ui-count` beside a name; `tab-error`; a strip longer than its row wraps onto rows, so every tab, the current one first of all, is on the screen at any width (it used to scroll sideways, and on a phone the current tab of `/reports/?kind=smolt` lay out of sight) | `tabs`/`tab`, `view-tabs`/`view-tab`, `view-count` (every template migrated) |
 | Badge | `ui-chip` with `data-status` (ok, note, warning, critical, hold, neutral) or `data-state` (nodata, stale) | glyph and word, a ladder of fill weight | `badge` with `badge-<status>` (each mapped to a tone) |
-| Card | `ui-card` (`ui-sheet` for a frame without padding) | flat; raised one step when it is a link | `card`, `tile`, `calc-card` |
+| Card | `ui-card` (`ui-sheet` for a frame without padding) | flat; raised one step when it is a link, and a link card keeps the page's focus ring beside that shadow (`:focus-visible`, WCAG 2.4.7; a `tw:` utility that sets a `box-shadow` on a link, like a metric card's status edge, adds its own focus variant) | `card`, `tile`, `calc-card` |
 | Page head | `ui-head` | area chip, `h1`, status line, actions | (one, in `app_base.html`) |
 
 The field markup is one template for every form (`templates/django/forms/field.html`, drawing
@@ -179,11 +198,39 @@ the help line and the errors tied to it by `aria-describedby`, and `aria-invalid
 - more raw font sizes or radii (px or rem, not a token) in an older sheet than the ratchet allows for it;
 - more uses of an older class name (`button`, `data-table`, `badge`, `tabs`, `view-tab`, `toolbar`, `card`, …) in the
   templates than the ratchet allows, or more arbitrary Tailwind sizes (`tw:text-[13px]`);
-- a count that went down while the ratchet was not lowered with it.
+- a count that went down while the ratchet was not lowered with it;
+- a template that links `base.css` without linking `ds.css` next (after `base.css` and `ui.css`, before `app.css`,
+  `components.css`, a page's sheets and `tw.css`).
 
 The ratchet is `ds-ratchet.json` in this folder: today's counts, which may only go down (`node scripts/check-ds.mjs
 --write` after a migration). `frontend/test/check-ds.test.ts` plants each kind of fault in a throwaway tree and proves
-the gate catches it.
+the gate catches it. `frontend/test/cascade.browser.test.ts` holds what the gate cannot see, in a real browser: a page's
+rule for one element of a pattern still wins (a report's Print button and tables, a chip's size and link colour, a
+toolbar control's weight, the search icon), the rail's collapse button is hidden on a phone and readable on the rail in
+all five themes, every link, button and field of the parts shows when it has the focus, and a phone's tab strip shows
+the current tab.
+
+## Known gaps (slice 1a)
+
+What this slice does not do or does not see, so nobody reads more into the gate and the tests than they hold:
+
+- **The `form` measure is not what the plan said.** The plan was a field column plus a context aside on wide screens.
+  What shipped: the fields flow into columns of at least 17 rem (none wider than 32 rem), the buttons stand under the
+  fields, and the form's sections stand beside it as an outline only when the form has tabs (from 1280 px). A form
+  without tabs spreads over the whole width (six fields in one row about 2,900 px long at 3440 px) and there is no
+  context aside. Bespoke form pages not built on `crud/form.html` keep their own caps.
+- **The gate reads less than its text suggests.** It does not see `font-size` in `em` or `%`, a one-off class that is not
+  on its list, `class='...'` in single quotes, or an old class name written in a `.py` or `.ts` file; its ratchet is a
+  count per old class name over all templates, so a use removed in one template can hide a use added in another.
+- **The contrast test has gaps.** `core/tests_contrast.py` reads six-digit hex only, and checks neither the chart series
+  colours nor text on the zone and tone fills: `--text-3` (the chart tick ink) on `--zone-safe` and `--ok-tint` is 4.24:1
+  in Polarnatt and 4.26:1 in Nordlys, under the 4.5:1 a small text needs. Colour-vision separation of the four area hues
+  is unmeasured (the 30° rule is a proxy).
+- **One cap is left.** `.sensor-chart` (`static/css/sensors.css`) keeps `max-width: 960px`: the Sensors page's charts stop at
+  960 px on a wide window.
+- **Chart text on a phone, and on a wall.** See Type above: the Deffeyes chart's text is under 12 px below a 768 px
+  window, and a Big card's chart text is 11.2 to 14 px, not wall legibility.
+- **Not tested:** Safari and iOS, screen readers, a real wall TV, Norwegian and Turkish at 390 px. axe covers part of WCAG.
 
 ## Tables
 

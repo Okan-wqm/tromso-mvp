@@ -11,7 +11,8 @@ The functions, by what they answer:
   drawer and the overview show;
 - `points_of(units, middle_only=...)`: {unit id: [SamplingPoint]}, every active point of each unit (its middle point
   first), or its middle point alone for the units of `middle_only`; `points_water` reads them all in one `latest()`:
-  what a wall of monitoring cards shows;
+  what a wall of monitoring cards shows; `own_water(unit ids)`, the units' own-water points, which `anchors` and
+  `latest` work from, read once and handed on;
 - `assumed_salinity(water_types)`: the salinity assumed where none was measured (the one rule: 0 in fresh water);
 - `water_sources(units, nested=...)`: {unit id: [Source]}, where a unit's temperature is read from: its middle
   point, then the loop point of its system (with `nested`, of the systems that system is nested in too, nearest
@@ -1409,30 +1410,39 @@ def _own_water_order(point):
     return point.kind != PointKind.MIDDLE, list(PointKind.values).index(point.kind), point.name
 
 
-def anchors(units):
-    """{unit id: the point that stands for the unit's water}: its active middle point (`middle_points`), else, for a unit
-    without one, its first active own-water point (OWN_WATER_KINDS: never an inlet), so its outlets and its system still
-    give it a status (coordinator, third cross review B5). A unit without either is not in the result. One query."""
-    units = list(units)
-    found = {}
-    if units:
-        for point in sorted(SamplingPoint.objects.filter(unit__in=[unit.pk for unit in units], is_active=True)
+def own_water(unit_ids):
+    """{unit id: [SamplingPoint]}: the units' active points of their own water (the middle point and OWN_WATER_KINDS: never
+    an inlet), in the order they count (`_own_water_order`: the middle first). One query; every unit asked is in it.
+    What `anchors` and a point's `Places` are worked out from: a reader that has it hands it on (`latest(own=...)`), so
+    one request reads it once."""
+    found = {unit_id: [] for unit_id in unit_ids}
+    if found:
+        for point in sorted(SamplingPoint.objects.filter(unit__in=list(found), is_active=True)
                             .filter(Q(kind=PointKind.MIDDLE) | Q(kind__in=OWN_WATER_KINDS)).with_owners(),
                             key=_own_water_order):
-            found.setdefault(point.unit_id, point)
+            found[point.unit_id].append(point)
     return found
 
 
-def _places(points):
-    """{point id: Places} of the points given: one query for the other points of their units, one for the units'
-    anchors, one for their loops. A point stands for its unit (`for_unit`) when it is the unit's middle point, or, for a
-    unit without one, the unit's anchor (`anchors`): it then reads the unit's own-water points and its system's."""
+def anchors(units, own=None):
+    """{unit id: the point that stands for the unit's water}: its active middle point (`middle_points`), else, for a unit
+    without one, its first active own-water point (OWN_WATER_KINDS: never an inlet), so its outlets and its system still
+    give it a status (coordinator, third cross review B5). A unit without either is not in the result. One query, none
+    when the caller hands in the units' `own_water`."""
+    units = list(units)
+    own = own_water([unit.pk for unit in units]) if own is None else own
+    return {unit.pk: own[unit.pk][0] for unit in units if own.get(unit.pk)}
+
+
+def _places(points, own=None):
+    """{point id: Places} of the points given: one query for the other points of their units (none when the caller hands
+    in their `own_water`), one for their loops. A point stands for its unit (`for_unit`) when it is the unit's middle
+    point, or, for a unit without one, the unit's anchor (`anchors`): it then reads the unit's own-water points and its
+    system's."""
     unit_ids = {point.unit_id for point in points if point.unit_id}
-    others = defaultdict(list)
-    if unit_ids:
-        for point in (SamplingPoint.objects.filter(unit__in=unit_ids, is_active=True)
-                      .filter(Q(kind=PointKind.MIDDLE) | Q(kind__in=OWN_WATER_KINDS)).with_owners()):
-            others[point.unit_id].append(point)
+    if own is None or not unit_ids <= set(own):         # a unit the caller did not read: read them all here
+        own = own_water(unit_ids)
+    others = defaultdict(list, {unit_id: list(own[unit_id]) for unit_id in unit_ids if own[unit_id]})
     standing = {}
     for unit_id, found in others.items():
         found.sort(key=_own_water_order)
@@ -1455,17 +1465,18 @@ def _places(points):
     return found
 
 
-def latest(points, now=None, at=None):
+def latest(points, now=None, at=None, own=None):
     """{point id: PointWater} of every sampling point given: per parameter, its value in the owner's order (`_resolve`,
     from the point's `Places`), judged for the fish of the point's own water that day (a value standing in from the
     system is judged for the unit's fish, as the unit's own value would be); values no longer fresh are stale. One query
     for the samples, one ask of the live sources for every point. With `at` (a past moment, owner amendment A4), the
     water as it was then: the samples taken up to that moment, each sensor's value at it (sources.value_at: the channels
-    bound there then), fresh and judged relative to it; nothing from after it."""
+    bound there then), fresh and judged relative to it; nothing from after it. `own`: the `own_water` of the points'
+    units when the caller has read it (not read again)."""
     moment = at or now or timezone.now()
     since = moment - WINDOW
     points = list(points)
-    places = _places(points)
+    places = _places(points, own)
     everything = {point.pk: point for point in points}
     for each in places.values():
         everything.update({point.pk: point for point in (*each.own, *each.system) if point.pk not in everything})
@@ -1632,8 +1643,9 @@ def owner_water(owners, now=None):
     for units (`unit_water`), and what the calculator takes a unit's or a loop's values from."""
     owners = list(owners)
     units = [owner for owner in owners if owner_type_of(owner) == 'unit']
-    middles = {**middle_points([owner for owner in owners if owner_type_of(owner) != 'unit']), **anchors(units)}
-    water = latest(list(middles.values()), now)
+    own = own_water([unit.pk for unit in units])
+    middles = {**middle_points([owner for owner in owners if owner_type_of(owner) != 'unit']), **anchors(units, own)}
+    water = latest(list(middles.values()), now, own=own)
     return {owner.pk: water[middles[owner.pk].pk] if owner.pk in middles else PointWater(None) for owner in owners}
 
 
@@ -1645,12 +1657,13 @@ def unit_water(units, now=None):
 MIDDLE = PointKind.MIDDLE
 
 
-def points_of(units, middle_only=()):
+def points_of(units, middle_only=(), own=None):
     """{unit id: [SamplingPoint]} of every unit given: its active points, the middle point first (`middle_points`, the
     one definition of it), the others by name; for the units of `middle_only` (ids) the middle point alone. A unit
-    without a middle point has only its others (or none): nothing stands in for it."""
+    without a middle point has only its others (or none): nothing stands in for it. `own`: the units' `own_water`, when
+    the caller has read it."""
     units = list(units)
-    middles = anchors(units)                   # the middle point, else the point that stands for the unit
+    middles = anchors(units, own)              # the middle point, else the point that stands for the unit
     narrow = set(middle_only)
     wide = [unit.pk for unit in units if unit.pk not in narrow]
     others = defaultdict(list)
@@ -1663,9 +1676,12 @@ def points_of(units, middle_only=()):
 
 
 def points_water(units, now=None, middle_only=()):
-    """{unit id: [PointWater]} of every unit given: the readings of each of its `points_of`, all read by ONE `latest()`."""
-    chosen = points_of(units, middle_only)
-    water = latest([point for points in chosen.values() for point in points], now)
+    """{unit id: [PointWater]} of every unit given: the readings of each of its `points_of`, all read by ONE `latest()`.
+    The units' own-water points are read once, for both (`own_water`)."""
+    units = list(units)
+    own = own_water([unit.pk for unit in units])
+    chosen = points_of(units, middle_only, own)
+    water = latest([point for points in chosen.values() for point in points], now, own=own)
     return {unit_id: [water[point.pk] for point in points] for unit_id, points in chosen.items()}
 
 

@@ -136,6 +136,62 @@ class WordsTests(SimpleTestCase):
             self.assertIn('en az %% 7 üstünde, alkalinite ne kadar düşükse o kadar fazla;',
                           str(messages.JUDGED['co2', 'limits']))
 
+    def test_the_nh3_words_say_up_to_7_percent_and_less_the_higher_the_ph_over_the_whole_range(self):
+        """The judged NH₃-N over its best estimate from 5 ‰, as the program works it out over everything it accepts
+        (the bounds of farm/water/parameters.py: T −3 to 40 °C, S to 50 ‰, pH 2 to 12): the 10^0.03 is the ratio
+        r = [NH₃]/[NH₄⁺], and NH₃-N is r / (1 + r) of the TAN, so the NH₃-N is (10^0.03 − 1) / (1 + 10^0.03 r) above its
+        best estimate: at most 10^0.03 − 1 (7.15 %, where r is nothing), never rising with the pH (r does), and as
+        little as 0.013 % at pH 12 (a sweep of 241,595 waters). "About 7 % above it" was false there: the NH₃-N is that
+        much above only while little of the TAN is NH₃ (the verification of 2026-11-22, F2 and its follow-up). The
+        words, and those said beside a pH put on the NBS scale (the same margin: only the pH it starts from moves), say
+        "up to about 7 % above it, less the higher the pH"."""
+        bound = {parameter.code: (float(parameter.low), float(parameter.high)) for parameter in parameters.MEASURED}
+        (t_low, t_high), (ph_low, ph_high) = bound['temperature_c'], bound['ph']
+        s_high = bound['salinity_ppt'][1]
+        temperatures = [t_low, 0.0, 6.0, 12.0, 20.0, 30.0, t_high]
+        salinities = [native.SEA_FROM, 7.5, 10.0, 20.0, 34.0, 40.0, s_high]
+        phs = [ph_low + 0.25 * step for step in range(int((ph_high - ph_low) / 0.25) + 1)]
+        ratio = 10 ** native.PH_UNCERTAINTY
+        margins = []
+        for salinity in salinities:
+            for temperature in temperatures:
+                for alkalinity in (100.0, 1000.0):
+                    row = []                                         # the margin along the pH, one water each
+                    for ph in phs:
+                        if deffeyes.why_impossible(temperature, salinity, ph, alkalinity):
+                            continue                                 # at or below the alkalinity floor of its pH
+                        analysis = deffeyes.analyse(deffeyes.Water(temperature, salinity, ph, alkalinity, tan_mg_l=1.0))
+                        self.assertEqual(analysis.nh3_basis, 'limits')
+                        share = analysis.nh3_corrected_n_mg_l / 1.0                 # the best estimate's share of the TAN
+                        margin = analysis.nh3_n_mg_l / analysis.nh3_corrected_n_mg_l - 1
+                        # The closed form: the whole of the margin is the shift of r by 10^0.03.
+                        self.assertAlmostEqual(margin, (ratio - 1) / (1 + ratio * share / (1 - share)), delta=1e-9)
+                        row.append(margin)
+                    for lower_ph, higher_ph in zip(row, row[1:]):
+                        self.assertLessEqual(higher_ph, lower_ph + 1e-12,
+                                             f'S {salinity}, {temperature} °C, alkalinity {alkalinity}: more pH, more')
+                    margins += row
+        self.assertGreater(len(margins), 3000)                       # the sweep ran (3 790 waters at the time of writing)
+        self.assertLess(max(margins), ratio - 1 + 1e-12)             # "up to": never above 10^0.03 − 1 ...
+        self.assertGreater(max(margins), 0.07)                       # ... and 7 is where it gets to (+7.1519 %)
+        self.assertLess(min(margins), 0.001)                         # "less": to nothing worth the name at pH 12
+        said = {'en': ('up to about 7 %% above it, less the higher the pH;',
+                       'up to about 7 %% above its best estimate, less the higher the pH.'),
+                'nb': ('opptil omtrent 7 %% over det, mindre jo høyere pH er;',
+                       'opptil omtrent 7 %% over det beste estimatet, mindre jo høyere pH er.'),
+                'tr': ('en fazla yaklaşık %% 7 üstünde, pH yükseldikçe daha az;',
+                       'en fazla yaklaşık %% 7 üstünde, pH yükseldikçe daha az.')}
+        for language, (judged, on_nbs) in said.items():
+            with translation.override(language):
+                for words, phrase in ((str(messages.JUDGED['nh3', 'limits']), judged),
+                                      (str(messages.JUDGED_ON_NBS), on_nbs)):
+                    with self.subTest(language=language, phrase=phrase):
+                        self.assertIn(phrase, words)
+                        # The one percentage the words give is the top; no other figure belongs to it.
+                        self.assertEqual([number for pair in re.findall(r'%%\s?(\d+)|(\d+)\s?%%', words)
+                                          for number in pair if number], ['7'])
+                        words % {'value': '0.0121', 'scale': 'total scale'}         # still formats
+
     def test_a_sea_nh3_says_what_its_best_estimate_rests_on(self):
         eq = chemistry.water_equilibria(12.0, 34.0, 100.0)
         said = messages.judged('nh3', 'limits', 0.0061, eq)

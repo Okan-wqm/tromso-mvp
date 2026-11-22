@@ -1182,11 +1182,15 @@ class Context:
     @staticmethod
     def _judged_through(converted):
         """What a value judged through its other unit says: the value it was judged as, what that was worked out from and
-        the limits that judged it (second cross review, finding 5)."""
-        from farm.templatetags.water import limit_text      # the one way a limit is said; it imports this module
+        the limits that judged it (second cross review, finding 5). The value is judged unrounded, so past a limit it is
+        said with the decimals that show the side it is on (`value_past`), as the card's reason says it."""
+        # the one way a limit is said, and a value past one; they import this module
+        from farm.templatetags.water import limit_text, value_past
         unit = 'mg/L' if converted.code == OXYGEN_MG_L else '%'
+        found = crossed(converted)
         said = _('Judged as %(value)s %(unit)s.') % {
-            'value': number_format(converted.value, converted.parameter.decimals), 'unit': unit}
+            'value': (number_format(converted.value, converted.parameter.decimals) if found is None
+                      else value_past(converted, found[2], found[1].endswith('low'))), 'unit': unit}
         parts = [said, str(converted.note or '')]
         if converted.limits:
             parts.append(_('Limit: %(limits)s.') % {'limits': '; '.join(str(limit_text(row))

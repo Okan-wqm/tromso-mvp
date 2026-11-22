@@ -17,9 +17,9 @@ from django.utils.translation import gettext
 from core import text
 from core.dates import company_zone
 from farm.templatetags.stock import number, percent
-from farm.templatetags.water import water_value
+from farm.templatetags.water import value_past, water_value
 from farm.water import calculation, deffeyes, parameters, read as water_read
-from farm.water.evaluate import ALERTS, Status, judge
+from farm.water.evaluate import ALERTS, Status, crossed, judge
 
 from . import catalogue
 
@@ -219,8 +219,12 @@ def bar(face):
                       for name, label in zip(BOUNDS, (gettext('critical below'), gettext('warning below'),
                                                       gettext('warning above'), gettext('critical above')))
                       if bounds[name] is not None)
+    # A worked-out value judged past a bound of this limit is said with the decimals that show which side it is on
+    # (value_past), as the card's reason says it: never "60.0, critical; limits: critical below 60.0".
+    past = crossed(reading.judged_value, limit)
+    value = face.value if past is None else value_past(reading, past[1], past[0].endswith('low'))
     sentence = gettext('%(label)s %(value)s, %(status)s; limits: %(limits)s') % {
-        'label': face.label, 'value': face.value, 'status': text.lower(face.status_label), 'limits': shown}
+        'label': face.label, 'value': value, 'status': text.lower(face.status_label), 'limits': shown}
     return Bar(tuple(bands), at(reading.value), sentence)
 
 

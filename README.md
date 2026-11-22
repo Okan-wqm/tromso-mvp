@@ -945,6 +945,25 @@ screen would first bound the feeding walk (`project` reads every feeding of the 
 way round. The queries stay equal from 6 to 100 units (pinned at 6 and 24 in `monitoring/tests/test_budget.py`). `CONN_MAX_AGE` is
 left alone: the queries are a tenth of the time, so there is no evidence for it.
 
+**Made faster without a cache** (2026-11-22, on the dev data: 25 units, 20 stocked, 899 feedings, 232 sensor bindings).
+The waste found by profiling was removed, every result is still worked out on each request, and **nothing is stored or
+cached between requests, so there is nothing to invalidate**: (1) the ration walk read the sensors once per day it asked
+a temperature for and once per channel inside that (179 reads of the bindings and the hypertable for one wall); it now
+reads every moment of the walk in one ask (`Series.prefetch`, `sources.values_at`, two queries); (2) the last feeding
+(`last_fed_of`) built every feeding of the lineage as a record with its unit, department and site; it now weighs them as
+plain rows by the same `fed_moment` and builds only the winners; (3) the feeding walk scanned every share of the fold for
+each unit of each day; it groups them by unit once per step (`fold._by_unit`); (4) a wall read its units' own-water
+points twice (`points_of` and `latest`); it reads them once (`read.own_water`, handed on); (5) the page read the
+activity log's revision twice (the grid's token and the pane's); once now. Measured in-process on this machine (5 warm
+runs each, median, `main` and the branch back to back while another suite ran): the page 5.0 s and 330 queries before,
+2.2 s and 118 after; the cards fragment 4.6 s and 319 queries, 2.7 s and 109; the pane 2.2 s and 136 queries, 1.5 s and
+85. Every answer is byte for byte the same on the dev data with the clock pinned. Why no cache: the ration of today runs
+on the temperature at the moment of the request and its age, the freshness states must stay live, and a late sensor
+reading (the ingest's late path) moves a past day's temperature without any write Django sees, so no key could prove a
+stored walk still valid. What is left is Python: the template render of the cards (Django's engine, about 0.5 to 0.7 s
+for 20 cards), the water read (about 0.5 s) and the feeding walk (about 0.4 s); the queries stay equal with the units
+(`test_budget.EndpointBudgetTests`: the page, the fragment and the pane at 8 and 26 stocked units).
+
 **A fitted template in the designer** (Phase 1D, review R7). Each widget has its LOOKS (`catalogue.WidgetSpec.looks`):
 value, water table, pH window, chart, dosing, points and stock have a fitted look; fish, feeding, health, tasks,
 experiments, the bar and the chart button have none. The validator takes the template's measure
@@ -1196,7 +1215,12 @@ A11, 2026-11-08, the one explicit exception to A9.3; it replaced decision Q5's 7
 MOST RECENTLY entered temperature across every tier, so a 2-day-old loop value beats an 8-day-old own one): a stale one
 says so on
 the meal board, "Based on the temperature from 03.11.2026 07:40 (5 days old)"; only a unit where no temperature was ever
-recorded has no ration ("No temperature recorded here yet: record one."); the moment is now for today and the end of the day for a past day. The SFR is
+recorded has no ration ("No temperature recorded here yet: record one."); the moment is now for today and the end of the day for a past day.
+The sensors are read at every moment a walk may ask (each feeding day and each day asked, on its unit's clock) in ONE
+ask before the walk (`Series.prefetch`, `sources.values_at`: the bindings, then one statement with a LATERAL lookup per
+binding and moment on the hypertable's key), never once per day and once per channel (2026-11-22: a wall's walk had made
+179 reads of the bindings and the hypertable; `farm.tests.test_protocols.SensorRationTemperatureTests` holds one ask and
+the same rations as a day-by-day ask). Nothing of it is kept after the request. The SFR is
 the band's cell at that temperature, **interpolated linearly between two columns and never extrapolated** (owner
 decision Q1): outside the first and last column, or a fish outside the bands, there is no ration and the page says
 why; never a default temperature or rate. The day's ration R = estimated biomass × SFR / 100, a meal R ÷ the band's

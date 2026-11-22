@@ -949,9 +949,13 @@ left alone: the queries are a tenth of the time, so there is no evidence for it.
 The waste found by profiling was removed, every result is still worked out on each request, and **nothing is stored or
 cached between requests, so there is nothing to invalidate**: (1) the ration walk read the sensors once per day it asked
 a temperature for and once per channel inside that (179 reads of the bindings and the hypertable for one wall); it now
-reads every moment of the walk in one ask (`Series.prefetch`, `sources.values_at`, two queries); (2) the last feeding
-(`last_fed_of`) built every feeding of the lineage as a record with its unit, department and site; it now weighs them as
-plain rows by the same `fed_moment` and builds only the winners; (3) the feeding walk scanned every share of the fold for
+reads the moments the walk can ask (the days a protocol is in force for, not every feeding day) in one ask
+(`Series.prefetch`, `sources.values_at`, two queries; on the dev wall the walk asks for 18 moments, 155 were read before
+the days were restricted and 18 are now); one failing ask fails every moment of it together, so those moments are then asked one by one as before and
+a failure costs only the moments it hits; (2) the last feeding (`last_fed_of`) built every feeding of the lineage as a
+record with its unit, department and site; it now reads them once, every column, weighs each as a plain row by the same
+`fed_moment` and builds only the winners from those very rows (one snapshot: a feeding voided or changed meanwhile can
+neither break the answer nor split a moment from its record); (3) the feeding walk scanned every share of the fold for
 each unit of each day; it groups them by unit once per step (`fold._by_unit`); (4) a wall read its units' own-water
 points twice (`points_of` and `latest`); it reads them once (`read.own_water`, handed on); (5) the page read the
 activity log's revision twice (the grid's token and the pane's); once now. Measured in-process on this machine (5 warm
@@ -1216,11 +1220,14 @@ MOST RECENTLY entered temperature across every tier, so a 2-day-old loop value b
 says so on
 the meal board, "Based on the temperature from 03.11.2026 07:40 (5 days old)"; only a unit where no temperature was ever
 recorded has no ration ("No temperature recorded here yet: record one."); the moment is now for today and the end of the day for a past day.
-The sensors are read at every moment a walk may ask (each feeding day and each day asked, on its unit's clock) in ONE
-ask before the walk (`Series.prefetch`, `sources.values_at`: the bindings, then one statement with a LATERAL lookup per
-binding and moment on the hypertable's key), never once per day and once per channel (2026-11-22: a wall's walk had made
-179 reads of the bindings and the hypertable; `farm.tests.test_protocols.SensorRationTemperatureTests` holds one ask and
-the same rations as a day-by-day ask). Nothing of it is kept after the request. The SFR is
+The sensors are read at every moment a walk may ask (each feeding day and each day asked, on its unit's clock, that a
+protocol assignment covers: a day no row covers asks no temperature) in ONE ask before the walk (`Series.prefetch`,
+`sources.values_at`: the bindings, then one statement with a LATERAL lookup per binding and moment on the hypertable's
+key), never once per day and once per channel (2026-11-22: a wall's walk had made 179 reads of the bindings and the
+hypertable; `farm.tests.test_protocols.SensorRationTemperatureTests` holds one ask and the same bases, day by day, as
+main's way of asking each day on its own). One failing ask fails every moment of it together (the answer is the same
+fail-open one, samples only, and the log says so); those moments are then asked one by one, as before, so a failure
+costs only the moments it hits. Nothing of it is kept after the request. The SFR is
 the band's cell at that temperature, **interpolated linearly between two columns and never extrapolated** (owner
 decision Q1): outside the first and last column, or a fish outside the bands, there is no ration and the page says
 why; never a default temperature or rate. The day's ration R = estimated biomass × SFR / 100, a meal R ÷ the band's

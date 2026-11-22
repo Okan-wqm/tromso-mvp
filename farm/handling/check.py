@@ -449,17 +449,23 @@ def earliest(unit, batch, today=None, kind=WITHDRAWAL_KIND):
     return earliest_of([(unit, batch)], today, kind)[(unit.pk, batch.pk)]
 
 
-def earliest_of(pairs, today=None, kind=WITHDRAWAL_KIND, holding=None):
+NOT_READ = object()         # `earliest_of(holding=...)` not given: it reads the withdrawals itself
+
+
+def earliest_of(pairs, today=None, kind=WITHDRAWAL_KIND, holding=NOT_READ):
     """{(unit id, batch id): Earliest} of every (unit, batch) pair given: `earliest` of each, with what it reads read
     once for all of them (a page of fifty rows costs about what one row does): the withdrawals in force (`holding_of`,
-    or `holding`, its answer, from a caller that has it already), the rule of each species, the last feedings of the
-    units (`last_fed_of`) and the water of the batches (`BatchWater.of_each`: each batch's water is the one it has read
-    alone)."""
+    or `holding`, its answer on the same `today`, from a caller that has it already: it must hold every unit of the
+    pairs, a unit missing from it is an error, never a unit without a withdrawal; None, no provider, holds nothing as
+    `earliest` alone), the rule of each species, the last feedings of the units (`last_fed_of`) and the water of the
+    batches (`BatchWater.of_each`: each batch's water is the one it has read alone)."""
     pairs = list({(unit.pk, batch.pk): (unit, batch) for unit, batch in pairs}.values())
     units = list({unit.pk: unit for unit, _batch in pairs}.values())
     days = {unit.pk: local_today(unit) if today is None else today for unit in units}
-    if holding is None:
-        holding = holding_of(units, today) or {}
+    if holding is NOT_READ:
+        holding = holding_of(units, today)
+    if holding is None:                         # no provider registered: not checked, nothing holds (`in_force`)
+        holding = {unit.pk: [] for unit in units}
     requirements = {}
     for _unit, batch in pairs:
         if batch.species_id not in requirements:
@@ -480,7 +486,7 @@ def earliest_of(pairs, today=None, kind=WITHDRAWAL_KIND, holding=None):
                if asks(batch) and fed.get(unit.pk) is not None and requirements[batch.species_id].degree_days}
     waters = BatchWater.of_each(watered.values())
     return {(unit.pk, batch.pk): _earliest_from(
-        unit, batch, days[unit.pk], kind, holding.get(unit.pk) or [], requirements[batch.species_id],
+        unit, batch, days[unit.pk], kind, holding[unit.pk], requirements[batch.species_id],
         fed.get(unit.pk), waters[watered[(unit.pk, batch.pk)]] if (unit.pk, batch.pk) in watered else None)
         for unit, batch in pairs}
 

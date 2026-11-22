@@ -171,7 +171,7 @@ class ProductionPlanResource(FromAddress, Resource):
                 shown.append((unit, share))
         # The withdrawals in force and the earliest dates of every row in one read each, not one per row.
         withdrawals = check.holding_of(list({unit.pk: unit for unit, _share in shown}.values()))
-        earliest = check.earliest_of([(unit, share.batch) for unit, share in shown], holding=withdrawals or {})
+        earliest = check.earliest_of([(unit, share.batch) for unit, share in shown], holding=withdrawals)
         rows = []
         for unit, share in shown:
             row = share_row(request, unit, share, plans.get(share.batch.pk), last_fed.get(unit.pk),

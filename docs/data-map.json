@@ -40336,10 +40336,12 @@
         "core/test_datamap.py",
         "core/test_text.py",
         "core/tests_workspaces.py",
+        "farm/tests/test_bound_text.py",
         "farm/tests/test_nh3_unrounded.py",
         "farm/tests/test_water_crossed.py",
         "knowledge/tests/test_extraction.py",
         "experiments/tests/test_overview.py",
+        "monitoring/tests/test_bound_text.py",
         "monitoring/tests/test_read.py",
         "monitoring/tests/test_render.py",
         "sensors/tests/test_timescale.py"

@@ -530,7 +530,7 @@ def _earliest_from(unit, batch, today, kind, blocks, requirement, fed, water):
 def _earliest(result, batches):
     """A harvest's (a live delivery's) earliest suitable date among the notes: of its batches, the latest."""
     found = earliest_of([(result.unit, batch) for batch in batches], kind=result.kind).values()
-    held =[each for each in found if each.decides]
+    held = [each for each in found if each.decides]
     if not held:
         return
     result.earliest = max(held, key=lambda each: (each.day is None, each.day or date.min))

@@ -500,18 +500,23 @@ class Series:
             wanted = [target for targets in self.targets.values() for target, _origin in targets]
             self.bound = sources.bound(wanted, code, since, until or timezone.now())
 
-    def _live(self, point_id, moment, window):
-        """The sensors' values of the point at the moment (Found, in sensor_targets' order, primary first), at most
-        `window` old. One ask of the live sources per moment for every point of the series, so the queries do not grow
-        with the points."""
-        if moment not in self.asked:
-            targets = {pk: [(target, origin) for target, origin in found if target in self.bound]
-                       for pk, found in self.targets.items()}
-            if not any(targets.values()):
-                self.asked[moment] = {}
-                return []
-            answer = sources.value_at([target for found in targets.values() for target, _origin in found], self.code,
-                                      moment)
+    def prefetch(self, moments):
+        """Asks the live sources ONCE for every moment of `moments` not asked yet (sources.values_at), for every point of
+        the series: a reader that knows the moments it will look up (the ration's days, farm/feeding/read.py) costs the
+        same queries for one moment or a hundred. What a moment's lookup finds is the same either way."""
+        if not self.live:
+            return
+        moments = [moment for moment in dict.fromkeys(moments) if moment not in self.asked]
+        if not moments:
+            return
+        targets = {pk: [(target, origin) for target, origin in found if target in self.bound]
+                   for pk, found in self.targets.items()}
+        if not any(targets.values()):
+            self.asked.update({moment: {} for moment in moments})
+            return
+        answers = sources.values_at([target for found in targets.values() for target, _origin in found], self.code,
+                                    moments)
+        for moment, answer in zip(moments, answers):
             by_point = {}
             for pk, found in targets.items():
                 values = []
@@ -523,6 +528,13 @@ class Series:
                                                 self.points[pk]))
                 by_point[pk] = values
             self.asked[moment] = by_point
+
+    def _live(self, point_id, moment, window):
+        """The sensors' values of the point at the moment (Found, in sensor_targets' order, primary first), at most
+        `window` old. One ask of the live sources per moment for every point of the series (or one for every moment
+        `prefetch` was given), so the queries do not grow with the points."""
+        if moment not in self.asked:
+            self.prefetch([moment])
         return [found for found in self.asked[moment].get(point_id, []) if window is None or moment - found.at <= window]
 
     def candidates(self, point_id, moment, window):

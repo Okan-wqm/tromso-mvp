@@ -109,9 +109,11 @@ def tables(protocol_ids):
     return found
 
 
-def policy(units, batch_ids, first, now):
+def policy(units, batch_ids, first, now, read=()):
     """The ration.Policy of these units (Tank, by id) and batches from the day `first` to now: the assignment rows
-    in force over those days, their tables, the batches' species and the units' temperatures, read once."""
+    in force over those days, their tables, the batches' species and the units' temperatures, read once. `read`: the
+    (unit id, day) pairs whose temperature the walk may ask (its feeding days and the days asked): the sensors' values
+    at all their moments are read in one ask, not one per day."""
     rows = list(ProtocolAssignment.objects.filter(Q(unit_id__in=list(units)) | Q(batch_id__in=batch_ids))
                 .filter(Q(valid_until__isnull=True) | Q(valid_until__gte=first))
                 .select_related('unit', 'protocol__species'))
@@ -123,12 +125,16 @@ def policy(units, batch_ids, first, now):
     today = {unit_id: local_today(unit) for unit_id, unit in units.items()}
     found = {}
 
-    def temperature(unit_id, day):
+    def moment(unit_id, day):
         """Now for the unit's today, the end of the day for a day before it."""
+        return now if day >= today[unit_id] else end_of(day, units[unit_id])
+
+    def temperature(unit_id, day):
         if (unit_id, day) not in found:
-            unit = units[unit_id]
-            found[(unit_id, day)] = book.at(unit, now if day >= today[unit_id] else end_of(day, unit))
+            found[(unit_id, day)] = book.at(units[unit_id], moment(unit_id, day))
         return found[(unit_id, day)]
+
+    book.prefetch(sorted({moment(unit_id, day) for unit_id, day in read if unit_id in units}))
 
     # The fasts planned harvests and transports ask for, from `first` to the units' today (one query).
     fasts = fasting.fasts(list(units.values()), first, max(today.values(), default=first))
@@ -163,7 +169,8 @@ def project(unit_ids, days=(), now=None):
     units = Tank.all_objects.select_related('production_department__site').in_bulk(unit_ids)
     first = min([record.date for record in records] + [day for _unit, day in days],
                 default=timezone.localdate(now, zone_of(None)))
-    projector = Projector(policy(units, batch_ids, first, now), days)
+    read = {(record.unit_id, record.date) for record in records} | set(days)
+    projector = Projector(policy(units, batch_ids, first, now, read), days)
     return Projection(walk(ledger(batch_ids), records, days, projector=projector), projector)
 
 

@@ -1,11 +1,7 @@
 /* Operations › Tasks and Recurring tasks (templates/tasks/): the page uses the Production units layout (view tabs,
    table, drawer, components.css); this adds the statuses, the overdue mark and the checklist. Only problems get
    colour: overdue and urgent are critical red, high is amber, done stays neutral. */
-.badge-open { background: var(--surface-sunken); color: var(--text-1); }
-.badge-in_progress { background: var(--action-tint); color: var(--action); }
-.badge-done { background: var(--surface-sunken); color: var(--text-1); border: 1px solid var(--line-hair); }
-.badge-cancelled { background: var(--surface-sunken); color: var(--text-3); }
-.badge-overdue { background: var(--crit-tint); color: var(--crit-text); }
+/* A task's status badges map onto the chip tones in static/css/ds.css (Badge). */
 .priority-urgent { color: var(--crit-text); font-weight: 600; }
 .priority-high { color: var(--warn-text); font-weight: 600; }
 .data-table tbody tr.is-overdue { box-shadow: var(--edge-crit); }
@@ -25,7 +21,7 @@
 .task-note { margin: .25rem 0 0; }
 .task-note-form { display: grid; gap: .375rem; margin-top: .75rem; }
 .task-note-form textarea {
-  width: 100%; padding: .5rem .625rem; border: 1.5px solid var(--line-control); border-radius: 6px; font: inherit;
+  width: 100%; padding: .5rem .625rem; border: 1.5px solid var(--line-control); border-radius: var(--radius-control); font: inherit;
 }
 .task-note-form .button { justify-self: start; }
 .drawer-actions form { display: contents; }

@@ -4968,14 +4968,49 @@ pages are drawn in it: the Overview, Meal board, Production units and Water chem
 without a redesign yet, and are redesigned one page at a time.
 
 - **Tokens.** `static/css/tokens.css` is the design system's `tokens.css` plus a short block of the app's own (the
-  rail's overlays), loaded first. **The design system's file is the source** (`docs/design/system/tokens.css`, made from
-  its `tokens.json`; its previews load it): a token is changed there and the file copied, never in one of the two, and
-  `core.tests_design_shell.TokenSourceTests` fails when the served file is not that file with only the app's block
-  after it, or when the app's block sets a name the design system sets. `static/css/tw.css` does not hold the tokens (it
+  rail's overlays), loaded first. **`docs/design/system/tokens.json` is the one source**: `scripts/tokens.mjs` builds
+  both CSS files from it (`npm run build:tokens`, part of `npm run build`; `npm run check:tokens`, CI and `npm test`
+  fail when either is not what it builds), and `core.tests_design_shell.TokenSourceTests` fails when the served file is
+  not the design system's with only the app's block after it, or when the app's block sets a name the design system
+  sets. Tokens v2 (2026-11-21) adds, in all five themes, the status roles `note` and `stale` (no hue: a note is told by
+  its square, stale by a hatch), the area hues `area-farm`, `-water`, `-feed`, `-stock` and `-neutral` (each with a
+  tint and a rail variant), `shadow-raised` (elevation 1) and the type scale as `--fs-*` variables, chart text included (`--fs-chart-*`: a
+  chart drawn in a viewBox divides them by its own scale, so its labels keep their size on screen: a pH plot at every card width, the Deffeyes chart from a 768 px window to 5120 px, and below that its text shrinks with the window, 6 px at 390 px, see docs/design/system/README.md, Type) and
+  chart colours that alias the status and area roles (`--chart-crit`, `--chart-water`, ...);
+  `core/tests_contrast.py` measures every text pair (4.5:1) and shape (3:1) in every theme and keeps each area hue 30°
+  from the status hues.
+- **Colour, two channels.** The area hues say where a page sits (`area` on its menu line in `config/navigation.py`,
+  the nearest of entry, group, section and panel; `core.navigation.area_of`): its rail icon and the chip before its
+  page title. The status colours say what is wrong, and only that. They never mix (docs/design/system/README.md,
+  Principles; this replaces "grey by default").
+- **Width.** The shell never caps the width (the old 1520 px cap left a third of a 2560 px window empty): every page's
+  content reaches the window's right edge, up to a 3840 × 2160 wall TV and the owner's 5120 × 1440 desk monitor (the farms' wall screens are standard 16:9 TVs; 5120 × 1440 is a desktop width). A page says how it uses the room
+  with `data-measure` on `<main>` (block `measure` of `app_base.html`): `fluid` (the default), `wall`, `form`
+  (`crud/form.html`: the fields flow into columns, none wider than a field needs, the sections an outline beside them
+  from 1280 px) and `prose` (text blocks at 70 ch in as many columns as fit, an aside beside them). The browser layout
+  test holds the right edge at nine widths from 390 to 5120 px, 1920 and 3840 (the wall TVs) among them.
+- **Components and the gate.** `static/css/ds.css` holds one rule set per pattern (button, field, filter bar, table,
+  tabs, badge, card, page head) on tokens only; the older class names of each pattern (`button`, `data-table`,
+  `badge-*`, ...) are drawn by the same rule, so every page took the look at once. `npm run check:ds`
+  (`scripts/check-ds.mjs`; CI and `npm test`) fails on a colour outside `tokens.css`, a raw size in `ds.css`, and on
+  more raw font sizes, radii, old class names or arbitrary Tailwind sizes than `docs/design/system/ds-ratchet.json`
+  allows; the ratchet only goes down. `ds.css` is linked right after `base.css` and `ui.css`, before `app.css`, `components.css`, a page's sheets and `tw.css`
+  (also by the printed water report and `500.html`): a rule of a later sheet for one element of a pattern wins by coming later, and
+  the gate fails on a template that links `base.css` without `ds.css` in that place (review of slice 1a: loaded after them, the rail's
+  collapse button, the report's Print button and tables and a chip's size lost their rules, and the printed report, which did not link
+  `ds.css` at all, lost its tables, buttons and cards). `frontend/test/cascade.browser.test.ts` holds, in a real browser, what the gate
+  cannot see. Details: docs/design/system/README.md, Width, Components, The gate. `static/css/tw.css` does not hold the tokens (it
   names the variables), so it is built from neither. No stylesheet writes a colour of its own: `core/tests_design_shell.py` fails on a
   hex, `rgb()` or `rgba()` outside `tokens.css`. The old variables (`--mist`, `--olive`, `--stripe` and the rest) are
   gone; every sheet reads the role tokens (`--surface-*`, `--text-1` to `-3`, `--line-*`, `--primary`, `--action`,
   `--ok`, `--warn`, `--crit` with their `-text` and `-tint`).
+- **Known gaps of the design system (slice 1a).** Not done or not seen, in full in docs/design/system/README.md (Known gaps):
+  the `form` measure is not the plan's field column with a context aside (a form without tabs spreads over the width, and
+  has no aside); the gate does not see `em` or `%` font sizes, single-quoted classes or old classes in `.py` and `.ts`
+  files, and its ratchet is one count per class name; the contrast test reads six-digit hex only and does not check chart
+  series or text on zone fills (`--text-3` on `--zone-safe` is 4.24 to 4.26:1 in Polarnatt and Nordlys); `.sensor-chart`
+  keeps `max-width: 960px`; the Deffeyes chart's text is 6 to 11 px below a 768 px window; a Big card's chart text is 11.2 to
+  14 px, not wall legibility (the wall slice); Safari and iOS, screen readers and a real wall TV were not tested.
 - **Parts.** `static/css/ui.css` is the design system's `components.css` (the `ui-*` classes) with the app's additions
   at its end; the shell's layout is `app.css`.
 - **Tailwind.** A redesigned page may be drawn with Tailwind v4 utilities beside the `ui-*` parts
@@ -5292,7 +5327,10 @@ What one tab needed and the next ones will too lives in `core/`:
 
 The layout rules every page relies on are in the style sheets, once, and checked by tests (`core/tests_templates.py`
 reads the templates and the style sheets; `frontend/test/layout.browser.test.ts` lays the parts out in a real browser at
-390, 1024 and 1440 px, in the typefaces of `static/css/fonts.css`, not the machine's fallback font):
+390, 1024 and 1440 px (and the content's right edge at nine widths up to 5120 px, a 3840 px TV among them), in the typefaces of
+`static/css/fonts.css`, not the machine's fallback font; `frontend/test/cascade.browser.test.ts` holds the cascade of the sheets,
+in the order the templates link them: a page's rule for one element of a pattern wins, the focus ring shows, a phone's tab strip
+shows the current tab, the charts' text size):
 
 - **No page scrolls sideways.** A word longer than the line (a content hash) breaks (`.content`); a grid track is never a
   bare `1fr` (that is at least as wide as its widest content) but `minmax(0, …fr)`; a filter's fields, view tabs and a
@@ -5942,7 +5980,7 @@ so run `scripts/test.sh` on the branch before asking for a merge.
 | Job | What it runs | The same on a developer's machine |
 |---|---|---|
 | `python` | the browser build first (`npm ci`, `npm run build`: `check` fails on core.W001 without `static/js`), then `CHECKS=1 scripts/test.sh` (`SUITE=0` on a pull request) with 4 workers, in the test runner's image (`scripts/testrunner/image.sh`, built with its layers cached): `ruff check` (the linter, below); `compile_catalogs` (a fresh checkout has no `.mo`, and core.W002 would fail the check); `manage.py check --fail-level WARNING`; `check --deploy` with production-like settings (DEBUG off, a random key, a host, an SMTP server, a sender and an https public address: Email), where any issue but the four still open fails (`DEPLOY_OPEN` in `scripts/testrunner/in-container.sh`: the four HTTPS settings, until the production settings exist); `makemigrations --check`; `data_map --check`; `update_catalogs`, then `git diff --exit-code -- locale` (the catalogs were up to date); `compile_catalogs`; then, except on a pull request, the whole suite with warnings as errors | `CHECKS=1 SUITE=0 scripts/test.sh` (the checks only) or `CHECKS=1 scripts/test.sh`, then `git diff -- locale` |
-| `frontend` | `npm ci`, `npm run check:css` (the committed `static/css/tw.css` is what `frontend/tailwind.css` and the templates build now), `npm run build` (tsc, `tsconfig.json`, then the Tailwind build), `npm test` (the TypeScript tests, the designer's and the layout's browser tests on the runner's Chrome) | the same four |
+| `frontend` | `npm ci`, `npm run check:css` (the committed `static/css/tw.css` is what `frontend/tailwind.css` and the templates build now), `npm run check:tokens` (the tokens' CSS is what `tokens.json` builds), `npm run check:ds` (the design-system gate and its ratchet), `npm run build` (tsc, `tsconfig.json`, then the Tailwind build), `npm test` (the TypeScript tests, the designer's and the layout's browser tests on the runner's Chrome) | the same four |
 | `rust` | in `sensors-ingest/`, on the toolchain of `rust-toolchain.toml` (1.88.0, the release image's and the crate's `rust-version`): `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked --all-targets` against a TimescaleDB service migrated by Django (`manage.py migrate` in the test runner's image, the server's own packages) and a Mosquitto broker (`REQUIRE_DB=1`: the database and broker tests run, never skip), `cargo deny --locked check` (licences, bans, sources, RustSec advisories), `THIRD_PARTY` equal to what `Cargo.lock` says | `sensors-ingest/tests/run.sh` |
 | `chemcore` | `chemcore/scripts/test.sh` in the `chemcore-tools` stage of `docker/testrunner.Dockerfile` (its layers cached): rustfmt, clippy, `cargo test`, libm the chemistry's only dependency, no WebAssembly, `cargo deny` with advisories, `chemcore/THIRD_PARTY`, `docker/requirements.lock` naming the pins of `requirements.txt`; the built module's handshake with `chemcore/EXPECTED` (core.E001) is the python job's `check`. | the same `docker run` as the script's header |
 | `security` | `pip-audit --strict` on `requirements.txt` and the test runner's, and with `--require-hashes` on what the runner image installs (`docker/requirements.lock`) and the chemcore wheel's build tool (`docker/chemcore-build.lock`, maturin); the Python licence gate (`pip-licenses --allow-only`, the licences [`THIRD_PARTY.md`](THIRD_PARTY.md) allows: AGPL, SSPL, BUSL, non-commercial or any unreviewed licence fails); the banned components, MinIO and rodbus, whatever licence a client library carries (a Python or npm package, or an image a compose file or Dockerfile names; the crates are denied in `deny.toml`); `npm audit --omit=dev --audit-level=high` | see below |

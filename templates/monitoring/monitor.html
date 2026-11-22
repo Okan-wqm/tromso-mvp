@@ -7,13 +7,14 @@
    that works without script; the grid is data-poll (frontend/poll.ts) and its children are keyed so only a changed card is
    replaced; the windows sit beside it (frontend/windows.ts). {% endcomment %}
 {% block title %}{{ title }}{% endblock %}
+{% block measure %}{% if wall %}wall{% else %}fluid{% endif %}{% endblock %}
 {% block html_attrs %}{% if wall %} data-wall{% endif %}{% endblock %}
 {% block page_styles %}<link rel="stylesheet" href="{% asset 'css/monitor.css' %}"><link rel="stylesheet" href="{% asset 'css/card-grid.css' %}">{% endblock %}
 {% block extra_head %}<script type="module" src="{% asset 'js/windows.js' %}"></script><script type="module" src="{% asset 'js/announce.js' %}"></script><script type="module" src="{% asset 'js/wall.js' %}"></script>{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
-<form method="get" class="monitor-toolbar toolbar" role="search">
+<form method="get" class="monitor-toolbar ui-toolbar" role="search">
   {% if wall %}<input type="hidden" name="wall" value="1">{% endif %}
   <div class="monitor-filters">
     <label>{% trans "Board" %}<select name="board" data-autosubmit><option value="">{% trans "No board" %}</option>{% for each in boards %}<option value="{{ each.pk }}"{% if board and each.pk == board.pk %} selected{% endif %}>{{ each.name }}</option>{% endfor %}</select></label>

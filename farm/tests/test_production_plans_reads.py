@@ -19,11 +19,13 @@ from core.testing import FrozenClock
 
 from .. import withdrawal_gate
 from ..feeding import read as feeding_read
+from ..feeding.services import record_feeding
 from ..handling import check, fasting
 from ..handling.fasting import DAY, LOOKBACK_DAYS
 from ..health import services as health_services
 from ..models import (
-    HandlingRule, Medicine, MedicineWithdrawal, ProductionDepartment, ProductionPlan, Site, Tank, WaterMeasurement,
+    HandlingRule, Medicine, MedicineWithdrawal, ProductionDepartment, ProductionPlan, Site, System, Tank,
+    WaterMeasurement,
 )
 from ..models.site import zone_of
 from ..stock import read as stock_read, services as stock_services
@@ -352,3 +354,72 @@ class BudgetTests(Fixtures, FeedingTestCase):
         decides = {row['earliest'].decides for row in self.client.get(reverse('farm:productionplan_list'))
                    .context['objects'] if row['share'] and row['unit'].pk in made}
         self.assertEqual(decides, {'withdrawal'})
+
+
+class WaterOnAnotherClockTests(FrozenClock, FeedingTestCase):
+    """A batch's water read beside batches of other clocks is the water it reads alone (main's `earliest`: one
+    BatchWater per batch). U-A on UTC with a system whose site is Tokyo (the link written past Tank.clean, as raw
+    writes or a restore could leave it); U-K on Kiritimati (UTC+14). At 05:00 UTC it is the 22nd on all three clocks.
+    The loop's sample at 00:30 on Tokyo's first day of the water (today - 30) is before that day starts on U-A's clock
+    but not on U-K's: a read of both batches' units together counts it, U-A's batch alone does not. Fed 31 days ago, a
+    30 degree-day purge counts from that day (verification of wip/plans-perf, finding 2)."""
+    NOW = datetime(2026, 11, 22, 5, 0, tzinfo=UTC)
+    EARLY, LATE = '2', '10'         # the loop's samples on its first day, at 00:30 and 15:00 on Tokyo's clock
+    MAIN_SAYS = ''                  # alone: 10 + 4 x 5 = 30 degree-days, fasted; with the early 2 counted, held
+
+    @withdrawal_gate.opened('test fixture: samples straight in the database')
+    def sample(self, point, moment, value):
+        WaterMeasurement.objects.create(point=point, measured_at=moment, source='manual', temperature_c=Decimal(value),
+                                        created_by=self.user)
+
+    def setUp(self):
+        super().setUp()
+        self.user.groups.add(role('Harvest keeper', *HARVEST_KEEPER))
+        tokyo = Site.objects.create(name='Tokyo', code='TK', timezone='Asia/Tokyo')
+        kiritimati = Site.objects.create(name='Kiritimati', code='KI', timezone='Pacific/Kiritimati')
+        self.ua = make_unit('U-A', self.hall)
+        self.uk = make_unit('U-K', ProductionDepartment.objects.create(site=kiritimati, name='Hall K', code='HK'))
+        self.system = System.objects.create(site=tokyo, name='Tokyo loop', code='TL',
+                                            production_department=ProductionDepartment.objects.create(
+                                                site=tokyo, name='Hall T', code='HT'))
+        Tank.objects.filter(pk=self.ua.pk).update(system=self.system)          # past Tank.clean's own-site check
+        self.ua.refresh_from_db()
+        HandlingRule.objects.filter(kind='harvest', species=None).delete()
+        HandlingRule.objects.create(kind='harvest', species=None, min_fasting_hours=0,
+                                    min_fasting_degree_days=Decimal(30))
+        self.bx = self.stock(self.ua, count=500, weight='100', days_ago=31)
+        self.by = self.stock(self.uk, count=500, weight='100', days_ago=31)
+        for unit in (self.ua, self.uk):
+            record_feeding(self.user, unit=unit, day=local_today(unit) - 31 * DAY, feed=self.feed,
+                           amount_kg=Decimal('0.2'))
+        loop, zone = point_of(self.system), zone_of(tokyo)
+        self.first = local_today(self.ua) - 30 * DAY
+        self.sample(loop, datetime.combine(self.first, time(0, 30), tzinfo=zone), self.EARLY)
+        self.sample(loop, datetime.combine(self.first, time(15), tzinfo=zone), self.LATE)
+        for back in range(1, 5):
+            self.sample(loop, datetime.combine(local_today(self.ua) - back * DAY, time(12), tzinfo=zone), '5')
+
+    def test_a_batch_beside_a_batch_on_another_clock_reads_its_own_water(self):
+        today = local_today(self.ua)
+        self.assertEqual((today, local_today(self.uk)), (date(2026, 11, 22), date(2026, 11, 22)))
+        # The edge is there: the two batches' units read together count the early sample on U-A's first day.
+        alone = BatchWater({self.bx.pk}, today, self.first).temperatures.of(self.ua.pk, self.first)
+        together = BatchWater({self.bx.pk, self.by.pk}, today, self.first).temperatures.of(self.ua.pk, self.first)
+        self.assertEqual((alone, together), (Decimal(self.LATE), (Decimal(self.EARLY) + Decimal(self.LATE)) / 2))
+        main = main_earliest(self.ua, self.bx)
+        self.assertEqual(main.decides, self.MAIN_SAYS)
+        self.assertEqual(check.earliest_of([(self.ua, self.bx)])[(self.ua.pk, self.bx.pk)], main)
+        both = check.earliest_of([(self.ua, self.bx), (self.uk, self.by)])
+        self.assertEqual(both, {(self.ua.pk, self.bx.pk): main,
+                                (self.uk.pk, self.by.pk): main_earliest(self.uk, self.by)})
+        rows = {row['unit'].pk: row for row in self.client.get(reverse('farm:productionplan_list')).context['objects']
+                if row['share']}
+        self.assertEqual((rows[self.ua.pk]['earliest'], rows[self.uk.pk]['earliest']),
+                         (main, main_earliest(self.uk, self.by)))
+
+
+class WaterOnAnotherClockWarmEarlyTests(WaterOnAnotherClockTests):
+    """The unsafe side: the early sample is the warm one, so a shared read adds degree-days main never counted and
+    says "free" where main holds the fish (alone: 2 + 4 x 5 = 22 degree-days)."""
+    EARLY, LATE = '20', '2'
+    MAIN_SAYS = check.PURGING

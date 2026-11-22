@@ -3260,6 +3260,7 @@
         "core/test_languages.py",
         "core/tests_account_mail.py",
         "core/tests_matrix_notes.py",
+        "farm/tests/test_bound_text.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_calculator_loaded_ph.py",
         "farm/tests/test_cleaner_ration.py",

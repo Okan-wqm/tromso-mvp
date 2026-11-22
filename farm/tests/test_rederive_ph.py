@@ -129,6 +129,19 @@ class RederiveTests(SeaTestCase):
         self.assertEqual((stored.ph, stored.ph_converted_formula), (old, 3))
         self.assertEqual(AuditLog.objects.count(), logged)
         self.assertEqual([warning.id for warning in ph_converted_by_an_older_formula(None)], ['farm.W001'])
+        # The check's hint says what keeps such a sample counted and the way out (the independent review of formula 4,
+        # can-follow 4); voiding it is no way out: voided samples are converted too, so they stay counted.
+        [warning] = ph_converted_by_an_older_formula(None)
+        self.assertIn('"NOT converted again" stays counted here, voided or not', warning.hint)
+        self.assertIn('if the unit’s water origin is wrong, correct it and run it again', warning.hint)
+        with withdrawal_gate.opened('test fixture: a voided sample'):
+            WaterMeasurement.all_objects.filter(pk=sample.pk).update(is_deleted=True, void_reason='typed twice')
+        self.run_command()
+        self.assertEqual([warning.id for warning in ph_converted_by_an_older_formula(None)], ['farm.W001'])
+        Tank.objects.filter(pk=self.sea.pk).update(water_type='saltwater', water_origin='seawater')
+        self.run_command()
+        self.assertEqual(WaterMeasurement.all_objects.get(pk=sample.pk).ph_converted_formula, 4)
+        self.assertEqual(ph_converted_by_an_older_formula(None), [])
 
     def test_nbs_samples_are_never_read(self):
         self.record(ph_scale='nbs', ph='7.95', temperature_c='2', salinity_ppt='34')

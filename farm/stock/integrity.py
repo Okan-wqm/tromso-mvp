@@ -16,9 +16,9 @@ from farm.health import read as health_read
 from farm.models import (
     Batch, DeliveryRecord, EscapeRecord, HandlingAcknowledgement, HandlingPlanItem, HarvestRecord, OpeningBalance,
     ProductionDepartment,
-    Species, StockMovement, StockOperation, Tank,
+    Species, StockMovement, StockOperation, Tank, WithdrawalAcknowledgement,
 )
-from farm.models.handling import KIND_OF_OPERATION, AcknowledgedWarning
+from farm.models.handling import KIND_OF_OPERATION, OPERATION_NAMED, AcknowledgedWarning
 from farm.models.harvest import FULFILLED_BY
 from farm.models.stock import MovementKind, OperationKind
 from farm.models.tank import NEEDS_FISH, NEEDS_NO_FISH
@@ -192,7 +192,8 @@ def _harvest_problems(operations, lines_of):
     went (one HarvestRecord) and no other kind of operation has a record; a plan item is fulfilled by an
     operation of its kind, of its unit and batch; an acknowledgement belongs to a handling (a harvest, a transfer or
     split, a delivery, a grading), and the acknowledgement of fish combined with held fish (a withdrawal row, the
-    owner's decision 8) to the move that combined them: one of those, or a STOCKING, which is not a handling."""
+    owner's decision 8) to the move that combined them: one of those, or a STOCKING, which is not a handling; a
+    withdrawal acknowledgement of a later write names an operation of its warning's kind (`OPERATION_NAMED`)."""
     found = []
     records = HarvestRecord.all_objects.select_related('operation').in_bulk()
     for operation in operations.values():
@@ -217,4 +218,12 @@ def _harvest_problems(operations, lines_of):
         if kind not in handled and not combined:
             found.append(f'Acknowledgement {row.pk} belongs to a {kind}, which is not a handling, nor a stocking '
                          'that combined fish with held fish.')
+    # A later write's acknowledgement of fish that left the farm inside a withdrawal names that operation: a harvested
+    # row a harvest, a delivered row a live delivery (the verification of the S-03 follow-up, §6; the only writer,
+    # farm.health.withdrawal._acknowledge, takes both from the same ledger line).
+    for row in WithdrawalAcknowledgement.objects.filter(harvest__isnull=False).select_related('harvest'):
+        named = OPERATION_NAMED.get(row.warning)
+        if named is not None and row.harvest.kind != named:
+            found.append(f'Withdrawal acknowledgement {row.pk} ({row.warning}) names {row.harvest.kind} '
+                         f'{row.harvest_id}, not a {named}.')
     return found

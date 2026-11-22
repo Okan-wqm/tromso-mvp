@@ -555,7 +555,8 @@ class CalculatorForm(forms.Form):
     water_origin = forms.ChoiceField(
         label=_('Water origin'), required=False, choices=[('', _('Not said')), *Tank.WaterOrigin.choices],
         help_text=_('Fresh water with salt added (NaCl) is worked out without sea water’s ions, its ionic strength as '
-                    'NaCl’s; not said, a salinity of 1 to 5 ‰ is taken as diluted sea water.'))
+                    'NaCl’s; fresh water with sea water or a sea-salt mix added is diluted sea water. Not said, a '
+                    'salinity of 1 to 5 ‰ is taken as diluted sea water.'))
     volume_m3 = number_field(_('Volume (m³)'), Decimal('0.01'), 1000000, 2,
                              _('The water the amounts are for: a tank or a loop. Empty: the doses per m³ only.'))
     calcium_mg_l = number_field(_('Calcium (mg/L Ca²⁺)'), 0, 2000, 1,

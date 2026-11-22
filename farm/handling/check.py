@@ -24,8 +24,9 @@ transaction: the stock service runs it after its locks (a feeding of the unit ta
   themselves (they are culled). Whether their withdrawal holds the salmon beside them is the owner's and the vet's to
   decide; until then it is no warning on the production fish's harvest and no acknowledgement of theirs, it does not
   decide their earliest date, and a harvest of theirs is not "inside" it: the dialog says it as a note ("Cleaner
-  fish in C-01 are in a medicine withdrawal (…): keep them out of the harvest."), and the unit's own line
-  (`in_force_of`) still shows it.
+  fish in C-01 are in a medicine withdrawal (…): keep them out of the harvest."; a live delivery's dialog in its own
+  words, "… (B-2026-006, the fish may leave the farm from …): keep them out of the live delivery."), and the unit's own
+  line (`in_force_of`) still shows it.
 - Fasting: **the fast is of the fish in the unit handled** (flow fault S-01; the owner, 14.11.2026: fish of two
   batches in one unit are one group): one fast for the unit, whichever batch the handling names, from the latest
   feeding of the fish in it along their own path (farm.feeding.read.last_fed_of: this unit since they came in, the
@@ -299,11 +300,16 @@ def in_force(unit, day):
     return None if found is None else found[0]
 
 
-def cleaner_text(unit, block):
-    """The note of a harvest dialog about cleaner fish under a withdrawal beside the fish harvested."""
+def cleaner_text(unit, block, kind=WITHDRAWAL_KIND):
+    """The note of a harvest dialog about cleaner fish under a withdrawal beside the fish harvested; of a live delivery's
+    dialog (any other handling the withdrawal is asked of) in a delivery's words, its end as `end_text` says it (the
+    verification of the S-03 follow-up, can-follow 2: the delivery dialog spoke of a harvest)."""
+    params = {'unit': unit.code, 'batch': block.batch.code, 'end': end_text(block.until, block.approximate, kind)}
+    if kind != WITHDRAWAL_KIND:
+        return _('Cleaner fish in %(unit)s are in a medicine withdrawal (%(batch)s, %(end)s): keep them out of the '
+                 'live delivery.') % params
     return _('Cleaner fish in %(unit)s are in a medicine withdrawal (%(batch)s, %(end)s): keep them out of the '
-             'harvest.') % {'unit': unit.code, 'batch': block.batch.code,
-                            'end': withdrawal.harvest_from(block.until, block.approximate)}
+             'harvest.') % params
 
 
 def _withdrawal(result):
@@ -328,7 +334,7 @@ def _withdrawal(result):
         known = latest.get(block.batch.pk)
         if known is None or (known.until is not None and (block.until is None or block.until > known.until)):
             latest[block.batch.pk] = block
-    result.notes.extend(cleaner_text(unit, block) for block in latest.values())
+    result.notes.extend(cleaner_text(unit, block, result.kind) for block in latest.values())
     if not blocks and not beside:
         result.notes.append(_('No medicine withdrawal in force.'))
 

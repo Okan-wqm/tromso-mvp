@@ -26,7 +26,7 @@ from ..health.withdrawal import WithdrawalChanged
 from ..models import HandlingAcknowledgement, Treatment, WithdrawalAcknowledgement
 from ..models.handling import HandlingKind
 from ..models.stock import OperationKind
-from ..stock import services as stock_services
+from ..stock import integrity, services as stock_services
 from ..stock.dates import shown_date
 from .helpers import rows_data
 from .test_harvest_inside_withdrawal import ASKED
@@ -258,6 +258,26 @@ class AcknowledgementShapeTests(Delivered, GuardTestCase):
         self.assertEqual(str(row.get_warning_display()), 'Live delivery inside a withdrawal')
         with self.assertRaises(Exception), transaction.atomic():
             WithdrawalAcknowledgement.objects.filter(pk=row.pk).update(reason='changed')    # append-only
+
+    def test_check_stock_says_a_row_that_names_the_wrong_kind_of_operation(self):
+        """The CHECK holds only that an operation is named; a delivered row naming a harvest (or a harvested row naming
+        a delivery, or either naming a transfer) is found by the stock's integrity rules (the verification of the S-03
+        follow-up, §6 and probe Q6: the database took them and check_stock said nothing)."""
+        delivery = self.deliver(3, count=100)
+        harvest = self.harvest(2, count=10)
+        transfer = stock_services.record_transfer(self.user, source=self.t1, batch=self.batch, day=self.day(1),
+                                                  legs=[(self.t2, 10)], reason='density')
+        base = {'record_type': 'treatment', 'record_id': '1', 'record_label': 'Treatment', 'batch': self.batch,
+                'source': 'treatment:1', 'created_by': self.user}
+        WithdrawalAcknowledgement.objects.create(warning='delivered', harvest=delivery, **base)
+        WithdrawalAcknowledgement.objects.create(warning='harvested', harvest=harvest, **base)
+        self.assertEqual([each for each in integrity.problems() if 'Withdrawal acknowledgement' in each], [])
+        wrong = [WithdrawalAcknowledgement.objects.create(warning=warning, harvest=operation, **base)
+                 for warning, operation in (('delivered', harvest), ('harvested', delivery), ('delivered', transfer))]
+        self.assertEqual([each for each in integrity.problems() if 'Withdrawal acknowledgement' in each], [
+            f'Withdrawal acknowledgement {wrong[0].pk} (delivered) names harvest {harvest.pk}, not a delivery.',
+            f'Withdrawal acknowledgement {wrong[1].pk} (harvested) names delivery {delivery.pk}, not a harvest.',
+            f'Withdrawal acknowledgement {wrong[2].pk} (delivered) names transfer {transfer.pk}, not a delivery.'])
 
 
 class MoveOverADeliveryTests(Delivered, CombinedTestCase):

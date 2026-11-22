@@ -12,6 +12,7 @@ from decimal import Decimal
 
 from django.core.management import call_command
 from django.urls import reverse
+from django.utils import translation
 
 from core.models import AuditLog
 
@@ -19,6 +20,8 @@ from .. import withdrawal_gate
 from ..handling import check
 from ..health import services as health_services, withdrawal
 from ..models import HandlingAcknowledgement, Medicine, MedicineWithdrawal, StockMovement
+from ..models.handling import HandlingKind
+from ..models.stock import OperationKind
 from ..stock import services as stock_services
 from ..stock.dates import shown_date
 from .helpers import going_on, make_facility, role
@@ -71,6 +74,29 @@ class CleanerFishBesideTests(CleanerWithdrawalTestCase):
                 self.assertIn(self.note(self.bathed_lump), result.notes)
                 self.assertNotIn('No medicine withdrawal in force.', result.notes)   # one is: the cleaner fish's
                 self.assertEqual(result.fingerprint, '')                             # nothing to tick
+
+    def test_a_live_delivery_of_the_salmon_says_the_note_in_a_deliverys_words(self):
+        """The verification of the S-03 follow-up, can-follow 2 (probe C1): the delivery dialog said "harvest from" and
+        "keep them out of the harvest"; a delivery speaks of the fish leaving the farm (F-1's words)."""
+        note = (f'Cleaner fish in C-01 are in a medicine withdrawal ({self.bathed_lump.code}, the fish may leave the farm '
+                f'from {shown_date(self.until)}): keep them out of the live delivery.')
+        result = check.assess(HandlingKind.TRANSPORT, self.cage, self.today, self.salmon_batch,
+                              operation=OperationKind.DELIVERY)
+        self.assertEqual(self.withdrawals(result), [])
+        self.assertIn(note, result.notes)
+        self.assertFalse([each for each in result.notes if 'harvest' in each], result.notes)
+        self.assertIn(self.note(self.bathed_lump), check.assess('harvest', self.cage, self.today).notes)   # unchanged
+        dialog = self.client.get(reverse('farm:stock_delivery', args=[self.cage.pk]), headers={'X-Modal': '1'})
+        self.assertContains(dialog, note)
+        for language in ('nb', 'tr'):
+            with translation.override(language):
+                said = check.assess(HandlingKind.TRANSPORT, self.cage, self.today, self.salmon_batch,
+                                    operation=OperationKind.DELIVERY).notes
+                harvest = check.assess('harvest', self.cage, self.today).notes
+                [delivery_note] = [each for each in said if self.bathed_lump.code in each]
+                [harvest_note] = [each for each in harvest if self.bathed_lump.code in each]
+                self.assertNotIn(note, said, language)                                     # translated
+                self.assertNotEqual(delivery_note, harvest_note, language)                 # in its own words
 
     def test_it_does_not_decide_the_salmons_earliest_harvest_date_nor_their_plan_rows(self):
         self.assertEqual(check.earliest(self.cage, self.salmon_batch).decides, '')

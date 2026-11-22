@@ -218,8 +218,12 @@ class WithdrawalWarning(models.TextChoices):
     HELD = 'held', _('Fish held again by a withdrawal')
 
 
-# The warnings that name the operation whose fish left the farm inside the withdrawal (`harvest`).
-NAMING_THE_HARVEST = (WithdrawalWarning.HARVESTED, WithdrawalWarning.DELIVERED)
+# The warnings that name the operation whose fish left the farm inside the withdrawal (`harvest`), each with the kind of
+# operation it names: a harvested row a harvest, a delivered row a live delivery. The database's CHECK holds only that an
+# operation is named (a cross-table rule is no CHECK); farm.stock.integrity holds the kind (`check_stock`).
+OPERATION_NAMED = {WithdrawalWarning.HARVESTED: OperationKind.HARVEST,
+                   WithdrawalWarning.DELIVERED: OperationKind.DELIVERY}
+NAMING_THE_HARVEST = tuple(OPERATION_NAMED)
 
 
 class WithdrawalAcknowledgement(models.Model):

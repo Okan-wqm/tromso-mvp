@@ -386,7 +386,12 @@ html[data-wall] .monitor-grid:has(> .is-fit):is([data-poll-state="stale"], [data
    card's unit). The shapes sit in a nested svg stretched over the plot, so their strokes must not scale with it. A
    region beyond a limit is grey and takes the critical tint only while the water is in it; the safe zone is the one
    green; the water is ink, hollow and dashed when a value it is drawn from is old. ---- */
-.monitor-chart-svg { display: block; flex: 1 1 0; width: 100%; height: 100%; min-height: 0; overflow: hidden; font-family: var(--font-text); }
+/* The chart's text is the card's own (its unit's steps, --fs-u-*: tokens.css), placed by percentages; a label on the
+   top edge or a tick on the bottom one reaches half an em (its line box) past the svg's box, so the svg lets it show (it was cut:
+   "pH 9.0", "Alkalinity, mg/L CaCO3" on the top edge) and the figure keeps that room above it, and on its left for a
+   three-figure tick ("110"). */
+.monitor-chart { padding: .55em 0 0 .7em; }
+.monitor-chart-svg { display: block; flex: 1 1 0; width: 100%; height: 100%; min-height: 0; overflow: visible; font-family: var(--font-text); font-variant-numeric: tabular-nums; }
 .monitor-chart-svg :is(line, polyline, polygon, rect) { vector-effect: non-scaling-stroke; }
 .monitor-chart-svg .chart-field { fill: var(--surface-sheet); }
 .monitor-chart-svg .chart-region { stroke: none; }
@@ -399,12 +404,12 @@ html[data-wall] .monitor-grid:has(> .is-fit):is([data-poll-state="stale"], [data
 .monitor-chart-svg .chart-lead { stroke: var(--text-3); stroke-width: 1; stroke-dasharray: 2 3; }
 .monitor-chart-svg .chart-dose { stroke: var(--action); stroke-width: 3; }
 .monitor-chart-svg .chart-target line { stroke: var(--action); stroke-width: 2.5; }
-.monitor-chart-svg text { fill: var(--text-3); font-size: .8em; }
+.monitor-chart-svg text { fill: var(--chart-tick-ink); font-size: var(--fs-u-s); }
 .monitor-chart-svg :is(.chart-ph, .chart-axis-x, .chart-tick-y) { text-anchor: end; }
 .monitor-chart-svg .chart-tick-x { text-anchor: middle; }
-.monitor-chart-svg .chart-name { fill: var(--text-2); font-size: 1em; text-anchor: middle; }
-.monitor-chart-svg .chart-name-safe { fill: var(--ok-text); font-size: .8em; }
-.monitor-chart-svg .chart-old { fill: var(--text-1); font-size: 1em; font-weight: 600; }
+.monitor-chart-svg .chart-name { fill: var(--text-2); font-size: var(--fs-u-s); font-weight: 600; text-anchor: middle; }
+.monitor-chart-svg .chart-name-safe { fill: var(--ok-text); font-size: var(--fs-u-s); }
+.monitor-chart-svg .chart-old { fill: var(--chart-ink); font-size: var(--fs-u-m); font-weight: 600; }
 .monitor-chart-svg :is(.chart-ph, .chart-name, .chart-old) { paint-order: stroke; stroke: var(--surface-sheet); stroke-width: .3em; stroke-linejoin: round; }
 .monitor-chart-svg .chart-water { fill: var(--text-1); stroke: var(--surface-sheet); stroke-width: 2.5; }
 .monitor-chart-svg.is-old .chart-water { fill: var(--surface-sheet); stroke: var(--text-1); stroke-width: 2; stroke-dasharray: 3 2.5; }

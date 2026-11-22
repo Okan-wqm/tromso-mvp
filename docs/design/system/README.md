@@ -99,6 +99,18 @@ Gradients belong to **brand surfaces** only — the rail, the monitoring wall, r
 - Scale: `caption` 12 (chart ticks), `head` / `small` 13 (column heads, sub-lines), `body` 15 (16 coarse), `label` 15/600, `figure` 18/600 (the one figure per row people act on), `h2` 22, `h1` and `readout` 28 (the Next meal figure). Line height 1.45, headings 1.2, prose 68ch.
 - The scale is a CSS variable per step, `--fs-<name>` (`--fs-caption` … `--fs-h1`, built from `tokens.json`'s type
   styles): a stylesheet writes `font-size: var(--fs-small)`, never a number (the gate below).
+- Chart text has its own steps (`--fs-chart-tick` 12, `--fs-chart-axis` 13, `--fs-chart-label` 12, `--fs-chart-legend`
+  13 px, tabular figures). A chart drawn in a viewBox (the Deffeyes chart, 600 units wide; the calculator's pH plots,
+  400) takes one of a few widths as its card allows (the card is a size container: 640, 800, 960, 1200 px for the
+  Deffeyes chart, 400, 480, 640, 800 for a plot), knows its scale (`--chart-scale`) and divides the chart steps by it,
+  so its text is the same size on screen from 1280 to 5120 px instead of growing with the window (a plot's 10-unit
+  ticks were 30 px wide at 5120 px). A monitoring card's chart is drawn in the card's own unit: its text takes the card
+  steps `--fs-u-s`, `-m`, `-l`, `-xl` (0.8, 1, 1.25, 2.4 em), and its figure leaves room around the svg so no label on
+  an edge is cut.
+- Chart colours come from the roles, never a new hue: `chart-crit`, `chart-warn`, `chart-ok`, `chart-note`,
+  `chart-stale` (the status roles, for zones, limits and an old position), `chart-water` (the water area hue, for the
+  water's own point and marker), `chart-ink`, `chart-tick-ink`, `chart-grid`; series that are only categories keep
+  `chart-s1`…`chart-s5`.
 
 ## Space, radius, depth
 

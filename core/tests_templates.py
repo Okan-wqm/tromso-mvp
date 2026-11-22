@@ -163,12 +163,12 @@ class FieldMarkupTests(SimpleTestCase):
     def form(self):
         from django import forms
 
-        class Reading(forms.Form):
+        class FieldDemo(forms.Form):
             ph = forms.DecimalField(label='pH', min_value=0, max_value=14, decimal_places=2,
                                     help_text='Measured at the tank.')
             count = forms.IntegerField(label='Fish', min_value=1)
 
-        reading = Reading(data={'ph': '15', 'count': ''})
+        reading = FieldDemo(data={'ph': '15', 'count': ''})
         reading.is_valid()
         return reading
 

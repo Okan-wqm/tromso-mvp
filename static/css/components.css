@@ -511,11 +511,21 @@ td.wq-was-warning, .wq-value.wq-was-warning { color: var(--warn-text); font-weig
 .calc-deffeyes .deffeyes { padding: 0; border: 0; }
 
 .calc-plot-facts { margin: 0 0 .5rem; color: var(--text-3); font-size: var(--fs-small); font-variant-numeric: tabular-nums; }
-.ph-chart { display: block; width: 100%; height: auto; font-family: var(--font-text); }
+/* A chart drawn in a viewBox scales its text with its width: 10 units of text were 7 px in a narrow column and 30 px
+   in a 5120 px window. So the chart takes one of a few widths (its card is a size container) and knows its scale
+   (--chart-scale = drawn width / viewBox width), and its text is the chart type scale divided by it: on screen the
+   tick is --fs-chart-tick, the label --fs-chart-label, at every width from 1280 to 5120 px. The pH plots are 400 units
+   wide; below the first step a plot fills its card and its text is that of a 400 px plot. */
+.calc-card:has(> .ph-chart, > * > .ph-chart) { container-type: inline-size; }
+.ph-chart { --chart-scale: 1; display: block; width: 100%; height: auto; margin: 0 auto; font-family: var(--font-text); font-variant-numeric: tabular-nums; }
+@container (min-width: 400px) { .ph-chart { --chart-scale: 1; width: 400px; } }
+@container (min-width: 480px) { .ph-chart { --chart-scale: 1.2; width: 480px; } }
+@container (min-width: 640px) { .ph-chart { --chart-scale: 1.6; width: 640px; } }
+@container (min-width: 800px) { .ph-chart { --chart-scale: 2; width: 800px; } }
 .ph-grid line { stroke: var(--surface-sunken); stroke-dasharray: 3 3; }
 .ph-frame { fill: none; stroke: var(--line-control); }
-.ph-ticks text { font-size: 10px; fill: var(--text-3); }
-.ph-axis { font-size: 11px; fill: var(--text-2); }
+.ph-ticks text { font-size: calc(var(--fs-chart-tick) / var(--chart-scale)); fill: var(--chart-tick-ink); }
+.ph-axis { font-size: calc(var(--fs-chart-axis) / var(--chart-scale)); fill: var(--text-2); }
 .ph-band-safe { fill: color-mix(in srgb, var(--ok) 18%, transparent); }
 .ph-band-alert { fill: color-mix(in srgb, var(--warn) 20%, transparent); }
 .ph-band-danger { fill: color-mix(in srgb, var(--crit) 15%, transparent); }
@@ -530,16 +540,16 @@ td.wq-was-warning, .wq-value.wq-was-warning { color: var(--warn-text); font-weig
 .ph-level-limit { stroke: var(--chart-s3); }
 .ph-level-zero { stroke: var(--crit); stroke-dasharray: 3 3; }
 .ph-marker { stroke-width: 2; }
-.ph-marker-water { stroke: var(--chart-s1); stroke-dasharray: 5 5; }
+.ph-marker-water { stroke: var(--chart-water); stroke-dasharray: 5 5; }
 .ph-marker-border { stroke: var(--crit); }
-.ph-label { font-size: 10px; fill: var(--text-3); stroke: var(--surface-sheet); stroke-width: 3px; paint-order: stroke; }
-.ph-marker-label-water { fill: var(--action); }
+.ph-label { font-size: calc(var(--fs-chart-label) / var(--chart-scale)); fill: var(--text-2); stroke: var(--surface-sheet); stroke-width: calc(3px / var(--chart-scale)); paint-order: stroke; }
+.ph-marker-label-water { fill: var(--chart-water); }
 .ph-marker-label-border { fill: var(--crit-text); }
 .ph-dot { stroke: var(--surface-sheet); stroke-width: 2; }
-.ph-dot-water { fill: var(--chart-s1); }
+.ph-dot-water { fill: var(--chart-water); }
 .ph-dot-border { fill: var(--crit); }
 .ph-legend { display: flex; flex-wrap: wrap; gap: .25rem .875rem; margin: .5rem 0 0; padding: 0; list-style: none;
-  color: var(--text-3); font-size: var(--fs-caption); }
+  color: var(--text-3); font-size: var(--fs-chart-legend); }
 .ph-legend li { display: inline-flex; align-items: center; gap: .375rem; }
 .ph-swatch { display: inline-block; width: 14px; height: 0; border-top: 2.5px solid; }
 .ph-swatch.ph-series-nh3, .ph-swatch.ph-series-h2s { border-color: var(--crit); }
@@ -649,14 +659,22 @@ polygon.deffeyes-arrow.deffeyes-reagent-hcl { fill: var(--chart-s3); }
    the cross, gray 400 the path, neutral 200 the grid). */
 .deffeyes { margin: 0; padding: 1rem; border: 1px solid var(--line-hair); border-radius: var(--radius-object); background: var(--surface-sheet); }
 .deffeyes-title { margin-bottom: .5rem; font-weight: 700; text-align: center; }
-.deffeyes-chart { display: block; width: 100%; max-width: 640px; height: auto; margin: 0 auto; font-family: var(--font-text); }
+/* The Deffeyes chart is 600 units wide; it takes 640, 800, 960 or 1200 px as its figure allows (the figure is a size
+   container), its text the chart type scale divided by that scale (see .ph-chart above). Below the first step it fills
+   its figure and its text is that of a 640 px chart. */
+.deffeyes { container-type: inline-size; }
+.deffeyes-chart { --chart-scale: 1.0667; display: block; width: 100%; height: auto; margin: 0 auto; font-family: var(--font-text); font-variant-numeric: tabular-nums; }
+@container (min-width: 640px) { .deffeyes-chart { --chart-scale: 1.0667; width: 640px; } }
+@container (min-width: 800px) { .deffeyes-chart { --chart-scale: 1.3333; width: 800px; } }
+@container (min-width: 960px) { .deffeyes-chart { --chart-scale: 1.6; width: 960px; } }
+@container (min-width: 1200px) { .deffeyes-chart { --chart-scale: 2; width: 1200px; } }
 .deffeyes-grid line { stroke: var(--surface-sunken); stroke-dasharray: 3 3; }
 .deffeyes-frame { fill: none; stroke: var(--line-control); }
-.deffeyes-ticks text { font-size: 11px; fill: var(--text-3); }
-.deffeyes-axis { font-size: var(--fs-caption); fill: var(--text-2); }
+.deffeyes-ticks text { font-size: calc(var(--fs-chart-tick) / var(--chart-scale)); fill: var(--chart-tick-ink); }
+.deffeyes-axis { font-size: calc(var(--fs-chart-axis) / var(--chart-scale)); fill: var(--text-2); }
 .deffeyes-isoline { fill: none; stroke-width: .5; stroke-opacity: .25; }
 .deffeyes-isoline.is-labelled { stroke-width: 1.5; stroke-opacity: .5; }
-.deffeyes-ph { font-size: 11px; font-weight: 700; text-anchor: middle; dominant-baseline: central; stroke: var(--surface-sheet);
+.deffeyes-ph { font-size: calc(var(--fs-chart-label) / var(--chart-scale)); font-weight: 700; text-anchor: middle; dominant-baseline: central; stroke: var(--surface-sheet);
   stroke-width: 3px; paint-order: stroke; }
 .deffeyes-zone { stroke: none; }
 .deffeyes-zone-nh3 { fill: color-mix(in srgb, var(--crit) 18%, transparent); }
@@ -672,9 +690,9 @@ polygon.deffeyes-arrow.deffeyes-reagent-hcl { fill: var(--chart-s3); }
 .deffeyes-omega-aragonite { stroke: var(--chart-s3); }
 .deffeyes-path { fill: none; stroke: var(--line-control); stroke-width: 1.5; stroke-dasharray: 6 4; }
 .deffeyes-target line { stroke: var(--text-1); stroke-width: 2.5; }
-.deffeyes-point { fill: var(--chart-s1); stroke: var(--action); stroke-width: 1; }
+.deffeyes-point { fill: var(--chart-water); stroke: var(--chart-ink); stroke-width: 1; }
 .deffeyes-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: .375rem 1rem; margin: .75rem 0 0; padding: 0;
-  list-style: none; color: var(--text-3); font-size: var(--fs-small); }
+  list-style: none; color: var(--text-3); font-size: var(--fs-chart-legend); }
 .deffeyes-legend li { display: inline-flex; align-items: center; gap: .375rem; }
 .deffeyes-key { width: 14px; height: 14px; }
 .deffeyes-swatch { width: 14px; height: 10px; border-radius: 2px; opacity: .7; }

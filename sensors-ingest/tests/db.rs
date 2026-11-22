@@ -66,6 +66,59 @@ fn status(fx: &Fx) -> Vec<Status> {
     }]
 }
 
+/// Timestamps through the database driver, both ways, in the session's UTC (`db::connect`): microsecond precision
+/// (finer is cut toward 2000-01-01, the protocol's zero), leap days, the years far from now, and what the driver refuses
+/// to decode. Text in, text out (JSON as `/decode` writes it, PostgreSQL's own text): only the line naming the time
+/// type differs between the chrono implementation and its replacement.
+#[tokio::test]
+async fn timestamps_round_trip_through_the_driver_at_microsecond_precision() {
+    type Ts = DateTime<Utc>;
+    let Some(url) = url() else { return };
+    let a = admin(&url).await;
+    let cases = [
+        // (as the ingest holds it, as PostgreSQL stores it, as the ingest reads it back)
+        ("2026-11-04T12:00:00Z", "2026-11-04 12:00:00+00", "2026-11-04T12:00:00Z"),
+        ("2024-02-29T23:59:59.999999Z", "2024-02-29 23:59:59.999999+00", "2024-02-29T23:59:59.999999Z"),
+        ("2026-11-04T12:00:00.1234567Z", "2026-11-04 12:00:00.123456+00", "2026-11-04T12:00:00.123456Z"),
+        ("2026-11-04T12:00:00.000001Z", "2026-11-04 12:00:00.000001+00", "2026-11-04T12:00:00.000001Z"),
+        ("2026-03-29T01:30:00Z", "2026-03-29 01:30:00+00", "2026-03-29T01:30:00Z"),
+        ("2026-10-25T01:30:00Z", "2026-10-25 01:30:00+00", "2026-10-25T01:30:00Z"),
+        ("2000-01-01T00:00:00Z", "2000-01-01 00:00:00+00", "2000-01-01T00:00:00Z"),
+        ("1999-12-31T23:59:59.9999995Z", "2000-01-01 00:00:00+00", "2000-01-01T00:00:00Z"),
+        ("2000-01-01T00:00:00.0000005Z", "2000-01-01 00:00:00+00", "2000-01-01T00:00:00Z"),
+        ("1970-01-01T00:00:00Z", "1970-01-01 00:00:00+00", "1970-01-01T00:00:00Z"),
+        ("1969-12-31T23:59:59.999999Z", "1969-12-31 23:59:59.999999+00", "1969-12-31T23:59:59.999999Z"),
+        ("0001-01-01T00:00:00Z", "0001-01-01 00:00:00+00", "0001-01-01T00:00:00Z"),
+        ("0000-12-31T23:59:59Z", "0001-12-31 23:59:59+00 BC", "0000-12-31T23:59:59Z"),
+        ("-4713-11-24T00:00:00Z", "4714-11-24 00:00:00+00 BC", "-4713-11-24T00:00:00Z"),
+        ("9999-12-31T23:59:59.999999Z", "9999-12-31 23:59:59.999999+00", "9999-12-31T23:59:59.999999Z"),
+        ("+10000-01-01T00:00:00Z", "10000-01-01 00:00:00+00", "+10000-01-01T00:00:00Z"),
+        ("+262142-12-31T23:59:59.999999Z", "262142-12-31 23:59:59.999999+00", "+262142-12-31T23:59:59.999999Z"),
+    ];
+    for (held, stored, back) in cases {
+        let t: Ts = serde_json::from_value(serde_json::json!(held)).unwrap();
+        let text: String = a.query_one("SELECT $1::timestamptz::text", &[&t]).await.unwrap().get(0);
+        assert_eq!(text, stored, "{held} to the database");
+        let read: Ts = a.query_one("SELECT $1::text::timestamptz", &[&text]).await.unwrap().get(0);
+        assert_eq!(serde_json::to_value(read).unwrap(), serde_json::json!(back), "{held} read back");
+        // and as an array element (the batch statements bind arrays)
+        let arr: String = a.query_one("SELECT ($1::timestamptz[])[1]::text", &[&vec![t]]).await.unwrap().get(0);
+        assert_eq!(arr, stored, "{held} in an array");
+    }
+    // outside PostgreSQL's range the server refuses the value
+    let t: Ts = serde_json::from_value(serde_json::json!("-4714-01-01T00:00:00Z")).unwrap();
+    assert!(a.query_one("SELECT $1::timestamptz::text", &[&t]).await.is_err());
+    // the driver refuses to decode what the ingest cannot hold: the infinities and years after 262142
+    for text in ["infinity", "-infinity", "262143-01-01 00:00:00+00", "294276-12-31 23:59:59.999999+00"] {
+        let r = a.query_one("SELECT $1::text::timestamptz", &[&text]).await.unwrap();
+        let e = r.try_get::<_, Ts>(0).expect_err(text);
+        let cause = std::error::Error::source(&e).map(ToString::to_string);
+        assert_eq!(cause.as_deref(), Some("value too large to decode"), "{text}: {e}");
+        assert!(r.try_get::<_, Option<Ts>>(0).is_err(), "{text} as an option");
+    }
+    assert_eq!(a.query_one("SELECT NULL::timestamptz", &[]).await.unwrap().get::<_, Option<Ts>>(0), None);
+}
+
 #[tokio::test]
 async fn the_contract_view_columns_and_quality_flags_equal_the_ingest_copy() {
     let Some(url) = url() else { return };

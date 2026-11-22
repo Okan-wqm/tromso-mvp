@@ -1,4 +1,8 @@
-{% load i18n %}{% comment %} What the calculator's H₂S rests on, beside the H₂S worked out (the page's card and the report): the constant of
+{% load i18n %}{% comment %} What the calculator's H₂S rests on, beside the H₂S worked out (the H₂S card of _results.html, which the page,
+   its live part and the report all include, so the note is there once in each): the constant of
    Millero, Plese & Fernandez (1988; chemcore/core/src/chemistry.rs k_h2s_total), measured in sea water only (the
    paper's abstract: S 5 to 40, 5 to 25 °C); in fresh water, and outside that range, the equation alone (the H₂S audit
-   of 2026-11-20, F5; README, Water-chemistry core). Nothing without a total sulfide. {% endcomment %}{% if analysis.h2s_ug_l is not None %}<p class="calc-note" data-h2s-basis>{% blocktrans trimmed %}H₂S: the constant of Millero, Plese and Fernandez (1988), measured in sea water of 5 to 40 ‰ at 5 to 25 °C. Outside that, fresh water among it, the H₂S rests on their equation alone, checked against no second source.{% endblocktrans %}</p>{% endif %}
+   of 2026-11-20, F5; README, Water-chemistry core). Beside every number that rests on the constant: the H₂S of a
+   total sulfide given, and the most total sulfide at this pH that an H₂S limit gives (the calculator always has a
+   limit, its default 2 µg/L); nothing when neither is worked out (the verification of 2026-11-22, F1).
+   {% endcomment %}{% if analysis.h2s_ug_l is not None or analysis.safe_total_sulfide_ug_l is not None %}<p class="calc-note" data-h2s-basis>{% blocktrans trimmed %}H₂S: the constant of Millero, Plese and Fernandez (1988), measured in sea water of 5 to 40 ‰ at 5 to 25 °C. Outside that, fresh water included, the H₂S rests on their equation alone, checked against no second source.{% endblocktrans %}</p>{% endif %}

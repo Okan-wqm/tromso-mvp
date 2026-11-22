@@ -58,7 +58,6 @@
       <p class="calc-note" data-formula="{{ analysis.equilibria.formula }}">{{ analysis.provenance }}</p>
       {% if analysis.nh3_judged %}<p class="calc-note">{{ analysis.nh3_judged }}</p>{% endif %}
       {% if analysis.co2_judged %}<p class="calc-note">{{ analysis.co2_judged }}</p>{% endif %}
-      {% include "farm/calculator/_h2s_basis.html" %}
     </div>
   </div>
   {% endwith %}

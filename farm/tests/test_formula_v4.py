@@ -81,6 +81,42 @@ class WordsTests(SimpleTestCase):
                         self.assertIn('EPA', words)
                         words % {'value': '0,0121'}
 
+    def test_the_co2_words_say_the_margin_the_core_gives_over_the_whole_range(self):
+        """The judged CO₂ over its best estimate from 5 ‰, as the program works it out (S 5 to 40, 0 to 30 °C): never
+        below 10^0.03 − 1, at most about 10 % up to pH 8.2 and 14 % at pH 9 with 50 mg/L, more with less alkalinity (it
+        said "about 7 to 9 %", true only to about pH 8: the independent review of formula 4, can-follow 2)."""
+        def margins(phs, alkalinities):
+            found = []
+            for salinity in (5.0, 10.0, 34.0, 40.0):
+                for temperature in (0.0, 12.0, 30.0):
+                    for alkalinity in alkalinities:
+                        for ph in phs:
+                            if deffeyes.why_impossible(temperature, salinity, ph, alkalinity):
+                                continue                             # below its floor (S 40, 30 °C, pH 8.5, 10 mg/L)
+                            analysis = deffeyes.analyse(deffeyes.Water(temperature, salinity, ph, alkalinity))
+                            self.assertEqual(analysis.co2_basis, 'limits')
+                            found.append(analysis.co2_mg_l / analysis.co2_corrected_mg_l - 1)
+            return found
+
+        least = 10 ** native.PH_UNCERTAINTY - 1
+        up_to_8_2 = margins([6.0, 6.5, 7.0, 7.5, 8.0, 8.2], [50.0, 100.0, 200.0])
+        at_9 = margins([9.0], [50.0, 100.0, 200.0])
+        low_alkalinity = margins([8.5], [10.0])
+        self.assertGreaterEqual(min(up_to_8_2 + at_9 + low_alkalinity), least - 1e-12)
+        self.assertLess(max(up_to_8_2), 0.10)
+        self.assertGreater(max(up_to_8_2), 0.09)                     # "up to about 10 %"
+        self.assertTrue(0.135 < max(at_9) < 0.145)                   # "14 % at pH 9"
+        self.assertGreater(max(low_alkalinity), 0.145)               # "more ... with a low alkalinity"
+        english = str(messages.JUDGED['co2', 'limits'])
+        self.assertIn('at least 7 %% above it', english)
+        self.assertIn('up to about 10 %% at pH 8.2 and 14 %% at pH 9 with 50 mg/L', english)
+        self.assertNotIn('7 to 9', english)
+        for language, number in (('nb', '14'), ('tr', '14')):
+            with translation.override(language):
+                words = str(messages.JUDGED['co2', 'limits'])
+                self.assertIn(number, words)
+                self.assertIn('8,2', words)
+
     def test_a_sea_nh3_says_what_its_best_estimate_rests_on(self):
         eq = chemistry.water_equilibria(12.0, 34.0, 100.0)
         said = messages.judged('nh3', 'limits', 0.0061, eq)

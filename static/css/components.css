@@ -514,10 +514,17 @@ td.wq-was-warning, .wq-value.wq-was-warning { color: var(--warn-text); font-weig
 /* A chart drawn in a viewBox scales its text with its width: 10 units of text were 7 px in a narrow column and 30 px
    in a 5120 px window. So the chart takes one of a few widths (its card is a size container) and knows its scale
    (--chart-scale = drawn width / viewBox width), and its text is the chart type scale divided by it: on screen the
-   tick is --fs-chart-tick, the label --fs-chart-label, at every width from 1280 to 5120 px. The pH plots are 400 units
-   wide; below the first step a plot fills its card and its text is that of a 400 px plot. */
+   tick is --fs-chart-tick, the label --fs-chart-label (12-15.6 px for a pH plot at every card width down to 200 px, and for the
+   Deffeyes chart from a 768 px window to 5120 px, see its steps below). The pH plots are 400 units wide; below the first
+   step a plot fills its card and takes the scale of the step under its width (0.9 to 0.5), the text it measured at
+   390 px being 12.2 px at the same overlaps and no cut label. */
 .calc-card:has(> .ph-chart, > * > .ph-chart) { container-type: inline-size; }
 .ph-chart { --chart-scale: 1; display: block; width: 100%; height: auto; margin: 0 auto; font-family: var(--font-text); font-variant-numeric: tabular-nums; }
+@container (max-width: 399px) { .ph-chart { --chart-scale: .9; } }
+@container (max-width: 359px) { .ph-chart { --chart-scale: .8; } }
+@container (max-width: 319px) { .ph-chart { --chart-scale: .7; } }
+@container (max-width: 279px) { .ph-chart { --chart-scale: .6; } }
+@container (max-width: 239px) { .ph-chart { --chart-scale: .5; } }
 @container (min-width: 400px) { .ph-chart { --chart-scale: 1; width: 400px; } }
 @container (min-width: 480px) { .ph-chart { --chart-scale: 1.2; width: 480px; } }
 @container (min-width: 640px) { .ph-chart { --chart-scale: 1.6; width: 640px; } }
@@ -660,8 +667,12 @@ polygon.deffeyes-arrow.deffeyes-reagent-hcl { fill: var(--chart-s3); }
 .deffeyes { margin: 0; padding: 1rem; border: 1px solid var(--line-hair); border-radius: var(--radius-object); background: var(--surface-sheet); }
 .deffeyes-title { margin-bottom: .5rem; font-weight: 700; text-align: center; }
 /* The Deffeyes chart is 600 units wide; it takes 640, 800, 960 or 1200 px as its figure allows (the figure is a size
-   container), its text the chart type scale divided by that scale (see .ph-chart above). Below the first step it fills
-   its figure and its text is that of a 640 px chart. */
+   container), its text the chart type scale divided by that scale (see .ph-chart above): 12-13 px on screen wherever its
+   figure is 640 px wide or more (the calculator: a 768 px window up to 5120 px). Below the first step it fills its
+   figure and its text is that of a 640 px chart, so it shrinks with the window (10-11 px at 600 px, 6 px at 390 px; main
+   gave 5.9 px). That is NOT forced to 12 px: 12 px at 390 px needs the scale 0.54, and at 0.6 (10.8 px) the pairs of
+   overlapping labels went from 10 to 23 and one label was cut. A chart panned sideways in a frame of its own is a design call for the
+   calculator's rebuild (slice 2 of the frontend redesign), not for a stylesheet. */
 .deffeyes { container-type: inline-size; }
 .deffeyes-chart { --chart-scale: 1.0667; display: block; width: 100%; height: auto; margin: 0 auto; font-family: var(--font-text); font-variant-numeric: tabular-nums; }
 @container (min-width: 640px) { .deffeyes-chart { --chart-scale: 1.0667; width: 640px; } }

@@ -676,26 +676,66 @@ class CalculatorPageTests(TestCase):
         page = self.client.get(self.url, self.query(ph='7.2')).content.decode()
         self.assertIn(f'href="{self.report_url}?', page)
 
-    def test_the_sources_name_the_ammonium_constants_and_the_h2s_says_its_basis(self):
-        """The list of sources names the ammonium constants formula 4 works with (Clegg & Whitfield's best estimate,
-        the ideal water's Yao & Millero; it said "Millero (1995)" alone), and beside an H₂S worked out the page and the
-        report say what the H₂S constant was measured on (the H₂S audit of 2026-11-20, F5); without a total sulfide
-        there is no H₂S and no note."""
-        note = ('H₂S: the constant of Millero, Plese and Fernandez (1988), measured in sea water of 5 to 40 ‰ at 5 to '
-                '25 °C. Outside that, fresh water among it, the H₂S rests on their equation alone, checked against no '
-                'second source.')
+    def test_the_sources_name_the_ammonium_constants_and_how_each_water_is_judged_on_them(self):
+        """The list of sources names the ammonium constants formula 4 works with (it said "Millero (1995)" alone):
+        Clegg & Whitfield's for the best estimate, Yao & Millero's for the ideal water (`fresh_at`: k_nh4_sws(t, 0)),
+        fresh and salt-added water judged on the larger of the two (`limits_basis`: the ideal water throughout for a
+        salt-added one, up to 1 ‰ for a fresh one), and brackish water of 1 to 5 ‰ on the larger of the best estimate
+        and a blend of Yao & Millero's with Clegg & Whitfield's (formula4.rs `limits_basis`: blend(ideal.k_nh4,
+        sea.k_nh4); the verification of 2026-11-22, F3). On the page and in the report, in each language."""
+        footer = ('ammonium: Clegg and Whitfield (1995) for the best estimate, Yao and Millero (1995) for the ideal '
+                  'water; fresh and salt-added water is judged on the larger of these two values, and brackish water of '
+                  '1 to 5 ‰ on the larger of the best estimate and a blend of the two constants;')
         for url in (self.url, self.report_url):
             with self.subTest(url=url):
                 html = self.client.get(url, self.query()).content.decode()
-                self.assertIn('ammonium: Clegg and Whitfield (1995), fresh and salt-added water judged on the ideal '
-                              'water with Yao and Millero (1995);', html)
+                self.assertIn(footer, html)
                 self.assertNotIn('ammonium: Millero (1995)', html)
-                self.assertIn(note, html)
-        self.assertIn('data-h2s-basis', self.client.get(self.results_url, self.query()).content.decode())
-        for url in (self.url, self.results_url, self.report_url):
-            with self.subTest(url=url, sulfide=None):
-                self.assertNotIn('data-h2s-basis', self.client.get(url, self.query(total_sulfide_ug_l='')).content
-                                 .decode())
+                self.assertNotIn('judged on the ideal water with Yao', html)
+        for language, words in {'nb': ('Yao og Millero (1995) for ideelt vann', 'brakkvann på 1 til 5 ‰',
+                                       'en blanding av de to konstantene'),
+                                'tr': ('ideal su için Yao ve Millero (1995)', '1–5 ‰ acı su',
+                                       'iki sabitin karışımından büyük olana göre')}.items():
+            Profile.objects.update_or_create(user=self.user, defaults={'language': language})
+            for url in (self.url, self.report_url):
+                html = self.client.get(url, self.query()).content.decode()
+                with self.subTest(language=language, url=url):
+                    for word in words:
+                        self.assertIn(word, html)
+
+    def test_the_h2s_basis_stands_beside_every_number_that_rests_on_the_constant(self):
+        """What the H₂S constant was measured on is said on the page, in its live part and in the report beside the
+        H₂S worked out from a total sulfide and beside the most total sulfide an H₂S limit gives at this pH: that number
+        is worked out from the same share (analysis.rs `safe_total_sulfide_ug_l`), and the calculator always has a limit
+        (its default 2 µg/L), so with no total sulfide typed the card showed it without the note (the verification of
+        2026-11-22, F1). With neither a total sulfide nor a limit nothing rests on the constant and there is no note.
+        The words are the same in each case and say fresh water is included."""
+        note = ('H₂S: the constant of Millero, Plese and Fernandez (1988), measured in sea water of 5 to 40 ‰ at 5 to '
+                '25 °C. Outside that, fresh water included, the H₂S rests on their equation alone, checked against no '
+                'second source.')
+        most = re.compile(r'Most total sulfide at this pH \(as S\)</th><td class="num">([^<]*)</td>')
+        cases = [
+            # (what is typed, the note is there, the "most total sulfide" row shows a number, the H₂S shows a number)
+            ({}, True, True, True),                                          # the defaults: a sulfide and a limit
+            ({'total_sulfide_ug_l': ''}, True, True, False),                 # F1: only the limit
+            ({'h2s_limit_ug_l': ''}, True, False, True),                     # only the sulfide
+            ({'total_sulfide_ug_l': '', 'h2s_limit_ug_l': ''}, False, False, False),
+        ]
+        for typed, noted, most_shown, h2s_shown in cases:
+            for url in (self.url, self.results_url, self.report_url):
+                with self.subTest(typed=typed, url=url):
+                    analysis = self.client.get(url, self.query(**typed)).context['analysis']
+                    self.assertEqual(analysis.safe_total_sulfide_ug_l is not None, most_shown)
+                    self.assertEqual(analysis.h2s_ug_l is not None, h2s_shown)
+                    html = self.client.get(url, self.query(**typed)).content.decode()
+                    self.assertEqual(html.count('data-h2s-basis'), int(noted))      # once, not once per include
+                    self.assertEqual(note in html, noted)
+                    self.assertEqual(most.search(html).group(1).strip() != '—', most_shown)
+        for language, words in {'nb': 'ferskvann medregnet', 'tr': 'tatlı su da dahil'}.items():
+            Profile.objects.update_or_create(user=self.user, defaults={'language': language})
+            for url in (self.url, self.results_url, self.report_url):
+                with self.subTest(language=language, url=url):
+                    self.assertIn(words, self.client.get(url, self.query(total_sulfide_ug_l='')).content.decode())
 
     def test_nothing_is_stored_and_reading_is_needed(self):
         self.client.get(self.results_url, self.query(dose_nahco3='50'))

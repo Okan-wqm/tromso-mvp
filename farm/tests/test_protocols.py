@@ -4,6 +4,7 @@ after each feeding and its reset at a weighing, the correction numbers and the w
 feeding-protocols §6.7; then the pages (Meal board, Records, Protocols, Assignments, the drawer, the weighing
 dialog) against the stored rows, the permissions, the delete plan and the languages."""
 import uuid
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone as dt_timezone
 from decimal import Decimal
@@ -25,7 +26,7 @@ from ..feeding import ration, read
 from ..feeding.fold import Feeding, walk
 from ..feeding.projection import Projector
 from ..feeding.ration import Band, Cell, Policy, Table, sfr_at
-from ..feeding.temperature import Temperature
+from ..feeding.temperature import Temperature, TemperatureBook
 from ..models import (
     Feed, FeedingProtocol, FeedingRecord, HandlingPlanItem, ProtocolAssignment, ProtocolBand, ProtocolRate, Site,
     StockOperation, System, Tank,
@@ -34,7 +35,8 @@ from ..models import (
 from ..stock import read as stock_read, services as stock_services
 from ..stock.dates import local_today
 from ..stock.fold import Line, Op
-from ..water import services as water_services
+from ..water import services as water_services, sources
+from ..water.read import Found, Observation, Series
 from .helpers import WINDOW_WAY_OUT, correction_window, make_facility, point_of, role
 from .test_feeding import FeedingTestCase
 from .test_stock import make_unit
@@ -925,27 +927,70 @@ class BulkFiguresTests(WorkedExampleTestCase):
                          ['', '', '', 'soon', 'soon', 'now'])
 
 
+def live_as_main_asked_it(series, point_id, moment, window):
+    """`Series._live` as main (56b7ea0) wrote it, verbatim but for `series` where it said `self`: each moment asked of the
+    sources on its own, by `sources.value_at`, when it is first looked up. The oracle of SensorRationTemperatureTests:
+    nothing of `Series.prefetch` or `sources.values_at` is in it."""
+    if moment not in series.asked:
+        targets = {pk: [(target, origin) for target, origin in found if target in series.bound]
+                   for pk, found in series.targets.items()}
+        if not any(targets.values()):
+            series.asked[moment] = {}
+            return []
+        answer = sources.value_at([target for found in targets.values() for target, _origin in found], series.code,
+                                  moment)
+        by_point = {}
+        for pk, found in targets.items():
+            values = []
+            for target, origin in found:
+                for value in sources.ordered(answer.values.get(target, [])):
+                    if value.at <= moment:
+                        observed = Observation.of_sensor(series.points[pk], value, origin)
+                        values.append(Found(value.at, observed.get(series.code), value.fresh_for, origin,
+                                            series.points[pk]))
+            by_point[pk] = values
+        series.asked[moment] = by_point
+    return [found for found in series.asked[moment].get(point_id, []) if window is None or moment - found.at <= window]
+
+
 class SensorRationTemperatureTests(WorkedExampleTestCase):
     """The ration's temperature from a probe on T-02 (owner rule A9: a fresh sensor value counts as the unit's own): the
-    walk reads the sensors at every day it may ask in ONE ask of the live sources (Series.prefetch), and every day's
-    ration is what a day-by-day ask gives. Before, a fifteen-day walk asked the sources fifteen times, and the sensors
-    ran a query per channel at each (the monitoring wall's 161 reads of the hypertable, 2026-11-21)."""
+    walk reads the sensors at the days it may ask in ONE ask of the live sources (Series.prefetch), and every day's
+    basis is what main's way gives: the prefetch OFF, each day asked of the sources on its own when the walk first looks
+    it up (`live_as_main_asked_it`, a provider that answers one moment at a time). Before, a fifteen-day walk asked the
+    sources fifteen times, and the sensors ran a query per channel at each (the monitoring wall's 161 reads of the
+    hypertable, 2026-11-21). The reference shares nothing with the new reads (`Series.prefetch`, `sources.values_at`), so
+    a fault in them, a day's answer swapped with another's, shows."""
 
     def setUp(self):
         super().setUp()
         from .test_water_sources import FakeProvider
-        from ..water import sources
 
-        class Many(FakeProvider):
+        class Flaky(FakeProvider):
+            """`broken_at`: the moments whose `value_at` fails (it is asked, and it raises)."""
+            broken_at = ()
+
+            def value_at(self, targets, code, moment):
+                if moment in self.broken_at:
+                    self.asked.append(('value_at', code))
+                    raise RuntimeError('the sensors database dropped this ask')
+                return FakeProvider.value_at(self, targets, code, moment)
+
+        class Many(Flaky):
+            """Also answers several moments in one ask; `values_at_broken`: that ask fails."""
+            values_at_broken = False
+
             def values_at(self, targets, code, moments):
                 self.asked.append(('values_at', code, len(moments)))
+                if self.values_at_broken:
+                    raise RuntimeError('the sensors database dropped the ask for all the days')
                 found = []
                 for moment in moments:
                     found.append(FakeProvider.value_at(self, targets, code, moment))
                     self.asked.pop()                                      # its own value_at is not an ask
                 return found
 
-        self.providers = {'many': Many(), 'one_by_one': FakeProvider()}
+        self.providers = {'many': Many(), 'one_by_one': Flaky()}
         target = (sources.POINT, point_of(self.t2).pk)
         now = self.pinned = timezone.now()
         for provider in self.providers.values():
@@ -956,27 +1001,60 @@ class SensorRationTemperatureTests(WorkedExampleTestCase):
                 provider.history.setdefault(target, {}).setdefault('temperature_c', []).append(value)
         self.sources = sources
 
-    def figures(self, name):
-        """The figures with this provider, both read at ONE moment: today's temperature carries its age at `now`."""
+    @contextmanager
+    def reading(self, name, as_main=False):
+        """The named provider registered, the clock at ONE moment (today's temperature carries its age at `now`), and
+        with `as_main` the walk reads the sensors main's way: the prefetch off and `Series._live` as main wrote it."""
         provider = self.providers[name]
+        provider.asked.clear()
         self.sources.register(provider)
         try:
             with mock.patch('django.utils.timezone.now', return_value=self.pinned):
-                found = read.figures(stock_read.stock_of([self.t2]), details=[self.t2], ration=True)[self.t2.pk]
-            return found, provider
+                if as_main:
+                    with mock.patch.object(TemperatureBook, 'prefetch', lambda book, moments: None), \
+                            mock.patch.object(Series, '_live', live_as_main_asked_it):
+                        yield provider
+                else:
+                    yield provider
         finally:
             self.sources.unregister(provider)
 
-    def test_one_ask_for_every_day_and_the_same_rations_as_asking_day_by_day(self):
+    @staticmethod
+    def asks(provider):
+        return [ask for ask in provider.asked if ask[0] in ('value_at', 'values_at')]
+
+    def figures(self, name, as_main=False):
+        """(the figures of T-02 with this provider, the asks it was asked)."""
+        with self.reading(name, as_main) as provider:
+            found = read.figures(stock_read.stock_of([self.t2]), details=[self.t2], ration=True)[self.t2.pk]
+        return found, self.asks(provider)
+
+    def days(self, name, as_main=False, back=16):
+        """{(unit id, day): UnitDay} of T-02 for each of its last `back` days: the basis of every share with the
+        temperature it rests on, not only today's ration."""
+        with self.reading(name, as_main):
+            return read.project([self.t2.pk], [(self.t2.pk, self.today - timedelta(days=n)) for n in range(back)]).days
+
+    def temperature_of(self, days, back):
+        return days[(self.t2.pk, self.today - timedelta(days=back))].shares[0].end.temperature
+
+    def assertSame(self, new, old):
+        """The figures and the days of two readings are equal, field by field."""
+        self.assertEqual(new[0].ration, old[0].ration)
+        self.assertEqual(new[0].corrections, old[0].corrections)
+        self.assertEqual(new[0].week, old[0].week)
+
+    def test_one_ask_for_the_days_and_the_same_bases_as_main_asking_day_by_day(self):
         many, asked_once = self.figures('many')
-        one_by_one, asked_daily = self.figures('one_by_one')
-        asks = [ask for ask in asked_once.asked if ask[0] in ('value_at', 'values_at')]
-        self.assertEqual(len(asks), 1, asks)
-        self.assertEqual(asks[0][:2], ('values_at', 'temperature_c'))
-        self.assertGreater(sum(ask[0] == 'value_at' for ask in asked_daily.asked), 10)   # the walk does ask most days
-        self.assertEqual(many.ration, one_by_one.ration)
-        self.assertEqual(many.corrections, one_by_one.corrections)
-        self.assertEqual(many.week, one_by_one.week)
+        main, asked_daily = self.figures('one_by_one', as_main=True)
+        self.assertEqual(len(asked_once), 1, asked_once)
+        self.assertEqual(asked_once[0][:2], ('values_at', 'temperature_c'))
+        self.assertGreater(sum(ask[0] == 'value_at' for ask in asked_daily), 10)   # main's way asks most days, one each
+        self.assertSame((many,), (main,))
+        self.assertEqual(self.days('many'), self.days('one_by_one', as_main=True))     # every day's basis, 16 days
         temperatures = {line.end.temperature for line in many.ration.shares}
         self.assertEqual({each.via for each in temperatures}, {'unit'})
         self.assertTrue(all(each.sampling_point is not None for each in temperatures))
+        # the days differ from one another: a swapped or shifted answer could not pass for the right ones
+        days = self.days('many')
+        self.assertGreater(len({self.temperature_of(days, back).value_c for back in range(1, 12)}), 6)

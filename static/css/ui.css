@@ -126,8 +126,6 @@ svg.ui-gauge-track .ui-gauge-fill { position: static; fill: var(--text-3); }
 .ui-seg a:hover { background: var(--surface-sunken); color: var(--text-1); }
 .ui-seg a[aria-pressed="true"] { background: var(--action-tint); color: var(--action); box-shadow: inset 0 0 0 2px var(--action); }
 
-.ui-toolbar form { display: contents; }
-
 /* "How rations are worked out": the arithmetic folded under a link-styled summary */
 .ui-explain { margin: 0 0 var(--space-3); color: var(--text-2); font-size: var(--fs-small); }
 .ui-explain summary { width: fit-content; color: var(--action); font-size: var(--fs-body); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }

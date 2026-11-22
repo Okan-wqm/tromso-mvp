@@ -1771,7 +1771,8 @@ without values it shows its defaults.
   - Left as the verification says: V-D (farm 0045 and 0046 add their check validated, an exclusive lock on
     `water_measurements` while each chunk is scanned: land with the server stopped; going back past 0045 keeps the P
     and loses the PO₄ entry), V-E (the phosphate sentence is one per list, above it), V-H (the chrono advisory of
-    `sensors-ingest`: a dated ignore on main, not on this branch).
+    `sensors-ingest`: a dated ignore on main, not on this branch; since solved without an ignore, the ingest moved from
+    chrono to `time`).
 - **After the water-chemistry audit of 2026-11-19** (`F:\dev\balik-notes\chem-audit-fable\AUDIT.md`; no constant and no
   formula moved, the golden files keep their bytes; F2, a published NBS conversion in salt water, waits for the owner):
   - *A sensor's pH has a scale* (F1, owner decision 1 of 2026-11-17). A pH channel says the scale its probe reports on
@@ -6038,5 +6039,6 @@ touches one place and its tests: `pypdf` only in `knowledge/extraction.py` (read
 `sensors/management/commands/sensors_ingest_role.py` (the ingest role's SQL, quoted by `psycopg.sql`); `cryptography` is
 imported by nothing of ours (pypdf uses it for encrypted PDFs). Tests may import a library to build their inputs (a PDF, a
 `.mo` file, a connection). In the ingest, the MQTT client (`rumqttc`) is only in `src/mqtt.rs` and the HTTP server (`axum`)
-in `src/http.rs` and `src/supervisor.rs`; its database client is its core and is used where it writes (`src/db.rs`,
-`src/config.rs`, `src/env.rs`, `src/service.rs`).
+in `src/http.rs` and `src/supervisor.rs`, the time library (`time`, since chrono became unmaintained) only in `src/ts.rs`,
+the one timestamp type (the bench example `examples/multisource.rs` formats its payload times with it too); its
+database client is its core and is used where it writes (`src/db.rs`, `src/config.rs`, `src/env.rs`, `src/service.rs`).

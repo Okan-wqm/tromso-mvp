@@ -11,9 +11,9 @@
 //!
 //! Both times are cut to microseconds (the stored precision) so the in-memory key equals the stored key.
 
-use crate::model::{DeadReason, to_micros};
+use crate::model::DeadReason;
 use crate::quality::{CLOCK_SUSPECT, RECEIVE_TIME};
-use chrono::{DateTime, Duration, Utc};
+use crate::ts::{self, Ts};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Limits {
@@ -22,21 +22,17 @@ pub struct Limits {
 }
 
 /// The stored time and its quality bits, or the reason the sample is refused.
-pub fn resolve(
-    device_ts: Option<DateTime<Utc>>,
-    received_at: DateTime<Utc>,
-    limits: Limits,
-) -> Result<(DateTime<Utc>, i16), DeadReason> {
-    let received_at = to_micros(received_at);
-    let Some(device_ts) = device_ts.map(to_micros) else {
+pub fn resolve(device_ts: Option<Ts>, received_at: Ts, limits: Limits) -> Result<(Ts, i16), DeadReason> {
+    let received_at = received_at.trunc_micros();
+    let Some(device_ts) = device_ts.map(Ts::trunc_micros) else {
         return Ok((received_at, RECEIVE_TIME));
     };
-    let latest = Duration::try_seconds(limits.future_skew_s).and_then(|d| received_at.checked_add_signed(d));
+    let latest = ts::try_seconds(limits.future_skew_s).and_then(|d| received_at.checked_add(d));
     if latest.is_some_and(|l| device_ts > l) {
         return Ok((received_at, CLOCK_SUSPECT));
     }
     // A late limit beyond the representable range means nothing is too old.
-    let oldest = Duration::try_days(limits.late_limit_days).and_then(|d| received_at.checked_sub_signed(d));
+    let oldest = ts::try_days(limits.late_limit_days).and_then(|d| received_at.checked_sub(d));
     if oldest.is_some_and(|o| device_ts < o) {
         return Err(DeadReason::TooOld);
     }
@@ -46,17 +42,17 @@ pub fn resolve(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::TimeZone;
+    use crate::ts::Duration;
     use proptest::prelude::*;
 
     const L: Limits = Limits { future_skew_s: 60, late_limit_days: 730 };
 
-    fn now() -> DateTime<Utc> {
-        Utc.with_ymd_and_hms(2026, 11, 4, 12, 0, 0).unwrap() + Duration::nanoseconds(123_456_789)
+    fn now() -> Ts {
+        Ts::ymd_hms(2026, 11, 4, 12, 0, 0).unwrap() + Duration::nanoseconds(123_456_789)
     }
 
-    fn micros(t: DateTime<Utc>) -> DateTime<Utc> {
-        DateTime::<Utc>::from_timestamp_micros(t.timestamp_micros()).unwrap()
+    fn micros(t: Ts) -> Ts {
+        Ts::from_unix_micros(t.unix_micros()).unwrap()
     }
 
     #[test]

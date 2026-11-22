@@ -676,6 +676,27 @@ class CalculatorPageTests(TestCase):
         page = self.client.get(self.url, self.query(ph='7.2')).content.decode()
         self.assertIn(f'href="{self.report_url}?', page)
 
+    def test_the_sources_name_the_ammonium_constants_and_the_h2s_says_its_basis(self):
+        """The list of sources names the ammonium constants formula 4 works with (Clegg & Whitfield's best estimate,
+        the ideal water's Yao & Millero; it said "Millero (1995)" alone), and beside an H₂S worked out the page and the
+        report say what the H₂S constant was measured on (the H₂S audit of 2026-11-20, F5); without a total sulfide
+        there is no H₂S and no note."""
+        note = ('H₂S: the constant of Millero, Plese and Fernandez (1988), measured in sea water of 5 to 40 ‰ at 5 to '
+                '25 °C. Outside that, fresh water among it, the H₂S rests on their equation alone, checked against no '
+                'second source.')
+        for url in (self.url, self.report_url):
+            with self.subTest(url=url):
+                html = self.client.get(url, self.query()).content.decode()
+                self.assertIn('ammonium: Clegg and Whitfield (1995), fresh and salt-added water judged on the ideal '
+                              'water with Yao and Millero (1995);', html)
+                self.assertNotIn('ammonium: Millero (1995)', html)
+                self.assertIn(note, html)
+        self.assertIn('data-h2s-basis', self.client.get(self.results_url, self.query()).content.decode())
+        for url in (self.url, self.results_url, self.report_url):
+            with self.subTest(url=url, sulfide=None):
+                self.assertNotIn('data-h2s-basis', self.client.get(url, self.query(total_sulfide_ug_l='')).content
+                                 .decode())
+
     def test_nothing_is_stored_and_reading_is_needed(self):
         self.client.get(self.results_url, self.query(dose_nahco3='50'))
         self.client.get(self.report_url, self.query())

@@ -6,6 +6,7 @@ trigger, serialized per target so two concurrent saves cannot both pass). Histor
 open binding and opens the next in one transaction with one log entry. The water read sees a bound channel's value with
 its origin, skips a channel in maintenance, hides the bindings of a deleted point and shows them again when it is
 restored; a moved sensor's history stays with the unit it was in."""
+import random
 import threading
 import uuid
 from datetime import timedelta
@@ -27,11 +28,37 @@ from farm.water import read, sources
 
 from sensors import bindings
 from sensors.models import Binding, Channel, ChannelState
+from sensors.provider import _bindings, _scale, _target
+from sensors.quality import BAD_MASK
 
 from . import SensorsCase, make_channel, make_connection, make_device, make_format
 
 BINDER = ('view_binding', 'add_binding', 'change_binding', 'delete_binding', 'view_channel', 'view_samplingpoint',
           'view_system', 'view_equipment')
+
+
+def value_at_as_main_asked_it(targets, code, moment):
+    """`SensorSource.value_at` as main (56b7ea0) wrote it, verbatim: the bindings, then ONE query of the hypertable for
+    each of them, at the one moment. The oracle of the tests of `values_at` (which asks for several moments in two
+    queries): nothing of it is shared but the bindings' own query and the value's fields."""
+    newest = {}
+    found_bindings = _bindings(targets).filter(channel__quantity=code, valid_from__lte=moment)
+    with connection.cursor() as cursor:
+        for binding in found_bindings:
+            cursor.execute(
+                f'SELECT ts, value FROM sensors_reading WHERE channel_no = %s AND ts >= %s AND ts <= %s '
+                f'AND (%s::timestamptz IS NULL OR ts < %s) AND (quality & {BAD_MASK}) = 0 ORDER BY ts DESC LIMIT 1',
+                [binding.channel.channel_no, binding.valid_from, moment, binding.valid_to, binding.valid_to])
+            row = cursor.fetchone()
+            key = (_target(binding), binding.channel.channel_no)
+            if row is not None and (key not in newest or row[0] > newest[key].at):
+                newest[key] = sources.SensorValue(code=code, value=row[1], at=row[0],
+                                                  fresh_for=binding.channel.fresh_s, role=binding.role,
+                                                  channel_no=binding.channel.channel_no, **_scale(binding.channel))
+    found = {}
+    for (target, _channel_no), value in newest.items():
+        found.setdefault(target, []).append(value)
+    return found
 
 
 class BindingCase(SensorsCase):
@@ -215,10 +242,11 @@ class WaterReadTests(BindingCase):
         moments = [self.start - timedelta(hours=1), self.start + timedelta(hours=2),
                    self.start + timedelta(days=1, hours=3), moved_at - timedelta(minutes=1),
                    moved_at + timedelta(hours=2), moved_at + timedelta(hours=2)]
-        each = [PROVIDER.value_at(targets, 'ph', moment) for moment in moments]
+        each = [value_at_as_main_asked_it(targets, 'ph', moment) for moment in moments]     # main's own, not our reading
         with self.assertNumQueries(2):
             together = PROVIDER.values_at(targets, 'ph', moments)
         self.assertEqual(together, each)
+        self.assertEqual([PROVIDER.value_at(targets, 'ph', moment) for moment in moments], each)
         self.assertEqual(each[0], {})
         self.assertEqual([value.value for value in each[1][(sources.POINT, self.mid1.pk)]], [7.0])
         self.assertEqual(sorted(value.value for value in each[2][(sources.POINT, self.mid1.pk)]), [6.9, 7.0])
@@ -227,6 +255,93 @@ class WaterReadTests(BindingCase):
         self.assertEqual([value.value for value in each[4][(sources.POINT, self.mid2.pk)]], [7.6])
         self.assertEqual([answer.values for answer in sources.values_at(targets, 'ph', moments)], each)
         self.assertEqual(PROVIDER.values_at(targets, 'ph', []), [])
+
+    def test_values_at_is_what_main_asked_binding_by_binding_at_every_edge_of_every_binding_and_reading(self):
+        """The bounds of a binding, against main's own `value_at` (the same statement per binding, copied above, nothing
+        of `values_at` in it): a reading is the place's from the binding's first moment on (inclusive) up to, never
+        including, its last; at, a microsecond before and a microsecond after each such edge, with bad readings and late
+        ones beside them, a moved sensor, a backup channel, a channel on a system, a deleted binding, duplicate moments,
+        and a seeded cloud of readings; every answer, its order and each value's fields equal."""
+        from sensors.provider import PROVIDER
+        micro, t0 = timedelta(microseconds=1), self.start
+        moved = t0 + timedelta(days=3, hours=5, minutes=7, seconds=11)
+        ph2, ph3, ph4 = (make_channel(self.device, 'ph', code=code) for code in ('PH-2', 'PH-3', 'PH-4'))
+        bindings.move(self.user, self.ph, point=self.mid1, at=t0)
+        bindings.move(self.user, self.ph, point=self.mid2, at=moved)
+        bindings.move(self.user, self.ph, point=self.mid1, at=moved + timedelta(days=3))
+        self.bind(ph2, start=t0 + timedelta(hours=7), end=t0 + timedelta(days=4), point=self.mid1, role='backup')
+        self.bind(ph2, start=t0 + timedelta(days=4), system=self.ras, role='backup')
+        self.bind(ph3, start=t0 + timedelta(days=1, minutes=1), system=self.ras)
+        self.bind(ph4, start=t0, point=self.mid2, role='backup').soft_delete(self.user)
+        # A sensor that came to the place AFTER its last reading (a probe bound there, not yet heard): what it said
+        # before it came is another place's and gives this one nothing, whatever a later moment asks.
+        late = make_channel(self.device, 'ph', code='PH-5')
+        came = t0 + timedelta(days=5, hours=3)
+        self.bind(late, start=came, point=self.mid1, role='backup')
+        readings, edges, cloud = {}, {came}, []
+
+        def put(channel, ts, quality=0):
+            readings.setdefault((channel.channel_no, ts), (round(5 + len(readings) / 1000, 3), quality))
+
+        for binding in Binding.all_objects.all():
+            if binding.channel == late:
+                continue
+            for edge in (binding.valid_from, binding.valid_to):
+                if edge is None:
+                    continue
+                edges.add(edge)
+                for shift, quality in ((-3, 8), (-2, 16), (-1, 0), (0, 0), (1, 0), (2, 16), (3, 8)):
+                    put(binding.channel, edge + shift * micro, quality)
+        for ts, quality in ((came - timedelta(hours=1), 0), (came - micro, 0), (came - 2 * micro, 16),
+                            (came + timedelta(days=2), 0)):                    # all before it came, one long after
+            put(late, ts, quality)
+        at_the_edges = {ts for _channel_no, ts in readings}
+        rng = random.Random(20261122)
+        for channel in (self.ph, ph2, ph3, ph4):
+            for _n in range(60):
+                cloud.append(t0 - timedelta(days=1) + timedelta(microseconds=rng.randrange(0, 12 * 86400 * 10 ** 6)))
+                put(channel, cloud[-1], rng.choice([0, 0, 0, 1, 8, 16, 32, 64, 128]))
+        with connection.cursor() as cursor:
+            cursor.executemany('INSERT INTO sensors_reading (channel_no, ts, value, quality) VALUES (%s, %s, %s, %s)',
+                               [(channel_no, ts, value, quality) for (channel_no, ts), (value, quality)
+                                in readings.items()])
+        moments = sorted({*(edge + shift * micro for edge in edges for shift in (-1, 0, 1)), *at_the_edges,
+                          *rng.sample(cloud, 60), t0 - timedelta(hours=1), timezone.now(),
+                          came + timedelta(minutes=30), came + timedelta(days=1)})
+        moments += [moments[7], moments[7], moments[-3]]                                    # duplicates, out of order
+        targets_sets = [[(sources.POINT, self.mid1.pk), (sources.POINT, self.mid2.pk), (sources.SYSTEM, self.ras.pk)],
+                        [(sources.SYSTEM, self.ras.pk), (sources.POINT, self.mid2.pk)], [(sources.POINT, self.mid1.pk)]]
+        answered = 0
+        for targets in targets_sets:
+            each = [value_at_as_main_asked_it(targets, 'ph', moment) for moment in moments]
+            with self.assertNumQueries(2):
+                together = PROVIDER.values_at(targets, 'ph', moments)
+            self.assertEqual(len(together), len(moments))
+            for moment, was, now in zip(moments, each, together):
+                self.assertEqual(now, was, (targets, moment))
+                self.assertEqual(list(now), list(was))                                         # the targets' order
+                self.assertEqual([[value.channel_no for value in values] for values in now.values()],
+                                 [[value.channel_no for value in values] for values in was.values()])
+                answered += bool(was)
+        self.assertGreater(answered, 150)                          # most moments have a value: the edges decide which
+        # Two edges said out loud: the sensor that came after its last reading gives the place nothing until it is heard
+        # there ...
+        [soon, later] = PROVIDER.values_at([(sources.POINT, self.mid1.pk)], 'ph',
+                                           [came + timedelta(minutes=30), came + timedelta(days=3)])
+        self.assertEqual([each.channel_no for each in soon.get((sources.POINT, self.mid1.pk), [])
+                          if each.channel_no == late.channel_no], [])
+        self.assertEqual([each.value for each in later[(sources.POINT, self.mid1.pk)]
+                          if each.channel_no == late.channel_no], [readings[(late.channel_no, came + timedelta(days=2))][0]])
+        # ... and the reading AT the moment a sensor moved on the reading AT the moment the sensor moved is the new place's, never the old one's.
+        at_edge = PROVIDER.values_at([(sources.POINT, self.mid1.pk), (sources.POINT, self.mid2.pk)], 'ph',
+                                     [moved - micro, moved])
+
+        def value(answer, point):
+            return [each.value for each in answer.get((sources.POINT, point.pk), [])
+                    if each.channel_no == self.ph.channel_no]
+        before, at = readings[(self.ph.channel_no, moved - micro)][0], readings[(self.ph.channel_no, moved)][0]
+        self.assertEqual([value(at_edge[0], self.mid1), value(at_edge[0], self.mid2)], [[before], []])
+        self.assertEqual([value(at_edge[1], self.mid1), value(at_edge[1], self.mid2)], [[before], [at]])
 
 
 class PageTests(BindingCase):

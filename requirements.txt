@@ -3,6 +3,9 @@ Babel==2.18.0
 # AES-encrypted PDFs (an owner password and no user password, common on publishers' PDFs): pypdf reads them with it.
 cryptography==50.0.2
 Django==6.1.2
+# The cold tier of the sensor readings (sensors/tiers.py): writes a chunk as a Parquet file and reads it back (MIT;
+# no other package needed, its Parquet writer is built in).
+duckdb==1.5.6
 psycopg==3.3.6
 psycopg-binary==3.3.6
 # Reads the text of an uploaded PDF (knowledge/extraction.py); a recent release, as each patch closes ways a

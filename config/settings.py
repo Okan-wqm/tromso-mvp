@@ -225,6 +225,10 @@ STOCK_BACKDATE_DAYS = 31
 TASKS = {'default': {'BACKEND': 'core.jobs.DatabaseBackend'}}
 WORKER_STALE_SECONDS = int(os.environ.get('WORKER_STALE_SECONDS', '120'))
 
+# The cold tier of the sensor readings (sensors/tiers.py, core/archive.py): the directory whole chunks are moved to as
+# Parquet files, on this server (owner amendment D2; best on another disk or partition). Empty: the cold tier is off.
+COLD_ARCHIVE_DIR = os.environ.get('COLD_ARCHIVE_DIR', '')
+
 # A feeding above this % of the unit's book biomass a day asks for an acknowledgement, stored on the record
 # (farm/feeding/services.py; owner decision Q-F5): a kilo typed for a gram is caught, fry may be fed more.
 FEEDING_ACK_PERCENT = 10

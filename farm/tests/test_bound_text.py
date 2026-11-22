@@ -8,15 +8,23 @@ bound read "O₂ (%) 60.0 < critical limit 60.0". `value_past` (farm/templatetag
 sentences: the shown value when it already reads past the bound, else the exact value with the fewest extra decimals that
 do (at most `EXTRA_DECIMALS`; past that, cut toward the side it is on). It never judges: its callers hand it the bound
 the judgement named (`evaluate.crossed`). The cards' own sentences are held to it in monitoring/tests/test_bound_text.py."""
+import re
 from decimal import ROUND_CEILING, ROUND_FLOOR, Decimal as D
 from types import SimpleNamespace
 
+from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase
+from django.urls import reverse
 from django.utils import timezone, translation
+
+from alarms import sources as alarm_sources
+from monitoring.tests import ALL_RIGHTS
+from monitoring.tests.golden import Tree
 
 from ..templatetags.water import EXTRA_DECIMALS, value_past, water_value
 from ..water import parameters, read
 from ..water.evaluate import Status, judge
+from .helpers import role
 from .test_water import WaterTestCase
 
 BOUNDS = ('critical_low', 'warning_low', 'warning_high', 'critical_high')
@@ -149,3 +157,108 @@ class JudgedThroughTests(WaterTestCase):
         reading = self.unit_water().get('oxygen_mg_l')
         self.assertEqual(reading.judged, Status.OK)
         self.assertRegex(reading.note, r'Judged as \d\d\.\d %\.')
+
+
+# ---- every line that says a bound ------------------------------------------------------------------------------------
+UNITS, MONITOR = reverse('farm:production_units'), reverse('monitoring:monitor')
+# What says a bound in a line: "critical below 60.0", "warning limit 70.0", the number after a "<" or a ">".
+BOUND_WORDS = re.compile(r'(?:(?:critical|warning) (?:limit|below|above) |[<>] )\d[\d.,]*')
+ROUNDED = re.compile(r'(?<![\d.,])60\.0(?!\d)')            # 59.988221 % rounded to its one decimal
+
+
+def lines_with_the_value_rounded_onto_the_bound(html):
+    """The lines of a page that say a bound (a drawer row's limits and notes, a card's reasons, the band's chips, a
+    title or an accessible name) and show the value 59.988221 % as 60.0 beside it. The bare figure of a cell or a tile
+    is not such a line: it says no bound (it keeps its parameter's decimals, the owner's decision)."""
+    lines = []
+    for node in Tree(html).root.walk():
+        if node.tag in ('li', 'th') and not any(each.tag in ('li', 'ul', 'article', 'table') for each in node.walk()
+                                                 if each is not node):
+            lines.append(' '.join(node.text().split()))
+        lines += [' '.join(node.attrs[name].split()) for name in ('title', 'aria-label') if node.attrs.get(name)]
+    return [line for line in lines if BOUND_WORDS.search(line) and ROUNDED.search(BOUND_WORDS.sub('', line))]
+
+
+class GuardTests(SimpleTestCase):
+    def test_the_guard_finds_what_it_is_there_for(self):
+        for bad in ('<ul><li>O₂ (%) 60.0 · critical limit 60.0</li></ul>', '<li>O₂ (%) 60.0 &lt; 70.0</li>',
+                    '<table><tr><th>O₂ · Atlantic salmon: critical below 60.0 · reads 60.0 (x)</th></tr></table>',
+                    '<td title="O₂ (%) 60.0, critical; limits: critical below 60.0">60.0</td>'):
+            with self.subTest(bad=bad):
+                self.assertEqual(len(lines_with_the_value_rounded_onto_the_bound(bad)), 1)
+        for good in ('<ul><li>O₂ (%) 59.99 · critical limit 60.0</li></ul>', '<td>60.0</td>', '<b>60.0 %</b>',
+                     '<th>O₂ · critical below 60.0 · reads 59.99 (x)</th>'):
+            with self.subTest(good=good):
+                self.assertEqual(lines_with_the_value_rounded_onto_the_bound(good), [])
+
+
+class NotesBesideTheLimitTests(WaterTestCase):
+    """Review of wip/bound-text, findings 1 and 3: the notes a reading keeps beside the limits that judged it said the
+    rounded value ("reads 60.0 …", "last own value 60.0 critical …") where the drawer's row prints them right after
+    "critical below 60.0". T-01's worked-out oxygen is 59.988221 % (7.07 mg/L at 8.2 °C, 0 ‰, 1 atm) against a critical
+    limit of 60.0: the Production units drawer, the alarm's summary and the monitoring cards (the card's reason, the
+    band's chip, the bar's name, every mode) say 59.99 and never 60.0 beside the bound."""
+
+    def setUp(self):
+        super().setUp()
+        self.stock()
+        self.limit('oxygen_saturation_pct', critical_low=60, warning_low=70)
+        self.reader = get_user_model().objects.create_user('reader', 'reader@example.com', 'x')
+        self.reader.groups.add(role('reader role', *ALL_RIGHTS))
+
+    def pages(self):
+        """The drawer's Water section (the water keeper's) and the monitoring page in each mode of its cards (a reader's)."""
+        found = {'drawer': self.client.get(UNITS, {'unit': self.t1.pk}).content.decode()}
+        self.client.force_login(self.reader)
+        for name, query in (('simple', {}), ('small', {'mode': 'small'}), ('big', {'mode': 'big'}),
+                            ('wall', {'wall': '1', 'mode': 'small'})):
+            found[name] = self.client.get(MONITOR, query).content.decode()
+        self.client.force_login(self.user)
+        return found
+
+    def assert_no_line_says_the_rounded_value_beside_a_bound(self, said):
+        pages = self.pages()
+        for name, html in pages.items():
+            with self.subTest(page=name):
+                self.assertEqual(lines_with_the_value_rounded_onto_the_bound(html), [])
+                self.assertNotIn(f'{said} 60.0', html)
+        for name in ('simple', 'small', 'big', 'wall'):                  # the band's chip, in every mode
+            self.assertRegex(pages[name], r'59\.99 &lt; critical limit 60\.0')
+        for name in ('small', 'big'):                                    # the card's own reason
+            self.assertRegex(pages[name], r'59\.99</span> ?<span[^>]*>· critical limit 60\.0')
+        return pages
+
+    def test_the_worst_fresh_note_says_the_value_that_decided_the_status(self):
+        self.sample(self.loop, hours=3, oxygen_mg_l='7.07', temperature_c='8.2')     # the loop's, fresh: 59.988221 %
+        self.sample(hours=1, oxygen_mg_l='9', temperature_c='8.2')                   # the unit's own, newer and fine
+        reading = self.unit_water().get('oxygen_saturation_pct')
+        self.assertEqual((reading.status, reading.worse.value, reading.worse.exact.quantize(D('0.000001'))),
+                         (Status.CRITICAL, D('60.0'), D('59.988221')))
+        self.assertIn(' reads 59.99 (', reading.note)
+        self.assertNotIn(' reads 60.0', reading.note)
+        pages = self.assert_no_line_says_the_rounded_value_beside_a_bound('reads')
+        self.assertIn(' reads 59.99 (', pages['drawer'])
+        self.assertIn('critical below 60.0, warning below 70.0', pages['drawer'])
+
+    def test_the_last_own_value_note_and_the_alarms_summary_say_the_value_that_keeps_the_level(self):
+        self.sample(self.loop, hours=1, oxygen_mg_l='9', temperature_c='8.2')        # the loop's stands in, fresh and fine
+        self.sample(hours=30, oxygen_mg_l='7.07', temperature_c='8.2')               # the unit's own, old: 59.988221 %
+        reading = self.unit_water().get('oxygen_saturation_pct')
+        self.assertEqual((reading.status, reading.last_own.value, reading.last_own.status,
+                          reading.last_own.exact.quantize(D('0.000001'))),
+                         (Status.CRITICAL, D('60.0'), Status.STALE, D('59.988221')))
+        self.assertIn('last own value 59.99 critical on ', reading.note)
+        self.assertNotIn('last own value 60.0', reading.note)
+        summary = alarm_sources._summary(self.mid1, reading)
+        self.assertIn('; last own value 59.99 critical on ', summary)
+        self.assertNotIn('last own value 60.0', summary)
+        pages = self.assert_no_line_says_the_rounded_value_beside_a_bound('last own value')
+        self.assertIn('last own value 59.99 critical on ', pages['drawer'])
+
+    def test_a_note_about_a_value_that_is_not_past_a_worked_out_bound_is_said_as_it_always_was(self):
+        """An oxygen measured in mg/L is judged through its % row; its own note says the mg/L as entered."""
+        self.sample(self.loop, hours=3, oxygen_mg_l='5', temperature_c='8.2')        # measured 5.00 mg/L: about 42 %
+        self.sample(hours=1, oxygen_mg_l='9', temperature_c='8.2')
+        reading = self.unit_water().get('oxygen_mg_l')
+        self.assertEqual((reading.judged, str(reading.worse.value)), (Status.CRITICAL, '5.00'))
+        self.assertIn(' reads 5.00 (', reading.note)

@@ -453,8 +453,8 @@ def earliest_of(pairs, today=None, kind=WITHDRAWAL_KIND, holding=None):
     """{(unit id, batch id): Earliest} of every (unit, batch) pair given: `earliest` of each, with what it reads read
     once for all of them (a page of fifty rows costs about what one row does): the withdrawals in force (`holding_of`,
     or `holding`, its answer, from a caller that has it already), the rule of each species, the last feedings of the
-    units (`last_fed_of`) and the water of the batches (one BatchWater for each farm day, from the earliest day any of
-    its pairs counts from: a batch's days are its own, so a wider read changes none of them)."""
+    units (`last_fed_of`) and the water of the batches (`BatchWater.of_each`: each batch's water is the one it has read
+    alone)."""
     pairs = list({(unit.pk, batch.pk): (unit, batch) for unit, batch in pairs}.values())
     units = list({unit.pk: unit for unit, _batch in pairs}.values())
     days = {unit.pk: local_today(unit) if today is None else today for unit in units}
@@ -474,17 +474,15 @@ def earliest_of(pairs, today=None, kind=WITHDRAWAL_KIND, holding=None):
     # The unit's last feeding, not the batch's (S-01).
     fed = last_fed_of([(unit, days[unit.pk], handled_ids[(unit.pk, days[unit.pk])],
                         days[unit.pk] - timedelta(days=LOOKBACK_DAYS)) for unit in asking])
-    degrees = [(unit, batch) for unit, batch in pairs
-               if asks(batch) and fed.get(unit.pk) is not None and requirements[batch.species_id].degree_days]
-    waters = {}
-    for day in {days[unit.pk] for unit, _batch in degrees}:
-        members = [(unit, batch) for unit, batch in degrees if days[unit.pk] == day]
-        water = BatchWater({batch.pk for _unit, batch in members}, day,
-                           min(fed[unit.pk].record.date for unit, _batch in members) + DAY)
-        waters.update({(unit.pk, batch.pk): water for unit, batch in members})
+    # The water `earliest` reads for a purge in degree-days: the batch's, from the day after the unit's last feeding.
+    watered = {(unit.pk, batch.pk): (batch.pk, days[unit.pk], fed[unit.pk].record.date + DAY)
+               for unit, batch in pairs
+               if asks(batch) and fed.get(unit.pk) is not None and requirements[batch.species_id].degree_days}
+    waters = BatchWater.of_each(watered.values())
     return {(unit.pk, batch.pk): _earliest_from(
         unit, batch, days[unit.pk], kind, holding.get(unit.pk) or [], requirements[batch.species_id],
-        fed.get(unit.pk), waters.get((unit.pk, batch.pk))) for unit, batch in pairs}
+        fed.get(unit.pk), waters[watered[(unit.pk, batch.pk)]] if (unit.pk, batch.pk) in watered else None)
+        for unit, batch in pairs}
 
 
 def _earliest_from(unit, batch, today, kind, blocks, requirement, fed, water):

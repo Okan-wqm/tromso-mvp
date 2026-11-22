@@ -279,5 +279,7 @@
 .calc-card { padding: var(--space-4); }
 :is(.card, .tile, a.ui-card) { box-shadow: var(--shadow-raised); }
 .card { display: flex; flex-direction: column; }
+/* a link card keeps the page's focus ring: its own shadow would otherwise replace it (WCAG 2.4.7) */
+:is(.card, .tile, a.ui-card):focus-visible { box-shadow: var(--ring-focus), var(--shadow-raised); }
 .tile { display: flex; flex-direction: column; min-width: 11rem; padding: var(--space-4) var(--space-5); color: var(--text-1); text-decoration: none; }
 :is(.tile, a.ui-card):hover { border-color: var(--action); }

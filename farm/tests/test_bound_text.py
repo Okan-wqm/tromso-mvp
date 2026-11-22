@@ -18,12 +18,14 @@ from django.urls import reverse
 from django.utils import timezone, translation
 
 from alarms import sources as alarm_sources
+from monitoring.cards import render
 from monitoring.tests import ALL_RIGHTS
 from monitoring.tests.golden import Tree
 
-from ..templatetags.water import EXTRA_DECIMALS, value_past, water_value
+from ..templatetags.stock import percent
+from ..templatetags.water import EXTRA_DECIMALS, figure_past, proof_of, reading_figure, value_past, water_value
 from ..water import parameters, read
-from ..water.evaluate import Status, judge
+from ..water.evaluate import ALERTS, Status, judge
 from .helpers import role
 from .test_water import WaterTestCase
 
@@ -160,7 +162,8 @@ class JudgedThroughTests(WaterTestCase):
 
 
 # ---- every line that says a bound ------------------------------------------------------------------------------------
-UNITS, MONITOR = reverse('farm:production_units'), reverse('monitoring:monitor')
+UNITS, MONITOR, OVERVIEW = (reverse('farm:production_units'), reverse('monitoring:monitor'),
+                            reverse('production_home'))
 # What says a bound in a line: "critical below 60.0", "warning limit 70.0", the number after a "<" or a ">".
 BOUND_WORDS = re.compile(r'(?:(?:critical|warning) (?:limit|below|above) |[<>] )\d[\d.,]*')
 ROUNDED = re.compile(r'(?<![\d.,])60\.0(?!\d)')            # 59.988221 % rounded to its one decimal
@@ -179,6 +182,36 @@ def lines_with_the_value_rounded_onto_the_bound(html):
     return [line for line in lines if BOUND_WORDS.search(line) and ROUNDED.search(BOUND_WORDS.sub('', line))]
 
 
+# A figure on its own that says 60.0: a cell's or a tile's number ("60.0", "60.0 %", Turkish "%60,0"), the saturation beside
+# a tile's label ("O₂ · 60.0 %") or the last words of a title.
+ALONE = re.compile(r'(?:^|·\s*)%?\s*60[.,]0\s*%?$')
+
+
+def direct_text(node):
+    """What an element says itself: its own text, not its children's, in one line."""
+    return ' '.join(' '.join(each for each in node.children if isinstance(each, str)).split())
+
+
+def figures_rounded_onto_the_bound(html):
+    """The figures a page puts on their own (the owner's decision of 2026-11-22: a value judged past a bound shows the
+    decimals that prove it everywhere it is shown) that say 59.988221 % as 60.0: the text of an element, a title or an
+    accessible name that is, or ends in, 60.0."""
+    found = []
+    for node in Tree(html).root.walk():
+        if node.tag in ('script', 'style'):
+            continue
+        found += [text for text in (direct_text(node), *(' '.join(node.attrs[name].split())
+                                                         for name in ('title', 'aria-label') if node.attrs.get(name)))
+                  if ALONE.search(text)]
+    return found
+
+
+def figures(html):
+    """The numbers a page puts on their own, by what an element says itself: '59.99', '76.4', '59.99 %', '7.07'."""
+    return [text for text in (direct_text(node) for node in Tree(html).root.walk() if node.tag not in ('script', 'style'))
+            if re.fullmatch(r'%?\s*\d[\d.,]*(?:\s*%)?', text)]
+
+
 class GuardTests(SimpleTestCase):
     def test_the_guard_finds_what_it_is_there_for(self):
         for bad in ('<ul><li>O₂ (%) 60.0 · critical limit 60.0</li></ul>', '<li>O₂ (%) 60.0 &lt; 70.0</li>',
@@ -191,13 +224,22 @@ class GuardTests(SimpleTestCase):
             with self.subTest(good=good):
                 self.assertEqual(lines_with_the_value_rounded_onto_the_bound(good), [])
 
+    def test_the_figure_guard_finds_a_figure_on_its_own_that_says_the_rounded_value(self):
+        for bad in ('<td class="wq">60.0<span class="wq-note">*</span></td>', '<b>60.0 %</b>', '<b>%60,0</b>',
+                    '<span>O₂ · 60.0 %</span>', '<dt title="Dissolved oxygen (mg/L O₂) · 60.0 %">x</dt>',
+                    '<td>60,0</td>'):
+            with self.subTest(bad=bad):
+                self.assertEqual(len(figures_rounded_onto_the_bound(bad)), 1)
+        for good in ('<td>59.99</td>', '<b>59.99 %</b>', '<td>160.0</td>', '<td>60.01</td>', '<th>critical below 60.0</th>',
+                     '<span>O₂ (%) 59.99 · critical limit 60.0</span>', '<td>55.0</td>', '<script>var a = 60.0</script>'):
+            with self.subTest(good=good):
+                self.assertEqual(figures_rounded_onto_the_bound(good), [])
+        self.assertEqual(figures('<td>59.99<span>*</span></td><b>76.4 %</b><p>words 1.0</p>'), ['59.99', '76.4 %'])
 
-class NotesBesideTheLimitTests(WaterTestCase):
-    """Review of wip/bound-text, findings 1 and 3: the notes a reading keeps beside the limits that judged it said the
-    rounded value ("reads 60.0 …", "last own value 60.0 critical …") where the drawer's row prints them right after
-    "critical below 60.0". T-01's worked-out oxygen is 59.988221 % (7.07 mg/L at 8.2 °C, 0 ‰, 1 atm) against a critical
-    limit of 60.0: the Production units drawer, the alarm's summary and the monitoring cards (the card's reason, the
-    band's chip, the bar's name, every mode) say 59.99 and never 60.0 beside the bound."""
+
+class FarmPages(WaterTestCase):
+    """T-01 of the water farm with a critical limit of 60.0 and 70.0 for the oxygen's saturation, and every page that says
+    its water: the Production units drawer, the Production overview, the monitoring page in each mode of its cards."""
 
     def setUp(self):
         super().setUp()
@@ -207,8 +249,10 @@ class NotesBesideTheLimitTests(WaterTestCase):
         self.reader.groups.add(role('reader role', *ALL_RIGHTS))
 
     def pages(self):
-        """The drawer's Water section (the water keeper's) and the monitoring page in each mode of its cards (a reader's)."""
-        found = {'drawer': self.client.get(UNITS, {'unit': self.t1.pk}).content.decode()}
+        """The drawer's Water section and the overview (the water keeper's), the monitoring page in each mode of its cards
+        (a reader's)."""
+        found = {'drawer': self.client.get(UNITS, {'unit': self.t1.pk}).content.decode(),
+                 'overview': self.client.get(OVERVIEW).content.decode()}
         self.client.force_login(self.reader)
         for name, query in (('simple', {}), ('small', {'mode': 'small'}), ('big', {'mode': 'big'}),
                             ('wall', {'wall': '1', 'mode': 'small'})):
@@ -221,12 +265,21 @@ class NotesBesideTheLimitTests(WaterTestCase):
         for name, html in pages.items():
             with self.subTest(page=name):
                 self.assertEqual(lines_with_the_value_rounded_onto_the_bound(html), [])
+                self.assertEqual(figures_rounded_onto_the_bound(html), [])
                 self.assertNotIn(f'{said} 60.0', html)
         for name in ('simple', 'small', 'big', 'wall'):                  # the band's chip, in every mode
             self.assertRegex(pages[name], r'59\.99 &lt; critical limit 60\.0')
         for name in ('small', 'big'):                                    # the card's own reason
             self.assertRegex(pages[name], r'59\.99</span> ?<span[^>]*>· critical limit 60\.0')
         return pages
+
+
+class NotesBesideTheLimitTests(FarmPages):
+    """Review of wip/bound-text, findings 1 and 3: the notes a reading keeps beside the limits that judged it said the
+    rounded value ("reads 60.0 …", "last own value 60.0 critical …") where the drawer's row prints them right after
+    "critical below 60.0". T-01's worked-out oxygen is 59.988221 % (7.07 mg/L at 8.2 °C, 0 ‰, 1 atm) against a critical
+    limit of 60.0: the Production units drawer, the alarm's summary and the monitoring cards (the card's reason, the
+    band's chip, the bar's name, every mode) say 59.99 and never 60.0 beside the bound."""
 
     def test_the_worst_fresh_note_says_the_value_that_decided_the_status(self):
         self.sample(self.loop, hours=3, oxygen_mg_l='7.07', temperature_c='8.2')     # the loop's, fresh: 59.988221 %
@@ -262,3 +315,133 @@ class NotesBesideTheLimitTests(WaterTestCase):
         reading = self.unit_water().get('oxygen_mg_l')
         self.assertEqual((reading.judged, str(reading.worse.value)), (Status.CRITICAL, '5.00'))
         self.assertIn(' reads 5.00 (', reading.note)
+
+
+def cell_of(html, label):
+    """The figure beside a drawer row's head (the row whose head starts with `label`), as the cell says it itself."""
+    for head in (node for node in Tree(html).root.walk()
+                 if node.tag == 'th' and ' '.join(node.text().split()).startswith(label)):
+        (cell,) = [each for each in head.parent.children if getattr(each, 'tag', '') == 'td']
+        return direct_text(cell)
+    raise AssertionError(f'no row {label!r}')
+
+
+class FigureTests(SimpleTestCase):
+    """The owner's decision of 2026-11-22 ("geçtiğini gösterecek kadar ondalık gösterilsin"): a value judged past a bound
+    shows the decimals that prove it wherever it is shown, not only in a sentence (`reading_figure`, `proof_of`)."""
+
+    def figure(self, code, exact, **bounds):
+        return reading_figure(judged(worked_out(code, exact), row_of(**bounds)))
+
+    def test_a_value_judged_past_a_bound_it_rounds_onto_says_the_decimals_that_prove_it(self):
+        self.assertEqual(self.figure('oxygen_saturation_pct', '59.988221', critical_low=60, warning_low=70), '59.99')
+        self.assertEqual(self.figure('oxygen_saturation_pct', '69.996', critical_low=60, warning_low=70), '69.996')
+        self.assertEqual(self.figure('oxygen_saturation_pct', '110.012', warning_high=110, critical_high=120), '110.01')
+        self.assertEqual(self.figure('nh3_n_mg_l', '0.010340', warning_high='0.0103', critical_high='0.02'), '0.01034')
+
+    def test_a_value_clearly_past_its_bound_stays_as_it_was(self):
+        for code, exact, bounds, said in (('oxygen_saturation_pct', '54.98', dict(critical_low=60, warning_low=70), '55.0'),
+                                          ('oxygen_saturation_pct', '59.94', dict(critical_low=60, warning_low=70), '59.9'),
+                                          ('oxygen_saturation_pct', '125.04', dict(warning_high=110, critical_high=120),
+                                           '125.0'),
+                                          ('nh3_n_mg_l', '0.03123', dict(warning_high='0.0103', critical_high='0.02'),
+                                           '0.0312')):
+            with self.subTest(exact=exact):
+                reading = judged(worked_out(code, exact), row_of(**bounds))
+                self.assertIn(reading.judged, ALERTS)
+                self.assertEqual(reading_figure(reading), said)
+                self.assertEqual(reading_figure(reading), water_value(reading.value, reading.code))
+                self.assertIsNone(proof_of(reading))
+
+    def test_a_value_inside_its_bounds_or_measured_is_never_reshaped(self):
+        self.assertEqual(self.figure('oxygen_saturation_pct', '60.004', critical_low=60), '60.0')    # on the bound: inside
+        self.assertEqual(self.figure('oxygen_saturation_pct', '70.004', warning_low=70), '70.0')
+        measured = read.Reading(parameters.get('oxygen_saturation_pct'), D('60.0'),
+                                read.Observation(SimpleNamespace(name='Middle', kind='middle'), NOW, read.Origin.MANUAL, {}))
+        judged(measured, row_of(critical_low=60))
+        self.assertEqual((reading_figure(measured), proof_of(measured)), ('60.0', None))
+        self.assertEqual(reading_figure(None), '—')
+
+    def test_it_is_judged_past_the_nearest_bound_of_every_row_that_judges_it(self):
+        """Two species judge it: the figure proves the value past the nearer of the two bounds, so past both."""
+        reading = worked_out('oxygen_saturation_pct', '59.96')
+        reading.limits = [row_of(critical_low='60.0'), row_of(critical_low='60.1')]
+        reading.judged = Status.CRITICAL
+        self.assertEqual(read.past_bound(reading), ('critical_low', D('60.0')))
+        self.assertEqual(reading_figure(reading), '59.96')
+        reading.limits = [row_of(critical_low='60.1')]
+        self.assertEqual((read.past_bound(reading), reading_figure(reading)), (('critical_low', D('60.1')), '60.0'))
+        reading.limits = [row_of(critical_low='59.9')]
+        self.assertIsNone(read.past_bound(reading))
+
+    def test_the_card_says_it_in_the_figure_and_beside_the_tiles_label(self):
+        reading = judged(worked_out('oxygen_saturation_pct', '59.988221'), row_of(critical_low=60, warning_low=70))
+        self.assertEqual(render.face(reading, NOW).value, '59.99')
+        for language, said in (('en', '59.99 %'), ('nb', '59,99 %'), ('tr', '%59,99')):
+            with self.subTest(language=language), translation.override(language):
+                self.assertEqual(percent(*proof_of(reading)), said)
+
+    def test_the_decimal_sign_is_the_languages(self):
+        reading = judged(worked_out('oxygen_saturation_pct', '59.988221'), row_of(critical_low=60, warning_low=70))
+        for language in ('nb', 'tr'):
+            with self.subTest(language=language), translation.override(language):
+                self.assertEqual((reading_figure(reading), figure_past(reading)), ('59,99', '59,99'))
+
+
+class FiguresTests(FarmPages):
+    """With T-01's own oxygen at 59.988221 % (7.07 mg/L at 8.2 °C, 0 ‰, 1 atm) against a critical limit of 60.0: no place
+    that shows it says 60.0 beside "critical below 60.0", or on its own: the drawer's cell, the overview's figure, the
+    cards' figure, the tile's saturation beside its label, the alarm's summary; in English, Norwegian and Turkish."""
+
+    def setUp(self):
+        super().setUp()
+        self.sample(hours=1, oxygen_mg_l='7.07', temperature_c='8.2')
+
+    def texts(self, html):
+        return [direct_text(each) for each in Tree(html).root.walk() if each.tag not in ('script', 'style')]
+
+    def says(self, html, number):
+        return any(number in text for text in self.texts(html))
+
+    def test_no_place_says_the_rounded_value(self):
+        reading = self.unit_water().get('oxygen_saturation_pct')
+        self.assertEqual((reading.judged, reading.value, reading.exact.quantize(D('0.000001'))),
+                         (Status.CRITICAL, D('60.0'), D('59.988221')))
+        self.assertEqual(reading_figure(reading), '59.99')
+        pages = self.pages()
+        for name, html in pages.items():
+            with self.subTest(page=name):
+                self.assertEqual(figures_rounded_onto_the_bound(html), [])
+                self.assertEqual(lines_with_the_value_rounded_onto_the_bound(html), [])
+                self.assertTrue(self.says(html, '59.99'), name)
+        self.assertEqual(cell_of(pages['drawer'], 'Oxygen saturation'), '59.99')
+        self.assertIn('critical below 60.0, warning below 70.0', pages['drawer'])
+        for name in ('small', 'wall'):                                  # the tile's saturation beside its label
+            self.assertTrue([text for text in self.texts(pages[name]) if text.endswith('· 59.99 %')], name)
+        summary = alarm_sources._summary(self.mid1, reading)
+        self.assertIn('Oxygen saturation (% of air saturation) 59.99 (critical)', summary)
+        self.assertNotIn('60.0', summary)
+
+    def test_a_value_clearly_past_stays_as_it_was_on_every_page(self):
+        self.sample(hours=0.5, oxygen_mg_l='6.48', temperature_c='8.2')           # 54.98 %: shown 55.0, past 60.0 by far
+        reading = self.unit_water().get('oxygen_saturation_pct')
+        self.assertTrue(D('54.9') < reading.exact < D('55.1'), reading.exact)
+        self.assertEqual((reading.value, reading.judged, reading_figure(reading)), (D('55.0'), Status.CRITICAL, '55.0'))
+        pages = self.pages()
+        self.assertEqual(cell_of(pages['drawer'], 'Oxygen saturation'), '55.0')
+        self.assertTrue(self.says(pages['overview'], '55.0'))
+        for name in ('simple', 'small', 'big', 'wall'):
+            self.assertRegex(pages[name], r'O₂ \(%\) 55\.0 &lt; critical limit 60\.0')
+        self.assertIn('Oxygen saturation (% of air saturation) 55.0 (critical)',
+                      alarm_sources._summary(self.mid1, reading))
+
+    def test_in_norwegian_and_turkish_the_decimal_comma_is_theirs(self):
+        from core.models import Profile
+        for language in ('nb', 'tr'):
+            for person in (self.user, self.reader):
+                Profile.objects.update_or_create(user=person, defaults={'language': language})
+            pages = self.pages()
+            for name, html in pages.items():
+                with self.subTest(language=language, page=name):
+                    self.assertEqual(figures_rounded_onto_the_bound(html), [])
+                    self.assertTrue(self.says(html, '59,99'))

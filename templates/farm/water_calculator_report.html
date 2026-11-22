@@ -58,6 +58,7 @@
       <p class="calc-note" data-formula="{{ analysis.equilibria.formula }}">{{ analysis.provenance }}</p>
       {% if analysis.nh3_judged %}<p class="calc-note">{{ analysis.nh3_judged }}</p>{% endif %}
       {% if analysis.co2_judged %}<p class="calc-note">{{ analysis.co2_judged }}</p>{% endif %}
+      {% include "farm/calculator/_h2s_basis.html" %}
     </div>
   </div>
   {% endwith %}
@@ -77,7 +78,7 @@
   {% else %}
   {% include "farm/calculator/_errors.html" %}
   {% endif %}
-  <p class="panel-help calculator-sources">{% blocktrans trimmed %}Carbonic acid: Millero, Graham, Huang, Bustos-Serrano and Pierrot (2006); water: Millero (1995); boric acid: Dickson (1990); ammonium: Millero (1995); hydrogen sulfide: Millero, Plese and Fernandez (1988); calcite and aragonite: Mucci (1983); oxygen: Benson and Krause (1984). A pH is as a meter reads it (NBS scale). A border nearer than 0.2 pH is a warning.{% endblocktrans %} {% blocktrans trimmed %}Dosing: each reagent moves the water along its own direction on the chart (Deffeyes 1965); CO₂ the air leaves in the water: Weiss (1974), with 420 µmol/mol CO₂ in the air.{% endblocktrans %}</p>
+  <p class="panel-help calculator-sources">{% blocktrans trimmed %}Carbonic acid: Millero, Graham, Huang, Bustos-Serrano and Pierrot (2006); water: Millero (1995); boric acid: Dickson (1990); ammonium: Clegg and Whitfield (1995), fresh and salt-added water judged on the ideal water with Yao and Millero (1995); hydrogen sulfide: Millero, Plese and Fernandez (1988); calcite and aragonite: Mucci (1983); oxygen: Benson and Krause (1984). A pH is as a meter reads it (NBS scale). A border nearer than 0.2 pH is a warning.{% endblocktrans %} {% blocktrans trimmed %}Dosing: each reagent moves the water along its own direction on the chart (Deffeyes 1965); CO₂ the air leaves in the water: Weiss (1974), with 420 µmol/mol CO₂ in the air.{% endblocktrans %}</p>
   <script type="module" src="{% asset 'js/components.js' %}"></script>
 </body>
 </html>

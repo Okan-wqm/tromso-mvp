@@ -297,10 +297,13 @@ def provenance(equilibria):
 # water-chemistry audit of 2026-11-19 and the owner's decision; chemcore/core/src/formula4.rs): the safe side, the larger
 # of it and the best estimate. Up to 1 ‰ the ideal water as formula 3 had it; from 5 ‰ the best estimate at the pH + 0.03
 # (NH3) or − 0.03 (CO2), native.PH_UNCERTAINTY (farm/tests/test_formula_v4.py holds the words to it); blended between.
-# The CO₂'s margin is 10^0.03 − 1 (7.2 %) only while the alkalinity is all bicarbonate: the lower pH also takes borate
-# and hydroxide out of the alkalinity, so the carbonate's share grows; worked out by the core from 5 ‰ (S 5 to 40, 0 to
-# 30 °C): +7.2 % to +9.8 % up to pH 8.2 and to +14.4 % at pH 9 with 50 mg/L, far more where the alkalinity is near its
-# floor (farm/tests/test_formula_v4.py WordsTests holds the words to these numbers).
+# The CO₂'s margin over the best estimate is 10^0.03 − 1 (7.152 %) only while the alkalinity is all bicarbonate: the
+# lower pH also takes borate and hydroxide out of the alkalinity, so the carbonate's share grows. As the core works it
+# out from 5 ‰ over everything the program accepts (T −3 to 40 °C, S 5 to 50 ‰, pH 2 to 12, alkalinity 0 to 1000 mg/L:
+# a sweep of 1.3 million waters, none of them on the best estimate): never below +7.1535 %, falling with the alkalinity
+# at every temperature, salinity and pH, and with no ceiling worth naming (+11 % at pH 8.2 and +19 % at pH 9 with 50
+# mg/L, +171 000 % beside the alkalinity floor), so the words give the floor and the direction and name no maximum
+# (farm/tests/test_formula_v4.py WordsTests runs the sweep, coarser, and holds the words to it).
 JUDGED = {
     ('nh3', 'limits'): _('NH₃ judged on the safe side (to 1 ‰ the ideal water, every activity 1, as Emerson et al. 1975; '
                          'from 5 ‰ the best estimate at the pH + 0.03, the uncertainty of a pH reading (US EPA 1989), '
@@ -309,9 +312,9 @@ JUDGED = {
     ('nh3', 'corrected'): _('NH₃ judged on its best estimate, the larger here.'),
     ('co2', 'limits'): _('CO₂ judged on the safe side (to 1 ‰ the ideal water, every activity 1, as Standard Methods '
                          '4500-CO₂ D; from 5 ‰ the best estimate at the pH − 0.03, the uncertainty of a pH reading (US EPA '
-                         '1989), at least 7 %% above it and more at a high pH with a low alkalinity (up to about 10 %% at '
-                         'pH 8.2 and 14 %% at pH 9 with 50 mg/L as CaCO₃); blended between; salt-added water: the ideal '
-                         'throughout), the larger of it and the best estimate; best estimate %(value)s mg/L.'),
+                         '1989), at least 7 %% above it and more the lower the alkalinity; blended between; salt-added '
+                         'water: the ideal throughout), the larger of it and the best estimate; best estimate %(value)s '
+                         'mg/L.'),
     ('co2', 'corrected'): _('CO₂ judged on its best estimate, the larger here.'),
 }
 JUDGED_DECIMALS = {'nh3': 4, 'co2': 2}

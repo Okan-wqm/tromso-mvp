@@ -1501,7 +1501,8 @@ published values):
   water-chemistry audit of 2026-11-19 and the owner's decision; before it, cross review F1 and the owner's decision of
   2026-11-09): up to 1 ‰ the ideal water, every activity 1, Emerson et al. (1975) as Piper et al. 1982 and US EPA 1985
   used it, exactly as formula 3 had it; from 5 ‰ the best estimate at the pH + 0.03, the uncertainty of a pH reading
-  (US EPA 1989, p. 3), which is 7.2 % above the best estimate at every temperature; blended between; salt-added water:
+  (US EPA 1989, p. 3), which puts the best estimate's [NH₃]/[NH₄⁺] 7.2 % higher at every temperature and the NH₃-N up
+  to 7.15 % higher, less the higher the pH (formula 4 below); blended between; salt-added water:
   the ideal throughout. The larger of it and the best estimate is judged (in fresh water the ideal is the larger as soon
   as an ion is measured: at 12 °C, pH 7.5 the best estimate is 8.7 % lower at 500 µS/cm, 11.6 % at 1000 and 17.2 % at
   3000; with nothing measured the two are within 0.5 %). The best estimate's NH₃-N is said in the title beside it ("NH₃
@@ -1825,7 +1826,8 @@ without values it shows its defaults.
     the NBS scale on the limits' basis (a free-scale constant on that NBS pH, unconverted), the safe side, about 13 to
     25 % above what that pH gives exactly
     (F11). Since formula 4 these words say what formula 4 does: the best estimate rests on Millero's step and Clegg &
-    Whitfield's constant, and the NH₃ is judged at the NBS pH + 0.03, about 7 % above it.
+    Whitfield's constant, and the NH₃ is judged at the NBS pH + 0.03, up to about 7 % above it, less the higher the pH
+    (the margin is the same as for a pH typed as NBS: only the pH it starts from moves; formula 4 below).
 - **The optional phosphate** (PO₄-P, mg/L as P; the independent check's hypothesis 12a, owner 2026-11-10;
   `chemcore/findings/phosphate.md`): phosphate is part of the alkalinity a titration measures, [HPO₄²⁻] + 2 [PO₄³⁻] −
   [H₃PO₄] (Dickson 1981's definition as Dickson, Sabine & Christian 2007 give it, ch. 2), with Millero's (1995)
@@ -1853,7 +1855,15 @@ without values it shows its defaults.
   is judged exactly as before: `chemcore/core/tests/formula4.rs`; only where nothing is measured, ionic strength 0, the
   best estimate's pure-water K_NH4 may be up to 0.5 % above the ideal's at 0 °C and judges); from 5 ‰ the best estimate
   at the pH + 0.03 for NH₃ and at the pH − 0.03 for CO₂ (the uncertainty of a pH reading: US EPA 1989, p. 3), so the
-  judged NH₃ is the best estimate's [NH₃]/[NH₄⁺] × 10^0.03 (+7.2 %) and the judged CO₂ at least +7.15 % above it, more
+  judged NH₃ has the best estimate's ratio r = [NH₃]/[NH₄⁺] × 10^0.03 (+7.15 %), which puts the NH₃-N, r / (1 + r) of the
+  TAN, (10^0.03 − 1) / (1 + 10^0.03 r) above its best estimate: up to +7.15 % (where r is nothing) and less the higher the
+  pH. Over everything the program accepts (T −3 to 40 °C, S 5 to 50 ‰, pH 2 to 12; 241 595 waters) it is +7.1519 % at pH
+  2 and +0.013 % at pH 12 (S 5, 27 °C), never rising with the pH, and the program is within 3e-15 of that closed form.
+  The page's words therefore say "up to about 7 % above it, less the higher the pH" (they said "about 7 % above it",
+  false at a high pH, until the follow-up of the verification of 2026-11-22; the same for the note beside a pH put on
+  the NBS scale), and `farm/tests/test_formula_v4.py` sweeps a coarser grid (3 790 waters) and holds them to it (the
+  sweep: `F:\dev\balik-notes\small-fixes\nh3_sweep_full.py`). The judged CO₂ is at least +7.15 % above its best
+  estimate, more
   where the lower pH takes borate and hydroxide out of the alkalinity (the carbonate's share grows). Over everything the
   program accepts (T −3 to 40 °C, S 5 to 50 ‰, pH 2 to 12, alkalinity 0 to 1000 mg/L as CaCO₃; 1.32 million waters, none
   judged on the best estimate) the judged CO₂ is never below +7.15 % (the least of the sweep, +7.1535 %, at S 5, −3 °C,
@@ -1866,7 +1876,7 @@ without values it shows its defaults.
   coarser (17 116 waters, its bounds read from `farm/water/parameters.py`) and holds the words to it; between, blended
   with the band's weight (no step at 1 or 5 ‰: S 0 to 40 by 0.05 ‰, at most 0.5 % a
   step); salt-added water the ideal throughout. Held over the owner's MUST ranges, sea water S 5 to 40 at 0 to 30 °C and
-  land water at 8 to 30 °C (`formula4.rs`: 57 660 sea cells, NH₃ +7.15 % exactly, CO₂ at least +7.15 %; every land
+  land water at 8 to 30 °C (`formula4.rs`: 57 660 sea cells, the NH₃/NH₄⁺ ratio +7.15 % exactly, CO₂ at least +7.15 %; every land
   cell at or above the best estimate); outside them the margin is the rule's and holds (tested −2 to 40 °C), the best
   estimate itself is not checked above 30 °C (the warning `nh3_past_guard` says it). Against formula 3: the judged NH₃
   of brackish and sea water falls 11 to 14 % at S 5, 8 to 12 % at S 10, 4 to 9 % at S 20, 0 to 5 % at S 34 (formula 3's

@@ -923,3 +923,57 @@ class BulkFiguresTests(WorkedExampleTestCase):
         self.assertEqual([read.drift(today, None)] + [read.drift(today, today - timedelta(days=days))
                                                       for days in (0, soon, soon + 1, now, now + 1)],
                          ['', '', '', 'soon', 'soon', 'now'])
+
+
+class SensorRationTemperatureTests(WorkedExampleTestCase):
+    """The ration's temperature from a probe on T-02 (owner rule A9: a fresh sensor value counts as the unit's own): the
+    walk reads the sensors at every day it may ask in ONE ask of the live sources (Series.prefetch), and every day's
+    ration is what a day-by-day ask gives. Before, a fifteen-day walk asked the sources fifteen times, and the sensors
+    ran a query per channel at each (the monitoring wall's 161 reads of the hypertable, 2026-11-21)."""
+
+    def setUp(self):
+        super().setUp()
+        from .test_water_sources import FakeProvider
+        from ..water import sources
+
+        class Many(FakeProvider):
+            def values_at(self, targets, code, moments):
+                self.asked.append(('values_at', code, len(moments)))
+                found = []
+                for moment in moments:
+                    found.append(FakeProvider.value_at(self, targets, code, moment))
+                    self.asked.pop()                                      # its own value_at is not an ask
+                return found
+
+        self.providers = {'many': Many(), 'one_by_one': FakeProvider()}
+        target = (sources.POINT, point_of(self.t2).pk)
+        now = timezone.now()
+        for provider in self.providers.values():
+            for hours in range(0, 24 * 18, 6):
+                value = sources.SensorValue(code='temperature_c', value=12.0 + (hours % 37) / 10,
+                                            at=now - timedelta(hours=hours, minutes=5), fresh_for=8 * 3600,
+                                            role=sources.PRIMARY, channel_no=7)
+                provider.history.setdefault(target, {}).setdefault('temperature_c', []).append(value)
+        self.sources = sources
+
+    def figures(self, name):
+        provider = self.providers[name]
+        self.sources.register(provider)
+        try:
+            return read.figures(stock_read.stock_of([self.t2]), details=[self.t2], ration=True)[self.t2.pk], provider
+        finally:
+            self.sources.unregister(provider)
+
+    def test_one_ask_for_every_day_and_the_same_rations_as_asking_day_by_day(self):
+        many, asked_once = self.figures('many')
+        one_by_one, asked_daily = self.figures('one_by_one')
+        asks = [ask for ask in asked_once.asked if ask[0] in ('value_at', 'values_at')]
+        self.assertEqual(len(asks), 1, asks)
+        self.assertEqual(asks[0][:2], ('values_at', 'temperature_c'))
+        self.assertGreater(sum(ask[0] == 'value_at' for ask in asked_daily.asked), 10)   # the walk does ask most days
+        self.assertEqual(many.ration, one_by_one.ration)
+        self.assertEqual(many.corrections, one_by_one.corrections)
+        self.assertEqual(many.week, one_by_one.week)
+        temperatures = {line.end.temperature for line in many.ration.shares}
+        self.assertEqual({each.via for each in temperatures}, {'unit'})
+        self.assertTrue(all(each.sampling_point is not None for each in temperatures))

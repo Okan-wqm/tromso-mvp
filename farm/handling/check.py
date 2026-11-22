@@ -52,7 +52,7 @@ from django.core.exceptions import ValidationError
 from django.utils import formats
 from django.utils.translation import gettext as _
 
-from farm.feeding.read import handled, last_fed_at
+from farm.feeding.read import handled, handled_of, last_fed_at, last_fed_of
 from farm.models import Batch, HandlingAcknowledgement, Treatment
 from farm.models.handling import AcknowledgedWarning, HandlingKind, HandlingRule, WithdrawalWarning
 from farm.models.stock import MovementKind, OperationKind
@@ -277,16 +277,19 @@ def held_apart(batch, named=None):
     return batch.species.is_cleaner_fish and (named is None or batch.pk != named.pk)
 
 
+def _apart(blocks, named=None):
+    """(the blocks that hold a harvest, those of cleaner fish beside the production fish: `held_apart`)."""
+    holding, beside = [], []
+    for block in blocks:
+        (beside if held_apart(block.batch, named) else holding).append(block)
+    return holding, beside
+
+
 def _in_force(unit, day, named=None):
     """(the blocks in force that hold a harvest of `unit` on `day`, those of cleaner fish beside the production fish:
     `held_apart`); None when no provider is registered."""
     found = in_force_of([unit], day)
-    if found is None:
-        return None
-    holding, beside = [], []
-    for block in found[unit.pk]:
-        (beside if held_apart(block.batch, named) else holding).append(block)
-    return holding, beside
+    return None if found is None else _apart(found[unit.pk], named)
 
 
 def in_force(unit, day):
@@ -295,8 +298,16 @@ def in_force(unit, day):
     after the day, or unknown. None when no provider is registered: not checked.
     It takes no batch on purpose (S-02): the fish of a unit are handled together, so a withdrawal is never asked of
     one of its batches alone."""
-    found = _in_force(unit, day)
-    return None if found is None else found[0]
+    found = holding_of([unit], day)
+    return None if found is None else found[unit.pk]
+
+
+def holding_of(units, day=None):
+    """{unit id: `in_force` of the unit} of every unit given, in one read of the registry (`in_force_of`: one reader
+    per site's day, the same number of queries for fifty units as for one); `day` None: each unit's own today. None
+    when no provider is registered: not checked."""
+    found = in_force_of(units, day)
+    return None if found is None else {unit_id: _apart(blocks)[0] for unit_id, blocks in found.items()}
 
 
 def cleaner_text(unit, block):
@@ -435,18 +446,57 @@ def earliest(unit, batch, today=None, kind=WITHDRAWAL_KIND):
     `kind`: the handling it is asked for, a harvest (its purge), or a transport for a live delivery (the transport's
     fast, the rule a delivery's fast is checked by: KIND_OF_OPERATION), so a delivery's dialog says the earliest
     suitable date as a harvest's does (review of S-03 at 6776780, F-1)."""
-    today = local_today(unit) if today is None else today
-    blocks = in_force(unit, today) or []
+    return earliest_of([(unit, batch)], today, kind)[(unit.pk, batch.pk)]
+
+
+def earliest_of(pairs, today=None, kind=WITHDRAWAL_KIND, holding=None):
+    """{(unit id, batch id): Earliest} of every (unit, batch) pair given: `earliest` of each, with what it reads read
+    once for all of them (a page of fifty rows costs about what one row does): the withdrawals in force (`holding_of`,
+    or `holding`, its answer, from a caller that has it already), the rule of each species, the last feedings of the
+    units (`last_fed_of`) and the water of the batches (one BatchWater for each farm day, from the earliest day any of
+    its pairs counts from: a batch's days are its own, so a wider read changes none of them)."""
+    pairs = list({(unit.pk, batch.pk): (unit, batch) for unit, batch in pairs}.values())
+    units = list({unit.pk: unit for unit, _batch in pairs}.values())
+    days = {unit.pk: local_today(unit) if today is None else today for unit in units}
+    if holding is None:
+        holding = holding_of(units, today) or {}
+    requirements = {}
+    for _unit, batch in pairs:
+        if batch.species_id not in requirements:
+            requirements[batch.species_id] = fasting.requirement_of(kind, batch.species)
+
+    def asks(batch):
+        requirement = requirements[batch.species_id]
+        return requirement is not None and requirement.asks
+
+    asking = list({unit.pk: unit for unit, batch in pairs if asks(batch)}.values())
+    handled_ids = handled_of([(unit, days[unit.pk]) for unit in asking])
+    # The unit's last feeding, not the batch's (S-01).
+    fed = last_fed_of([(unit, days[unit.pk], handled_ids[(unit.pk, days[unit.pk])],
+                        days[unit.pk] - timedelta(days=LOOKBACK_DAYS)) for unit in asking])
+    degrees = [(unit, batch) for unit, batch in pairs
+               if asks(batch) and fed.get(unit.pk) is not None and requirements[batch.species_id].degree_days]
+    waters = {}
+    for day in {days[unit.pk] for unit, _batch in degrees}:
+        members = [(unit, batch) for unit, batch in degrees if days[unit.pk] == day]
+        water = BatchWater({batch.pk for _unit, batch in members}, day,
+                           min(fed[unit.pk].record.date for unit, _batch in members) + DAY)
+        waters.update({(unit.pk, batch.pk): water for unit, batch in members})
+    return {(unit.pk, batch.pk): _earliest_from(
+        unit, batch, days[unit.pk], kind, holding.get(unit.pk) or [], requirements[batch.species_id],
+        fed.get(unit.pk), waters.get((unit.pk, batch.pk))) for unit, batch in pairs}
+
+
+def _earliest_from(unit, batch, today, kind, blocks, requirement, fed, water):
+    """`earliest` of one pair from what `earliest_of` read: the blocks in force that hold the unit's fish, the rule,
+    the unit's last feeding in the LOOKBACK_DAYS before `today` (None: none, or not read because the rule asks
+    nothing) and the batches' water (when the rule asks for degree-days)."""
     dated = [block for block in blocks if block.until is not None]
     unknown = len(dated) < len(blocks)
     latest = max(dated, key=lambda block: block.until, default=None)
-    requirement = fasting.requirement_of(kind, batch.species)
-    purge_day, degrees_unknown, water = None, False, None
+    purge_day, degrees_unknown = None, False
     if requirement is not None and requirement.asks:
-        fed = last_fed_at(unit, today, since=today - timedelta(days=LOOKBACK_DAYS))      # the unit's, not the batch's
         if fed is not None:
-            if requirement.degree_days:
-                water = BatchWater({batch.pk}, today, fed.record.date + DAY)
             day = today
             for _n in range(fasting.MAX_FAST_DAYS + 1):
                 done = fasting.fasted(unit, day, fed, requirement, water, [batch.pk])
@@ -475,8 +525,8 @@ def earliest(unit, batch, today=None, kind=WITHDRAWAL_KIND):
 
 def _earliest(result, batches):
     """A harvest's (a live delivery's) earliest suitable date among the notes: of its batches, the latest."""
-    found = [earliest(result.unit, batch, kind=result.kind) for batch in batches]
-    held = [each for each in found if each.decides]
+    found = earliest_of([(result.unit, batch) for batch in batches], kind=result.kind).values()
+    held =[each for each in found if each.decides]
     if not held:
         return
     result.earliest = max(held, key=lambda each: (each.day is None, each.day or date.min))

@@ -316,7 +316,12 @@
 .content[data-measure="form"] .form-grid:not(.form-grid-location) {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
 }
-.content[data-measure="form"] .form-grid:not(.form-grid-location) > .field:has(textarea) { grid-column: 1 / -1; }
+/* A wide field (a text area, a time zone) takes two columns, not the whole row: a row-wide field would hold every
+   column open, and an unused one would stay as an empty band at the right instead of folding away. On a phone it is
+   one column anyway (components.css). The form's buttons stand at the start of the form column, under the fields,
+   the others first and the one primary last, so they never drift to the window's far edge, away from the fields. */
+.content[data-measure="form"] .form-grid:not(.form-grid-location) > .field:is(:has(textarea), :has(#id_timezone), :has(#id_street), :has(#id_site_manager)) { grid-column: span 2; }
+.content[data-measure="form"] .form-actions { justify-content: flex-start; }
 .content[data-measure="prose"] .prose-flow {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 34rem), 1fr)); gap: var(--space-5) var(--space-6);
   align-items: start;

@@ -194,6 +194,40 @@ class WaterReadTests(BindingCase):
         answer = sources.value_at([(sources.POINT, self.mid1.pk)], 'ph', moment)
         self.assertEqual([value.value for value in answer.values[(sources.POINT, self.mid1.pk)]], [7.1])
 
+    def test_the_values_at_several_moments_are_the_value_at_each_in_two_queries(self):
+        """`values_at` (one ask for the moments a ration walk will look up) says at each moment what `value_at` says
+        there: before a sensor came, while it was bound, after it moved on, a bad reading never; and its queries do not
+        grow with the moments or the bindings."""
+        from sensors.provider import PROVIDER
+        moved_at = timezone.now().replace(microsecond=0) - timedelta(days=2)
+        other = make_channel(self.device, 'ph', code='PH-2')
+        bindings.move(self.user, self.ph, point=self.mid1, at=self.start)
+        bindings.move(self.user, self.ph, point=self.mid2, at=moved_at)
+        self.bind(other, start=self.start + timedelta(days=1), point=self.mid1, role='backup')
+        with connection.cursor() as cursor:
+            cursor.execute(
+                'INSERT INTO sensors_reading (channel_no, ts, value, quality) VALUES (%s, %s, 7.0, 0), (%s, %s, 7.1, 0), '
+                '(%s, %s, 3.0, 16), (%s, %s, 7.6, 0), (%s, %s, 6.9, 0)',
+                [self.ph.channel_no, self.start + timedelta(hours=1), self.ph.channel_no, moved_at - timedelta(hours=1),
+                 self.ph.channel_no, moved_at - timedelta(minutes=5), self.ph.channel_no, moved_at + timedelta(hours=1),
+                 other.channel_no, self.start + timedelta(days=1, hours=2)])
+        targets = [(sources.POINT, self.mid1.pk), (sources.POINT, self.mid2.pk)]
+        moments = [self.start - timedelta(hours=1), self.start + timedelta(hours=2),
+                   self.start + timedelta(days=1, hours=3), moved_at - timedelta(minutes=1),
+                   moved_at + timedelta(hours=2), moved_at + timedelta(hours=2)]
+        each = [PROVIDER.value_at(targets, 'ph', moment) for moment in moments]
+        with self.assertNumQueries(2):
+            together = PROVIDER.values_at(targets, 'ph', moments)
+        self.assertEqual(together, each)
+        self.assertEqual(each[0], {})
+        self.assertEqual([value.value for value in each[1][(sources.POINT, self.mid1.pk)]], [7.0])
+        self.assertEqual(sorted(value.value for value in each[2][(sources.POINT, self.mid1.pk)]), [6.9, 7.0])
+        self.assertEqual(sorted(value.value for value in each[3][(sources.POINT, self.mid1.pk)]), [6.9, 7.1])
+        self.assertNotIn((sources.POINT, self.mid2.pk), each[3])
+        self.assertEqual([value.value for value in each[4][(sources.POINT, self.mid2.pk)]], [7.6])
+        self.assertEqual([answer.values for answer in sources.values_at(targets, 'ph', moments)], each)
+        self.assertEqual(PROVIDER.values_at(targets, 'ph', []), [])
+
 
 class PageTests(BindingCase):
     def setUp(self):

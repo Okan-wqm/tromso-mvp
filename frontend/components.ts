@@ -325,7 +325,10 @@ class Modal {
       void this.load(form.action, { method: 'POST', body: new FormData(form) });
     });
     dialog.addEventListener('click', (event) => {
-      if (event.target === dialog) dialog.close();   // a click on the backdrop
+      // A click on the backdrop. The dialog says closedby="any" (app_base.html), which closes it so where the browser
+      // has it; this listener is the fallback for the browsers of the floor that do not (close() on a closed dialog
+      // does nothing).
+      if (event.target === dialog) dialog.close();
     });
     dialog.addEventListener('close', () => {
       this.content.replaceChildren();

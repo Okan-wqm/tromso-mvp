@@ -66,6 +66,17 @@ def judge(value, limit):
     return Status.OK
 
 
+def crossed(value, limit):
+    """(bound's name, bound) of the bound of a limit row that `judge` judged a value by: the critical one it is past,
+    else the warning one, in `judge`'s own order; None for a value inside the warning bounds. What a short sentence
+    names beside the value ("5.00 < critical limit 6.00"); never a second judgement (a test holds it to `judge`)."""
+    for name, below in (('critical_low', True), ('critical_high', False), ('warning_low', True), ('warning_high', False)):
+        bound = getattr(limit, name)
+        if bound is not None and (value < bound if below else value > bound):
+            return name, bound
+    return None
+
+
 class Limits:
     """The live limit rows, found by species, parameter and water type."""
 

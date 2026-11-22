@@ -1,8 +1,9 @@
-{% load i18n %}{% comment %} One card: the FRAME (never data: the unit, its state word, shape and reasons, the withdrawal (a note chip: it lasts weeks), the unit's
+{% load i18n health %}{% comment %} One card: the FRAME (never data: the unit, its state word, shape and reasons, the withdrawal (a note chip: it lasts weeks), the unit's
    status when it is not in use, the flip link, a template that cannot be drawn, what the state is from and which
    template draws the card and why; a template cannot move, shrink or remove it), then the template's widgets placed on a 12-column CSS grid
    in reading order (monitoring/cards/render.py build). Below a narrow container the grid is one column in the same order
-   (static/css/monitor.css); the wall runs no layout script. {% endcomment %}{% with card=row.card unit=row.card.unit state=row.card.state stock=row.card.stock chosen=row.card.template %}
+   (static/css/monitor.css); the wall runs no layout script. A template with a measure is drawn FITTED instead (monitoring/_card_fit.html): the same frame at the size of
+   its cell. {% endcomment %}{% with card=row.card unit=row.card.unit state=row.card.state stock=row.card.stock chosen=row.card.template %}{% if chosen.measure %}{% include "monitoring/_card_fit.html" %}{% else %}
 <article class="monitor-card monitor-{{ state.key }}" data-key="card:{{ unit.pk }}" data-state="{{ state.key }}"{% if state.stale %} data-stale{% endif %} data-template="{{ chosen.template.pk|default:'' }}"{% if row.preview %} data-preview{% endif %} id="card-{{ unit.pk }}" aria-labelledby="card-title-{{ unit.pk }}">
   <header class="monitor-card-head">
     <div>
@@ -12,7 +13,7 @@
     </div>
     <div class="monitor-card-state">
       {% include "monitoring/_state_word.html" %}
-      {% if card.withdrawal %}<span class="badge badge-note" title="{% for block in card.withdrawal %}{{ block.batch.code }}{% if block.until %} · {{ block.until|date:'DATE_FORMAT' }}{% endif %} {% endfor %}">{% trans "Withdrawal" %}{% with until=card.withdrawal.0.until %}{% if until %} · {{ until|date:"DATE_FORMAT" }}{% endif %}{% endwith %}</span>{% endif %}
+      {% if card.withdrawal %}<span class="badge badge-note" title="{% for block in card.withdrawal %}{{ block.batch.code }}: {{ block|harvest_from }} {% endfor %}">{% trans "Withdrawal" %} · {{ card.withdrawal.0|harvest_from }}</span>{% endif %}
       {% if chosen.flip_to %}<a class="monitor-flip" id="flip-{{ unit.pk }}" href="{{ row.flip.page }}" data-poll-url="{{ row.flip.poll }}">{{ chosen.flip_to.shown_name }}</a>{% endif %}
     </div>
   </header>
@@ -28,4 +29,4 @@
     <p class="row-sub monitor-why">{% trans "Template" %}: {{ chosen.name }} · {{ chosen.because }}</p>
   </footer>
 </article>
-{% endwith %}
+{% endif %}{% endwith %}

@@ -53,7 +53,7 @@ class ColumnsTests(PagesCase):
             for name in form.base_fields:
                 with self.subTest(form=form.__name__, field=name):
                     self.assertIn(name, columns)
-        self.assertEqual(set(CardTemplateForm.base_fields) - {'version'}, {'name', 'description', 'expanded', 'layout'})
+        self.assertEqual(set(CardTemplateForm.base_fields) - {'version'}, {'name', 'description', 'expanded', 'layout', 'measure_w', 'measure_h'})
         self.assertEqual(set(CardTemplateAssignmentForm.base_fields) - {'version'},
                          {'template', 'unit', 'system', 'system_type', 'species', 'kind'})
 
@@ -72,7 +72,7 @@ class TemplateRoundTripTests(PagesCase):
         # read: the list (built-ins first, a mark, how many rules and boards use each), the form filled from the row
         listing = self.client.get(TEMPLATES)
         self.assertEqual([each.pk for each in listing.context['objects']][:3],
-                         [builtin.DETAILED, builtin.OPERATOR, builtin.SIMPLE])
+                         [builtin.BIG, builtin.DETAILED, builtin.OPERATOR])
         self.assertContains(listing, 'Hall view')
         self.assertEqual(next(each for each in listing.context['objects'] if each.pk == builtin.SIMPLE).rules, 1)
         form = self.client.get(self.edit(template)).context['form']
@@ -103,6 +103,39 @@ class TemplateRoundTripTests(PagesCase):
         response = self.client.post(NEW_TEMPLATE, {'name': 'Garbage', 'layout': 'not json'})
         self.assertEqual(response.status_code, 200)
         self.assertFalse(CardTemplate.objects.filter(name='Garbage').exists())
+
+    def test_a_measure_is_saved_whole_and_a_fitted_layout_takes_at_most_24_rows(self):
+        """A fitted card's measure (the General tab): both its width and its height or neither, in their ranges; the
+        layout of a fitted template fits its rows; the copy of a fitted template is fitted."""
+        # (a layout of widgets that have a fitted look: one without cannot be given a measure, review R7,
+        # monitoring/tests/test_fitted_designer.py)
+        fitted = {'schema': 1, 'widgets': [
+            {'id': 'w1', 'type': 'value', 'x': 0, 'y': 0, 'w': 3, 'h': 2, 'bind': {'parameter': 'oxygen_mg_l'}},
+            {'id': 'w2', 'type': 'ph_window', 'x': 0, 'y': 2, 'w': 12, 'h': 2}]}
+        template = self.template('Overview', layout=fitted)
+        response = self.client.post(self.edit(template), self.posted(template, measure_w='31', measure_h='10'))
+        self.assertEqual(response.status_code, 302)
+        template.refresh_from_db()
+        self.assertEqual(template.measure, (31, 10))
+        updated = AuditLog.objects.filter(entity_type='card template', action='update').latest('pk')
+        self.assertEqual(updated.changes['Card width (units)'][1], '31')
+        for width, height, said in (('31', '', 'needs both its width and its height'), ('', '10', 'needs both'),
+                                    ('11', '10', 'greater than or equal to 12'), ('31', '65', 'less than or equal to 64')):
+            with self.subTest(width=width, height=height):
+                response = self.client.post(self.edit(template), self.posted(template, measure_w=width, measure_h=height))
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, said)
+        tall = {'schema': 1, 'widgets': [{'id': f'w{row}', 'type': 'tasks', 'x': 0, 'y': 2 * row, 'w': 6, 'h': 2}
+                                         for row in range(13)]}                     # 26 rows
+        response = self.client.post(self.edit(template), self.posted(template, layout=json.dumps(tall)))
+        self.assertContains(response, 'at most 24 rows; this layout takes 26')
+        template.refresh_from_db()
+        self.assertEqual((template.measure, template.layout), ((31, 10), fitted))    # nothing of the refusals was stored
+        self.client.post(self.edit(template), self.posted(template, measure_w='', measure_h=''))
+        template.refresh_from_db()
+        self.assertIsNone(template.measure)                                          # and it flows again
+        self.client.post(reverse('monitoring:cardtemplate_copy', args=[builtin.SMALL]))
+        self.assertEqual(CardTemplate.objects.get(name='Small (copy)').measure, builtin.SMALL_MEASURE)
 
     def test_a_stale_version_is_refused(self):
         template = self.template('Wall view')

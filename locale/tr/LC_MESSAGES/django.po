@@ -151,6 +151,10 @@ msgid "%(batch)s: not weighed since it came in, so no FCR yet"
 msgstr "%(batch)s: geldiğinden beri tartılmadı, bu yüzden henüz FCR yok"
 
 #, python-format
+msgid "%(bound)s, no recent data"
+msgstr "%(bound)s, güncel veri yok"
+
+#, python-format
 msgid "%(channel)s measures %(quantity)s as %(other)s does: one of the two is the backup there."
 msgstr ""
 "%(channel)s, %(other)s ile aynı %(quantity)s değerini ölçüyor: oradaki ikisinden biri yedek "
@@ -592,6 +596,10 @@ msgid "%(date)s (no time recorded: counted from the end of the day)"
 msgstr "%(date)s (saat kaydedilmemiş: gün sonundan itibaren sayılır)"
 
 #, python-format
+msgid "%(days)d d"
+msgstr "%(days)d gün"
+
+#, python-format
 msgid "%(days)d d ago"
 msgstr "%(days)d gün önce"
 
@@ -807,6 +815,10 @@ msgid "%(grams)s g (%(percent)s %%, %(kilos)s kg)"
 msgstr "%(grams)s g (%%%(percent)s, %(kilos)s kg)"
 
 #, python-format
+msgid "%(hours)d h"
+msgstr "%(hours)d sa"
+
+#, python-format
 msgid "%(hours)d h ago"
 msgstr "%(hours)d sa önce"
 
@@ -912,6 +924,10 @@ msgstr "Buna bağlı: %(label)s"
 #, python-format
 msgid "%(label)s that lose their %(link)s"
 msgstr "%(label)s: “%(link)s” bağlantısı kalkar"
+
+#, python-format
+msgid "%(label)s: measured %(moment)s"
+msgstr "%(label)s: %(moment)s tarihinde ölçüldü"
 
 #, python-format
 msgid "%(label)s: no limit for these fish"
@@ -1539,8 +1555,8 @@ msgid ""
 "%(unit)s held salmonids and was due a count by %(date)s: count it, or the site’s average is not "
 "of every cage."
 msgstr ""
-"%(unit)s’te salmonidler vardı ve sayım %(date)s tarihine kadar yapılmalıydı: sayın, yoksa sahanın"
-" ortalaması her kafesi kapsamaz."
+"%(unit)s biriminde salmonidler vardı ve sayım %(date)s tarihine kadar yapılmalıydı: sayın, yoksa "
+"sahanın ortalaması her kafesi kapsamaz."
 
 #, python-format
 msgid ""
@@ -1661,6 +1677,10 @@ msgstr "%%%(value)s"
 msgid "%(value)s %(unit)s"
 msgstr "%(value)s %(unit)s"
 
+#, python-format
+msgid "%(value)s assumed"
+msgstr "%(value)s varsayıldı"
+
 #. Translators: days of cover, e.g. 12.5 days.
 #, python-format
 msgid "%(value)s days"
@@ -1704,6 +1724,10 @@ msgstr "%(value)s t"
 #, python-format
 msgid "%(value)s °C"
 msgstr "%(value)s °C"
+
+#, python-format
+msgid "%(value)s, no recent data"
+msgstr "%(value)s, güncel veri yok"
 
 #. Translators: a ratio, how many times as much, e.g. 2× (a size limit).
 #, python-format
@@ -1784,6 +1808,12 @@ msgstr "(adı olmayan değer)"
 
 msgid "(whole batch)"
 msgstr "(tüm parti)"
+
+#, python-format
+msgid "+%(count)s more unit"
+msgid_plural "+%(count)s more units"
+msgstr[0] "+%(count)s birim daha"
+msgstr[1] "+%(count)s birim daha"
 
 msgid "0 rows"
 msgstr "0 satır"
@@ -1971,6 +2001,13 @@ msgstr ""
 "Bir kart şablonu, izleme kartına bileşenler yerleştirir; kartın çerçevesi (birim, durumu ve "
 "nedeni) her zaman gösterilir."
 
+msgid ""
+"A card’s pH window is drawn on the scale of its unit’s water type. A pH beyond the scale is shown"
+" as an arrow and the number."
+msgstr ""
+"Bir kartın pH penceresi, biriminin su tipinin ölçeğinde çizilir. Ölçeğin dışındaki bir pH, ok ve "
+"sayı olarak gösterilir."
+
 #, python-format
 msgid "A channel has at most %(num)d calibration."
 msgid_plural "A channel has at most %(num)d calibrations."
@@ -2051,8 +2088,8 @@ msgid ""
 "A cull of %(batch)s on %(date)s has the reason “%(reason)s”, which is none of Mattilsynet’s six "
 "causes for cleaner fish."
 msgstr ""
-"%(batch)s’in %(date)s tarihli itlafının nedeni “%(reason)s”; bu, Mattilsynet’in temizleyici "
-"balıklar için belirlediği altı nedenden biri değil."
+"%(batch)s partisinin %(date)s tarihli itlafının nedeni “%(reason)s”; bu, Mattilsynet’in "
+"temizleyici balıklar için belirlediği altı nedenden biri değil."
 
 msgid "A day in the period"
 msgstr "Dönemdeki bir gün"
@@ -2203,6 +2240,24 @@ msgid ""
 msgstr ""
 "Bir sunumun zamanı, kimin kaydettiği, nasıl sunulduğu ve telefonla bildirilmediyse makbuzu veya "
 "referansı vardır."
+
+msgid ""
+"A fitted card needs both its width (12 to 64 units) and its height (6 to 64 units); leave both "
+"empty for a card that flows."
+msgstr ""
+"Sığdırılan bir kart için hem genişlik (12-64 birim) hem yükseklik (6-64 birim) gerekir; akan bir "
+"kart için ikisini de boş bırakın."
+
+msgid "A fitted card needs both its width and its height; leave both empty for a card that flows."
+msgstr ""
+"Sığdırılan bir kart için hem genişlik hem yükseklik gerekir; akan bir kart için ikisini de boş "
+"bırakın."
+
+#, python-format
+msgid "A fitted card’s widgets share its height in at most %(most)d rows; this layout takes %(rows)d."
+msgstr ""
+"Sığdırılan bir kartın bileşenleri yüksekliği en çok %(most)d satırda paylaşır; bu yerleşim "
+"%(rows)d satır kullanıyor."
 
 msgid "A flow can be stated for an inlet or an outlet only."
 msgstr "Debi yalnızca bir giriş veya çıkış için belirtilebilir."
@@ -2375,6 +2430,9 @@ msgstr ""
 "Bir pH kanalı, probunun ölçtüğü ölçeği söyler (pH ölçeği). TRIS ile kalibre edilen bir prob "
 "(deniz suyu ISFET ve optik sensörlerinin çoğu) toplam ölçekte ölçer, deniz suyunda NBS’den 0,09 "
 "ile 0,15 daha düşük: NBS olarak alınırsa NH₃’ü % 19 ile % 28 düşük okunur."
+
+msgid "A pH lies between 0 and 14."
+msgstr "pH 0 ile 14 arasındadır."
 
 msgid ""
 "A pH on this scale is taken for sea water of 5 ‰ or more only (not fresh water with salt added): "
@@ -3164,6 +3222,9 @@ msgstr ""
 "%(formula)s sonrasında CO₂, havayla dengedeki bir suyun tuttuğu %(air)s mg/L’nin altında: sıyırma"
 " onu oraya indiremez."
 
+msgid "Against its limits"
+msgstr "Sınırlara göre"
+
 msgid "Against the standard week (min)"
 msgstr "Standart haftaya göre (dk)"
 
@@ -3222,6 +3283,9 @@ msgstr "Alarmlar"
 msgid "Alive"
 msgstr "Canlı"
 
+msgid "Alk."
+msgstr "Alk."
+
 msgid "Alkalinity"
 msgstr "Alkalinite"
 
@@ -3239,6 +3303,9 @@ msgstr "Alkalinite aralığı, üst (mg/L CaCO₃ olarak)"
 
 msgid "Alkalinity band, low (mg/L as CaCO₃)"
 msgstr "Alkalinite aralığı, alt (mg/L CaCO₃ olarak)"
+
+msgid "Alkalinity, mg/L CaCO₃"
+msgstr "Alkalinite, mg/L CaCO₃"
 
 msgid "All"
 msgstr "Tümü"
@@ -3794,6 +3861,9 @@ msgstr "Alan"
 msgid "Area not set: the stricter limit applies (Facility › Sites)"
 msgstr "Bölge girilmemiş: daha sıkı sınır geçerli (Tesis › Sahalar)"
 
+msgid "Arrived"
+msgstr "Geldi"
+
 #, python-format
 msgid ""
 "As P this is %(value)s mg/L: a phosphate is between %(low)s and %(high)s mg/L as P (up to "
@@ -4187,8 +4257,14 @@ msgstr "0 ile 5000 m arasında: deniz seviyesinden en yüksek çiftliklere kadar
 msgid "Between 10 and 600. Empty uses the system’s 15 seconds."
 msgstr "10 ile 600 arasında. Boş bırakılırsa sistemin 15 saniyesi kullanılır."
 
+msgid "Between the CO₂ and the NH₃ limit, outside the alkalinity band"
+msgstr "CO₂ ve NH₃ sınırı arasında, alkalinite bandının dışında"
+
 msgid "Between the two doses"
 msgstr "İki doz arasında"
+
+msgid "Big"
+msgstr "Büyük"
 
 msgid "Binding"
 msgstr "Atama"
@@ -4335,8 +4411,24 @@ msgstr "CO₂"
 msgid "CO₂ (mg/L)"
 msgstr "CO₂ (mg/L)"
 
+#, python-format
+msgid "CO₂ > %(limit)s mg/L"
+msgstr "CO₂ > %(limit)s mg/L"
+
 msgid "CO₂ best estimate (information, not judged)"
 msgstr "CO₂ en iyi tahmin (bilgi, değerlendirmede kullanılmaz)"
+
+msgid "CO₂ calc."
+msgstr "CO₂ hesap"
+
+msgid "CO₂ calc. (mg/L)"
+msgstr "CO₂ hesap (mg/L)"
+
+msgid "CO₂ does not reach its limit"
+msgstr "CO₂ sınırına ulaşmıyor"
+
+msgid "CO₂ is past its limit at every pH"
+msgstr "CO₂ her pH değerinde sınırını aşıyor"
 
 msgid "CO₂ judged on its best estimate, the larger here."
 msgstr "CO₂, burada daha büyük olan en iyi tahminiyle değerlendirildi."
@@ -4345,14 +4437,15 @@ msgstr "CO₂, burada daha büyük olan en iyi tahminiyle değerlendirildi."
 msgid ""
 "CO₂ judged on the safe side (to 1 ‰ the ideal water, every activity 1, as Standard Methods "
 "4500-CO₂ D; from 5 ‰ the best estimate at the pH − 0.03, the uncertainty of a pH reading (US EPA "
-"1989), about 7 to 9 %% above it; blended between; salt-added water: the ideal throughout), the "
-"larger of it and the best estimate; best estimate %(value)s mg/L."
+"1989), at least 7 %% above it and more the lower the alkalinity; blended between; salt-added "
+"water: the ideal throughout), the larger of it and the best estimate; best estimate %(value)s "
+"mg/L."
 msgstr ""
 "CO₂ güvenli tarafta değerlendirildi (1 ‰’ye kadar ideal su, tüm aktiviteler 1, Standard Methods "
 "4500-CO₂ D gibi; 5 ‰’den itibaren pH − 0,03’teki en iyi tahmin, bir pH okumasının belirsizliği "
-"(US EPA 1989), onun yaklaşık %% 7 ile %% 9 üstünde; aradaki tuzlulukta karıştırılmış; tuz "
-"eklenmiş suda baştan sona ideal), bu değer ile en iyi tahminin büyüğü; en iyi tahmin %(value)s "
-"mg/L."
+"(US EPA 1989), onun en az %% 7 üstünde, alkalinite ne kadar düşükse o kadar fazla; aradaki "
+"tuzlulukta karıştırılmış; tuz eklenmiş suda baştan sona ideal), bu değer ile en iyi tahminin "
+"büyüğü; en iyi tahmin %(value)s mg/L."
 
 #, python-format
 msgid ""
@@ -4371,6 +4464,16 @@ msgstr "CO₂ sınırı"
 
 msgid "CO₂ limit (mg/L)"
 msgstr "CO₂ sınırı (mg/L)"
+
+#, python-format
+msgid "CO₂ passes its limit below pH %(ph)s"
+msgstr "CO₂ sınırı pH %(ph)s altında aşılır"
+
+msgid "CO₂ probe"
+msgstr "CO₂ prob"
+
+msgid "CO₂ probe (mg/L)"
+msgstr "CO₂ prob (mg/L)"
 
 msgid "CO₂ the air leaves in it"
 msgstr "Havanın suda bıraktığı CO₂"
@@ -4442,6 +4545,9 @@ msgstr "Hesapla"
 
 msgid "Calculated"
 msgstr "Hesaplanan"
+
+msgid "Calculated from the pH, the alkalinity, the temperature and the salinity."
+msgstr "pH, alkalinite, sıcaklık ve tuzluluktan hesaplandı."
 
 msgid "Calculator"
 msgstr "Hesaplayıcı"
@@ -4531,22 +4637,33 @@ msgstr "Karbondioksit (mg/L serbest CO₂)"
 msgid "Carbon dioxide, added"
 msgstr "Karbondioksit, eklenen"
 
+msgid "Carbon dioxide, calculated (mg/L CO₂)"
+msgstr "Karbondioksit, hesaplanan (mg/L CO₂)"
+
 msgid "Carbon dioxide, stripped"
 msgstr "Karbondioksit, sıyrılan"
 
 msgid ""
 "Carbonic acid: Millero, Graham, Huang, Bustos-Serrano and Pierrot (2006); water: Millero (1995); "
-"boric acid: Dickson (1990); ammonium: Millero (1995); hydrogen sulfide: Millero, Plese and "
-"Fernandez (1988); calcite and aragonite: Mucci (1983); oxygen: Benson and Krause (1984). A pH is "
-"as a meter reads it (NBS scale). A border nearer than 0.2 pH is a warning."
+"boric acid: Dickson (1990); ammonium: Clegg and Whitfield (1995) for the best estimate, Yao and "
+"Millero (1995) for the ideal water; fresh and salt-added water is judged on the larger of these "
+"two values, and brackish water of 1 to 5 ‰ on the larger of the best estimate and a blend of the "
+"two constants; hydrogen sulfide: Millero, Plese and Fernandez (1988); calcite and aragonite: "
+"Mucci (1983); oxygen: Benson and Krause (1984). A pH is as a meter reads it (NBS scale). A border"
+" nearer than 0.2 pH is a warning."
 msgstr ""
 "Karbonik asit: Millero, Graham, Huang, Bustos-Serrano ve Pierrot (2006); su: Millero (1995); "
-"borik asit: Dickson (1990); amonyum: Millero (1995); hidrojen sülfür: Millero, Plese ve Fernandez"
-" (1988); kalsit ve aragonit: Mucci (1983); oksijen: Benson ve Krause (1984). pH, bir ölçerin "
-"okuduğu gibidir (NBS ölçeği). 0,2 pH'den yakın bir sınır uyarıdır."
+"borik asit: Dickson (1990); amonyum: en iyi tahmin için Clegg ve Whitfield (1995), ideal su için "
+"Yao ve Millero (1995); tatlı su ve tuz eklenmiş su bu iki değerden büyük olana göre, 1–5 ‰ acı su"
+" ise en iyi tahmin ile iki sabitin karışımından büyük olana göre değerlendirilir; hidrojen "
+"sülfür: Millero, Plese ve Fernandez (1988); kalsit ve aragonit: Mucci (1983); oksijen: Benson ve "
+"Krause (1984). pH, bir ölçerin okuduğu gibidir (NBS ölçeği). 0,2 pH'den yakın bir sınır uyarıdır."
 
 msgid "Card"
 msgstr "Kart"
+
+msgid "Card height (units)"
+msgstr "Kart yüksekliği (birim)"
 
 msgid ""
 "Card layout: select a widget, move it with the arrow keys, resize it with Shift and the arrow "
@@ -4564,6 +4681,9 @@ msgstr "Kart şablonları"
 msgid "Card width"
 msgstr "Kart genişliği"
 
+msgid "Card width (units)"
+msgstr "Kart genişliği (birim)"
+
 msgid "Cardiomyopathy syndrome (CMS)"
 msgstr "Kardiyomiyopati sendromu (CMS)"
 
@@ -4575,6 +4695,9 @@ msgstr "Kartlar"
 
 msgid "Cards are drawn with"
 msgstr "Kartların şablonu"
+
+msgid "Cards by state"
+msgstr "Duruma göre kartlar"
 
 msgid "Cards can be added once the board is created."
 msgstr "Kartlar, pano oluşturulduktan sonra eklenebilir."
@@ -4623,8 +4746,8 @@ msgid ""
 "Channel #%(number)d’s values before %(time)s are not drawn: its pH scale was changed then, and "
 "the scale they were measured on is not known."
 msgstr ""
-"Kanal #%(number)d’in %(time)s öncesindeki değerleri çizilmez: pH ölçeği o zaman değiştirildi ve "
-"ölçüldükleri ölçek bilinmiyor."
+"%(number)d numaralı kanalın %(time)s öncesindeki değerleri çizilmez: pH ölçeği o zaman "
+"değiştirildi ve ölçüldükleri ölçek bilinmiyor."
 
 #, python-format
 msgid ""
@@ -4661,6 +4784,16 @@ msgstr "Güncel değeri olmayan kanallar"
 
 msgid "Charged"
 msgstr "Sayılan"
+
+msgid "Chart"
+msgstr "Grafik"
+
+msgid "Chart view"
+msgstr "Grafik görünümü"
+
+#, python-format
+msgid "Chart view, %(unit)s"
+msgstr "Grafik görünümü, %(unit)s"
 
 msgid "Charts"
 msgstr "Grafikler"
@@ -4919,6 +5052,14 @@ msgstr ""
 "%(unit)s içindeki temizleyici balıklar ilaç bekleme süresinde (%(batch)s, %(end)s): onları "
 "hasadın dışında tutun."
 
+#, python-format
+msgid ""
+"Cleaner fish in %(unit)s are in a medicine withdrawal (%(batch)s, %(end)s): keep them out of the "
+"live delivery."
+msgstr ""
+"%(unit)s içindeki temizleyici balıklar ilaç bekleme süresinde (%(batch)s, %(end)s): onları canlı "
+"teslimatın dışında tutun."
+
 msgid "Cleaner fish only"
 msgstr "Yalnızca temizleyici balıklar"
 
@@ -4986,7 +5127,7 @@ msgstr "Kişinin kendisi giriş yaptı"
 
 #, python-format
 msgid "Clocked in since %(since)s."
-msgstr "%(since)s’den beri içeride."
+msgstr "%(since)s itibarıyla içeride."
 
 msgid "Clocks"
 msgstr "Saatler"
@@ -5001,8 +5142,17 @@ msgstr "%(kind)s · %(place)s · %(period)s bildirilmeden kapatılsın mı?"
 msgid "Close it"
 msgstr "Kapat"
 
+msgid "Close the big card"
+msgstr "Büyük kartı kapat"
+
+msgid "Close the big card (Esc)"
+msgstr "Büyük kartı kapat (Esc)"
+
 msgid "Close without filing"
 msgstr "Bildirmeden kapat"
+
+msgid "Close-up"
+msgstr "Yakın"
 
 msgid "Closed"
 msgstr "Kapalı"
@@ -5445,6 +5595,9 @@ msgstr "D-uçlu"
 msgid "DIC (mmol/L)"
 msgstr "DIC (mmol/L)"
 
+msgid "DIC, mmol/L"
+msgstr "DIC, mmol/L"
+
 msgid "DOI"
 msgstr "DOI"
 
@@ -5594,6 +5747,17 @@ msgstr "Deffeyes grafiği"
 msgid "Deffeyes chart · %(unit)s"
 msgstr "Deffeyes grafiği · %(unit)s"
 
+#, python-format
+msgid ""
+"Deffeyes chart, %(unit)s: %(words)s; pH %(ph)s, alkalinity %(alkalinity)s mg/L, DIC %(dic)s "
+"mmol/L, calculated CO₂ %(co2)s mg/L; %(view)s"
+msgstr ""
+"Deffeyes grafiği, %(unit)s: %(words)s; pH %(ph)s, alkalinite %(alkalinity)s mg/L, DIC %(dic)s "
+"mmol/L, hesaplanan CO₂ %(co2)s mg/L; %(view)s"
+
+msgid "Deffeyes chart, drawn"
+msgstr "Deffeyes grafiği, çizilmiş"
+
 msgid "Definition"
 msgstr "Tanım"
 
@@ -5692,7 +5856,9 @@ msgstr[1] "%(supplier)s teslimatı kaydedildi: %(count)d satır."
 
 #, python-format
 msgid "Delivery recorded: %(count)s fish of %(batch)s from %(unit)s to %(destination)s."
-msgstr "Teslimat kaydedildi: %(unit)s biriminden %(destination)s’a %(batch)s partisinden %(count)s balık."
+msgstr ""
+"Teslimat kaydedildi: %(unit)s biriminden %(batch)s partisinden %(count)s balık; alıcı: "
+"%(destination)s."
 
 #, python-format
 msgid "Delivery to %(person)s: %(outcome)s"
@@ -5776,7 +5942,7 @@ msgstr "Cihaz saati %(amount)s geri"
 
 #, python-format
 msgid "Device clock is more than %(amount)s ahead"
-msgstr "Cihaz saati %(amount)s'dan fazla ileri"
+msgstr "Cihaz saati %(amount)s değerinden fazla ileri"
 
 msgid "Device clock off by more than (seconds)"
 msgstr "Cihaz saati şundan fazla saparsa (saniye)"
@@ -5886,6 +6052,9 @@ msgstr "Doz birimi"
 
 msgid "Dose · amount"
 msgstr "Doz · miktar"
+
+msgid "Dosing advice"
+msgstr "Dozlama önerisi"
 
 msgid "Dosing path"
 msgstr "Dozlama yolu"
@@ -6233,8 +6402,8 @@ msgid ""
 "Entered as %(value)s mg/L as PO₄; stored as phosphorus (PO₄-P), divided by %(factor)s (the molar "
 "masses of PO₄ and P)."
 msgstr ""
-"%(value)s mg/L PO₄ olarak girildi; fosfor (PO₄-P) olarak saklandı, %(factor)s’e bölünerek (PO₄ ve"
-" P’nin mol kütleleri)."
+"%(value)s mg/L PO₄ olarak girildi; fosfor (PO₄-P) olarak saklandı, %(factor)s ile bölünerek (PO₄ "
+"ve P’nin mol kütleleri)."
 
 msgid "Entered by hand"
 msgstr "Elle girildi"
@@ -7049,6 +7218,17 @@ msgstr "Akışlı sistem"
 msgid "Fluidised bed"
 msgstr "Akışkan yatak"
 
+msgid "Focus"
+msgstr "Odak"
+
+#, python-format
+msgid "Focus: %(unit)s"
+msgstr "Odak: %(unit)s"
+
+#, python-brace-format
+msgid "Focus: {unit}"
+msgstr "Odak: {unit}"
+
 msgid "Food fish (matfisk)"
 msgstr "Pazar balığı (matfisk)"
 
@@ -7061,6 +7241,15 @@ msgstr "Süre (saniye)"
 #, python-format
 msgid "For a %(severity)s alarm, from %(low)d to %(high)d %(unit)s."
 msgstr "%(severity)s bir alarm için %(low)d ile %(high)d %(unit)s arası."
+
+msgid ""
+"For a fitted card, one that is drawn at the size of its place on a wall: how many of its own "
+"units the card is wide (12 to 64; the Small card is 31). Empty with the height: the card flows "
+"down the page."
+msgstr ""
+"Sığdırılan bir kart, yani duvardaki yerinin boyutunda çizilen kart için: kartın kendi biriminden "
+"kaç birim genişlikte olduğu (12-64; Küçük kart 31). Yükseklikle birlikte boş: kart sayfada aşağı "
+"doğru akar."
 
 msgid ""
 "For a sea site with salmonids: the lower sea-lice limit of spring runs in weeks 16–21 from Nord-"
@@ -7187,10 +7376,12 @@ msgstr "Tuz eklenmiş tatlı su"
 
 msgid ""
 "Fresh water with salt added (NaCl) is worked out without sea water’s ions, its ionic strength as "
-"NaCl’s; not said, a salinity of 1 to 5 ‰ is taken as diluted sea water."
+"NaCl’s; fresh water with sea water or a sea-salt mix added is diluted sea water. Not said, a "
+"salinity of 1 to 5 ‰ is taken as diluted sea water."
 msgstr ""
 "Tuz (NaCl) eklenmiş tatlı su, deniz suyunun iyonları olmadan, iyonik şiddeti NaCl'ninki olarak "
-"hesaplanır; belirtilmezse 1–5 ‰ tuzluluk seyreltilmiş deniz suyu sayılır."
+"hesaplanır; deniz suyu veya deniz tuzu karışımı eklenmiş tatlı su seyreltilmiş deniz suyudur. "
+"Belirtilmezse 1–5 ‰ tuzluluk seyreltilmiş deniz suyu sayılır."
 
 msgid "Freshness"
 msgstr "Tazelik"
@@ -7249,6 +7440,9 @@ msgstr "Uçtan uca; her uç, tank genişliğinde bir yarım dairedir."
 msgid "From lokalitetsnummer"
 msgstr "Çıkış lokalitetsnummer"
 
+msgid "From pH"
+msgstr "Başlangıç pH"
+
 msgid "From the backup or the system’s channel"
 msgstr "Yedekten veya sistemin kanalından"
 
@@ -7285,6 +7479,9 @@ msgstr "Yakıt tipi"
 
 msgid "Full name of the site manager"
 msgstr "Saha sorumlusunun tam adı"
+
+msgid "Full scale"
+msgstr "Tam ölçek"
 
 msgid "Full screen"
 msgstr "Tam ekran"
@@ -7899,6 +8096,13 @@ msgstr ""
 "Yeni bir değer gelmeden bir değerin kaç kalp atışı taze kaldığı; sonra yer güncel veri yok "
 "gösterir. 1 ile 20 arası. Boş: olduğu gibi (yeni bir kanal için 3)."
 
+msgid ""
+"How many of its own units a fitted card is high (6 to 64; the Small card is 10). The card’s "
+"widgets share that height in equal rows, at most 24."
+msgstr ""
+"Sığdırılan bir kartın kendi biriminden kaç birim yükseklikte olduğu (6-64; Küçük kart 10). Kartın"
+" bileşenleri bu yüksekliği eşit satırlarda paylaşır, en çok 24 satır."
+
 msgid "How many times a failing transport is tried with one notification."
 msgstr "Başarısız bir aktarımın bir bildirimle kaç kez deneneceği."
 
@@ -7986,6 +8190,15 @@ msgstr "H₂S: toplam sülfürü verin."
 msgid "H₂S: no limit given."
 msgstr "H₂S: sınır verilmedi."
 
+msgid ""
+"H₂S: the constant of Millero, Plese and Fernandez (1988), measured in sea water of 5 to 40 ‰ at 5"
+" to 25 °C. Outside that, fresh water included, the H₂S rests on their equation alone, checked "
+"against no second source."
+msgstr ""
+"H₂S: Millero, Plese ve Fernandez’in (1988) sabiti, 5–40 ‰ deniz suyunda 5–25 °C’de ölçülmüştür. "
+"Bunun dışında, tatlı su da dahil, H₂S yalnızca onların denklemine dayanır ve ikinci bir kaynakla "
+"karşılaştırılmamıştır."
+
 msgid "H₂S: the limit is not reached anywhere on this chart."
 msgstr "H₂S: bu çizelgenin hiçbir yerinde sınıra ulaşılmaz."
 
@@ -8056,6 +8269,14 @@ msgstr ""
 "Tuzlu suda en iyi tahmin, NBS pH’ını Millero’nun (1986) ölçtüğü adımla ve amonyum sabitini Clegg "
 "& Whitfield’dan (1995) alır."
 
+#, python-format
+msgid "In the CO₂ region: %(margin)s pH past the limit"
+msgstr "CO₂ bölgesinde: sınırın %(margin)s pH ötesinde"
+
+#, python-format
+msgid "In the NH₃ region: %(margin)s pH past the limit"
+msgstr "NH₃ bölgesinde: sınırın %(margin)s pH ötesinde"
+
 msgid "In the library"
 msgstr "Kütüphanede"
 
@@ -8072,6 +8293,13 @@ msgstr ""
 " üstünde veya altında kuralı almaz: düzeyini su limitleri değerlendirir (pH’ı NBS ölçeğinde). pH "
 "değişim hızı her ölçekte hemen hemen aynıdır ve bir değeri, kanalın pH ölçeği değiştirilmeden "
 "önceki bir değerle karşılaştırmaz."
+
+msgid "In the safe zone"
+msgstr "Güvenli bölgede"
+
+#, python-format
+msgid "In the safe zone · %(margin)s pH to the CO₂ limit"
+msgstr "Güvenli bölgede · CO₂ sınırına %(margin)s pH"
 
 msgid "In time"
 msgstr "Zamanında"
@@ -8524,6 +8752,13 @@ msgstr "Son iyi değer"
 
 msgid "Last good value at"
 msgstr "Son iyi değer zamanı"
+
+#, python-format
+msgid "Last known position · old: %(values)s"
+msgstr "Son bilinen konum · eski: %(values)s"
+
+msgid "Last known position."
+msgstr "Son bilinen konum."
 
 msgid "Last message at"
 msgstr "Son mesaj zamanı"
@@ -9117,6 +9352,10 @@ msgstr ""
 msgid "Missing"
 msgstr "Eksik"
 
+#, python-format
+msgid "Missing: %(why)s."
+msgstr "Eksik: %(why)s."
+
 msgid "Mixed"
 msgstr "Karışık"
 
@@ -9259,20 +9498,34 @@ msgstr ""
 msgid "NH₃ and NH₄⁺ together, as nitrogen. The NH₃ limit is drawn from it."
 msgstr "NH₃ ve NH₄⁺ birlikte, azot olarak. NH₃ sınırı buna göre çizilir."
 
+msgid "NH₃ does not reach its limit"
+msgstr "NH₃ sınırına ulaşmıyor"
+
+msgid "NH₃ is past its limit at every pH"
+msgstr "NH₃ her pH değerinde sınırını aşıyor"
+
 msgid "NH₃ judged on its best estimate, the larger here."
 msgstr "NH₃, burada daha büyük olan en iyi tahminiyle değerlendirildi."
 
 #, python-format
 msgid ""
 "NH₃ judged on the safe side (to 1 ‰ the ideal water, every activity 1, as Emerson et al. 1975; "
-"from 5 ‰ the best estimate at the pH + 0.03, the uncertainty of a pH reading (US EPA 1989), about"
-" 7 %% above it; blended between; salt-added water: the ideal throughout), the larger of it and "
-"the best estimate; best estimate %(value)s mg/L."
+"from 5 ‰ the best estimate at the pH + 0.03, the uncertainty of a pH reading (US EPA 1989), up to"
+" about 7 %% above it, less the higher the pH; blended between; salt-added water: the ideal "
+"throughout), the larger of it and the best estimate; best estimate %(value)s mg/L."
 msgstr ""
 "NH₃ güvenli tarafta değerlendirildi (1 ‰’ye kadar ideal su, tüm aktiviteler 1, Emerson ve ark. "
 "1975 gibi; 5 ‰’den itibaren pH + 0,03’teki en iyi tahmin, bir pH okumasının belirsizliği (US EPA "
-"1989), onun yaklaşık %% 7 üstünde; aradaki tuzlulukta karıştırılmış; tuz eklenmiş suda baştan "
-"sona ideal), bu değer ile en iyi tahminin büyüğü; en iyi tahmin %(value)s mg/L."
+"1989), onun en fazla yaklaşık %% 7 üstünde, pH yükseldikçe daha az; aradaki tuzlulukta "
+"karıştırılmış; tuz eklenmiş suda baştan sona ideal), bu değer ile en iyi tahminin büyüğü; en iyi "
+"tahmin %(value)s mg/L."
+
+msgid "NH₃ not assessed: no TAN"
+msgstr "NH₃ değerlendirilmedi: TAN yok"
+
+#, python-format
+msgid "NH₃ passes its limit above pH %(ph)s"
+msgstr "NH₃ sınırı pH %(ph)s üstünde aşılır"
 
 msgid "NH₃ share of TAN at the border"
 msgstr "Sınırda TAN içindeki NH₃ payı"
@@ -9292,6 +9545,10 @@ msgstr "NH₃-N"
 
 msgid "NH₃-N (mg/L)"
 msgstr "NH₃-N (mg/L)"
+
+#, python-format
+msgid "NH₃-N > %(limit)s mg/L"
+msgstr "NH₃-N > %(limit)s mg/L"
 
 msgid "NH₃-N best estimate (information, not judged)"
 msgstr "NH₃-N en iyi tahmin (bilgi, değerlendirmede kullanılmaz)"
@@ -9314,14 +9571,26 @@ msgstr "NH₃: TAN hiçbir pH'de sınıra ulaşamaz (sınır TAN'ın altında de
 msgid "NH₃: the limit is not reached anywhere on this chart."
 msgstr "NH₃: bu çizelgenin hiçbir yerinde sınıra ulaşılmaz."
 
+msgid "NH₄-N"
+msgstr "NH₄-N"
+
 msgid "NH₄-N (mg/L)"
 msgstr "NH₄-N (mg/L)"
+
+msgid "NO₂-N"
+msgstr "NO₂-N"
 
 msgid "NO₂-N (mg/L)"
 msgstr "NO₂-N (mg/L)"
 
+msgid "NO₃-N"
+msgstr "NO₃-N"
+
 msgid "NO₃-N (mg/L)"
 msgstr "NO₃-N (mg/L)"
+
+msgid "NTU"
+msgstr "NTU"
 
 msgid "Name"
 msgstr "Ad"
@@ -9472,6 +9741,9 @@ msgstr "Sonraki"
 msgid "Next meal"
 msgstr "Sonraki öğün"
 
+msgid "Next page (PageDown)"
+msgstr "Sonraki sayfa (PageDown)"
+
 msgid "Next week"
 msgstr "Sonraki hafta"
 
@@ -9543,6 +9815,9 @@ msgstr "Cihazın hiçbir kanalı eşleşmiyor"
 msgid "No channels yet: add them on the Channels page."
 msgstr "Henüz kanal yok: Kanallar sayfasından ekleyin."
 
+msgid "No chart"
+msgstr "Grafik yok"
+
 msgid "No check"
 msgstr "Denetim yok"
 
@@ -9579,6 +9854,9 @@ msgstr "Tanı yok"
 #, python-format
 msgid "No diagram: the sensor’s pH cannot be put on the NBS scale (%(why)s)."
 msgstr "Diyagram yok: sensörün pH’ı NBS ölçeğine dönüştürülemiyor (%(why)s)."
+
+msgid "No dosing advice"
+msgstr "Dozlama önerisi yok"
 
 msgid "No expiry date recorded."
 msgstr "Son kullanma tarihi kaydedilmemiş."
@@ -9778,6 +10056,9 @@ msgstr "Bu filtrelere uyan işlem yok."
 msgid "No operation recorded yet"
 msgstr "Henüz işlem kaydedilmedi"
 
+msgid "No other sampling point"
+msgstr "Başka örnekleme noktası yok"
+
 msgid "No other table."
 msgstr "Başka tablo yok."
 
@@ -9820,6 +10101,10 @@ msgstr "Eşleşen satır yok."
 #, python-format
 msgid "No rows match. <a href=\"%(url)s\">Clear the search and filters</a>."
 msgstr "Eşleşen satır yok. <a href=\"%(url)s\">Aramayı ve filtreleri temizleyin</a>."
+
+#, python-format
+msgid "No safe zone: %(why)s"
+msgstr "Güvenli bölge yok: %(why)s"
 
 msgid "No samples match these filters."
 msgstr "Bu filtrelere uyan numune yok."
@@ -9889,6 +10174,9 @@ msgstr "Tank yok"
 
 msgid "No tank is placed."
 msgstr "Yerleştirilmiş tank yok."
+
+msgid "No target, reagent or dosing volume is set for these fish yet."
+msgstr "Bu balıklar için henüz hedef, reaktif veya dozlama hacmi tanımlanmadı."
 
 msgid "No task completed or cancelled yet"
 msgstr "Henüz tamamlanan veya iptal edilen görev yok"
@@ -10244,6 +10532,10 @@ msgstr "Doğrulanmadı"
 msgid "Not weighed since the fish came in."
 msgstr "Balıklar geldiğinden beri tartılmadı."
 
+#, python-format
+msgid "Not worked out: %(why)s."
+msgstr "Hesaplanmadı: %(why)s."
+
 msgid "Not worked out: the TAN is no longer fresh."
 msgstr "Hesaplanmadı: TAN değeri artık güncel değil."
 
@@ -10271,6 +10563,9 @@ msgstr "Bu filtrelere uyan stok yok."
 
 msgid "Nothing in the store yet"
 msgstr "Depoda henüz hiçbir şey yok"
+
+msgid "Nothing is assumed for a missing value."
+msgstr "Eksik değer için hiçbir şey varsayılmaz."
 
 msgid "Nothing is filled in for a missing value."
 msgstr "Eksik bir değer için hiçbir şey doldurulmaz."
@@ -10504,6 +10799,9 @@ msgstr "Kalem başına bir yeniden sipariş seviyesi."
 msgid "One row per water parameter is made by the platform; it is changed, never added or deleted."
 msgstr "Platform her su parametresi için bir satır oluşturur; değiştirilir, asla eklenmez ya da silinmez."
 
+msgid "One row per water type is made by the platform; it is changed, never added or deleted."
+msgstr "Platform her su tipi için bir satır oluşturur; satır değiştirilir, eklenmez ve silinmez."
+
 #, python-format
 msgid ""
 "One row per weight band, from its lower weight up to, not including, its upper one; the bands "
@@ -10691,6 +10989,9 @@ msgstr "%(since)s tarihinden beri açık: Yoklama sayfasında kapatılacak"
 
 msgid "Open the PDF"
 msgstr "PDF’i aç"
+
+msgid "Open the big card beside the overview"
+msgstr "Büyük kartı genel görünümün yanında aç"
 
 msgid "Open the draft"
 msgstr "Taslağı aç"
@@ -10910,6 +11211,9 @@ msgstr "Başka bir dil"
 msgid "Other parasites (e.g. AGD)"
 msgstr "Diğer parazitler (örn. AGD)"
 
+msgid "Other sampling points"
+msgstr "Diğer örnekleme noktaları"
+
 msgid "Other species"
 msgstr "Diğer balık türleri"
 
@@ -11007,6 +11311,12 @@ msgstr "Ozon jeneratörü"
 msgid "Ozone production"
 msgstr "Ozon üretimi"
 
+msgid "O₂"
+msgstr "O₂"
+
+msgid "O₂ %"
+msgstr "O₂ %"
+
 msgid "O₂ (%)"
 msgstr "O₂ (%)"
 
@@ -11041,6 +11351,9 @@ msgstr "Sayfa %(page)s"
 
 msgid "Page label"
 msgstr "Sayfa etiketi"
+
+msgid "Page of the worst card (Home)"
+msgstr "En kötü kartın sayfası (Home)"
 
 msgid "Page(s)"
 msgstr "Sayfa(lar)"
@@ -11441,6 +11754,9 @@ msgstr "Önizleme güncellendi."
 
 msgid "Previous"
 msgstr "Önceki"
+
+msgid "Previous page (PageUp)"
+msgstr "Önceki sayfa (PageUp)"
 
 msgid "Previous week"
 msgstr "Önceki hafta"
@@ -12483,6 +12799,9 @@ msgstr "Başka bir nedense nedenini yazın, yalnızca o zaman."
 msgid "Say why: a tank that leaves, or is replaced, is registered with its reason."
 msgstr "Nedenini yazın: ayrılan veya değiştirilen bir tank gerekçesiyle kaydedilir."
 
+msgid "Scale"
+msgstr "Ölçek"
+
 msgid "Scale loss"
 msgstr "Pul kaybı"
 
@@ -13114,6 +13433,9 @@ msgstr "Kesim ağırlığı (kg)"
 msgid "Slow sinking"
 msgstr "Yavaş batan"
 
+msgid "Small"
+msgstr "Küçük"
+
 msgid "Small size"
 msgstr "Küçük boy"
 
@@ -13388,6 +13710,9 @@ msgstr "Başka bir parti stokla"
 msgid "Stock at the month’s end"
 msgstr "Ay sonundaki stok"
 
+msgid "Stock in one line"
+msgstr "Tek satırda stok"
+
 msgid "Stock lines"
 msgstr "Stok satırları"
 
@@ -13600,8 +13925,14 @@ msgstr "Sistemler (döngü)"
 msgid "Systems by status"
 msgstr "Duruma göre sistemler"
 
+msgid "TAN"
+msgstr "TAN"
+
 msgid "TAN (mg/L N)"
 msgstr "TAN (mg/L N)"
+
+msgid "TGP %"
+msgstr "TGP %"
 
 msgid "TGP (%)"
 msgstr "TGP (%)"
@@ -13972,8 +14303,18 @@ msgstr "Kanal şu anda hiçbir yere atanmamış."
 msgid "The channel was in maintenance."
 msgstr "Kanal bakımdaydı."
 
+msgid "The chart cannot be drawn"
+msgstr "Grafik çizilemiyor"
+
 msgid "The chart cannot be drawn: this point has no recent value of"
 msgstr "Grafik çizilemiyor: bu noktanın güncel bir değeri yok:"
+
+msgid ""
+"The chart is drawn from the latest values received, and these are old: it shows where the water "
+"was, not where it is now."
+msgstr ""
+"Grafik gelen son değerlerden çizilir ve şunlar eskidir: suyun şimdi nerede olduğunu değil, o "
+"sırada nerede olduğunu gösterir."
 
 msgid "The charts and the values show again once every value is right."
 msgstr "Her değer doğru olduğunda çizelgeler ve değerler yeniden görünür."
@@ -14561,6 +14902,13 @@ msgstr "Metin olarak yerleşim"
 msgid "The leave was shortened."
 msgstr "İzin kısaltıldı."
 
+msgid ""
+"The left end of the pH window on the cards of units with this water. A pH below it is shown as an"
+" arrow and the number, never as a mark on the end."
+msgstr ""
+"Bu suya sahip birimlerin kartlarındaki pH penceresinin sol ucu. Bunun altındaki bir pH, uçta bir "
+"işaret olarak değil, ok ve sayı olarak gösterilir."
+
 #, python-format
 msgid "The level %(label)s of %(factor)s has two different values."
 msgstr "%(factor)s faktörünün %(label)s düzeyinin iki farklı değeri var."
@@ -14773,11 +15121,20 @@ msgstr ""
 #, python-format
 msgid ""
 "The pH was measured on the %(scale)s and put on the NBS scale by Millero’s (1986) step: the NH₃ "
-"is judged at that pH + 0.03, the uncertainty of a pH reading, about 7 %% above its best estimate."
+"is judged at that pH + 0.03, the uncertainty of a pH reading, up to about 7 %% above its best "
+"estimate, less the higher the pH."
 msgstr ""
 "pH %(scale)s üzerinde ölçüldü ve Millero’nun (1986) adımıyla NBS ölçeğine dönüştürüldü: NH₃ bu pH"
-" + 0,03’te, bir pH okumasının belirsizliğinde değerlendirilir; en iyi tahmininin yaklaşık %% 7 "
-"üstünde."
+" + 0,03’te, bir pH okumasının belirsizliğinde değerlendirilir; en iyi tahmininin en fazla "
+"yaklaşık %% 7 üstünde, pH yükseldikçe daha az."
+
+#, python-format
+msgid "The pH window cannot be drawn: %(why)s."
+msgstr "pH penceresi çizilemiyor: %(why)s."
+
+#, python-format
+msgid "The pH window cannot be drawn: no scale is set for %(water)s."
+msgstr "pH penceresi çizilemiyor: %(water)s için ölçek tanımlanmamış."
 
 msgid "The page could not be shown. Try again, and tell an administrator if it happens again."
 msgstr "Sayfa gösterilemedi. Yeniden deneyin; tekrar olursa bir yöneticiye bildirin."
@@ -15041,6 +15398,13 @@ msgstr ""
 "Haftadaki bir duyarlılık testinin sonucu (lakselusforskriften § 10 d): ne zaman, laboratuvar, "
 "etken madde ve sonuç. Rapordan ayrı kaydedilir."
 
+msgid ""
+"The right end. Choose the two ends so that the pH the water is kept at and the pH at which CO₂ "
+"and NH₃ pass their limits lie between them; at least half a pH unit apart."
+msgstr ""
+"Sağ uç. İki ucu, suyun tutulduğu pH ile CO₂ ve NH₃'ün sınırlarını aştığı pH aralarında kalacak "
+"şekilde seçin; aralarında en az yarım pH birimi olmalıdır."
+
 #, python-format
 msgid "The role of group %(name)s is not one of the four."
 msgstr "%(name)s grubunun rolü dört roldan biri değil."
@@ -15061,8 +15425,14 @@ msgstr "Güvenli bölge bu aralıktadır."
 msgid "The salinity is %(source)s."
 msgstr "Tuzluluk: %(source)s."
 
+msgid "The salinity is assumed: fresh water."
+msgstr "Tuzluluk varsayıldı: tatlı su."
+
 msgid "The salinity is fresh water’s."
 msgstr "Tuzluluk tatlı suyunkidir."
+
+msgid "The scale must span at least half a pH unit, from the lower end to the higher."
+msgstr "Ölçek, alt uçtan üst uca en az yarım pH birimi kapsamalıdır."
 
 msgid ""
 "The scale the pH above was measured on. Other than NBS: for sea water of 5 ‰ or more; the chart "
@@ -15909,6 +16279,14 @@ msgid "This item already has a lot with this number."
 msgstr "Bu kalemin bu numarada bir lotu zaten var."
 
 #, python-format
+msgid ""
+"This layout cannot be a fitted card: there is no fitted look for %(widgets)s, which would be cut."
+" Remove them on the Design tab, or leave the width and the height empty for a card that flows."
+msgstr ""
+"Bu düzen sığdırılmış bir kart olamaz: %(widgets)s için sığdırılmış görünüm yok, kesilirlerdi. "
+"Bunları Tasarım sekmesinde kaldırın ya da akan bir kart için genişliği ve yüksekliği boş bırakın."
+
+#, python-format
 msgid "This layout is of an unknown version (%(version)s)."
 msgstr "Bu yerleşimin sürümü bilinmiyor (%(version)s)."
 
@@ -16170,7 +16548,7 @@ msgstr "Bitiş"
 
 #, python-format
 msgid "To %(destination)s"
-msgstr "%(destination)s’a"
+msgstr "Alıcı: %(destination)s"
 
 #, python-format
 msgid "To %(facility)s"
@@ -16190,6 +16568,9 @@ msgstr "Hedef yer"
 
 msgid "To lokalitetsnummer"
 msgstr "Varış lokalitetsnummer"
+
+msgid "To pH"
+msgstr "Bitiş pH"
 
 msgid "To read before it starts"
 msgstr "Başlamadan önce okunacaklar"
@@ -17096,12 +17477,12 @@ msgstr "Bilginin geldiği yer: her kaydın tam olarak bir kaynağı vardır."
 
 msgid ""
 "Where the salt in its water comes from. Fresh water with salt added (NaCl, for smolt or against "
-"disease) is worked out without sea water’s ions; not said, a salinity of 1 to 5 ‰ is taken as "
-"diluted sea water."
+"disease) is worked out without sea water’s ions; fresh water with sea water or a sea-salt mix "
+"added is diluted sea water. Not said, a salinity of 1 to 5 ‰ is taken as diluted sea water."
 msgstr ""
 "Sudaki tuzun nereden geldiği. Tuz (NaCl) eklenmiş tatlı su (smolt için veya hastalığa karşı) "
-"deniz suyunun iyonları olmadan hesaplanır; belirtilmezse 1–5 ‰ tuzluluk seyreltilmiş deniz suyu "
-"sayılır."
+"deniz suyunun iyonları olmadan hesaplanır; deniz suyu veya deniz tuzu karışımı eklenmiş tatlı su "
+"seyreltilmiş deniz suyudur. Belirtilmezse 1–5 ‰ tuzluluk seyreltilmiş deniz suyu sayılır."
 
 msgid "Where the value comes from, e.g. “the vet, November 2026”."
 msgstr "Değerin kaynağı, örn. “veteriner, Kasım 2026”."
@@ -17118,6 +17499,9 @@ msgid ""
 msgstr ""
 "Suyun alındığı yer, örn. “Yan çıkış”, “Filtreden sonra” veya “3 m”. Bir sahibin noktalarının "
 "adları farklıdır."
+
+msgid "Where this view lies in the full scale"
+msgstr "Bu görünümün tam ölçekteki yeri"
 
 msgid "Where to file it"
 msgstr "Nereye sunulur"
@@ -17269,6 +17653,36 @@ msgstr "%(widget)s bileşeni: %(detail)s"
 #, python-format
 msgid "Widget %(widget)s: %(label)s cannot be placed yet."
 msgstr "%(widget)s bileşeni: %(label)s henüz yerleştirilemez."
+
+#, python-format
+msgid ""
+"Widget %(widget)s: %(label)s has no fitted look and would be cut on a fitted card. Remove it, or "
+"leave the card’s width and height empty."
+msgstr ""
+"Bileşen %(widget)s: %(label)s için sığdırılmış görünüm yok, sığdırılmış bir kartta kesilirdi. "
+"Kaldırın ya da kartın genişliğini ve yüksekliğini boş bırakın."
+
+#, python-format
+msgid "Widget %(widget)s: %(label)s is made for a fitted card. Give the template a width and a height."
+msgstr ""
+"Bileşen %(widget)s: %(label)s sığdırılmış bir kart için yapılmıştır. Şablona bir genişlik ve bir "
+"yükseklik verin."
+
+#, python-format
+msgid ""
+"Widget %(widget)s: at this measure its place is about %(has)s units high and %(label)s needs "
+"%(needs)s: give it more rows, or the card more height."
+msgstr ""
+"Bileşen %(widget)s: bu ölçüde yeri yaklaşık %(has)s birim yüksekliğinde, %(label)s ise %(needs)s "
+"gerektirir: daha fazla satır ya da karta daha fazla yükseklik verin."
+
+#, python-format
+msgid ""
+"Widget %(widget)s: at this measure its place is about %(has)s units wide and %(label)s needs "
+"%(needs)s: give it more columns, or the card more width."
+msgstr ""
+"Bileşen %(widget)s: bu ölçüde yeri yaklaşık %(has)s birim genişliğinde, %(label)s ise %(needs)s "
+"gerektirir: daha fazla sütun ya da karta daha fazla genişlik verin."
 
 #, python-format
 msgid "Widget %(widget)s: choose the water parameter it shows (and, if not the middle, its point)."
@@ -17657,6 +18071,9 @@ msgstr "bilinmeyen bir tesis"
 msgid "an unknown receiver"
 msgstr "bilinmeyen bir alıcı"
 
+msgid "and"
+msgstr "ve"
+
 #, python-format
 msgid "and %(count)s more: all reports"
 msgstr "ve %(count)s tane daha: tüm raporlar"
@@ -17776,6 +18193,12 @@ msgstr "<strong>%(name)s</strong> tarafından"
 msgid "by its recurring task"
 msgstr "yinelenen görevi tarafından"
 
+msgid "calc."
+msgstr "hesap"
+
+msgid "calculated"
+msgstr "hesap"
+
 #, python-format
 msgid "calculated %(calculated)s"
 msgstr "hesaplanan %(calculated)s"
@@ -17845,6 +18268,10 @@ msgstr "temizleyici balık %(batches)s: %(fish)s balık"
 msgid "client reference"
 msgstr "istemci referansı"
 
+#, python-format
+msgid "close view · ×%(zoom)s"
+msgstr "yakın görünüm · ×%(zoom)s"
+
 msgid "closed report"
 msgstr "kapatılmış rapor"
 
@@ -17890,6 +18317,10 @@ msgstr "kritik alt"
 #, python-format
 msgid "critical below %(value)s"
 msgstr "%(value)s altı kritik"
+
+#, python-format
+msgid "critical limit %(bound)s"
+msgstr "kritik sınır %(bound)s"
 
 #, python-format
 msgid "criticality %(level)d"
@@ -18386,7 +18817,7 @@ msgstr "bu sayfada değiştirildi"
 
 #, python-format
 msgid "found %(time)s"
-msgstr "saat %(time)s’te bulundu"
+msgstr "bulunma saati %(time)s"
 
 msgid "free scale"
 msgstr "serbest ölçekte"
@@ -18418,6 +18849,9 @@ msgstr "25 °C'deki iletkenlikten"
 
 msgid "from the salinity"
 msgstr "tuzluluktan"
+
+msgid "full scale · axes from zero"
+msgstr "tam ölçek · eksenler sıfırdan"
 
 msgid "g"
 msgstr "g"
@@ -18514,6 +18948,10 @@ msgstr "veri alım durumu"
 msgid "ingest statuses"
 msgstr "veri alım durumları"
 
+#, python-format
+msgid "inputs: %(list)s"
+msgstr "girdiler: %(list)s"
+
 msgid "inventory item"
 msgstr "stok kalemi"
 
@@ -18549,6 +18987,13 @@ msgstr "bilgi kaydı"
 
 msgid "lab"
 msgstr "laboratuvar"
+
+msgid "last known position"
+msgstr "son bilinen konum"
+
+#, python-format
+msgid "last known position, old: %(values)s"
+msgstr "son bilinen konum, eski: %(values)s"
 
 #, python-format
 msgid "last own value %(value)s %(status)s on %(time)s, no recent data: measure this unit"
@@ -18667,6 +19112,33 @@ msgstr "sonraki öğün %(meal)s"
 msgid "no"
 msgstr "hayır"
 
+msgid "no CO₂ limit"
+msgstr "CO₂ sınırı yok"
+
+msgid "no CO₂ limit for these fish"
+msgstr "bu balıklar için CO₂ sınırı yok"
+
+msgid "no NH₃ limit"
+msgstr "NH₃ sınırı yok"
+
+msgid "no NH₃ limit for these fish"
+msgstr "bu balıklar için NH₃ sınırı yok"
+
+msgid "no TAN"
+msgstr "TAN yok"
+
+msgid "no active middle sampling point"
+msgstr "etkin orta örnekleme noktası yok"
+
+msgid "no alk. band"
+msgstr "alk. bandı yok"
+
+msgid "no alkalinity band"
+msgstr "alkalinite bandı yok"
+
+msgid "no alkalinity band for these fish"
+msgstr "bu balıklar için alkalinite bandı yok"
+
 #, python-format
 msgid "no cleaner fish held at %(site)s since %(date)s"
 msgstr "%(date)s tarihinden beri %(site)s lokasyonunda temizleyici balık yok"
@@ -18751,6 +19223,10 @@ msgstr "böyle bir satır yok"
 msgid "no time recorded"
 msgstr "saat kaydedilmemiş"
 
+#, python-format
+msgid "no value of %(values)s"
+msgstr "şu değerler yok: %(values)s"
+
 msgid "none"
 msgstr "yok"
 
@@ -18808,6 +19284,10 @@ msgstr "bu tuzluluktaki deniz suyununki"
 
 msgid "off"
 msgstr "izinli"
+
+#, python-format
+msgid "off the scale (%(low)s to %(high)s)"
+msgstr "ölçek dışında (%(low)s – %(high)s)"
 
 msgid "office department"
 msgstr "ofis departmanı"
@@ -18867,6 +19347,10 @@ msgstr ""
 "ölçeğinde hesaplanıp çizilir."
 
 #, python-format
+msgid "pH %(ph)s"
+msgstr "pH %(ph)s"
+
+#, python-format
 msgid ""
 "pH %(ph)s is the value loaded from %(point)s: it is on the NBS scale already (a stored pH always "
 "is) and is not converted again. Leave the scale at NBS, or type the pH as it was measured with "
@@ -18905,6 +19389,19 @@ msgstr "pH ölçeği değiştirildi: önceki değerler kullanılmaz"
 
 msgid "pH sensor"
 msgstr "pH sensörü"
+
+msgid "pH window"
+msgstr "pH penceresi"
+
+msgid "pH window scale"
+msgstr "pH penceresi ölçeği"
+
+msgid "pH window scales"
+msgstr "pH penceresi ölçekleri"
+
+#, python-format
+msgid "pH window, %(unit)s: %(said)s"
+msgstr "pH penceresi, %(unit)s: %(said)s"
 
 msgid "pH, critical above (NBS scale)"
 msgstr "pH, kritik üst sınır (NBS ölçeği)"
@@ -19053,6 +19550,12 @@ msgstr "rol"
 
 msgid "roles"
 msgstr "roller"
+
+msgid "safe"
+msgstr "güvenli"
+
+msgid "sample"
+msgstr "örnek"
 
 msgid "sampling point"
 msgstr "numune noktası"
@@ -19216,6 +19719,9 @@ msgstr "sonraki ayın 7’si"
 msgid "the board’s default"
 msgstr "panonun varsayılanı"
 
+msgid "the close view is the full scale here: the water is far past a limit"
+msgstr "yakın görünüm burada tam ölçek: su bir sınırın çok ötesinde"
+
 #, python-format
 msgid "the fish may leave the farm from %(date)s"
 msgstr "balıklar %(date)s tarihinden itibaren çiftlikten çıkabilir"
@@ -19258,8 +19764,14 @@ msgstr "bu birim için kural"
 msgid "the site’s altitude"
 msgstr "sahanın rakımı"
 
+msgid "the view chosen on this screen"
+msgstr "bu ekranda seçilen görünüm"
+
 msgid "the whole site"
 msgstr "tüm saha"
+
+msgid "this card’s own scale"
+msgstr "ölçek bu karta özgü"
 
 msgid "to"
 msgstr "bitiş"
@@ -19377,6 +19889,10 @@ msgstr "uyarı alt"
 msgid "warning below %(value)s"
 msgstr "%(value)s altı uyarı"
 
+#, python-format
+msgid "warning limit %(bound)s"
+msgstr "uyarı sınırı %(bound)s"
+
 msgid "water freshness"
 msgstr "su tazeliği"
 
@@ -19454,6 +19970,9 @@ msgstr "{label} kaldırıldı."
 #, python-brace-format
 msgid "{unit} is now {state}."
 msgstr "{unit} şimdi: {state}."
+
+msgid "°C"
+msgstr "°C"
 
 #, python-format
 msgid "ΔCO₂ %(value)s mg/L"
@@ -19533,4 +20052,7 @@ msgstr ""
 #, python-format
 msgid "“%(value)s” is not a temperature."
 msgstr "“%(value)s” bir sıcaklık değil."
+
+msgid "‰"
+msgstr "‰"
 

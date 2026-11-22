@@ -5,8 +5,8 @@
    cancel. {% endcomment %}
 {% block extra_head %}<link rel="stylesheet" href="{% asset 'css/hr.css' %}">{% endblock %}
 {% block above %}
-<nav class="view-tabs" aria-label="{% trans 'Status' %}">
-  {% for key, label in tabs %}<a class="view-tab{% if tab == key %} is-current{% endif %}" href="?tab={{ key }}"{% if tab == key %} aria-current="page"{% endif %}>{{ label }}{% if key == "all" %} <span class="count">{{ all_count }}</span>{% else %} <span class="count">{% if key == "pending" %}{{ counts.pending }}{% elif key == "approved" %}{{ counts.approved }}{% else %}{{ counts.rejected }}{% endif %}</span>{% endif %}</a>{% endfor %}
+<nav class="ui-tabs" aria-label="{% trans 'Status' %}">
+  {% for key, label in tabs %}<a class="ui-tab{% if tab == key %} is-current{% endif %}" href="?tab={{ key }}"{% if tab == key %} aria-current="page"{% endif %}>{{ label }}{% if key == "all" %} <span class="count">{{ all_count }}</span>{% else %} <span class="count">{% if key == "pending" %}{{ counts.pending }}{% elif key == "approved" %}{{ counts.approved }}{% else %}{{ counts.rejected }}{% endif %}</span>{% endif %}</a>{% endfor %}
 </nav>
 {% endblock %}
 {% block search_placeholder %}{% trans "Search by name or type" %}{% endblock %}

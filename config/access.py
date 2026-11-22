@@ -28,6 +28,8 @@ AREAS = [
     # for a template right.
     Area(_('Card templates'), 'monitoring.CardTemplate'),
     Area(_('Card template rules'), 'monitoring.CardTemplateAssignment'),
+    # The two ends of a card's pH window, per water type: rows the platform makes, changed only.
+    Area(_('pH window scales'), 'monitoring.PhWindowScale', actions=('view', 'change')),
     Area(_('Suppliers'), 'farm.Supplier'),
     Area(_('Library'), 'knowledge.Document'),
     # Edit also reviews an entry (marks it reviewed, or takes it back to draft).

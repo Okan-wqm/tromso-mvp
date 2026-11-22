@@ -15,7 +15,7 @@ The owner's bar: "ultra professional, readable, organised, harmonious colour and
 ## 2. Design principles
 
 - **One job per colour.** Red means critical only. Blue marks what you can follow or select. Olive-black is structure and the single commit button per view. Rose is the brand and never touches data.
-- **Grey by default, colour only for the abnormal** (ISA-101, the high-performance HMI rule). A normal value is ink on white; only a warning, critical or stale value earns a tint. This applies everywhere, the monitoring cards most of all.
+- (Amended 2026-11-21 by the owner's "colourful, clear, organised": colour now runs in two channels that never mix, area hues for where you are in the chrome and status colours for what is wrong; the rule below still holds for values and cards. See docs/design/system/README.md, Principles.) **Grey by default, colour only for the abnormal** (ISA-101, the high-performance HMI rule). A normal value is ink on white; only a warning, critical or stale value earns a tint. This applies everywhere, the monitoring cards most of all.
 - **Status is shape, word and fill weight; colour comes third.** It survives greyscale, colour blindness and glare.
 - **Five numbers never wrap, clip or hide:** unit, decision figure, status, next action, age.
 - **Every value says where it came from and how old it is** (Sensor, Manual, Lab; "2 d ago"); "no data" is a word, never a dash or 0.

@@ -33,6 +33,8 @@ WALL = {'schema': 1, 'widgets': [
 # Bounds from the first measurement (2026-11-05: page 67 queries, 3.4 s, 1,512 KB; fragment 62, 3.1 s, 1,477 KB; the
 # unchanged poll 7 queries, 0.03 s), with room for a slower machine.
 MAX_QUERIES, MAX_SECONDS, MAX_KB = 80, 30.0, 3000
+# A wall of 200 Small cards: about 6 KB a card (monitoring/tests/test_small.py SMALL_CARD_BYTES) and the page around them.
+SMALL_MAX_KB = 1400
 
 
 @tag('slow')
@@ -69,3 +71,31 @@ class LoadTests(MonitoringCase):
                 self.assertLessEqual(queries, MAX_QUERIES)
                 self.assertLessEqual(seconds, MAX_SECONDS)
                 self.assertLessEqual(kb, MAX_KB)
+
+    def test_a_wall_of_200_small_cards(self):
+        """The overview of a wide monitor (mode=small): 200 Small cards, each with its four values, the calculated CO₂
+        and the pH window from the unit's chart (the chemistry core once per unit, the fish's limits once for all)."""
+        for unit in self.farm_of(198, fresh=False):
+            self.sample(unit, hours=1, temperature_c='9.5', oxygen_mg_l='9', ph='7.2', alkalinity_mg_l='95',
+                        tan_mg_l='0.5')
+        self.limit('oxygen_mg_l', critical_low=6, warning_low=7, warning_high=12, critical_high=14)
+        self.limit('co2_mg_l', warning_high=15, critical_high=20)
+        self.limit('nh3_n_mg_l', warning_high='0.0100', critical_high='0.0200')
+        self.limit('alkalinity_mg_l', warning_low=70, warning_high=150)
+        found = {}
+        small = {'wall': '1', 'mode': 'small'}
+        with mock.patch.object(read, 'TOKEN_BUCKET', 10 ** 9):
+            for name, url in (('page', reverse('monitoring:monitor')), ('fragment', reverse('monitoring:cards'))):
+                self.measure(url, small)                                           # warm
+                response, queries, seconds, kb = self.measure(url, small)
+                self.assertEqual(response.status_code, 200)
+                html = response.content.decode()
+                self.assertEqual(html.count('data-key="card:'), 200)
+                self.assertGreaterEqual(html.count('class="monitor-ph-window'), 198)      # a chart drawn for each
+                found[name] = (queries, round(seconds, 2), round(kb))
+        print('\nLOAD 200 small cards (queries, seconds, KB):', found)
+        for name, (queries, seconds, kb) in found.items():
+            with self.subTest(path=name):
+                self.assertLessEqual(queries, MAX_QUERIES)
+                self.assertLessEqual(seconds, MAX_SECONDS)
+                self.assertLessEqual(kb, SMALL_MAX_KB)

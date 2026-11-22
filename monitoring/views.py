@@ -21,7 +21,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.translation import gettext as _, ngettext, pgettext
+from django.utils.translation import gettext as _, gettext_lazy, ngettext, pgettext
 from django.views.decorators.http import require_POST
 
 from core import audit, navigation
@@ -31,10 +31,11 @@ from farm.models import ProductionDepartment, Site, System, Tank
 from farm.stock.views import VIEW
 
 from . import read
-from .cards import resolve, validate
+from .cards import builtin, catalogue, resolve, validate
 from .models import CardTemplate, CardWidth, MonitorBoard
 
 POLL = 'monitoring:cards'
+PANE = 'monitoring:pane'
 SESSION_DAY = 'monitoring_wall_day'
 
 
@@ -53,8 +54,8 @@ def _keep_alive(request, params):
         request.session[SESSION_DAY] = today      # modifying the session saves it with a new expiry
 
 
-def _poll_url(query, token):
-    return f'{reverse(POLL)}?{query}{"&" if query else ""}{urlencode({"after": token})}'
+def _poll_url(query, token, name=POLL):
+    return f'{reverse(name)}?{query}{"&" if query else ""}{urlencode({"after": token})}'
 
 
 def _board(params):
@@ -73,19 +74,120 @@ def _unavailable():
 
 
 def _grid(request, params, board, now=None):
-    """The context of the grid: the cards after the filters and the occupancy, how many units are not shown, and the
-    strip of the cards that need a look."""
+    """The context of the grid: the cards after the filters and the occupancy, how many units are not shown, the band
+    above them (the tally per state and the chips of what needs a look) and the switch of the page's cards."""
     units = read.units_for(params, board)
     found = read.cards(units, request.user, resolve.Choice.of(board, params), params.occupancy, now)
     farm = Tank.objects.count()
+    band = read.band(found)
+    # (review R2) critical units no chip has room for: a wall of exactly those, one click from the band
+    hidden = params.canonical(units=tuple(str(card.unit.pk) for card in band.hidden), flip=frozenset(), focus='')
+    openers = _openers(params, found)
     return {
-        'rows': [{'card': card, 'flip': _flip_urls(params, card)} for card in found], 'strip': read.attention(found),
+        'band_hidden_url': f'{reverse("monitoring:monitor")}?{hidden}' if band.hidden else '',
+        'rows': [{'card': card, 'flip': _flip_urls(params, card), 'zoom': _zoom_urls(params, card),
+                  'open': openers.get(card.unit.pk)} for card in found],
+        'openers': openers,
+        'band': band, 'modes': _modes(params, board), 'chart_views': _chart_views(params, found),
         'params': params, 'card_width': board.card_width if board is not None else CardWidth.AUTO,
         'computed_at': timezone.make_naive(now, company_zone()),     # naive: a template shows an aware one in UTC
         'shown': len(found), 'on_farm': farm,
         'count_line': ngettext('%(shown)d of %(farm)d unit shown', '%(shown)d of %(farm)d units shown', farm)
         % {'shown': len(found), 'farm': farm},
     }
+
+
+# How a screen's cards can be drawn, as the toolbar's choice and the band's switch name them. Small is a VIEW: every
+# card of the screen, whatever the rules and the board say (monitoring/cards/resolve.py). Without a board, '' is the
+# farm's own rules (Simple where it has made none) and Detailed the page's choice below them; on a board, '' is the
+# board's own cards.
+MODE_CHOICES = ((read.SMALL, gettext_lazy('Small')), (read.BIG, gettext_lazy('Big')), ('', gettext_lazy('Simple')),
+                (read.DETAILED, gettext_lazy('Detailed')))
+BOARD_CHOICES = ((read.SMALL, gettext_lazy('Small')), (read.BIG, gettext_lazy('Big')), ('', gettext_lazy('As the board')))
+# The two views of a chart's picture, as the band's and a card's switch name them (owner decision 12).
+CHART_CHOICES = (('', gettext_lazy('Close-up')), (read.CHART_FULL, gettext_lazy('Full scale')))
+
+
+def _modes(params, board):
+    """The band's switch of the screen's cards: [{label, url, current, id}], each the page drawn with that kind of card
+    and no card flipped (and, for the full-height cards, no pane beside them: the pane is the way into ONE tank from
+    an overview). Plain links: they work without script, and a wall, which has no toolbar, changes its cards with
+    them. Each has an id, so a poll that replaces the band gives the focus back (review R8)."""
+    page = reverse('monitoring:monitor')
+    on_board = board is not None
+    chosen = params.mode if params.mode in (read.SMALL, read.BIG) or (not on_board and params.mode == read.DETAILED) else ''
+    found = []
+    for key, label in (BOARD_CHOICES if on_board else MODE_CHOICES):
+        query = params.canonical(mode=key, flip=frozenset(), focus='' if key == read.BIG else params.focus)
+        found.append({'label': label, 'url': f'{page}?{query}' if query else page, 'current': key == chosen,
+                      'id': key or ('board' if on_board else 'simple')})
+    return found
+
+
+def _address(query, name='monitoring:monitor'):
+    return f'{reverse(name)}?{query}' if query else reverse(name)
+
+
+def _chart_views(params, found):
+    """The band's switch of the screen's charts, when a card of the screen draws one: [{label, url, poll, current}],
+    each the page with every chart in that view and no card differing. Links, as the cards' switch."""
+    if not any(view.type == 'chart' for card in found for view in card.widgets):
+        return []
+    return [{'label': label, 'current': key == params.chart, 'id': key or 'close',
+             'url': _address(params.canonical(chart=key, zoom=frozenset())),
+             'poll': _address(params.canonical(chart=key, zoom=frozenset()), POLL)} for key, label in CHART_CHOICES]
+
+
+def _zoom_urls(params, card, poll=POLL):
+    """A card's own switch of its chart's view: [{label, url, poll, current}]. The address keeps the cards that
+    differ from the screen's view (`zoom`), as it keeps the flipped ones. `poll`: the fragment the card is part of
+    (the grid's, or the pane's for the card in the pane)."""
+    unit, found = str(card.unit.pk), []
+    differs = unit in params.zoom
+    for key, label in CHART_CHOICES:
+        current = (key == params.chart) != differs
+        zoom = params.zoom if current else params.zoom ^ {unit}
+        query = params.canonical(zoom=frozenset(zoom))
+        found.append({'label': label, 'current': current, 'url': _address(query), 'poll': _address(query, poll)})
+    return found
+
+
+def _openers(params, found):
+    """{unit id: {page, open}} for the cards that are the way INTO their tank (owner decision 7: from a small card the
+    operator opens that tank's Big card): the fitted cards that are not full-height ones themselves. `page`: the
+    address with that unit in the pane, or, for the unit that is in it, the address with the pane closed; `open`:
+    whether it is the one. A link: it works without script (frontend/windows.ts docks the pane without a page load)."""
+    openers = {}
+    for card in found:
+        if not card.template.measure or card.template.fill:
+            continue
+        unit = str(card.unit.pk)
+        is_open = unit == params.focus
+        openers[card.unit.pk] = {'page': _address(params.canonical(focus='' if is_open else unit)), 'open': is_open,
+                                 'into': _address(params.canonical(focus=unit))}
+    return openers
+
+
+def _pane(request, params, now=None):
+    """The context of the pane (monitoring/_pane.html): the Big card of the unit the address has gone into, read as any
+    card is (the same read, the person's own rights, the screen's chart view), or None when the address names no unit
+    or one that is gone. One unit's read: what it costs does not depend on the wall beside it."""
+    if not params.focus:
+        return None
+    unit = Tank.objects.select_related('production_department__site', 'system').filter(pk=params.focus).first()
+    if unit is None:
+        return None
+    choice = resolve.Choice(view=builtin.BIG, chart=params.chart, zoom=params.zoom)
+    found = read.cards([unit], request.user, choice, read.ALL, now)
+    if not found:
+        return None
+    card = found[0]
+    return {'row': {'card': card, 'flip': {}, 'zoom': _zoom_urls(params, card, PANE), 'pane': True, 'ns': 'pane-'},
+            'pane_unit': unit, 'close_url': _address(params.canonical(focus=''))}
+
+
+def _pane_token(request, params):
+    return read.change_token(request.user, f'pane?{params.canonical()}', board=params.board)
 
 
 def _flip_urls(params, card):
@@ -107,11 +209,15 @@ def monitor(request):
     token = read.change_token(request.user, params.canonical(), board=params.board)
     now = timezone.now()
     board = _board(params)
+    pane_token = _pane_token(request, params)
     try:
         grid = _grid(request, params, board, now)
+        pane = _pane(request, params, now)
     except read.Unavailable:
         return _unavailable()
     context = _context(**grid, token=token, query=params.canonical(), board=board,
+                       pane=pane, pane_poll_url=_poll_url(params.canonical(), pane_token, PANE),
+                       big_measure=builtin.BIG_MEASURE,
                        boards=MonitorBoard.objects.order_by('name'),
                        poll_url=_poll_url(params.canonical(), token),
                        poll_seconds=board.seconds if board else settings.MONITOR_POLL_SECONDS,
@@ -147,6 +253,29 @@ def cards(request):
     return HttpResponse(html, headers=headers)
 
 
+@permission_required(VIEW, raise_exception=True)
+def pane(request):
+    """The pane's content for the address: the Big card of the unit gone into (`focus`), keyed like a card of the grid
+    so frontend/poll.ts merges it; 204 with the same next address while nothing has changed since `after`, as the
+    grid's fragment; 404 when the address names no unit or one that is gone (the pane then closes: poll.ts `poll:gone`,
+    frontend/windows.ts)."""
+    params = read.Params.from_query(request.GET)
+    _keep_alive(request, params)
+    if not params.focus:
+        return HttpResponse(status=404, headers={'Cache-Control': 'no-store'})
+    token = _pane_token(request, params)
+    headers = {'Cache-Control': 'no-store', 'X-Poll-Next': _poll_url(params.canonical(), token, PANE)}
+    if request.GET.get('after') == token:
+        return HttpResponse(status=204, headers=headers)
+    try:
+        found = _pane(request, params, timezone.now())
+    except read.Unavailable:
+        return _unavailable()
+    if found is None:
+        return HttpResponse(status=404, headers={'Cache-Control': 'no-store'})
+    return HttpResponse(render_to_string('monitoring/_pane.html', found), headers=headers)
+
+
 # ---- Reference data › Card templates --------------------------------------------------------------------------------
 def _copy_name(source):
     """'<name> (copy)', or '(copy 2)', '(copy 3)' … while the name is taken by a live template (any case)."""
@@ -162,14 +291,15 @@ def _copy_name(source):
 @require_POST
 @permission_required('monitoring.add_cardtemplate', raise_exception=True)
 def copy_template(request, pk):
-    """A copy of a template (the way to change a built-in): its description, layout and flip target, a name of its
-    own; logged as a new record, then its form opens."""
+    """A copy of a template (the way to change a built-in): its description, layout, measure and flip target, a name of
+    its own; logged as a new record, then its form opens."""
     from .resources import CardTemplateResource
     source = get_object_or_404(CardTemplate, pk=pk)
     with transaction.atomic():
         copy = CardTemplate.objects.create(
             name=_copy_name(source), description=source.description, layout=source.layout,
-            schema_version=source.schema_version, expanded=source.expanded, created_by=request.user,
+            schema_version=source.schema_version, expanded=source.expanded, measure_w=source.measure_w,
+            measure_h=source.measure_h, created_by=request.user,
             updated_by=request.user)
         audit.record_create(request.user, copy, CardTemplateResource.recorded(copy),
                             entity_type=CardTemplateResource.entity_type())
@@ -182,10 +312,12 @@ PREVIEW_BYTES = 65536
 @require_POST
 @permission_required('monitoring.change_cardtemplate', raise_exception=True)
 def preview(request):
-    """The designer's preview: {layout, unit, name?, state?} as JSON; answers {html, problems}. The layout is checked by
-    the validator first (an error draws nothing), then the same card read and the same _card.html as the wall draw it for
-    that one unit, with the previewer's own rights. Nothing is written and nothing is logged. `state` forces the frame's
-    state for a look at it; it is accepted here only, and the card says it is a preview."""
+    """The designer's preview: {layout, unit, name?, state?, measure?} as JSON; answers {html, problems}. The layout is
+    checked by the validator first, with the measure the form has now ([width, height] in card units: a fitted
+    template, whose card is drawn fitted; none: a card that flows): an error draws nothing, then the same card read
+    and the same _card.html as the wall draw it for that one unit, with the previewer's own rights. Nothing is written
+    and nothing is logged. `state` forces the frame's state for a look at it; it is accepted here only, and the card
+    says it is a preview."""
     if len(request.body) > PREVIEW_BYTES:
         return JsonResponse({'error': 'too large'}, status=413)
     try:
@@ -194,13 +326,21 @@ def preview(request):
     except (ValueError, KeyError, TypeError, Tank.DoesNotExist):
         return JsonResponse({'error': 'bad request'}, status=400)
     layout = asked.get('layout')
-    problems = validate.validate(layout)
+    # (a fitted template's measure, as the form has it now: the card is then drawn fitted, at that measure)
+    measure = asked.get('measure')
+    if measure is not None:
+        if not (isinstance(measure, list) and len(measure) == 2 and all(type(each) is int for each in measure)
+                and catalogue.MEASURE_W[0] <= measure[0] <= catalogue.MEASURE_W[1]
+                and catalogue.MEASURE_H[0] <= measure[1] <= catalogue.MEASURE_H[1]):
+            return JsonResponse({'error': 'bad request'}, status=400)
+        measure = tuple(measure)
+    problems = validate.validate(layout, measure)
     found = [problem.as_data() for problem in problems]
     if any(problem.severity == validate.ERROR for problem in problems):
         return JsonResponse({'html': '', 'problems': found})
     name = str(asked.get('name') or '').strip()[:100] or _('New template')
-    chosen = resolve.Resolved(SimpleNamespace(pk='', shown_name=name, expanded_id=None), validate.upgrade(layout),
-                              resolve.PREVIEW)
+    chosen = resolve.Resolved(SimpleNamespace(pk='', shown_name=name, expanded_id=None, measure=measure),
+                              validate.upgrade(layout), resolve.PREVIEW)
     try:
         cards = read.cards([unit], request.user, resolve.Choice(preview=chosen), read.ALL)
     except read.Unavailable:

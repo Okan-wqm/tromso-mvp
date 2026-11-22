@@ -732,7 +732,7 @@ class CalculatorPageTests(TestCase):
 
     def test_the_water_page_has_the_calculator_tab(self):
         response = self.client.get(reverse('farm:water'))
-        self.assertContains(response, f'<a class="view-tab" href="{self.url}">Calculator</a>', html=True)
+        self.assertContains(response, f'<a class="ui-tab" href="{self.url}">Calculator</a>', html=True)
 
     def test_it_speaks_each_language(self):
         for language, words in {

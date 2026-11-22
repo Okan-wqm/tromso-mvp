@@ -1,7 +1,8 @@
 {% load i18n cards %}{% comment %} One water value, large when the template says so: the figure, the status in words, where it came from and how
-   old it is, the point when not the middle; "no data" rather than a dash (monitoring/cards/render.py face). {% endcomment %}{% bound card view as said %}
+   old it is, the point when not the middle; "no data" rather than a dash (monitoring/cards/render.py face). On a fitted
+   card it is a tile of the card's own unit (monitoring/widgets/_value_fit.html). {% endcomment %}{% if chosen.measure %}{% include "monitoring/widgets/_value_fit.html" %}{% else %}{% bound card view as said %}
 <dl class="metrics monitor-value{% if view.large %} is-large{% endif %}">
   <div><dt>{{ said.label }}{% if view.bind.point and view.bind.point != "middle" %} · {{ said.reading.point.name|default:view.bind.point }}{% endif %}</dt>
     <dd class="wq{% if said.status %} wq-{{ said.status }}{% endif %}{% if said.missing %} wq-none{% endif %}">{{ said.value }}</dd>
-    <dd class="row-sub">{% if said.status_label %}{{ said.status_label }} · {% endif %}{% if said.origin %}{{ said.origin }} · {% endif %}{{ said.age }}{% if said.stale %} · {% trans "old" %}{% endif %}</dd>{% if said.note %}<dd class="row-sub wq-said">{{ said.note }}</dd>{% endif %}</div>
-</dl>
+    <dd class="row-sub">{% if said.status_label %}{{ said.status_label }} · {% endif %}{% if said.origin %}{{ said.origin }} · {% endif %}{% if said.measured %}{{ said.measured }} · {% endif %}{{ said.age }}{% if said.stale %} · {% trans "old" %}{% endif %}</dd>{% if said.note %}<dd class="row-sub wq-said">{{ said.note }}</dd>{% endif %}</div>
+</dl>{% endif %}

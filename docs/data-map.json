@@ -2646,6 +2646,7 @@
         "farm/tests/test_withdrawal_combined.py",
         "farm/tests/test_withdrawal_delivery.py",
         "farm/tests/test_withdrawal_delivery_after.py",
+        "farm/tests/test_withdrawal_delivery_paths.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_guard.py",
         "farm/tests/test_withdrawal_lots.py",
@@ -2698,6 +2699,7 @@
         "monitoring/tests/test_boards.py",
         "monitoring/tests/test_designer.py",
         "monitoring/tests/test_pages.py",
+        "monitoring/tests/test_ph_scale.py",
         "monitoring/tests/test_template_pages.py",
         "monitoring/tests/test_token.py",
         "sensors/tests/test_alarms.py",
@@ -3099,6 +3101,7 @@
         "farm/tests/test_second_approval_said_first.py",
         "farm/tests/test_withdrawal_ceiling.py",
         "farm/tests/test_withdrawal_delivery_after.py",
+        "farm/tests/test_withdrawal_delivery_paths.py",
         "farm/tests/test_withdrawal_gate.py",
         "alarms/tests/test_freshness.py",
         "alarms/tests/test_reference.py"
@@ -3297,6 +3300,7 @@
         "experiments/tests/test_deviations.py",
         "experiments/tests/test_pages.py",
         "experiments/tests/test_placements.py",
+        "monitoring/tests/test_big.py",
         "monitoring/tests/test_designer.py",
         "monitoring/tests/test_pages.py",
         "monitoring/tests/test_template_pages.py",
@@ -9916,6 +9920,7 @@
         "farm/tests/test_withdrawal_ceiling.py",
         "farm/tests/test_withdrawal_combined.py",
         "farm/tests/test_withdrawal_delivery.py",
+        "farm/tests/test_withdrawal_delivery_paths.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
         "farm/tests/test_withdrawal_guard.py",
@@ -13055,6 +13060,7 @@
         "farm/tests/test_withdrawal_wording.py",
         "reports/tests/test_lice.py",
         "monitoring/tests/test_read.py",
+        "monitoring/tests/test_small.py",
         "monitoring/tests/test_token.py"
       ]
     },
@@ -16466,6 +16472,7 @@
         "farm/tests/test_species_size_limit.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_withdrawal_ceiling.py",
+        "farm/tests/test_withdrawal_delivery_paths.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
         "knowledge/tests/test_documents.py",
@@ -17574,6 +17581,7 @@
         "farm/tests/test_window_refusals.py",
         "farm/tests/test_withdrawal_combined.py",
         "farm/tests/test_withdrawal_delivery.py",
+        "farm/tests/test_withdrawal_delivery_paths.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_spread_matrix.py",
         "reports/tests/test_cleaner.py",
@@ -18876,6 +18884,7 @@
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
+        "farm/tests/test_withdrawal_delivery_paths.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
         "tasks/tests/__init__.py",
@@ -19926,6 +19935,7 @@
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_calculator_loaded_ph.py",
+        "farm/tests/test_charts_of.py",
         "farm/tests/test_cleaner_ration.py",
         "farm/tests/test_core_refusal.py",
         "farm/tests/test_escape_delivery.py",
@@ -19951,6 +19961,7 @@
         "farm/tests/test_water_oxygen_basis.py",
         "farm/tests/test_water_points.py",
         "farm/tests/test_water_resolver.py",
+        "farm/tests/test_withdrawal_delivery_paths.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
         "farm/tests/test_withdrawal_lots.py",
@@ -21328,8 +21339,12 @@
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_water.py",
+        "farm/tests/test_water_crossed.py",
         "monitoring/tests/__init__.py",
+        "monitoring/tests/test_big.py",
         "monitoring/tests/test_extras.py",
+        "monitoring/tests/test_going_in.py",
+        "monitoring/tests/test_small.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_refused_sensor_ph.py",
@@ -22127,6 +22142,7 @@
         "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
+        "farm/tests/test_charts_of.py",
         "farm/tests/test_deffeyes.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
@@ -22608,6 +22624,7 @@
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
         "farm/tests/test_calculator.py",
+        "farm/tests/test_charts_of.py",
         "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_production_overview.py",
@@ -22615,6 +22632,7 @@
         "farm/tests/test_water_followups.py",
         "farm/tests/test_water_points.py",
         "farm/tests/test_water_review3.py",
+        "farm/tests/test_withdrawal_delivery_paths.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
         "reports/tests/test_lice.py",
@@ -22966,6 +22984,7 @@
         "farm/tests/test_withdrawal_ceiling.py",
         "farm/tests/test_withdrawal_combined.py",
         "farm/tests/test_withdrawal_delivery_after.py",
+        "farm/tests/test_withdrawal_delivery_paths.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_guard.py",
         "farm/tests/test_withdrawal_lots.py",
@@ -31417,9 +31436,11 @@
         "left_out": false
       },
       "tests": [
+        "monitoring/tests/test_band.py",
         "monitoring/tests/test_boards.py",
         "monitoring/tests/test_golden.py",
         "monitoring/tests/test_resolve.py",
+        "monitoring/tests/test_small.py",
         "monitoring/tests/test_templates_db.py"
       ]
     },
@@ -31756,9 +31777,11 @@
       },
       "tests": [
         "core/tests_workspaces.py",
+        "monitoring/tests/test_band.py",
         "monitoring/tests/test_boards.py",
         "monitoring/tests/test_golden.py",
         "monitoring/tests/test_resolve.py",
+        "monitoring/tests/test_small.py",
         "monitoring/tests/test_templates_db.py"
       ]
     },
@@ -32120,6 +32143,7 @@
         "monitoring/tests/test_load.py",
         "monitoring/tests/test_render.py",
         "monitoring/tests/test_resolve.py",
+        "monitoring/tests/test_small.py",
         "monitoring/tests/test_template_pages.py",
         "monitoring/tests/test_templates_db.py"
       ]
@@ -32318,6 +32342,32 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "measure_w",
+          "field": "measure_w",
+          "type": "smallint",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "CardTemplateForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "measure_h",
+          "field": "measure_h",
+          "type": "smallint",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "CardTemplateForm › General"
+          ],
+          "how": "form",
+          "why": ""
         }
       ],
       "constraints": [
@@ -32379,6 +32429,12 @@
         },
         {
           "name": "chk_monitor_card_templates_builtin",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_card_templates_measure",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -32459,6 +32515,8 @@
             "name": "General",
             "description": "General",
             "expanded": "General",
+            "measure_w": "General",
+            "measure_h": "General",
             "layout": "Design",
             "version": ""
           }
@@ -32478,12 +32536,278 @@
       "tests": [
         "core/tests_workspaces.py",
         "monitoring/tests/test_designer.py",
+        "monitoring/tests/test_fitted_designer.py",
         "monitoring/tests/test_frame.py",
         "monitoring/tests/test_load.py",
         "monitoring/tests/test_render.py",
         "monitoring/tests/test_resolve.py",
         "monitoring/tests/test_template_pages.py",
         "monitoring/tests/test_templates_db.py"
+      ]
+    },
+    {
+      "app": "monitoring",
+      "model": "PhWindowScale",
+      "table": "monitor_ph_window_scales",
+      "description": "The scale of the pH window on a monitoring card (monitoring/cards/render.py ph_window), one row per water type (farm.models.tank.WaterType, the class a unit's water has: a fresh-water loop run near pH 6.3 and a sea cage at 8.1 do not read well on one scale).",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "water_type",
+          "field": "water_type",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [
+            "freshwater",
+            "saltwater",
+            "brackish"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
+        },
+        {
+          "name": "ph_low",
+          "field": "ph_low",
+          "type": "numeric(3, 1)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "PhWindowScaleForm › Scale"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "ph_high",
+          "field": "ph_high",
+          "type": "numeric(3, 1)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "PhWindowScaleForm › Scale"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_monitor_ph_window_scales_water",
+          "kind": "unique",
+          "fields": [
+            "water_type"
+          ],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_ph_window_scales_water",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_ph_window_scales_range",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_ph_window_scales_span",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_ph_window_scales_kept",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "migration 0007 makes one row per water type"
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "pH window scales tab",
+              "url_names": [
+                "monitoring:phwindowscale_edit"
+              ],
+              "routes": [
+                "/ph-window-scales/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "there is always one row per water type (a CHECK keeps it)"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "pH window scales tab",
+              "url_names": [
+                "monitoring:phwindowscale_list"
+              ],
+              "routes": [
+                "/ph-window-scales/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "The water type is the row's own: no form changes it. A card whose water has no row (a restore that lost it) says so and draws no window: no scale of the code stands in.",
+      "forms": [
+        {
+          "form": "PhWindowScaleForm",
+          "module": "monitoring.forms",
+          "fields": {
+            "ph_low": "Scale",
+            "ph_high": "Scale",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "Monitoring",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "monitoring/tests/test_ph_scale.py"
       ]
     },
     {
@@ -40069,6 +40393,7 @@
         "core/test_text.py",
         "core/tests_workspaces.py",
         "farm/tests/test_nh3_unrounded.py",
+        "farm/tests/test_water_crossed.py",
         "knowledge/tests/test_extraction.py",
         "experiments/tests/test_overview.py",
         "monitoring/tests/test_read.py",

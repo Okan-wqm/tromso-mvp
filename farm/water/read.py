@@ -19,7 +19,8 @@ The functions, by what they answer:
   (farm/health/withdrawal.py) both start here, and `Series` is the lookup they share;
 - `samples_of(...)`: the live samples of live points in a time window, newest first, for the history of a point,
   of an owner (all its points) or of a site; `history(samples)`: those samples with their readings, judged;
-- `limits_now(point)`: the limits that would judge a value at the point today.
+- `limits_now(point)`: the limits that would judge a value at the point today; `limits_of(places)`: the same for
+  many places in one read.
 
 - The latest value is per parameter, not per sample: a later sample without DO never hides a critical
   DO (the source read the newest row, WQ-04). One grouped query finds, per point, the newest live sample
@@ -76,7 +77,7 @@ from farm.stock.read import Presence
 
 from . import chemistry, messages, parameters, sources
 from . import freshness
-from .evaluate import ALERTS, MAX_AHEAD, RANK, Limits, Status, ahead, is_fresh, worst
+from .evaluate import ALERTS, MAX_AHEAD, RANK, Limits, Status, ahead, crossed as bound_crossed, is_fresh, worst
 from .parameters import NH3_N, NH4_N, OXYGEN_MG_L, OXYGEN_PCT, TAN
 
 # The water's ionic-strength inputs of a TAN sample's ammonia (formula 3): looked up as its salinity is.
@@ -791,7 +792,8 @@ class SpeciesBook:
 
 # ---- everything a set of points needs, read once ----------------------------------------------------------
 class Context:
-    """The points' units, the fish in them, their salinity over time and the limits."""
+    """The points' units, the fish in them, their salinity over time and the limits. With `since` None, the fish and the
+    limits alone (`limits_of`: no value is read there, so neither the middle points nor the salinity are)."""
 
     def __init__(self, points, since):
         points = list(points)
@@ -799,6 +801,10 @@ class Context:
         self.book = SpeciesBook({unit.pk for units in self.served.values() for unit in units})
         species = set(self.book.species.values())
         self.limits = Limits(WaterLimit.objects.filter(species_id__in=species, species__is_deleted=False))
+        if since is None:
+            self.middles, self.salinity = {}, None
+            self._series_points, self._since, self._ionic = [], None, {}
+            return
         self.middles = middle_points({point.owner.pk: point.owner for point in points}.values())
         self.salinity = Series([*points, *self.middles.values()], parameters.SALINITY, since - WINDOW)
         self._series_points, self._since = [*points, *self.middles.values()], since - WINDOW
@@ -1586,6 +1592,24 @@ def worst_fresh(reading, others, now=None):
     return reading
 
 
+def crossed(reading):
+    """Which value is past which bound, for a reading the limits judge critical or a warning: (the Reading whose value
+    it is, the bound's name, the bound), or None when no one bound says it. The value is the worse fresh one when that
+    decided the status (`worst_fresh`), the value in its other unit when a row on that unit judged it (the oxygen,
+    `Context.judge`), else the reading's own; the bound is the one `evaluate.judge` judged it by (evaluate.crossed), on
+    the value the limits judged (`Reading.judged_value`: a worked-out value unrounded, as `Context.judge` judges it).
+    For a short sentence beside the full reason (a monitoring card's one line, the band's chip): never a judgement."""
+    source = reading.worse or reading
+    for each in (source, source.through):
+        if each is None or each.value is None:
+            continue
+        for row in each.limits:
+            found = bound_crossed(each.judged_value, row)
+            if found is not None and found[0].startswith(str(reading.judged)):
+                return (each, *found)
+    return None
+
+
 def _values_at(targets, moment, codes=parameters.COLUMNS):
     """The live sources' values of every measured parameter (or of `codes`) at a past moment, as one answer
     (sources.Answer)."""
@@ -1706,23 +1730,32 @@ def history(samples):
     return rows
 
 
-def limits_now(place):
-    """{code: [WaterLimit]} for the fish at a point, or in a unit, loop or piece of equipment, today: what a value
-    there would be judged against."""
+def limits_of(places):
+    """{place id: {code: [WaterLimit]}} for the fish at each point, or in each unit, loop or piece of equipment, today:
+    what a value there would be judged against. ONE read of the fish and of the limits for all the places (a wall of
+    cards asks for every unit at once): the queries do not grow with the places."""
     now = timezone.now()
-    point = place if isinstance(place, SamplingPoint) else SamplingPoint(**{owner_type_of(place): place})
-    context = Context([point], now)
-    exposures = context.exposures(point, local_time(now, point).date())
+    points = {place.pk: place if isinstance(place, SamplingPoint) else SamplingPoint(**{owner_type_of(place): place})
+              for place in places}
+    context = Context(points.values(), None)
     found = {}
-    for parameter in parameters.LIMITED:
-        rows = []
-        for species_id, water_type in exposures:
-            row = context.limits.applying(species_id, parameter.code, water_type)
-            if row is not None and row not in rows:
-                rows.append(row)
-        if rows:
-            found[parameter.code] = rows
+    for pk, point in points.items():
+        exposures = context.exposures(point, local_time(now, point).date())
+        limits = found[pk] = {}
+        for parameter in parameters.LIMITED:
+            rows = []
+            for species_id, water_type in exposures:
+                row = context.limits.applying(species_id, parameter.code, water_type)
+                if row is not None and row not in rows:
+                    rows.append(row)
+            if rows:
+                limits[parameter.code] = rows
     return found
+
+
+def limits_now(place):
+    """{code: [WaterLimit]} for the fish at a point, or in a unit, loop or piece of equipment, today (`limits_of`)."""
+    return limits_of([place])[place.pk]
 
 
 @dataclass(frozen=True)

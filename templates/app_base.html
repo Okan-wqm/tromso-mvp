@@ -12,8 +12,11 @@
   <link rel="stylesheet" href="{% asset 'css/tokens.css' %}">
   <link rel="stylesheet" href="{% asset 'css/base.css' %}">
   <link rel="stylesheet" href="{% asset 'css/ui.css' %}">
+  {# The patterns first, the sheets that refine them after: a rule of app.css, components.css or a page's own sheet for one element of a pattern wins by coming later, never loses a tie to ds.css (npm run check:ds holds this order in every template that loads base.css). #}
+  <link rel="stylesheet" href="{% asset 'css/ds.css' %}">
   <link rel="stylesheet" href="{% asset 'css/app.css' %}">
   <link rel="stylesheet" href="{% asset 'css/components.css' %}">
+  {% block page_styles %}{% endblock %}
   <link rel="stylesheet" href="{% asset 'css/tw.css' %}">
   {% block extra_head %}{% endblock %}
 </head>
@@ -58,7 +61,7 @@
         {% for group in section.groups %}
         {% if group.label %}<p class="rail-group">{{ group.label }}</p>{% endif %}
         {% for entry in group.entries %}
-        <a class="rail-link" href="{{ entry.url }}" title="{{ entry.label }}"{% if entry.current %} aria-current="page"{% endif %}>
+        <a class="rail-link" href="{{ entry.url }}" title="{{ entry.label }}"{% if entry.current %} aria-current="page"{% endif %} data-area="{{ entry.area }}">
           {% include "icons/_icon.html" with name=entry.icon %}<span class="rail-label">{{ entry.label }}</span>
           {% if entry.badge %}<span class="rail-badge"{% if entry.badge.url %} data-poll="{{ entry.badge.url }}" data-poll-every="30"{% endif %}>{{ entry.badge.text }}</span>{% endif %}
         </a>
@@ -108,14 +111,18 @@
         </div>
       </header>
 
-      <main class="content" id="content" tabindex="-1">
+      {% comment %} The page's measure (docs/design/system/README.md, Width): the shell never caps the width; a page says how
+         its content uses it. fluid (the default: lists, tables, dashboards) and wall reach the right edge; form keeps a
+         field column with its sections as an outline beside it; prose keeps text at a reading measure. {% endcomment %}
+      <main class="content" id="content" tabindex="-1" data-measure="{% block measure %}fluid{% endblock %}">
         {% if messages %}
         <div class="flash-list" role="status">
           {% for message in messages %}<p class="flash flash-{{ message.tags }}">{{ message }}</p>{% endfor %}
         </div>
         {% endif %}
-        <div class="page-head ui-head">
+        <div class="page-head ui-head" data-area="{{ page_area|default:"neutral" }}">
           <div class="page-title">
+            {% if page_icon %}<span class="ui-area" aria-hidden="true">{% include "icons/_icon.html" with name=page_icon %}</span>{% endif %}
             <h1>{% block heading %}{% trans "Overview" %}{% endblock %}</h1>
             {% block head_status %}{% endblock %}
           </div>
@@ -129,7 +136,7 @@
     {% for entry in bottom_bar %}<a class="ui-bottombar-link" href="{{ entry.url }}"{% if entry.current %} aria-current="page"{% endif %}>{% include "icons/_icon.html" with name=entry.icon %}<span class="ui-bottombar-label">{{ entry.label }}</span>{% if entry.badge.text %}<span class="rail-badge">{{ entry.badge.text }}</span>{% endif %}</a>
     {% endfor %}<button type="button" class="ui-bottombar-link" data-nav-open aria-controls="rail" aria-expanded="false">{% include "icons/_icon.html" with name="menu" %}<span class="ui-bottombar-label">{% trans "More" %}</span></button>
   </nav>
-  <dialog class="modal" id="modal" aria-labelledby="modal-title" data-forbidden="{% trans "You do not have permission to do this." %}"><div data-modal-content></div></dialog>
+  <dialog class="modal" id="modal" closedby="any" aria-labelledby="modal-title" data-forbidden="{% trans "You do not have permission to do this." %}"><div data-modal-content></div></dialog>
   <script type="module" src="{% asset 'js/shell.js' %}"></script>
   <script type="module" src="{% asset 'js/components.js' %}"></script>
   <script type="module" src="{% asset 'js/poll.js' %}"></script>

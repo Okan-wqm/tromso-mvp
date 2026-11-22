@@ -100,6 +100,44 @@ class FaceTests(SimpleTestCase):
         self.assertTrue(render.face(live('oxygen_mg_l', '8.4', seconds=200, channel_no=12, fresh_for=180), NOW).stale)
         self.assertFalse(render.face(live('oxygen_mg_l', '8.4', seconds=170, channel_no=12, fresh_for=180), NOW).stale)
 
+    def test_a_value_the_core_refused_where_the_fish_have_a_limit_cannot_be_evaluated_never_no_data(self):
+        """Main's refused values (read.Reading.refused, the verification of 2026-11-18, V-A) on a card: no figure, the
+        words "Cannot be evaluated" and its status, drawn as a warning (the water page's chip); without a limit it is
+        only missing."""
+        refused = reading('nh3_n_mg_l', None, status=Status.UNEVALUATED)
+        refused.refused, refused.limits, refused.judged = 'ionic strength past the Davies range', ['a row'], \
+            Status.UNEVALUATED
+        face = render.face(refused, NOW)
+        self.assertEqual((face.value, face.status, face.status_label, face.missing),
+                         ('Cannot be evaluated', 'unevaluated', 'Cannot be evaluated', True))
+        self.assertEqual(render.alert_of(face.status), 'warning')
+        unlimited = reading('nh3_n_mg_l', None, status=Status.NOT_MEASURED)
+        unlimited.refused = 'ionic strength past the Davies range'
+        face = render.face(unlimited, NOW)
+        self.assertEqual((face.value, face.status), ('no data', ''))
+
+    def test_a_value_on_its_safe_side_basis_alone_keeps_its_figure_and_says_so(self):
+        basis = reading('nh3_n_mg_l', '0.0050', status=Status.UNEVALUATED)
+        basis.refused, basis.limits, basis.judged = 'ionic strength past the Davies range', ['a row'], \
+            Status.UNEVALUATED
+        basis.measured = 'at least: the safe-side basis'
+        face = render.face(basis, NOW)
+        self.assertEqual((face.value, face.status, face.measured), ('0.0050', 'unevaluated',
+                                                                    'at least: the safe-side basis'))
+        self.assertEqual(render.alert_of(face.status), 'warning')
+
+    def test_the_alert_of_a_value_is_the_limits_judgement_and_nothing_for_the_rest(self):
+        for status, alert in ((Status.CRITICAL, 'critical'), (Status.WARNING, 'warning'),
+                              (Status.UNEVALUATED, 'warning'), (Status.OK, ''), (Status.STALE, ''),
+                              (Status.NO_LIMIT, ''), ('', '')):
+            with self.subTest(status=status):
+                self.assertEqual(render.alert_of(status), alert)
+
+    def test_a_worked_out_value_says_its_formula_beside_its_note(self):
+        found = reading('nh3_n_mg_l', '0.0050')
+        found.note, found.provenance = 'From the sample.', 'Formula 4: ionic strength 0.0021.'
+        self.assertEqual(render.face(found, NOW).note, 'From the sample. Formula 4: ionic strength 0.0021.')
+
 
 class BarTests(SimpleTestCase):
     """The bands of a bar are what evaluate.judge says of the values in them (F-088): an open bound is no band."""
@@ -258,7 +296,7 @@ class PageTests(MonitoringCase):
     def test_state_in_the_address_changes_nothing_on_a_live_page(self):
         self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='8.1')
         plain, forced = self.page(), self.page(state='critical')
-        strip = lambda html: re.sub(r'computed at [^<]+|after=[0-9a-f]+', '', html)
+        strip = lambda html: re.sub(r'computed at <b[^>]*>[^<]+</b>|after=[0-9a-f]+', '', html)
         self.assertEqual([node.attrs['class'] for node in articles(plain).values()],
                          [node.attrs['class'] for node in articles(forced).values()])
         self.assertNotIn('data-preview', forced)

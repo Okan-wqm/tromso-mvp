@@ -9,7 +9,9 @@ comes from the read that owns it (README, Monitoring).
                                                      call per source some card needs, for all the units
     needs(resolved) -> {source: unit ids}            what the templates' widgets show, and the roll-up's fixed set
     state_of(card) -> State                          the one roll-up of a card, a ladder
-    attention(cards) -> [Card]                       the cards that need a look first, for the wall's strip
+    attention(cards) -> [Card]                       the cards that need a look first, worst first
+    band(cards) -> Band                              what stands above the cards: the tally per state and a chip per
+                                                     thing that needs a look, capped
     change_token(user, query, ...) -> str            what changed since the screen last looked, without reading it
 
 The sources, each read once for every card and only for a person who may read it:
@@ -22,7 +24,9 @@ The sources, each read once for every card and only for a person who may read it
 - the medicine withdrawal: the registry's one bulk answer (`harvest.views.withdrawals`), with the stock right, as on
   Production units;
 - the health (open events for the state; treatments and the latest sea-lice count of a card with a health widget), the
-  tasks (a card with a tasks widget) and the placement chips (a card with an experiments widget).
+  tasks (a card with a tasks widget) and the placement chips (a card with an experiments widget);
+- the pH window's scale per water type (`ph_scales`: the farm's reference data, one query for a wall whose cards
+  draw the window).
 
 SOURCES is the one table of them: each with the right that reads it and whether the card can be drawn without it. The
 roll-up's set (the fish, the feeding, the middle point's water, the open events) is read for every card whatever its
@@ -39,19 +43,25 @@ from functools import cached_property
 from urllib.parse import urlencode
 from uuid import UUID
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone, translation
 from django.utils.timesince import timesince
 from django.utils.translation import gettext as _, gettext_lazy, ngettext
 
 from core import audit
+from core.text import lower as text_lower
 from farm.feeding import read as feeding_read, views as feeding_views
+from farm.handling.withdrawal import harvest_from
 from farm.harvest import views as harvest_views
 from farm.health import read as health_read, views as health_views
 from farm.models import Tank
 from farm.stock import read as stock_read, views as stock_views
 from farm.stock.dates import local_today
-from farm.water import parameters, read as water_read, views as water_views
+from farm.templatetags.water import water_value
+from farm.water import (
+    calculation as water_calculation, chemistry, deffeyes, parameters, read as water_read, views as water_views,
+)
 from farm.water.evaluate import Status
 from tasks import read as tasks_read, views as tasks_views
 
@@ -59,8 +69,8 @@ from .cards import catalogue, render, resolve
 
 logger = logging.getLogger(__name__)
 
-STOCK, FEEDING, WATER, TREATMENTS, EVENTS, LICE, TASKS, CHIPS = (
-    'stock', 'feeding', 'water', 'treatments', 'events', 'lice', 'tasks', 'chips')
+STOCK, FEEDING, WATER, TREATMENTS, EVENTS, LICE, TASKS, CHIPS, CHART = (
+    'stock', 'feeding', 'water', 'treatments', 'events', 'lice', 'tasks', 'chips', 'chart')
 
 
 @dataclass(frozen=True)
@@ -69,6 +79,7 @@ class Source:
     permission: str        # the right that reads it, from the module that owns the records ('' : the provider decides)
     required: bool         # the roll-up needs it: a card is not drawn without it
     label: str = ''        # how a card's frame names it when it could not be read
+    of: str = ''           # worked out from another source's answer: read only for a person who may read that one
 
 
 SOURCES = (
@@ -80,7 +91,9 @@ SOURCES = (
     Source(LICE, health_views.COUNTS['view'], False, gettext_lazy('Sea-lice counts')),
     Source(TASKS, tasks_views.VIEW, False, gettext_lazy('Tasks')),
     Source(CHIPS, '', False, gettext_lazy('Experiments')),
+    Source(CHART, '', False, gettext_lazy('Deffeyes chart'), of=WATER),
 )
+BY_NAME = {source.name: source for source in SOURCES}
 LABELS = {source.name: source.label for source in SOURCES}
 # The sections of a card a right reads.
 SECTIONS = tuple(source.name for source in SOURCES if source.permission)
@@ -98,8 +111,10 @@ class Unavailable(Exception):
     """A source the roll-up needs could not be read: no card can be drawn honestly."""
 # What a card names as hidden: the health records are one block of the card.
 HEALTH = 'health'
-SIMPLE, DETAILED = 'simple', 'detailed'
-MODES = (SIMPLE, DETAILED)
+SMALL, BIG, SIMPLE, DETAILED = 'small', 'big', 'simple', 'detailed'
+MODES = (SMALL, BIG, SIMPLE, DETAILED)
+# The view a screen's charts are drawn in when the address says so: full scale (the default is the close view).
+CHART_FULL = 'full'
 STOCKED, EMPTY, ALL = 'stocked', 'empty', 'all'
 OCCUPANCIES = (STOCKED, EMPTY, ALL)
 KINDS = tuple(Tank.Kind.values)
@@ -134,8 +149,8 @@ def _uuid(value):
 @dataclass(frozen=True)
 class Params:
     """What a page's address chooses: filters, occupancy (stocked by default), the all-cards mode, the cards that
-    differ from it (`flip`), the units picked by hand and the board. A value that names nothing is dropped, so a stale
-    link shows what it can."""
+    differ from it (`flip`), the units picked by hand, the board, the charts' view and the unit gone into (`focus`: its
+    Big card in the pane beside the cards). A value that names nothing is dropped, so a stale link shows what it can."""
     site: str = ''
     department: str = ''
     system: str = ''
@@ -147,6 +162,9 @@ class Params:
     flip: frozenset = frozenset()
     board: str = ''
     wall: bool = False
+    chart: str = ''                     # '' (the close view) or 'full': the view of every chart of the screen
+    zoom: frozenset = frozenset()       # the units whose chart is drawn in the OTHER view
+    focus: str = ''                     # the unit whose Big card stands in the pane beside the cards ("" : none)
 
     @classmethod
     def from_query(cls, query):
@@ -159,14 +177,17 @@ class Params:
             units=tuple(sorted({_uuid(item) for value in query.getlist('units') for item in value.split(',')} - {''})),
             mode=query.get('mode', '') if query.get('mode', '') in MODES else '',
             flip=frozenset(_uuid(item) for item in query.get('flip', '').split(',') if _uuid(item)),
-            board=_uuid(query.get('board', '')), wall=query.get('wall', '') == '1')
+            board=_uuid(query.get('board', '')), wall=query.get('wall', '') == '1',
+            chart=CHART_FULL if query.get('chart', '') == CHART_FULL else '',
+            zoom=frozenset(_uuid(item) for item in query.get('zoom', '').split(',') if _uuid(item)),
+            focus=_uuid(query.get('focus', '')))
 
     def canonical(self, **changes):
         """The address's query, one spelling for one state (sorted, defaults left out): what the change token and the
         fragment's address are built on. `changes` replace fields first."""
         merged = {**self.__dict__, **changes}
         pairs = []
-        for name in ('board', 'department', 'kind', 'mode', 'q', 'site', 'system'):
+        for name in ('board', 'chart', 'department', 'focus', 'kind', 'mode', 'q', 'site', 'system'):
             if merged[name]:
                 pairs.append((name, merged[name]))
         if merged['wall']:
@@ -177,6 +198,8 @@ class Params:
             pairs.append(('units', ','.join(sorted(merged['units']))))
         if merged['flip']:
             pairs.append(('flip', ','.join(sorted(merged['flip']))))
+        if merged['zoom']:
+            pairs.append(('zoom', ','.join(sorted(merged['zoom']))))
         return urlencode(sorted(pairs))
 
 
@@ -243,6 +266,10 @@ class Card:
     hidden: tuple = ()                  # what the person may not read: FEEDING, WATER, HEALTH, TASKS
     sections: frozenset = frozenset()
     failed: frozenset = frozenset()     # the optional sources that failed: their widgets say "no data"
+    chart: object = None                # water.calculation.UnitChart or Refusal of its middle point (a card that shows it)
+    chart_view: str = deffeyes.CLOSE    # the view its chart's picture is drawn in (deffeyes.CLOSE, deffeyes.FULL)
+    chart_extent: tuple = ()            # what the FULL view's box must hold: one box per screen and water type
+    ph_scale: tuple = ()                # (low, high): the pH window's scale for its water type, () when none is set
     now: object = None
     clock: tuple = ()                   # data-quality notes: a device of its water whose clock is off (clock_notes)
 
@@ -329,8 +356,9 @@ def _placements(units, user):
 
 
 def needs(resolved):
-    """{source: unit ids} for {unit id: Resolved}: the sources of every widget of each unit's layout, the roll-up's set
-    for every unit, and POINTS (every active point's water) and WEEK (the feeding week) for the cards that show them."""
+    """{source: unit ids} for {unit id: Resolved}: the sources of every widget of each unit's layout (the unit's chart
+    too for a value widget bound to a value the chart works out), the roll-up's set for every unit, and POINTS (every
+    active point's water) and WEEK (the feeding week) for the cards that show them."""
     found = {source.name: set() for source in SOURCES}
     found[POINTS], found[WEEK] = set(), set()
     for unit_id, chosen in resolved.items():
@@ -339,8 +367,10 @@ def needs(resolved):
         for widget in chosen.layout['widgets']:
             for name in catalogue.WIDGETS[widget['type']].sources:
                 found[name].add(unit_id)
+            if widget.get('bind', {}).get('parameter') in catalogue.CALCULATED:
+                found[CHART].add(unit_id)               # a value the unit's chart works out
             opts = widget.get('opts', {})
-            if (widget['type'] == 'water_table' and opts.get('points') == 'all') or \
+            if (widget['type'] == 'water_table' and opts.get('points') == 'all') or widget['type'] == 'points' or \
                     widget.get('bind', {}).get('point', water_read.MIDDLE) != water_read.MIDDLE:
                 found[POINTS].add(unit_id)
             if widget['type'] == 'feeding' and opts.get('week'):
@@ -378,7 +408,8 @@ def cards(units, user, choice, occupancy=STOCKED, now=None):
 
     def optional(name, loader, *args):
         wanted = [unit for unit in kept if unit.pk in need[name]]
-        if not wanted or (name in SECTIONS and name not in sections):
+        if not wanted or (name in SECTIONS and name not in sections) or (
+                BY_NAME[name].of and BY_NAME[name].of not in sections):
             return {}
         found, broke = _optional(name, loader, *args, wanted)
         if broke:
@@ -389,6 +420,10 @@ def cards(units, user, choice, occupancy=STOCKED, now=None):
     counts = optional(LICE, lambda wanted: health_read.latest_counts([unit.pk for unit in wanted]))
     tasks = optional(TASKS, lambda wanted: tasks_read.per_unit([unit.pk for unit in wanted], now))
     chips = optional(CHIPS, lambda wanted: _placements(wanted, user))
+    # From the water just read: no value is read again, and the fish's limits once for all the cards that show it.
+    charts = optional(CHART, lambda wanted: water_calculation.charts_of(wanted, water, now))
+    extents = chart_extents(kept, charts)
+    scales = ph_scales(resolved) if WATER in sections else {}
     hidden = tuple(key for key, shown in ((FEEDING, FEEDING in sections), (WATER, WATER in sections),
                                           (HEALTH, bool(sections & {TREATMENTS, EVENTS, LICE})),
                                           (TASKS, TASKS in sections)) if not shown)
@@ -405,9 +440,44 @@ def cards(units, user, choice, occupancy=STOCKED, now=None):
             lines=lines, drift=_weigh(lines), water=tuple(water.get(unit.pk, ())),
             withdrawal=tuple(withdrawals.get(unit.pk, ())), treatments=tuple(treatments.get(unit.pk, ())),
             events=tuple(events.get(unit.pk, ())), lice=counts.get(unit.pk), tasks=tasks.get(unit.pk),
-            chips=tuple(chips.get(unit.pk, ())), failed=frozenset(failed),
+            chips=tuple(chips.get(unit.pk, ())), failed=frozenset(failed), chart=charts.get(unit.pk),
+            chart_view=(deffeyes.FULL if (choice.chart == CHART_FULL) != (str(unit.pk) in choice.zoom)
+                        else deffeyes.CLOSE),
+            chart_extent=extents.get(unit.water_type, ()), ph_scale=scales.get(unit.water_type, ()),
             hidden=hidden, sections=sections, now=now, clock=tuple(clocks.get(unit.pk, ()))))
     return found
+
+
+def ph_scales(resolved):
+    """{water type: (low, high)}: the scale of the pH window for each water type, the farm's reference data
+    (monitoring.PhWindowScale, owner decision 15), in ONE query for the whole wall and none when no card of it draws
+    the window. In a savepoint, as an optional source: rows that cannot be read leave the cards, and each window says
+    it has no scale rather than draw on a number of the code's."""
+    if not any(widget['type'] == 'ph_window' for chosen in resolved.values() for widget in chosen.layout['widgets']):
+        return {}
+    from .models import PhWindowScale
+    found, _broke = _optional('ph_scale', lambda: {
+        water: (float(low), float(high))
+        for water, low, high in PhWindowScale.objects.values_list('water_type', 'ph_low', 'ph_high')})
+    return found
+
+
+def chart_extents(units, charts):
+    """{water type: ((DIC, alkalinity),)}: for each water type of the screen's units, the one point every chart's box
+    must hold so that the charts of that water share ONE box at full scale (deffeyes.card_figure `extent`): the
+    largest DIC and the largest alkalinity (a water's own or its band's upper end) among the charts that could be
+    worked out. Fresh and sea water keep a box each: their waters are far apart, and a shared box would shrink both."""
+    found = {}
+    for unit in units:
+        chart = charts.get(unit.pk)
+        if not isinstance(chart, water_calculation.UnitChart):
+            continue
+        analysis = chart.calculation.analysis
+        top = analysis.limits.alkalinity_high_mg_l
+        alkalinity = max(analysis.alkalinity_meq, top / chemistry.MG_CACO3_PER_MEQ if top is not None else 0.0)
+        dic, high = found.get(unit.water_type, (0.0, 0.0))
+        found[unit.water_type] = (max(dic, analysis.dic), max(high, alkalinity))
+    return {water_type: (point,) for water_type, point in found.items()}
 
 
 def _live_channels(water):
@@ -506,9 +576,76 @@ def _alerts(middle, now):
             text = '{}: {}'.format(label, status)
         else:
             text = '{}: {}'.format(label, _('%(status)s, no recent data') % {'status': status})
+        text = Reason(text, _brief(reading, middle, stale))
+        if stale:
             old.append(text)
         (critical if judged == Status.CRITICAL else warning).append(text)
     return critical, warning, old
+
+
+@dataclass(frozen=True)
+class Brief:
+    """A reason in short, for a small card's one line and the band's chip: a value against the bound it is past
+    (`figure` 'O₂ (mg/L) 5.00', `sign` '<', `bound` 'critical limit 6.00' with ", no recent data" when the value is
+    old, `limit` '6.00'), or, with no sign and no bound, the reason's own words."""
+    figure: str
+    sign: str = ''
+    bound: str = ''
+    limit: str = ''
+    critical: bool = False
+    old: bool = False
+    label: str = ''          # what the figure is of ('O₂ (mg/L)'): units past the same bound of it share a chip
+    amount: object = None    # the figure as a number: the worst of a chip's units is the one it says
+
+    @property
+    def sentence(self):
+        """One line for the band's chip, whose shape (and word, for a screen reader) says the rung: a critical value
+        against its bound in words ('CO₂ (mg/L) 28.9 > critical limit 20.0'), a warning against the number alone
+        ('CO₂ (mg/L) 18.8 > 15.0'); an old value says so."""
+        if not self.sign:
+            return self.figure
+        said = f'{self.figure} {self.sign} {self.bound if self.critical else self.limit}'
+        return _('%(value)s, no recent data') % {'value': said} if self.old and not self.critical else said
+
+
+class Reason(str):
+    """A reason of a card's state: the sentence itself (the owning read's own words, as every card, the announcer and
+    the tests read it), carrying its `brief`. Anything that loses the brief (a copy, a format) falls back to the whole
+    sentence (`brief_of`): more words, never fewer."""
+
+    def __new__(cls, text, brief=None):
+        made = super().__new__(cls, text)
+        made.brief = brief
+        return made
+
+
+def brief_of(reason):
+    """The Brief of a reason: its own, else its whole sentence."""
+    return getattr(reason, 'brief', None) or Brief(str(reason))
+
+
+BOUND_WORDS = {Status.CRITICAL: gettext_lazy('critical limit %(bound)s'),
+               Status.WARNING: gettext_lazy('warning limit %(bound)s')}
+
+
+def _brief(reading, middle, stale):
+    """The Brief of a value the limits judge critical or a warning: the value that is past a bound (the water's own
+    answer, farm.water.read.crossed: the worse fresh value when that decided it), named by its parameter's short label
+    and its point when not the card's middle, and the bound with its kind; "no recent data" when the value is old. None
+    when no one bound says it (the card then says the whole reason)."""
+    found = water_read.crossed(reading)
+    if found is None:
+        return None
+    source, name, bound = found
+    label = str(catalogue.REASON_LABELS.get(source.code, source.parameter.short))
+    if source.point is not None and middle.point is not None and source.point != middle.point:
+        label = f'{label} ({source.point})'
+    limit = water_value(bound, source.code)
+    words = BOUND_WORDS[Status(reading.judged)] % {'bound': limit}
+    if stale:
+        words = _('%(bound)s, no recent data') % {'bound': words}
+    return Brief(f'{label} {water_value(source.value, source.code)}', '<' if name.endswith('low') else '>', str(words),
+                 limit, reading.judged == Status.CRITICAL, stale, label, source.value)
 
 
 def state_of(card):
@@ -579,7 +716,11 @@ def _ladder(card):
         if unjudged:
             return State(UNJUDGED, tuple(unjudged), basis)
     if card.withdrawal:
-        note.append(_('Medicine withdrawal in force'))
+        text, first = _('Medicine withdrawal in force'), card.withdrawal[0]
+        # (in short, with its end in the product's one wording, farm.handling.withdrawal.harvest_from: the first day
+        # the fish may be harvested, never "until")
+        note.append(Reason(text, Brief(text, bound=str(harvest_from(
+            getattr(first, 'until', None), getattr(first, 'approximate', False))))))
     if card.drift == 'soon':
         note.append(_('Weigh soon'))
     note += [line['why'] for line in card.lines if line['why']]
@@ -596,6 +737,83 @@ def attention(cards_):
     order."""
     worse = [card for card in cards_ if RANK[card.state.key] <= RANK[UNJUDGED]]
     return sorted(worse, key=lambda card: RANK[card.state.key])
+
+
+# ---- the band ---------------------------------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class Chip:
+    """One entry of the band: the units it names (the first `shown` by their code, `more` of them only counted), the
+    rung they are on and what is wrong, in short."""
+    state: str
+    cards: tuple
+    text: str
+    shown: tuple
+    more: int
+
+    @property
+    def word(self):
+        return WORDS[self.state]
+
+    @property
+    def rest(self):
+        """The codes of the units it only counts, for its title."""
+        return ', '.join(card.unit.code for card in self.cards[len(self.shown):])
+
+
+@dataclass(frozen=True)
+class Band:
+    """What stands above the cards on every screen and page of them: how many units are on each rung (`tally`:
+    (key, word, count), worst first, the rungs that have a unit), a chip per thing that needs a look (`chips`), and how
+    many abnormal units no chip names because there were more chips than fit (`more`), said by state, worst first
+    (`rest`: (key, word, count)); `hidden` are the CRITICAL cards among them: the page links to a wall of exactly
+    those, so no critical unit is ever only a number (review R2)."""
+    tally: tuple
+    chips: tuple
+    more: int
+    rest: tuple = ()
+    hidden: tuple = ()
+
+
+def band(cards_, chips=None, codes=None):
+    """The Band of the cards shown. The tally counts EVERY card, so nothing is left out of the count whatever the cap.
+    The chips, worst first (`attention`: every critical chip before any warning one): a critical or warning unit with
+    the first reason of its state in short (`Brief`: the value against the bound it is past); units past the SAME
+    BOUND of the same value share one chip, which says the worst of their figures (5.00 and 5.01 mg/L under one limit
+    are one cause, review R2), as do units whose reason is the same words; the
+    units with no recent data share one, and those with a value no limit judges another (their words are the state's:
+    the card says which value). At most `chips` chips (settings.MONITOR_BAND_CHIPS), each naming at most `codes` units
+    (settings.MONITOR_BAND_CODES); the rest are counted, never dropped silently."""
+    chips = settings.MONITOR_BAND_CHIPS if chips is None else chips
+    codes = settings.MONITOR_BAND_CODES if codes is None else codes
+    counts = {}
+    for card in cards_:
+        counts[card.state.key] = counts.get(card.state.key, 0) + 1
+    tally = tuple((key, word, counts[key]) for key, word in STATES if key in counts)
+    groups = {}
+    for card in attention(cards_):
+        state = card.state
+        brief = brief_of(state.reasons[0]) if state.key in (CRITICAL, WARNING) and state.reasons else None
+        if brief is None:
+            cause = text_lower(str(state.word))
+        elif brief.sign and brief.amount is not None:
+            cause = (brief.label, brief.sign, brief.limit, brief.old)
+        else:
+            cause = brief.sentence
+        groups.setdefault((state.key, cause), []).append((card, brief))
+    found = []
+    for (key, cause), members in groups.items():
+        if isinstance(cause, tuple):
+            worst = (min if cause[1] == '<' else max)((brief for _card, brief in members), key=lambda brief: brief.amount)
+            cause = worst.sentence
+        cards = tuple(card for card, _brief in members)
+        found.append(Chip(key, cards, cause, cards[:codes], max(len(cards) - codes, 0)))
+    dropped = [card for chip in found[chips:] for card in chip.cards]
+    counts = {}
+    for card in dropped:
+        counts[card.state.key] = counts.get(card.state.key, 0) + 1
+    return Band(tally, tuple(found[:chips]), len(dropped),
+                tuple((key, word, counts[key]) for key, word in STATES if key in counts),
+                tuple(card for card in dropped if card.state.key == CRITICAL))
 
 
 # ---- the change token -------------------------------------------------------------------------------------------------

@@ -38,9 +38,12 @@ def codes(problems, severity='error'):
 
 class CatalogueTests(SimpleTestCase):
     def test_the_v1_widgets_and_their_sources(self):
-        self.assertEqual(sorted(WIDGETS), ['bar', 'deffeyes', 'experiment', 'feeding', 'fish', 'health', 'spark',
-                                           'tasks', 'value', 'water_table'])
+        self.assertEqual(sorted(WIDGETS), ['bar', 'chart', 'deffeyes', 'dosing', 'experiment', 'feeding', 'fish',
+                                           'health', 'ph_window', 'points', 'spark', 'stock', 'tasks', 'value',
+                                           'water_table'])
+        self.assertEqual(WIDGETS['chart'].sources, ('water', 'chart'))          # the Big card's picture of the chart
         self.assertEqual(WIDGETS['value'].sources, ('water',))
+        self.assertEqual(WIDGETS['ph_window'].sources, ('water', 'chart'))      # drawn from the unit's chart
         self.assertEqual(WIDGETS['health'].sources, ('events', 'treatments', 'lice'))
         self.assertEqual(WIDGETS['fish'].sources, ('stock',))
         self.assertEqual(WIDGETS['experiment'].sources, ('chips',))
@@ -186,7 +189,8 @@ class ValidateTests(SimpleTestCase):
             problem = validate.Problem('error', 'w1', code, (('other', 'w2'), ('label', 'x'), ('version', 9),
                                                              ('detail', 'y'), ('option', 'z'), ('count', 16),
                                                              ('min_w', 1), ('min_h', 1), ('max_w', 2), ('max_h', 2),
-                                                             ('max', 40)))
+                                                             ('max', 40), ('most', 24), ('rows', 26), ('has', '2.2'),
+                                                             ('needs', '4.0')))
             with self.subTest(code=code):
                 self.assertTrue(problem.message)
                 with translation.override('nb'):
@@ -252,3 +256,38 @@ class VectorTests(SimpleTestCase):
                         found.append([problem.code, problem.widget] + ([dict(problem.params)['other']]
                                                                         if problem.code == 'overlap' else []))
                 self.assertEqual(found, case['problems'])
+
+
+class CalculatedTests(SimpleTestCase):
+    """A value widget may be bound to a value the unit's Deffeyes chart works out (owner decision 2, 2026-11-12: the
+    chart's CO₂ is always the calculated one), as to a water parameter."""
+
+    def test_the_calculated_co2_is_bindable_and_is_not_a_water_parameter_yet(self):
+        code = catalogue.CO2_CALCULATED
+        self.assertIn(code, catalogue.bindable())
+        self.assertNotIn(code, parameters.BY_CODE)                      # Phase 1: shown and tagged, not judged
+        self.assertEqual(codes(validate.validate(layout(widget(bind={'parameter': code})))), [])
+        self.assertEqual(codes(validate.validate(layout(widget(bind={'parameter': 'co2_guessed_mg_l'})))),
+                         [('binding', 'w1')])
+        described = catalogue.described(code)
+        self.assertEqual((str(described.short), described.shown_as, described.figure),
+                         ('CO₂ calc. (mg/L)', 'co2_mg_l', 'co2_mg_l'))
+        self.assertIs(catalogue.described('ph'), parameters.get('ph'))
+        from farm.water.deffeyes import Analysis
+        self.assertIn(described.figure, Analysis.__dataclass_fields__)   # the analysis's own figure, by its name
+
+    def test_the_designer_is_offered_it_among_the_parameters(self):
+        with translation.override('en'):
+            offered = {each['value']: each['label'] for each in catalogue.as_data()['parameters']}
+        self.assertEqual(offered[catalogue.CO2_CALCULATED], 'Carbon dioxide, calculated (mg/L CO₂)')
+        self.assertTrue(set(parameters.BY_CODE) <= set(offered))
+
+    def test_a_fitted_cards_bounds_are_the_classes_the_style_sheet_holds(self):
+        from ..cards import render
+        css = render.grid_css()
+        (low_w, high_w), (low_h, high_h) = catalogue.MEASURE_W, catalogue.MEASURE_H
+        for name, low, high in (('mw', low_w, high_w), ('mh', low_h, high_h), ('gr', 1, catalogue.FIT_ROWS)):
+            for size in (low, high):
+                self.assertIn(f'.{name}-{size}{{--{name}:{size}}}', css)
+            for size in (low - 1, high + 1):
+                self.assertNotIn(f'.{name}-{size}{{', css)

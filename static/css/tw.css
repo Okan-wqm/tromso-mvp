@@ -1,5 +1,11 @@
 /*! tailwindcss v4.3.3 | MIT License | https://tailwindcss.com */
 @layer properties;
+.tw\:col-span-4 {
+  grid-column: span 4 / span 4;
+}
+.tw\:col-span-full {
+  grid-column: 1 / -1;
+}
 .tw\:col-start-1 {
   grid-column-start: 1;
 }
@@ -24,6 +30,9 @@
 .tw\:-mb-px {
   margin-bottom: -1px;
 }
+.tw\:contents {
+  display: contents;
+}
 .tw\:flex {
   display: flex;
 }
@@ -32,6 +41,12 @@
 }
 .tw\:inline-flex {
   display: inline-flex;
+}
+.tw\:h-full {
+  height: 100%;
+}
+.tw\:min-h-0 {
+  min-height: 0px;
 }
 .tw\:min-h-8 {
   min-height: calc(var(--space-1) * 8);
@@ -42,11 +57,23 @@
 .tw\:min-w-0 {
   min-width: 0px;
 }
+.tw\:flex-1 {
+  flex: 1;
+}
 .tw\:shrink-0 {
   flex-shrink: 0;
 }
+.tw\:cursor-pointer {
+  cursor: pointer;
+}
 .tw\:list-none {
   list-style-type: none;
+}
+.tw\:auto-rows-fr {
+  grid-auto-rows: minmax(0, 1fr);
+}
+.tw\:grid-cols-1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
 }
 .tw\:grid-cols-2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -54,8 +81,23 @@
 .tw\:grid-cols-3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
+.tw\:grid-cols-\[auto_auto_minmax\(1\.5em\,1fr\)_auto_auto\] {
+  grid-template-columns: auto auto minmax(1.5em,1fr) auto auto;
+}
+.tw\:grid-cols-\[auto_minmax\(0\,1fr\)\] {
+  grid-template-columns: auto minmax(0,1fr);
+}
+.tw\:grid-cols-\[minmax\(0\,1fr\)\] {
+  grid-template-columns: minmax(0,1fr);
+}
 .tw\:grid-cols-\[minmax\(0\,1fr\)_auto\] {
   grid-template-columns: minmax(0,1fr) auto;
+}
+.tw\:grid-cols-\[minmax\(0\,1fr\)_auto_auto_auto\] {
+  grid-template-columns: minmax(0,1fr) auto auto auto;
+}
+.tw\:grid-rows-\[auto\] {
+  grid-template-rows: auto;
 }
 .tw\:flex-col {
   flex-direction: column;
@@ -63,8 +105,17 @@
 .tw\:flex-row {
   flex-direction: row;
 }
+.tw\:flex-nowrap {
+  flex-wrap: nowrap;
+}
 .tw\:flex-wrap {
   flex-wrap: wrap;
+}
+.tw\:place-content-center {
+  place-content: center;
+}
+.tw\:content-center {
+  align-content: center;
 }
 .tw\:content-start {
   align-content: flex-start;
@@ -78,6 +129,9 @@
 .tw\:items-start {
   align-items: flex-start;
 }
+.tw\:justify-between {
+  justify-content: space-between;
+}
 .tw\:gap-0\.5 {
   gap: calc(var(--space-1) * 0.5);
 }
@@ -86,6 +140,12 @@
 }
 .tw\:gap-2 {
   gap: calc(var(--space-1) * 2);
+}
+.tw\:gap-3 {
+  gap: calc(var(--space-1) * 3);
+}
+.tw\:gap-4 {
+  gap: calc(var(--space-1) * 4);
 }
 .tw\:gap-6 {
   gap: calc(var(--space-1) * 6);
@@ -99,8 +159,14 @@
 .tw\:gap-x-4 {
   column-gap: calc(var(--space-1) * 4);
 }
+.tw\:gap-x-5 {
+  column-gap: calc(var(--space-1) * 5);
+}
 .tw\:gap-x-6 {
   column-gap: calc(var(--space-1) * 6);
+}
+.tw\:gap-x-8 {
+  column-gap: calc(var(--space-1) * 8);
 }
 .tw\:gap-y-1 {
   row-gap: var(--space-1);
@@ -121,11 +187,23 @@
 .tw\:self-center {
   align-self: center;
 }
+.tw\:self-stretch {
+  align-self: stretch;
+}
 .tw\:justify-self-end {
   justify-self: flex-end;
 }
+.tw\:truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .tw\:overflow-hidden {
   overflow: hidden;
+}
+.tw\:border-0 {
+  border-style: var(--tw-border-style);
+  border-width: 0px;
 }
 .tw\:border-t {
   border-top-style: var(--tw-border-style);
@@ -139,6 +217,10 @@
   border-bottom-style: var(--tw-border-style);
   border-bottom-width: 1px;
 }
+.tw\:border-l {
+  border-left-style: var(--tw-border-style);
+  border-left-width: 1px;
+}
 .tw\:border-hair {
   border-color: var(--line-hair);
 }
@@ -148,14 +230,23 @@
 .tw\:bg-sunken {
   background-color: var(--surface-sunken);
 }
+.tw\:bg-transparent {
+  background-color: transparent;
+}
 .tw\:p-0 {
   padding: 0px;
+}
+.tw\:px-2 {
+  padding-inline: calc(var(--space-1) * 2);
 }
 .tw\:px-3 {
   padding-inline: calc(var(--space-1) * 3);
 }
 .tw\:px-4 {
   padding-inline: calc(var(--space-1) * 4);
+}
+.tw\:py-0 {
+  padding-block: 0px;
 }
 .tw\:py-2 {
   padding-block: calc(var(--space-1) * 2);
@@ -175,8 +266,17 @@
 .tw\:pb-1 {
   padding-bottom: var(--space-1);
 }
+.tw\:pl-2 {
+  padding-left: calc(var(--space-1) * 2);
+}
 .tw\:pl-4 {
   padding-left: calc(var(--space-1) * 4);
+}
+.tw\:text-center {
+  text-align: center;
+}
+.tw\:text-right {
+  text-align: right;
 }
 .tw\:text-caption {
   font-size: 12px;
@@ -198,9 +298,32 @@
   font-size: 13px;
   line-height: var(--tw-leading, 1.45);
 }
+.tw\:text-u-l {
+  font-size: 1.25em;
+  line-height: var(--tw-leading, 1.15);
+}
+.tw\:text-u-m {
+  font-size: 1em;
+  line-height: var(--tw-leading, 1.3);
+}
+.tw\:text-u-s {
+  font-size: .8em;
+  line-height: var(--tw-leading, 1.25);
+}
+.tw\:text-u-xl {
+  font-size: 2.4em;
+  line-height: var(--tw-leading, 1);
+}
+.tw\:font-normal {
+  --tw-font-weight: 400;
+  font-weight: 400;
+}
 .tw\:font-semibold {
   --tw-font-weight: 600;
   font-weight: 600;
+}
+.tw\:whitespace-normal {
+  white-space: normal;
 }
 .tw\:whitespace-nowrap {
   white-space: nowrap;
@@ -226,6 +349,9 @@
 .tw\:text-warn-text {
   color: var(--warn-text);
 }
+.tw\:italic {
+  font-style: italic;
+}
 .tw\:no-underline {
   text-decoration-line: none;
 }
@@ -235,10 +361,19 @@
 .tw\:\[box-shadow\:var\(--edge-warn\)\] {
   box-shadow: var(--edge-warn);
 }
+.tw\:\[font\:inherit\] {
+  font: inherit;
+}
 @media (hover: hover) {
   .tw\:hover\:bg-sunken:hover {
     background-color: var(--surface-sunken);
   }
+}
+.tw\:focus-visible\:\[box-shadow\:var\(--ring-focus\)\,var\(--edge-crit\)\]:focus-visible {
+  box-shadow: var(--ring-focus),var(--edge-crit);
+}
+.tw\:focus-visible\:\[box-shadow\:var\(--ring-focus\)\,var\(--edge-warn\)\]:focus-visible {
+  box-shadow: var(--ring-focus),var(--edge-warn);
 }
 @media (width >= 40rem) {
   .tw\:sm\:col-span-2 {
@@ -292,6 +427,15 @@
     min-height: calc(var(--space-1) * 14);
   }
 }
+.tw\:wall\:flex-nowrap:where([data-wall], [data-wall] *) {
+  flex-wrap: nowrap;
+}
+.tw\:wall\:gap-y-0:where([data-wall], [data-wall] *) {
+  row-gap: 0px;
+}
+.tw\:wall\:whitespace-nowrap:where([data-wall], [data-wall] *) {
+  white-space: nowrap;
+}
 .tw\:\[\&_\.icon\]\:mt-px .icon {
   margin-top: 1px;
 }
@@ -310,6 +454,17 @@
 }
 .tw\:\[\&_b_\.wq-source\]\:inline b .wq-source {
   display: inline;
+}
+.tw\:\[\&\>b\]\:text-u-l > b {
+  font-size: 1.25em;
+  line-height: var(--tw-leading, 1.15);
+}
+.tw\:\[\&\>b\]\:font-semibold > b {
+  --tw-font-weight: 600;
+  font-weight: 600;
+}
+.tw\:\[\&\>b\]\:text-ink-1 > b {
+  color: var(--text-1);
 }
 @property --tw-divide-y-reverse {
   syntax: "*";

@@ -30,8 +30,8 @@
   </section>
 
   <div class="calc-bar">
-    <div class="tabs calc-tabs" role="tablist" aria-label="{% trans "The calculator's values" %}" data-tabs hidden>
-      {% for tab in form.tabs %}<button type="button" role="tab" class="tab{% if tab.has_errors %} tab-error{% endif %}" data-tab="{{ tab.key }}">{{ tab.label }}{% if tab.has_errors %}<span class="sr-only"> {% trans "(has errors)" %}</span>{% endif %}</button>{% endfor %}
+    <div class="ui-tabs calc-tabs" role="tablist" aria-label="{% trans "The calculator's values" %}" data-tabs hidden>
+      {% for tab in form.tabs %}<button type="button" role="tab" class="ui-tab{% if tab.has_errors %} tab-error{% endif %}" data-tab="{{ tab.key }}">{{ tab.label }}{% if tab.has_errors %}<span class="sr-only"> {% trans "(has errors)" %}</span>{% endif %}</button>{% endfor %}
     </div>
     {% for tab in form.tabs %}
     <section class="tab-panel calc-panel" role="tabpanel" data-panel="{{ tab.key }}"{% if tab.has_errors %} data-has-errors{% endif %}>
@@ -69,5 +69,5 @@
 
   {% include "farm/calculator/_results.html" %}
 </form>
-<p class="panel-help calculator-sources">{% blocktrans trimmed %}Carbonic acid: Millero, Graham, Huang, Bustos-Serrano and Pierrot (2006); water: Millero (1995); boric acid: Dickson (1990); ammonium: Millero (1995); hydrogen sulfide: Millero, Plese and Fernandez (1988); calcite and aragonite: Mucci (1983); oxygen: Benson and Krause (1984). A pH is as a meter reads it (NBS scale). A border nearer than 0.2 pH is a warning.{% endblocktrans %} {% blocktrans trimmed %}Dosing: each reagent moves the water along its own direction on the chart (Deffeyes 1965); CO₂ the air leaves in the water: Weiss (1974), with 420 µmol/mol CO₂ in the air.{% endblocktrans %}</p>
+<p class="panel-help calculator-sources">{% blocktrans trimmed %}Carbonic acid: Millero, Graham, Huang, Bustos-Serrano and Pierrot (2006); water: Millero (1995); boric acid: Dickson (1990); ammonium: Clegg and Whitfield (1995) for the best estimate, Yao and Millero (1995) for the ideal water; fresh and salt-added water is judged on the larger of these two values, and brackish water of 1 to 5 ‰ on the larger of the best estimate and a blend of the two constants; hydrogen sulfide: Millero, Plese and Fernandez (1988); calcite and aragonite: Mucci (1983); oxygen: Benson and Krause (1984). A pH is as a meter reads it (NBS scale). A border nearer than 0.2 pH is a warning.{% endblocktrans %} {% blocktrans trimmed %}Dosing: each reagent moves the water along its own direction on the chart (Deffeyes 1965); CO₂ the air leaves in the water: Weiss (1974), with 420 µmol/mol CO₂ in the air.{% endblocktrans %}</p>
 {% endblock %}

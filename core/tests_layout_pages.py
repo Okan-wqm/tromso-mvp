@@ -17,3 +17,18 @@ class LayoutPagesTests(SimpleTestCase):
         self.assertIn('class="wq-source"', pages['water.html'])
         self.assertIn('lang="nb"', pages['card-nb.html'])
         self.assertIn('class="form-actions"', pages['approve.html'])
+        # the Reports page's strip: twelve link tabs (all, five urgent kinds, six scheduled), the current one a scheduled kind
+        self.assertEqual(pages['report-tabs.html'].count('class="ui-tab"'), 12)
+        self.assertIn('href="/reports/?kind=smolt" aria-current="page">Smolt', pages['report-tabs.html'])
+        for name in ('wall-small-en.html', 'wall-small-tr.html'):
+            self.assertIn('data-key="band"', pages[name])
+            self.assertEqual(pages[name].count('<article class="monitor-card '), 20)
+            self.assertIn('is-fit mw-31 mh-12', pages[name])
+            self.assertIn('class="monitor-ph-window', pages[name])
+        self.assertIn('lang=', pages['card-nb.html'])
+        self.assertNotEqual(pages['wall-small-en.html'], pages['wall-small-tr.html'])
+        # the pane of a unit gone into: the dock's own markup around its Big card
+        self.assertIn('class="monitor-window monitor-pane"', pages['dock-big-tr.html'])
+        self.assertIn('is-fit mw-48 mh-61', pages['dock-big-tr.html'])
+        self.assertIn('class="monitor-chart-svg', pages['dock-big-tr.html'])
+        self.assertIn('id="open-', pages['wall-small-tr.html'])

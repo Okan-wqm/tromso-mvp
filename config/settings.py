@@ -352,6 +352,11 @@ WEIGH_NOW_DAYS = 28
 # Seconds between two asks of a monitoring wall (a board may say its own, 10 to 600): the screen asks "has anything
 # changed?" and is answered without a body while nothing has (monitoring/read.py change_token).
 MONITOR_POLL_SECONDS = 15
+# The band above the monitoring cards names what needs a look in chips: at most this many chips, each naming at most this
+# many units by their code; the rest are counted ("+3"), and the band's tally always counts every unit
+# (monitoring/read.py band).
+MONITOR_BAND_CHIPS = 6
+MONITOR_BAND_CODES = 4
 
 # How far ahead a recurring task's tasks are made, and how many days back missed ones are made after a gap (they
 # are overdue): tasks/services.py, owner decision 3.

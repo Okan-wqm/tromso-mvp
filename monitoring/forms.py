@@ -4,14 +4,15 @@ template), saved as a whole list (monitoring/resources.py). The templates
 offered are the live ones (Reference data › Card templates), a built-in by its name in the person's language."""
 from django import forms
 from django.urls import reverse
+from django.utils.text import get_text_list
 from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
 from core.crud import RowFormSet, TabbedForm, tab_fields
 from farm.models import Species, System, Tank
 
 from .cards import catalogue, validate
-from .models import (REFRESH_MAX, REFRESH_MIN, SCOPES, CardTemplate, CardTemplateAssignment, MonitorBoard,
-                     MonitorBoardUnit)
+from .models import (PH_SCALE_BOUNDS, PH_SCALE_SPAN, REFRESH_MAX, REFRESH_MIN, SCOPES, CardTemplate,
+                     CardTemplateAssignment, MonitorBoard, MonitorBoardUnit, PhWindowScale)
 
 BOARD_TABS = [
     ('general', _('General'), ['name', 'description', 'default_template', 'card_width', 'refresh_seconds']),
@@ -96,7 +97,7 @@ BoardUnitFormSet = forms.inlineformset_factory(
 
 # ---- card templates and their rules (Reference data) -------------------------------------------------------------
 TEMPLATE_TABS = [
-    ('general', _('General'), ['name', 'description', 'expanded']),
+    ('general', _('General'), ['name', 'description', 'expanded', 'measure_w', 'measure_h']),
     ('design', _('Design'), ['layout']),
 ]
 
@@ -125,8 +126,8 @@ class LayoutField(forms.JSONField):
 
 
 class CardTemplateForm(TabbedForm):
-    """A card template: its name, a description, the template its flip link shows and its layout. A built-in is shown,
-    never saved (a trigger refuses it too): copy it to make one's own."""
+    """A card template: its name, a description, the template its flip link shows, the measure of a fitted card and
+    its layout. A built-in is shown, never saved (a trigger refuses it too): copy it to make one's own."""
 
     tabs = TEMPLATE_TABS
 
@@ -140,6 +141,11 @@ class CardTemplateForm(TabbedForm):
             'expanded': _('The template a card’s flip link shows (Simple flips to Detailed). Empty: no flip link.'),
             'layout': _('Where each widget sits on the card’s 12 columns. The frame of a card (the unit, its state and '
                         'why, the withdrawal) is always shown and is not part of the layout.'),
+            'measure_w': _('For a fitted card, one that is drawn at the size of its place on a wall: how many of its '
+                           'own units the card is wide (12 to 64; the Small card is 31). Empty with the height: the '
+                           'card flows down the page.'),
+            'measure_h': _('How many of its own units a fitted card is high (6 to 64; the Small card is 10). The '
+                           'card’s widgets share that height in equal rows, at most 24.'),
         }
 
     def __init__(self, *args, **kwargs):
@@ -159,6 +165,25 @@ class CardTemplateForm(TabbedForm):
         cleaned = super().clean()
         if not self.instance._state.adding and self.instance.is_builtin:
             raise forms.ValidationError(_('A built-in template cannot be changed; copy it to make one of your own.'))
+        width, height, layout = cleaned.get('measure_w'), cleaned.get('measure_h'), cleaned.get('layout')
+        if (width is None) != (height is None):
+            self.add_error('measure_w' if width is None else 'measure_h',
+                           _('A fitted card needs both its width and its height; leave both empty for a card that '
+                             'flows.'))
+        elif width is not None and isinstance(layout, dict) and 'layout' not in self.errors:
+            # What a fitted card refuses is the validator's (validate.FITTED_ERRORS), said on the measure: a widget
+            # with no fitted look would be cut on a wall without a word (review R7), so the measure is not taken.
+            problems = [problem for problem in validate.validate(layout, (width, height))
+                        if problem.code in validate.FITTED_ERRORS]
+            unfitted = [dict(problem.params)['label'] for problem in problems if problem.code == 'fit_look']
+            if unfitted:
+                self.add_error('measure_w', _(
+                    'This layout cannot be a fitted card: there is no fitted look for %(widgets)s, which would be cut. '
+                    'Remove them on the Design tab, or leave the width and the height empty for a card that flows.') % {
+                        'widgets': get_text_list(list(dict.fromkeys(unfitted)), _('and'))})
+            for problem in problems:
+                if problem.code == 'fit_rows':
+                    self.add_error('measure_h', problem.message)
         return cleaned
 
     def save(self, commit=True):
@@ -206,4 +231,41 @@ class CardTemplateAssignmentForm(TabbedForm):
             raise forms.ValidationError(ONE_SCOPE)
         if not self.instance._state.adding and self.instance.is_global and given:
             raise forms.ValidationError(_('The global rule stays for every unit: change its template only.'))
+        return cleaned
+
+
+# ---- the pH window's scale (Reference data) ---------------------------------------------------------------------------
+SCALE_TABS = [('scale', _('Scale'), ['ph_low', 'ph_high'])]
+
+
+class PhWindowScaleForm(TabbedForm):
+    """The scale of the pH window on the monitoring cards of one water type (monitoring.PhWindowScale): its two ends.
+    The water type is the row's own and is not changed."""
+
+    tabs = SCALE_TABS
+
+    class Meta:
+        model = PhWindowScale
+        fields = tab_fields(SCALE_TABS)
+        help_texts = {
+            'ph_low': _('The left end of the pH window on the cards of units with this water. A pH below it is shown as '
+                        'an arrow and the number, never as a mark on the end.'),
+            'ph_high': _('The right end. Choose the two ends so that the pH the water is kept at and the pH at which '
+                         'CO₂ and NH₃ pass their limits lie between them; at least half a pH unit apart.'),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ('ph_low', 'ph_high'):
+            self.fields[name].widget.attrs.update({'min': PH_SCALE_BOUNDS[0], 'max': PH_SCALE_BOUNDS[1], 'step': '0.1'})
+
+    def clean(self):
+        cleaned = super().clean()
+        low, high = cleaned.get('ph_low'), cleaned.get('ph_high')
+        for name, value in (('ph_low', low), ('ph_high', high)):
+            if value is not None and not PH_SCALE_BOUNDS[0] <= value <= PH_SCALE_BOUNDS[1]:
+                self.add_error(name, _('A pH lies between 0 and 14.'))
+        if low is not None and high is not None and high < low + PH_SCALE_SPAN and not self.has_error('ph_high'):
+            self.add_error('ph_high', _('The scale must span at least half a pH unit, from the lower end to the '
+                                       'higher.'))
         return cleaned

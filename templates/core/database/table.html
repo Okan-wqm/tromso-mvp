@@ -10,9 +10,9 @@
   <span class="faint">{{ table.section }} · {% trans "Django model" %} <code>{{ table.app }}.{{ table.model_name }}</code> · {% if counts.estimated %}≈ {% endif %}{% blocktrans trimmed count counter=counts.rows %}{{ counter }} row{% plural %}{{ counter }} rows{% endblocktrans %}{% if counts.estimated %} ({% trans "An estimate from the database’s statistics" %}){% endif %}{% if counts.deleted %}, {% blocktrans trimmed with number=counts.deleted %}{{ number }} deleted{% endblocktrans %}{% endif %}</span>
 </p>
 
-<div class="tabs" role="tablist" aria-label="{% trans "Table sections" %}" data-tabs hidden>
-  <button type="button" role="tab" class="tab" data-tab="data">{% trans "Data" %}</button>
-  <button type="button" role="tab" class="tab" data-tab="structure">{% trans "Structure" %}</button>
+<div class="ui-tabs" role="tablist" aria-label="{% trans "Table sections" %}" data-tabs hidden>
+  <button type="button" role="tab" class="ui-tab" data-tab="data">{% trans "Data" %}</button>
+  <button type="button" role="tab" class="ui-tab" data-tab="structure">{% trans "Structure" %}</button>
 </div>
 
 <section class="tab-panel tab-panel-wide" role="tabpanel" data-panel="data">

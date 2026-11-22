@@ -90,6 +90,20 @@ class TailwindWiringTests(SimpleTestCase):
         sheets = re.findall(r"<link rel=\"stylesheet\" href=\"\{% asset '([^']+)' %\}\">", base)
         self.assertEqual(sheets[-1], 'css/tw.css')
 
+    def test_a_pages_own_sheet_loads_before_it(self):
+        """A page that sets utilities on elements its own sheet styles too (Monitoring: a card's frame) loads that sheet
+        in the block before tw.css, so the utility wins over the sheet's rule for the same class."""
+        base = (ROOT / 'templates' / 'app_base.html').read_text(encoding='utf-8')
+        self.assertLess(base.index('{% block page_styles %}'), base.index("{% asset 'css/tw.css' %}"))
+        self.assertLess(base.index("{% asset 'css/tw.css' %}"), base.index('{% block extra_head %}'))
+        for name in ('monitor.html', 'template_form.html'):
+            page = (ROOT / 'templates' / 'monitoring' / name).read_text(encoding='utf-8')
+            styles = page[page.index('{% block page_styles %}'):]
+            styles = styles[:styles.index('{% endblock %}')]
+            self.assertIn("{% asset 'css/monitor.css' %}", styles, name)
+            head = page[page.index('{% block extra_head %}'):]
+            self.assertNotIn('rel="stylesheet"', head[:head.index('{% endblock %}')], name)
+
     def test_the_tool_is_pinned_listed_and_built_by_npm_run_build(self):
         package = json.loads((ROOT / 'package.json').read_text(encoding='utf-8'))
         versions = {package['devDependencies'][name] for name in ('tailwindcss', '@tailwindcss/cli')}

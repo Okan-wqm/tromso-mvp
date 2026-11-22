@@ -151,3 +151,44 @@ class DateFormatTests(SimpleTestCase):
                                   formats.date_format(moment, 'SHORT_DATE_FORMAT'),
                                   formats.date_format(moment, 'SHORT_DATETIME_FORMAT')),
                                  ('06.10.2026', '09:04', '06.10.2026 09:04', '06.10.', '06.10.2026', '06.10.2026 09:04'))
+
+
+class FieldMarkupTests(SimpleTestCase):
+    """One field markup for every form (templates/django/forms/field.html, which draws registration/_field.html, the
+    template crud/form.html includes too): the label bound to the control, the server's own constraints on the control
+    (min, max, step: the browser's check mirrors the server's rule, nothing is written twice in TypeScript), the help line
+    and the errors tied to the control by aria-describedby, and aria-invalid on a field in error. Every layout Django
+    offers draws the same markup."""
+
+    def form(self):
+        from django import forms
+
+        class FieldDemo(forms.Form):
+            ph = forms.DecimalField(label='pH', min_value=0, max_value=14, decimal_places=2,
+                                    help_text='Measured at the tank.')
+            count = forms.IntegerField(label='Fish', min_value=1)
+
+        reading = FieldDemo(data={'ph': '15', 'count': ''})
+        reading.is_valid()
+        return reading
+
+    def test_every_layout_draws_the_one_field_markup(self):
+        from django.template.loader import render_to_string
+        reading = self.form()
+        drawn = {'form': str(reading), 'as_p': reading.as_p(), 'as_table': reading.as_table(), 'as_ul': reading.as_ul(),
+                 'field group': reading['ph'].as_field_group() + reading['count'].as_field_group(),
+                 'crud include': ''.join(render_to_string('registration/_field.html', {'field': reading[name]})
+                                         for name in ('ph', 'count'))}
+        for layout, html in drawn.items():
+            with self.subTest(layout=layout):
+                self.assertEqual(html.count('<div class="field has-error">'), 2)
+                self.assertIn('<label for="id_ph">pH</label>', html)
+                ph = re.search(r'<input[^>]*name="ph"[^>]*>', html).group(0)
+                for attribute in ('min="0"', 'max="14"', 'step="0.01"', 'aria-invalid="true"',
+                                  'aria-describedby="id_ph_helptext id_ph_error"'):
+                    self.assertIn(attribute, ph)
+                self.assertIn('<div class="help" id="id_ph_helptext">Measured at the tank.</div>', html)
+                self.assertRegex(html, r'<ul class="errorlist" id="id_ph_error"><li>[^<]+</li></ul>')
+                count = re.search(r'<input[^>]*name="count"[^>]*>', html).group(0)
+                self.assertIn('min="1"', count)
+                self.assertIn('aria-describedby="id_count_error"', count)

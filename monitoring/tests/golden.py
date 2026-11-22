@@ -86,12 +86,18 @@ class Normaliser:
             self.dates.append((formats.date_format(day, 'DATE_FORMAT'), f'<day{offset:+d}>'))
             self.dates.append((day.isoformat(), f'<iso{offset:+d}>'))
         self.dates.sort(key=lambda pair: len(pair[0]), reverse=True)
+        # The SHORT day a fitted card prints (day.month: the withdrawal's first day of harvest, the day a value
+        # arrived): within half a year of today it names one day. Only where a card prints one (after "harvest from",
+        # before a time): a figure like 10.11 mg/L is never taken for a day.
+        self.short = {f'{today + timedelta(days=offset):%d.%m}': f'<short{offset:+d}>' for offset in range(-180, 181)}
 
     def __call__(self, text):
         text = squash(text)
         for old, new in self.pairs:
             text = text.replace(old, new)
         text = re.sub(r'\b\d{1,2}:\d{2}\b', '<time>', text)
+        text = re.sub(r'(?:(?<=harvest from )|(?<=harvest from about ))\d\d\.\d\d\b(?!\.\d)|\b\d\d\.\d\d(?= <time>)',
+                      lambda found: self.short.get(found.group(0), found.group(0)), text)
         for old, new in self.dates:
             if old in text:
                 text = text.replace(old, new)

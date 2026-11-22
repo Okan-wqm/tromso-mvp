@@ -555,3 +555,349 @@ def _region_names(analysis):
     elif analysis.h2s.ph is not None:
         names['h2s'] = str(_('H₂S toxic (pH < %(ph)s)') % {'ph': _ph(analysis.h2s.ph)})
     return names
+
+
+# ---- the card's picture: a window on the figure, close or at full scale ----------------------------------------
+# A monitoring card draws the same figure (`figure`) in a box of any shape, in one of TWO VIEWS (owner decision 12,
+# 2026-11-12), each a window on the core's figure and nothing else:
+#   FULL   the core's own box, from the origin;
+#   CLOSE  the window `close_window` works out by the rule below.
+# `picture` turns the figure and a window into the parts templates/monitoring/widgets/_chart.html prints: the outer
+# <svg> has NO viewBox (its text is the card's own text size), the shapes sit in a nested <svg viewBox="0 0 1000 1000"
+# preserveAspectRatio="none"> stretched over the plot, and every label and mark is placed by a percentage, so the plot
+# need not be square. No style attribute anywhere (the Content-Security-Policy is style-src 'self'). Every coordinate
+# is a string with a dot decimal whatever the language.
+CLOSE, FULL = 'close', 'full'
+VIEWS = (CLOSE, FULL)
+# The layers a card's picture draws: the lines of equal pH, the two toxic regions with their borders, the safe zone
+# and the target. (H₂S, Ω, the dosing and simulator paths are the calculator's.)
+CARD_LAYERS = frozenset({'isolines', 'safe', 'nh3', 'co2', 'target'})
+# The rule of CLOSE, in numbers: the window is never narrower than CLOSE_MIN mmol/L (under that the last digit of a pH
+# probe fills the picture); what must be seen across is the middle CLOSE_SHARE of it; what must be seen up and down
+# takes at most CLOSE_UP of its height; a window of CLOSE_FULL of the core's box or more IS the box.
+CLOSE_MIN, CLOSE_SHARE, CLOSE_UP, CLOSE_FULL = 0.5, 0.5, 0.6, 0.8
+# The plot inside the picture, in per cent of the picture: a narrow margin for the alkalinity ticks at the left and
+# for the DIC ticks under it; everything else is plot.
+PLOT_LEFT, PLOT_TOP, PLOT_WIDTH, PLOT_HEIGHT = 3.6, 0.8, 95.9, 94.4
+
+
+@dataclass(frozen=True)
+class Window:
+    """The part of a figure a picture shows: from and to in DIC (mmol/L) and in alkalinity (meq/L), how much larger
+    than the core's box it draws (`zoom`), whether it IS the core's box (`full`), and where the CO₂ and the NH₃ border
+    cross the water's own alkalinity (DIC; None: that border does not cross it)."""
+    dic: tuple
+    alkalinity: tuple
+    zoom: float
+    full: bool
+    co2: float | None = None
+    nh3: float | None = None
+
+    @property
+    def ends(self):
+        return (*self.dic, *self.alkalinity)
+
+
+def crossing(flat, alkalinity):
+    """Where a border (a flat polyline in DIC, alkalinity) crosses an alkalinity: its DIC there, or None."""
+    line = _pairs(flat)
+    for (x1, y1), (x2, y2) in zip(line, line[1:]):
+        if (y1 - alkalinity) * (y2 - alkalinity) <= 0 and y1 != y2:
+            return x1 + (alkalinity - y1) / (y2 - y1) * (x2 - x1)
+    return None
+
+
+def _border_at(figure, key, alkalinity):
+    found = (crossing(flat, alkalinity) for name, _label, flat in figure['boundaries'] if name == key)
+    return next((dic for dic in found if dic is not None), None)
+
+
+def full_window(figure):
+    """The core's own box, from the origin."""
+    return Window((0.0, float(figure['box'][0])), (0.0, float(figure['box'][1])), 1.0, True)
+
+
+def close_window(figure, band=(None, None), target_active=False):
+    """The window of the CLOSE view of a figure (`figure`'s document). `band`: the alkalinity band's two ends in meq/L
+    (None: the farm has not set that end); `target_active`: there is a dosing proposal, so the target must be seen.
+
+    ACROSS (DIC), at the water's own alkalinity: the water, the target when it is active, and the place where each
+    limit's border crosses that alkalinity (CO₂ on one side, NH₃ on the other). What they span is the MIDDLE HALF of
+    the window: a quarter is added on each side, so each region beyond a limit keeps a quarter of the picture and one
+    sees which side is which and how far it is.
+    - One border missing (no limit row, no TAN): that side gets the same distance as the side there is. No border at
+      all: the smallest window, around the water.
+    - UP (alkalinity): the window has the box's own proportion (shapes keep the look they have at full scale) and is
+      centred on the water (and the active target); when the water is outside the alkalinity band the band's nearer
+      end is taken in too; what must be seen up and down takes at most CLOSE_UP of the height, and the window grows
+      for it.
+    - Never narrower than CLOSE_MIN. A window of CLOSE_FULL of the core's box or more IS the box (a water far beyond
+      a limit): the close view is then the full scale, and says so (`full`).
+    - The window is moved, never shrunk, to stay inside the core's box.
+    - Old inputs change nothing: the window is around the last known position.
+    While the water is between the two borders the window hangs on the BORDERS (which move with the alkalinity and
+    the temperature, slowly), not on the water: a new pH moves the point inside a picture that stays put.
+    Pure: the same figure gives the same window. (The mock-up's `closeWindow`, F:/dev/balik-notes/plan/pages/
+    monitoring/final/chart.mjs; its 19 waters and 7 hard cases are farm/tests/close_vectors.json.)"""
+    box_dic, box_alkalinity = float(figure['box'][0]), float(figure['box'][1])
+    dic, alkalinity = figure['point']
+    co2, nh3 = _border_at(figure, 'co2', alkalinity), _border_at(figure, 'nh3', alkalinity)
+    target = figure.get('target') if target_active else None
+    across = [dic] + ([target[0]] if target else []) + [border for border in (co2, nh3) if border is not None]
+    left, right = min(across), max(across)
+    if co2 is not None and nh3 is None:
+        left = min(left, dic - abs(co2 - dic))
+    if nh3 is not None and co2 is None:
+        right = max(right, dic + abs(dic - nh3))
+    up_down = [alkalinity] + ([target[1]] if target else [])
+    low, top = band
+    if low is not None and alkalinity < low:
+        up_down.append(min(low, box_alkalinity))
+    if top is not None and alkalinity > top:
+        up_down.append(top)
+    down, up = min(up_down), max(up_down)
+    wide = max(CLOSE_MIN, (right - left) / CLOSE_SHARE, (up - down) / CLOSE_UP * box_dic / box_alkalinity)
+    if wide >= box_dic * CLOSE_FULL:
+        whole = full_window(figure)
+        return Window(whole.dic, whole.alkalinity, 1.0, True, co2, nh3)
+    high = wide * box_alkalinity / box_dic
+    start = min(max((left + right) / 2 - wide / 2, 0.0), box_dic - wide)
+    floor = min(max((down + up) / 2 - high / 2, 0.0), box_alkalinity - high)
+    return Window((start, start + wide), (floor, floor + high), box_dic / wide, False, co2, nh3)
+
+
+def window_of(figure, view, band=(None, None), target_active=False):
+    """The window of a view of a figure: FULL the core's box, CLOSE the rule's."""
+    return full_window(figure) if view == FULL else close_window(figure, band, target_active)
+
+
+def card_figure(analysis, extent=()):
+    """The figure a card's picture is drawn from: CARD_LAYERS of the analysis. `extent`: points the box must hold
+    (`geometry`), so that the cards of one screen and one water type share ONE box in the FULL view."""
+    return figure(analysis, geometry(analysis, CARD_LAYERS, extent=extent))
+
+
+@dataclass(frozen=True)
+class Picture:
+    """A card's picture of a figure in a window, as the template prints it. In the plot (the nested SVG, 0 to 1000
+    each way): `regions` (key, points), `isolines` (half, x1, y1, x2, y2: a line of equal pH every quarter, those
+    every half stronger), `bounds` (key, points), `leads` (the water's two lines to the axes), `dose` (the line from
+    the water to the active target). In per cent of the picture: `ph_names` (pH, decimals, x, y), `names` (where each
+    region says what it is: 'co2', 'nh3', 'safe' -> (x, y)), `y_ticks` (alkalinity in mg/L as CaCO₃, x, y), `x_ticks`
+    (DIC, decimals, x, y), `water`, `target`, `old_at` (where "last known position" is said), `corner` and `x_axis`
+    (where the two axes are named). `locator`: the window in the core's box, 0 to 100 each way (None: the window is
+    the box). Numbers are numbers here: whoever prints them writes them in the reader's language."""
+    view: str
+    window: Window
+    plot: tuple
+    regions: tuple
+    isolines: tuple
+    bounds: tuple
+    leads: tuple
+    dose: tuple | None
+    ph_names: tuple
+    names: dict
+    y_ticks: tuple
+    x_ticks: tuple
+    water: tuple
+    target: tuple | None
+    old_at: tuple
+    corner: tuple
+    x_axis: tuple
+    locator: tuple | None
+
+
+def _one(value):
+    """A coordinate at one decimal, with a dot, no trailing zero: 37.2, 1000, 0."""
+    text = f'{value:.1f}'
+    text = text[:-2] if text.endswith('.0') else text
+    return '0' if text == '-0' else text
+
+
+def _simplify(points, tolerance):
+    """A polyline without the points that lie within `tolerance` of the line through the neighbours that are kept
+    (Ramer-Douglas-Peucker): a border drawn 1000 units wide needs no point a pixel cannot show."""
+    if len(points) < 3:
+        return list(points)
+    (ax, ay), (bx, by) = points[0], points[-1]
+    length = math.hypot(bx - ax, by - ay) or 1.0
+    far, at = 0.0, 0
+    for index in range(1, len(points) - 1):
+        px, py = points[index]
+        distance = abs((bx - ax) * (ay - py) - (ax - px) * (by - ay)) / length
+        if distance > far:
+            far, at = distance, index
+    if far <= tolerance:
+        return [points[0], points[-1]]
+    return _simplify(points[:at + 1], tolerance)[:-1] + _simplify(points[at:], tolerance)
+
+
+def _inside(ring, point):
+    """Whether a point lies in a polygon (even-odd)."""
+    px, py = point
+    odd = False
+    for (ax, ay), (bx, by) in zip(ring, ring[1:] + ring[:1]):
+        if (ay > py) != (by > py) and px < (bx - ax) * (py - ay) / (by - ay) + ax:
+            odd = not odd
+    return odd
+
+
+def in_region(figure, key):
+    """Whether the figure's water lies in its region `key` ('safe', 'co2', 'nh3') as the core drew it; False when the
+    figure has no such region."""
+    ring = next((flat for name, _label, flat in figure['regions'] if name == key), None)
+    return ring is not None and _inside(_pairs(ring), tuple(figure['point']))
+
+
+def _window_part(segment, ends):
+    """The part of a segment (x1, y1, x2, y2) inside a window (Liang-Barsky), or None."""
+    x1, y1, x2, y2 = segment
+    xa, xb, ya, yb = ends
+    dx, dy = x2 - x1, y2 - y1
+    start, end = 0.0, 1.0
+    for p, q in ((-dx, x1 - xa), (dx, xb - x1), (-dy, y1 - ya), (dy, yb - y1)):
+        if p == 0:
+            if q < 0:
+                return None
+            continue
+        ratio = q / p
+        if p < 0:
+            if ratio > end:
+                return None
+            start = max(start, ratio)
+        else:
+            if ratio < start:
+                return None
+            end = min(end, ratio)
+    return (x1 + start * dx, y1 + start * dy, x1 + end * dx, y1 + end * dy)
+
+
+def _step(span, choices, about):
+    return next((step for step in choices if span / step <= about), choices[-1])
+
+
+# The locator (the core's box in outline, the window marked in it) draws a window never smaller than this share of the
+# box each way: at x12 the true mark is a dash a wall cannot read as "here".
+LOCATOR_MARK = 12
+# Where a toxic region may say what it is, as fractions of the window (across, down): the first that lies in the
+# region and is clear of the water's lead lines is taken.
+CO2_SPOTS = ((0.82, 0.82), (0.88, 0.9), (0.88, 0.6), (0.6, 0.9), (0.45, 0.92))
+NH3_SPOTS = ((0.17, 0.3), (0.15, 0.45), (0.3, 0.22), (0.15, 0.62))
+
+
+def picture(figure, window, view=CLOSE, target_active=False):
+    """The Picture of a figure (`card_figure`) in a window (`window_of`). `target_active`: there is a dosing proposal;
+    the target and the line to it are drawn only then."""
+    xa, xb, ya, yb = window.ends
+    wide, high = xb - xa, yb - ya
+
+    def x(dic):
+        return (dic - xa) / wide * 1000
+
+    def y(alkalinity):
+        return (1 - (alkalinity - ya) / high) * 1000
+
+    def px(dic):
+        return PLOT_LEFT + (dic - xa) / wide * PLOT_WIDTH
+
+    def py(alkalinity):
+        return PLOT_TOP + (1 - (alkalinity - ya) / high) * PLOT_HEIGHT
+
+    def points(flat):
+        return ' '.join(f'{_one(at_x)},{_one(at_y)}'
+                        for at_x, at_y in _simplify([(x(dic), y(alk)) for dic, alk in _pairs(flat)], 0.8))
+
+    rings = {key: flat for key, _name, flat in figure['regions']}
+    regions = tuple((key, points(rings[key])) for key in ('nh3', 'co2', 'safe') if key in rings)
+    isolines, named = [], []
+    for ph, _labelled, *segment in figure['isolines']:
+        if ph < 6 or ph > 9 or (ph * 4) % 1:
+            continue
+        cut = _window_part(segment, window.ends)
+        if cut is None:
+            continue
+        half = (ph * 2) % 1 == 0
+        isolines.append((half, _one(x(cut[0])), _one(y(cut[1])), _one(x(cut[2])), _one(y(cut[3]))))
+        if half or view == CLOSE:
+            named.append((ph, cut[2], cut[3]))
+    bounds = tuple((key, points(flat)) for key, _name, flat in figure['boundaries'] if key in ('co2', 'nh3'))
+    water_dic, water_alkalinity = figure['point']
+    water_x, water_y = px(water_dic), py(water_alkalinity)
+    leads = ((_one(0), _one(y(water_alkalinity)), _one(x(water_dic)), _one(y(water_alkalinity))),
+             (_one(x(water_dic)), _one(y(water_alkalinity)), _one(x(water_dic)), _one(1000)))
+    target = figure.get('target') if target_active else None
+    dose = None if target is None else (_one(x(water_dic)), _one(y(water_alkalinity)), _one(x(target[0])),
+                                        _one(y(target[1])))
+    # the lines of equal pH say their pH where they leave the window, never over the water, never on each other
+    ph_names, last = [], None
+    for ph, end_dic, end_alkalinity in named:
+        at_right = end_dic >= xb - 1e-6
+        at = ((PLOT_LEFT + PLOT_WIDTH - 0.6, py(end_alkalinity) - 1.1) if at_right
+              else (px(end_dic) - 0.5, PLOT_TOP + 3.4))
+        crowded = last is not None and math.hypot(at[0] - last[0], (at[1] - last[1]) * 1.6) < (5.5 if at_right else 9)
+        over_water = abs(at[0] - water_x) < 9 and abs(at[1] - water_y) < 7
+        if (at[1] < PLOT_TOP + 3 or at[1] > PLOT_TOP + PLOT_HEIGHT - 6 or at[0] < PLOT_LEFT + 30 or crowded
+                or over_water):
+            continue
+        last = at
+        ph_names.append((ph, 2 if (ph * 2) % 1 else 1, _one(at[0]), _one(at[1])))
+    # the two toxic regions say what they are where they are in this window: the first of a few fixed spots that lies
+    # in the region and is clear of the water's two lead lines
+    water_fx, water_fy = (water_dic - xa) / wide, (yb - water_alkalinity) / high
+
+    def clear(fx, fy):
+        return (not (abs(fx - water_fx) < 0.11 and fy > water_fy)
+                and not (abs(fy - water_fy) < 0.05 and fx < water_fx + 0.11))
+
+    def place(key, spots):
+        if key not in rings:
+            return None
+        ring = _pairs(rings[key])
+        return next(((fx, fy) for fx, fy in spots
+                     if clear(fx, fy) and _inside(ring, (xa + wide * fx, yb - high * fy))), None)
+
+    names = {}
+    for key, spots in (('co2', CO2_SPOTS), ('nh3', NH3_SPOTS)):
+        spot = place(key, spots)
+        if spot is not None:
+            names[key] = (_one(PLOT_LEFT + PLOT_WIDTH * spot[0]), _one(PLOT_TOP + PLOT_HEIGHT * spot[1]))
+    if 'safe' in rings:
+        ring = _pairs(rings['safe'])
+        alkalinities = [point[1] for point in ring]
+        low, top = max(min(alkalinities), ya), min(max(alkalinities), yb)
+        at = low + (top - low) * (0.2 if water_alkalinity > (low + top) / 2 else 0.82)
+        row = [point[0] for point in ring if abs(point[1] - at) < max((top - low) * 0.05, 0.02)]
+        if row and top > low:
+            middle = (min(row) + max(row)) / 2
+            if xa < middle < xb:
+                names['safe'] = (_one(px(middle)), _one(py(at) + 1))
+    # ticks with the window's real numbers: alkalinity in mg/L as CaCO₃ at the left, DIC under the plot
+    per_meq = chemistry.MG_CACO3_PER_MEQ
+    mg_step = _step(high * per_meq, (5, 10, 20, 25, 50, 100), 6)
+    dic_step = _step(wide, (0.05, 0.1, 0.2, 0.5, 1, 2), 7)
+    y_ticks = []
+    mg = math.ceil(ya * per_meq / mg_step) * mg_step
+    while mg <= yb * per_meq:
+        alkalinity = mg / per_meq
+        if ya + high * 0.03 < alkalinity < yb - high * 0.03:
+            y_ticks.append((mg, _one(PLOT_LEFT - 0.6), _one(py(alkalinity) + 1.1)))
+        mg += mg_step
+    x_ticks = []
+    decimals = 2 if dic_step < 0.1 else 1 if dic_step < 1 else 0
+    count = math.ceil(xa / dic_step - 1e-9)
+    while count * dic_step <= xb + 1e-9:
+        dic = count * dic_step
+        if xa + wide * 0.03 < dic < xb - wide * 0.02:
+            x_ticks.append((round(dic, 2), decimals, _one(px(dic)), _one(PLOT_TOP + PLOT_HEIGHT + 3.7)))
+        count += 1
+    locator = None
+    if not window.full:
+        box_dic, box_alkalinity = float(figure['box'][0]), float(figure['box'][1])
+        locator = (_one(xa / box_dic * 100), _one((1 - yb / box_alkalinity) * 100),
+                   _one(max(wide / box_dic * 100, LOCATOR_MARK)), _one(max(high / box_alkalinity * 100, LOCATOR_MARK)))
+    return Picture(
+        view, window, (_one(PLOT_LEFT), _one(PLOT_TOP), _one(PLOT_WIDTH), _one(PLOT_HEIGHT)), regions,
+        tuple(isolines), bounds, leads, dose, tuple(ph_names), names, tuple(y_ticks), tuple(x_ticks),
+        (_one(water_x), _one(water_y)), None if target is None else (_one(px(target[0])), _one(py(target[1]))),
+        (_one(water_x + 1.4), _one(water_y - 2.4)), (_one(PLOT_LEFT + 0.8), _one(PLOT_TOP + 3.4)),
+        (_one(PLOT_LEFT + PLOT_WIDTH - 0.6), _one(PLOT_TOP + PLOT_HEIGHT - 1.6)), locator)

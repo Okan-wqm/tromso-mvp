@@ -8,6 +8,8 @@ the modes and the refresh seconds in their ranges; one card per unit per board; 
 version; one scope per rule and one live rule per scope; the built-ins unchangeable, by a trigger); the form mirrors them
 for friendly messages. That a board holds only live units is not a row fact (liveness is soft-delete state), so it is the
 form's choices and the read's live join."""
+from decimal import Decimal
+
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -19,6 +21,7 @@ from django.utils.translation import gettext, gettext_lazy as _
 
 from core.models import AuditedModel
 from farm.models import Species, System, Tank
+from farm.models.tank import WaterType
 
 from .cards import builtin, catalogue
 
@@ -127,13 +130,14 @@ _IS_ARRAY = Exact(Coalesce(_json_type(_WIDGETS), Value('')), Value('array'))
 
 class CardTemplate(AuditedModel):
     """A named layout of widgets for a monitoring card (monitoring/cards/: the catalogue, the validator). The frame of a
-    card (unit, state, reasons, withdrawal, basis, flip link) is not here: a template cannot hide it. Three are built in
+    card (unit, state, reasons, withdrawal, basis, flip link) is not here: a template cannot hide it. Four are built in
     (monitoring/cards/builtin.py): never changed or deleted by any writer (a trigger, migration 0002), copied to make
-    one's own.
+    one's own. A template with a measure is FITTED: its card is drawn at the size of its cell (catalogue.MEASURE_W).
 
     What the database holds (a hand edit cannot pass it): a live name, unique in any case; the layout's version one the
     code knows and stamped in the layout too; the layout an object whose widgets are a list of at most 40, in at most 32
-    KB; a template not flipping to itself; only the three built-ins built in, never deleted. Everything that needs the
+    KB; a template not flipping to itself; a measure whole or absent and in its range; only the four built-ins built
+    in, never deleted. Everything that needs the
     catalogue (places, sizes, overlaps, bindings, options) is the validator's, once."""
 
     name = models.CharField(_('Name'), max_length=100)
@@ -145,6 +149,14 @@ class CardTemplate(AuditedModel):
     # The template the card's flip link shows (Simple flips to Detailed and back); empty: no flip link.
     expanded = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='expanded_by',
                                  verbose_name=_('Flip link shows'))
+    # A FITTED template's measure: its card's width and height in the card's own unit (monitoring/cards/catalogue.py
+    # MEASURE_W, MEASURE_H). Both empty: the card flows down the page as cards always did.
+    measure_w = models.PositiveSmallIntegerField(
+        _('Card width (units)'), null=True, blank=True,
+        validators=[MinValueValidator(catalogue.MEASURE_W[0]), MaxValueValidator(catalogue.MEASURE_W[1])])
+    measure_h = models.PositiveSmallIntegerField(
+        _('Card height (units)'), null=True, blank=True,
+        validators=[MinValueValidator(catalogue.MEASURE_H[0]), MaxValueValidator(catalogue.MEASURE_H[1])])
 
     class Meta:
         db_table = 'monitor_card_templates'
@@ -180,7 +192,20 @@ class CardTemplate(AuditedModel):
                                    violation_error_message=_('A template cannot flip to itself.')),
             models.CheckConstraint(condition=Q(is_builtin=False) | Q(id__in=BUILTIN_IDS, is_deleted=False),
                                    name='chk_monitor_card_templates_builtin'),
+            models.CheckConstraint(
+                # (said with IS NOT NULL: a range test of a NULL is unknown, and a CHECK lets the unknown pass)
+                condition=Q(measure_w__isnull=True, measure_h__isnull=True)
+                | Q(measure_w__isnull=False, measure_h__isnull=False, measure_w__range=catalogue.MEASURE_W,
+                    measure_h__range=catalogue.MEASURE_H),
+                name='chk_monitor_card_templates_measure',
+                violation_error_message=_('A fitted card needs both its width (12 to 64 units) and its height (6 to 64 '
+                                          'units); leave both empty for a card that flows.')),
         ]
+
+    @property
+    def measure(self):
+        """(width, height) of a fitted template's card in card units, else None."""
+        return (self.measure_w, self.measure_h) if self.measure_w and self.measure_h else None
 
     def __str__(self):
         return self.shown_name
@@ -271,3 +296,42 @@ class CardTemplateAssignment(AuditedModel):
             return [gettext('The global rule is never deleted: every unit must get a template. Change its template '
                             'instead.')]
         return []
+
+
+# How narrow a pH window's scale may be and where it may lie: the refusal of nonsense, never a value in force.
+PH_SCALE_BOUNDS = (0, 14)
+PH_SCALE_SPAN = Decimal('0.5')
+
+
+class PhWindowScale(AuditedModel):
+    """The scale of the pH window on a monitoring card (monitoring/cards/render.py ph_window), one row per water type
+    (farm.models.tank.WaterType, the class a unit's water has: a fresh-water loop run near pH 6.3 and a sea cage at 8.1
+    do not read well on one scale). The farm's reference data (owner decision 15, 2026-11-16), seeded by migration 0007
+    with the 6.4 to 8.6 the code held; changed, never added or deleted. A pH beyond the scale is marked as off it,
+    never drawn on its end. Read once for a wall (monitoring/read.py ph_scales)."""
+
+    water_type = models.CharField(_('Water type'), max_length=20, choices=WaterType.choices, editable=False)
+    ph_low = models.DecimalField(_('From pH'), max_digits=3, decimal_places=1)
+    ph_high = models.DecimalField(_('To pH'), max_digits=3, decimal_places=1)
+
+    class Meta:
+        db_table = 'monitor_ph_window_scales'
+        ordering = ['water_type']
+        verbose_name = _('pH window scale')
+        verbose_name_plural = _('pH window scales')
+        constraints = [
+            models.UniqueConstraint(fields=['water_type'], name='uq_monitor_ph_window_scales_water'),
+            models.CheckConstraint(condition=Q(water_type__in=WaterType.values),
+                                   name='chk_monitor_ph_window_scales_water'),
+            models.CheckConstraint(condition=Q(ph_low__gte=PH_SCALE_BOUNDS[0], ph_high__lte=PH_SCALE_BOUNDS[1]),
+                                   name='chk_monitor_ph_window_scales_range',
+                                   violation_error_message=_('A pH lies between 0 and 14.')),
+            models.CheckConstraint(condition=Q(ph_high__gte=F('ph_low') + Value(PH_SCALE_SPAN)),
+                                   name='chk_monitor_ph_window_scales_span',
+                                   violation_error_message=_('The scale must span at least half a pH unit, from the '
+                                                             'lower end to the higher.')),
+            models.CheckConstraint(condition=Q(is_deleted=False), name='chk_monitor_ph_window_scales_kept'),
+        ]
+
+    def __str__(self):
+        return str(self.get_water_type_display())

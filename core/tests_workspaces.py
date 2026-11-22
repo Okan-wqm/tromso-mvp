@@ -68,7 +68,7 @@ class PanelSwitcherTests(WorkspaceTestCase):
                                         'Team list', 'Organization chart', 'Production departments', 'Systems', 'Equipment',
                                         'Tanks, ponds & cages', 'Monitoring boards', 'Sampling points', 'Species', 'Feeds',
                                         'Water limits', 'Water freshness', 'Medicines', 'Handling rules', 'Card templates',
-                                        'Card template rules', 'Slaughter facilities', 'Suppliers'])
+                                        'Card template rules', 'pH window scales', 'Slaughter facilities', 'Suppliers'])
 
     def test_the_switcher_lists_the_panels_and_marks_the_current_one(self):
         self.sign_in(self.admin)
@@ -130,7 +130,7 @@ class PanelMemoryTests(WorkspaceTestCase):
                                         'Team list', 'Organization chart', 'Production departments', 'Systems', 'Equipment',
                                         'Tanks, ponds & cages', 'Monitoring boards', 'Sampling points', 'Species', 'Feeds',
                                         'Water limits', 'Water freshness', 'Medicines', 'Handling rules', 'Card templates',
-                                        'Card template rules', 'Slaughter facilities', 'Suppliers'])
+                                        'Card template rules', 'pH window scales', 'Slaughter facilities', 'Suppliers'])
         self.page(reverse('farm:site_list'))
         self.assertEqual(self.page(reverse('password_change')).context['workspace']['key'], 'company')
 
@@ -217,6 +217,7 @@ class MenuPlacementTests(TestCase):
             'farm.HandlingRule': 'Production · Setup · Reference data',
             'monitoring.CardTemplate': 'Production · Setup · Reference data',
             'monitoring.CardTemplateAssignment': 'Production · Setup · Reference data',
+            'monitoring.PhWindowScale': 'Production · Setup · Reference data',
             'farm.Supplier': 'Production · Setup · Purchasing',
             'farm.StockOperation': 'Production · Operations',
             'farm.FeedingRecord': 'Production · Operations · Feeding',

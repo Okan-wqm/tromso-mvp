@@ -3,7 +3,7 @@
 {% comment %} A device's form adds its channels on a tab of their own, read-only: each channel is edited on its own form;
    and where it is placed now and was before (sensors/bindings.py `placement_history`), with the Move device dialog for
    a person who may bind. {% endcomment %}
-{% block extra_tabs %}{% if object %}<button type="button" role="tab" class="tab" data-tab="channels">{% trans "Channels" %}</button><button type="button" role="tab" class="tab" data-tab="placement">{% trans "Placement" %}</button>{% endif %}{% endblock %}
+{% block extra_tabs %}{% if object %}<button type="button" role="tab" class="ui-tab" data-tab="channels">{% trans "Channels" %}</button><button type="button" role="tab" class="ui-tab" data-tab="placement">{% trans "Placement" %}</button>{% endif %}{% endblock %}
 {% block extra_panels %}
 {% if object %}
 <section class="tab-panel" role="tabpanel" data-panel="channels">

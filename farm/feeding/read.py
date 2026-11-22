@@ -341,20 +341,39 @@ def last_fed_of(asked, lines=None):
     every = [place for found_for in places.values() for place in found_for]
     if not every:
         return found
-    records = (FeedingRecord.objects.filter(unit_id__in={place.unit_id for place in every}, target=FeedTarget.PRODUCTION,
-                                            date__gte=min(place.first for place in every),
-                                            date__lte=max(place.last for place in every))
-               .select_related('unit__production_department__site'))
+    # The candidates as plain rows (a wall's thousands of feedings are never built as records), their moment by the one
+    # rule (`fed_moment`) on their unit's clock; then the winners as records, in one query.
+    unit_ids = {place.unit_id for place in every}
+    units = Tank.all_objects.select_related('production_department__site').in_bulk(unit_ids)
     by_unit = defaultdict(list)
-    for record in records:
-        by_unit[record.unit_id].append(record)
+    for pk, unit_id, day, clock, created in (
+            FeedingRecord.objects.filter(unit_id__in=unit_ids, target=FeedTarget.PRODUCTION,
+                                         date__gte=min(place.first for place in every),
+                                         date__lte=max(place.last for place in every))
+            .values_list('pk', 'unit_id', 'date', 'time', 'created_at')):
+        row = _Fed(pk, day, clock, created, units[unit_id])
+        by_unit[unit_id].append((row, fed_moment(row)))
+    winners = {}
     for unit_id, where in places.items():
-        counted = {record.pk: record for place in where for record in by_unit.get(place.unit_id, ())
-                   if place.first <= record.date <= place.last}
+        counted = {row.pk: (row, moment) for place in where for row, moment in by_unit.get(place.unit_id, ())
+                   if place.first <= row.date <= place.last}
         if counted:
-            record = max(counted.values(), key=lambda each: (fed_moment(each), each.created_at))
-            found[unit_id] = LastFed(fed_moment(record), record)
+            winners[unit_id] = max(counted.values(), key=lambda each: (each[1], each[0].created_at))
+    records = (FeedingRecord.objects.select_related('unit__production_department__site')
+               .in_bulk([row.pk for row, _moment in winners.values()]))
+    for unit_id, (row, moment) in winners.items():
+        found[unit_id] = LastFed(moment, records[row.pk])
     return found
+
+
+@dataclass(frozen=True)
+class _Fed:
+    """A feeding as `last_fed_of` weighs it: what `fed_moment` reads, and its entry time for a tie."""
+    pk: object
+    date: date
+    time: time
+    created_at: datetime
+    unit: object
 
 
 def handled(unit, day):

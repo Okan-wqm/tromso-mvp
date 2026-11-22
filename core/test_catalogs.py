@@ -74,6 +74,17 @@ class CatalogCompletenessTests(SimpleTestCase):
                             self.assertEqual(named_placeholders(text), allowed)
                             self.assertEqual(tags(text), tags(message.id))
 
+    def test_no_turkish_suffix_is_glued_to_a_value_filled_in_later(self):
+        """A Turkish case suffix follows the sound of the word it is put on (#3’ün, #6’nın; T-01’de, B-2026-002’nin),
+        so one fixed suffix after a placeholder is wrong for some of its values (the second review of the chemistry
+        fixes, §6: "Kanal #%(number)d’in"). A translation names the value's kind and puts the suffix there instead
+        ("%(number)d numaralı kanalın", "%(unit)s biriminde")."""
+        glued = re.compile(r"%(\(\w+\))?[sdfi]['’]\w")
+        for message in self.messages('tr'):
+            for text in forms_of(message.string):
+                with self.subTest(msgid=message.id):
+                    self.assertIsNone(glued.search(text), text)
+
     def test_each_language_has_the_plural_rule_django_uses_for_it(self):
         for language in catalogs.languages():
             self.assertEqual(catalogs.load(language).plural_forms, catalogs.new_catalog(language).plural_forms)

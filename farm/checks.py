@@ -45,5 +45,8 @@ def ph_converted_by_an_older_formula(app_configs, **kwargs):
     return [Warning(
         f'{count} water sample(s) hold a pH measured on another scale than NBS that was put on the NBS scale by an '
         f'older formula than the application’s.',
-        hint='Back up the database, then run `manage.py rederive_ph --dry-run` and `manage.py rederive_ph`.',
+        hint='Back up the database, then run `manage.py rederive_ph --dry-run` and `manage.py rederive_ph`. A sample '
+             'it lists as "NOT converted again" stays counted here, voided or not (its reason says why: the point’s '
+             'water is said to be salt-added, or the core cannot work the water out): if the unit’s water origin is '
+             'wrong, correct it and run it again.',
         id='farm.W001')]

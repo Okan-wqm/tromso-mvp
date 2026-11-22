@@ -7,15 +7,16 @@
 {% block title %}{% if object %}{{ object }}{% else %}{% blocktrans trimmed %}New {{ name }}{% endblocktrans %}{% endif %}{% endblock %}
 {% block eyebrow %}{{ group }} · {{ title }}{% endblock %}
 {% block heading %}{% if object %}{{ object }}{% else %}{% blocktrans trimmed %}New {{ name }}{% endblocktrans %}{% endif %}{% endblock %}
+{% block measure %}form{% endblock %}
 {% block content %}
 {% with tabs=form.tab_list %}
 {% if tabs|length > 1 or object %}
-<div class="tabs" role="tablist" aria-label="{% blocktrans trimmed with kind=name|capfirst %}{{ kind }} form sections{% endblocktrans %}" data-tabs data-open="{{ open_tab|default:'' }}" hidden>
+<div class="ui-tabs" role="tablist" aria-label="{% blocktrans trimmed with kind=name|capfirst %}{{ kind }} form sections{% endblocktrans %}" data-tabs data-open="{{ open_tab|default:'' }}" hidden>
   {% for tab in tabs %}
-  <button type="button" role="tab" class="tab{% if tab.has_errors %} tab-error{% endif %}" data-tab="{{ tab.key }}">{{ tab.label }}{% if tab.has_errors %}<span class="sr-only"> {% trans "(has errors)" %}</span>{% endif %}</button>
+  <button type="button" role="tab" class="ui-tab{% if tab.has_errors %} tab-error{% endif %}" data-tab="{{ tab.key }}">{{ tab.label }}{% if tab.has_errors %}<span class="sr-only"> {% trans "(has errors)" %}</span>{% endif %}</button>
   {% endfor %}
   {% block extra_tabs %}{% endblock %}
-  {% if object %}<button type="button" role="tab" class="tab" data-tab="history">{% trans "History" %}</button>{% endif %}
+  {% if object %}<button type="button" role="tab" class="ui-tab" data-tab="history">{% trans "History" %}</button>{% endif %}
 </div>
 {% endif %}
 

@@ -101,6 +101,17 @@ def _tabs():
                 ('Høstet', 'Høsteplan', 'Produksjonsplaner', 'Slakteriene', 'Håndteringsregler', 'Behandlinger'))]})
 
 
+def _report_tabs():
+    """The Reports page's strip of kinds as the page prints it for /reports/?kind=smolt (reports.resources._tabs): twelve
+    link tabs and the two group names, the current one a scheduled kind (Smolt), with the counts of the
+    reports due that a long strip carries."""
+    from reports.kinds import ReportKind
+    from reports.resources import _tabs
+
+    due = [N(kind=ReportKind.SMOLT.value)] * 3 + [N(kind=ReportKind.BIOMASS.value)] + [N(kind=ReportKind.DISEASE.value)]
+    return render_to_string('reports/_report_tabs.html', {'tabs': _tabs(N(GET={}), due, ReportKind.SMOLT.value)})
+
+
 def _meal():
     """The meal board's table with the seeded farm's longest lines: a trial's placement chip, an estimate to weigh
     soon and an incomplete one, a temperature read through a loop and stale, a line whose ration cannot be worked out."""
@@ -304,7 +315,7 @@ def _wall(language, pane=''):
 
 
 PAGES = {'meal': _meal, 'stock': _stock, 'water': _water, 'card-en': lambda: _card('en'), 'card-nb': lambda: _card('nb'),
-         'matrix': _matrix, 'approve': _approve, 'tabs': _tabs, 'overview': _overview,
+         'matrix': _matrix, 'approve': _approve, 'tabs': _tabs, 'report-tabs': _report_tabs, 'overview': _overview,
          'wall-small-en': lambda: _wall('en'), 'wall-small-tr': lambda: _wall('tr'),
          'dock-big-tr': lambda: _wall('tr', pane='HA-R02')}
 

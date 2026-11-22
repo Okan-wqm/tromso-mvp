@@ -260,8 +260,11 @@ Differences from the source:
 - Water type is required and has no default (the source defaulted to saltwater in one place and
   freshwater in another).
 - The water origin is optional (cross review F3, farm 0041, `chk_tanks_water_origin`): sea water or diluted sea water,
-  or fresh water with salt added (NaCl, for smolt or against disease). The water chemistry reads it (Water-chemistry
-  core): salt-added water is worked out without sea water's ions; not said, a salinity of 1 to 5 ‰ is taken as diluted
+  or fresh water with salt added (NaCl, for smolt or against disease). Fresh water with sea water or a sea-salt mix
+  added is diluted sea water, and the help texts of the unit and the calculator say so (its magnesium, calcium and
+  sulfate are sea water's; the salt-added water audit of 2026-11-20, `F:\dev\balik-notes\chem-audit-fable\SALT-ADDED.md`,
+  question 1; farm 0049). The water chemistry reads it (Water-chemistry core): salt-added water is worked out without
+  sea water's ions; not said, a salinity of 1 to 5 ‰ is taken as diluted
   sea water and the value says so. A loop or a sampling point takes its units' origin when they all say the same.
 - The code is unique among live units. The regulatory unit ID is the locality's own number (merd 1 on two sites
   is two units): unique among the live units of a site, held by the database per production department and by the
@@ -1540,7 +1543,8 @@ published values):
   water-chemistry audit of 2026-11-19 and the owner's decision; before it, cross review F1 and the owner's decision of
   2026-11-09): up to 1 ‰ the ideal water, every activity 1, Emerson et al. (1975) as Piper et al. 1982 and US EPA 1985
   used it, exactly as formula 3 had it; from 5 ‰ the best estimate at the pH + 0.03, the uncertainty of a pH reading
-  (US EPA 1989, p. 3), which is 7.2 % above the best estimate at every temperature; blended between; salt-added water:
+  (US EPA 1989, p. 3), which puts the best estimate's [NH₃]/[NH₄⁺] 7.2 % higher at every temperature and the NH₃-N up
+  to 7.15 % higher, less the higher the pH (formula 4 below); blended between; salt-added water:
   the ideal throughout. The larger of it and the best estimate is judged (in fresh water the ideal is the larger as soon
   as an ion is measured: at 12 °C, pH 7.5 the best estimate is 8.7 % lower at 500 µS/cm, 11.6 % at 1000 and 17.2 % at
   3000; with nothing measured the two are within 0.5 %). The best estimate's NH₃-N is said in the title beside it ("NH₃
@@ -1691,8 +1695,18 @@ without values it shows its defaults.
   source calls them Millero 2010, WQ-39); Kw of Millero (1995) on his seawater scale (pure water's at a salinity of 0;
   formula 1 took the 2007 Guide's approximate total-scale value); KB of Dickson (1990)
   with Uppström's (1974) boron; the ammonium constant of Clegg & Whitfield (1995, eq. 18; formula 3 took Millero's
-  1995); KH₂S of Millero, Plese &
-  Fernandez (1988); the Ksp of Mucci (1983); the CO₂ solubility of Weiss (1974); each converted to the free
+  1995) for the best estimate, while fresh and salt-added water are judged on the larger of it and the ideal water,
+  which keeps Yao & Millero's (1995) pure-water value, and brackish water of 1 to 5 ‰ on the larger of the best
+  estimate and a blend of the two (`formula4.rs limits_basis`; formula 4 below; the calculator's list of sources, on
+  the page and in the report, says all of it); KH₂S of Millero,
+  Plese & Fernandez (1988), whose measurements are in sea water of 5 to 40 ‰ at 5 to 25 °C (the paper's abstract): in
+  fresh water, below 5 °C and above 25 °C the H₂S rests on the equation alone, checked against no second source (the
+  tests hold its 25 °C values, 6.98 fresh and 6.51 at S 35; the H₂S audit of 2026-11-20 recalled two other fresh-water
+  fits, Millero 1986 and Broderius & Smith 1977, that put pK₁ 0.03 to 0.13 lower at 5 to 12 °C, i.e. less H₂S, but
+  did not open them), and the calculator says so, once on the page, in its live part and in the report, beside every
+  number that rests on it: the H₂S of a total sulfide, and the most total sulfide an H₂S limit gives at the pH (the
+  calculator always has a limit, its default 2 µg/L; `farm/calculator/_h2s_basis.html`); the
+  Ksp of Mucci (1983); the CO₂ solubility of Weiss (1974); each converted to the free
   scale, the pH (NBS) too, as the source does. DIC = (alkalinity − [OH⁻] + [H⁺] − [B(OH)₄⁻]) / (α1 + 2 α2),
   CO₂ = DIC α0; NH₃-N = TAN K / (K + [H⁺]); H₂S = total sulfide × 34.08 / 32.07 × [H⁺] / (K + [H⁺]). A pH
   and an alkalinity that cannot go together (the hydroxide and the borate alone at or above the alkalinity) are refused:
@@ -1854,7 +1868,8 @@ without values it shows its defaults.
     the NBS scale on the limits' basis (a free-scale constant on that NBS pH, unconverted), the safe side, about 13 to
     25 % above what that pH gives exactly
     (F11). Since formula 4 these words say what formula 4 does: the best estimate rests on Millero's step and Clegg &
-    Whitfield's constant, and the NH₃ is judged at the NBS pH + 0.03, about 7 % above it.
+    Whitfield's constant, and the NH₃ is judged at the NBS pH + 0.03, up to about 7 % above it, less the higher the pH
+    (the margin is the same as for a pH typed as NBS: only the pH it starts from moves; formula 4 below).
 - **The optional phosphate** (PO₄-P, mg/L as P; the independent check's hypothesis 12a, owner 2026-11-10;
   `chemcore/findings/phosphate.md`): phosphate is part of the alkalinity a titration measures, [HPO₄²⁻] + 2 [PO₄³⁻] −
   [H₃PO₄] (Dickson 1981's definition as Dickson, Sabine & Christian 2007 give it, ch. 2), with Millero's (1995)
@@ -1882,10 +1897,28 @@ without values it shows its defaults.
   is judged exactly as before: `chemcore/core/tests/formula4.rs`; only where nothing is measured, ionic strength 0, the
   best estimate's pure-water K_NH4 may be up to 0.5 % above the ideal's at 0 °C and judges); from 5 ‰ the best estimate
   at the pH + 0.03 for NH₃ and at the pH − 0.03 for CO₂ (the uncertainty of a pH reading: US EPA 1989, p. 3), so the
-  judged NH₃ is the best estimate's [NH₃]/[NH₄⁺] × 10^0.03 (+7.2 %) and the judged CO₂ +7.2 to +9 % above it at every
-  temperature; between, blended with the band's weight (no step at 1 or 5 ‰: S 0 to 40 by 0.05 ‰, at most 0.5 % a
+  judged NH₃ has the best estimate's ratio r = [NH₃]/[NH₄⁺] × 10^0.03 (+7.15 %), which puts the NH₃-N, r / (1 + r) of the
+  TAN, (10^0.03 − 1) / (1 + 10^0.03 r) above its best estimate: up to +7.15 % (where r is nothing) and less the higher the
+  pH. Over everything the program accepts (T −3 to 40 °C, S 5 to 50 ‰, pH 2 to 12; 241 595 waters) it is +7.1519 % at pH
+  2 and +0.013 % at pH 12 (S 5, 27 °C), never rising with the pH, and the program is within 3e-15 of that closed form.
+  The page's words therefore say "up to about 7 % above it, less the higher the pH" (they said "about 7 % above it",
+  false at a high pH, until the follow-up of the verification of 2026-11-22; the same for the note beside a pH put on
+  the NBS scale), and `farm/tests/test_formula_v4.py` sweeps a coarser grid (3 790 waters) and holds them to it (the
+  sweep: `F:\dev\balik-notes\small-fixes\nh3_sweep_full.py`). The judged CO₂ is at least +7.15 % above its best
+  estimate, more
+  where the lower pH takes borate and hydroxide out of the alkalinity (the carbonate's share grows). Over everything the
+  program accepts (T −3 to 40 °C, S 5 to 50 ‰, pH 2 to 12, alkalinity 0 to 1000 mg/L as CaCO₃; 1.32 million waters, none
+  judged on the best estimate) the judged CO₂ is never below +7.15 % (the least of the sweep, +7.1535 %, at S 5, −3 °C,
+  pH 5.8, 1000 mg/L), is lower the higher the alkalinity at every temperature, salinity and pH swept, and has no
+  maximum worth naming: +11.3 % at pH 8.2
+  and +19.1 % at pH 9 with 50 mg/L (S 50, 40 °C at most), +171 000 % beside the alkalinity floor. The page's words
+  therefore give the floor and the direction, "at least 7 % above it and more the lower the alkalinity", and no
+  maximum (they said "up to about 10 % at pH 8.2 and 14 % at pH 9 with 50 mg/L", false over that range, until the
+  verification of 2026-11-22, F2, and "about 7 to 9 %" before that). `farm/tests/test_formula_v4.py` runs the sweep
+  coarser (17 116 waters, its bounds read from `farm/water/parameters.py`) and holds the words to it; between, blended
+  with the band's weight (no step at 1 or 5 ‰: S 0 to 40 by 0.05 ‰, at most 0.5 % a
   step); salt-added water the ideal throughout. Held over the owner's MUST ranges, sea water S 5 to 40 at 0 to 30 °C and
-  land water at 8 to 30 °C (`formula4.rs`: 57 660 sea cells, NH₃ +7.15 % exactly, CO₂ at least +7.15 %; every land
+  land water at 8 to 30 °C (`formula4.rs`: 57 660 sea cells, the NH₃/NH₄⁺ ratio +7.15 % exactly, CO₂ at least +7.15 %; every land
   cell at or above the best estimate); outside them the margin is the rule's and holds (tested −2 to 40 °C), the best
   estimate itself is not checked above 30 °C (the warning `nh3_past_guard` says it). Against formula 3: the judged NH₃
   of brackish and sea water falls 11 to 14 % at S 5, 8 to 12 % at S 10, 4 to 9 % at S 20, 0 to 5 % at S 34 (formula 3's
@@ -1902,7 +1935,9 @@ without values it shows its defaults.
   again from what was measured, by the sample door's own conversion, each rewrite logged in the activity log with the
   old and new NBS pH and the formula (samples are otherwise never edited); a sample the conversion now refuses is left
   as it was and named. Running it again changes nothing. The check `farm.W001` (`manage.py check --database default`)
-  counts samples left on an older formula: run the command at landing, after the backup.
+  counts samples left on an older formula: run the command at landing, after the backup. A sample the command refuses
+  stays counted, voided or not (voided samples are converted too); the hint says so and the way out: if the unit's
+  water origin is wrong, correct it and run the command again. There is no way to acknowledge such a sample yet.
 - **NH₃ and CO₂ are judged on the larger of the limits' basis and the activity-corrected value** (formula 3; formula 4
   keeps the rule and replaced the sea-water basis described here, above; cross review F1,
   owner 2026-11-09; `chemistry::Basis`, `fresh::limits_basis`): the NH₃-N, the CO₂, their statuses, borders and margins,
@@ -2426,8 +2461,9 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
   of the days, is unchanged). **Cleaner fish beside the production fish are kept apart** (`check.held_apart`; the
   owner's decision of 16.11.2026): their withdrawal is no warning on the production fish's harvest, no acknowledgement of
   theirs and not their earliest date; the dialog says it as a note ("Cleaner fish in C-01 are in a medicine
-  withdrawal (B-2026-004, harvest from 19.11.2026): keep them out of the harvest."), and the unit's own line still
-  shows it (`farm/tests/test_withdrawal_cleaner_fish.py`). The health records register their provider in `farm/apps.py` (`farm/handling/withdrawal.py`:
+  withdrawal (B-2026-004, harvest from 19.11.2026): keep them out of the harvest."; a live delivery's dialog in a
+  delivery's words, "… (B-2026-004, the fish may leave the farm from 19.11.2026): keep them out of the live
+  delivery."), and the unit's own line still shows it (`farm/tests/test_withdrawal_cleaner_fish.py`). The health records register their provider in `farm/apps.py` (`farm/handling/withdrawal.py`:
   `register(provider)`, `blocks(unit, day)`, `WithdrawalBlock(batch, until, approximate, reason, source)`; see
   Operations › Health). With no provider registered the harvest dialog would say "Medicine withdrawal not
   checked" and warn nothing.
@@ -2862,7 +2898,9 @@ works them out again from what it left. It asks when the write
   `check.WITHDRAWAL_LINES`, `_inside` compares them) and asked in the same box: a delivery as "Live delivery of
   16.11.2026 from T-01 (B-2026-001, 300 fish to Nordic Smolt AS) lies inside this withdrawal (the fish may leave the
   farm from 22.11.2026): medicated fish sold alive may have been eaten.", stored as a `delivered` acknowledgement that
-  names the delivery (a `harvested` one names the harvest) and counted by the second-person setting as a harvest is, or
+  names the delivery (a `harvested` one names the harvest) and counted by the second-person setting as a harvest is
+  (every kind of write that can do it, a water sample and the reference data among them:
+  `farm/tests/test_withdrawal_delivery_after.py`, `farm/tests/test_withdrawal_delivery_paths.py`), or
 - makes the withdrawal of fish held today end earlier, or ends it (a course voided or shortened, a medicine's withdrawal
   shortened, a medicated feeding voided, a temperature corrected): the message gives the old and the new end.
 
@@ -2871,7 +2909,9 @@ what was found with its box, `withdrawal_ack`, whose value (the impact's fingerp
 a tick acknowledges that write only; an impact that changed since it was shown is asked again. Going on keeps the write as
 it was made, stores a `WithdrawalAcknowledgement` per warning (the write, the batch, the withdrawal, the harvest, the end
 and what was shown; the database refuses an edit or a delete) and logs a critical entry on the record with the warnings.
-An acknowledgement covers the end it was given for: `check_withdrawal` says "Not acknowledged (acknowledged until …; now
+The database's CHECK holds that a `harvested` or `delivered` row names an operation; that it names one of its kind (a
+harvest, a live delivery: `models.handling.OPERATION_NAMED`) is a cross-table rule, which `check_stock` holds
+(`farm/stock/integrity.py`). An acknowledgement covers the end it was given for: `check_withdrawal` says "Not acknowledged (acknowledged until …; now
 …)" once a withdrawal ends later than that. A harvest the write records itself is asked about by its own handling check,
 not twice. Whether a second person must approve going on past a withdrawal is a setting of the platform owner's (owner
 answer, 2026-11-06); it is asked in one place, `farm.handling.check.second_person_must_approve(user, kinds, record)`, which
@@ -4958,14 +4998,49 @@ pages are drawn in it: the Overview, Meal board, Production units and Water chem
 without a redesign yet, and are redesigned one page at a time.
 
 - **Tokens.** `static/css/tokens.css` is the design system's `tokens.css` plus a short block of the app's own (the
-  rail's overlays), loaded first. **The design system's file is the source** (`docs/design/system/tokens.css`, made from
-  its `tokens.json`; its previews load it): a token is changed there and the file copied, never in one of the two, and
-  `core.tests_design_shell.TokenSourceTests` fails when the served file is not that file with only the app's block
-  after it, or when the app's block sets a name the design system sets. `static/css/tw.css` does not hold the tokens (it
+  rail's overlays), loaded first. **`docs/design/system/tokens.json` is the one source**: `scripts/tokens.mjs` builds
+  both CSS files from it (`npm run build:tokens`, part of `npm run build`; `npm run check:tokens`, CI and `npm test`
+  fail when either is not what it builds), and `core.tests_design_shell.TokenSourceTests` fails when the served file is
+  not the design system's with only the app's block after it, or when the app's block sets a name the design system
+  sets. Tokens v2 (2026-11-21) adds, in all five themes, the status roles `note` and `stale` (no hue: a note is told by
+  its square, stale by a hatch), the area hues `area-farm`, `-water`, `-feed`, `-stock` and `-neutral` (each with a
+  tint and a rail variant), `shadow-raised` (elevation 1) and the type scale as `--fs-*` variables, chart text included (`--fs-chart-*`: a
+  chart drawn in a viewBox divides them by its own scale, so its labels keep their size on screen: a pH plot at every card width, the Deffeyes chart from a 768 px window to 5120 px, and below that its text shrinks with the window, 6 px at 390 px, see docs/design/system/README.md, Type) and
+  chart colours that alias the status and area roles (`--chart-crit`, `--chart-water`, ...);
+  `core/tests_contrast.py` measures every text pair (4.5:1) and shape (3:1) in every theme and keeps each area hue 30°
+  from the status hues.
+- **Colour, two channels.** The area hues say where a page sits (`area` on its menu line in `config/navigation.py`,
+  the nearest of entry, group, section and panel; `core.navigation.area_of`): its rail icon and the chip before its
+  page title. The status colours say what is wrong, and only that. They never mix (docs/design/system/README.md,
+  Principles; this replaces "grey by default").
+- **Width.** The shell never caps the width (the old 1520 px cap left a third of a 2560 px window empty): every page's
+  content reaches the window's right edge, up to a 3840 × 2160 wall TV and the owner's 5120 × 1440 desk monitor (the farms' wall screens are standard 16:9 TVs; 5120 × 1440 is a desktop width). A page says how it uses the room
+  with `data-measure` on `<main>` (block `measure` of `app_base.html`): `fluid` (the default), `wall`, `form`
+  (`crud/form.html`: the fields flow into columns, none wider than a field needs, the sections an outline beside them
+  from 1280 px) and `prose` (text blocks at 70 ch in as many columns as fit, an aside beside them). The browser layout
+  test holds the right edge at nine widths from 390 to 5120 px, 1920 and 3840 (the wall TVs) among them.
+- **Components and the gate.** `static/css/ds.css` holds one rule set per pattern (button, field, filter bar, table,
+  tabs, badge, card, page head) on tokens only; the older class names of each pattern (`button`, `data-table`,
+  `badge-*`, ...) are drawn by the same rule, so every page took the look at once. `npm run check:ds`
+  (`scripts/check-ds.mjs`; CI and `npm test`) fails on a colour outside `tokens.css`, a raw size in `ds.css`, and on
+  more raw font sizes, radii, old class names or arbitrary Tailwind sizes than `docs/design/system/ds-ratchet.json`
+  allows; the ratchet only goes down. `ds.css` is linked right after `base.css` and `ui.css`, before `app.css`, `components.css`, a page's sheets and `tw.css`
+  (also by the printed water report and `500.html`): a rule of a later sheet for one element of a pattern wins by coming later, and
+  the gate fails on a template that links `base.css` without `ds.css` in that place (review of slice 1a: loaded after them, the rail's
+  collapse button, the report's Print button and tables and a chip's size lost their rules, and the printed report, which did not link
+  `ds.css` at all, lost its tables, buttons and cards). `frontend/test/cascade.browser.test.ts` holds, in a real browser, what the gate
+  cannot see. Details: docs/design/system/README.md, Width, Components, The gate. `static/css/tw.css` does not hold the tokens (it
   names the variables), so it is built from neither. No stylesheet writes a colour of its own: `core/tests_design_shell.py` fails on a
   hex, `rgb()` or `rgba()` outside `tokens.css`. The old variables (`--mist`, `--olive`, `--stripe` and the rest) are
   gone; every sheet reads the role tokens (`--surface-*`, `--text-1` to `-3`, `--line-*`, `--primary`, `--action`,
   `--ok`, `--warn`, `--crit` with their `-text` and `-tint`).
+- **Known gaps of the design system (slice 1a).** Not done or not seen, in full in docs/design/system/README.md (Known gaps):
+  the `form` measure is not the plan's field column with a context aside (a form without tabs spreads over the width, and
+  has no aside); the gate does not see `em` or `%` font sizes, single-quoted classes or old classes in `.py` and `.ts`
+  files, and its ratchet is one count per class name; the contrast test reads six-digit hex only and does not check chart
+  series or text on zone fills (`--text-3` on `--zone-safe` is 4.24 to 4.26:1 in Polarnatt and Nordlys); `.sensor-chart`
+  keeps `max-width: 960px`; the Deffeyes chart's text is 6 to 11 px below a 768 px window; a Big card's chart text is 11.2 to
+  14 px, not wall legibility (the wall slice); Safari and iOS, screen readers and a real wall TV were not tested.
 - **Parts.** `static/css/ui.css` is the design system's `components.css` (the `ui-*` classes) with the app's additions
   at its end; the shell's layout is `app.css`.
 - **Tailwind.** A redesigned page may be drawn with Tailwind v4 utilities beside the `ui-*` parts
@@ -5282,7 +5357,10 @@ What one tab needed and the next ones will too lives in `core/`:
 
 The layout rules every page relies on are in the style sheets, once, and checked by tests (`core/tests_templates.py`
 reads the templates and the style sheets; `frontend/test/layout.browser.test.ts` lays the parts out in a real browser at
-390, 1024 and 1440 px, in the typefaces of `static/css/fonts.css`, not the machine's fallback font):
+390, 1024 and 1440 px (and the content's right edge at nine widths up to 5120 px, a 3840 px TV among them), in the typefaces of
+`static/css/fonts.css`, not the machine's fallback font; `frontend/test/cascade.browser.test.ts` holds the cascade of the sheets,
+in the order the templates link them: a page's rule for one element of a pattern wins, the focus ring shows, a phone's tab strip
+shows the current tab, the charts' text size):
 
 - **No page scrolls sideways.** A word longer than the line (a content hash) breaks (`.content`); a grid track is never a
   bare `1fr` (that is at least as wide as its widest content) but `minmax(0, …fr)`; a filter's fields, view tabs and a
@@ -5932,7 +6010,7 @@ so run `scripts/test.sh` on the branch before asking for a merge.
 | Job | What it runs | The same on a developer's machine |
 |---|---|---|
 | `python` | the browser build first (`npm ci`, `npm run build`: `check` fails on core.W001 without `static/js`), then `CHECKS=1 scripts/test.sh` (`SUITE=0` on a pull request) with 4 workers, in the test runner's image (`scripts/testrunner/image.sh`, built with its layers cached): `ruff check` (the linter, below); `compile_catalogs` (a fresh checkout has no `.mo`, and core.W002 would fail the check); `manage.py check --fail-level WARNING`; `check --deploy` with production-like settings (DEBUG off, a random key, a host, an SMTP server, a sender and an https public address: Email), where any issue but the four still open fails (`DEPLOY_OPEN` in `scripts/testrunner/in-container.sh`: the four HTTPS settings, until the production settings exist); `makemigrations --check`; `data_map --check`; `update_catalogs`, then `git diff --exit-code -- locale` (the catalogs were up to date); `compile_catalogs`; then, except on a pull request, the whole suite with warnings as errors | `CHECKS=1 SUITE=0 scripts/test.sh` (the checks only) or `CHECKS=1 scripts/test.sh`, then `git diff -- locale` |
-| `frontend` | `npm ci`, `npm run check:css` (the committed `static/css/tw.css` is what `frontend/tailwind.css` and the templates build now), `npm run build` (tsc, `tsconfig.json`, then the Tailwind build), `npm test` (the TypeScript tests, the designer's and the layout's browser tests on the runner's Chrome) | the same four |
+| `frontend` | `npm ci`, `npm run check:css` (the committed `static/css/tw.css` is what `frontend/tailwind.css` and the templates build now), `npm run check:tokens` (the tokens' CSS is what `tokens.json` builds), `npm run check:ds` (the design-system gate and its ratchet), `npm run build` (tsc, `tsconfig.json`, then the Tailwind build), `npm test` (the TypeScript tests, the designer's and the layout's browser tests on the runner's Chrome) | the same four |
 | `rust` | in `sensors-ingest/`, on the toolchain of `rust-toolchain.toml` (1.88.0, the release image's and the crate's `rust-version`): `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked --all-targets` against a TimescaleDB service migrated by Django (`manage.py migrate` in the test runner's image, the server's own packages) and a Mosquitto broker (`REQUIRE_DB=1`: the database and broker tests run, never skip), `cargo deny --locked check` (licences, bans, sources, RustSec advisories), `THIRD_PARTY` equal to what `Cargo.lock` says | `sensors-ingest/tests/run.sh` |
 | `chemcore` | `chemcore/scripts/test.sh` in the `chemcore-tools` stage of `docker/testrunner.Dockerfile` (its layers cached): rustfmt, clippy, `cargo test`, libm the chemistry's only dependency, no WebAssembly, `cargo deny` with advisories, `chemcore/THIRD_PARTY`, `docker/requirements.lock` naming the pins of `requirements.txt`; the built module's handshake with `chemcore/EXPECTED` (core.E001) is the python job's `check`. | the same `docker run` as the script's header |
 | `security` | `pip-audit --strict` on `requirements.txt` and the test runner's, and with `--require-hashes` on what the runner image installs (`docker/requirements.lock`) and the chemcore wheel's build tool (`docker/chemcore-build.lock`, maturin); the Python licence gate (`pip-licenses --allow-only`, the licences [`THIRD_PARTY.md`](THIRD_PARTY.md) allows: AGPL, SSPL, BUSL, non-commercial or any unreviewed licence fails); the banned components, MinIO and rodbus, whatever licence a client library carries (a Python or npm package, or an image a compose file or Dockerfile names; the crates are denied in `deny.toml`); `npm audit --omit=dev --audit-level=high` | see below |

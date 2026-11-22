@@ -776,8 +776,17 @@ judgement is never changed, only the words: the same rule says the value in the 
 limits: critical below 60.0, …"), in the note an oxygen judged through its other unit keeps ("Judged as 59.99 %.") and in
 the two notes the drawer prints right after a row's limits ("… reads 59.99 (…): the worst fresh value decides the
 status", "last own value 59.99 critical on …", which the alarm's summary carries too: `read.said_value`), and a chip of
-units past the same bound says the lowest (or highest) of their unrounded values. The figure alone (a tile, a table
-cell) keeps the parameter's decimals. On a wall each row of the band is one line; on the desk page they wrap.
+units past the same bound says the lowest (or highest) of their unrounded values. The figure on its own says it too
+(owner decision, 2026-11-22: "geçtiğini gösterecek kadar ondalık gösterilsin"): a value judged past a bound that its
+shown value rounds onto is shown with the decimals that prove it everywhere it is shown, 59.99 and not 60.0: the cell of
+the water tables, the drawer and the overview (`farm/_water_value.html`, filter `reading_figure`), the cards' figure and
+the saturation beside a tile's label (`render.face`, `render.tile`) and the alarm's summary. One rule for all of them:
+`read.past_bound` (the nearest bound its own value was judged past, on the unrounded value) and
+`farm.templatetags.water.proof_of` (the fewest decimals that read past it). A value clearly past its bound, a value inside
+its bounds and a measured value (judged as entered) keep the parameter's decimals ("55.0", "60.0"). Known limits, left as
+they are: the calculator (judged in the Rust core on floats, printed without a bound), the position of the bar's marker
+(drawn at the rounded value) and `signed_amount` (a calculator margin of -0.003 reads 0.00). On a wall each row of the
+band is one line; on the desk page they wrap.
 
 **The Small card and the screen's view** (owner decisions 5 and 7, 2026-11-12: wide monitors; a small card for the
 overview). `mode=small` is a VIEW of the screen: EVERY card of it is drawn with the built-in Small template, on a board or

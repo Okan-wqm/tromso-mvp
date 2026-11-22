@@ -176,6 +176,9 @@
   font-size: var(--fs-head); font-weight: 600; line-height: 1.35; white-space: normal;
 }
 :is(.ui-table, .data-table) tbody th { color: var(--text-1); font-size: inherit; font-weight: 600; }
+/* A row head of the older tables stays on one line, as main's `.data-table th` had it (the printed calculator report's
+   "Worked out" labels wrapped to three lines without it; review of 2026-11-22). */
+.data-table tbody th { white-space: nowrap; }
 :is(.ui-table, .data-table) tbody th a:not(.badge, .ui-chip) { color: var(--text-1); text-decoration: none; }
 :is(.ui-table, .data-table) tbody th a:not(.badge, .ui-chip):hover { color: var(--action); text-decoration: underline; }
 :is(.ui-table, .data-table) tbody tr:last-child > * { border-bottom: 0; }

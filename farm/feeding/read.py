@@ -646,10 +646,20 @@ def drift(today, measured_on):
 def meal_lines(unit_day, batches, today):
     """The line of each batch of a unit's day (projection.UnitDay, None: no day): its ShareDay, its batch (`batches`:
     by id), why it has no ration, whether its fish are cleaner fish (marked as such; without a feeding table of their
-    own they have no ration and no why, D-1), the drift of its estimate and the days since its measured point. The meal board and the monitoring
-    cards print these and nothing computed beside them."""
+    own they have no ration and no why, D-1), the drift of its estimate and the days since its measured point. The meal
+    board and the monitoring cards print these and nothing computed beside them.
+
+    The day names its batches; `batches` is what the caller has (the unit's stock now) and may lack one: the day is the
+    fold at the end of the unit's TODAY, the stock the fold of every line there is, so a line dated after today (a clock
+    set back before the ledger's newest lines, a site whose time zone was moved a day behind) leaves a batch in the day
+    that the stock no longer holds. Such a batch is read here, in one query for all of them, never a KeyError on a
+    page."""
+    shares = unit_day.shares if unit_day else []
+    missing = {share.batch_id for share in shares} - batches.keys()
+    if missing:
+        batches = {**batches, **Batch.all_objects.select_related('species').in_bulk(missing)}
     return [{'share': share, 'batch': batches[share.batch_id], 'why': share.end.why(batches[share.batch_id]),
              'cleaner': batches[share.batch_id].species.is_cleaner_fish,
              'drift': drift(today, share.measured_on),
              'estimate_days': (today - share.measured_on).days if share.measured_on else None}
-            for share in (unit_day.shares if unit_day else [])]
+            for share in shares]

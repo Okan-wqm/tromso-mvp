@@ -968,6 +968,17 @@ stored walk still valid. What is left is Python: the template render of the card
 for 20 cards), the water read (about 0.5 s) and the feeding walk (about 0.4 s); the queries stay equal with the units
 (`test_budget.EndpointBudgetTests`: the page, the fragment and the pane at 8 and 26 stocked units).
 
+**A clock before the ledger.** The stock reads every ledger line there is, the ration's day stops at the unit's today, and
+they agree because no line is dated after the unit's today (a date in the future is refused on the clock of every site
+it touches). With the clock set back before the newest lines (the farm replayed as it was on a day) or a site's time
+zone moved behind, they differ: a batch that left after the day is in the day's lines and not in the stock, and a unit
+stocked after the day holds fish and has no day. The wall answered a 500 for it (a `KeyError` in `meal_lines`, then the
+feeding widget's `count meals=` of no day). `feeding.read.meal_lines` now reads a batch its caller does not have (one
+query for all, none when the stock has them all) and the feeding widget leaves out the meals line of no day (its other
+fields show the dash they show for any missing value); `ClockBeforeTheLedgerTests` pins the clock before such lines. The
+card still mixes the two reads while the clock is behind (the stock is the ledger's, the lines are the day's): making
+the stock itself clock-aware is a larger change to a reader every page uses, and nothing but a replayed clock needs it.
+
 **A fitted template in the designer** (Phase 1D, review R7). Each widget has its LOOKS (`catalogue.WidgetSpec.looks`):
 value, water table, pH window, chart, dosing, points and stock have a fitted look; fish, feeding, health, tasks,
 experiments, the bar and the chart button have none. The validator takes the template's measure

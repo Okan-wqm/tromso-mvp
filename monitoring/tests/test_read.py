@@ -1,18 +1,22 @@
 """The monitoring read model: the address, the filters, the state ladder (each rung, with the blind
 rule), and that every figure a card holds is the owning read's own, checked on one fixture against the pages that
 show the same figure."""
-from datetime import timedelta
+from datetime import UTC, datetime, time, timedelta
 from types import SimpleNamespace
 from unittest import mock
 
+from django.db import connection
 from django.http import QueryDict
 from django.test import SimpleTestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 
+from farm.feeding import read as feeding_read
 from farm.harvest import views as harvest_views
 from farm.models import HandlingPlanItem, HealthEvent
-from farm.tests.helpers import make_facility
+from farm.tests.helpers import make_facility, stock_fish
+from farm.tests.test_stock import make_unit
 from farm.water import parameters, read as water_read
 from farm.water.evaluate import Status
 from farm.water.read import Observation, Origin, PointWater, Reading
@@ -358,6 +362,70 @@ class CardsTests(MonitoringCase):
         self.assertIn('Fasting before the harvest', card.lines[0]['why'])
         self.assertEqual(card.state.key, 'note')
         self.assertTrue(any('Fasting before the harvest' in reason for reason in card.state.reasons))
+
+
+class ClockBeforeTheLedgerTests(MonitoringCase):
+    """A clock set back to a day before the newest lines of the ledger (the farm as it was on a day, replayed; a site whose
+    time zone was moved a day behind): the stock reads every line there is, the day's walk stops at the unit's today. So
+    a batch that left AFTER the day is in the day's lines and no longer in the stock, and a unit stocked after the day
+    holds fish and has no day. Both gave a 500 on the wall (on the dev data at 2026-11-08 05:15 UTC: a KeyError in
+    `meal_lines`, then the feeding widget's `count meals=` of no day); the pages, the fragment, the pane and the meal
+    board answer, naming the day's batches and saying nothing of a ration that has no day."""
+
+    def setUp(self):
+        super().setUp()
+        self.leaver = self.stock(self.t2, count=1000, weight='80', days_ago=10)      # in T-02 with the worked example's fish
+        self.mortality(self.leaver, 1000, days_ago=3, unit=self.t2)                  # all gone from it 3 days ago
+        self.late = make_unit('T-09', self.hall)
+        self.late_batch = stock_fish(self.user, self.late, 500, '50', 2, species=self.salmon)    # stocked 2 days ago
+        self.then = datetime.combine(self.day(5), time(5, 15), tzinfo=UTC)           # the clock: 5 days ago, 05:15
+
+    def cards(self):
+        units = read.units_for(read.Params())
+        return {card.unit.code: card for card in read.cards(units, self.reader, chosen({unit.pk: 'simple' for unit in units}),
+                                                            'stocked')}
+
+    def test_at_the_real_clock_the_days_batches_are_the_stocks(self):
+        cards = self.cards()
+        self.assertEqual({line['batch'].pk for line in cards['T-02'].lines}, {self.fish.pk})
+        self.assertEqual({share.batch.pk for share in cards['T-02'].stock.shares}, {self.fish.pk})
+        self.assertEqual(len(cards['T-09'].lines), 1)
+
+    def test_the_cards_name_the_batches_of_the_day_the_clock_is_at(self):
+        with mock.patch('django.utils.timezone.now', return_value=self.then):
+            cards = self.cards()
+        self.assertEqual({line['batch'].pk for line in cards['T-02'].lines}, {self.fish.pk, self.leaver.pk})   # that day's
+        self.assertEqual({share.batch.pk for share in cards['T-02'].stock.shares}, {self.fish.pk})             # the ledger's
+        self.assertEqual((cards['T-09'].day, cards['T-09'].lines), (None, ()))     # no fish there at the end of that day
+        self.assertEqual({share.batch.pk for share in cards['T-09'].stock.shares}, {self.late_batch.pk})
+
+    def test_the_meal_lines_read_a_batch_the_caller_has_not_in_one_query_and_none_when_it_has_all(self):
+        with mock.patch('django.utils.timezone.now', return_value=self.then):
+            day = self.cards()['T-02'].day
+        today = self.day(5)
+        with CaptureQueriesContext(connection) as log:
+            lines = feeding_read.meal_lines(day, {}, today)
+        self.assertEqual(len(log), 1)
+        self.assertEqual({line['batch'].pk for line in lines}, {self.fish.pk, self.leaver.pk})
+        known = {line['batch'].pk: line['batch'] for line in lines}
+        with self.assertNumQueries(0):
+            self.assertEqual(feeding_read.meal_lines(day, known, today), lines)
+        self.assertEqual(feeding_read.meal_lines(None, {}, today), [])
+
+    def test_the_page_the_fragment_the_pane_and_the_meal_board_answer_at_that_clock(self):
+        with mock.patch('django.utils.timezone.now', return_value=self.then):
+            for query in ('', '?mode=detailed', '?occupancy=all&mode=detailed'):
+                for name in ('monitoring:monitor', 'monitoring:cards'):
+                    response = self.client.get(reverse(name) + query)
+                    self.assertEqual((name, query, response.status_code), (name, query, 200))
+            for unit in (self.t1, self.t2, self.late):
+                self.assertEqual(self.client.get(reverse('monitoring:pane'), {'focus': unit.pk}).status_code, 200,
+                                 unit.code)
+            board = self.client.get(reverse('farm:meal_board'))
+            self.assertEqual(board.status_code, 200)
+            rows = {row['unit'].code: row for row in board.context['rows']}
+            self.assertEqual({line['batch'].pk for line in rows['T-02']['lines']}, {self.fish.pk, self.leaver.pk})
+            self.assertEqual((rows['T-09']['day'], rows['T-09']['lines']), (None, []))
 
 
 class RefusedWaterCardTests(MonitoringCase):

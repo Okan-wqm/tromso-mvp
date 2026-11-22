@@ -8,7 +8,8 @@ decided by farm/water/read.py, never here.
   the binding held (a probe moved here gives this place nothing until its first value here). Never the hypertable.
 - `value_at`: the channels bound there at any time up to the moment, and for each the newest clean reading at or before
   it taken while the binding held (a sensor moved away keeps its earlier values with the place it was in, and gives none
-  to the place it moved to before it came). One indexed row per binding.
+  to the place it moved to before it came). One indexed row per binding; `values_at` asks for several moments in the
+  same two queries.
 - A pH value says its channel's pH scale and since when it holds (`_scale`): the farm puts it on the NBS scale."""
 from django.db import connection
 from django.db.models import Q
@@ -76,24 +77,47 @@ class SensorSource:
 
     def value_at(self, targets, code, moment):
         """Per target, each channel's newest clean reading at or before `moment` taken while it was bound there."""
-        newest = {}
-        bindings = _bindings(targets).filter(channel__quantity=code, valid_from__lte=moment)
+        return self.values_at(targets, code, [moment])[0]
+
+    def values_at(self, targets, code, moments):
+        """`value_at` at each of `moments`, in their order. Two queries whatever the number of bindings and moments: the
+        bindings, then for each binding and each moment it had begun by, its newest clean reading at or before the
+        moment in ONE statement (a LATERAL lookup on the hypertable's (channel_no, ts) key), never a query per binding
+        or per moment."""
+        moments = list(moments)
+        if not moments:
+            return []
+        bindings = list(_bindings(targets).filter(channel__quantity=code, valid_from__lte=max(moments)))
+        if not bindings:
+            return [{} for _moment in moments]
         with connection.cursor() as cursor:
-            for binding in bindings:
-                cursor.execute(
-                    f'SELECT ts, value FROM sensors_reading WHERE channel_no = %s AND ts >= %s AND ts <= %s '
-                    f'AND (%s::timestamptz IS NULL OR ts < %s) AND (quality & {BAD_MASK}) = 0 ORDER BY ts DESC LIMIT 1',
-                    [binding.channel.channel_no, binding.valid_from, moment, binding.valid_to, binding.valid_to])
-                row = cursor.fetchone()
+            cursor.execute(
+                'SELECT b.id, m.n, r.ts, r.value FROM unnest(%s::uuid[], %s::integer[], %s::timestamptz[], '
+                '%s::timestamptz[]) AS b(id, channel_no, valid_from, valid_to) '
+                'CROSS JOIN unnest(%s::timestamptz[]) WITH ORDINALITY AS m(moment, n) '
+                'CROSS JOIN LATERAL (SELECT ts, value FROM sensors_reading WHERE channel_no = b.channel_no '
+                'AND ts >= b.valid_from AND ts <= m.moment AND (b.valid_to IS NULL OR ts < b.valid_to) '
+                f'AND (quality & {BAD_MASK}) = 0 ORDER BY ts DESC LIMIT 1) r WHERE b.valid_from <= m.moment',
+                [[binding.pk for binding in bindings], [binding.channel.channel_no for binding in bindings],
+                 [binding.valid_from for binding in bindings], [binding.valid_to for binding in bindings], moments])
+            rows = {(binding_id, n - 1): (ts, value) for binding_id, n, ts, value in cursor.fetchall()}
+        answers = []
+        for index, moment in enumerate(moments):
+            newest = {}
+            for binding in bindings:                # in the bindings' own order, as when each was read on its own
+                row = rows.get((binding.pk, index))
+                if binding.valid_from > moment or row is None:
+                    continue
                 key = (_target(binding), binding.channel.channel_no)
-                if row is not None and (key not in newest or row[0] > newest[key].at):
+                if key not in newest or row[0] > newest[key].at:
                     newest[key] = sources.SensorValue(code=code, value=row[1], at=row[0],
                                                       fresh_for=binding.channel.fresh_s, role=binding.role,
                                                       channel_no=binding.channel.channel_no, **_scale(binding.channel))
-        found = {}
-        for (target, _channel_no), value in newest.items():
-            found.setdefault(target, []).append(value)
-        return found
+            found = {}
+            for (target, _channel_no), value in newest.items():
+                found.setdefault(target, []).append(value)
+            answers.append(found)
+        return answers
 
 
 PROVIDER = SensorSource()

@@ -4,12 +4,15 @@ point (`(POINT, pk)`) or a system (`(SYSTEM, pk)`, a measurement of the system's
 for a point, and in which order, is decided in one place only: farm/water/read.py (`latest` and `Series`), owner rule
 A1. This module only gathers the providers' answers.
 
-A provider is an object with three methods:
+A provider is an object with three methods, and a fourth it may have:
 
     latest(targets, now) -> {target: {code: [SensorValue]}}
         every usable channel's newest good value (stale ones too: the reader decides), primary channels first;
     value_at(targets, code, moment) -> {target: [SensorValue]}
         each channel's newest good value at or before `moment`, from the channels bound to the target at that time.
+    values_at(targets, code, moments) -> [{target: [SensorValue]}]   (optional)
+        `value_at` at each of several moments, in their order, in one ask (a reader that knows the moments it will
+        look up asks once, not once per moment); a provider without it is asked `value_at` per moment.
     bound(targets, code, since, until) -> {target}
         the targets with a channel of the parameter bound there at some time in the range (one cheap ask, so a series
         never asks per moment for a place nothing was bound to).
@@ -103,6 +106,31 @@ def value_at(targets, code, moment):
     if not targets or not _providers:
         return Answer({})
     return _ask('value_at', targets, code, moment)
+
+
+def values_at(targets, code, moments):
+    """The providers' values of one parameter at each of `moments`, for the targets: [Answer] in the moments' order,
+    one ask of each provider for all of them (`value_at` per moment for a provider that cannot answer several). A
+    provider that raises is left out of every moment's answer, and each says so."""
+    targets, moments = list(dict.fromkeys(targets)), list(moments)
+    if not targets or not _providers or not moments:
+        return [Answer({}) for _moment in moments]
+    merged, failed = [{} for _moment in moments], False
+    for provider in list(_providers):
+        try:
+            with transaction.atomic():
+                if hasattr(provider, 'values_at'):
+                    found = provider.values_at(targets, code, moments)
+                else:
+                    found = [provider.value_at(targets, code, moment) for moment in moments]
+        except Exception:                                        # fail open, and say so
+            logger.exception('A water source (%r) failed; its values are left out.', provider)
+            failed = True
+            continue
+        for slot, answer in zip(merged, found):
+            for target, values in answer.items():
+                slot.setdefault(target, []).extend(values)
+    return [Answer(slot, failed) for slot in merged]
 
 
 def ordered(values):

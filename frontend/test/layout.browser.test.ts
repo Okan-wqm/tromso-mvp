@@ -4,8 +4,9 @@
 // frame (the shell's rail and content area) is written here. A page never scrolls sideways at a phone's, a tablet's or a
 // desktop's width; a wide table scrolls in its own frame and shows that more of it lies to a side; row actions stand apart;
 // a water value's origin and age stand on their own line under the value and break only between the two; the shell never
-// caps the width: a fluid page's content reaches the window's right edge (less the gutter) from a phone to the farm's
-// 5120 px wall monitor (docs/design/system/README.md, Width); nothing of a
+// caps the width: a fluid page's content reaches the window's right edge (less the gutter) from a phone to a wall
+// TV (3840 and 1920 px: the farms' wall screens are standard 16:9 TVs) and the owner's 5120 px desktop monitor
+// (docs/design/system/README.md, Width); nothing of a
 // monitoring card spills out of it, in Norwegian too; a form's one primary button comes last, on the row of the others.
 // The page loads the product's own typefaces (static/css/fonts.css, static/fonts), as app_base.html does: without them the
 // browser falls back to the machine's system-ui font (Segoe UI on Windows, DejaVu Sans on Linux, a much wider face), and
@@ -18,6 +19,8 @@ import { join, resolve } from 'node:path';
 
 import { chromium, type Page } from 'playwright-core';
 
+import { linksOf } from './sheets.js';
+
 const BROWSERS = [
   process.env.CHROME_PATH ?? '',
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
@@ -28,14 +31,13 @@ const CSS = resolve('static/css');
 const FONTS = resolve('static/fonts');
 const PAGES = resolve('frontend/test/pages');
 const WIDTHS = [390, 1024, 1440];
-const PARTS = ['meal', 'tabs', 'stock', 'water', 'matrix', 'card-en', 'card-nb', 'approve', 'overview'];
+const PARTS = ['meal', 'tabs', 'report-tabs', 'stock', 'water', 'matrix', 'card-en', 'card-nb', 'approve', 'overview'];
 
 const part = (name: string): string => `<section id="part-${name}">${readFileSync(join(PAGES, `${name}.html`), 'utf8')}</section>`;
 
 function page(): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>layout</title>
-<link rel="stylesheet" href="/css/fonts.css"><link rel="stylesheet" href="/css/tokens.css"><link rel="stylesheet" href="/css/base.css"><link rel="stylesheet" href="/css/ui.css"><link rel="stylesheet" href="/css/app.css"><link rel="stylesheet" href="/css/components.css"><link rel="stylesheet" href="/css/ds.css">
-<link rel="stylesheet" href="/css/monitor.css"><link rel="stylesheet" href="/css/tw.css"></head><body><div class="shell"><aside class="rail" id="rail"><nav class="rail-nav"><a class="rail-link" id="rail-units" href="#"><svg class="icon"></svg><span class="rail-label">Production units</span></a></nav></aside><div class="console">
+${linksOf('app_base.html', ['monitor'])}</head><body><div class="shell"><aside class="rail" id="rail"><nav class="rail-nav"><a class="rail-link" id="rail-units" href="#"><svg class="icon"></svg><span class="rail-label">Production units</span></a></nav></aside><div class="console">
 <header class="topbar"><div class="title-block"><h1>Layout</h1></div></header><main class="content" data-measure="fluid">${PARTS.map(part).join('\n')}</main></div></div></body></html>`;
 }
 
@@ -120,9 +122,9 @@ test('the page layout of the real templates', { skip: BROWSERS.length ? false : 
       });
     }
 
-    await t.test('the shell never caps the width: a fluid page reaches the right edge at every width up to 5120 px', async () => {
-      for (const width of [390, 1024, 1280, 1440, 1920, 2560, 3440, 5120]) {
-        await tab.setViewportSize({ width, height: width > 2560 ? 1440 : 900 });
+    await t.test('the shell never caps the width: a fluid page reaches the right edge at every width up to 5120 px (a wall TV is 1920 or 3840 px wide, a desk monitor 5120)', async () => {
+      for (const width of [390, 1024, 1280, 1440, 1920, 2560, 3440, 3840, 5120]) {
+        await tab.setViewportSize({ width, height: width === 3840 ? 2160 : width > 2560 ? 1440 : 900 });
         await tab.waitForTimeout(50);
         const edges = await tab.evaluate(() => {
           const main = document.querySelector('main.content')!;

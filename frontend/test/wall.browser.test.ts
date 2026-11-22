@@ -16,11 +16,13 @@ import { join, resolve } from 'node:path';
 import { chromium, type Page } from 'playwright-core';
 
 import { BROWSERS, skipWithout } from './browsers.js';
+import { linksOf } from './sheets.js';
 
 const SERVED: [string, string, string][] = [['/css/', resolve('static/css'), 'text/css'], ['/fonts/', resolve('static/fonts'), 'font/woff2'],
                                             ['/js/', resolve('.build/test'), 'text/javascript']];
 const PAGES = resolve('frontend/test/pages');
-const SHEETS = ['fonts', 'tokens', 'base', 'ui', 'app', 'components', 'ds', 'monitor', 'card-grid', 'tw'];
+// (the sheets in the order the monitoring page links them: app_base.html with the page's own two before tw.css)
+const SHEETS = linksOf('app_base.html', ['monitor', 'card-grid']);
 
 /** The wall's page; `pane`: with the pane of a unit gone into in its dock (frontend/test/pages/dock-big-tr.html, the
  *  dock's own markup around the unit's Big card). */
@@ -28,7 +30,7 @@ function page(language: string, pane = false): string {
   const part = readFileSync(join(PAGES, `wall-small-${language}.html`), 'utf8');
   const docked = pane ? readFileSync(join(PAGES, 'dock-big-tr.html'), 'utf8') : '';
   return `<!doctype html><html lang="${language}" data-theme="fjord" data-wall><head><meta charset="utf-8"><title>wall</title>
-${SHEETS.map((name) => `<link rel="stylesheet" href="/css/${name}.css">`).join('')}<script type="module" src="/js/wall.js"></script></head>
+${SHEETS}<script type="module" src="/js/wall.js"></script></head>
 <body><div class="shell"><aside class="rail" id="rail"></aside><div class="console"><header class="topbar"></header><main class="content" data-measure="wall">
 <aside class="monitor-dock" id="monitor-dock" data-mw="48" data-mh="61">${docked}</aside>
 <div class="monitor-grid" data-card-width="2">${part}</div>

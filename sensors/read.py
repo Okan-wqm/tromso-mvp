@@ -239,7 +239,7 @@ class Chart:
     zone: object
     buckets: list = field(default_factory=list)
     gaps: list = field(default_factory=list)
-    samples: list = field(default_factory=list)     # [(at, value)] of the manual and lab samples
+    samples: list = field(default_factory=list)     # [(at, value, source)] of the manual and lab samples
     markers: list = field(default_factory=list)
     reduced: bool = False
     segments: list = field(default_factory=list)
@@ -372,7 +372,8 @@ def gaps(buckets, start, end, now):
 
 
 def _samples(target, quantity, start, end):
-    """[(at, value)] of the manual and lab samples of a water quantity at the target's points."""
+    """[(at, value, source)] of the manual and lab samples of a water quantity at the target's points (source: 'manual'
+    or 'lab', farm.WaterMeasurement.Source)."""
     if quantity not in parameters.COLUMNS:
         return []
     points = [point for point in places(target)[1] if point is not None]
@@ -380,7 +381,7 @@ def _samples(target, quantity, start, end):
         return []
     return list(WaterMeasurement.objects.filter(point__in=points, measured_at__gte=start, measured_at__lt=end,
                                                 **{f'{quantity}__isnull': False})
-                .order_by('measured_at').values_list('measured_at', quantity))
+                .order_by('measured_at').values_list('measured_at', quantity, 'source'))
 
 
 def bound_quantities(target, start, end):

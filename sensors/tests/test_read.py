@@ -178,7 +178,7 @@ class SeriesTests(ReadCase):
                               source='manual', values={'temperature_c': Decimal('8.5')})
         now = timezone.now()
         found = read.series(self.t1, 'temperature_c', now - timedelta(hours=6), now)
-        self.assertEqual([float(value) for _at, value in found.samples], [8.5])
+        self.assertEqual([float(value) for _at, value, _source in found.samples], [8.5])
 
 
 class LocalDayTests(ReadCase):

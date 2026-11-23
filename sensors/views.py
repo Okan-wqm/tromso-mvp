@@ -25,7 +25,7 @@ from core import audit, navigation
 from core.crud import DRAFT, done, refusal_text, render_page
 from core.dates import read_moment
 from core.models import AuditLog
-from farm.models import System, Tank
+from farm.models import Equipment, System, Tank
 from farm.models.site import zone_of
 from farm.water import deffeyes
 from core.widgets import MomentInput
@@ -155,6 +155,47 @@ def chart_csv(request):
         writer.writerow([bucket.start.isoformat(), bucket.end.isoformat(), repr(bucket.avg), repr(bucket.vmin),
                          repr(bucket.vmax), bucket.n, bucket.channel_no, bucket.role, bucket.origin])
     return response
+
+
+WATER_READ = 'farm.view_watermeasurement'
+
+
+def chart_bands(user, place):
+    """The fish's limit bands at a place (sensors.read.bands_of of the water read's limits), for a person who may read
+    the water; {} otherwise or for a place with no fish (the chart then has no band: "no limit", never an assumed one)."""
+    if not user.has_perm(WATER_READ) or isinstance(place, Equipment):
+        return {}
+    from farm.water import read as water_read
+    return read.bands_of(water_read.limits_now(place.unit if getattr(place, 'unit_id', None) else place))
+
+
+def chart_now(found, now):
+    """The newest value of the channel drawn last in the window, with its time and whether it is fresh (sensors.read
+    `latest`, the channel's own freshness): what a chart's "now" dot says; None when nothing is bound there."""
+    if not found.segments:
+        return None
+    state = read.latest([found.segments[-1].channel_no], now)[found.segments[-1].channel_no]
+    if state.value is None:
+        return {'value': None, 'at': None, 'fresh': False, 'channel': state.channel_no}
+    return {'value': state.value, 'at': int(state.at.timestamp()), 'fresh': state.fresh, 'channel': state.channel_no}
+
+
+@permission_required(READ, raise_exception=True)
+def chart_data(request):
+    """The Charts page's chart as data (the query of the page and of its CSV: a place, a quantity, a preset or from and
+    to), for the page behind `?ui=next`: what `charts` draws as SVG (sensors/chart.py `data`), the fish's limit bands for
+    a person who may read the water, the newest value of the channel, and the CSV's address. A query the form refuses
+    is answered 400 with the form's reasons, never an empty chart."""
+    form = ChartForm(request.GET or None)
+    if not form.is_bound or not form.is_valid():
+        return JsonResponse({'errors': {name: [str(error) for error in errors] for name, errors in form.errors.items()}},
+                            status=400)
+    data = form.cleaned_data
+    found = _chart_of(form)
+    return JsonResponse({
+        'chart': chart.data(found, str(data['place']), chart_bands(request.user, data['place'])),
+        'now': chart_now(found, timezone.now()),
+        'csv': f'{reverse("sensors:chart_csv")}?{request.GET.urlencode()}'})
 
 
 @permission_required(READ, raise_exception=True)

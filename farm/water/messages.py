@@ -376,10 +376,12 @@ def ionic_strength_unit(equilibria):
 def last_own(reading):
     """What the page, the card and the alarm say of a unit's own last value that keeps its status while a value of its
     system stands in (read.last_own; decision of 2026-11-19 on the verification's F3-9): "last own value 0.8924
-    critical on 02.11.2026 10:00, no recent data: measure this unit"."""
+    critical on 02.11.2026 10:00, no recent data: measure this unit". A worked-out value judged unrounded is said as the
+    card's reason says it (read.said_value): "last own value 59.99 critical", never 60.0 beside "critical below 60.0"."""
     from ..models.water_point import local_time
     from .evaluate import Status
+    from .read import said_value
     return _('last own value %(value)s %(status)s on %(time)s, no recent data: measure this unit') % {
-        'value': number_format(reading.value, reading.parameter.decimals),
+        'value': said_value(reading),
         'status': str(Status(reading.judged).label).lower(),
         'time': local_time(reading.at, reading.point).strftime('%d.%m.%Y %H:%M')}

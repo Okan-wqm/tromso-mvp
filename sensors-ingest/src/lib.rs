@@ -16,4 +16,7 @@ pub mod quality;
 pub mod reduce;
 pub mod service;
 pub mod supervisor;
+#[cfg(test)]
+mod time_pins;
 pub mod timerule;
+pub mod ts;

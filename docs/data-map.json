@@ -3264,6 +3264,7 @@
         "core/test_languages.py",
         "core/tests_account_mail.py",
         "core/tests_matrix_notes.py",
+        "farm/tests/test_bound_text.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_calculator_loaded_ph.py",
         "farm/tests/test_cleaner_ration.py",
@@ -11130,6 +11131,7 @@
         "farm/tests/test_health.py",
         "farm/tests/test_migration_feeding_acknowledgement.py",
         "farm/tests/test_migration_purging.py",
+        "farm/tests/test_production_plans_reads.py",
         "reports/tests/test_compute.py",
         "reports/tests/test_deadline.py"
       ]
@@ -12580,6 +12582,7 @@
         "core/test_languages.py",
         "farm/tests/test_health.py",
         "farm/tests/test_migration_withdrawals.py",
+        "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_withdrawal_cleaner_fish.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_locks.py",
@@ -13053,6 +13056,7 @@
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
         "farm/tests/test_migration_withdrawals.py",
+        "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_row_list_refused.py",
         "farm/tests/test_species.py",
         "farm/tests/test_withdrawal_cleaner_fish.py",
@@ -13616,6 +13620,7 @@
         "farm/tests/test_migration_feeding_acknowledgement.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_production_departments.py",
+        "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_restore.py",
         "farm/tests/test_site_structure.py",
         "farm/tests/test_sites.py",
@@ -13931,7 +13936,8 @@
       },
       "tests": [
         "core/tests_workspaces.py",
-        "farm/tests/test_harvest.py"
+        "farm/tests/test_harvest.py",
+        "farm/tests/test_production_plans_reads.py"
       ]
     },
     {
@@ -15331,6 +15337,7 @@
         "farm/tests/test_overview_truth.py",
         "farm/tests/test_private_contacts.py",
         "farm/tests/test_production_departments.py",
+        "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
         "farm/tests/test_row_list_refused.py",
@@ -18879,6 +18886,7 @@
         "farm/tests/test_health.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_ph_scale_salt_added.py",
+        "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
         "farm/tests/test_suppliers.py",
@@ -19951,6 +19959,7 @@
         "farm/tests/test_migration_points.py",
         "farm/tests/test_ph_scale.py",
         "farm/tests/test_ph_scale_salt_added.py",
+        "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_rederive_ph.py",
         "farm/tests/test_sensor_ph_scale.py",
@@ -22154,6 +22163,7 @@
         "farm/tests/test_ph_scale_salt_added.py",
         "farm/tests/test_phosphate.py",
         "farm/tests/test_phosphate_unit.py",
+        "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_rederive_ph.py",
         "farm/tests/test_water.py",
@@ -40396,10 +40406,12 @@
         "core/test_datamap.py",
         "core/test_text.py",
         "core/tests_workspaces.py",
+        "farm/tests/test_bound_text.py",
         "farm/tests/test_nh3_unrounded.py",
         "farm/tests/test_water_crossed.py",
         "knowledge/tests/test_extraction.py",
         "experiments/tests/test_overview.py",
+        "monitoring/tests/test_bound_text.py",
         "monitoring/tests/test_read.py",
         "monitoring/tests/test_render.py",
         "sensors/tests/test_timescale.py"

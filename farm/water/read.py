@@ -1220,11 +1220,11 @@ class Context:
     @staticmethod
     def _judged_through(converted):
         """What a value judged through its other unit says: the value it was judged as, what that was worked out from and
-        the limits that judged it (second cross review, finding 5)."""
+        the limits that judged it (second cross review, finding 5). The value is judged unrounded, so past a limit it is
+        said with the decimals that show the side it is on (`said_value`), as the card's reason says it."""
         from farm.templatetags.water import limit_text      # the one way a limit is said; it imports this module
         unit = 'mg/L' if converted.code == OXYGEN_MG_L else '%'
-        said = _('Judged as %(value)s %(unit)s.') % {
-            'value': number_format(converted.value, converted.parameter.decimals), 'unit': unit}
+        said = _('Judged as %(value)s %(unit)s.') % {'value': said_value(converted), 'unit': unit}
         parts = [said, str(converted.note or '')]
         if converted.limits:
             parts.append(_('Limit: %(limits)s.') % {'limits': '; '.join(str(limit_text(row))
@@ -1624,7 +1624,7 @@ def worst_fresh(reading, others, now=None):
     if not worse.sample.live:
         source = _('%(origin)s at %(point)s') % {'origin': source, 'point': worse.point}
     said = _('%(source)s reads %(value)s (%(time)s): the worst fresh value decides the status.') % {
-        'source': source, 'value': number_format(worse.value, worse.parameter.decimals),
+        'source': source, 'value': said_value(worse),
         'time': local_time(worse.at, worse.point).strftime('%d.%m.%Y %H:%M')}
     if now is not None and ahead(worse.at, now):
         said = '{} {}'.format(said, _('The device clock is ahead by %(minutes)d min.') % {
@@ -1651,6 +1651,26 @@ def crossed(reading):
             if found is not None and found[0].startswith(str(reading.judged)):
                 return (each, *found)
     return None
+
+
+def past_bound(reading):
+    """(the bound's name, the bound) the reading's OWN value was judged past, or None: the nearest of them where its limit
+    rows (one per species) give several, so a figure that proves it past that one proves it past the rest on its side.
+    On the value the limits judged (`Reading.judged_value`: a worked-out value unrounded), by the bound `evaluate.judge`
+    judged it by, whatever the reading's status is (a value another value decides is not the value this one is past).
+    What `farm.templatetags.water.proof_of` proves a figure against; never a judgement."""
+    value = reading.judged_value
+    found = [each for each in (bound_crossed(value, row) for row in reading.limits) if each is not None]
+    return min(found, key=lambda each: abs(each[1] - value), default=None)
+
+
+def said_value(reading):
+    """The reading's own value as a note beside the limits that judged it says it ("… reads 59.99 …", "last own value
+    59.99 critical …", "Judged as 59.99 %."). A worked-out value is judged unrounded and shown rounded, so past a bound it
+    is said with the decimals that show the side it is on (`farm.templatetags.water.figure_past`: never "reads 60.0"
+    beside "critical below 60.0"); any other value at its parameter's decimals, as it always was. Display only."""
+    from farm.templatetags.water import figure_past      # it imports this module
+    return figure_past(reading) or number_format(reading.value, reading.parameter.decimals)
 
 
 def _values_at(targets, moment, codes=parameters.COLUMNS):

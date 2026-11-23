@@ -1,6 +1,5 @@
 //! Configuration types read from the contract view `sensors_ingest_config`, and the dead-letter reasons.
 
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -87,9 +86,4 @@ impl DeadReason {
             DeadReason::Oversize => "oversize",
         }
     }
-}
-
-/// A timestamp at the precision PostgreSQL stores (microseconds), so the in-memory key equals the stored key.
-pub fn to_micros(t: DateTime<Utc>) -> DateTime<Utc> {
-    DateTime::<Utc>::from_timestamp_micros(t.timestamp_micros()).unwrap_or(t)
 }

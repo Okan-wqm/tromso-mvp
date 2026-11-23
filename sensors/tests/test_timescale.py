@@ -277,7 +277,10 @@ class RollupRefreshTests(TransactionTestCase):
         self.assertEqual(self.hour(22), [(3, 9.0, 1.0, 5.0, 3.0)])
 
     def test_an_old_late_row_is_taken_in_by_the_daily_job_and_dropped_raw_keeps_its_rollup(self):
-        early = datetime(2025, 1, 6, 10, tzinfo=tz.utc)
+        # Before the hour policy's 75 days and inside the late job's reach (the contract's late limit, 728 days, and a
+        # day), both counted back from the DATABASE's now(): no test clock moves them. It was 06.01.2025, which the late
+        # job stops reaching on 05.01.2027.
+        early = one("SELECT date_trunc('hour', now()) - INTERVAL '400 days'")
         insert([(21, early, 1.0, 1, 0, None, None, None), (21, early + timedelta(minutes=30), 3.0, 1, 0, None, None, None)])
         self.refresh('sensors_rollup_1h')
         insert([(21, early + timedelta(minutes=10), 5.0, 1, quality.LATE, None, None, None)])

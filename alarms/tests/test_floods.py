@@ -131,7 +131,8 @@ class BurstTests(FloodCase):
         snoozer = get_user_model().objects.create_user('snoozer', 'snoozer@example.com', 'x')
         services.shelve(made[0].alarm, snoozer, 30, 'probe cleaned', at=self.now)
         found = self.send(1)
-        self.assertEqual((found.snoozed, found.sent, found.floods), (1, 2, 0))        # two: not a flood of three
+        self.assertEqual((found.snoozed, found.sent, found.floods), (1, 3, 0))        # two: not a flood of three
+        self.assertEqual(sorted(sent.kind for sent in RecordingTransport.sent), ['alarm', 'alarm', 'snoozed'])
 
 
 class FailingFloodTests(FloodCase):

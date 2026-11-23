@@ -19,7 +19,7 @@
 set -eu
 DIR=${SECRETS_DIR:-$(dirname "$0")/../secrets}
 MQTT_INGEST_USER=${MQTT_INGEST_USER:-ingest}
-MOSQUITTO_IMAGE=eclipse-mosquitto:2.0.20@sha256:21421af7b32bf9ce508e9090c8eb13bb81f410ca778dc205506180a6f862d0eb
+MOSQUITTO_IMAGE=eclipse-mosquitto:2.0.23@sha256:6a332cc7a8dbe011cbc076180cbb76b37c6f0f55809682ea08e7980ef0112ad9
 command -v openssl > /dev/null || { echo "openssl is needed" >&2; exit 1; }
 umask 077
 mkdir -p "$DIR"

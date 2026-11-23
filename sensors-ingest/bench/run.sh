@@ -18,7 +18,7 @@ STATE=sensors-ingest/bench/.state
 DB=sensors_bench
 NET=sensors-bench
 PG_IMAGE=timescale/timescaledb:2.17.2-pg17
-MOSQ=eclipse-mosquitto:2.0.20@sha256:21421af7b32bf9ce508e9090c8eb13bb81f410ca778dc205506180a6f862d0eb
+MOSQ=eclipse-mosquitto:2.0.23@sha256:6a332cc7a8dbe011cbc076180cbb76b37c6f0f55809682ea08e7980ef0112ad9
 PHASE=${1:-throughput}
 sql() { docker run --rm --network balik-ciftligi_default -e PGPASSWORD=balik "$PG_IMAGE" psql -h db -U balik -d "$DB" -Atq -c "$1"; }
 out() { echo "$*"; echo "[$PHASE] $*" >> "$STATE/results.txt"; }

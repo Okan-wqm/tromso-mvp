@@ -56,3 +56,41 @@ readings arrive (Sensors). Write the release and the date in the farm's record.
   never `docker system prune` or `docker volume prune` on a farm's server: they remove what nobody named, and a
   stopped service's volume can be the database's.
 - The old static files stay in the `static` volume (pages still open in a browser load their own); they are small.
+
+## Patch cadence
+
+What is patched, by whom, how often. Every patch that reaches a farm goes through CI and the go-live stack workflow
+first, like a release.
+
+| What | Where it is pinned | Watched by | Applied |
+|---|---|---|---|
+| The server's OS (kernel, OpenSSL, Docker Engine) | the host | unattended-upgrades (security), the provider's notices | security updates daily by themselves; a reboot in the monthly window (the reboot test below) |
+| PostgreSQL and TimescaleDB | `deploy/db/Dockerfile` (`timescale/timescaledb:<version>-pg17@sha256:...`) | Dependabot (docker, `/deploy/db`), the PostgreSQL quarterly minor releases, TimescaleDB's releases | a minor/patch within the month; a TimescaleDB release needs `ALTER EXTENSION timescaledb UPDATE` (below) |
+| nginx, Mosquitto, cloudflared | `deploy/compose.yml` | Dependabot (docker-compose, `/deploy`) | within the month; a security fix within the week |
+| Python packages (Django, gunicorn, psycopg, ...) | `requirements.txt`, `docker/requirements.lock` | Dependabot (pip), the `security` CI job (pip-audit) | as for the images; a Django security release within the week |
+| Rust crates (ingest, chemistry core) | `Cargo.lock` | Dependabot (cargo), cargo deny advisories in CI | with the next release |
+| restic | `deploy/db/Dockerfile` (version and sha256) | restic's releases (not covered by Dependabot) | checked monthly by a person |
+
+**Monthly window** (one per farm, the farm's quiet day): apply what CI has passed, reboot the host if the OS asks for
+it, then the checks of "Steps" 7 and 8 above and `sh scripts/heartbeat.sh`.
+
+**A new TimescaleDB:** the image carries the new extension files; each database moves with
+`dc exec db psql -U postgres -d balik -X -c 'ALTER EXTENSION timescaledb UPDATE'` as the first statement of a new
+session, after a backup, with web, jobs and ingest stopped. The development and test databases still run TimescaleDB
+2.17.2 (`docker-compose.yml`, `scripts/test.sh`): move them with the owner's go-ahead (the development database is
+shared), and until then run the whole suite on the production image once per release
+(`gh workflow run ci.yml -f pg_image=<deploy/db/Dockerfile's FROM image>`).
+
+**The reboot test** (at installation, then after every kernel update): `reboot`, then without touching anything:
+WireGuard up (`wg show`), every service healthy (`dc ps`), the broker listening on the VPN address
+(`ss -ltn | grep 8883`), the heartbeat green. The broker publishes its port on the WireGuard address, which exists
+only once WireGuard is up: Docker must start after it. On the host:
+
+```
+# /etc/systemd/system/docker.service.d/after-wireguard.conf
+[Unit]
+Wants=wg-quick@wg0.service
+After=wg-quick@wg0.service
+```
+
+then `systemctl daemon-reload`.

@@ -5,7 +5,7 @@
 # the ingest uses it under a permissive option. Regenerate after any dependency change (tests/run.sh checks it).
 
 ## Services (docker images, digest-pinned in docker-compose.yml)
-eclipse-mosquitto 2.0.20        EPL-2.0 OR EDL-1.0 (BSD-3-Clause)   broker
+eclipse-mosquitto 2.0.23        EPL-2.0 OR EDL-1.0 (BSD-3-Clause)   broker
 nodered/node-red 4.0.9          Apache-2.0                          field simulator (development only)
 rust 1.88.0-slim-bookworm       MIT OR Apache-2.0 (toolchain); Debian packages, build stage only
 debian bookworm-slim            Debian free software (DFSG); ca-certificates MPL-2.0 data   runtime base

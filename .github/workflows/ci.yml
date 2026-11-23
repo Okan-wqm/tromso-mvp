@@ -32,6 +32,10 @@ on:
         description: "Django test labels to run instead of the whole suite (letters, digits, _ . and spaces)"
         required: false
         default: ""
+      pg_image:
+        description: "The database server image of the suite, pinned by digest (default: scripts/test.sh's)"
+        required: false
+        default: ""
       stack:
         description: "Also prove the production stack (go-live-stack.yml): build, start, roles, HTTPS, MQTT, backup, restore"
         type: boolean
@@ -120,12 +124,17 @@ jobs:
           WORKERS: "4"
           DB_TMPFS: 4g
           LABELS: ${{ inputs.labels }}
+          TEST_PG_IMAGE: ${{ inputs.pg_image }}
         run: |
           TEST_DB_PASSWORD=$(openssl rand -hex 16)
           export TEST_DB_PASSWORD
           re='^[A-Za-z0-9_. ]+$'
           if [[ -n "$LABELS" && ! "$LABELS" =~ $re ]]; then
             echo "::error::labels may hold letters, digits, _ . and spaces"
+            exit 1
+          fi
+          if [[ -n "$TEST_PG_IMAGE" && ! "$TEST_PG_IMAGE" =~ ^timescale/timescaledb:[0-9.]+-pg[0-9]+@sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::pg_image must be a timescale/timescaledb image pinned by digest"
             exit 1
           fi
           # shellcheck disable=SC2086 # the labels are words, split on purpose
@@ -248,7 +257,7 @@ jobs:
       - name: Broker (Mosquitto, users ingest and dev)
         working-directory: .
         run: |
-          MOSQ=eclipse-mosquitto:2.0.20@sha256:21421af7b32bf9ce508e9090c8eb13bb81f410ca778dc205506180a6f862d0eb
+          MOSQ=eclipse-mosquitto:2.0.23@sha256:6a332cc7a8dbe011cbc076180cbb76b37c6f0f55809682ea08e7980ef0112ad9
           docker volume create si-test-broker-auth
           docker run --rm -v si-test-broker-auth:/mosquitto/auth "$MOSQ" sh -c '
             mosquitto_passwd -c -b /mosquitto/auth/passwd ingest ingest-pw 2>/dev/null

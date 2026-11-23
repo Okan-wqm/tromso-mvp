@@ -27,7 +27,7 @@ print("# (deny.toml: permissive licences only, rodbus banned). Where a crate off
 print("# the ingest uses it under a permissive option. Regenerate after any dependency change (tests/run.sh checks it).")
 print()
 print("## Services (docker images, digest-pinned in docker-compose.yml)")
-print("eclipse-mosquitto 2.0.20        EPL-2.0 OR EDL-1.0 (BSD-3-Clause)   broker")
+print("eclipse-mosquitto 2.0.23        EPL-2.0 OR EDL-1.0 (BSD-3-Clause)   broker")
 print("nodered/node-red 4.0.9          Apache-2.0                          field simulator (development only)")
 print("rust 1.88.0-slim-bookworm       MIT OR Apache-2.0 (toolchain); Debian packages, build stage only")
 print("debian bookworm-slim            Debian free software (DFSG); ca-certificates MPL-2.0 data   runtime base")

@@ -23,7 +23,7 @@ services:
 
   mosquitto:
     profiles: [sensors]
-    image: eclipse-mosquitto:2.0.20@sha256:21421af7b32bf9ce508e9090c8eb13bb81f410ca778dc205506180a6f862d0eb
+    image: eclipse-mosquitto:2.0.23@sha256:6a332cc7a8dbe011cbc076180cbb76b37c6f0f55809682ea08e7980ef0112ad9
     restart: unless-stopped
     entrypoint: ["sh", "/mosquitto/config/entrypoint.sh"]
     # Plain MQTT on the host's loopback only; field devices use the TLS listener of conf.d/tls.conf (publish 8883 then).

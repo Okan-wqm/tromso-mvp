@@ -41,7 +41,8 @@ WORKERS=${WORKERS:-6}
 CHECKS=${CHECKS:-0}
 SUITE=${SUITE:-1}
 DB_PASSWORD=${TEST_DB_PASSWORD:-balik}
-PG_IMAGE=timescale/timescaledb:2.17.2-pg17
+# TEST_PG_IMAGE runs the suite on another server image (the production one, deploy/db/Dockerfile: CI input pg_image).
+PG_IMAGE=${TEST_PG_IMAGE:-timescale/timescaledb:2.17.2-pg17}
 RUN=${RUN_ID:-$(date +%Y%m%d%H%M%S)-$$}
 DB=balik-test-db-$RUN
 NET=balik-test-$RUN

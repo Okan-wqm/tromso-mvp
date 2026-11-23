@@ -158,7 +158,7 @@ heartbeat() {
 }
 
 mqtt() {
-  local image=eclipse-mosquitto:2.0.20@sha256:21421af7b32bf9ce508e9090c8eb13bb81f410ca778dc205506180a6f862d0eb
+  local image=eclipse-mosquitto:2.0.23@sha256:6a332cc7a8dbe011cbc076180cbb76b37c6f0f55809682ea08e7980ef0112ad9
   local device=$SECRETS_DIR/mqtt-devices/sensor-ci
   sub() {  # sub NAME USER PASSWORD [--cert ... --key ...]: what mosquitto_sub says in 3 s
     local name=$1 user=$2 password=$3

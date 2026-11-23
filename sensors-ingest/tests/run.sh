@@ -37,7 +37,7 @@ docker run --rm --network "$NET" -v "$REPO:/app" -w /app -e DB_HOST="$DB_HOST" -
   "$DJANGO_IMAGE" python manage.py migrate --no-input >/dev/null
 
 # a broker with the production configuration (users ingest/ingest-pw and dev/dev-pw) for the live tests
-MOSQ=eclipse-mosquitto:2.0.20@sha256:21421af7b32bf9ce508e9090c8eb13bb81f410ca778dc205506180a6f862d0eb
+MOSQ=eclipse-mosquitto:2.0.23@sha256:6a332cc7a8dbe011cbc076180cbb76b37c6f0f55809682ea08e7980ef0112ad9
 BROKER=sensors-ingest-test-broker
 cleanup() { docker rm -f -v "$BROKER" >/dev/null 2>&1 || true; docker volume rm si-test-broker-auth >/dev/null 2>&1 || true; }
 cleanup

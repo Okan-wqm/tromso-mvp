@@ -761,8 +761,8 @@ few queries whatever the farm. The grid is drawn with `data-poll-state="loading"
 (`X-Poll-Next`), from which the polls go on as below; the fragment replaces the placeholder by key, and that first fill says
 nothing aloud (it is the first load). A first answer that fails (the 503 of a source the cards need, a server error, no
 answer) shows "The cards cannot be read just now. The page tries again by itself." at once, in the look of the stale notice,
-and says it aloud once, in the assertive live region as the stale and gone notices are (`frontend/announce.ts`); a first
-fill that succeeds says nothing. The page asks again after the usual longer waits and the cards replace it when they
+and says it aloud once, in the POLITE live region (`frontend/announce.ts`; the stale and gone notices stay assertive); a
+first fill that succeeds says nothing. The page asks again after the usual longer waits and the cards replace it when they
 come. A 401, 403 or
 a redirect to sign-in is gone, as for any poll (the red notice, the placeholder hidden). The pane's body (`?focus=`) is
 filled the same way from its own fragment. `?full=1` is the page as it was before, the cards drawn by the server: the way in
@@ -5223,7 +5223,7 @@ compiled by `npm run build` into `static/js/`, which is not committed:
   live regions beside the grid (`#monitor-announce`, never inside the polled grid): a critical one assertively, the others
   politely, the first in full ("T-01 is now Critical.") and the rest as a count, at most one announcement per region in 5 s with
   the latest held for after. A first load, a better state, a card coming into view or going say nothing; so does the
-  shell's first fill when it succeeds, while a failed first answer says once, in the assertive region, that the cards
+  shell's first fill when it succeeds, while a failed first answer says once, in the polite region, that the cards
   cannot be read (the placeholder's own words). The
   sentences and the state words are the page's (`data-announce-*`, `data-state-*`).
 - `designer.ts` the card designer of Reference data › Card templates (the Design tab, `templates/monitoring/widgets/_designer.html`):

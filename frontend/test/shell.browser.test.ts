@@ -1,7 +1,7 @@
 // The shell's first fill in a real browser (Playwright on the machine's own Chrome or Edge; skipped where there is none):
 // a grid the server drew as a placeholder (data-poll-state="loading", templates/monitoring/_loading.html) is asked for
 // at once, not after its interval; its first answer replaces the placeholder and says nothing; a failed first answer
-// (a 503) says "cannot be read" at once and aloud, and the cards come when the server answers; a 401 is gone; a 204 is
+// (a 503) says "cannot be read" at once and aloud, politely, and the cards come when the server answers; a 401 is gone; a 204 is
 // no first answer, and its next address is not followed. static/css/monitor.css shows the placeholder's lines. Test
 // code only.
 import { test } from 'node:test';
@@ -115,15 +115,15 @@ test('a 503 first says the cards cannot be read at once, then the cards come', {
     assert.equal(stub.asked.length, 1);
     assert.equal(await shown(tab, '[data-unread]'), true);
     assert.equal(await shown(tab, '[data-loading]'), false);
-    await tab.waitForFunction(() => document.querySelector('[aria-live="assertive"]')?.textContent !== '',
+    await tab.waitForFunction(() => document.querySelector('[aria-live="polite"]')?.textContent !== '',
                               undefined, { timeout: 5000 });
-    assert.deepEqual(await said(tab), [UNREAD, '']);
+    assert.deepEqual(await said(tab), ['', UNREAD]);                          // politely: the screen says it too
     await tab.waitForFunction(() => document.querySelector('.monitor-grid')?.getAttribute('data-poll-state') === 'live',
                               undefined, { timeout: 10000 });                    // asked again after the longer wait
     assert.equal(await tab.locator('[data-key="loading"]').count(), 0);
     assert.equal(await tab.locator('[data-key="card:0"]').count(), 1);
     await tab.waitForTimeout(1500);
-    assert.deepEqual(await said(tab), [UNREAD, '']);                          // the first fill: no "Updated again."
+    assert.deepEqual(await said(tab), ['', UNREAD]);                          // the first fill: no "Updated again."
     assert.equal(stub.asked[1], '/cards');                                     // the same address: no token yet
   });
 });

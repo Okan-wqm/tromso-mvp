@@ -7,8 +7,9 @@
 // (F-244). At most one announcement per region in a window: what comes meanwhile is held, the latest goes out when the
 // window has passed. The grid's merge (frontend/poll.ts) tells what it replaced with a `poll:merged` event; the state is
 // the article's data-state. The grid's own notices (data-poll-state: not updated, gone, live again) are said too, in the
-// assertive region (F-045), and so is "cannot be read" when the shell's first answer fails (unread: the words of its
-// placeholder, templates/monitoring/_loading.html). The shell's first fill (loading or unread, then live) says nothing:
+// assertive region (F-045). "Cannot be read" when the shell's first answer fails (unread: the words of its placeholder,
+// templates/monitoring/_loading.html) is said in the POLITE region (coordinator's decision, 2026-11-23): there is no
+// picture yet that could mislead, and the page says it on the screen. The shell's first fill (loading or unread, then live) says nothing:
 // it is the first load.
 
 /** The states in rising order (worst last) from the page's list (#monitor-announce data-states: monitoring/read.py
@@ -180,7 +181,8 @@ function start(): void {
       speak('polite', found.polite);
     }
   });
-  // The grid's own notices (poll.ts sets data-poll-state): said in the assertive region, in the page's words.
+  // The grid's own notices (poll.ts sets data-poll-state), in the page's words: not updated, gone and live again in the
+  // assertive region; the shell's "cannot be read" (unread) in the polite one.
   let pollState = grid.dataset.pollState;
   new MutationObserver(() => {
     const now = grid.dataset.pollState ?? '';
@@ -189,7 +191,7 @@ function start(): void {
                                              unread: grid.querySelector('.monitor-loading > [data-unread]')?.textContent ?? '' });
     pollState = now;
     if (text) {
-      speak('assertive', text);
+      speak(now === 'unread' ? 'polite' : 'assertive', text);
     }
   }).observe(grid, { attributes: true, attributeFilter: ['data-poll-state'] });
 }

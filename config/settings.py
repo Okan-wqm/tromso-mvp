@@ -301,7 +301,10 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {'dated': {'format': '%(asctime)s %(levelname)s %(name)s: %(message)s'}},
     'handlers': {'stderr': {'class': 'logging.StreamHandler', 'formatter': 'dated'}},
-    'loggers': {'core.accountmail': {'handlers': ['stderr'], 'level': 'INFO', 'propagate': False}},
+    'loggers': {'core.accountmail': {'handlers': ['stderr'], 'level': 'INFO', 'propagate': False},
+                # the alarm worker's start, standby, lost database, stop and the passes that changed something: its
+                # service's log (docker compose logs alarms)
+                'alarms.worker': {'handlers': ['stderr'], 'level': 'INFO', 'propagate': False}},
 }
 
 # Under one, no link would ever work, no reset mail ever be sent and no mail have the time to leave: said here, not
@@ -370,3 +373,26 @@ SENSORS_BROKER_AUTH_DIR = os.environ.get('SENSORS_BROKER_AUTH_DIR', str(BASE_DIR
 # The alarms' transports, {channel: dotted path of an alarms.transports.Transport}. None is connected: the mobile app that
 # receives the push comes later, so every notification waits in the outbox and the pages say that nothing is sent.
 ALARM_TRANSPORTS = {}
+
+# The alarm worker (manage.py run_alarm_worker, alarms/worker.py; the compose service `alarms`), in seconds unless said,
+# each from the environment. The deployment's, like the ingest's batching: how the process runs, not a rule of the farm
+# (those are the alarm rules' rows, Company › Alarms). alarms.worker.Timing refuses nonsense at start.
+ALARM_WORKER = {
+    # between two looks at what changed (the sensors' values, any record written): the step of the reaction
+    'tick': float(os.environ.get('ALARM_WORKER_TICK', '1')),
+    # a pass at least this often, changed or not: what time alone moves (a value going stale, the delays, escalation)
+    'sweep': float(os.environ.get('ALARM_WORKER_SWEEP', '15')),
+    # no pass finished for this long: the pages and the health check say the alarms are not being checked (3 sweeps)
+    'stale_after': int(os.environ.get('ALARM_WORKER_STALE_AFTER', '45')),
+    # the database unreachable this long: the process exits, and Docker starts it again
+    'db_down_exit': float(os.environ.get('ALARM_WORKER_DB_DOWN_EXIT', '60')),
+    # the longest wait between two tries while the database is unreachable (the tick, doubled each time, up to this)
+    'backoff_max': float(os.environ.get('ALARM_WORKER_BACKOFF_MAX', '10')),
+    # passes that failed whole, in a row, before the process exits
+    'max_failures': int(os.environ.get('ALARM_WORKER_MAX_FAILURES', '5')),
+    # a pass still running after this long: the process exits (a hang), and Docker starts it again
+    'hang_exit': float(os.environ.get('ALARM_WORKER_HANG_EXIT', '120')),
+    # the worker's own statements: one that runs longer is cancelled, a lock not had in lock_timeout is given up
+    'statement_timeout': float(os.environ.get('ALARM_WORKER_STATEMENT_TIMEOUT', '20')),
+    'lock_timeout': float(os.environ.get('ALARM_WORKER_LOCK_TIMEOUT', '5')),
+}

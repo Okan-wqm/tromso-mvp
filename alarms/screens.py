@@ -3,7 +3,7 @@ from core.datamap import Screen, no, system
 
 from .views import alarm_acknowledge, alarm_detail, alarm_list
 
-LOOP = 'written by manage.py run_alarms (alarms/engine.py)'
+LOOP = 'written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)'
 APPEND_ONLY = 'append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin'
 
 SCREENS = {
@@ -12,6 +12,12 @@ SCREENS = {
         delete=no("a subject's row is kept: its timers survive a restart"),
         read=no("the loop's own memory; the alarms it opened are on the Alarms page"),
         columns={'*': system('the timers and the open alarm the loop keeps per subject (alarms/sources.py advance)')}),
+    'AlarmWorkerStatus': Screen(
+        create=no('the alarm worker writes its own row when it takes the lock (alarms/worker.py)'),
+        edit=no('only the worker moves its row: each pass, each look, and when it stops'),
+        delete=no("the worker's row is kept: the time of its last pass is what says the alarms went unchecked"),
+        read=no('manage.py alarm_worker_health reads it (alarms/watch.py)'),
+        columns={'*': system('the alarm worker, on the database clock')}),
     'SeverityPolicy': Screen(create=no('migration 0002 makes one row per severity'),
                              delete=no('there is always one row per severity')),
     'Alarm': Screen(create=no(LOOP), edit=no(APPEND_ONLY), delete=no(APPEND_ONLY), read=(alarm_list, alarm_detail),

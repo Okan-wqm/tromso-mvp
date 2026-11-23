@@ -153,6 +153,46 @@ class AlarmSubjectState(models.Model):
         return self.key
 
 
+class WorkerState(models.TextChoices):
+    RUNNING = 'running', _('Checking the alarms')
+    STOPPED = 'stopped', _('Stopped')
+
+
+class AlarmWorkerStatus(models.Model):
+    """The alarm worker's own row (alarms/worker.py; one per worker name, written only by the worker that holds the lock):
+    whether it runs, when it last looked (`heartbeat_at`), when it last finished a pass and a pass with no failed step,
+    how long that took, what failed, and the age after which the pages and the health check call the alarms unchecked
+    (`stale_after_seconds`, the worker's own setting, so a reader needs no setting of its own). The stamps are the
+    database's clock (`now()`), the clock the readers compare them with: a server clock that jumps moves neither.
+    Mutable, like the subjects' timers: not history (the alarms and the activity log are)."""
+
+    name = models.CharField(_('Name'), primary_key=True, max_length=40)
+    state = models.CharField(_('State'), max_length=10, choices=WorkerState.choices)
+    host = models.CharField(_('Host'), max_length=100, blank=True)
+    pid = models.PositiveIntegerField(_('Process'), null=True, blank=True)
+    started_at = models.DateTimeField(_('Started at'))
+    heartbeat_at = models.DateTimeField(_('Last seen at'))
+    last_pass_at = models.DateTimeField(_('Last pass at'), null=True, blank=True)
+    last_ok_pass_at = models.DateTimeField(_('Last pass without a failed step at'), null=True, blank=True)
+    last_pass_ms = models.PositiveIntegerField(_('Last pass took (ms)'), null=True, blank=True)
+    failed_steps = models.CharField(_('Failed steps of the last pass'), max_length=300, blank=True)
+    consecutive_failures = models.PositiveIntegerField(_('Failures in a row'), default=0)
+    last_error = models.CharField(_('Last error'), max_length=300, blank=True)
+    stale_after_seconds = models.PositiveIntegerField(_('Unchecked after (seconds)'))
+
+    class Meta:
+        db_table = 'alarm_worker_status'
+        verbose_name = _('alarm worker status')
+        verbose_name_plural = _('alarm worker statuses')
+        constraints = [models.CheckConstraint(condition=Q(state__in=WorkerState.values),
+                                              name='chk_alarm_worker_status_state'),
+                       models.CheckConstraint(condition=Q(stale_after_seconds__gte=1),
+                                              name='chk_alarm_worker_status_stale_after')]
+
+    def __str__(self):
+        return self.name
+
+
 class RecipientRule(AuditedModel):
     """Who is notified of which alarms: on a site (or every site) and a production department (or every one), of at least
     a severity, at a level (0 is notified when the alarm opens; level 1 when nobody acknowledged level 0 in the platform

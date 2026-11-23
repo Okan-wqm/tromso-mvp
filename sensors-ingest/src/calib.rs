@@ -5,18 +5,18 @@
 //! and the channel's state.
 
 use crate::quality::{MAINTENANCE, OUT_OF_RANGE};
-use chrono::{DateTime, Utc};
+use crate::ts::Ts;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Epoch {
     /// None = -infinity.
-    pub valid_from: Option<DateTime<Utc>>,
+    pub valid_from: Option<Ts>,
     pub a: f64,
     pub b: f64,
 }
 
 /// Epochs sorted by `valid_from` (None first). Returns None when no epoch covers `ts` or the result is not finite.
-pub fn apply(epochs: &[Epoch], ts: DateTime<Utc>, raw: f64) -> Option<f64> {
+pub fn apply(epochs: &[Epoch], ts: Ts, raw: f64) -> Option<f64> {
     let e = epochs.iter().rev().find(|e| e.valid_from.is_none_or(|from| from <= ts))?;
     let value = e.a * raw + e.b;
     value.is_finite().then_some(value)
@@ -38,11 +38,10 @@ pub fn judge(value: f64, range: Option<(f64, f64)>, maintenance: bool) -> i16 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::TimeZone;
     use proptest::prelude::*;
 
-    fn t(day: u32) -> DateTime<Utc> {
-        Utc.with_ymd_and_hms(2026, 10, day, 0, 0, 0).unwrap()
+    fn t(day: u8) -> Ts {
+        Ts::ymd_hms(2026, 10, day, 0, 0, 0).unwrap()
     }
 
     fn epochs() -> Vec<Epoch> {

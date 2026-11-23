@@ -6,6 +6,7 @@ band gives the focus back (review R8). What the Small card only said in a title 
 alkalinity band is set (review R6), and the window's words are placed by one rule and never touch (the weak point of
 the 1C report)."""
 import itertools
+from unittest import mock
 
 from django.http import QueryDict
 from django.test import SimpleTestCase
@@ -44,6 +45,11 @@ class AddressTests(SimpleTestCase):
 class PaneTests(SmallCase):
     def setUp(self):
         super().setUp()
+        # The change token holds the minute: a minute that rolled over between a fragment and the poll that follows it
+        # made the poll a 200, not a 204 (as test_pages.FragmentTests and test_load do not let it).
+        patch = mock.patch.object(read, 'TOKEN_BUCKET', 10 ** 9)
+        patch.start()
+        self.addCleanup(patch.stop)
         self.good_water()
 
     def test_a_small_cards_code_is_the_link_into_its_tank(self):

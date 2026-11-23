@@ -3,7 +3,6 @@
 
 mod common;
 
-use chrono::{DateTime, Duration, Utc};
 use common::*;
 use sensors_ingest::config::{self, VIEW_COLUMNS};
 use sensors_ingest::db::{self, Status};
@@ -11,6 +10,7 @@ use sensors_ingest::model::DeadReason;
 use sensors_ingest::pipeline::{self, DeadLimiter, Msg, Output, Reading};
 use sensors_ingest::quality;
 use sensors_ingest::reduce::{Row, State};
+use sensors_ingest::ts::{Duration, Ts};
 use std::collections::HashMap;
 use std::sync::Mutex;
 use uuid::Uuid;
@@ -22,10 +22,10 @@ fn serial() -> std::sync::MutexGuard<'static, ()> {
     SERIAL.lock().unwrap_or_else(|p| p.into_inner())
 }
 
-fn t0() -> DateTime<Utc> {
+fn t0() -> Ts {
     // twenty days ago at a whole second: inside the retention, before compression, reproducible keys
-    let t = Utc::now() - Duration::days(20);
-    DateTime::from_timestamp(t.timestamp(), 0).unwrap()
+    let t = Ts::now() - Duration::days(20);
+    Ts::from_unix_secs(t.unix_secs()).unwrap()
 }
 
 struct Setup {
@@ -46,7 +46,7 @@ async fn setup(a: &tokio_postgres::Client) -> Setup {
     Setup { fx, dev, ch_a, ch_b }
 }
 
-fn msg(fx: &Fx, t: DateTime<Utc>, body: serde_json::Value) -> Msg {
+fn msg(fx: &Fx, t: Ts, body: serde_json::Value) -> Msg {
     Msg {
         connection_id: fx.connection,
         topic: "zz/plc".into(),
@@ -64,6 +64,59 @@ fn status(fx: &Fx) -> Vec<Status> {
         qos0_dropped: 5,
         poison_total: 2,
     }]
+}
+
+/// Timestamps through the database driver, both ways, in the session's UTC (`db::connect`): microsecond precision
+/// (finer is cut toward 2000-01-01, the protocol's zero), leap days, the years far from now, and what the driver refuses
+/// to decode. Text in, text out (JSON as `/decode` writes it, PostgreSQL's own text): only the line naming the time
+/// type differs between the chrono implementation and its replacement.
+#[tokio::test]
+async fn timestamps_round_trip_through_the_driver_at_microsecond_precision() {
+    type Ts = sensors_ingest::ts::Ts;
+    let Some(url) = url() else { return };
+    let a = admin(&url).await;
+    let cases = [
+        // (as the ingest holds it, as PostgreSQL stores it, as the ingest reads it back)
+        ("2026-11-04T12:00:00Z", "2026-11-04 12:00:00+00", "2026-11-04T12:00:00Z"),
+        ("2024-02-29T23:59:59.999999Z", "2024-02-29 23:59:59.999999+00", "2024-02-29T23:59:59.999999Z"),
+        ("2026-11-04T12:00:00.1234567Z", "2026-11-04 12:00:00.123456+00", "2026-11-04T12:00:00.123456Z"),
+        ("2026-11-04T12:00:00.000001Z", "2026-11-04 12:00:00.000001+00", "2026-11-04T12:00:00.000001Z"),
+        ("2026-03-29T01:30:00Z", "2026-03-29 01:30:00+00", "2026-03-29T01:30:00Z"),
+        ("2026-10-25T01:30:00Z", "2026-10-25 01:30:00+00", "2026-10-25T01:30:00Z"),
+        ("2000-01-01T00:00:00Z", "2000-01-01 00:00:00+00", "2000-01-01T00:00:00Z"),
+        ("1999-12-31T23:59:59.9999995Z", "2000-01-01 00:00:00+00", "2000-01-01T00:00:00Z"),
+        ("2000-01-01T00:00:00.0000005Z", "2000-01-01 00:00:00+00", "2000-01-01T00:00:00Z"),
+        ("1970-01-01T00:00:00Z", "1970-01-01 00:00:00+00", "1970-01-01T00:00:00Z"),
+        ("1969-12-31T23:59:59.999999Z", "1969-12-31 23:59:59.999999+00", "1969-12-31T23:59:59.999999Z"),
+        ("0001-01-01T00:00:00Z", "0001-01-01 00:00:00+00", "0001-01-01T00:00:00Z"),
+        ("0000-12-31T23:59:59Z", "0001-12-31 23:59:59+00 BC", "0000-12-31T23:59:59Z"),
+        ("-4713-11-24T00:00:00Z", "4714-11-24 00:00:00+00 BC", "-4713-11-24T00:00:00Z"),
+        ("9999-12-31T23:59:59.999999Z", "9999-12-31 23:59:59.999999+00", "9999-12-31T23:59:59.999999Z"),
+        ("+10000-01-01T00:00:00Z", "10000-01-01 00:00:00+00", "+10000-01-01T00:00:00Z"),
+        ("+262142-12-31T23:59:59.999999Z", "262142-12-31 23:59:59.999999+00", "+262142-12-31T23:59:59.999999Z"),
+    ];
+    for (held, stored, back) in cases {
+        let t: Ts = serde_json::from_value(serde_json::json!(held)).unwrap();
+        let text: String = a.query_one("SELECT $1::timestamptz::text", &[&t]).await.unwrap().get(0);
+        assert_eq!(text, stored, "{held} to the database");
+        let read: Ts = a.query_one("SELECT $1::text::timestamptz", &[&text]).await.unwrap().get(0);
+        assert_eq!(serde_json::to_value(read).unwrap(), serde_json::json!(back), "{held} read back");
+        // and as an array element (the batch statements bind arrays)
+        let arr: String = a.query_one("SELECT ($1::timestamptz[])[1]::text", &[&vec![t]]).await.unwrap().get(0);
+        assert_eq!(arr, stored, "{held} in an array");
+    }
+    // outside PostgreSQL's range the server refuses the value
+    let t: Ts = serde_json::from_value(serde_json::json!("-4714-01-01T00:00:00Z")).unwrap();
+    assert!(a.query_one("SELECT $1::timestamptz::text", &[&t]).await.is_err());
+    // the driver refuses to decode what the ingest cannot hold: the infinities and years after 262142
+    for text in ["infinity", "-infinity", "262143-01-01 00:00:00+00", "294276-12-31 23:59:59.999999+00"] {
+        let r = a.query_one("SELECT $1::text::timestamptz", &[&text]).await.unwrap();
+        let e = r.try_get::<_, Ts>(0).expect_err(text);
+        let cause = std::error::Error::source(&e).map(ToString::to_string);
+        assert_eq!(cause.as_deref(), Some("value too large to decode"), "{text}: {e}");
+        assert!(r.try_get::<_, Option<Ts>>(0).is_err(), "{text} as an option");
+    }
+    assert_eq!(a.query_one("SELECT NULL::timestamptz", &[]).await.unwrap().get::<_, Option<Ts>>(0), None);
 }
 
 #[tokio::test]
@@ -148,7 +201,7 @@ async fn a_batch_commits_readings_states_devices_dead_letters_and_status_and_a_r
     let msgs: Vec<Msg> = (0..10)
         .map(|i| {
             let ti = t + Duration::seconds(i);
-            msg(&s.fx, ti, serde_json::json!({"ts": ti.to_rfc3339(), "seq": i, "a": 10.0 + 0.1 * i as f64, "b": i}))
+            msg(&s.fx, ti, serde_json::json!({"ts": ti.to_string(), "seq": i, "a": 10.0 + 0.1 * i as f64, "b": i}))
         })
         .chain([Msg {
             connection_id: s.fx.connection,
@@ -249,14 +302,14 @@ async fn the_heartbeat_writes_status_without_a_commit_time() {
     let c = ingest(&url).await;
     db::write_status(&c, &status(&s.fx)).await.unwrap();
     let r = a.query_one("SELECT heartbeat_at, last_commit_at FROM sensors_ingest_status", &[]).await.unwrap();
-    let first: DateTime<Utc> = r.get(0);
-    assert!(r.get::<_, Option<DateTime<Utc>>>(1).is_none());
+    let first: Ts = r.get(0);
+    assert!(r.get::<_, Option<Ts>>(1).is_none());
     tokio::time::sleep(std::time::Duration::from_millis(20)).await;
     let mut st = status(&s.fx);
     st[0].connected = false;
     db::write_status(&c, &st).await.unwrap();
     let r = a.query_one("SELECT heartbeat_at, connected FROM sensors_ingest_status", &[]).await.unwrap();
-    assert!(r.get::<_, DateTime<Utc>>(0) > first);
+    assert!(r.get::<_, Ts>(0) > first);
     assert!(!r.get::<_, bool>(1));
     let c = a.query_one("SELECT qos0_dropped, poison_total FROM sensors_ingest_status", &[]).await.unwrap();
     assert_eq!((c.get::<_, i64>(0), c.get::<_, i64>(1)), (5, 2), "the counters reach the overview");
@@ -281,7 +334,7 @@ async fn the_dead_letter_flood_is_capped_and_readings_never_are() {
         .collect();
     msgs.extend((0..30).map(|i| {
         let ti = t + Duration::seconds(i);
-        msg(&s.fx, ti, serde_json::json!({"ts": ti.to_rfc3339(), "b": i}))
+        msg(&s.fx, ti, serde_json::json!({"ts": ti.to_string(), "b": i}))
     }));
     let out = pipeline::process(&cfg, &HashMap::new(), &mut DeadLimiter::new(10), &msgs);
     db::write_batch(&mut c, &out, &status(&s.fx)).await.unwrap();
@@ -308,8 +361,8 @@ async fn late_rows_and_duplicates_reach_compressed_and_recent_chunks() {
     let a = admin(&url).await;
     let s = setup(&a).await;
     let mut c = ingest(&url).await;
-    let old = DateTime::from_timestamp((Utc::now() - Duration::days(20)).timestamp(), 0).unwrap();
-    let row = |ts: DateTime<Utc>, v: f64| Reading {
+    let old = Ts::from_unix_secs((Ts::now() - Duration::days(20)).unix_secs()).unwrap();
+    let row = |ts: Ts, v: f64| Reading {
         channel_no: s.ch_b,
         row: Row { ts, value: v, n: 1, quality: 0, run_sum: None, run_min: None, run_max: None },
     };
@@ -327,7 +380,7 @@ async fn late_rows_and_duplicates_reach_compressed_and_recent_chunks() {
         .unwrap()
         .get(0);
     assert!(compressed >= 1, "a chunk 20 days back was compressed");
-    let recent = DateTime::from_timestamp((Utc::now() - Duration::days(5)).timestamp(), 0).unwrap();
+    let recent = Ts::from_unix_secs((Ts::now() - Duration::days(5)).unix_secs()).unwrap();
     let late = Output {
         readings: vec![
             row(old + Duration::seconds(5), 0.5),   // new key inside the compressed chunk
@@ -398,7 +451,7 @@ async fn statistics_oracle_through_the_database() {
         let v = v.clamp(1.0, 99.0);
         values.push(v);
         let ti = t + Duration::seconds(i);
-        msgs.push(msg(&s.fx, ti, serde_json::json!({"ts": ti.to_rfc3339(), "a": v})));
+        msgs.push(msg(&s.fx, ti, serde_json::json!({"ts": ti.to_string(), "a": v})));
     }
     for chunk in msgs.chunks(250) {
         let out = pipeline::process(&cfg, &committed, &mut lim, chunk);
@@ -440,7 +493,7 @@ async fn statistics_oracle_through_the_database() {
         .await
         .unwrap();
     for h in hours {
-        let start: DateTime<Utc> = h.get(0);
+        let start: Ts = h.get(0);
         let got: i64 = h.get(1);
         let direct = (0..values.len() as i64).filter(|i| {
             let ti = t + Duration::seconds(*i);

@@ -44,6 +44,7 @@ from django.utils.translation import gettext as _
 from core import audit
 from farm.models import Tank, WaterLimit
 from farm.stock import read as stock_read
+from farm.templatetags.water import figure_past
 from farm.models.water_point import site_of
 from farm.water import messages as water_messages, parameters, read as water_read
 from farm.water.read import LIMITED, OXYGEN
@@ -115,7 +116,8 @@ def _summary(point, reading):
     with audit.source_language():
         label = str(parameters.get(reading.code).label)
         status = str(Status(reading.judged).label).lower()
-        value = reading.value if reading.value is not None else reading.worse.value
+        shown = reading if reading.value is not None else reading.worse
+        value = figure_past(shown) or shown.value        # a value judged past a bound says the decimals that prove it
         if reading.value is not None and reading.refused:      # its limits' basis alone, as the page says it (F3-5)
             value = _('at least %(value)s') % {'value': value}
         said = f'{getattr(owner, "code", owner)} · {point.name}: {label} {value} ({status})'

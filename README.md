@@ -785,7 +785,26 @@ data share one, and those with a value no limit judges another. The server caps 
 silently. The short form of a reason is its `Brief` (`read.brief_of`): the water's own answer to "which value is past
 which bound" (`farm.water.read.crossed`, `evaluate.crossed`: the bound `judge` judged it by, the worse fresh value when
 that decided the status, the oxygen's other unit when a row on that unit judged it), never a second judgement; a reason
-that is not a value against a bound is said whole. On a wall each row of the band is one line; on the desk page they wrap.
+that is not a value against a bound is said whole. A value worked out (the oxygen in its other unit, the NH₃-N) is judged
+unrounded (`Reading.exact`) and shown at its parameter's decimals, so a true 59.988 % of saturation, critical against 60.0,
+is shown 60.0; a sentence that sets such a value beside its bound never reads as on it or inside it: where the shown value
+would, it says the exact value with the fewest extra decimals that read past ("O₂ (%) 59.99 < critical limit 60.0"; at
+most three more decimals, then cut toward the side it is on; `farm.templatetags.water.value_past`, the one rule). The
+judgement is never changed, only the words: the same rule says the value in the bar's name ("O₂ (%) 59.99, critical;
+limits: critical below 60.0, …"), in the note an oxygen judged through its other unit keeps ("Judged as 59.99 %.") and in
+the two notes the drawer prints right after a row's limits ("… reads 59.99 (…): the worst fresh value decides the
+status", "last own value 59.99 critical on …", which the alarm's summary carries too: `read.said_value`), and a chip of
+units past the same bound says the lowest (or highest) of their unrounded values. The figure on its own says it too
+(owner decision, 2026-11-22: "show as many decimals as it takes to show it is past"): a value judged past a bound that its
+shown value rounds onto is shown with the decimals that prove it everywhere it is shown, 59.99 and not 60.0: the cell of
+the water tables, the drawer and the overview (`farm/_water_value.html`, filter `reading_figure`), the cards' figure and
+the saturation beside a tile's label (`render.face`, `render.tile`) and the alarm's summary. One rule for all of them:
+`read.past_bound` (the nearest bound its own value was judged past, on the unrounded value) and
+`farm.templatetags.water.proof_of` (the fewest decimals that read past it). A value clearly past its bound, a value inside
+its bounds and a measured value (judged as entered) keep the parameter's decimals ("55.0", "60.0"). Known limits, left as
+they are: the calculator (judged in the Rust core on floats, printed without a bound), the position of the bar's marker
+(drawn at the rounded value) and `signed_amount` (a calculator margin of -0.003 reads 0.00). On a wall each row of the
+band is one line; on the desk page they wrap.
 
 **The Small card and the screen's view** (owner decisions 5 and 7, 2026-11-12: wide monitors; a small card for the
 overview). `mode=small` is a VIEW of the screen: EVERY card of it is drawn with the built-in Small template, on a board or
@@ -1831,7 +1850,8 @@ without values it shows its defaults.
   - Left as the verification says: V-D (farm 0045 and 0046 add their check validated, an exclusive lock on
     `water_measurements` while each chunk is scanned: land with the server stopped; going back past 0045 keeps the P
     and loses the PO₄ entry), V-E (the phosphate sentence is one per list, above it), V-H (the chrono advisory of
-    `sensors-ingest`: a dated ignore on main, not on this branch).
+    `sensors-ingest`: a dated ignore on main, not on this branch; since solved without an ignore, the ingest moved from
+    chrono to `time`).
 - **After the water-chemistry audit of 2026-11-19** (`F:\dev\balik-notes\chem-audit-fable\AUDIT.md`; no constant and no
   formula moved, the golden files keep their bytes; F2, a published NBS conversion in salt water, waits for the owner):
   - *A sensor's pH has a scale* (F1, owner decision 1 of 2026-11-17). A pH channel says the scale its probe reports on
@@ -1873,7 +1893,9 @@ without values it shows its defaults.
   - *The NH₃-N is judged unrounded* (F3): the limits, the worst fresh value and the alarm's deadband test read the value
     as worked out (`Reading.exact`, `judged_value`), the page shows it at four decimals. A true 0.01034 mg/L read 0.0103
     and was OK against a limit of 0.0103; it is now a warning that reads 0.0103. The oxygen worked out in its other
-    unit is judged the same way.
+    unit is judged the same way. Where the number shown would read as on the limit it is past, a sentence that sets
+    the value beside its bound says the exact one instead ("0.01034 > 0.0103", never "0.0103 > 0.0103"; `value_past`,
+    Monitoring, the band above).
   - *Words* (F5 to F11): the sea-water basis says what it is (above); the activity-corrected NH₃ of a water with seawater
     constants says it rests on the application's own NBS conversion and reads up to about 16 % below the published
     references in cold sea water, information and not the better value (F6); a kit's nitrite is divided by 3.28 (F7);
@@ -2382,6 +2404,18 @@ temperature, held constant and shown) and grow by it ÷ the band's expected FCR;
 harvest or transport gives no growth; no protocol, a weight outside the bands or no temperature stops it with the
 reason, never a default, and so does two years without reaching it. Nothing is stored.
 
+The page reads its rows together, not one by one: the withdrawals in force of every unit shown in one ask of the
+registry (`check.holding_of`), every row's earliest suitable harvest date in one pass (`check.earliest_of`), the last
+feedings of the stock in one read (`feeding.read.last_fed_in`, what the units list says, without walking the
+feedings), and the forecast: one projection walk plus a per-batch walk of up to 730 days for a batch with a target.
+Nothing is kept between requests, so nothing can be stale. Measured on the development data (20 rows, warm median of
+5, on a loaded machine, 22.11.2026): 825 queries and about 10 s before, 131 queries and about 1.8 s after; the page
+is the same byte for byte with the clock pinned, and its query count does not grow with its rows. The tests
+(`farm/tests/test_production_plans_reads.py`) hold the set reads to main's one-at-a-time reads as they were before
+them (copied into the test as the oracle) and to fixed dates, at five frozen moments on three site clocks, and the
+page to at most 60 queries at 3 and at 9 units. What is left is mostly the forecast's walk of the feedings and the
+last feeding's read of every feeding since the fish came in.
+
 **Slaughter facilities** (Setup › Harvest and logistics): name, Mattilsynet's approval number (godkjenningsnummer, 1
 to 6 letters or digits, stored in capitals, unique among live facilities; the format is the source's and is not
 verified with Mattilsynet), the operator (a supplier of the new category **Slaughter and processing**, which
@@ -2535,7 +2569,12 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
   fast of a transport (the rule a delivery's fast is checked by) where a harvest has its purge: "Earliest suitable live
   delivery date: 17.11.2026. Medicine withdrawal decides: the fish may leave the farm from 17.11.2026." or "… The fast
   decides: feeding must stop by …" (`check.earliest(unit, batch, kind=transport)`). A transfer and a grading do not
-  say it.
+  say it. A page of many rows asks `check.earliest_of(pairs)`, which reads each input once for all the rows (the
+  withdrawals in force, `check.holding_of(units)`, or the caller's, which must name every unit asked; the rule of
+  each species; the units' last feedings; the water, `BatchWater.of_each`, read together only for batches whose
+  samples are read over the same moments, so each batch's water is the one it has alone, also when a system's loop
+  point is on a site of another clock) and gives each row exactly what `earliest` gives it alone (`earliest` is its
+  case of one pair; `farm/tests/test_production_plans_reads.py` holds both to main's reads before them).
 - *Production units*: a "Withdrawal" badge on a unit with a withdrawal in force today, and the drawer's
   **Harvest and handling** part: the check of a harvest today and the unit's open plans with their fasts.
 
@@ -6103,5 +6142,6 @@ touches one place and its tests: `pypdf` only in `knowledge/extraction.py` (read
 `sensors/management/commands/sensors_ingest_role.py` (the ingest role's SQL, quoted by `psycopg.sql`); `cryptography` is
 imported by nothing of ours (pypdf uses it for encrypted PDFs). Tests may import a library to build their inputs (a PDF, a
 `.mo` file, a connection). In the ingest, the MQTT client (`rumqttc`) is only in `src/mqtt.rs` and the HTTP server (`axum`)
-in `src/http.rs` and `src/supervisor.rs`; its database client is its core and is used where it writes (`src/db.rs`,
-`src/config.rs`, `src/env.rs`, `src/service.rs`).
+in `src/http.rs` and `src/supervisor.rs`, the time library (`time`, since chrono became unmaintained) only in `src/ts.rs`,
+the one timestamp type (the bench example `examples/multisource.rs` formats its payload times with it too); its
+database client is its core and is used where it writes (`src/db.rs`, `src/config.rs`, `src/env.rs`, `src/service.rs`).

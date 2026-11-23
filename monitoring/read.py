@@ -58,7 +58,7 @@ from farm.health import read as health_read, views as health_views
 from farm.models import Tank
 from farm.stock import read as stock_read, views as stock_views
 from farm.stock.dates import local_today
-from farm.templatetags.water import water_value
+from farm.templatetags.water import value_past, water_value
 from farm.water import (
     calculation as water_calculation, chemistry, deffeyes, parameters, read as water_read, views as water_views,
 )
@@ -595,7 +595,7 @@ class Brief:
     critical: bool = False
     old: bool = False
     label: str = ''          # what the figure is of ('O₂ (mg/L)'): units past the same bound of it share a chip
-    amount: object = None    # the figure as a number: the worst of a chip's units is the one it says
+    amount: object = None    # the figure as a number, unrounded where it was worked out: the worst of a chip's units is the one it says
 
     @property
     def sentence(self):
@@ -632,7 +632,9 @@ def _brief(reading, middle, stale):
     """The Brief of a value the limits judge critical or a warning: the value that is past a bound (the water's own
     answer, farm.water.read.crossed: the worse fresh value when that decided it), named by its parameter's short label
     and its point when not the card's middle, and the bound with its kind; "no recent data" when the value is old. None
-    when no one bound says it (the card then says the whole reason)."""
+    when no one bound says it (the card then says the whole reason). A worked-out value is said with the decimals that
+    show the side of the bound it is on ("59.99 < critical limit 60.0", never "60.0 < critical limit 60.0": it is judged
+    unrounded; `value_past`), and the chip's worst of its units is the lowest or highest of those unrounded values."""
     found = water_read.crossed(reading)
     if found is None:
         return None
@@ -644,8 +646,9 @@ def _brief(reading, middle, stale):
     words = BOUND_WORDS[Status(reading.judged)] % {'bound': limit}
     if stale:
         words = _('%(bound)s, no recent data') % {'bound': words}
-    return Brief(f'{label} {water_value(source.value, source.code)}', '<' if name.endswith('low') else '>', str(words),
-                 limit, reading.judged == Status.CRITICAL, stale, label, source.value)
+    below = name.endswith('low')
+    return Brief(f'{label} {value_past(source, bound, below)}', '<' if below else '>', str(words),
+                 limit, reading.judged == Status.CRITICAL, stale, label, source.judged_value)
 
 
 def state_of(card):

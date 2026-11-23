@@ -4,7 +4,7 @@ its state, the first reason in short with how many more, the oxygen with its sat
 calculated CO₂ and the pH window; an old value is never silent; a chart that cannot be worked out says why; and what
 the old cards said is still reachable (every reason, the withdrawal, which template and why, the flip link)."""
 import re
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone as dt_timezone
 from pathlib import Path
 from unittest import mock
 
@@ -13,7 +13,9 @@ from django.test import SimpleTestCase
 from django.urls import reverse
 from django.utils import translation
 
+from core.testing import StartedClock
 from farm.handling.withdrawal import WithdrawalBlock
+from farm.stock.dates import local_today
 from farm.templatetags.water import water_value
 from farm.water import calculation, read as water_read
 
@@ -49,7 +51,14 @@ def source(html, unit):
     return re.search(rf'<article[^>]*card:{unit.pk}.*?</article>', html, re.S).group(0)
 
 
-class SmallCase(MonitoringCase):
+class SmallCase(StartedClock, MonitoringCase):
+    """The Small and Big cards say when a value arrived as the clock time when it is today's, else with its day
+    (render.arrived): a sample of an hour ago read between 00:00 and 01:00 in Oslo is yesterday's, and the Big card's
+    row said "22.11 23:33 · 1 h" where the test asked for "23:33 · 1 h" (seen at 00:33 Oslo time on 23.11.2026). So the
+    clock starts at a fixed mid-day moment, an hour of every sample here from any midnight, and runs on, as the cards'
+    samples are told apart by when they were made (core.testing, README › Tests)."""
+    NOW = datetime(2026, 11, 18, 11, 0, tzinfo=dt_timezone.utc)      # 12:00 in Oslo, a Wednesday, far from a DST change
+
     def setUp(self):
         super().setUp()
         self.limit('oxygen_mg_l', critical_low=6, warning_low=7)
@@ -371,13 +380,15 @@ class OwnerDecisionsOf16NovemberTests(SmallCase):
 
     def test_the_withdrawal_says_its_date_beside_the_word_whatever_the_first_reason(self):
         """Decision 16."""
-        from datetime import date
         self.good_water(oxygen_mg_l='5')                                 # the first reason is the oxygen, not the withdrawal
-        block = WithdrawalBlock(batch=self.fish, until=date(2026, 11, 23), approximate=False, reason='', source=None)
+        # A withdrawal is in force while its first free day is after the unit's today (farm.handling.check.in_force_of):
+        # the day is counted from that today, never written as a date, which became today on 23.11.2026 and failed.
+        until = local_today(self.t2) + timedelta(days=5)
+        block = WithdrawalBlock(batch=self.fish, until=until, approximate=False, reason='', source=None)
         with mock.patch('farm.handling.withdrawal._providers', [lambda units, day: {self.t2.pk: [block]}]):
             card = card_of(self.page(), self.t2)
         (badge,) = nodes(card, 'monitor-withdrawal')
-        self.assertEqual(text(badge), 'Withdrawal · harvest from 23.11')
+        self.assertEqual(text(badge), f'Withdrawal · harvest from {until:%d.%m}')    # day.month, as the card says it
         unknown = WithdrawalBlock(batch=self.fish, until=None, approximate=False, reason='', source=None)
         with mock.patch('farm.handling.withdrawal._providers', [lambda units, day: {self.t2.pk: [block, unknown]}]):
             (badge,) = nodes(card_of(self.page(), self.t2), 'monitor-withdrawal')

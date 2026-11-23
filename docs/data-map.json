@@ -2379,6 +2379,7 @@
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_pages.py",
+        "alarms/tests/test_reaction.py",
         "alarms/tests/test_reference.py",
         "alarms/tests/test_refused_sensor_ph.py",
         "alarms/tests/test_refused_water.py",
@@ -13868,7 +13869,8 @@
         "sensors/tests/test_portable.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_migration_reverse.py",
-        "alarms/tests/test_migration_subjects.py"
+        "alarms/tests/test_migration_subjects.py",
+        "alarms/tests/test_reaction.py"
       ]
     },
     {
@@ -15590,7 +15592,8 @@
         "alarms/tests/__init__.py",
         "alarms/tests/test_migration.py",
         "alarms/tests/test_migration_reverse.py",
-        "alarms/tests/test_migration_subjects.py"
+        "alarms/tests/test_migration_subjects.py",
+        "alarms/tests/test_reaction.py"
       ]
     },
     {
@@ -19113,7 +19116,8 @@
         "sensors/tests/test_portable.py",
         "sensors/tests/test_read.py",
         "sensors/tests/test_replay.py",
-        "alarms/tests/__init__.py"
+        "alarms/tests/__init__.py",
+        "alarms/tests/test_reaction.py"
       ]
     },
     {
@@ -21561,6 +21565,7 @@
         "monitoring/tests/test_small.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_cross_review.py",
+        "alarms/tests/test_reaction.py",
         "alarms/tests/test_refused_sensor_ph.py",
         "alarms/tests/test_refused_water.py"
       ]

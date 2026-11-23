@@ -263,6 +263,77 @@ class DefaultRuleNeedsFishTests(FreshRuleCase):
                               .values_list('rule', flat=True)), [own.pk])
 
 
+class SwitchedOffTests(FreshRuleCase):
+    """The review of 2026-11-23, F5: a rule switched off (or deleted) left its open event, and its alarm, open for ever,
+    even after the probe sent again (no pass visits such a rule). The next pass closes them, and the alarm's clearance
+    says the rule's state in the activity log; an active rule's events are never closed so."""
+
+    def test_switching_a_rule_off_closes_its_open_event_and_alarm(self):
+        from alarms import sources as alarm_sources
+        from alarms.models import Alarm
+        oxygen = make_channel(self.device, 'oxygen_mg_l', code='O2')
+        bindings.move(self.user, oxygen, self.now - timedelta(hours=1), system=self.ras)
+        self.send(self.ph, 7.5, self.now - timedelta(hours=1))
+        self.send(oxygen, 9.0, self.now - timedelta(hours=1))
+        alarms.evaluate(self.now)
+        alarm_sources.sensor_events()
+        [ph_event] = self.open_events()
+        [oxygen_event] = self.open_events(oxygen)
+        AlarmRule.objects.filter(pk=default('ph').pk).update(is_active=False, off_reason='Probes out for service.')
+        self.send(self.ph, 7.6, self.now + timedelta(seconds=5))           # the probe sends again
+        alarms.evaluate(self.now + timedelta(seconds=10))
+        alarm_sources.sensor_events()
+        self.assertEqual(AlarmEvent.objects.get(pk=ph_event.pk).closed_at, self.now + timedelta(seconds=10))
+        self.assertIsNone(AlarmEvent.objects.get(pk=oxygen_event.pk).closed_at)     # an active rule's: still open
+        alarm = Alarm.objects.get(sensor_event=ph_event)
+        self.assertEqual((alarm.clearance.cause, alarm.clearance.cleared_at),
+                         ('event_closed', self.now + timedelta(seconds=10)))
+        self.assertFalse(Alarm.objects.get(sensor_event=oxygen_event).is_cleared)
+        logged = AuditLog.objects.filter(entity_type='alarm', entity_id=str(alarm.pk)).latest('id').changes
+        self.assertEqual((logged['Alarm rule'][1], logged['Why it is switched off'][1]),
+                         ('pH (NBS scale): No fresh value · Inactive', 'Probes out for service.'))
+
+    def test_a_deleted_rules_open_event_closes_too(self):
+        rule = AlarmRule.objects.create(channel=self.ph, kind='no_data', for_s=60)
+        self.send(self.ph, 7.5, self.now - timedelta(hours=1))
+        AlarmRule.objects.filter(pk=default('ph').pk).update(is_active=False, off_reason='Own rule only.')
+        alarms.evaluate(self.now)
+        [event] = AlarmEvent.objects.filter(closed_at__isnull=True, rule=rule)
+        AlarmRule.all_objects.filter(pk=rule.pk).update(is_deleted=True)
+        alarms.evaluate(self.now + timedelta(seconds=1))
+        self.assertEqual(AlarmEvent.objects.get(pk=event.pk).closed_at, self.now + timedelta(seconds=1))
+
+
+class OwnRuleTests(FreshRuleCase):
+    """The review of 2026-11-23, F4: a farm's own "No fresh value" rule beside the default gave two alarms for one silent
+    probe. The default stands aside where the farm has its own active rule of the quantity, or of the channel: one
+    alarm, the farm's."""
+
+    def silent(self):
+        self.send(self.ph, 7.5, self.now - timedelta(hours=1))
+        alarms.evaluate(self.now)
+        return {event.rule_id for event in AlarmEvent.objects.filter(closed_at__isnull=True,
+                                                                     channel_no=self.ph.channel_no)}
+
+    def test_a_farms_own_rule_of_the_quantity_is_the_one_alarm(self):
+        own = AlarmRule.objects.create(quantity='ph', kind='no_data', for_s=600, severity='critical')
+        self.assertEqual(self.silent(), {own.pk})
+
+    def test_a_farms_own_rule_of_the_channel_is_the_one_alarm(self):
+        own = AlarmRule.objects.create(channel=self.ph, kind='no_data', for_s=600)
+        self.assertEqual(self.silent(), {own.pk})
+
+    def test_the_default_comes_back_when_the_own_rule_is_switched_off_and_closes_its_event_when_it_stands_aside(self):
+        self.assertEqual(self.silent(), {default('ph').pk})
+        own = AlarmRule.objects.create(quantity='ph', kind='no_data', for_s=0)
+        alarms.evaluate(self.now + timedelta(seconds=1))
+        self.assertEqual({event.rule_id for event in AlarmEvent.objects.filter(closed_at__isnull=True)}, {own.pk})
+        AlarmRule.objects.filter(pk=own.pk).update(is_active=False, off_reason='Back to the default.')
+        alarms.evaluate(self.now + timedelta(seconds=2))
+        self.assertEqual({event.rule_id for event in AlarmEvent.objects.filter(closed_at__isnull=True)},
+                         {default('ph').pk})
+
+
 class CoverageCheckTests(FreshRuleCase):
     def switch_off(self, code='ph'):
         AlarmRule.objects.filter(pk=default(code).pk).update(is_active=False, off_reason='Probes out for service.')
@@ -402,7 +473,17 @@ class MigrationTests(TransactionTestCase):
                          sorted(quantities.JUDGED_CODES))
         self.assertEqual(default('ph').pk, ph)                         # marked again, no second rule
         self.assertEqual(default('tan_mg_l').severity, 'critical')
-        # Marked again, a farm's severity is never overwritten; one made again is seeded as the code says.
+        # Marked again, a farm's severity is kept (the TAN's critical), but an oxygen rule is raised to critical, the
+        # owner's default for it (the review of 2026-11-23, F4), and the log says so; one made again is seeded as the
+        # code says.
         self.assertEqual((default('oxygen_mg_l').severity, default('oxygen_saturation_pct').severity),
-                         ('warning', 'critical'))
+                         ('critical', 'critical'))
+        raised = AuditLog.objects.filter(entity_type='alarm rule', user_name='system',
+                                         entity_id=str(default('oxygen_mg_l').pk)).order_by('created_at', 'id').last()
+        self.assertEqual((raised.changes['Severity'], raised.changes['Default rule']), (['Warning', 'Critical'], ['No', 'Yes']))
         self.assertEqual(AlarmRule.objects.count(), len(quantities.JUDGED_CODES))
+        # Back again: the rule it raised gets its own severity back, said in the log.
+        self.migrate(('sensors', '0013_channel_ph_scale'))
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT severity FROM sensors_alarm_rule WHERE quantity = 'oxygen_mg_l'")
+            self.assertEqual(cursor.fetchall(), [('warning',)])

@@ -1185,6 +1185,14 @@ msgid "%(point)s is inactive: it takes no new samples."
 msgstr "%(point)s er inaktivt: det tar ikke nye prøver."
 
 #, python-format
+msgid ""
+"%(probe)s: the oxygen probe is silent; the oxygen is measured otherwise (by hand or by another "
+"probe)."
+msgstr ""
+"%(probe)s: oksygensonden er stille; oksygenet måles på annen måte (for hånd eller med en annen "
+"sonde)."
+
+#, python-format
 msgid "%(protocol)s, assigned to %(unit)s, is for %(protocol_species)s; these fish are %(species)s."
 msgstr "%(protocol)s, tildelt %(unit)s, er for %(protocol_species)s; denne fisken er %(species)s."
 
@@ -1651,14 +1659,6 @@ msgstr ""
 #, python-format
 msgid "%(unit)s: %(fish)d fish counted on %(date)s, where the regulation asks for %(least)d in this week."
 msgstr "%(unit)s: %(fish)d fisk telt %(date)s, der forskriften krever %(least)d denne uken."
-
-#, python-format
-msgid ""
-"%(unit)s: the oxygen probe %(probes)s is silent; the oxygen is measured otherwise (by hand or by "
-"another probe)."
-msgstr ""
-"%(unit)s: oksygensonden %(probes)s er stille; oksygenet måles på annen måte (for hånd eller med "
-"en annen sonde)."
 
 #, python-format
 msgid ""

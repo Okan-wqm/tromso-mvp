@@ -1188,6 +1188,14 @@ msgid "%(point)s is inactive: it takes no new samples."
 msgstr "%(point)s pasif: yeni numune almaz."
 
 #, python-format
+msgid ""
+"%(probe)s: the oxygen probe is silent; the oxygen is measured otherwise (by hand or by another "
+"probe)."
+msgstr ""
+"%(probe)s: oksijen sondası veri göndermiyor; oksijen başka yolla ölçülüyor (elle ya da başka bir "
+"sondayla)."
+
+#, python-format
 msgid "%(protocol)s, assigned to %(unit)s, is for %(protocol_species)s; these fish are %(species)s."
 msgstr "%(unit)s birimine atanan %(protocol)s, %(protocol_species)s için; bu balıklar %(species)s."
 
@@ -1660,14 +1668,6 @@ msgstr ""
 #, python-format
 msgid "%(unit)s: %(fish)d fish counted on %(date)s, where the regulation asks for %(least)d in this week."
 msgstr "%(unit)s: %(date)s tarihinde %(fish)d balık sayıldı; yönetmelik bu hafta için %(least)d ister."
-
-#, python-format
-msgid ""
-"%(unit)s: the oxygen probe %(probes)s is silent; the oxygen is measured otherwise (by hand or by "
-"another probe)."
-msgstr ""
-"%(unit)s: oksijen sondası %(probes)s veri göndermiyor; oksijen başka yolla ölçülüyor (elle ya da "
-"başka bir sondayla)."
 
 #, python-format
 msgid ""

@@ -165,8 +165,18 @@ def posted(field):
              'type': attrs.get('type', input_type), **base}]
 
 
+def with_initial(field):
+    """posted(field) and the hidden copy of its first value, when it has one (show_hidden_initial)."""
+    initial = field['initial']
+    return posted(field) + ([{'name': initial['name'], 'value': '' if initial['value'] is None else str(initial['value']),
+                              'on': True, 'type': 'hidden', 'required': False, 'disabled': False, 'bounds': {}}]
+                            if initial else [])
+
+
 def normalised(controls):
-    """Controls compared on what is posted and how: a checkbox's value only counts when it is ticked."""
+    """Controls compared on what is posted and how. A control without a name posts nothing (the card designer's own
+    pickers): left out."""
+    controls = [c for c in controls if c['name']]
     return sorted(
         (c['name'] or '', c['value'],
          bool(c['on']), c['type'] if c['type'] in ('option', 'checkbox', 'radio', 'file', 'hidden', 'textarea')
@@ -209,7 +219,7 @@ class FormPayloadTests(TestCase):
                         continue
                     field = fields[bound.html_name]
                     old = drawn(bound)
-                    self.assertEqual(normalised(posted(field)), normalised(old.controls), bound.html_name)
+                    self.assertEqual(normalised(with_initial(field)), normalised(old.controls), bound.html_name)
                     label = old.said('legend') if bound.use_fieldset else old.said('label')
                     self.assertIn(' '.join(str(field['label']).split()), label, bound.html_name)
                     if field['help'] and 'text' in field['help']:

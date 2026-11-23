@@ -101,8 +101,24 @@ def _attrs(attrs):
 
 
 def _option(option):
-    return {'value': plain(option['value']) if option['value'] is not None else '', 'label': plain(option['label']),
+    """One choice, its value as the browser posts it (the old markup writes `value="{{ value }}"`: always text)."""
+    value = option['value']
+    return {'value': '' if value is None else str(plain(value)), 'label': plain(option['label']),
             'selected': bool(option['selected']), 'attrs': _attrs(option.get('attrs') or {})}
+
+
+def _initial(bound):
+    """The hidden copy of a field's first value (`show_hidden_initial`: a field that says whether it was changed, a site's
+    time zone), as BoundField.as_hidden(only_initial=True) writes it; None for a field without one."""
+    if not bound.field.show_hidden_initial:
+        return None
+    hidden = bound.field.hidden_widget()
+    if bound.form.is_bound and bound.html_initial_name in bound.form.data:
+        value = bound.form._widget_data_value(hidden, bound.html_initial_name)
+    else:
+        value = bound.value()
+    context = hidden.get_context(bound.html_initial_name, value, {})['widget']
+    return {'name': bound.html_initial_name, 'value': plain(context.get('value'))}
 
 
 def _text(value):
@@ -164,6 +180,7 @@ def field_payload(bound):
         'fieldset': bool(bound.use_fieldset),
         'errors': [str(error) for error in bound.errors],
         'widget': widget_payload(bound),
+        'initial': _initial(bound),
     }
 
 

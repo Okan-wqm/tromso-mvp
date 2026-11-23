@@ -6,7 +6,6 @@ page's own rows (farm.water.views._latest), the alarms the Alarms page's (alarms
 page's board and muster (hr.read), the reports the overview's due list (config.views._upcoming), the feed the Storage
 overview (inventory.read.overview), the messages the inbox (messaging.read), the activity what the person may read of
 the log (core.audit.readable). Only the split per site is done here, and it reads the same rows."""
-from collections import defaultdict
 from decimal import Decimal
 
 from django.conf import settings

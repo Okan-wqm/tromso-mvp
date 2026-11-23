@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 from decimal import Decimal
 
-from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
+from django.core.exceptions import NON_FIELD_ERRORS, PermissionDenied, ValidationError
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy
@@ -37,7 +37,7 @@ from . import allocation, read
 from . import design as design_module
 from .models import (
     DETAIL_FIELDS, TRANSITIONS, AllocationMethod, Experiment, ExperimentGroup, Factor, FactorKind, GroupLevel, GroupRole, Level,
-    Replicate, ReplicateSystem, ReplicateUnit, Status,
+    ExperimentShare, Member, Replicate, ReplicateSystem, ReplicateUnit, Status,
 )
 
 DESIGN = gettext_lazy('Design')
@@ -943,3 +943,88 @@ def replace_unit(user, placement, new_unit, from_day, reason, version):
                 raise _refused(BOOKED_MEANWHILE)
             _log_amendment(user, locked, before, reason, row.unit)
         return locked
+
+
+# ---- who may read it: shares and the audience (the lead's) ----------------------------------------------------------
+SHARES = gettext_lazy('Shares')
+AUDIENCE = gettext_lazy('Who may read it')
+
+
+def is_lead(user, experiment):
+    """Whether `user` is the experiment's lead now (its window open)."""
+    from .sealing import live
+    return Member._base_manager.filter(live(), experiment=experiment, user=user, role=Member.Role.LEAD).exists()
+
+
+def _lead_only(user, experiment):
+    if not is_lead(user, experiment):
+        raise PermissionDenied
+
+
+def describe_share(share):
+    """A share as the activity log keeps it, in English: who, which part, until when, why."""
+    grantee = share.user.get_username() if share.user_id else f'role {share.group.name}'
+    return f'{grantee}: {share.part} until {share.valid_until.date().isoformat()} ({share.reason})'
+
+
+def share(user, experiment, grantee, parts, until, reason, group=None):
+    """The lead gives `grantee` (a person, or with `group` a role) the `parts` of the experiment until `until`, for
+    `reason`; a part the grantee holds already is renewed (the old row revoked, history kept). Logged once on the
+    experiment ("Shares", the new rows). Returns the new rows."""
+    _lead_only(user, experiment)
+    reason = (reason or '').strip()
+    if not reason or not parts or until is None:
+        raise _refused(_('Say who, which parts, until when and why.'))
+    now = timezone.now()
+    made = []
+    with transaction.atomic():
+        Experiment.objects.select_for_update().get(pk=experiment.pk)
+        target = {'group': group} if group is not None else {'user': grantee}
+        for part in dict.fromkeys(parts):
+            ExperimentShare.objects.filter(experiment=experiment, part=part, revoked_at__isnull=True, **target).update(
+                revoked_at=now, revoked_by=user)
+            try:
+                with transaction.atomic():
+                    made.append(ExperimentShare.objects.create(experiment=experiment, part=part, valid_from=now,
+                                                               valid_until=until, reason=reason, created_by=user,
+                                                               **target))
+            except IntegrityError:
+                raise _refused(_('A share lasts at most two years and ends after it begins.'))
+        with audit.source_language():
+            audit.record(user, AuditLog.Action.UPDATE, experiment,
+                         {str(SHARES): [None, '; '.join(describe_share(row) for row in made)]})
+    return made
+
+
+def revoke(user, row):
+    """The lead ends a share now (the row stays, with who ended it and when). Logged once on the experiment."""
+    experiment = row.experiment
+    _lead_only(user, experiment)
+    with transaction.atomic():
+        updated = ExperimentShare.objects.filter(pk=row.pk, revoked_at__isnull=True).update(
+            revoked_at=timezone.now(), revoked_by=user)
+        if updated:
+            with audit.source_language():
+                audit.record(user, AuditLog.Action.UPDATE, experiment,
+                             {str(SHARES): [describe_share(row), None]})
+    return row
+
+
+def set_audience(user, experiment, audience):
+    """The lead makes the experiment sealed (its team and shares) or open (everyone who reads experiments). Logged."""
+    _lead_only(user, experiment)
+    if audience not in Experiment.Audience.values:
+        raise _refused(_('Choose who may read it.'))
+    with transaction.atomic():
+        locked = Experiment.objects.select_for_update().get(pk=experiment.pk)
+        if locked.audience == audience:
+            return locked
+        before = locked.get_audience_display()
+        locked.audience = audience
+        locked.version += 1
+        locked.updated_by = user
+        locked.save(update_fields=['audience', 'version', 'updated_by', 'updated_at'])
+        with audit.source_language():
+            audit.record(user, AuditLog.Action.UPDATE, locked,
+                         {str(AUDIENCE): [audit.message(before), audit.message(locked.get_audience_display())]})
+    return locked

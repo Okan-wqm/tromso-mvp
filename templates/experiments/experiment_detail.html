@@ -15,16 +15,30 @@
     <div><dt>{% trans "Primary endpoint" %}</dt><dd>{{ object.get_primary_endpoint_display|default:"–" }}</dd></div>
     {% if object.copied_from_id %}<div><dt>{% trans "Copied from" %}</dt><dd>{{ object.copied_from }}</dd></div>{% endif %}
   </dl>
+  {% if "design" in parts %}
   {% if object.hypothesis %}<h2 class="section-title">{% trans "Hypothesis" %}</h2><p>{{ object.hypothesis|linebreaksbr }}</p>{% endif %}
   {% if object.notes %}<h2 class="section-title">{% trans "Notes" %}</h2><p>{{ object.notes|linebreaksbr }}</p>{% endif %}
+  {% endif %}
 </section>
 {% if can_start %}<p><a class="button button-inline" href="{{ start_url }}" data-modal>{% trans "Start the experiment" %}</a></p>{% endif %}
-{% include "experiments/_copy_buttons.html" %}
+{% if in_team %}{% include "experiments/_copy_buttons.html" %}{% endif %}
+{% if is_lead %}<p><a class="button button-ghost" href="{{ sharing_url }}">{% trans "Sharing" %}</a></p>{% endif %}
 <nav class="ui-tabs" aria-label="{% trans "Experiment" %}">
   {% for key, label, href in tabs %}<a class="ui-tab" href="{{ href }}"{% if tab == key %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
 </nav>
 {% if tab == "overview" %}{% include "experiments/_overview.html" %}
 {% elif tab == "data" %}{% include "experiments/_data.html" %}
+{% elif tab == "looked" %}
+<section class="detail-section">
+  <h2 class="section-title">{% trans "Who looked" %}</h2>
+  <div class="table-wrap"><table class="data-table">
+    <thead><tr><th scope="col">{% trans "When" %}</th><th scope="col">{% trans "Person" %}</th><th scope="col">{% trans "Kind" %}</th><th scope="col">{% trans "Part" %}</th></tr></thead>
+    <tbody>
+      {% for event in looked %}<tr><td class="nowrap">{{ event.at|date:"DATETIME_FORMAT" }}</td><td>{{ event.user_name }}</td><td>{{ event.get_kind_display }}</td><td>{{ event.part|default:"–" }}</td></tr>
+      {% empty %}<tr><td colspan="4" class="muted">{% trans "No one outside the team has read it." %}</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</section>
 {% else %}
 <section class="detail-section">
   <h2 class="section-title">{% trans "Team" %}</h2>

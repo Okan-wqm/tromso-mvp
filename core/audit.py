@@ -13,10 +13,12 @@ from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models import Max
+from django.db.models.functions import Cast
 from django.utils import translation
 from django.utils.text import capfirst
 from django.utils.translation import gettext_lazy as _, gettext_noop
 
+from . import sealing
 from .models import AuditLog
 
 
@@ -37,10 +39,35 @@ def hidden_types(user):
 
 
 def readable(user, entries=None):
-    """The log entries `user` may read: every one but those of a restricted record type they lack the permission for."""
+    """The log entries `user` may read: every one but those of a restricted record type they lack the permission for,
+    and those about a record the viewer of the moment may not see (core.sealing: a sealed cell's records, decided at
+    read time from the same seals, nothing stamped on the log)."""
     entries = AuditLog.objects.all() if entries is None else entries
     hidden = hidden_types(user)
-    return entries.exclude(entity_type__in=hidden) if hidden else entries
+    entries = entries.exclude(entity_type__in=hidden) if hidden else entries
+    return sealed_out(entries)
+
+
+def entity_types(model):
+    """Every name the log may give a record of `model`: its own, and that of each tab that serves it."""
+    from .crud import Resource
+    return sorted({entity_type_of(model), *(tab.entity_type() for tab in Resource.registry if tab.model is model)})
+
+
+def sealed_out(entries):
+    """`entries` without those about a record the viewer of the moment may not see."""
+    current = sealing.viewer()
+    if current is None or current.is_super:
+        return entries
+    for seal in sealing.registry():
+        if not seal.filters:
+            continue
+        condition = sealing.hidden(seal, current)
+        if condition is None:
+            continue
+        ids = seal.model._base_manager.filter(condition).annotate(log_id=Cast('pk', models.CharField())).values('log_id')
+        entries = entries.exclude(entity_type__in=entity_types(seal.model), entity_id__in=ids)
+    return entries
 
 
 def source_language():

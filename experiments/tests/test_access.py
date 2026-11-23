@@ -29,8 +29,8 @@ class AccessCase(TestCase):
         return self.client.get(reverse('experiments:experiment_detail', args=[self.experiment.pk])
                                + (f'?tab={tab}' if tab else ''))
 
-    def give(self, part, user=None, **fields):
-        values = {'experiment': self.experiment, 'user': user or self.researcher, 'part': part, 'reason': 'Review',
+    def give(self, part, **fields):
+        values = {'experiment': self.experiment, 'user': self.researcher, 'part': part, 'reason': 'Review',
                   'valid_until': timezone.now() + timedelta(days=10), **fields}
         return ExperimentShare.objects.create(**values)
 

@@ -1,0 +1,37 @@
+{% extends base_template %}
+{% load i18n %}
+{% comment %} The lead's Sharing page (experiments.resources.ExperimentSharingView): who outside the team holds which part of the
+   experiment until when and why, revoked ones kept as history, and a new share. {% endcomment %}
+{% block title %}{% trans "Sharing" %}{% endblock %}
+{% block eyebrow %}{{ group }} · {{ object.code }}{% endblock %}
+{% block heading %}{% trans "Sharing" %}{% endblock %}
+{% block content %}
+<section class="detail-section">
+  <p>{% blocktrans trimmed with audience=object.get_audience_display %}Who may read it: {{ audience }}. A person or a role outside the team reads only the parts shared with them, until the day given.{% endblocktrans %}</p>
+  <div class="table-wrap"><table class="data-table">
+    <thead><tr><th scope="col">{% trans "Person or role" %}</th><th scope="col">{% trans "Part" %}</th><th scope="col">{% trans "Until" %}</th><th scope="col">{% trans "Reason" %}</th><th scope="col">{% trans "Status" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>
+    <tbody>
+      {% for share in shares %}
+      <tr>
+        <td>{% if share.user %}{{ share.user.get_full_name|default:share.user.get_username }}{% else %}{{ share.group.name }}{% endif %}</td>
+        <td>{{ share.get_part_display }}</td><td class="nowrap">{{ share.valid_until|date:"DATE_FORMAT" }}</td><td>{{ share.reason }}</td>
+        <td>{% if share.revoked_at %}{% blocktrans trimmed with day=share.revoked_at|date:"DATE_FORMAT" %}Revoked {{ day }}{% endblocktrans %}{% elif share.valid_until < now %}{% trans "Ended" %}{% else %}{% trans "Live" %}{% endif %}</td>
+        <td class="row-actions">{% if not share.revoked_at and share.valid_until > now %}<form method="post" action="{% url "experiments:experiment_revoke" object.pk share.pk %}">{% csrf_token %}<button type="submit" class="button button-ghost">{% trans "Revoke" %}</button></form>{% endif %}</td>
+      </tr>
+      {% empty %}<tr><td colspan="6" class="muted">{% trans "Nothing is shared." %}</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</section>
+<section class="detail-section">
+  <h2 class="section-title">{% trans "Share a part" %}</h2>
+  <form method="post" action="{{ request.path }}" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="form-grid">{% for field in form.visible_fields %}{% include "registration/_field.html" %}{% endfor %}</div>
+    <div class="form-actions">
+      <a class="button button-ghost" href="{{ back_url }}">{% trans "Back" %}</a>
+      <button type="submit" class="button button-inline">{% trans "Share" %}</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

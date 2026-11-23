@@ -34,7 +34,7 @@ from django.utils import timezone
 from django.utils.text import capfirst
 from django.utils.translation import gettext as _, ngettext
 
-from . import audit
+from . import audit, sealing
 from .models import AuditedModel, AuditLog, violated_constraint
 
 # LOCK ORDER. The one order every write takes its locks on the farm's structure in: the fish first (batches, then
@@ -56,6 +56,15 @@ class DeletePlan:
     # (model, pk) of a record the plan takes along, or (model, pk, link) of one it detaches -> (the link it hangs by,
     # (model, pk) of what it points at)
     via: dict = field(default_factory=dict)
+    hidden: set = field(default_factory=set)      # (model, pk) of the records the person may not see (core.sealing)
+
+    @property
+    def restricted(self):
+        """How many records the delete reaches that the person may not see: counted, never named."""
+        return len(self.hidden)
+
+    def shown(self, record):
+        return (type(record), record.pk) not in self.hidden
 
     @property
     def can_delete(self):
@@ -73,13 +82,14 @@ class DeletePlan:
         """[{'label': 'Systems', 'records': [...]}] for the confirmation."""
         return [
             {'label': capfirst(model._meta.verbose_name_plural), 'records': records}
-            for model, records in self._by_model(self.cascade).items()
+            for model, records in self._by_model([record for record in self.cascade if self.shown(record)]).items()
         ]
 
     def detached_groups(self):
         """[{'label': 'Production departments', 'link': 'site', 'records': [...]}]: kept, but losing their link."""
         groups = []
-        for model, pairs in self._by_model(self.detach, record_of=lambda pair: pair[0]).items():
+        shown = [pair for pair in self.detach if self.shown(pair[0])]
+        for model, pairs in self._by_model(shown, record_of=lambda pair: pair[0]).items():
             for link in dict.fromkeys(link for _record, link in pairs):
                 groups.append({
                     'label': capfirst(model._meta.verbose_name_plural),
@@ -91,7 +101,9 @@ class DeletePlan:
     @property
     def kept(self):
         """{model: how many of its records keep their link}, each record counted once."""
-        return {model: len(pks) for model, pks in self.kept_records.items()}
+        counted = {model: len([pk for pk in pks if (model, pk) not in self.hidden])
+                   for model, pks in self.kept_records.items()}
+        return {model: count for model, count in counted.items() if count}
 
     def kept_groups(self):
         """[{'label': 'Water samples', 'count': 120, 'note': ...}]: kept as they are; the note says what
@@ -103,21 +115,44 @@ class DeletePlan:
         """[{'label': 'Equipment', 'records': [...]}]: linked to a deleted record, keeping the link row."""
         return [
             {'label': capfirst(model._meta.verbose_name_plural), 'records': records}
-            for model, records in self._by_model(self.unlinked).items()
+            for model, records in self._by_model([record for record in self.unlinked if self.shown(record)]).items()
         ]
 
 
 def plan_delete(obj):
-    """What deleting `obj` would do, without doing it."""
+    """What deleting `obj` would do, without doing it. Collected as the system (a delete reaches every record its links
+    reach), then shown as the person: what they may not see is counted ("N restricted records"), never named, and a
+    delete that reaches it is refused to them (core.sealing)."""
     plan = DeletePlan(obj)
-    _collect(obj, plan, {(type(obj), obj.pk)})
+    with sealing.system('the delete plan'):
+        _collect(obj, plan, {(type(obj), obj.pk)})
     deleted = {(type(record), record.pk) for record in plan.cascade}
     plan.detach = [(record, link) for record, link in plan.detach if (type(record), record.pk) not in deleted]
     plan.unlinked = list({(type(record), record.pk): record for record in plan.unlinked
                           if (type(record), record.pk) not in deleted}.values())
     kept = {model: {pk for pk in pks if (model, pk) not in deleted} for model, pks in plan.kept_records.items()}
     plan.kept_records = {model: pks for model, pks in kept.items() if pks}
+    _hide(plan)
     return plan
+
+
+def _hide(plan):
+    """Marks the records the viewer of the moment may not see, and refuses a delete that would change one of them."""
+    reached = {}
+    for record in [*plan.cascade, *(record for record, _link in plan.detach), *plan.unlinked]:
+        reached.setdefault(type(record), set()).add(record.pk)
+    for model, pks in plan.kept_records.items():
+        reached.setdefault(model, set()).update(pks)
+    for model, pks in reached.items():
+        seen = set(model._default_manager.filter(pk__in=pks).values_list('pk', flat=True)) \
+            if sealing.seal_of(model) else pks
+        plan.hidden.update((model, pk) for pk in pks if pk not in seen)
+    changed = {(type(record), record.pk) for record in [*plan.cascade, *(record for record, _link in plan.detach)]}
+    if changed & plan.hidden:
+        plan.blockers.append(ngettext(
+            'It reaches %(count)d record you may not see: someone who may see it deletes it.',
+            'It reaches %(count)d records you may not see: someone who may see them deletes it.',
+            len(changed & plan.hidden)) % {'count': len(changed & plan.hidden)})
 
 
 def _cascade(children, plan, seen, link, parent):

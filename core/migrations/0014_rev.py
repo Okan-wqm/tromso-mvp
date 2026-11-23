@@ -7,6 +7,9 @@
   starts above the floor row ('*', 0) a rebuild sets. A second note of a key already pending is skipped unless its day
   is earlier, so a 5,000-line operation writes one row per key;
 - core_rev_truncated(): a TRUNCATE fires no row trigger, so the statement trigger moves every key of its scope at once.
+core_rev_ensure(scopes, keys) gives every key without a row one (the key's history unknown: its day the whole history),
+above the floor, in sorted order; a key with a row is left as it is. The farm's and the sensors' migrations call it for
+the keys that exist when they add their triggers, so a stored figure can be stamped for any key, touched or not.
 core_rev_mark_built(scope, key, rev0) is a builder's compare-and-set. The table is rewritten often: fillfactor 50 keeps
 its updates HOT.
 
@@ -81,6 +84,19 @@ BEGIN
 END
 $$;
 
+CREATE FUNCTION core_rev_ensure(p_scopes text[], p_keys text[]) RETURNS integer LANGUAGE sql AS $$
+    WITH made AS (
+        INSERT INTO core_rev (scope, key, rev, dirty_epoch, dirty_from)
+        SELECT u.scope, u.key, coalesce((SELECT f.rev FROM core_rev f WHERE f.scope = '*' AND f.key = '0'), 0) + 1, 0,
+               DATE '0001-01-01'
+        FROM (SELECT DISTINCT * FROM unnest(p_scopes, p_keys) AS u(scope, key)) AS u
+        ORDER BY 1, 2
+        ON CONFLICT (scope, key) DO NOTHING
+        RETURNING 1
+    )
+    SELECT count(*)::integer FROM made
+$$;
+
 CREATE FUNCTION core_rev_mark_built(p_scope text, p_key text, p_rev bigint) RETURNS boolean LANGUAGE plpgsql AS $$
 DECLARE
     done boolean;
@@ -93,8 +109,12 @@ END
 $$;
 """
 
+# The keys that exist now get a row (core_rev_ensure): the platform settings' table.
+BACKFILL = "SELECT core_rev_ensure(ARRAY['platform_settings'], ARRAY['0'])"
+
 DROP = """
 DROP FUNCTION IF EXISTS core_rev_mark_built(text, text, bigint);
+DROP FUNCTION IF EXISTS core_rev_ensure(text[], text[]);
 DROP FUNCTION IF EXISTS core_rev_truncated();
 DROP FUNCTION IF EXISTS core_rev_apply();
 DROP FUNCTION IF EXISTS core_rev_flush();
@@ -129,4 +149,5 @@ class Migration(migrations.Migration):
         migrations.RunSQL('ALTER TABLE core_rev SET (fillfactor = 50)', 'ALTER TABLE core_rev RESET (fillfactor)'),
         migrations.RunSQL(FUNCTIONS, DROP),
         TrackRev('platform_settings', 'platform_settings'),
+        migrations.RunSQL(BACKFILL, migrations.RunSQL.noop),
     ]

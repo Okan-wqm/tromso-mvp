@@ -17,4 +17,7 @@ class Migration(migrations.Migration):
     operations = [
         TrackRev('sensors_binding', 'sensors_binding'),
         TrackRev('sensors_channel', 'sensors_channel'),
+        # the keys that exist now get a row (core_rev_ensure, core/0014)
+        migrations.RunSQL("SELECT core_rev_ensure(ARRAY['sensors_binding', 'sensors_channel'], ARRAY['0', '0'])",
+                          migrations.RunSQL.noop),
     ]

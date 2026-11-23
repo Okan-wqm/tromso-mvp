@@ -1,6 +1,7 @@
 """After a restore, or a load run with the revision triggers off: moves every revision of core_rev past every stored
-figure's stamp (core.rev.rebuild), so each stored figure is built again from the data. Safe to run at any time: it
-never changes a business row, it only makes stored figures miss once."""
+figure's stamp (core.rev.rebuild), so each stored figure is built again from the data. It never changes a business
+row, it only makes stored figures miss once. It locks the revision table while it runs (a second or less): writes to the
+tracked tables wait for it at their commit. A missing trigger is named; `manage.py core_rev_repair` makes it again."""
 from django.core.management.base import BaseCommand
 from django.db import transaction
 

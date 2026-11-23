@@ -19,6 +19,18 @@ TABLES = ('water_sampling_points', 'water_limits', 'species', 'water_freshness',
           'production_departments', 'equipment', 'equipment_systems')
 
 
+# Every key that exists when the triggers come gets a row (core_rev_ensure, core/0014): the points, the units, the
+# batches and the tables. A key with no row is unknown and never valid; without this, a point nothing has changed since
+# would never be served from a stored row.
+BACKFILL = (
+    "SELECT core_rev_ensure(coalesce(array_agg(s), '{}'), coalesce(array_agg(k), '{}')) FROM ("
+    "SELECT 'water_point' AS s, id::text AS k FROM water_sampling_points "
+    "UNION ALL SELECT 'unit_stock', id::text FROM tanks "
+    "UNION ALL SELECT 'batch', id::text FROM batches "
+    "UNION ALL SELECT t, '0' FROM unnest(%s) AS t) AS q"
+) % ('ARRAY[' + ', '.join(f"'{table}'" for table in TABLES) + ']::text[]')
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -40,4 +52,5 @@ class Migration(migrations.Migration):
                  day="DATE '0001-01-01'", columns=('species_id',), events=('UPDATE',)),
         TrackRev('water_measurements', 'water_point', keys='{row}.point_id'),
         *(TrackRev(table, table) for table in TABLES),
+        migrations.RunSQL(BACKFILL, migrations.RunSQL.noop),
     ]

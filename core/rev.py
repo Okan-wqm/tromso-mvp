@@ -5,7 +5,8 @@ stage 3).
 void, or the species of that batch changes. The database moves it, by triggers a migration adds with
 `core.operations.TrackRev`; no Python code bumps anything, so raw SQL, `bulk_create`, the admin, a TRUNCATE and a
 restore are all covered. A change is noted while the transaction runs and applied at COMMIT, once per key, in sorted key
-order (no deadlock between writers, a lock held for microseconds); a transaction rolled back moves nothing.
+order (no deadlock between writers; each key's row is locked from the apply to the end of the COMMIT, which on a big
+operation is the rest of its commit, a tenth of a second or so); a transaction rolled back moves nothing.
 
 Besides the counter a row holds `dirty_from`, the earliest day changed since the last build, and `dirty_epoch`, the
 revision of that build. A figure stored with the revision it was built from (`built_rev`, read BEFORE the data) is
@@ -24,13 +25,21 @@ for the stored water the plan's B3 builds:
   site and clock), the equipment and the systems it serves (whose units an equipment point is judged for), the platform
   settings (the clock tolerance), the sensors' bindings and channels (which channel counts where, its scale, its
   freshness).
-No trigger sits on a table the ingest (sensors-ingest, Rust) writes: NEVER_TRACKED. A live value is proved by its
-channel's state itself (the reader compares it), never by a revision.
+No trigger sits on a table the ingest (sensors-ingest, Rust) writes: NEVER_TRACKED, which a test holds equal to the
+tables its database role may write. A live value is proved by its channel's state itself (the reader compares it), never
+by a revision.
+
+A key with no row is unknown, never valid: `ensure(pairs)` gives keys a row (above the floor, the whole history dirty),
+and the migrations that add the triggers do it for every key that exists then. A reader ensures its keys, then stamps
+them, then reads the data. `missing()` names a trigger that is gone or off; `repair()` (manage.py core_rev_repair) makes
+the missing ones again and rebuilds.
 
 The audit revision (core.audit.revision) is NOT a proof: admin edits, restores and raw SQL need not log."""
 from datetime import date
 
-from django.db import connection
+import importlib
+
+from django.db import connection, transaction
 
 # The day a change that may touch the whole history notes (a batch's species, a line whose operation is gone, any change
 # of a scope without days).
@@ -59,7 +68,10 @@ TRACKED = (
 )
 # The tables the ingest writes, many times a second: a trigger there would slow every reading and could stop the
 # ingest's COMMITs (live-arch CONSENSUS). A test holds that none of them has a revision trigger.
-NEVER_TRACKED = ('sensors_reading', 'sensors_channel_state', 'sensors_device_state')
+NEVER_TRACKED = ('sensors_reading', 'sensors_channel_state', 'sensors_device_state', 'sensors_ingest_status',
+                 'sensors_dead_letter')
+# The migrations that make the triggers (core.operations.TrackRev): `operations()` reads them, `repair()` replays them.
+MIGRATIONS = ('core.migrations.0014_rev', 'farm.migrations.0050_rev_triggers', 'sensors.migrations.0014_rev_triggers')
 # SQL giving the largest revision a stored figure was stamped with, one per table of stored figures (a checkpoint's
 # built_rev); a rebuild moves every revision past all of them.
 STAMPED = []
@@ -114,12 +126,31 @@ def settle():
         cursor.execute('SET CONSTRAINTS ALL DEFERRED')
 
 
+def ensure(pairs):
+    """Gives each (scope, key) without a row one, above the floor and with the whole history dirty (nothing is known of
+    it), in sorted order; a key with a row keeps it. Returns how many were made. A reader ensures the keys it will stamp
+    before it stamps them: a key with no row is never valid, so a point nothing ever changed would never be served."""
+    pairs = sorted({(scope, str(key)) for scope, key in pairs})
+    if not pairs:
+        return 0
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT core_rev_ensure(%s::text[], %s::text[])',
+                       [[scope for scope, _key in pairs], [key for _scope, key in pairs]])
+        return cursor.fetchone()[0]
+
+
 def rebuild(stamped=()):
     """After a restore or a load with the triggers off: every revision moves past every revision ever stamped (the
     restored rows may be older than the stored figures), its epoch with it, and the dirty days are cleared; the floor
-    for keys seen later is set to the same value. Every stored figure is then invalid and is built again."""
+    for keys seen later is set to the same value. Every stored figure is then invalid and is built again.
+
+    The table is locked first (SHARE ROW EXCLUSIVE: readers go on, writers' commits wait until the rebuild's transaction
+    ends) and only then is the largest revision read, so a commit can neither deadlock with the rebuild (it would
+    otherwise take every row in the table's physical order while a commit takes its rows in key order) nor land between
+    the read and the update and be set back."""
     found = list(stamped)
-    with connection.cursor() as cursor:
+    with transaction.atomic(), connection.cursor() as cursor:
+        cursor.execute('LOCK TABLE core_rev IN SHARE ROW EXCLUSIVE MODE')
         for sql in STAMPED:
             cursor.execute(sql)
             found.append(cursor.fetchone()[0])
@@ -159,3 +190,31 @@ def missing():
     found = [name for name in names if name in root]
     found += sorted(f'{name} on {child}' for name, child in gone if child is not None)
     return found
+
+
+def operations():
+    """Every TrackRev of the migrations that make the triggers, as they are written there."""
+    from .operations import TrackRev
+    found = []
+    for module in MIGRATIONS:
+        found += [each for each in importlib.import_module(module).Migration.operations if isinstance(each, TrackRev)]
+    return found
+
+
+def repair():
+    """Makes again the triggers `missing()` names (dropped, disabled or replica-only, on a table or a hypertable's
+    chunk): each broken (table, scope) gets its function and its three triggers made anew, exactly as its migration
+    made them (TimescaleDB puts the row triggers on every chunk), then every revision is rebuilt, since changes may have
+    passed unseen while they were gone. Returns the (table, scope) pairs made again; nothing is done when none is
+    missing."""
+    gone = {name.split(' on ')[0] for name in missing()}
+    broken = [operation for operation in operations() if gone & set(operation.names())]
+    if not broken:
+        return []
+    with transaction.atomic():
+        with connection.schema_editor(atomic=False) as editor:
+            for operation in broken:
+                operation.database_backwards('core', editor, None, None)
+                operation.database_forwards('core', editor, None, None)
+        rebuild()
+    return [(operation.table, operation.scope) for operation in broken]

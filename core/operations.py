@@ -5,8 +5,8 @@
   row's, both when an update moves a row) and the earliest day it touches, and notes them for the transaction
   (`core_rev_note`: nothing is written, no lock is taken);
 - `core_rev_<table>_<scope>_apply`, a deferred constraint trigger, applies what was noted at COMMIT (`core_rev_apply`),
-  each key once and in sorted order, so the counter rows are locked for microseconds and two writers never lock them
-  in opposite orders;
+  each key once and in sorted order, so two writers never lock the counter rows in opposite orders (a row stays
+  locked from its apply to the end of that COMMIT);
 - `core_rev_<table>_<scope>_trunc`, an AFTER TRUNCATE statement trigger: a TRUNCATE fires no row trigger, so it moves
   every key of the scope at once (`core_rev_truncated`), with the whole history as the day.
 Because they are triggers, every writer is covered: the services, `bulk_create`, the admin, raw SQL and a restore."""

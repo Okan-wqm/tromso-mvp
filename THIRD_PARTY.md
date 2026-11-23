@@ -60,7 +60,7 @@ Installed only in the image the tests run in (`scripts/test.sh`); never on a ser
 | Package | Licence | What it is used for |
 |---|---|---|
 | `tblib` | BSD-2-Clause | Lets the parallel test runner send a failing test's traceback from its worker to the main process |
-| `ruff` (0.17.4, pinned exactly) | MIT | The Python linter of the project checks (`CHECKS=1 scripts/test.sh`, `ruff.toml`): errors only, pyflakes `F` and `E9`; reads the files, changes none |
+| `ruff` (0.17.6, pinned exactly) | MIT | The Python linter of the project checks (`CHECKS=1 scripts/test.sh`, `ruff.toml`): errors only, pyflakes `F` and `E9`; reads the files, changes none |
 
 ## CI-only tools (`.github/workflows/ci.yml`)
 

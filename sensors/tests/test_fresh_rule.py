@@ -290,7 +290,7 @@ class SwitchedOffTests(FreshRuleCase):
         self.assertEqual((alarm.clearance.cause, alarm.clearance.cleared_at),
                          ('event_closed', self.now + timedelta(seconds=10)))
         self.assertFalse(AlarmClearance.objects.filter(alarm__sensor_event=oxygen_event).exists())
-        logged = AuditLog.objects.filter(entity_type='alarm', entity_id=str(alarm.pk)).latest('id').changes
+        logged = AuditLog.objects.get(entity_type='alarm', entity_id=str(alarm.pk), changes__has_key='Cleared at').changes
         self.assertEqual((logged['Alarm rule'][1], logged['Why it is switched off'][1]),
                          ('pH (NBS scale): No fresh value · Inactive', 'Probes out for service.'))
 

@@ -17,13 +17,14 @@ from `SealingMiddleware`; management commands (but runserver) and the test runne
 a few named reads that must count everything (a legal figure, a fold, the delete plan, the booking check) run inside
 `system(reason)`, and a test names every such call site."""
 import contextvars
+from datetime import date
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 
 from django.core import checks
 from django.db import models
-from django.db.models import Exists, ExpressionWrapper, OuterRef, Q
-from django.db.models.functions import TruncDate
+from django.db.models import Exists, ExpressionWrapper, OuterRef, Q, Value
+from django.db.models.functions import Coalesce, TruncDate
 
 from .dates import company_today, company_zone
 
@@ -409,11 +410,14 @@ def _day_filter(model, day):
         today = company_today()
         return Q(from_on__lte=today, until_on__gte=today)
     if isinstance(day, tuple):
+        # A row that spans days (a binding, a treatment, a recurring task) meets a cell when the two overlap; an empty
+        # end is open (it runs on), an empty start has always been.
         first, last = day
-        last_ref = _day_ref(model, last)
-        condition = Q(until_on__gte=_day_ref(model, first))
-        return condition & (Q(from_on__lte=last_ref) if last_ref is not None else Q())
-    ref = _day_ref(model, day)
+        first_day = Coalesce(_day_ref(model, first), Value(date.min), output_field=models.DateField())
+        last_day = Coalesce(_day_ref(model, last), Value(date.max), output_field=models.DateField())
+        return Q(until_on__gte=first_day, from_on__lte=last_day)
+    # A row without its day (a task with no due date) lies on the cell while the cell is current.
+    ref = Coalesce(_day_ref(model, day), Value(company_today()), output_field=models.DateField())
     return Q(from_on__lte=ref, until_on__gte=ref)
 
 
@@ -424,7 +428,7 @@ def _day_ref(model, path):
         # The moment's day on the site's clock; the outer reference is given its type, which a reference to the outer
         # query does not carry (TruncDate asks for it).
         return TruncDate(ExpressionWrapper(ref, output_field=models.DateTimeField()), tzinfo=company_zone())
-    return ref
+    return ExpressionWrapper(ref, output_field=models.DateField())
 
 
 def _paths(value):

@@ -59,6 +59,8 @@ ROUTE_RECORDS = {
 # found by it (searches ignore case) is.
 SEARCH = world.CANARY.lower()
 CSRF = re.compile(rb'(csrfmiddlewaretoken" value="|csrftoken=|"csrfToken": ")[^"; ]+')
+# The Content-Security-Policy's nonce, new on every answer: in the page's script tags and in the header.
+NONCE = re.compile(rb'''(nonce="|'nonce-)[A-Za-z0-9+/=_-]+''')
 
 
 @dataclass(frozen=True)
@@ -115,8 +117,9 @@ def content(response):
 
 
 def normal(data, ids=()):
-    """An answer with what differs between two renders of the same page taken out: the CSRF tokens, and the ids tried."""
-    data = CSRF.sub(rb'\1-', data)
+    """An answer with what differs between two renders of the same page taken out: the CSRF tokens, the
+    Content-Security-Policy's nonce, and the ids tried."""
+    data = NONCE.sub(rb'\1-', CSRF.sub(rb'\1-', data))
     for value in ids:
         data = data.replace(str(value).encode(), b'<id>')
     return data

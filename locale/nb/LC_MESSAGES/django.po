@@ -13628,6 +13628,9 @@ msgstr "Stål"
 msgid "Step"
 msgstr "Trinn"
 
+msgid "Still loading? Open the full page"
+msgstr "Laster fortsatt? Åpne hele siden"
+
 msgid "Stock"
 msgstr "Beholdning"
 

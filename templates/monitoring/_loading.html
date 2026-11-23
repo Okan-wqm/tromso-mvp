@@ -4,4 +4,7 @@
    static/css/monitor.css shows one of its lines by the polled element's state: "Loading" while it is loading, "cannot
    be read" when the first answer failed ("unread": a 503, a server error, no answer), none when the person is signed
    out or may no longer read it ("gone": the page's own notice says so). Without script the grid's says where the full
-   page is. {% endcomment %}<div class="monitor-loading" data-key="loading"><p data-loading>{% if grid %}{% trans "Loading the cards…" %}{% else %}{% trans "Loading…" %}{% endif %}</p><p data-unread>{% trans "The cards cannot be read just now. The page tries again by itself." %}</p>{% if grid %}<noscript><p><a href="{{ full_url }}">{% trans "JavaScript is off: show the full page with the cards" %}</a></p></noscript>{% endif %}</div>
+   page is. The grid's has a WATCHDOG line too, hidden, that the sheet shows after half a minute (CSS only, an
+   animation's delay: it works when frontend/poll.ts never loads or never runs): a placeholder still there by then is
+   one no answer has replaced, and the line is the way to the page drawn with its cards; the first answer takes it
+   away with the placeholder. {% endcomment %}<div class="monitor-loading" data-key="loading"><p data-loading>{% if grid %}{% trans "Loading the cards…" %}{% else %}{% trans "Loading…" %}{% endif %}</p><p data-unread>{% trans "The cards cannot be read just now. The page tries again by itself." %}</p>{% if grid %}<p data-stuck><a href="{{ full_url }}">{% trans "Still loading? Open the full page" %}</a></p><noscript><p><a href="{{ full_url }}">{% trans "JavaScript is off: show the full page with the cards" %}</a></p></noscript>{% endif %}</div>

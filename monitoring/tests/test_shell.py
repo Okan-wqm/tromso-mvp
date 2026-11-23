@@ -116,6 +116,9 @@ class ShellTests(ShellCase):
                 link = re.search(r'<noscript><p><a href="([^"]+)">([^<]+)</a></p></noscript>', grid)
                 self.assertEqual(markup.unescape(link.group(1)), f'{PAGE}?{query}&full=1' if query else f'{PAGE}?full=1')
                 self.assertEqual(link.group(2), 'JavaScript is off: show the full page with the cards')
+                # the watchdog (review F1): the way to the full page, shown by the sheet after half a minute, without script
+                self.assertEqual(markup.unescape(re.search(r'<p data-stuck><a href="([^"]+)">Still loading\? Open the full page</a></p>',
+                                                           grid).group(1)), markup.unescape(link.group(1)))
                 # what the page says when its first answer fails, shown by static/css/monitor.css only then
                 self.assertIn('<p data-unread>The cards cannot be read just now. The page tries again by itself.</p>',
                               grid)
@@ -169,9 +172,10 @@ class ShellTests(ShellCase):
 
     def test_the_shell_in_norwegian_and_turkish(self):
         for language, words in {'nb': ('Laster kortene …', 'Kortene kan ikke leses akkurat nå. Siden prøver igjen av seg selv.',
-                                       'JavaScript er slått av: vis hele siden med kortene'),
+                                       'JavaScript er slått av: vis hele siden med kortene', 'Laster fortsatt? Åpne hele siden'),
                                 'tr': ('Kartlar yükleniyor…', 'Kartlar şu anda okunamıyor. Sayfa kendiliğinden yeniden deniyor.',
-                                       'JavaScript kapalı: kartlarla birlikte tam sayfayı göster')}.items():
+                                       'JavaScript kapalı: kartlarla birlikte tam sayfayı göster',
+                                       'Hâlâ yükleniyor mu? Tam sayfayı açın')}.items():
             Profile.objects.update_or_create(user=self.reader, defaults={'language': language})
             grid = self.grid_of(self.shell())
             for text in words:
@@ -191,6 +195,7 @@ class FocusTests(ShellCase):
         self.assertEqual(poll_of(opening), f'{PANE}?focus={self.t2.pk}&mode=small')
         self.assertIn('Loading…', BODY.search(frame).group(2))
         self.assertNotIn('<noscript>', BODY.search(frame).group(2))         # the grid's placeholder says it once
+        self.assertNotIn('data-stuck', BODY.search(frame).group(2))         # and its watchdog line
         self.assertEqual(self.client.get(poll_of(opening)).status_code, 200)
 
     def test_a_focus_on_a_unit_that_is_not_there_draws_no_pane_as_the_full_page(self):

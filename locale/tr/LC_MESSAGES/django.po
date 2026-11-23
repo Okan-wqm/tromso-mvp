@@ -13657,6 +13657,9 @@ msgstr "Çelik"
 msgid "Step"
 msgstr "Adım"
 
+msgid "Still loading? Open the full page"
+msgstr "Hâlâ yükleniyor mu? Tam sayfayı açın"
+
 msgid "Stock"
 msgstr "Stok"
 

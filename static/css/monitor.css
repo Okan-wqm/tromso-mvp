@@ -21,7 +21,8 @@
 .monitor-window-body[data-poll-state="gone"]::before { content: attr(data-gone-text); background: var(--crit); color: var(--on-crit); }
 .monitor-grid[data-poll-state="stale"]::before,
 .monitor-grid[data-poll-state="gone"]::before,
-.monitor-grid[data-poll-state="unread"] > .monitor-loading > [data-unread] {
+.monitor-grid[data-poll-state="unread"] > .monitor-loading > [data-unread],
+html[data-wall] .monitor-grid > .monitor-loading > p {
   padding: .75rem 1.25rem;
   font-size: clamp(1.25rem, 2.4vw, 2.5rem);
   text-align: center;
@@ -37,6 +38,13 @@
 .monitor-loading > [data-unread],
 [data-poll-state="unread"] > .monitor-loading > [data-loading],
 [data-poll-state="gone"] > .monitor-loading { display: none; }
+/* The watchdog (review F1): the grid's placeholder still there after half a minute is one no answer replaced (an
+   answer that never came, or frontend/poll.ts that never loaded or never ran): its line to the page drawn with its
+   cards (?full=1) shows then, by an animation's delay alone, so no script is needed. The first answer removes it with
+   the placeholder. Only transitions are turned off for reduced motion (base.css): this is not one, and it moves
+   nothing. On a wall it has the notices' size (above). */
+.monitor-loading > [data-stuck] { visibility: hidden; animation: monitor-stuck 0s linear 30s forwards; }
+@keyframes monitor-stuck { to { visibility: visible; } }
 
 /* ---- the wall: ?wall=1 puts data-wall on <html> (templates/app_base.html html_attrs) -------------------------- */
 html[data-wall] .rail,

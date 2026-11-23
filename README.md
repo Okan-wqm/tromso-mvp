@@ -1005,13 +1005,16 @@ or empty unit stays grey "no recent data" and raises no alarm, and so do the sen
 the fish). The other parameters keep their rule: a silent probe of them is a warning (its default rule), and an old
 value of them changes no card's state (`monitoring/tests/test_silent_oxygen.py`).
 One alarm per problem (review 2 of the branch, the coordinator's calls): a silent oxygen probe beside a FRESH typed
-oxygen (or another probe) is a warning of the alarm system, "T-02: the oxygen probe PROBE-T › O2 is silent; the oxygen
-is measured otherwise (by hand or by another probe)" (subject `system:unit:<unit>:oxygen_probe_silent`), the card
-following the fresh value; its default rule stands aside while that value is fresh (`read.oxygen_known`) and says its
-critical once it is not, and the warning ends (R3 p3). An old typed oxygen past its limit keeps its levels of the water
-limits, which say it: the alarm system's oxygen alarm stands aside while such a level holds or is open on the unit's
-oxygen (R4 p5); that the critical level and the warning level of one value are two alarms is main's design (ISA-18.2 L
-and LL: the warning is not notified while the critical is open). Two probes of one unit silent together (mg/L and %, or
+oxygen (or another probe) is a warning of the alarm system, one per probe wherever it is bound (a unit's point, its
+loop, an inlet or a piece of equipment no unit's water reads: review 3, N2), "PROBE-T › O2: T-02 › Middle: the oxygen
+probe is silent; the oxygen is measured otherwise (by hand or by another probe)" (subject
+`system:oxygen_probe_silent:<channel>`), the card following the fresh value; its default rule stands aside while that
+value is fresh (`read.oxygen_known`) and says its critical once it is not, and the warning ends (R3 p3). An old typed
+oxygen past its CRITICAL limit keeps its critical level of the water limits, which says it: the alarm system's oxygen
+critical stands aside while that level holds or is open on the unit's oxygen (R4 p5); past its warning limit only, its
+warning level stands beside the alarm system's critical, so a critical card is never only a warning alarm (review 3,
+N1). That the critical level and the warning level of one value are two alarms is main's design (ISA-18.2 L and LL: the
+warning is not notified while the critical is open). Two probes of one unit silent together (mg/L and %, or
 a primary and a backup) are an alarm each, one per channel as every sensor rule is (R4 p6). A farm's own "No fresh
 value" rule keeps the severity the farm gave it, a warning too: the farm's explicit choice (R3 p2). The check
 `sensors.W001` and the Alarm rules page do not list an oxygen channel without a rule: a unit with fish whose oxygen has

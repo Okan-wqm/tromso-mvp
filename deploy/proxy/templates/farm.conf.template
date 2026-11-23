@@ -36,15 +36,9 @@ map $uri $static_cache_control {
     default "no-cache";
 }
 
-gzip on;
-gzip_vary on;
-gzip_min_length 1024;
-gzip_types text/css application/javascript application/json image/svg+xml text/plain;
-
-upstream farm_web {
-    server web:8000;
-    keepalive 16;
-}
+# The web container by name through Docker's resolver, asked again every 10 s: a recreated container (an upgrade) gets
+# a new address, and the proxy follows it without a restart.
+resolver 127.0.0.11 valid=10s ipv6=off;
 
 server {
     listen 80 default_server;
@@ -74,8 +68,15 @@ server {
     ssl_session_timeout 1d;
     ssl_session_tickets off;
 
+    set $farm_web http://web:8000;
+
+    # Compressed: the static files only. A page holding a secret (a form's token) is never compressed (BREACH).
     location /static/ {
         alias /srv/static/;
+        gzip on;
+        gzip_vary on;
+        gzip_min_length 1024;
+        gzip_types text/css application/javascript application/json image/svg+xml;
         add_header Cache-Control $static_cache_control always;
         add_header X-Content-Type-Options nosniff always;
     }

@@ -3,7 +3,7 @@
 #           script (init/, sql/roles.sql) and the folder the WAL is archived to, owned by postgres so that a new volume
 #           mounted there is writable by the server
 #   backup  the same image (its pg_dump, pg_basebackup and pg_archivecleanup are the server's own version) with restic,
-#           which encrypts and copies the backups off the server (deploy/backup/README.md); runs as postgres
+#           which encrypts and copies the backups off the server (docs/ops/backup-and-restore.md); runs as postgres
 # Build context: deploy/.
 FROM timescale/timescaledb:2.17.2-pg17@sha256:3324f81ca7f84cdc2dc4497863b3798ababa8ce130c5b59d73f0b40e3a34148e AS db
 RUN mkdir -p /wal-archive /etc/balik/sql \
@@ -11,6 +11,8 @@ RUN mkdir -p /wal-archive /etc/balik/sql \
  && chmod 0700 /wal-archive
 COPY db/sql/ /etc/balik/sql/
 COPY db/init/ /docker-entrypoint-initdb.d/
+# run in a shell of its own, never sourced into the entrypoint's
+RUN chmod 0755 /docker-entrypoint-initdb.d/100-balik-roles.sh
 
 FROM db AS backup
 # restic (BSD-2-Clause), the release binary checked against the sha256 its release lists.
@@ -23,7 +25,7 @@ RUN wget -q -O /tmp/restic.bz2 \
  && install -m 0755 /tmp/restic /usr/local/bin/restic \
  && rm -f /tmp/restic \
  && restic version \
- && mkdir -p /backups /media-ro \
+ && mkdir -p /backups \
  && chown postgres:postgres /backups
 COPY backup/ /usr/local/lib/balik-backup/
 USER postgres

@@ -158,19 +158,19 @@ cleanup_wal() {
 ship() {
   mkdir -p "$DUMPS" "$BASES"
   log "ship to the repository (host $HOST_TAG)"
-  restic backup --no-scan --host "$HOST_TAG" --tag balik --exclude '*.part' "$DUMPS" "$BASES" "$WAL" "$MEDIA"
+  restic backup --retry-lock 10m --no-scan --host "$HOST_TAG" --tag balik --exclude '*.part' "$DUMPS" "$BASES" "$WAL" "$MEDIA"
   log "ship done"
 }
 
 forget() {
   log "retention: hourly $KEEP_HOURLY, daily $KEEP_DAILY, weekly $KEEP_WEEKLY, monthly $KEEP_MONTHLY"
-  restic forget --host "$HOST_TAG" --tag balik --prune --keep-hourly "$KEEP_HOURLY" --keep-daily "$KEEP_DAILY" \
+  restic forget --retry-lock 10m --host "$HOST_TAG" --tag balik --prune --keep-hourly "$KEEP_HOURLY" --keep-daily "$KEEP_DAILY" \
     --keep-weekly "$KEEP_WEEKLY" --keep-monthly "$KEEP_MONTHLY"
 }
 
 check() {
   log "repository check (5 % of the data read back)"
-  restic check --read-data-subset=5%
+  restic check --retry-lock 10m --read-data-subset=5%
 }
 
 job() {  # job NAME: runs it in a shell of its own, so that its first failing command ends it (inside a condition a
@@ -203,9 +203,16 @@ restore_dump() {
   log "restore of $file into $PGDATABASE"
   psql -X -v ON_ERROR_STOP=1 -c 'SELECT timescaledb_pre_restore()' > /dev/null
   status=0
-  pg_restore --exit-on-error --dbname="$PGDATABASE" "$file" || status=$?
+  pg_restore --dbname="$PGDATABASE" "$file" 2> /tmp/restore.log || status=$?
   psql -X -v ON_ERROR_STOP=1 -c 'SELECT timescaledb_post_restore()' > /dev/null
-  [ "$status" = 0 ] || die "pg_restore failed ($status)"
+  # Every statement pg_restore could not run is an error here, but one: the database's first start already wrote
+  # TimescaleDB's own installation row (metadata, key exported_uuid), which the dump holds too. Anything else stops.
+  grep '^pg_restore: error' /tmp/restore.log | grep -v 'unique constraint "metadata_pkey"' > /tmp/restore.errors || true
+  if [ -s /tmp/restore.errors ] || { [ "$status" != 0 ] && ! grep -q 'metadata_pkey' /tmp/restore.log; }; then
+    cat /tmp/restore.log
+    die "pg_restore failed ($status)"
+  fi
+  if [ "$status" != 0 ]; then log "pg_restore: TimescaleDB's installation row was already there (kept the new one)"; fi
   psql -X -v ON_ERROR_STOP=1 -c 'ANALYZE' > /dev/null
   log "restore done"
 }

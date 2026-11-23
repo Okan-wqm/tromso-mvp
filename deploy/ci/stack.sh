@@ -79,7 +79,7 @@ EOF
 
 up() {
   say "the backup repository (restic init)"
-  "${DC[@]}" run --rm backup init
+  "${DC[@]}" run --rm -T backup init
   say "start"
   "${DC[@]}" up -d
   say "wait for every service to be healthy (10 minutes at most)"
@@ -107,10 +107,10 @@ roles() {
 
 data() {
   say "the first admin (createsuperuser, as the app role)"
-  "${DC[@]}" run --rm --no-deps -e DJANGO_SUPERUSER_PASSWORD="$(cat "$ADMIN_PASSWORD_FILE")" web \
+  "${DC[@]}" run --rm -T --no-deps -e DJANGO_SUPERUSER_PASSWORD="$(cat "$ADMIN_PASSWORD_FILE")" web \
     python manage.py createsuperuser --no-input --username ci-admin --email ci-admin@farm.ci.invalid
   say "synthetic data: the HR demonstration company (seed_hr_demo, DEBUG on as on a developer's machine)"
-  "${DC[@]}" run --rm --no-deps -e DJANGO_DEBUG=1 web python manage.py seed_hr_demo
+  "${DC[@]}" run --rm -T --no-deps -e DJANGO_DEBUG=1 web python manage.py seed_hr_demo
   say "synthetic readings, written as the ingest role (new chunks made by a role that owns nothing)"
   psql_as sensors_ingest db_ingest_password "INSERT INTO sensors_reading (channel_no, ts, value)
     SELECT 1, ts, 7 + random() FROM generate_series(now() - interval '60 days', now(), interval '10 minutes') AS ts"
@@ -175,18 +175,18 @@ restore() {
   say "a second, empty installation: its database made by the image's first start"
   "${RC[@]}" up -d --wait db
   say "the latest snapshot fetched from the repository (decrypted with the repository's password)"
-  "${RC[@]}" run --rm --no-deps restore fetch latest /backups/restore
-  dump=$("${RC[@]}" run --rm --no-deps --entrypoint sh restore -c 'ls -1 /backups/restore/backups/dumps/balik-*Z.dump | tail -n 1')
+  "${RC[@]}" run --rm -T --no-deps restore fetch latest /backups/restore
+  dump=$("${RC[@]}" run --rm -T --no-deps --entrypoint sh restore -c 'ls -1 /backups/restore/backups/dumps/balik-*Z.dump | tail -n 1')
   echo "dump: $dump"
   say "the dump restored as the superuser, then every table's row count compared with the backup's"
-  "${RC[@]}" run --rm --no-deps restore restore-dump "$dump"
-  "${RC[@]}" run --rm --no-deps restore verify-counts "$dump.counts"
+  "${RC[@]}" run --rm -T --no-deps restore restore-dump "$dump"
+  "${RC[@]}" run --rm -T --no-deps restore verify-counts "$dump.counts"
   say "the application on the restored database: every migration applied, the deploy check clean"
-  "${RC[@]}" run --rm --no-deps web python manage.py migrate --check
+  "${RC[@]}" run --rm -T --no-deps web python manage.py migrate --check
 }
 
 pitr() {
-  base=$("${RC[@]}" run --rm --no-deps --entrypoint sh restore -c 'ls -1d /backups/restore/backups/base/balik-*Z | tail -n 1')
+  base=$("${RC[@]}" run --rm -T --no-deps --entrypoint sh restore -c 'ls -1d /backups/restore/backups/base/balik-*Z | tail -n 1')
   echo "base backup: $base"
   docker volume create farm-pitr-data > /dev/null
   say "a data folder from the base backup, replaying the archived WAL of the snapshot"

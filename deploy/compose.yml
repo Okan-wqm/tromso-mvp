@@ -127,8 +127,11 @@ services:
       DB_USER: balik_owner
       DB_PASSWORD_FILE: /run/secrets/db_owner_password
     secrets: [django_secret_key, django_audit_digest_key, db_owner_password, email_password]
+    # The first to mount them, so both volumes start owned by the web image's user (a volume takes its first
+    # container's folder): static for the files below, media for the web server's uploads.
     volumes:
       - static:/srv/static
+      - media:/srv/media
     restart: "no"
     healthcheck:
       disable: true

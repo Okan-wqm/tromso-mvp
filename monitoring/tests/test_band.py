@@ -115,7 +115,7 @@ class BandPageTests(MonitoringCase):
 
     def test_the_tally_the_chips_and_their_links(self):
         self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='5')
-        html = self.client.get(PAGE).content.decode()
+        html = self.client.get(PAGE, {'full': '1'}).content.decode()
         band = band_of(html)
         tally = next(each for each in band.walk() if 'monitor-tally' in each.classes)
         self.assertEqual([text(each) for each in tally.children if not isinstance(each, str)],
@@ -136,19 +136,19 @@ class BandPageTests(MonitoringCase):
     def test_a_warning_chip_says_the_number_and_nothing_abnormal_shows_no_chip(self):
         self.sample(self.t1, hours=1, temperature_c='13.2', oxygen_mg_l='9')
         self.sample(self.t2, hours=1, oxygen_mg_l='6.5')                 # (T-02's temperature is the fixture's, 13.2 °C)
-        band = band_of(self.client.get(PAGE).content.decode())
+        band = band_of(self.client.get(PAGE, {'full': '1'}).content.decode())
         strip = next(each for each in band.walk() if 'monitor-strip' in each.classes)
         self.assertEqual([text(each) for each in strip.children if not isinstance(each, str)],
                          ['Warning T-02 O₂ (mg/L) 6.50 < 7.00'])
         self.sample(self.t2, hours=0.5, oxygen_mg_l='9')
-        calm = band_of(self.client.get(PAGE).content.decode())
+        calm = band_of(self.client.get(PAGE, {'full': '1'}).content.decode())
         self.assertFalse([each for each in calm.walk() if 'monitor-strip' in each.classes])
 
     def test_the_cap_counts_the_units_no_chip_names(self):
         for unit in self.farm_of(3, fresh=False):
             self.sample(unit, hours=1, temperature_c=str(16 + 2 * int(unit.code[-1])), oxygen_mg_l='9')
         with override_settings(MONITOR_BAND_CHIPS=2):
-            band = band_of(self.client.get(PAGE).content.decode())
+            band = band_of(self.client.get(PAGE, {'full': '1'}).content.decode())
         (more,) = [each for each in band.walk() if 'monitor-strip-more' in each.classes]
         # (the two warning units are past the same bound: one chip; what is left over says its state)
         self.assertEqual(text(more), '+2 more units: 2 No recent data')
@@ -157,7 +157,7 @@ class BandPageTests(MonitoringCase):
 
     def test_the_switch_of_the_screens_cards(self):
         def switch(**query):
-            band = band_of(self.client.get(PAGE, query).content.decode())
+            band = band_of(self.client.get(PAGE, {**query, 'full': '1'}).content.decode())
             nav = next(each for each in band.walk() if 'monitor-modes' in each.classes)
             return [(text(each), each.attrs['href'], each.attrs.get('aria-current')) for each in nav.walk()
                     if each.tag == 'a']
@@ -178,7 +178,7 @@ class BandPageTests(MonitoringCase):
                           ('As the board', f'{PAGE}?board={board.pk}', 'page')])
 
     def test_the_page_indicator_is_there_for_the_wall_script_and_hidden_until_it_is_needed(self):
-        band = band_of(self.client.get(PAGE, {'wall': '1'}).content.decode())
+        band = band_of(self.client.get(PAGE, {'full': '1', 'wall': '1'}).content.decode())
         (pages,) = [each for each in band.walk() if 'data-pages' in each.attrs]
         self.assertIn('hidden', pages.attrs)
         # (its third button is the way to the page of the worst card: Phase 1D, monitoring/tests/test_going_in.py)
@@ -231,7 +231,7 @@ class BandReviewTests(MonitoringCase):
                          [('critical', 'Critical', 2), ('warning', 'Warning', 1)])
         self.assertEqual(sorted(card.unit.code for card in found.hidden), sorted(unit.code for unit in units[3:]))
         with override_settings(MONITOR_BAND_CHIPS=3):
-            html = self.client.get(PAGE, {'units': ','.join(str(unit.pk) for unit in every)}).content.decode()
+            html = self.client.get(PAGE, {'full': '1', 'units': ','.join(str(unit.pk) for unit in every)}).content.decode()
         more = next(each for each in band_of(html).walk() if 'monitor-strip-more' in each.classes)
         self.assertEqual(text(more), '+3 more units: 2 Critical · 1 Warning')
         (link,) = [each for each in more.walk() if each.tag == 'a']
@@ -241,7 +241,7 @@ class BandReviewTests(MonitoringCase):
 
     def test_no_chip_and_no_reason_with_a_bound_can_be_cut(self):
         self.sample(self.t2, hours=30, oxygen_mg_l='5')                # critical and old: the longest chip there is
-        html = self.client.get(PAGE, {'mode': 'small', 'wall': '1'}).content.decode()
+        html = self.client.get(PAGE, {'full': '1', 'mode': 'small', 'wall': '1'}).content.decode()
         band = band_of(html)
         self.assertNotIn('truncate', ' '.join(' '.join(each.classes) for each in band.walk()))
         self.assertNotIn('overflow-hidden', ' '.join(' '.join(each.classes) for each in band.walk()))
@@ -258,7 +258,7 @@ class BandReviewTests(MonitoringCase):
 
     def test_a_measured_co2_says_it_is_the_probes(self):
         self.sample(self.t2, hours=1, oxygen_mg_l='9', co2_mg_l='16')
-        html = self.client.get(PAGE, {'mode': 'small'}).content.decode()
+        html = self.client.get(PAGE, {'full': '1', 'mode': 'small'}).content.decode()
         chip = next(each for each in band_of(html).walk() if 'monitor-chip-text' in each.classes)
         self.assertEqual(text(chip), 'CO₂ probe (mg/L) 16.0 > critical limit 15.0')
         card = next(node for node in Tree(html).root.walk() if node.attrs.get('data-key') == f'card:{self.t2.pk}')

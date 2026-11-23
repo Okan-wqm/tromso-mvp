@@ -268,7 +268,7 @@ class OnThePageTests(BoardCase):
     def test_a_board_picks_its_units_draws_each_as_its_row_says_and_sets_the_interval(self):
         board = self.board('Wall', default_template_id=SIMPLE, refresh_seconds=45)
         self.save_units(board, [{'unit': str(self.t1.pk), 'template': str(DETAILED)}, {'unit': str(self.t2.pk), 'template': ''}])
-        page = self.client.get(reverse('monitoring:monitor'), {'board': str(board.pk)})
+        page = self.client.get(reverse('monitoring:monitor'), {'board': str(board.pk), 'full': '1'})
         html = page.content.decode()
         self.assertEqual(page.context['shown'], 2)
         self.assertIn('data-poll-every="45"', html)
@@ -277,21 +277,21 @@ class OnThePageTests(BoardCase):
         self.assertIn(f'data-storage-key="monitoring:{board.pk}"', html)
         # the board's default template applies to every card without a template of its own
         MonitorBoard.objects.filter(pk=board.pk).update(default_template_id=DETAILED)
-        self.assertEqual(self.client.get(reverse('monitoring:monitor'), {'board': str(board.pk)}).content.decode()
+        self.assertEqual(self.client.get(reverse('monitoring:monitor'), {'board': str(board.pk), 'full': '1'}).content.decode()
                          .count(f'data-template="{DETAILED}"'), 2)
 
     def test_a_board_that_does_not_exist_shows_the_page_without_it(self):
-        page = self.client.get(reverse('monitoring:monitor'), {'board': '6f7f1b3a-6c9e-4f43-8f0e-6a7d0d0b0a11'})
+        page = self.client.get(reverse('monitoring:monitor'), {'full': '1', 'board': '6f7f1b3a-6c9e-4f43-8f0e-6a7d0d0b0a11'})
         self.assertEqual(page.status_code, 200)
         self.assertEqual(page.context['shown'], 0)                       # never the whole farm for a wall that lost its board
 
     def test_a_board_with_no_cards_or_deleted_under_a_running_wall_shows_no_unit(self):
         board = self.board('Wall')
         url = reverse('monitoring:cards')
-        empty = self.client.get(reverse('monitoring:monitor'), {'board': str(board.pk)})
+        empty = self.client.get(reverse('monitoring:monitor'), {'board': str(board.pk), 'full': '1'})
         self.assertEqual(empty.context['shown'], 0)
         self.save_units(board, [{'unit': str(self.t1.pk), 'template': ''}])
-        self.assertEqual(self.client.get(reverse('monitoring:monitor'), {'board': str(board.pk)}).context['shown'], 1)
+        self.assertEqual(self.client.get(reverse('monitoring:monitor'), {'board': str(board.pk), 'full': '1'}).context['shown'], 1)
         self.client.post(reverse('monitoring:monitorboard_delete', args=[board.pk]))
         gone = self.client.get(url, {'board': str(board.pk)}).content.decode()
         self.assertNotIn('data-key="card:', gone)                          # the poll of a deleted board draws no card

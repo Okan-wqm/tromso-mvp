@@ -32,30 +32,30 @@ def text(node):
 
 class FrameTests(MonitoringCase):
     def test_a_unit_not_in_use_says_its_status_on_the_frame_and_its_state_is_unchanged(self):
-        html = self.client.get(PAGE, {'occupancy': 'all'}).content.decode()
+        html = self.client.get(PAGE, {'full': '1', 'occupancy': 'all'}).content.decode()
         pond = card_of(html, self.p1)                                    # P-01 is under maintenance
         status = next(node for node in pond.walk() if 'monitor-status' in node.classes)
         self.assertEqual(text(status), 'Maintenance')
         self.assertIn('monitor-empty', pond.attrs['class'])
         self.t2.status = 'active'
         self.t2.save()
-        active = card_of(self.client.get(PAGE).content.decode(), self.t2)
+        active = card_of(self.client.get(PAGE, {'full': '1'}).content.decode(), self.t2)
         self.assertFalse([node for node in active.walk() if 'monitor-status' in node.classes])
 
     def test_a_withdrawal_is_a_note_chip_not_an_alarm(self):
         block = WithdrawalBlock(self.fish, self.today + timedelta(days=5), False, 'Treated.', None)
         with mock.patch('farm.handling.withdrawal._providers', [lambda units, day: {self.t2.pk: [block]}]):
-            card = card_of(self.client.get(PAGE).content.decode(), self.t2)
+            card = card_of(self.client.get(PAGE, {'full': '1'}).content.decode(), self.t2)
         chip = next(node for node in card.walk() if node.tag == 'span' and 'badge' in node.classes)
         self.assertIn('badge-note', chip.classes)
         self.assertNotIn('badge-critical', chip.classes)
         self.assertTrue(text(chip).startswith('Withdrawal'))
 
     def test_the_frame_says_which_template_draws_the_card_and_why(self):
-        card = card_of(self.client.get(PAGE).content.decode(), self.t2)
+        card = card_of(self.client.get(PAGE, {'full': '1'}).content.decode(), self.t2)
         why = next(node for node in card.walk() if 'monitor-why' in node.classes)
         self.assertEqual(text(why), 'Template: Simple · the rule for every unit')
-        detailed = card_of(self.client.get(PAGE, {'mode': 'detailed'}).content.decode(), self.t2)
+        detailed = card_of(self.client.get(PAGE, {'full': '1', 'mode': 'detailed'}).content.decode(), self.t2)
         self.assertIn('Detailed · chosen on this page', text(next(node for node in detailed.walk()
                                                                    if 'monitor-why' in node.classes)))
 
@@ -65,7 +65,7 @@ class FrameTests(MonitoringCase):
             {'id': 'w1', 'type': 'gauge', 'x': 0, 'y': 0, 'w': 3, 'h': 2}]})      # past the validator, as a hand edit
         CardTemplateAssignment.objects.create(template=mine, unit=self.t2)
         with self.assertLogs('monitoring.cards.resolve'):
-            card = card_of(self.client.get(PAGE).content.decode(), self.t2)
+            card = card_of(self.client.get(PAGE, {'full': '1'}).content.decode(), self.t2)
         error = next(node for node in card.walk() if 'monitor-template-error' in node.classes)
         self.assertIn('Hand edited', text(error))
         self.assertEqual(card.attrs['data-template'], str(mine.pk))

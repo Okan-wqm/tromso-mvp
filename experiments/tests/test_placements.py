@@ -140,5 +140,5 @@ class MonitoringTests(RanTrialCase):
     def test_the_card_of_a_booked_tank_shows_its_experiment(self):
         from monitoring.tests import ALL_RIGHTS
         self.user.groups.add(role('Monitor', *ALL_RIGHTS))
-        page = self.client.get(reverse('monitoring:monitor'), {'units': f'{self.tanks[0].pk},{self.tanks[4].pk}'})
+        page = self.client.get(reverse('monitoring:monitor'), {'full': '1', 'units': f'{self.tanks[0].pk},{self.tanks[4].pk}'})
         self.assertContains(page, f'{self.trial.code} · Control · R1', count=1)

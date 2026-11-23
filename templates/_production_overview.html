@@ -73,7 +73,7 @@
           <div class="tw:flex tw:flex-wrap tw:gap-x-6 tw:gap-y-1 tw:min-w-0 tw:col-start-1 tw:xl:col-start-2 tw:xl:row-start-1 tw:[&_.ui-value]:flex-wrap tw:[&_b]:whitespace-normal tw:[&_b_.wq-source]:inline tw:[&_b_.wq-source]:ml-2">
             {% for reading, judged, old in row.water.alerts %}
             <span class="ui-value tw:flex-row tw:items-baseline tw:gap-2" data-status="{{ judged }}"><span class="tw:text-small tw:text-ink-2 tw:whitespace-nowrap">{{ reading.parameter.short }}</span><span class="ui-value-figure tw:items-start">{% if judged == "critical" %}{% include "icons/_icon.html" with name="octagon" %}{% else %}{% include "icons/_icon.html" with name="alert" %}{% endif %}{% include "farm/_water_value.html" with tag="b" latest=True source=True %}</span></span>
-            {% endfor %}
+            {% endfor %}{% for why in row.water.why_silent %}<span class="tw:text-small tw:text-ink-2" data-silent>{{ why }}</span>{% endfor %}
           </div>
           <a class="ui-btn tw:min-h-8 tw:px-3 tw:text-small tw:col-start-2 tw:row-start-1 tw:row-span-2 tw:self-center tw:justify-self-end tw:xl:col-start-3 tw:xl:row-span-1 tw:coarse:min-h-12" href="{{ row.history_url }}">{% trans "History" %}</a>
         </li>

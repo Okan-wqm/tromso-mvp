@@ -700,6 +700,28 @@ def reading_of(code, observation):
     return reading
 
 
+@dataclass(frozen=True)
+class Silence:
+    """A unit that holds fish whose oxygen has no fresh value (owner decision of 2026-11-23): `reading`, its newest
+    oxygen value (mg/L, else %) with its age at `now`, or None when it has none in the window."""
+    reading: object
+    now: datetime
+
+    @property
+    def since(self):
+        """When the oxygen stopped being fresh: its newest value's time plus its freshness (`now` when it has none)."""
+        if self.reading is None:
+            return self.now
+        return min(self.now, self.reading.at + freshness_of(self.reading))
+
+
+def freshness_of(reading):
+    """How long a reading stays fresh: its sensor's own freshness, else its parameter's (freshness.fresh_for)."""
+    if reading.sample.fresh_for is not None:
+        return timedelta(seconds=reading.sample.fresh_for)
+    return freshness.fresh_for(reading.code)
+
+
 @dataclass
 class PointWater:
     """The latest readings of one sampling point, by parameter code; `point` is None for a unit that has no
@@ -718,6 +740,9 @@ class PointWater:
     measured: list = field(default_factory=list)     # [(status, judged)] of the limited values taken at the point
     for_unit: bool = False      # the point stands for its unit (its middle point, or its anchor without one)
     future: list = field(default_factory=list)       # readings stamped more than MAX_AHEAD ahead: a data error
+    holds_fish: bool = False    # a point that stands for its unit: the unit holds fish on its own day (`latest`)
+    silent_oxygen: object = None    # Silence: the unit holds fish and its oxygen has no fresh value (`latest`)
+    targets: frozenset = frozenset()    # the sensor targets its place reads (own, then its system's)
 
     @staticmethod
     def _rolled_up(counted):
@@ -738,8 +763,9 @@ class PointWater:
         return judged if status == Status.STALE and judged in (*ALERTS, Status.UNEVALUATED) else status
 
     def _counted(self):
+        silent = [Status.CRITICAL] if self.silent_oxygen is not None else []
         return [self._as_counted(reading.status, reading.judged) for reading in self.readings.values()
-                if reading.code in LIMITED]
+                if reading.code in LIMITED] + silent
 
     @property
     def status(self):
@@ -749,7 +775,8 @@ class PointWater:
     @property
     def point_status(self):
         """The worst of the values measured at the point itself (`measured`), by the same rule."""
-        return self._rolled_up([self._as_counted(status, judged) for status, judged in self.measured])
+        silent = [Status.CRITICAL] if self.silent_oxygen is not None else []
+        return self._rolled_up([self._as_counted(status, judged) for status, judged in self.measured] + silent)
 
     @property
     def old_alert(self):
@@ -791,6 +818,12 @@ class PointWater:
         (`Reading.last_own`): what the card says beside the status."""
         return [f'{reading.parameter.label}: {messages.last_own(reading.last_own)}' for reading in self.readings.values()
                 if reading.last_own is not None]
+
+    @property
+    def why_silent(self):
+        """['O₂ (mg/L): no recent data, 3 hours old'] when the unit holds fish and its oxygen has no fresh value
+        (`silent_oxygen`, critical: owner decision of 2026-11-23): what the card, the band and the alarm say."""
+        return [messages.no_fresh_oxygen(self.silent_oxygen)] if self.silent_oxygen is not None else []
 
     @property
     def alerts(self):
@@ -1560,7 +1593,28 @@ def latest(points, now=None, at=None, own=None):
                     last_own(reading, [judged(each) for each in found if each.value is not None and each.point is not None
                                        and each.point.pk in own_ids], moment)
             point_water.readings[code] = reading
+        point_water.targets = frozenset(target for target, _origin, _point in (*where.own_targets,
+                                                                                 *where.system_targets))
+        if where.for_unit:
+            _silence(point_water, context, point, day, moment)
     return water
+
+
+def _silence(point_water, context, point, day, moment):
+    """Owner decision of 2026-11-23 (it reverses the "never red" of 2026-11-04 for the oxygen alone): a unit that holds
+    fish on its own day (`Context.exposures`: the batches present that day) whose oxygen, in mg/L or in %, has no fresh
+    value for the place (A9: its own, else its system's) is CRITICAL, on every page and in the alarms
+    (`PointWater.silent_oxygen`, counted in its status). A unit without fish stays as it was: an old or missing oxygen
+    is "no recent data", never red. Only the point that stands for its unit is asked (`for_unit`)."""
+    point_water.holds_fish = bool(context.exposures(point, day))
+    if not point_water.holds_fish:
+        return
+    oxygen = [point_water.readings.get(code) for code in (OXYGEN_MG_L, OXYGEN_PCT)]
+    oxygen = [reading for reading in oxygen if reading is not None and reading.value is not None]
+    if any(reading.fresh(moment) for reading in oxygen):
+        return
+    newest = max(oxygen, key=lambda reading: (reading.at, reading.code == OXYGEN_MG_L), default=None)
+    point_water.silent_oxygen = Silence(newest, moment)
 
 
 def oxygen_basis(rows, moment):
@@ -1698,6 +1752,45 @@ def _at_moment(where, moment):
                         PH_INPUTS)
     own, system = (_fresh_live(_live(targets, answer), moment) for targets in (where.own_targets, where.system_targets))
     return {code: own.get(code) or system.get(code) for code in PH_INPUTS if own.get(code) or system.get(code)}
+
+
+# A place a sensor is bound to, beside sources.POINT and sources.SYSTEM: a piece of equipment (its water is the systems'
+# it serves).
+EQUIPMENT = 'equipment'
+
+
+def with_fish(places, now=None):
+    """The places given ((sources.POINT, point id), (sources.SYSTEM, system id) or (EQUIPMENT, equipment id)) whose
+    water concerns fish at `now`: a unit holding fish on its own day (the batches present that day, SpeciesBook) among
+    the units the place's water is judged for (a unit's point: the unit; a loop's point or a system: the system's units;
+    a piece of equipment: the units of the systems it serves; Context._served). What the sensors' default "No fresh
+    value" rules hold for (owner decision of 2026-11-23: a fallow or empty unit raises no alarm; sensors/alarms.py).
+    Four queries at most."""
+    now = now or timezone.now()
+    places = set(places)
+    point_ids = [pk for kind, pk in places if kind == sources.POINT]
+    points = list(SamplingPoint.objects.filter(pk__in=point_ids).with_owners()) if point_ids else []
+    served = {(sources.POINT, pk): units for pk, units in Context._served(points).items()}
+    system_ids = {pk for kind, pk in places if kind == sources.SYSTEM}
+    serves = defaultdict(set)
+    equipment_ids = [pk for kind, pk in places if kind == EQUIPMENT]
+    if equipment_ids:
+        for equipment_id, system_id in EquipmentSystem.objects.filter(
+                equipment__in=equipment_ids, system__is_deleted=False).values_list('equipment_id', 'system_id'):
+            serves[equipment_id].add(system_id)
+            system_ids.add(system_id)
+    units_of = defaultdict(list)
+    if system_ids:
+        for unit in Tank.objects.filter(system__in=system_ids).select_related('production_department__site'):
+            units_of[unit.system_id].append(unit)
+    for system_id in {pk for kind, pk in places if kind == sources.SYSTEM}:
+        served[(sources.SYSTEM, system_id)] = units_of.get(system_id, [])
+    for equipment_id in equipment_ids:
+        served[(EQUIPMENT, equipment_id)] = [unit for system_id in serves.get(equipment_id, ())
+                                             for unit in units_of.get(system_id, [])]
+    book = SpeciesBook({unit.pk for units in served.values() for unit in units})
+    return {place for place, units in served.items()
+            if any(book.on(unit.pk, local_time(now, unit).date()) for unit in units)}
 
 
 def owner_water(owners, now=None):

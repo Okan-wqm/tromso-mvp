@@ -4,6 +4,7 @@ unchanged. farm/tests/test_native_geometry.py checks that every code the core gi
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.utils.formats import number_format
+from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
 
 from . import native, parameters
@@ -385,3 +386,14 @@ def last_own(reading):
         'value': said_value(reading),
         'status': str(Status(reading.judged).label).lower(),
         'time': local_time(reading.at, reading.point).strftime('%d.%m.%Y %H:%M')}
+
+
+def no_fresh_oxygen(silence):
+    """What a unit with fish whose oxygen has no fresh value says (read.Silence; owner decision of 2026-11-23, critical):
+    'Dissolved oxygen (mg/L O₂): no recent data, 3 hours old', or without an age when it has no oxygen value at all.
+    The card's own words for a value missing or old (monitoring.read)."""
+    reading = silence.reading
+    if reading is None:
+        return _('%(label)s: no recent data') % {'label': parameters.get(parameters.OXYGEN_MG_L).label}
+    return _('%(label)s: no recent data, %(age)s old') % {'label': reading.parameter.label,
+                                                          'age': timesince(reading.at, silence.now, depth=1)}

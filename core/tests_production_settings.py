@@ -94,7 +94,8 @@ class SecretFileTests(SimpleTestCase):
                          "s.MAILERS['default']['OPTIONS']['password']]",
                          DJANGO_SECRET_KEY_FILE=self.file('key-from-a-file\nsecond line\n'),
                          DJANGO_AUDIT_DIGEST_KEY_FILE=self.file('digest-from-a-file\r\n'),
-                         DB_PASSWORD_FILE=self.file('db-from-a-file\n'), EMAIL_HOST='smtp.farm.invalid',
+                         DB_PASSWORD='', DB_PASSWORD_FILE=self.file('db-from-a-file\n'),
+                         EMAIL_HOST='smtp.farm.invalid',
                          EMAIL_HOST_USER='farm', EMAIL_HOST_PASSWORD_FILE=self.file('mail-from-a-file'))
         self.assertEqual(found, ['key-from-a-file', 'digest-from-a-file', 'db-from-a-file', 'mail-from-a-file'])
 
@@ -102,7 +103,8 @@ class SecretFileTests(SimpleTestCase):
         for env, words in (
                 ({'DJANGO_SECRET_KEY': 'a', 'DJANGO_SECRET_KEY_FILE': self.file('b')},
                  'Both DJANGO_SECRET_KEY and DJANGO_SECRET_KEY_FILE are set'),
-                ({'DB_PASSWORD_FILE': self.file('\nsecond line')}, 'holds nothing on its first line'),
+                # (the test runner's own DB_PASSWORD is blanked: an empty variable counts as not set)
+                ({'DB_PASSWORD': '', 'DB_PASSWORD_FILE': self.file('\nsecond line')}, 'holds nothing on its first line'),
                 ({'DJANGO_AUDIT_DIGEST_KEY_FILE': str(Path(tempfile.gettempdir()) / 'no-such-secret')},
                  'cannot be read')):
             with self.subTest(env=sorted(env)):

@@ -2107,13 +2107,6 @@ msgstr ""
 "En legitimasjon er navnet og hemmeligheten et apparat eller en gateway logger inn på brokeren "
 "med. Hemmeligheten vises én gang, når den lages."
 
-msgid ""
-"A critical alarm of the alarm system itself is never snoozed: it says the alarms are not working "
-"as they should."
-msgstr ""
-"En kritisk alarm fra selve alarmsystemet slumres aldri: den sier at alarmene ikke virker som de "
-"skal."
-
 #, python-format
 msgid ""
 "A cull of %(batch)s on %(date)s has the reason “%(reason)s”, which is none of Mattilsynet’s six "
@@ -3581,6 +3574,11 @@ msgstr ""
 
 msgid "An active protocol has a table."
 msgstr "En aktiv protokoll har en tabell."
+
+msgid ""
+"An alarm about the alarm system's own health is never snoozed: it says the alarms are not working"
+" as they should."
+msgstr "En alarm om alarmsystemets egen helse slumres aldri: den sier at alarmene ikke virker som de skal."
 
 msgid "An amount needs its unit, and a unit its amount."
 msgstr "En mengde trenger sin enhet, og en enhet sin mengde."

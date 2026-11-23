@@ -2115,13 +2115,6 @@ msgstr ""
 "Kimlik bilgisi, bir cihazın veya ağ geçidinin broker’a giriş yaptığı ad ve gizli anahtardır. "
 "Gizli anahtar yalnızca oluşturulduğunda bir kez gösterilir."
 
-msgid ""
-"A critical alarm of the alarm system itself is never snoozed: it says the alarms are not working "
-"as they should."
-msgstr ""
-"Alarm sisteminin kendi kritik alarmı asla ertelenmez: alarmların olması gerektiği gibi "
-"çalışmadığını söyler."
-
 #, python-format
 msgid ""
 "A cull of %(batch)s on %(date)s has the reason “%(reason)s”, which is none of Mattilsynet’s six "
@@ -3588,6 +3581,13 @@ msgstr ""
 
 msgid "An active protocol has a table."
 msgstr "Aktif bir protokolün tablosu olmalı."
+
+msgid ""
+"An alarm about the alarm system's own health is never snoozed: it says the alarms are not working"
+" as they should."
+msgstr ""
+"Alarm sisteminin kendi sağlığıyla ilgili bir alarm asla ertelenmez: alarmların olması gerektiği "
+"gibi çalışmadığını söyler."
 
 msgid "An amount needs its unit, and a unit its amount."
 msgstr "Miktar birimiyle, birim de miktarıyla girilir."

@@ -4492,10 +4492,15 @@ from which device, how late) is logged. The server side is built; the push trans
   severity's retry time up to its escalation time; once its alarm is acknowledged or cleared it has its delivery attempts
   like a warning's, which are tried their retry time apart and then failed (its alarm's page says so). A critical
   notification of an open, unacknowledged alarm that has failed for longer than the escalation time cannot be
-  delivered: a critical alarm of the alarm system says so ("notifications_undeliverable"), and the pages' notice and the
+  delivered: a critical alarm of the alarm system says so ("notifications_undeliverable"; a snoozed alarm's never counts), and the pages' notice and the
   health check too. **A critical is never behind a round of warnings** (F5): a round ends at `ALARM_WORKER_SEND_ROUND`
   (5 s), and before a warning's group when a critical was queued since it began; the next round, a tick later, starts
-  with it. Each send gets `send_timeout` seconds (no answer or a raise is a failed attempt). Never lost: a restart sends
+  with it (a critical that joins the queue during the round, whatever time it is stamped with). Each send gets
+  `send_timeout` seconds (no answer or a raise is a failed attempt). A notification whose alarm cleared before it was
+  ever tried is given up, its attempt saying so, so a backlog of cleared alarms never goes out when a transport is first
+  connected; a channel without a transport is left out of a round in the database. One notification that cannot be
+  handled is logged and left for the next round, never stopping the others. The attempt, the queue's entry and the log
+  are written in one transaction, and a round drops an entry that already went. Never lost: a restart sends
   what was not sent; a sender that died after the transport took one and before its attempt was written sends it again
   (at least once; the notification's id is the push service's collapse key), and a notification is never written sent
   twice (a unique constraint). Two senders never send one at once (a claim lock, then a second look). A round that fails
@@ -4504,7 +4509,9 @@ from which device, how late) is logged. The server side is built; the push trans
   retried, grouped and given up by the same rules.
 - **Snooze** (ISA-18.2 shelving; owner decision Q5): who holds Alarm snoozes: Create snoozes an open alarm from its page
   for 1 to its severity's longest snooze, saying why; one at a time, all the snoozes of one alarm together at most that
-  longest (so a snooze is never renewed past it), never a critical alarm of the alarm system itself; ended early from the
+  longest (so a snooze is never renewed past it), never an alarm about the alarm system's own health (`alarms/health.py`:
+  not checked for a while, a step failing, notifications undeliverable, rules incomplete; its alarms about the farm, an
+  oxygen with no fresh value or the sensors unreadable, are snoozed like any); ended early from the
   same page. The people notified of the alarm are told who snoozed it, until when and why. While it lasts the alarm is
   still raised, kept, listed and cleared; nobody new is notified, what was queued waits, and it is not escalated. Once
   it ends (its time out, also while the worker was down, or ended early) notification goes on, the escalation time
@@ -4545,7 +4552,10 @@ from which device, how late) is logged. The server side is built; the push trans
     holds the lock (`pg_backend_pid()`): a connection opened again after an error inside a pass is a new session, and
     the lock is taken again on it with the session's settings (F4). A holder that is wedged (its process alive, its
     session idle and never ending) is evicted by hand: `SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE
-    application_name = 'alarm-worker' AND datname = current_database();` (the standby takes over within a tick);
+    application_name = 'alarm-worker' AND datname = current_database();` (the standby takes over within a tick). After
+    a network cut the database holds the lost worker's lock until its keepalives give the peer up: about 30 s with the
+    default `stale_after` of 45 s (15 s idle, then three probes 5 s apart), so the standby takes over before the pages
+    call the alarms unchecked;
   - **its row** (`alarm_worker_status`, `alarms` 0015): running or stopped, its last pass and last good pass on the
     database's clock, how long the pass took, the failed steps, the outbox's waiting notifications and the oldest;
   - **what it survives and when it ends itself**: the database away, tried again after the tick doubled up to

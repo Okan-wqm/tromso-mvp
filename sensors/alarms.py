@@ -197,10 +197,10 @@ def _silent(channel, state, binding, now):
 
 
 def silent_probes(codes, now=None):
-    """{place (`place_of`): [channel]} of the channels of `codes` an active default "No fresh value" rule covers (not
-    standing aside for a farm's own rule: `_aside`), active on an active device, bound now, that sent no fresh value
-    there (`_silent`): the probes whose silence the alarm system says as a warning where the place's oxygen is fresh
-    all the same (alarms/sources.py; review 2 of the branch, R3 p3). Five queries."""
+    """{place (`place_of`): [Binding, its channel loaded]} of the channels of `codes` an active default "No fresh
+    value" rule covers (not standing aside for a farm's own rule: `_aside`), active on an active device, bound now, that
+    sent no fresh value there (`_silent`): the probes whose silence the alarm system says as a warning where the place's
+    oxygen is fresh all the same (alarms/sources.py; review 2 of the branch, R3 p3). Five queries."""
     now = now or timezone.now()
     defaults = set(AlarmRule.objects.filter(is_default=True, is_active=True, quantity__in=list(codes))
                    .values_list('quantity', flat=True))
@@ -209,13 +209,16 @@ def silent_probes(codes, now=None):
         quantity__in=defaults - aside_quantities, state=ChannelStatus.ACTIVE, device__is_active=True)
         .select_related('device') if channel.pk not in aside_channels]
     places = {binding.channel_id: binding for binding in Binding.objects.visible().at(now)
-              .filter(channel__in=[channel.pk for channel in channels])}
+              .filter(channel__in=[channel.pk for channel in channels])
+              .select_related('point__unit', 'point__system', 'point__equipment', 'system', 'equipment')}
     channels = [channel for channel in channels if channel.pk in places]
     states = read.latest([channel.channel_no for channel in channels], now)
     found = {}
     for channel in channels:
-        if _silent(channel, states[channel.channel_no], places[channel.pk], now):
-            found.setdefault(place_of(places[channel.pk]), []).append(channel)
+        binding = places[channel.pk]
+        if _silent(channel, states[channel.channel_no], binding, now):
+            binding.channel = channel                       # (its device loaded: the alarm's site)
+            found.setdefault(place_of(binding), []).append(binding)
     return found
 
 

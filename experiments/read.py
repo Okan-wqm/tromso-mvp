@@ -24,10 +24,11 @@ from decimal import Decimal
 
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.formats import number_format
+from django.utils.formats import date_format, number_format
 from django.utils.translation import gettext as _
 
 from core import sealing
+from core.people import person_name
 from farm import placements as farm_placements
 from farm.feeding import read as feeding_read
 from farm.feeding.fold import LOST
@@ -493,19 +494,55 @@ def _ration_off_diet(placed, protocols, presence, mine, units, today):
 # ---- the chip beside a unit on the farm's pages ------------------------------------------------------------------------
 def chips(units, user):
     """{unit id: [farm.placements.Placement]}: the experiment, group and replicate each unit is booked to on its site's today
-    (drafts reserve their tanks, so they show too), for a person who may read experiments; one read of `placements` for
-    each distinct day, so the farm's pages do not grow with their units."""
-    if not user.has_perm('experiments.view_experiment'):
-        return {}
+    (drafts reserve their tanks, so they show too), for a person who may read experiments and the experiment's places
+    (core.sealing: its team, a grantee of its systems, anyone for an open one); one read of `placements` for each
+    distinct day, so the farm's pages do not grow with their units.
+
+    A person who holds Oversee sees, on a tank of an experiment they may not read, the card instead (plan 3, owner
+    decision C2.5): "Research trial", its lead, its approval and its days; never its number, name, group, replicate or
+    team, and no link. Each such card read is in the read log (`oversee`)."""
     by_day = {}
     for unit in units:
         by_day.setdefault(local_today(unit), []).append(unit.pk)
     found = {}
-    for day, unit_ids in by_day.items():
-        for unit_id, cell in placements(unit_ids, day).items():
-            experiment = cell.group.experiment
-            found[unit_id] = [farm_placements.Placement(
-                label=f'{experiment.code} · {cell.group.name} · R{cell.replicate.number}',
-                title=f'{experiment.name} ({experiment.get_status_display()})',
-                url=reverse('experiments:experiment_detail', args=[experiment.pk]))]
+    if user.has_perm('experiments.view_experiment'):
+        for day, unit_ids in by_day.items():
+            for unit_id, cell in placements(unit_ids, day).items():
+                experiment = cell.group.experiment
+                found[unit_id] = [farm_placements.Placement(
+                    label=f'{experiment.code} · {cell.group.name} · R{cell.replicate.number}',
+                    title=f'{experiment.name} ({experiment.get_status_display()})',
+                    url=reverse('experiments:experiment_detail', args=[experiment.pk]))]
+    if user.has_perm('experiments.oversee_experiment') and not user.is_superuser:
+        for day, unit_ids in by_day.items():
+            for unit_id, card in cards([pk for pk in unit_ids if pk not in found], day).items():
+                found[unit_id] = [card]
+    return found
+
+
+def cards(unit_ids, day):
+    """{unit id: Placement} the card of the experiment each tank is booked to on `day`, read as the system (the card says
+    only what a person overseeing the tank must know), each card logged as an `oversee` read."""
+    if not unit_ids:
+        return {}
+    found = {}
+    with sealing.system('the oversee card'):
+        rows = (ReplicateUnit.objects.filter(unit_id__in=list(unit_ids), from_on__lte=day, until_on__gte=day,
+                                             replicate__is_deleted=False, replicate__group__is_deleted=False,
+                                             replicate__group__experiment__is_deleted=False)
+                .select_related('replicate__group__experiment'))
+        lines = {}
+        for row in rows:
+            experiment = row.replicate.group.experiment
+            lead = experiment.members.filter(role='lead').select_related('user').first()
+            lines[row.unit_id] = (experiment, lead.user if lead else None, row.from_on, row.until_on)
+    for unit_id, (experiment, lead, first, last) in lines.items():
+        parts = [_('Lead: %(name)s') % {'name': person_name(lead)}] if lead else []
+        if experiment.approval_ref:
+            parts.append(_('Approval %(ref)s') % {'ref': experiment.approval_ref} + (
+                ' ' + _('valid until %(day)s') % {'day': date_format(experiment.approval_valid_until)}
+                if experiment.approval_valid_until else ''))
+        parts.append(_('%(first)s to %(last)s') % {'first': date_format(first), 'last': date_format(last)})
+        found[unit_id] = farm_placements.Placement(label=_('Research trial'), title=' · '.join(parts), url='')
+        sealing.log_access('oversee', 'unit', unit_id, part='systems', route='experiments.read.cards')
     return found

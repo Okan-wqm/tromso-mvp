@@ -3839,6 +3839,10 @@ msgstr "Seçili günlere uygula"
 msgid "Approval"
 msgstr "Onay"
 
+#, python-format
+msgid "Approval %(ref)s"
+msgstr "Onay %(ref)s"
+
 msgid "Approval number"
 msgstr "Onay numarası"
 
@@ -8873,6 +8877,10 @@ msgstr "Yerleşim sürümü"
 msgid "Lead"
 msgstr "Yürütücü"
 
+#, python-format
+msgid "Lead: %(name)s"
+msgstr "Yürütücü: %(name)s"
+
 msgid "Least"
 msgstr "En az"
 
@@ -11313,6 +11321,20 @@ msgstr "Gecikmiş görevler"
 msgid "Oversaw"
 msgstr "Gözetti"
 
+msgid "Oversee"
+msgstr "Gözetim"
+
+msgid ""
+"Oversee shows the fish of every confidential experiment’s tanks as farm facts (stock, mortality, "
+"feeding, water, health, lice, medicine withdrawal, tasks and night alarms), never the "
+"experiment’s design, results or team. A person without it does not see those tanks at all: give "
+"it to whoever must keep those fish alive or report on them."
+msgstr ""
+"Gözetim, gizli her deneyin tanklarındaki balıkları çiftlik bilgileri olarak gösterir (stok, ölüm,"
+" yemleme, su, sağlık, bit, ilaç arınma süresi, görevler ve gece alarmları); deneyin tasarımını, "
+"sonuçlarını ya da ekibini asla göstermez. Bu yetkisi olmayan kişi o tankları hiç görmez: o "
+"balıkları hayatta tutması ya da onlar hakkında rapor vermesi gereken kişiye verin."
+
 msgid "Overview"
 msgstr "Genel bakış"
 
@@ -12460,6 +12482,9 @@ msgstr "Araştırma"
 
 msgid "Research or other production"
 msgstr "Araştırma veya diğer üretim"
+
+msgid "Research trial"
+msgstr "Araştırma denemesi"
 
 msgid "Researcher"
 msgstr "Araştırmacı"
@@ -20016,6 +20041,10 @@ msgstr "kullanıcı"
 
 msgid "users"
 msgstr "kullanıcılar"
+
+#, python-format
+msgid "valid until %(day)s"
+msgstr "%(day)s tarihine kadar geçerli"
 
 #, python-format
 msgid "via %(batch)s in %(unit)s"

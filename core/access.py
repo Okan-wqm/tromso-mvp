@@ -27,10 +27,12 @@ from . import navigation
 # in their own department) and `all_production` (Employees: every production person, never the office's). Each is
 # offered by its one area; the other rows have an empty cell there.
 ACTIONS = [('view', _('Read')), ('add', _('Create')), ('change', _('Edit')), ('delete', _('Delete')),
-           ('crew', _('Crew')), ('all_production', _('All production')), ('all', _('Everyone'))]
+           ('crew', _('Crew')), ('all_production', _('All production')), ('all', _('Everyone')),
+           ('oversee', _('Oversee'))]
 READ = 'view'
 ALL = 'all'
-# The actions that include Read on their area. The others widen rows (crew, all_production, all) and include nothing.
+# The actions that include Read on their area. The others widen rows (crew, all_production, all, oversee) and include
+# nothing.
 INCLUDES_READ = ('add', 'change', 'delete')
 # The widening columns that are read on their own area's page, through its Read: Crew is drawn only under one's own week on
 # the Shift schedule, so Read beside it is how it works at all (the Production worker preset), never a Read left over from
@@ -46,6 +48,9 @@ class Area:
     # What the area's rights also reach that its name does not say, in a sentence for whoever grants it: the role matrix
     # prints it under the area (an experiment's and a report's pages show farm figures without the farm areas' Read).
     note: str = ''
+    # The duties a widening column may touch, said as information where the platform admin grants it, never a block
+    # (owner amendment C1): printed under the area after its note.
+    duties: str = ''
 
     def perm(self, action):
         meta = apps.get_model(self.model)._meta

@@ -3834,6 +3834,10 @@ msgstr "Bruk på de valgte dagene"
 msgid "Approval"
 msgstr "Godkjenning"
 
+#, python-format
+msgid "Approval %(ref)s"
+msgstr "Godkjenning %(ref)s"
+
 msgid "Approval number"
 msgstr "Godkjenningsnummer"
 
@@ -8846,6 +8850,10 @@ msgstr "Oppsettversjon"
 msgid "Lead"
 msgstr "Leder"
 
+#, python-format
+msgid "Lead: %(name)s"
+msgstr "Leder: %(name)s"
+
 msgid "Least"
 msgstr "Minst"
 
@@ -11290,6 +11298,20 @@ msgstr "Forfalte oppgaver"
 msgid "Oversaw"
 msgstr "Fulgte opp"
 
+msgid "Oversee"
+msgstr "Tilsyn"
+
+msgid ""
+"Oversee shows the fish of every confidential experiment’s tanks as farm facts (stock, mortality, "
+"feeding, water, health, lice, medicine withdrawal, tasks and night alarms), never the "
+"experiment’s design, results or team. A person without it does not see those tanks at all: give "
+"it to whoever must keep those fish alive or report on them."
+msgstr ""
+"Tilsyn viser fisken i karene til alle konfidensielle forsøk som driftsfakta (beholdning, "
+"dødelighet, fôring, vann, helse, lus, tilbakeholdelsestid for legemidler, oppgaver og "
+"nattalarmer), aldri forsøkets design, resultater eller team. En person uten Tilsyn ser ikke disse"
+" karene i det hele tatt: gi det til den som må holde fisken i live eller rapportere om den."
+
 msgid "Overview"
 msgstr "Oversikt"
 
@@ -12436,6 +12458,9 @@ msgstr "Forskning"
 
 msgid "Research or other production"
 msgstr "Forskning eller annen produksjon"
+
+msgid "Research trial"
+msgstr "Forskningsforsøk"
 
 msgid "Researcher"
 msgstr "Forsker"
@@ -19979,6 +20004,10 @@ msgstr "bruker"
 
 msgid "users"
 msgstr "brukere"
+
+#, python-format
+msgid "valid until %(day)s"
+msgstr "gyldig til %(day)s"
 
 #, python-format
 msgid "via %(batch)s in %(unit)s"

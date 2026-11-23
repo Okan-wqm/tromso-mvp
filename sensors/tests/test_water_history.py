@@ -55,7 +55,7 @@ class WaterHistoryTests(SensorsCase):
         chart = next(chart for chart in found.charts if chart.quantity.code == 'temperature_c')
         self.assertIn((self.start + timedelta(minutes=29), self.start + timedelta(hours=3)), chart.gaps)
         self.assertFalse([bucket for bucket in chart.buckets
-                          if self.start + timedelta(minutes=30) <= bucket.start < self.start + timedelta(hours=3)])
+                          if self.start + timedelta(minutes=29) < bucket.first_ts < self.start + timedelta(hours=3)])
 
     def test_the_nh3_of_each_sample_is_worked_out_or_says_why_not(self):
         self.sample(4, tan_mg_l='0.500', ph='7.20', temperature_c='12.0')
@@ -74,16 +74,19 @@ class WaterHistoryTests(SensorsCase):
         self.assertEqual(read.water_history(self.unit, self.start, self.now, now=self.now).worked, {})
 
     def test_the_bands_are_the_strictest_of_the_fish_there(self):
+        # A unit holds one species; a loop's water serves every unit on it, so its bands are the strictest of them all.
         trout = make_species('TRO', 'Rainbow trout', 'Oncorhynchus mykiss', local_name='Regnbueørret')
         salmon = make_species()
         stock_fish(self.user, self.unit, 500, species=salmon)
-        stock_fish(self.user, self.unit, 500, species=trout)
+        stock_fish(self.user, make_unit('T-02', self.hall, system=self.ras), 500, species=trout)
         WaterLimit.objects.create(species=salmon, parameter='oxygen_mg_l', water_type='any',
                                   critical_low=Decimal(6), warning_low=Decimal(7))
         WaterLimit.objects.create(species=trout, parameter='oxygen_mg_l', water_type='any',
                                   critical_low=Decimal(5), warning_low=Decimal(8), warning_high=Decimal(14))
-        found = read.water_history(self.unit, self.start, self.now, now=self.now)
+        found = read.water_history(self.ras, self.start, self.now, now=self.now)
         self.assertEqual(found.bands, {'oxygen_mg_l': {'critical_low': 6.0, 'warning_low': 8.0, 'warning_high': 14.0}})
+        alone = read.water_history(self.unit, self.start, self.now, now=self.now)
+        self.assertEqual(alone.bands, {'oxygen_mg_l': {'critical_low': 6.0, 'warning_low': 7.0}})
 
     def test_a_window_that_ends_before_it_starts_is_refused(self):
         with self.assertRaises(ValueError):

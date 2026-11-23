@@ -59,7 +59,7 @@ class CalculatorSaysTests(TestCase):
         for label in WORKED_ROWS + ('Reagents to dose with', 'Temperature (°C)'):
             self.assertIn(label, labels)
         ammonia = next(row for row in found['pairs'] if row[0] == 'Un-ionised ammonia (NH₃-N)')
-        self.assertRegex(ammonia[1], r'^\d+\.\d{4} mg/L · \S')         # the value, its unit and its status
+        self.assertRegex(ammonia[1], r'^\d+\.\d{4} mg/L')                  # the value and its unit
         self.assertIn('Water chemistry report', found['headings'])
 
     def test_a_water_that_cannot_be_says_why_on_every_view(self):

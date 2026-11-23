@@ -6764,6 +6764,10 @@ msgstr "%(date)s taşıması öncesi aç bırakma: %(start)s itibarıyla (%(asks
 msgid "Fed"
 msgstr "Yemlenen"
 
+#, python-format
+msgid "Fed %(kg)s kg of %(feed)s"
+msgstr "%(kg)s kg %(feed)s verildi"
+
 msgid "Fed beyond the book"
 msgstr "Kaydın ötesinde yemlenen"
 
@@ -13122,6 +13126,9 @@ msgstr "Sensör buraya taşındı"
 msgid "Sensor readings"
 msgstr "Sensör okumaları"
 
+msgid "Sensor values are not shown: they need the right to read sensor readings."
+msgstr "Sensör değerleri gösterilmiyor: sensör okumalarını görme yetkisi gerekir."
+
 msgid "Sensors"
 msgstr "Sensörler"
 
@@ -16615,6 +16622,10 @@ msgstr "%(date)s tarihli tedavi iptal edildi."
 #, python-format
 msgid "Treatment recorded: %(what)s in %(units)s from %(start)s to %(end)s."
 msgstr "Tedavi kaydedildi: %(what)s, %(units)s, %(start)s – %(end)s."
+
+#, python-format
+msgid "Treatment: %(method)s"
+msgstr "Tedavi: %(method)s"
 
 msgid "Treatments"
 msgstr "Tedaviler"

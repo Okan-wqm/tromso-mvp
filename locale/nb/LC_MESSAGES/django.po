@@ -6745,6 +6745,10 @@ msgstr "Sulting før transporten %(date)s: fra %(start)s (%(asks)s)."
 msgid "Fed"
 msgstr "Fôret"
 
+#, python-format
+msgid "Fed %(kg)s kg of %(feed)s"
+msgstr "Foret %(kg)s kg %(feed)s"
+
 msgid "Fed beyond the book"
 msgstr "Fôret ut over registeret"
 
@@ -13095,6 +13099,9 @@ msgstr "Sensoren flyttet hit"
 msgid "Sensor readings"
 msgstr "Sensoravlesninger"
 
+msgid "Sensor values are not shown: they need the right to read sensor readings."
+msgstr "Sensorverdier vises ikke: de krever retten til å lese sensoravlesninger."
+
 msgid "Sensors"
 msgstr "Sensorer"
 
@@ -16578,6 +16585,10 @@ msgstr "Behandlingen %(date)s er annullert."
 #, python-format
 msgid "Treatment recorded: %(what)s in %(units)s from %(start)s to %(end)s."
 msgstr "Behandling registrert: %(what)s i %(units)s fra %(start)s til %(end)s."
+
+#, python-format
+msgid "Treatment: %(method)s"
+msgstr "Behandling: %(method)s"
 
 msgid "Treatments"
 msgstr "Behandlinger"

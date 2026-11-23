@@ -2165,6 +2165,7 @@
       },
       "tests": [
         "core/tests_workspaces.py",
+        "farm/tests/test_water_history_page.py",
         "sensors/tests/test_alarms.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_alarms.py",
@@ -19007,6 +19008,7 @@
         "farm/tests/test_systems.py",
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
+        "farm/tests/test_water_history_page.py",
         "farm/tests/test_water_points.py",
         "farm/tests/test_withdrawal_delivery_paths.py",
         "farm/tests/test_withdrawal_gate.py",
@@ -19023,6 +19025,7 @@
         "sensors/tests/test_portable.py",
         "sensors/tests/test_read.py",
         "sensors/tests/test_replay.py",
+        "sensors/tests/test_water_history.py",
         "alarms/tests/__init__.py"
       ]
     },
@@ -20082,6 +20085,7 @@
         "farm/tests/test_stock.py",
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
+        "farm/tests/test_water_history_page.py",
         "farm/tests/test_water_origin.py",
         "farm/tests/test_water_oxygen_basis.py",
         "farm/tests/test_water_points.py",
@@ -20099,10 +20103,12 @@
         "monitoring/tests/test_boards.py",
         "monitoring/tests/test_golden.py",
         "monitoring/tests/test_token.py",
+        "sensors/tests/test_chart_data.py",
         "sensors/tests/test_pages.py",
         "sensors/tests/test_ph_scale.py",
         "sensors/tests/test_portable.py",
         "sensors/tests/test_replay.py",
+        "sensors/tests/test_water_history.py",
         "alarms/tests/test_cross_review.py"
       ]
     },
@@ -21472,6 +21478,8 @@
         "monitoring/tests/test_extras.py",
         "monitoring/tests/test_going_in.py",
         "monitoring/tests/test_small.py",
+        "sensors/tests/test_chart_data.py",
+        "sensors/tests/test_water_history.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_refused_sensor_ph.py",
@@ -37909,6 +37917,7 @@
       "tests": [
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
+        "sensors/tests/test_chart_data.py",
         "sensors/tests/test_contract.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_history.py",

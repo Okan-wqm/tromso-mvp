@@ -135,6 +135,39 @@ def mail_is_configured(app_configs, **kwargs):
     return found
 
 
+@register(Tags.security, deploy=True)
+def production_settings(app_configs, **kwargs):
+    """What Django's own deploy checks do not hold a production server (DEBUG off) to (config/settings.py, the
+    production block): a host list that takes every host, an http origin trusted for forms, and the activity log's
+    digests under the secret key. Errors: the production server runs `check --deploy` before it starts
+    (deploy/web/gunicorn.conf.py) and does not start on them."""
+    if settings.DEBUG:
+        return []
+    found = []
+    if '*' in settings.ALLOWED_HOSTS:
+        found.append(Error(
+            'DJANGO_ALLOWED_HOSTS holds "*": the server would answer to any host name.',
+            hint='Set DJANGO_ALLOWED_HOSTS to the host names people open the console at, comma separated.',
+            id='core.E007'))
+    plain = [origin for origin in settings.CSRF_TRUSTED_ORIGINS if urlsplit(origin).scheme != 'https']
+    if plain:
+        found.append(Error(
+            f'A form may be posted from an origin that is not https: {", ".join(plain)}.',
+            hint='Set DJANGO_CSRF_TRUSTED_ORIGINS to https origins only, or leave it unset (the public address).',
+            id='core.E008'))
+    key = settings.AUDIT_DIGEST_KEY
+    problem = ('it is not set, so the secret key would be used' if not key
+               else 'it is the secret key' if key == settings.SECRET_KEY
+               else 'it is shorter than 32 characters' if len(key) < 32 else None)
+    if problem:
+        found.append(Error(
+            f'The activity log\'s digest key (DJANGO_AUDIT_DIGEST_KEY) cannot be used: {problem}.',
+            hint='Set DJANGO_AUDIT_DIGEST_KEY (or DJANGO_AUDIT_DIGEST_KEY_FILE) to a random value of its own before '
+                 'real data is written, and keep it with the backups (README, Security in the pages).',
+            id='core.E009'))
+    return found
+
+
 @register(Tags.database)
 def implied_reads(app_configs, **kwargs):
     """Roles whose Read on an area may come only from the matrix's old rule (All production or Everyone once added

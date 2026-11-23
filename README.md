@@ -5478,7 +5478,8 @@ their own, see Alarms).
   A link that no longer works says so ("The link was already used or has expired") and offers "Request a new link"
   and the sign-in page. Setting the password does not sign in. Between opening the link and saving the password the
   token is in the person's session row, and the link's address is in the access log of whatever stands in front of
-  Django: Django's design; the secure-cookie settings are still on the open deploy list for it.
+  Django: Django's design. With DEBUG off the session cookie travels over https only (Starting a production server),
+  and the production proxy leaves the link's key out of its access log (`deploy/proxy`).
 - **The link starts with `PUBLIC_BASE_URL`**, never with the Host header of the request that caused the mail.
 - **The text** is plain text (`templates/mail/`), in English, Norwegian bokmål and Turkish: in the language saved on
   the recipient's account (the admin chooses it on the user form), otherwise the language of whoever caused the mail.
@@ -5608,19 +5609,46 @@ so Django's `mail.E001` (a development-only mail backend) is closed and no longe
 
 ### Starting a production server
 
-Nothing in the repository starts a production server yet (no image, no entry point, no WSGI server in
-`requirements.txt`), and a WSGI server does not run Django's system checks by itself. Whatever starts it must run,
-in this order and stopping at the first failure:
+The production stack is `deploy/compose.yml`, with its runbooks in `docs/ops/` (install, first admin, upgrade,
+backup and restore, secrets, incidents, access, one installation per farm, the go-live checklist). The web image is
+the `web` stage of `docker/testrunner.Dockerfile`: gunicorn (`deploy/web/gunicorn.conf.py`, threaded workers), the
+catalogs and the static files under hashed names built in, run as an unprivileged user. Before anything serves, the
+release step (`deploy/web/release.sh`, as the database's owner role) runs, stopping at the first failure:
 
 ```
-python manage.py check --deploy --fail-level ERROR   # exits 1 on core.E001 (chemistry core), farm.E001, core.E002 to E005 (mail)
-python manage.py migrate                             # runs the same checks first
-python manage.py compile_catalogs
-<the WSGI server> config.wsgi:application
+python manage.py check --deploy --fail-level WARNING   # an unsafe or missing production setting, the chemistry core, the mail
+python manage.py migrate
+<deploy/db/sql/grants.sql>                             # the app role's rights on what the migrations made
+cp -R /app/staticfiles/. /srv/static/                  # the hashed static files to the proxy's volume
 ```
 
-with `DJANGO_DEBUG=0`, `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, the database variables and the mail variables
-above in the environment. Should the server be started without the checks all the same and without its mail
+and gunicorn runs the same deploy check in its master before the first worker starts (`on_starting`), so a server
+started any other way refuses an unsafe value too. The web server then signs in as the app role, which may read and
+write rows and nothing else (`docs/ops/database-roles.md`).
+
+**The production settings** (`config/settings.py`, its production block): with `DJANGO_DEBUG=0` the server stands
+behind the stack's TLS proxy, which ends HTTPS, overwrites `X-Forwarded-Proto` and is the only way in:
+
+- `SECURE_PROXY_SSL_HEADER`, `SECURE_SSL_REDIRECT`, `SESSION_COOKIE_SECURE` and `CSRF_COOKIE_SECURE` are on, whatever
+  the environment says;
+- HSTS for `DJANGO_HSTS_SECONDS` (a year unless set; 0 is refused, security.W004), subdomains unless
+  `DJANGO_HSTS_INCLUDE_SUBDOMAINS=0`, `preload` only with `DJANGO_HSTS_PRELOAD=1` (a decision for the whole domain's
+  owner; security.W021 is silenced while it is off);
+- `CSRF_TRUSTED_ORIGINS` from `DJANGO_CSRF_TRUSTED_ORIGINS` (comma separated) or the public address; each https
+  (core.E008);
+- the Content-Security-Policy is the same as a development server's;
+- static files under hashed names (ManifestStaticFilesStorage; the proxy keeps them a year, the import map reaches the
+  modules by them, `core/templatetags/assets.py`);
+- Django's warnings and errors go to stderr (with DEBUG off Django's own handler prints nothing).
+
+Every secret may come from a file instead of the environment: `DJANGO_SECRET_KEY_FILE`, `DJANGO_AUDIT_DIGEST_KEY_FILE`,
+`DB_PASSWORD_FILE`, `EMAIL_HOST_PASSWORD_FILE` (the first line; both a variable and its file set, or a file that cannot
+be read or is empty, stop the server). The stack gives every secret as a Docker secret file this way. The deploy
+check also refuses `*` among `DJANGO_ALLOWED_HOSTS` (core.E007) and a missing digest key, or one equal to the secret
+key or shorter than 32 characters (core.E009). `core/tests_production_settings.py` holds all of this, each unsafe value
+by its id; the go-live stack workflow (`.github/workflows/go-live-stack.yml`) proves the running stack from outside.
+
+Should the server be started without the checks all the same and without its mail
 settings, no mail is lost silently: every send fails ("The public address of this server is not set", or the mailer's
 own refusal of a missing host) and shows on the person's row as any failed send. One worker thread per server
 process sends the mails, so a server run as several processes sends several at a time. Nothing in the code ends that
@@ -5650,7 +5678,7 @@ runs the server:
   `core.tests_account_mail.SendTimeTests` fails then, which is the alarm.
 - **An account made active again within a link's lifetime has that link back** (the token is stateless; putting a
   wrong address right ends the link for good).
-- **No limit per client** on "Forgot your password?": the reverse proxy's (above).
+- **No limit per client** on "Forgot your password?" in the application: the production proxy limits it, and the sign-in, per client address (`PROXY_SIGNIN_PER_MINUTE`, `deploy/proxy`).
 - **A mail can reach the same person twice**, at the same address, in the two cases of "Whose a waiting mail is" (the
   mail under way of an owner silent past the lease that completes after all; a mail whose outcome could not be
   written), when the admin sends again. The first row stays "interrupted" though the mail went.
@@ -5817,6 +5845,7 @@ runs the server:
 | `config/test_runner.py`, `config/tests.py` | The test runner: the parallel suite, fast password hashing, warnings as errors (Tests) |
 | `core/testing.py` | The tests' clock: `FrozenClock` holds `timezone.now()` at a class's `NOW`, so a test dated on fixed days does not read the day it runs on (Tests) |
 | `.github/workflows/ci.yml`, `.github/dependabot.yml`, `sensors-ingest/rust-toolchain.toml`, `scripts/testrunner/image.sh` | CI, dependency updates and the ingest's pinned toolchain (CI and dependency updates) |
+| `deploy/`, `docs/ops/`, `.github/workflows/go-live-stack.yml` | The go-live package: the production stack (`compose.yml`, the proxy, the broker's TLS listener, the database image with its roles, the backup agent, `web/` the server's start, jobs and release step), the scripts (secrets, certificates, role checks, password rotation), the access templates (Cloudflare, WireGuard), the stack's proof (`ci/`); the runbooks and the go-live checklist (Starting a production server) |
 
 ### Management commands
 
@@ -6048,11 +6077,12 @@ so run `scripts/test.sh` on the branch before asking for a merge.
 
 | Job | What it runs | The same on a developer's machine |
 |---|---|---|
-| `python` | the browser build first (`npm ci`, `npm run build`: `check` fails on core.W001 without `static/js`), then `CHECKS=1 scripts/test.sh` (`SUITE=0` on a pull request) with 4 workers, in the test runner's image (`scripts/testrunner/image.sh`, built with its layers cached): `ruff check` (the linter, below); `compile_catalogs` (a fresh checkout has no `.mo`, and core.W002 would fail the check); `manage.py check --fail-level WARNING`; `check --deploy` with production-like settings (DEBUG off, a random key, a host, an SMTP server, a sender and an https public address: Email), where any issue but the four still open fails (`DEPLOY_OPEN` in `scripts/testrunner/in-container.sh`: the four HTTPS settings, until the production settings exist); `makemigrations --check`; `data_map --check`; `update_catalogs`, then `git diff --exit-code -- locale` (the catalogs were up to date); `compile_catalogs`; then, except on a pull request, the whole suite with warnings as errors | `CHECKS=1 SUITE=0 scripts/test.sh` (the checks only) or `CHECKS=1 scripts/test.sh`, then `git diff -- locale` |
+| `python` | the browser build first (`npm ci`, `npm run build`: `check` fails on core.W001 without `static/js`), then `CHECKS=1 scripts/test.sh` (`SUITE=0` on a pull request) with 4 workers, in the test runner's image (`scripts/testrunner/image.sh`, built with its layers cached): `ruff check` (the linter, below); `compile_catalogs` (a fresh checkout has no `.mo`, and core.W002 would fail the check); `manage.py check --fail-level WARNING`; `check --deploy` with production-like settings (DEBUG off, a random key, a host, an SMTP server, a sender and an https public address: Email), and a random digest key, where any issue fails (`DEPLOY_OPEN` in `scripts/testrunner/in-container.sh` is empty since the production settings exist: Starting a production server); `makemigrations --check`; `data_map --check`; `update_catalogs`, then `git diff --exit-code -- locale` (the catalogs were up to date); `compile_catalogs`; then, except on a pull request, the whole suite with warnings as errors | `CHECKS=1 SUITE=0 scripts/test.sh` (the checks only) or `CHECKS=1 scripts/test.sh`, then `git diff -- locale` |
 | `frontend` | `npm ci`, `npm run check:css` (the committed `static/css/tw.css` is what `frontend/tailwind.css` and the templates build now), `npm run check:tokens` (the tokens' CSS is what `tokens.json` builds), `npm run check:ds` (the design-system gate and its ratchet), `npm run build` (tsc, `tsconfig.json`, then the Tailwind build), `npm test` (the TypeScript tests, the designer's and the layout's browser tests on the runner's Chrome) | the same four |
 | `rust` | in `sensors-ingest/`, on the toolchain of `rust-toolchain.toml` (1.88.0, the release image's and the crate's `rust-version`): `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked --all-targets` against a TimescaleDB service migrated by Django (`manage.py migrate` in the test runner's image, the server's own packages) and a Mosquitto broker (`REQUIRE_DB=1`: the database and broker tests run, never skip), `cargo deny --locked check` (licences, bans, sources, RustSec advisories), `THIRD_PARTY` equal to what `Cargo.lock` says | `sensors-ingest/tests/run.sh` |
 | `chemcore` | `chemcore/scripts/test.sh` in the `chemcore-tools` stage of `docker/testrunner.Dockerfile` (its layers cached): rustfmt, clippy, `cargo test`, libm the chemistry's only dependency, no WebAssembly, `cargo deny` with advisories, `chemcore/THIRD_PARTY`, `docker/requirements.lock` naming the pins of `requirements.txt`; the built module's handshake with `chemcore/EXPECTED` (core.E001) is the python job's `check`. | the same `docker run` as the script's header |
 | `security` | `pip-audit --strict` on `requirements.txt` and the test runner's, and with `--require-hashes` on what the runner image installs (`docker/requirements.lock`) and the chemcore wheel's build tool (`docker/chemcore-build.lock`, maturin); the Python licence gate (`pip-licenses --allow-only`, the licences [`THIRD_PARTY.md`](THIRD_PARTY.md) allows: AGPL, SSPL, BUSL, non-commercial or any unreviewed licence fails); the banned components, MinIO and rodbus, whatever licence a client library carries (a Python or npm package, or an image a compose file or Dockerfile names; the crates are denied in `deny.toml`); `npm audit --omit=dev --audit-level=high` | see below |
+| `go-live-stack` | by hand only (`gh workflow run ci.yml --ref <branch> -f stack=true`, calling `.github/workflows/go-live-stack.yml`, which is also dispatched on its own once it is on `main`): the production stack of `deploy/compose.yml` built and started on a throwaway runner with throwaway secrets and synthetic data (`deploy/ci/stack.sh`): every service healthy, the database roles (`deploy/scripts/check-roles.sh`), HTTPS, headers, hashed static files, sign-in and a crawl of the pages (`deploy/ci/smoke.py`), MQTT over TLS with client certificates, a backup shipped to a runner folder, a restore into a second installation with every table's row count, a point-in-time restore (`docs/ops/`) | none: no local Docker runs of the stack; on a farm's server `docs/ops/install.md`, step 7 |
 
 The ingest's tests, bench and end-to-end runs make their configuration in SQL of their own (`sensors-ingest/tests/common/mod.rs`,
 `bench/seed.sql`, `bench/multisource_setup.py`, `e2e/seed.sql`) on the schema Django migrates, so a migration breaks them

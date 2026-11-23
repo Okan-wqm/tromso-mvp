@@ -4,7 +4,7 @@
 
 use crate::pipeline::{Output, Reading};
 use crate::reduce::State;
-use chrono::{DateTime, Utc};
+use crate::ts::{self, Ts};
 use std::collections::HashMap;
 use std::str::FromStr;
 use tokio_postgres::{Client, Error, NoTls};
@@ -186,13 +186,15 @@ pub async fn write_batch(client: &mut Client, out: &Output, status: &[Status]) -
         // conflicts inside a COMPRESSED chunk (tests/db.rs late_rows_and_duplicates...). Rows that can meet a
         // compressed chunk with a conflict - late rows, and anything older than the compression horizon - go one per
         // statement; the rest (forward rows of recent, uncompressed chunks) in one batched statement.
-        let horizon = Utc::now() - chrono::Duration::days(COMPRESSION_HORIZON_DAYS);
+        // 13 days back is always in range; were it not, every row would take the one-per-statement path, the safe one
+        let now = Ts::now();
+        let horizon = ts::try_days(COMPRESSION_HORIZON_DAYS).and_then(|d| now.checked_sub(d)).unwrap_or(now);
         let (single, batch): (Vec<&Reading>, Vec<&Reading>) =
             out.readings.iter().partition(|x| x.row.quality & crate::quality::LATE != 0 || x.row.ts < horizon);
         if !batch.is_empty() {
             let r = &batch;
             let ch: Vec<i32> = r.iter().map(|x| x.channel_no).collect();
-            let ts: Vec<DateTime<Utc>> = r.iter().map(|x| x.row.ts).collect();
+            let ts: Vec<Ts> = r.iter().map(|x| x.row.ts).collect();
             let v: Vec<f64> = r.iter().map(|x| x.row.value).collect();
             let n: Vec<i32> = r.iter().map(|x| x.row.n).collect();
             let q: Vec<i16> = r.iter().map(|x| x.row.quality).collect();
@@ -218,7 +220,7 @@ pub async fn write_batch(client: &mut Client, out: &Output, status: &[Status]) -
     if !out.states.is_empty() {
         let st: Vec<(&i32, &State)> = out.states.iter().collect();
         let ch: Vec<i32> = st.iter().map(|x| *x.0).collect();
-        let col_t = |f: fn(&State) -> Option<DateTime<Utc>>| st.iter().map(|x| f(x.1)).collect::<Vec<_>>();
+        let col_t = |f: fn(&State) -> Option<Ts>| st.iter().map(|x| f(x.1)).collect::<Vec<_>>();
         let col_f = |f: fn(&State) -> Option<f64>| st.iter().map(|x| f(x.1)).collect::<Vec<_>>();
         let col_q = |f: fn(&State) -> Option<i16>| st.iter().map(|x| f(x.1)).collect::<Vec<_>>();
         let run_n: Vec<i32> = st.iter().map(|x| x.1.run_n).collect();
@@ -246,7 +248,7 @@ pub async fn write_batch(client: &mut Client, out: &Output, status: &[Status]) -
     if !out.devices.is_empty() {
         let d: Vec<_> = out.devices.iter().collect();
         let ids: Vec<Uuid> = d.iter().map(|x| *x.0).collect();
-        let at: Vec<Option<DateTime<Utc>>> = d.iter().map(|x| x.1.last_message_at).collect();
+        let at: Vec<Option<Ts>> = d.iter().map(|x| x.1.last_message_at).collect();
         let seq: Vec<Option<i64>> = d.iter().map(|x| x.1.last_seq).collect();
         let acc: Vec<i64> = d.iter().map(|x| x.1.accepted).collect();
         let late: Vec<i64> = d.iter().map(|x| x.1.late).collect();
@@ -264,8 +266,8 @@ pub async fn write_batch(client: &mut Client, out: &Output, status: &[Status]) -
         let payload: Vec<&[u8]> = d.iter().map(|x| x.payload.as_slice()).collect();
         let len: Vec<i32> = d.iter().map(|x| x.payload_len).collect();
         let count: Vec<i32> = d.iter().map(|x| x.count).collect();
-        let first: Vec<DateTime<Utc>> = d.iter().map(|x| x.first_at).collect();
-        let last: Vec<DateTime<Utc>> = d.iter().map(|x| x.last_at).collect();
+        let first: Vec<Ts> = d.iter().map(|x| x.first_at).collect();
+        let last: Vec<Ts> = d.iter().map(|x| x.last_at).collect();
         w.dead_letters = tx
             .execute(UPSERT_DEAD, &[&conn, &dev, &topic, &reason, &sha, &payload, &len, &count, &first, &last])
             .await?;

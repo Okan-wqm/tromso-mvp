@@ -195,7 +195,7 @@ struct Writer {
 }
 
 fn now_s() -> i64 {
-    chrono::Utc::now().timestamp()
+    crate::ts::Ts::now().unix_secs()
 }
 
 /// Sleeps, or returns false early when shutdown is asked.

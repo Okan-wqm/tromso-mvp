@@ -759,13 +759,17 @@ never reads as all is well, and it reads no card source (no stock, feeding or wa
 few queries whatever the farm. The grid is drawn with `data-poll-state="loading"` and its address carries no token, so
 `frontend/poll.ts` asks for the fragment at once and its first answer is always the cards (200), with the next address
 (`X-Poll-Next`), from which the polls go on as below; the fragment replaces the placeholder by key, and that first fill says
-nothing aloud (it is the first load). A first answer that fails (the 503 of a source the cards need, a server error, no
-answer) shows "The cards cannot be read just now. The page tries again by itself." at once, in the look of the stale notice,
-and says it aloud once, in the POLITE live region (`frontend/announce.ts`; the stale and gone notices stay assertive); a
-first fill that succeeds says nothing. The page asks again after the usual longer waits and the cards replace it when they
-come. A 401, 403 or
-a redirect to sign-in is gone, as for any poll (the red notice, the placeholder hidden). The pane's body (`?focus=`) is
-filled the same way from its own fragment. `?full=1` is the page as it was before, the cards drawn by the server: the way in
+nothing aloud (it is the first load); then the page goes to the card a `#card-<unit>` address names, as a page drawn
+whole does. A first answer that fails (the 503 of a source the cards need, a server error, no answer within 35 s, a 204,
+or a 200 with nothing keyed in it: an empty body, a proxy's page) shows "The cards cannot be read just now. The page tries
+again by itself." at once, in the look of the stale notice, and says it aloud once, in the POLITE live region
+(`frontend/announce.ts`; the stale and gone notices stay assertive); the page asks again, never more than 10 s apart while
+nothing is on the screen, and when the cards come it says "Updated again." politely. A first fill that succeeds says
+nothing. A 401, 403 or a redirect to sign-in is gone, as for any poll (the red notice, the placeholder hidden). The pane's
+body (`?focus=`) is filled the same way from its own fragment, and its "cannot be read" is said politely too. A
+WATCHDOG line in the grid's placeholder, "Still loading? Open the full page" (a link to `?full=1`), is hidden and shown
+by the sheet after 30 s (an animation's delay, CSS only): it is the way out when poll.js never loads or never runs, and
+it goes with the placeholder at the first fill. On a wall the placeholder's lines have the notices' size. `?full=1` is the page as it was before, the cards drawn by the server: the way in
 without script (the placeholder's `<noscript>` link) and what the old pages' tests read. The shell with its first answers put
 in place is byte for byte the full page (`monitoring/tests/test_shell.py` ParityTests; on the dev data, the parity of the
 branch against main). The fragment and the pane are unchanged.
@@ -5186,8 +5190,11 @@ compiled by `npm run build` into `static/js/`, which is not committed:
   failures in a row, `gone` after a 401, 403, 404 or a redirect to sign-in, with a bubbling `poll:gone`
   event), so the page's CSS can say so in its own words (the script has no text). An element the server
   draws with `data-poll-state="loading"` holds only a placeholder (the monitoring shell): it is asked for at
-  once, it turns live when its first answer with a body is in place, and before that a failure, or a 204,
-  makes it `unread` at once (no last picture to keep; a 204's next address is not followed); the event `poll:now`
+  once (its request may take 35 s), it turns live when its first answer with something to show is in place (a
+  merged element's: an element with the key), and before that a failure, a 204 or a 200 with nothing to show makes
+  it `unread` at once (no last picture to keep; such an answer's next address is not followed), and it is asked
+  again within 10 s whatever its interval; after the first answer the page goes to the element its `#fragment`
+  names, when the answer brought it; the event `poll:now`
   asks at once (`detail.url`: the address from now on); `data-poll-merge="<attr>"` replaces a keyed child
   only when its markup differs, inserts a new key where the answer has it and drops a child the answer
   lacks (focus stays on the same id; an unkeyed child in the answer replaces everything);
@@ -5223,9 +5230,9 @@ compiled by `npm run build` into `static/js/`, which is not committed:
   live regions beside the grid (`#monitor-announce`, never inside the polled grid): a critical one assertively, the others
   politely, the first in full ("T-01 is now Critical.") and the rest as a count, at most one announcement per region in 5 s with
   the latest held for after. A first load, a better state, a card coming into view or going say nothing; so does the
-  shell's first fill when it succeeds, while a failed first answer says once, in the polite region, that the cards
-  cannot be read (the placeholder's own words). The
-  sentences and the state words are the page's (`data-announce-*`, `data-state-*`).
+  shell's first fill when it succeeds, while a failed first answer, the grid's or the pane's, says once, in the
+  polite region, that the cards cannot be read (the placeholder's own words), and the grid's cards that come after it
+  say "Updated again." there. The sentences and the state words are the page's (`data-announce-*`, `data-state-*`).
 - `designer.ts` the card designer of Reference data › Card templates (the Design tab, `templates/monitoring/widgets/_designer.html`):
   it edits the form's own layout textarea (without script the layout is edited as text); a palette (click or Enter adds), a
   canvas of the 12 columns under the card's fixed frame band (select; drag to move, the corner handle to resize, one history

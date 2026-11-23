@@ -1889,12 +1889,13 @@ def points_water(units, now=None, middle_only=()):
     chosen = points_of(units, middle_only, own)
     water = latest([point for points in chosen.values() for point in points], now, own=own)
     found = {unit_id: [water[point.pk] for point in points] for unit_id, points in chosen.items()}
-    # A unit with no point to read its own water at: its water without a point, which says whether its oxygen is silent
-    # (`pointless_water`); it is no point of the card's (no reading, no name).
+    # A unit with fish and no point to read its own water at: its water without a point, which says its oxygen is silent
+    # (`pointless_water`); it is no point of the card's (no reading, no name). One query for all of them.
     pointless = pointless_water(
         [unit for unit in units if not any(water[point.pk].for_unit for point in chosen[unit.pk])], now)
     for unit_id, standing in pointless.items():
-        found[unit_id] = [standing, *found[unit_id]]
+        if standing.holds_fish:
+            found[unit_id] = [standing, *found[unit_id]]
     return found
 
 

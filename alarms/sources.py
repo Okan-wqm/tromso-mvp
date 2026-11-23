@@ -584,10 +584,13 @@ def _silent_subjects(units, found_water, unevaluated, failed, now, oxygen_levels
 def _oxygen_levels(subjects):
     """The ids of the units whose oxygen has a level of the water limits that holds this pass or is open (`water_key`):
     the alarm system's oxygen alarm stands aside for it (`_silent_subjects`)."""
-    keys = {subject.key for subject in subjects if subject.key.startswith('water:unit:')
-            and subject.key.split(':')[3] == OXYGEN}
-    held = {subject.key.split(':')[2] for subject in subjects if subject.key in keys and subject.holds}
-    return held | {key.split(':')[2] for key in AlarmSubjectState.objects.filter(key__in=keys, open_alarm__isnull=False)
+    def unit_of(key):
+        _water, _unit, unit_id, slot, _severity = key.split(':')
+        return unit_id if slot == OXYGEN else None
+    levels = {subject.key: subject for subject in subjects if subject.key.startswith('water:unit:')
+              and unit_of(subject.key) is not None}
+    held = {unit_of(key) for key, subject in levels.items() if subject.holds}
+    return held | {unit_of(key) for key in AlarmSubjectState.objects.filter(key__in=list(levels), open_alarm__isnull=False)
                    .values_list('key', flat=True)}
 
 

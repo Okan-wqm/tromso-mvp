@@ -531,7 +531,7 @@ def _refused_subjects(units, found_water, unevaluated, failed, now):
     return subjects
 
 
-def _silent_subjects(units, found_water, unevaluated, failed, now, oxygen_levels=frozenset()):
+def _silent_subjects(units, found_water, unevaluated, failed, now, oxygen_levels=frozenset(), oxygen_pass=None):
     """Owner decision of 2026-11-23: a unit that holds fish now whose oxygen has no fresh value (read.PointWater.silent_oxygen:
     a typed sample grown old, a unit without sensors, a unit with no point to read its water at; mg/L and % being one
     quantity) is a CRITICAL alarm of the alarm system, one per unit (subject `system:unit:<unit>:no_fresh_oxygen`), on
@@ -563,13 +563,13 @@ def _silent_subjects(units, found_water, unevaluated, failed, now, oxygen_levels
         if looked and not found.holds_fish:
             subject.structural = ClearCause.STRUCTURAL
         subjects.append(subject)
-    return subjects + _probe_subjects(oxygen, failed, now)
+    return subjects + _probe_subjects(oxygen_pass or sensor_alarms.OxygenPass(now), failed, now)
 
 
 PROBE_PREFIX = f'{OXYGEN_PROBE_SILENT}:'
 
 
-def _probe_subjects(oxygen, failed, now):
+def _probe_subjects(oxygen_pass, failed, now):
     """A WARNING per silent oxygen probe (subject `system:oxygen_probe_silent:<channel>`, on its device's site and the
     department of its place): a default rule's probe that sent no fresh value at its place while the oxygen of the units
     holding fish there is fresh all the same (a typed sample, another probe: sensors.alarms.silent_probes,
@@ -579,8 +579,7 @@ def _probe_subjects(oxygen, failed, now):
     piece of equipment no unit's water reads (review 3, N2). Once nothing else is fresh the rule's critical says it and
     this one ends "restored", as it does once the probe sends again, is moved or taken out (its open row is visited
     though the probe is no longer listed); never on a pass that could not read the live values."""
-    probes = sensor_alarms.silent_probes(oxygen, now)
-    known = water_read.oxygen_known(set(probes), now) if probes else set()
+    probes, known = oxygen_pass.probes(), oxygen_pass.known()          # read once in the pass (`OxygenPass`)
     subjects, seen = [], set()
     for place, bindings in probes.items():
         for binding in bindings:
@@ -616,7 +615,7 @@ def _oxygen_levels(subjects):
                    .values_list('key', flat=True)}
 
 
-def water(now, rules):
+def water(now, rules, oxygen_pass=None):
     """Raises and clears the water limits' levels at `now` (alarms.rules `rules`), and the system alarms of live sources
     that cannot be read and of units that cannot be evaluated: (opened, cleared). While the live sources cannot be read
     nothing clears: a sample alone must never end an alarm a sensor raised (alarm plan, defect 3). A unit that cannot be
@@ -657,7 +656,7 @@ def water(now, rules):
         '%(unit)s holds fish and has no active sampling point for its own water: its water raises no alarm until it '
         'has one.'), unit=unit.code), now, parameter=NO_WATER_POINT, where=_unit_where(unit)) for unit in units]
     subjects += _refused_subjects(units, found_water, unevaluated, failed, now)
-    subjects += _silent_subjects(units, found_water, unevaluated, failed, now, _oxygen_levels(subjects))
+    subjects += _silent_subjects(units, found_water, unevaluated, failed, now, _oxygen_levels(subjects), oxygen_pass)
     # A unit whose water is read no more (no point to read it at, the parameter gone) keeps its alarm open: nothing says it
     # is over. A unit removed has nothing left to judge: its alarms end (cause "unit removed").
     return settle(subjects + _removed(units, now), now, rules)

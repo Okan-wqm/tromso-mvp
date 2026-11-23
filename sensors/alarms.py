@@ -121,10 +121,33 @@ def close_switched_off(now):
     return len(found)
 
 
-def evaluate(now=None):
+class OxygenPass:
+    """One alarm pass's view of the silent oxygen probes (`silent_probes`) and of the places where the oxygen is known all
+    the same (farm.water.read.oxygen_known), each read once, when first asked, and shared by the pass's sensor rules
+    (`evaluate`: a default oxygen rule stands aside there) and the alarm system's warnings (alarms/sources.py): the pass
+    (alarms/engine.py `run_once`) makes one and hands it down (review 3 of the branch, N3). Not a cache across passes."""
+
+    def __init__(self, now):
+        self.now = now
+        self._probes = self._known = None
+
+    def probes(self):
+        if self._probes is None:
+            self._probes = silent_probes(OXYGEN, self.now)
+        return self._probes
+
+    def known(self):
+        if self._known is None:
+            probes = self.probes()
+            self._known = water_read.oxygen_known(set(probes), self.now) if probes else set()
+        return self._known
+
+
+def evaluate(now=None, oxygen=None):
     """Checks every active rule now, after closing the events of the rules switched off (`close_switched_off`); returns
-    how many events opened and closed."""
+    how many events opened and closed. `oxygen`: the pass's OxygenPass (one made here without it)."""
     now = now or timezone.now()
+    oxygen = oxygen or OxygenPass(now)
     opened_count = 0
     with transaction.atomic():
         closed_count = close_switched_off(now)
@@ -147,11 +170,7 @@ def evaluate(now=None):
         # A default oxygen rule's silent probe where the place's oxygen is fresh all the same (a typed sample, another
         # probe): the alarm system's warning says it, not this rule's critical (review 2 of the branch, R3 p3); once
         # nothing else is fresh, the rule holds again.
-        known = None
-        if rule.is_default and rule.quantity in OXYGEN and channels:
-            silent = {place_of(places[channel.pk]) for channel in channels
-                      if _silent(channel, states[channel.channel_no], places[channel.pk], now)}
-            known = water_read.oxygen_known(silent, now) if silent else set()
+        known = oxygen.known() if rule.is_default and rule.quantity in OXYGEN and channels else None
         with transaction.atomic():
             open_events = {event.channel_no: event for event in AlarmEvent.objects.select_for_update(of=('self',))
                            .filter(rule=rule, closed_at__isnull=True).select_related('binding')}

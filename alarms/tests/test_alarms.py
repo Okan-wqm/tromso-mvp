@@ -131,7 +131,8 @@ class SensorTests(AlarmsCase):
     def test_the_loop_checks_the_sensor_rules_itself(self):
         with mock.patch.object(sensor_alarms, 'evaluate', return_value=(0, 0)) as evaluate:
             self.loop()
-        evaluate.assert_called_once_with(self.now)
+        evaluate.assert_called_once()
+        self.assertEqual(evaluate.call_args.args[0], self.now)          # (and the pass's OxygenPass)
 
 
 class RoutingTests(AlarmsCase):

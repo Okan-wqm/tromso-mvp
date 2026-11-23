@@ -154,9 +154,12 @@ def run_once(now=None):
             else:
                 summary.failed += 1
 
-    steps = [('sensor rules', lambda: sensor_alarms.evaluate(now)),
+    # The silent oxygen probes and where the oxygen is known all the same: read once, for the sensor rules and the
+    # alarm system's warnings of this pass (sensors.alarms.OxygenPass).
+    oxygen = sensor_alarms.OxygenPass(now)
+    steps = [('sensor rules', lambda: sensor_alarms.evaluate(now, oxygen)),
              ('sensor events', lambda: count(sources.sensor_events())),
-             ('water', lambda: count(sources.water(now, rules))),
+             ('water', lambda: count(sources.water(now, rules, oxygen))),
              ('device clocks', lambda: count(sources.device_clocks(now, rules))),
              ('notify', notify),
              ('send', send)]

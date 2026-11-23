@@ -1168,7 +1168,7 @@ dot that carries meaning at least 3:1 (the water page's warning dot moved from #
 sage never carries meaning (a note card's border is the muted green, an empty one's dotted); `@media (forced-colors: active)`
 keeps the shapes, the bands of a bar and the state borders in high-contrast mode (and the pH window's regions and mark).
 The fitted card, the band and the pH window use three inks on three grounds and a colour only for a state; every pair of
-text and ground they use is at least 4.5:1 in all five themes (`test_frame.py`: the inks on the sheet and the canvas, the
+text and ground they use is at least 4.5:1 in all six themes (`test_frame.py`: the inks on the sheet and the canvas, the
 state's text on the sheet and on its tint, a border's number on the grey region, the safe stretch and the critical tint).
 
 **Measured with templates** (2026-11-05, `monitoring/tests/test_load.py`, run with `MONITOR_LOAD=1`; the test database on this

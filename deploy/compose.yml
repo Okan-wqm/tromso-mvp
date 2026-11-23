@@ -1,0 +1,448 @@
+# One farm's production stack (docs/ops/install.md). Each farm has its own server, its own copy of this folder's
+# settings and secrets, and its own database. Run from this folder:
+#   docker compose --env-file farm.env build
+#   docker compose --env-file farm.env up -d
+# farm.env is farm.env.example filled in (not in git); the secrets are files under SECRETS_DIR (default ./secrets, not
+# in git), made by scripts/make-secrets.sh, each read by the one service that needs it (/run/secrets/<name>).
+#
+#   db         PostgreSQL 17 + TimescaleDB, its WAL archived for the backup; on the internal network only
+#   release    one-shot, before anything serves: check --deploy, migrate, the app role's rights, the static files
+#   web        gunicorn (deploy/web/gunicorn.conf.py) as the app role; no published port
+#   jobs       the scheduled commands (deploy/web/jobs.sh): the broker's users and topics, recurring tasks, housekeeping
+#   alarms     the alarm worker's slot (below, commented): built on its own branch
+#   proxy      nginx: TLS, HTTP to HTTPS, the static files with a year's cache, rate limits on sign-in and reset
+#   mosquitto  the MQTT broker: TLS on MQTT_BIND_ADDRESS:8883 (the VPN), per-device users and topics
+#   ingest     the Rust MQTT ingest (listen only) as the database role sensors_ingest
+#   backup     pg_dump, base backups, the archived WAL and the uploads, encrypted and copied off the server (restic)
+#   restore    one-shot, profile `ops`: restores a backup (docs/ops/backup-and-restore.md)
+#   cloudflared  profile `cloudflare`: the Cloudflare Tunnel, when access goes through Cloudflare Zero Trust
+#
+# Every image a server pulls is pinned by digest; the farm's own images are built from Dockerfiles whose bases are.
+# Every service: a restart policy, a health check, memory and CPU limits, its log rotated (10 MB x 5).
+
+name: ${COMPOSE_PROJECT_NAME:-farm}
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+# What every service running the web image shares.
+x-app-environment: &app-environment
+  DJANGO_DEBUG: "0"
+  DJANGO_ALLOWED_HOSTS: ${SITE_HOST:?set SITE_HOST in farm.env}
+  PUBLIC_BASE_URL: https://${SITE_HOST}
+  DJANGO_SECRET_KEY_FILE: /run/secrets/django_secret_key
+  DJANGO_AUDIT_DIGEST_KEY_FILE: /run/secrets/django_audit_digest_key
+  DJANGO_HSTS_SECONDS: ${DJANGO_HSTS_SECONDS:-31536000}
+  DB_HOST: db
+  DB_PORT: "5432"
+  DB_NAME: ${DB_NAME:-balik}
+  DB_USER: balik_app
+  DB_PASSWORD_FILE: /run/secrets/db_app_password
+  DB_CONN_MAX_AGE: "60"
+  EMAIL_HOST: ${EMAIL_HOST:?set EMAIL_HOST in farm.env}
+  EMAIL_PORT: ${EMAIL_PORT:-}
+  EMAIL_TLS: ${EMAIL_TLS:-starttls}
+  EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+  EMAIL_HOST_PASSWORD_FILE: ${EMAIL_HOST_PASSWORD_FILE:-}
+  DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:?set DEFAULT_FROM_EMAIL in farm.env}
+  COMPANY_NAME: ${COMPANY_NAME:-}
+  COMPANY_TIME_ZONE: ${COMPANY_TIME_ZONE:-Europe/Oslo}
+  SENSORS_BROKER_AUTH_DIR: /broker-auth
+
+x-app: &app
+  image: ${WEB_IMAGE:-balik-web:local}
+  build:
+    context: ..
+    dockerfile: docker/testrunner.Dockerfile
+    target: web
+  environment: *app-environment
+  secrets: [django_secret_key, django_audit_digest_key, db_app_password, email_password]
+  read_only: true
+  tmpfs: [/tmp]
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+  logging: *logging
+  networks: [data]
+
+services:
+  db:
+    image: ${DB_IMAGE:-balik-db:local}
+    build:
+      context: .
+      dockerfile: db/Dockerfile
+      target: db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_DB: ${DB_NAME:-balik}
+    secrets: [postgres_password, db_owner_password, db_app_password, db_ingest_password, db_backup_password]
+    # The WAL is archived every 5 minutes at the latest (archive_timeout), for the backup agent to ship; a failing
+    # archive_command keeps the WAL on the server and retries, it never loses it.
+    command:
+      - postgres
+      - -c
+      - timescaledb.telemetry_level=off
+      - -c
+      - wal_level=replica
+      - -c
+      - archive_mode=on
+      - -c
+      - archive_command=test ! -f /wal-archive/%f && cp %p /wal-archive/%f
+      - -c
+      - archive_timeout=300
+      - -c
+      - max_connections=${DB_MAX_CONNECTIONS:-100}
+      - -c
+      - shared_buffers=${DB_SHARED_BUFFERS:-1GB}
+      - -c
+      - log_min_duration_statement=${DB_LOG_SLOW_MS:-2000}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - wal-archive:/wal-archive
+    shm_size: 512m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d \"$${POSTGRES_DB}\" -h 127.0.0.1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    stop_grace_period: 2m
+    deploy:
+      resources:
+        limits:
+          memory: ${DB_MEMORY:-4g}
+          cpus: "${DB_CPUS:-2}"
+    logging: *logging
+    networks: [data]
+
+  release:
+    <<: *app
+    command: ["sh", "/app/deploy/web/release.sh"]
+    environment:
+      <<: *app-environment
+      DB_USER: balik_owner
+      DB_PASSWORD_FILE: /run/secrets/db_owner_password
+    secrets: [django_secret_key, django_audit_digest_key, db_owner_password, email_password]
+    volumes:
+      - static:/srv/static
+    restart: "no"
+    healthcheck:
+      disable: true
+    depends_on:
+      db:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: "1"
+
+  web:
+    <<: *app
+    restart: unless-stopped
+    environment:
+      <<: *app-environment
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-3}
+      GUNICORN_THREADS: ${GUNICORN_THREADS:-4}
+      GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-120}
+    volumes:
+      - media:/srv/media
+    networks: [data, edge]
+    expose: ["8000"]
+    depends_on:
+      release:
+        condition: service_completed_successfully
+    # gunicorn's graceful_timeout (30 s) plus room: a worker finishes its request and sends its mail before it ends
+    stop_grace_period: 45s
+    deploy:
+      resources:
+        limits:
+          memory: ${WEB_MEMORY:-2g}
+          cpus: "${WEB_CPUS:-2}"
+
+  jobs:
+    <<: *app
+    command: ["sh", "/app/deploy/web/jobs.sh"]
+    restart: unless-stopped
+    environment:
+      <<: *app-environment
+      SENSORS_BROKER_EXTRA: /run/secrets/mqtt_passwd_extra
+    secrets: [django_secret_key, django_audit_digest_key, db_app_password, email_password, mqtt_passwd_extra]
+    volumes:
+      - broker-auth:/broker-auth
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/jobs.alive && test $$(( $$(date +%s) - $$(stat -c %Y /tmp/jobs.alive) )) -lt 600"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 2m
+    depends_on:
+      release:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: "1"
+
+  # The alarm worker's slot (plan F:/dev/balik-notes/plan/alarms/PLAN.md: a separate service reacting within 10 s, the
+  # notification queue, the dead-man check). Built on its own branch; when it lands, it fills this in: the web image
+  # (or its own), the app role, restart unless-stopped, a health check that fails when its last pass is older than
+  # its period, and its dead-man signal leaving the server by a path that does not depend on this proxy or Cloudflare.
+  # alarms:
+  #   <<: *app
+  #   command: ["python", "manage.py", "run_alarms", "--loop", "10"]
+  #   restart: unless-stopped
+  #   networks: [data, edge]
+  #   depends_on:
+  #     release:
+  #       condition: service_completed_successfully
+
+  proxy:
+    image: nginx:1.30.7-alpine@sha256:caf4e1e032a20f9c3c5e28fc7f25ffd768ad8677b4975c54193075997b3a97e3
+    restart: unless-stopped
+    environment:
+      SITE_HOST: ${SITE_HOST}
+      PROXY_REAL_IP_FROM: ${PROXY_REAL_IP_FROM:-127.0.0.1/32}
+      PROXY_REAL_IP_HEADER: ${PROXY_REAL_IP_HEADER:-X-Forwarded-For}
+      PROXY_SIGNIN_PER_MINUTE: ${PROXY_SIGNIN_PER_MINUTE:-10}
+      # only these are put into the templates: nginx's own $variables stay as they are
+      NGINX_ENVSUBST_FILTER: "^(SITE_HOST|PROXY_)"
+    ports:
+      - "${HTTPS_BIND:-0.0.0.0}:443:443"
+      - "${HTTP_BIND:-0.0.0.0}:80:80"
+    volumes:
+      - ./proxy/templates:/etc/nginx/templates:ro
+      - static:/srv/static:ro
+      - ${SECRETS_DIR:-./secrets}/tls:/etc/nginx/tls:ro
+    read_only: true
+    tmpfs: [/etc/nginx/conf.d, /var/cache/nginx, /var/run, /tmp]
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8081/proxy-health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      web:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "1"
+    logging: *logging
+    networks: [edge]
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0.20@sha256:21421af7b32bf9ce508e9090c8eb13bb81f410ca778dc205506180a6f862d0eb
+    restart: unless-stopped
+    entrypoint: ["sh", "/mosquitto/config/entrypoint.sh"]
+    # TLS for the field devices, on the VPN address only (docs/ops/access.md); the plain listener 1883 is for the
+    # ingest, inside the compose network, and is published nowhere.
+    ports:
+      - "${MQTT_BIND_ADDRESS:?set MQTT_BIND_ADDRESS (the VPN address the broker listens on) in farm.env}:8883:8883"
+    volumes:
+      - ../sensors-ingest/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ../sensors-ingest/mosquitto/entrypoint.sh:/mosquitto/config/entrypoint.sh:ro
+      - ./mosquitto/${MQTT_DEVICE_AUTH:-clientcert}:/mosquitto/config/conf.d:ro
+      - ${SECRETS_DIR:-./secrets}/mqtt:/mosquitto/tls:ro
+      - broker-auth:/mosquitto/auth
+      - mosquitto-data:/mosquitto/data
+    healthcheck:
+      test: ["CMD-SHELL", "pidof mosquitto > /dev/null"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    # the jobs write the broker's users and topics first (sensor_broker_sync), so the broker starts with them
+    depends_on:
+      jobs:
+        condition: service_started
+    stop_grace_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: "1"
+    logging: *logging
+    networks: [edge]
+
+  ingest:
+    image: ${INGEST_IMAGE:-balik-ingest:local}
+    build:
+      context: ../sensors-ingest
+    restart: unless-stopped
+    environment:
+      INGEST_DB: host=db port=5432 dbname=${DB_NAME:-balik} user=sensors_ingest
+      RUST_LOG: ${INGEST_LOG:-info}
+    secrets:
+      - source: db_ingest_password
+        target: sensors_ingest_db
+      - mqtt_ingest
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    expose: ["8080"]
+    depends_on:
+      release:
+        condition: service_completed_successfully
+      mosquitto:
+        condition: service_started
+    # SIGTERM: what is queued is committed and acknowledged, then DISCONNECT (the broker keeps the session)
+    stop_grace_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: ${INGEST_MEMORY:-1g}
+          cpus: "${INGEST_CPUS:-2}"
+    logging: *logging
+    networks: [data, edge]
+
+  backup:
+    image: ${BACKUP_IMAGE:-balik-backup:local}
+    build:
+      context: .
+      dockerfile: db/Dockerfile
+      target: backup
+    restart: unless-stopped
+    env_file:
+      - ${SECRETS_DIR:-./secrets}/backup.env
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGDATABASE: ${DB_NAME:-balik}
+      PGUSER: balik_backup
+      PGPASSWORD_FILE: /run/secrets/db_backup_password
+      RESTIC_REPOSITORY: ${RESTIC_REPOSITORY:?set RESTIC_REPOSITORY (the off-server backup target) in farm.env}
+      RESTIC_PASSWORD_FILE: /run/secrets/restic_password
+      BACKUP_HOST_TAG: ${COMPOSE_PROJECT_NAME:-farm}
+      BACKUP_DUMP_HOURS: ${BACKUP_DUMP_HOURS:-24}
+      BACKUP_BASE_DAYS: ${BACKUP_BASE_DAYS:-7}
+      BACKUP_SHIP_MINUTES: ${BACKUP_SHIP_MINUTES:-15}
+      BACKUP_KEEP_HOURLY: ${BACKUP_KEEP_HOURLY:-48}
+      BACKUP_KEEP_DAILY: ${BACKUP_KEEP_DAILY:-14}
+      BACKUP_KEEP_WEEKLY: ${BACKUP_KEEP_WEEKLY:-8}
+      BACKUP_KEEP_MONTHLY: ${BACKUP_KEEP_MONTHLY:-12}
+    secrets: [db_backup_password, restic_password]
+    volumes:
+      - wal-archive:/wal-archive
+      - backups:/backups
+      - media:/media-ro:ro
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD", "sh", "/usr/local/lib/balik-backup/agent.sh", "health"]
+      interval: 60s
+      timeout: 30s
+      retries: 2
+      start_period: 30m
+    # after the release: a dump never meets a migration half done
+    depends_on:
+      db:
+        condition: service_healthy
+      release:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: "1"
+    logging: *logging
+    networks: [data, edge]
+
+  restore:
+    image: ${BACKUP_IMAGE:-balik-backup:local}
+    profiles: [ops]
+    env_file:
+      - ${SECRETS_DIR:-./secrets}/backup.env
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGDATABASE: ${DB_NAME:-balik}
+      PGUSER: postgres
+      PGPASSWORD_FILE: /run/secrets/postgres_password
+      RESTIC_REPOSITORY: ${RESTIC_REPOSITORY:?set RESTIC_REPOSITORY in farm.env}
+      RESTIC_PASSWORD_FILE: /run/secrets/restic_password
+      BACKUP_HOST_TAG: ${RESTORE_FROM_HOST_TAG:-${COMPOSE_PROJECT_NAME:-farm}}
+    secrets: [postgres_password, restic_password]
+    volumes:
+      - backups:/backups
+      - media:/srv/media
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    logging: *logging
+    networks: [data, edge]
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.10.7@sha256:4955524aeaa379e154023d5a027c250f7b35041a2e7e950cf13f144bc9b9c5ba
+    profiles: [cloudflare]
+    restart: unless-stopped
+    # A tunnel managed in the Cloudflare dashboard: its token in secrets/cloudflared.env (TUNNEL_TOKEN=...), its public
+    # hostname sent to https://proxy:443 with the origin's server name SITE_HOST (docs/ops/access.md).
+    command: ["tunnel", "--no-autoupdate", "--metrics", "0.0.0.0:2000", "run"]
+    env_file:
+      - ${SECRETS_DIR:-./secrets}/cloudflared.env
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    depends_on:
+      proxy:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "1"
+    logging: *logging
+    networks: [edge]
+
+networks:
+  # The database's network: no way out of the server, nothing published.
+  data:
+    internal: true
+  # The proxy, the broker and what must reach outside (mail, the backup's repository). A fixed range, so that the proxy
+  # can be told to believe the client address cloudflared passes on from this network only (PROXY_REAL_IP_FROM).
+  edge:
+    ipam:
+      config:
+        - subnet: ${EDGE_SUBNET:-172.31.250.0/24}
+
+volumes:
+  pgdata: {}
+  wal-archive: {}
+  backups: {}
+  media: {}
+  static: {}
+  broker-auth: {}
+  mosquitto-data: {}
+
+secrets:
+  postgres_password:
+    file: ${SECRETS_DIR:-./secrets}/postgres_password
+  db_owner_password:
+    file: ${SECRETS_DIR:-./secrets}/db_owner_password
+  db_app_password:
+    file: ${SECRETS_DIR:-./secrets}/db_app_password
+  db_ingest_password:
+    file: ${SECRETS_DIR:-./secrets}/db_ingest_password
+  db_backup_password:
+    file: ${SECRETS_DIR:-./secrets}/db_backup_password
+  django_secret_key:
+    file: ${SECRETS_DIR:-./secrets}/django_secret_key
+  django_audit_digest_key:
+    file: ${SECRETS_DIR:-./secrets}/django_audit_digest_key
+  email_password:
+    file: ${SECRETS_DIR:-./secrets}/email_password
+  mqtt_ingest:
+    file: ${SECRETS_DIR:-./secrets}/mqtt_ingest
+  mqtt_passwd_extra:
+    file: ${SECRETS_DIR:-./secrets}/mqtt_passwd_extra
+  restic_password:
+    file: ${SECRETS_DIR:-./secrets}/restic_password

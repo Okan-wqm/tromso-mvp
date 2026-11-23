@@ -1,0 +1,113 @@
+# The reverse proxy of a farm's server (deploy/compose.yml service `proxy`, docs/ops/install.md). The nginx image
+# renders this file into /etc/nginx/conf.d/farm.conf at start, putting in SITE_HOST and the PROXY_* values only
+# (NGINX_ENVSUBST_FILTER); every other $name is nginx's own.
+#
+#   - TLS 1.2 and 1.3 with the certificate of SECRETS_DIR/tls (fullchain.pem, privkey.pem); plain HTTP is sent to https
+#   - only SITE_HOST is served; a TLS handshake for any other name is refused
+#   - /static/: the files `collectstatic` wrote under hashed names, kept by browsers for a year (immutable); a name
+#     without a hash is checked every time
+#   - sign-in and password reset: PROXY_SIGNIN_PER_MINUTE requests a minute per client (burst 5), then 429
+#   - the access log leaves out the one-time key of a password mail's link
+#   - a request body of 25 MB at most (the library takes a PDF of 20 MB, KNOWLEDGE_MAX_FILE_BYTES)
+#   - the client's address: behind Cloudflare Tunnel the proxy believes PROXY_REAL_IP_HEADER (CF-Connecting-IP) from
+#     PROXY_REAL_IP_FROM only (the edge network); otherwise the connection's own address
+
+server_tokens off;
+client_max_body_size 25m;
+charset utf-8;
+
+real_ip_header ${PROXY_REAL_IP_HEADER};
+set_real_ip_from ${PROXY_REAL_IP_FROM};
+real_ip_recursive on;
+
+limit_req_zone $binary_remote_addr zone=signin:10m rate=${PROXY_SIGNIN_PER_MINUTE}r/m;
+limit_req_status 429;
+limit_req_log_level warn;
+
+map $request_uri $loggable_uri {
+    "~^(?<kept>/accounts/reset/[^/]+/)[^/?]+" "${kept}removed/";
+    default $request_uri;
+}
+log_format farm '$remote_addr [$time_iso8601] "$request_method $loggable_uri $server_protocol" $status '
+                '$body_bytes_sent $request_time "$http_user_agent"';
+
+map $uri $static_cache_control {
+    "~\.[0-9a-f]{12}\.[A-Za-z0-9]+$" "public, max-age=31536000, immutable";
+    default "no-cache";
+}
+
+gzip on;
+gzip_vary on;
+gzip_min_length 1024;
+gzip_types text/css application/javascript application/json image/svg+xml text/plain;
+
+upstream farm_web {
+    server web:8000;
+    keepalive 16;
+}
+
+server {
+    listen 80 default_server;
+    access_log /dev/stdout farm;
+    location / {
+        return 301 https://${SITE_HOST}$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl default_server;
+    ssl_reject_handshake on;
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name ${SITE_HOST};
+    access_log /dev/stdout farm;
+
+    ssl_certificate /etc/nginx/tls/fullchain.pem;
+    ssl_certificate_key /etc/nginx/tls/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:farm_tls:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    location /static/ {
+        alias /srv/static/;
+        add_header Cache-Control $static_cache_control always;
+        add_header X-Content-Type-Options nosniff always;
+    }
+
+    # Uploaded files are never static: the view that checks who asks sends them (knowledge.views.document_file).
+    location /media/ {
+        return 404;
+    }
+
+    location = /accounts/login/ {
+        limit_req zone=signin burst=5 nodelay;
+        include /etc/nginx/conf.d/farm-proxy.inc;
+    }
+    location /accounts/password_reset/ {
+        limit_req zone=signin burst=5 nodelay;
+        include /etc/nginx/conf.d/farm-proxy.inc;
+    }
+    location /accounts/reset/ {
+        limit_req zone=signin burst=5 nodelay;
+        include /etc/nginx/conf.d/farm-proxy.inc;
+    }
+
+    location / {
+        include /etc/nginx/conf.d/farm-proxy.inc;
+    }
+}
+
+# The container's health check, on the loopback only.
+server {
+    listen 127.0.0.1:8081;
+    access_log off;
+    location = /proxy-health {
+        return 200 "ok\n";
+    }
+}

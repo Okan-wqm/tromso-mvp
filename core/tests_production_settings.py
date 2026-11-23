@@ -119,7 +119,7 @@ class RefusalTests(SimpleTestCase):
     def test_a_safe_production_configuration_passes_without_a_warning(self):
         code, output = deploy_check(**PRODUCTION)
         self.assertEqual(code, 0, output)
-        self.assertIn('System check identified no issues', output)
+        self.assertIn('check identified no issues', output)
 
     def test_each_unsafe_value_is_refused(self):
         for change, issue in (

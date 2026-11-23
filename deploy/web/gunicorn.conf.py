@@ -48,6 +48,8 @@ errorlog = '-'
 loglevel = os.environ.get('GUNICORN_LOG_LEVEL', 'info')
 # The request's own size limits stay gunicorn's; the body limit is the proxy's (client_max_body_size).
 proc_name = 'balik-web'
+# No control socket (gunicornc): the root file system is read-only, and compose manages the container.
+control_socket_disable = True
 
 
 def on_starting(server):

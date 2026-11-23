@@ -20,7 +20,7 @@ Rotate on a schedule (yearly), when a person who could read a secret leaves, and
 | The ingest's broker password | `mqtt_ingest`, `mqtt_passwd_extra` | ingest; jobs (writes the broker's users) | delete both files, `sh scripts/make-secrets.sh`, recreate jobs, then ingest | the ingest reconnects; the broker keeps its queue |
 | A device's broker password | the device's Credential (Sensors pages) | the device | new secret on the Credential's page, then on the device | that device is cut off until it has the new one |
 | Console certificate | `tls/fullchain.pem`, `tls/privkey.pem` | proxy | replace both, `dc exec proxy nginx -s reload` | none |
-| MQTT server certificate | `mqtt/server.crt`, `mqtt/server.key` | mosquitto | remove both, `sh scripts/certs.sh mqtt-server ...`, `dc restart mosquitto` | devices reconnect |
+| MQTT server certificate | `mqtt/server.crt`, `mqtt/server.key` | mosquitto | remove both, `sh scripts/certs.sh mqtt-server ...`, `dc up -d --no-deps --force-recreate mosquitto` (the files are mounted one by one) | devices reconnect |
 | A device's client certificate | `mqtt-devices/<device>/` (then on the device) | the device | `certs.sh mqtt-device` again after removing its folder; a lost device: also disable its Credential (the certificate alone does not let it in) | that device only |
 | The MQTT CA | `mqtt/ca.crt`, `mqtt-ca/ca.key` | mosquitto, every device | only if its key leaked: new CA, new server certificate, new certificate on every device | every device until it has its new certificate |
 | Cloudflare Tunnel token | `cloudflared.env` | cloudflared | rotate in the Zero Trust dashboard, write the file, `dc --profile cloudflare up -d --force-recreate cloudflared` | seconds |

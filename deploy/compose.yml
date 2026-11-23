@@ -254,9 +254,17 @@ services:
       - ../sensors-ingest/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - ../sensors-ingest/mosquitto/entrypoint.sh:/mosquitto/config/entrypoint.sh:ro
       - ./mosquitto/${MQTT_DEVICE_AUTH:-clientcert}:/mosquitto/config/conf.d:ro
-      - ${SECRETS_DIR:-./secrets}/mqtt:/mosquitto/tls:ro
       - broker-auth:/mosquitto/auth
       - mosquitto-data:/mosquitto/data
+    # The TLS files one by one (the broker drops to its own user before it reads them, and the secrets folder is the
+    # host's root only): /run/secrets/mqtt_ca.crt, mqtt_server.crt, mqtt_server.key.
+    secrets:
+      - source: mqtt_ca
+        target: mqtt_ca.crt
+      - source: mqtt_server_cert
+        target: mqtt_server.crt
+      - source: mqtt_server_key
+        target: mqtt_server.key
     healthcheck:
       test: ["CMD-SHELL", "pidof mosquitto > /dev/null"]
       interval: 30s
@@ -449,3 +457,9 @@ secrets:
     file: ${SECRETS_DIR:-./secrets}/mqtt_passwd_extra
   restic_password:
     file: ${SECRETS_DIR:-./secrets}/restic_password
+  mqtt_ca:
+    file: ${SECRETS_DIR:-./secrets}/mqtt/ca.crt
+  mqtt_server_cert:
+    file: ${SECRETS_DIR:-./secrets}/mqtt/server.crt
+  mqtt_server_key:
+    file: ${SECRETS_DIR:-./secrets}/mqtt/server.key

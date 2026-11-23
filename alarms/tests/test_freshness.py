@@ -110,6 +110,8 @@ NAMED = {
     ('alarms/models.py', 'ATTEMPTS_BOUNDS'): 'the refusal of nonsense of delivery attempts (§7c)',
     ('alarms/models.py', 'RETRY_BOUNDS'): 'the refusal of nonsense of a retry time (a second to an hour), never the '
                                           'time in force',
+    ('alarms/models.py', 'SHELVE_BOUNDS'): 'the refusal of unsafe snoozes per severity (a critical alarm untold for at '
+                                           'most 8 h), never the longest in force',
     ('alarms/outbox.py', 'CLAIM'): "the advisory lock class of a notification being sent: an identity, not a threshold",
     ('alarms/models.py', 'CLOCK_SKEW_BOUNDS'): "the refusal of nonsense of a device clock limit: at most the ingest "
                                                "contract's hour",

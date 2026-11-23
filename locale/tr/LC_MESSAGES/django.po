@@ -2911,12 +2911,8 @@ msgstr ""
 "Aralık dışındaki bir değer saklanır, işaretlenir ve hiçbir yerde kullanılmaz. Yeni bir kanalda "
 "boş: parametrenin alabileceği değerler."
 
-msgid ""
-"A warning or a critical value raises an alarm (Company › Alarms); nothing is sent until the push "
-"transport is connected."
-msgstr ""
-"Uyarı ya da kritik bir değer bir alarm başlatır (Şirket › Alarmlar); anlık bildirim aktarımı "
-"bağlanana kadar hiçbir şey gönderilmez."
+msgid "A warning or a critical value raises an alarm (Company › Alarms)."
+msgstr "Uyarı ya da kritik bir değer alarm açar (Şirket › Alarmlar)."
 
 msgid "A warning’s device clock limit is below the critical one."
 msgstr "Uyarının cihaz saati sınırı kritik olanınkinden küçüktür."
@@ -10659,6 +10655,9 @@ msgstr "Stokta hiçbir şey yok: önce bir teslimat alın."
 msgid "Nothing is owed there: it was filed, closed already or is not due."
 msgstr "Orada bir şey gerekmiyor: bildirildi, zaten kapatıldı veya zamanı gelmedi."
 
+msgid "Nothing is sent until the push transport is connected."
+msgstr "Push aktarımı bağlanana kadar hiçbir şey gönderilmez."
+
 msgid ""
 "Nothing is sent yet: the push transport is not connected (the mobile app comes later). Every "
 "notification waits in the outbox below, with its recipient and level, and is sent once it is."
@@ -11468,6 +11467,14 @@ msgstr "Üst ekipman"
 
 msgid "Parent system"
 msgstr "Üst sistem"
+
+#, python-format
+msgid ""
+"Part of the alarms is NOT being checked since %(since)s: these steps of the alarm worker fail: "
+"%(steps)s."
+msgstr ""
+"Alarmların bir kısmı %(since)s itibarıyla DENETLENMİYOR: alarm servisinin şu adımları başarısız: "
+"%(steps)s."
 
 msgid "Parts"
 msgstr "Parçalar"
@@ -14290,6 +14297,41 @@ msgstr ""
 
 msgid "The alarm system itself"
 msgstr "Alarm sisteminin kendisi"
+
+#, python-format
+msgid ""
+"The alarms are NOT being checked since %(since)s: the alarm worker does not answer. No alarm is "
+"raised and nobody is told until it runs again."
+msgstr ""
+"Alarmlar %(since)s itibarıyla DENETLENMİYOR: alarm servisi yanıt vermiyor. Yeniden çalışana kadar"
+" hiçbir alarm açılmaz ve kimseye haber verilmez."
+
+#, python-format
+msgid ""
+"The alarms are NOT being checked since %(since)s: the alarm worker stopped. No alarm is raised "
+"and nobody is told until it runs again."
+msgstr ""
+"Alarmlar %(since)s itibarıyla DENETLENMİYOR: alarm servisi durdu. Yeniden çalışana kadar hiçbir "
+"alarm açılmaz ve kimseye haber verilmez."
+
+msgid ""
+"The alarms are NOT being checked: no alarm worker has run here. No alarm is raised and nobody is "
+"told."
+msgstr ""
+"Alarmlar DENETLENMİYOR: burada hiç alarm servisi çalışmadı. Hiçbir alarm açılmaz ve kimseye haber"
+" verilmez."
+
+#, python-format
+msgid "The alarms were last checked %(at)s."
+msgstr "Alarmlar en son %(at)s denetlendi."
+
+#, python-format
+msgid ""
+"The alarms were not checked from %(start)s to %(end)s (the alarm worker was not running): no "
+"alarm was raised and nobody was told in that time. Look at the farm's values of that time."
+msgstr ""
+"Alarmlar %(start)s ile %(end)s arasında denetlenmedi (alarm servisi çalışmıyordu): bu sürede "
+"hiçbir alarm açılmadı ve kimseye haber verilmedi. Çiftliğin o zamanki değerlerine bakın."
 
 msgid ""
 "The amount of a medicinal treatment is the amount used of the product; Mattilsynet asks for the "

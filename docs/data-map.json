@@ -1077,6 +1077,7 @@
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_clock.py",
         "alarms/tests/test_cross_review.py",
+        "alarms/tests/test_deadman.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_floods.py",
         "alarms/tests/test_outbox.py",
@@ -2543,12 +2544,73 @@
           "why": "the worker's row is kept: the time of its last pass is what says the alarms went unchecked"
         },
         "read": {
-          "status": "none",
-          "paths": [],
-          "why": "manage.py alarm_worker_health reads it (alarms/watch.py)"
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_list",
+              "url_names": [
+                "alarms:alarm_list"
+              ],
+              "routes": [
+                "/alarms/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_detail",
+              "url_names": [
+                "alarms:alarm_detail"
+              ],
+              "routes": [
+                "/alarms/<int:pk>/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_snoozes",
+              "url_names": [
+                "alarms:alarm_snoozes"
+              ],
+              "routes": [
+                "/alarms/snoozes/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:water",
+              "url_names": [
+                "farm:water"
+              ],
+              "routes": [
+                "/operations/water/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "monitoring:monitor",
+              "url_names": [
+                "monitoring:monitor"
+              ],
+              "routes": [
+                "/operations/monitoring/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "sensors:home",
+              "url_names": [
+                "sensors:home"
+              ],
+              "routes": [
+                "/sensors/"
+              ]
+            }
+          ],
+          "why": ""
         }
       },
-      "note": "",
+      "note": "Read through alarms/watch.py: {% alarm_watch %} on these pages, and manage.py alarm_worker_health.",
       "forms": [],
       "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
       "soft_delete": false,
@@ -2562,6 +2624,7 @@
         "left_out": false
       },
       "tests": [
+        "alarms/tests/test_deadman.py",
         "alarms/tests/test_outbox.py",
         "alarms/tests/test_worker.py",
         "alarms/tests/test_worker_process.py"
@@ -2805,6 +2868,7 @@
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_clock.py",
         "alarms/tests/test_cross_review.py",
+        "alarms/tests/test_deadman.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_floods.py",
         "alarms/tests/test_outbox.py",

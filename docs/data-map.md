@@ -148,7 +148,7 @@ The outbox: one alarm for one person through one channel at one level, queued by
 - **read**: alarms.views.alarm_detail (`/alarms/<int:pk>/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarm_notifications
 - **constraints**: uq_alarm_notifications_once (unique: alarm, recipient, channel, level); chk_alarm_notifications_channel (check); chk_alarm_notifications_level (check)
-- **tests that mention it**: `alarms/tests/test_alarms.py`, `alarms/tests/test_clock.py`, `alarms/tests/test_cross_review.py` and 4 more
+- **tests that mention it**: `alarms/tests/test_alarms.py`, `alarms/tests/test_clock.py`, `alarms/tests/test_cross_review.py` and 5 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -303,10 +303,11 @@ The alarm worker's own row (alarms/worker.py; one per worker name, written only 
 - **create**: none, by design: the alarm worker writes its own row when it takes the lock (alarms/worker.py)
 - **edit**: none, by design: only the worker moves its row: each pass, each look, and when it stops
 - **delete**: none, by design: the worker's row is kept: the time of its last pass is what says the alarms went unchecked
-- **read**: none, by design: manage.py alarm_worker_health reads it (alarms/watch.py)
+- **read**: alarms.views.alarm_list (`/alarms/`); alarms.views.alarm_detail (`/alarms/<int:pk>/`); alarms.views.alarm_snoozes (`/alarms/snoozes/`); farm:water (`/operations/water/`); monitoring:monitor (`/operations/monitoring/`); sensors:home (`/sensors/`)
+- **how it works**: Read through alarms/watch.py: {% alarm_watch %} on these pages, and manage.py alarm_worker_health.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarm_worker_status
 - **constraints**: chk_alarm_worker_status_state (check); chk_alarm_worker_status_stale_after (check)
-- **tests that mention it**: `alarms/tests/test_outbox.py`, `alarms/tests/test_worker.py`, `alarms/tests/test_worker_process.py`
+- **tests that mention it**: `alarms/tests/test_deadman.py`, `alarms/tests/test_outbox.py`, `alarms/tests/test_worker.py` and 1 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -338,7 +339,7 @@ One time a condition held: a sensor rule's event (mirrored from sensors.AlarmEve
 - **read**: alarms.views.alarm_list (`/alarms/`); alarms.views.alarm_detail (`/alarms/<int:pk>/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarms
 - **constraints**: chk_alarms_source (check); chk_alarms_severity (check); chk_alarms_shape (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_alarms.py`, `alarms/tests/__init__.py` and 14 more
+- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_alarms.py`, `alarms/tests/__init__.py` and 15 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

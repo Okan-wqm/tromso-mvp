@@ -2903,12 +2903,8 @@ msgstr ""
 "En verdi utenfor området lagres, merkes og brukes ingen steder. Tom på en ny kanal: det "
 "parameteren kan være."
 
-msgid ""
-"A warning or a critical value raises an alarm (Company › Alarms); nothing is sent until the push "
-"transport is connected."
-msgstr ""
-"En advarsel eller en kritisk verdi utløser en alarm (Selskap › Alarmer); ingenting sendes før "
-"push-transporten er koblet til."
+msgid "A warning or a critical value raises an alarm (Company › Alarms)."
+msgstr "En advarsel eller en kritisk verdi utløser en alarm (Selskap › Alarmer)."
 
 msgid "A warning’s device clock limit is below the critical one."
 msgstr "Advarselens grense for enhetsklokke er under den kritiske."
@@ -10636,6 +10632,9 @@ msgstr "Ingen beholdning: ta imot et varemottak først."
 msgid "Nothing is owed there: it was filed, closed already or is not due."
 msgstr "Ingenting skal sendes der: det er sendt inn, allerede lukket eller ikke aktuelt."
 
+msgid "Nothing is sent until the push transport is connected."
+msgstr "Ingenting sendes før push-transporten er tilkoblet."
+
 msgid ""
 "Nothing is sent yet: the push transport is not connected (the mobile app comes later). Every "
 "notification waits in the outbox below, with its recipient and level, and is sent once it is."
@@ -11442,6 +11441,14 @@ msgstr "Overordnet utstyr"
 
 msgid "Parent system"
 msgstr "Overordnet system"
+
+#, python-format
+msgid ""
+"Part of the alarms is NOT being checked since %(since)s: these steps of the alarm worker fail: "
+"%(steps)s."
+msgstr ""
+"En del av alarmene blir IKKE sjekket siden %(since)s: disse trinnene i alarmtjenesten feiler: "
+"%(steps)s."
 
 msgid "Parts"
 msgstr "Deler"
@@ -14259,6 +14266,41 @@ msgstr ""
 
 msgid "The alarm system itself"
 msgstr "Selve alarmsystemet"
+
+#, python-format
+msgid ""
+"The alarms are NOT being checked since %(since)s: the alarm worker does not answer. No alarm is "
+"raised and nobody is told until it runs again."
+msgstr ""
+"Alarmene blir IKKE sjekket siden %(since)s: alarmtjenesten svarer ikke. Ingen alarm utløses og "
+"ingen varsles før den kjører igjen."
+
+#, python-format
+msgid ""
+"The alarms are NOT being checked since %(since)s: the alarm worker stopped. No alarm is raised "
+"and nobody is told until it runs again."
+msgstr ""
+"Alarmene blir IKKE sjekket siden %(since)s: alarmtjenesten stoppet. Ingen alarm utløses og ingen "
+"varsles før den kjører igjen."
+
+msgid ""
+"The alarms are NOT being checked: no alarm worker has run here. No alarm is raised and nobody is "
+"told."
+msgstr ""
+"Alarmene blir IKKE sjekket: ingen alarmtjeneste har kjørt her. Ingen alarm utløses og ingen "
+"varsles."
+
+#, python-format
+msgid "The alarms were last checked %(at)s."
+msgstr "Alarmene ble sist sjekket %(at)s."
+
+#, python-format
+msgid ""
+"The alarms were not checked from %(start)s to %(end)s (the alarm worker was not running): no "
+"alarm was raised and nobody was told in that time. Look at the farm's values of that time."
+msgstr ""
+"Alarmene ble ikke sjekket fra %(start)s til %(end)s (alarmtjenesten kjørte ikke): ingen alarm ble"
+" utløst og ingen ble varslet i den tiden. Se på anleggets verdier fra den tiden."
 
 msgid ""
 "The amount of a medicinal treatment is the amount used of the product; Mattilsynet asks for the "

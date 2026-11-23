@@ -18881,6 +18881,7 @@
         "farm/tests/test_health.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_ph_scale_salt_added.py",
+        "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
         "farm/tests/test_suppliers.py",

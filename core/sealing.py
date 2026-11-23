@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 
 from django.core import checks
 from django.db import models
-from django.db.models import Exists, OuterRef, Q
+from django.db.models import Exists, ExpressionWrapper, OuterRef, Q
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 
@@ -420,7 +420,9 @@ def _day_ref(model, path):
     target = _field_path(model, path)[-1]
     ref = OuterRef(path)
     if isinstance(target, models.DateTimeField):
-        return TruncDate(ref)
+        # The moment's day on the site's clock; the outer reference is given its type, which a reference to the outer
+        # query does not carry (TruncDate asks for it).
+        return TruncDate(ExpressionWrapper(ref, output_field=models.DateTimeField()))
     return ref
 
 

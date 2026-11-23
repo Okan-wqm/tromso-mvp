@@ -2165,6 +2165,7 @@
       },
       "tests": [
         "core/tests_workspaces.py",
+        "farm/tests/test_company_overview.py",
         "sensors/tests/test_alarms.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_alarms.py",
@@ -10014,6 +10015,7 @@
       },
       "tests": [
         "core/tests_erasure.py",
+        "core/tests_pagesays.py",
         "core/tests_private_log.py",
         "core/tests_workspaces.py",
         "farm/tests/test_equipment.py",
@@ -13720,6 +13722,7 @@
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_fish.py",
+        "farm/tests/test_company_overview.py",
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_feeding.py",
@@ -15433,6 +15436,7 @@
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_clocks.py",
+        "farm/tests/test_company_overview.py",
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_fast_of_the_unit.py",

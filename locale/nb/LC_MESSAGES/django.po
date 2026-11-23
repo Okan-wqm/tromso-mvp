@@ -7988,6 +7988,9 @@ msgstr "Hvor langt innenfor grensen klokken må komme tilbake før alarmen opphe
 msgid "How it is given; a treatment with it uses the same method."
 msgstr "Hvordan det gis; en behandling med det bruker samme metode."
 
+msgid "How long after a failed attempt the notification is tried again. 1 to 3600."
+msgstr "Hvor lenge etter et mislykket forsøk varselet prøves igjen. 1 til 3600."
+
 msgid "How long before a shift starts a clock-in counts for it. Default 2 hours."
 msgstr "Hvor lenge før et skift starter en innstempling teller for det. Standard 2 timer."
 
@@ -10589,6 +10592,9 @@ msgstr "Varsel"
 msgid "Notification answered"
 msgstr "Besvart varsel"
 
+msgid "Notifications waiting"
+msgstr "Varsler som venter"
+
 msgid "Notified"
 msgstr "Varslet"
 
@@ -10673,6 +10679,9 @@ msgstr "Eldre enn kanalens nyeste lagrede verdi da den kom."
 
 msgid "Older than the raw data is kept"
 msgstr "Eldre enn rådata beholdes"
+
+msgid "Oldest waiting since"
+msgstr "Eldste venter siden"
 
 msgid "On"
 msgstr "På"
@@ -11193,6 +11202,9 @@ msgstr "Ute av tjeneste"
 
 msgid "Out of the water (not placed)"
 msgstr "Ute av vannet (ikke plassert)"
+
+msgid "Outbox last gone through at"
+msgstr "Utboksen sist gått gjennom"
 
 msgid "Outcome"
 msgstr "Utfall"
@@ -12418,6 +12430,9 @@ msgstr "Resultat"
 
 msgid "Retired"
 msgstr "Utfaset"
+
+msgid "Retry after (seconds)"
+msgstr "Prøv igjen etter (sekunder)"
 
 msgid "Return"
 msgstr "Retur"

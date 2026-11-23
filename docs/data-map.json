@@ -742,7 +742,8 @@
         "left_out": false
       },
       "tests": [
-        "alarms/tests/test_alarms.py"
+        "alarms/tests/test_alarms.py",
+        "alarms/tests/test_outbox.py"
       ]
     },
     {
@@ -1051,7 +1052,8 @@
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_clock.py",
         "alarms/tests/test_cross_review.py",
-        "alarms/tests/test_defects.py"
+        "alarms/tests/test_defects.py",
+        "alarms/tests/test_outbox.py"
       ]
     },
     {
@@ -1436,6 +1438,7 @@
         "core/tests_workspaces.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_alarms.py",
+        "alarms/tests/test_outbox.py",
         "alarms/tests/test_pages.py"
       ]
     },
@@ -1443,7 +1446,7 @@
       "app": "alarms",
       "model": "SeverityPolicy",
       "table": "alarm_severity_policies",
-      "description": "How an alarm of a severity behaves, one row per severity (a person with the right edits them, every change logged): how long a condition must hold before the alarm is raised and how long it must be over before it clears (in data time, so a restart loses nothing), how long a level waits for an acknowledgement before the next level is notified, and how many times a failing transport is tried with one notification.",
+      "description": "How an alarm of a severity behaves, one row per severity (a person with the right edits them, every change logged): how long a condition must hold before the alarm is raised and how long it must be over before it clears (in data time, so a restart loses nothing), how long a level waits for an acknowledgement before the next level is notified, and how many times a failing transport is tried with one notification, and how long apart.",
       "columns": [
         {
           "name": "id",
@@ -1623,6 +1626,19 @@
           "why": ""
         },
         {
+          "name": "retry_seconds",
+          "field": "retry_seconds",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SeverityPolicyForm › Rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
           "name": "clock_skew_seconds",
           "field": "clock_skew_seconds",
           "type": "integer",
@@ -1702,6 +1718,12 @@
           "conditional": false
         },
         {
+          "name": "chk_alarm_severity_policies_retry",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
           "name": "chk_alarm_severity_policies_clock",
           "kind": "check",
           "fields": [],
@@ -1774,6 +1796,7 @@
             "off_delay_seconds": "Rule",
             "escalation_minutes": "Rule",
             "delivery_attempts": "Rule",
+            "retry_seconds": "Rule",
             "clock_skew_seconds": "Device clock",
             "clock_skew_deadband_seconds": "Device clock",
             "clock_behind_window_seconds": "Device clock",
@@ -1799,6 +1822,7 @@
         "alarms/tests/test_clock.py",
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py",
+        "alarms/tests/test_outbox.py",
         "alarms/tests/test_reference.py"
       ]
     },
@@ -2083,6 +2107,39 @@
           "on_form": [],
           "how": "system",
           "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "last_send_at",
+          "field": "last_send_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "outbox_waiting",
+          "field": "outbox_waiting",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "outbox_oldest_at",
+          "field": "outbox_oldest_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
         }
       ],
       "constraints": [
@@ -2135,6 +2192,7 @@
         "left_out": false
       },
       "tests": [
+        "alarms/tests/test_outbox.py",
         "alarms/tests/test_worker.py",
         "alarms/tests/test_worker_process.py"
       ]
@@ -2378,6 +2436,7 @@
         "alarms/tests/test_clock.py",
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py",
+        "alarms/tests/test_outbox.py",
         "alarms/tests/test_pages.py",
         "alarms/tests/test_reaction.py",
         "alarms/tests/test_reference.py",

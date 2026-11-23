@@ -8012,6 +8012,9 @@ msgstr "Alarm kapanmadan önce saatin sınırın ne kadar içine dönmesi gerekt
 msgid "How it is given; a treatment with it uses the same method."
 msgstr "Nasıl uygulandığı; onunla yapılan tedavi aynı yöntemi kullanır."
 
+msgid "How long after a failed attempt the notification is tried again. 1 to 3600."
+msgstr "Başarısız bir denemeden ne kadar sonra bildirimin yeniden deneneceği. 1 ile 3600 arası."
+
 msgid "How long before a shift starts a clock-in counts for it. Default 2 hours."
 msgstr "Bir giriş kaydının vardiya başlamadan ne kadar önce o vardiyaya sayıldığı. Varsayılan 2 saat."
 
@@ -10612,6 +10615,9 @@ msgstr "Bildirim"
 msgid "Notification answered"
 msgstr "Yanıtlanan bildirim"
 
+msgid "Notifications waiting"
+msgstr "Bekleyen bildirimler"
+
 msgid "Notified"
 msgstr "Bildirildi"
 
@@ -10696,6 +10702,9 @@ msgstr "Geldiğinde kanalın saklanan en yeni değerinden daha eski."
 
 msgid "Older than the raw data is kept"
 msgstr "Ham verinin saklanma süresinden daha eski"
+
+msgid "Oldest waiting since"
+msgstr "En eskisi şu zamandan beri bekliyor"
 
 msgid "On"
 msgstr "Günler"
@@ -11218,6 +11227,9 @@ msgstr "Hizmet dışı"
 
 msgid "Out of the water (not placed)"
 msgstr "Sudan çıkarıldı (yerleştirilmemiş)"
+
+msgid "Outbox last gone through at"
+msgstr "Giden kutusunun son tarandığı zaman"
 
 msgid "Outcome"
 msgstr "Sonuç"
@@ -12444,6 +12456,9 @@ msgstr "Sonuç"
 
 msgid "Retired"
 msgstr "Kullanımdan kaldırıldı"
+
+msgid "Retry after (seconds)"
+msgstr "Yeniden deneme aralığı (saniye)"
 
 msgid "Return"
 msgstr "İade"

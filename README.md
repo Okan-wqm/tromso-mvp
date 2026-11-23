@@ -3841,7 +3841,7 @@ What works:
 - **A probe that stops sending** (owner decision of 2026-11-20, the second review of the water-chemistry audit,
   question 3): every quantity the water limits judge (`quantities.JUDGED_CODES`: each one a limit can be set on,
   derived from `farm/water/parameters.py` LIMITED, which holds every input of the judged NH₃) has a **default "No
-  fresh value" rule**, seeded by sensors 0014 on every channel of the quantity, so the channels there are and every
+  fresh value" rule**, seeded by sensors 0015 on every channel of the quantity, so the channels there are and every
   channel made later, by any door, are covered by the rule's scope (no row per channel) and take its severity:
   **critical for the dissolved oxygen** (mg/L and %), a warning for every other quantity (owner decision of
   2026-11-20, `quantities.default_severity`; an existing rule a migration marks the default keeps its own). It holds only
@@ -3859,12 +3859,12 @@ What works:
   quantity `uq_sensors_alarm_rule_default`, the trigger `trg_sensors_alarm_rule_default_kept` against a delete, an
   unmarking or a move to another quantity). A channel of such a quantity that no active "No fresh value" rule covers
   (its default switched off and none of its own) is said above the Alarm rules list and by the check `sensors.W001`
-  (`manage.py check --database default`). Going back past sensors 0014 leaves the rules as ordinary ones (their
+  (`manage.py check --database default`). Going back past sensors 0015 leaves the rules as ordinary ones (their
   alarms are history); going forward again marks them the default once more.
   **One alarm per silent probe** (the review of 2026-11-23, F4, the coordinator's call): where the farm has its own
   active "No fresh value" rule of the quantity, or of the channel, the default stands aside there (`sensors.alarms._aside`;
   an open event of the default closes), so the farm's rule is the one alarm; switched off, the default comes back. An
-  existing rule that sensors 0014 adopts as the default keeps its severity, except the dissolved oxygen's, raised to
+  existing rule that sensors 0015 adopts as the default keeps its severity, except the dissolved oxygen's, raised to
   critical where it was a warning (the owner's decision), the activity log saying so (and going back gives it its own
   severity again). **A rule switched off or deleted** (F5): the next pass closes its open events, which no pass visits
   any more (`close_switched_off`; never an active rule's), and their alarms clear with the rule's state and the reason

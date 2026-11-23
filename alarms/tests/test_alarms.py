@@ -115,6 +115,7 @@ class SensorTests(AlarmsCase):
         self.sensor_rule = AlarmRule.objects.create(kind='low', severity='warning', channel=self.flow, threshold=10)
 
     def test_a_sensor_rules_event_is_mirrored_and_cleared_with_it(self):
+        self.sample(7.2)                        # T-01's water fine, its oxygen fresh: the sensor rule's is the one alarm
         event = AlarmEvent.objects.create(rule=self.sensor_rule, channel_no=self.flow.channel_no,
                                           opened_at=self.now, peak=4)
         with mock.patch.object(sensor_alarms, 'evaluate', return_value=(0, 0)):

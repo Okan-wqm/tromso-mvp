@@ -271,7 +271,7 @@ class SwitchedOffTests(FreshRuleCase):
 
     def test_switching_a_rule_off_closes_its_open_event_and_alarm(self):
         from alarms import sources as alarm_sources
-        from alarms.models import Alarm
+        from alarms.models import Alarm, AlarmClearance
         oxygen = make_channel(self.device, 'oxygen_mg_l', code='O2')
         bindings.move(self.user, oxygen, self.now - timedelta(hours=1), system=self.ras)
         self.send(self.ph, 7.5, self.now - timedelta(hours=1))
@@ -289,7 +289,7 @@ class SwitchedOffTests(FreshRuleCase):
         alarm = Alarm.objects.get(sensor_event=ph_event)
         self.assertEqual((alarm.clearance.cause, alarm.clearance.cleared_at),
                          ('event_closed', self.now + timedelta(seconds=10)))
-        self.assertFalse(Alarm.objects.get(sensor_event=oxygen_event).is_cleared)
+        self.assertFalse(AlarmClearance.objects.filter(alarm__sensor_event=oxygen_event).exists())
         logged = AuditLog.objects.filter(entity_type='alarm', entity_id=str(alarm.pk)).latest('id').changes
         self.assertEqual((logged['Alarm rule'][1], logged['Why it is switched off'][1]),
                          ('pH (NBS scale): No fresh value · Inactive', 'Probes out for service.'))

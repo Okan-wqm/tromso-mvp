@@ -155,6 +155,7 @@ class MissingRuleTests(CrossReviewCase):
     def test_the_configuration_alarm_clears_when_the_row_is_back(self):
         from ..models import SeverityPolicy
         row = SeverityPolicy.objects.get(severity='warning')
+        self.sample(7.2)                        # T-01's water fine, its oxygen fresh: no other system alarm
         without_triggers("DELETE FROM alarm_severity_policies WHERE severity = 'warning'")
         self.loop()
         without_triggers('INSERT INTO alarm_severity_policies (id, severity, on_delay_seconds, off_delay_seconds, '

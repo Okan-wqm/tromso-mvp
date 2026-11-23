@@ -58,7 +58,7 @@ When an alarm stopped holding: the sensor rule's event closed, or a fresh water 
 - **read**: alarms.views.alarm_list (`/alarms/`); alarms.views.alarm_detail (`/alarms/<int:pk>/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarm_clearances
 - **constraints**: chk_alarm_clearances_cause (check)
-- **tests that mention it**: `alarms/tests/test_alarms.py`, `alarms/tests/test_clock.py`, `alarms/tests/test_cross_review.py` and 1 more
+- **tests that mention it**: `sensors/tests/test_fresh_rule.py`, `alarms/tests/test_alarms.py`, `alarms/tests/test_clock.py` and 2 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

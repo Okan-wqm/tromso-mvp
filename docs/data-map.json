@@ -318,6 +318,7 @@
         "left_out": false
       },
       "tests": [
+        "sensors/tests/test_fresh_rule.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_clock.py",
         "alarms/tests/test_cross_review.py",

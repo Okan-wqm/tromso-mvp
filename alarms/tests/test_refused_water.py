@@ -63,7 +63,11 @@ class RefusedWaterCase(WaterTestCase):
         return engine.run_once(self.now + timedelta(minutes=minutes))
 
     def open_alarms(self, **filters):
-        return Alarm.objects.filter(clearance__isnull=True, **filters).order_by('source', 'severity')
+        """The open alarms but the alarm system's oxygen one: a stocked unit of the fixture without a sample (T-01 where
+        only T-02 is sampled) holds fish and no fresh oxygen, critical (owner decision of 2026-11-23,
+        monitoring/tests/test_silent_oxygen.py); these tests are about the NH₃."""
+        return (Alarm.objects.filter(clearance__isnull=True, **filters).exclude(source='system', parameter='oxygen_mg_l')
+                .order_by('source', 'severity'))
 
     def opened(self):
         return [(alarm.source, alarm.severity, alarm.parameter) for alarm in self.open_alarms()]
@@ -136,7 +140,7 @@ class ReadingTests(RefusedWaterCase):
         water = self.unit_water(self.t2)
         self.assertEqual((water.get(NH3).status, water.unevaluated), ('no_limit', []))
         self.run_pass()
-        self.assertFalse(Alarm.objects.exists())
+        self.assertFalse(self.open_alarms().exists())
 
     def test_the_history_row_says_it(self):
         for hours, (water, wanted) in enumerate(((LOW, 'unevaluated'), (WATER, 'critical')), start=1):

@@ -5204,7 +5204,8 @@
       "tests": [
         "experiments/tests/test_pages.py",
         "experiments/tests/test_places.py",
-        "experiments/tests/test_sealing_schema.py"
+        "experiments/tests/test_sealing_schema.py",
+        "experiments/tests/world.py"
       ]
     },
     {

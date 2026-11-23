@@ -587,7 +587,7 @@ A whole system booked to a replicate for a range of days, both included: the int
 - **how it works**: A whole system booked for a replicate, each nested system its own row, its tanks placed and tagged with it (services.save_places); no other experiment books the system or one of its tanks on those days.
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Research › experiment_replicate_systems
 - **constraints**: chk_experiment_bookings_period (check); excl_replicate_systems_system (exclusion: system, from_on, until_on)
-- **tests that mention it**: `experiments/tests/test_pages.py`, `experiments/tests/test_places.py`, `experiments/tests/test_sealing_schema.py`
+- **tests that mention it**: `experiments/tests/test_pages.py`, `experiments/tests/test_places.py`, `experiments/tests/test_sealing_schema.py` and 1 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

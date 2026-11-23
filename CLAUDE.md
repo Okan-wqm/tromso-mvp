@@ -115,7 +115,7 @@ Landing a branch, one at a time, in the agreed order:
 5. Fast-forward `main`, stop the dev server, then `migrate` + `compile_catalogs` + `npm run build` in one go, then
    start the dev server. Stopped first: a server still running the old code writes what the new migrations have just
    converted or removed (core/0011 makes the log's personal data private, and an old server would write it plain again
-   behind it). After it, `manage.py check --database default` must be quiet (core.W003, core.W004).
+   behind it). After it, `manage.py check --database default` must be quiet (core.W003, core.W004, core.W005).
 6. Live check through the real pages (create, edit and delete one record of every new kind; crawl the pages in
    EN, NB and TR), then push, then remove the worktree and delete the merged branch.
 7. Update the README section and the relevant notes in the same batch, and tell the owner what to click to check.

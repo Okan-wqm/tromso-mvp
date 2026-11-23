@@ -4868,6 +4868,107 @@ its tables fail the test until its `screens.py` declares them. **Adding a featur
 on the map: a tab declares nothing but its fields on its form; a dialog that writes through a service names its
 views in `screens.py`.
 
+## Revisions (`core_rev`, `core/rev.py`)
+
+The rule (performance plan; live-data architecture, stage 3): a derived figure is worked out on read by the function
+that owns it. It may be stored only when the database itself proves the stored copy still valid: no figure is cached
+for a time (no TTL), no counter sits on a business table, and no write path has to remember to clear anything. The
+proof is a **revision per (scope, key)** in the table `core_rev`. Nothing reads it yet: the stored water (the plan's
+B3) will stamp the revisions of its inputs and use a stored row only while every one of them is unchanged; until then
+the revisions move and no page changes.
+
+**How a revision moves.** The database moves it, never Python: each tracked table has three triggers, made by the
+migration operation `core.operations.TrackRev`. One notes the keys a changed row touches (the old and the new row's) and
+the earliest day it touches while the transaction runs, writing nothing; the second, deferred, applies them at COMMIT,
+each key once and in sorted order, so a 5,000-line stock operation writes one row per key and two writers in opposite
+order never deadlock (a deterministic test holds that a commit blocked on one key already holds every key sorted before
+it and none after it, whichever order it wrote them in); the third moves every key of its scope on a TRUNCATE, which
+fires no row trigger. A key's row stays locked from its apply to the end of that COMMIT: on a big operation that is the
+rest of its commit, about a tenth of a second, and a second writer of the same key waits that long at its own
+commit. The services, `bulk_create`, the admin, raw SQL, a soft
+delete, a restore of a record and a TRUNCATE are all covered; a transaction or savepoint rolled back moves nothing.
+Keys are text (a batch's id is a UUID; a table-level scope's key is `0`). A change without a day counts for the whole
+history (`dirty_from` 0001-01-01).
+
+**What is tracked:** every input of the water's judgement (`farm/water/read.py` `latest`, the sensors' provider):
+
+| Scope | Key | Tables | Why |
+|---|---|---|---|
+| `water_point` | sampling point | `water_measurements` | the samples: a value written, changed, moved to another point, voided or restored |
+| `unit_stock` | unit | `stock_movements`, `stock_operations` (date, void), `batches` (species) | the fish in a unit on a day decide which species, so which limits, a value is judged for (`SpeciesBook`) |
+| `batch` | batch | the same three | the stock fold's own key (ported from the performance work; no reader yet) |
+| the table's name | `0` | `water_sampling_points`, `water_limits`, `species`, `water_freshness`, `tanks`, `systems`, `sites`, `production_departments`, `equipment`, `equipment_systems`, `platform_settings`, `sensors_binding`, `sensors_channel` | the points and their owners, the limits and the live species they belong to, the freshness rules and the clock tolerance, the places (a unit's water type, its system, its site's clock and altitude), the equipment and the systems it serves (whose units an equipment point is judged for), which channel counts where with its state, pH scale and freshness |
+
+A ledger line moves its batch and its unit with its operation's day; an operation re-dated or voided or restored moves
+every batch and unit it has lines of, with the earlier of its two days; a batch given another species moves itself and
+every unit it was ever in, with the whole history. A table-level key moves on any change of its table: reference data
+changes rarely, and a stored row then is simply built again. **Never tracked:** the tables the ingest writes
+(`sensors_reading`, `sensors_channel_state`, `sensors_device_state`, `sensors_ingest_status`, `sensors_dead_letter`:
+`core.rev.NEVER_TRACKED`). A test holds it against the ingest's database role itself: the tables `sensors_ingest` may
+write are exactly these, none has a revision trigger and none is tracked. A trigger there would slow every reading and
+could stall the ingest's commits. A live value is proved by its channel's
+state, which the stored row snapshots, never by a revision.
+
+**The proof a stored figure uses.** It keeps the revisions it was built from, read BEFORE the data (`rev.stamp`, one
+query). It is valid while every revision is still the same. A day-ranged figure (a fold checkpoint) may also use
+`dirty_from`, the earliest day changed since its last build (`rev.mark_built`, a compare-and-set refused when a write
+landed while it read). A key without a row is unknown, never valid: `rev.ensure(pairs)` gives keys a row (above the
+floor, the whole history dirty), and the migrations that add the triggers gave one to every point, unit, batch and table
+there was then (`core_rev_ensure`). A reader ensures its keys, then stamps them, then reads the data.
+
+**Operating it.**
+- `manage.py check --database default` warns (core.W005) when a declared trigger is missing, disabled, or enabled for
+  replica sessions only, on a table or on a chunk of the `water_measurements` hypertable: a change to its table would
+  pass unseen. Quiet until core/0014 has run. It checks that each trigger is there and fires, not its definition.
+  TimescaleDB refuses to disable a trigger on a hypertable or a chunk; a chunk's trigger can still be dropped.
+- `manage.py core_rev_repair` (the warning's hint) makes the missing triggers again exactly as their migrations made
+  them (`core.rev.operations()`), then rebuilds every revision, since changes may have passed unseen meanwhile. It does
+  nothing when none is missing.
+- `manage.py core_rev_rebuild` after a restore of the database, a load run with the triggers off, or a session run with
+  `session_replication_role = replica` (which skips ordinary triggers): every revision moves past every stored figure's
+  stamp and a floor is set for keys seen later, so every stored figure is built again. It locks `core_rev` first (SHARE
+  ROW EXCLUSIVE: readers go on, the commits of writes to tracked tables wait until it ends, a second or less) and reads
+  the largest revision only then, so a committing writer neither deadlocks with it nor has its revision set back (a
+  deterministic test holds both).
+- A migration that writes a tracked table and then alters it in the same transaction must run `SET CONSTRAINTS ALL
+  IMMEDIATE` first (a table with pending deferred trigger events cannot be altered), as farm 0019 and 0021 already do.
+
+**What the stored water (B3) must hold to.** The revisions prove only what their triggers see; the reader is bound by:
+- **Every input is a key.** The `batch` scope covers the lines, the operations' dates and voids and the batches'
+  species, which is what the water reads (`SpeciesBook`). It does not cover all the stock fold reads (the opening
+  balances, a batch's input date, an operation's kind, which are edited only by their own operations today): a stored
+  fold checkpoint must add them before it relies on `batch`.
+- **Ensure, stamp, then read**, in that order, in one REPEATABLE READ snapshot; `rev.mark_built` runs last, in its own
+  short transaction, so the rows it locks are held for no longer than that.
+- **No write on read.** `farm.water.freshness._load()` makes a missing freshness row again and `PlatformSettings.get()`
+  makes the settings row when a restore lost it: both write tracked tables while reading, so they fail in a READ ONLY
+  evaluator and move a key when they do write. The evaluator must read those rows without them (or have them made by a
+  migration or a command first).
+- **What bypasses the triggers**, after which `manage.py core_rev_rebuild` must run: TimescaleDB's `drop_chunks` (it
+  drops chunks, no row trigger fires), `session_replication_role = replica`, `ALTER TABLE ... DISABLE TRIGGER ALL` on a
+  plain table, a rewrite of a table outside the ORM and SQL (`pg_restore`, a load with `--disable-triggers`, a copy
+  of the files). The reader must also call `core.rev.missing()` and compute live while it names anything, so a dropped
+  trigger never lets a stale row through. `core.rev.STAMPED` gets the stored table's largest stamp, so a rebuild moves
+  every revision past it.
+
+**What it costs a write** (measured 23.11.2026 on a GitHub runner, ubuntu-24.04, the test runner's throwaway server
+with fsync off, one worker: each case committed with every revision trigger made and again with them all dropped,
+alternating, the median; TimescaleDB refuses to disable a hypertable's triggers, so they are dropped and made again):
+
+| Write | Triggers on | Off | Added |
+|---|---|---|---|
+| a water sample through `farm.water.services.record` | 117.60 ms | 117.56 ms | +0.03 ms (lost in the service's own time) |
+| a water sample, one bare INSERT | 2.31 ms | 1.95 ms | +0.36 ms |
+| a limit edit (`save`) | 2.53 ms | 1.91 ms | +0.63 ms |
+| a 5,000-line operation (2,500 transfer pairs), 1 batch, 2 units | 436 ms | 294 ms | +142 ms |
+| the same over 50 batches and 50 units | 443 ms | 294 ms | +149 ms |
+| the void of a 5,000-line operation (one UPDATE, keys from its lines) | 19.1 ms | 1.3 ms | +17.8 ms |
+
+A ledger line costs about 30 µs: two note triggers (scopes `batch` and `unit_stock`) and two deferred apply events per
+row, whatever the number of keys; the apply itself writes one row per key. A sample or a reference row costs a fraction
+of a millisecond. The measurement is the temporary test `tests_rev_overhead.py` (kept in the notes, not in the
+repository).
+
 ## Local setup
 
 ```
@@ -5906,6 +6007,7 @@ runs the server:
 | `monitoring/` | Operations › Monitoring: the one card read and its state ladder with its words (`read.py`), the band above the cards (`read.band`), the card templates' catalogue, validator, resolution, drawing and the wall's slot rule (`cards/`, `cards/slots.py`), boards and templates (`models.py`, `resources.py`, `forms.py`), the page, the fragment and the designer's preview (`views.py`), `templates/monitoring/`, `static/css/monitor.css`, `frontend/poll.ts`, `frontend/announce.ts`, `frontend/designer.ts`, `frontend/windows.ts`, `frontend/wall.ts`, tests (README, Monitoring) |
 | `sensors/` | The Sensors panel: devices, channels and their bindings (`models/`, `bindings.py`), the live water source the farm reads through `farm/water/sources.py` (`provider.py`, `read.py`), alarms and quality (`alarms.py`, `quality.py`), the charts and the trail (`chart.py`, `trail.py`), `sensors/CONTRACT.md`, tests (README, Sensors) |
 | `sensors-ingest/` | The ingest service (Rust): reads the broker's sensor messages and writes the readings (`CONTRACT-REQUESTS.md`, `BENCH.md`) |
+| `core/rev.py`, `core/operations.py`, `core/migrations/0014_rev.py`, `farm/migrations/0050_rev_triggers.py`, `sensors/migrations/0014_rev_triggers.py` | Revisions (`core_rev`): the triggers that move a revision per (scope, key) whenever an input of the water's judgement changes, the `TrackRev` migration operation, the presence check (core.W005), `manage.py core_rev_repair` and `manage.py core_rev_rebuild` (README, Revisions) |
 | `core/checks.py`, `core/ranges.py`, `core/text.py` | The system checks run at start (the built catalogs and assets); periods as PostgreSQL compares them, for exclusion constraints; lower case in the person's language |
 | `knowledge/` | Knowledge: the library's documents and their pages, the knowledge entries (`models/`), reading a PDF's text (`extraction.py`), the full-text search (`search.py`), the reference in APA form (`citation.py`), the file, text and review views (`views.py`), the tabs (`forms/`, `resources/`, `templates/knowledge/`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
@@ -5961,6 +6063,8 @@ under the wrong kind, fails.
 | `hr_roles` | hr | product | Creates the Production manager and Production worker roles when missing | An operator, at set-up |
 | `private_log_values` | core | product | The conversion of migration `core/0011` again: plain values under private labels in the activity log made private (`--dry-run`) | The database administrator (docs/erasure.md) |
 | `erase_stranger_address` | core | product | Erases, on the data-protection officer's instruction, an address an invitation was mis-sent to: in `account_mails` and in the activity log's rows of the account (a dry run unless `--apply`; it checks only that no account has the address now) | The database administrator (docs/erasure.md, step 8) |
+| `core_rev_rebuild` | core | product | Moves every revision of `core_rev` past every stored figure's stamp and sets the floor for keys seen later, so every stored figure is built again; names a missing or disabled revision trigger | The database administrator, after a restore, a load with the triggers off or a session in replica mode (Revisions) |
+| `core_rev_repair` | core | product | Makes the missing, disabled or replica-only revision triggers (core.W005) again as their migrations made them, then rebuilds every revision; does nothing when none is missing | The database administrator, on core.W005 (Revisions) |
 | `check_stock` | farm | product | Folds the stock ledger from its first line and reports every broken rule; changes nothing | An operator |
 | `rederive_ph` | farm | product | Puts the stored samples' pH measured on the total, seawater or free scale on the NBS scale again by the application's formula, from what was measured, each change logged with its old value (`--dry-run` reads only; check farm.W001) | The database administrator, at a formula change after the backup (Water chemistry, formula 4) |
 | `check_withdrawal` | farm | product | The withdrawals holding fish today, and harvests and live deliveries recorded inside one; changes nothing | An operator |

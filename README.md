@@ -989,8 +989,9 @@ dissolved oxygen alone, the grey "no recent data … never red" of 2026-11-04). 
 day's operations, `SpeciesBook.holds`: a unit harvested or emptied earlier today holds none; review 2, R1) and neither
 its oxygen in mg/L nor in % has a fresh value for the place (its own, else its system's: A9), never measured included,
 and also a unit with fish and no point at all to read its water at (`read.pointless_water`, review 2 R2: it was grey,
-with the alarm system's "no active sampling point" warning, which no longer holds beside the critical), the water's
-one judgement (`farm.water.read.PointWater.silent_oxygen`, counted
+with the alarm system's "no active sampling point" warning, which no longer holds beside the critical) unless its
+system measures the oxygen for it (its loop point's samples and probes, else the system's probes: A9's second tier, read
+by the one resolver, `read._standing`), the water's one judgement (`farm.water.read.PointWater.silent_oxygen`, counted
 in `status` and `point_status`) makes it critical: the Small and Big cards, the wall, the pane and the band's chip say
 "Dissolved oxygen (mg/L O₂): no recent data, 3 hours old" (the chip "O₂ (mg/L): no recent data", one chip for every unit
 it holds), the water page's row, Production units and the production overview say "Critical, no recent data" with that
@@ -1009,7 +1010,9 @@ oxygen (or another probe) is a warning of the alarm system, one per probe wherev
 loop, an inlet or a piece of equipment no unit's water reads: review 3, N2), "PROBE-T › O2: T-02 › Middle: the oxygen
 probe is silent; the oxygen is measured otherwise (by hand or by another probe)" (subject
 `system:oxygen_probe_silent:<channel>`), the card following the fresh value; its default rule stands aside while that
-value is fresh (`read.oxygen_known`) and says its critical once it is not, and the warning ends (R3 p3). An old typed
+value is fresh (`read.oxygen_known`) and says its critical once it is not, and the warning ends (R3 p3). One pass of the
+alarm loop reads the silent probes and where the oxygen is known once, for its sensor rules and its warnings
+(`sensors.alarms.OxygenPass`, made by `alarms.engine.run_once` and handed down). An old typed
 oxygen past its CRITICAL limit keeps its critical level of the water limits, which says it: the alarm system's oxygen
 critical stands aside while that level holds or is open on the unit's oxygen (R4 p5); past its warning limit only, its
 warning level stands beside the alarm system's critical, so a critical card is never only a warning alarm (review 3,

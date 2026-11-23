@@ -18905,6 +18905,7 @@
         "experiments/tests/test_design.py",
         "experiments/tests/test_places.py",
         "monitoring/tests/test_resolve.py",
+        "monitoring/tests/test_silent_oxygen.py",
         "monitoring/tests/test_templates_db.py",
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",

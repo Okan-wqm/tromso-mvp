@@ -68,10 +68,13 @@ def outline(check):
 
 class PagePartsTests(SimpleTestCase):
     def test_every_table_scrolls_in_the_shared_frame(self):
-        """A table is printed in a .table-wrap: the frame that scrolls a wide table inside itself and shows that more of
-        it lies to a side (static/css/components.css), so no table widens the page or hides its last columns unseen."""
+        """A table is printed in a .table-wrap, or the design system's .ui-table-wrap (the same rule set, static/css/ds.css):
+        the frame that scrolls a wide table inside itself and shows that more of it lies to a side, so no table widens the
+        page or hides its last columns unseen."""
+        frames = {'table-wrap', 'ui-table-wrap'}
+
         def check(tag, classes, stack):
-            if tag == 'table' and not any('table-wrap' in open_classes for _, open_classes, _ in stack):
+            if tag == 'table' and not any(frames & set(open_classes) for _, open_classes, _ in stack):
                 return 'a table outside a .table-wrap'
         self.assertEqual(outline(check), [])
 

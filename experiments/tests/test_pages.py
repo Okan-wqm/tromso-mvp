@@ -458,7 +458,7 @@ class MenuAndAccessTests(PageTestCase):
         self.assertEqual(str(place.path), 'Production · Research')
         areas = {area.model: area for area in access.areas()}
         self.assertEqual(str(areas['experiments.Experiment'].label), 'Experiments')
-        self.assertEqual(areas['experiments.Experiment'].actions, ('view', 'add', 'change', 'delete'))
+        self.assertEqual(areas['experiments.Experiment'].actions, ('view', 'add', 'change', 'delete', 'oversee'))
         page = self.client.get(reverse('experiments:experiment_list'))
         self.assertEqual(page.context['workspace']['key'], 'production')
         current = [entry['label'] for section in page.context['rail_sections'] for group in section['groups']

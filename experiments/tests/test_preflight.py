@@ -31,8 +31,10 @@ class PreflightTests(ExperimentTestCase):
         replicate = self.replicate(group)
         for tank in self.tanks[4:6]:
             self.placement(replicate, tank)
-        Experiment.objects.filter(pk=led.pk).update(status='running', starts_on=self.today, approval_ref='FOTS 1',
-                                                    approval_valid_until=self.today - timedelta(days=1))
+        Experiment.objects.filter(pk=led.pk).update(          # started past the service, as test_pages starts one
+            status='running', starts_on=self.today, hypothesis='More protein grows salmon faster',
+            primary_endpoint='bfcr', allocation_method='manual', allocation_note='by hand', approval_ref='FOTS 1',
+            approval_valid_until=self.today - timedelta(days=1))
         idle = get_user_model().objects.create_user('idle', 'idle@example.com', 'x', is_active=False)
         ExperimentShare.objects.create(experiment=led, user=idle, part='water', reason='Audit',
                                        valid_until=timezone.now() + timedelta(days=3))

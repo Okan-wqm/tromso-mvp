@@ -129,7 +129,7 @@ class LeadOnlyTests(AccessCase):
         url = reverse('experiments:experiment_sharing', args=[self.experiment.pk])
         self.assertContains(self.client.get(url), 'Sharing')
         response = self.client.post(url, {'person': str(self.researcher.pk), 'parts': ['water'],
-                                          'until': (timezone.localdate() + timedelta(days=5)).isoformat(),
+                                          'until': (self.today + timedelta(days=5)).isoformat(),
                                           'reason': 'Water audit'})
         self.assertEqual(response.status_code, 302)
         share = ExperimentShare.objects.get()

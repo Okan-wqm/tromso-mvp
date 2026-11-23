@@ -29,7 +29,7 @@ def names(employees):
 class MatrixTests(PeopleTestCase):
     def test_the_columns_in_order_everyone_last(self):
         self.assertEqual([action for action, _label in access.ACTIONS],
-                         ['view', 'add', 'change', 'delete', 'crew', 'all_production', 'all'])
+                         ['view', 'add', 'change', 'delete', 'crew', 'all_production', 'oversee', 'all'])
         self.assertEqual(access.ACTIONS[-1][0], access.ALL)
 
     def test_the_permission_rows_exist_and_the_matrix_offers_them_on_one_area_each(self):
@@ -58,7 +58,7 @@ class MatrixTests(PeopleTestCase):
         for name in ('hr.add_employee', 'hr.change_shiftassignment', 'hr.delete_shiftassignment'):
             self.assertTrue(requires[ids[name]], name)
 
-    def test_the_role_form_shows_seven_columns_and_the_boxes_where_offered(self):
+    def test_the_role_form_shows_eight_columns_and_the_boxes_where_offered(self):
         admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
         self.client.force_login(admin)
         html = self.client.get(reverse('core:group_create')).content.decode()
@@ -66,7 +66,8 @@ class MatrixTests(PeopleTestCase):
         self.assertIn('>All production</th>', html)
         rows = re.findall(r'<tr>\s*<th scope="row">(.*?)</th>(.*?)</tr>', html, re.S)
         cells = {label: re.findall(r'<td>(.*?)</td>', body, re.S) for label, body in rows}
-        self.assertTrue(all(len(row) == 7 for row in cells.values()))
+        self.assertTrue(all(len(row) == 8 for row in cells.values()))
+        self.assertIn('Experiments: Oversee', cells['Experiments'][6])
         self.assertIn('Employees: All production', cells['Employees'][5])
         self.assertIn('Shift schedule: Crew', cells['Shift schedule'][4])
         self.assertEqual(cells['Species'][4].strip(), '')

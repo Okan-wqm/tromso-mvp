@@ -500,11 +500,10 @@ class ExportTests(DatabaseViewerTestCase):
 
     def test_an_export_needs_a_reason_and_is_logged_with_it(self):
         from core.models import AccessEvent
-        self.make_site()
         response = self.client.get(export_url('sites'), {'deleted': 'hide'})
         self.assertRedirects(response, table_url('sites') + '?deleted=hide', fetch_redirect_response=False)
         self.assertFalse(AccessEvent.objects.exists())
-        self.assertEqual(len(exported(self.download('sites'))), 1)
+        self.assertEqual(len(exported(self.download('sites', deleted='hide'))), 2)
         event = AccessEvent.objects.get()
         self.assertEqual((event.kind, event.entity_type, event.entity_id, event.reason, event.user_name),
                          ('export', 'table', 'sites', 'Checking the export', 'root'))

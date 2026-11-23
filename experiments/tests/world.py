@@ -20,6 +20,7 @@ from django.utils import timezone
 
 from core.access import areas
 from core.codes import next_code
+from farm import withdrawal_gate
 from farm.models import (
     Feed, FeedingRecord, HealthEvent, LiceCount, Medicine, ProductionDepartment, Site, Species, System, Tank,
     Treatment, WaterMeasurement,
@@ -72,6 +73,7 @@ EXPERIMENT_RIGHTS = ('experiments.view_experiment', 'experiments.add_experiment'
                      'experiments.delete_experiment')
 
 
+@withdrawal_gate.opened('test fixture: the worlds’ feedings and treatments written straight in the database')
 def build_open(cls):
     """World B: the farm without X, and the people who look at it."""
     cls.site = Site.objects.create(name='Bergen', code='BG')
@@ -111,6 +113,7 @@ def build_open(cls):
     cls.lead = person('lead', *everything, *EXPERIMENT_RIGHTS)
 
 
+@withdrawal_gate.opened('test fixture: the worlds’ feedings and treatments written straight in the database')
 def build_sealed(cls):
     """Adds X to world B: a running trial with a whole system (two tanks) and a tank, and everything on them."""
     began = cls.today - timedelta(days=BEGAN)

@@ -20924,6 +20924,7 @@
         "experiments/tests/test_oversee.py",
         "experiments/tests/test_places.py",
         "experiments/tests/test_preflight.py",
+        "experiments/tests/test_seal_budget.py",
         "experiments/tests/test_sealing_schema.py",
         "experiments/tests/test_start.py",
         "experiments/tests/world.py",

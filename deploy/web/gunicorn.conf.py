@@ -25,7 +25,9 @@ def _number(name, default):
     return number
 
 
-bind = os.environ.get('GUNICORN_BIND', '0.0.0.0:8000')
+# One address or several, space separated: the stack binds the loopback (the health check) and the web server's address
+# on the proxy's network only, so nothing else on the database's network reaches gunicorn (deploy/compose.yml).
+bind = os.environ.get('GUNICORN_BIND', '0.0.0.0:8000').split()
 worker_class = 'gthread'
 # Processes and threads: 3 x 4 serve twelve requests at a time; each thread keeps its own database connection
 # (DB_CONN_MAX_AGE), so workers x threads x the web containers must stay well below the database's max_connections.

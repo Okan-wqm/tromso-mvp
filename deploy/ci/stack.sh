@@ -27,7 +27,7 @@ export SECRETS_DIR=$T/secrets OFFSITE_DIR=$T/offsite
 HOST=farm.ci.invalid
 ROOT=$PWD
 DC=(docker compose --env-file "$ENV_FILE" -f "$ROOT/deploy/compose.yml" -f "$ROOT/deploy/ci/compose.ci.yml")
-RC=(env EDGE_SUBNET=172.31.251.0/24 docker compose -p farm-restore --env-file "$ENV_FILE" -f "$ROOT/deploy/compose.yml"
+RC=(env EDGE_SUBNET=172.31.251.0/24 WEB_FRONT_ADDRESS=172.31.251.10 docker compose -p farm-restore --env-file "$ENV_FILE" -f "$ROOT/deploy/compose.yml"
     -f "$ROOT/deploy/ci/compose.ci.yml" --profile ops)
 SERVICES=(db web jobs proxy mosquitto ingest backup)
 ADMIN_PASSWORD_FILE=$T/admin_password
@@ -137,6 +137,8 @@ except OSError as error:
   probe ingest 1.1.1.1 443 closed
   probe backup db 5432 open
   probe backup mosquitto 1883 closed
+  probe jobs web 8000 closed
+  probe backup web 8000 closed
   [ "$failures" = 0 ] || { echo "network: $failures probe(s) failed"; exit 1; }
   echo "network: every probe as expected"
 }

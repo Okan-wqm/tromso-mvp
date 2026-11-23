@@ -10,7 +10,7 @@ import hmac
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import CommandError
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
 from django.urls import reverse
 
 from core import access, navigation

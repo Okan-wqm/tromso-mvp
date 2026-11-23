@@ -161,9 +161,15 @@ services:
       GUNICORN_WORKERS: ${GUNICORN_WORKERS:-3}
       GUNICORN_THREADS: ${GUNICORN_THREADS:-4}
       GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-120}
+      # the health check's loopback, and the address the proxy reaches it at: not the database's network, where the
+      # jobs, the ingest and the backup agent are
+      GUNICORN_BIND: 127.0.0.1:8000 ${WEB_FRONT_ADDRESS:-172.31.250.10}:8000
     volumes:
       - media:/srv/media
-    networks: [data, front]
+    networks:
+      data: {}
+      front:
+        ipv4_address: ${WEB_FRONT_ADDRESS:-172.31.250.10}
     expose: ["8000"]
     depends_on:
       release:

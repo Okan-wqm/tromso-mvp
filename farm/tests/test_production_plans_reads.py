@@ -163,8 +163,9 @@ class Scenario(Fixtures):
     meal). T-01: salmon in a degree-day withdrawal. T-02: salmon never treated, fed today. T-03 / T-04: bathed salmon
     moved out of T-03 into the empty T-04 today (one unit emptied on the day, one filled). T-05 and R-01: salmon and
     trout fed at the same moment; the trout's own rule asks 24 h, the default 72 h and 30 degree-days. T-30 / T-31: fed
-    exactly 30 and 31 days ago (31: the last day looked back to). K-01 (salmon in a degree-day withdrawal) and K-02
-    (trout) on Tokyo's clock, O-01 (trout) on Oslo's. Water at T-01, C-01, T-05 and K-01."""
+    exactly 30 and 31 days ago (31: the last day looked back to). K-01 (salmon in a degree-day withdrawal), K-02
+    (trout) and K-03 (untreated salmon whose degree-days decide) on Tokyo's clock, O-01 (trout) on Oslo's. Water at
+    T-01, C-01, T-05, K-01 and K-03 (none on K-03's yesterday or today)."""
 
     DAYS = None         # {'UTC': date, 'Tokyo': date, 'Oslo': date}: each site's today at the class's frozen moment
 
@@ -175,12 +176,14 @@ class Scenario(Fixtures):
         tokyo_hall = ProductionDepartment.objects.create(site=tokyo, name='Hall T', code='HT')
         oslo_hall = ProductionDepartment.objects.create(site=oslo, name='Hall O', code='HO')
         cages = self.cage.production_department
-        self.k1, self.k2, self.o1 = make_unit('K-01', tokyo_hall), make_unit('K-02', tokyo_hall), make_unit('O-01', oslo_hall)
+        self.k1, self.k2, self.k3 = (make_unit(code, tokyo_hall) for code in ('K-01', 'K-02', 'K-03'))
+        self.o1 = make_unit('O-01', oslo_hall)
         self.t3, self.t4, self.t5 = (make_unit(code, self.hall) for code in ('T-03', 'T-04', 'T-05'))
         self.t30, self.t31, self.r1 = (make_unit(code, self.hall) for code in ('T-30', 'T-31', 'R-01'))
         self.c3, self.c4 = make_unit('C-03', cages), make_unit('C-04', cages)
         # The fish.
         self.tokyo_batch = self.stock(self.k1, count=800, weight='200', days_ago=12)
+        self.k3_batch = self.stock(self.k3, count=700, weight='180', days_ago=12)
         self.t2_batch = self.stock(self.t2, count=600, weight='90', days_ago=15)
         self.moved = self.stock(self.t3, count=400, weight='150', days_ago=12)
         self.t5_batch = self.stock(self.t5, count=500, weight='120', days_ago=12)
@@ -202,7 +205,8 @@ class Scenario(Fixtures):
         self.treat(self.medicine('Short vet.', days=5), [self.t3], 2)
         # The feedings: of the production fish, on each unit's own clock.
         for unit, days_ago in ((self.t1, 1), (self.t2, 5), (self.cage, 2), (self.cage2, 7), (self.t3, 3), (self.t5, 2),
-                               (self.r1, 2), (self.k1, 3), (self.k2, 2), (self.o1, 2), (self.c3, 1), (self.c4, 5)):
+                               (self.r1, 2), (self.k1, 3), (self.k2, 2), (self.k3, 2), (self.o1, 2), (self.c3, 1),
+                               (self.c4, 5)):
             self.fed_on(unit, days_ago)
         self.fed_on(self.t2, 0, at=None)          # today, no time: the day's last meal
         self.fed_on(self.t30, 30, at=None)
@@ -214,6 +218,7 @@ class Scenario(Fixtures):
         self.warm(self.t1, 1, 2, 3, 5, 8)
         self.warm(self.cage, 1, 2, value='6')
         self.warm(self.k1, 3, 4, 5, value='12')
+        self.warm(self.k3, 3, 4, 5, value='12')
         self.warm(self.t5, 1, 3, value='9')
         self.units = list(Tank.objects.select_related('production_department__site').order_by('code'))
         self.stock_now = stock_read.stock_of(self.units)
@@ -240,6 +245,11 @@ class SetReads:
                 self.assertEqual((of(unit, self.trouts[unit.pk]).day, of(unit, self.trouts[unit.pk]).decides),
                                  (today, ''))
         self.assertEqual(of(self.t5, self.t5_batch).decides, check.PURGING)
+        # K-03's purge on Tokyo's own day: fed 2 days ago, its yesterday unmeasured counts 0 °C (a past day), today and
+        # on at the projection, 12 °C: 0, 12, 24, 36 degree-days, so 3 days on. Read on another site's day (a day
+        # behind), its yesterday would be projected too, and it would be 2.
+        self.assertEqual((of(self.k3, self.k3_batch).day, of(self.k3, self.k3_batch).decides),
+                         (tokyo + 3 * DAY, check.PURGING))
         # Fed 31 days ago, the last day looked back to, and 30: the purge counts from them, never "not fed".
         for unit, batch in ((self.t31, self.fed31), (self.t30, self.fed30)):
             with self.subTest(unit=unit.code):

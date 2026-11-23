@@ -14,8 +14,11 @@ covers:
 - Oversee and its card, with migration 0005;
 - the preflight command, the budget tests and the README.
 
+Dropped by the owner (23.11.2026): step 10, guest accounts and django-otp. An outside researcher is an ordinary
+account the platform admin makes, with the Research collaborator role (`manage.py experiments_roles`); the lead adds
+them to the team or shares a part with them (README › Research › Experiments, Confidentiality).
+
 Not done:
-- Step 10 (guests: Profile columns, django-otp, the gate, invitations, observations, retention).
 - The lead's phone on the Oversee card. Owner amendment C3 asks for it, but HR keeps no contact detail on an employee,
   and a test holds that rule.
 

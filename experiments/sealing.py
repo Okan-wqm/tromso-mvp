@@ -51,12 +51,11 @@ def _shares(user_id, at):
 
 
 def _seen(user_id, part):
-    """The condition on an experiment that the person reads its `part` (for the shell: any part, or a guest's place):
-    its team (but a guest), or a live share of a part that gives it."""
+    """The condition on an experiment that the person reads its `part` (for the shell: any part): its team, or a live
+    share of a part that gives it."""
     at = timezone.now()
     members, shares = _members(user_id, at), _shares(user_id, at)
     if part != SHELL:
-        members = members.exclude(role=Member.Role.GUEST)
         shares = shares.filter(part__in=granting(part))
     return Q(pk__in=members.values('experiment_id')) | Q(pk__in=shares.values('experiment_id'))
 
@@ -64,7 +63,10 @@ def _seen(user_id, part):
 def hidden_work(who, part):
     """The ids of the experiments whose `part` `who` may not read (a subquery): those that are not open and are not
     theirs to read; for the platform admin only the private ones (owner amendment C4)."""
-    rows = Experiment._base_manager.filter(audience=Experiment.Audience.PRIVATE) if who.is_super         else Experiment._base_manager.exclude(audience=Experiment.Audience.OPEN)
+    if who.is_super:
+        rows = Experiment._base_manager.filter(audience=Experiment.Audience.PRIVATE)
+    else:
+        rows = Experiment._base_manager.exclude(audience=Experiment.Audience.OPEN)
     if who.user_id is not None:
         rows = rows.exclude(_seen(who.user_id, part))
     return rows.values('pk')
@@ -82,15 +84,11 @@ def oversees(who):
 
 def load(user):
     """The viewer for a signed-in `user`, for Python's decisions (the experiment's pages, the read log): their live
-    teams, guest places and shares, with the parts' closure; `oversee` from the role matrix; for the platform admin the
+    teams and shares, with the parts' closure; `oversee` from the role matrix; for the platform admin the
     private experiments they are not in (`barred`)."""
     now = timezone.now()
-    members = list(_members(user.pk, now).values_list('experiment_id', 'role'))
-    # A guest of the team is present and observes: they read the experiment's shell (its code, name, lead and team),
-    # no part of it (plan 2.2).
-    team = frozenset(experiment for experiment, role in members if role != Member.Role.GUEST)
-    guest_of = {experiment for experiment, role in members if role == Member.Role.GUEST}
-    granted = {SHELL: guest_of} if guest_of else {}
+    team = frozenset(_members(user.pk, now).values_list('experiment_id', flat=True))
+    granted = {}
     for experiment_id, part in _shares(user.pk, now).values_list('experiment_id', 'part').distinct():
         for each in closure([part]):
             granted.setdefault(each, set()).add(experiment_id)

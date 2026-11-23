@@ -3824,6 +3824,13 @@ msgstr "Her su"
 msgid "Anyone"
 msgstr "Herkes"
 
+msgid ""
+"Anyone with an account. Someone whose roles do not include Experiments: read opens it once the "
+"platform admin gives them such a role (Research collaborator)."
+msgstr ""
+"Hesabı olan herkes. Rollerinde Deneyler: görüntüle olmayan kişi, platform yöneticisi ona böyle "
+"bir rol (Araştırma ortağı) verdiğinde açabilir."
+
 msgid "App"
 msgstr "Uygulama"
 
@@ -7812,9 +7819,6 @@ msgstr "Büyüme"
 
 msgid "Growth stage"
 msgstr "Büyüme evresi"
-
-msgid "Guest"
-msgstr "Misafir"
 
 msgid "Gutted weight"
 msgstr "Işkembesiz ağırlık"
@@ -12485,6 +12489,9 @@ msgstr "Bu birimde balık kalıyorsa gerekli: boylama onları da tartar."
 
 msgid "Research"
 msgstr "Araştırma"
+
+msgid "Research collaborator"
+msgstr "Araştırma ortağı"
 
 msgid "Research or other production"
 msgstr "Araştırma veya diğer üretim"

@@ -7,6 +7,7 @@ from urllib.parse import urlencode
 
 from django import forms
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.exceptions import NON_FIELD_ERRORS, PermissionDenied, ValidationError
 from django.db import transaction
@@ -19,7 +20,7 @@ from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
 from core import sealing as core_sealing
 from core.crud import DRAFT, Resource, ResourceView, RowList, UpdateView, done, filter_by, render_page
 from core.models import AccessEvent
-from core.people import person_name, who_can
+from core.people import person_name
 from core.widgets import DayInput
 from farm.models import Site, Species, System, Tank
 from farm.models.site import zone_of
@@ -497,7 +498,10 @@ class AudienceForm(forms.Form):
 class ShareForm(forms.Form):
     """A share the lead gives: a person or a role, the parts, the last day and why."""
 
-    person = forms.ModelChoiceField(label=_('Person'), queryset=None, required=False)
+    person = forms.ModelChoiceField(
+        label=_('Person'), queryset=None, required=False,
+        help_text=_('Anyone with an account. Someone whose roles do not include Experiments: read opens it once the '
+                    'platform admin gives them such a role (Research collaborator).'))
     role = forms.ModelChoiceField(label=_('Role'), queryset=Group.objects.order_by('name'), required=False)
     parts = forms.MultipleChoiceField(label=_('Parts'), choices=SharePart.choices, widget=forms.CheckboxSelectMultiple,
                                       help_text=_('The results and the data bring the design and the systems with them; '
@@ -508,7 +512,11 @@ class ShareForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['person'].queryset = who_can('experiments', 'view_experiment')
+        # Any active account: an outside researcher is an ordinary account the platform admin made (no guest accounts,
+        # owner decision of 23.11.2026); they open the experiment once their roles include Experiments: read (the
+        # Research collaborator role, experiments.roles).
+        self.fields['person'].queryset = get_user_model().objects.filter(is_active=True).order_by(
+            'first_name', 'last_name', 'username')
         self.fields['person'].label_from_instance = person_name
 
     def clean(self):

@@ -1,8 +1,7 @@
 """Experiment confidentiality and whole-system booking (core.sealing, experiments.sealing): who may read an experiment
-(its audience, sealed by default; its team's windows and the guest role; the shares given by its lead), the approval it runs
-under (the card a person overseeing its tanks sees, with the lead's phone from their employee record), the whole-system bookings with their tagged
-placements, and the sealed cells as a view. Existing experiments become sealed, their rows stay valid (every new column has
-a default or is empty).
+(its audience, sealed by default; its team's windows; the shares given by its lead), the approval it runs under (shown
+on the card a person overseeing its tanks sees), the whole-system bookings with their tagged placements, and the sealed
+cells as a view. Existing experiments become sealed, their rows stay valid (every new column has a default or is empty).
 
 The database holds: a started experiment still changes its audience and approval (the frozen trigger of 0002
 widened, nothing else); a booking's placements are tanks of its system, in its replicate, on its days; a booking is not
@@ -303,7 +302,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='member',
             name='role',
-            field=models.CharField(choices=[('lead', 'Lead'), ('researcher', 'Researcher'), ('student', 'Student'), ('technician', 'Technician'), ('advisor', 'Advisor'), ('guest', 'Guest')], default='researcher', max_length=12, verbose_name='Role'),
+            field=models.CharField(choices=[('lead', 'Lead'), ('researcher', 'Researcher'), ('student', 'Student'), ('technician', 'Technician'), ('advisor', 'Advisor')], default='researcher', max_length=12, verbose_name='Role'),
         ),
         migrations.AddConstraint(
             model_name='experiment',
@@ -315,7 +314,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='member',
-            constraint=models.CheckConstraint(condition=models.Q(('role__in', ['lead', 'researcher', 'student', 'technician', 'advisor', 'guest'])), name='chk_experiment_members_role'),
+            constraint=models.CheckConstraint(condition=models.Q(('role__in', ['lead', 'researcher', 'student', 'technician', 'advisor'])), name='chk_experiment_members_role'),
         ),
         migrations.AddConstraint(
             model_name='member',

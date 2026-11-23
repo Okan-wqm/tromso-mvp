@@ -427,8 +427,6 @@ class MemberRole(models.TextChoices):
     STUDENT = 'student', _('Student')
     TECHNICIAN = 'technician', _('Technician')
     ADVISOR = 'advisor', _('Advisor')
-    # A visitor from outside the company: present and observing, for the days of their window.
-    GUEST = 'guest', _('Guest')
 
 
 class Member(models.Model):

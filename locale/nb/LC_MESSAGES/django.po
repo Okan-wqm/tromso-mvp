@@ -3819,6 +3819,13 @@ msgstr "Alt vann"
 msgid "Anyone"
 msgstr "Alle"
 
+msgid ""
+"Anyone with an account. Someone whose roles do not include Experiments: read opens it once the "
+"platform admin gives them such a role (Research collaborator)."
+msgstr ""
+"Alle som har en konto. Den som ikke har Forsøk: les i rollene sine, kan åpne det når "
+"plattformadministratoren gir dem en slik rolle (Forskningssamarbeidspartner)."
+
 msgid "App"
 msgstr "App"
 
@@ -7792,9 +7799,6 @@ msgstr "Vekst"
 
 msgid "Growth stage"
 msgstr "Vekststadium"
-
-msgid "Guest"
-msgstr "Gjest"
 
 msgid "Gutted weight"
 msgstr "Sløyd vekt"
@@ -12461,6 +12465,9 @@ msgstr "Påkrevd når fisk blir igjen i enheten: sorteringen veier dem også."
 
 msgid "Research"
 msgstr "Forskning"
+
+msgid "Research collaborator"
+msgstr "Forskningssamarbeidspartner"
 
 msgid "Research or other production"
 msgstr "Forskning eller annen produksjon"

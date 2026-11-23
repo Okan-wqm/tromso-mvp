@@ -4729,8 +4729,7 @@
             "researcher",
             "student",
             "technician",
-            "advisor",
-            "guest"
+            "advisor"
           ],
           "link": null,
           "on_form": [
@@ -4915,6 +4914,7 @@
       "tests": [
         "experiments/tests/__init__.py",
         "experiments/tests/test_access.py",
+        "experiments/tests/test_collaborator.py",
         "experiments/tests/test_constraints.py",
         "experiments/tests/test_deviations.py",
         "experiments/tests/test_pages.py",
@@ -6130,6 +6130,7 @@
       },
       "tests": [
         "experiments/tests/test_access.py",
+        "experiments/tests/test_collaborator.py",
         "experiments/tests/test_preflight.py",
         "experiments/tests/test_sealing_schema.py"
       ]
@@ -6679,6 +6680,7 @@
         "experiments/tests/__init__.py",
         "experiments/tests/test_access.py",
         "experiments/tests/test_amend.py",
+        "experiments/tests/test_collaborator.py",
         "experiments/tests/test_confidential.py",
         "experiments/tests/test_constraints.py",
         "experiments/tests/test_copy.py",

@@ -563,7 +563,7 @@ A person of the experiment's team, with their part.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Research › experiment_members
 - **forms**: `MemberForm`, `MemberForm`
 - **constraints**: uq_experiment_members_user (unique: experiment, user); uq_experiment_members_lead (unique: experiment); chk_experiment_members_role (check); chk_experiment_members_window (check)
-- **tests that mention it**: `experiments/tests/__init__.py`, `experiments/tests/test_access.py`, `experiments/tests/test_constraints.py` and 6 more
+- **tests that mention it**: `experiments/tests/__init__.py`, `experiments/tests/test_access.py`, `experiments/tests/test_collaborator.py` and 7 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -680,7 +680,7 @@ A part of an experiment given by its lead to a person or a role outside its team
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Research › experiment_shares
 - **forms**: `ShareForm`
 - **constraints**: chk_experiment_shares_grantee (check); chk_experiment_shares_part (check); chk_experiment_shares_period (check); chk_experiment_shares_length (check); chk_experiment_shares_reason (check); chk_experiment_shares_revoked (check); uq_experiment_shares_user_part (unique: experiment, user, part); uq_experiment_shares_group_part (unique: experiment, group, part)
-- **tests that mention it**: `experiments/tests/test_access.py`, `experiments/tests/test_preflight.py`, `experiments/tests/test_sealing_schema.py`
+- **tests that mention it**: `experiments/tests/test_access.py`, `experiments/tests/test_collaborator.py`, `experiments/tests/test_preflight.py` and 1 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -710,7 +710,7 @@ A trial of one species on one site: its design, its allocation and its dates; al
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Research › experiments
 - **forms**: `ExperimentForm`, `AudienceForm`
 - **constraints**: uq_experiments_code (unique: code); chk_experiments_code (check); chk_experiments_status (check); chk_experiments_audience (check); chk_experiments_approval (check); chk_experiments_endpoint (check); chk_experiments_duration (check); chk_experiments_template (check); chk_experiments_started (check); chk_experiments_allocation (check)
-- **tests that mention it**: `core/test_datamap.py`, `core/tests_entry_key.py`, `core/tests_sealing.py` and 18 more
+- **tests that mention it**: `core/test_datamap.py`, `core/tests_entry_key.py`, `core/tests_sealing.py` and 19 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

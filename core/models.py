@@ -445,7 +445,7 @@ class AccessKind(models.TextChoices):
 class AccessEvent(models.Model):
     """Who read which confidential record, when and how: the one read log (the activity log is for changes). Rows are
     append-only, as the activity log's: a database trigger (migration 0014) refuses UPDATE and DELETE. The person is
-    kept by id and by the name they had (a guest's pseudonym), with no database link, so the row outlives an account."""
+    kept by id and by the name they had, with no database link, so the row outlives an account."""
 
     Kind = AccessKind
 

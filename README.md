@@ -3324,7 +3324,15 @@ deleted ones too, and restores an experiment with the parts its delete took alon
 A **share** gives a person or a role one or more of five parts until a day (at most two years), with a reason; the
 results and the data bring the design and the systems with them, the water brings the systems. Revoked or ended shares
 stay as history; each share and revoke is one activity-log entry on the experiment. A member of the team has a window
-(from, until) and a role; a **guest** member reads the experiment's shell (code, name, lead, team) and no part.
+(from, until) and a role. The lead may share with any active account.
+
+**An outside researcher** (a visiting scientist, a partner's student) is an ordinary account; there are no guest
+accounts (owner decision of 23.11.2026). The platform admin creates the account (Administration › Users) and gives it
+a narrow role: `manage.py experiments_roles` makes **Research collaborator** (Experiments: read, nothing else; `--language
+nb` or `tr` names it in that language), which shows the Research menu and no farm page. The experiment's lead then adds
+the person to its team, or shares a part with them, on the experiment's own pages, and they read that experiment and its
+own pages; any other sealed experiment, and every farm page, stays closed to them. Taken off the team (or the share
+revoked) they read nothing of it from their next page on (`experiments/tests/test_collaborator.py`).
 
 For anyone else a sealed or private experiment **does not exist**: its pages answer as an unknown id (404), and its
 cells (a tank or a system it books, for the days it books them: the view `experiment_cells`) and every record on them
@@ -4627,7 +4635,7 @@ users; everyone else gets exactly what their roles allow. The Oversee column (Ex
   Email is unique and may be left out: the person is created, the admin is told that no invitation was sent,
   the row says "Not invited: no email address", and the person cannot sign in until an address is added and
   the invitation sent from the row (nobody hands out a password here). An inactive person is not invited.
-  Guests and students are users like everyone else. People are deactivated, not deleted, and nobody can
+  Outside researchers and students are users like everyone else (Research › Experiments, Confidentiality). People are deactivated, not deleted, and nobody can
   deactivate their own account. Platform admin status is not edited here (only with `createsuperuser`).
 
 ## Security in the pages
@@ -5929,6 +5937,7 @@ under the wrong kind, fails.
 | `check_inventory` | inventory | product | Every rule of the store from scratch; changes nothing | An operator |
 | `check_reports` | reports | product | Every report against its frozen content and its key; changes nothing | An operator |
 | `check_experiments` | experiments | product | Every started experiment against the rules the database cannot hold; changes nothing | An operator |
+| `experiments_roles` | experiments | product | Creates the Research collaborator role (Experiments: read, nothing else) when no role has its name, in the language given; never overwrites a role | The platform admin |
 | `experiments_sealing_preflight` | experiments | product | Before confidentiality goes live: the audiences, experiments without a lead, whole systems held without a booking, ended approvals, shares to inactive accounts, bookings without a tank; `--announcement` prints the text for the people; changes nothing | The owner |
 | `check_hr` | hr | product | What disagrees in the HR records; changes nothing | An operator |
 | `compile_catalogs` | core | build | Builds the `.mo` files from the `.po` files (Babel) | Landing, CI, the tests |

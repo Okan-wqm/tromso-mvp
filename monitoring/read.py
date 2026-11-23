@@ -693,8 +693,9 @@ def _ladder(card):
     # A status the unit's own stale value keeps while its system's value stands in (read.last_own, F3-9): said beside it.
     unevaluated += [str(text) for text in (middle.why_last_own if middle is not None else ())]
     # The oxygen of a unit with fish that has no fresh value (owner decision of 2026-11-23): critical, said as missing or
-    # old data, from the water's one judgement (farm.water.read.PointWater.silent_oxygen).
-    silent = _silent(middle)
+    # old data, from the water's one judgement (farm.water.read.PointWater.silent_oxygen): the middle point's, or the
+    # water of a unit with no point to read it at (it holds no reading: read.pointless_water).
+    silent = _silent(card.water[0] if card.water else None)
     if critical or silent:
         return State(CRITICAL, (*critical, *silent, *unevaluated), basis,
                      (*(text for text in old if text in critical), *silent))

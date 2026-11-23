@@ -199,9 +199,14 @@ def _latest(site):
         entries += [(unit, point) for point in sorted(by_owner.pop(unit.pk, []), key=point_order)]
     entries += [(point.owner, point) for point in sorted((p for found in by_owner.values() for p in found),
                                                          key=point_order)]
+    # A unit with no point to read its own water at (not even another own-water point standing for it): its water
+    # without a point, critical where it holds fish now (read.pointless_water; review 2 of the branch, R2).
+    anchored = read.anchors(units)
+    pointless = read.pointless_water([unit for unit in units if unit.pk not in anchored])
     rows = []
     for owner, point in entries:
-        point_water = water[point.pk] if point is not None else read.PointWater(None)
+        point_water = (water[point.pk] if point is not None
+                       else pointless.get(owner.pk, read.PointWater(None)))
         rows.append({'owner': owner, 'point': point, 'loop': isinstance(owner, System), 'water': point_water,
                      'history_url': history_url(point or owner)})
     columns = _columns([row['water'].readings for row in rows])

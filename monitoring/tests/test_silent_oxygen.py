@@ -13,13 +13,14 @@ The other parameters keep their rule: a silent pH probe is a warning, and the ca
 
 Real sensor channels, the real pages and the real alarm engine (the fixture of test_stopped_probe)."""
 from datetime import timedelta
+from unittest import mock
 
 from django.urls import reverse
 from django.utils import translation
 
 from alarms import engine
 from alarms.models import Alarm
-from farm.models import SamplingPoint, Tank
+from farm.models import SamplingPoint, System, Tank
 from farm.stock import services as stock_services
 from farm.tests.helpers import point_of, stock_fish
 from farm.tests.test_stock import make_unit
@@ -301,3 +302,59 @@ class ReviewThreeTests(SilentOxygenCase):
                          [('system', 'warning', PROBE_SILENT)])
         self.assertTrue(found[0][3].startswith('PROBE-I › O2: T-02 › '), found[0][3])
         self.assertFalse(AlarmEvent.objects.filter(channel_no=probe.channel_no, closed_at__isnull=True).exists())
+
+
+class LoopAndPassTests(SilentOxygenCase):
+    """After review 3 (the coordinator's calls of 2026-11-23): a unit with no point of its own reads its system's oxygen as
+    the water read resolves a loop's water for any unit (A9's second tier); one pass reads where the oxygen is known
+    once, for the sensor rules and the alarm system alike."""
+
+    def test_a_unit_without_a_point_in_a_loop_that_measures_its_oxygen_is_not_critical(self):
+        self.typed(self.t1, 1, oxygen_mg_l='9.0', temperature_c='12.0')
+        self.typed(self.t2, 1, oxygen_mg_l='9.0', temperature_c='12.0')
+        for code, measured in (('R8', 'loop sample'), ('R9', 'system probe')):
+            with self.subTest(measured=measured):
+                ras = System.objects.create(name=f'RAS {code}', code=code, site=self.bergen,
+                                            production_department=self.hall)
+                unit = make_unit(f'N-{code}', self.hall, system=ras)
+                stock_fish(self.user, unit, 500, '50', 10, species=self.salmon)
+                self.assertFalse(SamplingPoint.objects.filter(unit=unit).exists())
+                if measured == 'loop sample':
+                    self.typed(ras, 1, oxygen_mg_l='9.0')                         # the loop point's typed oxygen
+                else:
+                    device = make_device(self.connection, self.format, self.bergen, code=f'PROBE-{code}')
+                    probe = make_channel(device, 'oxygen_mg_l', code='O2')
+                    bindings.move(self.user, probe, system=ras, at=self.now - timedelta(hours=2))
+                    self.send(probe, OXYGEN, self.now - timedelta(seconds=30))
+                water = water_read.unit_water([unit], self.now)[unit.pk]
+                self.assertEqual((water.point, water.holds_fish, water.silent_oxygen), (None, True, None))
+                self.assertNotEqual(self.card(unit).state.key, 'critical')
+        self.assertEqual(self.alarms(), [])
+        # Two hours on, the system's probe is old: its default rule's critical says it, the unit's alone never twice.
+        later = self.now + timedelta(hours=2)
+        self.typed(self.t1, 0, oxygen_mg_l='9.0')
+        self.typed(self.t2, 0, oxygen_mg_l='9.0')
+        unit = Tank.objects.get(code='N-R9')
+        self.assertIsNotNone(water_read.unit_water([unit], later)[unit.pk].silent_oxygen)
+        found = [each for each in self.alarms(later) if 'R9' in each[3]]
+        self.assertEqual([(source, severity) for source, severity, _parameter, _summary in found],
+                         [('sensor_rule', 'critical')])
+
+    def test_one_pass_reads_where_the_oxygen_is_known_once(self):
+        """N3: two silent probes, in mg/L and in %, each its default rule, at T-02 whose typed oxygen is fresh: the pass
+        asks where the oxygen is known once (it asked once per oxygen rule and again for the warnings), and each
+        probe is its warning."""
+        self.typed(self.t1, 1, oxygen_mg_l='9.0', temperature_c='12.0')
+        self.typed(self.t2, 1, oxygen_mg_l='9.0', temperature_c='12.0')
+        device = make_device(self.connection, self.format, self.bergen, code='PROBE-T')
+        for quantity, code, value in (('oxygen_mg_l', 'O2', OXYGEN), ('oxygen_saturation_pct', 'O2-PCT', 95.0)):
+            probe = make_channel(device, quantity, code=code)
+            bindings.move(self.user, probe, point=point_of(self.t2), at=self.now - timedelta(hours=2))
+            self.send(probe, value, self.then)
+        with mock.patch.object(water_read, 'oxygen_known', wraps=water_read.oxygen_known) as known:
+            self.assertEqual(engine.run_once(self.now).failed_steps, [])
+            self.assertEqual(engine.run_once(self.now + timedelta(seconds=31)).failed_steps, [])
+        self.assertEqual(known.call_count, 2)                                   # once per pass, two passes
+        self.assertEqual(sorted(Alarm.objects.filter(clearance__isnull=True).values_list('source', 'severity',
+                                                                                         'parameter')),
+                         [('system', 'warning', PROBE_SILENT)] * 2)

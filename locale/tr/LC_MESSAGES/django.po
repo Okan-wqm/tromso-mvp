@@ -2256,6 +2256,9 @@ msgstr ""
 "Sığdırılan bir kartın bileşenleri yüksekliği en çok %(most)d satırda paylaşır; bu yerleşim "
 "%(rows)d satır kullanıyor."
 
+msgid "A flood from (alarms)"
+msgstr "Şu kadar alarmdan sel sayılır"
+
 msgid "A flow can be stated for an inlet or an outlet only."
 msgstr "Debi yalnızca bir giriş veya çıkış için belirtilebilir."
 
@@ -3269,6 +3272,14 @@ msgstr "Alarm olayı onaylandı."
 msgid "Alarm events"
 msgstr "Alarm olayları"
 
+#, python-format
+msgid ""
+"Alarm flood: %(size)s open %(severity)s alarms of one kind since %(since)s, the first: "
+"%(example)s. Each is listed below; a person gets one message for them."
+msgstr ""
+"Alarm seli: %(since)s itibarıyla aynı türden %(size)s açık alarm (%(severity)s), ilki: "
+"%(example)s. Her biri aşağıda listelenir; bir kişi bunlar için tek bir mesaj alır."
+
 msgid "Alarm recipients"
 msgstr "Alarm alıcıları"
 
@@ -3289,6 +3300,9 @@ msgstr "Alarm ertelemeleri"
 
 msgid "Alarms"
 msgstr "Alarmlar"
+
+msgid "Alarms in the flood message"
+msgstr "Sel mesajındaki alarmlar"
 
 msgid "Alive"
 msgstr "Canlı"
@@ -5512,6 +5526,9 @@ msgstr "Ülke"
 msgid "Counts"
 msgstr "Sayımlar"
 
+msgid "Covered by a flood message"
+msgstr "Bir sel mesajıyla kapsandı"
+
 msgid "Crab"
 msgstr "Yengeç"
 
@@ -7231,6 +7248,9 @@ msgstr "Yüzer"
 msgid "Floating feed stays at the surface; sinking and slow-sinking feed is for cages and deep tanks."
 msgstr "Yüzen yem yüzeyde kalır; batan ve yavaş batan yem kafesler ve derin tanklar içindir."
 
+msgid "Flood window (seconds)"
+msgstr "Sel penceresi (saniye)"
+
 msgid "Flow (m³/h)"
 msgstr "Debi (m³/sa)"
 
@@ -7489,6 +7509,14 @@ msgstr "Sudan son adıma:"
 
 msgid "From then"
 msgstr "O andan itibaren"
+
+msgid ""
+"From this many alarms of one kind (one site, this severity, one quantity, rule or check) within "
+"the flood window, a person gets one flood message for them. 2 to 1000."
+msgstr ""
+"Sel penceresi içinde aynı türden (tek tesis, bu önem düzeyi, tek bir büyüklük, kural ya da "
+"denetim) bu kadar alarmdan itibaren bir kişi bunlar için tek bir sel mesajı alır. 2 ile 1000 "
+"arası."
 
 msgid "Frozen at"
 msgstr "Dondurulma zamanı"
@@ -8072,6 +8100,13 @@ msgstr ""
 " olan kuralın önüne geçer; boylama, kendi kuralı ile taşıma kuralından uzun olanı alır. Çok kısa "
 "aç bırakma bir uyarıdır, engel değil: devam etmek kaydedilir ve kritik olarak günlüğe yazılır. "
 "Bunlar çiftliğin kendi kurallarıdır: başlangıç değerleri veterinerinizle kontrol edilmelidir."
+
+msgid ""
+"How long the alarms of a flood are counted together, and how long a flood message covers the ones"
+" that come after it. 10 to 3600."
+msgstr ""
+"Bir selin alarmlarının ne kadar süre birlikte sayılacağı ve bir sel mesajının kendisinden sonra "
+"gelenleri ne kadar süre kapsayacağı. 10 ile 3600 arası."
 
 msgid ""
 "How long the condition must hold, counted from the first value past the limit, before the alarm "
@@ -8691,6 +8726,9 @@ msgstr "Anahtar"
 
 msgid "Kind"
 msgstr "Tür"
+
+msgid "Kind of alarm"
+msgstr "Alarm türü"
 
 msgid "Kinds of report"
 msgstr "Rapor türleri"
@@ -19043,6 +19081,12 @@ msgstr "%(unit)s biriminde"
 #, python-format
 msgid "in %(unit)s, before the fish were moved here"
 msgstr "%(unit)s biriminde, balıklar buraya taşınmadan önce"
+
+#, python-format
+msgid "in a flood message of %(alarms)s alarm"
+msgid_plural "in a flood message of %(alarms)s alarms"
+msgstr[0] "%(alarms)s alarmlık bir sel mesajında"
+msgstr[1] "%(alarms)s alarmlık bir sel mesajında"
 
 msgid "ingest contract"
 msgstr "veri alım sözleşmesi"

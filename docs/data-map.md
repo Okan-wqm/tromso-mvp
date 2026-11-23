@@ -97,7 +97,7 @@ How far past its limit a water value must come back before an alarm on it clears
 <a id="alarmsdeliveryattempt"></a>
 ### alarms.DeliveryAttempt (`alarm_delivery_attempts`)
 
-A transport took a notification (sent) or failed to (failed, with what it said).
+A transport took a notification (sent) or failed to (failed, with what it said), or a flood message to the same person covered it (grouped: alarms/floods.py).
 
 - **create**: none, by design: written by run_alarms when a transport took or refused a notification
 - **edit**: none, by design: append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin
@@ -105,7 +105,7 @@ A transport took a notification (sent) or failed to (failed, with what it said).
 - **read**: alarms.views.alarm_detail (`/alarms/<int:pk>/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarm_delivery_attempts
 - **constraints**: chk_alarm_delivery_attempts_outcome (check); uq_alarm_delivery_attempts_sent_once (unique: notification)
-- **tests that mention it**: `alarms/tests/test_alarms.py`, `alarms/tests/test_outbox.py`
+- **tests that mention it**: `alarms/tests/test_alarms.py`, `alarms/tests/test_floods.py`, `alarms/tests/test_outbox.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -114,6 +114,8 @@ A transport took a notification (sent) or failed to (failed, with what it said).
 | attempted_at | timestamp with time zone |  |  | system: written by run_alarms from what the transport answered |
 | outcome | varchar(10) |  |  | system: written by run_alarms from what the transport answered |
 | detail | varchar(300) |  |  | system: written by run_alarms from what the transport answered |
+| flood_key | varchar(150) |  |  | system: written by run_alarms from what the transport answered |
+| flood_size | integer | yes |  | system: written by run_alarms from what the transport answered |
 
 <a id="alarmsescalation"></a>
 ### alarms.Escalation (`alarm_escalations`)
@@ -146,7 +148,7 @@ The outbox: one alarm for one person through one channel at one level, queued by
 - **read**: alarms.views.alarm_detail (`/alarms/<int:pk>/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarm_notifications
 - **constraints**: uq_alarm_notifications_once (unique: alarm, recipient, channel, level); chk_alarm_notifications_channel (check); chk_alarm_notifications_level (check)
-- **tests that mention it**: `alarms/tests/test_alarms.py`, `alarms/tests/test_clock.py`, `alarms/tests/test_cross_review.py` and 3 more
+- **tests that mention it**: `alarms/tests/test_alarms.py`, `alarms/tests/test_clock.py`, `alarms/tests/test_cross_review.py` and 4 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -204,8 +206,8 @@ How an alarm of a severity behaves, one row per severity (a person with the righ
 - **read**: alarm severity rules tab (`/alarms/severity-rules/`)
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Alarms › alarm_severity_policies
 - **forms**: `SeverityPolicyForm`
-- **constraints**: uq_alarm_severity_policies_severity (unique: severity); chk_alarm_severity_policies_severity (check); chk_alarm_severity_policies_delays (check); chk_alarm_severity_policies_on_delay (check); chk_alarm_severity_policies_escalation (check); chk_alarm_severity_policies_attempts (check); chk_alarm_severity_policies_retry (check); chk_alarm_severity_policies_shelve (check); chk_alarm_severity_policies_clock (check); chk_alarm_severity_policies_clock_window (check); chk_alarm_severity_policies_kept (check)
-- **tests that mention it**: `core/tests_platform.py`, `core/tests_workspaces.py`, `alarms/tests/test_alarms.py` and 6 more
+- **constraints**: uq_alarm_severity_policies_severity (unique: severity); chk_alarm_severity_policies_severity (check); chk_alarm_severity_policies_delays (check); chk_alarm_severity_policies_on_delay (check); chk_alarm_severity_policies_escalation (check); chk_alarm_severity_policies_attempts (check); chk_alarm_severity_policies_retry (check); chk_alarm_severity_policies_shelve (check); chk_alarm_severity_policies_flood (check); chk_alarm_severity_policies_clock (check); chk_alarm_severity_policies_clock_window (check); chk_alarm_severity_policies_kept (check)
+- **tests that mention it**: `core/tests_platform.py`, `core/tests_workspaces.py`, `alarms/tests/test_alarms.py` and 7 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -225,6 +227,8 @@ How an alarm of a severity behaves, one row per severity (a person with the righ
 | delivery_attempts | integer |  |  | SeverityPolicyForm › Rule |
 | retry_seconds | integer |  |  | SeverityPolicyForm › Rule |
 | shelve_max_minutes | integer |  |  | SeverityPolicyForm › Rule |
+| flood_count | integer |  |  | SeverityPolicyForm › Rule |
+| flood_window_seconds | integer |  |  | SeverityPolicyForm › Rule |
 | clock_skew_seconds | integer |  |  | SeverityPolicyForm › Device clock |
 | clock_skew_deadband_seconds | integer |  |  | SeverityPolicyForm › Device clock |
 | clock_behind_window_seconds | integer |  |  | SeverityPolicyForm › Device clock |
@@ -334,7 +338,7 @@ One time a condition held: a sensor rule's event (mirrored from sensors.AlarmEve
 - **read**: alarms.views.alarm_list (`/alarms/`); alarms.views.alarm_detail (`/alarms/<int:pk>/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarms
 - **constraints**: chk_alarms_source (check); chk_alarms_severity (check); chk_alarms_shape (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_alarms.py`, `alarms/tests/__init__.py` and 13 more
+- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_alarms.py`, `alarms/tests/__init__.py` and 14 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3388,7 +3392,7 @@ A time a rule held for a channel: when it opened and closed and the furthest val
 - **read**: sensors.views.alarm_events (`/sensors/alarm-events/`); sensors.views.home (`/sensors/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Sensors › sensors_alarm_event
 - **constraints**: uq_sensors_alarm_event_open (unique: rule, channel_no); chk_sensors_alarm_event_period (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_alarms.py`, `alarms/tests/test_alarms.py` and 2 more
+- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_alarms.py`, `alarms/tests/test_alarms.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3412,7 +3416,7 @@ When a channel needs a look: no fresh value, its device offline, above or below 
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Sensors › sensors_alarm_rule
 - **forms**: `AlarmRuleForm`
 - **constraints**: chk_sensors_alarm_rule_scope (check); chk_sensors_alarm_rule_kind (check); chk_sensors_alarm_rule_severity (check); chk_sensors_alarm_rule_quantity (check); chk_sensors_alarm_rule_threshold (check); chk_sensors_alarm_rule_numbers (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_alarms.py`, `alarms/tests/test_alarms.py` and 4 more
+- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_alarms.py`, `alarms/tests/test_alarms.py` and 5 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

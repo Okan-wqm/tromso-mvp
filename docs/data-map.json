@@ -614,7 +614,7 @@
       "app": "alarms",
       "model": "DeliveryAttempt",
       "table": "alarm_delivery_attempts",
-      "description": "A transport took a notification (sent) or failed to (failed, with what it said).",
+      "description": "A transport took a notification (sent) or failed to (failed, with what it said), or a flood message to the same person covered it (grouped: alarms/floods.py).",
       "columns": [
         {
           "name": "id",
@@ -660,7 +660,8 @@
           "null": false,
           "choices": [
             "sent",
-            "failed"
+            "failed",
+            "grouped"
           ],
           "link": null,
           "on_form": [],
@@ -672,6 +673,28 @@
           "field": "detail",
           "type": "varchar(300)",
           "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by run_alarms from what the transport answered"
+        },
+        {
+          "name": "flood_key",
+          "field": "flood_key",
+          "type": "varchar(150)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by run_alarms from what the transport answered"
+        },
+        {
+          "name": "flood_size",
+          "field": "flood_size",
+          "type": "integer",
+          "null": true,
           "choices": [],
           "link": null,
           "on_form": [],
@@ -743,6 +766,7 @@
       },
       "tests": [
         "alarms/tests/test_alarms.py",
+        "alarms/tests/test_floods.py",
         "alarms/tests/test_outbox.py"
       ]
     },
@@ -1054,6 +1078,7 @@
         "alarms/tests/test_clock.py",
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py",
+        "alarms/tests/test_floods.py",
         "alarms/tests/test_outbox.py",
         "alarms/tests/test_snooze.py"
       ]
@@ -1655,6 +1680,32 @@
           "why": ""
         },
         {
+          "name": "flood_count",
+          "field": "flood_count",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SeverityPolicyForm › Rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "flood_window_seconds",
+          "field": "flood_window_seconds",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SeverityPolicyForm › Rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
           "name": "clock_skew_seconds",
           "field": "clock_skew_seconds",
           "type": "integer",
@@ -1746,6 +1797,12 @@
           "conditional": false
         },
         {
+          "name": "chk_alarm_severity_policies_flood",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
           "name": "chk_alarm_severity_policies_clock",
           "kind": "check",
           "fields": [],
@@ -1820,6 +1877,8 @@
             "delivery_attempts": "Rule",
             "retry_seconds": "Rule",
             "shelve_max_minutes": "Rule",
+            "flood_count": "Rule",
+            "flood_window_seconds": "Rule",
             "clock_skew_seconds": "Device clock",
             "clock_skew_deadband_seconds": "Device clock",
             "clock_behind_window_seconds": "Device clock",
@@ -1845,6 +1904,7 @@
         "alarms/tests/test_clock.py",
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py",
+        "alarms/tests/test_floods.py",
         "alarms/tests/test_outbox.py",
         "alarms/tests/test_reference.py",
         "alarms/tests/test_snooze.py"
@@ -2746,6 +2806,7 @@
         "alarms/tests/test_clock.py",
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py",
+        "alarms/tests/test_floods.py",
         "alarms/tests/test_outbox.py",
         "alarms/tests/test_pages.py",
         "alarms/tests/test_reaction.py",
@@ -36382,6 +36443,7 @@
         "sensors/tests/test_alarms.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_defects.py",
+        "alarms/tests/test_floods.py",
         "alarms/tests/test_pages.py"
       ]
     },
@@ -36781,6 +36843,7 @@
         "sensors/tests/test_alarms.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_defects.py",
+        "alarms/tests/test_floods.py",
         "alarms/tests/test_migration.py",
         "alarms/tests/test_migration_reverse.py",
         "alarms/tests/test_pages.py"

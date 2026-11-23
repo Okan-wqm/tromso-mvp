@@ -5838,8 +5838,10 @@ under the wrong kind, fails.
 
 | Command | App | Kind | What it does | Who runs it |
 |---|---|---|---|---|
-| `run_alarms` | alarms | product | One pass of the alarms, or one every `--loop` seconds: opens, clears, notifies, escalates, sends | The deployment, as its loop (Alarms) |
-| `check_sensors` | sensors | product | The sensor alarm rules once, or every `--loop` seconds | An operator; the deployment runs `run_alarms` instead, which checks these too |
+| `run_alarm_worker` | alarms | product | The alarm worker: keeps the alarms checked until stopped (a pass within a tick of a change and every sweep, the outbox on its own thread, one active per database) | The deployment, as the compose service `alarms` (Alarms) |
+| `alarm_worker_health` | alarms | product | Exit 0 when the alarms are being checked, 1 and why when they are not | The compose service's healthcheck; anyone on the server |
+| `run_alarms` | alarms | product | One pass of the alarms and one round through the outbox, now: opens, clears, notifies, escalates, sends | An operator; the worker runs the same for as long as it runs |
+| `check_sensors` | sensors | product | The sensor alarm rules once, or every `--loop` seconds | An operator; the alarm worker checks these on every pass |
 | `generate_tasks` | tasks | product | Makes the planned tasks of every active recurring task | A cron job (the Tasks pages do the same before they read) |
 | `sensors_housekeeping` | sensors | product | Deletes the dead letters last seen more than 90 days ago | A daily job |
 | `sensor_broker_sync` | sensors | product | Writes the MQTT broker's passwd and acl files from the sensors configuration | An operator, after the sensors configuration changed (the broker reloads the files) |

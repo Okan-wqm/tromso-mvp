@@ -22,7 +22,7 @@
 </section>
 {% if can_start %}<p><a class="button button-inline" href="{{ start_url }}" data-modal>{% trans "Start the experiment" %}</a></p>{% endif %}
 {% if in_team %}{% include "experiments/_copy_buttons.html" %}{% endif %}
-{% if is_lead %}<p><a class="button button-ghost" href="{{ sharing_url }}">{% trans "Sharing" %}</a></p>{% endif %}
+{% if is_lead %}<p><a class="ui-btn" href="{{ sharing_url }}">{% trans "Sharing" %}</a></p>{% endif %}
 <nav class="ui-tabs" aria-label="{% trans "Experiment" %}">
   {% for key, label, href in tabs %}<a class="ui-tab" href="{{ href }}"{% if tab == key %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
 </nav>
@@ -31,7 +31,7 @@
 {% elif tab == "looked" %}
 <section class="detail-section">
   <h2 class="section-title">{% trans "Who looked" %}</h2>
-  <div class="table-wrap"><table class="data-table">
+  <div class="ui-table-wrap"><table class="ui-table">
     <thead><tr><th scope="col">{% trans "When" %}</th><th scope="col">{% trans "Person" %}</th><th scope="col">{% trans "Kind" %}</th><th scope="col">{% trans "Part" %}</th></tr></thead>
     <tbody>
       {% for event in looked %}<tr><td class="nowrap">{{ event.at|date:"DATETIME_FORMAT" }}</td><td>{{ event.user_name }}</td><td>{{ event.get_kind_display }}</td><td>{{ event.part|default:"–" }}</td></tr>

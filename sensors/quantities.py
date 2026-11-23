@@ -113,7 +113,7 @@ CODES = [quantity.code for quantity in ALL_QUANTITIES]
 WATER_CODES = [quantity.code for quantity in WATER]
 # The quantities the water limits judge: each one a limit can be set on (farm/water/parameters.py LIMITED; the NH₃ a
 # limit judges is worked out from them). A probe of one that stops sending is warned of by its default "No fresh value"
-# rule, whatever its pH scale (owner decision of 2026-11-20; sensors.AlarmRule.is_default, sensors 0014).
+# rule, whatever its pH scale (owner decision of 2026-11-20; sensors.AlarmRule.is_default, sensors 0015).
 JUDGED_CODES = [quantity.code for quantity in WATER if quantity.code in {parameter.code for parameter in parameters.LIMITED}]
 # The severity each default rule is seeded with (owner decision of 2026-11-20): critical for the dissolved oxygen, in
 # mg/L and in % (one quantity in two units, parameters.SAME_QUANTITY: a dead oxygen probe in a closed system can be fish

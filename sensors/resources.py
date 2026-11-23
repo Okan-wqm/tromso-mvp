@@ -289,7 +289,7 @@ class AlarmRuleResource(Resource):
 
     @classmethod
     def allowed(cls, request, obj, action):
-        """A default rule is switched off, never deleted (the database refuses it too: sensors 0014)."""
+        """A default rule is switched off, never deleted (the database refuses it too: sensors 0015)."""
         return not (action == 'delete' and obj.is_default)
 
     @classmethod

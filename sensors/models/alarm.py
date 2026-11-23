@@ -29,7 +29,7 @@ DEFAULT_FIXED = ('channel', 'quantity', 'kind', 'threshold', 'for_s', 'hysteresi
 
 
 def _default_rule():
-    """What the database holds a default rule to (sensors 0014): a "No fresh value" on every channel of a quantity the
+    """What the database holds a default rule to (sensors 0015): a "No fresh value" on every channel of a quantity the
     water limits judge, held at the channel's own freshness (no time past it, no threshold), never deleted, and switched
     off only with a reason."""
     seeded = (Q(kind=AlarmKind.NO_DATA, channel__isnull=True, quantity__in=quantities.JUDGED_CODES, threshold__isnull=True,

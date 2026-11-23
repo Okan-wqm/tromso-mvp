@@ -32,12 +32,12 @@ JUDGED = ['temperature_c', 'oxygen_mg_l', 'oxygen_saturation_pct', 'ph', 'alkali
           'turbidity_ntu', 'phosphate_p_mg_l']
 CRITICAL = ['oxygen_mg_l', 'oxygen_saturation_pct']   # seeded critical; every other a warning
 ENTITY = 'alarm rule'                   # the activity log's name of the record (AlarmRuleResource.entity_type)
-MARKED = 'sensors 0014: made the default "No fresh value" rule of its quantity (owner decision of 2026-11-20).'
-RAISED = ('sensors 0014: made the default "No fresh value" rule of its quantity, and critical as the default of the '
+MARKED = 'sensors 0015: made the default "No fresh value" rule of its quantity (owner decision of 2026-11-20).'
+RAISED = ('sensors 0015: made the default "No fresh value" rule of its quantity, and critical as the default of the '
           'dissolved oxygen is (owner decision of 2026-11-20).')
-LOWERED = 'sensors 0014 reversed: its severity as it was before sensors 0014 raised it.'
+LOWERED = 'sensors 0015 reversed: its severity as it was before sensors 0015 raised it.'
 SEVERITY = {'warning': 'Warning', 'critical': 'Critical'}         # as the log shows a severity (its choice's label)
-KEPT = 'sensors 0014 reversed: kept as an ordinary "No fresh value" rule, {why}.'
+KEPT = 'sensors 0015 reversed: kept as an ordinary "No fresh value" rule, {why}.'
 
 KEEP = """
 CREATE FUNCTION sensors_alarm_rule_default_kept() RETURNS trigger AS $$
@@ -115,7 +115,7 @@ def unseed(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('sensors', '0013_channel_ph_scale'),
+        ('sensors', '0014_rev_triggers'),
         ('core', '0007_audit_severity'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]

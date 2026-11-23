@@ -76,15 +76,24 @@ it, then the checks of "Steps" 7 and 8 above and `sh scripts/heartbeat.sh`.
 
 **A new TimescaleDB:** the image carries the new extension files; each database moves with
 `dc exec db psql -U postgres -d balik -X -c 'ALTER EXTENSION timescaledb UPDATE'` as the first statement of a new
-session, after a backup, with web, jobs and ingest stopped. **Now: production stays on 2.17.2**, the version the
-development database, the whole suite and the stack run on (`timescale/timescaledb:2.17.2-pg17`, whose PostgreSQL is
-17.2: Timescale does not rebuild old releases on newer PostgreSQL minors). The current 2.32.1 was tried: the whole suite
-on it (`gh workflow run ci.yml -f pg_image=timescale/timescaledb:2.32.1-pg17@sha256:2f5e6969...`, run 45222001099)
-fails five `sensors.tests.test_timescale` tests: the policies' job names changed, and a conflicting insert into a
-compressed chunk no longer drops the rest of its statement (the ingest's one-row-per-statement rule for late readings,
-README, Sensors, Storage, rests on the old behaviour and must be re-checked). The move is a task of its own: adapt
-those, run the whole suite on the new image with `pg_image`, move the development database (with the owner's
-go-ahead: it is shared), then `deploy/db/Dockerfile`'s FROM line.
+session, after a backup, with web, jobs and ingest stopped.
+
+**Where it stands (23.11.2026):** production runs **2.32.1** (`deploy/db/Dockerfile`, PostgreSQL 17 of its build); the
+development database and `scripts/test.sh` still run 2.17.2 (PostgreSQL 17.2, never rebuilt by Timescale). What
+changed between them, found by running the whole suite on each release with CI's `pg_image` input:
+
+- from 2.18 on, a conflicting row of a multi-row `INSERT ... ON CONFLICT DO NOTHING` into a compressed chunk no longer
+  drops the rest of the statement (the 2.17.2 fault the ingest works around by writing late rows one per statement;
+  the workaround stays, it is right on both): `sensors.tests.test_timescale.CompressedChunkInsertTests` pins each;
+- later releases list a continuous aggregate's jobs under the aggregate's own name as well: the tests find them by
+  either (`AGGREGATE_JOBS`);
+- the extension version test accepts exactly the versions the repository pins (test image and production image).
+
+The whole suite passes on both (the go-live hand-back names the runs). **Owned plan for the rest:** the coordinator
+moves the shared development database to the production release at the landing of `wip/go-live`, after its backup,
+with `ALTER EXTENSION timescaledb UPDATE`, and then moves `docker-compose.yml`, `scripts/test.sh` and CI's `rust` job to
+the same image, so that one release is tested everywhere again (by 30.11.2026). After that, a TimescaleDB release
+reaches production like any image: Dependabot, the whole suite with `pg_image`, then `deploy/db/Dockerfile`.
 
 **The reboot test** (at installation, then after every kernel update): `reboot`, then without touching anything:
 WireGuard up (`wg show`), every service healthy (`dc ps`), the broker listening on the VPN address

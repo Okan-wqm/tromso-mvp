@@ -197,7 +197,9 @@ class WalkCase(TestCase):
             return [f'{route.name} {method} {values}: crashed {type(response).__name__}: {response}'[:300]]
         found = []
         data = content(response)
-        if world.CANARY.encode() in data:
+        # Looked for with the random tokens taken out: a CSRF token or a nonce can hold the three letters by chance.
+        if world.CANARY.encode() in normal(data):
+            data = normal(data)
             at = data.find(world.CANARY.encode())
             found.append(f'{route.name} {method} {response.status_code}: canary in '
                          f'…{data[max(0, at - 80):at + 40].decode(errors="replace")}…')

@@ -180,6 +180,7 @@ RAW_SQL = {
     'alarms/engine.py': 'an advisory lock, no rows',
     'alarms/services.py': 'writes an alarm subject’s state for an alarm the engine raises, as the system (run_alarms)',
     'core/checks.py': 'the database server’s version',
+    'core/rev.py': 'the revision counters of core_rev (core-rev): a scope, a key and a number, no row of a record',
     'core/codes.py': 'the next number of a code sequence: a number, no record',
     'core/database.py': 'the catalogue of a table (columns, constraints, indexes, the estimate of a hypertable’s rows); '
                         'its rows are read through the seal (core.dbgrid)',

@@ -198,6 +198,19 @@ class DevicePageTests(PagesCase):
                 plain(value, 'device 1')
         self.assertNotIn('#', acl_text().replace('# Written by', ''))
 
+    def test_a_release_names_the_rows_a_pending_check_constraint_would_refuse_before_it_migrates(self):
+        # (review R5) core's check_pending_constraints, as the release step runs it before `migrate`: here with the
+        # migration that adds the topic rule, as if it were not applied yet, on a row written before it
+        from django.db.migrations.loader import MigrationLoader
+
+        from core.management.commands.check_pending_constraints import pending_checks
+        migration = MigrationLoader(connection).graph.nodes[('sensors', '0015_broker_lines_plain')]
+        with connection.cursor() as cursor:
+            cursor.execute('ALTER TABLE sensors_device DROP CONSTRAINT chk_sensors_device_topic_plain')
+            cursor.execute("UPDATE sensors_device SET topic = 'farm/o 2' WHERE id = %s", [self.device.pk])
+        found = {name: count for _migration, name, count in pending_checks(connection, [(migration, False)])}
+        self.assertEqual(found, {'chk_sensors_connection_username': 0, 'chk_sensors_device_topic_plain': 1})
+
 
 class ChannelPageTests(PagesCase):
     def create(self, **changes):

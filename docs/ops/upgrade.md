@@ -22,6 +22,8 @@ git fetch --tags && git checkout <new release tag>                 # 2. the new 
 diff farm.env.example <(git show <old tag>:deploy/farm.env.example)   # 3. new settings? add them to farm.env
 WEB_IMAGE=balik-web:<new tag> dc build                             # 4. the new images (tag them by release:
                                                                    #    set WEB_IMAGE etc. in farm.env)
+dc run --rm --no-deps web python manage.py check_pending_constraints   # 4b. the new CHECK constraints against the
+                                                                   #    rows there are: a broken row is named now
 dc stop web jobs ingest                                            # 5. nothing writes while the schema changes
 dc up -d                                                           # 6. release runs: check --deploy, migrate,
                                                                    #    rights, static files; then everything starts
@@ -36,8 +38,10 @@ readings arrive (Sensors). Write the release and the date in the farm's record.
 
 ## When it fails
 
-- **`release` exits with an error before `migrate`** (the deploy check): a setting is unsafe or missing (its id says
-  which). Fix `farm.env` or the secret, `dc up -d` again. Nothing has changed in the database.
+- **`release` exits with an error before `migrate`**: the deploy check (a setting is unsafe or missing, its id says
+  which: fix `farm.env` or the secret), or `check_pending_constraints` (rows that a new CHECK constraint would refuse,
+  named by migration and constraint: correct them with the old release running, or as the release notes say). Then
+  `dc up -d` again. Nothing has changed in the database.
 - **`migrate` fails half-way**: PostgreSQL runs each migration in a transaction, so the failed one left nothing; the
   ones before it are applied. Do not start the old code on the new schema. Either fix forward (a corrected release),
   or go back:

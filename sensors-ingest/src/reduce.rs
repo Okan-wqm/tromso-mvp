@@ -26,7 +26,7 @@
 //! broker's unacked window, plan risk 2).
 
 use crate::quality::{self, HEARTBEAT, LATE};
-use chrono::{DateTime, Duration, Utc};
+use crate::ts::{self, Duration, Ts};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Reduction {
@@ -44,15 +44,15 @@ pub struct Policy {
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct State {
     /// Receive time of the newest message carrying this channel (any quality, any path).
-    pub last_seen_at: Option<DateTime<Utc>>,
+    pub last_seen_at: Option<Ts>,
     /// Receive time of the newest good forward sample.
-    pub last_good_at: Option<DateTime<Utc>>,
+    pub last_good_at: Option<Ts>,
     /// The newest good forward sample (stored or not), its time and quality.
     pub last_value: Option<f64>,
-    pub last_value_ts: Option<DateTime<Utc>>,
+    pub last_value_ts: Option<Ts>,
     pub last_quality: Option<i16>,
     /// The last stored forward row: what the deadband and the heartbeat are measured from.
-    pub anchor_ts: Option<DateTime<Utc>>,
+    pub anchor_ts: Option<Ts>,
     pub anchor_value: Option<f64>,
     pub anchor_quality: Option<i16>,
     /// Good samples suppressed since the anchor.
@@ -61,21 +61,21 @@ pub struct State {
     pub run_min: Option<f64>,
     pub run_max: Option<f64>,
     /// Newest forward time processed; an older or equal time takes the late path.
-    pub high_ts: Option<DateTime<Utc>>,
+    pub high_ts: Option<Ts>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Sample {
-    pub ts: DateTime<Utc>,
+    pub ts: Ts,
     pub value: f64,
     pub quality: i16,
-    pub received_at: DateTime<Utc>,
+    pub received_at: Ts,
 }
 
 /// A row of `sensors_reading` without the channel number.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Row {
-    pub ts: DateTime<Utc>,
+    pub ts: Ts,
     pub value: f64,
     pub n: i32,
     pub quality: i16,
@@ -102,7 +102,8 @@ pub fn step(policy: &Policy, st: &mut State, s: Sample) -> Step {
         return Step { rows: vec![plain(s.ts, s.value, s.quality | LATE)], late: true, duplicate: false };
     }
     st.high_ts = Some(s.ts);
-    let heartbeat = Duration::try_seconds(policy.heartbeat_s).unwrap_or(Duration::MAX);
+    // a heartbeat too long for a span (chrono's limit, kept) is longer than any two times can be apart: never due
+    let heartbeat = ts::try_seconds(policy.heartbeat_s).unwrap_or(Duration::MAX);
     let good = !quality::is_bad(s.quality);
     let mut rows = Vec::with_capacity(2);
 
@@ -158,7 +159,7 @@ pub fn step(policy: &Policy, st: &mut State, s: Sample) -> Step {
     Step { rows, late: false, duplicate: false }
 }
 
-fn plain(ts: DateTime<Utc>, value: f64, quality: i16) -> Row {
+fn plain(ts: Ts, value: f64, quality: i16) -> Row {
     Row { ts, value, n: 1, quality, run_sum: None, run_min: None, run_max: None }
 }
 
@@ -176,7 +177,7 @@ fn reset_run(st: &mut State) {
 }
 
 /// The row of a stored good sample: it closes the open run (which then counts in its `n` and statistics).
-fn close_run_with(st: &mut State, ts: DateTime<Utc>, value: f64, quality: i16) -> Row {
+fn close_run_with(st: &mut State, ts: Ts, value: f64, quality: i16) -> Row {
     let row = if st.run_n == 0 {
         plain(ts, value, quality)
     } else {
@@ -220,13 +221,12 @@ fn close_run_at_last(st: &mut State) -> Option<Row> {
 mod tests {
     use super::*;
     use crate::quality::{OUT_OF_RANGE, RECEIVE_TIME};
-    use chrono::TimeZone;
     use proptest::prelude::*;
 
-    fn t0() -> DateTime<Utc> {
-        Utc.with_ymd_and_hms(2026, 11, 4, 0, 0, 0).unwrap()
+    fn t0() -> Ts {
+        Ts::ymd_hms(2026, 11, 4, 0, 0, 0).unwrap()
     }
-    fn at(s: i64) -> DateTime<Utc> {
+    fn at(s: i64) -> Ts {
         t0() + Duration::seconds(s)
     }
     fn smp(s: i64, v: f64, q: i16) -> Sample {
@@ -536,7 +536,7 @@ mod tests {
                 prop_assert!(out.late);
                 again.extend(out.rows);
             }
-            let stored: std::collections::HashSet<DateTime<Utc>> = first.iter().map(|r| r.ts).collect();
+            let stored: std::collections::HashSet<Ts> = first.iter().map(|r| r.ts).collect();
             let extra: Vec<&Row> = again.iter().filter(|r| !stored.contains(&r.ts)).collect();
             // the batch's newest sample is at high_ts: a duplicate, no row
             let high = st.high_ts;

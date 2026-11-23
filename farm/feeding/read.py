@@ -393,8 +393,21 @@ class _Fed:
 def handled(unit, day):
     """The ids of the production batches a handling of `unit` on `day` handles: those in it at the start of the day or
     at its end (fish that arrive on the day are handled with the others; the cleaner fish beside them are not)."""
-    book = book_on(unit, day).production
-    return set(book.start) | set(book.end)
+    return handled_of([(unit, day)])[(unit.pk, day)]
+
+
+def handled_of(asked):
+    """{(unit id, day): batch ids} of `handled` for every (unit, day) asked, from one walk of the units (a page of
+    fifty units reads the ledger once, not fifty times)."""
+    asked = list(asked)
+    if not asked:
+        return {}
+    days = _walk({unit.pk for unit, _day in asked}, [], [(unit.pk, day) for unit, day in asked]).days
+    found = {}
+    for unit, day in asked:
+        book = days[(unit.pk, day)].production
+        found[(unit.pk, day)] = set(book.start) | set(book.end)
+    return found
 
 
 def last_fed_at(unit, day, since=None):
@@ -577,8 +590,7 @@ def figures(stock, details=(), ration=False):
     # the cards say what the handling check says (fish moved in bring their last meal in their old unit). It reads the
     # lines the walk has just folded (every batch ever in these units): no second read of the ledger, so a page or a
     # wall of cards costs the queries it cost before (monitoring's recorded counts, review F-01).
-    last = last_fed_of(((item.unit, today[unit_id], [share.batch.pk for share in item.counted], None)
-                        for unit_id, item in stock.items()), lines=walked.lines)
+    last = last_fed_in(stock, lines=walked.lines)
     result = {}
     for unit_id, item in stock.items():
         fed = last.get(unit_id)
@@ -594,6 +606,15 @@ def figures(stock, details=(), ration=False):
         result[unit.pk].ration = projection.days.get((unit.pk, today[unit.pk]))
         result[unit.pk].corrections = projection.corrections(unit.pk)
     return result
+
+
+def last_fed_in(stock, lines=None):
+    """{unit id: LastFed or None} of the units with fish (`stock`: read.stock_of): what `figures` says of each as its
+    last feeding, `last_fed_of` the fish counted in it on its today, back to any day. A page that shows nothing else of
+    the figures (the production plans) asks this alone and walks no feeding; `lines`: the ledger lines of these batches
+    when the caller has them (a walk's)."""
+    return last_fed_of(((item.unit, local_today(item.unit), [share.batch.pk for share in item.counted], None)
+                        for item in stock.values()), lines=lines)
 
 
 def weeks(units, stock, today, walked):

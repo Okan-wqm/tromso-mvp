@@ -4,7 +4,7 @@
 use crate::calib::Epoch;
 use crate::model::{ChannelMap, Format, Shape, TimeUnit};
 use crate::reduce::{Policy, Reduction};
-use chrono::{DateTime, Utc};
+use crate::ts::Ts;
 use std::collections::BTreeMap;
 use thiserror::Error;
 use uuid::Uuid;
@@ -96,8 +96,8 @@ pub struct ViewRow {
     pub range_min: Option<f64>,
     pub range_max: Option<f64>,
     pub channel_state: String,
-    pub valid_from: Option<DateTime<Utc>>,
-    pub valid_to: Option<DateTime<Utc>>,
+    pub valid_from: Option<Ts>,
+    pub valid_to: Option<Ts>,
     pub a: f64,
     pub b: f64,
     pub is_simulated: bool,
@@ -446,7 +446,6 @@ pub async fn load(client: &mut tokio_postgres::Client) -> Result<Config, ConfigE
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use chrono::TimeZone;
 
     pub fn contract() -> Contract {
         Contract { schema_version: 1, config_epoch: 7, future_skew_s: 60, retention_days: 730, late_limit_days: 728 }
@@ -520,7 +519,7 @@ pub(crate) mod tests {
 
     #[test]
     fn rows_group_into_connections_devices_channels_and_epochs() {
-        let t1 = Utc.with_ymd_and_hms(2026, 10, 1, 0, 0, 0).unwrap();
+        let t1 = Ts::ymd_hms(2026, 10, 1, 0, 0, 0).unwrap();
         let mut r1 = row(1, 10, "farm/hall/plc", 5);
         r1.valid_to = Some(t1);
         let mut r2 = row(1, 10, "farm/hall/plc", 5);

@@ -23,7 +23,13 @@ on:
   # lands on main.
   schedule:
     - cron: "30 6 * * *"
+  # By hand on any branch (tools/ci_run.sh): the whole CI, or with `labels` the checks and only those Django test labels.
   workflow_dispatch:
+    inputs:
+      labels:
+        description: "Django test labels to run instead of the whole suite (letters, digits, _ . and spaces)"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -106,10 +112,17 @@ jobs:
           CHECKS: "1"
           WORKERS: "4"
           DB_TMPFS: 4g
+          LABELS: ${{ inputs.labels }}
         run: |
           TEST_DB_PASSWORD=$(openssl rand -hex 16)
           export TEST_DB_PASSWORD
-          bash scripts/test.sh
+          re='^[A-Za-z0-9_. ]+$'
+          if [[ -n "$LABELS" && ! "$LABELS" =~ $re ]]; then
+            echo "::error::labels may hold letters, digits, _ . and spaces"
+            exit 1
+          fi
+          # shellcheck disable=SC2086 # the labels are words, split on purpose
+          bash scripts/test.sh $LABELS
 
       - name: The translation catalogs are up to date (update_catalogs changed nothing)
         run: |

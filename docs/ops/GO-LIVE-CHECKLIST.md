@@ -9,8 +9,8 @@ Farm: ____________________  Server: ____________________  Release: ____________ 
 
 - [ ] Hosting target chosen (provider, country, size) and recorded.
 - [ ] Backup destination chosen (provider, country, another location than the server, object lock or append-only key).
-- [ ] Access method chosen per farm: Cloudflare Tunnel + Access, or VPN only ([access.md](access.md)); for
-      Cloudflare, the owner accepted that Cloudflare ends TLS.
+- [ ] Access method chosen per farm: WireGuard for people and sensors (recommended), or Cloudflare Tunnel + Access
+      with a second factor ([access.md](access.md)); for Cloudflare, the owner accepted that Cloudflare ends TLS.
 
 ## The release
 
@@ -64,6 +64,9 @@ Farm: ____________________  Server: ____________________  Release: ____________ 
 
 ## Alarms
 
+- [ ] **Go-live gate: until the alarm worker has landed and passed its own checks, the console is a monitoring and
+      record system only.** The farm's alarms are the site's own; the staff are told so, and the farm's record says so.
+      This line is ticked only when that is true, and replaced by the next one when the worker lands.
 - [ ] The alarm worker running (when it has landed) and its notifications reaching the right people.
 - [ ] The dead-man check reaching people by a path that does not depend on the proxy or Cloudflare.
 - [ ] The site's local hard-wired alarms tested independently of the console.
@@ -84,6 +87,11 @@ Farm: ____________________  Server: ____________________  Release: ____________ 
 - [ ] Retention as decided (`BACKUP_KEEP_*`); the repository's storage alarms (quota) set at the provider.
 
 ## Records and people on call
+
+- [ ] The off-server secret inventory in the owner's safe, each entry opened once to check it
+      ([rotate-secrets.md](rotate-secrets.md)); the break-glass items prepared and sealed ([incident.md](incident.md)).
+- [ ] The reboot test passed: WireGuard, every service and the heartbeat back by themselves ([upgrade.md](upgrade.md)).
+- [ ] The MQTT certificates' end dates in the farm's record, with a reminder a month before.
 
 - [ ] The farm's record complete ([per-farm.md](per-farm.md)).
 - [ ] Who is called when the console is down, day and night; the [incident.md](incident.md) checklist printed on site.

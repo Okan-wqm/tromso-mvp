@@ -4,21 +4,44 @@ Templates (placeholders only) are in `deploy/cloudflare/` and `deploy/wireguard/
 the Cloudflare API or touches DNS: a person sets these up per farm. Django's own sign-in, roles and rights stay in
 force whatever is in front (defence in depth).
 
-## People: three ways, one per farm
+## People: the recommendation, and the other ways
 
-| | A. Cloudflare Tunnel + Access (recommended for remote staff) | B. WireGuard VPN only | C. Public HTTPS |
+**For the pilot: WireGuard for people and sensors alike (B).** The console's sign-in has a password and nothing more
+(no second factor, no lockout: [first-admin.md](first-admin.md)), so the network in front is the second lock. With
+WireGuard nobody outside the VPN even reaches the sign-in page, no third party sees the traffic, and one mechanism
+serves the staff and the sensors. Cloudflare Access (A) is the option for staff who cannot run a VPN app, with a second
+factor required there. Public HTTPS (C) is not for this console.
+
+| | B. WireGuard (recommended) | A. Cloudflare Tunnel + Access (option) | C. Public HTTPS (not recommended) |
 |---|---|---|---|
-| Open inbound port | none (`cloudflared` dials out) | 51820/udp | 443, 80 |
-| Who reaches the sign-in page | only people Access lets through (e-mail one-time code or the farm's SSO, per-person rules, time-limited guests) | only devices with a VPN key | everyone on the internet |
-| TLS ends at | Cloudflare, then again at the farm's proxy (origin certificate) | the farm's proxy | the farm's proxy |
-| Who can see the traffic | Cloudflare (it ends TLS) | nobody but the farm | nobody but the farm |
-| Phones and tablets on site | the Cloudflare login in the browser | a VPN app on each | the browser |
-| Cost | free up to 50 users | free | free |
+| Open inbound port | 51820/udp | none (`cloudflared` dials out) | 443, 80 |
+| `HTTPS_BIND` / `HTTP_BIND` | the server's VPN address | 127.0.0.1 (the default) | 0.0.0.0 |
+| Who reaches the sign-in page | only devices with a VPN key | only people Access lets through, **with a second factor** | everyone on the internet |
+| `PROXY_ADMIN_ALLOW` (`/admin/`) | the VPN range (`10.8.0.0/24`) | `all`, Access's second factor in front | 127.0.0.1/32 (nobody) |
+| TLS ends at | the farm's proxy | Cloudflare, then again at the farm's proxy | the farm's proxy |
+| Who can see the traffic | nobody but the farm | Cloudflare (it ends TLS) | nobody but the farm |
+| Phones and tablets on site | a WireGuard app on each (a QR code per device) | the Cloudflare login in the browser | the browser |
+| Cost | free | free up to 50 users | free |
 
 **Owner decision for A:** Cloudflare ends TLS, so it can read the traffic (confidential experiments, regulatory
-reports, personal data). Acceptable for the pilot? EU-only processing is a paid option. If not acceptable: B.
+reports, personal data). EU-only processing is a paid option.
 
-### A. Cloudflare Tunnel + Access
+### B. WireGuard (recommended)
+
+1. On the server: `deploy/wireguard/wg0-server.conf.example` as `/etc/wireguard/wg0.conf` (mode 0600), the farm's
+   range (`10.8.<n>.0/24`, [per-farm.md](per-farm.md)); `systemctl enable --now wg-quick@wg0`; Docker started after it
+   (the reboot test, [upgrade.md](upgrade.md)).
+2. One peer per person's device and per site gateway (`wg genkey`, `wg pubkey`, `wg genpsk`), each with its own
+   `/32`; a person's laptop or phone gets its configuration as a file or a QR code (`qrencode -t ansiutf8 < peer.conf`),
+   and the private key never leaves that device. The peer list is the access list: removing a peer ends that access.
+3. `farm.env`: `HTTPS_BIND` and `HTTP_BIND` = the server's VPN address (`10.8.<n>.1`), `MQTT_BIND_ADDRESS` the same,
+   `PROXY_ADMIN_ALLOW` the VPN range.
+4. The console's name `SITE_HOST` resolves, for the VPN's users, to the server's VPN address (an internal DNS name, or
+   a public DNS record pointing to the private address). Its certificate: Let's Encrypt with DNS-01 when the name is
+   public, otherwise `sh scripts/certs.sh proxy-internal <SITE_HOST>` with `proxy-ca/ca.crt` installed in the browsers.
+5. Check: from a VPN peer the sign-in page opens; from outside the VPN nothing answers (the nmap check below).
+
+### A. Cloudflare Tunnel + Access (option)
 
 1. Zero Trust dashboard (by a person): Networks › Tunnels › create a tunnel (cloudflared); copy its token into
    `SECRETS_DIR/cloudflared.env` as `TUNNEL_TOKEN=...`.
@@ -26,28 +49,24 @@ reports, personal data). Acceptable for the pilot? EU-only processing is a paid 
    (`deploy/cloudflare/config.yml.example` shows the same as a file). The proxy's certificate: a Cloudflare origin
    certificate for `SITE_HOST` in `SECRETS_DIR/tls/`.
 3. Access › Applications › self-hosted, domain `SITE_HOST` (`deploy/cloudflare/access-application.example.json`):
-   a policy for the farm's staff (their e-mail domain or a list, one-time PIN or SSO), a separate one for named guests
-   with a short session; nothing else allowed.
+   a policy for the farm's staff (their e-mail domain or a list) **requiring a second factor**: an identity provider
+   that enforces MFA (the farm's Microsoft or Google accounts with MFA on), not the e-mail one-time PIN alone; a
+   separate policy for named guests with a short session; nothing else allowed.
 4. `farm.env`: `HTTPS_BIND=127.0.0.1`, `HTTP_BIND=127.0.0.1` (nothing published to the internet),
    `PROXY_REAL_IP_FROM=<EDGE_SUBNET>`, `PROXY_REAL_IP_HEADER=CF-Connecting-IP` (the rate limits then count each real
-   client, not the tunnel).
+   client, not the tunnel), `PROXY_ADMIN_ALLOW=all`.
 5. `dc --profile cloudflare up -d`. The firewall keeps 443 and 80 closed.
-6. Check from outside: the address shows Cloudflare's login first; after it, the farm's sign-in page.
+6. Check from outside: the address shows Cloudflare's login first, then the second factor, then the farm's sign-in.
 
-Kept outside Cloudflare: the sensors (B below), the alarm worker and the site's hard-wired alarms. The alarm worker's
-dead-man signal must reach people by a path that does not depend on Cloudflare (a Cloudflare outage must raise it).
+Kept outside Cloudflare: the sensors (below), the heartbeat ([monitoring.md](monitoring.md)), the alarm worker and the
+site's hard-wired alarms. The alarm worker's dead-man signal must reach people by a path that does not depend on
+Cloudflare (a Cloudflare outage must raise it).
 
-### B. WireGuard only
+### C. Public HTTPS (not recommended)
 
-`deploy/wireguard/wg0-server.conf.example` on the server, one peer per person or device (`wg genkey`), the console
-reached at `https://SITE_HOST` resolving to the server's VPN address (an internal DNS name or a hosts entry). The
-proxy's certificate from `sh scripts/certs.sh proxy-internal <SITE_HOST>`; `proxy-ca/ca.crt` installed in the
-browsers. `HTTPS_BIND` and `HTTP_BIND` = the VPN address.
-
-### C. Public HTTPS
-
-Only with a strong reason: the sign-in page faces the internet. Let's Encrypt (DNS-01) certificate, the proxy's rate
-limit, an IP allowlist in the server's firewall where the farm's addresses are fixed.
+The sign-in page faces the internet with a password as its only factor. If ever chosen: Let's Encrypt (DNS-01), the
+proxy's rate limits, `PROXY_ADMIN_ALLOW` left at 127.0.0.1/32, and an allowlist of the farm's fixed addresses in the
+`DOCKER-USER` chain (ufw does not see published ports: [install.md](install.md)).
 
 ## Sensors: MQTT over TLS inside the VPN
 

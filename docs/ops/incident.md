@@ -11,6 +11,24 @@ list; write every step with its time in the farm's record as you go. `dc` is `do
       relies on the local, hard-wired alarms until the console is confirmed right again. The console never shows a
       stale value as current (it says "no recent data"), but a person must know the console is in doubt.
 
+## Break glass (prepared at installation, used only when the normal way is gone)
+
+When ssh, the VPN or the platform admin's own account cannot be used (a lost key, the only admin away, an account
+locked out), these are the way in. They are made at installation and kept sealed in the owner's safe, apart from the
+daily credentials:
+
+- an **ssh key** for the server, of its own (`ssh-keygen -t ed25519`), its public half in root's `authorized_keys`
+  with a comment naming it the break-glass key; the provider's out-of-band console login as the second way;
+- a **WireGuard peer** of its own (a configuration file), not on any daily device;
+- the server's `postgres_password` and the repository's `restic_password` (they are in the inventory anyway,
+  [rotate-secrets.md](rotate-secrets.md));
+- for the console: no standing account. A new platform admin is made when needed:
+  `dc run --rm --no-deps web python manage.py createsuperuser`.
+
+**Using it:** two people agree (the owner and the person on call), the opening is written in the farm's record with
+the time and the reason, and afterwards every item used is replaced (a new key, a new peer, the passwords rotated)
+and the temporary admin deactivated. A break-glass key found in daily use is an incident.
+
 ## 1. What is happening
 
 - [ ] `dc ps`: which service is not healthy? `dc logs --since 1h <service>`.

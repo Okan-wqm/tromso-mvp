@@ -68,3 +68,35 @@ dc run --rm --no-deps backup restic key remove <old key id>
 
 (`restic_password.new` made first like any other: `openssl rand -base64 96 | tr -d '\n+/=' | cut -c1-64`, mode 0444.)
 Put the new password in the owner's safe **before** removing the old key.
+
+## What must also live off the server (the owner's safe)
+
+A server lost with its disks takes its `SECRETS_DIR` with it. What can be made again, and what cannot:
+
+| Secret | Off the server? | Why |
+|---|---|---|
+| `restic_password` | **yes, always** | without it no backup can ever be read |
+| `django_audit_digest_key` | **yes, always** | the activity log's private values are digested under it; a new key cannot be compared with the old digests |
+| The repository's credentials (`backup.env`) | yes | the restore service needs them on the new server (or the owner makes a new append-only user) |
+| The MQTT CA key (`mqtt-ca/ca.key`) | **only there**: it leaves the server once the devices have their certificates | a new CA means a new certificate on every device |
+| The proxy CA key (`proxy-ca/ca.key`, VPN-only consoles) | yes | a new CA means installing it again in every browser |
+| The WireGuard server's private key | yes | a new key means a new configuration on every peer |
+| `postgres_password`, the role passwords, `django_secret_key`, `mqtt_ingest` | no | made again by `make-secrets.sh` on the new server (the restored dump holds no role passwords; sessions and links are lost) |
+| `email_password`, `cloudflared.env` | no | at the provider |
+| The break-glass items ([incident.md](incident.md)) | yes | they are for when the server cannot be reached the usual way |
+
+The safe holds each with the farm's name and the date it was made; a rotation replaces the entry.
+
+## MQTT certificates: renewal
+
+The broker's and the devices' certificates live 825 days, the CA ten years (`scripts/certs.sh`).
+
+- **The broker's certificate:** the heartbeat turns red 21 days before it ends ([monitoring.md](monitoring.md)).
+  Renew it as in the table above (the devices keep theirs: the CA is unchanged).
+- **A device's certificate:** write each device's end date in the farm's record when it is made
+  (`openssl x509 -enddate -noout -in client.crt`) and renew it a month before: remove its folder
+  (`SECRETS_DIR/mqtt-devices/<device>`), `sh scripts/certs.sh mqtt-device <device>` (with the CA key brought back for
+  the purpose), load the new files into the device, remove them from the server again.
+- **There is no revocation list:** a certificate stays valid until it ends. A lost or stolen device is cut off by its
+  Credential (disable it on the Sensors pages: the broker refuses its user within a minute) and by removing its site's
+  WireGuard peer if the gateway went with it.

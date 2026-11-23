@@ -6195,7 +6195,8 @@ run it while working.
 test runner's), npm, cargo (`sensors-ingest` grouped, `chemcore` one pull request per crate, its pins exact: a libm move is a re-recorded golden), the GitHub actions and the Dockerfiles' images (`docker/`, `sensors-ingest/`); minor and patch releases
 grouped into one pull request per ecosystem, each major in a pull request of its own, at most 5 open per ecosystem. Django's
 feature releases (6.1 to 6.2) never come in the group, and a new Python or Rust (minor) is not proposed at all: they are
-planned moves. The TimescaleDB image is pinned by hand in `docker-compose.yml`, `scripts/test.sh`, the workflow and
+planned moves. Nor is a new major of `@types/node`: it follows the Node that runs the tests and CI (22, `NODE_VERSION`),
+and the two move together. The TimescaleDB image is pinned by hand in `docker-compose.yml`, `scripts/test.sh`, the workflow and
 `sensors-ingest/tests/run.sh`, and moves in all four together. Dependabot's security updates are a repository setting
 (Settings, Code security), to be switched on by the owner. Dependabot does not regenerate `docker/requirements.lock`: a
 pull request that moves a pin of `requirements.txt` fails the chemcore job (the lock must name the same pins) until the lock

@@ -219,6 +219,19 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+# Where `collectstatic` puts the files, with their manifest (the web image does it when it is built; the release step
+# copies them to the volume the reverse proxy serves, deploy/web/release.sh).
+STATIC_ROOT = Path(os.environ.get('DJANGO_STATIC_ROOT', BASE_DIR / 'staticfiles'))
+# With DEBUG off every static file is served under a name that carries a hash of its content (css/tw.3f2a9c41b7e0.css),
+# so the proxy lets a browser keep it for a year (deploy/proxy) and a changed file is a new name; the compiled modules
+# reach theirs through the import map (core/templatetags/assets.py). A development server keeps the plain names, each
+# versioned by its file's modification time.
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage' if DEBUG
+                    else 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'},
+}
+
 
 
 # Uploaded files (a library document's PDF), kept by Django's default storage under MEDIA_ROOT. There is

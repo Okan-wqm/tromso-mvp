@@ -49,7 +49,7 @@ from farm.models.water_point import site_of
 from farm.water import messages as water_messages, parameters, read as water_read
 from farm.water.read import LIMITED, OXYGEN
 from farm.water.evaluate import ALERTS, RANK, Status, judge, worst
-from sensors import clock as sensor_clock
+from sensors import alarms as sensor_alarms, clock as sensor_clock
 from sensors.models import AlarmEvent, Binding, Channel, Device
 
 from . import clock, services
@@ -336,6 +336,7 @@ UNIT_UNEVALUATED = 'unit_unevaluated'
 STEP_FAILED = 'step_failed'
 NO_WATER_POINT = 'no_water_point'
 VALUE_UNEVALUATED = 'value_unevaluated'
+NO_FRESH_OXYGEN = 'no_fresh_oxygen'
 # Every value the limits judge: each may come without a number for a stated reason (read.Reading.refused): a worked-out
 # one the chemistry core refused (the NH₃), a sensor pH that could not be put on the NBS scale (the water-chemistry
 # audit of 2026-11-19, F1 and its review's M1: it was silent), and any value a later refusal comes to. A value that is
@@ -516,6 +517,37 @@ def _refused_subjects(units, found_water, unevaluated, failed, now):
     return subjects
 
 
+def _silent_subjects(units, found_water, unevaluated, failed, now):
+    """Owner decision of 2026-11-23: a unit that holds fish whose oxygen has no fresh value (read.PointWater.silent_oxygen:
+    a typed sample grown old, or a unit without sensors, mg/L and % being one quantity) is a CRITICAL alarm of the alarm
+    system, one per unit (subject `system:unit:<unit>:no_fresh_oxygen`), on the unit's site: "<unit>: Dissolved oxygen
+    (mg/L O₂): no recent data, 3 hours old". Its on-delay runs from when the oxygen stopped being fresh
+    (read.Silence.since). Where an oxygen probe is bound to the unit's water (its own points or its system's) and a "No
+    fresh value" rule covers it (sensors.alarms.watched), that rule's alarm says it and this one does not hold, so a
+    silent probe is one alarm, never two. It ends "restored" once the oxygen is fresh again (or a probe watches it),
+    "no fish in the unit any more" once the unit holds none, and never on a pass that could not read the unit or the
+    live values."""
+    watched = sensor_alarms.watched((parameters.OXYGEN_MG_L, parameters.OXYGEN_PCT), now)
+    subjects = []
+    for unit in units:
+        found = found_water.get(unit.pk)
+        looked = found is not None and found.point is not None and unit.pk not in unevaluated
+        silence = found.silent_oxygen if looked else None
+        holds = silence is not None and not (found.targets & watched)
+        summary = ''
+        if holds:
+            with audit.source_language():
+                summary = f'{unit.code}: {found.why_silent[0]}'[:SUMMARY_LENGTH]
+        subject = system_subject(
+            f'unit:{unit.pk}:{NO_FRESH_OXYGEN}', holds, Severity.CRITICAL, summary, now,
+            parameter=parameters.OXYGEN_MG_L, where=_unit_where(unit), bad_at=silence.since if holds else None,
+            clear_ok=looked and not failed and not holds)
+        if looked and not found.holds_fish:
+            subject.structural = ClearCause.STRUCTURAL
+        subjects.append(subject)
+    return subjects
+
+
 def water(now, rules):
     """Raises and clears the water limits' levels at `now` (alarms.rules `rules`), and the system alarms of live sources
     that cannot be read and of units that cannot be evaluated: (opened, cleared). While the live sources cannot be read
@@ -553,6 +585,7 @@ def water(now, rules):
         '%(unit)s holds fish and has no active sampling point for its own water: its water raises no alarm until it '
         'has one.'), unit=unit.code), now, parameter=NO_WATER_POINT, where=_unit_where(unit)) for unit in units]
     subjects += _refused_subjects(units, found_water, unevaluated, failed, now)
+    subjects += _silent_subjects(units, found_water, unevaluated, failed, now)
     # A unit whose water is read no more (no point to read it at, the parameter gone) keeps its alarm open: nothing says it
     # is over. A unit removed has nothing left to judge: its alarms end (cause "unit removed").
     return settle(subjects + _removed(units, now), now, rules)

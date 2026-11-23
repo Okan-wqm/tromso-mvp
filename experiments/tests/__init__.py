@@ -18,6 +18,11 @@ D = Decimal
 
 
 class ExperimentTestCase(StockTestCase):
+    # Who may read the experiments the helper makes: open, so the experiments' own tests (design, places, start, the
+    # pages) read and change them as everyone who reads experiments did before confidentiality. Who reads a sealed or
+    # private one has its own tests (test_access, test_confidential, test_oversee); None leaves the database's default
+    # (sealed).
+    audience = 'open'
     def setUp(self):
         super().setUp()
         self.tanks = [self.t1, self.t2] + [make_unit(f'T-{number:02d}', self.hall) for number in range(3, 9)]
@@ -35,6 +40,8 @@ class ExperimentTestCase(StockTestCase):
     def experiment(self, name='Diet trial', **fields):
         """A draft experiment of salmon at Bergen, numbered as the form numbers it, by the ORM."""
         values = {'site': self.bergen, 'species': self.salmon, 'duration_days': 56, **fields}
+        if self.audience is not None:
+            values.setdefault('audience', self.audience)
         values.setdefault('code', next_code(Experiment, f'E-{self.today.year}-'))
         return Experiment.objects.create(name=name, **values)
 

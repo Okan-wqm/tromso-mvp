@@ -470,7 +470,8 @@ class MenuAndAccessTests(PageTestCase):
         tables = {table.name: table for table in sections['Research']}
         self.assertEqual(set(tables), {'experiments', 'experiment_factors', 'experiment_levels', 'experiment_groups',
                                        'experiment_group_levels', 'experiment_replicates',
-                                       'experiment_replicate_units', 'experiment_members'})
+                                       'experiment_replicate_units', 'experiment_members', 'experiment_shares',
+                                       'experiment_replicate_systems'})
         self.assertTrue(all(table.description for table in tables.values()))
         self.assertTrue(tables['experiments'].description.startswith('A trial of one species on one site'))
         constraints = {c.name for c in tables['experiment_replicate_units'].structure().constraints}
@@ -489,7 +490,7 @@ class MenuAndAccessTests(PageTestCase):
         registered = {model.__name__: model_admin for model, model_admin in admin.site._registry.items()
                       if model._meta.app_label == 'experiments'}
         self.assertEqual(set(registered), {'Experiment', 'Factor', 'Level', 'ExperimentGroup', 'Replicate',
-                                           'ReplicateUnit'})
+                                           'ReplicateUnit', 'ReplicateSystem'})
         self.assertEqual(registered['Experiment'].actions, ['restore'])
         self.assertTrue(all(model_admin.actions == [] for name, model_admin in registered.items()
                             if name != 'Experiment'))

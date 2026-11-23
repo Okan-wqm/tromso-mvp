@@ -13,6 +13,8 @@ from . import ExperimentTestCase
 
 
 class SchemaCase(ExperimentTestCase):
+    audience = None              # the database's default: sealed
+
     def setUp(self):
         super().setUp()
         self.loop = System.objects.create(site=self.bergen, production_department=self.hall, name='Loop', code='L1')

@@ -19,7 +19,7 @@ from django.db.models.functions import Cast, Coalesce, Lower
 from django.db.models.lookups import Exact, LessThanOrEqual
 from django.utils.translation import gettext, gettext_lazy as _
 
-from core.models import AuditedModel
+from core.models import AuditedModel, SealedManager
 from farm.models import Species, System, Tank
 from farm.models.tank import WaterType
 
@@ -103,6 +103,8 @@ class MonitorBoardUnit(models.Model):
     created_at = models.DateTimeField(_('Created at'), auto_now_add=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
                                    related_name='+', verbose_name=_('Created by'))
+
+    objects = SealedManager()
 
     class Meta:
         db_table = 'monitor_board_units'

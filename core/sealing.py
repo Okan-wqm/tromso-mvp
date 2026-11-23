@@ -327,6 +327,7 @@ def undeclared(model_list):
             if not model._meta.abstract and not model._meta.proxy and reaches_keyed(model) and seal_of(model) is None]
 
 
+@checks.register()
 def check_registry(app_configs=None, models=None, **kwargs):
     """E101: a model reaching a unit, a system or another keyed record without a seal. E102: a filtering seal whose
     model has a manager without SealedMixin."""

@@ -8,7 +8,7 @@ from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
-from core.models import AuditedModel
+from core.models import AuditedModel, SealedManager
 
 from .species import Species
 from .stock import Batch, OperationKind, StockOperation
@@ -176,6 +176,8 @@ class HandlingAcknowledgement(models.Model):
     rule = models.ForeignKey(HandlingRule, null=True, blank=True, on_delete=models.PROTECT,
                              related_name='acknowledgements', verbose_name=_('Handling rule'))
 
+    objects = SealedManager()
+
     class Meta:
         db_table = 'handling_acknowledgements'
         ordering = ['id']
@@ -253,6 +255,8 @@ class WithdrawalAcknowledgement(models.Model):
     until = models.DateField(_('Withdrawal until'), null=True, blank=True)       # None: unknown
     approximate = models.BooleanField(_('Withdrawal end estimated'), default=False)
     reason = models.CharField(_('Withdrawal'), max_length=500, blank=True)
+
+    objects = SealedManager()
 
     class Meta:
         db_table = 'withdrawal_acknowledgements'

@@ -30,7 +30,8 @@ from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _, pgettext_lazy
 
 from core.fields import ChoiceArrayField
-from core.models import AuditedModel
+from core.models import AuditedModel, SealedManager
+from core.sealing import SealedMixin, sealed
 from farm.models import Batch, Equipment, ProductionDepartment, Site, System, Tank
 from farm.stock.dates import site_today
 
@@ -149,7 +150,7 @@ class TaskQuerySet(models.QuerySet):
         return self.annotate(site_key=SITE_OF_PLACE)
 
 
-class TaskManager(models.Manager.from_queryset(TaskQuerySet)):
+class TaskManager(SealedMixin, models.Manager.from_queryset(TaskQuerySet)):
     def get_queryset(self):
         return super().get_queryset().filter(is_deleted=False)
 
@@ -291,6 +292,8 @@ class TaskSeriesAssignee(models.Model):
     series = models.ForeignKey(TaskSeries, on_delete=models.CASCADE, related_name='assignee_links')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='+')
 
+    objects = SealedManager()
+
     class Meta:
         db_table = 'task_series_assignees'
         constraints = [models.UniqueConstraint(fields=['series', 'user'], name='uq_task_series_assignees')]
@@ -305,6 +308,8 @@ class TaskSeriesChecklistItem(models.Model):
     text = models.CharField(_('Checklist item'), max_length=300)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
                                    related_name='+')
+
+    objects = SealedManager()
 
     class Meta:
         db_table = 'task_series_checklist_items'
@@ -359,7 +364,7 @@ class Task(AtPlace, AuditedModel):
     cancel_reason = models.CharField(_('Reason for cancelling'), max_length=500, blank=True, editable=False)
 
     objects = TaskManager()
-    all_objects = TaskQuerySet.as_manager()
+    all_objects = sealed(models.Manager.from_queryset(TaskQuerySet))()
 
     kept_note = _('They stay in the task lists, which show this as deleted, and show it again when it is restored.')
 
@@ -445,6 +450,8 @@ class TaskAssignee(models.Model):
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='assignee_links')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='+')
 
+    objects = SealedManager()
+
     class Meta:
         db_table = 'task_assignees'
         constraints = [models.UniqueConstraint(fields=['task', 'user'], name='uq_task_assignees')]
@@ -463,6 +470,8 @@ class TaskChecklistItem(models.Model):
                                 related_name='+', editable=False)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
                                    related_name='+')
+
+    objects = SealedManager()
 
     class Meta:
         db_table = 'task_checklist_items'
@@ -498,6 +507,8 @@ class TaskNote(models.Model):
     body = models.CharField(_('Note'), max_length=MAX_LENGTH)
     kind = models.CharField(_('Kind'), max_length=20, choices=Kind.choices, default=Kind.NOTE)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = SealedManager()
 
     class Meta:
         db_table = 'task_notes'

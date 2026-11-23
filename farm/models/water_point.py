@@ -27,6 +27,7 @@ from django.db.models import Q
 from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _, ngettext
 
+from core.sealing import sealed
 from core.models import ActiveManager, AuditedModel
 
 from .equipment import Equipment
@@ -236,7 +237,7 @@ class SamplingPoint(AuditedModel):
     description = models.CharField(_('Description'), max_length=300, blank=True)
 
     objects = PointManager()
-    all_objects = models.Manager.from_queryset(PointQuerySet)()
+    all_objects = sealed(models.Manager.from_queryset(PointQuerySet))()
 
     class Meta:
         db_table = 'water_sampling_points'

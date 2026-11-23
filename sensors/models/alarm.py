@@ -3,7 +3,7 @@ from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
-from core.models import AuditedModel
+from core.models import AuditedModel, SealedManager
 
 from .. import quantities
 from .channel import Channel, finite
@@ -92,6 +92,8 @@ class AlarmEvent(models.Model):
     opened_at = models.DateTimeField(_('Opened at'))
     closed_at = models.DateTimeField(_('Closed at'), null=True, blank=True)
     peak = models.FloatField(_('Furthest value'), null=True, blank=True)
+
+    objects = SealedManager()
 
     class Meta:
         db_table = 'sensors_alarm_event'

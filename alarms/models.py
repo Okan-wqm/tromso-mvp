@@ -19,7 +19,7 @@ from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext, gettext_lazy as _
 
-from core.models import AuditedModel
+from core.models import AuditedModel, SealedManager
 from farm.models import ProductionDepartment, SamplingPoint, Site
 from farm.water.parameters import LIMIT_CHOICES
 from sensors.models import AlarmEvent, Device
@@ -82,6 +82,8 @@ class Alarm(models.Model):
     opened_at = models.DateTimeField(_('Opened at'), db_index=True)
     summary = models.CharField(_('What'), max_length=300)
 
+    objects = SealedManager()
+
     class Meta:
         db_table = 'alarms'
         ordering = ['-opened_at', '-id']
@@ -111,6 +113,8 @@ class AlarmClearance(models.Model):
                                  verbose_name=_('Alarm'))
     cleared_at = models.DateTimeField(_('Cleared at'))
     cause = models.CharField(_('Why'), max_length=20, choices=ClearCause.choices, default=ClearCause.RETURNED)
+
+    objects = SealedManager()
 
     class Meta:
         db_table = 'alarm_clearances'
@@ -143,6 +147,8 @@ class AlarmSubjectState(models.Model):
     # then only the unit's own evidence ends it, never another point's value (the verification of FIX3, F3-7).
     own_held = models.BooleanField(default=False, db_default=False)     # db_default: services._set_open inserts rows raw
     updated_at = models.DateTimeField(auto_now=True)
+
+    objects = SealedManager()
 
     class Meta:
         db_table = 'alarm_subject_state'
@@ -213,6 +219,8 @@ class Notification(models.Model):
                              related_name='notifications', verbose_name=_('Recipient rule'))
     queued_at = models.DateTimeField(_('Queued at'))
 
+    objects = SealedManager()
+
     class Meta:
         db_table = 'alarm_notifications'
         ordering = ['queued_at', 'id']
@@ -239,6 +247,8 @@ class DeliveryAttempt(models.Model):
     outcome = models.CharField(_('Outcome'), max_length=10, choices=Outcome.choices)
     detail = models.CharField(_('Detail'), max_length=300, blank=True)
 
+    objects = SealedManager()
+
     class Meta:
         db_table = 'alarm_delivery_attempts'
         ordering = ['attempted_at', 'id']
@@ -263,6 +273,8 @@ class Escalation(models.Model):
     alarm = models.ForeignKey(Alarm, on_delete=models.PROTECT, related_name='escalations', verbose_name=_('Alarm'))
     level = models.PositiveSmallIntegerField(_('Level'))
     escalated_at = models.DateTimeField(_('Escalated at'))
+
+    objects = SealedManager()
 
     class Meta:
         db_table = 'alarm_escalations'
@@ -293,6 +305,8 @@ class Acknowledgement(models.Model):
     app = models.CharField(_('App'), max_length=100)
     notification = models.ForeignKey(Notification, null=True, blank=True, on_delete=models.PROTECT,
                                      related_name='acknowledgements', verbose_name=_('Notification answered'))
+
+    objects = SealedManager()
 
     class Meta:
         db_table = 'alarm_acknowledgements'

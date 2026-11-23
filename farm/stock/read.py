@@ -22,6 +22,7 @@ from typing import NamedTuple
 
 from django.db.models import F, IntegerField, Max, Min, Q, Sum, Value
 
+from core import sealing
 from farm.models import Batch, Site, StockMovement, Tank
 from farm.models.feeding import FeedTarget
 
@@ -44,10 +45,13 @@ def ledger(batch_ids, include_op=None):
     voided (the timeline before its void, farm/stock/services.py)."""
     live = Q(operation__is_deleted=False) | Q(operation_id=include_op) if include_op else Q(operation__is_deleted=False)
     opening = Value(None, output_field=IntegerField()) if not OPENING_BALANCES.get() else F('operation__opening_balance')
-    rows = list(StockMovement.objects.filter(live, batch_id__in=batch_ids).annotate(opening=opening).values_list(
-        'id', 'operation_id', 'operation__kind', 'operation__date', 'unit_id', 'batch_id', 'kind', 'count_delta',
-        'avg_weight_g', 'pair', 'measured_weight_kg', 'reason', 'batch__species__cleaner_fish_type',
-        'opening', 'batch__input_date'))
+    # Every line of the batches, as the system: a fold over part of a batch's lines is a wrong figure; what a person sees
+    # of it is narrowed where it is shown (the units they may see, core.sealing).
+    with sealing.system('the stock fold'):
+        rows = list(StockMovement.objects.filter(live, batch_id__in=batch_ids).annotate(opening=opening).values_list(
+            'id', 'operation_id', 'operation__kind', 'operation__date', 'unit_id', 'batch_id', 'kind', 'count_delta',
+            'avg_weight_g', 'pair', 'measured_weight_kg', 'reason', 'batch__species__cleaner_fish_type',
+            'opening', 'batch__input_date'))
     first = {}
     for row in rows:
         first[row[1]] = min(first.get(row[1], row[0]), row[0])

@@ -104,6 +104,8 @@ jobs:
         run: bash deploy/ci/stack.sh restore
       - name: Point-in-time restore into a third server
         run: bash deploy/ci/stack.sh pitr
+      - name: A database password rotated
+        run: bash deploy/ci/stack.sh rotate
       - name: Logs of the services
         if: failure()
         run: bash deploy/ci/stack.sh logs

@@ -28,14 +28,18 @@ Rotate on a schedule (yearly), when a person who could read a secret leaves, and
 ## A database role
 
 ```
-SECRETS_DIR=/etc/balik/<farm>/secrets sh scripts/rotate-db-password.sh balik_app
+sh scripts/rotate-db-password.sh balik_app        # SECRETS_DIR from the environment, else from farm.env
 ```
 
-It sets the new password in the database (as the superuser, inside the database container, the password on stdin),
-replaces the secret file (the old one is kept as `<name>.old` until you delete it) and recreates the services that
-sign in as the role. The database container itself still holds the old copies of the files it was started with (it
-reads them at its first start only); `scripts/check-roles.sh` reads them there, so recreate it in the next
-maintenance window: `dc up -d --no-deps --force-recreate db` (a database restart: a minute).
+It checks that the role's secret file exists and its folder is writable before anything changes, writes the new
+password beside it, gives the database only the password's SCRAM-SHA-256 verifier (made in the web image from the
+password on stdin: the plain password never reaches the database server, its logs or its activity view), replaces the
+secret file in one step (no copy of the old password is kept) and recreates the services that sign in as the role.
+If the database refuses, nothing else changes. The database container itself still holds the old copies of the files
+it was started with (it reads them at its first start only); `scripts/check-roles.sh` reads them there, so recreate
+it in the next maintenance window: `dc up -d --no-deps --force-recreate db` (a database restart: a minute). The go-live
+stack workflow rotates the app role's password this way and checks that the new one signs in, the old one is refused,
+no copy is left and the database's log never holds it.
 
 ## Django's secret key
 

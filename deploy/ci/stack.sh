@@ -247,6 +247,27 @@ pitr() {
   echo "readings: $total"
 }
 
+rotate() {
+  say "the app role's password rotated (scripts/rotate-db-password.sh): verifier only, no old copy, services recreated"
+  old=$(cat "$SECRETS_DIR/db_app_password")
+  COMPOSE="${DC[*]}" ENV_FILE="$ENV_FILE" sh deploy/scripts/rotate-db-password.sh balik_app
+  new=$(cat "$SECRETS_DIR/db_app_password")
+  [ "$old" != "$new" ] || { echo "FAIL: the secret file did not change"; exit 1; }
+  if ls -a "$SECRETS_DIR" | grep -E 'db_app_password\.(old|new)'; then echo "FAIL: a copy was left"; exit 1; fi
+  signin() { printf '%s\n' "$1" | "${DC[@]}" exec -T db sh -c \
+    'read -r p; PGPASSWORD=$p psql -X -h 127.0.0.1 -U balik_app -d "$POSTGRES_DB" -At -c "SELECT 1"' 2>&1; }
+  [ "$(signin "$new")" = 1 ] || { echo "FAIL: the new password does not sign in"; exit 1; }
+  if [ "$(signin "$old")" = 1 ]; then echo "FAIL: the old password still signs in"; exit 1; fi
+  echo "the new password signs in, the old one is refused"
+  if "${DC[@]}" logs db 2>&1 | grep -qF "$new"; then echo "FAIL: the new password is in the database's log"; exit 1; fi
+  for _ in $(seq 1 40); do
+    [ "$(health farm-ci-web-1)" = healthy ] && [ "$(health farm-ci-jobs-1)" = healthy ] && break
+    sleep 5
+  done
+  echo "web $(health farm-ci-web-1), jobs $(health farm-ci-jobs-1)"
+  [ "$(health farm-ci-web-1)" = healthy ] || { echo "FAIL: web is not healthy with the new password"; exit 1; }
+}
+
 logs() {
   "${DC[@]}" ps -a || true
   "${DC[@]}" logs --tail 60 || true

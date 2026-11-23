@@ -5478,6 +5478,9 @@ What one tab needed and the next ones will too lives in `core/`:
   that is not plain JSON, is refused, never guessed. Help text built with `format_html` travels as markup, any other as
   text. `core/tests_formpayload.py` builds every tab's form, new and sent empty, draws each field with the old field
   template and holds the payload to it: the same controls posted with the same values, the same label, help and errors.
+  A whole new page is held to its old one by `core/pagesays.py`: every run of text, link address and control name of the
+  old page's `<main>` must be carried by the new page's payload (`unsaid` names what is not), the two pages read side
+  by side in one test on one fixture.
 - `core/query.py`: the numbers and years a page reads from its address (`?page=`, `?before=`, `?year=`), one rule for
   every page (F-006, F-176, F-120): a number in ASCII digits within its bounds, a year of the calendar `core.dates`
   reads; anything else is taken as not given and the page shows its default, as for a stale link, never a server error.

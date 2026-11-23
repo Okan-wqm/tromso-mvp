@@ -76,10 +76,15 @@ it, then the checks of "Steps" 7 and 8 above and `sh scripts/heartbeat.sh`.
 
 **A new TimescaleDB:** the image carries the new extension files; each database moves with
 `dc exec db psql -U postgres -d balik -X -c 'ALTER EXTENSION timescaledb UPDATE'` as the first statement of a new
-session, after a backup, with web, jobs and ingest stopped. The development and test databases still run TimescaleDB
-2.17.2 (`docker-compose.yml`, `scripts/test.sh`): move them with the owner's go-ahead (the development database is
-shared), and until then run the whole suite on the production image once per release
-(`gh workflow run ci.yml -f pg_image=<deploy/db/Dockerfile's FROM image>`).
+session, after a backup, with web, jobs and ingest stopped. **Now: production stays on 2.17.2**, the version the
+development database, the whole suite and the stack run on (`timescale/timescaledb:2.17.2-pg17`, whose PostgreSQL is
+17.2: Timescale does not rebuild old releases on newer PostgreSQL minors). The current 2.32.1 was tried: the whole suite
+on it (`gh workflow run ci.yml -f pg_image=timescale/timescaledb:2.32.1-pg17@sha256:2f5e6969...`, run 45222001099)
+fails five `sensors.tests.test_timescale` tests: the policies' job names changed, and a conflicting insert into a
+compressed chunk no longer drops the rest of its statement (the ingest's one-row-per-statement rule for late readings,
+README, Sensors, Storage, rests on the old behaviour and must be re-checked). The move is a task of its own: adapt
+those, run the whole suite on the new image with `pg_image`, move the development database (with the owner's
+go-ahead: it is shared), then `deploy/db/Dockerfile`'s FROM line.
 
 **The reboot test** (at installation, then after every kernel update): `reboot`, then without touching anything:
 WireGuard up (`wg show`), every service healthy (`dc ps`), the broker listening on the VPN address

@@ -20,7 +20,6 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext, gettext_lazy as _
 
 from farm.models.water_point import PointKind
-from farm.water import parameters
 
 from . import catalogue
 
@@ -51,10 +50,21 @@ MESSAGES = {
     'no_oxygen': _('No widget shows the oxygen.'),
     'large': _('More than two widgets are large: the large ones no longer stand out.'),
     'many': _('More than %(count)d widgets: a card this full is hard to read from a distance.'),
+    # a FITTED template (one with a measure): what cannot stand on it, and what would not be read on it
+    'fit_look': _('Widget %(widget)s: %(label)s has no fitted look and would be cut on a fitted card. Remove it, or '
+                  'leave the card’s width and height empty.'),
+    'fit_rows': _('A fitted card’s widgets share its height in at most %(most)d rows; this layout takes %(rows)d.'),
+    'fit_low': _('Widget %(widget)s: at this measure its place is about %(has)s units high and %(label)s needs '
+                 '%(needs)s: give it more rows, or the card more height.'),
+    'fit_narrow': _('Widget %(widget)s: at this measure its place is about %(has)s units wide and %(label)s needs '
+                    '%(needs)s: give it more columns, or the card more width.'),
+    'needs_fit': _('Widget %(widget)s: %(label)s is made for a fitted card. Give the template a width and a height.'),
 }
 # The codes whose message names the widget.
 ABOUT_A_WIDGET = {'keys', 'duplicate', 'type', 'disabled', 'number', 'bounds', 'size', 'overlap', 'binding', 'unbound',
-                  'option'}
+                  'option', 'fit_look', 'fit_low', 'fit_narrow', 'needs_fit'}
+# The errors that are about the template's measure, not about the layout alone (the form puts them on the measure).
+FITTED_ERRORS = ('fit_look', 'fit_rows')
 _('“%(option)s” is not an option of this widget.'), _('“%(option)s” has no value.')
 _('the options must be a set of named values.')
 
@@ -104,9 +114,11 @@ def _is_int(value):
     return type(value) is int
 
 
-def validate(layout):
+def validate(layout, measure=None):
     """[Problem] of a layout, errors and warnings, in a stable order: the layout's, then each widget's in the widgets'
-    order (keys, id, type, numbers, bounds, size, binding, options), then each overlapping pair, then the warnings."""
+    order (keys, id, type, numbers, bounds, size, binding, options), then each overlapping pair, then what a FITTED
+    card refuses (`measure`: the template's (width, height) in card units, None for a card that flows), then the
+    warnings."""
     if not isinstance(layout, dict) or set(layout) != {'schema', 'widgets'} or not isinstance(layout['widgets'], list) \
             or not all(isinstance(each, dict) for each in layout['widgets']):
         return [_error('', 'shape')]
@@ -128,7 +140,55 @@ def validate(layout):
             placed.append((widget['id'], rect))
     problems += _overlaps(placed)
     if not any(problem.severity == ERROR for problem in problems):
-        problems += _warnings(widgets)
+        problems += _fitted_errors(widgets, measure)
+    if not any(problem.severity == ERROR for problem in problems):
+        problems += _warnings(widgets) + _look_warnings(widgets, measure)
+    return problems
+
+
+def _label(widget):
+    return str(catalogue.WIDGETS[widget['type']].label)
+
+
+def _fitted_errors(widgets, measure):
+    """What a fitted card refuses (review R7: a widget with no fitted look was cut on a wall without a word)."""
+    if not measure:
+        return []
+    problems = [_error(widget['id'], 'fit_look', label=_label(widget)) for widget in widgets
+                if catalogue.FIT not in catalogue.WIDGETS[widget['type']].looks]
+    rows = max((widget['y'] + widget['h'] for widget in widgets), default=0)
+    if rows > catalogue.FIT_ROWS:
+        problems.append(_error('', 'fit_rows', most=catalogue.FIT_ROWS, rows=rows))
+    return problems
+
+
+def fitted_place(widget, rows, measure):
+    """(width, height) of a widget's place on a fitted card of `measure`, in card units, about: the card's width less
+    its padding shared by the twelve columns, its height less the frame shared by the layout's rows."""
+    width, height = measure
+    return (widget['w'] / catalogue.COLUMNS * (width - catalogue.FIT_SIDES),
+            widget['h'] * (height - catalogue.FIT_FRAME) / max(rows, 1))
+
+
+def _look_warnings(widgets, measure):
+    """Advice about the look: on a fitted card, a place too low or too narrow for what the widget prints there; on a
+    card that flows, a widget made for a fitted one."""
+    def said(value):
+        return f'{value:.1f}'
+
+    problems = []
+    rows = max((widget['y'] + widget['h'] for widget in widgets), default=0)
+    for widget in widgets:
+        spec = catalogue.WIDGETS[widget['type']]
+        if not measure:
+            if catalogue.FLOW not in spec.looks:
+                problems.append(Problem(WARNING, widget['id'], 'needs_fit', (('label', _label(widget)),)))
+            continue
+        wide, high = fitted_place(widget, rows, measure)
+        for code, has, needs in (('fit_low', high, spec.fit_units[1]), ('fit_narrow', wide, spec.fit_units[0])):
+            if has < needs:
+                problems.append(Problem(WARNING, widget['id'], code, (
+                    ('label', _label(widget)), ('has', said(has)), ('needs', said(needs)))))
     return problems
 
 
@@ -160,7 +220,7 @@ def _widget(widget, seen):
 def geometry(name, spec, x, y, w, h):
     """The bounds and size problems of one placed widget (what frontend/grid mirrors)."""
     problems = []
-    if x < 0 or y < 0 or x + w > catalogue.COLUMNS:
+    if x < 0 or y < 0 or x + w > catalogue.COLUMNS or y + h > catalogue.ROWS:
         problems.append(_error(name, 'bounds'))
     if not (spec.min_w <= w <= spec.max_w and spec.min_h <= h <= spec.max_h):
         problems.append(_error(name, 'size', min_w=spec.min_w, min_h=spec.min_h, max_w=spec.max_w, max_h=spec.max_h))

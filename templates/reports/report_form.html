@@ -3,7 +3,7 @@
 {% comment %} A report's form (reports.forms.ReportForm): what it is for, fixed once started, the contact person, a notice's
    narrative; a lice report's treatment answers, resistance suspicions and sensitivity tests and a biomass report's
    units of reduced capacity are lists of their own (core.crud.RowList), saved separately while it is a draft.{% endcomment %}
-{% block extra_tabs %}{% if treatments %}<button type="button" role="tab" class="tab" data-tab="treatments">{% trans "Treatments" %}</button>{% endif %}{% if resistance %}<button type="button" role="tab" class="tab" data-tab="resistance">{% trans "Resistance suspicions" %}</button><button type="button" role="tab" class="tab" data-tab="sensitivity">{% trans "Sensitivity tests" %}</button>{% endif %}{% if units %}<button type="button" role="tab" class="tab" data-tab="units">{% trans "Units of reduced capacity" %}</button>{% endif %}{% endblock %}
+{% block extra_tabs %}{% if treatments %}<button type="button" role="tab" class="ui-tab" data-tab="treatments">{% trans "Treatments" %}</button>{% endif %}{% if resistance %}<button type="button" role="tab" class="ui-tab" data-tab="resistance">{% trans "Resistance suspicions" %}</button><button type="button" role="tab" class="ui-tab" data-tab="sensitivity">{% trans "Sensitivity tests" %}</button>{% endif %}{% if units %}<button type="button" role="tab" class="ui-tab" data-tab="units">{% trans "Units of reduced capacity" %}</button>{% endif %}{% endblock %}
 {% block extra_panels %}
 {% if treatments %}
 {% trans "Treatments" as panel_title %}

@@ -1,4 +1,4 @@
-{% load i18n tasks %}
+{% load i18n tasks dates %}
 {% comment %} The drawer of the task picked on Operations › Tasks (?task=): what, where, when and for whom, its
    checklist with a tick per line, its notes, and what the person may do with it. Every button is a form posted
    to the task's own address, which comes back here (next).{% endcomment %}
@@ -16,13 +16,13 @@
     <dl class="facts">
       <div><dt>{% trans "Location" %}</dt><dd>{{ place|place_label }}{% if place.is_deleted %} <span class="badge badge-voided">{% trans "Place deleted" %}</span>{% endif %}<span class="row-sub">{{ place|place_kind }} · {{ place|place_context }}</span></dd></div>
       {% if task.batch %}<div><dt>{% trans "Batch" %}</dt><dd>{{ task.batch.code }}{% if task.batch.is_deleted %} <span class="badge badge-voided">{% trans "Voided" %}</span>{% endif %}</dd></div>{% endif %}
-      <div><dt>{% trans "Due" %}</dt><dd>{{ task.due_date|date:"DATE_FORMAT" }}{% if task.due_time %} {{ task.due_time|time:"H:i" }}{% endif %}</dd></div>
+      <div><dt>{% trans "Due" %}</dt><dd>{{ task.due_date|date:"DATE_FORMAT" }}{% if task.due_time %} {{ task.due_time|time:"TIME_FORMAT" }}{% endif %}</dd></div>
       <div><dt>{% trans "Assignees" %}</dt><dd>{% with names=task.assignees.all|people %}{% if names %}{{ names }}{% else %}<span class="over-text">{% trans "Nobody" %}</span>{% endif %}{% endwith %}</dd></div>
       {% if task.series %}<div><dt>{% trans "Recurring task" %}</dt><dd>{{ task.series.title }}{% if task.series.is_deleted %} <span class="badge badge-voided">{% trans "Deleted" %}</span>{% endif %}<span class="row-sub">{% blocktrans trimmed with date=task.occurrence_date|date:"DATE_FORMAT" %}planned for {{ date }}{% endblocktrans %}</span></dd></div>{% endif %}
-      {% if task.started_at %}<div><dt>{% trans "Started" %}</dt><dd>{{ task.started_by|person }} · {{ task.started_at|date:"DATETIME_FORMAT" }}</dd></div>{% endif %}
-      {% if task.completed_at %}<div><dt>{% trans "Completed" %}</dt><dd>{{ task.completed_by|person }} · {{ task.completed_at|date:"DATETIME_FORMAT" }}{% if task.completion_note %}<span class="row-sub">{{ task.completion_note }}</span>{% endif %}</dd></div>{% endif %}
-      {% if task.cancelled_at %}<div><dt>{% trans "Cancelled" %}</dt><dd>{{ task.cancelled_by|person }} · {{ task.cancelled_at|date:"DATETIME_FORMAT" }}<span class="row-sub">{{ task.cancel_reason }}</span></dd></div>{% endif %}
-      <div><dt>{% trans "Created" %}</dt><dd>{% if task.created_by %}{{ task.created_by|person }}{% else %}{% trans "by its recurring task" %}{% endif %} · {{ task.created_at|date:"DATETIME_FORMAT" }}</dd></div>
+      {% if task.started_at %}<div><dt>{% trans "Started" %}</dt><dd>{{ task.started_by|person }} · {{ task.started_at|site_clock:task.place_site|date:"DATETIME_FORMAT" }}</dd></div>{% endif %}
+      {% if task.completed_at %}<div><dt>{% trans "Completed" %}</dt><dd>{{ task.completed_by|person }} · {{ task.completed_at|site_clock:task.place_site|date:"DATETIME_FORMAT" }}{% if task.completion_note %}<span class="row-sub">{{ task.completion_note }}</span>{% endif %}</dd></div>{% endif %}
+      {% if task.cancelled_at %}<div><dt>{% trans "Cancelled" %}</dt><dd>{{ task.cancelled_by|person }} · {{ task.cancelled_at|site_clock:task.place_site|date:"DATETIME_FORMAT" }}<span class="row-sub">{{ task.cancel_reason }}</span></dd></div>{% endif %}
+      <div><dt>{% trans "Created" %}</dt><dd>{% if task.created_by %}{{ task.created_by|person }}{% else %}{% trans "by its recurring task" %}{% endif %} · {{ task.created_at|site_clock:task.place_site|date:"DATETIME_FORMAT" }}</dd></div>
     </dl>
     {% if task.description %}<p class="task-description">{{ task.description|linebreaksbr }}</p>{% endif %}
 
@@ -48,7 +48,7 @@
           {% else %}
           <span aria-hidden="true">{% if line.done_at %}☑{% else %}☐{% endif %}</span> {{ line.text }}
           {% endif %}
-          {% if line.done_at %}<span class="row-sub">{{ line.done_by|person }} · {{ line.done_at|date:"DATETIME_FORMAT" }}</span>{% endif %}
+          {% if line.done_at %}<span class="row-sub">{{ line.done_by|person }} · {{ line.done_at|site_clock:task.place_site|date:"DATETIME_FORMAT" }}</span>{% endif %}
         </li>
         {% endfor %}
       </ul>
@@ -62,7 +62,7 @@
       {% if drawer_notes %}
       <ul class="op-history">
         {% for note in drawer_notes %}
-        <li class="op-entry"><p class="op-head"><strong>{{ note.author|person }}</strong> <time datetime="{{ note.created_at|date:'c' }}">{{ note.created_at|date:"DATETIME_FORMAT" }}</time></p><p class="task-note">{{ note.body|linebreaksbr }}</p></li>
+        <li class="op-entry"><p class="op-head"><strong>{{ note.author|person }}</strong> <time datetime="{{ note.created_at|date:'c' }}">{{ note.created_at|site_clock:task.place_site|date:"DATETIME_FORMAT" }}</time>{% if note.kind == "completion_note" %} <span class="muted">{% trans "Completion note, kept when the task was reopened" %}</span>{% elif note.kind == "cancel_reason" %} <span class="muted">{% trans "Reason for cancelling, kept when the task was reopened" %}</span>{% endif %}</p><p class="task-note">{{ note.body|linebreaksbr }}</p></li>
         {% endfor %}
       </ul>
       {% else %}

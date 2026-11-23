@@ -8,6 +8,8 @@ makemessages and compilemessages do, so a Windows machine without gettext can bu
 
 The source language (settings.LANGUAGE_CODE) has no catalog: its msgids are the text itself."""
 import io
+import os
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -128,5 +130,23 @@ def update(language):
 
 
 def compile(language):
-    with mo_path(language).open('wb') as file:
-        write_mo(file, load(language))
+    """Writes the language's .mo file. Other processes may be loading it meanwhile (the parallel test workers each
+    build the catalogs, a running server reads them), so a reader must never meet a half-written file: the new file is
+    written beside the old one and takes its place in one step, and a file that would not change is left as it is
+    (only its time is brought up to the .po file's, for `is_built`)."""
+    path = mo_path(language)
+    file = io.BytesIO()
+    write_mo(file, load(language))
+    content = file.getvalue()
+    if path.exists() and path.read_bytes() == content:
+        if not is_built(language):
+            os.utime(path)
+        return
+    handle, temporary = tempfile.mkstemp(dir=path.parent, prefix=f'.{path.name}.', suffix='.tmp')
+    try:
+        with os.fdopen(handle, 'wb') as written:
+            written.write(content)
+        os.replace(temporary, path)
+    except BaseException:
+        Path(temporary).unlink(missing_ok=True)
+        raise

@@ -13,10 +13,14 @@ from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy, ngettext_lazy
 
 from core.crud import DRAFT, CodedFormMixin, RowFormSet, TabbedForm, tab_fields
-from farm.models import Equipment, SamplingPoint, Site, System
+from core.dates import on_clock
+from farm.models import Equipment, SamplingPoint, Site, System, Tank
 from farm.models.site import zone_of
+from farm.models.water import NBS
+from farm.water.parameters import PH
+from core.widgets import MomentInput
 
-from . import quantities
+from . import bindings, quantities
 from .models import (AlarmRule, Binding, Calibration, Channel, Connection, Credential, Device, PayloadFormat, Shape,
                      TimeUnit)
 
@@ -84,7 +88,8 @@ DEVICE_TABS = [
 
 class DeviceForm(CodedFormMixin, TabbedForm):
     """A device: where it publishes, how, and how often. Its connection is chosen once (its channels' numbers and
-    readings stay with it)."""
+    readings stay with it). Its site is where it is: while it is placed, the site of its place, which a move
+    changes (sensors/bindings.py `move_device`), never this form."""
 
     tabs = DEVICE_TABS
     fixed_after_creation = ('connection',)
@@ -112,6 +117,10 @@ class DeviceForm(CodedFormMixin, TabbedForm):
         self.fields['credential'].queryset = Credential.objects.order_by('username')
         self.fields['payload_format'].queryset = PayloadFormat.objects.order_by('name')
         self.fields['connection'].queryset = Connection.objects.order_by('name')
+        if self.instance.pk and bindings.holds_site(self.instance):
+            self.fields['site'].disabled = True
+            self.fields['site'].help_text = _('Where the device is placed now: a move to another site changes it (Move '
+                                              'device).')
 
     def clean(self):
         cleaned = super().clean()
@@ -132,9 +141,10 @@ class DeviceForm(CodedFormMixin, TabbedForm):
 
 CHANNEL_TABS = [
     ('source', gettext_lazy('Source'), ['device', 'code', 'name', 'value_path', 'item_name', 'note']),
-    ('quantity', gettext_lazy('Quantity and unit'), ['quantity', 'unit', 'unit_factor', 'unit_offset']),
+    ('quantity', gettext_lazy('Quantity and unit'), ['quantity', 'ph_scale', 'unit', 'unit_factor', 'unit_offset']),
     ('address', gettext_lazy('Address'), ['address_protocol', 'address']),
-    ('reduction', gettext_lazy('Storing'), ['reduction', 'deadband', 'heartbeat_s', 'range_min', 'range_max', 'state']),
+    ('reduction', gettext_lazy('Storing'), ['reduction', 'deadband', 'heartbeat_s', 'fresh_heartbeats', 'range_min',
+                                            'range_max', 'state']),
 ]
 # The fields a new channel takes from its quantity when they are left empty.
 DEFAULTED = ('unit', 'reduction', 'deadband', 'heartbeat_s', 'range_min', 'range_max')
@@ -171,6 +181,8 @@ class ChannelForm(CodedFormMixin, TabbedForm):
         field_classes = {'address': AddressField}
         localized_fields = ['unit_factor', 'unit_offset', 'deadband', 'range_min', 'range_max']
         help_texts = {
+            'quantity': quantities.PH_SCALE_NOTE,
+            'ph_scale': quantities.PH_SCALE_HELP,
             'value_path': gettext_lazy('One object per message: a JSON pointer to this channel’s value, e.g. '
                                        '/tags/o2/value.'),
             'item_name': gettext_lazy('A list of items: the name the item of this channel has, e.g. do.'),
@@ -181,11 +193,13 @@ class ChannelForm(CodedFormMixin, TabbedForm):
             'deadband': gettext_lazy('A value is stored again when it moves this much from the last stored one, in the '
                                      'quantity’s unit. Empty: the quantity’s default.'),
             'heartbeat_s': gettext_lazy('A value is stored at least this often even when it does not move. Fresh for '
-                                        'three heartbeats. Empty: the quantity’s default.'),
+                                        'the heartbeats below. Empty: the quantity’s default.'),
             'range_min': gettext_lazy('A value outside the range is stored, marked, and used nowhere. Empty on a new '
                                       'channel: what the quantity can be.'),
             'state': gettext_lazy('In maintenance its values are stored, marked, and used nowhere; retired, they are '
                                   'not listened to.'),
+            'fresh_heartbeats': gettext_lazy('How many heartbeats a value stays fresh without a new one; then the place '
+                                             'shows no recent data. 1 to 20. Empty: as it is (3 for a new channel).'),
         }
         widgets = {
             'note': forms.Textarea(attrs={'rows': 2}),
@@ -201,6 +215,22 @@ class ChannelForm(CodedFormMixin, TabbedForm):
         for name in DEFAULTED:
             if adding:
                 self.fields[name].required = False
+        # Empty: as it is (a new channel: the platform's default, 3), so a form or a client that does not send it
+        # changes nothing (cross review F10 made it the channel's own).
+        self.fields['fresh_heartbeats'].required = False
+        # A pH scale is a pH channel's alone (chk_sensors_channel_ph_scale): asked while the quantity is pH or not chosen.
+        chosen = self.instance.quantity or (self.data.get(self.add_prefix('quantity')) if self.is_bound else None) \
+            or (self.draft or {}).get('quantity')
+        if chosen and chosen != PH:
+            del self.fields['ph_scale']
+        else:
+            # Empty: as it is (a new channel: NBS), so a form or a client that does not send it changes nothing.
+            self.fields['ph_scale'].required = False
+        if 'ph_scale' in self.fields and not adding and self.instance.ph_scale_from is not None:
+            self.tab_help['quantity'] = _('The pH scale was changed on %(time)s: what the probe measured before is used '
+                                          'nowhere (its scale is not known).') % {
+                'time': timezone.localtime(self.instance.ph_scale_from, zone_of(self.instance.device.site))
+                .strftime('%d.%m.%Y %H:%M')}
         if adding and self.draft is not None and self.draft.get(DRAFT) == 'quantity' \
                 and self.draft.get('quantity') in quantities.BY_CODE:
             for name, value in quantities.defaults(self.draft['quantity']).items():
@@ -213,6 +243,16 @@ class ChannelForm(CodedFormMixin, TabbedForm):
                 and self.draft is not None and self.draft.get(DRAFT) == 'quantity':
             return self.initial[field_name]
         return super().get_initial_for_field(field, field_name)
+
+    def clean_fresh_heartbeats(self):
+        found = self.cleaned_data.get('fresh_heartbeats')
+        if found is None:
+            return self.instance.fresh_heartbeats if self.instance.fresh_heartbeats is not None else                 Channel._meta.get_field('fresh_heartbeats').default
+        return found
+
+    def clean_ph_scale(self):
+        """Empty: the channel's scale as it is (NBS for a new one)."""
+        return self.cleaned_data.get('ph_scale') or self.instance.ph_scale or NBS
 
     def clean(self):
         cleaned = super().clean()
@@ -274,7 +314,7 @@ class SiteClockDateTimeField(forms.DateTimeField):
     """A moment typed on the clock of the channel's site (farm.models.site.zone_of), never the browser's. A time a
     change of clocks skips or repeats is refused, so a calibration never starts an hour off."""
 
-    widget = forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M')
+    widget = MomentInput()
 
     def __init__(self, *args, zone=None, **kwargs):
         self.zone = zone
@@ -292,15 +332,9 @@ class SiteClockDateTimeField(forms.DateTimeField):
         return on_site_clock(timezone.make_naive(moment, timezone.get_current_timezone()), self.zone)
 
 
-def on_site_clock(wall, zone):
-    """The moment a wall-clock time (naive) is on a site's clock; refused when the clocks skip it or show it twice."""
-    first, second = wall.replace(fold=0, tzinfo=zone), wall.replace(fold=1, tzinfo=zone)
-    if first.utcoffset() != second.utcoffset():
-        raise ValidationError(_('This time happens twice on the site’s clock (the clocks go back): choose another.'))
-    if timezone.make_naive(first.astimezone(zone), zone) != wall:
-        raise ValidationError(_('This time does not exist on the site’s clock (the clocks go forward): choose '
-                                'another.'))
-    return first
+# The moment a wall-clock time (naive) is on a site's clock, refused when the clocks skip it or show it twice: the one
+# check, core.dates.on_clock, under the name the sensors' forms and views use.
+on_site_clock = on_clock
 
 
 class CalibrationForm(forms.ModelForm):
@@ -364,14 +398,27 @@ class CredentialForm(TabbedForm):
 
 
 BIND_TABS = [('general', gettext_lazy('Binding'), ['channel', 'target', 'role', 'valid_from', 'note'])]
-TARGET_KINDS = {'point': SamplingPoint, 'system': System, 'equipment': Equipment}
+# The places a dialog or a chart names as "kind:pk": a unit (tank, pond, cage), a sampling point, a system, a piece of
+# equipment. A channel is bound to the last three; a unit stands for its middle point (sensors/bindings.py `landing`).
+PLACE_KINDS = {'unit': Tank, 'point': SamplingPoint, 'system': System, 'equipment': Equipment}
 
 
-def target_choices():
-    """The places a channel can be bound to, grouped: live active sampling points (the owner's code and the point's
-    name), systems and pieces of equipment. A value is "kind:pk"."""
-    points = SamplingPoint.objects.filter(is_active=True).with_owners().order_by('name')
+def place_of(value):
+    """The unit, sampling point, system or piece of equipment a "kind:pk" names; None for anything else."""
+    kind, _sep, pk = (value or '').partition(':')
+    model = PLACE_KINDS.get(kind)
+    try:
+        return model.objects.filter(pk=pk).first() if model is not None and pk else None
+    except (ValueError, ValidationError):
+        return None
+
+
+def place_choices(units=True):
+    """The places, grouped: units (when asked), live active sampling points (the owner's code and the point's name),
+    systems and pieces of equipment. A value is "kind:pk"."""
+    points = SamplingPoint.objects.filter(is_active=True).with_owners()
     return [
+        *([(_('Units'), [(f'unit:{unit.pk}', str(unit)) for unit in Tank.objects.order_by('code')])] if units else []),
         (_('Sampling points'), sorted(((f'point:{point.pk}', str(point)) for point in points), key=lambda item: item[1])),
         (_('Systems'), [(f'system:{system.pk}', str(system)) for system in System.objects.order_by('code')]),
         (_('Equipment'), [(f'equipment:{item.pk}', str(item)) for item in Equipment.objects.order_by('code')]),
@@ -381,12 +428,12 @@ def target_choices():
 class BindForm(TabbedForm):
     """The Move dialog: bind a channel from a moment to a sampling point, a system or a piece of equipment (one choice,
     `target`, that fills the column of its kind). The channel's open binding ends at that moment (sensors/bindings.py).
-    The moment is typed on the clock of the channel's site."""
+    The moment is typed on the clock of the place's site (sensors/bindings.py `clock`)."""
 
     tabs = BIND_TABS
     target = forms.ChoiceField(label=gettext_lazy('Bound to'))
     valid_from = forms.DateTimeField(label=gettext_lazy('From'),
-                                     widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'))
+                                     widget=MomentInput())
 
     class Meta:
         model = Binding
@@ -398,40 +445,31 @@ class BindForm(TabbedForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['channel'].queryset = Channel.objects.select_related('device__site').order_by('device__code', 'code')
-        self.fields['target'].choices = [('', '---------'), *target_choices()]
+        self.fields['target'].choices = [('', '---------'), *place_choices(units=False)]
         self.fields['target'].help_text = _('A water value goes to a sampling point or a system; a process value '
                                             '(flow, level, power…) to a piece of equipment or a system.')
-        self.fields['valid_from'].help_text = _('On the clock of the channel’s site. Its binding until now ends then.')
+        self.fields['valid_from'].help_text = _('On the clock of the place’s site. Its binding until now ends then.')
 
     def clean(self):
         cleaned = super().clean()
         channel, chosen = cleaned.get('channel'), cleaned.get('target', '')
-        kind, _sep, pk = chosen.partition(':')
-        model = TARGET_KINDS.get(kind)
-        target = model.objects.filter(pk=pk).first() if model is not None and pk else None
+        target = place_of(chosen)
         if chosen and target is None:
             self.add_error('target', _('Choose a place from the list.'))
         if channel is None or target is None:
             return cleaned
-        if channel.is_water and kind == 'equipment':
-            self.add_error('target', _('A water value is bound to a sampling point or a system.'))
-        if not channel.is_water and kind == 'point':
-            self.add_error('target', _('A process value is bound to a piece of equipment or a system.'))
         if cleaned.get('valid_from') is not None:
             wall = timezone.make_naive(cleaned['valid_from'], timezone.get_current_timezone())
             try:
-                cleaned['valid_from'] = on_site_clock(wall, zone_of(channel.device.site))
+                cleaned['valid_from'] = on_site_clock(wall, bindings.clock(channel.device, target))
             except ValidationError as error:
                 self.add_error('valid_from', error)
                 return cleaned
-            role = cleaned.get('role')
-            clash = Binding.objects.filter(**{kind: target}, role=role, channel__quantity=channel.quantity) \
-                .exclude(channel=channel).at(cleaned['valid_from']).select_related('channel').first()
-            if clash is not None:
-                self.add_error('role', _('%(target)s already has a %(role)s %(quantity)s channel then: %(channel)s.') % {
-                    'target': target, 'role': clash.get_role_display().lower(), 'quantity': channel.quantity_info.label,
-                    'channel': clash.channel})
-        cleaned['target_kind'], cleaned['target_object'] = kind, target
+        # The rules of a move (sensors/bindings.py), said on the form before it is sent; the move checks them again.
+        for field, message in bindings.refusals(channel, target, cleaned.get('role'),
+                                                cleaned.get('valid_from') or timezone.now()):
+            self.add_error(field, message)
+        cleaned['target_kind'], cleaned['target_object'] = bindings.kind_of(target), target
         return cleaned
 
     def _check_conditional_constraints(self, cleaned):
@@ -456,7 +494,7 @@ class BindingForm(TabbedForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        zone = zone_of(self.instance.channel.device.site) if self.instance.channel_id else None
+        zone = bindings.clock(self.instance.channel.device, self.instance.target) if self.instance.channel_id else None
         self.fields['valid_to'] = SiteClockDateTimeField(label=self.fields['valid_to'].label, required=False, zone=zone,
                                                          help_text=self.fields['valid_to'].help_text)
 
@@ -467,12 +505,70 @@ class BindingForm(TabbedForm):
         return value
 
 
+OUT = 'out'
+
+
+class DeviceMoveForm(forms.Form):
+    """The Move device dialog: a whole device (a portable probe) to a unit, a sampling point, a system or a piece of
+    equipment, or out of the water, from a moment typed on the clock of the place's site (sensors/bindings.py
+    `move_device`, `clock`). Choosing the device, the place or the role renders the dialog again with where each channel
+    will land (`refresh_on`, saving nothing)."""
+
+    refresh_on = ('device', 'target', 'role')
+    device = forms.ModelChoiceField(label=gettext_lazy('Device'), queryset=Device.objects.none())
+    target = forms.ChoiceField(label=gettext_lazy('Move to'))
+    role = forms.ChoiceField(label=gettext_lazy('Role'), choices=Binding.Role.choices, initial=Binding.Role.PRIMARY)
+    valid_from = forms.DateTimeField(label=gettext_lazy('From'), widget=MomentInput())
+    note = forms.CharField(label=gettext_lazy('Note'), max_length=300, required=False,
+                           help_text=gettext_lazy('e.g. moved to the new tank after the grading'))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['device'].queryset = Device.objects.select_related('site').order_by('code')
+        self.fields['target'].choices = [('', '---------'), (OUT, _('Out of the water (not placed)')),
+                                         *place_choices()]
+        self.fields['target'].help_text = _('A unit takes the water values at its middle point; a system takes them '
+                                            'as its own water. A process value goes to a system or a piece of '
+                                            'equipment.')
+        self.fields['valid_from'].help_text = _('On the clock of the place’s site. Every channel’s binding until now '
+                                                'ends then.')
+        for name in self.refresh_on:
+            self.fields[name].widget.attrs['data-refresh'] = DRAFT
+
+    def chosen(self):
+        """(device, place, out) as far as the data names them: for the landing shown before the move."""
+        data = self.data if self.is_bound else self.initial
+        device_id, value = str(data.get('device') or ''), data.get('target') or ''
+        device = None
+        try:
+            device = Device.objects.select_related('site').filter(pk=device_id).first() if device_id else None
+        except (ValueError, ValidationError):
+            pass
+        return device, (None if value == OUT else place_of(value)), value == OUT
+
+    def clean(self):
+        cleaned = super().clean()
+        device, chosen = cleaned.get('device'), cleaned.get('target', '')
+        place = None if chosen == OUT else place_of(chosen)
+        if chosen and chosen != OUT and place is None:
+            self.add_error('target', _('Choose a place from the list.'))
+            return cleaned
+        cleaned['place'] = place
+        if device is not None and cleaned.get('valid_from') is not None:
+            wall = timezone.make_naive(cleaned['valid_from'], timezone.get_current_timezone())
+            try:
+                cleaned['valid_from'] = on_site_clock(wall, bindings.clock(device, place))
+            except ValidationError as error:
+                self.add_error('valid_from', error)
+        return cleaned
+
+
 ALARM_TABS = [('general', gettext_lazy('Alarm rule'), ['channel', 'quantity', 'kind', 'threshold', 'for_s', 'hysteresis',
                                                         'severity', 'is_active'])]
 
 
 class AlarmRuleForm(TabbedForm):
-    """An alarm rule: on one channel or on every channel of a quantity. Shown on the Sensors pages, never sent."""
+    """An alarm rule: on one channel or on every channel of a quantity. Its events are alarms (Company › Alarms)."""
 
     tabs = ALARM_TABS
 
@@ -483,7 +579,10 @@ class AlarmRuleForm(TabbedForm):
         widgets = {'threshold': forms.TextInput(attrs=DECIMAL), 'hysteresis': forms.TextInput(attrs=DECIMAL)}
         help_texts = {
             'quantity': gettext_lazy('Instead of one channel: every active channel of this quantity.'),
-            'threshold': gettext_lazy('In the quantity’s unit; for a rate, the change over the time below.'),
+            'threshold': gettext_lazy('In the quantity’s unit; for a rate, the change over the time below. A water value, '
+                                      'a pH among them, takes no above or below here: the water limits judge its level '
+                                      '(a pH on the NBS scale). A rate of pH is about the same on every scale, and does '
+                                      'not compare a value with one from before the channel’s pH scale was changed.'),
             'for_s': gettext_lazy('Above or below: every value of this time must be past the threshold. No fresh value: '
                                   'this long past the channel’s freshness. A rate: the change over this time.'),
             'hysteresis': gettext_lazy('An open alarm closes only once the value is back past the threshold by this much.'),

@@ -21,6 +21,7 @@ from ..models import Species
 from ..models.species import SCIENTIFIC_NAME, normalise_scientific_name
 from ..resources import SpeciesResource
 from .helpers import role
+from farm import withdrawal_gate
 
 SPECIES_MANAGER = ('view_species', 'add_species', 'change_species', 'delete_species', 'view_auditlog')
 WATERS = Species.WATER_FIELDS
@@ -65,6 +66,7 @@ class SpeciesTestCase(TestCase):
 
 
 class SpeciesRoundTripTests(SpeciesTestCase):
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_create_read_edit_delete(self):
         # Create: every field typed (a species the catalogue does not know, so nothing is filled in)
         self.create(common_name=' Nile tilapia ', local_name='Tilapia', scientific_name='  oreochromis  NILOTICUS ',
@@ -111,6 +113,7 @@ class SpeciesRoundTripTests(SpeciesTestCase):
         self.assertEqual(stored(Species.all_objects.get(), 'is_deleted', 'deleted_by'), (True, self.user))
         self.assertEqual(list(self.client.get(reverse('farm:species_list')).context['objects']), [])
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_every_optional_field_can_be_cleared_when_editing(self):
         # A species of the catalogue: an edit that keeps its name fills nothing back in.
         salmon = self.make('Atlantic salmon', 'Salmo salar', 'SAL', local_name='Laks', description='Grow-out',
@@ -237,6 +240,7 @@ class SpeciesValidationTests(SpeciesTestCase):
                 Species.objects.filter(pk=species.pk).update(official_code=code)
         Species.objects.filter(pk=species.pk).update(official_code='')
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_assumed_withdrawal_temperature_is_between_0_and_40_or_empty(self):
         for value in ('41', '-1', '40.1', 'abc', '8.55'):
             with self.subTest(value=value):
@@ -252,6 +256,7 @@ class SpeciesValidationTests(SpeciesTestCase):
         self.create(withdrawal_temperature_c='8,5')            # typed the way the language writes it
         self.assertEqual(Species.objects.get().withdrawal_temperature_c, Decimal('8.5'))
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_assumed_withdrawal_temperature_is_a_database_check(self):
         species = self.make()
         for value in (Decimal('41'), Decimal('-1'), Decimal('40.1')):
@@ -264,6 +269,7 @@ class SpeciesValidationTests(SpeciesTestCase):
             Species(common_name='Blue tilapia', scientific_name='Oreochromis aureus', code='TLA', freshwater=True,
                     withdrawal_temperature_c=Decimal('41')).full_clean()
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_assumed_withdrawal_temperature_is_in_turkish_and_norwegian(self):
         self.addCleanup(translation.activate, 'en')
         species = self.make(withdrawal_temperature_c=Decimal('8.5'))
@@ -534,7 +540,7 @@ class SpeciesAuditTests(SpeciesTestCase):
         self.create(local_name='Tilapia', official_code='TLN')
         species = Species.objects.get()
         self.edit(species, local_name='Tilapia', official_code='TLN', status='discontinued', brackish=True,
-                  cleaner_fish_type='wrasse')
+                  cleaner_fish_type='wrasse', max_weight_ratio='2')
         self.client.post(reverse('farm:species_delete', args=[species.pk]))
         created, edited, deleted = AuditLog.objects.order_by('created_at')
         self.assertEqual((created.action, created.entity_type, created.entity_label),
@@ -545,6 +551,7 @@ class SpeciesAuditTests(SpeciesTestCase):
             'Category': [None, message('Fish')], 'Fresh water': [None, message('Yes')],
             'Brackish water': [None, message('No')], 'Sea water': [None, message('No')],
             'Official code': [None, 'TLN'], 'Status': [None, message('Active')],
+            'Max weight ratio of batches in one unit': [None, '2.00'],      # the box left empty: the default of its kind
         })
         self.assertEqual(edited.changes, {
             'Brackish water': [message('No'), message('Yes')],

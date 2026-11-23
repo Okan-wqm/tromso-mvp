@@ -1,0 +1,14 @@
+[build-system]
+requires = ["maturin==1.16.0"]
+build-backend = "maturin"
+
+[project]
+name = "chemcore"
+requires-python = ">=3.12"
+dynamic = ["version"]
+description = "The water chemistry core of the fish farm (server only)"
+
+[tool.maturin]
+module-name = "chemcore"
+profile = "release"
+locked = true

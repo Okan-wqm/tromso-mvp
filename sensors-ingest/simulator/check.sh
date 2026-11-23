@@ -11,7 +11,7 @@ NODERED=nodered/node-red:4.0.9@sha256:0b295b3a14c512548567ca99db631bc37b23bfc79f
 RUN=simcheck-$(head -c 6 /dev/urandom | od -An -tx1 | tr -d " \n")
 NET=$RUN-net
 cleanup() {
-  docker rm -f $RUN-broker $RUN-sim >/dev/null 2>&1 || true
+  docker rm -f -v $RUN-broker $RUN-sim >/dev/null 2>&1 || true
   docker volume rm $RUN-auth >/dev/null 2>&1 || true
   docker network rm "$NET" >/dev/null 2>&1 || true
 }

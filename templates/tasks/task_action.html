@@ -9,7 +9,7 @@
 {% block content %}
 <div class="confirm">
   <p class="confirm-question">{{ question }}</p>
-  <p class="muted">{{ task.place|place_label }} · {{ task.due_date|date:"DATE_FORMAT" }}{% if task.due_time %} {{ task.due_time|time:"H:i" }}{% endif %}</p>
+  <p class="muted">{{ task.place|place_label }} · {{ task.due_date|date:"DATE_FORMAT" }}{% if task.due_time %} {{ task.due_time|time:"TIME_FORMAT" }}{% endif %}</p>
   <form method="post" action="{{ request.get_full_path }}" novalidate>
     {% csrf_token %}
     {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}

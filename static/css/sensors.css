@@ -2,15 +2,15 @@
    without a value a hatched rectangle (never bridged), a sample a dot, a move or a calibration a dashed mark. */
 .sensor-chart-figure { margin: 0 0 1rem; }
 .sensor-chart { width: 100%; height: auto; max-width: 960px; display: block; }
-.sensor-chart .chart-head { font-size: 13px; fill: var(--ink, #1f2937); font-weight: 600; }
-.sensor-chart .chart-band { fill: var(--sage, #9bb7a0); fill-opacity: .25; stroke: none; }
-.sensor-chart .chart-line { fill: none; stroke: #2563EB; stroke-width: 1.6; }
-.sensor-chart .chart-gap { fill: var(--stripe, #e5e7eb); fill-opacity: .7; }
-.sensor-chart .chart-sample { fill: var(--olive, #6b7f3a); stroke: var(--white, #fff); stroke-width: 1; }
-.sensor-chart .chart-other-source { fill: #F59E0B; }
-.sensor-chart .chart-marker { stroke: var(--muted, #6b7280); stroke-dasharray: 4 3; }
-.sensor-chart .chart-tick { font-size: 11px; fill: var(--muted, #6b7280); }
-.sensor-chart .chart-frame { fill: none; stroke: var(--line, #d1d5db); }
-.sensor-chart .chart-empty { font-size: 13px; fill: var(--muted, #6b7280); }
+.sensor-chart .chart-head { font-size: var(--fs-small); fill: var(--text-1); font-weight: 600; }
+.sensor-chart .chart-band { fill: var(--chart-s1); fill-opacity: .25; stroke: none; }
+.sensor-chart .chart-line { fill: none; stroke: var(--chart-s1); stroke-width: 1.6; }
+.sensor-chart .chart-gap { fill: var(--line-hair); fill-opacity: .7; }
+.sensor-chart .chart-sample { fill: var(--chart-s2); stroke: var(--surface-sheet); stroke-width: 1; }
+.sensor-chart .chart-other-source { fill: var(--chart-s3); }
+.sensor-chart .chart-marker { stroke: var(--chart-iso); stroke-dasharray: 4 3; }
+.sensor-chart .chart-tick { font-size: 11px; fill: var(--text-3); }
+.sensor-chart .chart-frame { fill: none; stroke: var(--line-hair); }
+.sensor-chart .chart-empty { font-size: var(--fs-small); fill: var(--text-3); }
 .sensor-chart-form .form-grid { align-items: end; }
-.sensor-target-charts .view-tabs { margin-bottom: .5rem; }
+.sensor-target-charts .ui-tabs { margin-bottom: .5rem; }

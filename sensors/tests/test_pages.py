@@ -7,7 +7,6 @@ or logged; the menu panel, the role matrix and the rights of each area."""
 import base64
 import hashlib
 import hmac
-from datetime import datetime, timezone as tz
 
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -101,9 +100,9 @@ class ConnectionPageTests(PagesCase):
         self.client.post(url('connection', 'delete', connection.pk))
         for record in (connection, device, channel):
             self.assertTrue(type(record).all_objects.get(pk=record.pk).is_deleted)
+        restore(type(connection).all_objects.get(pk=connection.pk), self.keeper)   # with what its delete took along
         for record in (connection, device, channel):
-            restore(type(record).all_objects.get(pk=record.pk), self.keeper)
-        self.assertTrue(Channel.objects.filter(pk=channel.pk).exists())
+            self.assertFalse(type(record).all_objects.get(pk=record.pk).is_deleted)
 
     def test_the_rules_reach_the_person_as_messages(self):
         base = {'name': 'X', 'host': 'h', 'port': '8883', 'client_id': 'c-x', 'keepalive_s': '60'}

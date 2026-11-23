@@ -13,37 +13,49 @@ Definitions (stock-db §4), for a unit u today:
 FCR, the last feeding and the feed rate are read from the feeding records with the same ledger
 (farm/feeding/read.py)."""
 from bisect import bisect_right
+from contextvars import ContextVar
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import timedelta
 from decimal import Decimal
 from typing import NamedTuple
 
-from django.db.models import Sum
+from django.db.models import F, IntegerField, Max, Min, Q, Sum, Value
 
 from farm.models import Batch, Site, StockMovement, Tank
 from farm.models.feeding import FeedTarget
 
+from .dates import local_today
 from .fold import Line, Op, Share, fold
+from .sizes import Lots, size_mixes
 
 HUNDRED = Decimal(100)
 DAY = timedelta(days=1)
 
 
-def ledger(batch_ids):
+# Whether the database holds the opening balances (farm 0036). Only a dry run on a database not migrated yet
+# (fix_seed_size_mix) says no: then there can be none, and the ledger reads the lines without them.
+OPENING_BALANCES = ContextVar('opening_balances', default=True)
+
+
+def ledger(batch_ids, include_op=None):
     """The live lines of these batches, as the fold reads them. Every operation belongs to one batch,
-    so the lines of an operation all come with its batch."""
-    rows = list(StockMovement.objects.filter(batch_id__in=batch_ids, operation__is_deleted=False).values_list(
+    so the lines of an operation all come with its batch. `include_op`: an operation whose lines count although it is
+    voided (the timeline before its void, farm/stock/services.py)."""
+    live = Q(operation__is_deleted=False) | Q(operation_id=include_op) if include_op else Q(operation__is_deleted=False)
+    opening = Value(None, output_field=IntegerField()) if not OPENING_BALANCES.get() else F('operation__opening_balance')
+    rows = list(StockMovement.objects.filter(live, batch_id__in=batch_ids).annotate(opening=opening).values_list(
         'id', 'operation_id', 'operation__kind', 'operation__date', 'unit_id', 'batch_id', 'kind', 'count_delta',
-        'avg_weight_g', 'pair', 'measured_weight_kg', 'reason', 'batch__species__cleaner_fish_type'))
+        'avg_weight_g', 'pair', 'measured_weight_kg', 'reason', 'batch__species__cleaner_fish_type',
+        'opening', 'batch__input_date'))
     first = {}
     for row in rows:
         first[row[1]] = min(first.get(row[1], row[0]), row[0])
     ops = {}
     lines = []
-    for line_id, op_id, op_kind, op_date, unit_id, batch_id, kind, delta, weight, pair, measured, reason, cleaner \
-            in rows:
-        op = ops.setdefault(op_id, Op(op_id, op_kind, op_date, first[op_id]))
+    for line_id, op_id, op_kind, op_date, unit_id, batch_id, kind, delta, weight, pair, measured, reason, cleaner, \
+            opening, stocked_on in rows:
+        op = ops.setdefault(op_id, Op(op_id, op_kind, op_date, first[op_id], stocked_on if opening else None))
         lines.append(Line(line_id, op, unit_id, batch_id, kind, delta, weight, pair, measured, reason, bool(cleaner)))
     return lines
 
@@ -104,12 +116,89 @@ def batches_ever_in(unit_ids):
                .values_list('batch_id', flat=True).distinct())
 
 
+def spans():
+    """{(unit id, batch id): (the day of its first live line, the day of its last; None while fish of the batch are
+    in the unit)}: when each batch was in each unit, roughly (a gap between two stays is not seen), for the whole live
+    ledger in ONE grouped query. What `in_units`, `between` and `reach` are asked of, so that a reader of the medicine
+    withdrawal finds the fish a hold can have reached without a query per unit or per batch, and without loading the
+    ledger of a batch no hold can have reached."""
+    rows = (StockMovement.objects.filter(operation__is_deleted=False).order_by().values('unit_id', 'batch_id')
+            .annotate(first=Min('operation__date'), last=Max('operation__date'), fish=Sum('count_delta')))
+    return {(row['unit_id'], row['batch_id']): (row['first'], None if row['fish'] > 0 else row['last'])
+            for row in rows}
+
+
+def in_units(found, unit_ids, day=None):
+    """The batches of `found` (`spans()`) that were in one of `unit_ids`: ever, or with `day` on a day their span
+    there covers (never fewer than Presence.batches_during says)."""
+    return between(found, unit_ids, day, day) if day is not None else {
+        batch_id for unit_id, batch_id in found if unit_id in set(unit_ids)}
+
+
+def between(found, unit_ids, first, last):
+    """The batches of `found` (`spans()`) whose span in one of `unit_ids` shares a day with `first`..`last`."""
+    unit_ids = set(unit_ids)
+    return {batch_id for (unit_id, batch_id), (began, ended) in found.items()
+            if unit_id in unit_ids and began <= last and (ended is None or first <= ended)}
+
+
+def reach(found, seeds, until=None):
+    """The batches fish held from `seeds` ([(unit id, batch id, day)]) can have reached before `until` (None: with no
+    end), by the spans alone (`found`: `spans()`): a lot (a batch in a unit) is reached from the day held fish can
+    have been in it; from then on every batch whose span in that unit is still running is reached there (they share the
+    unit), and every other unit the lot's batch is still in, or comes into (its fish may have been moved there). Never
+    fewer than the medicine withdrawal's walk reaches (farm.health.withdrawal.Reader._walk, which reads the moves and
+    the days exactly); more, since a span does not say which fish moved. What a reader loads beyond the exposed
+    batches, and what a write locks: bounded by the time a hold is in force, not by the farm's history."""
+    of_batch, of_unit = defaultdict(list), defaultdict(list)
+    for unit_id, batch_id in found:
+        of_batch[batch_id].append(unit_id)
+        of_unit[unit_id].append(batch_id)
+    since, waiting = {}, []
+
+    def take(unit_id, batch_id, day):
+        span = found.get((unit_id, batch_id))
+        if span is None:
+            return
+        day = max(day, span[0])
+        if (span[1] is not None and span[1] < day) or (until is not None and day >= until):
+            return
+        if (unit_id, batch_id) not in since or day < since[(unit_id, batch_id)]:
+            since[(unit_id, batch_id)] = day
+            waiting.append((unit_id, batch_id))
+
+    for seed in seeds:
+        take(*seed)
+    while waiting:
+        unit_id, batch_id = waiting.pop()
+        day = since[(unit_id, batch_id)]
+        for other in of_unit[unit_id]:
+            take(unit_id, other, day)
+        for where in of_batch[batch_id]:
+            take(where, batch_id, day)
+    return {batch_id for _unit_id, batch_id in since}
+
+
+def downstream(found, unit_ids, first=None):
+    """The batches a write about `unit_ids` dated `first` (None: of any day) can join to or part from the fish there:
+    those in the units from that day on and every batch they can have reached since (`reach`). A move of held fish
+    into a unit holds the fish of that unit wherever they went afterwards, so a write locks these."""
+    unit_ids = set(unit_ids)
+    day = first or min((began for began, _ended in found.values()), default=None)
+    return reach(found, [(unit_id, batch_id, day) for unit_id, batch_id in found if unit_id in unit_ids]) if day else set()
+
+
 class Presence:
     """Which batch had fish in which unit on which day, from the counts of the live lines alone (no fold:
-    a count is the sum of the lines up to a day). A batch counts on a day when it had fish there at the end
-    of that day or of the day before, so fish stocked, moved or harvested that day count. The water judges
-    a sample for the species present (farm/water/read.py), the health module finds the batches a treatment
-    reached and the units a batch was in (farm/health/withdrawal.py).
+    a count is the sum of the lines up to a day). A batch counts on a day (`present`) when it had fish there at the
+    end of that day or of the day before, so fish stocked, moved or harvested that day count. The water judges
+    a sample for the species present (farm/water/read.py), the health module finds the units a batch was in
+    (farm/health/withdrawal.py).
+
+    The ends of the days do not see fish that came into a unit and left it again on ONE day. `during` does: the batch
+    had fish in the unit at some moment of the day (at the end of the day before, or fish of it came in that day).
+    The medicine withdrawal asks that (which fish a course reached, which batches held a unit on a harvest's day:
+    review F-03 of the flow faults); `present` keeps its meaning for everything else.
 
     Build it with `of_units` (every batch that was in these units) or `of_batches` (every unit these
     batches were in)."""
@@ -117,8 +206,13 @@ class Presence:
     def __init__(self, rows):
         """`rows`: (unit id, batch id, date, count delta) of live lines."""
         changes = defaultdict(lambda: defaultdict(int))
+        self.arrived = defaultdict(set)              # (unit, batch) -> the days fish of the batch came into the unit
         for unit_id, batch_id, day, delta in rows:
             changes[(unit_id, batch_id)][day] += delta
+            if delta > 0:
+                self.arrived[(unit_id, batch_id)].add(day)
+        self.moves = defaultdict(list)               # day -> [(unit left, unit entered, batch)]: `of_batches(moves=True)`
+        self.transfers = set()                       # (operation, pair, unit left, unit entered, batch) of those moves
         self.timelines = {}                          # (unit, batch) -> (days, fish at the end of each)
         self.units = defaultdict(set)                # batch -> the units it was ever in
         self.batches = defaultdict(set)              # unit -> the batches ever in it
@@ -141,8 +235,37 @@ class Presence:
         return cls._of(StockMovement.objects.filter(unit_id__in=unit_ids, operation__is_deleted=False))
 
     @classmethod
-    def of_batches(cls, batch_ids):
-        return cls._of(StockMovement.objects.filter(batch_id__in=batch_ids, operation__is_deleted=False))
+    def of_batches(cls, batch_ids, moves=False):
+        """`moves`: also which unit the fish of every transfer left and which they entered (`moves`, `transfers`, `days`),
+        read in the same query: what the medicine withdrawal follows held fish by."""
+        lines = StockMovement.objects.filter(batch_id__in=batch_ids, operation__is_deleted=False)
+        if not moves:
+            return cls._of(lines)
+        rows = list(lines.values_list('unit_id', 'batch_id', 'operation__date', 'count_delta', 'kind',
+                                      'operation_id', 'pair'))
+        presence = cls(row[:4] for row in rows)
+        left = {(operation_id, pair): unit_id for unit_id, _batch, _day, _delta, kind, operation_id, pair in rows
+                if kind == 'transfer_out'}
+        for unit_id, batch_id, day, _delta, kind, operation_id, pair in rows:
+            source = left.get((operation_id, pair)) if kind == 'transfer_in' else None
+            if source is not None:
+                presence.moves[day].append((source, unit_id, batch_id))
+                presence.transfers.add((operation_id, pair, source, unit_id, batch_id))
+        presence.days = sorted({row[2] for row in rows})
+        return presence
+
+    def add(self, other):
+        """Takes in the lines of other batches (a Presence `of_batches(moves=True)` of batches this one has not)."""
+        self.timelines.update(other.timelines)
+        self.arrived.update(other.arrived)
+        for batch_id, unit_ids in other.units.items():
+            self.units[batch_id] |= unit_ids
+        for unit_id, batch_ids in other.batches.items():
+            self.batches[unit_id] |= batch_ids
+        for day, moves in other.moves.items():
+            self.moves[day].extend(moves)
+        self.transfers |= other.transfers
+        self.days = sorted({*self.days, *other.days})
 
     def count_at_end(self, unit_id, batch_id, day):
         """The fish of the batch in the unit after every line dated `day` or before."""
@@ -155,6 +278,24 @@ class Presence:
 
     def present(self, unit_id, batch_id, day):
         return self.count_at_end(unit_id, batch_id, day) > 0 or self.count_at_end(unit_id, batch_id, day - DAY) > 0
+
+    def during(self, unit_id, batch_id, day):
+        """Whether the batch had fish in the unit at any moment of `day`: there at the end of the day before, or fish
+        of it came in that day, also when they left again the same day. Wherever `present` says yes, this does."""
+        return (self.count_at_end(unit_id, batch_id, day - DAY) > 0
+                or day in self.arrived.get((unit_id, batch_id), ()))
+
+    def batches_during(self, unit_id, day):
+        """The batches that had fish in the unit at any moment of `day` (`during`)."""
+        return {batch_id for batch_id in self.batches.get(unit_id, ()) if self.during(unit_id, batch_id, day)}
+
+    def during_between(self, unit_id, batch_id, first, last):
+        """Whether the batch had fish in the unit at any moment of a day from `first` to `last`, both included: on
+        `first` (`during`), or fish of it came in on a later one of those days."""
+        if first > last:
+            return False
+        return (self.during(unit_id, batch_id, first)
+                or any(first < day <= last for day in self.arrived.get((unit_id, batch_id), ())))
 
     def batches_in(self, unit_id, day):
         """The batches with fish in the unit on `day`."""
@@ -188,6 +329,9 @@ class BatchShare:
     culls: int
     unit_count: int = 0      # the unit's fish of its kind (production or cleaner fish), for the share by count
     siblings: int = 1        # the batches of its kind in the unit, itself included
+    lots: list = field(default_factory=list)   # sizes.Lot: its fish by size (a grading's classes kept apart)
+
+    past = False             # in the unit now (PastShare: a batch that left it inside the correction window)
 
     @property
     def cleaner(self):
@@ -217,6 +361,61 @@ class BatchShare:
     @property
     def losses(self):
         return self.deaths + self.culls
+
+
+@dataclass(frozen=True)
+class PastShare:
+    """A batch that has no fish in a unit now and had some on a day a record may still be dated on (inside the
+    correction window): what a dialog offers beside the batches there now, so that a mortality, a weighing or a
+    treatment of a day the fish were there can still be entered once the unit is empty (flow fault S-04). The
+    service decides on the record's own day, as for every record."""
+    batch: Batch
+    until: object                # the last day it had fish in the unit: they left on it
+
+    past = True
+    count = 0
+
+    @property
+    def cleaner(self):
+        return self.batch.species.is_cleaner_fish
+
+
+def left_within(units, first_of, production=False):
+    """{unit id: [PastShare]} of the batches that have no fish in a unit now and still had some on a day from
+    `first_of(unit)` on (the first day a record of the unit may be dated: farm.stock.dates.earliest), by code; a unit
+    with none is left out. With `production`, production fish only. THE gate of a dialog that records something of a
+    past day: fish that were there on a day that may still be dated, not fish there today."""
+    presence = Presence.of_units([unit.pk for unit in units])
+    gone = defaultdict(list)
+    for unit in units:
+        first = first_of(unit)
+        for batch_id in presence.batches.get(unit.pk, ()):
+            days, counts = presence.timelines[(unit.pk, batch_id)]
+            if counts[-1] <= 0 and days[-1] >= first:
+                gone[unit.pk].append((batch_id, days[-1]))
+    batches = Batch.all_objects.select_related('species').in_bulk(
+        {batch_id for found in gone.values() for batch_id, _day in found})
+    shares = {unit_id: sorted((PastShare(batches[batch_id], day) for batch_id, day in found
+                               if not (production and batches[batch_id].species.is_cleaner_fish)),
+                              key=lambda share: share.batch.code)
+              for unit_id, found in gone.items()}
+    return {unit_id: found for unit_id, found in shares.items() if found}
+
+
+def offered_day(unit):
+    """The day a dialog offers for a new record of `unit` (None: no unit chosen yet): its today while it holds fish;
+    NONE when it is empty now. A record of an emptied unit is of a day its fish were still there (flow fault S-04), which
+    the person gives: today would be refused ("T-01 holds no fish on …"), and offering it invited that (review F-09:
+    the stock dialogs gave no day, the feeding, treatment and sea-lice dialogs still gave today)."""
+    if unit is not None and not unit_counts([unit.pk]).get(unit.pk):
+        return None
+    return local_today(unit)
+
+
+def offered(unit, stock, first):
+    """The batches a dialog of `unit` offers: those in it now (`stock`, its UnitStock or None) and those that left it
+    on a day from `first` on (`left_within`)."""
+    return [*(stock.shares if stock else []), *left_within([unit], lambda _unit: first).get(unit.pk, [])]
 
 
 @dataclass
@@ -320,6 +519,18 @@ class UnitStock:
     def batches(self):
         return [share.batch for share in self.counted]
 
+    @property
+    def size_mixes(self):
+        """[sizes.SizeMix] of every lot in the unit (production and cleaner fish, each against its own species) at its
+        measured weight, with its day: what Production units, which shows the measured averages, warns about."""
+        return self.size_mixes_at()
+
+    def size_mixes_at(self, factors=None):
+        """The same at the feeding walk's estimates where feed was credited (`factors`: batch id -> the estimate over
+        the measured average, sizes.size_mixes): what the meal board, which shows the estimates, warns about."""
+        return size_mixes({share.batch.pk: share.lots for share in self.shares},
+                          {share.batch.pk: share.batch for share in self.shares}, factors)
+
     def days(self, today):
         return (today - self.since).days if self.since else None
 
@@ -332,7 +543,8 @@ def stock_of(units):
     batch_ids = {row['batch_id'] for row in present}
     if not batch_ids:
         return {}
-    return _unit_stocks(units, fold(ledger(batch_ids)), batch_ids)
+    lots = Lots()
+    return _unit_stocks(units, fold(ledger(batch_ids), before=lots.before, on_line=lots.line), batch_ids, lots)
 
 
 def stock_on(units, day):
@@ -341,10 +553,11 @@ def stock_on(units, day):
     day before it its opening stock. A unit without fish then is left out."""
     batch_ids = batches_ever_in([unit.pk for unit in units])
     lines = [line for line in ledger(batch_ids) if line.op.date <= day]
-    return _unit_stocks(units, fold(lines), batch_ids) if lines else {}
+    lots = Lots()
+    return _unit_stocks(units, fold(lines, before=lots.before, on_line=lots.line), batch_ids, lots) if lines else {}
 
 
-def _unit_stocks(units, shares, batch_ids):
+def _unit_stocks(units, shares, batch_ids, lots=None):
     """{unit id: UnitStock} of `units` from the fold's shares: each unit's batches with fish, oldest stay first."""
     batches = Batch.all_objects.select_related('species').in_bulk(batch_ids)
     by_id = {unit.pk: unit for unit in units}
@@ -353,7 +566,7 @@ def _unit_stocks(units, shares, batch_ids):
         if share.count and unit_id in by_id:
             stock.setdefault(unit_id, UnitStock(by_id[unit_id])).shares.append(BatchShare(
                 batches[batch_id], share.count, share.grams, share.since, share.last_weighed, share.fish_in,
-                share.deaths, share.culls))
+                share.deaths, share.culls, lots=lots.of.get((unit_id, batch_id), []) if lots else []))
     for unit_stock in stock.values():
         kinds = {target: unit_stock.of(target) for target in FeedTarget.values}
         unit_stock.shares.sort(key=lambda share: (share.cleaner, share.since, share.batch.code))
@@ -392,6 +605,7 @@ class Movement:
     grams: Decimal = None
     measured_weight_kg: Decimal = None
     other_unit_id: object = None
+    opening: bool = False       # a line of an opening balance: fish the farm already had, never fish stocked
 
     @property
     def kilos(self):
@@ -421,5 +635,6 @@ def movements(units, first, last):
         if line.pair is not None:
             other = next((end.unit_id for end in ends[(line.op.id, line.pair)] if end.id != line.id), None)
         found.append(Movement(line.id, line.op.id, line.op.kind, line.op.date, line.unit_id, line.batch_id, line.kind,
-                              line.count_delta, line.reason, grams.get(line.id), line.measured_weight_kg, other))
+                              line.count_delta, line.reason, grams.get(line.id), line.measured_weight_kg, other,
+                              line.op.stocked_on is not None))
     return found

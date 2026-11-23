@@ -255,3 +255,16 @@ class MaterialiseTests(TasksTestCase):
         self.assertTrue(TaskSeries.all_objects.get(pk=series.pk).is_deleted)
         self.assertEqual(set(Task.objects.filter(system=self.ras)), {first, old, single})
         self.assertEqual(Task.objects.get(pk=first.pk).status, Status.IN_PROGRESS)
+
+    def test_restoring_a_deleted_recurring_task_brings_back_its_planned_tasks(self):
+        # F-029: the planned tasks went with it and, deleted, still held their days, so none was made again.
+        series = self.series()
+        services.materialise(series)
+        self.client.post(reverse('tasks:task_delete', args=[Task.objects.get(series=series,
+                                                                            occurrence_date=self.day(3)).pk]))
+        self.client.post(reverse('tasks:taskseries_delete', args=[series.pk]))
+        self.assertFalse(Task.objects.filter(series=series).exists())
+        softdelete.restore(TaskSeries.all_objects.get(pk=series.pk), self.boss)
+        services.materialise_due()
+        live = sorted(Task.objects.filter(series=series).values_list('occurrence_date', flat=True))
+        self.assertEqual(live, [self.day(n) for n in range(HORIZON + 1) if n != 3])

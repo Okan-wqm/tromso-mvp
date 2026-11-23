@@ -6,10 +6,10 @@ use crate::config::Config;
 use crate::model::{ChannelMap, Format};
 use crate::service::Shared;
 use crate::timerule::{self, Limits};
+use crate::ts::Ts;
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, RwLock};
@@ -46,7 +46,7 @@ async fn healthz(State(state): State<AppState>) -> (StatusCode, Json<serde_json:
     if !sh.ready.load(Ordering::SeqCst) {
         problems.push("writer not ready (database, lock or configuration)".into());
     }
-    let age = chrono::Utc::now().timestamp() - sh.last_db_ok.load(Ordering::SeqCst);
+    let age = Ts::now().unix_secs() - sh.last_db_ok.load(Ordering::SeqCst);
     if age > DB_STALE_S {
         problems.push(format!("no database write for {age} s"));
     }
@@ -88,7 +88,7 @@ struct DecodeRequest {
     format: Format,
     channels: Vec<ChannelMap>,
     payload: String,
-    received_at: Option<DateTime<Utc>>,
+    received_at: Option<Ts>,
 }
 
 #[derive(Serialize)]
@@ -96,7 +96,7 @@ struct DecodedSample {
     channel_no: i32,
     /// The value as decoded, before calibration (the box has no channel calibration).
     value: f64,
-    ts: DateTime<Utc>,
+    ts: Ts,
     quality: i16,
 }
 
@@ -104,7 +104,7 @@ async fn decode(State(state): State<AppState>, Json(req): Json<DecodeRequest>) -
     let limits = current(&state)
         .map(|c| Limits { future_skew_s: c.contract.future_skew_s, late_limit_days: c.contract.late_limit_days })
         .unwrap_or(Limits { future_skew_s: 60, late_limit_days: 728 });
-    let received_at = req.received_at.unwrap_or_else(Utc::now);
+    let received_at = req.received_at.unwrap_or_else(Ts::now);
     let d = crate::decode::decode(&req.format, &req.channels, req.payload.as_bytes());
     let mut faults = d.faults.clone();
     let mut samples = Vec::new();
@@ -156,7 +156,7 @@ mod tests {
         assert_eq!(code, StatusCode::SERVICE_UNAVAILABLE);
         assert_eq!(body["status"], "unhealthy");
         s.shared.ready.store(true, Ordering::SeqCst);
-        s.shared.last_db_ok.store(chrono::Utc::now().timestamp(), Ordering::SeqCst);
+        s.shared.last_db_ok.store(Ts::now().unix_secs(), Ordering::SeqCst);
         s.shared.connected.lock().unwrap().insert(Uuid::from_u128(1), true);
         let (code, body) = call(&s, get("/healthz")).await;
         assert_eq!(code, StatusCode::OK, "{body}");
@@ -164,7 +164,7 @@ mod tests {
         s.shared.connected.lock().unwrap().insert(Uuid::from_u128(1), false);
         assert_eq!(call(&s, get("/healthz")).await.0, StatusCode::SERVICE_UNAVAILABLE);
         s.shared.connected.lock().unwrap().insert(Uuid::from_u128(1), true);
-        s.shared.last_db_ok.store(chrono::Utc::now().timestamp() - DB_STALE_S - 1, Ordering::SeqCst);
+        s.shared.last_db_ok.store(Ts::now().unix_secs() - DB_STALE_S - 1, Ordering::SeqCst);
         let (code, body) = call(&s, get("/healthz")).await;
         assert_eq!(code, StatusCode::SERVICE_UNAVAILABLE);
         assert!(body["problems"].to_string().contains("database"), "{body}");

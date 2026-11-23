@@ -15,9 +15,53 @@ days still accruing). A block whose `until` is on or before the day is clear.
 they return None, not an empty list: the check then says "Medicine withdrawal not checked" instead of reading it
 as clear."""
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
+
+from django.utils import formats
+from django.utils.translation import gettext as _
 
 _providers = []
+
+
+def harvest_from(until, approximate=False, shown=None):
+    """THE words for a withdrawal's end, on every page, message and log line that says it (flow fault M-01): the first
+    day the fish may be harvested. "harvest from 25.11.2026"; "harvest from about 25.11.2026" when it is projected;
+    "end unknown" when it cannot be worked out. Never "until <date>": `until` is the first FREE day, and "until" read
+    as the last HELD day on one page and as the first free day on five others, a day apart for one withdrawal.
+    `shown`: how the day is written (default: the page's date format, dd.mm.yyyy; a command's output its own)."""
+    if until is None:
+        return _('end unknown')
+    day = shown(until) if shown is not None else formats.date_format(until, 'DATE_FORMAT')
+    if approximate:
+        return _('harvest from about %(date)s') % {'date': day}
+    return _('harvest from %(date)s') % {'date': day}
+
+
+def leave_from(until, approximate=False, shown=None):
+    """`harvest_from`'s words for fish that leave the farm ALIVE (a live delivery, the owner's decisions 12 and 13 of
+    19.11.2026): "harvest from" is read as a rule about slaughter by someone selling live fish, so a delivery's
+    warning says when the fish may leave the farm. The same day, the same "about" and the same "end unknown"; only the
+    words differ. "the fish may leave the farm from 25.11.2026"; "… from about 25.11.2026" when it is projected."""
+    if until is None:
+        return _('end unknown')
+    day = shown(until) if shown is not None else formats.date_format(until, 'DATE_FORMAT')
+    if approximate:
+        return _('the fish may leave the farm from about %(date)s') % {'date': day}
+    return _('the fish may leave the farm from %(date)s') % {'date': day}
+
+
+def held_until(until, approximate=False):
+    """The Treatments list's words for a withdrawal's end, BOTH days (flow fault M-01 proposed both; review F-09): the
+    last day the fish are held and, in the one wording (`harvest_from`), the first day they may be harvested: "until
+    13.12.2026 (harvest from 14.12.2026)", "until about … (harvest from about …)", "end unknown". The last held day
+    is only ever said with the first free day beside it: "until <date>" alone was read both ways."""
+    harvest = harvest_from(until, approximate)
+    if until is None:
+        return harvest
+    params = {'last': formats.date_format(until - timedelta(days=1), 'DATE_FORMAT'), 'harvest': harvest}
+    if approximate:
+        return _('until about %(last)s (%(harvest)s)') % params
+    return _('until %(last)s (%(harvest)s)') % params
 
 
 @dataclass(frozen=True)
@@ -51,3 +95,16 @@ def blocks(unit, day):
     """Every provider's blocks for the fish in `unit` on `day`; None when no provider is registered."""
     found = blocks_of([unit], day)
     return None if found is None else found[unit.pk]
+
+
+SOURCE_NAMES = {'treatment': 'treatment', 'feedingrecord': 'feeding'}
+
+
+def source_key(source):
+    """What a withdrawal comes from, as the acknowledgements store it: "treatment:<id>" or "feeding:<id>" (a medicated
+    feeding no in-feed treatment covers); '' for none. check_withdrawal matches an acknowledgement to a harvest's
+    withdrawal by it."""
+    if source is None:
+        return ''
+    name = source._meta.model_name
+    return f'{SOURCE_NAMES.get(name, name)}:{source.pk}'

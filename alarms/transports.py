@@ -1,0 +1,34 @@
+"""How a notification leaves the platform: one transport per channel, named in settings.ALARM_TRANSPORTS ({channel: dotted
+path of a Transport class}). None is connected today (the mobile app that receives the push comes later): the setting is
+empty, the outbox waits, and the pages say that nothing is sent. A transport plugs in by being named there; nothing else
+changes. The tests use a double (alarms/tests/doubles.py) that records what it would send."""
+from dataclasses import dataclass
+
+from django.conf import settings
+from django.utils.module_loading import import_string
+
+
+@dataclass(frozen=True)
+class Sent:
+    detail: str = ''
+
+
+@dataclass(frozen=True)
+class Failed:
+    detail: str = ''
+
+
+class Transport:
+    """Takes one notification (its alarm, recipient, channel and level) to the person; returns Sent or Failed with a
+    short detail, never raises for a delivery that did not happen."""
+
+    channel = ''
+
+    def send(self, notification):
+        raise NotImplementedError
+
+
+def transport_for(channel):
+    """The transport of `channel`, or None when none is connected."""
+    path = getattr(settings, 'ALARM_TRANSPORTS', {}).get(channel)
+    return import_string(path)() if path else None

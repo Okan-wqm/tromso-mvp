@@ -11,4 +11,5 @@ urlpatterns = [route for tab in Resource.registry if tab.model._meta.app_label =
 urlpatterns += [
     path('operations/monitoring/', views.monitor, name='monitor'),
     path('operations/monitoring/cards/', views.cards, name='cards'),
+    path('operations/monitoring/pane/', views.pane, name='pane'),
 ]

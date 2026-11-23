@@ -31,10 +31,10 @@ INSERT INTO sensors_device (id, created_at, updated_at, version, is_deleted, cod
 
 -- code, device, quantity, unit, value_path, item_name, reduction, deadband, heartbeat, range
 INSERT INTO sensors_channel (id, created_at, updated_at, version, is_deleted, code, name, quantity, unit, unit_factor,
-  unit_offset, value_path, item_name, address_protocol, address, reduction, deadband, heartbeat_s, range_min, range_max,
-  state, note, device_id)
+  unit_offset, value_path, item_name, address_protocol, address, reduction, deadband, heartbeat_s, fresh_heartbeats,
+  range_min, range_max, state, note, device_id)
 SELECT gen_random_uuid(), now(), now(), 1, false, c.code, c.code, c.quantity, c.unit, 1, 0, c.value_path, c.item_name,
-  'mqtt', '{}', c.reduction, c.deadband, c.heartbeat_s, c.range_min, c.range_max, 'active', '', c.device_id::uuid
+  'mqtt', '{}', c.reduction, c.deadband, c.heartbeat_s, 3, c.range_min, c.range_max, 'active', '', c.device_id::uuid
 FROM (VALUES
   ('TEMP-IN', '00000000-0000-0000-0000-0000000d0001', 'temperature_c', 'C', '/tags/temp_inlet/value', '', 'deadband', 0.1, 60, -2.0, 40.0),
   ('TEMP-OUT', '00000000-0000-0000-0000-0000000d0001', 'temperature_c', 'C', '/tags/temp_outlet/value', '', 'deadband', 0.1, 60, -2.0, 40.0),

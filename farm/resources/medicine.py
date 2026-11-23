@@ -1,10 +1,14 @@
 from django.utils.translation import gettext as _now, gettext_lazy as _, ngettext_lazy
 
 from core.crud import Resource, RowList, filter_by
+from core.models import AuditLog
 
 from ..forms.health import MedicineForm, MedicineWithdrawalFormSet
+from ..health import withdrawal
 from ..health.withdrawal import Rule
-from ..models import Medicine
+from ..models import Medicine, Treatment
+from ..stock.dates import earliest_today
+from ..stock.services import lock_fish
 
 
 class MedicineWithdrawalList(RowList):
@@ -12,8 +16,30 @@ class MedicineWithdrawalList(RowList):
     on its Withdrawal tab, like a feed's suitability."""
 
     key, tab, label = 'withdrawals', 'withdrawal', _('Withdrawal')
+    question_field = withdrawal.FIELD
     formset = MedicineWithdrawalFormSet
     saved = ngettext_lazy('%(count)d withdrawal row saved.', '%(count)d withdrawal rows saved.', 'count')
+
+    @classmethod
+    def severity(cls, medicine):
+        """Critical once the medicine was given (a live treatment): its withdrawal is worked out live from these rows
+        (HLT-02), so a change moves the end of every course already given, of fish held now or harvested (F-196)."""
+        given = medicine.treatments.exists()
+        return AuditLog.Severity.CRITICAL if given else AuditLog.Severity.NORMAL
+
+    @classmethod
+    def save(cls, user, medicine, rows, entity_type, seen=None):
+        """The rows saved through the withdrawal guard (farm.health.withdrawal.guarded): the withdrawal is worked out live
+        from them, so a change moves every course already given with the medicine, and a harvest it brings inside a
+        withdrawal or fish held today that it frees are asked about first. The batches those courses reached are locked,
+        as a stock operation locks them."""
+        treatments = Treatment.objects.filter(medicine=medicine).prefetch_related('units')
+        unit_ids = {unit.pk for treatment in treatments for unit in treatment.units.all()}
+        first = min((treatment.start_date for treatment in treatments), default=None)
+        units, batch_ids = lock_fish(unit_ids, first) if first else ({}, set())
+        today = earliest_today(units.values())
+        withdrawal.guarded(user, batch_ids, today, lambda: super(MedicineWithdrawalList, cls).save(
+            user, medicine, rows, entity_type) or medicine, record_of=lambda _result: medicine, seen=seen)
 
     @classmethod
     def describe(cls, row):

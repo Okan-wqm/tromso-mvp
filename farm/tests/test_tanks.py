@@ -17,7 +17,7 @@ from core.models import AuditLog, Profile
 from ..models import ProductionDepartment, Site, System, Tank
 from ..models.tank import NEEDS_FISH, STARTING_STATUSES, TRANSITIONS
 from ..stock import services
-from .helpers import role, stock_fish
+from .helpers import leave_without_site, role, stock_fish
 
 Status = Tank.Status
 UNIT_MANAGER = (
@@ -66,7 +66,6 @@ class TankTestCase(TestCase):
         self.hall = ProductionDepartment.objects.create(site=self.bergen, name='Hall A', code='HA')
         self.hall_b = ProductionDepartment.objects.create(site=self.bergen, name='Hall B', code='HB')
         self.sea = ProductionDepartment.objects.create(site=self.tromso, name='Sea', code='SE')
-        self.orphan = ProductionDepartment.objects.create(name='Orphan', code='OR')
         self.ras = System.objects.create(site=self.bergen, name='RAS 1', code='R1')
         self.ras_a = System.objects.create(site=self.bergen, name='RAS A', code='RA', production_department=self.hall)
         self.cage_line = System.objects.create(site=self.tromso, name='Cage line', code='CL')
@@ -457,12 +456,23 @@ class LocationTests(TankTestCase):
         self.post(unit_data(self.hall_b, system=str(self.ras.pk)))
         self.assertEqual(Tank.objects.get().system, self.ras)
 
-    def test_a_department_without_a_site_has_no_systems(self):
-        errors = self.errors(unit_data(self.orphan, system=str(self.ras.pk)))
-        self.assertEqual(errors['system'],
-                         ['The production department is not on any site, so its units cannot be in a system.'])
-        self.post(unit_data(self.orphan))
-        self.assertEqual(Tank.objects.get().production_department, self.orphan)
+    def test_a_department_without_a_site_takes_no_unit_until_it_is_on_one(self):
+        # Only a department a deleted site left without one before that was refused (F-212).
+        unit = self.make(department=self.hall_b)
+        orphan = leave_without_site(self.hall_b)
+        self.assertNotIn(orphan, self.client.get(reverse('farm:tank_create')).context['form']
+                         .fields['production_department'].queryset)
+        self.assertIn('production_department', self.errors(unit_data(orphan, code='t-02')))
+        offered = self.client.get(reverse('farm:tank_edit', args=[unit.pk])).context['form'].fields['production_department']
+        self.assertIn(orphan, offered.queryset)
+        self.assertEqual(offered.label_from_instance(orphan), 'Hall B (no site)')
+        errors = self.errors(unit_data(orphan, system=str(self.ras.pk), version='1'), unit)
+        self.assertEqual(errors['production_department'],
+                         ['This production department is not on any site; choose one that is.'])
+        self.assertNotIn('system', errors)
+        self.post(unit_data(self.hall, code='T1', version='1'), unit)
+        unit.refresh_from_db()
+        self.assertEqual(unit.production_department, self.hall)
 
     def test_the_systems_offered_know_their_departments(self):
         form = self.client.get(reverse('farm:tank_create')).context['form']
@@ -472,7 +482,7 @@ class LocationTests(TankTestCase):
         self.assertIn(f'data-group="{" ".join(sorted([str(self.hall.pk), str(self.hall_b.pk)]))}"', html)
         labels = form['production_department'].as_widget()
         self.assertIn('Bergen · Hall A', labels)
-        self.assertIn('Orphan (no site)', labels)
+        self.assertNotIn('(no site)', labels)
 
     def test_a_system_cannot_move_to_another_department_while_units_of_another_are_in_it(self):
         self.make(system=self.ras, department=self.hall_b)
@@ -622,10 +632,25 @@ class StockGuardTests(TankTestCase):
         self.stock(stocked)
         Tank.objects.filter(pk=stocked.pk).update(status='maintenance')
         stocked = Tank.objects.get(pk=stocked.pk)
-        self.assertEqual(stocked.next_statuses(), ['maintenance'])
+        self.assertEqual(stocked.next_statuses(), ['maintenance', 'active'])
         stocked.status = Status.INACTIVE
         with self.assertRaisesMessage(ValidationError, 'cannot be made inactive'):
             stocked.full_clean()
+
+    def test_a_unit_in_maintenance_with_fish_goes_back_to_active(self):
+        # F-166: maintenance with fish in the unit had no way out but moving every fish away.
+        unit = self.make(status='preparing')
+        self.stock(unit)
+        self.post(unit_data(self.hall, code='T1', status='maintenance', status_reason='Pump service', version='2'), unit)
+        unit.refresh_from_db()
+        self.assertEqual(unit.status, 'maintenance')
+        self.post(unit_data(self.hall, code='T1', status='active', status_reason='Pump fixed', version='3'), unit)
+        unit.refresh_from_db()
+        self.assertEqual((unit.status, unit.status_reason), ('active', 'Pump fixed'))
+        empty = self.make(code='T2', status='maintenance')
+        empty.status = Status.ACTIVE
+        with self.assertRaisesMessage(ValidationError, 'A unit becomes active when fish are stocked in it'):
+            empty.full_clean()
 
     def test_a_unit_with_fish_cannot_be_deleted_nor_its_department(self):
         unit = self.make()
@@ -678,11 +703,11 @@ class TankDeletePlanTests(TankTestCase):
         entry = AuditLog.objects.get(entity_type='unit')
         self.assertEqual((entry.action, entry.changes), ('update', {'System': ['RAS 1 (R1)', None]}))
 
-    def test_deleting_a_site_leaves_the_units_with_their_department_out_of_its_systems(self):
+    def test_a_site_with_units_stays_and_its_units_keep_their_department_and_system(self):
         unit = self.make(system=self.ras)
         self.client.post(reverse('farm:site_delete', args=[self.bergen.pk]))
         unit.refresh_from_db()
-        self.assertEqual((unit.is_deleted, unit.system, unit.production_department.site), (False, None, None))
+        self.assertEqual((unit.is_deleted, unit.system, unit.production_department.site), (False, self.ras, self.bergen))
 
     def test_a_restored_unit_is_checked_like_a_new_one(self):
         unit = self.make()
@@ -691,6 +716,7 @@ class TankDeletePlanTests(TankTestCase):
         with self.assertRaisesMessage(ValidationError, 'Another unit already uses this code.'):
             softdelete.restore(Tank.all_objects.get(pk=unit.pk), self.user)
         Tank.objects.filter(code='T1').update(code='T9')
+        Tank.objects.get(code='T9').soft_delete(self.user)     # a department is deleted without live units (farm 0030)
         self.hall.soft_delete(self.user)
         with self.assertRaisesMessage(ValidationError, 'Production department “Hall A (HA)” is deleted.'):
             softdelete.restore(Tank.all_objects.get(pk=unit.pk), self.user)
@@ -754,7 +780,7 @@ class TankListTests(TankTestCase):
 
     def test_the_production_overview_counts_units_by_kind(self):
         response = self.client.get(reverse('production_home'))
-        self.assertIn({'label': 'Tanks, ponds & cages', 'count': 3, 'url': reverse('farm:tank_list')},
+        self.assertIn({'key': 'tank', 'label': 'Tanks, ponds & cages', 'count': 3, 'url': reverse('farm:tank_list')},
                       [{**tile, 'label': str(tile['label'])} for tile in response.context['tiles']])
         self.assertEqual([(item['value'], item['count']) for item in response.context['units_by_kind']],
                          [('tank', 1), ('pond', 1), ('cage', 1)])

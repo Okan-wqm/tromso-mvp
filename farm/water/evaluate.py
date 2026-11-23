@@ -11,12 +11,15 @@ a limit changed today re-judges every sample at once (the source froze it at wri
 - A value is judged against every species it concerns, the fish in its unit on that day (several
   batches, later cleaner fish), and the worst status wins. No fish, or no row for their species: "no
   limit" (owner decision 1: an empty unit's values are shown, not judged).
-- A value older than its parameter's freshness is "stale" (shown with its age), never ok.
+- A value older than its parameter's freshness is "stale" (shown with its age), never ok. The freshness and the clock
+  tolerance are the user's reference data (farm/water/freshness.py), read once per page and per alarm pass.
 - A unit's status is the worst status of its fresh values; stale when nothing is fresh."""
 from datetime import timedelta
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+
+from . import freshness
 
 # The water type of a limit row for any water (farm.models.water.WaterLimit).
 ANY_WATER = 'any'
@@ -26,6 +29,10 @@ class Status(models.TextChoices):
     """In order, worst first: the order "the worst of" reads."""
     CRITICAL = 'critical', _('Critical')
     WARNING = 'warning', _('Warning')
+    # A value the fish have a limit for that the chemistry core refuses to work out (read.Reading.refused: a
+    # conductivity past the Davies range): what it is for the fish is not known, so it is never OK and never silent
+    # (the verification of 2026-11-18, V-A). Below a judged warning, above OK.
+    UNEVALUATED = 'unevaluated', _('Cannot be evaluated')
     OK = 'ok', _('OK')
     NO_LIMIT = 'no_limit', _('No limit')
     STALE = 'stale', _('Stale')
@@ -33,6 +40,12 @@ class Status(models.TextChoices):
 
 
 RANK = {status: rank for rank, status in enumerate(Status)}
+# How far ahead of the server's clock a value may be stamped and still count is the platform owner's clock tolerance
+# (freshness.tolerance). The furthest ahead the sensors' ingest contract lets a device's time be
+# (sensors_contract.future_skew_s, at most 3600 s) is the contract's, not a rule: a value between the tolerance and this
+# decides a status (read.worst_fresh, said as a clock ahead) but is never shown as the newest; beyond it, it is a data
+# error the card says ("timestamp in the future").
+MAX_AHEAD = timedelta(seconds=3600)
 ALERTS = (Status.CRITICAL, Status.WARNING)
 
 
@@ -51,6 +64,17 @@ def judge(value, limit):
     if limit.warning_high is not None and value > limit.warning_high:
         return Status.WARNING
     return Status.OK
+
+
+def crossed(value, limit):
+    """(bound's name, bound) of the bound of a limit row that `judge` judged a value by: the critical one it is past,
+    else the warning one, in `judge`'s own order; None for a value inside the warning bounds. What a short sentence
+    names beside the value ("5.00 < critical limit 6.00"); never a second judgement (a test holds it to `judge`)."""
+    for name, below in (('critical_low', True), ('critical_high', False), ('warning_low', True), ('warning_high', False)):
+        bound = getattr(limit, name)
+        if bound is not None and (value < bound if below else value > bound):
+            return name, bound
+    return None
 
 
 class Limits:
@@ -75,9 +99,25 @@ class Limits:
             return Status.NO_LIMIT, []
         return worst(judge(value, row) for row in found), found
 
+    def uncovered(self, parameter, exposures):
+        """The species of `exposures` that no row judges `parameter` for, in their order: a unit with salmon judged and
+        lumpfish beside them with no row is not judged for the lumpfish, whatever the salmon's row says."""
+        return tuple(dict.fromkeys(species_id for species_id, water_type in exposures
+                                   if self.applying(species_id, parameter, water_type) is None))
+
+
+def ahead(measured_at, now):
+    """Whether a value is stamped further ahead of `now` than the clock tolerance (freshness.tolerance): a device whose
+    clock runs ahead (the sensors' contract lets a device be up to an hour ahead). Such a value is never fresh and never
+    the newest (read.newest)."""
+    return measured_at - now > freshness.tolerance()
+
 
 def is_fresh(parameter, measured_at, now, fresh_for=None):
-    """The one freshness rule: a value says something about the water now for its parameter's `fresh_hours`, or, for a
-    live value, for `fresh_for` seconds (a sensor channel's three heartbeats)."""
-    limit = timedelta(seconds=fresh_for) if fresh_for is not None else timedelta(hours=parameter.fresh_hours)
+    """The one freshness rule: a value says something about the water now for its parameter's freshness (the user's
+    row, freshness.hours), or, for a live value, for `fresh_for` seconds (a sensor channel's heartbeats); a value from
+    further ahead than the clock tolerance says nothing (`ahead`)."""
+    if ahead(measured_at, now):
+        return False
+    limit = timedelta(seconds=fresh_for) if fresh_for is not None else freshness.fresh_for(parameter.code)
     return now - measured_at <= limit

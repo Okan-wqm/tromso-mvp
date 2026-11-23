@@ -7,15 +7,15 @@ from django.contrib.sessions.models import Session
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
-from django.utils import timezone
 
 from core import access, navigation
+from core.dates import company_today
 from core.models import AuditLog, Profile
 from farm.models import FeedingRecord, StockOperation, WaterMeasurement
 
 from .. import read
 from ..cards import builtin
-from . import ALL_RIGHTS, MonitoringCase
+from . import MonitoringCase
 
 PAGE, CARDS = reverse('monitoring:monitor'), reverse('monitoring:cards')
 DETAILED_CARD = f'data-template="{builtin.DETAILED}"'
@@ -30,7 +30,7 @@ class PageTests(MonitoringCase):
         response = self.client.get(PAGE)
         self.assertEqual(response.status_code, 200)
         html = response.content.decode()
-        self.assertEqual(keys(html), ['head', 'strip', f'card:{self.t1.pk}', f'card:{self.t2.pk}'])
+        self.assertEqual(keys(html), ['band', f'card:{self.t1.pk}', f'card:{self.t2.pk}'])
         for text in ('data-poll="', 'data-poll-every="15"', 'data-poll-merge="data-key"', 'id="monitor-windows"',
                      'data-fullscreen', 'T-01', 'T-02', '2 of 3 units shown', 'computed at'):
             self.assertIn(text, html)
@@ -40,7 +40,7 @@ class PageTests(MonitoringCase):
             self.assertIn(text, html)                                    # focus can be restored by id after a refresh
 
     def test_filters_occupancy_and_the_units_chosen_narrow_what_is_shown(self):
-        shown = lambda **query: keys(self.client.get(PAGE, query).content.decode())[2:]
+        shown = lambda **query: keys(self.client.get(PAGE, query).content.decode())[1:]
         self.assertEqual(shown(q='t-02'), [f'card:{self.t2.pk}'])
         self.assertEqual(shown(occupancy='empty'), [f'card:{self.p1.pk}'])
         self.assertEqual(len(shown(occupancy='all')), 3)
@@ -75,17 +75,24 @@ class PageTests(MonitoringCase):
         for text in ('12,000', '13.2', '8.10', '7.20', 'Deffeyes chart', 'State from'):
             self.assertIn(text, card)
         self.assertIn(f'data-window="{reverse("farm:water_unit_chart", args=[self.t2.pk])}"', card)
-        self.assertEqual(card.count('<svg'), 0)                      # the chart lives in the window, never in a card
-        self.assertEqual(html.count('<svg'), html.count('class="icon"'))     # (the icons are the only svg)
+        # the chart lives in the window, never in a card: the only svg are the icons and the capacity bar (an SVG rectangle,
+        # templates/farm/_capacity_bar.html, since the Content-Security-Policy allows no style attribute)
+        self.assertEqual(card.count('<svg') - card.count('<svg class="capacity-bar'), 0)
+        self.assertEqual(html.count('<svg'), html.count('class="icon"') + html.count('<svg class="capacity-bar'))
 
     def test_a_card_that_may_not_see_a_section_says_so_and_prints_no_value_of_it(self):
-        self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='8.1')
+        # Values that no date on the page can spell: the oxygen was 8.1, printed "8.10", and the page says when the
+        # fish were last weighed, 15 days back: "28.10.2026" on 12.11.2026, when this test failed for that alone.
+        self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='8.47')
+        shown = self.client.get(PAGE, {'mode': 'detailed'}).content.decode()
+        for text in ('13.2', '8.47'):
+            self.assertIn(text, shown)                               # as the page prints them for who may see the water
         self.as_person('stock-only', 'view_stockoperation')
         html = self.client.get(PAGE, {'mode': 'detailed'}).content.decode()
         for text in ('Feeding: not shown to you', 'Water: not shown to you', 'Health: not shown to you',
                      'Tasks: not shown to you', 'State from: Fish'):
             self.assertIn(text, html)
-        for text in ('13.2', '8.10', 'Deffeyes chart', 'Ration'):
+        for text in ('13.2', '8.47', 'Deffeyes chart', 'Ration'):
             self.assertNotIn(text, html)
         self.assertIn('12,000', html)                                # the fish are the stock right's
 
@@ -118,7 +125,7 @@ class FragmentTests(MonitoringCase):
     def test_200_with_the_cards_and_the_next_address_then_204_while_nothing_changes(self):
         first = self.ask()
         self.assertEqual(first.status_code, 200)
-        self.assertEqual(keys(first.content.decode()), ['head', 'strip', f'card:{self.t1.pk}', f'card:{self.t2.pk}'])
+        self.assertEqual(keys(first.content.decode()), ['band', f'card:{self.t1.pk}', f'card:{self.t2.pk}'])
         self.assertEqual(first['Cache-Control'], 'no-store')
         after = first['X-Poll-Next']
         self.assertTrue(after.startswith(f'{CARDS}?after='))
@@ -141,7 +148,7 @@ class FragmentTests(MonitoringCase):
         html = response.content.decode()
         for shell in ('<html', 'rail', 'Skip to content', 'id="monitor-windows"'):
             self.assertNotIn(shell, html)                           # no request: the shell's context never ran
-        self.assertNotIn('<svg', html.replace('<svg class="icon"', ''))
+        self.assertNotIn('<svg', html.replace('<svg class="icon"', '').replace('<svg class="capacity-bar', ''))
 
     def test_the_fragment_is_the_pages_grid(self):
         page = self.client.get(PAGE)
@@ -170,6 +177,24 @@ class FragmentTests(MonitoringCase):
                 self.assertEqual((response.status_code, response['Cache-Control']), (503, 'no-store'), url)
                 self.assertNotIn(b'data-key="card:', response.content)
 
+    def test_a_source_the_state_needs_that_fails_is_logged_with_its_name_and_cause_once_a_minute(self):
+        """F-025: the 503 is never silent: the source and the error with its trace are logged, at most once a minute per
+        source, so a wall that polls every 15 s does not flood the log."""
+        read.FAILED_AT.clear()
+        for name, target in (('stock', 'stock_read.stock_of'), ('water', 'water_read.points_water'),
+                             ('events', 'health_read.open_events')):
+            owner, attribute = target.split('.')
+            with self.subTest(source=name), \
+                    mock.patch.object(getattr(read, owner), attribute, side_effect=RuntimeError(f'{name} is down')):
+                with self.assertLogs('monitoring.read', 'ERROR') as logged:
+                    self.assertEqual(self.client.get(CARDS).status_code, 503)
+                self.assertEqual(len(logged.records), 1)
+                record = logged.records[0]
+                self.assertIn(f'The {name} source', record.getMessage())
+                self.assertIn(f'RuntimeError: {name} is down', logged.output[0])     # the trace and the cause
+                with self.assertNoLogs('monitoring.read', 'ERROR'):
+                    self.assertEqual(self.client.get(CARDS).status_code, 503)        # within the minute: once
+
     def test_the_204_path_costs_a_session_the_rights_and_two_revision_queries(self):
         after = self.ask()['X-Poll-Next']
         self.client.get(after)
@@ -196,11 +221,11 @@ class FragmentTests(MonitoringCase):
 class WallTests(MonitoringCase):
     def test_a_wall_page_marks_the_document_and_keeps_its_session_once_a_day(self):
         html = self.client.get(PAGE, {'wall': '1'}).content.decode()
-        self.assertIn('<html lang="en" data-wall>', html)
+        self.assertRegex(html, r'<html lang="en" data-theme="[a-z]+" data-wall>')         # (core/theme.py)
         self.assertIn('data-fullscreen', html)                           # the wall keeps its Full screen button ...
         self.assertIn('Leave the wall', html)                            # ... and a way out
         self.assertIn('wall=1', re.search(r'data-poll="([^"]+)"', html).group(1))
-        self.assertEqual(self.client.session['monitoring_wall_day'], timezone.localdate().isoformat())
+        self.assertEqual(self.client.session['monitoring_wall_day'], company_today().isoformat())   # the company's day
         key = self.client.session.session_key
         first = Session.objects.get(pk=key).expire_date
         self.client.get(PAGE, {'wall': '1'})                        # the same day: no write
@@ -209,7 +234,7 @@ class WallTests(MonitoringCase):
         session['monitoring_wall_day'] = '2026-01-01'               # a day ago: extended again
         session.save()
         self.client.get(f'{CARDS}?wall=1')
-        self.assertEqual(self.client.session['monitoring_wall_day'], timezone.localdate().isoformat())
+        self.assertEqual(self.client.session['monitoring_wall_day'], company_today().isoformat())   # the company's day
 
     def test_a_page_that_is_not_a_wall_does_not_touch_the_session(self):
         self.client.get(PAGE)

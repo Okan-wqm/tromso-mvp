@@ -1,0 +1,222 @@
+/* Suderra Platform component styles (ui-*), from docs/design/system/components.css. Load fonts.css and tokens.css first.
+   Every colour, length and shadow reads a token (static/css/tokens.css). The app's own additions follow the copy. */
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--surface-canvas);
+  color: var(--text-1);
+  font-family: var(--font-text);
+  font-size: var(--fs-body);
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+:focus-visible { outline: none; box-shadow: var(--ring-focus); }
+.ui-icon { width: var(--icon-inline); height: var(--icon-inline); flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+
+/* The buttons, chips, tabs, toolbar, table frame and page head are static/css/ds.css (one rule set per pattern). */
+
+/* ---------- Shell: rail (sidebar) + top bar ---------- */
+.ui-shell { display: grid; grid-template-columns: var(--rail-w) minmax(0, 1fr); min-height: 100vh; }
+.ui-rail {
+  position: sticky; top: 0; display: flex; flex-direction: column; height: 100vh;
+  background: var(--gradient-rail); background-color: var(--surface-rail);
+  box-shadow: var(--stripe-rail); color: var(--text-on-rail);
+}
+.ui-rail-head { display: flex; align-items: center; gap: var(--space-3); height: var(--topbar-h); padding: 4px var(--space-3) 0 var(--space-4); }
+.ui-logo { display: block; width: 40px; height: 40px; flex: none; border-radius: var(--radius-pill); background: var(--surface-sheet); box-shadow: var(--shadow-logo); }
+.ui-wordmark { font-family: var(--font-display); font-size: 19px; font-weight: 600; letter-spacing: .08em; line-height: 1; color: var(--text-on-rail); }
+.ui-wordmark span { color: var(--brand); }
+.ui-panel-switch {
+  display: flex; align-items: center; gap: var(--space-2); width: calc(100% - 24px); margin: 0 var(--space-3) var(--space-2);
+  min-height: var(--control-h); padding: 0 var(--space-3);
+  border: 1px solid var(--rail-line); border-radius: var(--radius-control);
+  background: none; color: var(--text-on-rail); font: inherit; font-weight: 600; cursor: pointer;
+}
+.ui-panel-switch .ui-icon { margin-left: auto; }
+.ui-rail-nav { flex: 1; overflow-y: auto; padding: var(--space-2) var(--space-3) var(--space-5); }
+.ui-rail-group { margin: var(--space-4) 0 var(--space-1); padding: 0 var(--space-3); color: var(--text-on-rail); opacity: .62; font-size: var(--fs-small); font-weight: 600; }
+.ui-rail-link {
+  position: relative; display: flex; align-items: center; gap: var(--space-3);
+  min-height: var(--control-h); padding: 0 var(--space-3);
+  border-radius: var(--radius-control); color: var(--text-on-rail); text-decoration: none; font-weight: 500;
+}
+.ui-rail-link .ui-icon { width: var(--icon-rail); height: var(--icon-rail); stroke-width: 1.75; opacity: .85; }
+.ui-rail-link:hover { background: var(--rail-hover); }
+.ui-rail-link:focus-visible { box-shadow: var(--ring-focus-rail); }
+.ui-rail-link[aria-current="page"] { background: var(--rail-active); color: var(--on-rail-strong); font-weight: 700; }
+.ui-rail-link[aria-current="page"]::before { content: ""; position: absolute; left: -12px; top: 8px; bottom: 8px; width: 4px; border-radius: 0 2px 2px 0; background: var(--brand); }
+.ui-rail-link[aria-current="page"] .ui-icon { opacity: 1; }
+.ui-rail-badge { margin-left: auto; min-width: var(--badge-h); height: var(--badge-h); padding: 0 6px; border-radius: var(--radius-pill); background: var(--rail-badge); color: var(--on-rail-strong); font-size: var(--fs-caption); font-weight: 700; line-height: var(--badge-h); text-align: center; }
+.ui-rail-badge[data-status="critical"] { background: var(--crit); color: var(--on-crit); }
+.ui-rail-foot { padding: var(--space-3) var(--space-4); border-top: 1px solid var(--rail-rule); color: var(--text-on-rail); opacity: .7; font-size: var(--fs-small); }
+
+.ui-topbar {
+  position: sticky; top: 0; z-index: var(--z-topbar);
+  display: flex; align-items: center; gap: var(--space-3); height: var(--topbar-h); padding: 0 var(--space-5);
+  border-bottom: 1px solid var(--line-hair); background: var(--surface-canvas);
+}
+.ui-crumbs { color: var(--text-3); font-size: var(--fs-small); }
+.ui-crumbs b { color: var(--text-2); font-weight: 600; }
+.ui-lang { display: inline-flex; margin-left: auto; padding: 2px; border: 1px solid var(--line-control); border-radius: var(--radius-control); background: var(--surface-sheet); }
+.ui-lang button { min-width: 36px; min-height: 28px; border: 0; border-radius: var(--radius-chip); background: none; color: var(--text-2); font: inherit; font-size: var(--fs-small); font-weight: 700; cursor: pointer; }
+.ui-lang button[aria-pressed="true"] { background: var(--action-tint); color: var(--action); }
+.ui-user { display: inline-flex; align-items: center; gap: var(--space-2); font-weight: 600; }
+.ui-avatar { display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--radius-pill); background: var(--surface-sunken); color: var(--text-2); font-size: var(--fs-caption); font-weight: 700; }
+
+/* ---------- Page head and sheet ---------- */
+.ui-page { padding: var(--space-5); }
+.ui-safety { display: flex; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-3); color: var(--text-2); font-size: var(--fs-small); }
+.ui-why { color: var(--text-2); font-size: var(--fs-small); }
+
+/* ---------- Segmented toggle ---------- */
+.ui-seg { display: inline-flex; border: 1px solid var(--line-control); border-radius: var(--radius-control); background: var(--surface-sheet); overflow: hidden; }
+.ui-seg button { display: inline-flex; align-items: center; gap: var(--space-1); min-height: 38px; padding: 0 var(--space-3); border: 0; border-right: 1px solid var(--line-hair); background: none; color: var(--text-2); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.ui-seg button:last-child { border-right: 0; }
+.ui-seg button[aria-pressed="true"] { background: var(--action-tint); color: var(--action); box-shadow: inset 0 0 0 2px var(--action); }
+
+/* ---------- Table: sticky first column and actions, critical edge, scroll cue ---------- */
+.ui-table .sticky-first { position: sticky; left: 0; z-index: var(--z-sticky); background: var(--surface-sheet); }
+.ui-table .sticky-end { position: sticky; right: 0; z-index: var(--z-sticky); background: var(--surface-sheet); text-align: right; white-space: nowrap; box-shadow: -1px 0 0 var(--line-hair); }
+.ui-table thead .sticky-first, .ui-table thead .sticky-end { background: var(--surface-sunken); }
+.ui-table tr[data-status="critical"] > :first-child { box-shadow: var(--edge-crit); }
+.ui-table tr[data-status="warning"] > :first-child { box-shadow: var(--edge-warn); }
+.ui-table tr[data-state="voided"] td { color: var(--text-3); text-decoration: line-through; }
+.ui-code { display: block; font-weight: 600; white-space: nowrap; }
+.ui-sub { display: block; color: var(--text-3); font-size: var(--fs-small); }
+.ui-fold td { color: var(--text-2); font-weight: 600; background: var(--surface-canvas); }
+
+/* ---------- Value face, gauge, meal pips ---------- */
+.ui-value { display: inline-flex; flex-direction: column; }
+.ui-value b { font-weight: 600; white-space: nowrap; }
+.ui-value[data-status="warning"] b { color: var(--warn-text); }
+.ui-value[data-status="critical"] b { color: var(--crit-text); font-weight: 700; }
+.ui-value small { color: var(--text-3); font-size: var(--fs-small); white-space: nowrap; }
+.ui-gauge { display: inline-flex; align-items: center; gap: var(--space-2); white-space: nowrap; }
+.ui-gauge-track { position: relative; width: 96px; height: 8px; border: 1px solid var(--line-control); border-radius: var(--radius-pill); overflow: hidden; }
+.ui-gauge-fill { position: absolute; inset: 0 auto 0 0; background: var(--text-3); }
+.ui-gauge[data-status="warning"] .ui-gauge-fill { background: var(--warn); }
+.ui-gauge[data-status="critical"] .ui-gauge-fill { background: var(--crit); }
+/* The track drawn as an SVG (no style attribute under the Content-Security-Policy): the fill is a rectangle's width. */
+svg.ui-gauge-track { display: block; background: var(--surface-sheet); }
+svg.ui-gauge-track .ui-gauge-fill { position: static; fill: var(--text-3); }
+.ui-gauge[data-status="warning"] svg.ui-gauge-track .ui-gauge-fill { fill: var(--warn); }
+.ui-gauge[data-status="critical"] svg.ui-gauge-track .ui-gauge-fill { fill: var(--crit); }
+.ui-pips { display: inline-flex; gap: 6px; vertical-align: middle; }
+.ui-pip { width: 14px; height: 14px; border: 2px dashed var(--line-control); border-radius: var(--radius-pill); }
+.ui-pip[data-state="done"] { border: 0; background: var(--text-1); }
+.ui-pip[data-state="next"] { border: 2px solid var(--action); box-shadow: 0 0 0 2px var(--action-tint); }
+.ui-readout { font-size: var(--fs-h1); font-weight: 700; line-height: 1.2; white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* ===================== The app's additions to the ui-* parts (not in the design system's copy above) ===================== */
+/* The icons of templates/icons/_icon.html (svg.icon) inside the parts: 16px at stroke 2 inline and in chips. */
+.ui-safety .icon, .ui-value .icon { width: var(--icon-inline); height: var(--icon-inline); stroke-width: 2; }
+.ui-safety .icon { color: var(--warn); }
+
+/* Segmented filters whose choices are links (aria-pressed) */
+.ui-seg a {
+  display: inline-flex; align-items: center; gap: var(--space-1); min-height: 38px; padding: 0 var(--space-3);
+  border-right: 1px solid var(--line-hair); color: var(--text-2); font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap;
+}
+.ui-seg a:last-child { border-right: 0; }
+.ui-seg a:hover { background: var(--surface-sunken); color: var(--text-1); }
+.ui-seg a[aria-pressed="true"] { background: var(--action-tint); color: var(--action); box-shadow: inset 0 0 0 2px var(--action); }
+
+/* "How rations are worked out": the arithmetic folded under a link-styled summary */
+.ui-explain { margin: 0 0 var(--space-3); color: var(--text-2); font-size: var(--fs-small); }
+.ui-explain summary { width: fit-content; color: var(--action); font-size: var(--fs-body); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.ui-explain p { max-width: var(--prose); margin: var(--space-2) 0 0; }
+
+/* Table parts: a row group's head cell, the status edge on the first cell (the row keeps its own classes), units */
+.ui-table th[scope="rowgroup"], .ui-table tbody th { font-weight: 400; text-align: left; }
+.ui-table td[data-status="critical"], .ui-table th[data-status="critical"] { box-shadow: var(--edge-crit); }
+.ui-table td[data-status="warning"], .ui-table th[data-status="warning"] { box-shadow: var(--edge-warn); }
+.ui-table tbody + tbody > tr:first-child > * { border-top: 2px solid var(--line-hair); }
+.ui-table .num .ui-value { align-items: flex-end; text-align: right; }
+.ui-table .sticky-first { min-width: 9rem; max-width: 16rem; }
+.ui-table .sticky-first .ui-chip { margin-top: 6px; }
+.ui-table .ui-code a, a.ui-code { color: var(--text-1); text-decoration: none; }
+.ui-table a.ui-code:hover { color: var(--action); text-decoration: underline; }
+.ui-table .ui-sub + .ui-sub { margin-top: 2px; }
+.ui-table abbr { text-decoration: none; }
+.ui-table tr.is-selected > * { background: var(--action-tint); }
+.ui-table tr.is-selected > :first-child { box-shadow: inset 4px 0 0 var(--action); }
+.ui-table tr.is-voided td { color: var(--text-3); }
+.ui-table tr.is-voided td .ui-value b { text-decoration: line-through; }
+.ui-table .ui-pips { margin-top: 4px; }
+.ui-table td.ui-why, .ui-table .ui-why { white-space: normal; }
+.ui-value[data-status="stale"] b, .ui-value[data-status="no_limit"] b { color: var(--text-2); }
+.ui-value[data-status="stale"] b { font-style: italic; }
+.ui-value .wq-derived { font-style: italic; }
+.ui-value-figure { display: inline-flex; align-items: center; gap: var(--space-1); }
+.ui-value[data-status="warning"] .icon { color: var(--warn); }
+.ui-value[data-status="critical"] .icon { color: var(--crit); }
+.ui-gauge-text { white-space: nowrap; }
+.ui-gauge-fill { display: block; }
+.ui-gauge[data-status="critical"] .ui-gauge-text { color: var(--crit-text); font-weight: 600; }
+.ui-readout + .ui-sub { margin-top: 2px; }
+.ui-hint { color: var(--text-3); font-size: var(--fs-small); }
+
+@media (max-width: 639px) {
+  .ui-table .sticky-first { min-width: 7.5rem; max-width: 9.5rem; }
+  .ui-readout { font-size: 24px; }
+}
+.ui-table [data-gap] { margin-top: 4px; }
+.ui-table .ui-chip-wrap { display: flex; width: fit-content; max-width: 22rem; }
+.ui-mt { display: block; margin-top: 4px; }
+.ui-table .unit-row .sticky-first, .ui-table .unit-row .sticky-end { z-index: 3; }
+.ui-table tr.is-over > * { background: var(--warn-tint); }
+.ui-table .unit-row { position: relative; cursor: pointer; }
+.ui-table .unit-row:hover > * { background: var(--surface-sunken); }
+.ui-table .ui-gauge .over-badge { margin-left: var(--space-1); }
+.ui-table .num .ui-chip-wrap { margin-left: auto; text-align: left; }
+@media (max-width: 639px) {
+  .ui-table .ui-chip { white-space: normal; line-height: 1.25; padding-block: 3px; }
+}
+/* The origin and age printed inside a value (farm/_water_source.html) read as the value face's small line */
+.ui-value b .wq-source { display: block; margin-top: 1px; color: var(--text-3); font-size: var(--fs-small); font-style: normal; font-weight: 400; white-space: nowrap; }
+.ui-table .row-sub { display: block; color: var(--text-3); font-size: var(--fs-small); }
+/* A long chip in the sticky unit column (a trial's placement) wraps inside its column instead of running under the next */
+.ui-table .sticky-first .badge { display: inline-block; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+@media (max-width: 639px) {
+  /* On a phone the two sticky columns leave room for the figures: the unit narrows, the row action may take two lines */
+  .ui-table .sticky-first { min-width: 6.5rem; max-width: 7.5rem; padding-inline: var(--space-3); }
+  .ui-table .sticky-end { padding-inline: var(--space-2); }
+  .ui-table .sticky-end .ui-btn { max-width: 5.5rem; padding: 0 var(--space-2); white-space: normal; line-height: 1.2; text-align: center; }
+}
+
+/* Widths: a table's words wrap inside their column so that the meal board fits a 1440 px window (README: the five numbers
+   never clip), and where a wide table scrolls, its sticky actions carry a shade so a column passing under them reads as
+   going on, not as cut. Figures and codes stay on one line. */
+/* a figure column's head wraps too (.ui-table .num, which keeps the figures on one line, outranked the plain head rule):
+   "Fed today" held its column at 59 px of head over a 31 px figure */
+.ui-table thead th, .ui-table thead th.num { white-space: normal; }
+.ui-value small, .ui-value b .wq-source { white-space: normal; }
+.ui-value b .wq-origin, .ui-value b .wq-age { white-space: nowrap; }
+.ui-table .ui-code-wrap { white-space: normal; }
+.ui-table .ui-chip-wrap { max-width: 12rem; }
+.ui-table .sticky-end { padding-inline: var(--space-2); box-shadow: -1px 0 0 var(--line-hair), -10px 0 10px -10px var(--scrim); }
+.ui-table .sticky-first { box-shadow: 10px 0 10px -10px var(--scrim); }
+.ui-table td.sticky-first[data-status="critical"] { box-shadow: var(--edge-crit), 10px 0 10px -10px var(--scrim); }
+.ui-table td.sticky-first[data-status="warning"] { box-shadow: var(--edge-warn), 10px 0 10px -10px var(--scrim); }
+.board-table .board-protocol { min-width: 8rem; max-width: 12rem; }
+.board-table .board-weight { max-width: 11rem; }
+.board-table .board-water { max-width: 10rem; }
+.units-table .units-batch { max-width: 12rem; }
+.ui-gauge { flex-wrap: wrap; white-space: normal; }
+.ui-gauge-text { white-space: nowrap; }
+.ui-table .sticky-first { min-width: 7.5rem; }
+.board-table .board-weight { max-width: 9.5rem; }
+.board-table .board-weight .ui-chip-wrap { max-width: 9rem; }
+.ui-table .sticky-end .ui-btn { padding: 0 var(--space-3); }
+.ui-table td.num.board-weight { white-space: normal; }
+.board-table .board-protocol { max-width: 11rem; }
+.ui-table .sticky-first { max-width: 12rem; }
+.ui-table .sticky-first .ui-chip, .ui-table .water-status .ui-chip { white-space: normal; line-height: 1.25; padding-block: 3px; }
+.ui-table .water-status { min-width: 8rem; max-width: 10rem; }
+.ui-value b .wq-origin { white-space: normal; }
+.ui-table td.num .ui-value { min-width: 6.5rem; }

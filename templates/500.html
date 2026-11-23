@@ -1,0 +1,24 @@
+{% load i18n static %}<!doctype html>
+{% comment %} A page that broke: rendered without the request (Django's server_error), so nothing here may need the person, the
+   menu or the database: the base style sheet, what happened and the way back (core/tests_errors.py). {% endcomment %}
+<html lang="{{ LANGUAGE_CODE|default:'en' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% trans "Something went wrong" %} · Suderra</title>
+  <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
+  <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  <link rel="stylesheet" href="{% static 'css/ds.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components.css' %}">
+</head>
+<body>
+  <main class="content">
+    <div class="empty" role="alert">
+      <h1>{% trans "Something went wrong" %}</h1>
+      <p>{% trans "The page could not be shown. Try again, and tell an administrator if it happens again." %}</p>
+      <a class="button button-inline" href="/">{% trans "Go to the overview" %}</a>
+    </div>
+  </main>
+</body>
+</html>

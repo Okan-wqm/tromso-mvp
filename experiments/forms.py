@@ -17,6 +17,7 @@ from farm.models import FeedingProtocol, Site, Species, System, Tank
 from farm.models.feeding_protocol import ProtocolStatus
 from farm.stock.dates import site_today
 from farm.stock.services import STOCKABLE_SPECIES
+from core.widgets import DayInput
 
 from . import read, services
 from .design import load
@@ -28,7 +29,7 @@ DETAILS_TABS = [('details', _('Details'), DETAIL_FIELDS)]
 # What a started experiment fixes (the database refuses a change too: migration 0002).
 FIXED_WHEN_STARTED = ('hypothesis', 'primary_endpoint', 'starts_on', 'duration_days')
 # A trial uses a species the farm grows or tries out (STOCKABLE_SPECIES: the batch's own rule).
-DATE = forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d')
+DATE = DayInput()
 
 
 class ExperimentForm(TabbedForm):

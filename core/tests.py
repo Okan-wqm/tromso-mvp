@@ -1,7 +1,7 @@
 import io
 import re
 import warnings
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone as utc
 from unittest import mock
 from importlib import import_module
 
@@ -61,7 +61,7 @@ class AuthFlowTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ['ali@example.com'])
 
-        link = re.search(r'http://testserver(\S+)', mail.outbox[0].body).group(1)
+        link = re.search(re.escape(settings.PUBLIC_BASE_URL) + r'(/\S+)', mail.outbox[0].body).group(1)
         response = self.client.get(link, follow=True)
         self.assertTrue(response.context['validlink'])
         response = self.client.post(
@@ -87,7 +87,8 @@ class ShellTests(TestCase):
         response = self.client.get(reverse('home'))
         self.assertContains(response, 'id="rail"')
         self.assertContains(response, 'data-nav-toggle')
-        self.assertContains(response, 'aria-current="page"', count=1)
+        rail = response.content.decode().split('id="rail"')[1].split('</aside>')[0]
+        self.assertEqual(rail.count('aria-current="page"'), 1)          # (the bottom bar marks its own: core/tests_design_shell.py)
         self.assertContains(response, 'action="%s"' % reverse('logout'))
 
     def test_password_change_uses_shell(self):
@@ -154,7 +155,20 @@ class AuditLogTests(TestCase):
         self.assertEqual(labels(q='bh'), ['Bergen (BH)'])
         self.assertEqual(labels(user='kari'), ['Tromsø (TS)'])
         self.assertEqual(labels(action='create'), ['Bergen (BH)'])
-        self.assertEqual(labels(**{'from': '2999-01-01'}), [])
+        self.assertEqual(labels(**{'from': '01.01.2099'}), [])          # the window of dates ends with 2100
+
+    def test_activity_log_days_and_times_are_the_companys_clock(self):
+        """23:30 UTC on 1 March is 00:30 on 2 March in Oslo (settings.COMPANY_TIME_ZONE): the entry is the 2nd's, by
+        the filter and on the page, not the server's UTC day."""
+        self.user.user_permissions.add(Permission.objects.get(codename='view_auditlog'))
+        self.client.force_login(self.user)
+        with mock.patch('django.utils.timezone.now', return_value=datetime(2026, 3, 1, 23, 30, tzinfo=utc.utc)):
+            self.make_entry(entity_label='Night (NT)')
+        url = reverse('core:activity_log')
+        labels = lambda **query: [e.entity_label for e in self.client.get(url, query).context['page'].object_list]
+        self.assertEqual(labels(**{'from': '02.03.2026', 'to': '02.03.2026'}), ['Night (NT)'])
+        self.assertEqual(labels(**{'from': '01.03.2026', 'to': '01.03.2026'}), [])
+        self.assertContains(self.client.get(url), '02.03.2026 00:30')
 
 
 def perms(*names):
@@ -290,7 +304,7 @@ class RoleTests(AdminTestCase):
                 continue
             read_id = re.search(r'value="%s" id="(\w+)"' % perms(area.perm(access.READ))[0], html).group(1)
             for action in area.actions:
-                if action != access.READ:
+                if action in access.INCLUDES_READ:     # Crew, All production and Everyone widen rows only
                     tied += 1
                     self.assertRegex(
                         html, r'value="%s" id="\w+" data-requires="%s"' % (perms(area.perm(action))[0], read_id))
@@ -365,7 +379,7 @@ class UserTests(AdminTestCase):
         self.client.post(reverse('core:user_create'), user_data())
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ['kari@example.com'])
-        link = re.search(r'http://testserver(\S+)', mail.outbox[0].body).group(1)
+        link = re.search(re.escape(settings.PUBLIC_BASE_URL) + r'(/\S+)', mail.outbox[0].body).group(1)
 
         self.client.logout()
         response = self.client.get(link, follow=True)
@@ -386,9 +400,8 @@ class UserTests(AdminTestCase):
         self.client.post(reverse('password_reset'), {'email': 'kari@example.com'})
         self.assertEqual(len(mail.outbox), 1)
 
-    def test_email_is_required_and_unique(self):
-        response = self.client.post(reverse('core:user_create'), user_data(email=''))
-        self.assertIn('email', response.context['form'].errors)
+    def test_email_is_unique(self):
+        # (it may be left out: core.tests_account_mail, a user without an address)
         response = self.client.post(reverse('core:user_create'), user_data(username='other', email='ROOT@example.com'))
         self.assertEqual(response.context['form'].errors['email'], ['Another user already uses this email.'])
         self.assertEqual(get_user_model().objects.count(), 1)
@@ -411,11 +424,13 @@ class UserTests(AdminTestCase):
         self.client.post(reverse('core:user_create'), user_data(groups=[self.feeder.pk]))
         kari = get_user_model().objects.get(username='kari')
         self.client.post(reverse('core:user_edit', args=[kari.pk]), user_data(is_active='', groups=[self.vet.pk]))
-        created, edited = AuditLog.objects.order_by('created_at').values_list('action', 'entity_type', 'changes')
+        created, invited, edited = AuditLog.objects.order_by('created_at').values_list('action', 'entity_type', 'changes')
         self.assertEqual(created, ('create', 'user', {
             'Username': [None, 'kari'], 'First name': [None, 'Kari'], 'Last name': [None, 'Nordmann'],
             'Email': [None, 'kari@example.com'], 'Active': [None, message('Yes')], 'Roles': [None, 'Feeder'],
         }))
+        # the invitation the new person was sent (core.tests_account_mail)
+        self.assertEqual(invited, ('invite', 'user', {'Sent to': [None, 'kari@example.com']}))
         self.assertEqual(edited, ('update', 'user', {'Active': [message('Yes'), message('No')], 'Roles': ['Feeder', 'Vet']}))
 
 

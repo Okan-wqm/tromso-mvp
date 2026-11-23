@@ -3,7 +3,6 @@ channel number drawn from a sequence and never reused, and the generated columns
 itself (an IntegrityError naming the constraint), whatever wrote the row."""
 from datetime import datetime, timezone as tz
 
-from django.db import connection
 from django.test import TestCase
 
 from sensors import quantities

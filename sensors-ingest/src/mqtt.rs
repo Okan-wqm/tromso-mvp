@@ -9,7 +9,7 @@
 use crate::config::ConnCfg;
 use crate::pipeline::Msg;
 use crate::service::{Acker, Envelope, Shared};
-use chrono::Utc;
+use crate::ts::Ts;
 use rumqttc::{
     AsyncClient, Event, EventLoop, MqttOptions, Outgoing, Packet, Publish, QoS, TlsConfiguration, Transport,
 };
@@ -207,7 +207,7 @@ async fn read_loop(
                     connection_id: id,
                     topic: p.topic.clone(),
                     payload: p.payload.to_vec(),
-                    received_at: Utc::now(),
+                    received_at: Ts::now(),
                 };
                 let ack: Option<Box<dyn Acker>> =
                     if qos0 { None } else { Some(Box::new(MqttAck { client: client.clone(), publish: p })) };
@@ -237,7 +237,6 @@ mod tests {
     use super::*;
     use crate::pipeline::Msg;
     use crate::service::Acker;
-    use chrono::Utc;
     use std::sync::Arc;
     use std::sync::atomic::{AtomicU64, Ordering};
     use std::time::Duration;
@@ -254,12 +253,7 @@ mod tests {
         Envelope {
             generation: 0,
             qos0,
-            msg: Msg {
-                connection_id: Uuid::nil(),
-                topic: "t".into(),
-                payload: b"{}".to_vec(),
-                received_at: Utc::now(),
-            },
+            msg: Msg { connection_id: Uuid::nil(), topic: "t".into(), payload: b"{}".to_vec(), received_at: Ts::now() },
             ack: if qos0 { None } else { Some(Box::new(Count(acks.clone()))) },
         }
     }

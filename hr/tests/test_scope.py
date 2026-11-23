@@ -12,7 +12,7 @@ from .. import read, scope
 from ..models import Employee, OfficeDepartment, Posting
 from ..units import token
 from .helpers import user
-from .helpers_people import LEAD_PERMS, PeopleTestCase, TOP, employee, place
+from .helpers_people import PeopleTestCase, TOP, employee, place
 
 DAY = date(2026, 3, 2)
 
@@ -149,14 +149,14 @@ class EmployeeUrlMatrixTests(PeopleTestCase):
                  'holiday_create', 'holiday_edit', 'holiday_delete', 'schedulingsettings_list',
                  'schedulingsettings_edit', 'shiftassignment_list', 'shiftassignment_create', 'shiftassignment_edit',
                  'shiftassignment_delete', 'roster_plan', 'leaverequest_list', 'leaverequest_create', 'leaverequest_edit',
-                 'leaverequest_detail', 'leaverequest_approve', 'leaverequest_reject', 'leaverequest_cancel',
+                 'leaverequest_detail', 'leaverequest_approve', 'leaverequest_reject', 'leaverequest_cancel', 'leaverequest_shorten',
                  'leavetype_list', 'leavetype_create', 'leavetype_edit', 'leavetype_delete', 'attendancerecord_list',
                  'attendancerecord_create', 'attendancerecord_edit', 'attendancerecord_delete', 'today', 'today_board', 'punch', 'orgchart', 'overview'}
         # Production › Team serves the people pages again (core.crud.Mount): the same routes named with its key
         mounted = {'employee_list', 'employee_create', 'employee_edit', 'employee_detail', 'shiftassignment_list',
                    'shiftassignment_create', 'shiftassignment_edit', 'shiftassignment_delete', 'roster_plan', 'leaverequest_list',
                    'leaverequest_create', 'leaverequest_edit', 'leaverequest_detail', 'leaverequest_approve',
-                   'leaverequest_reject', 'leaverequest_cancel', 'attendancerecord_list', 'attendancerecord_create',
+                   'leaverequest_reject', 'leaverequest_cancel', 'leaverequest_shorten', 'attendancerecord_list', 'attendancerecord_create',
                    'attendancerecord_edit', 'attendancerecord_delete', 'today', 'today_board', 'punch', 'orgchart', 'overview'}
         known |= {f'production_{name}' for name in mounted}
         self.assertEqual(set(names) - known, set(), 'give every new HR route a row in the URL matrix')

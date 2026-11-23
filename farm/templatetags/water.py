@@ -1,13 +1,17 @@
 """How water values read on the pages, in the person's language: each at its parameter's precision with
 the language's decimal sign, a limit row as a short sentence, and how old a value is."""
+from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_UP, Decimal
+
 from django import template
 from django.utils import timezone
 from django.utils.timesince import timesince
 from django.utils.translation import gettext as _
 
+from core import text
+
 from ..models.site import zone_of
 from ..models.water_point import site_of
-from ..water import parameters, read as water_read
+from ..water import messages, parameters, read as water_read
 from ..water.evaluate import ANY_WATER, Status
 from .stock import DASH, number
 
@@ -20,6 +24,70 @@ def water_value(value, code):
     if value in (None, ''):
         return DASH
     return number(value, parameters.get(code).decimals)
+
+
+# How many decimals more than its parameter keeps a worked-out value may be said with, to read on the side of a bound it
+# is on (`value_past`).
+EXTRA_DECIMALS = 3
+
+
+def _proof(reading, limit, below):
+    """(the value, its decimals) that read past `limit` for a worked-out value that is past it but whose shown value
+    would not, else None: the exact value with the fewest extra decimals that read past, at most `EXTRA_DECIMALS` and,
+    past them, cut toward the side it is on, so it is never rounded onto the bound."""
+    exact = reading.exact
+    if exact is None or not _past(exact, limit, below) or _past(reading.value, limit, below):
+        return None
+    decimals = parameters.get(reading.code).decimals
+    for places in range(decimals + 1, decimals + EXTRA_DECIMALS + 1):
+        rounded = exact.quantize(Decimal(1).scaleb(-places), rounding=ROUND_HALF_UP)
+        if _past(rounded, limit, below):
+            return rounded, places
+    return exact.quantize(Decimal(1).scaleb(-places), rounding=ROUND_FLOOR if below else ROUND_CEILING), places
+
+
+def _past(value, limit, below):
+    return value < limit if below else value > limit
+
+
+def value_past(reading, limit, below):
+    """The reading's value as a sentence says it beside `limit`, the bound its judgement named (evaluate.crossed: `below`
+    is whether it was past it from under). A worked-out value is judged unrounded (`Reading.exact`, the audit of
+    2026-11-19, F3) and shown at its parameter's decimals, so a true 59.988221 % past a limit of 60.0 is shown 60.0 and a
+    sentence that set it beside the bound read "60.0 < critical limit 60.0". Where the shown value reads past the bound,
+    it is said as `water_value` says it; where it reads on it (rounded onto it), the exact value with the fewest extra
+    decimals that read past ("59.99 < 60.0", `_proof`). Display only: nothing here judges, and a value the bound does
+    not name, or one judged as entered (`exact` None: it has no more decimals than are shown), is said as it always
+    was."""
+    proof = _proof(reading, limit, below)
+    return water_value(reading.value, reading.code) if proof is None else number(*proof)
+
+
+def proof_of(reading):
+    """(the value, its decimals) a worked-out reading is said with wherever its figure stands alone (a cell, a tile, an
+    alarm's summary), or None where its plain figure stands: when its own value was judged past a bound (the nearest of
+    them, read.past_bound) and rounds onto it, the decimals that read past it (owner decision of 2026-11-22: a value
+    judged past a bound shows the decimals that prove it everywhere it is shown). Measured values are judged as entered:
+    always None."""
+    if reading is None or reading.value is None or reading.exact is None:
+        return None
+    found = water_read.past_bound(reading)
+    return None if found is None else _proof(reading, found[1], found[0].endswith('low'))
+
+
+def figure_past(reading):
+    """The text of `proof_of` (the figure of a reading rounded onto the bound it is past), else None."""
+    proof = proof_of(reading)
+    return None if proof is None else number(*proof)
+
+
+@register.filter
+def reading_figure(reading):
+    """A reading's value as a figure on its own says it: at its parameter's decimals (`water_value`), and where it is
+    judged past a bound the shown value would read as on, with the decimals that read past it (`figure_past`)."""
+    if reading is None:
+        return DASH
+    return figure_past(reading) or water_value(reading.value, reading.code)
 
 
 @register.filter
@@ -45,7 +113,7 @@ def limit_text(row):
         parts.append(_('critical above %(value)s') % {'value': show(row.critical_high)})
     who = row.species.common_name
     if row.water_type != ANY_WATER:
-        who = f'{who} ({row.get_water_type_display().lower()})'
+        who = f'{who} ({text.lower(row.get_water_type_display())})'
     return f'{who}: {", ".join(parts)}'
 
 
@@ -61,7 +129,7 @@ def age(moment):
 
 
 @register.filter
-def site_clock(sample):
+def sample_clock(sample):
     """When a sample was taken, on the clock of its site, as a naive time the date filter shows as it is."""
     return timezone.make_naive(sample.measured_at, zone_of(site_of(sample.point)))
 
@@ -69,6 +137,12 @@ def site_clock(sample):
 @register.filter
 def status_label(status):
     return Status(status).label
+
+
+@register.filter
+def ionic_strength_unit(equilibria):
+    """The unit of a water's ionic strength (messages.ionic_strength_unit): mol/kg H₂O or mol/L."""
+    return messages.ionic_strength_unit(equilibria)
 
 
 @register.filter
@@ -105,12 +179,11 @@ def short_age(moment, now=None):
 
 
 @register.filter
-def source_line(reading, now=None):
-    """Where a value comes from and how old it is, as every page with a latest value shows it (owner rule A1):
-    "unit sensor #12 · 12 s ago", "system sensor #3 · 40 s ago", "manual · 2 days ago"; `now`: the moment the age is
-    counted to (a past moment's Deffeyes), else now."""
+def source(reading, now=None):
+    """Where a value comes from and how old it is, as every page with a latest value shows it (owner rule A1), for
+    farm/_water_source.html: {'origin': 'unit sensor #12', 'age': '12 s ago'}, 'system sensor #3' and '40 s ago',
+    'manual' and '2 days ago'; `now`: the moment the age is counted to (a past moment's Deffeyes), else now."""
     if not reading:
-        return ''
-    origin = water_read.origin_text(reading)
-    # Translators: %(origin)s is where a value comes from (manual, lab, unit sensor #12, system sensor); %(age)s how old.
-    return _('%(origin)s · %(age)s ago') % {'origin': origin, 'age': short_age(reading.at, now or None)}
+        return None
+    # Translators: how old a value is, e.g. "12 s ago", "2 days ago".
+    return {'origin': water_read.origin_text(reading), 'age': _('%(age)s ago') % {'age': short_age(reading.at, now or None)}}

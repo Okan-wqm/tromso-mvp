@@ -7,6 +7,8 @@ from django.utils import formats, timezone
 from django.utils.html import escape
 from django.utils.translation import gettext as _
 
+from farm.water import messages
+
 from . import read
 
 WIDTH, HEIGHT = 720, 260
@@ -84,7 +86,8 @@ def draw(chart, title):
         parts.append(f'<circle class="chart-sample" cx="{_number(x(at))}" cy="{_number(y(float(value)))}" r="4">'
                      f'<title>{escape(_("Sample"))}: {escape(formats.localize(value))}</title></circle>')
     for marker in chart.markers:
-        label = _('Sensor moved here') if marker.kind == 'move' else _('Calibrated')
+        label = {'move': _('Sensor moved here'), 'ph_scale': _('pH scale changed: the values before are not used')
+                 }.get(marker.kind, _('Calibrated'))
         parts.append(f'<line class="chart-marker" x1="{_number(x(marker.at))}" x2="{_number(x(marker.at))}" y1="{TOP}" '
                      f'y2="{HEIGHT - BOTTOM}"><title>{escape(label)}</title></line>')
     for value in (low + pad, (low + high) / 2, high - pad):
@@ -109,4 +112,18 @@ def notes(chart):
         found.append(_('Each point is the mean of its time; the band is its lowest and highest value.'))
     if chart.samples:
         found.append(_('The dots are manual and lab samples.'))
+    scales = sorted({(segment.channel_no, segment.ph_scale) for segment in chart.segments if segment.ph_scale})
+    for channel_no, scale in scales:
+        # A pH channel on another scale (sensors.Channel.ph_scale): drawn as the probe measured it; the water pages put
+        # it on the NBS scale with the temperature and salinity of each moment (farm/water/read.py).
+        found.append(_('Channel #%(number)d is drawn as its probe measured it, on the %(scale)s, not converted: the '
+                       'samples and the water pages are on the NBS scale.') % {
+            'number': channel_no, 'scale': messages.PH_SCALES[scale]})
+    for channel_no, changed in chart.cuts:
+        # Whether the change is inside the window or after it (a window wholly before it is blank: the review of the
+        # water-chemistry audit, C4), the chart says why those values are not drawn.
+        found.append(_('Channel #%(number)d’s values before %(time)s are not drawn: its pH scale was changed then, and '
+                       'the scale they were measured on is not known.') % {
+            'number': channel_no,
+            'time': formats.date_format(timezone.localtime(changed, chart.zone), 'DATETIME_FORMAT')})
     return found

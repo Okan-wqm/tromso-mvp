@@ -7,7 +7,7 @@ server's reasons on their fields (422) and goes back where it was opened (`next`
 Who may do what (config/access.py): reading a page needs view on its records, recording add, voiding delete;
 a treatment's last day is changed with change. The buttons a person cannot use are not shown, and the views
 refuse them too. The withdrawal line is shown to everyone who sees the units: it is food safety."""
-from datetime import date, timedelta
+from datetime import timedelta
 from urllib.parse import urlencode
 
 from django.contrib import messages
@@ -21,14 +21,15 @@ from django.utils.translation import gettext as _, ngettext
 
 from core import navigation
 from core.crud import done, render_page
+from core.dates import read_day
+from core.platform import unknown_withdrawal_days
 
 from ..forms.health import LastDayForm, LiceCountForm, TreatmentForm
 from ..forms.stock import VoidForm
 from ..models import Batch, HealthEvent, LiceCount, Medicine, Site, Tank, Treatment
 from ..models.health import MedicineKind
 from ..stock import read as stock_read, views as stock_views
-from ..stock.dates import local_today, shown_date
-from ..stock.read import Presence
+from ..stock.dates import earliest, shown_date
 from ..stock.services import AlreadyRecorded
 from . import notices, read, services, withdrawal
 
@@ -60,21 +61,20 @@ def dialog_url(name, back, unit=None, args=()):
     return f'{reverse(name, args=args)}?{urlencode(query)}'
 
 
-def _day(value):
-    try:
-        return date.fromisoformat(value)
-    except ValueError:
-        return None
-
-
 def _units_with_fish(site=None, production=False):
-    """The live units holding fish now (of `site` when given), in code order; with `production`, those holding production
-    fish (a cage of cleaner fish alone is not counted for lice: the count is of the salmonids)."""
+    """The live units a treatment or a sea-lice count can be recorded for (of `site` when given), in code order: those
+    holding fish now, and those whose fish left on a day that may still be dated (inside the correction window:
+    farm.stock.read.left_within, flow fault S-04: a course given before the harvest that emptied the unit must still be
+    enterable, or the harvest inside its withdrawal is never found). The service checks the fish on the record's own
+    day. With `production`, units of production fish (a cage of cleaner fish alone is not counted for lice: the count is
+    of the salmonids)."""
     units = Tank.objects.select_related('production_department__site').order_by('code')
     if site is not None:
         units = units.filter(production_department__site=site)
-    stock = stock_read.stock_of(list(units))
-    held = [pk for pk, unit_stock in stock.items() if unit_stock.count > 0 or not production]
+    units = list(units)
+    stock = stock_read.stock_of(units)
+    held = {pk for pk, unit_stock in stock.items() if unit_stock.count > 0 or not production}
+    held |= set(stock_read.left_within([unit for unit in units if unit.pk not in held], earliest, production))
     return Tank.objects.filter(pk__in=held).select_related('production_department__site').order_by('code')
 
 
@@ -88,24 +88,7 @@ def _chosen_unit(request):
 TREATMENT_FILTERS = ('site', 'unit', 'batch', 'method', 'medicine', 'from', 'to', 'show', 'voided')
 
 
-def treated_batches(treatments, today):
-    """{treatment id: [(batch, Withdrawal or None)]}: the batches each treatment reached (from the stock ledger)
-    and, for a live treatment with a medicine, the withdrawal it puts on each."""
-    unit_ids = {unit.pk for treatment in treatments for unit in treatment.units.all()}
-    presence = Presence.of_units(unit_ids)
-    batch_ids = {batch_id for unit_id in unit_ids for batch_id in presence.batches.get(unit_id, ())}
-    reader = withdrawal.Reader(batch_ids, today)
-    batches = Batch.all_objects.in_bulk(batch_ids)
-    found = {}
-    for treatment in treatments:
-        treated = sorted((batches[batch_id] for batch_id in reader.treated(treatment)), key=lambda batch: batch.code)
-        found[treatment.pk] = [
-            (batch, reader.of_treatment(treatment, batch.pk) if treatment.medicine_id and not treatment.is_deleted
-             else None) for batch in treated]
-    return found
-
-
-def _filtered_treatments(params, today):
+def _filtered_treatments(params, request):
     treatments = Treatment.all_objects.select_related('medicine', 'vet', 'health_event', 'created_by', 'deleted_by')\
         .prefetch_related('units__production_department__site', 'acknowledgements')
     if params['voided'] != '1':
@@ -129,8 +112,8 @@ def _filtered_treatments(params, today):
     else:
         params['method'] = ''
     for key, lookup in (('from', 'end_date__gte'), ('to', 'start_date__lte')):
-        day = _day(params[key])
-        params[key] = day.isoformat() if day else ''
+        day = read_day(params[key], request)
+        params[key] = day or ''          # a date: the input shows it as the language writes it
         if day:
             treatments = treatments.filter(**{lookup: day})
     if params['show'] == VACCINATIONS:
@@ -141,11 +124,11 @@ def _filtered_treatments(params, today):
     params['batch'] = str(batch.pk) if batch else ''
     if batch is not None or params['show'] == UNDER_WITHDRAWAL:
         candidates = list(treatments)
-        rows = treated_batches(candidates, today)
+        rows = withdrawal.of_treatments(candidates)
         keep = [treatment.pk for treatment in candidates
-                if (batch is None or any(each.pk == batch.pk for each, _w in rows[treatment.pk]))
-                and (params['show'] != UNDER_WITHDRAWAL
-                     or any(found is not None and found.holds_on(today) for _b, found in rows[treatment.pk]))]
+                if (batch is None or any(part.batch.pk == batch.pk for part in rows[treatment.pk]))
+                # held today: on today of the site the fish are on (withdrawal.of_treatments)
+                and (params['show'] != UNDER_WITHDRAWAL or any(part.held for part in rows[treatment.pk]))]
         treatments = treatments.filter(pk__in=keep)
     return treatments, choices
 
@@ -155,11 +138,10 @@ def treatments(request):
     """Operations › Treatments: every treatment, newest first, with the batches it reached and the withdrawal
     it puts on each, filtered in the address."""
     params = {key: request.GET.get(key, '').strip() for key in TREATMENT_FILTERS}
-    today = local_today()
-    found, choices = _filtered_treatments(params, today)
+    found, choices = _filtered_treatments(params, request)
     page = Paginator(found, PAGE_SIZE).get_page(request.GET.get('page'))
     rows = list(page.object_list)
-    batches = treated_batches(rows, today)
+    batches = withdrawal.of_treatments(rows)
     here = request.get_full_path()
     can_void, can_change = request.user.has_perm(TREATMENTS['delete']), request.user.has_perm(TREATMENTS['change'])
     kept = {key: value for key, value in params.items() if value}
@@ -170,13 +152,16 @@ def treatments(request):
                'last_day_url': dialog_url('farm:treatment_last_day', here, args=[treatment.pk])
                if can_change and not treatment.is_deleted else ''}
               for treatment in rows],
-        page=page, pager_query=urlencode(kept), params=params, choices=choices, today=today,
+        page=page, pager_query=urlencode(kept), params=params, choices=choices,
         count_line=ngettext('%(count)d treatment', '%(count)d treatments', page.paginator.count) % {
             'count': page.paginator.count},
         filtered=bool({key for key in kept if key != 'voided'}),
         clear_url=reverse('farm:treatments'),
         record_url=dialog_url('farm:treatment_record', here) if request.user.has_perm(TREATMENTS['add']) else '',
         under_withdrawal=UNDER_WITHDRAWAL, vaccinations=VACCINATIONS,
+        # The courses whose unknown end has stopped holding fish (withdrawal rule 8), with what gives each an end.
+        unresolved=[withdrawal.unresolved_text(batch, held) for batch, held in withdrawal.unresolved()],
+        unknown_days=unknown_withdrawal_days(),
     ))
 
 
@@ -239,7 +224,8 @@ def void_treatment(request, pk):
         form = VoidForm(request.POST)
         if form.is_valid():
             try:
-                services.void_treatment(request.user, treatment, form.cleaned_data['reason'])
+                services.void_treatment(request.user, treatment, form.cleaned_data['reason'],
+                                        withdrawal_ack=form.cleaned_data['withdrawal_ack'])
             except ValidationError as error:
                 form.add_service_error(error)
             else:
@@ -254,7 +240,7 @@ def void_treatment(request, pk):
 COUNT_FILTERS = ('site', 'unit', 'from', 'to', 'voided')
 
 
-def _filtered_counts(params):
+def _filtered_counts(params, request):
     counts = LiceCount.all_objects.select_related('unit__production_department__site', 'created_by', 'deleted_by')
     if params['voided'] != '1':
         params['voided'] = ''
@@ -270,19 +256,39 @@ def _filtered_counts(params):
         else:
             params[key] = ''
     for key, lookup in (('from', 'date__gte'), ('to', 'date__lte')):
-        day = _day(params[key])
-        params[key] = day.isoformat() if day else ''
+        day = read_day(params[key], request)
+        params[key] = day or ''          # a date: the input shows it as the language writes it
         if day:
             counts = counts.filter(**{lookup: day})
     return counts, choices
+
+
+
+def _site_weeks(params):
+    """The weekly table: each site's average over every cage counted that week (Vedlegg 1 point 6) and its badge. The
+    filters choose which sites and weeks are shown (a unit filter: its site; a date range: the weeks it touches), never
+    which counts make an average: one cage's average is not the site's (audit F-082)."""
+    counts = LiceCount.objects.all()
+    if params['unit']:
+        unit = Tank.all_objects.select_related('production_department').get(pk=params['unit'])
+        site_id = unit.production_department.site_id
+        counts = counts.filter(unit__production_department__site=site_id) if site_id else counts.filter(unit=unit)
+    elif params['site']:
+        counts = counts.filter(unit__production_department__site=params['site'])
+    first, last = params['from'] or None, params['to'] or None     # dates already: _filtered_counts read them (read_day)
+    if first:
+        counts = counts.filter(date__gte=first - timedelta(days=first.weekday()))          # its week's Monday
+    if last:
+        counts = counts.filter(date__lte=last + timedelta(days=6 - last.weekday()))      # its week's Sunday
+    return read.lice_weeks(counts)
 
 
 @permission_required(COUNTS['view'], raise_exception=True)
 def lice_counts(request):
     """Operations › Sea-lice counts: the site's weekly averages against the statutory limit, then every count."""
     params = {key: request.GET.get(key, '').strip() for key in COUNT_FILTERS}
-    counts, choices = _filtered_counts(params)
-    weeks = read.lice_weeks(counts)[:LICE_WEEKS]
+    counts, choices = _filtered_counts(params, request)       # first: it reads the dates (read_day) and the choices
+    weeks = _site_weeks(params)[:LICE_WEEKS]
     stocked = read.stocked_by_site(_units_with_fish(production=True))
     for week in weeks:
         week.stocked = stocked.get(week.site.pk if week.site else None, 0)

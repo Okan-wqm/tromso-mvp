@@ -1,41 +1,34 @@
 {% load assets i18n %}<!doctype html>
-<html lang="{{ LANGUAGE_CODE }}"{% block html_attrs %}{% endblock %}>
+{# The signed-in console (docs/design/system): the rail, the top bar, the page head and, below 1024 px, the bottom bar. #}
+<html lang="{{ LANGUAGE_CODE }}" data-theme="{{ THEME|default:"fjord" }}"{% block html_attrs %}{% endblock %}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{% trans "Panel" %}{% endblock %} · Suderra</title>
   <script src="{% asset 'js/nav-boot.js' %}"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&display=swap">
   <link rel="icon" href="{% asset 'favicon.svg' %}" type="image/svg+xml">
   {% module_map %}
+  <link rel="stylesheet" href="{% asset 'css/fonts.css' %}">
+  <link rel="stylesheet" href="{% asset 'css/tokens.css' %}">
   <link rel="stylesheet" href="{% asset 'css/base.css' %}">
+  <link rel="stylesheet" href="{% asset 'css/ui.css' %}">
+  {# The patterns first, the sheets that refine them after: a rule of app.css, components.css or a page's own sheet for one element of a pattern wins by coming later, never loses a tie to ds.css (npm run check:ds holds this order in every template that loads base.css). #}
+  <link rel="stylesheet" href="{% asset 'css/ds.css' %}">
   <link rel="stylesheet" href="{% asset 'css/app.css' %}">
   <link rel="stylesheet" href="{% asset 'css/components.css' %}">
+  {% block page_styles %}{% endblock %}
+  <link rel="stylesheet" href="{% asset 'css/tw.css' %}">
   {% block extra_head %}{% endblock %}
 </head>
 <body>
   <a class="skip" href="#content">{% trans "Skip to content" %}</a>
   <div class="shell">
     <aside class="rail" id="rail" aria-label="{% trans "Main navigation" %}">
-      <div class="rail-head">
-        {% if workspaces|length > 1 %}
-        <div class="menu workspace-menu" data-menu>
-          <button type="button" class="workspace-trigger" data-menu-toggle aria-haspopup="true" aria-expanded="false" aria-controls="workspace-panel" title="{% trans "Switch panel" %}">
-            {% include "_workspace_brand.html" %}
-            {% include "icons/_icon.html" with name="chevron-down" %}
-          </button>
-          <div class="menu-panel" id="workspace-panel" data-menu-panel hidden>
-            <p class="menu-head">{% trans "Panels" %}</p>
-            {% for panel in workspaces %}
-            <a class="menu-item" href="{{ panel.url }}"{% if panel.key == workspace.key %} aria-current="true"{% endif %}>{{ panel.label }}{% if panel.badge.text %}<span class="menu-badge">{{ panel.badge.text }}</span>{% endif %}</a>
-            {% endfor %}
-          </div>
-        </div>
-        {% else %}
-        <a class="workspace-trigger" href="{% url 'home' %}">{% include "_workspace_brand.html" %}</a>
-        {% endif %}
+      <div class="rail-head ui-rail-head">
+        <a class="rail-brand" href="{% url 'home' %}">
+          <img class="ui-logo" src="{% asset 'img/suderra-mark-disc.png' %}" alt=""><span class="ui-wordmark">SU<span>DERRA</span></span>
+          <span class="sr-only">{% trans "Suderra, home" %}</span>
+        </a>
         <button type="button" class="icon-button rail-toggle" data-nav-toggle aria-controls="rail" aria-expanded="true" title="{% trans "Collapse menu" %}"
                 data-label-collapse="{% trans "Collapse menu" %}" data-label-expand="{% trans "Expand menu" %}">
           {% include "icons/_icon.html" with name="panel-left-close" %}
@@ -43,39 +36,55 @@
         </button>
       </div>
 
-      <nav class="rail-nav">
+      {% if workspaces|length > 1 %}
+      <div class="menu workspace-menu" data-menu>
+        <button type="button" class="ui-panel-switch" data-menu-toggle aria-haspopup="true" aria-expanded="false" aria-controls="workspace-panel" title="{% trans "Switch panel" %}">
+          <span class="workspace-name">{{ workspace.label }}</span>
+          {% include "icons/_icon.html" with name="chevron-down" %}
+        </button>
+        <div class="menu-panel" id="workspace-panel" data-menu-panel hidden>
+          <p class="menu-head">{% trans "Panels" %}</p>
+          {% for panel in workspaces %}
+          <a class="menu-item" href="{{ panel.url }}"{% if panel.key == workspace.key %} aria-current="true"{% endif %}>{{ panel.label }}{% if panel.badge.text %}<span class="menu-badge">{{ panel.badge.text }}</span>{% endif %}</a>
+          {% endfor %}
+        </div>
+      </div>
+      {% elif workspace %}
+      <p class="ui-panel-switch workspace-single"><span class="workspace-name">{{ workspace.label }}</span></p>
+      {% endif %}
+
+      <nav class="rail-nav ui-rail-nav">
         {% for section in rail_sections %}
-        {% if section.label %}<p class="rail-section">{{ section.label }}</p>{% endif %}
+        {% if section.collapsed %}<details class="rail-collapse" data-collapse="{{ section.key }}"{% if section.current %} open data-current{% endif %}>
+        <summary class="rail-section">{{ section.label }}</summary>
+        {% elif section.label %}<p class="rail-section">{{ section.label }}</p>{% endif %}
         {% for group in section.groups %}
         {% if group.label %}<p class="rail-group">{{ group.label }}</p>{% endif %}
         {% for entry in group.entries %}
-        <a class="rail-link" href="{{ entry.url }}" title="{{ entry.label }}"{% if entry.current %} aria-current="page"{% endif %}>
+        <a class="rail-link" href="{{ entry.url }}" title="{{ entry.label }}"{% if entry.current %} aria-current="page"{% endif %} data-area="{{ entry.area }}">
           {% include "icons/_icon.html" with name=entry.icon %}<span class="rail-label">{{ entry.label }}</span>
           {% if entry.badge %}<span class="rail-badge"{% if entry.badge.url %} data-poll="{{ entry.badge.url }}" data-poll-every="30"{% endif %}>{{ entry.badge.text }}</span>{% endif %}
         </a>
         {% endfor %}
         {% endfor %}
+        {% if section.collapsed %}</details>{% endif %}
         {% endfor %}
       </nav>
 
-      <div class="rail-foot">{% block rail_foot %}{% trans "Fish farm" %}{% endblock %}</div>
+      <div class="rail-foot">{% block rail_foot %}{% if rail_foot %}{{ rail_foot }}{% else %}{% trans "Fish farm" %}{% endif %}{% endblock %}</div>
     </aside>
     <div class="scrim" data-nav-close hidden></div>
 
     <div class="console">
-      <header class="topbar">
-        <button type="button" class="icon-button menu-button" data-nav-open aria-controls="rail" aria-expanded="false">
-          {% include "icons/_icon.html" with name="menu" %}
-          <span class="sr-only">{% trans "Open menu" %}</span>
-        </button>
-        <div class="title-block">
+      <header class="topbar ui-topbar">
+        <nav class="ui-crumbs" aria-label="{% trans "You are here" %}">
           <p class="eyebrow">{% block eyebrow %}{% trans "Panel" %}{% endblock %}</p>
-          <h1>{% block heading %}{% trans "Overview" %}{% endblock %}</h1>
-        </div>
+        </nav>
+        <div class="topbar-language">{% include "_language_switcher.html" %}</div>
 
         <div class="menu user-menu" data-menu>
           <button type="button" class="user-trigger" data-menu-toggle aria-haspopup="true" aria-expanded="false" aria-controls="user-panel">
-            <span class="initials" aria-hidden="true">{{ user.get_username|slice:":2"|upper }}</span>
+            <span class="initials ui-avatar" aria-hidden="true">{{ user.get_username|slice:":2"|upper }}</span>
             <span class="user-name">{{ user.get_username }}</span>
             {% include "icons/_icon.html" with name="chevron-down" %}
           </button>
@@ -84,7 +93,15 @@
               <strong>{{ user.get_full_name|default:user.get_username }}</strong>
               {% if user.email %}<span>{{ user.email }}</span>{% endif %}
             </p>
-            <div class="menu-language"><span>{% trans "Language" %}</span>{% include "_language_switcher.html" %}</div>
+            <div class="menu-language menu-theme"><span>{% trans "Theme" %}</span>
+              <form class="theme-switch" method="post" action="{% url 'core:set_theme' %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <div role="group" aria-label="{% trans "Theme" %}">
+                  {% for key, name in THEMES %}<button type="submit" name="theme" value="{{ key }}" aria-pressed="{% if key == THEME %}true{% else %}false{% endif %}">{{ name }}</button>{% endfor %}
+                </div>
+              </form>
+            </div>
             <a class="menu-item" href="{% url 'password_change' %}">{% trans "Change password" %}</a>
             <form method="post" action="{% url 'logout' %}">
               {% csrf_token %}
@@ -94,17 +111,32 @@
         </div>
       </header>
 
-      <main class="content" id="content" tabindex="-1">
+      {% comment %} The page's measure (docs/design/system/README.md, Width): the shell never caps the width; a page says how
+         its content uses it. fluid (the default: lists, tables, dashboards) and wall reach the right edge; form keeps a
+         field column with its sections as an outline beside it; prose keeps text at a reading measure. {% endcomment %}
+      <main class="content" id="content" tabindex="-1" data-measure="{% block measure %}fluid{% endblock %}">
         {% if messages %}
         <div class="flash-list" role="status">
           {% for message in messages %}<p class="flash flash-{{ message.tags }}">{{ message }}</p>{% endfor %}
         </div>
         {% endif %}
+        <div class="page-head ui-head" data-area="{{ page_area|default:"neutral" }}">
+          <div class="page-title">
+            {% if page_icon %}<span class="ui-area" aria-hidden="true">{% include "icons/_icon.html" with name=page_icon %}</span>{% endif %}
+            <h1>{% block heading %}{% trans "Overview" %}{% endblock %}</h1>
+            {% block head_status %}{% endblock %}
+          </div>
+          {% block head_actions %}{% endblock %}
+        </div>
         {% block content %}{% endblock %}
       </main>
     </div>
   </div>
-  <dialog class="modal" id="modal" aria-labelledby="modal-title" data-forbidden="{% trans "You do not have permission to do this." %}"><div data-modal-content></div></dialog>
+  <nav class="ui-bottombar" aria-label="{% trans "Main pages" %}">
+    {% for entry in bottom_bar %}<a class="ui-bottombar-link" href="{{ entry.url }}"{% if entry.current %} aria-current="page"{% endif %}>{% include "icons/_icon.html" with name=entry.icon %}<span class="ui-bottombar-label">{{ entry.label }}</span>{% if entry.badge.text %}<span class="rail-badge">{{ entry.badge.text }}</span>{% endif %}</a>
+    {% endfor %}<button type="button" class="ui-bottombar-link" data-nav-open aria-controls="rail" aria-expanded="false">{% include "icons/_icon.html" with name="menu" %}<span class="ui-bottombar-label">{% trans "More" %}</span></button>
+  </nav>
+  <dialog class="modal" id="modal" closedby="any" aria-labelledby="modal-title" data-forbidden="{% trans "You do not have permission to do this." %}"><div data-modal-content></div></dialog>
   <script type="module" src="{% asset 'js/shell.js' %}"></script>
   <script type="module" src="{% asset 'js/components.js' %}"></script>
   <script type="module" src="{% asset 'js/poll.js' %}"></script>

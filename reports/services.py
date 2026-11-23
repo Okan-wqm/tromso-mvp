@@ -10,7 +10,7 @@ from farm.models import Batch
 from farm.models.species import SALMONID_CODES
 from core.models import AuditLog
 
-from . import compute, due, periods
+from . import compute, due, labels, periods
 from .kinds import EVENTS
 from .models import (
     NARRATIVE, WITHOUT_REFERENCE, Channel, DueClosure, OpenQuestion, OutsideDutyDone, QuestionStatus, Report,
@@ -20,8 +20,9 @@ from .models import (
 # The format of a notice that was recorded on the health event before notices existed (its time only).
 LEGACY_FORMAT = 0
 
-# The leaves of a content that name rather than count: a change of one is "identity changed since filing".
-IDENTITY_LEAVES = ('/number', '/species', '/organisation_number', '/lokalitetsnummer', '/site', '/site_code')
+# The leaves of a content that name rather than count (reports/labels.py, which also prints them as written): a change
+# of one is "identity changed since filing".
+IDENTITY_LEAVES = labels.IDENTITY_LEAVES
 
 # The answers a correction starts from: the report's own (the row lists are copied too).
 CARRIED = ('contact_name', 'contact_email', 'contact_phone', *NARRATIVE, 'notes')
@@ -79,7 +80,8 @@ def submit(user, report, *, submitted_at, channel, reference, version, content_s
             _refuse(_('The records changed after you looked at the report: review it again before you record the '
                       'filing.'))
         ReportSnapshot.objects.create(report=current, format_version=compute.FORMAT_VERSION, content=result.content,
-                                      content_sha256=digest, sources_fingerprint=compute.fingerprint(result.scope))
+                                      content_sha256=digest, sources_fingerprint=compute.fingerprint(result.scope),
+                                      scope_version=compute.scope_version(current.kind))
         current.deadline_on = compute.deadline(current)
         current.filed_late = (periods.oslo_today(submitted_at) > current.deadline_on) if current.deadline_on else False
         current.submitted_at, current.submitted_by = submitted_at, user
@@ -128,15 +130,24 @@ def close_due(user, *, kind, place, period, reason):
     return closure
 
 
+def _take_away(user, model, row):
+    """Deletes a closure or a duty done once: the row locked first, refused when it is gone already (a second press on a
+    page shown before the first), logged after it is gone (audit F-077)."""
+    with transaction.atomic():
+        found = model.objects.select_for_update().filter(pk=row.pk).first()
+        if found is None:
+            _refuse(_('It was taken away already.'))
+        pk, label = found.pk, audit.english(found)
+        found.delete()
+        found.pk = pk
+        with audit.source_language():
+            audit.record(user, AuditLog.Action.DELETE, found, entity_type=model._meta.verbose_name, label=label)
+    return pk
+
+
 def reopen(user, closure):
     """Takes a closure away: the report is owed again. Logged."""
-    with transaction.atomic():
-        pk = closure.pk
-        with audit.source_language():
-            audit.record(user, AuditLog.Action.DELETE, closure, entity_type=DueClosure._meta.verbose_name,
-                         label=audit.english(closure))
-        closure.delete()
-    return pk
+    return _take_away(user, DueClosure, closure)
 
 
 def record_duty_done(user, *, duty, site, year, done_on, reference=''):
@@ -167,11 +178,7 @@ def record_duty_done(user, *, duty, site, year, done_on, reference=''):
 
 def undo_duty_done(user, record):
     """Takes a record away: the duty is owed again. Logged."""
-    with transaction.atomic():
-        with audit.source_language():
-            audit.record(user, AuditLog.Action.DELETE, record, entity_type=OutsideDutyDone._meta.verbose_name,
-                         label=audit.english(record))
-        record.delete()
+    _take_away(user, OutsideDutyDone, record)
 
 
 def start_correction(user, report):
@@ -201,8 +208,9 @@ def start_correction(user, report):
 
 def differences(report):
     """What the records give now against what was filed: [(path, filed, now)] of the figures, of the identity (a
-    unit's number, a species' code, the site's numbers renamed since) and of the sources read, and whether the
-    format changed. Read on the report's page; nothing is stored."""
+    unit's number, a species' code, the site's numbers renamed since) and of the sources read, whether the format
+    changed, and `labels`, each path as the page names it (reports/labels.py). Read on the report's page; nothing is
+    stored."""
     snapshot = report.snapshot
     if snapshot.format_version == LEGACY_FORMAT:
         return {'figures': [], 'identity': [], 'sources': [], 'format_changed': False, 'legacy': True}
@@ -220,4 +228,5 @@ def differences(report):
         else:
             figures.append(item)
     return {'figures': figures, 'identity': identity, 'sources': sources,
-            'format_changed': snapshot.format_version != compute.FORMAT_VERSION}
+            'format_changed': snapshot.format_version != compute.FORMAT_VERSION,
+            'labels': {path: labels.describe(path, snapshot.content, now) for path, _filed, _now in figures + identity}}

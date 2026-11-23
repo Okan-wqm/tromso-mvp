@@ -8,13 +8,12 @@ from decimal import Decimal
 from unittest import mock
 
 from django.core.management import call_command
-from django.test import override_settings
 from django.urls import reverse
 
 from farm.feeding import services as feeding
 from farm.models import Feed, HandlingPlanItem, HealthEvent, Site
 from farm.stock import services as stock
-from farm.tests.helpers import role
+from farm.tests.helpers import correction_window, role
 
 from .. import compute, due, integrity, services
 from ..kinds import ReportKind
@@ -224,7 +223,7 @@ class ChangedSinceFilingTests(DueTestCase):
     def test_a_filed_report_whose_records_changed_is_listed(self):
         self.october()
         report = self.report(Report.Kind.SMOLT, OCTOBER)
-        with override_settings(STOCK_BACKDATE_DAYS=3650):
+        with correction_window(3650):
             services.submit(self.user, report, submitted_at=datetime(2026, 11, 2, 9, 0, tzinfo=utc.utc),
                             channel='altinn', reference='AR-2', version=report.version, content_sha256=previewed(report))
             self.assertEqual(due.no_longer_match(TODAY), [])
@@ -234,7 +233,7 @@ class ChangedSinceFilingTests(DueTestCase):
     def test_the_list_reads_the_rows_a_report_reads_and_never_folds_a_ledger(self):
         self.october()
         report = self.report(Report.Kind.SMOLT, OCTOBER)
-        with override_settings(STOCK_BACKDATE_DAYS=3650):
+        with correction_window(3650):
             services.submit(self.user, report, submitted_at=datetime(2026, 11, 2, 9, 0, tzinfo=utc.utc),
                             channel='altinn', reference='AR-2', version=report.version, content_sha256=previewed(report))
             stock.void(self.user, self.out, 'Wrong unit')
@@ -244,7 +243,7 @@ class ChangedSinceFilingTests(DueTestCase):
     def test_a_report_a_filed_correction_replaced_is_not_listed(self):
         self.october()
         report = self.report(Report.Kind.SMOLT, OCTOBER)
-        with override_settings(STOCK_BACKDATE_DAYS=3650):
+        with correction_window(3650):
             services.submit(self.user, report, submitted_at=datetime(2026, 11, 2, 9, 0, tzinfo=utc.utc),
                             channel='altinn', reference='AR-2', version=report.version, content_sha256=previewed(report))
             stock.void(self.user, self.out, 'Wrong unit')
@@ -262,22 +261,22 @@ class ChangedSinceFilingTests(DueTestCase):
         notice = self.report(Report.Kind.ESCAPE, site=self.sea, escape=operation.escape_record,
                              occurred_on=day(10, 25), what_happened='A net tore',
                              found_at=datetime(2026, 10, 25, 8, 0, tzinfo=utc.utc))
-        with override_settings(STOCK_BACKDATE_DAYS=3650):
+        with correction_window(3650):
             services.submit(self.user, notice, submitted_at=datetime(2026, 11, 2, 9, 0, tzinfo=utc.utc),
                             channel='altinn', reference='AR-4', version=notice.version, content_sha256=previewed(notice))
             self.assertEqual(due.no_longer_match(TODAY), [])
             stock.void(self.user, operation, 'Entered twice')
-        with override_settings(STOCK_BACKDATE_DAYS=31):
+        with correction_window(31):
             self.assertEqual([found.pk for found in due.no_longer_match(date(2027, 3, 1))], [notice.pk])
 
     def test_a_report_of_a_period_older_than_the_backdating_window_is_not_read_again(self):
         self.october()
         report = self.report(Report.Kind.SMOLT, OCTOBER)
-        with override_settings(STOCK_BACKDATE_DAYS=3650):
+        with correction_window(3650):
             services.submit(self.user, report, submitted_at=datetime(2026, 11, 2, 9, 0, tzinfo=utc.utc),
                             channel='altinn', reference='AR-2', version=report.version, content_sha256=previewed(report))
             stock.void(self.user, self.out, 'Wrong unit')
-        with override_settings(STOCK_BACKDATE_DAYS=31):
+        with correction_window(31):
             self.assertEqual(due.no_longer_match(date(2027, 3, 1)), [])
 
 

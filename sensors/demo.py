@@ -30,7 +30,10 @@ TOPIC_ROOT = 'demo'
 CODE_PREFIX = 'SIM-'
 # Every device has these; the others are shared out, half to every other device, so two devices cover them all.
 BASE = [parameters.TEMPERATURE, parameters.OXYGEN_MG_L, parameters.OXYGEN_PCT, parameters.PH]
-REST = [code for code in parameters.COLUMNS if code not in BASE]
+# The ionic-strength inputs (the conductivity at 25 °C, the hardness) are left out: the simulator does not send them
+# (sensors-ingest/simulator/build-flows.js), and a bound channel that never reports is a gap, not a demo.
+IONIC = ('conductivity_25_us_cm', 'hardness_mg_l')
+REST = [code for code in parameters.COLUMNS if code not in BASE and code not in IONIC]
 
 
 @dataclass

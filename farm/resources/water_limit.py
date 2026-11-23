@@ -4,11 +4,13 @@ from core.crud import Resource, filter_by
 
 from ..forms.water import WaterLimitForm
 from ..models import Species, WaterLimit
+from ..water import read as water_read
 from ..water.parameters import LIMIT_CHOICES
 
 
 class WaterLimitResource(Resource):
-    """Setup › Reference data › Water limits: per species and parameter, the bounds a value is judged by."""
+    """Setup › Reference data › Water limits: per species and parameter, the bounds a value is judged by; above them,
+    what the fish kept today have no limit for (water.read.missing_limits), which their cards say as "No limit"."""
 
     model = WaterLimit
     form_class = WaterLimitForm
@@ -31,4 +33,5 @@ class WaterLimitResource(Resource):
         return objects, {
             'species_list': species, 'chosen_species': chosen_species,
             'parameters': LIMIT_CHOICES, 'chosen_parameter': chosen_parameter,
+            'missing': water_read.missing_limits(),
         }

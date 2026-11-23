@@ -9,10 +9,11 @@ from .forms import stock as stock_forms
 from .forms.feeding_protocol import BandRowForm, ProtocolTableForm
 from .forms.health import LastDayForm
 from .forms.water import MEASURED, RoundForm, RoundRowForm, SampleVoidForm, WaterSampleForm
+from .models.water import BASIS_COLUMNS
 from .harvest import views as harvest
 from .health import views as health
 from .resources.feeding_protocol import FeedingProtocolResource
-from .stock import views as stock
+from .stock import opening, views as stock
 from .water import views as water
 
 TOKEN = "the form's one-time token: the same form sent twice records once"
@@ -63,7 +64,7 @@ SCREENS = {
 
     # --- the stock: one write path (farm/stock/services.py), shown on Production units ---
     'Batch': Screen(
-        create=(stock.stock_input,),
+        create=(stock.stock_input, opening.opening_balance_create),
         edit=(stock.batch_details,),
         delete=(stock.void_operation,),
         read=(stock.production_units, harvest.harvests),
@@ -71,15 +72,21 @@ SCREENS = {
         extra_fields={'token': TOKEN, 'count': 'the fish stocked: a line of the stocking operation',
                       'avg_weight_g': 'the average weight stocked: a line of the stocking operation',
                       'over_capacity_ack': "the person's acknowledgement of a unit over capacity: stored on the "
-                                           'stocking operation'},
+                                           'stocking operation',
+                      'size_mix_ack': "the person's acknowledgement of batches of very different sizes in a unit: "
+                                      'stored on the stocking operation',
+                      'day': "an opening balance's takeover day: the date of its stocking operation",
+                      'document': "an opening balance's source document: stored on its OpeningBalance"},
     ),
+    'WaterFreshness': Screen(create=no('migration 0037 makes one row per water parameter'),
+                             delete=no('there is always one row per water parameter (a lost one is made again)')),
     'StockOperation': Screen(
         create=STOCK_WRITE,
         edit=no(LEDGER),
         delete=(stock.void_operation,),
         read=(stock.production_units, harvest.harvests),
-        forms=STOCK_DIALOGS + (stock_forms.VoidForm,),
-        fills={'VoidForm.reason': 'void_reason'},
+        forms=STOCK_DIALOGS + (stock_forms.StockVoidForm,),
+        fills={'StockVoidForm.reason': 'void_reason'},
         columns={'kind': computed('which dialog was used: stocking, mortality, cull, weighing, transfer, grading, '
                                   'harvest, delivery or escape')},
     ),
@@ -96,6 +103,9 @@ SCREENS = {
     ),
     'EscapeRecord': Screen(part_of='farm.StockOperation', create=('farm:stock_escape',),
                            read=(stock.production_units,), forms=(stock_forms.EscapeForm,)),
+    'OpeningBalance': Screen(part_of='farm.StockOperation', create=('farm:opening_balance_create',),
+                             read=(opening.opening_balances, stock.production_units),
+                             forms=(stock_forms.OpeningBalanceForm,)),
     'DeliveryRecord': Screen(part_of='farm.StockOperation', create=('farm:stock_delivery',),
                              read=(stock.production_units,), forms=(stock_forms.DeliveryForm,)),
     'HarvestRecord': Screen(part_of='farm.StockOperation', create=('farm:stock_harvest',),
@@ -110,6 +120,19 @@ SCREENS = {
              'values it kept.',
         columns={'*': computed('what the person was shown when they acknowledged the warning: the handling check '
                                '(farm/handling/check.py) works it out and the service stores it')},
+    ),
+    'WithdrawalAcknowledgement': Screen(
+        create=('farm:treatment_record', 'farm:treatment_last_day', 'farm:treatment_void', 'farm:feeding_record',
+                'farm:feeding_void', 'farm:water_record', 'farm:water_round', 'farm:water_void', 'farm:stock_harvest',
+                'farm:stock_transfer', 'farm:stock_void', 'farm:medicine_withdrawals'),
+        edit=no('append-only (a database trigger): what the person went on past stays as it was'),
+        delete=no('append-only (a database trigger): voiding the write leaves them as history'),
+        read=gap('no page lists them yet: check_withdrawal reads them, and the write\'s critical log entry says what was '
+                 'acknowledged'),
+        note='One row for each warning of the withdrawal guard (farm.health.withdrawal.guarded) the person went on past: '
+             'a harvest or a live delivery already recorded brought inside a withdrawal, fish held today freed by the '
+             'write, or fish held again by a longer ceiling.',
+        columns={'*': computed('what the withdrawal guard found and the person was shown, stored when they went on')},
     ),
 
     # --- feeding ---
@@ -147,8 +170,18 @@ SCREENS = {
         read=(water.water_page, stock.production_units),
         forms=(WaterSampleForm, RoundForm, RoundRowForm, SampleVoidForm),
         fills={'SampleVoidForm.reason': 'void_reason'},
-        columns={parameter.code: dynamic('one field for each water parameter (farm.forms.water.MEASURED)')
-                 for parameter in MEASURED},
+        columns={**{parameter.code: dynamic('one field for each water parameter (farm.forms.water.MEASURED)')
+                    for parameter in MEASURED},
+                 **{column: computed('what an oxygen without its own temperature or salinity is worked out with, found '
+                                     'by the server at the sample’s point and time (farm/water/read.oxygen_basis)')
+                    for column in BASIS_COLUMNS},
+                 **{column: computed('a pH measured on another scale than NBS: what was measured and the formula the '
+                                     'server put it on the NBS scale by, with the scale chosen on the form '
+                                     '(farm/water/services.on_nbs)')
+                    for column in ('ph_as_measured', 'ph_converted_formula')},
+                 'phosphate_as_measured': computed('a phosphate entered as PO₄: what was entered, kept beside the '
+                                                   'phosphorus the server stores, with the unit chosen on the form '
+                                                   '(farm/water/services.as_p)')},
     ),
 
     # --- health ---

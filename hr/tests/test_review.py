@@ -3,15 +3,14 @@ of the day, a lead does not write their own attendance or plan, the Manager and 
 private text edits are logged, and the database holds two rules that were only Python."""
 from datetime import date, datetime, time, timedelta, timezone as utc
 
-from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError, connection, transaction
+from django.db import IntegrityError, transaction
 from django.urls import reverse
 
 from core.models import AuditLog
 from farm.models import ProductionDepartment
 
-from .. import read, rules, services
+from .. import read, services
 from ..models import AttendanceRecord, Employee, LeaveRequest, LeaveType, Shift, ShiftAssignment
 from ..units import token
 from .helpers import user
@@ -38,7 +37,8 @@ class Moved(PeopleTestCase):
         self.shift = Shift.objects.create(name='Early', code='EARLY', starts_at=time(6), ends_at=time(14))
         self.cell = ShiftAssignment.objects.create(employee=self.p, day=date(2026, 3, 10), shift=self.shift, note='old note')
         self.punch = AttendanceRecord.objects.create(
-            employee=self.p, clock_in=datetime(2026, 3, 10, 6, tzinfo=utc.utc), via='entered', note='old reason')
+            employee=self.p, clock_in=datetime(2026, 3, 10, 6, tzinfo=utc.utc), clock_out=datetime(2026, 3, 10, 14, tzinfo=utc.utc),
+            via='entered', note='old reason')       # closed: history of its day (an open one is today's lead's too, R9)
         kind = LeaveType.objects.create(name='Annual', code='AN')
         self.request = LeaveRequest.objects.create(employee=self.p, leave_type=kind, first_day=date(2026, 3, 10),
                                                    last_day=date(2026, 3, 10))

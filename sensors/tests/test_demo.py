@@ -3,6 +3,7 @@ the payload format, a device per tank and per system with 7-8 water channels, to
 the tank's middle point or to the system, a simulator credential), idempotent, refused unless confirmed, removable with
 `--remove` without touching any other configuration; and every parameter's reading shows on the water page with its
 origin and age and in the tank's and the system's charts."""
+import re
 from datetime import timedelta
 from io import StringIO
 
@@ -34,14 +35,14 @@ class DemoCase(SensorsCase):
 
     def setup_demo(self, *extra):
         out = StringIO()
-        call_command('sensors_demo_setup', '--confirm', *extra, stdout=out)
+        call_command('sensors_demo_setup', '--force', '--confirm', *extra, stdout=out)
         return out.getvalue()
 
 
 class SetupTests(DemoCase):
     def test_it_refuses_without_a_flag(self):
         with self.assertRaises(CommandError):
-            call_command('sensors_demo_setup', stdout=StringIO())
+            call_command('sensors_demo_setup', '--force', stdout=StringIO())
 
     def test_a_device_per_tank_and_system_with_every_measured_parameter_bound_in_place(self):
         out = self.setup_demo()
@@ -49,11 +50,13 @@ class SetupTests(DemoCase):
         self.assertEqual(devices.count(), 4)                                     # three tanks and the system
         for device in devices:
             count = device.channels.count()
-            self.assertIn(count, (7, 8, len(parameters.COLUMNS)), device.code)
+            half = len(demo.REST) // 2
+            self.assertIn(count, (len(demo.BASE) + half, len(demo.BASE) + len(demo.REST) - half,
+                                  len(demo.BASE) + len(demo.REST)), device.code)
             self.assertEqual(device.credential.username, demo.USERNAME)
             self.assertEqual(device.topic, f'{demo.TOPIC_ROOT}/{device.code.lower()}')
         codes = set(Channel.objects.filter(device__in=devices).values_list('quantity', flat=True))
-        self.assertEqual(codes, set(parameters.COLUMNS))
+        self.assertEqual(codes, set(parameters.COLUMNS) - set(demo.IONIC))         # the simulator sends no ionic inputs
         for unit, middle in zip(self.units, self.middles):
             bound = Binding.objects.filter(point=middle)
             self.assertTrue(bound.exists(), unit.code)
@@ -84,7 +87,7 @@ class SetupTests(DemoCase):
 
     def test_remove_takes_away_only_what_it_made(self):
         self.setup_demo()
-        call_command('sensors_demo_setup', '--remove', stdout=StringIO())
+        call_command('sensors_demo_setup', '--force', '--remove', stdout=StringIO())
         self.assertFalse(Device.all_objects.filter(connection__client_id=demo.CLIENT_ID).exists())
         self.assertFalse(Connection.all_objects.filter(client_id=demo.CLIENT_ID).exists())
         self.assertFalse(Credential.all_objects.filter(username=demo.USERNAME).exists())
@@ -119,7 +122,7 @@ class EveryParameterShowsTests(DemoCase):
                 for seconds in (45, 35, 25):          # after the binding began (a minute before the setup ran)
                     cursor.execute('INSERT INTO sensors_reading (channel_no, ts, value) VALUES (%s, %s, %s)',
                                    [channel.channel_no, now - timedelta(seconds=seconds), value])
-        page = self.client.get(reverse('farm:water')).content.decode()
+        page = re.sub(r'<[^>]+>', '', self.client.get(reverse('farm:water')).content.decode())   # the words
         tank_device = Device.objects.get(code=f'{demo.CODE_PREFIX}{self.units[0].code}')
         for channel in tank_device.channels.all():
             self.assertRegex(page, rf'unit sensor #{channel.channel_no} · \d+ s ago', channel.quantity)

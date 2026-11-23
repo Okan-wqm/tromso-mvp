@@ -2,7 +2,7 @@
 span, the bookings by other experiments, the allocation and its reason, the log), the span that moves its placements, the
 Places tab's page, and two experiments enrolling one tank at once."""
 import threading
-from datetime import date, timedelta
+from datetime import timedelta
 from unittest import mock
 
 from django.contrib.auth import get_user_model
@@ -13,6 +13,7 @@ from django.urls import reverse
 
 from core.models import AuditLog
 from farm.models import System
+from farm.stock.dates import site_today
 from farm.tests.helpers import role
 from farm.tests.test_stock import make_unit
 
@@ -568,7 +569,7 @@ class ConcurrencyTests(TransactionTestCase):
         hall = ProductionDepartment.objects.create(site=self.site, name='Hall A', code='HA')
         self.tank = make_unit('T-01', hall)
         self.species = make_species()
-        self.today = date.today()
+        self.today = site_today(self.site)
         self.experiments = []
         for name in ('One', 'Two'):
             trial = Experiment.objects.create(code=f'E-2026-00{len(self.experiments) + 1}', name=name, site=self.site,

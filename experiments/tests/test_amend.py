@@ -2,7 +2,6 @@
 diet's assignment row ended and written through the farm's own assignments, the figures bounded by the days; the farm's
 `assignments.end`; and the two dialogs."""
 from datetime import timedelta
-from decimal import Decimal
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import IntegrityError, transaction
@@ -11,8 +10,8 @@ from django.urls import reverse
 from django.utils import translation
 
 from core.models import AuditLog, Profile
-from farm.feeding import assignments, services as feeding_services
-from farm.models import FeedingProtocol, ProtocolAssignment, ProtocolBand, ProtocolRate
+from farm.feeding import assignments
+from farm.models import FeedingProtocol, ProtocolAssignment
 from farm.stock import services as stock_services
 from farm.tests.test_protocols import ProtocolTestCase
 
@@ -20,8 +19,7 @@ from .. import read, services
 from ..models import Experiment, ReplicateUnit
 from . import D
 from .test_overview import RanTrialCase
-from .test_pages import RESEARCHER, person
-from farm.tests.helpers import role
+from .test_pages import person
 
 
 def message_of(error):
@@ -291,7 +289,7 @@ class AmendPageTests(AmendTestCase):
 
     def test_the_dialogs_show_the_tank_and_the_days_and_ask_for_the_reason(self):
         page = self.client.get(self.release_url, headers={'X-Modal': '1'})
-        self.assertContains(page, f'T-02 is in Control R2 from')
+        self.assertContains(page, 'T-02 is in Control R2 from')
         self.assertEqual(page.context['form']['last_day'].value(), self.today)
         self.assertContains(page, 'name="reason"')
         replace = self.client.get(self.replace_url, headers={'X-Modal': '1'})
@@ -409,3 +407,54 @@ class ReleaseRaceTests(TransactionTestCase):
         self.assertIn('Someone else changed this experiment', [r for r in results if r != 'ok'][0])
         self.assertEqual((Experiment.objects.get().version, ReplicateUnit.objects.exclude(left_reason='').count()),
                          (self.trial.version + 1, 1))
+
+
+class CopyRaceTests(TransactionTestCase):
+    """One copy form sent twice at once makes one copy (cross review of the merge, finding 2): the source is locked
+    before the form's key is looked up, as every write path takes its locks first, so the second sending waits for the
+    first and finds its copy instead of failing on the key."""
+
+    serialized_rollback = True
+
+    def setUp(self):
+        from django.contrib.auth import get_user_model
+        from farm.models import Site
+        from farm.tests.helpers import make_species
+        self.user = get_user_model().objects.create_user('ali', 'ali@example.com', 'x')
+        self.trial = Experiment.objects.create(code='E-2026-001', name='One', site=Site.objects.create(name='Bergen',
+                                                                                                      code='BG'),
+                                               species=make_species(), duration_days=56)
+
+    def test_two_sendings_at_once_make_one_copy(self):
+        import threading
+        import time
+        import uuid
+        from unittest import mock
+
+        from django.db import connection
+
+        from core import codes
+        token, results, gate = uuid.uuid4(), [], threading.Barrier(2)
+        numbered = codes.next_code
+
+        def slow_number(*args, **kwargs):
+            time.sleep(0.5)                  # both sendings are past their first look before either has a copy
+            return numbered(*args, **kwargs)
+
+        def send():
+            gate.wait()
+            try:
+                results.append(services.copy(self.user, self.trial, 'Repeat', token=token).pk)
+            except Exception as error:      # noqa: BLE001 - the outcome is what the test is about
+                results.append(f'{type(error).__name__}: {str(error)[:80]}')
+            finally:
+                connection.close()
+
+        with mock.patch.object(services, 'next_code', slow_number):
+            threads = [threading.Thread(target=send) for _ in range(2)]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join(30)
+        self.assertEqual(Experiment.objects.filter(copied_from=self.trial).count(), 1)
+        self.assertEqual(len(set(results)), 1, results)

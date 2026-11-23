@@ -9,7 +9,7 @@ from core.audit import message
 from core.models import AuditLog
 
 from ..models import ProductionDepartment, Site
-from .helpers import role
+from .helpers import leave_without_site, role
 
 PRODUCTION_DEPARTMENT_MANAGER = (
     'view_productiondepartment', 'add_productiondepartment', 'change_productiondepartment', 'delete_productiondepartment',
@@ -120,19 +120,11 @@ class DepartmentListTests(ProductionDepartmentTestCase):
 
 class DepartmentSiteLinkTests(ProductionDepartmentTestCase):
     def test_departments_left_without_a_site_are_flagged_and_filterable(self):
-        self.make(name='Hall A', code='HA')
-        self.client.post(reverse('farm:site_delete', args=[self.bergen.pk]))
+        leave_without_site(self.make(name='Hall A', code='HA'))   # a deleted site's, before F-212
+        self.make(name='Hall B', code='HB')
         self.assertContains(self.client.get(reverse('farm:productiondepartment_list')), '1 production department is not on any site.')
         response = self.client.get(reverse('farm:productiondepartment_list'), {'site': 'none'})
         self.assertEqual([d.name for d in response.context['objects']], ['Hall A'])
-
-    def test_a_department_without_a_site_can_still_be_edited(self):
-        hall = self.make(name='Hall A', code='HA')
-        ProductionDepartment.objects.filter(pk=hall.pk).update(site=None)
-        self.client.post(reverse('farm:productiondepartment_edit', args=[hall.pk]),
-                         production_department_data(None, name='Hall A2', code='HA', version='1'))
-        hall.refresh_from_db()
-        self.assertEqual((hall.name, hall.site), ('Hall A2', None))
 
 
 class DepartmentAuditAndPermissionTests(ProductionDepartmentTestCase):

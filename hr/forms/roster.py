@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from core.crud import TabbedForm, tab_fields
+from core.widgets import DayInput
 
 from .. import rules, scope, services
 from ..models import Employee, Shift, ShiftAssignment
@@ -27,7 +28,7 @@ class ShiftAssignmentForm(TabbedForm):
             'note': _('A remark for the lead’s own planning; it is not shown in the log.'),
         }
         widgets = {
-            'day': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'day': DayInput(),
             'note': forms.TextInput(),
         }
 
@@ -53,7 +54,7 @@ class ShiftAssignmentForm(TabbedForm):
             return cleaned
         if not scope.can_reach(self.user, employee, day):
             raise ValidationError(_('You do not plan this person on this day.'))
-        if services.self_plan(self.user, employee):
+        if services.own_record(self.user, employee):
             raise ValidationError(_('You do not plan your own days.'))
         found = services.evaluate(employee, {day: shift})
         blocking = [item for item in found if item.blocks]

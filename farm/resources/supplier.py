@@ -22,6 +22,9 @@ class SupplierResource(Resource):
     list_template = 'farm/supplier_list.html'
     form_template = 'farm/supplier_form.html'
     icon = 'truck'
+    # A supplier may be one person (a vet, a diver) and the form cannot know: its own e-mail and phone are private in
+    # the activity log like a site's contact e-mail (review R7). Its name, organisation number and address stay.
+    private_fields = ('email', 'phone')
     row_lists = (SupplierContacts,)
     page_size = 50
 

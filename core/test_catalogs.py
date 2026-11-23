@@ -1,4 +1,5 @@
 """The message catalogs: complete, translated, in step with the code, and every tab translatable."""
+import io
 import json
 import os
 import re
@@ -7,7 +8,9 @@ import subprocess
 import tempfile
 from importlib import import_module
 from pathlib import Path
+from unittest import mock
 
+from babel.messages.mofile import write_mo
 from django.conf import settings
 from django.core.management import call_command
 from django.db import models
@@ -71,6 +74,17 @@ class CatalogCompletenessTests(SimpleTestCase):
                             self.assertEqual(named_placeholders(text), allowed)
                             self.assertEqual(tags(text), tags(message.id))
 
+    def test_no_turkish_suffix_is_glued_to_a_value_filled_in_later(self):
+        """A Turkish case suffix follows the sound of the word it is put on (#3’ün, #6’nın; T-01’de, B-2026-002’nin),
+        so one fixed suffix after a placeholder is wrong for some of its values (the second review of the chemistry
+        fixes, §6: "Kanal #%(number)d’in"). A translation names the value's kind and puts the suffix there instead
+        ("%(number)d numaralı kanalın", "%(unit)s biriminde")."""
+        glued = re.compile(r"%(\(\w+\))?[sdfi]['’]\w")
+        for message in self.messages('tr'):
+            for text in forms_of(message.string):
+                with self.subTest(msgid=message.id):
+                    self.assertIsNone(glued.search(text), text)
+
     def test_each_language_has_the_plural_rule_django_uses_for_it(self):
         for language in catalogs.languages():
             self.assertEqual(catalogs.load(language).plural_forms, catalogs.new_catalog(language).plural_forms)
@@ -103,6 +117,60 @@ class CatalogInStepWithCodeTests(SimpleTestCase):
         self.assertEqual(ids, ['core.W002'] * len(catalogs.languages()))
 
 
+class CatalogBuildTests(SimpleTestCase):
+    """Building a .mo file while other processes load it (the parallel test workers each build the catalogs, and a
+    running server reads them): a reader sees the old file or the new one, never a half-written one."""
+
+    def setUp(self):
+        folder = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, folder, ignore_errors=True)
+        po = catalogs.po_path('nb')
+        self.folder = folder / 'nb' / 'LC_MESSAGES'
+        self.folder.mkdir(parents=True)
+        shutil.copyfile(po, self.folder / po.name)
+        settings_override = override_settings(LOCALE_PATHS=[folder])
+        settings_override.enable()
+        self.addCleanup(settings_override.disable)
+
+    def test_a_failed_build_leaves_the_previous_file_whole(self):
+        catalogs.compile('nb')
+        built = catalogs.mo_path('nb').read_bytes()
+
+        def half_written(file, catalog):
+            file.write(built[:7])
+            raise OSError('disk full')
+
+        with mock.patch.object(catalogs, 'write_mo', half_written), self.assertRaises(OSError):
+            catalogs.compile('nb')
+        self.assertEqual(catalogs.mo_path('nb').read_bytes(), built)
+        self.assertEqual(sorted(path.name for path in self.folder.iterdir()), ['django.mo', 'django.po'])
+
+    def test_an_unchanged_catalog_is_not_written_again(self):
+        catalogs.compile('nb')
+        mo = catalogs.mo_path('nb')
+        later = catalogs.po_path('nb').stat().st_mtime + 100
+        os.utime(mo, (later, later))
+        catalogs.compile('nb')
+        self.assertEqual(mo.stat().st_mtime, later)
+
+    def test_an_unchanged_catalog_older_than_its_po_file_counts_as_built_after_a_build(self):
+        catalogs.compile('nb')
+        mo = catalogs.mo_path('nb')
+        earlier = catalogs.po_path('nb').stat().st_mtime - 100
+        os.utime(mo, (earlier, earlier))
+        self.assertFalse(catalogs.is_built('nb'))
+        catalogs.compile('nb')
+        self.assertTrue(catalogs.is_built('nb'))
+
+    def test_a_changed_catalog_is_written(self):
+        catalogs.compile('nb')
+        catalogs.mo_path('nb').write_bytes(b'stale')
+        catalogs.compile('nb')
+        file = io.BytesIO()
+        write_mo(file, catalogs.load('nb'))
+        self.assertEqual(catalogs.mo_path('nb').read_bytes(), file.getvalue())
+
+
 # Choices that are names, not text: time zones, and the languages' own names.
 NOT_TEXT = {('farm.Site', 'timezone'), ('auth.User', 'language')}
 
@@ -117,13 +185,14 @@ class TabTranslationTests(SimpleTestCase):
         super().setUpClass()
         import_module(settings.ROOT_URLCONF)    # declares every resource
         cls.tabs = list(Resource.registry)
+        # Each catalog's msgids, read once: parsing a .po file for every text took a quarter of an hour.
+        cls.msgids = {language: {message.id for message in catalogs.load(language)} for language in catalogs.languages()}
 
     def assertTranslatable(self, text, where):
         self.assertIsInstance(text, Promise, f'{where} is plain text: wrap it in gettext_lazy')
         english = audit.english(text)
         for language in catalogs.languages():
-            known = any(message.id == english for message in catalogs.load(language))
-            self.assertTrue(known, f'{where}: {english!r} is not in the {language} catalog')
+            self.assertIn(english, self.msgids[language], f'{where}: {english!r} is not in the {language} catalog')
 
     def test_the_tabs_are_found(self):
         self.assertGreaterEqual(len(self.tabs), 5)
@@ -185,7 +254,7 @@ class TypeScriptTests(SimpleTestCase):
 
     ROOT = Path(settings.BASE_DIR)
     # Key names the browser reports, not text.
-    KEY_NAMES = {'Escape', 'Enter', 'Delete', 'Backspace'}
+    KEY_NAMES = {'Escape', 'Enter', 'Delete', 'Backspace', 'Home'}
 
     @classmethod
     def shipped(cls, root):

@@ -54,20 +54,21 @@ class PanelSwitcherTests(WorkspaceTestCase):
         company = self.page(reverse('farm:site_list'))
         self.assertEqual(company.context['workspace']['key'], 'company')
         self.assertEqual(self.labels(company), ['Overview', 'Sites', 'Storage locations', 'Library', 'Knowledge entries',
-                                                 'Activity log', 'Roles', 'Users', 'Database', 'Today & attendance', 'Team list', 'Departments',
+                                                 'Alarms', 'Alarm recipients', 'Alarm severity rules', 'Alarm deadbands',
+                                                 'Activity log', 'Roles', 'Users', 'Database',
+                                                 'Platform settings', 'Opening balances', 'Today & attendance', 'Team list', 'Departments',
                                                  'Organization chart', 'Shift schedule', 'Team overview', 'Attendance', 'Leave requests', 'Scheduling settings'])
         production = self.page(reverse('farm:system_list'))
         self.assertEqual(production.context['workspace']['key'], 'production')
-        self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',
-                                                    'Tanks, ponds & cages', 'Monitoring boards', 'Sampling points', 'Species', 'Feeds',
-                                                    'Water limits', 'Medicines', 'Handling rules', 'Card templates',
-                                                    'Card template rules', 'Slaughter facilities',
-                                                    'Suppliers', 'Production units', 'Monitoring', 'Water chemistry', 'Storage', 'Tasks',
-                                                    'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments',
-                                                    'Harvested', 'Harvest plan', 'Production plans', 'Treatments',
-                                                    'Health events', 'Sea-lice counts', 'Experiments', 'Regulatory reports', 'Questions for the authority',
-                                                   'Messages', 'Today & attendance', 'Shift schedule', 'Leave requests', 'Attendance',
-                                                   'Team overview', 'Team list', 'Organization chart'])
+        self.assertEqual(self.labels(production), ['Overview', 'Production units', 'Monitoring', 'Water chemistry', 'Storage', 'Tasks',
+                                        'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments', 'Harvested',
+                                        'Harvest plan', 'Production plans', 'Treatments', 'Health events', 'Sea-lice counts',
+                                        'Experiments', 'Regulatory reports', 'Questions for the authority', 'Messages',
+                                        'Today & attendance', 'Shift schedule', 'Leave requests', 'Attendance', 'Team overview',
+                                        'Team list', 'Organization chart', 'Production departments', 'Systems', 'Equipment',
+                                        'Tanks, ponds & cages', 'Monitoring boards', 'Sampling points', 'Species', 'Feeds',
+                                        'Water limits', 'Water freshness', 'Medicines', 'Handling rules', 'Card templates',
+                                        'Card template rules', 'pH window scales', 'Slaughter facilities', 'Suppliers'])
 
     def test_the_switcher_lists_the_panels_and_marks_the_current_one(self):
         self.sign_in(self.admin)
@@ -121,16 +122,15 @@ class PanelMemoryTests(WorkspaceTestCase):
         self.assertEqual(self.client.session['workspace'], 'production')
         response = self.page(reverse('password_change'))
         self.assertEqual(response.context['workspace']['key'], 'production')
-        self.assertEqual(self.labels(response), ['Overview', 'Production departments', 'Systems', 'Equipment',
-                                                  'Tanks, ponds & cages', 'Monitoring boards', 'Sampling points', 'Species', 'Feeds',
-                                                  'Water limits', 'Medicines', 'Handling rules', 'Card templates',
-                                                    'Card template rules', 'Slaughter facilities',
-                                                  'Suppliers', 'Production units', 'Monitoring', 'Water chemistry', 'Storage', 'Tasks',
-                                                  'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments',
-                                                  'Harvested', 'Harvest plan', 'Production plans', 'Treatments',
-                                                  'Health events', 'Sea-lice counts', 'Experiments', 'Regulatory reports', 'Questions for the authority',
-                                                   'Messages', 'Today & attendance', 'Shift schedule', 'Leave requests', 'Attendance',
-                                                   'Team overview', 'Team list', 'Organization chart'])
+        self.assertEqual(self.labels(response), ['Overview', 'Production units', 'Monitoring', 'Water chemistry', 'Storage', 'Tasks',
+                                        'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments', 'Harvested',
+                                        'Harvest plan', 'Production plans', 'Treatments', 'Health events', 'Sea-lice counts',
+                                        'Experiments', 'Regulatory reports', 'Questions for the authority', 'Messages',
+                                        'Today & attendance', 'Shift schedule', 'Leave requests', 'Attendance', 'Team overview',
+                                        'Team list', 'Organization chart', 'Production departments', 'Systems', 'Equipment',
+                                        'Tanks, ponds & cages', 'Monitoring boards', 'Sampling points', 'Species', 'Feeds',
+                                        'Water limits', 'Water freshness', 'Medicines', 'Handling rules', 'Card templates',
+                                        'Card template rules', 'pH window scales', 'Slaughter facilities', 'Suppliers'])
         self.page(reverse('farm:site_list'))
         self.assertEqual(self.page(reverse('password_change')).context['workspace']['key'], 'company')
 
@@ -161,12 +161,11 @@ class MainHeadingTests(WorkspaceTestCase):
         self.sign_in(self.admin)
         response = self.page(reverse('farm:system_list'))
         self.assertEqual(self.headings(response),
-                         [('', ['']), ('Setup', ['Facility structure', 'Reference data', 'Harvest and logistics',
-                                                 'Purchasing']),
-                          ('Operations', ['', 'Feeding', 'Harvest', 'Health']), ('Research', ['']), ('Reports', ['']),
-                          ('Communication', ['']), ('Team', ['Time & attendance', 'People'])])
+                         [('', ['']), ('Operations', ['', 'Feeding', 'Harvest', 'Health']), ('Research', ['']),
+                          ('Reports', ['']), ('Communication', ['']), ('Team', ['Time & attendance', 'People']),
+                          ('Setup', ['Facility structure', 'Reference data', 'Harvest and logistics', 'Purchasing'])])
         self.assertContains(response, '<p class="rail-section">Operations</p>', html=True)
-        self.assertContains(response, '<p class="rail-section">Setup</p>', html=True)
+        self.assertContains(response, '<summary class="rail-section">Setup</summary>', html=True)    # (collapsible, last)
         self.assertContains(response, '<p class="rail-group">Facility structure</p>', html=True)
         self.assertContains(response, '<p class="rail-group">Reference data</p>', html=True)
         self.assertContains(response, '<p class="rail-group">Harvest and logistics</p>', html=True)
@@ -175,7 +174,7 @@ class MainHeadingTests(WorkspaceTestCase):
     def test_company_has_one_main_heading_hr(self):
         self.sign_in(self.admin)
         response = self.page(reverse('home'))
-        self.assertEqual(self.headings(response), [('', ['', 'Facility', 'Knowledge', 'Administration']),
+        self.assertEqual(self.headings(response), [('', ['', 'Facility', 'Knowledge', 'Alarms', 'Administration']),
                                                     ('HR', ['HR dashboard', 'Time & shifts'])])
         self.assertContains(response, '<p class="rail-section">HR</p>', html=True, count=1)
         self.assertContains(response, 'rail-section', count=1)
@@ -212,11 +211,13 @@ class MenuPlacementTests(TestCase):
             'farm.Species': 'Production · Setup · Reference data',
             'farm.Feed': 'Production · Setup · Reference data',
             'farm.WaterLimit': 'Production · Setup · Reference data',
+            'farm.WaterFreshness': 'Production · Setup · Reference data',
             'farm.Medicine': 'Production · Setup · Reference data',
             'farm.SlaughterFacility': 'Production · Setup · Harvest and logistics',
             'farm.HandlingRule': 'Production · Setup · Reference data',
             'monitoring.CardTemplate': 'Production · Setup · Reference data',
             'monitoring.CardTemplateAssignment': 'Production · Setup · Reference data',
+            'monitoring.PhWindowScale': 'Production · Setup · Reference data',
             'farm.Supplier': 'Production · Setup · Purchasing',
             'farm.StockOperation': 'Production · Operations',
             'farm.FeedingRecord': 'Production · Operations · Feeding',
@@ -257,6 +258,12 @@ class MenuPlacementTests(TestCase):
             'sensors.AlarmRule': 'Sensors · Operations',
             'sensors.AlarmEvent': 'Sensors · Operations',
             'sensors.Credential': 'Sensors · Administration',
+            'alarms.Alarm': 'Company · Alarms',
+            'alarms.RecipientRule': 'Company · Alarms',
+            'alarms.SeverityPolicy': 'Company · Alarms',
+            'alarms.ParameterDeadband': 'Company · Alarms',
+            'core.PlatformSettings': 'Company · Administration',
+            'farm.OpeningBalance': 'Company · Administration',
             'core.AuditLog': 'Company · Administration',
         })
 

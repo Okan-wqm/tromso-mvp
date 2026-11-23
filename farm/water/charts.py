@@ -22,12 +22,10 @@ from dataclasses import dataclass, field
 
 from django.utils.translation import gettext, gettext_lazy as _
 
-from . import chemistry
-from .deffeyes import ALERT_PH, OMEGA_SALINITY, PH_RANGE, Box, clip_polyline, shown
+from . import native
+from .deffeyes import Box, _inputs, shown
 from .evaluate import Status
 
-STEP = 0.05                  # pH between two points of a curve
-JUDGED = {Status.OK, Status.WARNING, Status.CRITICAL}
 
 
 @dataclass
@@ -44,122 +42,51 @@ class Plot:
     dots: list = field(default_factory=list)           # [(key, pH, value, name)]
 
 
-def widen(span, ph, margin=0.25):
-    """A pH axis that holds the water's pH, its ends on half units."""
-    low, high = span
-    return (max(PH_RANGE[0], min(low, math.floor((ph - margin) * 2) / 2)),
-            max(high, math.ceil((ph + margin) * 2) / 2))
-
-
-def grid(span):
-    low, high = span
-    count = round((high - low) / STEP)
-    return [low + (high - low) * index / count for index in range(count + 1)]
+SERIES = {'nh3': _('NH₃-N'), 'h2s': _('H₂S'), 'hs': _('HS⁻'), 'co2': _('CO₂'), 'hco3': _('HCO₃⁻'),
+          'co3': _('CO₃²⁻'), 'calcite': _('Calcite'), 'aragonite': _('Aragonite')}
+HORIZONTALS = {'limit': _('Limit'), 'zero': _('Ω = 1')}
+DOTS = {'water': _('The water'), 'border': _('The border')}
 
 
 def bands(border, low, high):
-    """The danger, alert and safe bands of a border on a pH axis (the source's getVisibleNH3ChartZones and
-    getVisibleH2SChartZones): toxic above (NH₃) or below (H₂S) the border, alert within ALERT_PH of it on the
-    safe side, each cut to the axis, so a border a little beyond the axis still shows its alert strip (the
-    source drew it all safe, though a water there is a warning); [] when the limit is not judged (no value or
-    no limit)."""
-    if border.status not in JUDGED:
-        return []
-    if border.ph is None:                              # the limit cannot be reached at any pH
-        return [('safe', low, high)]
-    edge = border.ph
-    if border.toxic_above:
-        found = [('safe', low, edge - ALERT_PH), ('alert', edge - ALERT_PH, edge), ('danger', edge, high)]
-    else:
-        found = [('danger', low, edge), ('alert', edge, edge + ALERT_PH), ('safe', edge + ALERT_PH, high)]
-    cut = [(kind, max(start, low), min(end, high)) for kind, start, end in found]
-    return [band for band in cut if band[2] > band[1]]
+    """The danger, alert and safe bands of a border on a pH axis (the core's, after the source's
+    getVisibleNH3ChartZones and getVisibleH2SChartZones): toxic above (NH₃) or below (H₂S) the border, alert within
+    ALERT_PH of it on the safe side, each cut to the axis, so a border a little beyond the axis still shows its alert
+    strip; [] when the limit is not judged (no value or no limit)."""
+    return native.bands(border.ph, border.toxic_above, Status(border.status).value, low, high)
 
 
 def _ph_label(ph):
     return f'pH {shown(ph, 2)}'
 
 
-def _verticals(analysis, border, span):
-    lines = [('water', analysis.water.ph, _ph_label(analysis.water.ph))]
-    if border.ph is not None and span[0] <= border.ph <= span[1]:
-        lines.append(('border', border.ph, str(_('Border %(ph)s') % {'ph': shown(border.ph, 2)})))
-    return lines
+def _vertical(key, ph):
+    if key == 'water':
+        return key, ph, _ph_label(ph)
+    return key, ph, str(_('Border %(ph)s') % {'ph': shown(ph, 2)})
 
 
-# ---- the four charts ------------------------------------------------------------------------------------
-def nh3_plot(analysis):
-    """NH₃-N against pH; None without the TAN."""
-    tan, limit, eq = analysis.water.tan_mg_l, analysis.limits.nh3_n_mg_l, analysis.equilibria
-    if tan is None:
+def _plot(key, found):
+    """A chart of the core's numbers with its words."""
+    if found is None:
         return None
-    span = widen((6.0, 9.5), analysis.water.ph)
-    curve = [(ph, tan * eq.nh3_share(ph)) for ph in grid(span)]
-    top = 2.5 * limit if limit else max(value for _ph, value in curve)
-    top = max(top, 1.15 * analysis.nh3_n_mg_l) or 1.0
-    plot = Plot('nh3', span, (0.0, top), 'mg_l', series=[('nh3', _('NH₃-N'), curve)],
-                bands=bands(analysis.nh3, *span), verticals=_verticals(analysis, analysis.nh3, span))
-    plot.dots.append(('water', analysis.water.ph, analysis.nh3_n_mg_l, _('The water')))
-    if limit:
-        plot.horizontals.append(('limit', limit, _('Limit')))
-        if analysis.nh3.ph is not None and span[0] <= analysis.nh3.ph <= span[1]:
-            plot.dots.append(('border', analysis.nh3.ph, limit, _('The border')))
-    return plot
-
-
-def h2s_plot(analysis):
-    """The shares of the total sulfide as H₂S and HS⁻ against pH, in %."""
-    eq = analysis.equilibria
-    span = (PH_RANGE[0], PH_RANGE[1])
-    shares = [(ph, 100 * eq.h2s_share(ph)) for ph in grid(span)]
-    plot = Plot('h2s', span, (0.0, 100.0), 'percent',
-                series=[('h2s', _('H₂S'), shares), ('hs', _('HS⁻'), [(ph, 100 - share) for ph, share in shares])],
-                bands=bands(analysis.h2s, *span), verticals=_verticals(analysis, analysis.h2s, span))
-    plot.dots.append(('water', analysis.water.ph, 100 * eq.h2s_share(analysis.water.ph), _('The water')))
-    return plot
-
-
-def carbonate_plot(analysis):
-    """The shares of the DIC as CO₂, HCO₃⁻ and CO₃²⁻ against pH, in %."""
-    eq = analysis.equilibria
-    span = (PH_RANGE[0], 12.0)
-    points = [(ph, eq.fractions(ph)) for ph in grid(span)]
-    names = (('co2', _('CO₂')), ('hco3', _('HCO₃⁻')), ('co3', _('CO₃²⁻')))
-    series = [(key, name, [(ph, 100 * shares[index]) for ph, shares in points])
-              for index, (key, name) in enumerate(names)]
-    return Plot('carbonate', span, (0.0, 100.0), 'percent', series=series,
-                verticals=[('water', analysis.water.ph, _ph_label(analysis.water.ph))])
-
-
-def saturation_index(eq, dic, ph, calcium_mg_l, ksp):
-    """log10 Ω of a water: Ω = [Ca²⁺] [CO₃²⁻] / Ksp, concentrations per litre (WQ-32)."""
-    product = calcium_mg_l / chemistry.MG_CALCIUM_PER_MOL * eq.carbonate(dic, ph) / 1000
-    return math.log10(product / ksp)
-
-
-def saturation_plot(analysis):
-    """The calcite and aragonite saturation index against pH at the water's DIC; None without the calcium or
-    outside Mucci's salinities."""
-    water, eq = analysis.water, analysis.equilibria
-    if not water.calcium_mg_l or not OMEGA_SALINITY[0] <= water.salinity_ppt <= OMEGA_SALINITY[1]:
-        return None
-    span = widen((6.0, 9.5), water.ph)
-    series = [(key, name, [(ph, saturation_index(eq, analysis.dic, ph, water.calcium_mg_l, ksp)) for ph in grid(span)])
-              for key, name, ksp in (('calcite', _('Calcite'), eq.ksp_calcite),
-                                     ('aragonite', _('Aragonite'), eq.ksp_aragonite))]
-    values = [value for _key, _name, curve in series for _ph, value in curve]
-    low, high = math.floor(min(min(values), 0) * 2) / 2, math.ceil(max(max(values), 0) * 2) / 2
-    if high - low < 1:
-        high = low + 1
-    return Plot('saturation', span, (low, high), 'index', series=series,
-                verticals=[('water', water.ph, _ph_label(water.ph))],
-                horizontals=[('zero', 0.0, _('Ω = 1'))])
+    return Plot(key, found['x'], found['y'], found['unit'],
+                series=[(series, SERIES[series], curve) for series, curve in found['series']],
+                bands=found['bands'], verticals=[_vertical(*vertical) for vertical in found['verticals']],
+                horizontals=[(name, value, HORIZONTALS[name]) for name, value in found['horizontals']],
+                dots=[(name, ph, value, DOTS[name]) for name, ph, value in found['dots']])
 
 
 def plots(analysis):
-    """The four charts by key; a chart that cannot be drawn is None (the template says why)."""
-    return {'nh3': nh3_plot(analysis), 'h2s': h2s_plot(analysis), 'carbonate': carbonate_plot(analysis),
-            'saturation': saturation_plot(analysis)}
+    """The four charts by key (the core's, chemcore/core/src/plots.rs); a chart that cannot be drawn is None (the
+    template says why)."""
+    water, limits, target, pressure = _inputs(analysis)
+    return {key: _plot(key, found) for key, found in native.plots(water, limits, target, pressure).items()}
+
+
+def saturation_index(eq, dic, ph, calcium_mg_l, ksp):
+    """log10 Ω of a water: Ω = [Ca²⁺] [CO₃²⁻] / Ksp, concentrations per litre (WQ-32; the core's)."""
+    return native.saturation_index(eq, dic, ph, calcium_mg_l, ksp)
 
 
 # ---- the SVG --------------------------------------------------------------------------------------------
@@ -235,7 +162,7 @@ def draw(plot):
     series = []
     for key, name, curve in plot.series:
         shifted = [(ph - x_low, value - y_low) for ph, value in curve]
-        for line in clip_polyline(shifted, box):
+        for line in native.clip_polyline(shifted, (box.dic, box.alkalinity, box.dic_step, box.alkalinity_step)):
             series.append({'key': key, 'name': str(name),
                            'points': ' '.join(f'{_fixed(x(a + x_low))},{_fixed(y(b + y_low))}' for a, b in line)})
     return Drawing(

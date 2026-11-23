@@ -1,9 +1,7 @@
+import re
 from datetime import date, datetime, time, timedelta, timezone as utc
-from decimal import Decimal
-from types import SimpleNamespace
 from unittest import mock
 
-from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, connection, transaction
 from django.test import SimpleTestCase
@@ -15,9 +13,10 @@ from farm.models import ProductionDepartment, Site
 from farm.stock.dates import site_today
 
 from .. import read, rules, services
-from ..models import AttendanceRecord, Employee, LeaveRequest, LeaveType, SchedulingSettings, Shift, ShiftAssignment
+from ..models import (AttendanceRecord, Employee, LeaveRequest, LeaveType, Posting, SchedulingSettings, Shift,
+                      ShiftAssignment)
 from .helpers import fields_of, user
-from .helpers_people import PeopleTestCase, TOP, employee, place
+from .helpers_people import PeopleTestCase, employee, place
 
 UTC = utc.utc
 DAY = date(2026, 3, 2)
@@ -35,12 +34,13 @@ def punch(person, start, end=None, **fields):
 
 
 class StatusRuleTests(SimpleTestCase):
-    """rules.status: pure, at a fixed now. Grace 10, absent after 30, punch window 120 (minutes)."""
+    """rules.status: pure, at a fixed now. Grace 10, absent after 30, punch window 120 (minutes); an open clock-in
+    counts as forgotten after 16 hours (hr/tests/test_forgotten.py)."""
 
     SPAN = (at(6), at(14))
 
     def standing(self, now, punches=(), on_leave=False, span=SPAN):
-        return rules.status(span, punches, on_leave, now, 10, 30, 120)
+        return rules.status(span, punches, on_leave, now, 10, 30, 120, 16)
 
     def test_upcoming_not_in_and_absent_follow_the_clock(self):
         self.assertEqual(self.standing(at(5)).state, 'upcoming')
@@ -65,11 +65,31 @@ class StatusRuleTests(SimpleTestCase):
         earlier = self.standing(at(7), [(at(3, 0), at(5, 0))])                 # 3 hours before: not this shift's
         self.assertEqual(earlier.state, 'absent')
 
-    def test_leave_beats_everything_and_an_unplanned_presence_is_still_a_presence(self):
-        self.assertEqual(self.standing(at(7), [(at(6), None)], on_leave=True).state, 'on_leave')
+    def test_a_clock_in_beats_leave_and_an_unplanned_presence_is_still_a_presence(self):
+        # Who is on site is a fact: a person on leave who came in is present (the headcount in an emergency).
+        self.assertEqual(self.standing(at(7), [(at(6), None)], on_leave=True).state, 'present')
+        self.assertEqual(self.standing(at(7), [(at(6), None)], on_leave=True, span=None).state, 'present')
+        self.assertEqual(self.standing(at(7), [], on_leave=True).state, 'on_leave')
         self.assertEqual(self.standing(at(8), [(at(7), None)], span=None).state, 'present')
         self.assertEqual(self.standing(at(8), [(at(7), at(8))], span=None).state, 'done')
         self.assertIsNone(self.standing(at(8), [], span=None))                  # nothing planned, nobody there: unlisted
+
+    def test_an_open_clock_in_is_present_whatever_the_window_the_plan_or_the_leave(self):
+        """Someone called in long before their shift (outside the punch window) and still on site is present: before the
+        shift, during it and on leave. An open clock-in is who is on site now (the emergency headcount)."""
+        called_in = [(at(1), None)]                                          # 5 hours before a 06:00 start, still in
+        before = self.standing(at(3), called_in)
+        self.assertEqual((before.state, before.first_in, before.late_minutes), ('present', at(1), 0))
+        self.assertEqual(self.standing(at(9), called_in).state, 'present')     # not absent: they never left
+        self.assertEqual(self.standing(at(9), called_in, on_leave=True).state, 'present')
+        late_shift = (at(14), at(22))
+        self.assertEqual(self.standing(at(10), [(at(7), None)], span=late_shift).state, 'present')   # not upcoming
+        self.assertEqual(self.standing(at(15), [(at(7), None)], span=late_shift).state, 'present')   # not absent
+        # a closed stretch outside the window is still not this shift's
+        self.assertEqual(self.standing(at(9), [(at(1), at(3))]).state, 'absent')
+        # a closed stretch before the window, then an open one inside it: on site, on time, from the shift's own clock-in
+        both = self.standing(at(9), [(at(1), at(5)), (at(5), None)])
+        self.assertEqual((both.state, both.first_in, both.late_minutes), ('present', at(5), 0))
 
     def test_a_night_shift_across_midnight_is_judged_at_its_own_instants(self):
         night = (at(22), at(6, day=DAY + timedelta(days=1)))
@@ -108,7 +128,7 @@ class PunchModelTests(PeopleTestCase):
         self.assertEqual(AttendanceRecord.objects.filter(employee=self.in_a).count(), 2)
 
     def test_every_column_is_covered(self):
-        self.assertEqual(fields_of(AttendanceRecord), {'employee', 'clock_in', 'clock_out', 'via', 'note', 'entry_key'})
+        self.assertEqual(fields_of(AttendanceRecord), {'employee', 'clock_in', 'clock_out', 'via', 'note'})
 
 
 class SelfPunchTests(PeopleTestCase):
@@ -134,13 +154,14 @@ class SelfPunchTests(PeopleTestCase):
         with mock.patch('django.utils.timezone.now', return_value=at(6)):
             services.clock_in(self.ann)
         before = (AttendanceRecord.objects.count(), AuditLog.objects.count())
-        with self.assertRaises(ValidationError):
-            services.clock_in(self.ann)
-        self.assertEqual((AttendanceRecord.objects.count(), AuditLog.objects.count()), before)
-        services.clock_out(self.ann)
-        before = (AttendanceRecord.objects.count(), AuditLog.objects.count())
-        with self.assertRaises(ValidationError):
+        with mock.patch('django.utils.timezone.now', return_value=at(14)):      # the same day: an ordinary open stretch
+            with self.assertRaisesMessage(ValidationError, 'You are already clocked in.'):
+                services.clock_in(self.ann)
+            self.assertEqual((AttendanceRecord.objects.count(), AuditLog.objects.count()), before)
             services.clock_out(self.ann)
+            before = (AttendanceRecord.objects.count(), AuditLog.objects.count())
+            with self.assertRaisesMessage(ValidationError, 'You are not clocked in.'):
+                services.clock_out(self.ann)
         self.assertEqual((AttendanceRecord.objects.count(), AuditLog.objects.count()), before)
 
     def test_only_a_person_with_read_and_an_employee_row_clocks(self):
@@ -179,7 +200,7 @@ class EnteredPresenceTests(PeopleTestCase):
         Site.objects.filter(pk=self.site.pk).update(timezone='Europe/Oslo')
         self.post(self.in_a, '2026-03-02T07:00', '2026-03-02T15:30')
         record = AttendanceRecord.objects.get()
-        self.assertEqual({name: getattr(record, name) for name in fields_of(AttendanceRecord) if name != 'entry_key'},
+        self.assertEqual({name: getattr(record, name) for name in fields_of(AttendanceRecord)},
                          {'employee': self.in_a, 'clock_in': at(6), 'clock_out': at(14, 30), 'via': 'entered',
                           'note': 'Phone was dead'})                       # 07:00 in Oslo (winter) is 06:00 UTC
         self.assertEqual(record.created_by, self.lead)
@@ -216,6 +237,18 @@ class EnteredPresenceTests(PeopleTestCase):
         errors = self.post(self.in_a, '2026-03-02T12:00', '2026-03-02T13:00').context['form'].errors
         self.assertTrue(errors)
 
+    def test_the_overlap_is_checked_on_the_sites_clock_never_read_as_utc(self):
+        # The form's overlap check (the exclusion constraint) must see the instants the typed times stand for, as the
+        # database does: a time typed on the Oslo clock read as UTC is an hour off in winter.
+        Site.objects.filter(pk=self.site.pk).update(timezone='Europe/Oslo')
+        punch(self.in_a, at(6), at(7))                                     # 07:00 to 08:00 on the Oslo clock
+        response = self.post(self.in_a, '2026-03-02T06:00', '2026-03-02T07:00')     # just before it: 05:00 to 06:00 UTC
+        self.assertEqual(response.status_code, 302, response.context and response.context['form'].errors)
+        self.assertEqual(sorted(AttendanceRecord.objects.values_list('clock_in', flat=True)), [at(5), at(6)])
+        errors = self.post(self.in_a, '2026-03-02T07:30', '2026-03-02T08:30').context['form'].errors  # inside it
+        self.assertIn('clock_out', errors)
+        self.assertEqual(AttendanceRecord.objects.count(), 2)
+
     def test_a_person_outside_the_team_is_not_a_choice_and_other_teams_stretches_are_404(self):
         before = (AttendanceRecord.objects.count(), AuditLog.objects.count())
         response = self.post(self.in_b, '2026-03-02T06:00', '2026-03-02T10:00')
@@ -228,6 +261,19 @@ class EnteredPresenceTests(PeopleTestCase):
                                ).context['objects']
         self.assertEqual(list(rows), [])
         self.assertEqual((AttendanceRecord.objects.count(), AuditLog.objects.count()), (before[0] + 1, before[1]))
+
+    def test_a_stretch_after_midnight_on_the_sites_clock_belongs_to_that_days_department(self):
+        """Ann moves from department A to B on 2 March, on an Oslo site. Her stretch from 00:30 on 2 March (23:30 UTC on
+        the 1st) is on B's lead's list, not A's: the day that decides who sees it is the site's, not the server's UTC."""
+        Site.objects.filter(pk=self.site.pk).update(timezone='Europe/Oslo')
+        Posting.objects.filter(employee=self.in_a).update(valid_until=date(2026, 3, 1))
+        place(self.in_a, self.dept_b, start=date(2026, 3, 2))
+        punch(self.in_a, at(23, 30, day=date(2026, 3, 1)), at(5, day=date(2026, 3, 2)))
+        for actor, seen in ((self.lead, 0), (self.lead_b, 1)):
+            self.client.force_login(actor)
+            rows = self.client.get(reverse('hr:production_attendancerecord_list'),
+                                   {'from': '01.03.2026', 'to': '03.03.2026'}).context['objects']
+            self.assertEqual(len(list(rows)), seen, actor.username)
 
     def test_the_service_checks_the_verb_the_team_and_the_reason(self):
         for actor, person, note, error in ((self.lead, self.in_b, 'x', PermissionDenied),
@@ -280,6 +326,113 @@ class BoardTests(PeopleTestCase):
         self.assertEqual(states, {'Alfa': 'present', 'Bergh': 'upcoming', 'Cyr': 'upcoming'})
         states, _ = self.states(at(6, 20))
         self.assertEqual(states['Cyr'], 'not_in')
+
+    def test_the_tiles_share_out_the_people_planned_and_count_who_is_there_unplanned_apart(self):
+        """Every person planned today is in exactly one tile, so the tiles add up to Planned today; Late is a part of
+        Here now; someone here without a plan is counted apart (Production › Team, Today & attendance)."""
+        dee, eve, fia, gus = (employee(f'E-9{n}', name) for n, name in enumerate(('Dahl', 'Eide', 'Fosse', 'Gran')))
+        for person in (dee, eve, fia, gus):
+            place(person, self.dept_a)
+        for person in (self.in_a, self.ben, self.cy, dee, eve):
+            self.plan(person, self.early)
+        self.plan(fia, self.night)                                     # starts tonight: upcoming
+        punch(self.in_a, at(6, 3))                                     # here
+        punch(self.ben, at(6, 40))                                     # here, late
+        punch(eve, at(6), at(9))                                       # done
+        kind = LeaveType.objects.create(name='Annual', code='AN')
+        LeaveRequest.objects.create(employee=dee, leave_type=kind, first_day=DAY, last_day=DAY, status='approved',
+                                    decided_at=at(1))
+        punch(gus, at(7))                                              # here, not planned
+        board = read.board(self.lead, at(10))
+        tiles = [(tile.key, tile.count) for tile in board.tiles]
+        self.assertEqual(tiles, [('upcoming', 1), ('here', 2), ('not_in', 0), ('absent', 1), ('on_leave', 1), ('done', 1),
+                                 ('forgotten', 0)])                 # shown only when someone forgot (test_forgotten)
+        self.assertEqual((board.planned, sum(count for _, count in tiles), board.late, board.unplanned), (6, 6, 1, 1))
+        self.client.force_login(self.lead)
+        with mock.patch('django.utils.timezone.now', return_value=at(10)):
+            page = self.client.get(reverse('hr:production_today_board')).content.decode()
+        shown = re.findall(r'<span class="tile-count">(\d+)</span><span class="tile-label">([^<]+)</span>', page)
+        self.assertEqual(shown, [('3', 'On site now'), ('6', 'Planned today'), ('1', 'Upcoming'), ('2', 'Here now'),
+                                 ('0', 'Not in yet'), ('1', 'Absent'), ('1', 'On leave'), ('1', 'Done'),
+                                 ('1', 'Here, not planned')])
+        self.assertIn('1 late', page)
+
+    def test_whoever_clocked_in_is_on_the_board_whatever_their_plan_or_leave(self):
+        """The board is the headcount on site (an emergency): a clock-in makes a person present on it, on approved leave
+        or not, planned or not; leave alone, with nothing planned, lists nobody."""
+        kind = LeaveType.objects.create(name='Annual', code='AN')
+        for person in (self.in_a, self.ben, self.cy):
+            LeaveRequest.objects.create(employee=person, leave_type=kind, first_day=DAY, last_day=DAY, status='approved',
+                                        decided_at=at(1))
+        self.plan(self.ben, self.early)
+        punch(self.in_a, at(7))                                        # on leave, nothing planned, came in
+        punch(self.ben, at(6))                                         # on leave over a plan, came in
+        states, board = self.states(at(8))
+        self.assertEqual(states, {'Alfa': 'present', 'Bergh': 'present'})   # Cyr, on leave and away, is not listed
+        self.assertEqual((board.here, board.unplanned, board.planned), (1, 1, 1))
+
+    def test_on_site_now_counts_every_open_clock_in_and_nobody_who_went_home(self):
+        """The truthful headcount: planned and here (late too), here without a plan, and someone called in before their
+        own shift; never someone who clocked out, planned or not ("Here, not planned" counts only those still in)."""
+        self.plan(self.in_a, self.night)                               # planned tonight 22:00, called in at 07:00
+        punch(self.in_a, at(7))
+        self.plan(self.ben, self.early)
+        punch(self.ben, at(6, 2))                                      # planned, here
+        punch(self.cy, at(7), at(9))                                   # not planned, came and went home
+        gus = employee('E-99', 'Gran')
+        place(gus, self.dept_a)
+        punch(gus, at(8))                                              # not planned, still here
+        states, board = self.states(at(10))
+        self.assertEqual(states, {'Alfa': 'present', 'Bergh': 'present', 'Cyr': 'done', 'Gran': 'present'})
+        self.assertEqual((board.here, board.unplanned, board.unplanned_done, board.on_site), (2, 1, 1, 3))
+        self.client.force_login(self.lead)
+        with mock.patch('django.utils.timezone.now', return_value=at(10)):
+            page = self.client.get(reverse('hr:production_today_board')).content.decode()
+        shown = {label: count for count, label in
+                 re.findall(r'<span class="tile-count">(\d+)</span><span class="tile-label">([^<]+)</span>', page)}
+        self.assertEqual((shown['On site now'], shown['Here, not planned']), ('3', '1'))
+
+    def test_a_person_with_no_posted_site_is_on_the_companys_clock_not_the_servers(self):
+        """23:30 UTC on 2 March is 00:30 on 3 March in Oslo (settings.COMPANY_TIME_ZONE): the early shift of the 3rd is
+        that person's today, upcoming; on the server's UTC day nothing would be planned and nobody listed."""
+        nomad = employee('E-77', 'Nomad')                               # not placed anywhere
+        self.plan(nomad, self.early, day=DAY + timedelta(days=1))
+        board = read.board(self.hr, at(23, 30))
+        row = next(row for row in board.rows if row.employee == nomad)
+        self.assertEqual((row.state, row.day, row.zone.key), ('upcoming', DAY + timedelta(days=1), 'Europe/Oslo'))
+
+    def test_a_time_with_no_site_is_shown_on_the_companys_clock(self):
+        from ..templatetags.hr import on_clock
+        self.assertEqual(on_clock(at(23, 30), ''), datetime(2026, 3, 3, 0, 30))
+
+    def test_on_site_now_is_the_muster_count_of_every_open_clock_in_whoever_looks(self):
+        """In an emergency the count must be the whole site's: every open clock-in, the viewer's team or not, as a number
+        only (no name outside the viewer's team), and the tile says so. A clock-in left open for days still counts."""
+        punch(self.in_a, at(7))                                        # the lead's team
+        punch(self.in_b, at(6))                                        # another team: counted, not named
+        punch(self.in_fin, at(7, day=DAY - timedelta(days=3)))         # left open three days ago: still counted
+        punch(self.ben, at(6), at(8))                                  # went home: not counted
+        board = read.board(self.lead, at(10))
+        self.assertEqual(board.on_site, 3)
+        self.client.force_login(self.lead)
+        with mock.patch('django.utils.timezone.now', return_value=at(10)):
+            page = self.client.get(reverse('hr:production_today_board')).content.decode()
+        shown = {label: count for count, label in
+                 re.findall(r'<span class="tile-count">(\d+)</span><span class="tile-label">([^<]+)</span>', page)}
+        self.assertEqual(shown['On site now'], '3')
+        self.assertIn('Everyone clocked in, all teams', page)
+        self.assertNotIn('Bravo', page)
+        self.assertNotIn('Charlie', page)
+
+    def test_a_clock_in_open_for_days_is_listed_never_dropped(self):
+        """A stretch left open is read whatever its age (closed ones from two days back): past the limit of Scheduling
+        settings it is a forgotten clock-out, its own state (hr/tests/test_forgotten.py); under it, a presence."""
+        punch(self.in_a, at(7, day=DAY - timedelta(days=3)))           # forgot to clock out three days ago
+        punch(self.ben, at(21, day=DAY - timedelta(days=1)))           # 13 hours ago
+        punch(self.cy, at(8))                                          # 2 hours ago
+        states, board = self.states(at(10))
+        self.assertEqual(states, {'Alfa': 'forgotten', 'Bergh': 'present', 'Cyr': 'present'})
+        self.assertEqual((board.on_site, board.forgotten_open), (3, 1))
 
     def test_people_planned_off_or_with_no_plan_are_not_listed_unless_they_are_there(self):
         self.plan(self.in_a, None)                                     # planned off
@@ -351,7 +504,7 @@ class TodayPageTests(PeopleTestCase):
         ProductionDepartment.objects.filter(pk=self.dept_a.pk).update(manager=self.lead)
 
     def test_the_page_the_fragment_and_the_numbers_for_the_viewers_team_only(self):
-        today = site_today(None)
+        today = site_today(self.site)                 # the people's own site's day (the board reads each on their site's clock)
         for person in (self.in_a, self.in_b):
             ShiftAssignment.objects.create(employee=person, day=today, shift=self.early)
         self.client.force_login(self.lead)

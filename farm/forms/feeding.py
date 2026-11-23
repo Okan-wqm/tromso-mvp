@@ -49,7 +49,7 @@ class FeedingForm(Acknowledged, ServiceErrors, forms.ModelForm):
         help_text=_('The production fish or the cleaner fish beside them: each feed goes to its own fish. Left as '
                     'the feed suits, it is the cleaner fish’s when the feed suits only them.'))
 
-    ack_field = 'high_rate_ack'
+    ack_fields = ('high_rate_ack',)
     service_fields = {'unit': NON_FIELD_ERRORS}
 
     class Meta:
@@ -67,7 +67,9 @@ class FeedingForm(Acknowledged, ServiceErrors, forms.ModelForm):
     def __init__(self, *args, unit, stock=None, **kwargs):
         super().__init__(*args, instance=FeedingRecord(unit=unit), **kwargs)
         self.unit = unit
-        self.initial['date'] = local_today(unit)      # a new record: its own empty date would win over the field's
+        # A new record: its own empty date would win over the field's. The unit's today while it holds fish; no day for
+        # a unit that is empty now (`stock` None: the feeding is of a day its fish were there, flow fault S-04).
+        self.initial['date'] = local_today(unit) if stock is not None else None
         self.fields['token'].initial = uuid.uuid4()
         self.fields['feed'].queryset = Feed.objects.filter(status=Feed.Status.ACTIVE).prefetch_related('suitability')
         self.fields['feed'].choices = self._feed_choices(stock)
@@ -131,4 +133,5 @@ class FeedingForm(Acknowledged, ServiceErrors, forms.ModelForm):
         return services.record_feeding(
             user, unit=self.unit, day=data['date'], feed=data['feed'], amount_kg=data['amount_kg'],
             time=data['time'], meals=data['meals'], feeder=data['feeder'], notes=data['notes'],
-            ack=data['high_rate_ack'], target=data['target'], token=data['token'])
+            ack=data['high_rate_ack'], target=data['target'], token=data['token'],
+            withdrawal_ack=data['withdrawal_ack'])

@@ -4,6 +4,7 @@ order at that moment (a fresh sensor value at or before it, carried no longer th
 sample; else missing, never invented), and the whole diagram of that moment's water worked out by farm/water/deffeyes.py
 (every frame its own geometry, frames whose diagram reads exactly the same inputs sharing one), one query of the readings
 per tier and page; and its JSON endpoint: the page's figures once each, the frames as columns, the cursor of the next page."""
+import gzip
 import json
 from datetime import datetime, timedelta, timezone as tz
 from decimal import Decimal
@@ -13,7 +14,8 @@ from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
-from farm.models import System
+from core.testing import FrozenClock
+from farm.models import System, Tank
 from farm.tests.helpers import point_of, role
 from farm.tests.test_stock import make_unit
 from farm.water import calculation, chemistry, deffeyes, read as water_read, services as water_services
@@ -24,6 +26,12 @@ from sensors.models import Channel
 from . import SensorsCase, make_channel
 
 START = datetime(2026, 10, 10, tzinfo=tz.utc)
+# The clock stands a week after START. The replay is a function of a range of stored moments, and its data is dated on
+# START's days (the seeded readings, the hour tier's whole hours, the addresses' '2026-10-10T00:05'), so the dates stay
+# and the clock is held: the rules that read it (a sample at most the correction window back, no binding and no sample in
+# the future, the read's "no later than now") then see what they saw the day the tests were written, whatever the day
+# of the run: every replayed moment is past, and the sample of the day before START is eight days old.
+NOW = START + timedelta(days=7)
 
 
 def insert(channel_no, rows):
@@ -37,7 +45,9 @@ def readings_queries(queries):
     return [query for query in queries if 'sensors_reading' in query['sql'] or 'sensors_rollup' in query['sql']]
 
 
-class ReplayCase(SensorsCase):
+class ReplayCase(FrozenClock, SensorsCase):
+    NOW = NOW
+
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
@@ -61,7 +71,9 @@ class ReplayCase(SensorsCase):
         """The figure of the unit's own chart at the frame's moment (calculation.chart_of with `at`), in the page's box."""
         analysis = calculation.chart_of(frames.target, at=frame.at).calculation.analysis
         extent = [(each.point.dic, each.point.alkalinity_meq) for each in frames.frames if each.point is not None]
-        return deffeyes.figure(analysis, deffeyes.geometry(analysis, extent=extent))
+        # A page's figure leaves its point out (None): the diagram does not read the pH, the alkalinity or the oxygen
+        # (sensors/tests/test_page_share.py proves it), so frames of one diagram share it and carry their own point.
+        return {**deffeyes.figure(analysis, deffeyes.geometry(analysis, extent=extent)), 'point': None}
 
 
 class FrameTests(ReplayCase):
@@ -94,10 +106,12 @@ class FrameTests(ReplayCase):
         for frame in frames.frames:
             with self.subTest(at=frame.at):
                 self.assertEqual(frames.figures[frame.figure], self.figure_at(frames, frame))
-        # One figure for each different water (at the parameters' decimals): the frames of one water share it.
+        # One figure for each different diagram (the water but its pH, alkalinity and oxygen, at the parameters'
+        # decimals): the frames of one diagram share it.
         waters = {}
         for frame in frames.frames:
-            waters.setdefault(tuple(sorted((code, item.value) for code, item in frame.inputs.items())), set()).add(
+            waters.setdefault(tuple(sorted((code, item.value) for code, item in frame.inputs.items()
+                                           if code not in ('ph', 'alkalinity_mg_l', 'oxygen_mg_l'))), set()).add(
                 frame.figure)
         self.assertEqual(len(frames.figures), len(waters))
         self.assertGreater(len(waters), 5)
@@ -119,6 +133,33 @@ class FrameTests(ReplayCase):
         for frame in frames.frames:
             self.assertEqual(frame.figure, 0)
             self.assertEqual(frames.figures[0], self.figure_at(frames, frame))
+
+    def test_a_salt_added_units_frames_are_worked_out_as_its_chart_works_them_out(self):
+        """Cross review round 2, R1: the replay takes the unit's water origin, as its chart does (calculation.origin_of):
+        a salt-added unit at 3 permil is worked out on the fresh path, never as diluted sea water."""
+        Tank.objects.filter(pk__in=[self.t1.pk, self.t2.pk]).update(water_origin='salt_added')
+        self.t1.refresh_from_db()
+        self.mid1.refresh_from_db()                 # its unit, as the database holds it now
+        water_services.record(self.user, point=self.mid1, measured_at=START - timedelta(hours=1), source='manual',
+                              values={'salinity_ppt': Decimal('3')})
+        self.steady()
+        frames = read.deffeyes_frames(self.t1, START + timedelta(minutes=5), START + timedelta(minutes=35),
+                                      timedelta(minutes=10))
+        for frame in frames.frames:
+            with self.subTest(at=frame.at):
+                chart = calculation.chart_of(frames.target, at=frame.at).calculation.analysis
+                self.assertEqual(chart.equilibria.water_origin, 'salt_added')
+                self.assertEqual(frame.inputs['salinity_ppt'].value, 3.0)
+                self.assertEqual(frame.point.co2_mg_l, chart.co2_mg_l)
+                self.assertEqual(frames.figures[frame.figure], self.figure_at(frames, frame))
+        # A sampling point of the unit takes its unit's origin too (read.Context._served), as its samples' NH3 does: each
+        # frame is its own inputs worked out as salt-added water.
+        at_point = read.deffeyes_frames(self.mid1, START + timedelta(minutes=5), START + timedelta(minutes=35),
+                                        timedelta(minutes=10))
+        for mine in at_point.frames:
+            made = calculation.inputs_from({**{code: item.value for code, item in mine.inputs.items()},
+                                            'water_origin': 'salt_added'})
+            self.assertEqual(mine.point.co2_mg_l, deffeyes.analyse(made['water']).co2_mg_l)
 
     def test_mixed_origins_are_named(self):
         self.steady()
@@ -149,6 +190,23 @@ class FrameTests(ReplayCase):
         self.assertIsNone(frame.figure)
         self.assertEqual(frame.impossible, deffeyes.why_impossible(10.0, 0.0, 12.4, 100.0))
         self.assertTrue(frame.impossible)
+
+    def test_a_water_the_core_refuses_has_no_diagram_and_says_why(self):
+        """The review's R1: a stored conductivity past the Davies range on a fresh water. The frame says the core's
+        reason, as a unit's chart does; before, the page of frames raised."""
+        water_services.record(self.user, point=self.mid1, measured_at=START - timedelta(hours=1), source='manual',
+                              values={'conductivity_25_us_cm': Decimal('40000')})
+        insert(self.ph.channel_no, [(START, 7.2)])
+        insert(self.channel.channel_no, [(START, 12.0)])
+        frame = read.deffeyes_frames(self.t1, START, START + timedelta(minutes=1), timedelta(minutes=1)).frames[0]
+        self.assertEqual(frame.missing, ())
+        self.assertIsNone(frame.point)
+        self.assertIsNone(frame.figure)
+        self.assertEqual(frame.impossible, deffeyes.unworkable(12.0, 0.0, 100.0, conductivity_25_us_cm=40000.0))
+        self.assertIn('Cannot be worked out: ionic strength above 0.5', frame.impossible)
+        self.assertEqual(read.frame_analysis({'temperature_c': 12.0, 'salinity_ppt': 0.0, 'ph': 7.2, 'alkalinity_mg_l': 80.0,
+                                              'conductivity_25_us_cm': 40000.0, 'water_origin': ''}, {}),
+                         (None, frame.impossible))
 
     def test_a_moved_sensor_counts_for_the_tank_it_was_in(self):
         self.steady()
@@ -231,6 +289,19 @@ class EndpointTests(ReplayCase):
             'target': f'unit:{self.t1.pk}', 'start': '2026-10-10T00:05', 'end': '2026-10-10T00:55', 'step': '300',
             **params})
 
+    def test_a_page_is_sent_compressed_to_a_browser_that_takes_gzip(self):
+        """Owner amendment B4: the replay endpoint compresses its page (the figures are geometry, no secret)."""
+        self.steady()
+        self.reader()
+        plain = self.get()
+        packed = self.client.get(reverse('sensors:deffeyes_frames'), {
+            'target': f'unit:{self.t1.pk}', 'start': '2026-10-10T00:05', 'end': '2026-10-10T00:55', 'step': '300'},
+            HTTP_ACCEPT_ENCODING='gzip')
+        self.assertNotIn('Content-Encoding', plain)
+        self.assertEqual(packed['Content-Encoding'], 'gzip')
+        self.assertLess(len(packed.content), len(plain.content))
+        self.assertEqual(json.loads(gzip.decompress(packed.content)), json.loads(plain.content))
+
     def test_a_page_has_each_figure_once_and_the_frames_as_columns(self):
         self.steady()
         self.reader()
@@ -248,9 +319,11 @@ class EndpointTests(ReplayCase):
         self.assertEqual(columns['inputs']['ph']['value'], [frame.inputs['ph'].value for frame in frames.frames])
         self.assertEqual(columns['inputs']['ph']['origin'], ['sensor'] * 10)
         self.assertEqual(set(columns['inputs']), {'ph', 'temperature_c', 'alkalinity_mg_l', 'salinity_ppt'})
-        # The server's SVG of a frame is drawn from the figure the player gets.
-        figure = found['figures'][columns['figure'][3]]
-        self.assertEqual(deffeyes.render(figure), deffeyes.render(frames.figures[frames.frames[3].figure]))
+        # The server's SVG of a frame is drawn from the figure the player gets and the frame's own point.
+        figure = {**found['figures'][columns['figure'][3]], 'point': [columns['dic'][3], columns['alkalinity_meq'][3]]}
+        point = frames.frames[3].point
+        self.assertEqual(deffeyes.render(figure), deffeyes.render({**frames.figures[frames.frames[3].figure],
+                                                                   'point': [point.dic, point.alkalinity_meq]}))
         self.assertNotIn('diagram', found)
 
     def test_the_next_page_is_asked_by_its_cursor(self):
@@ -270,3 +343,207 @@ class EndpointTests(ReplayCase):
         self.client.force_login(user)
         self.assertEqual(self.client.get(reverse('sensors:deffeyes_frames'), {'target': f'unit:{self.t1.pk}'})
                          .status_code, 403)
+
+    def test_a_range_outside_the_window_of_dates_is_refused_never_a_server_error(self):
+        """`start` and `end` are typed into an address: the calendar's ends (an overflow on the site's clock) and
+        anything outside 1900-2100 are refused (400) through core.dates.read_moment."""
+        self.reader()
+        for start, end in (('0001-01-01T00:30', '0001-01-02T00:30'), ('9999-12-30T00:00', '9999-12-31T00:00'),
+                           ('1899-12-30T00:00', '1899-12-31T00:00'), ('2026-10-10', '2026-10-11')):
+            with self.subTest(start=start, end=end):
+                self.assertEqual(self.get(start=start, end=end).status_code, 400)
+
+    def test_a_step_longer_than_any_time_is_refused_never_a_server_error(self):
+        self.reader()
+        for step in ('100000000000000000', '9' * 40):            # a short step is snapped up to the ladder, kept
+            with self.subTest(step=step):
+                self.assertEqual(self.get(step=step).status_code, 400)
+
+
+def insert_many(channel_no, rows):
+    """[(ts, value, quality)] of one channel in one statement."""
+    with connection.cursor() as cursor:
+        cursor.execute('INSERT INTO sensors_reading (channel_no, ts, value, quality) '
+                       'SELECT %s, * FROM unnest(%s::timestamptz[], %s::float8[], %s::smallint[])',
+                       [channel_no, [at for at, *_rest in rows], [value for _at, value, _q in rows],
+                        [quality for *_rest, quality in rows]])
+
+
+def scanned(sql):
+    """How many rows of the readings' chunks a query reads (returned and filtered out), from its EXPLAIN ANALYZE."""
+    with connection.cursor() as cursor:
+        cursor.execute('EXPLAIN (ANALYZE, FORMAT JSON) ' + sql)
+        plan = cursor.fetchone()[0]
+    plan = json.loads(plan) if isinstance(plan, str) else plan
+    total, nodes = 0, [plan[0]['Plan']]
+    while nodes:
+        node = nodes.pop()
+        nodes.extend(node.get('Plans', []))
+        if node.get('Relation Name', '').startswith('_hyper_'):
+            total += (node['Actual Rows'] + node.get('Rows Removed by Filter', 0)) * node['Actual Loops']
+    return total
+
+
+class ValueAtTests(ReplayCase):
+    """Each frame's sensor value is what the live view's rule gives at the frame's moment (`sensors.provider` value_at:
+    the channel's newest clean reading at or before the moment, taken while it was bound there), within the channel's
+    freshness: on irregular readings with bad ones among them, readings exactly on a frame's moment, gaps longer than the
+    freshness, a backup channel and a sensor moved away and back (for less and for more than its freshness), at every
+    step of the raw tier, page by page."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        from random import Random
+        rng = Random(20261108)
+        cls.backup = make_channel(cls.device, 'ph', code='PH-B')                  # fresh 900 s
+        bindings.move(cls.user, cls.backup, point=cls.mid1, role='backup', at=START - timedelta(days=1))
+        # The pH probe goes to T-02 for two minutes and comes back (shorter than its freshness: both of its stays in
+        # T-01 have fresh values after it), then for 40 minutes (longer than its freshness).
+        bindings.move(cls.user, cls.ph, point=cls.mid2, at=START + timedelta(minutes=60, seconds=7))
+        bindings.move(cls.user, cls.ph, point=cls.mid1, at=START + timedelta(minutes=62, seconds=3))
+        bindings.move(cls.user, cls.ph, point=cls.mid2, at=START + timedelta(minutes=100, seconds=7))
+        bindings.move(cls.user, cls.ph, point=cls.mid1, at=START + timedelta(minutes=140, seconds=3))
+        gaps = {cls.channel.channel_no: (0.2, 0.7, 1, 1, 1, 2, 3, 5, 30, 200, 400),
+                cls.ph.channel_no: (5, 20, 60, 120, 600, 1200),
+                cls.backup.channel_no: (60, 300, 900, 1500)}
+        cls.rows = {}
+        for number, choices in gaps.items():
+            at, made = START - timedelta(minutes=20), []
+            while at < START + timedelta(hours=3, minutes=10):
+                if rng.random() < 0.1:                                     # exactly on a frame's moment (pages())
+                    at = at.replace(second=7, microsecond=250000) + timedelta(minutes=1)
+                else:
+                    at += timedelta(microseconds=int(rng.choice(choices) * rng.uniform(0.5, 1.5) * 1e6))
+                quality = rng.choice((0,) * 16 + (1, 8, 32, 64, 16, 128))    # good, heartbeat, late, and bad ones
+                made.append((at, round(rng.uniform(6.5, 12.5), 4), quality))
+            insert_many(number, made)
+            cls.rows[number] = made
+
+    def pages(self):
+        """Every page of the raw tier's steps over the readings, from a moment on no whole second."""
+        start = START + timedelta(seconds=7, microseconds=250000)
+        for step, frames, size in ((timedelta(seconds=1), 360, 150), (timedelta(seconds=5), 300, 120),
+                                   (timedelta(seconds=15), 300, 120), (timedelta(minutes=1), 190, 70),
+                                   (timedelta(minutes=5), 38, 2000), (timedelta(minutes=30), 6, 2000)):
+            cursor = 0
+            while cursor is not None:
+                page = read.deffeyes_frames(self.t1, start, start + frames * step, step, cursor=cursor, size=size)
+                self.assertEqual(page.tier, read.RAW)
+                yield step, page
+                cursor = page.next
+
+    def test_each_frames_sensor_value_is_value_at_of_its_channel_at_its_moment(self):
+        from farm.water import sources
+        from sensors.provider import PROVIDER
+        targets = {'sensor': (sources.POINT, self.mid1.pk), 'system_sensor': (sources.SYSTEM, self.ras.pk)}
+        seen = {}
+        for step, page in self.pages():
+            for frame in page.frames:
+                for code in ('ph', 'temperature_c'):
+                    item = frame.inputs.get(code)
+                    if item is None or item.channel_no is None:
+                        continue
+                    with self.subTest(step=step, at=frame.at, code=code):
+                        target = targets[item.origin]
+                        found = {value.channel_no: value
+                                 for value in PROVIDER.value_at([target], code, frame.at).get(target, [])}
+                        expected = found[item.channel_no]
+                        self.assertLessEqual(frame.at - expected.at, timedelta(seconds=expected.fresh_for))
+                        self.assertEqual(item.value, float(water_read.as_parameter(code, expected.value)))
+                        self.assertEqual(item.age_s, (frame.at - expected.at).total_seconds())
+                    seen[(step, code)] = seen.get((step, code), 0) + 1
+        self.assertEqual(len(seen), 12)                                   # both inputs from a sensor at every step
+
+    def test_the_rows_are_each_segments_newest_clean_reading_at_each_moment_within_its_freshness(self):
+        """`replay_rows` gives, for every segment and moment, the segment's newest clean reading at or before the moment
+        and inside its binding when it is no older than the channel's freshness; nothing else (a staler value is never
+        used)."""
+        from sensors.quality import BAD_MASK
+        given = on_the_moment = 0
+        for step, page in self.pages():
+            first, count = page.frames[0].at, len(page.frames)
+            found = [segment for code in read.REPLAY_INPUTS
+                     for segment in read.segments(self.t1, code, first - read.CARRY, first + count * step)]
+            rows = read.replay_rows(found, first, step, count, read.RAW)
+            expected = {}
+            for index, segment in enumerate(found):
+                clean = [(at, value) for at, value, quality in self.rows.get(segment.channel_no, [])
+                         if not quality & BAD_MASK and segment.start <= at < segment.end]
+                for slot in range(count):
+                    moment = first + slot * step
+                    before = [row for row in clean if row[0] <= moment]
+                    if before and moment - before[-1][0] <= timedelta(seconds=segment.fresh_s):
+                        expected[(index, slot)] = before[-1]
+                        on_the_moment += before[-1][0] == moment
+            given += len(expected)
+            with self.subTest(step=step, cursor=page.cursor):
+                self.assertEqual(rows, expected)
+        self.assertGreater(given, 1000)
+        self.assertGreater(on_the_moment, 10)                            # a reading exactly at a frame counts for it
+
+    def test_a_page_reads_about_one_reading_per_frame_and_channel_never_every_reading_of_its_span(self):
+        """The readings query of a raw page reads about the readings it gives (one per frame and segment), not every
+        reading of the page's span: at a minute's step over 1 Hz readings it read sixty times more."""
+        dense = make_channel(self.device, 'temperature_c', code='T-DENSE', heartbeat_s=60)
+        bindings.move(self.user, dense, point=self.mid1, at=START - timedelta(days=1))
+        insert_many(dense.channel_no, [(START + timedelta(seconds=second), 10.0 + second / 1e4, 0)
+                                       for second in range(4 * 3600)])
+        first, count, step = START + timedelta(minutes=20), 200, timedelta(minutes=1)
+        with CaptureQueriesContext(connection) as queries:
+            read.deffeyes_frames(self.t1, first, first + count * step, step)
+        (query,) = readings_queries(queries)
+        # The dense probe and the system's temperature, the pH probe's three stays in T-01, the backup.
+        segments = [segment for code in read.REPLAY_INPUTS
+                    for segment in read.segments(self.t1, code, first - read.CARRY, first + count * step)]
+        self.assertEqual(len(segments), 6)
+        self.assertLessEqual(scanned(query['sql']), 2 * count * len(segments))
+
+    def test_the_planner_setting_is_as_it_was_after_a_page_inside_a_callers_transaction(self):
+        """Cross review F4: the look-ups switch TimescaleDB's runtime exclusion off for their own query only; inside a
+        caller's transaction (an atomic block around the replay) the setting is back to what it was afterwards."""
+        from django.db import transaction
+
+        def setting():
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_setting('timescaledb.enable_runtime_exclusion')")
+                return cursor.fetchone()[0]
+
+        with transaction.atomic():
+            before = setting()
+            read.deffeyes_frames(self.t1, START, START + timedelta(hours=2), timedelta(minutes=1))
+            self.assertEqual(setting(), before)
+        self.assertEqual(before, 'on')
+
+
+class OneRuleTests(ReplayCase):
+    """The replay picks each input at each frame by the water's one rule, `farm.water.read.choose` (owner rule A9), as
+    the live view does: the newest fresh value of the unit's own places (its own-water points' sensors and samples), else
+    its system's (the system's sensors, those on its loop point, the loop's samples); never sensor-before-sample (A1)."""
+
+    def test_a_newer_fresh_manual_value_beats_an_older_fresh_sensor_value(self):
+        self.steady()
+        water_services.record(self.user, point=self.mid1, measured_at=START + timedelta(minutes=22), source='manual',
+                              values={'ph': Decimal('6.50')})
+        frames = read.deffeyes_frames(self.t1, START + timedelta(minutes=24), START + timedelta(minutes=25),
+                                      timedelta(minutes=1))
+        ph = frames.frames[0].inputs['ph']
+        self.assertEqual((ph.origin, ph.value), (read.MANUAL, 6.5))
+
+    def test_the_units_own_fresh_value_comes_before_the_systems_sensor(self):
+        self.steady()
+        water_services.record(self.user, point=self.mid1, measured_at=START + timedelta(minutes=30), source='manual',
+                              values={'temperature_c': Decimal('9.0')})
+        frames = read.deffeyes_frames(self.t1, START + timedelta(minutes=31), START + timedelta(minutes=32),
+                                      timedelta(minutes=1))
+        temperature = frames.frames[0].inputs['temperature_c']
+        self.assertEqual((temperature.origin, temperature.value), (read.MANUAL, 9.0))
+
+    def test_a_probe_on_the_loop_point_stands_in_for_the_unit(self):
+        oxygen = make_channel(self.device, 'oxygen_mg_l')
+        bindings.move(self.user, oxygen, point=self.loop, at=START - timedelta(days=1))
+        insert(oxygen.channel_no, [(START + timedelta(minutes=m), 8.0) for m in range(60)])
+        self.steady()
+        frames = read.deffeyes_frames(self.t1, START + timedelta(minutes=10), START + timedelta(minutes=11),
+                                      timedelta(minutes=1))
+        self.assertEqual(getattr(frames.frames[0].inputs.get('oxygen_mg_l'), 'value', None), 8.0)

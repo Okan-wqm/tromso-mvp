@@ -2,6 +2,7 @@
 and the few answers no record holds. Every figure of a report is computed from the farm's records on read
 (reports/compute); nothing here holds a count, a weight or a feed amount (docs/regulatory-reports.md, section 5)."""
 import uuid
+from functools import cached_property
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -19,7 +20,9 @@ SHA256 = r'^[0-9a-f]{64}$'
 
 
 class HarvestCondition(models.TextChoices):
-    """The condition of the harvested fish the biomass report's slaughter weights are given in (`slaktetilstand`)."""
+    """The condition of the harvested fish the biomass report's slaughter weights are given in (`slaktetilstand`): the
+    condition of the kilos the farm holds, never a choice. Today only round kilos are weighed (at harvest); gutted kilos
+    come with the slaughter result (OUR-18)."""
     ROUND = 'round', _('Round weight (as weighed at harvest)')
     GUTTED = 'gutted', _('Gutted weight')
 
@@ -108,10 +111,9 @@ class Report(AuditedModel):
     # cleaner-fish or planned-slaughter report is a PUT to that id (the sea-lice endpoint has POST only).
     authority_id = models.CharField(_('Id returned by the authority’s API'), max_length=100, blank=True)
     notes = models.CharField(_('Notes'), max_length=2000, blank=True)
-    # The two facts no record holds that a monthly report needs said: in what condition the harvest weights of the biomass
-    # report are given, and that no feed was given to the cleaner fish (so that 0 kg is a statement, not a silence).
-    harvest_condition = models.CharField(_('Condition of the harvested fish'), max_length=10, blank=True,
-                                         choices=HarvestCondition.choices)
+    # The fact no record holds that a monthly report needs said: that no feed was given to the cleaner fish (so that 0 kg
+    # is a statement, not a silence). The condition of the biomass report's harvest kilos is not asked: they are the round
+    # kilos the farm holds (compute.biomass.HARVEST_CONDITION, audit F-086).
     no_cleaner_feed = models.BooleanField(_('No feed was given to the cleaner fish'), default=False)
     # Set when the filing is recorded: the deadline then, and whether the filing came after it (the day in Oslo). Empty for a
     # notice (filed at once) and for a filing recorded before this was kept.
@@ -138,9 +140,6 @@ class Report(AuditedModel):
             _check('escape', Q(kind=ReportKind.ESCAPE, escape__isnull=False)
                    | (~Q(kind=ReportKind.ESCAPE) & Q(escape__isnull=True)),
                    _('An escape notice is about an escape, and no other report is.')),
-            _check('harvest_condition', Q(harvest_condition='')
-                   | Q(kind=ReportKind.BIOMASS, harvest_condition__in=HarvestCondition.values),
-                   _('Only the biomass report has a condition of the harvested fish.')),
             _check('no_cleaner_feed', Q(no_cleaner_feed=False) | Q(kind=ReportKind.CLEANER_FISH),
                    _('Only the cleaner-fish report says that no feed was given.')),
             _check('authority_id_when_filed', Q(authority_id='') | Q(submitted_at__isnull=False),
@@ -213,10 +212,12 @@ class Report(AuditedModel):
             return None
         return periods.Period(self.info.grain, self.period_start)
 
-    @property
+    @cached_property
     def deadline(self):
-        """The authority's deadline (a date in Oslo); None for a notice, which is filed at once."""
-        return self.info.deadline(self.period) if self.period and self.info.deadline else None
+        """The authority's deadline (a date in Oslo); None for a notice, which is filed at once: the one function every
+        reader asks (reports.compute.deadline, audit F-101)."""
+        from .compute import deadline
+        return deadline(self)
 
     @property
     def is_submitted(self):
@@ -279,6 +280,9 @@ class ReportSnapshot(models.Model):
     content = models.JSONField(_('Content as filed'))
     content_sha256 = models.CharField(_('Content hash'), max_length=64)
     sources_fingerprint = models.CharField(_('Sources fingerprint'), max_length=64)
+    # The version of the rows the fingerprint was taken over (reports.compute.SCOPE_VERSIONS): the "still matches?" check
+    # reads the same rows again, whatever the current version.
+    scope_version = models.PositiveSmallIntegerField(_('Sources fingerprint version'), default=1)
     created_at = models.DateTimeField(_('Frozen at'), auto_now_add=True)
 
     class Meta:

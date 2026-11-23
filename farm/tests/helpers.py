@@ -1,3 +1,4 @@
+from contextlib import ContextDecorator
 """Shared test helpers for the farm tabs."""
 from django.contrib.auth.models import Group, Permission
 
@@ -7,7 +8,7 @@ def site_data(**overrides):
         'name': 'Main Production Site', 'code': 'mps-001', 'type': 'land_based', 'status': 'active',
         'lokalitetsnummer': '', 'organisation_number': '', 'production_form': '', 'reports_from': '',
         'description': '', 'area_m2': '',
-        'timezone': '', 'country': 'Norway', 'region': 'Vestland', 'street': '', 'city': '', 'state': '',
+        'timezone': 'Europe/Oslo', 'country': 'Norway', 'region': 'Vestland', 'street': '', 'city': '', 'state': '',
         'postal_code': '', 'latitude': '', 'longitude': '', 'altitude': '', 'site_manager': '',
         'contact_email': '', 'contact_phone': '',
     }
@@ -42,6 +43,33 @@ def role(name, *codenames):
     group = Group.objects.create(name=name)
     group.permissions.set(Permission.objects.filter(codename__in=codenames))
     return group
+
+
+class correction_window(ContextDecorator):
+    """The platform owner's correction window (core.platform) set to `days` for a block or a test method, and put
+    back after it."""
+
+    def __init__(self, days):
+        self.days = days
+
+    def __enter__(self):
+        from core.models import PlatformSettings
+        self.before = PlatformSettings.get().correction_window_days
+        PlatformSettings.objects.update(correction_window_days=self.days)
+        return self
+
+    def __exit__(self, *exc):
+        from core.models import PlatformSettings
+        PlatformSettings.objects.update(correction_window_days=self.before)
+        return False
+
+
+# What every refusal by the correction window ends with (core.platform.window_way_out), and what a refused stocking
+# says before it (farm.stock.dates.opening_way_out): flow fault B-07.
+WINDOW_WAY_OUT = ('The correction window is the platform owner’s setting: it is changed in Company › Administration › '
+                  'Platform settings.')
+OPENING_WAY_OUT = ('Fish the farm already had before then are registered as an opening balance (Company › '
+                   'Administration › Opening balances), by the platform owner.')
 
 
 SITE_MANAGER = ('view_site', 'add_site', 'change_site', 'delete_site', 'view_auditlog')
@@ -86,3 +114,35 @@ def point_of(owner, kind='middle'):
     for point_kind, name in wanted:
         SamplingPoint.all_objects.get_or_create(**{owner_type: owner}, kind=point_kind, name=name)
     return SamplingPoint.objects.get(**{owner_type: owner}, kind=kind)
+
+
+LIVE_ON_A_SITE = 'chk_production_departments_live_on_a_site'
+
+
+def leave_without_site(department):
+    """Makes `department` one of the rows a deleted site left without a site before the database held that a live
+    production department is on a site: the check is put back NOT VALID, as on a database that had such rows (farm
+    migration 0029), so the row stays as it is until it is changed."""
+    from django.db import connection
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT 1 FROM pg_constraint WHERE conname = %s', [LIVE_ON_A_SITE])
+        held = cursor.fetchone() is not None
+        cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')    # a table with pending deferred checks cannot be altered
+        cursor.execute(f'ALTER TABLE production_departments DROP CONSTRAINT IF EXISTS {LIVE_ON_A_SITE}')
+        cursor.execute('UPDATE production_departments SET site_id = NULL WHERE id = %s', [department.pk])
+        if held:
+            cursor.execute(f'ALTER TABLE production_departments ADD CONSTRAINT {LIVE_ON_A_SITE} '
+                           'CHECK (site_id IS NOT NULL OR is_deleted) NOT VALID')
+    department.refresh_from_db()
+    return department
+
+
+def going_on(call, *args, **kwargs):
+    """A write the withdrawal guard asks about (a harvest brought inside a withdrawal, fish released earlier), gone on
+    with as the person does: the box's value, the change's fingerprint, sent with the same write
+    (farm/tests/test_withdrawal_guard.py tests the question itself)."""
+    from ..health.withdrawal import WithdrawalChanged
+    try:
+        return call(*args, **kwargs)
+    except WithdrawalChanged as asked:
+        return call(*args, withdrawal_ack=asked.change.fingerprint, **kwargs)

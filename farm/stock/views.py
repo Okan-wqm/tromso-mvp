@@ -27,17 +27,18 @@ from django.utils.translation import gettext as _, gettext_lazy, ngettext, pgett
 
 from core import navigation
 from core.crud import DRAFT, done, render_page
+from core.platform import correction_window_days
 
 from ..feeding import read as feeding_read, views as feeding_views
 from ..health import views as health_views
 from ..forms.stock import (
     BatchDetailsForm, BatchInputForm, CullForm, DeliveryForm, EscapeForm, GradingForm, HarvestForm, InputLineFormSet, MortalityForm,
-    PlannedForm, TransferForm, VoidForm, WeighingForm, kept_rows, stockable_units,
+    PlannedForm, StockVoidForm, TransferForm, WeighingForm, kept_rows, stockable_units,
 )
 from ..harvest import read as harvest_read, views as harvest_views
 from .. import placements
 from ..models import Batch, HandlingPlanItem, HealthEvent, StockMovement, StockOperation, Tank
-from ..models.stock import ARRIVAL_STATUSES
+from ..models.stock import takes_fish
 from ..templatetags.stock import fish, number, tonnes
 from ..water import views as water_views
 from . import read, services
@@ -149,7 +150,7 @@ def production_units(request):
         rows=[{'unit': unit, 'stock': stock.get(unit.pk), 'feeding': feeding.get(unit.pk),
                'water': water.get(unit.pk), 'withdrawal': withdrawals.get(unit.pk), 'placements': chips.get(unit.pk, ()),
                'selected': unit is drawer_unit,
-               'href': page_url(params, unit=str(unit.pk)), 'takes_fish': unit.status in ARRIVAL_STATUSES}
+               'href': page_url(params, unit=str(unit.pk)), 'takes_fish': takes_fish(unit)}
               for unit in shown],
         biomass=biomass,
         count_line=ngettext('%(count)d unit', '%(count)d units', len(shown)) % {'count': len(shown)},
@@ -191,7 +192,7 @@ def _drawer(request, unit, stock, feeding, params):
     can_record, can_void = request.user.has_perm(RECORD), request.user.has_perm(VOID)
     operations = list(StockOperation.all_objects.filter(movements__unit=unit).distinct()
                       .select_related('created_by', 'deleted_by', 'harvest_record__facility',
-                                      'harvest_record__transport', 'escape_record', 'delivery_record')
+                                      'harvest_record__transport', 'escape_record', 'delivery_record', 'opening_balance')
                       .prefetch_related(Prefetch('movements', StockMovement.objects.select_related('unit', 'batch')),
                                         'acknowledgements')
                       .order_by('-date', '-created_at')[:HISTORY])
@@ -207,22 +208,26 @@ def _drawer(request, unit, stock, feeding, params):
             'operation': operation, 'lines': lines, 'record': getattr(operation, 'harvest_record', None),
             'escape': getattr(operation, 'escape_record', None),
             'delivery': getattr(operation, 'delivery_record', None),
+            'opening': operation.opening,
             'corrections': [{'correction': corrections[(line.batch_id, operation.date)], 'batch': line.batch}
                             for line in lines if line.kind == 'weighing' and line.unit_id == unit.pk
                             and not operation.is_deleted and (line.batch_id, operation.date) in corrections],
             'void_url': reverse('farm:stock_void', args=[operation.pk]) + query
             if can_void and not operation.is_deleted and operation.date >= earliest else ''})
-    takes_fish = unit.status in ARRIVAL_STATUSES
+    open_to_fish = takes_fish(unit)
     actions = []
-    if stock is not None and request.user.has_perm(feeding_views.RECORD):
+    # An empty unit whose fish left on a day that may still be dated offers the same dialogs, for a record of such a
+    # day (S-04); the drawer says so.
+    left = read.left_within([unit], services.earliest).get(unit.pk, []) if stock is None else []
+    if (stock is not None or left) and request.user.has_perm(feeding_views.RECORD):
         actions.append({'label': _('Record feeding'), 'url': reverse('farm:feeding_record', args=[unit.pk]) + query})
-    if can_record and stock is not None:
+    if can_record and (stock is not None or left):
         actions += [{'label': heading, 'url': reverse(f'farm:stock_{kind}', args=[unit.pk]) + query}
                     for kind, (_form, heading) in OPERATIONS.items()]
-        if takes_fish:
+        if open_to_fish and stock is not None:
             actions.append({'label': _('Stock another batch'), 'url': reverse('farm:stock_input') + query})
     for index, action in enumerate(actions):
-        action['primary'] = index == 0
+        action['primary'] = index == 0 and stock is not None
     return {
         **feeding_views.drawer(request, unit, stock, feeding, query),
         **water_views.drawer(request, unit),
@@ -234,12 +239,13 @@ def _drawer(request, unit, stock, feeding, params):
         if stock is not None else [],
         # Today's ration of each batch, at its estimated weight (farm/feeding/projection.py).
         'ration_rows': _ration_rows(stock, feeding),
-        'drawer': unit, 'drawer_stock': stock, 'history': history, 'actions': actions,
+        'drawer': unit, 'drawer_stock': stock, 'history': history, 'actions': actions, 'left': left,
+        'window_days': correction_window_days(),
         'drawer_placements': placements.of([unit], request.user).get(unit.pk, ()),
         'drawer_days': stock.days(services.local_today(unit)) if stock else None,
-        'stock_url': reverse('farm:stock_input') + query if can_record and takes_fish else '',
+        'stock_url': reverse('farm:stock_input') + query if can_record and open_to_fish else '',
         'close_url': page_url(params, unit=''),
-        'takes_fish': takes_fish,
+        'takes_fish': open_to_fish,
         'edit_unit_url': reverse('farm:tank_edit', args=[unit.pk]) if request.user.has_perm('farm.change_tank') else '',
     }
 
@@ -278,7 +284,7 @@ def stock_input(request):
     preselected = Tank.objects.filter(pk=chosen).first() if _is_uuid(chosen) else None
     kwargs = {'form_kwargs': _unit_choices(stockable_units()), 'prefix': 'units'}
     heading = (_('Stock unit %(unit)s') % {'unit': preselected.code} if preselected and
-               preselected.status in ARRIVAL_STATUSES else _('New batch'))
+               takes_fish(preselected) else _('New batch'))
     if request.method == 'POST':
         form = BatchInputForm(request.POST)
         rows = InputLineFormSet(request.POST, **kwargs)
@@ -299,7 +305,7 @@ def stock_input(request):
         return _refused(request, 'farm/stock_input.html', _context(form=form, rows=rows, heading=heading,
                                                                    back_url=_back(request)))
     form = BatchInputForm(unit=preselected)
-    initial = [{'unit': preselected.pk}] if preselected and preselected.status in ARRIVAL_STATUSES else []
+    initial = [{'unit': preselected.pk}] if preselected and takes_fish(preselected) else []
     rows = InputLineFormSet(initial=initial, **kwargs)
     return render_page(request, 'farm/stock_input.html', _context(form=form, rows=rows, heading=heading,
                                                                   back_url=_back(request)))
@@ -429,13 +435,22 @@ def record_operation(request, pk, kind):
     unit = get_object_or_404(Tank.objects.select_related('production_department__site'), pk=pk)
     form_class, heading = OPERATIONS[kind]
     stock = read.stock_of([unit]).get(unit.pk)
-    present = stock.shares if stock else []
+    # The fish the record may be about: those in the unit now, and those that left it on a day that may still be
+    # dated (flow fault S-04: a mortality or a weighing of a day before the harvest that emptied the unit). The
+    # service decides on the record's own day.
+    present = read.offered(unit, stock, services.earliest(unit))
     if form_class is HarvestForm:
         present = [share for share in present if not share.cleaner]      # cleaner fish are culled, not harvested
     plan = _plan(request, unit, form_class)
-    context = _context(unit=unit, stock=stock, heading=heading, back_url=_back(request, unit), plan=plan)
+    context = _context(unit=unit, stock=stock, heading=heading, back_url=_back(request, unit), plan=plan,
+                       window_days=correction_window_days())
     if not present:
-        return render_page(request, 'farm/stock_operation.html', context)
+        # No fish now and none on a day that may still be dated: said, on a GET and on a POST alike (a POST saves
+        # nothing, and says so with a refusal's status).
+        response = render_page(request, 'farm/stock_operation.html', context)
+        if request.method == 'POST':
+            response.status_code = 422
+        return response
     row_kwargs = {'form_kwargs': _unit_choices(stockable_units().exclude(pk=unit.pk)), 'prefix': 'rows'}
     form_kwargs = {'plan': plan} if issubclass(form_class, PlannedForm) else {}
     if request.method == 'POST' and DRAFT in request.POST and form_class.refresh_on:
@@ -532,10 +547,12 @@ def void_operation(request, pk):
     context = _context(operation=operation, lines=lines, heading=_('Void operation'),
                        back_url=_back(request, unit))
     if request.method == 'POST':
-        form = VoidForm(request.POST)
+        form = StockVoidForm(request.POST)
         if form.is_valid():
             try:
-                services.void(request.user, operation, form.cleaned_data['reason'])
+                services.void(request.user, operation, form.cleaned_data['reason'],
+                              withdrawal_ack=form.cleaned_data['withdrawal_ack'],
+                              ack=form.cleaned_data['over_capacity_ack'], size_mix_ack=form.cleaned_data['size_mix_ack'])
             except ValidationError as error:
                 form.add_service_error(error)
             else:
@@ -543,7 +560,7 @@ def void_operation(request, pk):
                     'operation': operation.get_kind_display(), 'date': services.shown_date(operation.date)})
                 return done(request, _back(request, unit))
         return _refused(request, 'farm/stock_void.html', {**context, 'form': form})
-    return render_page(request, 'farm/stock_void.html', {**context, 'form': VoidForm()})
+    return render_page(request, 'farm/stock_void.html', {**context, 'form': StockVoidForm()})
 
 
 def overview_tiles(user):
@@ -555,8 +572,10 @@ def overview_tiles(user):
     stock = read.stock_of(units)
     url = reverse('farm:production_units')
     return [
-        {'label': _('Stocked units'), 'count': len(stock), 'url': f'{url}?occupancy={STOCKED}'},
-        {'label': _('Fish'), 'count': fish(sum(item.count for item in stock.values())), 'url': url},
-        {'label': _('Biomass'), 'count': tonnes(sum((item.biomass_kg for item in stock.values()), start=0)),
+        {'key': 'stocked', 'label': _('Stocked units'), 'count': len(stock), 'of': len(units),
+         'url': f'{url}?occupancy={STOCKED}'},
+        {'key': 'fish', 'label': _('Fish'), 'count': fish(sum(item.count for item in stock.values())), 'url': url},
+        {'key': 'biomass', 'label': _('Biomass'),
+         'count': tonnes(sum((item.biomass_kg for item in stock.values()), start=0)),
          'url': url},
     ]

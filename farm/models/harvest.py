@@ -7,7 +7,6 @@ count, round kilos and date stay on its line and the operation. Nothing here hol
 ledger holds; a plan holds intentions, and its actuals are read from the operation that fulfils it."""
 from decimal import Decimal
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
@@ -336,7 +335,7 @@ class HandlingPlanItem(AuditedModel):
         """What the database cannot check: a done item is not cancelled (void its operation first); a new or
         moved plan names fish that are in the unit now, a day inside the backdating window at the earliest,
         and a slaughter facility that is active and takes the batch's species."""
-        from farm.stock.dates import earliest
+        from farm.stock.dates import earliest, too_old
         from farm.stock.read import fish_of_batch
         super().clean()
         stored = (type(self).all_objects.filter(pk=self.pk).values('unit_id', 'batch_id', 'date', 'facility_id')
@@ -350,8 +349,7 @@ class HandlingPlanItem(AuditedModel):
             errors['batch'] = gettext('No fish of %(batch)s are in %(unit)s now.') % {
                 'batch': self.batch.code, 'unit': self.unit.code}
         if self.unit_id and self.date and changed('date') and self.date < earliest(self.unit):
-            errors['date'] = gettext('A plan can be dated at most %(days)d days back.') % {
-                'days': settings.STOCK_BACKDATE_DAYS}
+            errors['date'] = too_old(gettext('A plan can be dated at most %(days)d days back.'))
         chosen = self.facility_id and self.batch_id and changed('facility_id', 'batch_id')
         if chosen and not offered_facilities(self.batch.species).filter(pk=self.facility_id).exists():
             errors['facility'] = gettext('Choose an active slaughter facility that takes %(species)s.') % {

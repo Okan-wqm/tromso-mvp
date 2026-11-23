@@ -21,7 +21,7 @@ from core.models import AuditedModel
 
 from .species import Species
 from .supplier import Supplier, SupplierLink, SupplyCategory
-from .tank import Tank
+from .tank import ON_A_SITE, Tank, on_a_site
 
 
 # ---- the choices ---------------------------------------------------------------------------------
@@ -150,6 +150,16 @@ class AdjustmentReason(models.TextChoices):
 # The statuses a unit may be stocked in. A preparing or fallow unit becomes active when fish arrive;
 # an active one takes a second batch of its species (owner decisions Q1 and Q5).
 ARRIVAL_STATUSES = (Tank.Status.ACTIVE, Tank.Status.PREPARING, Tank.Status.FALLOW)
+# The units that take fish: of such a status and on a live site (Tank ON_A_SITE), since a site's fish are counted
+# only through its units (F-212). The form's list and the page's buttons ask this; the one write path asks both parts
+# to say which one is missing.
+TAKES_FISH = Q(status__in=ARRIVAL_STATUSES) & ON_A_SITE
+
+
+def takes_fish(unit):
+    return unit.status in ARRIVAL_STATUSES and on_a_site(unit.production_department)
+
+
 # Operations that bring fish into a unit: the ones the capacity acknowledgement can belong to.
 ARRIVING_OPERATIONS = (OperationKind.INPUT, OperationKind.TRANSFER, OperationKind.GRADING,
                        OperationKind.ADJUSTMENT)
@@ -270,13 +280,14 @@ class StockOperation(AuditedModel):
     notes = models.CharField(_('Notes'), max_length=2000, blank=True)
     # The person accepted that the fish arriving take a unit above its max density (owner decision Q4).
     over_capacity_ack = models.BooleanField(_('Above the max density, accepted'), default=False)
+    # The person accepted that the fish arriving leave a unit holding batches of a species further apart in weight than
+    # the species' size limit (Species.max_weight_ratio; the owner, 2026-11-09).
+    size_mix_ack = models.BooleanField(_('Batches of different sizes, accepted'), default=False)
     # The health event the deaths or culls belong to (Operations › Health events), on a mortality or a cull
     # only; the event counts its deaths from these operations' lines.
     health_event = models.ForeignKey('HealthEvent', null=True, blank=True, on_delete=models.PROTECT,
                                      related_name='stock_operations', verbose_name=_('Health event'))
     void_reason = models.CharField(_('Reason for voiding'), max_length=500, blank=True)
-    # The key of the form it was entered with (not a secret): the same form sent twice records it once.
-    entry_key = models.UUIDField(null=True, blank=True, unique=True, editable=False)
 
     class Meta:
         db_table = 'stock_operations'
@@ -294,6 +305,10 @@ class StockOperation(AuditedModel):
                 name='chk_stock_operations_ack_on_arrival',
             ),
             models.CheckConstraint(
+                condition=Q(size_mix_ack=False) | Q(kind__in=ARRIVING_OPERATIONS),
+                name='chk_stock_operations_size_mix_ack_on_arrival',
+            ),
+            models.CheckConstraint(
                 condition=Q(health_event__isnull=True) | Q(kind__in=[OperationKind.MORTALITY, OperationKind.CULL]),
                 name='chk_stock_operations_health_event',
             ),
@@ -305,7 +320,18 @@ class StockOperation(AuditedModel):
         """Its escape record, or None: a count adjustment with one is an escape, and is named so wherever it is listed."""
         return getattr(self, 'escape_record', None)
 
+    @property
+    def opening(self):
+        """Its opening balance, or None: a stocking with one is an opening balance, and is named so wherever it is listed."""
+        return getattr(self, 'opening_balance', None)
+
+    def kind_label(self):
+        """Its kind as a list names it: a stocking with an opening balance is an opening balance."""
+        return gettext('Opening balance') if self.opening is not None else self.get_kind_display()
+
     def __str__(self):
+        if self.opening is not None:
+            return f'{gettext("Opening balance")} {self.date.isoformat()}'
         if self.escape is not None:
             line = next(iter(self.movements.all()), None)
             if line is not None:
@@ -480,3 +506,33 @@ class DeliveryRecord(models.Model):
 
     def __str__(self):
         return f'{self.operation} → {self.destination}'
+
+
+class OpeningBalance(models.Model):
+    """What makes a stocking the opening balance of fish the farm already had when it started using the platform (F-197):
+    the source document the counts come from. One per such stocking (its primary key), written with it by the stock service
+    on the platform owner's right (record_opening_balance), never edited, voided with it.
+
+    The stocking is dated the takeover day, inside the correction window, with the count and the average weight of that
+    day; its batch's stocking date is the real one, any day before (beyond the window by design), and its year class is
+    given. Every read of the ledger takes the fish as stock that was already there: their stay starts on the real stocking
+    date (days stocked), their average counts as measured on the takeover day, and the reports never count them as fish
+    stocked. A stocking with one is an opening balance, and is named so wherever it is listed."""
+
+    operation = models.OneToOneField(StockOperation, primary_key=True, on_delete=models.PROTECT,
+                                     related_name='opening_balance', limit_choices_to={'kind': OperationKind.INPUT},
+                                     verbose_name=_('Operation'))
+    document = models.CharField(_('Source document'), max_length=300)
+
+    objects = LiveOperations()
+    all_objects = models.Manager()
+
+    class Meta:
+        db_table = 'opening_balances'
+        base_manager_name = 'all_objects'
+        verbose_name = _('opening balance')
+        verbose_name_plural = _('opening balances')
+        constraints = [models.CheckConstraint(condition=~Q(document=''), name='chk_opening_balances_document')]
+
+    def __str__(self):
+        return str(self.operation)

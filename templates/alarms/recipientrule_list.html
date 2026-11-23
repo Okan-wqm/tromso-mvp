@@ -1,0 +1,30 @@
+{% extends "crud/list.html" %}
+{% load i18n %}
+{% comment %} Company › Alarms › Alarm recipients (alarms.resources.RecipientRuleResource): who is notified of which alarms, at
+   which level. {% endcomment %}
+{% block search_placeholder %}{% trans "Search" %}{% endblock %}
+{% block notice %}{% include "alarms/_not_sent.html" with connected=connected %}{% endblock %}
+{% block empty_text %}{% trans "Nobody is notified of an alarm until a rule says who: a role or a person, on a site or every site, from a severity, at a level." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th scope="col" class="num">{% trans "Level" %}</th><th scope="col">{% trans "Who" %}</th><th scope="col">{% trans "Where" %}</th><th scope="col">{% trans "At least" %}</th><th scope="col">{% trans "Channel" %}</th><th scope="col">{% trans "State" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>
+    <tbody>
+      {% for rule in objects %}
+      <tr>
+        <td class="num">{{ rule.level }}</td>
+        <td><span class="row-title">{% if rule.user %}{{ rule.user.get_full_name|default:rule.user.get_username }}{% else %}{{ rule.role }}{% endif %}</span>{% if rule.on_shift_only %}<span class="row-sub">{% trans "Only while on shift" %}</span>{% endif %}</td>
+        <td>{{ rule.production_department|default:rule.site|default:_("Every site") }}</td>
+        <td>{{ rule.get_min_severity_display }}</td>
+        <td>{{ rule.get_channel_display }}</td>
+        <td>{% if rule.is_active %}{% trans "Active" %}{% else %}<span class="badge badge-closed">{% trans "Inactive" %}</span>{% endif %}</td>
+        <td class="row-actions">
+          {% if can_change %}<a class="icon-button" href="{% url 'alarms:recipientrule_edit' rule.pk %}" data-modal title="{% trans "Edit" %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% trans "Edit" %}</span></a>{% endif %}
+          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'alarms:recipientrule_delete' rule.pk %}" data-modal title="{% trans "Delete" %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% trans "Delete" %}</span></a>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

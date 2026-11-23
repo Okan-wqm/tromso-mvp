@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.db.models import Case, Q, Value, When
 from django.utils.translation import gettext_lazy as _
 
@@ -24,7 +26,7 @@ class LeaveTypeResource(Resource):
     icon = 'calendar-off'
 
 
-class LeaveRequestResource(Resource):
+class LeaveRequestResource(services.PersonFirst, Resource):
     """Leave requests. Everyone with Read sees their own team's requests (`scoped`); a request's person and dates are the
     team lead's to see, its type only the person's, a decider's (Edit) and Everyone's, its reason only the person's and the
     holders of Everyone's. Edit also approves, rejects and cancels
@@ -45,6 +47,11 @@ class LeaveRequestResource(Resource):
     @classmethod
     def queryset(cls):
         return super().queryset().select_related('employee__user', 'leave_type', 'decided_by')
+
+    @classmethod
+    def after_save(cls, request, item, created):
+        """The employment rule again under the person's lock (the form checked it before any lock)."""
+        services.lock_employed(item.employee, item.first_day, item.last_day)
 
     @classmethod
     def scoped(cls, request, objects):
@@ -114,6 +121,8 @@ class LeaveRequestResource(Resource):
                 'can_decide': can_edit and not own and item.status == LeaveStatus.PENDING,
                 'can_cancel': services.can_cancel(request.user, item, listed=True,
                                                   today=site_today(sites[(item.employee_id, item.first_day)])),
+                'can_shorten': item.first_day < item.last_day and services.can_correct(request.user, item, listed=True),
+                'shorten_to': item.last_day - timedelta(days=1),          # the latest new last day the service takes
             })
         return rows
 

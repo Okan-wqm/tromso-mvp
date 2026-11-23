@@ -4,27 +4,35 @@ fish rule both ways, the dialogs, the list, void, permissions and the integratio
 the stored rows."""
 import io
 import uuid
-from datetime import date, time as clock
+from datetime import date, datetime, time as clock, timedelta, timezone as dt_timezone
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
+from django.db.models import Sum
 from django.test import SimpleTestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
+from django.utils import translation
 
 from core import access, database, navigation
+from core.dates import company_today
 from core.models import AuditLog, Profile
+from core.testing import FrozenClock
 
 from ..feeding import read, services, views as feeding_views
 from ..feeding.fold import Feeding, Point, PointKind, walk
 from ..handling import check
-from ..models import Equipment, EquipmentType, Feed, FeedingRecord, FeedSuitability, Tank
+from ..models import Equipment, EquipmentType, Feed, FeedingRecord, FeedSuitability, ProductionDepartment, Site, Tank
 from ..stock import integrity, read as stock_read, services as stock_services
+from ..stock.dates import local_today
 from ..stock.fold import Line, Op
-from .helpers import make_facility, role
+from ..templatetags.stock import tonnes
+from .helpers import WINDOW_WAY_OUT, correction_window, leave_without_site, make_facility, role
 from .test_stock import StockTestCase, make_unit
+from farm import withdrawal_gate
 
 
 def setUpModule():
@@ -33,6 +41,7 @@ def setUpModule():
 
 FEEDING_KEEPER = ('view_feedingrecord', 'add_feedingrecord', 'delete_feedingrecord', 'view_feed', 'delete_feed',
                   'view_equipment', 'delete_equipment')
+DAY = timedelta(days=1)
 
 
 # ---- the walk, without a database ------------------------------------------------------------------
@@ -254,7 +263,7 @@ class RecordTests(FeedingTestCase):
     def test_the_date_is_within_the_window_and_the_unit_holds_fish_that_day(self):
         self.assertEqual(self.refused(self.record, days_ago=-1), {'date': ['The date cannot be in the future.']})
         self.assertEqual(self.refused(self.record, days_ago=32),
-                         {'date': ['Operations can be dated at most 31 days back.']})
+                         {'date': [f'Operations can be dated at most 31 days back. {WINDOW_WAY_OUT}']})
         self.assertEqual(self.refused(self.record, days_ago=21),
                          {'date': [f'T-01 holds no fish on {stock_services.shown_date(self.day(21))}.']})
         self.assertEqual(self.refused(self.record, unit=self.t2),
@@ -290,14 +299,23 @@ class RecordTests(FeedingTestCase):
         response = self.client.post(self.url(), self.data(amount_kg='60'), headers={'X-Modal': '1'})
         self.assertEqual(response.status_code, 422)
         self.assertEqual(response.context['form'].errors['high_rate_ack'], [
-            f'60 kg is 12.0 % of the 500.0 kg T-01 holds on {stock_services.shown_date(self.day(1))} in the book; '
-            'more than 10 % a day is unusual. Tick the box below to record it anyway.'])
+            f'60 kg fed on {stock_services.shown_date(self.day(1))}, this feeding included, is 12.0 % of the 500.0 kg T-01 '
+            'holds in the book; more than 10 % a day is unusual. Tick the box below to record it anyway.'])
         self.assertContains(response, 'name="high_rate_ack"', status_code=422)
         self.assertFalse(FeedingRecord.objects.exists())
         self.client.post(self.url(), self.data(amount_kg='60', high_rate_ack='on'), headers={'X-Modal': '1'})
         self.assertTrue(FeedingRecord.objects.get().high_rate_ack)
         # A tick that was not needed is not stored as an acknowledgement.
-        self.assertFalse(self.record(kilos='5', ack=True).high_rate_ack)
+        self.assertFalse(self.record(kilos='5', days_ago=2, ack=True).high_rate_ack)
+
+    def test_the_usual_rate_is_of_the_days_total_not_of_one_feeding(self):
+        """Q-F5 asks about more than 10 % a day: two feedings of 6 % each are 12 % that day (audit F-081)."""
+        self.record(kilos='30')
+        errors = self.refused(self.record, kilos='30')
+        self.assertIn('60 kg fed on', errors['high_rate_ack'][0])
+        self.assertIn('is 12.0 % of the 500.0 kg T-01 holds', errors['high_rate_ack'][0])
+        self.assertTrue(self.record(kilos='30', ack=True).high_rate_ack)
+        self.assertFalse(self.record(kilos='30', days_ago=2).high_rate_ack)          # another day
 
     def test_the_same_form_sent_twice_records_once(self):
         data = self.data()
@@ -400,6 +418,7 @@ class FishRuleTests(FeedingTestCase):
         self.assertEqual(self.fish(self.t1), 0)
         self.assertStockAddsUp()
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_check_stock_reports_a_feeding_moved_past_the_service(self):
         feeding = self.record(days_ago=1)
         call_command('check_stock', stdout=io.StringIO())
@@ -437,11 +456,25 @@ class VoidTests(FeedingTestCase):
         logged = AuditLog.objects.get(entity_type='feeding record', action='void')
         self.assertEqual(logged.entity_label, f'Feeding · T-01 · {self.day(1).isoformat()} · 12 kg · GR-4')
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_only_within_the_backdating_window(self):
         feeding = self.record(days_ago=20)
         FeedingRecord.objects.filter(pk=feeding.pk).update(date=self.day(32))
         self.assertEqual(self.refused(services.void_feeding, self.user, feeding, 'old'),
-                         {'__all__': ['Operations older than 31 days cannot be voided.']})
+                         {'__all__': [f'Operations older than 31 days cannot be voided. {WINDOW_WAY_OUT}']})
+
+    @correction_window(60)
+    @translation.override('en')              # the test before it voided in Turkish: the language must not leak in
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
+    def test_the_window_is_the_platform_owners_setting(self):
+        self.assertEqual(self.refused(self.record, days_ago=61),
+                         {'date': [f'Operations can be dated at most 60 days back. {WINDOW_WAY_OUT}']})
+        self.assertEqual(self.refused(self.record, days_ago=32),             # not the window: the fish
+                         {'date': [f'T-01 holds no fish on {stock_services.shown_date(self.day(32))}.']})
+        feeding = self.record(days_ago=20)
+        FeedingRecord.objects.filter(pk=feeding.pk).update(date=self.day(61))
+        self.assertEqual(self.refused(services.void_feeding, self.user, feeding, 'old'),
+                         {'__all__': [f'Operations older than 60 days cannot be voided. {WINDOW_WAY_OUT}']})
 
 
 class FiguresTests(FeedingTestCase):
@@ -497,9 +530,171 @@ class FiguresTests(FeedingTestCase):
         self.assertContains(response, 'title="Not weighed since the fish came in."', count=1)
 
     def test_the_overview_shows_the_feed(self):
+        """Each site counts on its own day (the owner's decision of 12.11.2026): the 10 kg given today on T-01's site,
+        which reads UTC, are in "Feed today" at once, also in the hours when the company's day (Oslo's) has turned
+        and UTC's has not (core/tests_day_boundary.py holds the clock there)."""
         tiles = self.client.get(reverse('production_home')).context['feeding_tiles']
         self.assertEqual([(str(tile['label']), tile['count']) for tile in tiles],
                          [('Feed today', '10 kg'), ('Feed, last 7 days', '10 kg')])
+
+
+class OverviewFeedOnSeveralClocksTests(FrozenClock, FeedingTestCase):
+    """The overview's "Feed today" and "Feed, last 7 days" on a farm whose sites read several clocks: each site counts on
+    its own day, and the figure is the sum of each site's own day (the owner's decision of 12.11.2026). 16:00 UTC on
+    the 10th is the 10th in Bergen (the fixtures' site, UTC) and in Oslo (the company) and the 11th in Tokyo."""
+    NOW = datetime(2026, 11, 10, 16, 0, tzinfo=dt_timezone.utc)
+
+    def setUp(self):
+        super().setUp()
+        tokyo = Site.objects.create(name='Tokyo', code='TK', timezone='Asia/Tokyo')
+        self.k1 = make_unit('K-01', ProductionDepartment.objects.create(site=tokyo, name='Hall T', code='HT'))
+        self.stock(self.k1, count=1000, weight='100', days_ago=10)
+        self.here, self.there = local_today(self.t1), local_today(self.k1)
+        self.assertEqual((self.here, self.there, company_today()), (date(2026, 11, 10), date(2026, 11, 11), self.here))
+
+    def fed(self, unit, day, kilos):
+        services.record_feeding(self.user, unit=unit, day=day, feed=self.feed, amount_kg=Decimal(kilos))
+
+    def tiles(self):
+        return {tile['key']: tile for tile in self.client.get(reverse('production_home')).context['feeding_tiles']}
+
+    def test_feed_given_on_a_sites_today_is_in_feed_today_whatever_the_companys_clock_says(self):
+        self.fed(self.k1, self.there, '4')                         # Tokyo's today, the 11th: the company's tomorrow
+        self.fed(self.k1, self.there - DAY, '2')                   # Tokyo's yesterday, though it is the company's today
+        self.fed(self.t1, self.here, '10')                         # Bergen's today
+        self.fed(self.t1, self.here - DAY, '1')
+        tiles = self.tiles()
+        self.assertEqual((tiles['today']['count'], tiles['week']['count']),
+                         (tonnes(Decimal(14)), tonnes(Decimal(17))))
+
+    def test_the_seven_days_are_each_sites_own_last_seven(self):
+        self.fed(self.k1, self.there - 6 * DAY, '1')               # the 5th: the first of Tokyo's seven
+        self.fed(self.k1, self.there - 7 * DAY, '9')               # the 4th: before them, though in the company's seven
+        self.fed(self.t1, self.here - 6 * DAY, '3')                # the 4th: the first of Bergen's seven
+        self.fed(self.t1, self.here - 7 * DAY, '20')               # the 3rd: before them
+        tiles = self.tiles()
+        self.assertEqual((tiles['today']['count'], tiles['week']['count']), (tonnes(Decimal(0)), tonnes(Decimal(4))))
+
+    def test_the_cards_say_so_and_open_the_records_of_those_days(self):
+        tiles = self.tiles()
+        self.assertEqual({str(tile['sub']) for tile in tiles.values()}, {'Each site on its own day'})
+        records = reverse('farm:feeding_records')
+        self.assertEqual((tiles['today']['url'], tiles['week']['url']),
+                         (f'{records}?from=2026-11-10&to=2026-11-11', f'{records}?from=2026-11-04&to=2026-11-11'))
+        for language, words in (('en', 'Each site on its own day'), ('nb', 'Hver lokalitet på sin egen dag'),
+                                ('tr', 'Her saha kendi gününde')):
+            with self.subTest(language=language):
+                self.assertContains(self.client.get(reverse('production_home'), headers={'Accept-Language': language}),
+                                    words, count=2)
+
+    def test_a_farm_of_one_clock_says_nothing_of_it(self):
+        Site.objects.filter(code='TK').update(timezone=self.bergen.timezone)
+        self.assertEqual({str(tile['sub']) for tile in self.tiles().values()}, {''})
+
+    def test_a_unit_whose_department_has_no_site_counts_on_the_companys_day(self):
+        """Review T2: a department can be without a site (a row a deleted site left, farm 0029), and its units read the
+        company's day everywhere (local_today). Counting by the sites' clocks alone dropped their feed from both
+        cards; main counted it."""
+        hall = ProductionDepartment.objects.create(site=self.bergen, name='Old hall', code='OH')
+        unit = make_unit('X-01', hall)
+        self.stock(unit, count=1000, weight='100', days_ago=12)
+        leave_without_site(hall)
+        unit.refresh_from_db()
+        self.assertEqual(local_today(unit), company_today())
+        self.fed(unit, company_today(), '7')
+        self.fed(unit, company_today() - 6 * DAY, '2')
+        self.fed(unit, company_today() - 7 * DAY, '5')              # before the company's seven days
+        self.fed(self.k1, self.there, '4')
+        tiles = self.tiles()
+        self.assertEqual((tiles['today']['count'], tiles['week']['count']), (tonnes(Decimal(11)), tonnes(Decimal(13))))
+
+
+class FourClocksCase(FeedingTestCase):
+    """The third review's probe, kept: sites on four clocks (Bergen on UTC, Oslofjord, Tokyo, Seattle), each fed on its
+    own today and on each of the nine days before, a different amount every time. The cards must be the sum of each
+    site's own today and of each site's own last seven days, worked out here unit by unit."""
+
+    def setUp(self):
+        super().setUp()
+        self.units = {'Bergen': self.t1}
+        for name, code, zone in (('Tokyo', 'TK', 'Asia/Tokyo'), ('Oslofjord', 'OS', 'Europe/Oslo'),
+                                 ('Seattle', 'SE', 'America/Los_Angeles')):
+            site = Site.objects.create(name=name, code=code, timezone=zone)
+            hall = ProductionDepartment.objects.create(site=site, name=f'Hall {code}', code=f'H{code}')
+            self.units[name] = make_unit(f'{code}-01', hall)
+            self.stock(self.units[name], count=1000, weight='100', days_ago=12)
+        kilos = Decimal('0.5')
+        for unit in self.units.values():
+            for back in range(10):
+                services.record_feeding(self.user, unit=unit, day=local_today(unit) - back * DAY, feed=self.feed,
+                                        amount_kg=kilos)
+                kilos += Decimal('0.125')
+
+    def days(self):
+        return {name: local_today(unit).day for name, unit in self.units.items()}
+
+    def own_sums(self):
+        today = week = Decimal(0)
+        for unit in self.units.values():
+            day, of_unit = local_today(unit), FeedingRecord.objects.filter(unit=unit)
+            today += of_unit.filter(date=day).aggregate(found=Sum('amount_kg'))['found'] or 0
+            week += of_unit.filter(date__range=(day - 6 * DAY, day)).aggregate(found=Sum('amount_kg'))['found'] or 0
+        return today, week
+
+    def cards(self):
+        """(the cards' two figures, the queries the cards ran)"""
+        with CaptureQueriesContext(connection) as queries:
+            tiles = {tile['key']: tile for tile in feeding_views.overview_tiles(self.user)}
+        return (tiles['today']['count'], tiles['week']['count']), [query['sql'] for query in queries]
+
+    def assert_the_cards_are_the_sum_of_each_sites_own_days(self, days):
+        self.assertEqual(self.days(), days)
+        today, week = self.own_sums()
+        self.assertEqual(self.cards()[0], (tonnes(today), tonnes(week)))
+        everything = FeedingRecord.objects.aggregate(found=Sum('amount_kg'))['found']
+        self.assertTrue(0 < today < week < everything)               # each figure leaves something out
+
+
+class FourClocksAfternoonTests(FrozenClock, FourClocksCase):
+    """16:00 UTC on 10.11.2026: the 10th in Bergen, Oslo and Seattle, the 11th in Tokyo."""
+    NOW = datetime(2026, 11, 10, 16, 0, tzinfo=dt_timezone.utc)
+
+    def test_the_cards_are_the_sum_of_each_sites_own_days(self):
+        self.assert_the_cards_are_the_sum_of_each_sites_own_days({'Bergen': 10, 'Oslofjord': 10, 'Tokyo': 11, 'Seattle': 10})
+
+    def test_one_query_reads_the_feeding_records_and_only_those_of_the_days_counted(self):
+        """Review T3: the sums had their days in FILTER clauses only, so every look at the overview read the whole
+        table of feeding records, with two joins. The query is bounded by the days any clock counts: from the first of
+        the earliest clock's seven days (the 4th) to the latest clock's today (the 11th)."""
+        table = FeedingRecord._meta.db_table
+        read = [sql for sql in self.cards()[1] if f'FROM "{table}"' in sql]
+        self.assertEqual(len(read), 1)
+        where = read[0][read[0].index(f'FROM "{table}"'):]
+        self.assertRegex(where, rf" WHERE .*\"{table}\"\.\"date\" BETWEEN '?2026-11-04'?(::date)? AND '?2026-11-11'?(::date)?")
+
+
+class FourClocksASiteBehindTests(FrozenClock, FourClocksCase):
+    """07:30 UTC on 11.11.2026: the 11th in Bergen, Oslo and Tokyo, still the 10th in Seattle (23:30)."""
+    NOW = datetime(2026, 11, 11, 7, 30, tzinfo=dt_timezone.utc)
+
+    def test_the_cards_are_the_sum_of_each_sites_own_days(self):
+        self.assert_the_cards_are_the_sum_of_each_sites_own_days({'Bergen': 11, 'Oslofjord': 11, 'Tokyo': 11, 'Seattle': 10})
+
+
+class FourClocksSummerTimeNightTests(FrozenClock, FourClocksCase):
+    """22:30 UTC on 29.03.2026, the day Oslo went to summer time: 00:30 on the 30th in Oslo, the 29th in Bergen."""
+    NOW = datetime(2026, 3, 29, 22, 30, tzinfo=dt_timezone.utc)
+
+    def test_the_cards_are_the_sum_of_each_sites_own_days(self):
+        self.assert_the_cards_are_the_sum_of_each_sites_own_days({'Bergen': 29, 'Oslofjord': 30, 'Tokyo': 30, 'Seattle': 29})
+
+
+class FourClocksWinterTimeNightTests(FrozenClock, FourClocksCase):
+    """23:30 UTC on 24.10.2026, the night Oslo goes back to winter time: 01:30 on the 25th in Oslo, the 24th in Bergen."""
+    NOW = datetime(2026, 10, 24, 23, 30, tzinfo=dt_timezone.utc)
+
+    def test_the_cards_are_the_sum_of_each_sites_own_days(self):
+        self.assert_the_cards_are_the_sum_of_each_sites_own_days({'Bergen': 24, 'Oslofjord': 25, 'Tokyo': 25, 'Seattle': 24})
 
 class WindowsInTests(FeedingTestCase):
     """The windows of the units over days (read.windows_in), against the figures of the same worked example."""
@@ -687,6 +882,7 @@ class DeletePlanTests(FeedingTestCase):
 
 
 class ConstraintTests(FeedingTestCase):
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_checks(self):
         good = {'unit': self.t1, 'date': self.today, 'feed': self.feed, 'amount_kg': Decimal(1)}
         for fields in ({'amount_kg': 0}, {'amount_kg': Decimal('-1')}, {'meals': 0}, {'meals': 49},

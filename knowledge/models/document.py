@@ -12,10 +12,10 @@ from django.db import models, transaction
 from django.db.models import F, Q
 from django.db.models.functions import Lower
 from django.template.defaultfilters import filesizeformat
-from django.utils import timezone
 from django.utils.text import Truncator
 from django.utils.translation import gettext, gettext_lazy as _, ngettext
 
+from core.dates import company_today
 from core.fields import ChoiceArrayField
 from core.models import AuditedModel
 from farm.models import Species
@@ -175,8 +175,8 @@ class Document(AuditedModel):
         ]
 
     @classmethod
-    def from_db(cls, db, field_names, values):
-        document = super().from_db(db, field_names, values)
+    def from_db(cls, db, field_names, values, *, fetch_mode=None):
+        document = super().from_db(db, field_names, values, fetch_mode=fetch_mode)
         # The file as stored, to tell on save whether it was replaced or cleared.
         document._stored_file = values[field_names.index('file')] if 'file' in field_names else None
         return document
@@ -211,7 +211,7 @@ class Document(AuditedModel):
     # --- its file ------------------------------------------------------------------------------
     def clean(self):
         super().clean()
-        if self.year and timezone.localdate().year + 1 < self.year <= YEARS[1]:   # beyond YEARS, its validator says it
+        if self.year and company_today().year + 1 < self.year <= YEARS[1]:   # beyond YEARS, its validator says it
             raise ValidationError({'year': _('The year cannot be later than next year (in press).')})
 
     def save(self, *args, **kwargs):

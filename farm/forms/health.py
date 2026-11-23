@@ -5,7 +5,6 @@ the farm's today, the service's reasons on their fields)."""
 import uuid
 
 from django import forms
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
@@ -16,7 +15,8 @@ from ..health.withdrawal import rules_text
 from ..models import HealthEvent, LiceCount, Medicine, MedicineWithdrawal, Site, Species, Supplier, Tank, Treatment
 from ..models.health import SAME_SPECIES_MESSAGE
 from ..models.handling import HandlingKind
-from ..stock.dates import local_today, site_earliest, site_today
+from ..stock.dates import site_earliest, site_today, too_old
+from ..stock.read import offered_day
 from .stock import DATE, DECIMAL, NOTES, EventChoice, ServiceErrors, handling_ack_field
 
 
@@ -213,8 +213,7 @@ class HealthEventForm(TabbedForm):
             if day > site_today(site):
                 self.add_error('date', _('The date cannot be in the future.'))
             elif day < site_earliest(site):
-                self.add_error('date', _('Operations can be dated at most %(days)d days back.') % {
-                    'days': settings.STOCK_BACKDATE_DAYS})
+                self.add_error('date', too_old(_('Operations can be dated at most %(days)d days back.')))
         return cleaned
 
 
@@ -227,7 +226,7 @@ class MedicineChoice(forms.ModelChoiceField):
 
 
 class TreatmentForm(ServiceErrors, forms.ModelForm):
-    """A treatment: the units (those with fish now, of one site), how and with what, its first and last day,
+    """A treatment: the units (those with fish now or on a day that may still be dated, of one site), how and with what, its first and last day,
     the dose and the amount used, the prescription and the vet, the health event it answers, notes."""
 
     token = forms.UUIDField(widget=forms.HiddenInput)
@@ -261,7 +260,7 @@ class TreatmentForm(ServiceErrors, forms.ModelForm):
         self.fields['units'].queryset = units
         self.fields['handling_ack'] = handling_ack_field(HandlingKind.TREATMENT)
         self._handling = None
-        today = local_today(unit)
+        today = offered_day(unit)        # none for a unit that is empty now: the course is of days its fish were there
         # A new record's own empty dates would win over the farm's today (as the feeding form says).
         self.initial.update({'start_date': today, 'end_date': today})
         if unit is not None:
@@ -290,7 +289,10 @@ class TreatmentForm(ServiceErrors, forms.ModelForm):
                 units = [unit for unit in self.fields['units'].queryset if str(unit.pk) in chosen]
             day = data.get('start_date') or self.current('start_date')
             method = data.get('method') or self['method'].value()
-            self._handling = services.handling(list(units), day, method)
+            medicine = data.get('medicine') if 'medicine' in data else self.current('medicine')
+            reason = data.get('reason') or self['reason'].value()
+            self._handling = services.handling(list(units), day, method, medicine,
+                                               reason if reason in Treatment.Reason.values else None)
             self.fields['handling_ack'].widget.fingerprint = self._handling.fingerprint
         return self._handling
 
@@ -309,10 +311,14 @@ class TreatmentForm(ServiceErrors, forms.ModelForm):
             dose_value=data['dose_value'], dose_unit=data['dose_unit'], amount_value=data['amount_value'],
             amount_unit=data['amount_unit'], bath_minutes=data['bath_minutes'], prescribed_by=data['prescribed_by'],
             prescription_ref=data['prescription_ref'], vet=data['vet'], health_event=data['health_event'],
-            notes=data['notes'], handling_ack=data['handling_ack'], token=data['token'])
+            notes=data['notes'], handling_ack=data['handling_ack'], token=data['token'],
+            withdrawal_ack=data['withdrawal_ack'])
 
 
 class LastDayForm(ServiceErrors, forms.Form):
+    """A treatment's last day, changed. What the change does to the withdrawal (a harvest brought inside it, fish freed)
+    the withdrawal guard asks, with its box (ServiceErrors shows it)."""
+
     end_date = forms.DateField(label=_('Last day'), widget=DATE,
                                help_text=_('The withdrawal counts from the new last day; the change is logged.'))
 
@@ -322,7 +328,8 @@ class LastDayForm(ServiceErrors, forms.Form):
         self.fields['end_date'].initial = treatment.end_date
 
     def save(self, user):
-        return services.change_last_day(user, self.treatment, self.cleaned_data['end_date'])
+        return services.change_last_day(user, self.treatment, self.cleaned_data['end_date'],
+                                        withdrawal_ack=self.cleaned_data['withdrawal_ack'])
 
 
 # ---- sea-lice counts ----------------------------------------------------------------------------------
@@ -350,7 +357,7 @@ class LiceCountForm(ServiceErrors, forms.ModelForm):
         self.fields['unit'].queryset = units
         if unit is not None:
             self.initial['unit'] = unit.pk
-        self.initial['date'] = local_today(unit)
+        self.initial['date'] = offered_day(unit)
 
     def save(self, user):
         data = self.cleaned_data

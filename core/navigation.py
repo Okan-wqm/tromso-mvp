@@ -11,10 +11,24 @@ from dataclasses import dataclass, field
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.urls import reverse
+from django.utils.functional import SimpleLazyObject
 from django.utils.module_loading import import_string
-from django.utils.text import format_lazy
+from django.utils.text import format_lazy, slugify
+from django.utils.translation import gettext_lazy as _, override
 
 SESSION_KEY = 'workspace'
+
+# The area hues of the design system (docs/design/system/README.md, Colour; the --area-* tokens): where a page sits, drawn
+# on its rail icon and its page head, never on data or a status. An entry without one of its own is neutral.
+AREAS = ('farm', 'water', 'feed', 'stock', 'neutral')
+
+
+def area_of(workspace, section, group, entry):
+    """The nearest area set: the entry's, its group's, its section's, its panel's; else neutral."""
+    area = entry.area or group.area or section.area or workspace.area or 'neutral'
+    if area not in AREAS:
+        raise ImproperlyConfigured(f'{entry.url_name}: area {area!r} is not one of {AREAS}')
+    return area
 
 
 @dataclass(frozen=True)
@@ -41,8 +55,10 @@ class Entry:
     hidden: bool = False    # no line in the menu (a settings page reached from another page's links); it still
                             # has its place: the role matrix and the page heading read it, and it is current there
     show_when: str = ''     # the dotted path of a function(user) -> bool: the line is shown only when it says so (Company's
-                            # HR lines are left out for a person whose HR is all in Production). A menu courtesy only: the
-                            # page still answers whoever holds its permission
+                            # HR lines are left out for a person whose HR is all in Production). The address agrees with the
+                            # menu: a line left out is refused at its address too (core.middleware.MenuAccessMiddleware)
+    show_note: str = ''     # who is not offered it, in words: the role matrix says it under the area
+    area: str = ''          # its area hue (AREAS); '' takes its group's, section's or panel's
 
     def url(self):
         return reverse(self.url_name)
@@ -74,13 +90,17 @@ class Entry:
 class Group:
     label: str
     entries: list = field(default_factory=list)
+    area: str = ''
 
 
 @dataclass(frozen=True)
 class Section:
-    """A main heading of a panel's menu, e.g. Setup or Operations; '' for entries above them."""
+    """A main heading of a panel's menu, e.g. Setup or Operations; '' for entries above them. `collapsed`: folded away in
+    the rail (Setup, last), open on a page it holds and as the person left it elsewhere (frontend/collapse.ts)."""
     label: str
     groups: list = field(default_factory=list)
+    collapsed: bool = False
+    area: str = ''
 
 
 @dataclass(frozen=True)
@@ -89,6 +109,7 @@ class Workspace:
     label: str
     sections: list = field(default_factory=list)
     always: bool = False    # offered to everyone; otherwise only to people who can use something in it
+    area: str = ''
 
     def offered_to(self, user):
         """Entries without a permission (the overview) are open to all, so they do not count."""
@@ -114,6 +135,13 @@ class Place:
         return self.group.label or self.section.label or self.workspace.label
 
     @property
+    def trail(self):
+        """'Company › Administration › Platform settings': the way to the page through the menu, as a message names it
+        (in the language active when it is asked)."""
+        return ' › '.join(str(label) for label in (self.workspace.label, self.section.label, self.group.label,
+                                                  self.entry.label) if label)
+
+    @property
     def path(self):
         """'Production · Setup · Facility structure', translated when shown."""
         labels = [label for label in (self.workspace.label, self.section.label, self.group.label) if label]
@@ -129,6 +157,34 @@ def entries():
     return [entry for workspace in workspaces() for entry in workspace.entries()]
 
 
+def entry_for(path):
+    """The menu line a page belongs to: the one whose address is the longest start of the page's (the rail's current
+    line), or None."""
+    return max((entry for entry in entries() if entry.matches(path)), key=lambda entry: len(entry.url()), default=None)
+
+
+def notes(perm):
+    """["Company · HR · Shift schedule: not for a person whose HR is all in Production"]: the lines read with `perm` that
+    are shown only to some, for the role matrix (a role gives the right; the line still depends on the person)."""
+    found = []
+    for workspace in workspaces():
+        for section in workspace.sections:
+            for group in section.groups:
+                for entry in group.entries:
+                    if entry.perm == perm and entry.show_when and not entry.hidden:
+                        labels = [str(label) for label in (workspace.label, section.label, entry.label) if label]
+                        found.append(f'{" · ".join(labels)}: {entry.show_note}')
+    return found
+
+
+def refused(user, path):
+    """Whether the page is refused to the person because its menu line is left out for them (`show_when`), though they
+    hold its permission: the menu and the address bar agree. A line never in the menu (`hidden`) is not a refusal."""
+    entry = entry_for(path)
+    return (entry is not None and not entry.hidden and bool(entry.show_when) and entry.allowed_for(user)
+            and not entry.shown_to(user))
+
+
 def place(perm):
     """Where the page read with this permission ('farm.view_site') sits in the menu."""
     for workspace in workspaces():
@@ -138,6 +194,16 @@ def place(perm):
                     if entry.perm == perm:
                         return Place(workspace, section, group, entry)
     raise ImproperlyConfigured(f'No menu entry in {settings.RAIL_MENU} is read with {perm!r}: add one.')
+
+
+def trail(perm, fallback):
+    """The way through the menu to the page read with this permission ('Company › Administration › Platform
+    settings'), for a message that names where something is done; `fallback` (the page's name) when the menu in use
+    has no such entry."""
+    try:
+        return place(perm).trail
+    except ImproperlyConfigured:
+        return str(fallback)
 
 
 def page(url_name):
@@ -179,13 +245,16 @@ def rail(request):
             for group in section.groups:
                 shown = [
                     {'label': entry.label, 'url': entry.url(), 'icon': entry.icon,
-                     'current': entry.url() == current_url, 'badge': entry.badge_for(user)}
+                     'current': entry.url() == current_url, 'badge': entry.badge_for(user),
+                     'area': area_of(workspace, section, group, entry)}
                     for entry in group.entries if entry.shown_to(user, answers)
                 ]
                 if shown:
                     groups.append({'label': group.label, 'entries': shown})
             if groups:
-                sections.append({'label': section.label, 'groups': groups})
+                sections.append({'label': section.label, 'groups': groups, 'collapsed': section.collapsed,
+                                 'key': section_key(workspace, section),
+                                 'current': any(entry['current'] for group in groups for entry in group['entries'])})
         if sections:
             badges = [entry['badge'].count for section in sections for group in section['groups']
                       for entry in group['entries'] if entry['badge']]
@@ -194,4 +263,56 @@ def rail(request):
                            'badge': Badge(sum(badges), '') if badges else None})
     chosen = workspace_of(request.path) or request.session.get(SESSION_KEY)
     current = next((panel for panel in panels if panel['key'] == chosen), panels[0] if panels else None)
-    return {'workspaces': panels, 'workspace': current, 'rail_sections': current['sections'] if current else []}
+    sections = current['sections'] if current else []
+    foot = getattr(settings, 'RAIL_FOOT', '')
+    here = page_place(request.path)
+    return {'workspaces': panels, 'workspace': current, 'rail_sections': sections, 'bottom_bar': bottom_bar(sections),
+            'rail_foot': SimpleLazyObject(lambda: import_string(foot)(user)) if foot else '',
+            'page_area': here[0], 'page_icon': here[1]}
+
+
+def page_place(path):
+    """(area, icon) of the menu line a page belongs to, for its page head's area chip; ('neutral', '') for a page that
+    belongs to none."""
+    entry = entry_for(path)
+    if entry is None:
+        return 'neutral', ''
+    for workspace in workspaces():
+        for section in workspace.sections:
+            for group in section.groups:
+                if any(each is entry for each in group.entries):
+                    return area_of(workspace, section, group, entry), entry.icon
+    return 'neutral', ''
+
+
+def section_key(workspace, section):
+    """A section's name for the browser to remember it by, the same in every language: production-setup."""
+    with override('en'):
+        return f'{workspace.key}-{slugify(str(section.label)) or "top"}'
+
+
+# The bottom bar below 1024 px (docs/design/system/README.md, Shell): the daily pages under a short name, then More (the
+# whole menu as a sheet). A panel without them (Company) shows its first pages under their own names.
+BOTTOM_BAR = (('farm:meal_board', _('Meals')), ('farm:water', _('Water')), ('farm:production_units', _('Units')),
+              ('inventory:storage', _('Storage')))
+BOTTOM_BAR_SIZE = 4
+
+
+def bottom_bar(sections):
+    """The bottom bar's links out of the panel's menu as the person sees it (so only what their role opens)."""
+    shown = [entry for section in sections for group in section['groups'] for entry in group['entries']]
+    by_url = {entry['url']: entry for entry in shown}
+    daily = [{**by_url[reverse(name)], 'label': label} for name, label in BOTTOM_BAR if reverse(name) in by_url]
+    if daily:
+        return daily
+    return shown[:BOTTOM_BAR_SIZE]
+
+
+def page_base(request):
+    """The frame a page that is not a tab's own (an error page) draws in: the dialog's when the dialog asked for it
+    (X-Modal), the console's for a person signed in, the sign-in page's for a visitor (context processor)."""
+    from .crud import is_modal
+    if is_modal(request):
+        return {'page_base': 'modal_base.html'}
+    user = getattr(request, 'user', None)
+    return {'page_base': 'app_base.html' if user is not None and user.is_authenticated else 'auth_base.html'}

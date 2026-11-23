@@ -1,5 +1,6 @@
-"""Checks the sensor alarm rules (sensors/alarms.py) once, or every `--loop` seconds until stopped. Shown, not sent: the
-events appear on the Sensors overview and the Alarm events page; nobody is notified."""
+"""Checks the sensor alarm rules (sensors/alarms.py) once, or every `--loop` seconds until stopped: the events appear on
+the Sensors overview and the Alarm events page. The alarm loop (manage.py run_alarms) runs this same check on every pass and
+notifies; this command is the sensors' check alone."""
 import time
 
 from django.core.management.base import BaseCommand

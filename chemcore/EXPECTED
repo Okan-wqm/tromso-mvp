@@ -1,0 +1,5 @@
+# The chemcore build the server accepts (Django check core.E001). Written by chemcore/scripts/gen_expected.sh
+# from the built module; never edited by hand.
+version 0.1.0
+formula_version 4
+core_hash f401aeb4a4b49800

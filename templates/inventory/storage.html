@@ -7,8 +7,8 @@
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
-<nav class="view-tabs" aria-label="{{ title }}">
-  {% for item in tabs %}<a class="view-tab" href="{{ item.url }}"{% if item.current %} aria-current="page"{% endif %}>{{ item.label }}</a>{% endfor %}
+<nav class="ui-tabs" aria-label="{{ title }}">
+  {% for item in tabs %}<a class="ui-tab" href="{{ item.url }}"{% if item.current %} aria-current="page"{% endif %}>{{ item.label }}</a>{% endfor %}
 </nav>
 {% if actions %}
 <div class="storage-actions">

@@ -1,5 +1,5 @@
 {% extends "crud/list.html" %}
-{% load i18n %}
+{% load i18n stock %}
 {% block search_placeholder %}{% trans "Search by name, scientific name or code" %}{% endblock %}
 {% block filters %}
 <form method="get" class="toolbar-filter">
@@ -34,7 +34,7 @@
 <div class="table-wrap">
   <table class="data-table">
     <thead>
-      <tr><th scope="col">{% trans "Species" context "singular" %}</th><th scope="col">{% trans "Scientific name" %}</th><th scope="col">{% trans "Code" %}</th><th scope="col">{% trans "Official code" %}</th><th scope="col">{% trans "Category" %}</th><th scope="col">{% trans "Water" %}</th><th scope="col">{% trans "Cleaner fish" %}</th><th scope="col">{% trans "Status" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+      <tr><th scope="col">{% trans "Species" context "singular" %}</th><th scope="col">{% trans "Scientific name" %}</th><th scope="col">{% trans "Code" %}</th><th scope="col">{% trans "Official code" %}</th><th scope="col">{% trans "Category" %}</th><th scope="col">{% trans "Water" %}</th><th scope="col">{% trans "Cleaner fish" %}</th><th scope="col">{% trans "Size limit" %}</th><th scope="col">{% trans "Status" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
     </thead>
     <tbody>
       {% for species in objects %}
@@ -49,6 +49,7 @@
         <td>{{ species.get_category_display }}</td>
         <td>{{ species.water_environments|join:", " }}</td>
         <td>{% if species.is_cleaner_fish %}{{ species.get_cleaner_fish_type_display }}{% else %}–{% endif %}</td>
+        <td class="nowrap">{% if species.max_weight_ratio is not None %}{{ species.max_weight_ratio|times }}{% else %}{% trans "No check" %}{% endif %}</td>
         <td><span class="badge badge-{{ species.status }}">{{ species.get_status_display }}</span></td>
         <td class="row-actions">
           {% if can_change %}<a class="icon-button" href="{% url 'farm:species_edit' species.pk %}" data-modal title="{% blocktrans with name=species.common_name %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=species.common_name %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}

@@ -1,14 +1,14 @@
 {% extends "crud/list.html" %}
-{% load i18n crud assets hr %}
+{% load i18n crud assets hr dates %}
 {% block extra_head %}<link rel="stylesheet" href="{% asset 'css/hr.css' %}">{% endblock %}
 {% block search_placeholder %}{% trans "Search by name or number" %}{% endblock %}
 {% block filters %}
 <form method="get" class="toolbar-filter">
   {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
   <label class="sr-only" for="from-filter">{% trans "From" %}</label>
-  <input id="from-filter" type="date" name="from" value="{{ first|date:'Y-m-d' }}" data-autosubmit>
+  {% day_input "from" first id="from-filter" data_autosubmit=True %}
   <label class="sr-only" for="to-filter">{% trans "To" %}</label>
-  <input id="to-filter" type="date" name="to" value="{{ last|date:'Y-m-d' }}" data-autosubmit>
+  {% day_input "to" last id="to-filter" data_autosubmit=True %}
   <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
 </form>
 {% endblock %}
@@ -22,7 +22,7 @@
       <tr>
         <td>{% if can_change %}<a class="row-title" href="{% url 'hr:attendancerecord_edit'|mounted:request record.pk %}" data-modal>{{ record.employee.full_name }}</a>{% else %}<span class="row-title">{{ record.employee.full_name }}</span>{% endif %}</td>
         <td>{{ record.clock_in|on_clock:record.zone_name|date:"DATETIME_FORMAT" }}</td>
-        <td>{% if record.clock_out %}{{ record.clock_out|on_clock:record.zone_name|date:"DATETIME_FORMAT" }}{% else %}<span class="badge badge-active">{% trans "In" %}</span>{% endif %}</td>
+        <td>{% if record.clock_out %}{{ record.clock_out|on_clock:record.zone_name|date:"DATETIME_FORMAT" }}{% elif record.forgotten %}<span class="badge badge-state-forgotten">{% trans "Clock-out forgotten" %}</span>{% else %}<span class="badge badge-active">{% trans "In" %}</span>{% endif %}</td>
         <td>{{ record.get_via_display }}</td>
         <td class="row-actions">
           {% if can_change %}<a class="icon-button" href="{% url 'hr:attendancerecord_edit'|mounted:request record.pk %}" data-modal title="{% trans 'Correct' %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% trans "Correct" %}</span></a>{% endif %}

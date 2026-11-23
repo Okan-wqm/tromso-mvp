@@ -2,8 +2,10 @@
 the quality flags, the epoch a configuration change moves (and the notification it sends), the dead-letter and runtime
 tables and the role the service signs in with. Any change here is a change of the contract and fails these tests."""
 import hashlib
-import select
+import os
+import re
 from datetime import datetime, timedelta, timezone as tz
+from pathlib import Path
 
 import psycopg
 from django.conf import settings
@@ -28,6 +30,33 @@ RUNTIME_TABLES = ('sensors_channel_state', 'sensors_device_state', 'sensors_inge
 CONFIG_TABLES = ('sensors_connection', 'sensors_payload_format', 'sensors_device', 'sensors_channel',
                  'sensors_calibration')
 ROLE = 'sensors_ingest'
+INGEST = Path(settings.BASE_DIR) / 'sensors-ingest'
+# The files of sensors-ingest/ that make a channel in SQL of their own (the fixture of its tests, the seeds of its
+# bench, multi-source and end-to-end runs): the scan below must have read them, or it has gone blind.
+CHANNEL_FIXTURES = {'tests/common/mod.rs', 'bench/seed.sql', 'bench/multisource_setup.py', 'e2e/seed.sql'}
+INSERT = re.compile(r'INSERT\s+INTO\s+(\w+)\s*\(([^()]*)\)', re.IGNORECASE)
+# A statement written over several lines of a Rust string (a backslash ends the line) or as Python strings side by
+# side is one statement.
+CONTINUED = re.compile(r'''\\\r?\n\s*|["']\s*\r?\n\s*["']''')
+
+
+def ingest_inserts():
+    """[(file, table, columns)] of every `INSERT INTO table (columns)` in the ingest's sources, tests, seeds, scripts
+    and notes (not its build output)."""
+    found = []
+    for folder, folders, names in os.walk(INGEST):
+        folders[:] = sorted(name for name in folders if name != 'target' and not name.startswith('.'))
+        for name in sorted(names):
+            path = Path(folder) / name
+            if path.suffix not in ('.rs', '.sql', '.py', '.sh', '.md'):
+                continue
+            text = path.read_text(encoding='utf-8')
+            if path.suffix in ('.rs', '.py'):
+                text = CONTINUED.sub('', text)
+            for table, columns in INSERT.findall(text):
+                found.append((path.relative_to(INGEST).as_posix(), table.lower(),
+                              [column.strip().strip('\\"') for column in columns.split(',')]))
+    return found
 
 
 def view(channel_no=None):
@@ -255,3 +284,36 @@ class RoleTests(TestCase):
             self.assertFalse(self.privilege(table, 'DELETE'), table)
         for table in (*CONFIG_TABLES, 'sensors_credential', 'auth_user', 'audit_log'):
             self.assertFalse(self.privilege(table, 'SELECT'), table)
+
+
+class IngestSqlTests(TestCase):
+    """The ingest's tests, bench and end-to-end runs make their configuration in SQL of their own, on the schema these
+    migrations make. A column added here that the database does not fill (NOT NULL without a database default: a
+    model's `default` is Python's) breaks every such INSERT, and only the ingest's own run would say so (as
+    `fresh_heartbeats` of sensors 0010 did). So this suite reads those statements against the schema."""
+
+    def test_every_insert_of_the_ingest_names_the_columns_the_database_does_not_fill(self):
+        inserts = ingest_inserts()
+        self.assertLessEqual(CHANNEL_FIXTURES, {file for file, table, _columns in inserts if table == 'sensors_channel'})
+        tables = {}
+        for table in sorted({table for _file, table, _columns in inserts}):
+            tables[table] = dict(rows(
+                "SELECT column_name, is_nullable = 'NO' AND column_default IS NULL AND is_generated = 'NEVER' "
+                "AND is_identity = 'NO' FROM information_schema.columns "
+                "WHERE table_schema = current_schema() AND table_name = %s", [table]))
+        self.assertLessEqual({'sites', *CONFIG_TABLES, *RUNTIME_TABLES, 'sensors_reading'},
+                             {table for table, columns in tables.items() if columns})
+        wrong = []
+        for file, table, given in inserts:
+            columns = tables[table]
+            if not columns:                                   # a table of the run's own (a temporary one), not ours
+                continue
+            left_out = sorted(name for name, needed in columns.items() if needed and name not in given)
+            unknown = sorted(name for name in given if name not in columns)
+            if left_out:
+                wrong.append(f'{file}: INSERT INTO {table} leaves out {", ".join(left_out)} '
+                             f'(NOT NULL, no database default)')
+            if unknown:
+                wrong.append(f'{file}: INSERT INTO {table} names {", ".join(unknown)}, not a column of it')
+        self.assertEqual(wrong, [], 'sensors-ingest/ writes these in SQL of its own: change them with the migration, '
+                                    'and run sensors-ingest/tests/run.sh')

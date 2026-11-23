@@ -5,6 +5,11 @@ from .resources import UserResource
 from .views import activity_log, set_language
 
 SCREENS = {
+    'PlatformSettings': Screen(
+        create=no('the migration makes the one row'),
+        delete=no('there is always exactly one row'),
+        note="The platform owner's rules, read by core.platform only.",
+    ),
     'AuditLog': Screen(
         create=no('written by the code: every create, change, delete, restore and void of every record logs itself '
                   '(core.audit)'),
@@ -14,6 +19,15 @@ SCREENS = {
         note="A record's own rows are also shown on the History tab of its edit page.",
         columns={'*': system('written by core.audit when the change is saved')},
     ),
+    'EntryKey': Screen(
+        create=no('written by the code: a new record a form creates stores the form\'s key with it (core.crud, '
+                  'F-232)'),
+        edit=no('a key belongs to the sending that created its record'),
+        delete=no('kept, so a form sent again later still opens the record it created'),
+        read=no('read only by the form path, to find the record a key created'),
+        note='The same form sent twice creates one record: the second sending finds the first one\'s record here.',
+        columns={'*': system('written by core.crud when a form creates a record')},
+    ),
     'Profile': Screen(
         create=(set_language, UserResource),
         edit=(set_language, UserResource),
@@ -22,5 +36,15 @@ SCREENS = {
         note='Today the profile holds the language only: chosen with the language switcher, or on the Users tab.',
         forms=(UserForm,),
         columns={'user': system('the person the profile belongs to')},
+    ),
+    'AccountMail': Screen(
+        create=(UserResource, 'core:user_invite', 'password_reset'),
+        edit=no('a row is what became of one mail'),
+        delete=no('kept: the users tab shows what became of the last invitation, and the reset form counts an '
+                  'account\'s mails of the last hour'),
+        read=(UserResource,),
+        note='Written when a mail is sent: creating a user and "Send invitation" on the users tab send an invitation, '
+             '"Forgot your password?" a reset. Never the link or its token.',
+        columns={'*': system('written by core.accountmail when the mail is sent')},
     ),
 }

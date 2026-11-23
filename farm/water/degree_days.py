@@ -1,10 +1,11 @@
 """The water a batch lived in, day by day, and what it adds up to in degree-days: one definition for every reader, the
 medicine withdrawal (farm/health/withdrawal.py) and the purging fast before a harvest (farm/handling/fasting.py).
 
-- **A day's temperature** is the daily mean of the live samples of that farm-local day at the unit's middle point, else
-  at its system's loop point (the places are farm/water/read.py's `water_sources`, the one definition of where a unit's
-  water is read; a sample's day is on the clock of its point's site). A batch in several units that day takes the
-  lowest.
+- **A day's temperature** is, per farm-local day, the lowest daily mean of the live samples at the unit's own-water
+  points (middle, depth, outlets, drain; never the inlet: owner, 2026-11-08, the conservative side, a longer
+  withdrawal), else at its system's loop point (the places are farm/water/read.py's `water_sources`, the one definition
+  of where a unit's water is read; a sample's day is on the clock of its point's site). A batch in several units that
+  day takes the lowest.
 - **A past day without a measured temperature counts at the batch species' assumed water temperature**
   (`Species.withdrawal_temperature_c`, Setup › Reference data › Species: the farm's own assumption, a low value the
   conservative one), **and as 0 °C when the species has none**: never as unknown. A day that is not over, or still to
@@ -28,7 +29,7 @@ from farm.stock.dates import end_of, start_of
 from farm.stock.read import Presence
 
 from . import parameters
-from .read import Series, water_sources
+from .read import UNIT, Series, water_sources
 
 DAY = timedelta(days=1)
 TEMPERATURE = parameters.TEMPERATURE
@@ -46,13 +47,11 @@ class Temperatures:
 
     def __init__(self, units, first, last):
         self.first, self.last = first, last
-        self.sources = water_sources(units, nested=False)
+        self.sources = water_sources(units, nested=False, every_point=True)
         points = {source.point.pk: source.point for sources in self.sources.values() for source in sources}
         values = defaultdict(list)
         if points and first <= last:
-            # From the first moment of `first` to the last of `last` on the clocks of the units' sites.
-            series = Series(points.values(), TEMPERATURE, min(start_of(first, unit) for unit in units),
-                            max(end_of(last, unit) for unit in units))
+            series = Series(points.values(), TEMPERATURE, *span(units, first, last))
             for point_id, point in points.items():
                 for moment, value in zip(series.moments[point_id], series.values[point_id]):
                     day = local_time(moment, point).date()
@@ -61,12 +60,28 @@ class Temperatures:
         self.means = {key: sum(found, ZERO) / len(found) for key, found in values.items()}
 
     def of(self, unit_id, day):
-        """The unit's daily mean on `day`, else its system's; None when neither was measured."""
+        """The unit's daily mean on `day`: the lowest of its own-water points' that were measured (owner, 2026-11-08: the
+        conservative side, a longer withdrawal; never the inlet), else its system's loop's; None when neither was."""
+        own = [mean for mean in (self.means.get((source.point.pk, day)) for source in self.sources.get(unit_id, [])
+                                 if source.via == UNIT) if mean is not None]
+        if own:
+            return min(own)
         for source in self.sources.get(unit_id, []):
             mean = self.means.get((source.point.pk, day))
             if mean is not None:
                 return mean
         return None
+
+
+def span(units, first, last):
+    """(start, end): the moments a Temperatures of these units reads its samples between, from the first moment of
+    `first` to the last of `last`, the earliest and the latest on the clocks of the units' sites; None without units.
+    A sample counts on the day of its point's clock, so a point on a site of another clock (a system's loop point) can
+    have samples of `first` before the start: what is read depends on the units' clocks (`BatchWater.of_each`)."""
+    units = list(units)
+    if not units:
+        return None
+    return min(start_of(first, unit) for unit in units), max(end_of(last, unit) for unit in units)
 
 
 @dataclass(frozen=True)
@@ -108,9 +123,46 @@ class BatchWater:
         self.units = Tank.all_objects.select_related('production_department__site').in_bulk(unit_ids)
         # The batches' species in one query: the assumed temperature of a day without a measured one.
         self.batches = Batch.all_objects.select_related('species').in_bulk(self.batch_ids)
-        # From `first`, and at least LOOKBACK_DAYS back: a projection takes the last measured days within them.
-        self.temperatures = Temperatures(list(self.units.values()), min(first, today - LOOKBACK_DAYS * DAY), today)
+        self.temperatures = Temperatures(list(self.units.values()), self.first_day(today, first), today)
         self._projections = {}
+
+    @staticmethod
+    def first_day(today, first):
+        """The first day the samples are read for: `first`, and at least LOOKBACK_DAYS back (a projection takes the
+        last measured days within them)."""
+        return min(first, today - LOOKBACK_DAYS * DAY)
+
+    @classmethod
+    def of_each(cls, asked):
+        """{(batch id, today, first): BatchWater} of every (batch id, today, first) asked: one whose every answer about
+        that batch is what `BatchWater({batch id}, today, first)` gives, the batch read alone, with the batches whose
+        reads are the same read together (a page of fifty rows reads the water about once, not fifty times).
+
+        Batches share one only when they share the day, the first day read and `span`, the moments their samples are
+        read between on the clocks of the units each batch was ever in. Everything else a BatchWater holds is each
+        batch's own: its presence, its species, the sources of each unit (a unit's own points and its system's loop
+        point), and a point's daily means, which are its samples between those moments of a day on its own clock. A
+        batch beside batches of other clocks would read a wider span, and a loop point on a site of a third clock
+        could then count a sample on `first` that the batch alone does not: a different mean, a different date
+        (verification of wip/plans-perf, finding 2)."""
+        asked = set(asked)
+        if not asked:
+            return {}
+        presence = Presence.of_batches({batch_id for batch_id, _today, _first in asked})
+        units = Tank.all_objects.select_related('production_department__site').in_bulk(
+            {unit_id for unit_ids in presence.units.values() for unit_id in unit_ids})
+        keys = {}
+        for batch_id, today, first in asked:
+            first_day = cls.first_day(today, first)
+            read = span([units[unit_id] for unit_id in presence.units.get(batch_id, ())], first_day, today)
+            keys[(batch_id, today, first)] = (today, first_day, read)
+        groups = defaultdict(set)
+        for (batch_id, _today, _first), key in keys.items():
+            groups[key].add(batch_id)
+        # One group holds every batch asked: the presence read above is the one it would read.
+        waters = {key: cls(batch_ids, key[0], key[1], presence=presence if len(groups) == 1 else None)
+                  for key, batch_ids in groups.items()}
+        return {each: waters[key] for each, key in keys.items()}
 
     def assumed(self, batch_id):
         """The batch species' assumed water temperature; None when it has none."""

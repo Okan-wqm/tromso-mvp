@@ -6,7 +6,7 @@ from core import audit
 from core.crud import Mount, Resource, tab_fields
 from farm.stock.dates import site_today
 
-from .. import read, scope, services, units
+from .. import scope, services, units
 from ..forms import EmployeeForm
 from ..forms.employee import PLACEMENT_FIELDS
 from ..models import Employee, EmploymentType, Posting
@@ -40,6 +40,11 @@ class EmployeeResource(Resource):
     @classmethod
     def scoped(cls, request, objects):
         return objects.filter(pk__in=scope.team(request.user, realm=scope.realm_for(request)).values('pk'))
+
+    @classmethod
+    def allowed(cls, request, employee, action):
+        """One's own record is edited by a holder of Everyone only (hr.services.own_record)."""
+        return not services.own_record(request.user, employee)
 
     @classmethod
     def form(cls, request, *args, **kwargs):
@@ -77,7 +82,8 @@ class EmployeeResource(Resource):
             'types': EmploymentType.choices, 'chosen_type': chosen_type, 'statuses': STATUSES,
             'chosen_status': chosen_status, 'departments': units.choices(kinds=[scope.realm_for(request)]),
             'chosen_department': units.token(department),
-            'today': today,
+            'today': today, 'own': next((employee.pk for employee in Employee.objects.filter(user=request.user)
+                                         if services.own_record(request.user, employee)), None),
         }
 
     @classmethod
@@ -94,6 +100,9 @@ class EmployeeResource(Resource):
             department, title, day = placement
             services.move(request.user, employee, department, title, day)
         services.align_placements(request.user, employee)
+        conflict = services.employment_conflicts(employee, employee.joined_on, employee.left_on)    # the row is locked
+        if conflict is not None:
+            raise conflict
 
     @classmethod
     def detail_extras(cls, request, employee):

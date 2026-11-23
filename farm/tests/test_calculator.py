@@ -22,12 +22,13 @@ from core.models import Profile
 
 from ..forms.water import CalculatorForm
 from ..models import ProductionDepartment, SamplingPoint, Site, System, Tank, WaterLimit, WaterMeasurement
-from ..water import calculation, charts, chemistry, deffeyes, dosing, parameters, services
+from ..water import calculation, charts, chemistry, deffeyes, dosing, native, parameters, services
 from ..water.deffeyes import Limits, Target, Water, analyse
 from ..water.evaluate import Status
 from .helpers import make_species, point_of, role, stock_fish
 from .test_deffeyes import plummer_busenberg
 from .test_stock import make_unit
+from farm import withdrawal_gate
 
 REFERENCE = json.loads((Path(__file__).parent / 'deffeyes_reference' / 'reference.json').read_text(encoding='utf-8'))
 # The source's reagent names (reagents.ts REAGENTS) and ours.
@@ -164,8 +165,7 @@ class ReagentTests(SimpleTestCase):
         def co2(point):
             return eq.co2(point[0], eq.ph_at(*point)) * chemistry.MG_CO2_PER_MMOL
 
-        def below_air(dic, alkalinity):
-            return co2((dic, alkalinity)) < air
+        below_air = (eq, air)               # the water's equilibria, the air's CO₂: the core judges
 
         # Stripping and acid to DIC 1.55, alkalinity 1.40: stripping first ends at 0.34 mg/L, acid first and
         # stripping last at the target's 6.7: it can be done.
@@ -331,7 +331,7 @@ class SimulatorTests(SimpleTestCase):
         self.assertEqual(result.change['ph'], acid.step.ph - water.step.ph)
 
     def test_a_dose_that_only_moves_the_ph_is_judged(self):
-        # 120 g NaOH in 1 m³ reaches pH 11.25 with no TAN, no sulfide and CO₂ well inside its limit: nothing but
+        # 120 g NaOH in 1 m³ reaches pH 11.30 (formula 3; 11.25 by formula 1) with no TAN, no sulfide and CO₂ well inside its limit: nothing but
         # its pH says so (the verifier's case; the source marked a pH outside 6.5 to 8.5 red, OnDemandPanel.tsx).
         bounds = calculation.PhBounds(6.5, 7.0, 8.0, 8.5)
         for grams, expected in ((12, Status.OK), (15, Status.WARNING), (17, Status.CRITICAL), (120, Status.CRITICAL)):
@@ -341,7 +341,7 @@ class SimulatorTests(SimpleTestCase):
             judged = result.steps[-1]
             with self.subTest(grams=grams):
                 self.assertEqual(judged.ph_status, expected)
-        self.assertAlmostEqual(judged.step.ph, 11.25, delta=0.01)
+        self.assertAlmostEqual(judged.step.ph, 11.30, delta=0.01)
         self.assertEqual(judged.co2.status, Status.OK)
         self.assertEqual((judged.nh3.status, judged.h2s.status), (Status.NOT_MEASURED, Status.NOT_MEASURED))
         # Without bounds a step is not judged, never taken for ok.
@@ -463,23 +463,23 @@ class SmallChartTests(SimpleTestCase):
         # WQ-42: the source's NH₃ chart runs from pH 6 to 9.5 and up to 2.5 times the limit, and its points are
         # dropped outside: a water at pH 9.8, or with more NH₃ than that, had no point.
         result = analyse(Water(12, 1, 9.8, 200, tan_mg_l=2), Limits(0.0103, 15))
-        plot = charts.nh3_plot(result)
+        plot = charts.plots(result)['nh3']
         self.assertEqual(plot.x, (6.0, 10.5))
         self.assertGreaterEqual(plot.y[1], result.nh3_n_mg_l)
         drawing = charts.draw(plot)
         self.assertIn('water', [dot['key'] for dot in drawing.dots])
         self.assertIn('water', [line['key'] for line in drawing.verticals])
-        self.assertIsNone(charts.nh3_plot(analyse(Water(12, 1, 7.0, 80))))         # without the TAN
+        self.assertIsNone(charts.plots(analyse(Water(12, 1, 7.0, 80)))['nh3'])         # without the TAN
 
     def test_saturation_only_where_its_constants_hold(self):
-        self.assertIsNone(charts.saturation_plot(analyse(Water(12, 1, 7.0, 80, calcium_mg_l=400))))   # WQ-32
-        self.assertIsNone(charts.saturation_plot(analyse(Water(25, 35, 8.1, 115))))
-        plot = charts.saturation_plot(analyse(Water(25, 35, 8.1, 115, calcium_mg_l=412)))
+        self.assertIsNone(charts.plots(analyse(Water(12, 1, 7.0, 80, calcium_mg_l=400)))['saturation'])   # WQ-32
+        self.assertIsNone(charts.plots(analyse(Water(25, 35, 8.1, 115)))['saturation'])
+        plot = charts.plots(analyse(Water(25, 35, 8.1, 115, calcium_mg_l=412)))['saturation']
         self.assertEqual([key for key, _name, _curve in plot.series], ['calcite', 'aragonite'])
         self.assertLessEqual(plot.y[0], 0)
         self.assertGreaterEqual(plot.y[1], 0)
         # Its ticks are whole steps (the curves run from −2.27 to 1.40 here), never a half rounded to −0.
-        drawing = charts.draw(charts.saturation_plot(analyse(Water(12, 35, 7.0, 80, calcium_mg_l=400))))
+        drawing = charts.draw(charts.plots(analyse(Water(12, 35, 7.0, 80, calcium_mg_l=400)))['saturation'])
         self.assertEqual([tick['label'] for tick in drawing.y_ticks], ['-3', '-2', '-1', '0', '1', '2'])
 
     def test_the_svg_has_plain_coordinates_and_the_languages_labels(self):
@@ -584,6 +584,30 @@ class CalculatorPageTests(TestCase):
         self.assertIn('ph', page.context['form'].errors)
         self.assertIsNone(page.context['chart'])
 
+    def test_a_water_that_cannot_be_comes_back_with_its_reason_on_every_page(self):
+        """The core refuses a pH and an alkalinity no water has (native.ImpossibleWaterError); the form refuses them
+        first, by the same rule, so the page, its live parts and the report say why and never fail."""
+        odd = self.query(temperature_c='10', salinity_ppt='0.2', ph='11', alkalinity_mg_l='3')
+        with self.assertRaises(native.ImpossibleWaterError):
+            deffeyes.analyse(Water(10.0, 0.2, 11.0, 3.0))
+        for url in (self.url, self.results_url, self.report_url):
+            with self.subTest(url=url):
+                response = self.client.get(url, odd)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn('alkalinity_mg_l', response.context['form'].errors)
+                self.assertContains(response, 'At this pH the alkalinity is above')
+                self.assertIsNone(response.context['result'])
+        # The target likewise, on its own field.
+        target = self.query(target_ph='11.5', target_alkalinity_mg_l='20')
+        with self.assertRaises(native.ImpossibleWaterError):
+            deffeyes.analyse(Water(12.0, 1.0, 7.0, 80.0), target=Target(11.5, 20.0))
+        for url in (self.url, self.results_url, self.report_url):
+            with self.subTest(url=url, target=True):
+                response = self.client.get(url, target)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn('target_alkalinity_mg_l', response.context['form'].errors)
+                self.assertContains(response, 'At this pH the alkalinity is above')
+
     def test_the_recipes_and_the_dosing_layer(self):
         response = self.client.get(self.results_url, self.query())
         recipes = response.context['result'].recipes
@@ -606,15 +630,15 @@ class CalculatorPageTests(TestCase):
 
     def test_the_simulator_marks_a_ph_no_fish_lives_in(self):
         html = self.client.get(self.results_url, self.query(dose_naoh='120')).content.decode()
-        self.assertRegex(html, r'<td class="num wq-value wq-critical">11\.25<span class="sr-only"> \(Critical\)')
+        self.assertRegex(html, r'<td class="num wq-value wq-critical">11\.30<span class="sr-only"> \(Critical\)')
         self.assertRegex(html, r'<td class="num wq-value wq-ok">7\.00<span')                  # the water itself
         warning = self.client.get(self.results_url, self.query(dose_naoh='15')).content.decode()
-        self.assertRegex(warning, r'<td class="num wq-value wq-warning">8\.17<span')
+        self.assertRegex(warning, r'<td class="num wq-value wq-warning">8\.19<span')        # formula 3 (8.17 by 1)
         # The bounds are the form's: with no bound given the step is not judged.
         cleared = self.query(dose_naoh='120', ph_critical_low='', ph_warning_low='', ph_warning_high='',
                              ph_critical_high='')
         self.assertRegex(self.client.get(self.results_url, cleared).content.decode(),
-                         r'<td class="num wq-value wq-no_limit">11\.25<span')
+                         r'<td class="num wq-value wq-no_limit">11\.30<span')
 
     def test_the_ph_bounds_go_up(self):
         response = self.client.get(self.results_url, self.query(ph_critical_low='7', ph_warning_low='6'))
@@ -652,6 +676,67 @@ class CalculatorPageTests(TestCase):
         page = self.client.get(self.url, self.query(ph='7.2')).content.decode()
         self.assertIn(f'href="{self.report_url}?', page)
 
+    def test_the_sources_name_the_ammonium_constants_and_how_each_water_is_judged_on_them(self):
+        """The list of sources names the ammonium constants formula 4 works with (it said "Millero (1995)" alone):
+        Clegg & Whitfield's for the best estimate, Yao & Millero's for the ideal water (`fresh_at`: k_nh4_sws(t, 0)),
+        fresh and salt-added water judged on the larger of the two (`limits_basis`: the ideal water throughout for a
+        salt-added one, up to 1 ‰ for a fresh one), and brackish water of 1 to 5 ‰ on the larger of the best estimate
+        and a blend of Yao & Millero's with Clegg & Whitfield's (formula4.rs `limits_basis`: blend(ideal.k_nh4,
+        sea.k_nh4); the verification of 2026-11-22, F3). On the page and in the report, in each language."""
+        footer = ('ammonium: Clegg and Whitfield (1995) for the best estimate, Yao and Millero (1995) for the ideal '
+                  'water; fresh and salt-added water is judged on the larger of these two values, and brackish water of '
+                  '1 to 5 ‰ on the larger of the best estimate and a blend of the two constants;')
+        for url in (self.url, self.report_url):
+            with self.subTest(url=url):
+                html = self.client.get(url, self.query()).content.decode()
+                self.assertIn(footer, html)
+                self.assertNotIn('ammonium: Millero (1995)', html)
+                self.assertNotIn('judged on the ideal water with Yao', html)
+        for language, words in {'nb': ('Yao og Millero (1995) for ideelt vann', 'brakkvann på 1 til 5 ‰',
+                                       'en blanding av de to konstantene'),
+                                'tr': ('ideal su için Yao ve Millero (1995)', '1–5 ‰ acı su',
+                                       'iki sabitin karışımından büyük olana göre')}.items():
+            Profile.objects.update_or_create(user=self.user, defaults={'language': language})
+            for url in (self.url, self.report_url):
+                html = self.client.get(url, self.query()).content.decode()
+                with self.subTest(language=language, url=url):
+                    for word in words:
+                        self.assertIn(word, html)
+
+    def test_the_h2s_basis_stands_beside_every_number_that_rests_on_the_constant(self):
+        """What the H₂S constant was measured on is said on the page, in its live part and in the report beside the
+        H₂S worked out from a total sulfide and beside the most total sulfide an H₂S limit gives at this pH: that number
+        is worked out from the same share (analysis.rs `safe_total_sulfide_ug_l`), and the calculator always has a limit
+        (its default 2 µg/L), so with no total sulfide typed the card showed it without the note (the verification of
+        2026-11-22, F1). With neither a total sulfide nor a limit nothing rests on the constant and there is no note.
+        The words are the same in each case and say fresh water is included."""
+        note = ('H₂S: the constant of Millero, Plese and Fernandez (1988), measured in sea water of 5 to 40 ‰ at 5 to '
+                '25 °C. Outside that, fresh water included, the H₂S rests on their equation alone, checked against no '
+                'second source.')
+        most = re.compile(r'Most total sulfide at this pH \(as S\)</th><td class="num">([^<]*)</td>')
+        cases = [
+            # (what is typed, the note is there, the "most total sulfide" row shows a number, the H₂S shows a number)
+            ({}, True, True, True),                                          # the defaults: a sulfide and a limit
+            ({'total_sulfide_ug_l': ''}, True, True, False),                 # F1: only the limit
+            ({'h2s_limit_ug_l': ''}, True, False, True),                     # only the sulfide
+            ({'total_sulfide_ug_l': '', 'h2s_limit_ug_l': ''}, False, False, False),
+        ]
+        for typed, noted, most_shown, h2s_shown in cases:
+            for url in (self.url, self.results_url, self.report_url):
+                with self.subTest(typed=typed, url=url):
+                    analysis = self.client.get(url, self.query(**typed)).context['analysis']
+                    self.assertEqual(analysis.safe_total_sulfide_ug_l is not None, most_shown)
+                    self.assertEqual(analysis.h2s_ug_l is not None, h2s_shown)
+                    html = self.client.get(url, self.query(**typed)).content.decode()
+                    self.assertEqual(html.count('data-h2s-basis'), int(noted))      # once, not once per include
+                    self.assertEqual(note in html, noted)
+                    self.assertEqual(most.search(html).group(1).strip() != '—', most_shown)
+        for language, words in {'nb': 'ferskvann medregnet', 'tr': 'tatlı su da dahil'}.items():
+            Profile.objects.update_or_create(user=self.user, defaults={'language': language})
+            for url in (self.url, self.results_url, self.report_url):
+                with self.subTest(language=language, url=url):
+                    self.assertIn(words, self.client.get(url, self.query(total_sulfide_ug_l='')).content.decode())
+
     def test_nothing_is_stored_and_reading_is_needed(self):
         self.client.get(self.results_url, self.query(dose_nahco3='50'))
         self.client.get(self.report_url, self.query())
@@ -664,8 +749,8 @@ class CalculatorPageTests(TestCase):
 
     def test_it_speaks_each_language(self):
         for language, words in {
-            'tr': ('%100', '1,982 mmol/L', 'pH 7,0'),
-            'nb': ('100 %', '1,982 mmol/L', 'pH 7,0'),
+            'tr': ('%100', '1,987 mmol/L', 'pH 7,0'),
+            'nb': ('100 %', '1,987 mmol/L', 'pH 7,0'),
         }.items():
             Profile.objects.update_or_create(user=self.user, defaults={'language': language})
             for url in (self.url, self.results_url, self.report_url):
@@ -740,7 +825,10 @@ class ValuesFromAUnitTests(UnitWaterCase):
         self.assertContains(response, 'its fish have no such bound')
         bounds = response.context['result'] and response.context['form'].inputs()['ph_bounds']
         self.assertEqual(bounds, calculation.PhBounds(6.8, 7.0, None, 8.2))
-        self.assertEqual(source['missing'], ['Dissolved oxygen (mg/L O₂)'])
+        self.assertEqual(source['missing'], ['Dissolved oxygen (mg/L O₂)',
+                                             'Conductivity at 25 °C (µS/cm, temperature-compensated)',
+                                             'Total hardness (mg/L as CaCO₃)',
+                                             'Phosphate (mg/L, in the unit chosen beside it)'])
         self.assertContains(response, 'The latest values of T-01')
         self.assertContains(response, 'Atlantic salmon: warning above 0.0100, critical above 0.0200')
         self.assertEqual(response.context['analysis'].water.ph, 7.12)
@@ -884,6 +972,7 @@ class UnitChartTests(UnitWaterCase):
         self.assertIn('Nothing is filled in', body)
         self.assertNotIn('<svg', body)
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_a_unit_without_a_middle_point_lists_its_points_and_draws_nothing(self):
         other = self.make('T-03')
         self.sample(point_of(other, 'inlet'), temperature_c=9, ph='7.2', alkalinity_mg_l=90, salinity_ppt='0.2')
@@ -911,14 +1000,24 @@ class UnitChartTests(UnitWaterCase):
         self.assertEqual(refused.impossible, deffeyes.why_impossible(10, 0.2, 11, 3))
         self.assertFalse(deffeyes.possible(10, 0.2, 11, 3))
         self.assertTrue(deffeyes.possible(10, 0.2, 7.2, 90))
+        # The core itself refuses that water (the correction of 2026-11-10): the chart's refusal comes first, by the
+        # same rule, and the window says the reason.
+        with self.assertRaises(native.ImpossibleWaterError):
+            deffeyes.analyse(Water(10.0, 0.2, 11.0, 3.0))
+        page = self.client.get(reverse('farm:water_unit_chart', args=[odd.pk]))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'At this pH the alkalinity is above')
+        self.assertNotContains(page, '<svg')
 
-    def test_the_temperature_is_the_points_own_never_the_loops(self):
+    def test_the_loops_temperature_stands_in_when_the_unit_has_none_of_its_own(self):
+        """Owner rule A9 (2026-11-07) replaces the decision of 2026-11-04 (the chart refused a loop's temperature)."""
         loop_only = self.make('T-05')
         Tank.objects.filter(pk=loop_only.pk).update(system=self.loop)
         self.sample(point_of(self.loop), temperature_c=13)
         self.sample(self.middle(loop_only), ph='7.2', alkalinity_mg_l=90, salinity_ppt='0.2')
-        refused = calculation.chart_of(Tank.objects.get(pk=loop_only.pk))
-        self.assertEqual([str(label) for label in refused.missing], [str(parameters.get('temperature_c').label)])
+        chart = calculation.chart_of(Tank.objects.get(pk=loop_only.pk))
+        temperature = next(each for each in chart.inputs if each.field == 'temperature_c')
+        self.assertEqual((temperature.value, temperature.reading.point), (13, point_of(self.loop)))
 
     def test_offers_of_a_point_are_that_points_and_the_default_is_unchanged(self):
         middle = self.middle()
@@ -955,6 +1054,16 @@ class UnitChartTests(UnitWaterCase):
         blind.groups.add(role('Stock only', 'view_stockoperation', 'view_tank'))
         self.client.force_login(blind)
         self.assertEqual(self.client.get(url).status_code, 403)
+
+    def test_a_moment_outside_the_window_of_dates_is_refused_never_a_server_error(self):
+        """`?at=` is an address a person can edit: the calendar's ends (an overflow on the site's clock) and anything
+        outside 1900-2100 are refused (400) through core.dates.read_moment, like any other date typed."""
+        url = reverse('farm:water_unit_chart', args=[self.unit.pk])
+        for typed in ('0001-01-01T00:30', '9999-12-31T23:59', '1899-12-31T12:00', '2026-13-01T00:00', '2026-01-05',
+                      'x'):
+            with self.subTest(at=typed):
+                self.assertEqual(self.client.get(url, {'at': typed}).status_code, 400)
+        self.assertEqual(self.client.get(url, {'at': '2026-01-05T09:00'}).status_code, 200)
 
     def test_two_windows_never_share_an_svg_id_and_the_calculators_ids_are_unchanged(self):
         inlet = point_of(self.unit, 'inlet')

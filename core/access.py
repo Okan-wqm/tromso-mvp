@@ -2,7 +2,9 @@
 standard permissions (view/add/change/delete) each offers. The project's areas live in
 config/access.py; the role form shows them as a matrix (core.forms.PermissionMatrix).
 
-Read is implied by every other action: a role that may edit sites may also see them. Permissions no
+Create, Edit and Delete include Read: a role that may edit sites may also see them. Crew, All production and
+Everyone include nothing: they widen whose rows the role's other rights reach (HR's Production manager preset holds All
+production without Read on the Team list, and keeps it that way when it is saved in the matrix). Permissions no
 area offers (roles and users among them) cannot be given to a role, so only the platform admin has
 them."""
 from dataclasses import dataclass
@@ -20,7 +22,7 @@ from . import navigation
 
 # The matrix columns: (action, column label). `all` ("Everyone") is offered by the one area whose rows are
 # scoped to a relationship (HR's Employees): a role without it reaches only the rows its holder's relationship
-# gives (Resource.scoped), a role with it reaches every row. It implies Read like the other actions. Two more columns
+# gives (Resource.scoped), a role with it reaches every row. It includes no other right (INCLUDES_READ). Two more columns
 # widen HR's rows for production: `crew` (Shift schedule: a production worker also sees the name and shift of the people
 # in their own department) and `all_production` (Employees: every production person, never the office's). Each is
 # offered by its one area; the other rows have an empty cell there.
@@ -28,6 +30,12 @@ ACTIONS = [('view', _('Read')), ('add', _('Create')), ('change', _('Edit')), ('d
            ('crew', _('Crew')), ('all_production', _('All production')), ('all', _('Everyone'))]
 READ = 'view'
 ALL = 'all'
+# The actions that include Read on their area. The others widen rows (crew, all_production, all) and include nothing.
+INCLUDES_READ = ('add', 'change', 'delete')
+# The widening columns that are read on their own area's page, through its Read: Crew is drawn only under one's own week on
+# the Shift schedule, so Read beside it is how it works at all (the Production worker preset), never a Read left over from
+# the old matrix rule. The others (all_production, all) widen other areas' rows and stand without Read on their area.
+OWN_PAGE = ('crew',)
 
 
 @dataclass(frozen=True)
@@ -35,6 +43,9 @@ class Area:
     label: str            # _('Sites'), translatable text
     model: str            # 'farm.Site'
     actions: tuple = ('view', 'add', 'change', 'delete')
+    # What the area's rights also reach that its name does not say, in a sentence for whoever grants it: the role matrix
+    # prints it under the area (an experiment's and a report's pages show farm figures without the farm areas' Read).
+    note: str = ''
 
     def perm(self, action):
         meta = apps.get_model(self.model)._meta
@@ -64,10 +75,11 @@ def permissions():
 
 
 def implied(names):
-    """The permission names plus Read on every area for which another action is chosen."""
+    """The permission names plus Read on every area for which Create, Edit or Delete is chosen."""
     names = set(names)
     for area in areas():
-        if READ in area.actions and any(area.perm(action) in names for action in area.actions):
+        if READ in area.actions and any(area.perm(action) in names for action in area.actions
+                                        if action in INCLUDES_READ):
             names.add(area.perm(READ))
     return names
 

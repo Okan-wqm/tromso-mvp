@@ -4,7 +4,6 @@ dialogs (several units at once on create, one row on edit)."""
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
-from django.conf import settings
 
 from django import forms
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
@@ -12,11 +11,12 @@ from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _, ngettext
 
 from core.crud import DRAFT, CodedFormMixin, TabbedForm, tab_fields
+from core.widgets import DayInput
 
 from ..feeding import assignments
 from ..models import Batch, Feed, FeedingProtocol, ProtocolAssignment, ProtocolBand, Species, StockMovement, Tank
 from ..models.feeding_protocol import MAX_SFR, TEMPERATURE, ProtocolStatus
-from ..stock.dates import earliest, local_today
+from ..stock.dates import earliest, local_today, too_old
 
 DECIMAL = {'inputmode': 'decimal'}
 MAX_COLUMNS = 12      # temperature columns a table can have: what a screen shows side by side
@@ -83,8 +83,10 @@ def parse_temperatures(text):
             raise ValidationError(_('A temperature column is between %(low)s and %(high)s °C.') % {
                 'low': TEMPERATURE.low, 'high': TEMPERATURE.high})
         values.append(value.quantize(Decimal('0.1')))
-    if not values:
-        raise ValidationError(_('Give at least one temperature column.'))
+    if len(values) < 2:
+        # One column gave an SFR at exactly its temperature and none on every other day (no extrapolation, Q1; F-080).
+        raise ValidationError(_('Give at least two temperature columns: the SFR is read between them, never outside '
+                                'them.'))
     if len(set(values)) != len(values):
         raise ValidationError(_('Each temperature is a column once.'))
     if len(values) > MAX_COLUMNS:
@@ -248,11 +250,10 @@ def batches_in_stock():
 
 
 def within_window(day, stored=None, unit=None):
-    """A first day changed or new is at most STOCK_BACKDATE_DAYS back, as every daily record (farm/stock/dates.py):
+    """A first day changed or new is at most the correction window back, as every daily record (farm/stock/dates.py):
     the days before are history."""
     if day != stored and day < earliest(unit):
-        raise ValidationError(_('An assignment can start at most %(days)d days back.') % {
-            'days': settings.STOCK_BACKDATE_DAYS})
+        raise ValidationError(too_old(_('An assignment can start at most %(days)d days back.')))
     return day
 
 
@@ -280,8 +281,8 @@ class NewAssignmentForm(TabbedForm):
         model = ProtocolAssignment
         fields = ['protocol', 'batch', 'valid_from', 'valid_until', 'notes']
         field_classes = {'protocol': ProtocolChoice, 'batch': BatchChoice}
-        widgets = {'valid_from': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
-                   'valid_until': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+        widgets = {'valid_from': DayInput(),
+                   'valid_until': DayInput(),
                    'notes': forms.Textarea(attrs={'rows': 2})}
         help_texts = {**HELP, 'batch': _('A batch alone: the protocol follows it into every unit it is moved to.')}
 

@@ -1,16 +1,20 @@
 {% extends base_template %}
-{% load i18n assets %}
+{% load i18n assets cards %}
 {% comment %} Operations › Monitoring (monitoring.views.monitor): a live card per tank, pond or cage, simple or detailed, in one polled
-   grid that doubles as a wall screen (?wall=1), and a unit's Deffeyes chart in a movable window. The toolbar is a GET form
+   grid that doubles as a wall screen (?wall=1: frontend/wall.ts fits the cards of a fitted template to the screen and turns
+   their pages), and a unit's Deffeyes chart in a movable window. The page's own sheets load BEFORE tw.css (page_styles),
+   so a utility on a card wins over the sheet's rule for its class. The toolbar is a GET form
    that works without script; the grid is data-poll (frontend/poll.ts) and its children are keyed so only a changed card is
    replaced; the windows sit beside it (frontend/windows.ts). {% endcomment %}
 {% block title %}{{ title }}{% endblock %}
+{% block measure %}{% if wall %}wall{% else %}fluid{% endif %}{% endblock %}
 {% block html_attrs %}{% if wall %} data-wall{% endif %}{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{% asset 'css/monitor.css' %}"><script type="module" src="{% asset 'js/windows.js' %}"></script><script type="module" src="{% asset 'js/announce.js' %}"></script>{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% asset 'css/monitor.css' %}"><link rel="stylesheet" href="{% asset 'css/card-grid.css' %}">{% endblock %}
+{% block extra_head %}<script type="module" src="{% asset 'js/windows.js' %}"></script><script type="module" src="{% asset 'js/announce.js' %}"></script><script type="module" src="{% asset 'js/wall.js' %}"></script>{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
-<form method="get" class="monitor-toolbar toolbar" role="search">
+<form method="get" class="monitor-toolbar ui-toolbar" role="search">
   {% if wall %}<input type="hidden" name="wall" value="1">{% endif %}
   <div class="monitor-filters">
     <label>{% trans "Board" %}<select name="board" data-autosubmit><option value="">{% trans "No board" %}</option>{% for each in boards %}<option value="{{ each.pk }}"{% if board and each.pk == board.pk %} selected{% endif %}>{{ each.name }}</option>{% endfor %}</select></label>
@@ -19,7 +23,7 @@
     <label>{% trans "System" %}<select name="system" data-autosubmit><option value="">{% trans "All" %}</option>{% for system in systems %}<option value="{{ system.pk }}"{% if system.pk|stringformat:"s" == params.system %} selected{% endif %}>{{ system.name }}</option>{% endfor %}</select></label>
     <label>{% trans "Kind" %}<select name="kind" data-autosubmit><option value="">{% trans "All" %}</option>{% for value, label in kinds %}<option value="{{ value }}"{% if value == params.kind %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
     <label>{% trans "Fish" %}<select name="occupancy" data-autosubmit>{% for value, label in occupancies %}<option value="{{ value }}"{% if value == params.occupancy %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
-    <label>{% trans "Cards" %}<select name="mode" data-autosubmit><option value="">{% trans "Simple" %}</option><option value="detailed"{% if params.mode == "detailed" %} selected{% endif %}>{% trans "Detailed" %}</option></select></label>
+    <label>{% trans "Cards" %}<select name="mode" data-autosubmit><option value="">{% trans "Simple" %}</option><option value="small"{% if params.mode == "small" %} selected{% endif %}>{% trans "Small" %}</option><option value="big"{% if params.mode == "big" %} selected{% endif %}>{% trans "Big" %}</option><option value="detailed"{% if params.mode == "detailed" %} selected{% endif %}>{% trans "Detailed" %}</option></select></label>
     <label class="monitor-search">{% trans "Search" %}<input type="search" name="q" value="{{ params.q }}" placeholder="{% trans "Search unit" %}"></label>
     <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
   </div>
@@ -29,16 +33,24 @@
     <button type="submit" class="button button-ghost">{% trans "Show the chosen units" %}</button>
   </details>
   <div class="monitor-actions">
-    {% if wall %}<a class="button button-ghost" href="{{ page_url }}">{% include "icons/_icon.html" with name="monitor" %}{% trans "Leave the wall" %}</a>{% else %}<a class="button button-ghost" href="{{ wall_url }}">{% include "icons/_icon.html" with name="monitor" %}{% trans "Wall" %}</a>{% endif %}
-    <button type="button" class="button button-ghost" data-fullscreen aria-pressed="false">{% include "icons/_icon.html" with name="maximize" %}{% trans "Full screen" %}</button>
+    {% if wall %}<a class="button button-ghost" href="{{ page_url }}" title="{% trans "Leave the wall" %}">{% include "icons/_icon.html" with name="monitor" %}<span class="monitor-action-text">{% trans "Leave the wall" %}</span></a>{% else %}<a class="button button-ghost" href="{{ wall_url }}">{% include "icons/_icon.html" with name="monitor" %}{% trans "Wall" %}</a>{% endif %}
+    <button type="button" class="button button-ghost" data-fullscreen aria-pressed="false" title="{% trans "Full screen" %}">{% include "icons/_icon.html" with name="maximize" %}<span class="monitor-action-text">{% trans "Full screen" %}</span></button>
   </div>
 </form>
 
-<div class="monitor-grid" data-card-width="{{ card_width }}" data-poll="{{ poll_url }}" data-poll-every="{{ poll_seconds }}" data-poll-merge="data-key" data-poll-state="live" data-stale-text="{% trans "No connection: this may be out of date" %}" data-gone-text="{% trans "Signed out, or no longer available" %}">{% include "monitoring/_grid.html" %}</div>
+{% comment %} The pane of the unit gone into (`?focus=<unit>`: its Big card, monitoring.views._pane), BEFORE the cards in the page (it is
+   what the person asked for; a wall docks it at the right of the screen and frontend/wall.ts gives it the width of one
+   full-height card, static/css/monitor.css "the dock"). With script frontend/windows.ts opens, replaces and closes it
+   without a page load, from the skeleton below and the two fragments' addresses here; the measure is the Big
+   template's, so the room is kept before the card has come. {% endcomment %}
+<aside class="monitor-dock" id="monitor-dock" aria-label="{% trans "Focus" %}" data-param="focus" data-pane-url="{% url 'monitoring:pane' %}" data-grid-url="{% url 'monitoring:cards' %}" data-every="{{ poll_seconds }}" data-mw="{{ big_measure.0 }}" data-mh="{{ big_measure.1 }}" data-title-text="{% trans "Focus: {unit}" %}" data-stale-text="{% trans "Not updated: the server cannot be reached or cannot read the cards. This may be out of date." %}" data-gone-text="{% trans "Signed out, or no longer available" %}">{% if pane %}{% include "monitoring/_dock.html" %}{% endif %}</aside>
+<template id="monitor-dock-template">{% include "monitoring/_dock.html" with pane=None %}</template>
+
+<div class="monitor-grid" data-card-width="{{ card_width }}" data-poll="{{ poll_url }}" data-poll-every="{{ poll_seconds }}" data-poll-merge="data-key" data-poll-state="live" data-stale-text="{% trans "Not updated: the server cannot be reached or cannot read the cards. This may be out of date." %}" data-gone-text="{% trans "Signed out, or no longer available" %}" data-updated-text="{% trans "Updated again." %}">{% include "monitoring/_grid.html" %}</div>
 
 {% comment %} What frontend/announce.ts says aloud when a card gets worse: two live regions beside the grid, never inside it
    (a poll replaces the grid's cards, not these), and the sentences and state words in the person's language. {% endcomment %}
-<div id="monitor-announce" class="sr-only" data-announce-worse="{% trans "{unit} is now {state}." %}" data-announce-more="{% trans "{count} more cards got worse." %}" data-state-critical="{% trans "Critical" %}" data-state-warning="{% trans "Warning" %}" data-state-blind="{% trans "No recent data" %}" data-state-note="{% trans "Note" %}">
+{% card_states as states %}<div id="monitor-announce" class="sr-only" data-states="{% for key, word in states %}{{ key }}{% if not forloop.last %} {% endif %}{% endfor %}" data-announce-worse="{% trans "{unit} is now {state}." %}" data-announce-more="{% trans "{count} more cards got worse." %}"{% for key, word in states %} data-state-{{ key }}="{{ word }}"{% endfor %} data-stale-word="{% trans "no recent data" %}">
   <p data-announcer aria-live="assertive"></p>
   <p data-announcer aria-live="polite"></p>
 </div>

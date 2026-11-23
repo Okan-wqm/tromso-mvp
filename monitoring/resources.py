@@ -1,6 +1,7 @@
 """The monitoring tabs on top of core.crud: Setup › Facility structure › Monitoring boards (the boards of the Monitoring
 page, with their cards saved as a list on a tab of their own) and Setup › Reference data › Card templates and Card
-template rules (what a card holds, and which unit's card gets which; monitoring/cards/)."""
+template rules (what a card holds, and which unit's card gets which; monitoring/cards/) and pH window scales (the two
+ends of a card's pH window, per water type)."""
 from django.db.models import Case, Count, IntegerField, OuterRef, Subquery, Value, When
 from django.db.models.functions import Coalesce
 from django.urls import path
@@ -8,8 +9,9 @@ from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
 from core.crud import Resource, RowList
 
-from .forms import BoardUnitFormSet, CardTemplateAssignmentForm, CardTemplateForm, MonitorBoardForm
-from .models import CardTemplate, CardTemplateAssignment, MonitorBoard, MonitorBoardUnit
+from .forms import (BoardUnitFormSet, CardTemplateAssignmentForm, CardTemplateForm, MonitorBoardForm,
+                    PhWindowScaleForm)
+from .models import CardTemplate, CardTemplateAssignment, MonitorBoard, MonitorBoardUnit, PhWindowScale
 
 
 class BoardUnits(RowList):
@@ -120,3 +122,16 @@ class CardTemplateAssignmentResource(Resource):
                     When(kind__isnull=False, then=Value(5)), default=Value(6), output_field=IntegerField())
         return (super().queryset().select_related('template', 'unit', 'system', 'species')
                 .annotate(rank=rank).order_by('rank', 'created_at'))
+
+
+class PhWindowScaleResource(Resource):
+    """Setup › Reference data › pH window scales: per water type, the two ends of the pH window on the monitoring cards
+    (owner decision 15): one row each, seeded, changed only."""
+
+    model = PhWindowScale
+    form_class = PhWindowScaleForm
+    name, plural = _('pH window scale'), _('pH window scales')
+    url_prefix = 'ph-window-scales'
+    actions = ('change',)
+    list_template = 'monitoring/ph_scale_list.html'
+    icon = 'gauge'

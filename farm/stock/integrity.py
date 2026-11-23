@@ -1,7 +1,8 @@
 """Every rule of the stock, checked from scratch over the whole ledger (stock-db §6.5), the one rule
 the feeding and health records share with it: every live feeding finds fish in its unit at the start or the
 end of its day, as every live treatment on its first day and every sea-lice count on its day, and the rows a
-harvest adds (its record, the plan it fulfils, the warnings acknowledged). The stock, feeding and health
+harvest adds (its record, the plan it fulfils, the warnings acknowledged); and that fish and production departments
+are on a site (a department a deleted site left without one before that was refused, F-212). The stock, feeding and health
 services hold these on every write; this finds a row that got past them (a hand edit in
 the database, a bug). `manage.py check_stock` prints what it finds; the test suite runs
 it after its stock tests. Its messages are for the developer, in English."""
@@ -13,10 +14,11 @@ from farm.feeding import read as feeding_read
 from farm.feeding.fold import walk
 from farm.health import read as health_read
 from farm.models import (
-    Batch, DeliveryRecord, EscapeRecord, HandlingAcknowledgement, HandlingPlanItem, HarvestRecord, Species,
-    StockMovement, StockOperation, Tank,
+    Batch, DeliveryRecord, EscapeRecord, HandlingAcknowledgement, HandlingPlanItem, HarvestRecord, OpeningBalance,
+    ProductionDepartment,
+    Species, StockMovement, StockOperation, Tank, WithdrawalAcknowledgement,
 )
-from farm.models.handling import KIND_OF_OPERATION
+from farm.models.handling import KIND_OF_OPERATION, OPERATION_NAMED, AcknowledgedWarning
 from farm.models.harvest import FULFILLED_BY
 from farm.models.stock import MovementKind, OperationKind
 from farm.models.tank import NEEDS_FISH, NEEDS_NO_FISH
@@ -30,7 +32,7 @@ ONE_LINE = {OperationKind.MORTALITY: MovementKind.MORTALITY, OperationKind.CULL:
             OperationKind.DELIVERY: MovementKind.DELIVERY}
 
 
-def _operation_problems(operation, lines, batches):
+def _operation_problems(operation, lines, batches, openings=frozenset()):
     name = f'{operation.get_kind_display()} {operation.pk} of {operation.date}'
     kinds = Counter(line.kind for line in lines)
     if not lines:
@@ -44,7 +46,13 @@ def _operation_problems(operation, lines, batches):
         if len({line.unit_id for line in lines}) != len(lines):
             problems.append(f'{name} stocks a unit twice.')
         batch = batches.get(lines[0].batch_id)
-        if batch is not None and batch.input_date != operation.date:
+        if batch is None:
+            pass
+        elif operation.pk in openings:
+            if batch.input_date > operation.date:
+                problems.append(f'{name} is an opening balance of {batch.code}, whose stocking date ({batch.input_date}) '
+                                f'is after its takeover day.')
+        elif batch.input_date != operation.date:
             problems.append(f'{name} is not on the stocking date of {batch.code} ({batch.input_date}).')
     elif operation.kind in ONE_LINE:
         if len(lines) != 1 or lines[0].kind != ONE_LINE[operation.kind]:
@@ -77,8 +85,12 @@ def problems():
     lines_of = defaultdict(list)
     for line in StockMovement.objects.filter(operation__is_deleted=False):
         lines_of[line.operation_id].append(line)
+    openings = set(OpeningBalance.objects.values_list('operation_id', flat=True))
     for operation in operations.values():
-        found += _operation_problems(operation, lines_of.get(operation.pk, []), batches)
+        found += _operation_problems(operation, lines_of.get(operation.pk, []), batches, openings)
+    for opening in OpeningBalance.objects.select_related('operation'):
+        if opening.operation.kind != OperationKind.INPUT:
+            found.append(f'Opening balance {opening.pk} belongs to a {opening.operation.kind}, not a stocking.')
 
     inputs = Counter()
     for operation in operations.values():
@@ -130,16 +142,25 @@ def problems():
             species[unit_id].add(batches[batch_id].species_id)
     cleaner = set(Species.all_objects.exclude(cleaner_fish_type='').values_list('pk', flat=True))
     sea = read.sea_units(list(species))
-    for unit in Tank.all_objects.all():
+    for unit in Tank.all_objects.select_related('production_department'):
         fish = counts.get(unit.pk, 0)
         if fish and unit.is_deleted:
             found.append(f'Unit {unit.code} is deleted but holds {fish} fish.')
+        if fish and unit.production_department.site_id is None:
+            found.append(f'Unit {unit.code} holds {fish} fish but is not on any site.')
+        if not unit.is_deleted and unit.production_department.is_deleted:
+            found.append(f'Unit {unit.code} is live in the deleted production department '
+                         f'{unit.production_department.code}.')
         if fish and unit.status in NEEDS_NO_FISH:
             found.append(f'Unit {unit.code} is {unit.status} but holds {fish} fish.')
         if not fish and unit.status in NEEDS_FISH and not unit.is_deleted:
             found.append(f'Unit {unit.code} is {unit.status} but holds no fish.')
         if read.mixed(species[unit.pk], cleaner, unit.pk in sea):
             found.append(f'Unit {unit.code} holds {len(species[unit.pk])} species.')
+    for department in ProductionDepartment.objects.filter(site__isnull=True):
+        found.append(f'Production department {department.code} is not on any site.')
+    for department in ProductionDepartment.objects.filter(site__is_deleted=True).select_related('site'):
+        found.append(f'Production department {department.code} is on the deleted site {department.site.code}.')
     return found
 
 
@@ -169,7 +190,10 @@ def _record_problems(operations, lines_of):
 def _harvest_problems(operations, lines_of):
     """What the harvest adds to an operation, checked across rows: every live harvest names where its fish
     went (one HarvestRecord) and no other kind of operation has a record; a plan item is fulfilled by an
-    operation of its kind, of its unit and batch; an acknowledgement belongs to a handling."""
+    operation of its kind, of its unit and batch; an acknowledgement belongs to a handling (a harvest, a transfer or
+    split, a delivery, a grading), and the acknowledgement of fish combined with held fish (a withdrawal row, the
+    owner's decision 8) to the move that combined them: one of those, or a STOCKING, which is not a handling; a
+    withdrawal acknowledgement of a later write names an operation of its warning's kind (`OPERATION_NAMED`)."""
     found = []
     records = HarvestRecord.all_objects.select_related('operation').in_bulk()
     for operation in operations.values():
@@ -189,6 +213,17 @@ def _harvest_problems(operations, lines_of):
             found.append(f'Plan item {item.pk} names other fish than the {operation.kind} that fulfils it.')
     handled = set(KIND_OF_OPERATION)
     for row in HandlingAcknowledgement.objects.filter(operation__isnull=False).select_related('operation'):
-        if row.operation.kind not in handled:
-            found.append(f'Acknowledgement {row.pk} belongs to a {row.operation.kind}, which is not a handling.')
+        kind = row.operation.kind
+        combined = kind == OperationKind.INPUT and row.warning == AcknowledgedWarning.WITHDRAWAL
+        if kind not in handled and not combined:
+            found.append(f'Acknowledgement {row.pk} belongs to a {kind}, which is not a handling, nor a stocking '
+                         'that combined fish with held fish.')
+    # A later write's acknowledgement of fish that left the farm inside a withdrawal names that operation: a harvested
+    # row a harvest, a delivered row a live delivery (the verification of the S-03 follow-up, §6; the only writer,
+    # farm.health.withdrawal._acknowledge, takes both from the same ledger line).
+    for row in WithdrawalAcknowledgement.objects.filter(harvest__isnull=False).select_related('harvest'):
+        named = OPERATION_NAMED.get(row.warning)
+        if named is not None and row.harvest.kind != named:
+            found.append(f'Withdrawal acknowledgement {row.pk} ({row.warning}) names {row.harvest.kind} '
+                         f'{row.harvest_id}, not a {named}.')
     return found

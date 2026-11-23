@@ -14,7 +14,9 @@ The rules (the source got each of these wrong somewhere, STK-14, STK-24, STK-29)
 - a weighing sets the share's biomass to its count times the measured average;
 - fish moved between units arrive with exactly the grams that left the source;
 - a grading is a weighing of the whole lot: the graded fish carry their measured weight and the
-  fish that stay get their own measured average (a weighing line of the same operation).
+  fish that stay get their own measured average (a weighing line of the same operation);
+- an opening balance (fish the farm already had when it started using the platform) starts their stay on the real
+  stocking date, and its average counts as measured on its own day, the takeover day.
 Grams are Decimals at full precision, never rounded here; the page rounds for display."""
 from dataclasses import dataclass
 from datetime import date
@@ -33,6 +35,7 @@ class Op:
     kind: str
     date: date
     seq: int          # its first line id: the order of entry, which orders operations within a day
+    stocked_on: date = None   # an opening balance's: its batch's real stocking date, before the operation's own day
 
 
 @dataclass(frozen=True)
@@ -168,7 +171,8 @@ def fold(lines, observe=None, *, before=None, on_line=None):
             else:
                 grams = _arriving(share, line, moved)
                 if not share.count:
-                    share.since, share.last_weighed, share.fish_in, share.deaths, share.culls = op.date, None, 0, 0, 0
+                    share.since, share.fish_in, share.deaths, share.culls = op.stocked_on or op.date, 0, 0, 0
+                    share.last_weighed = op.date if op.stocked_on else None
                 share.count += k
                 share.grams += grams
                 share.fish_in += k

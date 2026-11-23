@@ -14,7 +14,6 @@ from django.urls import reverse
 
 from farm.handling.withdrawal import WithdrawalBlock
 
-from ..cards import builtin
 from ..models import CardTemplate, CardTemplateAssignment
 from . import MonitoringCase
 from .golden import Tree
@@ -74,10 +73,18 @@ class FrameTests(MonitoringCase):
 
 
 # ---- the colours --------------------------------------------------------------------------------------------------
-def tokens():
+# The design system's themes (static/css/tokens.css): the default block (:root, Fjord) and each theme's own.
+THEMES = ('fjord', 'polarnatt', 'nordlys', 'tang', 'laks')
+
+
+def tokens(theme='fjord'):
+    """The colour tokens in force in `theme`: the :root ones, then the theme's block over them."""
+    css = re.sub(r'/\*.*?\*/', '', (CSS / 'tokens.css').read_text(encoding='utf-8'), flags=re.S)
     found = {}
-    for name in ('base.css', 'app.css'):
-        found.update(re.findall(r'(--[a-z-]+):\s*(#[0-9A-Fa-f]{6})\s*;', (CSS / name).read_text(encoding='utf-8')))
+    for selectors, body in re.findall(r'([^{}]+)\{([^{}]*)\}', css):
+        names = [each.strip() for each in selectors.split(',')]
+        if ':root' in names or f'[data-theme="{theme}"]' in names:
+            found.update(re.findall(r'(--[a-z0-9-]+):\s*(#[0-9A-Fa-f]{6})\s*;', body))
     return found
 
 
@@ -92,21 +99,22 @@ def contrast(one, two):
     return (light + 0.05) / (dark + 0.05)
 
 
-def declared(css, selector, prop):
-    """The value of `prop` in the rule whose selector list holds `selector` exactly, resolved through the tokens."""
+def declared(css, selector, prop, theme='fjord'):
+    """The value of `prop` in the rule whose selector list holds `selector` exactly, resolved through `theme`'s
+    tokens."""
     css = re.sub(r'/\*.*?\*/', '', css, flags=re.S)                     # (a comment is not a selector)
     for selectors, body in re.findall(r'([^{}]+)\{([^{}]*)\}', css):
         if selector in [each.strip() for each in selectors.split(',')]:
             found = re.search(rf'(?:^|;)\s*{re.escape(prop)}\s*:\s*([^;]+)', body)
             if found:
                 value = found.group(1).strip()
-                token = re.fullmatch(r'var\((--[a-z-]+)\)', value)
-                return tokens()[token.group(1)] if token else value
+                token = re.fullmatch(r'var\((--[a-z0-9-]+)\)', value)
+                return tokens(theme)[token.group(1)] if token else value
     return None
 
 
 class ColourTests(SimpleTestCase):
-    WHITE = '#FFFFFF'
+    """In each of the five themes, against the theme's sheet (the card's ground)."""
 
     def css(self, name):
         return (CSS / name).read_text(encoding='utf-8')
@@ -116,13 +124,13 @@ class ColourTests(SimpleTestCase):
         for css, selector in ((components, '.over-text'), (components, '.warn-text'),
                               (components, 'td.wq-warning'), (components, 'td.wq-critical'),
                               (monitor, '.monitor-critical .monitor-state'), (monitor, '.monitor-warning .monitor-state')):
-            colour = declared(css, selector, 'color')
-            with self.subTest(selector=selector, colour=colour):
-                self.assertGreaterEqual(contrast(colour, self.WHITE), 4.5)
+            for theme in THEMES:
+                colour = declared(css, selector, 'color', theme)
+                with self.subTest(selector=selector, theme=theme, colour=colour):
+                    self.assertGreaterEqual(contrast(colour, tokens(theme)['--surface-sheet']), 4.5)
 
-    def test_a_border_or_dot_that_carries_meaning_is_at_least_3_to_1_and_never_the_pale_sage(self):
+    def test_a_border_or_dot_that_carries_meaning_is_at_least_3_to_1_and_never_the_hair_line(self):
         components, monitor = self.css('components.css'), self.css('monitor.css')
-        sage = tokens()['--sage']
         for css, selector, prop in ((monitor, '.monitor-critical', 'border-left-color'),
                                     (monitor, '.monitor-warning', 'border-left-color'),
                                     (monitor, '.monitor-blind', 'border-left-color'),
@@ -131,10 +139,11 @@ class ColourTests(SimpleTestCase):
                                     (components, '.wq-critical .wq-dot', 'background'),
                                     (components, '.wq-warning .wq-dot', 'background'),
                                     (components, '.wq-ok .wq-dot', 'background')):
-            colour = declared(css, selector, prop)
-            with self.subTest(selector=selector, colour=colour):
-                self.assertNotEqual(colour.upper(), sage.upper())
-                self.assertGreaterEqual(contrast(colour, self.WHITE), 3)
+            for theme in THEMES:
+                colour, theirs = declared(css, selector, prop, theme), tokens(theme)
+                with self.subTest(selector=selector, theme=theme, colour=colour):
+                    self.assertNotEqual(colour.upper(), theirs['--line-hair'].upper())
+                    self.assertGreaterEqual(contrast(colour, theirs['--surface-sheet']), 3)
 
     def test_forced_colours_keep_the_shapes_the_bands_and_the_state_borders(self):
         monitor = self.css('monitor.css')
@@ -142,3 +151,38 @@ class ColourTests(SimpleTestCase):
         self.assertIsNotNone(block)
         for selector in ('.monitor-shape', '.monitor-bar-svg .band', '.monitor-bar-svg .marker', '.monitor-card'):
             self.assertIn(selector, block.group(1))
+
+    def test_the_fitted_card_the_band_and_the_ph_window_say_everything_at_4_5_to_1(self):
+        """The pairs of text and ground the fitted card, the band and the pH window use (the final mock-up's
+        measure/contrast.txt, here in all five themes): the three inks on the sheet, the band's inks on the canvas,
+        the state's text on the sheet and on its tint, a border's number on the grey region, on the safe stretch and
+        on the critical tint."""
+        pairs = (('--text-1', '--surface-sheet'), ('--text-2', '--surface-sheet'), ('--text-3', '--surface-sheet'),
+                 ('--crit-text', '--surface-sheet'), ('--warn-text', '--surface-sheet'),
+                 ('--text-1', '--surface-canvas'), ('--text-2', '--surface-canvas'), ('--text-3', '--surface-canvas'),
+                 ('--crit-text', '--surface-canvas'), ('--warn-text', '--surface-canvas'),
+                 ('--text-2', '--surface-sunken'), ('--text-2', '--zone-safe'), ('--crit-text', '--crit-tint'))
+        for theme in THEMES:
+            theirs = tokens(theme)
+            for ink, ground in pairs:
+                with self.subTest(theme=theme, ink=ink, ground=ground):
+                    self.assertGreaterEqual(contrast(theirs[ink], theirs[ground]), 4.5)
+
+    def test_the_ph_windows_tones_are_the_ones_measured(self):
+        """The window's styles name the tokens the pairs above are of, and the mark is ink (never a state's colour)."""
+        monitor = self.css('monitor.css')
+        for selector, prop, token in (
+                ('.monitor-ph-window .chart-name', 'fill', '--text-2'),
+                ('.monitor-ph-window .chart-region-co2', 'fill', '--surface-sunken'),
+                ('.monitor-ph-window .chart-region-safe', 'fill', '--zone-safe'),
+                ('.monitor-ph-window.in-co2.is-critical .chart-region-co2', 'fill', '--crit-tint'),
+                ('.monitor-ph-window.in-co2.is-critical .chart-name-co2', 'fill', '--crit-text'),
+                ('.monitor-ph-window .chart-water', 'fill', '--text-1')):
+            with self.subTest(selector=selector):
+                self.assertEqual(declared(monitor, selector, prop), tokens()[token])
+
+    def test_forced_colours_keep_the_ph_windows_regions_and_its_mark(self):
+        monitor = self.css('monitor.css')
+        block = re.search(r'@media \(forced-colors: active\) \{(.*?)\n\}', monitor, re.S).group(1)
+        for selector in ('.monitor-ph-window .chart-region', '.monitor-ph-window .chart-water'):
+            self.assertIn(selector, block)

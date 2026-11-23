@@ -113,8 +113,11 @@ foreign key. The ingest never updates or deletes a reading.
   `run_sum`, `run_min`, `run_max` (the open run), `high_ts` (the newest time processed, stored or not: a sample at an
   older or equal time is late or a duplicate). Upserted in the same transaction as the readings it describes. Django's
   latest value reads `last_value`, `last_value_ts` and `last_good_at`: a value is fresh while
-  `now - least(last_good_at, last_value_ts) <= sensors_channel.fresh_s` (three heartbeats), so a replayed backlog,
-  received now but measured long ago, is not fresh.
+  `now - least(last_good_at, last_value_ts) <= sensors_channel.fresh_s` (`heartbeat_s` times the channel's
+  `fresh_heartbeats`: 3 unless the farm set another, 1 to 20), so a replayed backlog, received now but measured long
+  ago, is not fresh. Freshness is judged by Django when a value is read, never by the ingest, which stores whatever
+  arrives: `fresh_heartbeats` and `fresh_s` are not in the view, and SQL that makes a channel itself (the ingest's test
+  fixture and seeds) gives `fresh_heartbeats`, which has no database default (`IngestSqlTests` reads those statements).
 - `sensors_device_state` (device_id pk): `last_message_at`, `last_seq`, `accepted_total`, `late_total`, `dead_total`,
   `ignored_total` (counters default 0; ignored counts duplicates: a sample at exactly the channel's newest time writes
   nothing).

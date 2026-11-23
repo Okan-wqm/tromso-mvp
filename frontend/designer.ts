@@ -282,7 +282,7 @@ class Designer {
     this.history = commit(this.history, next);
     this.shown = this.history.present;
     this.textarea.value = JSON.stringify(serialize(this.history.present, this.cat.schema));
-    this.announce(changes(before, this.history.present));
+    this.announce(changes(before, this.history.present), before);
     this.render();
     this.schedulePreview();
   }
@@ -336,9 +336,11 @@ class Designer {
     }));
   }
 
-  private announce(found: Change[]): void {
+  // Each change said with its widget's name: a removed widget is found in the layout before the change (F-149).
+  private announce(found: Change[], before: Layout): void {
     const sentences = found.map((change) => {
-      const item = this.history.present.find((each) => each.id === change.id) ?? change;
+      const item = this.history.present.find((each) => each.id === change.id)
+        ?? before.find((each) => each.id === change.id) ?? change;
       const text = this.root.dataset[`announce${change.kind[0].toUpperCase()}${change.kind.slice(1)}`] ?? '';
       return fill(text, { label: this.labelOf(item as Item), x: change.x + 1, y: change.y + 1, w: change.w,
                           h: change.h });
@@ -358,6 +360,11 @@ class Designer {
     });
     for (const selector of ['[data-designer-unit]', '[data-designer-state]']) {
       required<HTMLSelectElement>(this.root, selector).addEventListener('change', () => this.schedulePreview());
+    }
+    // (the measure is on the form's General tab: a change there is a change of the card)
+    for (const name of ['measure_w', 'measure_h']) {
+      this.root.closest('form')?.querySelector<HTMLInputElement>(`input[name="${name}"]`)
+        ?.addEventListener('input', () => this.schedulePreview());
     }
     required<HTMLSelectElement>(this.root, '[data-designer-width]').addEventListener('change', (event) => {
       this.preview.style.setProperty('--card-min', (event.target as HTMLSelectElement).value);
@@ -386,7 +393,7 @@ class Designer {
     this.history = move_(this.history);
     this.shown = this.history.present;
     this.textarea.value = JSON.stringify(serialize(this.history.present, this.cat.schema));
-    this.announce(changes(before, this.history.present));
+    this.announce(changes(before, this.history.present), before);
     this.render();
     this.schedulePreview();
   }
@@ -449,6 +456,22 @@ class Designer {
   }
 
   // ---- the server's answer -------------------------------------------------------------------------------------
+  /** The form's measure as [width, height], null when either field is empty or no whole number (a card that flows:
+   *  the form's own check says what is wrong with a half-filled one on save). */
+  private measure(form: HTMLFormElement | null): [number, number] | null {
+    const read = (name: string): number => {
+      const input = form?.querySelector<HTMLInputElement>(`input[name="${name}"]`);
+      const raw = input?.value.trim() ?? '';
+      if (!input || !/^\d+$/.test(raw)) return Number.NaN;
+      // (outside the field's own range, e.g. while a number is being typed: no measure yet)
+      const value = Number(raw);
+      return (input.min && value < Number(input.min)) || (input.max && value > Number(input.max)) ? Number.NaN : value;
+    };
+    const width = read('measure_w');
+    const height = read('measure_h');
+    return Number.isNaN(width) || Number.isNaN(height) ? null : [width, height];
+  }
+
   private schedulePreview(): void {
     window.clearTimeout(this.timer);
     this.timer = window.setTimeout(() => void this.refresh(), PREVIEW_DELAY);
@@ -460,7 +483,11 @@ class Designer {
     this.request = request;
     const form = this.root.closest('form');
     const name = form?.querySelector<HTMLInputElement>('input[name="name"]')?.value ?? '';
-    const body = JSON.stringify({ layout: serialize(this.history.present, this.cat.schema), name,
+    // A FITTED template (the form's two measure fields both filled with whole numbers): the server draws the card
+    // fitted at that measure and its validator answers for it; the pane then shows it at the measure's proportion.
+    const measure = this.measure(form);
+    this.preview.classList.toggle('is-fitted', measure !== null);
+    const body = JSON.stringify({ layout: serialize(this.history.present, this.cat.schema), name, measure,
                                   unit: required<HTMLSelectElement>(this.root, '[data-designer-unit]').value,
                                   state: required<HTMLSelectElement>(this.root, '[data-designer-state]').value });
     try {
@@ -469,6 +496,7 @@ class Designer {
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken(form) },
       });
       if (!response.ok) {
+        this.previewFailed();
         return;
       }
       const answer = await response.json() as { html: string; problems: Problem[] };
@@ -481,9 +509,16 @@ class Designer {
       this.status.dataset.preview = label(this.root, 'announcePreview');
     } catch (error) {
       if (!(error instanceof DOMException && error.name === 'AbortError')) {
-        throw error;
+        this.previewFailed();                                  // offline, or an answer that is not the preview
       }
     }
+  }
+
+  // A preview the server refused or could not give (F-122): said in the pane, in the page's words, never thrown; the
+  // layout and its problems are not touched, and the next change asks again.
+  private previewFailed(): void {
+    this.preview.replaceChildren(element('p', { role: 'alert', class: 'designer-preview-failed' },
+                                         label(this.root, 'labelPreviewFailed')));
   }
 
   private showProblems(problems: Problem[]): void {

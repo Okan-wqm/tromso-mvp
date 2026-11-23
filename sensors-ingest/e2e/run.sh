@@ -9,6 +9,9 @@ cd "$(dirname "$0")/../.."
 export MSYS_NO_PATHCONV=1
 win() { cygpath -w "$1" 2>/dev/null || echo "$1"; }
 REPO=$(win "$PWD")
+# The Django image that migrates the schema: the test runner's, as scripts/testrunner/image.sh names it (the one name,
+# tests/run.sh's and CI's too), built when missing; no server starts without the water-chemistry core in it.
+DJANGO_IMAGE=${DJANGO_IMAGE:-$(sh scripts/testrunner/image.sh build)}
 STATE=sensors-ingest/e2e/.state
 DB=sensors_e2e
 PG_IMAGE=timescale/timescaledb:2.17.2-pg17
@@ -50,7 +53,7 @@ printf 'user ingest\ntopic read sim/#\nuser simulator\ntopic write sim/#\n' > "$
 docker run --rm --network balik-ciftligi_default -e PGPASSWORD=balik "$PG_IMAGE" psql -h db -U balik -d postgres -q \
   -c "DROP DATABASE IF EXISTS $DB WITH (FORCE)" -c "CREATE DATABASE $DB" >/dev/null
 docker run --rm --network balik-ciftligi_default -v "$REPO:/app" -w /app -e DB_HOST=db -e DB_PORT=5432 -e DB_NAME=$DB \
-  balik-testrunner:latest python manage.py migrate --no-input >/dev/null || { echo "migrate failed"; exit 1; }
+  "$DJANGO_IMAGE" python manage.py migrate --no-input >/dev/null || { echo "migrate failed"; exit 1; }
 sql "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'sensors_ingest_e2e') THEN
   CREATE ROLE sensors_ingest_e2e LOGIN IN ROLE sensors_ingest; END IF; END \$\$;
   ALTER ROLE sensors_ingest_e2e PASSWORD '$DBPW'" >/dev/null

@@ -2,6 +2,7 @@
 {% load i18n %}
 {% comment %} The list page of a tab (core.crud.ListView). A tab's own template extends this and fills `items`
    (and `above` the toolbar, e.g. the tabs of a group of pages).
+   `below` comes after the list or its empty state, whichever shows (the Shift schedule's Crew block).
    The heading is the menu entry's label (Resource.title); the nouns (name, plural) come from the tab and
    each sentence puts them where its language wants them.{% endcomment %}
 {% block title %}{{ title }}{% endblock %}
@@ -40,4 +41,5 @@
   {% endif %}
 </div>
 {% endif %}
+{% block below %}{% endblock %}
 {% endblock %}

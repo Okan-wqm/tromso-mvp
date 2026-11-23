@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import translation
 
 from core import access, database, navigation, softdelete
-from core.audit import message
+from core.audit import message, private
 from core.models import AuditLog, Profile
 from core.softdelete import plan_delete
 
@@ -121,8 +121,8 @@ class SupplierRoundTripTests(SupplierTestCase):
             ('', None, '', '', '', '', '', '', '', '', ''))
         self.assertEqual(list(supplier.sites.all()), [])
         self.assertEqual(AuditLog.objects.get().changes, {
-            'Organisation number': ['923456789', None], 'Rating': [message('5'), None], 'Email': ['a@b.no', None],
-            'Phone': ['1', None], 'Website': ['https://a.no', None], 'Street address': ['s', None],
+            'Organisation number': ['923456789', None], 'Rating': [message('5'), None], 'Email': [private('a@b.no'), None],
+            'Phone': [private('1'), None], 'Website': ['https://a.no', None], 'Street address': ['s', None],
             'Postal code': ['p', None], 'City': ['c', None], 'Country': ['n', None],
             'Sites served': ['Bergen (BG)', None], 'Payment terms': ['t', None], 'Notes': ['x', None],
         })
@@ -290,7 +290,7 @@ class SupplierContactTests(SupplierTestCase):
                                                  record=self.supplier))
         entry = AuditLog.objects.get()
         self.assertEqual((entry.action, entry.entity_type, entry.entity_id, entry.changes),
-                         ('update', 'supplier', str(self.supplier.pk), {'Contacts': [None, 'Kari (Sales, primary)']}))
+                         ('update', 'supplier', str(self.supplier.pk), {'Contacts': [None, [['Kari (Sales, primary)']]]}))
 
     def test_saving_contacts_needs_the_change_permission(self):
         reader = get_user_model().objects.create_user('ola', 'ola@example.com', 'x')

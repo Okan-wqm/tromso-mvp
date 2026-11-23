@@ -1,0 +1,46 @@
+# The parity classes of chemcore (plan 6.2), version 0: how close the Rust core must come to golden v1 (today's
+# Python, recorded with glibc) and to the 50-digit anchors. Reviewed like code; a gate is tightened by measurement
+# (4 x the observed ceiling, printed on every run) and NEVER loosened without a written finding in
+# chemcore/findings/. A blanket tolerance is rejected: it would hide a coefficient typo.
+#
+# Why not bit-for-bit: the core takes exp, log and pow from the libm crate, which differs from glibc in the last bit
+# in 1 to 11 % of calls (S0 measurement); only native against PyO3 is compared bit for bit.
+version = 0
+
+[classes.closed_form]
+# constants and closed forms (k1 .. ksp, fractions, isoline, DIC at a pH, CO2, shares, oxygen, CO2 from air):
+# verbatim arithmetic, the error is libm ulps inside pow(10, -pk) and log10, relative
+rel = 1e-12
+
+[classes.closed_form_meq]
+# meq/L and mmol/L values that are a difference of near-equal terms and can be near 0 (the isoline's intercept
+# [OH-] - [H+] + [B(OH)4-], the alkalinity floor, a DIC or CO2 near 0): the relative gate plus 1e-12 absolute
+rel = 1e-12
+abs = 1e-12
+
+[classes.closed_form_ph]
+# a pH from closed forms (the NBS offset, which is near 0 in nearly fresh water, a pH free, a border in closed form):
+# a pH is a logarithm, so it is compared absolutely
+abs = 1e-12
+
+[classes.solved_ph]
+# a pH found by bisection to 1e-10 on [0, 14]: a flipped last decision moves it by one final bracket (5e-11)
+abs = 2e-10
+
+[classes.bisection_geometry]
+# chart coordinates from a bisected pH (the safe zone's right edge, the CO2 curve's ends): dDIC/dpH reaches about
+# 14 mmol/L per pH near pH 6.3 at 6 mmol/L, so one flipped bracket moves a vertex by 1.4e-9
+abs = 1e-8
+
+[classes.closed_geometry]
+# chart coordinates from closed forms (isolines, Omega lines, the NH3 and H2S halves), absolute in chart units
+abs = 1e-10
+
+[classes.discrete]
+# statuses, region membership, counts and order of vertices, None and which exception: exactly equal
+exact = true
+
+[classes.quantised]
+# values stored or shown after quantising (read.py: Decimal of the exact binary value, then quantize): equal, the
+# flips at a rounding tie counted and listed
+exact = true

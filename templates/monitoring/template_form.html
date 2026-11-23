@@ -2,4 +2,5 @@
 {% load assets %}
 {% comment %} A card template's form (monitoring.resources.CardTemplateResource): the crud form, its Design tab the card designer
    (templates/monitoring/widgets/_designer.html, frontend/designer.ts) and the card's own styles for its preview. {% endcomment %}
-{% block extra_head %}<link rel="stylesheet" href="{% asset 'css/monitor.css' %}"><script type="module" src="{% asset 'js/designer.js' %}"></script>{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% asset 'css/monitor.css' %}"><link rel="stylesheet" href="{% asset 'css/card-grid.css' %}">{% endblock %}
+{% block extra_head %}<script type="module" src="{% asset 'js/designer.js' %}"></script>{% endblock %}

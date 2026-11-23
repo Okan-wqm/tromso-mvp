@@ -13,11 +13,13 @@ from django.utils.http import content_disposition_header
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
-from core import navigation
+from core import navigation, query
 from core.crud import done, render_page
+from core.dates import company_zone
 from farm.models import Site
+from farm.models.site import zone_of
 
-from . import compute, due, duties, exports, periods, services
+from . import compute, due, duties, exports, labels, periods, services
 from .forms import CloseForm, DutyDoneForm, SubmitForm
 from .kinds import ReportKind
 from .models import DueClosure, OpenQuestion, OutsideDutyDone
@@ -47,6 +49,10 @@ def overview_upcoming(user):
     rows = owed.rows
     reminders = [line for line in owed.duties if line.status in (duties.OVERDUE, duties.DUE_SOON)]
     return {'rows': rows[:UPCOMING], 'more': max(len(rows) - UPCOMING, 0), 'url': reverse('reports:report_list'),
+            # What the Reports page says beside its list, said on the overviews too (flow faults M-06, M-20): the sites
+            # that hold fish and are not set up for their reports (nothing can be known to be due for them), and the
+            # notices to file at once (they have no deadline, so they are never "overdue").
+            'not_set_up': owed.not_set_up, 'at_once': [row for row in rows if row.deadline is None],
             'overdue': sum(1 for row in rows if row.overdue) + sum(1 for line in reminders
                                                                    if line.status == duties.OVERDUE),
             'duties': reminders, 'duties_url': reverse('reports:outside_duties')}
@@ -126,8 +132,12 @@ def reopen(request, pk):
     """Takes a closure away: the report is owed again."""
     closure = get_object_or_404(DueClosure, pk=pk)
     kind = closure.kind
-    services.reopen(request.user, closure)
-    messages.success(request, _('Reopened: it is owed again.'))
+    try:
+        services.reopen(request.user, closure)
+    except ValidationError as error:            # pressed twice: the first took it away
+        messages.error(request, ' '.join(error.messages))
+    else:
+        messages.success(request, _('Reopened: it is owed again.'))
     return done(request, reverse('reports:report_list') + f'?kind={kind}')
 
 
@@ -147,20 +157,20 @@ def outside_duties(request):
 @permission_required('reports.change_report', raise_exception=True)
 def duty_done(request):
     """Records that an annual duty outside this system was done for a site and a year (a dialog)."""
-    code, year = request.GET.get('duty', ''), request.GET.get('year', '')
+    code, year = request.GET.get('duty', ''), query.year(request.GET.get('year', ''))
     site = Site.objects.filter(pk=request.GET.get('site', '')).first() if _is_uuid(request.GET.get('site', '')) else None
     found = duties.BY_CODE.get(code)
-    if found is None or not found.recordable or site is None or not year.isdigit():
+    if found is None or not found.recordable or site is None or year is None:
         raise Http404
     place = navigation.place(ReportResource.perm('view'))
     back = reverse('reports:outside_duties')
-    context = {'duty': found, 'site': site, 'year': int(year), 'heading': _('Record as done'), 'back_url': back,
+    context = {'duty': found, 'site': site, 'year': year, 'heading': _('Record as done'), 'back_url': back,
                'title': _('Record as done'), 'eyebrow': f'{place.heading} · {place.entry.label}'}
     if request.method == 'POST':
         form = DutyDoneForm(request.POST)
         if form.is_valid():
             try:
-                services.record_duty_done(request.user, duty=code, site=site, year=int(year), **form.cleaned_data)
+                services.record_duty_done(request.user, duty=code, site=site, year=year, **form.cleaned_data)
             except ValidationError as error:
                 for field, texts in error.message_dict.items():
                     for text in texts:
@@ -179,8 +189,12 @@ def duty_done(request):
 @require_POST
 def duty_undo(request, pk):
     """Takes a record that a duty was done away."""
-    services.undo_duty_done(request.user, get_object_or_404(OutsideDutyDone, pk=pk))
-    messages.success(request, _('The record is removed: the duty is owed again.'))
+    try:
+        services.undo_duty_done(request.user, get_object_or_404(OutsideDutyDone, pk=pk))
+    except ValidationError as error:            # pressed twice: the first took it away
+        messages.error(request, ' '.join(error.messages))
+    else:
+        messages.success(request, _('The record is removed: the duty is owed again.'))
     return done(request, reverse('reports:outside_duties'))
 
 
@@ -228,15 +242,16 @@ def export(request, pk, fmt):
 
 @permission_required('reports.view_report', raise_exception=True)
 def print_page(request, pk):
-    """The report on one page to print or to type from, in the authority's order."""
+    """The report on one page to print or to type from, its figures named as the report's page names them."""
     report = _report(pk)
     content, filed = _content(report)
+    zone = zone_of(report.site) if report.site_id else company_zone()      # an instant on the site's clock
     place = navigation.place(ReportResource.perm('view'))
     return render_page(request, 'reports/report_print.html', {
         'object': report, 'content': content, 'filed': filed, 'title': str(report),
         'content_hash': compute.content_hash(content), 'api_call': exports.api_call(report),
         'eyebrow': f'{place.heading} · {place.entry.label}',
-        'rows': exports.rows(report, content), 'list_url': reverse('reports:report_list'),
+        'figure_outline': labels.outline(content, zone), 'figure_zone': zone, 'list_url': reverse('reports:report_list'),
         'detail_url': reverse('reports:report_detail', args=[report.pk]),
     })
 

@@ -1,6 +1,6 @@
 """The last layer: the checks the database cannot hold, the demonstration seed and the roles it makes, the migrations back and
 forth, and the query budgets of the pages that list people."""
-from datetime import date, datetime, timezone as utc
+from datetime import date
 from io import StringIO
 
 from django.contrib.auth import get_user_model
@@ -14,10 +14,9 @@ from django.urls import reverse
 
 from farm.models import ProductionDepartment, Site
 
-from .. import checks, read
+from .. import checks
 from ..models import (AttendanceRecord, Employee, LeaveRequest, LeaveType, OfficeDepartment, Posting, SchedulingSettings,
                       Shift, ShiftAssignment)
-from .helpers import user
 from .helpers_people import PeopleTestCase, TOP, employee, place
 
 
@@ -32,6 +31,9 @@ class CheckHrTests(PeopleTestCase):
         self.assertIn('agree', out.getvalue())
 
     def test_every_disagreement_is_found_and_the_command_fails(self):
+        # Rows written before the database refused them (hr/0011_employment_bounds): made here past its floor, and put
+        # right before the test ends, when Django reads every deferred constraint.
+        self.addCleanup(lambda: LeaveRequest.objects.filter(employee__employee_number='E-50').delete())
         # a last day with a placement that runs past it, and leave after it
         gone = employee('E-50', 'Gone')
         place(gone, self.dept_a, TOP)

@@ -1,0 +1,179 @@
+"""The one write path of the alarms: each row is written here, with its activity-log entry in the same transaction (core.
+audit; the loop writes as 'system'). A pass writes set-based: its alarms, clearances, notifications and escalations, and
+their log entries, each in one statement however many there are (alarm plan, defect 7). Nothing here decides whether a
+condition holds (alarms/sources.py), who is notified (alarms/routing.py) or when (alarms/engine.py)."""
+from django.core.exceptions import ValidationError
+from django.db import connection, transaction
+from django.utils import timezone
+from django.utils.translation import gettext as _
+
+from core import audit
+from core.models import AuditLog
+from sensors.models.alarm import Severity
+
+from .models import Acknowledgement, Alarm, AlarmClearance, DeliveryAttempt, Escalation, Notification, Outcome
+
+
+def _fit(model, field, text):
+    """`text` cut to the column's size."""
+    return text[:model._meta.get_field(field).max_length]
+
+
+def _severity(alarm):
+    return AuditLog.Severity.CRITICAL if alarm.severity == Severity.CRITICAL else AuditLog.Severity.NORMAL
+
+
+def _log(entries):
+    AuditLog.objects.bulk_create(entries)
+
+
+# ---- alarms -----------------------------------------------------------------------------------------------------------
+def open_alarms(specs):
+    """New alarms, one per spec ({at, severity, summary, site, production_department, source, and sensor_event, or point
+    and parameter, or parameter}), each logged (a critical one critical): two statements for all of them."""
+    alarms = Alarm.objects.bulk_create([
+        Alarm(opened_at=spec['at'], summary=_fit(Alarm, 'summary', spec['summary']),
+              **{key: value for key, value in spec.items() if key not in ('at', 'summary')}) for spec in specs])
+    with audit.source_language():
+        _log([audit.created(None, alarm, {str(_('Severity')): audit.message(alarm.get_severity_display()),
+                                          str(_('What')): alarm.summary, str(_('Opened at')): alarm.opened_at.isoformat()},
+                            label=alarm.summary, severity=_severity(alarm)) for alarm in alarms])
+    return alarms
+
+
+def open_alarm(**spec):
+    """One new alarm, logged (`open_alarms`)."""
+    return open_alarms([spec])[0]
+
+
+class AlreadyOpen(Exception):
+    """A raise for a subject whose alarm is open: nothing was written."""
+
+
+def _set_open(pairs):
+    """[(subject key, alarm)] made the subjects' open alarms in one compare-and-set statement: set only where none is open;
+    AlreadyOpen (and nothing written: the caller's transaction rolls back) when one subject had one."""
+    rows = ', '.join(['(%s, %s, now())'] * len(pairs))
+    with connection.cursor() as cursor:
+        cursor.execute(
+            f'INSERT INTO alarm_subject_state (key, open_alarm_id, updated_at) VALUES {rows} '
+            f'ON CONFLICT (key) DO UPDATE SET open_alarm_id = EXCLUDED.open_alarm_id, pending_since = NULL, '
+            f'updated_at = now() WHERE alarm_subject_state.open_alarm_id IS NULL RETURNING key',
+            [value for key, alarm in pairs for value in (key, alarm.pk)])
+        done = {key for (key,) in cursor.fetchall()}
+    missing = [key for key, _alarm in pairs if key not in done]
+    if missing:
+        raise AlreadyOpen(missing)
+
+
+def raise_many(subjects):
+    """[(subject key, spec)]: opens each alarm as its subject's open alarm, a compare-and-set on the subjects' rows
+    (alarm plan, defect 6), all in four statements. Returns {key: alarm}."""
+    if not subjects:
+        return {}
+    with transaction.atomic():
+        alarms = open_alarms([spec for _key, spec in subjects])
+        pairs = [(key, alarm) for (key, _spec), alarm in zip(subjects, alarms)]
+        _set_open(pairs)
+        return dict(pairs)
+
+
+def raise_for(key, make):
+    """Opens the alarm `make()` writes as subject `key`'s open alarm (the same compare-and-set); returns it."""
+    with transaction.atomic():
+        alarm = make()
+        _set_open([(key, alarm)])
+        return alarm
+
+
+def clear_many(clearances):
+    """[(alarm, at, cause)] or [(alarm, at, cause, detail)]: each alarm stopped holding at `at` for `cause` (ClearCause),
+    logged as a change of the alarm with the `detail` ({label: text}: what changed, e.g. the limit row removed and by
+    whom) where there is one; two statements for all of them."""
+    clearances = [(alarm, at, cause, next(iter(detail), None)) for alarm, at, cause, *detail in clearances]
+    rows = AlarmClearance.objects.bulk_create([AlarmClearance(alarm=alarm, cleared_at=max(at, alarm.opened_at), cause=cause)
+                                               for alarm, at, cause, _detail in clearances])
+    with audit.source_language():
+        _log([audit.entry(None, AuditLog.Action.UPDATE, row.alarm, {
+            str(_('Cleared at')): [None, row.cleared_at.isoformat()],
+            str(_('Why')): [None, audit.message(row.get_cause_display())],
+            **{str(label): [None, text] for label, text in (detail or {}).items()}}, label=row.alarm.summary)
+            for row, (_alarm, _at, _cause, detail) in zip(rows, clearances)])
+    return rows
+
+
+def clear(alarm, at, cause):
+    """One alarm stopped holding (`clear_many`)."""
+    return clear_many([(alarm, at, cause)])[0]
+
+
+# ---- notifications and escalations -------------------------------------------------------------------------------------
+def queue_many(notifications):
+    """Unsaved Notifications queued, each logged; two statements for all of them."""
+    made = Notification.objects.bulk_create(notifications)
+    with audit.source_language():
+        _log([audit.created(None, notification, {
+            str(_('Recipient')): notification.recipient.get_username(),
+            str(_('Channel')): audit.message(notification.get_channel_display()), str(_('Level')): str(notification.level)},
+            label=f'{notification.alarm.summary} → {notification.recipient.get_username()}') for notification in made])
+    return made
+
+
+def enqueue(alarm, level, recipients, now):
+    """The notifications of `level` for [(user, rule)] not queued yet; returns the new ones, each logged."""
+    queued = set(Notification.objects.filter(alarm=alarm, level=level).values_list('recipient_id', 'channel'))
+    fresh = {}
+    for user, rule in recipients:
+        if (user.pk, rule.channel) not in queued:
+            fresh.setdefault((user.pk, rule.channel), Notification(alarm=alarm, recipient=user, channel=rule.channel,
+                                                                   level=level, rule=rule, queued_at=now))
+    return queue_many(list(fresh.values()))
+
+
+def escalate_many(escalations):
+    """Unsaved Escalations written, each logged; two statements for all of them."""
+    made = Escalation.objects.bulk_create(escalations)
+    with audit.source_language():
+        _log([audit.created(None, escalation, {str(_('Level')): str(escalation.level)},
+                            label=f'{escalation.alarm.summary} → {escalation.level}', severity=_severity(escalation.alarm))
+              for escalation in made])
+    return made
+
+
+def escalate(alarm, level, now):
+    """The alarm goes on to `level`: nobody acknowledged it in time at the level before (or nobody could be notified
+    there)."""
+    return escalate_many([Escalation(alarm=alarm, level=level, escalated_at=now)])[0]
+
+
+# ---- delivery and acknowledgement --------------------------------------------------------------------------------------
+def attempt(notification, result, now):
+    """What a transport did with a notification (alarms.transports Sent or Failed), logged on the notification."""
+    from .transports import Sent
+    outcome = Outcome.SENT if isinstance(result, Sent) else Outcome.FAILED
+    row = DeliveryAttempt.objects.create(notification=notification, attempted_at=now, outcome=outcome,
+                                         detail=_fit(DeliveryAttempt, 'detail', result.detail or ''))
+    with audit.source_language():
+        audit.record(None, AuditLog.Action.UPDATE, notification,
+                     {str(_('Delivery')): [None, f'{outcome}: {row.detail}' if row.detail else outcome]},
+                     label=f'{notification.alarm.summary} → {notification.recipient.get_username()}')
+    return row
+
+
+def acknowledge(alarm, user, *, at=None, device='', app='console', notification=None):
+    """`user` saw the alarm: once per person; `notification`, the one they answered, must be theirs. The first one stops
+    the escalation (alarms/engine.py). Who may is asked by the caller (read.may_acknowledge)."""
+    at = at or timezone.now()
+    with transaction.atomic():
+        alarm = Alarm.objects.select_for_update().get(pk=alarm.pk)
+        if notification is not None and (notification.alarm_id != alarm.pk or notification.recipient_id != user.pk):
+            raise ValidationError(_('This notification is not yours.'))
+        if Acknowledgement.objects.filter(alarm=alarm, user=user).exists():
+            raise ValidationError(_('You have already acknowledged this alarm.'))
+        ack = Acknowledgement.objects.create(alarm=alarm, user=user, acknowledged_at=at,
+                                             device=_fit(Acknowledgement, 'device', device),
+                                             app=_fit(Acknowledgement, 'app', app), notification=notification)
+        with audit.source_language():
+            audit.record_create(user, ack, {str(_('Device')): device or None, str(_('App')): app,
+                                            str(_('Delay')): str(ack.delay)}, label=alarm.summary)
+        return ack

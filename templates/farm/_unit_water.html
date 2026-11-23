@@ -4,7 +4,7 @@
    worked-out values in italics, its time and age, its status for the fish in the unit now and the limits that
    judged it; Record water sample and the unit's water history.{% endcomment %}
 <section class="drawer-section">
-  <h3>{% trans "Water" %} {% include "farm/_water_status.html" with status=water_point.status %}</h3>
+  <h3>{% trans "Water" %} {% include "farm/_water_status.html" with status=water_point.status old=water_point.old_alert %}</h3>
   {% if water_point.point %}<p class="row-sub">{% blocktrans trimmed with point=water_point.point %}at {{ point }}{% endblocktrans %}</p>
   {% else %}<p class="muted">{% trans "This unit has no active middle sampling point, so no water is shown for it." %}{% if water_points_url %} <a href="{{ water_points_url }}">{% trans "Sampling points" %}</a>{% endif %}</p>{% endif %}
   {% if water_readings %}
@@ -13,7 +13,7 @@
       <tbody>
         {% for reading in water_readings %}
         <tr>
-          <th scope="row">{{ reading.parameter.label }}<span class="row-sub">{% blocktrans trimmed with age=reading.at|age %}{{ age }} ago{% endblocktrans %}{% for row in reading.limits %} · {{ row|limit_text }}{% empty %}{% if reading.status == "no_limit" %} · {{ reading.status|status_label }}{% endif %}{% endfor %}{% if reading.note %} · {{ reading.note }}{% endif %}</span></th>
+          <th scope="row">{{ reading.parameter.label }}<span class="row-sub">{% blocktrans trimmed with age=reading.at|age %}{{ age }} ago{% endblocktrans %}{% for row in reading.limits %} · {{ row|limit_text }}{% empty %}{% if reading.status == "no_limit" %} · {{ reading.status|status_label }}{% endif %}{% endfor %}{% if reading.provenance %} · {{ reading.provenance }}{% endif %}{% if reading.note %} · {{ reading.note }}{% endif %}</span></th>
           {% include "farm/_water_cell.html" with latest=True %}
         </tr>
         {% endfor %}

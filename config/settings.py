@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 import os
+import sys
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -23,6 +24,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 # Local development fallback only; set DJANGO_SECRET_KEY anywhere else.
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-local-development-only')
+# The key of the activity log's digests of private values (core.audit.digest_key): its own, so that it and the secret
+# key are rotated apart; empty means the secret key. Set it before core/0011 converts real data: that conversion is
+# one-way and keeps the key it ran under (it refuses the fallback above when DEBUG is off).
+AUDIT_DIGEST_KEY = os.environ.get('DJANGO_AUDIT_DIGEST_KEY', '')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', '1') == '1'
@@ -62,10 +67,15 @@ INSTALLED_APPS = [
     # Sensors: MQTT connections, devices, channels and their readings (a TimescaleDB hypertable written by the ingest
     # service, sensors-ingest/), in a panel of their own; their water values reach the water read (farm/water/sources.py).
     'sensors',
+    # The alarms: what the water limits and the sensor rules raise, who is notified (the outbox, push first), escalation and
+    # acknowledgements, all append-only; nothing is sent until a transport is connected (ALARM_TRANSPORTS).
+    'alarms',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Every response says where its page may load from (SECURE_CSP below).
+    'django.middleware.csp.ContentSecurityPolicyMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     # The language comes from the cookie, then the browser's Accept-Language, then LANGUAGE_CODE.
     'django.middleware.locale.LocaleMiddleware',
@@ -77,9 +87,15 @@ MIDDLEWARE = [
     # A signed-in person's saved language wins over the cookie.
     'core.language.AccountLanguageMiddleware',
     'core.middleware.WorkspaceMiddleware',
+    # A page whose menu line is left out for the person is refused at its address too.
+    'core.middleware.MenuAccessMiddleware',
+    # The platform owner's settings are read once per request (core.platform).
+    'core.middleware.PlatformSettingsMiddleware',
     # Every page needs a signed-in user unless its view is marked @login_not_required.
     'django.contrib.auth.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    # A write the database aborted for another at the same moment says "send it again" (core.softdelete, LOCK ORDER).
+    'core.middleware.CrossedWritesMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -96,11 +112,33 @@ TEMPLATES = [
                 'django.template.context_processors.i18n',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.csp',
                 'core.navigation.rail',
+                'core.navigation.page_base',
+                'core.theme.context',
             ],
         },
     },
 ]
+
+# Where a page may load from: its own address only. Scripts are the project's own files, plus what carries the response's
+# nonce (the import map, core/templatetags/assets.py); no inline style (a widget's cell is a class, static/css/card-grid.css);
+# the font is the project's (static/fonts); no plug-in, no frame around a page, no form sent elsewhere. So even a name that
+# slipped past the escaping could not run as a script. core/tests_csp.py opens every page against it.
+from django.utils.csp import CSP  # noqa: E402
+
+SECURE_CSP = {
+    'default-src': [CSP.SELF],
+    'script-src': [CSP.SELF, CSP.NONCE],
+    'style-src': [CSP.SELF],
+    'img-src': [CSP.SELF, 'data:'],
+    'font-src': [CSP.SELF],
+    'connect-src': [CSP.SELF],
+    'object-src': [CSP.NONE],
+    'base-uri': [CSP.NONE],
+    'form-action': [CSP.SELF],
+    'frame-ancestors': [CSP.NONE],
+}
 
 # Widgets render with the project's templates too (e.g. the role form's permission matrix).
 FORM_RENDERER = 'django.forms.renderers.TemplatesSetting'
@@ -163,6 +201,12 @@ LANGUAGE_COOKIE_AGE = 60 * 60 * 24 * 365
 LANGUAGE_COOKIE_SAMESITE = 'Lax'
 
 TIME_ZONE = 'UTC'
+# The company's time zone: a new site's (the form offers it first) and the one migration farm/0028 gives a site that had
+# none. Not the server's clock above. From the environment until the platform owner's settings hold it.
+COMPANY_TIME_ZONE = os.environ.get('COMPANY_TIME_ZONE', 'Europe/Oslo')
+# In the tests a page may not show an aware time without a clock filter (core/clock_guard.py): |date and |time refuse it.
+# Never on in production: the filters stay Django's own there.
+CLOCK_GUARD = os.environ.get('CLOCK_GUARD', '1' if sys.argv[1:2] == ['test'] else '0') == '1'
 
 USE_I18N = True
 # Quantities group their digits where a template asks (floatformat:"g"); plain numbers such as
@@ -193,11 +237,82 @@ KNOWLEDGE_MAX_FILE_BYTES = 20 * 1024 * 1024
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
+# The account e-mails (core.accountmail): the invitation a new person gets and the password reset. Where they go comes
+# from the environment alone, so no address, user or password is in the repository (README, Email):
+#   EMAIL_HOST            the SMTP server; without it a development server prints the mail in its terminal
+#   EMAIL_PORT            its port; left out, the encryption's own (587 starttls, 465 ssl, 25 off)
+#   EMAIL_HOST_USER, EMAIL_HOST_PASSWORD   the account to sign in to it with; left out, no sign-in
+#   EMAIL_TLS             starttls (the default), ssl, or off
+#   EMAIL_TIMEOUT         seconds one mail may take in all (30): core.accountmail cuts the conversation off there
+#   DEFAULT_FROM_EMAIL    the sender address
+# With DEBUG off there is no console to fall back on: the mailer is SMTP whatever the environment holds, the server does
+# not start without EMAIL_HOST (core.checks.mail_is_configured, core.E002) and a send without one fails where the admin
+# sees it. MAIL_MUST_SEND is what that check reads: DEBUG as it was read here (the test runner turns DEBUG off).
+MAIL_MUST_SEND = not DEBUG
+# The mailer's own timeout is for each step of the SMTP conversation; core.accountmail holds the whole mail to it.
+MAIL_SEND_SECONDS = int(os.environ.get('EMAIL_TIMEOUT', '30'))
+# The account e-mails leave after the request that causes them, on a worker thread (core.accountmail). The tests run
+# the worker's jobs in the request instead (config.test_runner): their uncommitted rows are not another thread's to read.
+MAIL_IN_BACKGROUND = True
+_mail_encryption = os.environ.get('EMAIL_TLS', 'starttls')
+if _mail_encryption not in ('starttls', 'ssl', 'off'):
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(f'EMAIL_TLS must be starttls, ssl or off, not {_mail_encryption!r}.')
+if os.environ.get('EMAIL_HOST') or MAIL_MUST_SEND:
+    MAILERS = {
+        'default': {
+            'BACKEND': 'django.core.mail.backends.smtp.EmailBackend',
+            'OPTIONS': {
+                'host': os.environ.get('EMAIL_HOST') or None,
+                'port': int(os.environ['EMAIL_PORT']) if os.environ.get('EMAIL_PORT') else None,
+                'username': os.environ.get('EMAIL_HOST_USER') or None,
+                'password': os.environ.get('EMAIL_HOST_PASSWORD') or None,
+                'use_tls': _mail_encryption == 'starttls',
+                'use_ssl': _mail_encryption == 'ssl',
+                'timeout': MAIL_SEND_SECONDS,
+            },
+        },
+    }
+else:
+    MAILERS = {
+        'default': {
+            'BACKEND': 'django.core.mail.backends.console.EmailBackend',
+        },
+    }
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'webmaster@localhost')
+
+# The address people reach this server at, scheme and host (https://farm.example.no): every link in an e-mail starts
+# with it, never with the Host header of the request that caused the mail. A development server's is its own.
+PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL', 'http://127.0.0.1:8047' if DEBUG else '').rstrip('/')
+
+# How long the link of an invitation or a password reset works, in hours (Django's PASSWORD_RESET_TIMEOUT holds it in
+# seconds: one lifetime for both, as both are the same token). A day: long enough to open a mail the next morning,
+# and a person whose link has expired asks for a new one themselves ("Forgot your password?") or the admin sends the
+# invitation again.
+PASSWORD_RESET_TIMEOUT = int(os.environ.get('ACCOUNT_LINK_HOURS', '24')) * 3600
+
+# How many password reset mails one account is sent in an hour, whoever asks: more requests are answered like every
+# other and send nothing (core.accountmail.reset), so nobody's inbox is flooded through the form.
+PASSWORD_RESET_MAILS_PER_HOUR = int(os.environ.get('PASSWORD_RESET_MAILS_PER_HOUR', '3'))
+
+# The account e-mails' lines in the server's log (a mail that did not go out, requests held back or dropped): a reset
+# that failed shows nowhere else but on its account_mails row, so they do not depend on Python's last-resort handler
+# (warnings only, no time, no level). To the process's stderr, where the server's other output goes.
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {'dated': {'format': '%(asctime)s %(levelname)s %(name)s: %(message)s'}},
+    'handlers': {'stderr': {'class': 'logging.StreamHandler', 'formatter': 'dated'}},
+    'loggers': {'core.accountmail': {'handlers': ['stderr'], 'level': 'INFO', 'propagate': False}},
 }
+
+# Under one, no link would ever work, no reset mail ever be sent and no mail have the time to leave: said here, not
+# found out by a person.
+for _name, _value in (('ACCOUNT_LINK_HOURS', PASSWORD_RESET_TIMEOUT), ('EMAIL_TIMEOUT', MAIL_SEND_SECONDS),
+                      ('PASSWORD_RESET_MAILS_PER_HOUR', PASSWORD_RESET_MAILS_PER_HOUR)):
+    if _value < 1:
+        from django.core.exceptions import ImproperlyConfigured
+        raise ImproperlyConfigured(f'{_name} must be 1 or more.')
 
 
 # Auth
@@ -207,6 +322,10 @@ LOGOUT_REDIRECT_URL = 'login'
 
 # The rail menu (core.navigation).
 RAIL_MENU = 'config.navigation.WORKSPACES'
+# What the rail's foot says for a person (the company and their site), and the company's name: from the environment until
+# the platform owner's settings hold it.
+RAIL_FOOT = 'hr.read.rail_foot'
+COMPANY_NAME = os.environ.get('COMPANY_NAME', '')
 
 # What a role can be given (core.access).
 ACCESS_AREAS = 'config.access.AREAS'
@@ -217,10 +336,6 @@ DATABASE_VIEWER = 'config.database.VIEWER'
 # Tests hash passwords quickly (config/test_runner.py).
 TEST_RUNNER = 'config.test_runner.FastPasswordRunner'
 
-# How many days back a stock operation, a feeding or a water sample may be dated, and voided
-# (farm/stock/dates.py; owner decisions Q3 and Q-F4).
-STOCK_BACKDATE_DAYS = 31
-
 # A feeding above this % of the unit's book biomass a day asks for an acknowledgement, stored on the record
 # (farm/feeding/services.py; owner decision Q-F5): a kilo typed for a gram is caught, fry may be fed more.
 FEEDING_ACK_PERCENT = 10
@@ -230,9 +345,6 @@ FEEDING_ACK_PERCENT = 10
 # measured biomass marked stale (docs/regulatory-reports.md, D-7).
 REPORT_RECENT_WEIGHING_DAYS = 30
 
-# A ration reads the latest temperature of the unit or its loop measured at most this many days before (owner
-# decision Q5): stale after the temperature's 24 hours, no ration after this (farm/feeding/temperature.py).
-TEMPERATURE_USABLE_DAYS = 7
 
 # The estimated weight between weighings (farm/feeding/projection.py) is marked "weigh soon" after this many days
 # since the last measured point, and "weigh now: the estimate is unreliable" after the second (owner decision Q6).
@@ -242,6 +354,11 @@ WEIGH_NOW_DAYS = 28
 # Seconds between two asks of a monitoring wall (a board may say its own, 10 to 600): the screen asks "has anything
 # changed?" and is answered without a body while nothing has (monitoring/read.py change_token).
 MONITOR_POLL_SECONDS = 15
+# The band above the monitoring cards names what needs a look in chips: at most this many chips, each naming at most this
+# many units by their code; the rest are counted ("+3"), and the band's tally always counts every unit
+# (monitoring/read.py band).
+MONITOR_BAND_CHIPS = 6
+MONITOR_BAND_CODES = 4
 
 # How far ahead a recurring task's tasks are made, and how many days back missed ones are made after a gap (they
 # are overdue): tasks/services.py, owner decision 3.
@@ -251,3 +368,7 @@ TASK_BACKFILL_DAYS = 7
 # Where manage.py sensor_broker_sync writes the MQTT broker's passwd and acl files; the broker container mounts it at
 # /mosquitto/auth and reloads them when they change (sensors-ingest/mosquitto).
 SENSORS_BROKER_AUTH_DIR = os.environ.get('SENSORS_BROKER_AUTH_DIR', str(BASE_DIR / '.sensors' / 'broker-auth'))
+
+# The alarms' transports, {channel: dotted path of an alarms.transports.Transport}. None is connected: the mobile app that
+# receives the push comes later, so every notification waits in the outbox and the pages say that nothing is sent.
+ALARM_TRANSPORTS = {}

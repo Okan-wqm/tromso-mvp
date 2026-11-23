@@ -5,7 +5,7 @@ row can hold (farm/models/water_point.py has the model and the rules one row can
   makes them, so the activity log records them like any change: a tank gets an inlet, a middle, a side outlet and a
   bottom drain; a pond an inlet, a middle and an outlet; a cage its middle; a system its loop. A piece of equipment
   gets none (its inlet and outlets are the person's to add). The Tank and System tabs call it when a record is
-  created (their `after_save`), and migration farm/0019 for the units and systems that existed before the points
+  created (their `after_save`); migration farm/0019 made them for the units and systems that existed before the points
   did. The names are stored as written here, in English, like any name a person types.
 - `share_notes` reports the owners whose outlet shares do not add up to 100 %: the database cannot hold a rule that
   spans rows, so the form refuses more than 100 (SamplingPoint.clean) and the list says when it is less."""
@@ -13,7 +13,6 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from core import audit
-from core.models import AuditLog
 from farm.models import SamplingPoint, Tank
 from farm.models.water_point import EQUIPMENT, OUTLET_KINDS, SYSTEM, UNIT, PointKind, owner_type_of
 
@@ -32,8 +31,8 @@ LOGGED = ['unit', 'system', 'equipment', 'name', 'kind', 'depth_m', 'flow_m3_h',
 
 def template_for(owner_type, unit_kind=''):
     """[(kind, name)] a new owner of that type starts with (for a unit, of that kind of unit); none for a piece of
-    equipment. Plain values, no models: migration farm/0019 reads it for the units and systems that existed before
-    the points did, so keep its shape."""
+    equipment. Migration farm/0019 made the points of the units and systems that existed before the points did from
+    its own copy of this template (a migration never reads app code that may change)."""
     if owner_type == EQUIPMENT:
         return []
     return DEFAULTS[unit_kind if owner_type == UNIT else SYSTEM]

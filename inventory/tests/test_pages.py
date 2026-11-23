@@ -5,6 +5,7 @@ viewer and the three languages."""
 import uuid
 
 from django.contrib.auth import get_user_model
+from django.contrib.messages import get_messages
 from django.core.management import call_command
 from django.urls import reverse
 
@@ -165,6 +166,19 @@ class DialogTests(StoreTestCase):
                                           headers=MODAL).status_code, 204)
         self.assertEqual(self.on_hand(self.store, 'L2'), 40)
         self.assertStoreAddsUp()
+
+    def test_a_count_day_it_cannot_read_is_said_and_never_replaced_by_today(self):
+        """A typo in the count's day on a reload (a draft) is said back and kept in the box; the book shown is no day's,
+        never today's in its place."""
+        self.receive('100', number='L1')
+        url = reverse('inventory:count')
+        draft = self.client.post(url, {'_draft': 'date', 'location': str(self.store.pk), 'date': '31.13.2026',
+                                       **rows_data('found', [])}, headers=MODAL)
+        self.assertEqual(draft.status_code, 200)
+        self.assertEqual(draft.context['pairs'], [])
+        self.assertEqual(draft.context['form'].initial['date'], '31.13.2026')
+        said = [str(message) for message in get_messages(draft.wsgi_request)]
+        self.assertTrue(any(text.startswith('“31.13.2026” is not a date this page reads') for text in said), said)
 
     def test_the_item_and_lot_pages(self):
         self.receive('100', cost='2', currency='EUR')

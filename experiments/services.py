@@ -24,7 +24,7 @@ from django.utils.translation import gettext as _, gettext_lazy
 
 from core import audit, softdelete
 from core.codes import next_code
-from core.models import AuditLog
+from core.models import AuditLog, EntryKey
 from farm.feeding import assignments
 from farm.handling import check
 from farm.models import Batch, FeedingProtocol, ProtocolAssignment, System, Tank
@@ -711,7 +711,7 @@ def start(user, experiment, seen, version):
         assessment = design_module.assess(locked)
         if assessment.errors:
             raise _refused(*[finding.text for finding in assessment.errors])
-        check.require_acknowledged(assessment, seen, field='start_ack')
+        check.require_acknowledged(assessment, seen, field='start_ack', user=user)
         warned = []
         if assessment.warnings:
             with audit.source_language():                          # the log is English at rest
@@ -744,8 +744,11 @@ def copy(user, source, name, starts_on=None, as_template=False, token=None):
     core.codes.next_code inside the transaction; a form sent twice (`token`) makes one copy. Logged as created, with
     its design, and the copier's team row as any other."""
     with transaction.atomic():
+        # The source first, as every write path takes its locks before it looks the form's key up: the same form sent
+        # twice at once waits here for the first sending and then finds its copy.
+        source = Experiment.all_objects.select_for_update(of=('self',)).get(pk=source.pk)
         if token is not None:
-            sent = Experiment.all_objects.filter(entry_key=token).first()
+            sent = EntryKey.record_of(token, Experiment)
             if sent is not None:
                 return sent
         name = name.strip()
@@ -753,17 +756,18 @@ def copy(user, source, name, starts_on=None, as_template=False, token=None):
             raise _refused(_('The copy needs a name.'))
         if len(name) > Experiment._meta.get_field('name').max_length:
             raise _refused(_('The name of the copy is too long.'))
-        source = Experiment.all_objects.get(pk=source.pk)
         if source.is_deleted:
             raise _refused(_('This experiment was deleted meanwhile.'))
         new = Experiment(
             code=next_code(Experiment, f'E-{site_today(source.site).year}-'), name=name, is_template=as_template,
             site=source.site, species=source.species, hypothesis=source.hypothesis,
             primary_endpoint=source.primary_endpoint, starts_on=None if as_template else starts_on,
-            duration_days=source.duration_days, notes=source.notes, copied_from=source, entry_key=token,
+            duration_days=source.duration_days, notes=source.notes, copied_from=source,
             created_by=user, updated_by=user)
-        new.full_clean(exclude=['code', 'entry_key'])
+        new.full_clean(exclude=['code'])
         new.save()
+        if token is not None:
+            EntryKey.note(token, new)
         factors, levels = {}, {}
         for factor in Factor.objects.filter(experiment=source):
             factors[factor.pk] = Factor.objects.create(

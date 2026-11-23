@@ -1,0 +1,105 @@
+/* The console's Tailwind (docs/design/system/tailwind.md): the source of static/css/tw.css, built by `npm run build:css`
+   (part of `npm run build`) and committed; `npm run check:css` fails when the committed file is not what this source and
+   the templates build now (scripts/tailwind.mjs).
+
+   - Utilities only. No preflight and no default theme: base.css and ui.css are the reset and the base of every page, and
+     the pages not yet redesigned keep exactly the look they have.
+   - Every class carries the `tw:` prefix (tw:flex, tw:lg:grid-cols-3), so a template's own class names (`hidden`, `table`,
+     `grid`, `collapse`) never meet a utility, and tw.css styles only an element that asks for it.
+   - The output is not in a cascade layer: an unlayered rule of base.css or app.css (`a`, `.content h2`) would beat any
+     layered utility whatever its specificity. tw.css loads last (templates/app_base.html), so a utility wins over an
+     element rule and over a single class of the older sheets.
+   - The theme names the design system's role variables (static/css/tokens.css) and nothing else: no colour, size or
+     font is written here, so every utility follows the person's theme (Fjord, Polarnatt, Nordlys, Tang, Laks). */
+@import "tailwindcss/utilities.css" source(none);
+
+/* What the build reads for class names: every template, and the Python that may build a class name. */
+@source "../templates/**/*.html";
+@source "../{alarms,config,core,experiments,farm,hr,inventory,knowledge,messaging,monitoring,reports,sensors,tasks}/**/*.py";
+
+/* A finger, a glove or a stylus: the tank side's 48 px targets (README, Principles). */
+@custom-variant coarse (@media (pointer: coarse));
+/* The two night themes, for the rare rule that must differ by night (tailwind.md). */
+@custom-variant night (&:where([data-theme="polarnatt"], [data-theme="polarnatt"] *, [data-theme="nordlys"], [data-theme="nordlys"] *));
+/* The wall: ?wall=1 puts data-wall on <html> (templates/monitoring/monitor.html): a band's row that wraps on the desk
+   page is one line there. */
+@custom-variant wall (&:where([data-wall], [data-wall] *));
+
+@theme inline prefix(tw) {
+  /* Type: the two faces, and the scale of README, Type */
+  --font-text: var(--font-text);
+  --font-display: var(--font-display);
+  --text-caption: 12px;
+  --text-caption--line-height: 1.45;
+  --text-small: 13px;
+  --text-small--line-height: 1.45;
+  --text-body: 15px;
+  --text-body--line-height: 1.45;
+  --text-figure: 18px;
+  --text-figure--line-height: 1.35;
+  --text-h2: 22px;
+  --text-h2--line-height: 1.2;
+  --text-h1: 28px;
+  --text-h1--line-height: 1.2;
+  --text-readout: 28px;
+  --text-readout--line-height: 1.15;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --leading-tight: 1.2;
+  --leading-normal: 1.45;
+  /* A fitted monitoring card's type scale: FOUR sizes, in em of the card's own unit (--u, which static/css/monitor.css
+     takes from the card's size and its template's measure). s: where a value came from, when, captions; m: every label,
+     row and sentence; l: the state word and the band's clock; xl: the unit's code and the figures one reads first. Two
+     weights go with it, 400 and 600 (a test holds the monitoring templates to these four and those two). */
+  --text-u-s: .8em;
+  --text-u-s--line-height: 1.25;
+  --text-u-m: 1em;
+  --text-u-m--line-height: 1.3;
+  --text-u-l: 1.25em;
+  --text-u-l--line-height: 1.15;
+  --text-u-xl: 2.4em;
+  --text-u-xl--line-height: 1;
+
+  /* Colour: the role tokens only (README, Colour) */
+  --color-canvas: var(--surface-canvas);
+  --color-sheet: var(--surface-sheet);
+  --color-sunken: var(--surface-sunken);
+  --color-rail: var(--surface-rail);
+  --color-on-rail: var(--text-on-rail);
+  --color-hair: var(--line-hair);
+  --color-control: var(--line-control);
+  --color-ink-1: var(--text-1);
+  --color-ink-2: var(--text-2);
+  --color-ink-3: var(--text-3);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-on-primary: var(--on-primary);
+  --color-action: var(--action);
+  --color-action-tint: var(--action-tint);
+  --color-brand: var(--brand);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-warn-text: var(--warn-text);
+  --color-warn-tint: var(--warn-tint);
+  --color-crit: var(--crit);
+  --color-crit-text: var(--crit-text);
+  --color-crit-tint: var(--crit-tint);
+  --color-on-crit: var(--on-crit);
+
+  /* Space: Tailwind's 4 px step is space-1…space-8 (tw:p-1 4, tw:p-4 16, tw:p-6 24, tw:p-12 48) */
+  --spacing: var(--space-1);
+
+  /* Radius, depth, sizes */
+  --radius-chip: var(--radius-chip);
+  --radius-control: var(--radius-control);
+  --radius-object: var(--radius-object);
+  --radius-pill: var(--radius-pill);
+  --container-prose: var(--prose);
+
+  /* The shell's widths (README, Shell): a phone up to 639 px, the compact rail from 1024 px, the full rail from 1280 px */
+  --breakpoint-sm: 40rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+}

@@ -27,6 +27,7 @@ from ..stock.fold import Line, Op
 from .helpers import make_facility, make_species, role
 from .test_feeding import FeedingTestCase, make_unit
 from .test_harvest import HARVEST_KEEPER
+from farm import withdrawal_gate
 
 
 def setUpModule():
@@ -92,7 +93,7 @@ class CleanerFishTestCase(FeedingTestCase):
 
     def setUp(self):
         super().setUp()
-        self.fjord = Site.objects.create(name='Fjord', code='FJ', type='sea_cage', latitude=Decimal('60.1'),
+        self.fjord = Site.objects.create(name='Fjord', code='FJ', type='sea_cage', timezone='UTC', latitude=Decimal('60.1'),
                                          longitude=Decimal('5.1'))
         cages = ProductionDepartment.objects.create(site=self.fjord, name='Cages', code='CG')
         self.cage, self.cage2 = make_unit('C-01', cages), make_unit('C-02', cages)
@@ -146,6 +147,7 @@ class SpeciesRuleTests(CleanerFishTestCase):
         self.assertEqual(stock.cleaner_stock.count, 800)
         self.assertStockAddsUp()
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_check_stock_finds_cleaner_fish_in_a_land_unit_and_two_production_species_in_a_cage(self):
         for code, unit, species in (('B-2026-901', self.t1, self.lump), ('B-2026-902', self.cage, self.trout)):
             batch = Batch.objects.create(code=code, species=species, input_stage='fry', origin='own_hatchery',
@@ -219,7 +221,7 @@ class CullAndHarvestTests(CleanerFishTestCase):
         self.assertEqual([share.batch for share in form.present.values()], [self.salmon_batch])
         self.stock(self.cage2, species=self.lump, days_ago=5)
         self.assertContains(self.client.get(reverse('farm:stock_harvest', args=[self.cage2.pk])),
-                            'No fish are in C-02.')
+                            'C-02 holds cleaner fish only: they are not harvested.')
 
     def test_cleaner_fish_are_not_in_the_harvest_plan_nor_its_targets(self):
         self.user.groups.add(role('Harvest keeper', *HARVEST_KEEPER))
@@ -476,6 +478,7 @@ class HealthRecordsOfTheFishTests(CleanerFishTestCase):
 
 
 class DatabaseRuleTests(CleanerFishTestCase):
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_database_holds_the_feeding_targets_the_provenance_the_year_class_and_the_cull_reasons(self):
         record = self.record(kilos='1')
         with self.assertRaises(IntegrityError), transaction.atomic():
@@ -493,3 +496,28 @@ class DatabaseRuleTests(CleanerFishTestCase):
         with self.assertRaises(IntegrityError), transaction.atomic():
             StockMovement.objects.create(**{**good, 'kind': 'mortality'}, reason='emaciated')   # a cull's cause only
         StockMovement.objects.create(**good, reason='emaciated')                                  # one of the six: fine
+
+
+class WaterLimitsOfEveryFishTests(CleanerFishTestCase):
+    """Cross review: the water of a cage is judged for every species in it; a row for the salmon does not judge it for
+    the lumpfish beside them (Limits.uncovered), and the page that lists the missing limits names them too."""
+
+    def test_a_species_without_a_limit_is_not_hidden_by_one_with_a_limit(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from ..models import WaterLimit
+        from ..water import read as water_read, services as water_services
+        from ..water.evaluate import Status
+        from .helpers import point_of
+        WaterLimit.objects.create(species=self.salmon, parameter='temperature_c', water_type='any',
+                                  warning_high=Decimal(18))
+        water_services.record(self.user, point=point_of(self.cage), measured_at=timezone.now() - timedelta(hours=1),
+                              source='manual', values={'temperature_c': Decimal('16')})
+        water = water_read.unit_water([self.cage])[self.cage.pk]
+        reading = water.get('temperature_c')
+        self.assertEqual((reading.judged, reading.uncovered), (Status.OK, (self.lump.pk,)))
+        self.assertEqual([each.code for each in water.unjudged], ['temperature_c'])
+        self.assertIn(self.lump, [entry.species for entry in water_read.missing_limits()])
+        WaterLimit.objects.create(species=self.lump, parameter='temperature_c', water_type='any',
+                                  warning_high=Decimal(17))
+        self.assertEqual(water_read.unit_water([self.cage])[self.cage.pk].unjudged, [])

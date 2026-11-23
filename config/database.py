@@ -17,6 +17,7 @@ VIEWER = Viewer(
         Section(_('Research'), ('experiments',)),
         Section(_('Monitoring'), ('monitoring',)),
         Section(_('Sensors'), ('sensors',)),
+        Section(_('Alarms'), ('alarms',)),
         Section(_('Administration'), ('core', 'auth')),
     ],
     # Tables of a listed app that stay hidden, by table name.
@@ -30,6 +31,10 @@ VIEWER = Viewer(
     # a secret belongs here, and so does what people write to each other: a message's text is for the
     # members of its conversation, which the platform admin reading the database is not (README, Messages).
     masked={'auth_user': ('password',), 'messages': ('body',), 'shift_assignments': ('note',),
+            # What changed, as stored: it holds the digests of private values (core.audit.private), and whoever browses
+            # the database can also edit a contact, so a digest shown here could be compared with a typed guess. What
+            # changed is read on the activity log page, in words and without digests (review R21).
+            'audit_log': ('changes',),
             'leave_requests': ('reason', 'decision_note'), 'attendance_records': ('note',),
             # A broker credential's hash, where the ingest's broker secret lies (a file name, masked as every column named
             # like a secret), and what a device sent that could not be stored (it may hold anything).

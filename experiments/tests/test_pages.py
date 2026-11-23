@@ -100,7 +100,7 @@ class CreateTests(PageTestCase):
                  ({'site': ''}, 'site', 'This field is required.'),
                  ({'primary_endpoint': 'weight'}, 'primary_endpoint',
                   'Select a valid choice. weight is not one of the available choices.'),
-                 ({'starts_on': 'soon'}, 'starts_on', 'Enter a valid date.')]
+                 ({'starts_on': 'soon'}, 'starts_on', 'Give the date as dd.mm.yyyy, e.g. 06.11.2026.')]
         for fields, field, message in cases:
             with self.subTest(field=field, value=fields[field]):
                 response = self.create(**fields)
@@ -296,7 +296,7 @@ class DeleteTests(PageTestCase):
     def design(self, trial):
         """A design of every part: a diet factor, two groups, replicates, a placement."""
         diet = self.factor(trial, 'Diet')
-        high, low = self.level(diet), self.level(diet)
+        high, _low = self.level(diet), self.level(diet)
         group = self.group(trial, 'A')
         self.group_level(group, high)
         replicate = self.replicate(group, 1)
@@ -343,15 +343,17 @@ class DeleteTests(PageTestCase):
         for url in (reverse('farm:tank_delete', args=[self.t1.pk]), reverse('farm:site_delete', args=[self.bergen.pk])):
             self.assertContains(self.client.get(url), 'still belongs to it.')
 
-    def test_a_restored_draft_comes_back_without_its_design(self):
+    def test_a_restored_draft_comes_back_with_its_design(self):
+        # What its delete took along comes back with it (core.softdelete.restore, F-067).
         trial = self.experiment()
         self.design(trial)
         softdelete.execute(softdelete.plan_delete(trial), self.user)
         softdelete.restore(Experiment.all_objects.get(pk=trial.pk), self.user)
         self.assertEqual(Experiment.objects.get(pk=trial.pk).status, 'draft')
         self.assertEqual((Factor.objects.count(), ExperimentGroup.objects.count(), ReplicateUnit.objects.count()),
-                         (0, 0, 0))
-        self.assertEqual(AuditLog.objects.filter(action='restore').count(), 1)
+                         (1, 1, 1))
+        self.assertEqual(AuditLog.objects.filter(action='restore').count(),
+                         AuditLog.objects.filter(action='delete').count())
 
     def test_a_copy_outlives_a_deleted_source_and_the_confirmation_says_it_stays(self):
         source = self.experiment('Template', is_template=True)

@@ -107,7 +107,7 @@ class Experiment(AuditedModel):
                                     related_name='copies', verbose_name=_('Copied from'))
     notes = models.CharField(_('Notes'), max_length=2000, blank=True)
     # Who may read it (core.sealing; sealed whatever writes the row, the database default too): a sealed experiment, its cells and everything on them do not exist for anyone
-    # outside its team and its shares. Editable after the start, like the name (migration 0003).
+    # outside its team and its shares. Editable after the start, like the name (migration 0004).
     audience = models.CharField(_('Who may read it'), max_length=6, choices=Audience.choices, default=Audience.SEALED,
                                 db_default=Audience.SEALED)
     # The animal-research approval it runs under (FOTS), shown on the card a person overseeing its tanks sees.
@@ -115,8 +115,6 @@ class Experiment(AuditedModel):
     approval_valid_until = models.DateField(_('Approval valid until'), null=True, blank=True)
     # Whom a night technician calls about a tank of it (the lead's phone): on the same card.
     contact_phone = models.CharField(_('Contact phone'), max_length=30, blank=True, default='', db_default='')
-    # The key of the form it was created with (not a secret): the same form sent twice creates it once.
-    entry_key = models.UUIDField(null=True, blank=True, unique=True, editable=False)
 
     kept_note = _('They stay as they are.')
 

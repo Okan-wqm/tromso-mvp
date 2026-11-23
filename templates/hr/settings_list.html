@@ -19,6 +19,7 @@
     <div><dt>{% trans "Working weekdays" %}</dt><dd>{{ settings.weekday_labels|join:", " }}</dd></div>
     <div><dt>{% trans "Punch window (minutes)" %}</dt><dd>{{ settings.punch_window_minutes }}</dd></div>
     <div><dt>{% trans "Absent after (minutes)" %}</dt><dd>{{ settings.absent_after_minutes }}</dd></div>
+    <div><dt>{% trans "A clock-in counts as forgotten after (hours)" %}</dt><dd>{{ settings.forgotten_after_hours }}</dd></div>
   </dl>
   {% if can_change %}<p><a class="button button-inline" href="{% url 'hr:schedulingsettings_edit' settings.pk %}" data-modal>{% include "icons/_icon.html" with name="pencil" %}{% trans "Edit the limits" %}</a></p>{% endif %}
 </section>
@@ -26,7 +27,7 @@
 <section class="detail-section">
   <h2 class="section-title">{% trans "Shifts" %}</h2>
   {% if shifts %}
-  <ul class="plain-list">{% for shift in shifts %}<li><span class="shift-chip tone-{{ shift.tone }}">{{ shift.code }}</span> {{ shift.name }} · {{ shift.starts_at|time:"H:i" }}–{{ shift.ends_at|time:"H:i" }}</li>{% endfor %}</ul>
+  <ul class="plain-list">{% for shift in shifts %}<li><span class="shift-chip tone-{{ shift.tone }}">{{ shift.code }}</span> {{ shift.name }} · {{ shift.starts_at|time:"TIME_FORMAT" }}–{{ shift.ends_at|time:"TIME_FORMAT" }}</li>{% endfor %}</ul>
   {% else %}<p class="muted">{% trans "No shifts yet." %}</p>{% endif %}
   {% if perms.hr.view_shift %}<p><a href="{% url 'hr:shift_list' %}">{% trans "Manage shifts" %}</a></p>{% endif %}
 </section>
@@ -36,5 +37,12 @@
   <ul class="plain-list">{% for holiday in holidays %}<li>{{ holiday.day|date:"DATE_FORMAT" }} · {{ holiday.name }}</li>{% endfor %}</ul>
   {% else %}<p class="muted">{% trans "No holidays yet." %}</p>{% endif %}
   {% if perms.hr.view_holiday %}<p><a href="{% url 'hr:holiday_list' %}">{% trans "Manage holidays" %}</a></p>{% endif %}
+</section>
+<section class="detail-section">
+  <h2 class="section-title">{% trans "Leave types" %}</h2>
+  {% if leave_types %}
+  <ul class="plain-list">{% for kind in leave_types %}<li>{{ kind.name }} ({{ kind.code }}){% if kind.annual_days is not None %} · {% blocktrans trimmed with days=kind.annual_days|floatformat:"-2" %}{{ days }} days a year{% endblocktrans %}{% endif %}{% if not kind.needs_approval %} · {% trans "granted without approval" %}{% endif %}{% if kind.status != "active" %} · {{ kind.get_status_display }}{% endif %}</li>{% endfor %}</ul>
+  {% else %}<p class="muted">{% trans "No leave types yet: a leave request cannot be filed until there is one." %}</p>{% endif %}
+  {% if perms.hr.view_leavetype %}<p><a href="{% url 'hr:leavetype_list' %}">{% trans "Manage leave types" %}</a></p>{% endif %}
 </section>
 {% endblock %}

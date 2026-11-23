@@ -1,17 +1,28 @@
 {% extends base_template %}
 {% load i18n assets %}
-{% comment %} Organisation chart (hr.views.organisation_chart): the company as nested lists, no script and no drawing. {% endcomment %}
+{% comment %} Organisation chart (hr.views.organisation_chart): the company as a family tree. The tree is nested lists (a box's
+children are the list inside its item) and the stylesheet draws it (static/css/hr.css): no script and no chart library, so it
+reads, prints and is announced as a list of lists. A wide tree scrolls in its own frame, never the page. {% endcomment %}
 {% block title %}{{ title }}{% endblock %}
 {% block extra_head %}<link rel="stylesheet" href="{% asset 'css/hr.css' %}">{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
-<p class="muted">{% blocktrans trimmed with total=root.total %}{{ total }} people you may see in the company.{% endblocktrans %} <button type="button" class="button button-ghost" data-print hidden>{% include "icons/_icon.html" with name="printer" %}{% trans "Print" %}</button></p>
+<div class="org-chart">
+<div class="org-intro">
+  <p class="muted" id="org-summary">{% blocktrans trimmed with total=root.total %}{{ total }} people you may see in the company.{% endblocktrans %}</p>
+  <button type="button" class="button button-ghost" data-print hidden>{% include "icons/_icon.html" with name="printer" %}{% trans "Print" %}</button>
+</div>
 {% if root.children %}
-<ul class="org-tree">
-  {% for node in root.children %}{% include "hr/_org_node.html" %}{% endfor %}
-</ul>
+<p class="org-scroll-cue" id="org-cue">{% trans "A wide chart scrolls sideways inside its frame." %}</p>
+<div class="org-frame" role="region" tabindex="0" aria-labelledby="org-label" aria-describedby="org-summary org-cue">
+  <span class="sr-only" id="org-label">{% trans "Organization chart" %}</span>
+  <ul class="org-tree">
+    {% for node in root.children %}{% include "hr/_org_node.html" %}{% endfor %}
+  </ul>
+</div>
 {% else %}
 <div class="empty"><h2>{% trans "Nothing to show yet" %}</h2><p>{% trans "Sites, production departments and office departments appear here." %}</p></div>
 {% endif %}
+</div>
 {% endblock %}

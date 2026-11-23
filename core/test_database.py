@@ -131,7 +131,7 @@ class RegistryTests(DatabaseViewerTestCase):
     def test_tables_come_from_the_models_of_the_listed_apps(self):
         expected = {model._meta.db_table
                     for label in ('farm', 'inventory', 'knowledge', 'messaging', 'reports', 'tasks', 'experiments',
-                                  'monitoring', 'hr', 'sensors', 'core', 'auth')
+                                  'monitoring', 'hr', 'sensors', 'alarms', 'core', 'auth')
                     for model in apps.get_app_config(label).get_models(include_auto_created=True)} - set(database.viewer().excluded)
         self.assertEqual(set(names()), expected)
         self.assertTrue({'sites', 'site_contacts', 'production_departments', 'audit_log', 'auth_user',
@@ -375,12 +375,12 @@ class ValuesTests(DatabaseViewerTestCase):
         return {c.name: cell for c, cell in zip(grid.columns, grid.rows[0].cells)}
 
     def test_values_are_shown_as_stored(self):
-        site = self.make_site(latitude='60.391300', longitude='5.322100', altitude='-5.50', facilities={'name': 'ø', 'tanks': 3},
+        site = self.make_site(latitude='60.391300', longitude='5.322100', altitude='5.50', facilities={'name': 'ø', 'tanks': 3},
                               established_date='2020-01-02')
         cells = self.cells('sites')
         self.assertEqual(cells['latitude'].text, '60.391300')           # not rounded or localised
         self.assertEqual(cells['latitude'].kind, 'number')
-        self.assertEqual(cells['altitude'].text, '-5.50')
+        self.assertEqual(cells['altitude'].text, '5.50')
         self.assertEqual(cells['version'].text, '1')
         self.assertEqual(cells['established_date'].text, '2020-01-02')
         self.assertEqual(cells['facilities'].text, '{"name": "ø", "tanks": 3}')
@@ -433,7 +433,7 @@ class ValuesTests(DatabaseViewerTestCase):
 
     def test_a_link_to_a_deleted_record_still_shows_it(self):
         site = self.make_site()
-        ProductionDepartment.objects.create(name='Hall', code='H', site=site)
+        ProductionDepartment.objects.create(name='Hall', code='H', site=site).soft_delete(self.admin)   # deleted with it
         site.soft_delete(self.admin)
         self.assertEqual(self.cells('production_departments')['site_id'].label, 'Bergen Hatchery (BH)')
 
@@ -492,7 +492,7 @@ class MaskingTests(DatabaseViewerTestCase):
 class ExportTests(DatabaseViewerTestCase):
     def setUp(self):
         super().setUp()
-        self.bergen = self.make_site(latitude='60.391300', longitude='5.322100', altitude='-5.50', facilities={'tanks': 3},
+        self.bergen = self.make_site(latitude='60.391300', longitude='5.322100', altitude='5.50', facilities={'tanks': 3},
                                      notes='Line one\nLine two, with a "quote"')
         self.tromso = self.make_site(name='Tromsø Grow-out', code='TG')
         self.tromso.soft_delete(self.admin)
@@ -509,7 +509,7 @@ class ExportTests(DatabaseViewerTestCase):
         self.assertEqual([row['name'] for row in rows], ['Alta Smolt', 'Bergen Hatchery'])
         bergen = rows[1]
         self.assertEqual(bergen['id'], str(self.bergen.pk))
-        self.assertEqual((bergen['latitude'], bergen['altitude'], bergen['is_deleted']), ('60.391300', '-5.50', 'false'))
+        self.assertEqual((bergen['latitude'], bergen['altitude'], bergen['is_deleted']), ('60.391300', '5.50', 'false'))
         self.assertEqual(bergen['lokalitetsnummer'], '')                # NULL
         self.assertEqual(bergen['facilities'], '{"tanks": 3}')
         self.assertEqual(bergen['notes'], 'Line one\nLine two, with a "quote"')
@@ -537,10 +537,11 @@ class ExportTests(DatabaseViewerTestCase):
         self.assertEqual(len(exported(self.download('sites'))), 153)
 
     def test_text_a_spreadsheet_would_run_is_marked_but_numbers_are_not(self):
-        self.make_site(name='=HYPERLINK("http://example.com")', code='X1', altitude='-7.00')
+        # A negative number (a site west of Greenwich; an altitude is never below 0, F-089) is a number, not a formula.
+        self.make_site(name='=HYPERLINK("http://example.com")', code='X1', latitude='60.000000', longitude='-7.000000')
         rows = {row['code']: row for row in exported(self.download('sites'))}
         self.assertEqual(rows['X1']['name'], '\'=HYPERLINK("http://example.com")')
-        self.assertEqual(rows['X1']['altitude'], '-7.00')
+        self.assertEqual(rows['X1']['longitude'], '-7.000000')
 
     def test_excel_can_read_its_encoding(self):
         self.assertTrue(b''.join(self.download('sites').streaming_content).startswith('﻿'.encode()))

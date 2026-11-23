@@ -13,9 +13,10 @@ Nothing here computes a figure of a report: that is reports/compute; this decide
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
-from django.conf import settings
 
 from django.db.models import Exists, OuterRef, Prefetch, Q
+
+from core.platform import correction_window_days
 
 from farm.health import diseases, notices
 from django.utils.translation import gettext as _, gettext_lazy
@@ -176,7 +177,7 @@ def _existing():
     return index
 
 
-def _row(kind, place, period, today, existing, event=None, agreed=None):
+def _row(kind, place, period, today, existing, event=None):
     """The row of a report owed, or None when it was filed already."""
     key = (kind, place.pk if isinstance(place, Site) else None,
            place.pk if kind == ReportKind.SLAUGHTER_PLANNED else None, period.start if period else None,
@@ -184,12 +185,7 @@ def _row(kind, place, period, today, existing, event=None, agreed=None):
     report = existing.get(key)
     if report is not None and report.submitted_at is not None or key in existing.closed:
         return None
-    rule = KINDS[kind].deadline
-    deadline = rule(period) if rule and period else None
-    if kind == ReportKind.SLAUGHTER_PLANNED:
-        deadline = compute.slaughter.deadline(place, period, deadline)
-        if agreed is not None:
-            deadline = max(deadline, agreed)      # a slaughter agreed late is reported as soon as it is agreed
+    deadline = compute.deadline_of(kind, place, period)          # the one deadline (F-101)
     return DueRow(kind, place, period, deadline, deadline is not None and today > deadline, report, event)
 
 
@@ -321,9 +317,9 @@ def _slaughter(today, existing, rows):
     """A planned slaughter per facility and week, from the first week the site reports (its reports-from date): the duty
     arises from the harvest, planned or done (restkontrollforskriften § 9a), so a harvest that was never planned owes it
     too, and a week stays owed after it has passed until the notice is filed or a person closes it with a reason."""
-    weeks, agreed = {}, {}
+    weeks = {}
+    # Open or done: a plan whose harvest was voided is planned again and still owed.
     plans = (HandlingPlanItem.objects.filter(kind=PlanKind.HARVEST, cancelled_reason='', facility__isnull=False)
-             .filter(Q(operation__isnull=True) | Q(operation__is_deleted=False))
              .select_related('facility', 'unit__production_department__site'))
     for item in plans:
         site = item.unit.production_department.site
@@ -331,19 +327,20 @@ def _slaughter(today, existing, rows):
             continue
         key = (item.facility_id, periods.Period.of(periods.WEEK, item.date))
         weeks[key] = item.facility
-        day = periods.oslo_today(item.created_at)
-        agreed[key] = min(agreed.get(key, day), day)
     lines = Prefetch('operation__movements', StockMovement.objects.select_related(
         'unit__production_department__site').order_by('id'))
-    for record in HarvestRecord.objects.select_related('facility', 'operation').prefetch_related(lines):
+    records = list(HarvestRecord.objects.select_related('facility', 'operation').prefetch_related(lines))
+    from_plans = compute.slaughter.plans_of(record.operation_id for record in records)   # owed with their plan
+    for record in records:
+        if record.operation_id in from_plans:
+            continue
         first = next(iter(record.operation.movements.all()), None)
         site = first.unit.production_department.site if first is not None else None
         if site is None or site.reports_from is None or record.operation.date < site.reports_from:
             continue
         weeks.setdefault((record.facility_id, periods.Period.of(periods.WEEK, record.operation.date)), record.facility)
-    for (facility_id, period), facility in weeks.items():
-        row = _row(ReportKind.SLAUGHTER_PLANNED, facility, period, today, existing,
-                   agreed=agreed.get((facility_id, period)))
+    for (_facility_id, period), facility in weeks.items():
+        row = _row(ReportKind.SLAUGHTER_PLANNED, facility, period, today, existing)
         if row is not None:
             rows.append(row)
 
@@ -399,9 +396,9 @@ def _unexplained(today, existing, rows):
 def no_longer_match(today=None):
     """The filed reports, not replaced by a correction, whose records have changed since they were filed. Only the rows a
     report reads are compared (compute.scope), never its figures; a report of a period that closed before the
-    STOCK_BACKDATE_DAYS window cannot change and is not read again, a notice (it has no period) always is."""
+    correction window (core.platform) cannot change and is not read again, a notice (it has no period) always is."""
     today = today or periods.oslo_today()
-    recent = today - timedelta(days=settings.STOCK_BACKDATE_DAYS)
+    recent = today - timedelta(days=correction_window_days())
     filed = (Report.objects.filter(submitted_at__isnull=False).exclude(snapshot__format_version=0)
              .filter(Q(period_start__isnull=True) | Q(period_start__gte=recent - timedelta(days=366)))   # a year at most
              .annotate(has_filed_correction=Exists(Report.objects.filter(corrects=OuterRef('pk'),
@@ -412,6 +409,7 @@ def no_longer_match(today=None):
         # A period older than the backdating window cannot change; a notice has no window and is always read again.
         if report.is_superseded or report.period and report.period.end < recent:
             continue
-        if compute.fingerprint(compute.scope(report)) != report.snapshot.sources_fingerprint:
+        scope = compute.scope(report, version=report.snapshot.scope_version)       # as it was filed
+        if compute.fingerprint(scope) != report.snapshot.sources_fingerprint:
             found.append(report)
     return found

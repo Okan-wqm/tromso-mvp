@@ -229,7 +229,7 @@ class NeedsTests(MonitoringCase):
     def test_a_card_says_its_template_and_why(self):
         found, _sql = self.cards(FISH_ONLY)
         self.assertEqual({card.template.why for card in found}, {resolve.GLOBAL})
-        self.assertEqual({card.template.template.name for card in found}, {'L3'})      # (three built-ins before it)
+        self.assertEqual({card.template.template.name for card in found}, {'L5'})      # (five built-ins before it)
 
 
 class BudgetWithTemplatesTests(MonitoringCase):

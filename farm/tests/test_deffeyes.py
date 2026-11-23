@@ -18,13 +18,15 @@ from django.utils import translation
 from core.models import Profile
 
 from ..models import WaterMeasurement
-from ..water import chemistry, deffeyes
+from ..water import chemistry, deffeyes, native
 from ..water.deffeyes import Limits, Target, Water, analyse
 from ..water.evaluate import Status
 from .helpers import role
 
 REFERENCE = json.loads((Path(__file__).parent / 'deffeyes_reference' / 'reference.json').read_text(encoding='utf-8'))
 H2S_PER_S = chemistry.H2S_PER_S
+# The isolines the source draws: every quarter pH from 4.25 to 12.5 (the core draws them, chemcore/core/src/geometry.rs).
+ISOLINE_PHS = [round(4.25 + 0.25 * step, 2) for step in range(34)]
 
 
 def setUpModule():
@@ -71,12 +73,18 @@ class ConstantTests(SimpleTestCase):
         self.assertAlmostEqual(-math.log10(chemistry.k2_sws(25, 35) * to_total), 8.9660, delta=0.01)
 
     def test_water_and_boric_acid_are_the_handbooks_check_values(self):
-        # DOE (1994) Handbook of methods, ch. 5, and Dickson et al. (2007), at S 35 and 25 °C, total scale:
-        # ln Kw = −30.434 (Millero 1995), ln KB = −19.7964 (Dickson 1990).
+        # Dickson, Sabine & Christian (2007), Guide to Best Practices, ch. 5, at S 35 and 25 °C, total scale: ln Kw =
+        # −30.434 (eq. 62: Millero's 1995 expression with 0.015 taken from its constant, footnote 5; formula 1's
+        # `kw_total`), ln KB = −19.7964 (Dickson 1990). Millero's own, on his seawater scale (formula 3's `kw_sws`), is
+        # therefore −30.434 + 0.015.
         self.assertAlmostEqual(math.log(chemistry.kw_total(25, 35)), -30.434, delta=0.001)
+        self.assertAlmostEqual(math.log(native.kw_sws(25, 35)), -30.419, delta=0.001)
         self.assertAlmostEqual(math.log(chemistry.kb_total(25, 35)), -19.7964, delta=0.0001)
-        # In pure water: pKw 13.995 (Harned & Owen 1958) and pKB 9.237 (Manov et al. 1944) at 25 °C.
-        self.assertAlmostEqual(-math.log10(chemistry.kw_total(25, 0)), 13.995, delta=0.01)
+        # In pure water at 25 °C: pKw 13.995 (the value this test has always held; Harned & Owen 1958 print 13.9965),
+        # which Millero's expression gives at S 0 (13.9946) and the Guide's shifted constant misses by 0.006 (14.0012);
+        # pKB 9.237 (Manov et al. 1944).
+        self.assertAlmostEqual(-math.log10(native.kw_sws(25, 0)), 13.995, delta=0.001)
+        self.assertAlmostEqual(-math.log10(chemistry.kw_total(25, 0)), 14.0012, delta=0.0001)
         self.assertAlmostEqual(-math.log10(chemistry.kb_total(25, 0)), 9.237, delta=0.002)
 
     def test_hydrogen_sulfide_is_milleros(self):
@@ -107,11 +115,16 @@ class ConstantTests(SimpleTestCase):
 class DerivedTests(SimpleTestCase):
     def test_free_co2_follows_standard_methods(self):
         # Standard Methods 4500-CO₂ D (APHA): in fresh water at 25 °C, free CO₂ (mg/L) = 2.0 B 10^(6.0 − pH), with
-        # B the bicarbonate alkalinity in mg/L as CaCO₃ (all of it below pH 8.3); the 2.0 is rounded: within 3 %.
+        # B the bicarbonate alkalinity in mg/L as CaCO₃ (all of it below pH 8.3); the 2.0 is rounded: within 3 %. The
+        # equation takes every activity as 1 (no ionic strength): formula 1's convention, the basis CO₂ limits are judged
+        # on. Formula 3 gives the water its own ionic strength (here the alkalinity's, I 0.002) and less CO₂ by the
+        # activities, said beside the judged one, the larger (cross review F1).
         for ph in (6.5, 7.0, 7.5, 8.0):
             with self.subTest(ph=ph):
-                result = analyse(Water(25, 0, ph, 100))
+                result = analyse(Water(25, 0, ph, 100, formula=1))
                 self.assertAlmostEqual(result.co2_mg_l / (2.0 * 100 * 10 ** (6.0 - ph)), 1, delta=0.03)
+                self.assertLess(analyse(Water(25, 0, ph, 100)).co2_corrected_mg_l, result.co2_mg_l)
+                self.assertEqual(analyse(Water(25, 0, ph, 100)).co2_mg_l, result.co2_mg_l)    # judged on it (F1)
 
     def test_co2_rises_as_the_ph_falls_at_a_fixed_alkalinity(self):
         for temp_c in (0, 12, 30):
@@ -190,7 +203,7 @@ class SourceReferenceTests(SimpleTestCase):
     @staticmethod
     def run_row(row):
         water = Water(row['temperature_c'], row['salinity_ppt'], row['ph'], row['alkalinity_mg_l'], row['tan_mg_l'],
-                      row['total_sulfide_ug_l'])
+                      row['total_sulfide_ug_l'], formula=1)       # the source's engine is formula 1's convention
         limits = Limits(row['nh3_n_limit'], row['co2_limit'], row['h2s_limit'], row['alkalinity_low'],
                         row['alkalinity_high'])
         return analyse(water, limits, Target(row['target_ph'], row['target_alkalinity_mg_l']))
@@ -253,14 +266,14 @@ class SourceReferenceTests(SimpleTestCase):
     def test_the_chart_draws_what_the_source_draws(self):
         for case in REFERENCE['geometry']:
             water = Water(case['temperature_c'], case['salinity_ppt'], case['ph'], case['alkalinity_mg_l'],
-                          case['tan_mg_l'], case['total_sulfide_ug_l'], case['calcium_mg_l'])
+                          case['tan_mg_l'], case['total_sulfide_ug_l'], case['calcium_mg_l'], formula=1)
             limits = Limits(case['nh3_n_limit'], case['co2_limit'], case['h2s_limit'], case['alkalinity_low'],
                             case['alkalinity_high'])
             result = analyse(water, limits, Target(case['target_ph'], case['target_alkalinity_mg_l']))
             eq = result.equilibria
             with self.subTest(temperature=case['temperature_c'], salinity=case['salinity_ppt'], ph=case['ph']):
                 # The isolines (the source rounds its points to 4 decimals): their ends at DIC 0 and 8.
-                self.assertEqual([isoline[0] for isoline in case['isolines']], deffeyes.ISOLINE_PHS)
+                self.assertEqual([isoline[0] for isoline in case['isolines']], ISOLINE_PHS)
                 for ph, at_zero, end, at_end in case['isolines']:
                     slope, intercept = eq.isoline(ph)
                     self.assertClose(intercept, at_zero, absolute=1e-4)
@@ -412,7 +425,14 @@ class GeometryTests(SimpleTestCase):
         for dic, alkalinity in shape.regions['h2s']:
             if dic > 1e-9 and alkalinity > 1e-9:
                 self.assertLessEqual(eq.ph_at(dic, alkalinity), result.h2s.ph + 1e-9)
-        co2 = 15 / chemistry.MG_CO2_PER_MMOL
+        # The CO₂ curve is drawn in the water's own constants at the limit over the bicarbonate-range ratio of the limits'
+        # basis to its own CO₂, K1 10^offset over the basis's (Equilibria::co2_chart_ratio, cross review F1): a ratio of the
+        # equilibria alone, so a replay page still shares one diagram among frames equal but for pH and alkalinity
+        # (sensors.tests.test_page_share); the judged CO₂ on the curve within 1.5 % of the limit.
+        basis = eq.limits_equilibria()
+        ratio = eq.k1 * 10 ** eq.ph_offset / (basis.k1 * 10 ** basis.ph_offset)
+        co2 = 15 / ratio / chemistry.MG_CO2_PER_MMOL
+        self.assertLess(co2, 15 / chemistry.MG_CO2_PER_MMOL)
         for dic, alkalinity in shape.regions['co2']:
             ph = eq.ph_at(dic, alkalinity)
             if ph is not None:
@@ -422,6 +442,8 @@ class GeometryTests(SimpleTestCase):
             ph = eq.ph_at(dic, alkalinity)
             if alkalinity > 1e-9:
                 self.assertAlmostEqual(eq.co2(dic, ph) / co2, 1, places=8)
+                judged = eq.co2_judged(alkalinity, ph)[0] * chemistry.MG_CO2_PER_MMOL
+                self.assertAlmostEqual(judged / 15, 1, delta=0.015)
         for key in ('nh3', 'h2s'):
             border = getattr(result, key).ph
             for dic, alkalinity in shape.boundaries[key][0]:
@@ -467,7 +489,12 @@ class GeometryTests(SimpleTestCase):
         sea = analyse(Water(25, 35, 8.1, 115, calcium_mg_l=412), Limits())
         shape = deffeyes.geometry(sea)
         self.assertTrue(shape.omega['calcite'] and shape.omega['aragonite'])
-        carbonate = sea.equilibria.ksp_calcite / (412 / chemistry.MG_CALCIUM_PER_MOL) * 1000
+        # On the line the carbonate (mmol/L) times the calcium (mol/L) is the Ksp per litre: Mucci's per-kg² Ksp times
+        # the square of the sea water's density (the correction of 2026-11-10; the per-kg Ksp alone put the line where Ω
+        # is 1 / ρ², 0.955 at S 35 and 25 °C).
+        density = native.seawater_density(25.0, 35.0)
+        self.assertAlmostEqual(density, 1.023343, delta=1e-6)
+        carbonate = sea.equilibria.ksp_calcite * density ** 2 / (412 / chemistry.MG_CALCIUM_PER_MOL) * 1000
         for line in shape.omega['calcite']:
             for dic, alkalinity in line[1:-1]:
                 ph = sea.equilibria.ph_at(dic, alkalinity)
@@ -556,8 +583,10 @@ class GeometryTests(SimpleTestCase):
         self.assertIn({'key': 'nh3', 'name': 'NH₃ toxic (at every pH of the chart)'}, deffeyes.draw(result).legend)
         # Inside the range the border is a number with its margin.
         html = table(default_analysis().nh3)
-        self.assertIn('8.040', html)
-        self.assertIn('+1.04', html)
+        # Judged on the larger NH₃, here the ideal share its limit was set on (cross review F1): 7.986; formula 3's
+        # activity-corrected share alone would put it at 8.045, formula 1 at 8.040.
+        self.assertIn('7.986', html)
+        self.assertIn('+0.99', html)
 
     def assert_shaded_where_passed(self, result, key, toxic):
         """Points sampled over the box: a point whose pH passes the border (`toxic(ph)`) is in the region,
@@ -580,7 +609,8 @@ class GeometryTests(SimpleTestCase):
     def test_a_border_off_the_charts_range_is_shaded_where_it_meets_a_large_box(self):
         # The reviewer's case, which the form accepts: in a 35 × 22 box the top-left corner reaches pH 13.3,
         # past an NH₃ border of 13.08; the table says it in words, the chart shades the sliver.
-        result = analyse(Water(0, 0, 7.0, 1000, 0.100, 2), Limits(0.0999, 15, 2, 50, 1000))
+        # (formula 1, as the reviewer drew it: formula 3's ionic strength moves the border to 13.14 and the box to 30)
+        result = analyse(Water(0, 0, 7.0, 1000, 0.100, 2, formula=1), Limits(0.0999, 15, 2, 50, 1000))
         self.assertTrue(result.nh3.off_chart)
         self.assertAlmostEqual(result.nh3.ph, 13.084, places=3)
         self.assertEqual((deffeyes.box_of(result).dic, deffeyes.box_of(result).alkalinity), (35, 22))
@@ -631,14 +661,14 @@ class GeometryTests(SimpleTestCase):
                 # Every isoline that crosses the chart; the others pass wholly above it (at 12 °C pH 12.25 and
                 # 12.5, their hydroxide alone more than 6 meq/L) or below it (pH 4.25).
                 drawn = {float(ph) for ph in re.findall(r'class="deffeyes-isoline[^"]*" data-ph="([\d.]+)"', html)}
-                hidden = set(deffeyes.ISOLINE_PHS) - drawn
+                hidden = set(ISOLINE_PHS) - drawn
                 self.assertEqual(len(drawn) + len(hidden), 34)
                 self.assertEqual(hidden, {4.25, 12.25, 12.5})
                 for ph in hidden:
                     slope, intercept = result.equilibria.isoline(ph)
                     self.assertTrue(intercept > 6 or slope * 6 + intercept < 0, ph)
         self.assertIn('pH 7,0', html)                                # the labels in the language
-        self.assertIn('pH &gt; 8,04', html)
+        self.assertIn('pH &gt; 7,99', html)
 
 
 # ---- the page --------------------------------------------------------------------------------------------
@@ -655,8 +685,10 @@ class CalculatorPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         html = response.content.decode()
         for text in ('Water Quality Management Chart', '<svg class="deffeyes-chart"', 'Carbon dioxide (CO₂)',
-                     'NH₃ toxic (pH &gt; 8.04)', 'CO₂ toxic (&gt; 15 mg/L)', 'H₂S toxic (pH &lt; 5.91)',
-                     '1.982 mmol/L', '16.94 mg/L', 'wq-critical'):
+                     'NH₃ toxic (pH &gt; 7.99)', 'CO₂ toxic (&gt; 15 mg/L)', 'H₂S toxic (pH &lt; 5.93)',
+                     '1.987 mmol/L', '19.62 mg/L', '17.12 mg/L', 'wq-critical', 'data-formula="4"'):
+            # formula 4 (fresh water judged as formula 3 judged it); NH₃ and CO₂ judged on the larger, the limits' basis (cross review F1): CO₂ 19.62 mg/L, the
+            # activity-corrected 17.12 said beside it
             self.assertIn(text, html)
         self.assertContains(response, f'href="{self.url}" aria-current="page"')
         self.assertContains(response, f'href="{reverse("farm:water")}" title="Water chemistry" aria-current="page"')
@@ -700,12 +732,12 @@ class CalculatorPageTests(TestCase):
 
     def test_the_water_page_has_the_calculator_tab(self):
         response = self.client.get(reverse('farm:water'))
-        self.assertContains(response, f'<a class="view-tab" href="{self.url}">Calculator</a>', html=True)
+        self.assertContains(response, f'<a class="ui-tab" href="{self.url}">Calculator</a>', html=True)
 
     def test_it_speaks_each_language(self):
         for language, words in {
-            'tr': ('Su Kalitesi Yönetim Çizelgesi', 'Hesaplayıcı', '1,982 mmol/L', 'pH 7,0'),
-            'nb': ('Diagram for styring av vannkvalitet', 'Kalkulator', '1,982 mmol/L', 'pH 7,0'),
+            'tr': ('Su Kalitesi Yönetim Çizelgesi', 'Hesaplayıcı', '1,987 mmol/L', 'pH 7,0'),
+            'nb': ('Diagram for styring av vannkvalitet', 'Kalkulator', '1,987 mmol/L', 'pH 7,0'),
         }.items():
             Profile.objects.update_or_create(user=self.user, defaults={'language': language})
             response = self.client.get(self.url)

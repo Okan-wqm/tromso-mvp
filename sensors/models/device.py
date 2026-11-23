@@ -26,8 +26,10 @@ TOPIC_RULES = (
 class Device(CodedMixin, AuditedModel):
     """A field device that publishes on one topic of a connection: a probe, a PLC, a gateway for one instrument. Its
     channels are the values it sends. The topic may hold one '+' (a level the device fills, e.g. its serial number);
-    the device is still this row. A device belongs to a site; it may be the instrument a piece of equipment lists, and
-    then a deleted piece of equipment leaves the device in place, its history kept. A device that sends nothing for
+    the device is still this row. A device is at one site at a time: while placed (its channels bound), the site of its
+    place, followed by a move (sensors/bindings.py `move_device`) and held by the database (migration 0007); out of the
+    water, the site it was taken out at. It may be the instrument a piece of equipment lists, and then a deleted piece of
+    equipment leaves the device in place, its history kept. A device that sends nothing for
     three times its expected interval is offline."""
 
     connection = models.ForeignKey(Connection, on_delete=models.CASCADE, related_name='devices',

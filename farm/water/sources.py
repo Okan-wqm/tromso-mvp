@@ -4,15 +4,21 @@ point (`(POINT, pk)`) or a system (`(SYSTEM, pk)`, a measurement of the system's
 for a point, and in which order, is decided in one place only: farm/water/read.py (`latest` and `Series`), owner rule
 A1. This module only gathers the providers' answers.
 
-A provider is an object with three methods:
+A provider is an object with three methods, and a fourth it may have:
 
     latest(targets, now) -> {target: {code: [SensorValue]}}
         every usable channel's newest good value (stale ones too: the reader decides), primary channels first;
     value_at(targets, code, moment) -> {target: [SensorValue]}
         each channel's newest good value at or before `moment`, from the channels bound to the target at that time.
+    values_at(targets, code, moments) -> [{target: [SensorValue]}]   (optional)
+        `value_at` at each of several moments, in their order, in one ask (a reader that knows the moments it will
+        look up asks once, not once per moment); a provider without it is asked `value_at` per moment.
     bound(targets, code, since, until) -> {target}
         the targets with a channel of the parameter bound there at some time in the range (one cheap ask, so a series
         never asks per moment for a place nothing was bound to).
+
+A pH value carries its channel's scale and the moment that scale holds from (SensorValue): the provider says what the
+channel is set to, the farm decides what the value is on the NBS scale (farm/water/read.py, Context.sensor_ph).
 
 A provider that raises is left out of the answer and the answer says so (`failed`): the pages then say that the live
 values could not be read, and show what the samples give. Each provider runs in its own savepoint, so a database error
@@ -35,13 +41,17 @@ _providers = []
 @dataclass(frozen=True)
 class SensorValue:
     """One channel's value of one water parameter: the value in the parameter's unit, when it was measured, how long it
-    counts as fresh (seconds), the channel's role at its target and its number."""
+    counts as fresh (seconds), the channel's role at its target and its number. A pH channel's value says its channel's
+    scale (`ph_scale`: '' for NBS, else a farm.models.water.PhScale code) and since when that scale holds
+    (`ph_scale_from`: None, since the channel was made): farm/water/read.py puts it on the NBS scale, never here."""
     code: str
     value: float
     at: datetime
     fresh_for: int
     role: str
     channel_no: int
+    ph_scale: str = ''
+    ph_scale_from: datetime | None = None
 
 
 @dataclass(frozen=True)
@@ -96,6 +106,33 @@ def value_at(targets, code, moment):
     if not targets or not _providers:
         return Answer({})
     return _ask('value_at', targets, code, moment)
+
+
+def values_at(targets, code, moments):
+    """The providers' values of one parameter at each of `moments`, for the targets: [Answer] in the moments' order,
+    one ask of each provider for all of them (`value_at` per moment for a provider that cannot answer several). A
+    provider that raises is left out of EVERY moment's answer, and each says so: one ask, one failure, not one moment's.
+    A reader that wants a failure to cost only the moments it hits asks again, moment by moment, for those whose answer
+    failed (`Series.prefetch` leaves them to `Series._live`)."""
+    targets, moments = list(dict.fromkeys(targets)), list(moments)
+    if not targets or not _providers or not moments:
+        return [Answer({}) for _moment in moments]
+    merged, failed = [{} for _moment in moments], False
+    for provider in list(_providers):
+        try:
+            with transaction.atomic():
+                if hasattr(provider, 'values_at'):
+                    found = provider.values_at(targets, code, moments)
+                else:
+                    found = [provider.value_at(targets, code, moment) for moment in moments]
+        except Exception:                                        # fail open, and say so
+            logger.exception('A water source (%r) failed; its values are left out.', provider)
+            failed = True
+            continue
+        for slot, answer in zip(merged, found):
+            for target, values in answer.items():
+                slot.setdefault(target, []).extend(values)
+    return [Answer(slot, failed) for slot in merged]
 
 
 def ordered(values):

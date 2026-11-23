@@ -1,9 +1,7 @@
 from datetime import date, time
 
-from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import ProtectedError
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
@@ -12,7 +10,7 @@ from core.models import AuditLog
 from farm.models import ProductionDepartment, Site
 
 from .. import read, services
-from ..models import Employee, Holiday, Posting, SchedulingSettings, Shift, ShiftAssignment
+from ..models import Employee, Holiday, SchedulingSettings, Shift, ShiftAssignment
 from ..units import token
 from .helpers import PRIVATE, fields_of, user
 from .helpers_people import PeopleTestCase, TOP, employee, place
@@ -194,6 +192,14 @@ class PlanShiftsTests(RosterTestCase):
         self.assertEqual(ShiftAssignment.objects.count(), 0)
         services.plan_shifts(self.planner, [(self.in_a, days[0])], None)               # planned off
         self.assertIsNone(ShiftAssignment.objects.get().shift)
+
+    def test_clearing_a_selection_with_empty_cells_clears_the_filled_ones_and_logs_only_them(self):
+        # F-024: a mixed selection reached the write of an empty cell and failed the whole action.
+        filled, empty = date(2026, 3, 2), date(2026, 3, 3)
+        services.plan_shifts(self.planner, [(self.in_a, filled)], self.early)
+        services.plan_shifts(self.planner, [(self.in_a, filled), (self.in_a, empty)], services.CLEAR)
+        self.assertEqual(ShiftAssignment.objects.count(), 0)
+        self.assertEqual(AuditLog.objects.filter(entity_type='plan', action='delete').count(), 1)
 
     def test_one_person_outside_the_team_stops_the_whole_batch(self):
         before = self.state()
@@ -394,4 +400,4 @@ class RosterUrlTests(RosterTestCase):
         self.assertEqual(ShiftAssignment.objects.count(), 0)
         # no verb: refused
         self.client.force_login(user('reader2', 'view_shiftassignment', group='Reader2'))
-        self.assertEqual(self.client.post(reverse('hr:production_roster_plan'), post).status_code, 404)    # nobody's team
+        self.assertEqual(self.client.post(reverse('hr:production_roster_plan'), post).status_code, 403)    # no right to plan: refused before the request is read

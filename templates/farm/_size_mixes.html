@@ -1,0 +1,4 @@
+{% load i18n stock %}{% comment %} The batches of one species in a unit further apart in weight than the species' size limit (UnitStock.size_mixes,
+   farm/stock/sizes.py): a warning chip each, with the heaviest and the lightest lot and the limit, at the weights the
+   page shows (the meal board's estimates, Production units' measured weights with their day). `mixes`: the list; none:
+   nothing. {% endcomment %}{% for mix in mixes %}<span class="ui-mt"><span class="ui-chip ui-chip-wrap" data-status="warning" title="{{ mix.heavy.code }} · {{ mix.light.code }}">{% include "icons/_icon.html" with name="alert" %}<span>{% blocktrans trimmed with heavy=mix.heaviest.text light=mix.lightest.text limit=mix.limit|times %}Mixed sizes: {{ heavy }} and {{ light }} (limit {{ limit }}){% endblocktrans %}</span></span></span>{% endfor %}

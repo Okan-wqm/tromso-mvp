@@ -35,6 +35,12 @@ NOTE = gettext_lazy('Note')
 # What the activity log keeps of a task, besides its place.
 LOGGED = ['title', 'description', 'category', 'priority', 'status', 'due_date', 'due_time']
 LOGGED_AFTER = ['batch', 'assignees', 'started_by', 'completed_by', 'completion_note', 'cancelled_by', 'cancel_reason']
+# A person's free text on a task: the log says that it was given, replaced or cleared, never its words (it may name a
+# person, and nobody can erase from the log; owner decision F-061, 2026-11-10). A task's note (`add_note`) is kept the
+# same way. The words stay on the task, for who reads it: also after a reopening, which clears the completion note and
+# the reason on the task and keeps each as a note (`reopen`).
+PRIVATE = ('description', 'completion_note', 'cancel_reason')
+SERIES_PRIVATE = ('description',)     # a recurring task's description is the same free text
 SERIES_LOGGED = ['title', 'description', 'category', 'priority']
 SERIES_LOGGED_AFTER = ['assignees', 'frequency', 'interval', 'weekdays', 'day_of_month', 'due_time', 'starts_on',
                        'ends_on', 'is_active']
@@ -50,15 +56,15 @@ def place_text(place):
 
 def snapshot(task):
     """What the activity log compares for a task; build it inside audit.source_language()."""
-    values = audit.snapshot(task, LOGGED)
+    values = audit.snapshot(task, LOGGED, private=PRIVATE)
     values[str(LOCATION)] = place_text(task.place)
-    values.update(audit.snapshot(task, LOGGED_AFTER))
+    values.update(audit.snapshot(task, LOGGED_AFTER, private=PRIVATE))
     return values
 
 
 def series_snapshot(series):
     """What the activity log compares for a recurring task; build it inside audit.source_language()."""
-    values = audit.snapshot(series, SERIES_LOGGED)
+    values = audit.snapshot(series, SERIES_LOGGED, private=SERIES_PRIVATE)
     values[str(LOCATION)] = place_text(series.place)
     values.update(audit.snapshot(series, SERIES_LOGGED_AFTER))
     return values
@@ -150,7 +156,10 @@ def cancel(user, task, reason):
 
 def reopen(user, task):
     """Done or cancelled → open, the completion, the cancellation and the start cleared (the source left the
-    completer on a reopened task until it fixed it, FARM-HIGH-056). Needs Edit on tasks."""
+    completer on a reopened task until it fixed it, FARM-HIGH-056). Needs Edit on tasks. What the person wrote when
+    they closed it (the completion note, the reason for cancelling) is not lost with the clearing: each is kept on the
+    task as a note by its writer, marked as what it was (TaskNote.kind). The log has only their digests, so this is
+    where the words live on; only the erasure procedure removes them (docs/erasure.md)."""
     with transaction.atomic():
         task = _locked(task)
         if not user.has_perm(EDIT):
@@ -158,6 +167,10 @@ def reopen(user, task):
         if task.status in OPEN_STATUSES:
             raise ValidationError({NON_FIELD_ERRORS: _('This task is open already.')})
         before = _before(task)
+        for kind, words, writer in ((TaskNote.Kind.COMPLETION_NOTE, task.completion_note, task.completed_by),
+                                    (TaskNote.Kind.CANCEL_REASON, task.cancel_reason, task.cancelled_by)):
+            if words.strip():
+                TaskNote.objects.create(task=task, author=writer or user, body=words, kind=kind)
         task.status = Status.OPEN
         task.started_at = task.started_by = task.completed_at = task.completed_by = None
         task.cancelled_at = task.cancelled_by = None
@@ -188,8 +201,9 @@ def tick(user, item, done):
 
 
 def add_note(user, task, body):
-    """A note on the task, kept for good (never edited or removed) and logged with its text: task notes are
-    part of the work record."""
+    """A note on the task, kept on it for good (never edited or removed: task notes are part of the work record). The
+    activity log says that a note was added, by whom and when, with the keyed digest of its text and never the text
+    (core.audit.private): the words are read on the task, and the log, which nobody can erase from, holds none."""
     body = body.strip()
     if not body:
         raise ValidationError({'body': _('Write the note first.')})
@@ -199,7 +213,7 @@ def add_note(user, task, body):
         task = _locked(task)
         note = TaskNote.objects.create(task=task, author=user, body=body)
         with audit.source_language():
-            audit.record(user, AuditLog.Action.UPDATE, task, {str(NOTE): [None, body]})
+            audit.record(user, AuditLog.Action.UPDATE, task, {str(NOTE): [None, audit.private(body)]})
         return note
 
 

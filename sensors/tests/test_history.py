@@ -4,7 +4,8 @@ value from after it, a moved sensor counting for the tank it was in then), a sys
 point on the diagram from the hour tier, the channel that feeds each input, and binding a channel from a card's place
 through the Move dialog."""
 import json
-from datetime import datetime, timedelta, timezone as tz
+import re
+from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -15,7 +16,7 @@ from django.utils import timezone
 from farm.models import System
 from farm.tests.helpers import point_of, role
 from farm.tests.test_stock import make_unit
-from farm.water import calculation, chemistry, read as water_read, services as water_services
+from farm.water import calculation, chemistry, deffeyes, read as water_read, services as water_services
 
 from sensors import bindings, trail
 from sensors.models import Binding
@@ -97,7 +98,7 @@ class PastMomentTests(HistoryCase):
         page = self.client.get(reverse('farm:water_unit_chart', args=[self.t1.pk]), {'at': local})
         self.assertEqual(page.status_code, 200)
         self.assertContains(page, '7.31')
-        self.assertRegex(page.content.decode(), r'unit sensor #\d+ · 2\s?minutes ago')
+        self.assertRegex(re.sub(r'<[^>]+>', '', page.content.decode()), r'unit sensor #\d+ · 2\s?minutes ago')
         self.assertEqual(self.client.get(reverse('farm:water_unit_chart', args=[self.t1.pk]),
                                          {'at': 'yesterday'}).status_code, 400)
 
@@ -138,7 +139,7 @@ class TrailTests(HistoryCase):
             expected_ph = 7.0 + hour * 0.1 + (0.010 + 0.040) / 2
             self.assertEqual(point.at, start + timedelta(hours=hour))
             self.assertAlmostEqual(point.ph, expected_ph, places=9)
-            eq = chemistry.equilibria(10.0, 0.0)
+            eq = chemistry.water_equilibria(10.0, 0.0, 100.0)                    # formula 3: the alkalinity's ions
             self.assertAlmostEqual(point.dic, eq.dic(100 / chemistry.MG_CACO3_PER_MEQ, expected_ph), places=9)
         self.assertEqual(found.missing, [])
 
@@ -151,6 +152,53 @@ class TrailTests(HistoryCase):
         found = trail.trail(self.t1, start, self.now)
         self.assertEqual([point.at for point in found.points], [start])
         self.assertEqual(found.missing, [start + timedelta(hours=1)])
+
+    def test_an_hour_whose_ph_and_alkalinity_cannot_go_together_is_listed_never_drawn(self):
+        """The core refuses a water below the alkalinity floor of its pH (the correction of 2026-11-10): the trail lists
+        that hour as impossible; before, it drew a point with a DIC below 0."""
+        start = self.now - timedelta(hours=2)
+        insert(self.ph.channel_no, [(start + timedelta(minutes=10), 7.2), (start + timedelta(hours=1, minutes=10), 11.5)])
+        insert(self.channel.channel_no, [(start + timedelta(hours=hour, minutes=5), 10.0) for hour in range(2)])
+        self.sample(self.mid1, start - timedelta(days=1), alkalinity_mg_l='20', salinity_ppt='0')
+        self.assertTrue(deffeyes.why_impossible(10.0, 0.0, 11.5, 20.0))
+        found = trail.trail(self.t1, start, self.now)
+        self.assertEqual([point.at for point in found.points], [start])
+        self.assertEqual(found.impossible, [start + timedelta(hours=1)])
+        self.assertEqual(found.missing, [])
+        self.assertTrue(all(point.dic > 0 for point in found.points))
+        user = get_user_model().objects.create_user('reader', 'reader@example.com', 'x')
+        user.groups.add(role('Reader', 'view_watermeasurement'), role('Readings', 'view_reading'))
+        self.client.force_login(user)
+        response = self.client.get(reverse('sensors:trail'), {'target': f'unit:{self.t1.pk}', 'range': '6h'})
+        self.assertEqual(response.status_code, 200)
+        answer = json.loads(response.content)
+        self.assertEqual(answer['impossible'], [(start + timedelta(hours=1)).isoformat()])
+        self.assertEqual(len(answer['points']), 1)
+
+    def test_an_hour_the_core_refuses_is_listed_with_its_reason_never_a_server_error(self):
+        """The review's R1: a stored conductivity past the Davies range on a fresh water. The trail lists the hour with
+        the core's reason (deffeyes.unworkable, the gate a unit's chart asks); before, the whole trail raised."""
+        start = self.now - timedelta(hours=2)
+        insert(self.ph.channel_no, [(start + timedelta(hours=hour, minutes=10), 7.2) for hour in range(2)])
+        insert(self.channel.channel_no, [(start + timedelta(hours=hour, minutes=5), 12.0) for hour in range(2)])
+        self.sample(self.mid1, start - timedelta(days=1), alkalinity_mg_l='80', salinity_ppt='0',
+                    conductivity_25_us_cm='40000')
+        why = deffeyes.unworkable(12.0, 0.0, 80.0, conductivity_25_us_cm=40000.0)
+        self.assertIn('Cannot be worked out: ionic strength above 0.5', why)
+        found = trail.trail(self.t1, start, self.now)
+        self.assertEqual(found.points, [])
+        self.assertEqual(found.missing, [])
+        self.assertEqual(found.impossible, [])
+        self.assertEqual(found.unworkable, [(start, why), (start + timedelta(hours=1), why)])
+        user = get_user_model().objects.create_user('reader', 'reader@example.com', 'x')
+        user.groups.add(role('Reader', 'view_watermeasurement'), role('Readings', 'view_reading'))
+        self.client.force_login(user)
+        response = self.client.get(reverse('sensors:trail'), {'target': f'unit:{self.t1.pk}', 'range': '6h'})
+        self.assertEqual(response.status_code, 200)
+        answer = json.loads(response.content)
+        self.assertEqual(answer['unworkable'], [{'at': start.isoformat(), 'why': why},
+                                                {'at': (start + timedelta(hours=1)).isoformat(), 'why': why}])
+        self.assertEqual(answer['points'], [])
 
     def test_the_trail_endpoint_needs_both_rights_and_gives_the_points(self):
         start = self.now - timedelta(hours=1)
@@ -182,3 +230,16 @@ class BindFromMonitoringTests(HistoryCase):
         local = timezone.localtime(self.now - timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M')
         self.client.post(reverse('sensors:binding_create'), {**query, 'role': 'primary', 'valid_from': local})
         self.assertEqual(Binding.objects.get(channel=spare).point, self.mid2)
+
+
+class TrailOneRuleTests(HistoryCase):
+    def test_each_hour_picks_by_the_one_rule_the_units_own_fresh_sample_before_the_systems_sensor(self):
+        """The trail reads each input of an hour by `farm.water.read.choose` (owner rule A9) at the hour's end: the
+        unit's own fresh temperature sample comes before the system's sensor, never sensor-before-sample (A1)."""
+        start = self.now - timedelta(hours=3)
+        insert(self.ph.channel_no, [(start + timedelta(hours=hour, minutes=10), 7.2) for hour in range(3)])
+        insert(self.channel.channel_no, [(start + timedelta(hours=hour, minutes=5), 10.0) for hour in range(3)])
+        self.sample(self.mid1, start - timedelta(days=1), alkalinity_mg_l='100', salinity_ppt='0')
+        self.sample(self.mid1, start + timedelta(minutes=30), temperature_c='9.0')
+        found = trail.trail(self.t1, start, self.now)
+        self.assertEqual([point.temperature_c for point in found.points], [9.0, 9.0, 9.0])

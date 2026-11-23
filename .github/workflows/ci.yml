@@ -1,0 +1,365 @@
+# Continuous integration (README, CI and dependency updates). Every job runs what a developer runs locally:
+#   python    the browser build (static/js, which `check` asks for), then scripts/test.sh with CHECKS=1: the project
+#             checks (the linter first: ruff, errors only, ruff.toml), in the test runner's image
+#             (scripts/testrunner/image.sh) on a TimescaleDB server of its own, then
+#             the catalogs must be unchanged. On a pull request that is all (SUITE=0, minutes); the whole suite (an
+#             hour or more on a hosted runner) runs on a push to main, nightly and by hand
+#   frontend  npm ci, the Tailwind build checked against the committed static/css/tw.css, the tokens against tokens.json,
+#             the design-system gate (npm run check:ds), the browser build (tokens, tsc, Tailwind) and the TypeScript
+#             tests (npm test)
+#   rust      sensors-ingest: rustfmt, clippy, the tests against the real schema and a broker, cargo deny, THIRD_PARTY
+#   chemcore  chemcore/scripts/test.sh in the chemcore-tools stage of docker/testrunner.Dockerfile
+#   security  pip-audit, the Python licence gate, npm audit
+# No secret is used: the database passwords are throwaway values that live only inside a job, and the layer cache is
+# GitHub's own (the job's token, nothing configured).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # Nightly at 06:30 UTC: after 06:00, as monitoring's golden-card tests (G-03) fail before 06:00 UTC until their fix
+  # lands on main.
+  schedule:
+    - cron: "30 6 * * *"
+  # By hand on any branch (tools/ci_run.sh): the whole CI, or with `labels` the checks and only those Django test labels.
+  workflow_dispatch:
+    inputs:
+      labels:
+        description: "Django test labels to run instead of the whole suite (letters, digits, _ . and spaces)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+# One run per pull request (a newer push cancels the older run); runs on main (a push, the nightly, by hand) are never
+# cancelled, and each event has a group of its own.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "22"
+  # docker/build-push-action uploads every build's record as an artifact, on every run of three jobs: that filled the
+  # account's artifact storage ("Artifact storage quota has been hit"). A job keeps its image build's record only when
+  # that build failed, for 3 days (the step "Build record of the failed image build"); the job summary stays.
+  DOCKER_BUILD_RECORD_UPLOAD: "false"
+
+jobs:
+  # One job on every event, only SUITE differs: 0 on a pull request (the checks), 1 otherwise (the checks and the suite).
+  python:
+    name: ${{ github.event_name == 'pull_request' && 'Django checks' || 'Django checks and the whole suite' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: ${{ github.event_name == 'pull_request' && 30 || 150 }}
+    env:
+      SUITE: ${{ github.event_name == 'pull_request' && '0' || '1' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The compiled browser code (static/js, not committed): without it `check` fails on core.W001, as a server would
+      # start without its scripts.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Browser build (npm ci, npm run build)
+        run: |
+          npm ci
+          npm run build
+
+      # The image scripts/test.sh runs the tests in, as scripts/testrunner/image.sh defines it (Dockerfile, stage,
+      # context, tag), built here with its layers cached between runs, so the script finds it and builds nothing.
+      - name: Test runner image (scripts/testrunner/image.sh)
+        id: image
+        run: sh scripts/testrunner/image.sh >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        id: build
+        with:
+          context: ${{ steps.image.outputs.context }}
+          file: ${{ steps.image.outputs.file }}
+          target: ${{ steps.image.outputs.target }}
+          tags: ${{ steps.image.outputs.tag }}
+          load: true
+          push: false
+          cache-from: type=gha,scope=testrunner
+          cache-to: type=gha,mode=max,scope=testrunner
+      # Only when the build failed (the workflow's DOCKER_BUILD_RECORD_UPLOAD): its record (BuildKit's logs and trace, for
+      # Docker Desktop's Builds view), kept 3 days. Neither step can fail the job or hide the build's own failure.
+      - name: Build record of the failed image build
+        if: failure() && steps.build.outcome == 'failure'
+        continue-on-error: true
+        run: docker buildx history export --finalize --output "$RUNNER_TEMP/build-record.dockerbuild"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure() && steps.build.outcome == 'failure'
+        continue-on-error: true
+        with:
+          name: build-record-${{ github.job }}
+          path: ${{ runner.temp }}/build-record.dockerbuild
+          retention-days: 3
+          if-no-files-found: ignore
+
+      # The database server is the one scripts/test.sh starts (timescale/timescaledb:2.17.2-pg17, data in memory, the
+      # job scheduler off, fsync off): a GitHub service container cannot be given those server options, and the
+      # parallel run needs the scheduler off (README, Tests).
+      - name: Project checks, and the whole suite unless SUITE=0 (scripts/test.sh)
+        env:
+          CHECKS: "1"
+          WORKERS: "4"
+          DB_TMPFS: 4g
+          LABELS: ${{ inputs.labels }}
+        run: |
+          TEST_DB_PASSWORD=$(openssl rand -hex 16)
+          export TEST_DB_PASSWORD
+          re='^[A-Za-z0-9_. ]+$'
+          if [[ -n "$LABELS" && ! "$LABELS" =~ $re ]]; then
+            echo "::error::labels may hold letters, digits, _ . and spaces"
+            exit 1
+          fi
+          # shellcheck disable=SC2086 # the labels are words, split on purpose
+          bash scripts/test.sh $LABELS
+
+      - name: The translation catalogs are up to date (update_catalogs changed nothing)
+        run: |
+          if ! git diff --exit-code -- locale; then
+            echo "::error::locale/*/django.po are stale: run manage.py update_catalogs and commit the result"
+            exit 1
+          fi
+
+  frontend:
+    name: Browser code (tsc build and TypeScript tests)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      # static/css/tw.css is committed: it must be what frontend/tailwind.css and the templates build now (checked before
+      # the build below writes it again).
+      - name: Tailwind build is up to date (npm run check:css)
+        run: npm run check:css
+      # docs/design/system/tokens.css and static/css/tokens.css are what tokens.json builds (scripts/tokens.mjs).
+      - name: Tokens build is up to date (npm run check:tokens)
+        run: npm run check:tokens
+      # No one-off style: colours only in tokens.css, the component layer on tokens only, and the raw sizes and the old
+      # class names held to docs/design/system/ds-ratchet.json, which only goes down (scripts/check-ds.mjs).
+      - name: Design-system gate (npm run check:ds)
+        run: npm run check:ds
+      - name: Build (tsc -p tsconfig.json, then the Tailwind build)
+        run: npm run build
+      # The designer's browser test drives the runner's own Chrome (/usr/bin/google-chrome). Ubuntu 24.04 limits
+      # unprivileged user namespaces, which Chrome's sandbox needs.
+      - name: Allow Chrome's sandbox
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: TypeScript tests (npm test)
+        run: npm test
+
+  rust:
+    name: sensors-ingest (fmt, clippy, tests, deny)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: sensors-ingest
+    services:
+      db:
+        image: timescale/timescaledb:2.17.2-pg17
+        env:
+          POSTGRES_USER: balik
+          POSTGRES_PASSWORD: ci-throwaway-not-a-secret
+          POSTGRES_DB: sensors_ingest_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U balik"
+          --health-interval 5s --health-timeout 5s --health-retries 30
+    env:
+      CARGO_TERM_COLOR: always
+      DB_PASSWORD: ci-throwaway-not-a-secret
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Toolchain of rust-toolchain.toml
+        run: |
+          channel=$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)
+          rustup toolchain install "$channel" --profile minimal --component clippy --component rustfmt
+          rustc --version
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: sensors-ingest
+      - run: cargo fmt --check
+      - run: cargo clippy --locked --all-targets -- -D warnings
+
+      # The tests run against the real schema, migrated by Django in the test runner's image (the server's own
+      # packages, as tests/run.sh migrates in a Django image), and a broker with the production configuration.
+      - name: Test runner image (scripts/testrunner/image.sh)
+        id: image
+        working-directory: .
+        run: sh scripts/testrunner/image.sh >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        id: build
+        with:
+          context: ${{ steps.image.outputs.context }}
+          file: ${{ steps.image.outputs.file }}
+          target: ${{ steps.image.outputs.target }}
+          tags: ${{ steps.image.outputs.tag }}
+          load: true
+          push: false
+          # the python job writes this cache; reading it only, two jobs never race to write it
+          cache-from: type=gha,scope=testrunner
+      # as in the python job: the record of a failed build only, 3 days, never failing the job
+      - name: Build record of the failed image build
+        if: failure() && steps.build.outcome == 'failure'
+        continue-on-error: true
+        run: docker buildx history export --finalize --output "$RUNNER_TEMP/build-record.dockerbuild"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure() && steps.build.outcome == 'failure'
+        continue-on-error: true
+        with:
+          name: build-record-${{ github.job }}
+          path: ${{ runner.temp }}/build-record.dockerbuild
+          retention-days: 3
+          if-no-files-found: ignore
+      - name: Schema (manage.py migrate on the test database)
+        working-directory: .
+        env:
+          IMAGE: ${{ steps.image.outputs.tag }}
+        run: |
+          docker run --rm --network host -v "$PWD:/app" -w /app -e DB_HOST=127.0.0.1 -e DB_PORT=5432 \
+            -e DB_NAME=sensors_ingest_test -e DB_USER=balik -e DB_PASSWORD "$IMAGE" python manage.py migrate --no-input
+      - name: Broker (Mosquitto, users ingest and dev)
+        working-directory: .
+        run: |
+          MOSQ=eclipse-mosquitto:2.0.20@sha256:21421af7b32bf9ce508e9090c8eb13bb81f410ca778dc205506180a6f862d0eb
+          docker volume create si-test-broker-auth
+          docker run --rm -v si-test-broker-auth:/mosquitto/auth "$MOSQ" sh -c '
+            mosquitto_passwd -c -b /mosquitto/auth/passwd ingest ingest-pw 2>/dev/null
+            mosquitto_passwd -b /mosquitto/auth/passwd dev dev-pw 2>/dev/null
+            printf "user ingest\ntopic read #\nuser dev\ntopic write #\n" > /mosquitto/auth/acl
+            chown -R mosquitto:mosquitto /mosquitto/auth && chmod 0700 /mosquitto/auth/passwd /mosquitto/auth/acl'
+          docker run -d --name broker -p 127.0.0.1:1883:1883 -v "$PWD/sensors-ingest/mosquitto:/mosquitto/config:ro" \
+            -v si-test-broker-auth:/mosquitto/auth --tmpfs /mosquitto/data --entrypoint sh "$MOSQ" \
+            /mosquitto/config/entrypoint.sh
+          for _ in $(seq 1 30); do
+            (exec 3<>/dev/tcp/127.0.0.1/1883) 2>/dev/null && break
+            sleep 1
+          done
+      - name: cargo test (unit, property, database and broker tests)
+        env:
+          TEST_DATABASE_URL: host=127.0.0.1 port=5432 user=balik password=ci-throwaway-not-a-secret dbname=sensors_ingest_test
+          TEST_MQTT_HOST: 127.0.0.1
+          REQUIRE_DB: "1"
+        run: cargo test --locked --all-targets
+
+      - name: cargo deny (licences, bans, sources, advisories)
+        run: |
+          command -v cargo-deny >/dev/null || cargo install --locked cargo-deny@0.20.2
+          cargo deny --locked check
+      - name: THIRD_PARTY matches Cargo.lock
+        run: |
+          cargo metadata --format-version 1 --locked --filter-platform x86_64-unknown-linux-gnu > "$RUNNER_TEMP/meta.json"
+          python3 -I tests/third_party.py "$RUNNER_TEMP/meta.json" > "$RUNNER_TEMP/THIRD_PARTY"
+          diff -u THIRD_PARTY "$RUNNER_TEMP/THIRD_PARTY" || { echo "::error::sensors-ingest/THIRD_PARTY is out of date"; exit 1; }
+
+  # The water-chemistry core's gates, chemcore/scripts/test.sh (rustfmt, clippy, cargo test, libm the chemistry's only
+  # dependency, no WebAssembly, cargo deny with advisories, THIRD_PARTY, docker/requirements.lock naming the pins of
+  # requirements.txt), run where that script says: the chemcore-tools stage of docker/testrunner.Dockerfile. The built
+  # module's handshake with chemcore/EXPECTED (core.E001) is checked by the python job's `check`, in the image that
+  # holds the wheel.
+  chemcore:
+    name: chemcore (chemcore/scripts/test.sh)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        id: build
+        with:
+          context: .
+          file: docker/testrunner.Dockerfile
+          target: chemcore-tools
+          tags: chemcore-tools:ci
+          load: true
+          push: false
+          cache-from: |
+            type=gha,scope=chemcore-tools
+            type=gha,scope=testrunner
+          cache-to: type=gha,mode=max,scope=chemcore-tools
+      # as in the python job: the record of a failed build only, 3 days, never failing the job
+      - name: Build record of the failed image build
+        if: failure() && steps.build.outcome == 'failure'
+        continue-on-error: true
+        run: docker buildx history export --finalize --output "$RUNNER_TEMP/build-record.dockerbuild"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure() && steps.build.outcome == 'failure'
+        continue-on-error: true
+        with:
+          name: build-record-${{ github.job }}
+          path: ${{ runner.temp }}/build-record.dockerbuild
+          retention-days: 3
+          if-no-files-found: ignore
+      - name: The gates (chemcore/scripts/test.sh)
+        run: docker run --rm -v "$PWD:/repo" -w /repo chemcore-tools:ci sh chemcore/scripts/test.sh
+
+  security:
+    name: Advisories and licences
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            scripts/testrunner/requirements.txt
+      - name: Tools (a virtual environment of their own)
+        run: |
+          python -m venv "$RUNNER_TEMP/tools"
+          "$RUNNER_TEMP/tools/bin/pip" install pip-audit==2.10.1 pip-licenses==5.5.5
+      - name: pip-audit (known vulnerabilities in the Python requirements)
+        run: |
+          "$RUNNER_TEMP/tools/bin/pip-audit" --strict -r requirements.txt -r scripts/testrunner/requirements.txt
+          # what the runner image installs, pinned with hashes, and the chemcore wheel's build tool (maturin)
+          "$RUNNER_TEMP/tools/bin/pip-audit" --strict --require-hashes -r docker/requirements.lock -r docker/chemcore-build.lock
+      # The licences the requirements install (the test runner's too), each allowed in THIRD_PARTY.md; anything else
+      # fails: AGPL, SSPL, BUSL, a non-commercial licence or a new one nobody has reviewed yet.
+      - name: Python licences (pip-licenses, the allow-list of THIRD_PARTY.md)
+        run: |
+          python -m venv "$RUNNER_TEMP/app"
+          "$RUNNER_TEMP/app/bin/pip" install -r requirements.txt -r scripts/testrunner/requirements.txt
+          "$RUNNER_TEMP/tools/bin/pip-licenses" --python "$RUNNER_TEMP/app/bin/python" --from=mixed --format=markdown
+          "$RUNNER_TEMP/tools/bin/pip-licenses" --python "$RUNNER_TEMP/app/bin/python" --from=mixed \
+            --allow-only="Apache-2.0;Apache-2.0 OR BSD-3-Clause;BSD-2-Clause;BSD-3-Clause;BSD License;LGPL-3.0-only;MIT;MIT-0;PSF-2.0"
+      # The owner's banned components, whatever licence a client library carries: MinIO (its server is AGPL-3.0) and
+      # rodbus (non-commercial). The crates are banned in the deny.toml files; here the Python packages, the npm tree
+      # and every image a compose file or Dockerfile names.
+      - name: Banned components (MinIO, rodbus)
+        run: |
+          found=$("$RUNNER_TEMP/app/bin/pip" list --format=freeze | grep -iE '^(minio|rodbus)[=<>]' || true)
+          found="$found$(grep -ioE '"node_modules/(minio|rodbus)[^"]*"' package-lock.json || true)"
+          found="$found$(git grep -inE '^\s*(image:|FROM ).*(minio|rodbus)' -- '*.yml' '*.yaml' '*Dockerfile*' || true)"
+          if [ -n "$found" ]; then echo "::error::banned component: $found"; exit 1; fi
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: npm audit (high and critical)
+        run: npm audit --omit=dev --audit-level=high

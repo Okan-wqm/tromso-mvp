@@ -9,30 +9,62 @@ from decimal import Decimal
 
 from django import forms
 from django.core.exceptions import NON_FIELD_ERRORS
-from django.utils.translation import gettext_lazy as _, ngettext
+from django.utils import formats
+from django.utils.translation import gettext_lazy as _, ngettext, pgettext_lazy
 
 from core.crud import DRAFT
+from core.widgets import DayInput
 
 from ..handling import check
 from ..models import Batch, HandlingPlanItem, HealthEvent, SlaughterFacility, Species, Supplier, Tank
 from ..models.handling import HandlingKind
 from ..models.harvest import offered_facilities
 from ..models.stock import (
-    ARRIVAL_STATUSES, PROVENANCE_OF_ORIGIN, CullReason, InputStage, MortalityCause, Origin, TransferReason,
+    PROVENANCE_OF_ORIGIN, TAKES_FISH, CullReason, InputStage, MortalityCause, OperationKind, Origin, TransferReason,
 )
 from ..models.supplier import SupplyCategory
 from ..stock import services
 from ..templatetags.stock import number
 
-DATE = forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d')
+DATE = DayInput()
 DECIMAL = {'inputmode': 'decimal'}
 NOTES = forms.Textarea(attrs={'rows': 3})
 
 
 def share_label(share):
-    """A batch in the unit as a choice reads it: B-2026-001 — 3,200 fish · 145.2 g."""
+    """A batch in the unit as a choice reads it: B-2026-001 — 3,200 fish · 145.2 g; one that left the unit on a day
+    that may still be dated (farm.stock.read.PastShare): B-2026-001 — in the unit until 10.11.2026."""
+    if share.past:
+        return _('%(batch)s — in the unit until %(date)s') % {
+            'batch': share.batch.code, 'date': formats.date_format(share.until, 'DATE_FORMAT')}
     return _('%(batch)s — %(count)s fish · %(weight)s g') % {
         'batch': share.batch.code, 'count': number(share.count), 'weight': number(share.avg_weight_g, 1)}
+
+
+def batches_help(shares):
+    """What the batch choice of a unit says when it offers several: how many batches the unit holds NOW, and that those
+    that left it inside the correction window (farm.stock.read.PastShare) can still be chosen for a day they were
+    there. The batches that left were counted as held ("This unit holds 2 batches" of an empty unit: review F-09)."""
+    shares = list(shares)
+    gone = sum(1 for share in shares if share.past)
+    held = len(shares) - gone
+    if not held:
+        return _('This unit holds no fish now: choose the batch that was in it on the day of the record.')
+    text = ngettext('This unit holds %(count)d batch: the operation applies to the one chosen.',
+                    'This unit holds %(count)d batches: the operation applies to the one chosen.', held) % {'count': held}
+    if gone:
+        text += ' ' + ngettext('%(count)d batch that left it can still be chosen, for a day it was in the unit.',
+                               '%(count)d batches that left it can still be chosen, for a day they were in the unit.',
+                               gone) % {'count': gone}
+    return text
+
+
+class Unshown(forms.HiddenInput):
+    """A field the form carries but does not draw: the withdrawal guard's box is drawn with its question
+    (farm/_withdrawal_change.html), only when there is one."""
+
+    def render(self, name, value, attrs=None, renderer=None):
+        return ''
 
 
 class ServiceErrors:
@@ -40,14 +72,24 @@ class ServiceErrors:
     it (or on the field the form calls it), otherwise above the form."""
 
     service_fields = {}
+    # The withdrawal guard's refusal (farm.health.withdrawal.WithdrawalChanged): what the write does to the withdrawals,
+    # shown with its box by farm/_withdrawal_change.html; None until it asks. The box's value travels in the form's own
+    # `withdrawal_ack`, which its save hands to its service: it acknowledges that write only (cross-review 2, 6).
+    withdrawal_change = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['withdrawal_ack'] = forms.CharField(required=False, widget=Unshown)
 
     def add_service_error(self, error):
+        self.withdrawal_change = getattr(error, 'change', None) or self.withdrawal_change
         if not hasattr(error, 'error_dict'):
             self.add_error(None, error.messages)
             return
         for key, messages in error.message_dict.items():
             name = self.service_fields.get(key, key)
-            self.add_error(name if name in self.fields and name != NON_FIELD_ERRORS else None, messages)
+            shown_apart = name in (NON_FIELD_ERRORS, 'withdrawal_ack')          # the box is the question's own
+            self.add_error(name if name in self.fields and not shown_apart else None, messages)
 
 
 def acknowledgement():
@@ -57,20 +99,41 @@ def acknowledgement():
                     'e.g. for a few days before a split.'))
 
 
+def size_mix_acknowledgement():
+    """The box that puts batches of very different sizes of one species together (the species' size limit, Setup ›
+    Species; farm/stock/services.py, step 5)."""
+    return forms.BooleanField(
+        label=_('Put batches of different sizes together'), required=False,
+        help_text=_('The unit will hold batches of one species further apart in weight than the species allows: the '
+                    'bigger fish outcompete the smaller at feeding. Tick it only when that is meant, e.g. for the days '
+                    'before a grading.'))
+
+
 class Acknowledged:
     """A form whose service may ask the person to confirm something unusual (fish above a unit's max
-    biomass, a feeding above the usual rate): the box `ack_field` is offered once the service asked, or
-    when it is ticked already, and the dialog shows it apart from the other fields."""
+    biomass, batches of very different sizes together, a feeding above the usual rate): each box of `ack_fields` is
+    offered once the service asked for it, or when it is ticked already, and the dialog shows them apart from the
+    other fields (`shown_acks`), each answering its own question."""
 
-    ack_field = 'over_capacity_ack'
+    ack_fields = ('over_capacity_ack',)
+
+    @property
+    def ack_field(self):
+        return self.ack_fields[0]
 
     @property
     def ack(self):
         return self[self.ack_field]
 
     @property
+    def shown_acks(self):
+        """The boxes to show: those the service asked for, or ticked already."""
+        return [self[name] for name in self.ack_fields
+                if name in self.fields and (name in self.errors or bool(self[name].value()))]
+
+    @property
     def needs_ack(self):
-        return self.ack_field in self.errors or bool(self.ack.value())
+        return bool(self.shown_acks)
 
 
 class AcknowledgeInput(forms.CheckboxInput):
@@ -89,11 +152,12 @@ class AcknowledgeInput(forms.CheckboxInput):
         return data.get(name, '')
 
 
-def handling_ack_field(kind):
+def handling_ack_field(kind, operation=None):
     """The box to go on past the handling warnings shown; its value is their fingerprint (AcknowledgeInput). Only a
-    harvest can be warned of a medicine withdrawal, so only its box says that fish under one must not go to food."""
+    handling whose fish leave the farm (a harvest, a live delivery: check.asks_withdrawal) can be warned of a medicine
+    withdrawal, so only its box says that fish under one must not go to food."""
     stored = _('Going on is stored with what is shown here and logged as critical.')
-    if kind == HandlingKind.HARVEST:
+    if check.asks_withdrawal(kind, operation):
         stored = _('Fish under a medicine withdrawal must not go to food. Going on is stored with what is shown '
                    'here and logged as critical.')
     return forms.CharField(label=_('Go on despite these warnings'), required=False, widget=AcknowledgeInput,
@@ -106,10 +170,11 @@ class HandlingChecked:
     them, which the service reads (`handling_ack`)."""
 
     handling_kind = None
+    operation = None         # the stock operation, when its withdrawal is asked otherwise than its kind's (a delivery)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['handling_ack'] = handling_ack_field(self.handling_kind)
+        self.fields['handling_ack'] = handling_ack_field(self.handling_kind, self.operation)
         self._handling = None
 
     @property
@@ -122,7 +187,12 @@ class HandlingChecked:
             if batch is None:
                 share = self.present.get(str(self.initial.get('batch', ''))) or self.only_batch
                 batch = share.batch if share is not None else None
-            self._handling = check.assess(self.handling_kind, self.unit, day, batch)
+            if day is None:
+                # No day yet (a unit that is empty now offers none): the check is of the record's day, so it waits.
+                self._handling = check.Assessment(self.handling_kind, self.unit, None, batch, notes=[
+                    _('Choose the date first: the fast and the medicine withdrawal are checked for that day.')])
+            else:
+                self._handling = check.assess(self.handling_kind, self.unit, day, batch, operation=self.operation)
             self.fields['handling_ack'].widget.fingerprint = self._handling.fingerprint
         return self._handling
 
@@ -161,11 +231,10 @@ class OperationForm(ServiceErrors, forms.Form):
             field.widget = forms.HiddenInput()
         else:
             field.choices = [('', '---------'), *choices]
-            field.help_text = ngettext(
-                'This unit holds %(count)d batch: the operation applies to the one chosen.',
-                'This unit holds %(count)d batches: the operation applies to the one chosen.', len(choices)) % {
-                'count': len(choices)}
-        self.fields['date'].initial = services.local_today(unit)
+            field.help_text = batches_help(self.present.values())
+        # The farm's today, while the unit holds fish. A unit that is empty now is recorded for a day it held them
+        # (flow fault S-04): no day is assumed, the person gives it.
+        self.fields['date'].initial = None if self.past and len(self.past) == len(self.present) else             services.local_today(unit)
         self.fields['token'].initial = uuid.uuid4()
         for name in self.refresh_on:
             self.fields[name].widget.attrs['data-refresh'] = DRAFT
@@ -174,6 +243,11 @@ class OperationForm(ServiceErrors, forms.Form):
     def only_batch(self):
         """The one batch in the unit, shown instead of a choice."""
         return next(iter(self.present.values())) if len(self.present) == 1 else None
+
+    @property
+    def past(self):
+        """The batches offered that are no longer in the unit: they left it on a day that may still be dated."""
+        return [share for share in self.present.values() if share.past]
 
     def clean_batch(self):
         return self.present[self.cleaned_data['batch']].batch
@@ -194,7 +268,8 @@ def event_field():
 
 class MortalityForm(OperationForm):
     count = forms.IntegerField(label=_('Dead fish'), min_value=1)
-    cause = forms.ChoiceField(label=_('Cause'), choices=MortalityCause.choices, initial=MortalityCause.UNKNOWN)
+    cause = forms.ChoiceField(label=pgettext_lazy('mortality', 'Cause'), choices=MortalityCause.choices,
+                              initial=MortalityCause.UNKNOWN)
     measured_weight_kg = forms.DecimalField(
         label=_('Weight of the dead fish (kg)'), max_digits=14, decimal_places=3, min_value=Decimal('0.001'),
         required=False, localize=True, widget=forms.TextInput(attrs=DECIMAL),
@@ -209,7 +284,8 @@ class MortalityForm(OperationForm):
         return services.record_mortality(
             user, unit=self.unit, batch=data['batch'], day=data['date'], count=data['count'], cause=data['cause'],
             measured_weight_kg=data['measured_weight_kg'], notes=data['notes'],
-            health_event=data.get('health_event'), token=data['token'])
+            health_event=data.get('health_event'), token=data['token'],
+            withdrawal_ack=data['withdrawal_ack'])
 
 
 class CullForm(OperationForm):
@@ -242,7 +318,8 @@ class CullForm(OperationForm):
         data = self.cleaned_data
         return services.record_cull(
             user, unit=self.unit, batch=data['batch'], day=data['date'], count=data['count'], reason=data['reason'],
-            notes=data['notes'], health_event=data.get('health_event'), token=data['token'])
+            notes=data['notes'], health_event=data.get('health_event'), token=data['token'],
+            withdrawal_ack=data['withdrawal_ack'])
 
 
 class WeighingForm(OperationForm):
@@ -279,7 +356,8 @@ class WeighingForm(OperationForm):
         return services.record_weighing(
             user, unit=self.unit, batch=data['batch'], day=data['date'], avg_weight_g=data['avg_weight_g'],
             sample_count=data['sample_count'], sample_weight_kg=data['sample_weight_kg'], notes=data['notes'],
-            token=data['token'])
+            token=data['token'],
+            withdrawal_ack=data['withdrawal_ack'])
 
 
 class SpeciesChoice(forms.ModelChoiceField):
@@ -308,7 +386,9 @@ class BatchInputForm(Acknowledged, ServiceErrors, forms.ModelForm):
         label=_('Average weight (g)'), max_digits=12, decimal_places=4, min_value=Decimal('0.0001'), localize=True,
         widget=forms.TextInput(attrs=DECIMAL), help_text=_('As weighed on arrival; to 0.0001 g for eggs and larvae.'))
     over_capacity_ack = acknowledgement()
+    size_mix_ack = size_mix_acknowledgement()
 
+    ack_fields = ('over_capacity_ack', 'size_mix_ack')
     service_fields = {'date': 'input_date', 'unit': NON_FIELD_ERRORS, 'batch': NON_FIELD_ERRORS,
                       'count': NON_FIELD_ERRORS}
 
@@ -332,7 +412,7 @@ class BatchInputForm(Acknowledged, ServiceErrors, forms.ModelForm):
 
     field_order = ['species', 'input_stage', 'input_date', 'count', 'avg_weight_g', 'origin', 'provenance',
                    'supplier', 'supplier_batch_ref', 'strain', 'year_class', 'name', 'expected_harvest_date', 'notes',
-                   'over_capacity_ack']
+                   'over_capacity_ack', 'size_mix_ack']
 
     def __init__(self, *args, unit=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -378,6 +458,50 @@ class BatchInputForm(Acknowledged, ServiceErrors, forms.ModelForm):
             strain=data['strain'].strip(), name=data['name'].strip(),
             expected_harvest_date=data['expected_harvest_date'], notes=data['notes'],
             provenance=data['provenance'], year_class=data['year_class'], ack=data['over_capacity_ack'],
+            size_mix_ack=data['size_mix_ack'], token=data['token'],
+            withdrawal_ack=data['withdrawal_ack'])
+
+
+class OpeningBalanceForm(BatchInputForm):
+    """An opening balance (services.record_opening_balance): a batch the farm already had when it started using the
+    platform, as on the takeover day (its fish, their average weight, the units they are in), with the real stocking date
+    (beyond the correction window by design), the year class and the document the counts come from."""
+
+    day = forms.DateField(label=_('Takeover day'), widget=DATE,
+                          help_text=_('The day the counts and the average weight are of: inside the correction window, '
+                                      'like every record.'))
+    document = forms.CharField(label=_('Source document'), max_length=300,
+                               help_text=_('Where the counts come from: the old system’s export, a count sheet, a '
+                                           'delivery note.'))
+
+    service_fields = {'date': 'day', 'stocked_on': 'input_date', 'unit': NON_FIELD_ERRORS, 'batch': NON_FIELD_ERRORS,
+                      'count': NON_FIELD_ERRORS}
+    field_order = ['species', 'input_stage', 'input_date', 'year_class', 'day', 'count', 'avg_weight_g', 'document',
+                   'origin', 'provenance', 'supplier', 'supplier_batch_ref', 'strain', 'name', 'expected_harvest_date',
+                   'notes', 'over_capacity_ack', 'size_mix_ack']
+
+    def __init__(self, *args, unit=None, **kwargs):
+        super().__init__(*args, unit=unit, **kwargs)
+        self.fields['input_date'].label = _('Stocked on (the real date)')
+        self.fields['input_date'].help_text = _('The day the fish were stocked, however long ago: their days stocked count '
+                                                'from it.')
+        self.fields['input_date'].initial = None
+        self.fields['day'].initial = services.local_today(unit)
+        self.fields['year_class'].required = True
+        self.fields['count'].label = _('Fish on the takeover day')
+        self.fields['avg_weight_g'].help_text = _('Their average on the takeover day; to 0.0001 g for eggs and larvae.')
+        self.order_fields(self.field_order)
+
+    def save(self, user, lines):
+        data = self.cleaned_data
+        return services.record_opening_balance(
+            user, species=data['species'], input_stage=data['input_stage'], origin=data['origin'],
+            stocked_on=data['input_date'], day=data['day'], year_class=data['year_class'], document=data['document'],
+            lines=[(unit, count, data['avg_weight_g']) for unit, count in lines],
+            supplier=data['supplier'], supplier_batch_ref=data['supplier_batch_ref'].strip(),
+            strain=data['strain'].strip(), name=data['name'].strip(),
+            expected_harvest_date=data['expected_harvest_date'], notes=data['notes'],
+            provenance=data['provenance'], ack=data['over_capacity_ack'], size_mix_ack=data['size_mix_ack'],
             token=data['token'])
 
 
@@ -427,8 +551,8 @@ InputLineFormSet = forms.formset_factory(InputLineForm, extra=0, min_num=1, vali
 
 
 def stockable_units():
-    """The units fish can go into: those whose status takes fish."""
-    return (Tank.objects.filter(status__in=ARRIVAL_STATUSES)
+    """The units fish can go into: on a site, with a status that takes fish."""
+    return (Tank.objects.filter(TAKES_FISH)
             .select_related('production_department__site').order_by('code'))
 
 
@@ -469,8 +593,9 @@ class PlannedForm:
             widget=forms.HiddenInput)
         if plan is not None:
             # Recorded on the planned day, or today when it is done before it.
+            today = self.fields['date'].initial
             self.initial.update({'plan_item': plan.pk, 'batch': str(plan.batch_id),
-                                 'date': min(plan.date, self.fields['date'].initial)})
+                                 'date': min(plan.date, today) if today is not None else plan.date})
 
 
 class TransferForm(PlannedForm, HandlingChecked, Acknowledged, OperationForm):
@@ -480,21 +605,25 @@ class TransferForm(PlannedForm, HandlingChecked, Acknowledged, OperationForm):
 
     reason = forms.ChoiceField(label=_('Reason'), choices=TransferReason.choices, initial=TransferReason.DENSITY)
     over_capacity_ack = acknowledgement()
+    size_mix_ack = size_mix_acknowledgement()
 
     handling_kind = HandlingKind.TRANSPORT
     plan_kind = HandlingPlanItem.Kind.TRANSPORT
     service_fields = {**OperationForm.service_fields, 'plan_item': NON_FIELD_ERRORS}
     rows = LegFormSet
     rows_label = _('To units')
-    field_order = ['batch', 'date', 'reason', 'notes', 'over_capacity_ack']
+    ack_fields = ('over_capacity_ack', 'size_mix_ack')
+    field_order = ['batch', 'date', 'reason', 'notes', 'over_capacity_ack', 'size_mix_ack']
 
     def save(self, user, rows):
         data = self.cleaned_data
         return services.record_transfer(
             user, source=self.unit, batch=data['batch'], day=data['date'],
             legs=[(row['unit'], row['count']) for row in rows], reason=data['reason'], notes=data['notes'],
-            ack=data['over_capacity_ack'], handling_ack=data['handling_ack'], plan_item=data['plan_item'],
-            token=data['token'])
+            ack=data['over_capacity_ack'], size_mix_ack=data['size_mix_ack'], handling_ack=data['handling_ack'],
+            plan_item=data['plan_item'],
+            token=data['token'],
+            withdrawal_ack=data['withdrawal_ack'])
 
 
 class GradingForm(HandlingChecked, Acknowledged, OperationForm):
@@ -507,12 +636,14 @@ class GradingForm(HandlingChecked, Acknowledged, OperationForm):
         min_value=Decimal('0.0001'), required=False, localize=True, widget=forms.TextInput(attrs=DECIMAL),
         help_text=_('Required when fish stay in this unit: the grading weighs them too.'))
     over_capacity_ack = acknowledgement()
+    size_mix_ack = size_mix_acknowledgement()
 
     handling_kind = HandlingKind.GRADING
     service_fields = {**OperationForm.service_fields, 'avg_weight_g': 'remainder_avg_weight_g'}
     rows = OutputFormSet
     rows_label = _('Size classes')
-    field_order = ['batch', 'date', 'remainder_avg_weight_g', 'notes', 'over_capacity_ack']
+    ack_fields = ('over_capacity_ack', 'size_mix_ack')
+    field_order = ['batch', 'date', 'remainder_avg_weight_g', 'notes', 'over_capacity_ack', 'size_mix_ack']
 
     def save(self, user, rows):
         data = self.cleaned_data
@@ -520,7 +651,9 @@ class GradingForm(HandlingChecked, Acknowledged, OperationForm):
             user, source=self.unit, batch=data['batch'], day=data['date'],
             outputs=[(row['unit'], row['count'], row['avg_weight_g'], row['size_class'].strip()) for row in rows],
             remainder_avg_weight_g=data['remainder_avg_weight_g'], notes=data['notes'],
-            ack=data['over_capacity_ack'], handling_ack=data['handling_ack'], token=data['token'])
+            ack=data['over_capacity_ack'], size_mix_ack=data['size_mix_ack'], handling_ack=data['handling_ack'],
+            token=data['token'],
+            withdrawal_ack=data['withdrawal_ack'])
 
 
 class TransportChoice(forms.ModelChoiceField):
@@ -575,13 +708,34 @@ class HarvestForm(PlannedForm, HandlingChecked, OperationForm):
             self.initial.update({'count': self.plan.planned_count, 'facility': self.plan.facility_id,
                                  'transport': self.plan.transport_id, 'vessel': self.plan.vessel})
 
+    @property
+    def handling(self):
+        """The handling check, and a note when the harvest is recorded from a plan in another ISO week or at another
+        facility than planned: it stays the plan's in the planned-slaughter report (reports.compute.slaughter.plans_of,
+        audit F-227). Said, never refused."""
+        found = HandlingChecked.handling.fget(self)
+        if self.plan is not None and not getattr(self, '_plan_noted', False):
+            self._plan_noted = True
+            data = getattr(self, 'cleaned_data', {})
+            day = data.get('date') or self.initial.get('date') or self.fields['date'].initial
+            facility = data.get('facility')
+            facility_id = facility.pk if facility is not None else self.initial.get('facility')
+            if day is not None and (day.isocalendar()[:2] != self.plan.date.isocalendar()[:2]
+                                    or facility_id != self.plan.facility_id):
+                found.notes.append(_('Planned for %(date)s to %(facility)s: recorded on another week or at another '
+                                     'facility, this harvest is still reported in the planned-slaughter notice of the '
+                                     'plan’s week and facility; correct that notice if it was filed.') % {
+                    'date': formats.date_format(self.plan.date, 'DATE_FORMAT'), 'facility': self.plan.facility})
+        return found
+
     def save(self, user, rows=None):
         data = self.cleaned_data
         return services.record_harvest(
             user, unit=self.unit, batch=data['batch'], day=data['date'], count=data['count'],
             measured_weight_kg=data['measured_weight_kg'], facility=data['facility'], transport=data['transport'],
             vessel=data['vessel'], everything=data['everything'], notes=data['notes'],
-            handling_ack=data['handling_ack'], plan_item=data['plan_item'], token=data['token'])
+            handling_ack=data['handling_ack'], plan_item=data['plan_item'], token=data['token'],
+            withdrawal_ack=data['withdrawal_ack'])
 
 
 class EscapeForm(OperationForm):
@@ -609,7 +763,8 @@ class EscapeForm(OperationForm):
         return services.record_escape(
             user, unit=self.unit, batch=data['batch'], day=data['date'], count=data['count'], cause=data['cause'],
             suspected=data['suspected'], found_time=data['found_time'], health_status=data['health_status'],
-            recaptured=data['recaptured'], notes=data['notes'], token=data['token'])
+            recaptured=data['recaptured'], notes=data['notes'], token=data['token'],
+            withdrawal_ack=data['withdrawal_ack'])
 
 
 class DeliveryForm(HandlingChecked, OperationForm):
@@ -629,6 +784,7 @@ class DeliveryForm(HandlingChecked, OperationForm):
         help_text=_('Optional: the receiving site’s locality number (5 digits).'))
 
     handling_kind = HandlingKind.TRANSPORT
+    operation = OperationKind.DELIVERY       # fish sold alive: the withdrawal is asked (the owner's decision 12)
     field_order = ['batch', 'date', 'count', 'measured_weight_kg', 'destination', 'destination_site_number', 'notes']
 
     def save(self, user, rows=None):
@@ -637,7 +793,8 @@ class DeliveryForm(HandlingChecked, OperationForm):
             user, unit=self.unit, batch=data['batch'], day=data['date'], count=data['count'],
             destination=data['destination'], destination_site_number=data['destination_site_number'],
             measured_weight_kg=data['measured_weight_kg'], handling_ack=data['handling_ack'], notes=data['notes'],
-            token=data['token'])
+            token=data['token'],
+            withdrawal_ack=data['withdrawal_ack'])
 
 
 class VoidForm(ServiceErrors, forms.Form):
@@ -646,3 +803,13 @@ class VoidForm(ServiceErrors, forms.Form):
                                          'struck through, with this reason.'))
 
     service_fields = {}
+
+
+class StockVoidForm(Acknowledged, VoidForm):
+    """The void of a stock operation: fish it brings back that leave a unit over its capacity or holding a mix are asked
+    about with the same boxes as an arrival (farm/stock/services.py `void`)."""
+
+    over_capacity_ack = acknowledgement()
+    size_mix_ack = size_mix_acknowledgement()
+
+    ack_fields = ('over_capacity_ack', 'size_mix_ack')

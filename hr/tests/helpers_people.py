@@ -2,7 +2,6 @@
 manage them."""
 from datetime import date
 
-from django.contrib.auth import get_user_model
 
 from farm.models import ProductionDepartment, Site
 
@@ -30,7 +29,7 @@ class PeopleTestCase(HrTestCase):
 
     def setUp(self):
         super().setUp()
-        self.site = Site.objects.create(name='Bergen', code='BG')
+        self.site = Site.objects.create(name='Bergen', code='BG', timezone='UTC')     # the clock the tests count on
         self.lead_a = user('leada', *LEAD_PERMS, group='Lead A role')
         self.lead_b = user('leadb', *LEAD_PERMS, group='Lead B role')
         self.dept_a = ProductionDepartment.objects.create(site=self.site, name='Hatchery A', code='HAT-A',

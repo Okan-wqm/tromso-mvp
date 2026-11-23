@@ -82,9 +82,9 @@ for i in range(n):
     for code, q, vp, item, red, db, hb in CHANNELS[i % 3]:
         sql.append("INSERT INTO sensors_channel (id, created_at, updated_at, version, is_deleted, code, name, quantity, "
                    "unit, unit_factor, unit_offset, value_path, item_name, address_protocol, address, reduction, "
-                   "deadband, heartbeat_s, range_min, range_max, state, note, device_id) VALUES (gen_random_uuid(), "
-                   "%s, '%s', '%s', '%s', '', 1, 0, '%s', '%s', 'mqtt', '{}', '%s', %s, %d, NULL, NULL, 'active', '', "
-                   "'%s');" % (AUDIT, code, code, q, vp, item, red, db, hb, dev))
+                   "deadband, heartbeat_s, fresh_heartbeats, range_min, range_max, state, note, device_id) VALUES "
+                   "(gen_random_uuid(), %s, '%s', '%s', '%s', '', 1, 0, '%s', '%s', 'mqtt', '{}', '%s', %s, %d, 3, NULL, "
+                   "NULL, 'active', '', '%s');" % (AUDIT, code, code, q, vp, item, red, db, hb, dev))
 sql.append('COMMIT;')
 open(os.path.join(out, 'seed.sql'), 'w').write('\n'.join(sql) + '\n')
 print('devices %d' % n)

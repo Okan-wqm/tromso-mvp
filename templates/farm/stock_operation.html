@@ -8,26 +8,33 @@
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ heading }}{% endblock %}
 {% block content %}
-<p class="op-context"><strong>{{ unit.code }}</strong> · {{ unit.name }}{% if stock %} · {% blocktrans trimmed with fish=stock.count|fish biomass=stock.biomass_kg|kilos %}{{ fish }} fish, {{ biomass }} now{% endblocktrans %}{% endif %}</p>
-{% if not form %}
-<p class="notice notice-warning">{% blocktrans trimmed with unit=unit.code %}No fish are in {{ unit }}.{% endblocktrans %}</p>
+<p class="op-context"><strong>{{ unit.code }}</strong> · {{ unit.name }}{% if stock %} · {% blocktrans trimmed with fish=stock.count|fish biomass=stock.biomass_kg|kilos %}{{ fish }} fish, {{ biomass }} now{% endblocktrans %}{% elif form %} · {% trans "no fish now" %}{% endif %}</p>
+{% if not form and stock %}
+<p class="notice notice-warning">{% blocktrans trimmed with unit=unit.code %}{{ unit }} holds cleaner fish only: they are not harvested. Record their cull at the end of their use.{% endblocktrans %}</p>
+<div class="form-actions"><a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Close" %}</a></div>
+{% elif not form %}
+<p class="notice notice-warning">{% blocktrans trimmed with unit=unit.code count days=window_days %}No fish are in {{ unit }}, and none were in it in the last {{ days }} day: there is nothing to record here.{% plural %}No fish are in {{ unit }}, and none were in it in the last {{ days }} days: there is nothing to record here.{% endblocktrans %}</p>
 <div class="form-actions"><a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Close" %}</a></div>
 {% else %}
 <form method="post" action="{{ request.get_full_path }}" class="record-form" novalidate>
   {% csrf_token %}
   {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
   {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+  {% include "farm/_withdrawal_change.html" with withdrawal_change=form.withdrawal_change %}
   {% for hidden in form.hidden_fields %}{% if hidden.errors %}<div class="form-error" role="alert">{{ hidden.errors }}</div>{% endif %}{% endfor %}
-  {% with share=form.only_batch %}{% if share %}
+  {% with share=form.only_batch %}{% if share.past %}
+  <p class="op-batch">{% blocktrans trimmed with batch=share.batch.code unit=unit.code date=share.until|date:"DATE_FORMAT" %}Batch {{ batch }}: in {{ unit }} until {{ date }}{% endblocktrans %}</p>
+  {% elif share %}
   <p class="op-batch">{% blocktrans trimmed with batch=share.batch.code fish=share.count|fish weight=share.avg_weight_g|grams %}Batch {{ batch }}: {{ fish }} fish at {{ weight }}{% endblocktrans %}</p>
   {% endif %}{% endwith %}
+  {% if form.past %}<p class="notice">{% blocktrans trimmed with unit=unit.code count days=window_days %}Fish that left {{ unit }} in the last {{ days }} day are offered too: date the record on a day they were in the unit. A record that would leave a later operation without its fish is refused, and says which.{% plural %}Fish that left {{ unit }} in the last {{ days }} days are offered too: date the record on a day they were in the unit. A record that would leave a later operation without its fish is refused, and says which.{% endblocktrans %}</p>{% endif %}
   {% if plan %}<p class="op-plan">{% blocktrans trimmed with date=plan.date|date:"DATE_FORMAT" %}From the plan of {{ date }}: it is linked to the plan when it is recorded.{% endblocktrans %}</p>{% endif %}
   {% if estimate %}
   <p class="op-batch estimate-line">{% blocktrans trimmed with weight=estimate.estimated_g|grams date=estimate.day|date:"DATE_FORMAT" %}Estimated {{ weight }} on {{ date }}{% endblocktrans %}{% if estimate.days is not None %} ({% blocktrans trimmed count days=estimate.days %}{{ days }} day since the last measured weight{% plural %}{{ days }} days since the last measured weight{% endblocktrans %}){% endif %}{% if estimate.entered_g is not None %}; {% blocktrans trimmed with weight=estimate.entered_g|grams grams=estimate.difference_g|difference:1 percent=estimate.difference_pct|difference:1 %}you entered {{ weight }}: {{ grams }} g, {{ percent }} %{% endblocktrans %}{% endif %}.{% if estimate.blind_days %} <span class="warn-text">{% blocktrans trimmed count days=estimate.blind_days %}The estimate is incomplete: {{ days }} feeding day without an expected FCR.{% plural %}The estimate is incomplete: {{ days }} feeding days without an expected FCR.{% endblocktrans %}</span>{% endif %}</p>
   {% endif %}
   {% block intro %}{% endblock %}
   <div class="form-grid">
-    {% for field in form.visible_fields %}{% if field.name != form.ack_field and field.name != "handling_ack" %}{% include "registration/_field.html" %}{% endif %}{% endfor %}
+    {% for field in form.visible_fields %}{% if field.name in form.ack_fields %}{% elif field.name != "handling_ack" %}{% include "registration/_field.html" %}{% endif %}{% endfor %}
   </div>
   {% if rows %}
   <fieldset class="form-fieldset" data-formset>
@@ -42,9 +49,9 @@
   </fieldset>
   {% endif %}
   {% if form.handling_kind %}{% include "farm/_handling_panel.html" %}{% endif %}
-  {% if form.needs_ack %}
-  <div class="notice notice-warning">{% with field=form.ack %}{% include "registration/_field.html" %}{% endwith %}</div>
-  {% endif %}
+  {% for field in form.shown_acks %}
+  <div class="notice notice-warning">{% include "registration/_field.html" %}</div>
+  {% endfor %}
   <div class="form-actions">
     <a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Cancel" %}</a>
     <button type="submit" class="button button-inline">{{ heading }}</button>

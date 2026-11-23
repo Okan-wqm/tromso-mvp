@@ -19,6 +19,8 @@ SCIENTIFIC_NAME_MESSAGE = _('Write the genus and the species in Latin letters, e
 OFFICIAL_CODE_MESSAGE = _('The official code is three capital letters, e.g. SAL.')
 WATER_MESSAGE = _('Tick at least one water environment.')
 MAX_WITHDRAWAL_TEMPERATURE_C = 40       # far above any water a farm holds fish in: a typing slip, not an assumption
+# The size limit's bounds: 1 (only batches of the same average) to 1000 (a typing slip beyond it, never a farm's rule).
+MIN_WEIGHT_RATIO, MAX_WEIGHT_RATIO = 1, 1000
 
 
 def normalise_scientific_name(text):
@@ -70,6 +72,14 @@ class Species(CodedMixin, AuditedModel):
     projected at when no temperature was measured at all (farm/health/withdrawal.py). Empty counts a missing day
     as 0 °C and leaves a projection without a temperature unknown. The catalogue never fills it in.
 
+    The size limit (`max_weight_ratio`, 1 to 1000, a database check; empty: no check) is the farm's own rule too, the
+    owner's "fish of very different weights of the same species must not be in the same tank": how many times heavier,
+    on average, one batch of the species may be than another sharing a unit with it. A stocking, transfer or grading
+    beyond it asks for an acknowledgement, and a unit holding such a mix says so (farm/stock/services.py, read.py).
+    Migration 0034 gave every species there 2; a new species is offered 2 on its form, never given one by the code. A
+    cleaner fish is offered none (the owner, 2026-11-10: its cages are topped up with fish of other sizes); migration
+    0038 emptied the untouched default of the cleaner species already there.
+
     Status: "active" and "experimental" species are the ones offered for new batches (the batches
     tab); "inactive" and "discontinued" ones are not. There is no second flag `isActive`.
 
@@ -119,6 +129,10 @@ class Species(CodedMixin, AuditedModel):
         _('Assumed water temperature for withdrawal (°C)'), max_digits=4, decimal_places=1, null=True, blank=True,
         validators=[MinValueValidator(0), MaxValueValidator(MAX_WITHDRAWAL_TEMPERATURE_C)],
     )
+    max_weight_ratio = models.DecimalField(
+        _('Max weight ratio of batches in one unit'), max_digits=6, decimal_places=2, null=True, blank=True,
+        validators=[MinValueValidator(MIN_WEIGHT_RATIO), MaxValueValidator(MAX_WEIGHT_RATIO)],
+    )
     notes = models.CharField(_('Notes'), max_length=2000, blank=True)
 
     class Meta:
@@ -160,6 +174,10 @@ class Species(CodedMixin, AuditedModel):
                 name='chk_species_withdrawal_temperature',      # empty passes: a check on NULL is unknown, not false
             ),
             models.CheckConstraint(
+                condition=Q(max_weight_ratio__gte=MIN_WEIGHT_RATIO, max_weight_ratio__lte=MAX_WEIGHT_RATIO),
+                name='chk_species_max_weight_ratio',            # empty passes: no check
+            ),
+            models.CheckConstraint(
                 condition=Q(freshwater=True) | Q(brackish=True) | Q(saltwater=True), name='chk_species_water',
                 violation_error_message=WATER_MESSAGE,
             ),
@@ -178,6 +196,16 @@ class Species(CodedMixin, AuditedModel):
     def water_environments(self):
         """The labels of the water environments ticked, e.g. [Fresh water, Sea water]."""
         return [self._meta.get_field(name).verbose_name for name in self.WATER_FIELDS if getattr(self, name)]
+
+    def withdrawal_blockers(self):
+        """Why the species is not deleted or restored now: its assumed water temperature counts the degree-days of its
+        batches on a day without a measured one, so a withdrawal that holds one waits
+        (farm.health.withdrawal.held_reached; the withdrawal gate's rule, farm/apps.py)."""
+        from ..health.withdrawal import held_reached
+        return held_reached(species=self)
+
+    def delete_blockers(self):
+        return self.withdrawal_blockers()
 
     def clean(self):
         super().clean()

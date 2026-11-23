@@ -1,15 +1,17 @@
 """The farm's dates, one rule for every daily record (a stock operation, a feeding, a water sample, a
 movement of the store): today is the farm's own day, on the clock of the site (farm.models.site.zone_of),
-never the UTC date of a browser; a record may be dated at most STOCK_BACKDATE_DAYS back and never in the
-future, and the same window says how old a record may be voided (owner decisions Q3 and Q-F4). A record
+never the UTC date of a browser; a record may be dated at most the correction window back (the platform owner's
+setting, core.platform; 31 days until they set another) and never in the future, and the same window says how old a
+record may be voided (owner decisions Q3 and Q-F4). A record
 of a unit is on its site's clock; a movement of the store (inventory) on the clocks of the sites of its
 storage locations."""
 from datetime import datetime, time, timedelta
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils import formats, timezone
 from django.utils.translation import gettext as _
+
+from core.platform import correction_window_days, window_way_out
 
 from farm.models.site import zone_of
 
@@ -21,7 +23,7 @@ def site_today(site):
 
 def site_earliest(site):
     """The first day a record on the site may be dated (and the oldest one that may be voided)."""
-    return site_today(site) - timedelta(days=settings.STOCK_BACKDATE_DAYS)
+    return site_today(site) - timedelta(days=correction_window_days())
 
 
 def _site(unit):
@@ -36,6 +38,13 @@ def sites_of(units):
 def local_today(unit=None):
     """Today on the farm: on the clock of the unit's site, else the company's."""
     return site_today(_site(unit))
+
+
+def earliest_today(units):
+    """The earliest today among the units' sites, the company's when there are none: the one day the withdrawals of
+    fish on sites of several clocks are worked out on (the fish are held the longest so), for a write's guard and for
+    a page alike."""
+    return min((local_today(unit) for unit in units), default=local_today())
 
 
 def earliest(unit=None):
@@ -58,16 +67,30 @@ def shown_date(day):
     return formats.date_format(day, 'DATE_FORMAT')
 
 
-def check_date(day, units):
-    """Refuses a date in the future or before the backdating window of any of the units."""
-    check_site_date(day, sites_of(units))
+def too_old(text, also=''):
+    """A refusal by the correction window as a person can act on it (flow fault B-07): `text` (what is refused, with
+    the days), `also` (another way for this kind of record: an opening balance for fish the farm already had), then
+    whose setting the window is and where it is changed (core.platform.window_way_out). Every refusal by the window is
+    worded here."""
+    return ' '.join(part for part in (text % {'days': correction_window_days()}, also, window_way_out()) if part)
 
 
-def check_site_date(day, sites):
+def opening_way_out():
+    """Where fish that were on the farm before the window are registered: said when a stocking is refused by it."""
+    from core import navigation
+    return _('Fish the farm already had before then are registered as an opening balance (%(where)s), by the platform '
+             'owner.') % {'where': navigation.trail('farm.view_openingbalance', _('Opening balances'))}
+
+
+def check_date(day, units, also=''):
+    """Refuses a date in the future or before the backdating window of any of the units (`also`: too_old's)."""
+    check_site_date(day, sites_of(units), also)
+
+
+def check_site_date(day, sites, also=''):
     """Refuses a date in the future or before the backdating window on the clock of any of the sites."""
     for site in sites:
         if day > site_today(site):
             raise ValidationError({'date': _('The date cannot be in the future.')})
         if day < site_earliest(site):
-            raise ValidationError({'date': _('Operations can be dated at most %(days)d days back.')
-                                   % {'days': settings.STOCK_BACKDATE_DAYS}})
+            raise ValidationError({'date': too_old(_('Operations can be dated at most %(days)d days back.'), also)})

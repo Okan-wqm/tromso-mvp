@@ -1,0 +1,9 @@
+{% load i18n %}{% autoescape off %}{% blocktrans trimmed %}Hi {{ name }},{% endblocktrans %}
+
+{% blocktrans trimmed %}Your username is {{ username }}.{% endblocktrans %}
+{% trans "Open this link to set a new password:" %}
+{{ link }}
+
+{% blocktrans trimmed count hours=hours %}The link works once and expires after {{ hours }} hour.{% plural %}The link works once and expires after {{ hours }} hours.{% endblocktrans %}
+{% trans "If you did not ask for this, you can ignore this email." %}
+{% endautoescape %}

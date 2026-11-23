@@ -7,13 +7,13 @@ page of computed rows.
 - Production plans: every batch in stock in each unit it is in, with its target weight, its estimated weight
   now and the day it reaches the target (farm/harvest/forecast.py, from the feeding protocols' projection).
   "Plan harvest" starts a planned harvest of the share at the target weight, on that day."""
-from datetime import date
 from urllib.parse import urlencode
 
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from core.crud import Resource
+from core.dates import read_day
 
 from ..feeding import read as feeding_read
 from ..forms.harvest import FROM_ADDRESS, HandlingPlanItemForm, ProductionPlanForm, planned_kg
@@ -26,13 +26,6 @@ from ..stock import read as stock_read
 from ..stock.dates import local_today
 
 RECORD = 'farm.add_stockoperation'
-
-
-def _day(value):
-    try:
-        return date.fromisoformat(value)
-    except ValueError:
-        return None
 
 
 class FromAddress:
@@ -78,8 +71,8 @@ class HandlingPlanItemResource(FromAddress, Resource):
             else:
                 chosen[key] = ''
         for key, lookup in (('from', 'date__gte'), ('to', 'date__lte')):
-            day = _day(chosen[key])
-            chosen[key] = day.isoformat() if day else ''
+            day = read_day(chosen[key], request)
+            chosen[key] = day or ''          # a date: the input shows it as the language writes it
             if day:
                 objects = objects.filter(**{lookup: day})
         rows = [plan_row(request, item) for item in objects]
@@ -105,7 +98,7 @@ def plan_row(request, item):
     if not item.is_open:
         return row
     row['fast'] = fasting.fast_of(item)
-    row['withdrawal'] = check.in_force(item.unit, item.date, [item.batch])
+    row['withdrawal'] = check.in_force(item.unit, item.date)      # the unit's: of every batch in it (S-02)
     if item.kind == PlanKind.HARVEST:       # a transport moves live fish: no suitable date to a slaughter facility
         row['earliest'] = check.earliest(item.unit, item.batch)
     if request.user.has_perm(RECORD) and stock_read.fish_of_batch(item.batch_id).get(item.unit_id):
@@ -155,7 +148,7 @@ class ProductionPlanResource(FromAddress, Resource):
         plans = {plan.batch_id: plan for plan in objects}
         units = list(Tank.objects.select_related('production_department__site').order_by('code'))
         stock = stock_read.stock_of(units)
-        feeding = feeding_read.figures(stock)
+        last_fed = feeding_read.last_fed_in(stock)      # all the page shows of the feeding figures: no feeding walk
         sites = sorted({unit.production_department.site for unit in units if unit.pk in stock
                         and unit.production_department.site}, key=lambda site: site.name)
         chosen_site = request.GET.get('site', '')
@@ -164,7 +157,7 @@ class ProductionPlanResource(FromAddress, Resource):
         query = request.GET.get('q', '').strip().lower()
         estimates = forecast.forecasts([(item.unit, share) for item in stock.values() for share in item.counted],
                                        {batch_id: plan.target_weight_g for batch_id, plan in plans.items()})
-        rows = []
+        shown = []
         for unit_id, unit_stock in stock.items():
             unit = unit_stock.unit
             if chosen_site and str(unit.production_department.site_id) != chosen_site:
@@ -175,21 +168,30 @@ class ProductionPlanResource(FromAddress, Resource):
                          batch.species.local_name]
                 if query and not any(query in word.lower() for word in words if word):
                     continue
-                row = share_row(request, unit, share, plans.get(batch.pk), feeding.get(unit_id))
-                row['forecast'] = estimates.get((unit_id, batch.pk))
-                rows.append(_plan_date(row))
+                shown.append((unit, share))
+        # The withdrawals in force and the earliest dates of every row in one read each, not one per row.
+        withdrawals = check.holding_of(list({unit.pk: unit for unit, _share in shown}.values()))
+        earliest = check.earliest_of([(unit, share.batch) for unit, share in shown], holding=withdrawals)
+        rows = []
+        for unit, share in shown:
+            row = share_row(request, unit, share, plans.get(share.batch.pk), last_fed.get(unit.pk),
+                            None if withdrawals is None else withdrawals[unit.pk], earliest[(unit.pk, share.batch.pk)])
+            row['forecast'] = estimates.get((unit.pk, share.batch.pk))
+            rows.append(_plan_date(row))
         if not chosen_site and not query:
             in_stock = stock_read.batches_in_stock()
             rows += [{'plan': plan, 'share': None} for batch_id, plan in plans.items() if batch_id not in in_stock]
         return rows, {'sites': sites, 'chosen_site': chosen_site, 'tabs': harvest_views.tabs(request, 'targets')}
 
 
-def share_row(request, unit, share, plan, feeding):
-    """A batch in a unit: its fish and book average, its target, and the links to set it and plan a harvest."""
+def share_row(request, unit, share, plan, fed, withdrawal, earliest):
+    """A batch in a unit: its fish and book average, its target, and the links to set it and plan a harvest.
+    `fed`: the unit's last feeding (feeding.read.last_fed_in, a LastFed or None); `withdrawal`: the blocks in force
+    that hold the unit's fish today (check.in_force: the unit's, of every batch in it, S-02; None: not checked);
+    `earliest`: the batch's check.Earliest there (all three read for the page at once)."""
     today = local_today(unit)
-    row = {'unit': unit, 'share': share, 'plan': plan, 'last_fed': feeding.last_fed if feeding else None,
-           'today': today, 'withdrawal': check.in_force(unit, today, [share.batch]),
-           'earliest': check.earliest(unit, share.batch),
+    row = {'unit': unit, 'share': share, 'plan': plan, 'last_fed': fed.record.date if fed else None,
+           'today': today, 'withdrawal': withdrawal, 'earliest': earliest,
            'expected': share.batch.expected_harvest_date, 'plan_harvest_url': ''}
     if request.user.has_perm('farm.add_handlingplanitem'):
         prefill = {'kind': PlanKind.HARVEST, 'unit': unit.pk, 'batch': share.batch.pk,

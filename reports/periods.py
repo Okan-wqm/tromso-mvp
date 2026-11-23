@@ -12,6 +12,8 @@ from zoneinfo import ZoneInfo
 from django.utils import formats, timezone
 from django.utils.translation import gettext as _
 
+from core.dates import read_period
+
 OSLO = ZoneInfo('Europe/Oslo')
 
 WEEK, MONTH, YEAR = 'week', 'month', 'year'
@@ -97,14 +99,12 @@ class Period:
 
     @classmethod
     def from_key(cls, key):
-        """The period written as `key` (2026-W45, 2026-11, 2026); ValueError when it is not one."""
-        if '-W' in key:
-            year, week = key.split('-W')
-            return cls(WEEK, date.fromisocalendar(int(year), int(week), 1))
-        if '-' in key:
-            year, month = key.split('-')
-            return cls(MONTH, date(int(year), int(month), 1))
-        return cls(YEAR, date(int(key), 1, 1))
+        """The period written as `key` (2026-W45, 2026-11, 2026); ValueError when it is not one (core.dates.read_period:
+        the one reader, inside the window of dates)."""
+        found = read_period(key)
+        if found is None:
+            raise ValueError(f'Not a period: {key!r}')
+        return cls(*found)
 
     def label(self):
         """The period as a person reads it, in their language: week 45 of 2026, November 2026, 2026."""

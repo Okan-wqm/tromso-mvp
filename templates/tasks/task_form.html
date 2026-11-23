@@ -1,16 +1,16 @@
 {% extends "crud/form.html" %}
-{% load i18n tasks assets %}
+{% load i18n tasks assets dates %}
 {% block extra_head %}<link rel="stylesheet" href="{% asset 'css/tasks.css' %}">{% endblock %}
 {% comment %} A task's form adds its checklist on a tab of its own, saved as a list (core.crud.RowList) until a line is
    ticked; after that the lines are shown as they are, ticked on the Tasks page.{% endcomment %}
-{% block extra_tabs %}<button type="button" role="tab" class="tab" data-tab="checklist">{% trans "Checklist" %}</button>{% endblock %}
+{% block extra_tabs %}<button type="button" role="tab" class="ui-tab" data-tab="checklist">{% trans "Checklist" %}</button>{% endblock %}
 {% block extra_panels %}
 {% if checklist_started %}
 <section class="tab-panel" data-panel="checklist" aria-labelledby="checklist-title">
   <h3 class="panel-title" id="checklist-title">{% trans "Checklist" %}</h3>
   <p class="panel-help">{% trans "The checklist has been started: its lines can no longer be changed. Add a note instead." %}</p>
   <ul class="task-checklist">
-    {% for line in checklist_lines %}<li class="{% if line.done_at %}is-done{% endif %}"><span aria-hidden="true">{% if line.done_at %}☑{% else %}☐{% endif %}</span> {{ line.text }}{% if line.done_at %}<span class="row-sub">{{ line.done_by|person }} · {{ line.done_at|date:"DATETIME_FORMAT" }}</span>{% endif %}</li>{% endfor %}
+    {% for line in checklist_lines %}<li class="{% if line.done_at %}is-done{% endif %}"><span aria-hidden="true">{% if line.done_at %}☑{% else %}☐{% endif %}</span> {{ line.text }}{% if line.done_at %}<span class="row-sub">{{ line.done_by|person }} · {{ line.done_at|site_clock:object.place_site|date:"DATETIME_FORMAT" }}</span>{% endif %}</li>{% endfor %}
   </ul>
 </section>
 {% else %}

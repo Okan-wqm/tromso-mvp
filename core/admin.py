@@ -70,3 +70,6 @@ def register_audited(app_label):
 # Users and roles are managed on their own screens (Administration), where every change is written to
 # the activity log; Django's stock admin for them would change them without a trace.
 admin.site.unregister([User, Group])
+
+# The platform owner's settings: a row a restore left deleted comes back here.
+register_audited('core')

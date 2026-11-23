@@ -5,10 +5,13 @@
 #
 #   sensors-ingest/tests/run.sh            all of the above
 #   TEST_DB=other_name tests/run.sh        another test database
+#   DB_NETWORK=net DB_HOST=name tests/run.sh   another database server (its docker network and host name)
 #
-# Needs: docker, the image `timescale/timescaledb:2.17.2-pg17` (psql), a Django image with the requirements
-# (DJANGO_IMAGE, default balik-testrunner:latest), and the Rust image (RUST_IMAGE, default sensors-ingest-dev:1.88 =
-# rust:1.88.0-slim-bookworm plus clippy and rustfmt, built by this script when missing).
+# Needs: docker, the image `timescale/timescaledb:2.17.2-pg17` (psql), the Django image that migrates the schema
+# (DJANGO_IMAGE, default the test runner's image as scripts/testrunner/image.sh defines it, the one CI migrates in,
+# built when missing: no server starts without the water-chemistry core in it), and the Rust image (RUST_IMAGE,
+# default sensors-ingest-dev:1.88 = rust:1.88.0-slim-bookworm plus clippy and rustfmt, built by this script when
+# missing).
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 export MSYS_NO_PATHCONV=1
@@ -17,7 +20,7 @@ NET=${DB_NETWORK:-balik-ciftligi_default}
 DB_HOST=${DB_HOST:-db}
 TEST_DB=${TEST_DB:-sensors_ingest_test}
 [ "$TEST_DB" != balik ] || { echo "refusing to use the dev database"; exit 2; }
-DJANGO_IMAGE=${DJANGO_IMAGE:-balik-testrunner:latest}
+DJANGO_IMAGE=${DJANGO_IMAGE:-$(sh scripts/testrunner/image.sh build)}
 RUST_IMAGE=${RUST_IMAGE:-sensors-ingest-dev:1.88}
 REPO=$(win "$PWD")
 
@@ -36,7 +39,7 @@ docker run --rm --network "$NET" -v "$REPO:/app" -w /app -e DB_HOST="$DB_HOST" -
 # a broker with the production configuration (users ingest/ingest-pw and dev/dev-pw) for the live tests
 MOSQ=eclipse-mosquitto:2.0.20@sha256:21421af7b32bf9ce508e9090c8eb13bb81f410ca778dc205506180a6f862d0eb
 BROKER=sensors-ingest-test-broker
-cleanup() { docker rm -f "$BROKER" >/dev/null 2>&1 || true; docker volume rm si-test-broker-auth >/dev/null 2>&1 || true; }
+cleanup() { docker rm -f -v "$BROKER" >/dev/null 2>&1 || true; docker volume rm si-test-broker-auth >/dev/null 2>&1 || true; }
 cleanup
 trap cleanup EXIT
 docker run --rm -v si-test-broker-auth:/mosquitto/auth "$MOSQ" sh -c '

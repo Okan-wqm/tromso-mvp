@@ -4,11 +4,11 @@
 
 mod common;
 
-use chrono::{DateTime, Duration, Utc};
 use common::*;
 use sensors_ingest::config;
 use sensors_ingest::pipeline::{self, DeadLimiter, Msg};
 use sensors_ingest::service::{self, Acker, Envelope, Event, Settings, Shared};
+use sensors_ingest::ts::{Duration, Ts};
 use std::collections::HashMap;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
@@ -20,9 +20,9 @@ fn serial() -> std::sync::MutexGuard<'static, ()> {
     SERIAL.lock().unwrap_or_else(|p| p.into_inner())
 }
 
-fn t0() -> DateTime<Utc> {
-    let t = Utc::now() - Duration::days(20);
-    DateTime::from_timestamp(t.timestamp(), 0).unwrap()
+fn t0() -> Ts {
+    let t = Ts::now() - Duration::days(20);
+    Ts::from_unix_secs(t.unix_secs()).unwrap()
 }
 
 /// Records (message id, commits seen by the writer at the moment of the ack).
@@ -85,7 +85,7 @@ impl Harness {
         }
     }
 
-    async fn send(&self, generation: u64, id: u64, topic: &str, body: serde_json::Value, t: DateTime<Utc>) {
+    async fn send(&self, generation: u64, id: u64, topic: &str, body: serde_json::Value, t: Ts) {
         let msg = Msg {
             connection_id: self.conn,
             topic: topic.into(),
@@ -122,8 +122,8 @@ async fn plc(a: &tokio_postgres::Client) -> (Fx, i32) {
     (fx, ch)
 }
 
-fn body(t: DateTime<Utc>, v: f64) -> serde_json::Value {
-    serde_json::json!({"ts": t.to_rfc3339(), "a": v})
+fn body(t: Ts, v: f64) -> serde_json::Value {
+    serde_json::json!({"ts": t.to_string(), "a": v})
 }
 
 #[tokio::test]
@@ -286,7 +286,7 @@ async fn a_restarted_ingest_continues_exactly_where_the_committed_state_left() {
     let _g = serial();
     let a = admin(&url).await;
     let (fx, ch) = plc(&a).await;
-    let stream: Vec<(DateTime<Utc>, f64)> =
+    let stream: Vec<(Ts, f64)> =
         (0..400i64).map(|i| (t0() + Duration::seconds(i * 7), ((i * 37) % 23) as f64 * 0.11)).collect();
     for (part, range) in [(0, 0..170usize), (1, 170..400)] {
         let mut h = start(settings(&url), fx.connection);
@@ -312,9 +312,9 @@ async fn a_restarted_ingest_continues_exactly_where_the_committed_state_left() {
         })
         .collect();
     let out = pipeline::process(&cfg, &HashMap::new(), &mut DeadLimiter::new(10), &msgs);
-    let want: Vec<(DateTime<Utc>, f64, i32, i16)> =
+    let want: Vec<(Ts, f64, i32, i16)> =
         out.readings.iter().map(|r| (r.row.ts, r.row.value, r.row.n, r.row.quality)).collect();
-    let got: Vec<(DateTime<Utc>, f64, i32, i16)> = a
+    let got: Vec<(Ts, f64, i32, i16)> = a
         .query("SELECT ts, value, n, quality FROM sensors_reading WHERE channel_no = $1 ORDER BY ts", &[&ch])
         .await
         .unwrap()
@@ -375,9 +375,9 @@ async fn the_heartbeat_keeps_the_status_fresh_while_idle() {
     let mut h = start(settings(&url), fx.connection);
     h.ready().await;
     tokio::time::sleep(std::time::Duration::from_millis(400)).await;
-    let first: DateTime<Utc> = a.query_one("SELECT heartbeat_at FROM sensors_ingest_status", &[]).await.unwrap().get(0);
+    let first: Ts = a.query_one("SELECT heartbeat_at FROM sensors_ingest_status", &[]).await.unwrap().get(0);
     tokio::time::sleep(std::time::Duration::from_millis(800)).await;
-    let later: DateTime<Utc> = a.query_one("SELECT heartbeat_at FROM sensors_ingest_status", &[]).await.unwrap().get(0);
+    let later: Ts = a.query_one("SELECT heartbeat_at FROM sensors_ingest_status", &[]).await.unwrap().get(0);
     assert!(later > first);
     assert!(h.shared.last_db_ok.load(Ordering::SeqCst) > 0);
     h.stop().await;

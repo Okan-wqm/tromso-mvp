@@ -1,0 +1,20 @@
+{% load i18n %}
+{% comment %} The withdrawal guard's question (farm.health.withdrawal.guarded): what this write does to a medicine withdrawal
+   (a harvest already recorded now inside one, fish held today freed, fish combined with held fish or held again) and the box to go on, whose value is the
+   warnings' fingerprint, so changed warnings are asked again. Given `withdrawal_change` (a form's, or a page's).{% endcomment %}
+{% if withdrawal_change %}
+<section class="handling-panel" aria-labelledby="withdrawal-change-title">
+  <h3 class="handling-title" id="withdrawal-change-title">{% trans "Medicine withdrawal" %}</h3>
+  <div class="notice notice-warning handling-warnings" role="alert">
+    <ul role="list">{% for text in withdrawal_change.messages %}<li>{{ text }}</li>{% endfor %}</ul>
+    {% if withdrawal_change.second_person %}
+    <p class="form-error" role="alert">{{ withdrawal_change.second_person }}</p>
+    {% else %}
+    <div class="field">
+      <label class="check"><input type="checkbox" name="withdrawal_ack" value="{{ withdrawal_change.fingerprint }}" aria-describedby="withdrawal-ack-help"> {% trans "Go on despite these warnings" %}</label>
+      <div class="help" id="withdrawal-ack-help">{% trans "Fish under a medicine withdrawal must not go to food. Going on is stored with what is shown here and logged as critical." %}</div>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endif %}

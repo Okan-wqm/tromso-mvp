@@ -7,7 +7,7 @@ read (farm/feeding/ration.py, projection.py), nothing about them is stored.
 
 Who may do what: reading the board and Records needs view on the feeding records, recording one add, voiding one
 delete (config/access.py); the buttons a person cannot use are not shown, and the views refuse them too."""
-from datetime import date, time, timedelta
+from datetime import time, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from urllib.parse import urlencode
 
@@ -23,8 +23,10 @@ from django.utils.translation import gettext as _, ngettext
 
 from core import navigation
 from core.crud import done, render_page
+from core.dates import read_day
 
 from .. import placements
+from ..clocks import clocks, own_days
 from ..forms.feeding import FeedingForm, feed_label
 from ..forms.stock import VoidForm
 from ..handling.fasting import fasting_on
@@ -68,14 +70,7 @@ def _with_next(url, request):
 
 
 # ---- the list ------------------------------------------------------------------------------------
-def _day(value):
-    try:
-        return date.fromisoformat(value)
-    except ValueError:
-        return None
-
-
-def _filtered(params):
+def _filtered(params, request):
     """The records the filters choose, voided ones only when asked for, newest first; and the filters'
     values that name something (a stale link shows everything, as the other pages do)."""
     records = FeedingRecord.all_objects.select_related(
@@ -95,8 +90,8 @@ def _filtered(params):
         else:
             params[key] = ''
     for key, lookup in (('from', 'date__gte'), ('to', 'date__lte')):
-        day = _day(params[key])
-        params[key] = day.isoformat() if day else ''
+        day = read_day(params[key], request)
+        params[key] = day or ''          # a date: the input shows it as the language writes it
         if day:
             records = records.filter(**{lookup: day})
     batch = choices['batch'].filter(pk=params['batch']).first() if stock_views._is_uuid(params['batch']) else None
@@ -112,7 +107,7 @@ def feeding_records(request):
     if request.GET.get('view') == DAYS:
         return _by_day(request)
     params = {key: request.GET.get(key, '').strip() for key in FILTERS}
-    records, choices = _filtered(params)
+    records, choices = _filtered(params, request)
     totals = records.aggregate(count=Count('pk'), kilos=Sum('amount_kg', filter=Q(is_deleted=False)))
     page = Paginator(records, PAGE_SIZE).get_page(request.GET.get('page'))
     rows = list(page.object_list)
@@ -153,12 +148,12 @@ def _by_day(request):
     corrections. At most SPAN days a page, the last 7 by default; computed on read in one walk."""
     params = {key: request.GET.get(key, '').strip() for key in DAY_FILTERS}
     today = local_today()
-    last = min(_day(params['to']) or today, today)
-    first = min(_day(params['from']) or last - timedelta(days=read.WEEK - 1), last)
+    last = min(read_day(params['to'], request) or today, today)
+    first = min(read_day(params['from'], request) or last - timedelta(days=read.WEEK - 1), last)
     clipped = (last - first).days >= SPAN
     if clipped:
         first = last - timedelta(days=SPAN - 1)
-    params['from'], params['to'] = first.isoformat(), last.isoformat()
+    params['from'], params['to'] = first, last              # dates: an input shows them as the language writes them
     units = list(Tank.objects.select_related('production_department__site').order_by('code'))
     choices = {'site': sorted({unit.production_department.site for unit in units if unit.production_department.site},
                               key=lambda site: site.name),
@@ -265,8 +260,12 @@ def meal_board(request):
         batches = {share.batch.pk: share.batch for share in stock[unit.pk].shares}
         lines = read.meal_lines(unit_day, batches, today[unit.pk])
         temperature = next((line['share'].end.temperature for line in lines if line['share'].end.temperature), None)
+        # The chip compares the weights the lines show: the estimate where feed was credited since the measured point.
+        factors = {line['share'].batch_id: line['share'].end_g / line['share'].measured_g for line in lines
+                   if line['share'].fed_since_kg > 0 and line['share'].measured_g}
         rows.append({
             'unit': unit, 'stock': stock[unit.pk], 'day': unit_day, 'lines': lines, 'temperature': temperature,
+            'mixes': stock[unit.pk].size_mixes_at(factors),
             'placements': chips.get(unit.pk, ()),
             'record_url': f'{reverse("farm:feeding_record", args=[unit.pk])}?'
                           f'{urlencode({"meal": "next", "next": here})}' if can_record else '',
@@ -292,15 +291,18 @@ def next_meal(unit):
 # ---- the dialogs ---------------------------------------------------------------------------------
 @permission_required(RECORD, raise_exception=True)
 def choose_unit(request):
-    """Record feeding from the list: the units with fish, each opening its feeding dialog."""
+    """Record feeding from the list: the units with fish, and those whose fish left on a day that may still be dated
+    (a feeding of such a day can still be entered, flow fault S-04), each opening its feeding dialog."""
     units = list(Tank.objects.select_related('production_department__site').order_by('code'))
     stock = stock_read.stock_of(units)
+    left = stock_read.left_within([unit for unit in units if unit.pk not in stock], earliest)
     target = request.GET.get('next', '')
     query = f'?{urlencode({"next": target})}' if target else ''
     return render_page(request, 'farm/feeding_choose.html', _context(
         heading=_('Record feeding'), back_url=_back(request),
-        units=[{'unit': unit, 'stock': stock[unit.pk], 'url': reverse('farm:feeding_record', args=[unit.pk]) + query}
-               for unit in units if unit.pk in stock]))
+        units=[{'unit': unit, 'stock': stock.get(unit.pk), 'left': left.get(unit.pk),
+                'url': reverse('farm:feeding_record', args=[unit.pk]) + query}
+               for unit in units if unit.pk in stock or unit.pk in left]))
 
 
 def _split(unit, day, target=FeedTarget.PRODUCTION):
@@ -375,7 +377,8 @@ def void_feeding(request, pk):
         form = VoidForm(request.POST)
         if form.is_valid():
             try:
-                services.void_feeding(request.user, record, form.cleaned_data['reason'])
+                services.void_feeding(request.user, record, form.cleaned_data['reason'],
+                                      withdrawal_ack=form.cleaned_data['withdrawal_ack'])
             except ValidationError as error:
                 form.add_service_error(error)
             else:
@@ -416,19 +419,36 @@ def drawer(request, unit, stock, feeding, query):
 
 
 def overview_tiles(user):
-    """The production overview's feed figures: fed today and over the last 7 days on the whole farm (the
-    company's today), for people who may read the feeding records."""
+    """The production overview's feed figures: fed today and over the last 7 days on the whole farm, **each site on its
+    own day** (the owner's decision of 12.11.2026; farm.clocks.own_days). Feed recorded on a site's today is in "Feed
+    today" at once, whatever the company's clock says; the 7 days are each site's own last 7; a figure over sites on
+    different clocks is the sum of each site's own day, and the cards of a farm with more than one clock say so
+    (`sub`). Each card opens the records of its days, from the earliest to the latest among the sites (on a farm whose
+    sites are on different days just then, that list holds a day more of one site than the figure). For people who may
+    read the feeding records.
+
+    **A unit whose department has no site** (a row a deleted site left, farm 0029) reads the company's day everywhere
+    (`local_today`), and so here: the company's clock is one of the clocks counted. **One query, bounded**: the sums
+    have their own days in FILTER clauses, and the query reads only the records of the days some clock counts, from
+    the first of the earliest clock's seven days to the latest clock's today, never the whole table."""
     if not user.has_perm(VIEW):
         return []
-    today = local_today()
-    first = today - timedelta(days=read.WEEK - 1)
-    kilos = FeedingRecord.objects.filter(date__range=(first, today)).aggregate(
-        today=Sum('amount_kg', filter=Q(date=today)), week=Sum('amount_kg'))
+    now = clocks()                                         # the sites' clocks, and the company's for a unit with no site
+    site = 'unit__production_department__site'
+    todays = [clock.today for clock in now]
+    kilos = FeedingRecord.objects.filter(
+        date__range=(min(todays) - timedelta(days=read.WEEK - 1), max(todays)),
+    ).aggregate(today=Sum('amount_kg', filter=own_days(now, site)),
+                week=Sum('amount_kg', filter=own_days(now, site, read.WEEK)))
+    days = [clock.today for clock in now if clock.sites is not None] or todays       # the cards open the sites' days
+    earliest_day, latest_day = min(days), max(days)
+    first = earliest_day - timedelta(days=read.WEEK - 1)
+    sub = _('Each site on its own day') if len({clock.zone for clock in now if clock.sites is not None}) > 1 else ''
     url = reverse('farm:feeding_records')
     return [
-        {'label': _('Feed today'), 'count': tonnes(kilos['today'] or 0),
-         'url': f'{url}?{urlencode({"from": today.isoformat(), "to": today.isoformat()})}'},
-        {'label': _('Feed, last 7 days'), 'count': tonnes(kilos['week'] or 0),
-         'url': f'{url}?{urlencode({"from": first.isoformat(), "to": today.isoformat()})}'},
+        {'key': 'today', 'label': _('Feed today'), 'count': tonnes(kilos['today'] or 0), 'sub': sub,
+         'url': f'{url}?{urlencode({"from": earliest_day.isoformat(), "to": latest_day.isoformat()})}'},
+        {'key': 'week', 'label': _('Feed, last 7 days'), 'count': tonnes(kilos['week'] or 0), 'sub': sub,
+         'url': f'{url}?{urlencode({"from": first.isoformat(), "to": latest_day.isoformat()})}'},
     ]
 

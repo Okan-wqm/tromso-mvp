@@ -1,4 +1,4 @@
-{% load i18n inventory %}
+{% load i18n inventory dates %}
 {% comment %} The Counts tab: each count of a location, newest first, with its variance per lot worked out on read
    against the book at the end of its day (never stored), who counted, and Void while allowed.{% endcomment %}
 {% if count_url %}<div class="toolbar"><a class="button button-inline" href="{{ count_url }}" data-modal>{% include "icons/_icon.html" with name="plus" %}{% trans "Count a location" %}</a></div>{% endif %}
@@ -13,7 +13,7 @@
 <section class="overview-block op-entry{% if operation.is_deleted %} is-voided{% endif %}">
   <h2>{% blocktrans trimmed with location=operation.location.code site=operation.location.site.name date=operation.date|date:"DATE_FORMAT" %}{{ location }} ({{ site }}), {{ date }}{% endblocktrans %}
     {% if entry.void_url %}<a class="op-void" href="{{ entry.void_url }}" data-modal>{% trans "Void" %}</a>{% elif operation.is_deleted %}<span class="badge badge-voided">{% trans "Voided" %}</span>{% endif %}</h2>
-  <p class="row-sub">{% blocktrans trimmed with name=operation.created_by.get_username|default:"system" when=operation.created_at|date:"DATETIME_FORMAT" %}Counted by {{ name }}, recorded {{ when }}{% endblocktrans %}{% if operation.notes %} · {{ operation.notes }}{% endif %}{% if operation.is_deleted %} · {% blocktrans trimmed with reason=operation.void_reason %}voided: {{ reason }}{% endblocktrans %}{% endif %}</p>
+  <p class="row-sub">{% blocktrans trimmed with name=operation.created_by.get_username|default:"system" when=operation.created_at|company_clock|date:"DATETIME_FORMAT" %}Counted by {{ name }}, recorded {{ when }}{% endblocktrans %}{% if operation.notes %} · {{ operation.notes }}{% endif %}{% if operation.is_deleted %} · {% blocktrans trimmed with reason=operation.void_reason %}voided: {{ reason }}{% endblocktrans %}{% endif %}</p>
   {% if operation.is_deleted %}{% elif entry.variances %}
   <div class="table-wrap">
     <table class="data-table">

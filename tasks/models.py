@@ -189,8 +189,6 @@ class TaskSeries(AtPlace, AuditedModel):
     is_active = models.BooleanField(_('Active'), default=True)
     # The last day its tasks were made up to (tasks.services.materialise); None before the first time.
     generated_until = models.DateField(null=True, blank=True, editable=False)
-    # The key of the form it was created with (core.crud.ENTRY_KEY): the same form sent twice creates one.
-    entry_key = models.UUIDField(null=True, blank=True, unique=True, editable=False)
 
     class Meta:
         db_table = 'task_series'
@@ -359,8 +357,6 @@ class Task(AtPlace, AuditedModel):
     cancelled_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT,
                                      related_name='+', editable=False, verbose_name=_('Cancelled by'))
     cancel_reason = models.CharField(_('Reason for cancelling'), max_length=500, blank=True, editable=False)
-    # The key of the form it was created with (core.crud.ENTRY_KEY): the same form sent twice creates one task.
-    entry_key = models.UUIDField(null=True, blank=True, unique=True, editable=False)
 
     objects = TaskManager()
     all_objects = TaskQuerySet.as_manager()
@@ -483,7 +479,16 @@ class TaskChecklistItem(models.Model):
 
 class TaskNote(models.Model):
     """A note on a task by a person who can read it: part of the task's record, never edited or removed
-    (tasks.services.add_note is its only writer), and in the activity log."""
+    (tasks.services.add_note is its only writer). The activity log says that it was added, never its words.
+
+    `kind` says what the words were: a note, or the completion note or the reason for cancelling of a task that was
+    reopened. Reopening clears those two on the task, and the log holds only their digests, so tasks.services.reopen
+    keeps them here, by the person who wrote them: nothing a person wrote is lost by a reopening (review R5)."""
+
+    class Kind(models.TextChoices):
+        NOTE = 'note', _('Note')
+        COMPLETION_NOTE = 'completion_note', _('Completion note')
+        CANCEL_REASON = 'cancel_reason', _('Reason for cancelling')
 
     MAX_LENGTH = 4000
 
@@ -491,12 +496,15 @@ class TaskNote(models.Model):
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='notes')
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='+')
     body = models.CharField(_('Note'), max_length=MAX_LENGTH)
+    kind = models.CharField(_('Kind'), max_length=20, choices=Kind.choices, default=Kind.NOTE)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'task_notes'
         ordering = ['created_at', 'id']
-        constraints = [models.CheckConstraint(condition=Q(body__regex=TITLE), name='chk_task_notes_body')]
+        constraints = [models.CheckConstraint(condition=Q(body__regex=TITLE), name='chk_task_notes_body'),
+                       models.CheckConstraint(condition=Q(kind__in=['note', 'completion_note', 'cancel_reason']),
+                                              name='chk_task_notes_kind')]
 
     def __str__(self):
         return self.body

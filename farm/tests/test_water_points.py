@@ -14,6 +14,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core import access, database, navigation
+from core.crud import ENTRY_KEY
 from core.models import AuditLog, Profile
 from core.softdelete import plan_delete, restore
 
@@ -26,7 +27,8 @@ from ..water import parameters, points, read, services
 from ..water.evaluate import Status
 from .helpers import point_of, role
 from .test_stock import make_unit
-from .test_water import WATER_KEEPER, WaterTestCase
+from .test_water import WaterTestCase
+from farm import withdrawal_gate
 
 D = Decimal
 POINT_MANAGER = ('view_samplingpoint', 'add_samplingpoint', 'change_samplingpoint', 'delete_samplingpoint',
@@ -131,6 +133,7 @@ class ConstraintTests(PointTestCase):
                 SamplingPoint.objects.create(**{field: owner}, name='After the filter', kind='outlet')
         SamplingPoint.objects.create(unit=self.t2, name='After the filter', kind='outlet')       # another owner's
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_an_owner_has_one_active_middle_point_and_inactive_ones_stay(self):
         for field, owner in (('unit', self.pond), ('system', self.bare_system()), ('equipment', self.filter)):
             with self.subTest(owner=field):
@@ -177,6 +180,7 @@ class RuleTests(PointTestCase):
         point.clean()
         self.assertEqual((point.depth_m, point.flow_m3_h, point.flow_share_pct), (None, D(4), None))
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_outlet_shares_of_an_owner_add_up_to_at_most_100(self):
         side, drain = self.named(self.t1, 'side_outlet')['Side outlet'], self.named(self.t1, 'bottom_drain')[
             'Bottom drain']
@@ -338,9 +342,9 @@ class PointPageTests(PointTestCase):
                                           {'owner_type': owner_type, owner_type: str(owner.pk), 'kind': kind.value,
                                            '_draft': 'kind'}).context['form']
                 every |= set(posted.fields)
-        # Every field the form can show is a column, except the one that only says which owner field to show; and every
-        # column a person fills in is on the form.
-        self.assertEqual(sorted(every - columns), ['owner_type'])
+        # Every field the form can show is a column, except the one that only says which owner field to show and the
+        # new-record form's key (core.models.EntryKey); and every column a person fills in is on the form.
+        self.assertEqual(sorted(every - columns), [ENTRY_KEY, 'owner_type'])
         self.assertEqual(columns - every, {'id', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted',
                                            'deleted_at', 'deleted_by'})
         self.assertEqual(list(SamplingPointResource.snapshot(self.named(self.t1)['Inlet'])),
@@ -574,7 +578,7 @@ class DeleteTests(PointTestCase):
         history = self.client.get(reverse('farm:water'), {'view': 'history'}).context['history']
         self.assertEqual([row.sample.point.owner.code for row in history], ['R1'])
         restore(Tank.all_objects.get(pk=self.t2.pk), self.admin)
-        self.assertEqual(self.unit_water(self.t2).get('ph').value, D('7.10'))
+        self.assertEqual(self.unit_water(self.t2).get('ph').value, D('7.10'))      # never its inlet's (A9.1)
         history = self.client.get(reverse('farm:water'), {'view': 'history'}).context['history']
         self.assertEqual(sorted(row.sample.point.owner.code for row in history), ['R1', 'T-02', 'T-02'])
 
@@ -592,19 +596,29 @@ class DeleteTests(PointTestCase):
 
 # ---- reading "the unit's water" ---------------------------------------------------------------------------
 class ReadTests(PointTestCase):
-    def test_the_water_of_a_unit_is_its_middle_points_and_nothing_else(self):
+    def test_the_water_of_a_unit_is_its_points_and_the_loop_stands_in_for_what_it_has_none_of(self):
+        """Owner rule A9 (2026-11-07), A9.1 "its own sampling points" (owner, 2026-11-08): every active point that
+        measures the unit's own water (the middle, a depth point, an outlet, a drain) is its own, the newest fresh value
+        among them wins (at one time the middle first, then by name); an inlet is the supply stream, not the unit's
+        water, and never counts; its loop's fresh sample stands in only for a parameter the unit has nothing fresh of."""
         self.sample(point=self.named(self.t1, 'inlet')['Inlet'], hours=1, temperature_c='15', ph='6.1')
         self.sample(point=self.named(self.t1, 'side_outlet')['Side outlet'], hours=1, temperature_c='11')
-        self.sample(point=self.t1, hours=3, temperature_c='9.5')
+        self.sample(point=self.t1, hours=3, temperature_c='9.5', co2_mg_l='8')
         self.sample(point=self.loop, hours=1, temperature_c='12', ph='7.3', oxygen_mg_l='9')
         water = read.unit_water([self.t1, self.t2, self.pond])
+        outlet = self.named(self.t1, 'side_outlet')['Side outlet']
         self.assertEqual((water[self.t1.pk].point, water[self.t1.pk].get('temperature_c').value,
-                          water[self.t1.pk].get('ph')), (self.mid1, D('9.5'), None))
-        self.assertEqual((water[self.t2.pk].point, water[self.t2.pk].readings), (self.mid2, {}))   # not the loop's
+                          water[self.t1.pk].get('ph').value, water[self.t1.pk].get('ph').point),
+                         (self.mid1, D('11.0'), D('7.30'), self.loop))   # its outlet's, newer; the inlet's pH is not its
+        self.assertEqual(water[self.t1.pk].get('co2_mg_l').point, self.mid1)
+        self.assertEqual(water[self.t1.pk].get('oxygen_mg_l').point, self.loop)   # none of its own: the loop's
+        self.assertEqual((water[self.t2.pk].point, water[self.t2.pk].get('temperature_c').value),
+                         (self.mid2, D('12.0')))                                   # nothing of its own: the loop's
         self.assertEqual((water[self.pond.pk].point, water[self.pond.pk].readings, water[self.pond.pk].status),
                          (None, {}, Status.NOT_MEASURED))
-        self.assertEqual(water[self.t1.pk].get('temperature_c').point, self.mid1)
+        self.assertEqual(water[self.t1.pk].get('temperature_c').point, outlet)
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_sources_of_a_units_temperature_are_its_middle_point_then_its_loops(self):
         parent = System.objects.create(name='Parent', code='PR', site=self.bergen)
         System.objects.filter(pk=self.ras.pk).update(parent=parent)
@@ -615,6 +629,11 @@ class ReadTests(PointTestCase):
         self.assertEqual(sources(self.t1, True), [('unit', 'T-01', 'Middle'), ('system', 'R1', 'Loop'),
                                                   ('system', 'PR', 'Loop')])
         self.assertEqual(sources(self.t1, False), [('unit', 'T-01', 'Middle'), ('system', 'R1', 'Loop')])
+        every = [(source.via, source.owner.code, source.point.name)
+                 for source in read.water_sources([self.t1], nested=False, every_point=True)[self.t1.pk]]
+        self.assertEqual(every, [('unit', 'T-01', 'Middle'), ('unit', 'T-01', 'Bottom drain'),
+                                 ('unit', 'T-01', 'Side outlet'), ('system', 'R1', 'Loop')])
+        # A9.1: every point of the unit's own water, the middle first; never its inlet (the supply stream)
         self.assertEqual(sources(self.pond, True), [])                      # in no system, no point of its own
         SamplingPoint.objects.filter(pk=self.mid1.pk).update(is_active=False)
         self.assertEqual(sources(self.t1, False), [('system', 'R1', 'Loop')])      # an inactive point is not a source
@@ -632,9 +651,11 @@ class ReadTests(PointTestCase):
         self.assertEqual((found[self.t1.pk].value_c, found[self.t1.pk].via, found[self.t1.pk].point),
                          (D('12.0'), 'system', self.ras))                         # the loop's fresh one wins
         self.assertEqual((found[self.t2.pk].value_c, found[self.t2.pk].via), (D('12.0'), 'system'))
-        self.sample(point=self.t1, hours=3, temperature_c='9')
+        drain = self.named(self.t1, 'bottom_drain')['Bottom drain']
+        self.sample(point=drain, hours=1, temperature_c='9')                     # the unit's own water (A9.1), fresh
         found = temperature_for([self.t1], now)[self.t1.pk]
-        self.assertEqual((found.value_c, found.via, found.point, found.fresh), (D('9.0'), 'unit', self.t1, True))
+        self.assertEqual((found.value_c, found.via, found.point, found.sampling_point, found.fresh),
+                         (D('9.0'), 'unit', self.t1, drain, True))
 
     def test_the_withdrawals_daily_mean_reads_the_same_places(self):
         from ..water.degree_days import Temperatures
@@ -658,9 +679,9 @@ class ReadTests(PointTestCase):
         self.sample(point=self.loop, hours=1, alkalinity_mg_l='90', salinity_ppt='0.5')
         offers = calculation.offers(self.t1)
         self.assertEqual((offers['temperature_c'].value, offers['ph'].value, offers['co2_limit_mg_l'].value),
-                         (D('9.5'), D('7.20'), D(15)))
+                         (D('9.5'), D('7.20'), D(15)))                    # never its inlet's (the supply stream)
         self.assertEqual(offers['temperature_c'].reading.point, self.mid1)
-        self.assertNotIn('alkalinity_mg_l', offers)                    # nothing of the unit's is the loop's
+        self.assertEqual(offers['alkalinity_mg_l'].reading.point, self.loop)   # A9: the loop stands in for what the unit lacks
         self.assertEqual(offers['altitude_m'].value, D(0))
         loop = calculation.offers(self.ras)
         self.assertEqual((loop['alkalinity_mg_l'].value, loop['salinity_ppt'].value, 'ph' in loop),
@@ -678,9 +699,9 @@ class ReadTests(PointTestCase):
         readers = sorted(path.relative_to(root).as_posix() for path in root.rglob('*.py')
                          if not {'water', 'tests', 'migrations'} & set(path.relative_to(root).parts)
                          and 'WaterMeasurement' in path.read_text(encoding='utf-8'))
-        self.assertEqual(readers, ['admin.py', 'forms/water.py', 'models/__init__.py', 'models/water.py',
-                                   'models/water_point.py', 'screens.py'])    # the sample's form and its data-map
-        # declaration name its model, they read nothing
+        self.assertEqual(readers, ['admin.py', 'apps.py', 'forms/water.py', 'models/__init__.py', 'models/water.py',
+                                   'models/water_point.py', 'screens.py'])    # the sample's form, its data-map
+        # declaration and the withdrawal gate's registry (apps.py) name its model, they read nothing
 
     def test_a_samples_salinity_falls_back_to_its_points_then_its_owners_middle_point(self):
         Tank.objects.filter(pk=self.t1.pk).update(water_type='saltwater')
@@ -750,6 +771,7 @@ class DialogTests(PointTestCase):
         response = self.client.get(reverse('farm:water_record'), {'point': self.named(self.t1, 'inlet')['Inlet'].pk})
         self.assertEqual(response.context['form']['point'].value(), str(self.named(self.t1, 'inlet')['Inlet'].pk))
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_from_nowhere_every_active_point_is_offered_grouped_by_what_owns_it(self):
         point_of(self.filter, 'inlet')
         SamplingPoint.objects.filter(pk=self.mid2.pk).update(is_active=False)
@@ -812,6 +834,7 @@ class RoundTests(PointTestCase):
         response = self.client.get(reverse('farm:water_round'), {'site': self.bergen.pk, **query})
         return [str(row.point) for row in response.context['rows']]
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_a_round_has_a_row_per_middle_point_and_lists_other_points_when_asked(self):
         point_of(self.pond)
         self.assertEqual(self.rows(), ['P-01 › Middle', 'T-01 › Middle', 'T-02 › Middle', 'R1 › Loop'])

@@ -157,6 +157,8 @@ class Walk:
     days: dict = field(default_factory=dict)                    # (unit, day) -> Day, for the days asked
     split: dict = field(default_factory=dict)                   # feeding id -> {batch id: kg}
     orphans: list = field(default_factory=list)                 # feedings without fish, earliest first
+    lines: list = field(default_factory=list)                   # the ledger lines it folded, for a reader of the same
+                                                                # fish that would else read them again (last_fed_of)
 
 
 class _Walker:
@@ -181,19 +183,25 @@ class _Walker:
     # ---- the days asked for: their start and their end ------------------------------------------
     def capture(self, shares, until=None):
         """Reads every asked day whose start (all operations before it folded) and end (all operations
-        of it folded) are reached when the next operation is dated `until` (None: the fold is done)."""
+        of it folded) are reached when the next operation is dated `until` (None: the fold is done). The shares
+        do not change while it reads, so they are grouped by unit once per call (`_by_unit`), not scanned whole for
+        every unit of every day."""
+        grouped = None
         while self.started < len(self.order) and (until is None or self.order[self.started] <= until):
             day = self.order[self.started]
+            grouped = _by_unit(shares) if grouped is None else grouped
             for unit_id in self.wanted[day]:
-                self.start[(unit_id, day)] = present = _present(shares, unit_id)
+                self.start[(unit_id, day)] = present = _present(grouped.get(unit_id, {}), unit_id)
                 for feeding in self.feedings.get((unit_id, day), ()):
                     self._allocate(feeding, day, of_target(present, self.cleaner, feeding.target))
             self.started += 1
         while self.ended < len(self.order) and (until is None or self.order[self.ended] < until):
             day = self.order[self.ended]
+            grouped = _by_unit(shares) if grouped is None else grouped
             for unit_id in self.wanted[day]:
+                own = grouped.get(unit_id, {})
                 start = self.start.pop((unit_id, day))
-                end = _present(shares, unit_id)
+                end = _present(own, unit_id)
                 self.result.days[(unit_id, day)] = Day(start, end, self.cleaner)
                 for feeding in self.feedings.get((unit_id, day), ()):
                     if feeding.id in self.result.split:
@@ -204,7 +212,7 @@ class _Walker:
                     else:
                         self.result.orphans.append(feeding)
                 if self.projector is not None and end:
-                    self.projector.day(unit_id, day, shares, self.feedings.get((unit_id, day), ()), self.result.split)
+                    self.projector.day(unit_id, day, own, self.feedings.get((unit_id, day), ()), self.result.split)
             self.ended += 1
 
     def _allocate(self, feeding, day, grams):
@@ -268,6 +276,15 @@ def _present(shares, unit_id):
     return {batch_id: share.grams for (unit, batch_id), share in shares.items() if unit == unit_id and share.count}
 
 
+def _by_unit(shares):
+    """{unit id: {(unit id, batch id): Share}} of the fold's shares, each unit's in the fold's own order: what a day of
+    one unit reads (`_present`, Projector.day), without scanning every unit's shares."""
+    grouped = defaultdict(dict)
+    for key, share in shares.items():
+        grouped[key[0]][key] = share
+    return grouped
+
+
 def walk(lines, feedings=(), days=(), observe=None, projector=None):
     """Folds `lines` (farm/stock/fold.py) and walks `feedings` (Feeding) along: their split (each among the batches
     of its target, the lines saying which batches are cleaner fish), the stays
@@ -276,6 +293,7 @@ def walk(lines, feedings=(), days=(), observe=None, projector=None):
     on to the fold. A `projector` (farm/feeding/projection.py) keeps the estimated weight along the same walk:
     it sees every stock line, every weighing point and the end of every day read. Raises the fold's StockError."""
     walker = _Walker(feedings, days, observe, projector, frozenset(line.batch_id for line in lines if line.cleaner))
+    walker.result.lines = lines
     walker.result.shares = fold(lines, walker.after, before=walker.before, on_line=walker.line)
     walker.capture(walker.result.shares)
     return walker.result

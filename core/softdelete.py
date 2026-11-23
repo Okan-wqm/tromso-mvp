@@ -4,12 +4,12 @@ Records are soft-deleted, so the database's own `on_delete` never runs. Instead 
 consequences per tab, this reads each link's `on_delete` and applies it to live records:
 
 - CASCADE   the records that point at it are deleted with it, and so on down;
-- SET_NULL  they stay, but lose the link (e.g. a deleted site's production departments);
+- SET_NULL  they stay, but lose the link (e.g. a deleted production department's systems); a restore does not
+  link them again, what they pointed at is not kept;
 - PROTECT / RESTRICT  they block the delete until they are dealt with;
 - DO_NOTHING  they stay as they are, still pointing at it: history that outlives the record without
   holding it back (a deleted unit's feeding records and its sampling points, as its stock lines), shown again
-  with it when it is restored (restoring brings back only the record itself, so what must come back with it is
-  kept, not deleted with it). The database's own foreign key still refuses a hard delete. What they keep in
+  with it when it is restored. The database's own foreign key still refuses a hard delete. What they keep in
   turn is kept too (a unit's points keep their water samples). The
   confirmation counts them, each record once whatever links it, and says what becomes of them
   (the model's `kept_note`). Records that point at it this way but are only a plan, not history (a
@@ -23,17 +23,26 @@ confirmation lists them; nothing about them changes, so nothing is logged for th
 A model adds conditions that are not links by overriding `delete_blockers()` (fish still in a
 tank). One plan serves both the confirmation (what will be affected) and the delete itself, and
 every record it touches gets its own activity-log row, written in English like every audit row
-(core.audit).
+(core.audit). Every record the delete takes along is stamped with the delete's moment, so a restore brings
+back the record and what that delete took along (`restore`), never what was deleted on its own before.
 """
 from dataclasses import dataclass, field
 
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import IntegrityError, models, transaction
+from django.utils import timezone
 from django.utils.text import capfirst
 from django.utils.translation import gettext as _, ngettext
 
 from . import audit
-from .models import AuditedModel, AuditLog
+from .models import AuditedModel, AuditLog, violated_constraint
+
+# LOCK ORDER. The one order every write takes its locks on the farm's structure in: the fish first (batches, then
+# units: the stock operations, the withdrawal guard's lock_fish), then the place going up (production departments, then
+# sites: a unit's save, Tank._lock_place). A delete and a restore lock the records they take along the deepest first
+# and what they delete or restore last; a record is never locked after one above it. Two writes that both follow it
+# wait for each other; the database still fails one of a cycle no write can foresee (core.middleware.
+# CrossedWritesMiddleware says "try again").
 
 
 @dataclass
@@ -44,6 +53,9 @@ class DeletePlan:
     detach: list = field(default_factory=list)    # (record, link) pairs whose link is cleared
     unlinked: list = field(default_factory=list)  # records linked many-to-many, whose link stops counting
     kept_records: dict = field(default_factory=dict)   # model -> the pks of its records that keep their link
+    # (model, pk) of a record the plan takes along, or (model, pk, link) of one it detaches -> (the link it hangs by,
+    # (model, pk) of what it points at)
+    via: dict = field(default_factory=dict)
 
     @property
     def can_delete(self):
@@ -68,7 +80,7 @@ class DeletePlan:
         """[{'label': 'Production departments', 'link': 'site', 'records': [...]}]: kept, but losing their link."""
         groups = []
         for model, pairs in self._by_model(self.detach, record_of=lambda pair: pair[0]).items():
-            for link in dict.fromkeys(link for _, link in pairs):
+            for link in dict.fromkeys(link for _record, link in pairs):
                 groups.append({
                     'label': capfirst(model._meta.verbose_name_plural),
                     'link': str(model._meta.get_field(link).verbose_name).lower(),
@@ -108,12 +120,13 @@ def plan_delete(obj):
     return plan
 
 
-def _cascade(children, plan, seen):
+def _cascade(children, plan, seen, link, parent):
     for child in children:
         key = (type(child), child.pk)
         if key not in seen:
             seen.add(key)
             plan.cascade.append(child)
+            plan.via[key] = (link, (type(parent), parent.pk))
             _collect(child, plan, seen)
 
 
@@ -131,7 +144,7 @@ def _collect(obj, plan, seen):
         action = relation.on_delete
         if action is models.DO_NOTHING:
             planned = list(model.deleted_with(link, obj))
-            _cascade(planned, plan, seen)
+            _cascade(planned, plan, seen, link, obj)
             pks = set(model.objects.filter(**{link: obj}).exclude(pk__in=[record.pk for record in planned])
                       .values_list('pk', flat=True))
             _keep(model, pks, plan)
@@ -140,9 +153,10 @@ def _collect(obj, plan, seen):
         if not children:
             continue
         if action is models.CASCADE:
-            _cascade(children, plan, seen)
+            _cascade(children, plan, seen, link, obj)
         elif action is models.SET_NULL:
             plan.detach.extend((child, link) for child in children)
+            plan.via.update({(type(child), child.pk, link): (link, (type(obj), obj.pk)) for child in children})
         elif action in (models.PROTECT, models.RESTRICT):
             plan.blockers.append(protected(model, len(children)))
 
@@ -172,32 +186,133 @@ def protected(model, count):
 
 
 def execute(plan, user):
-    """Carries the plan out, inside the caller's transaction, one log row per affected record."""
+    """Carries the plan out, inside the caller's transaction, one log row per affected record. Every record it deletes
+    is stamped with one moment, the delete's (AuditedModel.mark_deleted): a restore brings back what it took along.
+
+    The plan was read before, unlocked (it is the confirmation's too), so the records it takes along or detaches are
+    locked now and taken only as they still are (cross review F2): one moved to another parent meanwhile stays where
+    it went, with what hangs under it, and one deleted on its own meanwhile keeps its own moment."""
+    moment = timezone.now()
+    rows = lock_along(plan)
+    gone = {(type(plan.obj), plan.obj.pk)}
+    taken = []
+    for record in plan.cascade:                        # parents before their children
+        key = (type(record), record.pk)
+        if _still_under(rows.get(key), *plan.via[key], gone):
+            gone.add(key)
+            taken.append(rows[key])
     with audit.source_language():
         for record, link in plan.detach:
+            key = (type(record), record.pk)
+            row = rows.get(key)
+            if key in gone or not _still_under(row, *plan.via[(*key, link)], gone):
+                continue
             label = capfirst(record._meta.get_field(link).verbose_name)
-            before = str(getattr(record, link))
-            record.detach(link, user)
-            audit.record(user, AuditLog.Action.UPDATE, record, {str(label): [before, None]})
-        for record in reversed(plan.cascade):
-            record.soft_delete(user)
+            before = str(getattr(row, link))
+            row.detach(link, user)
+            audit.record(user, AuditLog.Action.UPDATE, row, {str(label): [before, None]})
+        for record in reversed(taken):
+            record.mark_deleted(user, moment)
             audit.record_delete(user, record)
-        plan.obj.soft_delete(user)
+        plan.obj.mark_deleted(user, moment)
         audit.record_delete(user, plan.obj)
 
 
+def lock_along(plan):
+    """Locks what the plan takes along or detaches, the deepest first, before what it deletes is locked (the delete view
+    calls it first; execute again, a no-op then). One lock order for the farm's structure (LOCK ORDER above): from
+    the fish and the leaves up to the site, so a unit's save (unit, department, site) and a delete (units, department)
+    wait for each other instead of deadlocking (the merge review's finding 1). Returns {(model, pk): row}."""
+    return _locked([*reversed(plan.cascade), *(record for record, _link in plan.detach)])
+
+
+def _locked(records):
+    """{(model, pk): row} of the records as they are now, each locked for the caller's transaction, model by model in
+    the order the records come (the deepest first: LOCK ORDER above), each model's in primary-key order (a record
+    deleted meanwhile is there too, marked so)."""
+    pks = {}
+    for record in records:
+        pks.setdefault(type(record), set()).add(record.pk)
+    found = {}
+    for model, keys in pks.items():
+        for row in model.all_objects.select_for_update(of=('self',)).filter(pk__in=keys).order_by('pk'):
+            found[(model, row.pk)] = row
+    return found
+
+
+def _still_under(row, link, parent, gone):
+    """Whether `row`, as locked now, is live and still points through `link` at `parent`, a record the delete takes."""
+    if row is None or row.is_deleted or parent not in gone:
+        return False
+    return getattr(row, row._meta.get_field(link).attname) == parent[1]
+
+
+def taken_with(record):
+    """`record`, deleted, and what its delete took along: the records pointing at it that were deleted in the same
+    moment (execute), and theirs in turn; parents before their children, as read (restore locks them, the deepest
+    first). A record deleted on its own before is not among them, nor what was only detached (its link is not known
+    any more)."""
+    found, seen, frontier = [], set(), [record]
+    while frontier:
+        found.extend(frontier)
+        seen.update((type(item), item.pk) for item in frontier)
+        following = []
+        for parent in frontier:
+            for relation in parent._meta.related_objects:
+                model = relation.related_model
+                if not relation.one_to_many or not issubclass(model, AuditedModel):
+                    continue
+                children = (model.all_objects.order_by('pk')
+                            .filter(**{relation.field.name: parent}, is_deleted=True, deleted_at=parent.deleted_at))
+                following.extend(child for child in children if (model, child.pk) not in seen)
+                seen.update((model, child.pk) for child in children)
+        frontier = following
+    return found
+
+
 def restore(record, user):
-    """Brings a deleted record back, checked like a new one: refused when a record it points at is
-    deleted too (bring that back first) or when its code was taken meanwhile. Only the record itself
-    returns, not what was deleted with it. The change is logged."""
-    for link in record._meta.concrete_fields:
-        target = getattr(record, link.name) if link.is_relation else None
-        if isinstance(target, AuditedModel) and target.is_deleted:
-            raise ValidationError(_('%(field)s “%(record)s” is deleted.'),
-                                  params={'field': capfirst(link.verbose_name), 'record': target})
-    record.is_deleted, record.deleted_at, record.deleted_by = False, None, None
-    record.updated_by = user
-    record.version += 1
-    record.full_clean()   # re-checks the constraints among live records, e.g. a code taken meanwhile
-    record.save()
-    audit.record(user, AuditLog.Action.RESTORE, record)
+    """Brings a deleted record back with what its delete took along (taken_with), each checked like a new one:
+    refused when a record one of them points at is deleted and does not come back with them (bring that back first),
+    when a code was taken meanwhile, or when another restore was first. They are locked the deepest first and the
+    record last (LOCK ORDER above), so two restores take turns; it all comes back or nothing does. Each change is
+    logged. A link the delete cleared (SET_NULL) stays cleared: what it pointed at is not kept."""
+    model = type(record)
+    with transaction.atomic():
+        read = model.all_objects.filter(pk=record.pk).first() or record
+        collected = taken_with(read) if read.is_deleted else [read]
+        rows = _locked(list(reversed(collected)))
+        record = rows.get((model, record.pk), record)
+        if not record.is_deleted or record.deleted_at != read.deleted_at:
+            raise ValidationError(_('“%(record)s” is not deleted.'), params={'record': record})
+        # As locked, parents before their children: what is still deleted at the moment of this record's delete (a
+        # restore meanwhile took it back).
+        records = [row for row in (rows.get((type(item), item.pk)) for item in collected)
+                   if row is not None and row.is_deleted and row.deleted_at == read.deleted_at]
+        coming = {(type(item), item.pk) for item in records}
+        for item in records:
+            for link in item._meta.concrete_fields:
+                target = getattr(item, link.name) if link.is_relation else None
+                if isinstance(target, AuditedModel) and target.is_deleted and (type(target), target.pk) not in coming:
+                    raise ValidationError(_('%(field)s “%(record)s” is deleted.'),
+                                          params={'field': capfirst(link.verbose_name), 'record': target})
+        for item in records:
+            item.is_deleted, item.deleted_at, item.deleted_by = False, None, None
+            item.updated_by = user
+            item.version += 1
+            # Re-checks the constraints among live records, e.g. a code taken meanwhile; the records coming back
+            # together cannot clash with one another, they were live together.
+            item.validate_unique()
+            item.validate_constraints()
+        for item in records:
+            try:
+                with transaction.atomic():
+                    item.save()
+            except IntegrityError as error:    # taken by a record committed after the check
+                constraint = violated_constraint(type(item), error)
+                if constraint is None:
+                    raise
+                raise ValidationError(constraint.violation_error_message) from None
+        for item in records:
+            item.clean_fields()
+            item.clean()       # the model's own rules, with everything that comes back live again
+            audit.record(user, AuditLog.Action.RESTORE, item)

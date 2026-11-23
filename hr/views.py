@@ -2,7 +2,6 @@
 team overview and the organisation chart. Each is served in Company › HR and again under Production › Team (core.crud.Mount):
 the request carries the mount, the reads take its realm, and every link and return stays in it."""
 import uuid
-from datetime import date
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -10,18 +9,18 @@ from django.db import IntegrityError
 from django.http import Http404, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _, ngettext
 from django.views.decorators.http import require_POST
 
-from core import navigation
+from core import navigation, query
 from core.crud import done, mount_of, mounted_name, render_page
+from core.dates import read_day
 from farm.models.site import zone_of
 from farm.stock.dates import site_today
 
 from . import read, rules, scope, services, units
-from .models import AttendanceRecord, Shift
+from .models import Shift
 
 OFF, CLEAR = 'off', 'clear'
 
@@ -45,10 +44,13 @@ def parse_cells(values):
     """[(employee id, day)] from 'employee id:YYYY-MM-DD' strings; None when one is malformed."""
     cells = []
     for value in values:
-        employee, _separator, day = value.partition(':')
+        employee, _separator, text = value.partition(':')
+        day = read_day(text)                         # the one day parser: ISO, inside the window of dates
         try:
-            cells.append((uuid.UUID(employee), date.fromisoformat(day)))
+            cells.append((uuid.UUID(employee), day))
         except ValueError:
+            return None
+        if day is None:
             return None
     return cells
 
@@ -57,7 +59,10 @@ def parse_cells(values):
 def plan(request):
     """Sets one shift, planned off or nothing on every cell sent (`cells`, repeated; `shift`: a shift's id, `off` or
     `clear`), all or none. A person the user does not reach (a forged id) is a 404 and writes nothing; a blocking finding
-    refuses the batch with its first conflicts; warnings are told after the save."""
+    refuses the batch with its first conflicts; warnings are told after the save. Someone with no right to plan is
+    refused before the request is read."""
+    if not services.can_plan(request.user):
+        raise PermissionDenied
     cells = parse_cells(request.POST.getlist('cells'))
     if not cells:
         return HttpResponseBadRequest()
@@ -145,6 +150,17 @@ def reject(request, pk):
 
 
 @require_POST
+def shorten(request, pk):
+    """A decider ends an approved leave earlier (hr.services.shorten_leave): `last_day`, the new last day, typed in the
+    shared day box (core.dates.read_day says a text that is no day back to the person; nothing changes)."""
+    item = leave_request(request, pk)
+    last_day = read_day(request.POST.get('last_day', ''), request)
+    if last_day is None:
+        return _back(request)
+    return _run(request, lambda: services.shorten_leave(request.user, item, last_day), _('The leave was shortened.'))
+
+
+@require_POST
 def cancel(request, pk):
     item = leave_request(request, pk)
     return _run(request, lambda: services.cancel_leave(request.user, item), _('The request was cancelled.'))
@@ -152,11 +168,19 @@ def cancel(request, pk):
 
 # ---- today & attendance -------------------------------------------------------------------------------------------
 def _today_context(request):
+    """The board, the person's own open stretch and, when it is a forgotten clock-out, what they are told instead of the
+    buttons (services.forgotten_refusal); a forgotten row carries the address of its stretch for who may correct it."""
     own = services.own_employee(request.user)
-    open_punch = AttendanceRecord.objects.filter(employee=own, clock_out__isnull=True).first() if own else None
-    open_zone = zone_of(read.site_on(own, timezone.localdate())) if open_punch else None
-    return {'board': read.board(request.user, realm=scope.realm_for(request)), 'own': own, 'open_punch': open_punch,
-            'open_zone': open_zone,
+    open_punch = services.open_stretch(own) if own else None
+    open_zone = zone_of(read.site_on(own, site_today(None))) if open_punch else None
+    refusal = services.forgotten_refusal(open_punch)
+    board = read.board(request.user, realm=scope.realm_for(request))
+    if request.user.has_perm('hr.change_attendancerecord'):
+        for row in board.rows:
+            if row.open_record is not None and not services.own_record(request.user, row.employee):
+                row.close_url = _here(request, 'hr:attendancerecord_edit', row.open_record)
+    return {'board': board, 'own': own, 'open_punch': open_punch, 'open_zone': open_zone,
+            'forgotten': ' '.join(refusal.messages) if refusal is not None else '',
             'can_enter': request.user.has_perm('hr.add_attendancerecord'), 'states': rules.STATES}
 
 
@@ -196,18 +220,14 @@ def team_overview(request):
     """Team overview: the viewer's people and their week in numbers (`?week=`, `?department=`, `?q=`, `?page=`)."""
     if not request.user.has_perm('hr.view_shiftassignment'):
         raise PermissionDenied
-    from .resources.roster import parse_day
-    start = parse_day(request.GET.get('week')) or site_today(None)
+    start = read_day(request.GET.get('week'), request) or site_today(None)
     department = units.find(request.GET.get('department', ''))
-    try:
-        page = int(request.GET.get('page', '1'))
-    except ValueError:
-        page = 1
-    query = request.GET.get('q', '').strip()
+    page = query.number(request.GET.get('page', ''), least=1) or 1
+    searched = request.GET.get('q', '').strip()
     place = navigation.page(mounted_name('hr:overview', mount_of(request)))
     return render(request, 'hr/overview.html', {
-        'title': place.entry.label, 'eyebrow': place.heading, 'base_template': 'app_base.html', 'query': query,
-        'overview': read.overview(request.user, start, department, page, query=query, realm=scope.realm_for(request)),
+        'title': place.entry.label, 'eyebrow': place.heading, 'base_template': 'app_base.html', 'query': searched,
+        'overview': read.overview(request.user, start, department, page, query=searched, realm=scope.realm_for(request)),
         'departments': units.choices(kinds=[scope.realm_for(request)]),
         'chosen_department': units.token(department)})
 

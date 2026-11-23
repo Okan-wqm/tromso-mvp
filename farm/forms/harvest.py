@@ -180,6 +180,15 @@ class HandlingPlanItemForm(TabbedForm):
         self.fields['batch'].queryset = batches.order_by('-input_date', '-code')
         self.fields['batch'].empty_label = _('Select a batch')
         DependentSelect.apply(self.fields['batch'], 'unit', homes)
+        if kind == PlanKind.HARVEST:
+            # The plan is what the planned-slaughter notice reports: the form says what that notice needs, where the
+            # field said "optional" and the notice then refused to be filed (flow fault M-12).
+            self.fields['planned_kg'].help_text = _(
+                'Their round (live) weight, in kg. The plan is saved without it, but the planned-slaughter notice of '
+                'its week (Production › Reports) reports these kilos and cannot be filed for a plan that has none.')
+            self.fields['facility'].help_text = _(
+                'The planned-slaughter notice is filed per facility; it also needs the company that files for the '
+                'facility (its operator, Purchasing › Suppliers) to have a 9-digit organisation number.')
         if 'facility' in self.fields:
             facilities = offered_facilities() | SlaughterFacility.objects.filter(pk=item.facility_id)
             self.fields['facility'].queryset = facilities.distinct().order_by('name')

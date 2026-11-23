@@ -9,7 +9,7 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from farm.feeding import read as feeding_read, services as feeding_services
-from farm.models import Species, StockMovement
+from farm.models import StockMovement
 from farm.stock import read as stock_read, services as stock_services
 from farm.tests.test_stock import make_unit
 

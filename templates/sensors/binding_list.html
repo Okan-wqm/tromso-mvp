@@ -1,9 +1,11 @@
 {% extends "crud/list.html" %}
-{% load i18n %}
+{% load i18n dates %}
 {% comment %} Sensors › Setup › Bindings (sensors.resources.BindingResource): where each channel's values belong and since when,
    newest first; a channel's history when the address names it. A binding is never moved: a move ends it and starts the next
-   (Add opens the Move dialog). {% endcomment %}
+   (Add opens the Move dialog). `?place=unit:…` (or point, system, equipment) lists the sensors at a place: those
+   there now first, then those there before. {% endcomment %}
 {% block search_placeholder %}{% trans "Search by channel, device or place" %}{% endblock %}
+{% block notice %}{% if place %}<p class="panel-help">{% blocktrans trimmed with place=place %}The sensors at {{ place }}: those there now first, then those there before.{% endblocktrans %} <a href="{% url 'sensors:binding_list' %}">{% trans "Show every binding" %}</a></p>{% endif %}{% endblock %}
 {% block empty_text %}{% trans "A binding says where a channel's values belong from a moment on: a sampling point or a system for a water value, a piece of equipment or a system for a process value." %}{% endblock %}
 {% block items %}
 <div class="table-wrap">
@@ -15,8 +17,8 @@
         <td><a class="row-title" href="{% url 'sensors:binding_list' %}?channel={{ binding.channel_id }}">{{ binding.channel.code }}</a><span class="row-sub">{{ binding.channel.device.code }} · #{{ binding.channel.channel_no }}</span></td>
         <td>{{ binding.target }}{% if binding.note %}<span class="row-sub">{{ binding.note }}</span>{% endif %}</td>
         <td>{{ binding.get_role_display }}</td>
-        <td>{{ binding.valid_from|date:"DATETIME_FORMAT" }}</td>
-        <td>{% if binding.valid_to %}{{ binding.valid_to|date:"DATETIME_FORMAT" }}{% else %}<span class="badge">{% trans "now" %}</span>{% endif %}</td>
+        <td>{{ binding.valid_from|site_clock:binding.clock|date:"DATETIME_FORMAT" }}</td>
+        <td>{% if binding.valid_to %}{{ binding.valid_to|site_clock:binding.clock|date:"DATETIME_FORMAT" }}{% else %}<span class="badge">{% trans "now" %}</span>{% endif %}</td>
         <td class="row-actions">{% include "sensors/_row_actions.html" with model="binding" obj=binding label=binding.channel.code %}</td>
       </tr>
       {% endfor %}

@@ -9,7 +9,7 @@ use crate::decode::decode;
 use crate::model::DeadReason;
 use crate::reduce::{self, Row, Sample, State};
 use crate::timerule::{self, Limits};
-use chrono::{DateTime, Utc};
+use crate::ts::Ts;
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use uuid::Uuid;
@@ -25,7 +25,7 @@ pub struct Msg {
     pub connection_id: Uuid,
     pub topic: String,
     pub payload: Vec<u8>,
-    pub received_at: DateTime<Utc>,
+    pub received_at: Ts,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -36,7 +36,7 @@ pub struct Reading {
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct DeviceDelta {
-    pub last_message_at: Option<DateTime<Utc>>,
+    pub last_message_at: Option<Ts>,
     pub last_seq: Option<i64>,
     pub accepted: i64,
     pub late: i64,
@@ -54,8 +54,8 @@ pub struct DeadLetter {
     pub payload: Vec<u8>,
     pub payload_len: i32,
     pub count: i32,
-    pub first_at: DateTime<Utc>,
-    pub last_at: DateTime<Utc>,
+    pub first_at: Ts,
+    pub last_at: Ts,
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -83,8 +83,8 @@ impl DeadLimiter {
 
 impl DeadLimiter {
     /// The key a new dead letter is stored under: its own hash, or `overflow` once the hour's allowance is used.
-    fn key(&mut self, conn: Uuid, topic: &str, reason: DeadReason, sha: String, at: DateTime<Utc>) -> String {
-        let hour = at.timestamp().div_euclid(3600);
+    fn key(&mut self, conn: Uuid, topic: &str, reason: DeadReason, sha: String, at: Ts) -> String {
+        let hour = at.unix_secs().div_euclid(3600);
         let (h, seen) = self.per_conn.entry(conn).or_insert_with(|| (hour, HashSet::new()));
         if *h != hour {
             *h = hour;
@@ -151,7 +151,7 @@ pub fn process(cfg: &Config, committed: &HashMap<i32, State>, limiter: &mut Dead
         let decoded = decode(&dev.format, &dev.maps, &m.payload);
         let mut faults: Vec<DeadReason> = decoded.faults.clone();
         let (mut used, mut late, mut duplicate) = (false, false, false);
-        let received_at = crate::model::to_micros(m.received_at);
+        let received_at = m.received_at.trunc_micros();
         for raw in &decoded.samples {
             let Some(ch) = dev.channels.iter().find(|c| c.channel_no == raw.channel_no) else { continue };
             let (ts, time_q) = match timerule::resolve(raw.device_ts, m.received_at, limits) {
@@ -200,7 +200,7 @@ pub fn poison(cfg: &Config, m: &Msg) -> Output {
     let mut b = Batch { committed: &HashMap::new(), out: Output::default(), dead: BTreeMap::new() };
     b.dead_letter(&mut lim, m, device_id, DeadReason::BadValue);
     if let Some(id) = device_id {
-        let at = crate::model::to_micros(m.received_at);
+        let at = m.received_at.trunc_micros();
         b.out.devices.insert(id, DeviceDelta { last_message_at: Some(at), dead: 1, ..DeviceDelta::default() });
     }
     b.out.dead = b.dead.into_values().collect();
@@ -218,10 +218,10 @@ mod tests {
     use super::*;
     use crate::config::{build, tests as cfgt};
     use crate::quality::{CLOCK_SUSPECT, HEARTBEAT, LATE, MAINTENANCE, OUT_OF_RANGE, RECEIVE_TIME};
-    use chrono::{Duration, TimeZone};
+    use crate::ts::Duration;
 
-    fn now() -> DateTime<Utc> {
-        Utc.with_ymd_and_hms(2026, 11, 4, 12, 0, 0).unwrap()
+    fn now() -> Ts {
+        Ts::ymd_hms(2026, 11, 4, 12, 0, 0).unwrap()
     }
     fn conn() -> Uuid {
         Uuid::from_u128(1)
@@ -239,7 +239,7 @@ mod tests {
         r2.deadband = 0.0;
         build(cfgt::contract(), vec![r1, r2]).unwrap()
     }
-    fn msg(body: serde_json::Value, at: DateTime<Utc>) -> Msg {
+    fn msg(body: serde_json::Value, at: Ts) -> Msg {
         Msg {
             connection_id: conn(),
             topic: "farm/plc".into(),
@@ -247,8 +247,8 @@ mod tests {
             received_at: at,
         }
     }
-    fn iso(t: DateTime<Utc>) -> String {
-        t.to_rfc3339()
+    fn iso(t: Ts) -> String {
+        t.to_string()
     }
 
     #[test]

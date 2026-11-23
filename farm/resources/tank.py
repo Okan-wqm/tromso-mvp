@@ -7,6 +7,7 @@ from ..forms import TankForm
 from ..models import ProductionDepartment, Site, System, Tank
 from ..models.tank import KIND_FIELDS
 from ..water import points
+from .withdrawal_input import WithdrawalInput
 
 # What the activity log compares for a unit: every field it is described by, the calculated volumes
 # and max biomass (which a change of a measure or of the density moves), and the status with its reason.
@@ -17,7 +18,7 @@ LOGGED_FIELDS = [
 ]
 
 
-class TankResource(Resource):
+class TankResource(WithdrawalInput, Resource):
     model = Tank
     form_class = TankForm
     name, plural = _('unit'), _('units')
@@ -25,6 +26,12 @@ class TankResource(Resource):
     search_fields = ['name', 'code', 'regulatory_unit_id']
     list_template = 'farm/tank_list.html'
     icon = 'cylinder'
+
+    @classmethod
+    def reached(cls, request, unit):
+        """A unit's loop gives the water of a unit without a sample of its own (farm/water/read.py), so moving it into or
+        out of a loop moves the degree-days of the withdrawals of every fish it ever held."""
+        return {unit.pk}, None
 
     @classmethod
     def queryset(cls):

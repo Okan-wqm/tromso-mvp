@@ -8,8 +8,8 @@
 {% block content %}
 <p><a href="{{ back_url }}">{% trans "Back to the stock" %}</a></p>
 {% if sites|length > 1 %}
-<nav class="view-tabs" aria-label="{% trans "Site" %}">
-  {% for choice in sites %}<a class="view-tab" href="?site={{ choice.pk }}"{% if choice == site %} aria-current="page"{% endif %}>{{ choice.name }}</a>{% endfor %}
+<nav class="ui-tabs" aria-label="{% trans "Site" %}">
+  {% for choice in sites %}<a class="ui-tab" href="?site={{ choice.pk }}"{% if choice == site %} aria-current="page"{% endif %}>{{ choice.name }}</a>{% endfor %}
 </nav>
 {% endif %}
 {% if not days %}

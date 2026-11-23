@@ -4,7 +4,11 @@ walk (farm/feeding/fold.py) asks it at every feeding, so the projected growth an
 
 - The protocol: the row in force that day for the batch in this unit, else the unit's row, else the whole batch's
   row (owner decision Q8). A unit's row for another species is skipped, with the reason kept: a unit's row
-  outlives the fish in it. None: no ration, "no protocol".
+  outlives the fish in it. None: no ration, "no protocol". Cleaner fish (D-1) have no feeding table of their own as
+  a rule: when no row applies to them (a unit's row of the production species is read past as for any batch) and
+  they share the unit with production fish, they have no ration and no warning, "cleaner fish"; a row for their
+  species, of their batch or of their unit, is read as any batch's. Cleaner fish alone in a unit (a hatchery's tank of
+  lumpfish) are its production fish: no protocol is a gap, said as for any fish.
 - The band: the one with lower weight ≤ W < upper weight, W the fish's estimated average (owner decision Q7).
   None: the fish are outside the protocol, no ration (the source fed the first or last band, FP-03).
 - The temperature: farm/feeding/temperature.py. None: no ration.
@@ -19,7 +23,6 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from decimal import Decimal
 
-from django.conf import settings
 from django.utils.translation import gettext as _
 
 from farm.templatetags.stock import grams, number
@@ -83,12 +86,14 @@ def sfr_at(cells, temperature_c):
                 return Sfr(high.sfr_pct, temperature_c, high, high)
             share = (temperature_c - low.temperature_c) / (high.temperature_c - low.temperature_c)
             return Sfr(low.sfr_pct + (high.sfr_pct - low.sfr_pct) * share, temperature_c, low, high)
-    return Sfr(cells[0].sfr_pct, temperature_c, cells[0], cells[0])      # a table of one column
+    # Only a table of one column (stored before a table needed two, F-080) gets here: its temperature exactly.
+    return Sfr(cells[0].sfr_pct, temperature_c, cells[0], cells[0])
 
 
-# Why a share has no ration (Basis.missing); Basis.why() says it in the person's language.
-NO_PROTOCOL, SPECIES, OUTSIDE_BANDS, NO_TEMPERATURE, OUTSIDE_TABLE, FASTING = (
-    'no_protocol', 'species', 'outside_bands', 'no_temperature', 'outside_table', 'fasting')
+# Why a share has no ration (Basis.missing); Basis.why() says it in the person's language. CLEANER_FISH is no fault:
+# cleaner fish without a feeding table of their own, which the pages mark as cleaner fish and never warn about.
+NO_PROTOCOL, SPECIES, OUTSIDE_BANDS, NO_TEMPERATURE, OUTSIDE_TABLE, FASTING, CLEANER_FISH = (
+    'no_protocol', 'species', 'outside_bands', 'no_temperature', 'outside_table', 'fasting', 'cleaner_fish')
 
 
 @dataclass(frozen=True)
@@ -133,12 +138,19 @@ class Basis:
     def has_ration(self):
         return self.sfr is not None
 
+    @property
+    def cleaner_fish(self):
+        """Cleaner fish without a feeding table of their own: no ration, and nothing wrong (D-1)."""
+        return self.missing == CLEANER_FISH
+
     def ration_kg(self, biomass_kg):
         """The day's ration of fish weighing `biomass_kg` together."""
         return biomass_kg * self.sfr.value / HUNDRED
 
     def why(self, batch=None):
-        """Why there is no ration, as the page says it; '' when there is one."""
+        """Why there is no ration, as the page says it; '' when there is one, and for cleaner fish without a table of
+        their own (`cleaner_fish`), which is no fault: a page tells those apart by `cleaner_fish`, never by an empty
+        why alone."""
         if self.missing == NO_PROTOCOL:
             if self.skipped is not None:
                 protocol = self.skipped.protocol
@@ -156,8 +168,7 @@ class Basis:
                 'weight': grams(self.weight_g), 'protocol': self.table.protocol,
                 'range': band_range(bands[0].min_weight_g, upper)}
         if self.missing == NO_TEMPERATURE:
-            return _('No temperature in the last %(days)d days: record one.') % {
-                'days': settings.TEMPERATURE_USABLE_DAYS}
+            return _('No temperature recorded here yet: record one.')
         if self.missing == OUTSIDE_TABLE:
             cells = self.band.cells
             return _('%(temperature)s °C is outside this table (%(low)s–%(high)s °C).') % {
@@ -183,6 +194,7 @@ class Policy:
     species: dict                 # batch id -> species id
     temperature: object
     fasting: object = None        # (unit id, day) -> the Fast of a planned harvest or transport, or None
+    cleaner: frozenset = frozenset()   # the ids of the batches of a cleaner-fish species
     _rows: dict = field(default_factory=lambda: defaultdict(list))
     _resolved: dict = field(default_factory=dict)
 
@@ -210,10 +222,15 @@ class Policy:
         self._resolved[(unit_id, batch_id, day)] = result = (found, skipped)
         return result
 
-    def basis(self, unit_id, batch_id, day, weight_g):
-        """The Basis of the batch's ration in the unit on `day`, for fish of `weight_g` on average."""
+    def basis(self, unit_id, batch_id, day, weight_g, beside=False):
+        """The Basis of the batch's ration in the unit on `day`, for fish of `weight_g` on average. `beside`: the unit
+        holds production fish that day, so cleaner fish there are cleaning them (D-1); cleaner fish without production
+        fish (a hatchery tank of lumpfish) are that unit's production fish, and a missing table is a gap."""
         assignment, skipped = self.resolve(unit_id, batch_id, day)
         if assignment is None:
+            if batch_id in self.cleaner and beside:
+                # No table of their own (the unit's row, if any, is the production fish's): no ration, no warning.
+                return Basis(weight_g, missing=CLEANER_FISH)
             return Basis(weight_g, missing=NO_PROTOCOL, skipped=skipped)
         table = self.tables[assignment.protocol_id]
         band = table.band_for(weight_g)

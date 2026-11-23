@@ -13,6 +13,7 @@
   {% csrf_token %}
   {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
   {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+  {% include "farm/_withdrawal_change.html" with withdrawal_change=form.withdrawal_change %}
   {% for hidden in form.hidden_fields %}{% if hidden.errors %}<div class="form-error" role="alert">{{ hidden.errors }}</div>{% endif %}{% endfor %}
   <div class="form-grid">
     {% if not form.fixed %}{% with field=form.point %}{% include "registration/_field.html" %}{% endwith %}{% endif %}

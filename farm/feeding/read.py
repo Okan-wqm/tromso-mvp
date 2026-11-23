@@ -25,12 +25,14 @@ growth since is not credited (bFCR slightly high when mortality is heavy).
 The rations (`project`): the same walk with a projector (farm/feeding/projection.py), over the units' lineage (every
 unit their batches were in), keeps the estimated weight and the day's ration of the days asked, from the protocols,
 assignments and temperatures loaded once into a ration.Policy (`policy`). Nothing of it is stored."""
+from bisect import bisect_left, bisect_right
+from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 
 from django.conf import settings
-from django.db.models import Max, Prefetch, Q
+from django.db.models import Prefetch, Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -38,7 +40,9 @@ from farm.handling import fasting
 from farm.models import Batch, FeedingProtocol, FeedingRecord, ProtocolAssignment, ProtocolBand, StockMovement, Tank
 from farm.models.feeding import FeedTarget
 from farm.models.site import zone_of
+from farm.models.stock import MovementKind
 from farm.stock.dates import end_of, local_today, start_of
+from farm.stock.fold import operations
 from farm.stock.read import batches_ever_in, ledger
 
 from .fold import ZERO, Feeding, PointKind, Window, ratio, walk
@@ -105,28 +109,45 @@ def tables(protocol_ids):
     return found
 
 
-def policy(units, batch_ids, first, now):
+def policy(units, batch_ids, first, now, read=()):
     """The ration.Policy of these units (Tank, by id) and batches from the day `first` to now: the assignment rows
-    in force over those days, their tables, the batches' species and the units' temperatures, read once."""
+    in force over those days, their tables, the batches' species and the units' temperatures, read once. `read`: the
+    (unit id, day) pairs whose temperature the walk may ask (its feeding days and the days asked): the sensors' values
+    at all their moments are read in one ask, not one per day."""
     rows = list(ProtocolAssignment.objects.filter(Q(unit_id__in=list(units)) | Q(batch_id__in=batch_ids))
                 .filter(Q(valid_until__isnull=True) | Q(valid_until__gte=first))
                 .select_related('unit', 'protocol__species'))
-    species = dict(Batch.all_objects.filter(pk__in=batch_ids).values_list('pk', 'species_id'))
+    found_batches = list(Batch.all_objects.filter(pk__in=batch_ids)
+                         .values_list('pk', 'species_id', 'species__cleaner_fish_type'))
+    species = {pk: species_id for pk, species_id, _cleaner in found_batches}
+    cleaner = frozenset(pk for pk, _species_id, cleaner_type in found_batches if cleaner_type)
     book = TemperatureBook(units.values(), datetime.combine(first, time.min, tzinfo=UTC) - timedelta(days=1), now)
     today = {unit_id: local_today(unit) for unit_id, unit in units.items()}
     found = {}
 
-    def temperature(unit_id, day):
+    def moment(unit_id, day):
         """Now for the unit's today, the end of the day for a day before it."""
+        return now if day >= today[unit_id] else end_of(day, units[unit_id])
+
+    def temperature(unit_id, day):
         if (unit_id, day) not in found:
-            unit = units[unit_id]
-            found[(unit_id, day)] = book.at(unit, now if day >= today[unit_id] else end_of(day, unit))
+            found[(unit_id, day)] = book.at(units[unit_id], moment(unit_id, day))
         return found[(unit_id, day)]
+
+    def may_ask(unit_id, day):
+        """Whether the walk can ask that day's temperature at all: `Policy.basis` reads it only for a share with a
+        protocol in force that day, and a row reaches a unit's day only as the unit's own or as a whole batch's (a batch
+        in this unit that day: not known before the walk, so every row of a batch counts). A day no row covers is never
+        asked, whatever the fish weigh; the days left may still not be (the band is the weight's), and an unread day is
+        simply asked on its own (`Series._live`), with the same answer."""
+        return any(row.unit_id in (unit_id, None) and row.covers(day) for row in rows)
+
+    book.prefetch(sorted({moment(unit_id, day) for unit_id, day in read if unit_id in units and may_ask(unit_id, day)}))
 
     # The fasts planned harvests and transports ask for, from `first` to the units' today (one query).
     fasts = fasting.fasts(list(units.values()), first, max(today.values(), default=first))
     return Policy(rows, tables({row.protocol_id for row in rows}), species, temperature,
-                  fasting=lambda unit_id, day: fasts.get((unit_id, day)))
+                  fasting=lambda unit_id, day: fasts.get((unit_id, day)), cleaner=cleaner)
 
 
 @dataclass
@@ -155,8 +176,9 @@ def project(unit_ids, days=(), now=None):
     records = feedings(unit_ids)
     units = Tank.all_objects.select_related('production_department__site').in_bulk(unit_ids)
     first = min([record.date for record in records] + [day for _unit, day in days],
-                default=timezone.localdate(now))
-    projector = Projector(policy(units, batch_ids, first, now), days)
+                default=timezone.localdate(now, zone_of(None)))
+    read = {(record.unit_id, record.date) for record in records} | set(days)
+    projector = Projector(policy(units, batch_ids, first, now, read), days)
     return Projection(walk(ledger(batch_ids), records, days, projector=projector), projector)
 
 
@@ -217,31 +239,181 @@ def fed_moment(record):
     return datetime.combine(record.date, record.time, tzinfo=zone_of(record.unit.production_department.site))
 
 
-def last_fed_at(unit, day, batch=None, since=None):
-    """The latest feeding (LastFed) of the fish on or before `day`, back to `since`: the fish of `batch`
-    wherever they were (fish moved in were fed in their old unit), or, without a batch, of every batch in
-    `unit` at the start of `day` (at its end when it was empty then), its production fish (the ones handled; a
-    cleaner fish's feeding is not theirs). Which batches a record fed is the feeding walk's split, so a record of
-    the unit before these fish came in does not count. None when no record fed them."""
-    if batch is not None:
-        batch_ids = {batch.pk}
-    else:
-        batch_ids = set(book_on(unit, day).production.weights)
+@dataclass(frozen=True)
+class Where:
+    """A unit the fish now in another unit were in, and over which days (both included): the unit handled since they
+    came into it, the unit they came from up to the day they left it, and so on back along their own path."""
+    unit_id: object
+    first: date
+    last: date
+
+
+@dataclass
+class _Stay:
+    """A batch in a unit from the line that brought fish of it in while it had none there (`at`: that line's place in
+    the ledger's order, `since`: its day), and the transfers that brought more of it in during the stay (`arrivals`:
+    (the arriving line's place, its day, the unit the fish left, the place of the line they left it by), in order)."""
+    at: int
+    since: date
+    arrivals: list = field(default_factory=list)
+
+
+class Paths:
+    """Where fish were, back along their own path: the ledger's lines indexed ONCE, in the ledger's own order
+    (farm.stock.fold.operations: the day, then the order the operations were entered, the order they happened in),
+    for every unit asked afterwards (`where`). A transfer has a day and no time, so a path is cut at a PLACE in that
+    order, never at a day: fish that left a unit by one transfer were in it up to that transfer, whatever was entered
+    for the unit later the same day (a unit emptied and refilled on one day, a move there and back, a grading day:
+    read by day, the lines after the move were taken for the stay the fish left, and their last feeding was lost,
+    review F-02). Indexed once whatever the number of units (review F-04: once per unit, a units list of 200 units
+    cost 60 times one of 25)."""
+
+    def __init__(self, lines):
+        self.days = []                           # the day of every line, in the ledger's order: where a day ends
+        self.stays = defaultdict(list)           # (unit, batch) -> [_Stay], oldest first
+        running = defaultdict(int)
+        left = {}                                # (operation, pair) -> (the unit a transfer's fish left, that line's place)
+        for op, op_lines in operations(lines):
+            for line in op_lines:
+                place, key = len(self.days), (line.unit_id, line.batch_id)
+                self.days.append(op.date)
+                if line.count_delta > 0 and running[key] <= 0:     # a new stay: what came before is not these fish
+                    self.stays[key].append(_Stay(place, op.date))
+                running[key] += line.count_delta
+                if line.kind == MovementKind.TRANSFER_OUT:
+                    left[(op.id, line.pair)] = (line.unit_id, place)
+                elif line.kind == MovementKind.TRANSFER_IN and (op.id, line.pair) in left:
+                    source, out = left[(op.id, line.pair)]
+                    if source != line.unit_id:
+                        self.stays[key][-1].arrivals.append((place, op.date, source, out))
+
+    def where(self, unit_id, batch_ids, day, since=None):
+        """[Where] of the fish of `batch_ids` that are in `unit_id` on `day` (after every line dated `day` or before).
+        For each batch, the unit itself from the start of its stay there to `day`; for every arrival of that stay by a
+        transfer, the unit it came from, from the start of the batch's stay THERE (the stay the fish left: the one
+        going on just before the line they left by) to the day of the move (the move has no time, so its day counts in
+        both units: a fast is never overstated), and so on back. A unit the fish were never in, and their old unit
+        after they left it, are not in it: a sibling group fed elsewhere after a split does not break the fast of the
+        fish handled (flow fault S-01). Nothing before `since` is followed."""
+        found = {}                               # (unit, batch, the stay's place) -> [the stay's day, the last day]
+        followed = {}                            # the same -> the place its arrivals are followed up to
+        todo = [(unit_id, batch_id, bisect_right(self.days, day), day) for batch_id in batch_ids]
+        while todo:
+            unit, batch, cut, last = todo.pop()
+            if since is not None and last < since:
+                continue
+            stays = self.stays.get((unit, batch), ())
+            index = bisect_left(stays, cut, key=lambda stay: stay.at) - 1      # the stay going on before the cut
+            if index < 0:
+                continue
+            stay = stays[index]
+            key = (unit, batch, stay.at)
+            if key in found:
+                found[key][1] = max(found[key][1], last)
+            else:
+                found[key] = [stay.since, last]
+            start = followed.get(key, 0)
+            if cut <= start:
+                continue                         # this stay's arrivals before the cut are followed already
+            followed[key] = cut
+            for _place, moved_on, source, out in stay.arrivals[bisect_left(stay.arrivals, (start,)):
+                                                               bisect_left(stay.arrivals, (cut,))]:
+                todo.append((source, batch, out, moved_on))
+        return [Where(unit, first if since is None else max(first, since), last)
+                for (unit, _batch, _at), (first, last) in found.items()]
+
+
+def fed_where(lines, unit_id, batch_ids, day, since=None):
+    """`Paths(lines).where(...)` for one unit: [Where] of the fish of `batch_ids` in `unit_id` on `day`."""
+    return Paths(lines).where(unit_id, batch_ids, day, since)
+
+
+def last_fed_of(asked, lines=None):
+    """{unit id: LastFed or None}: THE reader of when the fish in a unit were last fed, for every page and check that
+    says it (the handling check and its acknowledgement, the earliest harvest date, the units list, the drawer, the
+    production plans, the cards). `asked`: [(unit, day, the ids of its production batches that day, since or None)].
+
+    The fast is of the FISH IN THE UNIT, not of a batch across every unit it was ever in (flow fault S-01; the owner,
+    14.11.2026: fish of two batches in one unit are one group, one fast for the unit whichever batch a dialog names):
+    the feedings of production fish in the units and days `fed_where` gives for each batch in the unit, on or before
+    `day`; the latest of them decides (the least-fasted fish: they cannot be handled apart). A cleaner fish's feeding
+    is not theirs. One ledger read (none when the caller holds the lines of these batches already: `lines`, a walk's),
+    indexed once (`Paths`), and one query of the feedings, for all the units asked: each answer's record and moment
+    come from that one read, so a feeding voided or changed while it runs cannot break or split the answer."""
+    asked = list(asked)
+    found = {unit.pk: None for unit, _day, _ids, _since in asked}
+    batch_ids = {batch_id for _unit, _day, ids, _since in asked for batch_id in ids}
     if not batch_ids:
-        return None
-    unit_ids = set(StockMovement.objects.filter(batch_id__in=batch_ids, operation__is_deleted=False)
-                   .values_list('unit_id', flat=True))
-    records = (FeedingRecord.objects.filter(unit_id__in=unit_ids, date__lte=day)
-               .select_related('unit__production_department__site'))
-    if since is not None:
-        records = records.filter(date__gte=since)
-    records = list(records)
-    fed = split_of(records)
-    moments = [(fed_moment(record), record) for record in records if batch_ids & set(fed.get(record.pk, {}))]
-    if not moments:
-        return None
-    moment, record = max(moments, key=lambda item: (item[0], item[1].created_at))
-    return LastFed(moment, record)
+        return found
+    paths = Paths(ledger(batch_ids) if lines is None else lines)
+    places = {unit.pk: paths.where(unit.pk, ids, day, since) for unit, day, ids, since in asked}
+    every = [place for found_for in places.values() for place in found_for]
+    if not every:
+        return found
+    # ONE read of the candidates, every column of each (a wall's thousands of feedings are never built as records): each
+    # weighed by the one rule (`fed_moment`) on its unit's clock, and only the winners built as records, from the very
+    # rows read. So a feeding voided, deleted or changed meanwhile can neither be missing from the answer nor disagree
+    # with its own moment: the answer is of that one snapshot, as when the records were read whole. (The units are read
+    # beside it: no feeding names a unit that is not there, the database refuses a hard delete of one.)
+    unit_ids = {place.unit_id for place in every}
+    units = Tank.all_objects.select_related('production_department__site').in_bulk(unit_ids)
+    rows = FeedingRecord.objects.filter(unit_id__in=unit_ids, target=FeedTarget.PRODUCTION,
+                                        date__gte=min(place.first for place in every),
+                                        date__lte=max(place.last for place in every))
+    columns = [column.attname for column in FeedingRecord._meta.concrete_fields]
+    at = {name: columns.index(name) for name in ('id', 'unit_id', 'date', 'time', 'created_at')}
+    by_unit = defaultdict(list)
+    for row in rows.values_list(*columns):
+        weighed = _Fed(row[at['id']], row[at['date']], row[at['time']], row[at['created_at']],
+                       units[row[at['unit_id']]], row)
+        by_unit[row[at['unit_id']]].append((weighed, fed_moment(weighed)))
+    for unit_id, where in places.items():
+        counted = {each.pk: (each, moment) for place in where for each, moment in by_unit.get(place.unit_id, ())
+                   if place.first <= each.date <= place.last}
+        if counted:
+            winner, moment = max(counted.values(), key=lambda each: (each[1], each[0].created_at))
+            record = FeedingRecord.from_db(rows.db, columns, winner.row)
+            record.unit = winner.unit
+            found[unit_id] = LastFed(moment, record)
+    return found
+
+
+@dataclass(frozen=True)
+class _Fed:
+    """A feeding as `last_fed_of` weighs it: what `fed_moment` reads, its entry time for a tie, its unit, and `row`, all
+    its columns as read, from which a winner is built."""
+    pk: object
+    date: date
+    time: time
+    created_at: datetime
+    unit: object
+    row: tuple
+
+
+def handled(unit, day):
+    """The ids of the production batches a handling of `unit` on `day` handles: those in it at the start of the day or
+    at its end (fish that arrive on the day are handled with the others; the cleaner fish beside them are not)."""
+    return handled_of([(unit, day)])[(unit.pk, day)]
+
+
+def handled_of(asked):
+    """{(unit id, day): batch ids} of `handled` for every (unit, day) asked, from one walk of the units (a page of
+    fifty units reads the ledger once, not fifty times)."""
+    asked = list(asked)
+    if not asked:
+        return {}
+    days = _walk({unit.pk for unit, _day in asked}, [], [(unit.pk, day) for unit, day in asked]).days
+    found = {}
+    for unit, day in asked:
+        book = days[(unit.pk, day)].production
+        found[(unit.pk, day)] = set(book.start) | set(book.end)
+    return found
+
+
+def last_fed_at(unit, day, since=None):
+    """The latest feeding (LastFed) of the fish in `unit` on or before `day`, back to `since`; None when no record fed
+    them (`last_fed_of`, for one unit). It takes no batch on purpose: the fast is the unit's."""
+    return last_fed_of([(unit, day, handled(unit, day), since)])[unit.pk]
 
 
 # ---- FCR -----------------------------------------------------------------------------------------
@@ -378,6 +550,7 @@ class UnitFeeding:
     (projection.UnitDay) and the corrections of its weighings."""
     today: date
     last_fed: date = None
+    last_fed_in: object = None     # the unit that feeding was in, when it is not this one (the fish were moved in since)
     shares: list = field(default_factory=list)
     week: Week = None
     ration: object = None
@@ -413,12 +586,16 @@ def figures(stock, details=(), ration=False):
     days = list(days)
     projection = project(unit_ids, days) if days else None
     walked = projection.walked if projection else _walk(unit_ids, feedings(unit_ids, since), days)
-    last = dict(FeedingRecord.objects.filter(unit_id__in=unit_ids, target=FeedTarget.PRODUCTION).order_by()
-                .values('unit_id').annotate(last=Max('date')).values_list('unit_id', 'last'))
+    # When the fish in each unit were last fed: the one reader (`last_fed_of`), so the list, the drawer, the plans and
+    # the cards say what the handling check says (fish moved in bring their last meal in their old unit). It reads the
+    # lines the walk has just folded (every batch ever in these units): no second read of the ledger, so a page or a
+    # wall of cards costs the queries it cost before (monitoring's recorded counts, review F-01).
+    last = last_fed_in(stock, lines=walked.lines)
     result = {}
     for unit_id, item in stock.items():
         fed = last.get(unit_id)
-        unit = result[unit_id] = UnitFeeding(today[unit_id], fed if fed and fed >= item.since else None)
+        unit = result[unit_id] = UnitFeeding(today[unit_id], fed.record.date if fed else None,
+                                             fed.record.unit if fed and fed.record.unit_id != unit_id else None)
         for share in item.shares:
             stay = walked.stays[(unit_id, share.batch.pk)][-1]
             unit.shares.append(ShareFeeding(share.batch, stay, window(stay), share.cleaner))
@@ -429,6 +606,15 @@ def figures(stock, details=(), ration=False):
         result[unit.pk].ration = projection.days.get((unit.pk, today[unit.pk]))
         result[unit.pk].corrections = projection.corrections(unit.pk)
     return result
+
+
+def last_fed_in(stock, lines=None):
+    """{unit id: LastFed or None} of the units with fish (`stock`: read.stock_of): what `figures` says of each as its
+    last feeding, `last_fed_of` the fish counted in it on its today, back to any day. A page that shows nothing else of
+    the figures (the production plans) asks this alone and walks no feeding; `lines`: the ledger lines of these batches
+    when the caller has them (a walk's)."""
+    return last_fed_of(((item.unit, local_today(item.unit), [share.batch.pk for share in item.counted], None)
+                        for item in stock.values()), lines=lines)
 
 
 def weeks(units, stock, today, walked):
@@ -480,9 +666,21 @@ def drift(today, measured_on):
 
 def meal_lines(unit_day, batches, today):
     """The line of each batch of a unit's day (projection.UnitDay, None: no day): its ShareDay, its batch (`batches`:
-    by id), why it has no ration, the drift of its estimate and the days since its measured point. The meal board
-    and the monitoring cards print these and nothing computed beside them."""
+    by id), why it has no ration, whether its fish are cleaner fish (marked as such; without a feeding table of their
+    own they have no ration and no why, D-1), the drift of its estimate and the days since its measured point. The meal
+    board and the monitoring cards print these and nothing computed beside them.
+
+    The day names its batches; `batches` is what the caller has (the unit's stock now) and may lack one: the day is the
+    fold at the end of the unit's TODAY, the stock the fold of every line there is, so a line dated after today (a clock
+    set back before the ledger's newest lines, a site whose time zone was moved a day behind) leaves a batch in the day
+    that the stock no longer holds. Such a batch is read here, in one query for all of them, never a KeyError on a
+    page."""
+    shares = unit_day.shares if unit_day else []
+    missing = {share.batch_id for share in shares} - batches.keys()
+    if missing:
+        batches = {**batches, **Batch.all_objects.select_related('species').in_bulk(missing)}
     return [{'share': share, 'batch': batches[share.batch_id], 'why': share.end.why(batches[share.batch_id]),
+             'cleaner': batches[share.batch_id].species.is_cleaner_fish,
              'drift': drift(today, share.measured_on),
              'estimate_days': (today - share.measured_on).days if share.measured_on else None}
-            for share in (unit_day.shares if unit_day else [])]
+            for share in shares]

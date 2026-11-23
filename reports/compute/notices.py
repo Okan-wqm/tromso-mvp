@@ -83,7 +83,7 @@ def site_change(report):
     lines = [line for line in read.movements(units, day, day)]
     batches = Batch.all_objects.select_related('species').in_bulk({line.batch_id for line in lines})
     species = sorted({species_code(batches[line.batch_id].species, problems) or '' for line in lines
-                      if line.kind in (MovementKind.INPUT, MovementKind.TRANSFER_IN)})
+                      if line.kind in (MovementKind.INPUT, MovementKind.TRANSFER_IN) and not line.opening})
     content = {'kind': report.kind, 'occurred_on': day.isoformat(), 'identity': identity(site, problems)}
     if report.kind == 'site_in_use':
         if not species:

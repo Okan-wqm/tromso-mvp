@@ -1,0 +1,23 @@
+{% extends base_template %}
+{% load i18n %}
+{% comment %} Company › Administration › Platform settings (core.resources.PlatformSettingsResource): the one row of the
+   platform owner's rules, read by core.platform only. Edit is the platform owner's right. {% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ group }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+{% for row in objects %}
+<section class="detail-section">
+  <h2 class="section-title">{% trans "Records" %}</h2>
+  <p class="muted">{% trans "The rules every daily record follows. Every change is in the activity log with its old and new value." %}</p>
+  <dl class="facts">
+    <div><dt>{% trans "Correction window (days)" %}</dt><dd>{{ row.correction_window_days }}</dd></div>
+    <div><dt>{% trans "An unknown withdrawal end holds for (days)" %}</dt><dd>{{ row.unknown_withdrawal_days }}</dd></div>
+    <div><dt>{% trans "A second person approves a withdrawal warning acknowledgement" %}</dt><dd>{% if row.second_approval_withdrawal %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</dd></div>
+  </dl>
+  <p class="panel-help">{% blocktrans trimmed count days=row.correction_window_days %}A record can be dated at most {{ days }} day back, and voided while it is no older. Older records stay as they are.{% plural %}A record can be dated at most {{ days }} days back, and voided while it is no older. Older records stay as they are.{% endblocktrans %}</p>
+  <p class="panel-help">{% blocktrans trimmed count days=row.unknown_withdrawal_days %}A medicine withdrawal whose end is unknown holds the fish for {{ days }} day after the course’s last day; after that the course is listed as unresolved on the Treatments page.{% plural %}A medicine withdrawal whose end is unknown holds the fish for {{ days }} days after the course’s last day; after that the course is listed as unresolved on the Treatments page.{% endblocktrans %}</p>
+</section>
+{% if can_change %}<p><a class="button button-inline" href="{% url 'core:platformsettings_edit' row.pk %}" data-modal>{% include "icons/_icon.html" with name="pencil" %}{% trans "Edit the settings" %}</a></p>{% endif %}
+{% endfor %}
+{% endblock %}

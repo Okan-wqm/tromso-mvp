@@ -10,7 +10,6 @@ from decimal import Decimal
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.db import DatabaseError, connection, transaction
-from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -44,7 +43,6 @@ def report_data(**overrides):
     return data
 
 
-@override_settings(STOCK_BACKDATE_DAYS=3650)
 class ReportPagesTestCase(ReportTestCase):
     def start(self, **overrides):
         response = self.client.post(reverse('reports:report_create'),
@@ -81,6 +79,14 @@ class DraftTests(ReportPagesTestCase):
         report.refresh_from_db()
         self.assertEqual((report.contact_phone, report.notes, report.kind, report.site, report.version),
                          ('+47 12345678', 'Checked', 'smolt', self.hatchery, 2))
+        # the contact's e-mail and telephone are private in the log (owner decision F-059); who the contact is stays
+        from core.audit import private
+        made, changed = AuditLog.objects.filter(entity_id=str(report.pk)).order_by('created_at')
+        self.assertEqual((made.changes['Contact e-mail'], made.changes['Contact telephone'],
+                          made.changes['Contact person']),
+                         ([None, private('kari@example.com')], [None, private('+47 98989898')], [None, 'Kari Nord']))
+        self.assertEqual(changed.changes['Contact telephone'], [private('+47 98989898'), private('+47 12345678')])
+        self.assertNotIn('kari@example.com', str(list(AuditLog.objects.values_list('changes', flat=True))))
         self.client.post(reverse('reports:report_delete', args=[report.pk]))
         self.assertTrue(Report.all_objects.get(pk=report.pk).is_deleted)
         self.assertFalse(Report.objects.exists())
@@ -134,7 +140,7 @@ class DraftTests(ReportPagesTestCase):
         self.assertEqual(report.found_at.astimezone(dt_tz.utc), datetime(2026, 10, 29, 21, 15, tzinfo=dt_tz.utc))
         edit = self.client.get(reverse('reports:report_edit', args=[report.pk]))
         self.assertEqual(edit.context['form'].initial['found_at'], datetime(2026, 10, 30, 6, 15))
-        self.assertContains(edit, 'value="2026-10-30T06:15"')
+        self.assertContains(edit, 'value="30.10.2026 06:15"')                       # dd.mm.yyyy HH:MM in every language
         self.assertEqual(compute.compute(report).content['found_at'], '2026-10-29T21:15:00+00:00')
         # The future is the site's future: a time that is past in UTC may still be to come in Tokyo.
         soon = timezone.localtime(timezone.now(), zone_of(self.sea)) + timedelta(hours=2)
@@ -266,6 +272,10 @@ class FilingTests(ReportPagesTestCase):
         paths = [path for path, _before, _after in page.context['differences']['figures']]
         self.assertIn(f'/units/{self.k2.pk}/fish_at_end', paths)
         self.assertIn(f'/units/{self.k2.pk}/moved_out_of_site', paths)
+        # Said as the figures are named on the page, the unit by its number, never as a key of the content.
+        self.assertContains(page, '<li>Unit K-02 · Fish at the month’s end: 500 → 1000</li>', html=True)
+        self.assertContains(page, '<li>Unit K-02 · Moved out of the site: 500 → 0</li>', html=True)
+        self.assertNotContains(page, f'/units/{self.k2.pk}/')
         response = self.client.post(reverse('reports:report_correct', args=[report.pk]))
         correction = Report.objects.get(corrects=report)
         self.assertRedirects(response, reverse('reports:report_edit', args=[correction.pk]))

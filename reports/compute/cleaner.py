@@ -20,7 +20,7 @@ from farm.models.stock import CLEANER_CULL_REASONS, MovementKind
 from farm.stock import read
 
 from . import stock
-from .common import Result, identity, note, species_code, text, unit_number, whole
+from .common import Result, identity, note, species_code, taken_over, text, unit_number, whole
 
 ZERO = Decimal(0)
 CAUSES = tuple(reason.value for reason in CLEANER_CULL_REASONS)
@@ -36,6 +36,7 @@ def compute(site, period, report=None):
                                              found.values() for share in unit_stock.shares})
     cleaner = {pk for pk, batch in batches.items() if batch.species.is_cleaner_fish}
     lines = [line for line in lines if line.batch_id in cleaner]
+    taken_over(lines, {unit.pk: unit for unit in units}, batches, warnings)
     rows = {}
 
     def row(unit, batch):
@@ -59,7 +60,9 @@ def compute(site, period, report=None):
     for line in lines:
         figures = row(by_id[line.unit_id], batches[line.batch_id])
         rows[str(line.unit_id)]['lines'].append(line.line_id)
-        if line.kind == MovementKind.INPUT:
+        if line.opening:
+            figures['opening'] += line.count        # stock the farm already had at the month's start, never stocked
+        elif line.kind == MovementKind.INPUT:
             figures['stocked'] += line.count
         elif line.kind == MovementKind.TRANSFER_IN:
             figures['moved_in'] += line.count

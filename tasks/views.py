@@ -142,5 +142,6 @@ def overview_tiles(user):
     services.materialise_due()
     counts = read.counts(Task.objects.all())
     url = reverse('tasks:task_list')
-    return [{'label': _('Tasks due today'), 'count': counts[read.TODAY] - counts['overdue'], 'url': url},
-            {'label': _('Overdue tasks'), 'count': counts['overdue'], 'url': url}]
+    return [{'key': 'due_today', 'label': _('Tasks due today'), 'count': counts[read.TODAY] - counts['overdue'],
+             'url': url},
+            {'key': 'overdue', 'label': _('Overdue tasks'), 'count': counts['overdue'], 'url': url}]

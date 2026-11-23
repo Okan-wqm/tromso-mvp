@@ -1,5 +1,14 @@
 {% extends "crud/list.html" %}
 {% load i18n water %}
+{% block above %}{% if missing %}
+<section class="notice notice-warning water-missing" aria-labelledby="water-missing-title">
+  <h2 id="water-missing-title">{% trans "Fish with no limit" %}</h2>
+  <p>{% trans "These fish are kept today, and no limit judges these values for them: their monitoring cards say “No limit” whatever the value is. Add the limits your vet or guideline gives." %}</p>
+  <ul role="list">{% for entry in missing %}
+    <li><strong>{{ entry.species.common_name }}</strong> ({{ entry.water_type_label }}){% if entry.species.is_deleted %} · {% trans "deleted species" %}{% endif %}: {% for parameter in entry.parameters %}{{ parameter.label }}{% if not forloop.last %}, {% endif %}{% endfor %}</li>
+  {% endfor %}</ul>
+</section>
+{% endif %}{% endblock %}
 {% block search_placeholder %}{% trans "Search by species or source" %}{% endblock %}
 {% block filters %}
 <form method="get" class="toolbar-filter">

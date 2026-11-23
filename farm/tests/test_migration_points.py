@@ -1,14 +1,20 @@
 """Migration farm/0019_water_points on a database that already has samples: every sample keeps its values, its void state
 and its entry key and ends on the middle point of the unit or system it was in; the units and systems that existed get
 their default points; and the migration goes back, or says why it cannot."""
+import ast
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
+from importlib import import_module
+from pathlib import Path
 
 from django.db import connection
 from django.db.migrations.exceptions import IrreversibleError
 from django.db.migrations.executor import MigrationExecutor
-from django.test import TransactionTestCase
+from django.test import SimpleTestCase, TransactionTestCase
+
+from farm import withdrawal_gate
+from farm.water import points
 
 BEFORE = [('farm', '0018_health')]
 AFTER = [('farm', '0019_water_points')]
@@ -71,6 +77,7 @@ class WaterPointsMigrationTests(TransactionTestCase):
         }
         return farm
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def sample(self, apps, **fields):
         WaterMeasurement = apps.get_model('farm', 'WaterMeasurement')
         return WaterMeasurement.objects.create(source='manual', **fields)
@@ -180,3 +187,21 @@ class WaterPointsMigrationTests(TransactionTestCase):
         Sample.objects.filter(point=inlet).delete()
         self.migrate(BEFORE)                                                  # once it is gone, it goes back
         self.assertFalse(self.applied())
+
+
+class FrozenTemplateTests(SimpleTestCase):
+    """F-074: the migration makes the points a unit or system started with on its day from its own copy, never from the
+    live app code (farm/water/points.py), so a later change to the template or to the models cannot change what an old
+    migration does on a fresh database; the copy is the template as it still is."""
+
+    def test_the_migration_imports_no_app_code_and_its_copy_is_the_template(self):
+        path = Path(import_module('farm.migrations').__file__).parent / '0019_water_points.py'
+        tree = ast.parse(path.read_text(encoding='utf-8'))
+        modules = {node.module for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)}
+        modules |= {alias.name for node in ast.walk(tree) if isinstance(node, ast.Import) for alias in node.names}
+        self.assertEqual({module for module in modules if module.split('.')[0] not in ('django', 'uuid')}, set())
+        migration = import_module('farm.migrations.0019_water_points')
+        for owner_type, kind in (('unit', 'tank'), ('unit', 'pond'), ('unit', 'cage'), ('system', '')):
+            with self.subTest(owner=owner_type, kind=kind):
+                self.assertEqual(migration.template_for(owner_type, kind),
+                                 [(str(each), str(name)) for each, name in points.template_for(owner_type, kind)])

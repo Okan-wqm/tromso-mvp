@@ -150,6 +150,57 @@ class SupportTests(AccessCase):
         self.assertContains(response, 'root')
 
 
+class PrivateTests(AccessCase):
+    """Owner amendment C4: the lead may keep the experiment from the platform admin too."""
+
+    def setUp(self):
+        Experiment.objects.filter(pk=self.experiment.pk).update(audience='private')
+        self.experiment.refresh_from_db()
+
+    def test_the_platform_admin_reads_nothing_of_a_private_experiment(self):
+        from farm.models import FeedingRecord, Tank
+        self.assertEqual(self.detail(self.boss).status_code, 404)
+        self.assertEqual(self.seen(self.boss, Experiment), set())
+        self.assertEqual(self.seen(self.boss, Factor), set())
+        self.assertEqual(self.seen(self.boss, ReplicateUnit), set())
+        self.assertFalse(self.seen(self.boss, Tank) & {tank.pk for tank in self.sealed_tanks})
+        self.assertNotIn(self.feeding.pk, self.seen(self.boss, FeedingRecord))
+        self.assertIn(self.open_tank.pk, self.seen(self.boss, Tank))
+        self.assertFalse(AccessEvent.objects.exists())
+
+    def test_nor_in_the_database_viewer(self):
+        self.client.force_login(self.boss)
+        for table in ('experiments', 'experiment_factors', 'tanks', 'systems', 'feeding_records'):
+            with self.subTest(table=table):
+                response = self.client.get(reverse('core:database_table', args=[table]))
+                self.assertEqual(response.status_code, 200)
+                self.assertNotContains(response, 'XQZ')
+
+    def test_the_platform_admin_still_sees_that_its_tanks_are_booked_and_when(self):
+        from .. import read
+        with sealing.as_viewer(self.boss):
+            days = read.booked([tank.pk for tank in self.sealed_tanks], self.today, self.today)
+        self.assertEqual(set(days), {tank.pk for tank in self.sealed_tanks})
+
+    def test_its_team_and_its_grantees_still_read_it(self):
+        self.assertContains(self.detail(self.lead), 'XQZ diet trial')
+        self.give('design')
+        self.assertContains(self.detail(self.researcher), 'XQZ diet trial')
+
+    def test_the_lead_sets_it_on_the_sharing_page_logged_once(self):
+        Experiment.objects.filter(pk=self.experiment.pk).update(audience='sealed')
+        self.client.force_login(self.lead)
+        url = reverse('experiments:experiment_sharing', args=[self.experiment.pk])
+        self.assertContains(self.client.get(url), 'not the platform admin')
+        self.assertEqual(self.client.post(url, {'audience': 'private'}).status_code, 302)
+        self.experiment.refresh_from_db()
+        self.assertEqual(self.experiment.audience, 'private')
+        entry = AuditLog.objects.get(entity_id=str(self.experiment.pk))
+        self.assertEqual(list(entry.changes), ['Who may read it'])
+        self.client.force_login(self.boss)
+        self.assertEqual(self.client.get(url).status_code, 404)
+
+
 class DeletePlanTests(AccessCase):
     def test_the_plan_counts_what_the_person_may_not_see_without_naming_it(self):
         from core.softdelete import plan_delete

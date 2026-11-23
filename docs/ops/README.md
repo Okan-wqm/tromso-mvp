@@ -11,6 +11,7 @@ Each farm has **its own server, its own installation and its own database**; not
 | [upgrade.md](upgrade.md) | A new release, with its migrations |
 | [backup-and-restore.md](backup-and-restore.md) | What is backed up, where, how long; restore a dump, restore to a moment |
 | [rotate-secrets.md](rotate-secrets.md) | Every secret: where it lives, how it is changed |
+| [monitoring.md](monitoring.md) | The outside heartbeat: services, backups, disk, certificates, sensors |
 | [incident.md](incident.md) | Something is wrong: the checklist |
 | [access.md](access.md) | How people reach the console (Cloudflare Zero Trust or VPN) and how sensors reach the broker |
 | [database-roles.md](database-roles.md) | The four database roles and what each may do |

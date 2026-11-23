@@ -94,6 +94,8 @@ jobs:
         run: bash deploy/ci/stack.sh data
       - name: HTTPS smoke test and crawl
         run: bash deploy/ci/stack.sh smoke
+      - name: Heartbeat, and a failing WAL archiver seen
+        run: bash deploy/ci/stack.sh heartbeat
       - name: MQTT over TLS
         run: bash deploy/ci/stack.sh mqtt
       - name: Backup (dump, base backup, WAL, ship)

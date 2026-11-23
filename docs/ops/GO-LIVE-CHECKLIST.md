@@ -68,6 +68,14 @@ Farm: ____________________  Server: ____________________  Release: ____________ 
 - [ ] The dead-man check reaching people by a path that does not depend on the proxy or Cloudflare.
 - [ ] The site's local hard-wired alarms tested independently of the console.
 
+## Monitoring
+
+- [ ] An outside monitor (not on this server, not behind its Cloudflare) holds a heartbeat check for this farm, period
+      5 minutes, grace 10, alerting two people by two channels ([monitoring.md](monitoring.md)).
+- [ ] `HEARTBEAT_URL` and `HEARTBEAT_FAIL_URL` in `farm.env`; the systemd timer enabled; `sh scripts/heartbeat.sh`
+      prints every check ok, and the monitor shows the ping.
+- [ ] Tested: stop one service (`dc stop jobs`), the monitor alerts within 15 minutes; start it again.
+
 ## Backups
 
 - [ ] The repository initialised; `agent.sh now` ran; `agent.sh snapshots` shows it; `backup` healthy.

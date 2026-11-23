@@ -82,7 +82,9 @@ services:
       POSTGRES_DB: ${DB_NAME:-balik}
     secrets: [postgres_password, db_owner_password, db_app_password, db_ingest_password, db_backup_password]
     # The WAL is archived every 5 minutes at the latest (archive_timeout), for the backup agent to ship; a failing
-    # archive_command keeps the WAL on the server and retries, it never loses it.
+    # archive_command keeps the WAL on the server and retries, it never loses it. A segment is copied under a temporary
+    # name and renamed, so a copy cut short (a full disk, a crash) is never taken for the segment; a segment already
+    # there counts as archived only when it is the same file (the archive is retried after a crash).
     command:
       - postgres
       - -c
@@ -92,7 +94,7 @@ services:
       - -c
       - archive_mode=on
       - -c
-      - archive_command=test ! -f /wal-archive/%f && cp %p /wal-archive/%f
+      - archive_command=if [ -f /wal-archive/%f ]; then cmp -s %p /wal-archive/%f; else cp %p /wal-archive/%f.tmp && mv /wal-archive/%f.tmp /wal-archive/%f; fi
       - -c
       - archive_timeout=300
       - -c

@@ -161,7 +161,8 @@ cleanup_wal() {
 ship() {
   mkdir -p "$DUMPS" "$BASES"
   log "ship to the repository (host $HOST_TAG)"
-  restic backup --retry-lock 10m --no-scan --host "$HOST_TAG" --tag balik --exclude '*.part' "$DUMPS" "$BASES" "$WAL" "$MEDIA"
+  restic backup --retry-lock 10m --no-scan --host "$HOST_TAG" --tag balik --exclude '*.part' --exclude '*.tmp' \
+    "$DUMPS" "$BASES" "$WAL" "$MEDIA"
   log "ship done"
 }
 
@@ -187,13 +188,22 @@ due() {  # due JOB EVERY
 }
 
 health() {
+  # Unhealthy when a job failed last (each is retried after 15 minutes), when one is overdue, or when the database's
+  # WAL archiver is failing: a WAL segment that cannot be archived is a backup that silently stops.
   slack=3600
+  for job in forget check; do
+    if [ -f "$STATE/$job.failed" ]; then echo "$job failed last"; exit 1; fi
+  done
   for spec in "dump $DUMP_EVERY" "ship $SHIP_EVERY" "base $BASE_EVERY"; do
     set -- $spec
     if [ -f "$STATE/$1.failed" ]; then echo "$1 failed last"; exit 1; fi
     age=$(( $(now) - $(last "$1") ))
     if [ "$age" -gt "$(( $2 + slack ))" ]; then echo "$1 overdue ($age s since the last success)"; exit 1; fi
   done
+  archiver=$(psql -X -At -c "SELECT CASE WHEN last_failed_time IS NOT NULL AND (last_archived_time IS NULL
+      OR last_failed_time > last_archived_time) THEN 'failing: ' || last_failed_wal ELSE 'ok' END FROM pg_stat_archiver") \
+    || { echo "the database cannot be asked for its WAL archiver"; exit 1; }
+  if [ "$archiver" != ok ]; then echo "the WAL archiver is $archiver (pg_stat_archiver)"; exit 1; fi
   echo ok
 }
 

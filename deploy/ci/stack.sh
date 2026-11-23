@@ -126,6 +126,37 @@ smoke() {
     --password-file "$ADMIN_PASSWORD_FILE"
 }
 
+heartbeat() {
+  say "the heartbeat's checks (scripts/heartbeat.sh): services, disk, certificates, backup, sensors"
+  COMPOSE="${DC[*]}" ENV_FILE="$ENV_FILE" sh deploy/scripts/heartbeat.sh
+  say "a WAL segment that cannot be archived turns the backup unhealthy and the heartbeat red"
+  "${DC[@]}" exec -T -u root db chmod 0500 /wal-archive
+  "${DC[@]}" exec -T db sh -c 'PGPASSWORD=$(head -n 1 /run/secrets/postgres_password) psql -X -h 127.0.0.1 -U postgres -d "$POSTGRES_DB" -At -c "CREATE TEMP TABLE heartbeat_wal AS SELECT 1" -c "SELECT pg_switch_wal()"' > /dev/null
+  out=""
+  for _ in $(seq 1 60); do
+    out=$("${DC[@]}" exec -T backup sh /usr/local/lib/balik-backup/agent.sh health 2>&1 || true)
+    case "$out" in *"archiver is failing"*) break ;; esac
+    sleep 2
+  done
+  echo "backup health: $out"
+  case "$out" in *"archiver is failing"*) ;; *) echo "FAIL: a failing archiver was not seen"; exit 1 ;; esac
+  if COMPOSE="${DC[*]}" ENV_FILE="$ENV_FILE" sh deploy/scripts/heartbeat.sh > "$T/heartbeat.out"; then
+    cat "$T/heartbeat.out"; echo "FAIL: the heartbeat passed with a failing archiver"; exit 1
+  fi
+  grep FAIL "$T/heartbeat.out"
+  say "the archive writable again: the archiver catches up and the heartbeat is green"
+  "${DC[@]}" exec -T -u root db chmod 0700 /wal-archive
+  for _ in $(seq 1 60); do
+    out=$("${DC[@]}" exec -T backup sh /usr/local/lib/balik-backup/agent.sh health 2>&1 || true)
+    [ "$out" = ok ] && break
+    sleep 3
+  done
+  echo "backup health: $out"
+  [ "$out" = ok ] || { echo "FAIL: the archiver did not recover"; exit 1; }
+  for _ in $(seq 1 60); do [ "$(health farm-ci-backup-1)" = healthy ] && break; sleep 5; done
+  COMPOSE="${DC[*]}" ENV_FILE="$ENV_FILE" sh deploy/scripts/heartbeat.sh
+}
+
 mqtt() {
   local image=eclipse-mosquitto:2.0.20@sha256:21421af7b32bf9ce508e9090c8eb13bb81f410ca778dc205506180a6f862d0eb
   local device=$SECRETS_DIR/mqtt-devices/sensor-ci

@@ -817,13 +817,14 @@ def band(cards_, chips=None, codes=None):
 
 
 # ---- the change token -------------------------------------------------------------------------------------------------
-def change_token(user, canonical_query, board='', now=None):
+def change_token(user, canonical_query, board='', now=None, revision=None):
     """What the screen asks "has anything changed?" with: a hash of the activity log's revision, the minute, the language,
     what the person may read, the board and the canonical address. No user id and no unit id: a unit made, edited or
     deleted writes a log entry, so the revision moves. The revision is read FIRST, before any data: a change between
     the two reads then makes the next token differ, never the other way round. The minute re-draws the figures that run
-    on the clock (age, next meal) at most once a minute per screen."""
-    revision = audit.revision()
+    on the clock (age, next meal) at most once a minute per screen. `revision`: audit.revision() as the caller has just
+    read it (the page's two tokens, the grid's and the pane's, read it once)."""
+    revision = audit.revision() if revision is None else revision
     now = now or timezone.now()
     parts = (revision, str(int(now.timestamp() // TOKEN_BUCKET)), translation.get_language() or '',
              ','.join(sorted(sections_for(user))), board, canonical_query)

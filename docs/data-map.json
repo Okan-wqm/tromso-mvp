@@ -9246,6 +9246,7 @@
         "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_cleaner_fish.py",
+        "farm/tests/test_fast_of_the_unit.py",
         "farm/tests/test_feeding.py",
         "farm/tests/test_migration_feeding_acknowledgement.py",
         "farm/tests/test_protocols.py",

@@ -182,6 +182,17 @@ services:
           memory: ${WEB_MEMORY:-2g}
           cpus: "${WEB_CPUS:-2}"
 
+  # One-off commands (docs/ops: createsuperuser, a check, a shell) as the app role: `dc run --rm manage python
+  # manage.py <command>`. The web server's container has a fixed address on the proxy's network, which a second,
+  # one-off container of it could not take; this one is on the database's network only and is never started by `up`.
+  manage:
+    <<: *app
+    profiles: [ops]
+    command: ["python", "manage.py", "help"]
+    restart: "no"
+    healthcheck:
+      disable: true
+
   jobs:
     <<: *app
     command: ["sh", "/app/deploy/web/jobs.sh"]

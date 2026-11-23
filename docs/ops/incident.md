@@ -23,7 +23,7 @@ daily credentials:
 - the server's `postgres_password` and the repository's `restic_password` (they are in the inventory anyway,
   [rotate-secrets.md](rotate-secrets.md));
 - for the console: no standing account. A new platform admin is made when needed:
-  `dc run --rm --no-deps web python manage.py createsuperuser`.
+  `dc run --rm manage python manage.py createsuperuser`.
 
 **Using it:** two people agree (the owner and the person on call), the opening is written in the farm's record with
 the time and the reason, and afterwards every item used is replaced (a new key, a new peer, the passwords rotated)
@@ -45,7 +45,7 @@ and the temporary admin deactivated. A break-glass key found in daily use is an 
 - [ ] Cut access at the edge: disable the Cloudflare Access application or the person's access (or stop
       `cloudflared`), or remove the VPN peer. On a public server: `dc stop proxy`.
 - [ ] Deactivate the affected accounts (Users). A platform admin account: deactivate it from another admin, or with
-      `dc run --rm --no-deps web python manage.py shell` (`User.objects.filter(username=...).update(is_active=False)`).
+      `dc run --rm manage python manage.py shell` (`User.objects.filter(username=...).update(is_active=False)`).
 - [ ] Sign everyone out: rotate `django_secret_key` ([rotate-secrets.md](rotate-secrets.md)).
 - [ ] Rotate every secret the attacker may have read (server access: all of `SECRETS_DIR`; a device: its credential
       and certificate). The digest key and the backup password only if they may have left the server.

@@ -8,7 +8,7 @@ The platform admin is a Django superuser: it opens everything and is the only on
 (README, Roles and users). Make one, for a named person, on the server:
 
 ```
-dc run --rm --no-deps web python manage.py createsuperuser
+dc run --rm manage python manage.py createsuperuser
 ```
 
 **No second factor and no lockout:** the console's sign-in (and Django's admin at `/admin/`) asks for a password
@@ -25,10 +25,10 @@ everyone else gets a role.
 Signed in as the platform admin (`https://<SITE_HOST>`):
 
 1. Company › Administration › Platform settings: the correction window, second approvals, alarm escalation.
-2. The production roles: `dc run --rm --no-deps web python manage.py hr_roles` makes the Production manager and
+2. The production roles: `dc run --rm manage python manage.py hr_roles` makes the Production manager and
    Production worker roles when they are missing; other roles are made in Company › Administration › Roles.
 3. The sites, systems, units and reference data, then Opening balances for the fish already on the farm.
-4. `dc run --rm --no-deps web python manage.py check --database default`: quiet (core.W003, core.W004).
+4. `dc run --rm manage python manage.py check --database default`: quiet (core.W003, core.W004).
 
 ## 3. Invitations
 

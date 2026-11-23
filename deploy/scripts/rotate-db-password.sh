@@ -55,7 +55,7 @@ after() {
   exit 1
 }
 
-verifier=$(printf '%s\n' "$new" | $COMPOSE run --rm -T --no-deps --entrypoint python web -c '
+verifier=$(printf '%s\n' "$new" | $COMPOSE run --rm -T --entrypoint python manage -c '
 import base64, hashlib, hmac, os, sys
 password = sys.stdin.readline().rstrip("\n").encode()
 salt, rounds = os.urandom(16), 4096

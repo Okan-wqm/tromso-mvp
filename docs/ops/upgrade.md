@@ -22,7 +22,7 @@ git fetch --tags && git checkout <new release tag>                 # 2. the new 
 diff farm.env.example <(git show <old tag>:deploy/farm.env.example)   # 3. new settings? add them to farm.env
 WEB_IMAGE=balik-web:<new tag> dc build                             # 4. the new images (tag them by release:
                                                                    #    set WEB_IMAGE etc. in farm.env)
-dc run --rm --no-deps web python manage.py check_pending_constraints   # 4b. the new CHECK constraints against the
+dc run --rm manage python manage.py check_pending_constraints   # 4b. the new CHECK constraints against the
                                                                    #    rows there are: a broken row is named now
 dc stop web jobs ingest                                            # 5. nothing writes while the schema changes
 dc up -d                                                           # 6. release runs: check --deploy, migrate,
@@ -30,7 +30,7 @@ dc up -d                                                           # 6. release 
 dc logs release                                                    #    "release: done"
 dc ps                                                              # 7. every service healthy
 sh scripts/check-roles.sh                                          # 8. the roles hold on the new tables
-dc run --rm --no-deps web python manage.py check --database default   #  quiet
+dc run --rm manage python manage.py check --database default   #  quiet
 ```
 
 Then sign in, open the pages of what the release changed, record one thing and look at it, and check that new sensor

@@ -23,7 +23,7 @@ What follows from it:
   ```
   (`erase_stranger_address` sets the log's trigger aside inside its transaction, which needs the table's owner;
   `docs/erasure.md`.) Every other product command (README, Management commands) runs as the app role:
-  `dc run --rm --no-deps web python manage.py <command>`.
+  `dc run --rm manage python manage.py <command>`.
 - `manage.py sensors_ingest_role` is a development tool on a farm's server: the ingest's role signs in with the
   password `roles.sql` gave it.
 - **The append-only tables** (the activity log, the alarms' history, the withdrawal acknowledgements, the filed reports'

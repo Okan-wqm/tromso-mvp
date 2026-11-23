@@ -149,11 +149,14 @@ def production_settings(app_configs, **kwargs):
             'DJANGO_ALLOWED_HOSTS holds "*": the server would answer to any host name.',
             hint='Set DJANGO_ALLOWED_HOSTS to the host names people open the console at, comma separated.',
             id='core.E007'))
-    plain = [origin for origin in settings.CSRF_TRUSTED_ORIGINS if urlsplit(origin).scheme != 'https']
+    plain = [origin for origin in settings.CSRF_TRUSTED_ORIGINS
+             if urlsplit(origin).scheme != 'https' or '*' in origin]
     if plain:
         found.append(Error(
-            f'A form may be posted from an origin that is not https: {", ".join(plain)}.',
-            hint='Set DJANGO_CSRF_TRUSTED_ORIGINS to https origins only, or leave it unset (the public address).',
+            f'A form may be posted from an origin that is not https, or from every host a wildcard matches: '
+            f'{", ".join(plain)}.',
+            hint='Set DJANGO_CSRF_TRUSTED_ORIGINS to https origins only, each one host, or leave it unset (the public '
+                 'address).',
             id='core.E008'))
     key = settings.AUDIT_DIGEST_KEY
     problem = ('it is not set, so the secret key would be used' if not key

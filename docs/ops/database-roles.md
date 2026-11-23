@@ -10,7 +10,7 @@ farm's server after install and after every upgrade; on every run of the go-live
 | `balik_owner` | the `release` step | own the database, the schema and every table: migrate | create roles or databases; it is no superuser |
 | `balik_app` | `web`, `jobs` (and the alarm worker) | `SELECT`, `INSERT`, `UPDATE`, `DELETE` on the tables (but `UPDATE`/`DELETE` on the append-only ones, below), use the sequences | `TRUNCATE`, `CREATE` (tables, indexes, schemas), `ALTER`, `DROP`, `REFERENCES`, `TRIGGER`, disable a trigger, grant |
 | `sensors_ingest` | `ingest` | what migrations `sensors/0001`, `0002`, `0006` grant: read its contract (`sensors_ingest_config`, `sensors_contract`, `sensors_quality_flag`), insert readings, read and write its runtime tables | read any other table, delete or update readings, any DDL |
-| `balik_backup` | `backup` | read every row (`pg_read_all_data`), stream the WAL (`REPLICATION`) | write anything, any DDL |
+| `balik_backup` | `backup` | read every row (`pg_read_all_data`), stream the WAL (`REPLICATION`) | write anything, any DDL. It can read the roles' password verifiers (`pg_authid`): a physical backup copies the whole server, them included, so whoever holds this role or the backups holds them too; the repository is encrypted and append-only for the farm |
 
 What follows from it:
 

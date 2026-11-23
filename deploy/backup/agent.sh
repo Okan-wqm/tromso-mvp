@@ -35,7 +35,7 @@
 #                             replayed up to TARGET_TIME (UTC, "2026-11-23 14:05:00+00") or to the end of the WAL
 #
 # Environment (deploy/compose.yml, deploy/farm.env): PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD_FILE;
-# RESTIC_REPOSITORY, RESTIC_PASSWORD_FILE and the repository's own credentials (deploy/secrets/backup.env);
+# RESTIC_REPOSITORY, RESTIC_PASSWORD_FILE and the repository's own credentials (SECRETS_DIR/backup.env);
 # BACKUP_HOST_TAG (this installation's name in the repository); the intervals above; the retention
 # BACKUP_KEEP_HOURLY (48), BACKUP_KEEP_DAILY (14), BACKUP_KEEP_WEEKLY (8), BACKUP_KEEP_MONTHLY (12);
 # BACKUP_LOCAL_DUMPS (3) and BACKUP_LOCAL_BASES (1): how many stay on the server as well. The archived WAL stays on the

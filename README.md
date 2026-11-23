@@ -5631,7 +5631,7 @@ behind the stack's TLS proxy, which ends HTTPS, overwrites `X-Forwarded-Proto` a
 
 - `SECURE_PROXY_SSL_HEADER`, `SECURE_SSL_REDIRECT`, `SESSION_COOKIE_SECURE` and `CSRF_COOKIE_SECURE` are on, whatever
   the environment says;
-- HSTS for `DJANGO_HSTS_SECONDS` (a year unless set; 0 is refused, security.W004), subdomains unless
+- HSTS for `DJANGO_HSTS_SECONDS` (an hour unless set, raised to a year once https is proven; 0 is refused, security.W004), subdomains unless
   `DJANGO_HSTS_INCLUDE_SUBDOMAINS=0`, `preload` only with `DJANGO_HSTS_PRELOAD=1` (a decision for the whole domain's
   owner; security.W021 is silenced while it is off);
 - `CSRF_TRUSTED_ORIGINS` from `DJANGO_CSRF_TRUSTED_ORIGINS` (comma separated) or the public address; each https

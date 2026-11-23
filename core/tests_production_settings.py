@@ -49,7 +49,7 @@ class ProductionSettingsTests(SimpleTestCase):
 
     def test_with_debug_off_every_request_is_https_behind_the_proxy(self):
         self.assertEqual(computed(self.SECURITY, **PRODUCTION), [
-            ['HTTP_X_FORWARDED_PROTO', 'https'], True, True, True, 31536000, True, False, ['security.W021'],
+            ['HTTP_X_FORWARDED_PROTO', 'https'], True, True, True, 3600, True, False, ['security.W021'],
             ['https://farm.invalid']])
 
     def test_a_development_server_stays_on_plain_http(self):
@@ -130,6 +130,8 @@ class RefusalTests(SimpleTestCase):
                 ({'DJANGO_ALLOWED_HOSTS': ''}, 'security.W020'),
                 ({'DJANGO_ALLOWED_HOSTS': '*'}, 'core.E007'),
                 ({'DJANGO_CSRF_TRUSTED_ORIGINS': 'http://farm.invalid'}, 'core.E008'),
+                ({'DJANGO_CSRF_TRUSTED_ORIGINS': 'https://*.farm.invalid'}, 'core.E008'),
+                ({'EMAIL_TLS': 'off', 'EMAIL_HOST_USER': 'farm', 'EMAIL_HOST_PASSWORD': 's3cret'}, 'core.E005'),
                 ({'DJANGO_AUDIT_DIGEST_KEY': ''}, 'core.E009'),
                 ({'DJANGO_AUDIT_DIGEST_KEY': PRODUCTION['DJANGO_SECRET_KEY']}, 'core.E009'),
                 ({'DJANGO_AUDIT_DIGEST_KEY': 'too-short'}, 'core.E009'),

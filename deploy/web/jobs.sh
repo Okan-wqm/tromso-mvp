@@ -5,7 +5,8 @@
 #                                   credential or device changed on the pages reaches the broker within a minute plus
 #                                   the broker's own 5 s), with the ingest's own broker user (SENSORS_BROKER_EXTRA)
 #   every JOBS_TASKS_SECONDS (3600) generate_tasks: the planned tasks of the recurring tasks
-#   once a day                      sensors_housekeeping: dead letters older than 90 days
+#   once a day                      sensors_housekeeping: dead letters older than 90 days; clearsessions: expired
+#                                   sign-ins (Django's own)
 # A failing job is logged and tried again at its next turn; the loop goes on. /tmp/jobs.alive is touched on a turn
 # only while no job's last run failed: the container's health check fails when it is older than 10 minutes, so a job
 # that keeps failing (or a loop that hangs) turns the container unhealthy.
@@ -44,6 +45,7 @@ while :; do
   today=$(date -u +%Y-%m-%d)
   if [ "$today" != "$housekeeping_day" ]; then
     run sensors_housekeeping
+    run clearsessions
     housekeeping_day=$today
   fi
   if ! ls /tmp/jobs.failed.* > /dev/null 2>&1; then

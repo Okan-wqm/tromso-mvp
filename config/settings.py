@@ -357,8 +357,8 @@ for _name, _value in (('ACCOUNT_LINK_HOURS', PASSWORD_RESET_TIMEOUT), ('EMAIL_TI
 # port). So, with DEBUG off and whatever the environment says:
 #   - a request is https when the proxy says so, and a plain-http one is sent to https;
 #   - the session and CSRF cookies travel over https only;
-#   - browsers are told to use https only (HSTS) for DJANGO_HSTS_SECONDS, one year unless set; 0 is refused by the
-#     deploy check (security.W004). Subdomains are included unless DJANGO_HSTS_INCLUDE_SUBDOMAINS=0. `preload` is a
+#   - browsers are told to use https only (HSTS) for DJANGO_HSTS_SECONDS: an hour unless set, raised to a year once
+#     https is proven (docs/ops/install.md); 0 is refused by the deploy check (security.W004). Subdomains are included unless DJANGO_HSTS_INCLUDE_SUBDOMAINS=0. `preload` is a
 #     decision for the owner of the whole domain, not this server's: off unless DJANGO_HSTS_PRELOAD=1, and its warning
 #     (security.W021) silenced while it is off;
 #   - the origins a form may be posted from (CSRF) are DJANGO_CSRF_TRUSTED_ORIGINS (comma separated) or, unset, the
@@ -371,7 +371,7 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if _production els
 SECURE_SSL_REDIRECT = _production
 SESSION_COOKIE_SECURE = _production
 CSRF_COOKIE_SECURE = _production
-SECURE_HSTS_SECONDS = int(os.environ.get('DJANGO_HSTS_SECONDS', '31536000')) if _production else 0
+SECURE_HSTS_SECONDS = int(os.environ.get('DJANGO_HSTS_SECONDS', '3600')) if _production else 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = os.environ.get('DJANGO_HSTS_INCLUDE_SUBDOMAINS', '1') == '1'
 SECURE_HSTS_PRELOAD = os.environ.get('DJANGO_HSTS_PRELOAD', '0') == '1'
 SILENCED_SYSTEM_CHECKS = [] if SECURE_HSTS_PRELOAD else ['security.W021']

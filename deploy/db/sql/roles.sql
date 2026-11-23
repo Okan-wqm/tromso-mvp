@@ -12,6 +12,9 @@
 --   balik_backup    pg_dump and pg_basebackup (deploy/backup): reads every row (pg_read_all_data) and streams the WAL
 --                   (REPLICATION); writes nothing.
 \set ON_ERROR_STOP on
+-- A failed statement is written to the server's log with its text, and these hold passwords: this session logs none.
+SET log_min_error_statement = panic;
+SET log_statement = 'none';
 \set owner_password `head -n 1 /run/secrets/db_owner_password`
 \set app_password `head -n 1 /run/secrets/db_app_password`
 \set ingest_password `head -n 1 /run/secrets/db_ingest_password`

@@ -27,8 +27,8 @@ from . import navigation
 # in their own department) and `all_production` (Employees: every production person, never the office's). Each is
 # offered by its one area; the other rows have an empty cell there.
 ACTIONS = [('view', _('Read')), ('add', _('Create')), ('change', _('Edit')), ('delete', _('Delete')),
-           ('crew', _('Crew')), ('all_production', _('All production')), ('all', _('Everyone')),
-           ('oversee', _('Oversee'))]
+           ('crew', _('Crew')), ('all_production', _('All production')), ('oversee', _('Oversee')),
+           ('all', _('Everyone'))]
 READ = 'view'
 ALL = 'all'
 # The actions that include Read on their area. The others widen rows (crew, all_production, all, oversee) and include

@@ -22,6 +22,7 @@ from core.models import AccessEvent
 from core.people import person_name, who_can
 from core.widgets import DayInput
 from farm.models import Site, Species, System, Tank
+from farm.models.site import zone_of
 from farm.stock.dates import site_today
 
 from . import design as design_module, read, sealing, services
@@ -74,6 +75,11 @@ class TeamList(RowList):
         """e.g. "Kari Nord (Lead)", in English like every log row."""
         return f'{person_name(row.user)} ({row.get_role_display()})'
 
+    @staticmethod
+    def lead(user):
+        """The row that makes `user` the lead, with no window (from now, until removed)."""
+        return {'user': user, 'role': Member.Role.LEAD, 'valid_from': None, 'valid_until': None}
+
 
 class ExperimentResource(Resource):
     model = Experiment
@@ -114,7 +120,7 @@ class ExperimentResource(Resource):
     def after_save(cls, request, experiment, created):
         """The creator leads a new experiment (logged as a change of its team, as any later one)."""
         if created:
-            TeamList.save(request.user, experiment, [{'user': request.user, 'role': Member.Role.LEAD}],
+            TeamList.save(request.user, experiment, [TeamList.lead(request.user)],
                           cls.entity_type())
 
     @classmethod
@@ -395,7 +401,7 @@ class ExperimentCopyView(ResourceView):
                     new = services.copy(request.user, source, data['name'], data['starts_on'],
                                         data['kind'] == CopyForm.TEMPLATE, data['token'])
                     if not new.members.exists():            # a form sent twice finds the copy it made, with its lead
-                        TeamList.save(request.user, new, [{'user': request.user, 'role': Member.Role.LEAD}],
+                        TeamList.save(request.user, new, [TeamList.lead(request.user)],
                                       r.entity_type())
             except ValidationError as error:
                 for message in error.messages:
@@ -544,7 +550,9 @@ class ExperimentSharingView(ResourceView):
         form = ShareForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
-            until = timezone.make_aware(timezone.datetime.combine(data['until'], timezone.datetime.max.time()))
+            # The end of the last day on the experiment's site's clock.
+            until = timezone.make_aware(timezone.datetime.combine(data['until'], timezone.datetime.max.time()),
+                                        timezone=zone_of(experiment.site))
             try:
                 services.share(request.user, experiment, data['person'], data['parts'], until, data['reason'],
                                group=data['role'])

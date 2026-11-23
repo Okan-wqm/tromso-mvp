@@ -13,9 +13,9 @@ Its lines are for the owner, in English."""
 from collections import defaultdict
 
 from django.db.models import Q
-from django.utils import timezone
 
 from core import sealing
+from core.dates import company_today
 from farm.models import System, Tank
 
 from .models import Experiment, ExperimentShare, Member, ReplicateSystem, ReplicateUnit, Status
@@ -33,7 +33,7 @@ ANNOUNCEMENT = (
 
 def report(today=None):
     """[str]: the lines to print."""
-    today = today or timezone.localdate()
+    today = today or company_today()
     lines = []
     with sealing.system('the preflight report'):
         experiments = Experiment.objects.filter(is_template=False)

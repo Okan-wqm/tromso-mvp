@@ -24,7 +24,8 @@ from django.core import checks
 from django.db import models
 from django.db.models import Exists, ExpressionWrapper, OuterRef, Q
 from django.db.models.functions import TruncDate
-from django.utils import timezone
+
+from .dates import company_today, company_zone
 
 # The parts of a confidential piece of work a grant can open (experiments: the owner's five).
 PARTS = ('design', 'results', 'systems', 'data', 'water')
@@ -405,7 +406,7 @@ def _correlated(model, path, target):
 def _day_filter(model, day):
     """The conditions on a cell's days for the outer row's `day`."""
     if day is None:
-        today = timezone.localdate()
+        today = company_today()
         return Q(from_on__lte=today, until_on__gte=today)
     if isinstance(day, tuple):
         first, last = day
@@ -422,7 +423,7 @@ def _day_ref(model, path):
     if isinstance(target, models.DateTimeField):
         # The moment's day on the site's clock; the outer reference is given its type, which a reference to the outer
         # query does not carry (TruncDate asks for it).
-        return TruncDate(ExpressionWrapper(ref, output_field=models.DateTimeField()))
+        return TruncDate(ExpressionWrapper(ref, output_field=models.DateTimeField()), tzinfo=company_zone())
     return ref
 
 

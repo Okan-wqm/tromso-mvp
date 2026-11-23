@@ -34,11 +34,11 @@ class CleanerFishTests(CleanerFishTestCase):
         self.assertEqual(card.stock.count, 2000)                      # the lumpfish are not in the unit's fish
         cleaner = card.stock.cleaner_stock
         self.assertEqual((cleaner.count, cleaner.biomass_kg), (10000, 500))
-        html = self.client.get(reverse('monitoring:monitor'), {'units': str(self.cage.pk), 'mode': 'detailed'}).content.decode()
+        html = self.client.get(reverse('monitoring:monitor'), {'full': '1', 'units': str(self.cage.pk), 'mode': 'detailed'}).content.decode()
         self.assertIn('Cleaner fish', html)
         self.assertIn('10,000', html)
         self.assertIn('500 kg', html)
-        simple = self.client.get(reverse('monitoring:monitor'), {'units': str(self.cage.pk)}).content.decode()
+        simple = self.client.get(reverse('monitoring:monitor'), {'full': '1', 'units': str(self.cage.pk)}).content.decode()
         self.assertNotIn('Cleaner fish', simple)                      # a simple card is the key figures
 
     def test_a_cage_with_salmon_and_lumpfish_is_not_ok_while_the_lumpfish_have_no_limit(self):
@@ -63,7 +63,7 @@ class CleanerFishTests(CleanerFishTestCase):
         self.assertNotEqual(self.cards('simple')[0].state.key, 'unjudged')
 
     def test_a_unit_without_cleaner_fish_has_no_such_line(self):
-        html = self.client.get(reverse('monitoring:monitor'), {'units': str(self.t1.pk), 'mode': 'detailed'}).content.decode()
+        html = self.client.get(reverse('monitoring:monitor'), {'full': '1', 'units': str(self.t1.pk), 'mode': 'detailed'}).content.decode()
         self.assertNotIn('Cleaner fish', html)
 
 

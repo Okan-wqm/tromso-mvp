@@ -14,9 +14,10 @@ declare const process: any;
  * 2. Point the imports at the copies: '@aquaculture/shared-contracts' → './shared-contracts.js' in
  *    reagents.ts and deffeyes-data.ts; '@platform/aquaculture-engines' → './index.js' in compute.ts and
  *    ui-types.ts; './types' → './ui-types.js' in compute.ts.
- * 3. node_modules/.bin/tsc -p farm/tests/deffeyes_reference/tsconfig.json, then
+ * 3. npx -y -p typescript@5.6.3 tsc -p farm/tests/deffeyes_reference/tsconfig.json, then
  *    node farm/tests/deffeyes_reference/out/driver.js > farm/tests/deffeyes_reference/reference.json
- *    (TypeScript 5.6.3, Node 22).
+ *    (TypeScript 5.6.3, Node 22). Not the project's own tsc: from TypeScript 7 on it refuses this harness's
+ *    `moduleResolution: "node"`, and the reference was made with 5.6.3.
  *
  * Input mapping: the source's calculator takes "H₂S measured at the realtime pH" (µg/L, no basis); ours
  * takes the total sulfide as S. The source is fed h2sUgL = St × 34.08088/32.065 × fractionH2S(pH), the H₂S

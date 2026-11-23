@@ -8725,6 +8725,9 @@ msgstr "JSON"
 msgid "JSON for Mattilsynet’s reporting API"
 msgstr "Mattilsynet’in raporlama API’si için JSON"
 
+msgid "JavaScript is off: show the full page with the cards"
+msgstr "JavaScript kapalı: kartlarla birlikte tam sayfayı göster"
+
 msgid "Joined"
 msgstr "İşe giriş"
 
@@ -9090,6 +9093,9 @@ msgstr "Canlı sensör değerleri okunamadı: yalnızca numuneler."
 
 msgid "Live values"
 msgstr "Canlı değerler"
+
+msgid "Loading the cards…"
+msgstr "Kartlar yükleniyor…"
 
 msgid "Loading…"
 msgstr "Yükleniyor…"
@@ -13874,6 +13880,9 @@ msgstr "Çelik"
 msgid "Step"
 msgstr "Adım"
 
+msgid "Still loading? Open the full page"
+msgstr "Hâlâ yükleniyor mu? Tam sayfayı açın"
+
 msgid "Stock"
 msgstr "Stok"
 
@@ -14496,6 +14505,9 @@ msgstr ""
 
 msgid "The calculator's values"
 msgstr "Hesaplayıcının değerleri"
+
+msgid "The cards cannot be read just now. The page tries again by itself."
+msgstr "Kartlar şu anda okunamıyor. Sayfa kendiliğinden yeniden deniyor."
 
 msgid "The cards cannot be read just now. The screen keeps its last picture; try again shortly."
 msgstr "Kartlar şu anda okunamıyor. Ekran son görüntüsünü koruyor; birazdan yeniden deneyin."

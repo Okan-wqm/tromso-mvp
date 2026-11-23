@@ -414,7 +414,8 @@ class ClockBeforeTheLedgerTests(MonitoringCase):
 
     def test_the_page_the_fragment_the_pane_and_the_meal_board_answer_at_that_clock(self):
         with mock.patch('django.utils.timezone.now', return_value=self.then):
-            for query in ('', '?mode=detailed', '?occupancy=all&mode=detailed'):
+            for query in ('', '?mode=detailed', '?occupancy=all&mode=detailed', '?full=1', '?mode=detailed&full=1',
+                          '?occupancy=all&mode=detailed&full=1'):
                 for name in ('monitoring:monitor', 'monitoring:cards'):
                     response = self.client.get(reverse(name) + query)
                     self.assertEqual((name, query, response.status_code), (name, query, 200))

@@ -251,6 +251,18 @@ mod tests {
         t.to_string()
     }
 
+    // The dead-letter key stores this hex (sensors_dead_letter.payload_sha256), so a hash crate upgrade must not move
+    // it: the FIPS 180-2 test vectors, lower-case hex, 64 digits.
+    #[test]
+    fn sha256_hex_gives_the_standard_digests() {
+        assert_eq!(sha256_hex(b""), "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+        assert_eq!(sha256_hex(b"abc"), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+        assert_eq!(
+            sha256_hex(b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"),
+            "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1"
+        );
+    }
+
     #[test]
     fn values_of_a_simulated_device_are_flagged_simulated() {
         let mut r = cfgt::row(1, 10, "farm/plc", 1);

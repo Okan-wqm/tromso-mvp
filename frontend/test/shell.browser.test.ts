@@ -122,10 +122,13 @@ async function run(stub: Stub, look: Look, check: (tab: Page) => Promise<void>, 
 const state = (tab: Page): Promise<string | null> => tab.locator('.monitor-grid').getAttribute('data-poll-state');
 const said = async (tab: Page): Promise<string[]> => tab.locator('#monitor-announce [data-announcer]').allTextContents();
 const shown = (tab: Page, selector: string): Promise<boolean> => tab.locator(selector).first().isVisible();
-const until = (tab: Page, wanted: string, timeout = 5000): Promise<unknown> =>
+// The waits are generous on purpose: a notice can sit up to 5 s behind the announcer's limiter, and a loaded CI runner
+// adds to it (a 503-then-ok run once took 30 s and missed a 5 s wait). A wait only bounds how long a failing test hangs;
+// what each test proves is asserted after it.
+const until = (tab: Page, wanted: string, timeout = 12000): Promise<unknown> =>
   tab.waitForFunction((value) => document.querySelector('.monitor-grid')?.getAttribute('data-poll-state') === value,
                       wanted, { timeout });
-const politely = (tab: Page, text: string, timeout = 5000): Promise<unknown> =>
+const politely = (tab: Page, text: string, timeout = 12000): Promise<unknown> =>
   tab.waitForFunction((value) => document.querySelector('[aria-live="polite"]')?.textContent === value, text, { timeout });
 
 test('the placeholder is the template\'s, with its watchdog line and no state', () => {
@@ -158,7 +161,10 @@ test('the first fill comes at once, replaces the placeholder and says nothing', 
 test('a 503 first says the cards cannot be read at once, then "Updated again." when they come',
      { skip: skipWithout(BROWSERS) }, async () => {
   const stub: Stub = { answers: [{ status: 503, body: 'The cards cannot be read just now.' },
-                                 { status: 200, body: cards(['warning']), next: '/cards?after=2' },
+                                 // the good answer is held back 8 s, longer than the announcer's 5 s limiter: with
+                                 // a quick one the limiter could go straight to "Updated again." and never say the
+                                 // failure, which made this test fail now and then on a loaded runner
+                                 { status: 200, body: cards(['warning']), next: '/cards?after=2', delay: 8000 },
                                  { status: 204, next: '/cards?after=2' }], asked: [] };
   await run(stub, { every: 1 }, async (tab) => {
     await until(tab, 'unread');                                                // the first failure, not the second
@@ -167,7 +173,7 @@ test('a 503 first says the cards cannot be read at once, then "Updated again." w
     assert.equal(await shown(tab, '[data-loading]'), false);
     await politely(tab, UNREAD);                                               // politely: the screen says it too
     assert.deepEqual(await said(tab), ['', UNREAD]);
-    await until(tab, 'live', 10000);                                           // asked again after the longer wait
+    await until(tab, 'live', 25000);                                           // asked again after the longer wait
     assert.equal(await tab.locator('[data-key="loading"]').count(), 0);
     assert.equal(await tab.locator('[data-key="card:0"]').count(), 1);
     assert.equal(stub.asked[1], '/cards');                                     // the same address: no token yet

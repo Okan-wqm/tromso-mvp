@@ -77,7 +77,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ('auth', '0012_alter_user_first_name_max_length'),
         ('contenttypes', '0002_remove_content_type_name'),
-        ('core', '0014_access_event'),
+        ('core', '0015_access_event'),
         ('experiments', '0004_confidential'),
     ]
 

@@ -21,7 +21,7 @@ DROP FUNCTION IF EXISTS core_access_events_append_only();
 
 
 class Migration(migrations.Migration):
-    dependencies = [('core', '0013_unknown_withdrawal_ceiling')]
+    dependencies = [('core', '0014_rev')]
 
     operations = [
         migrations.CreateModel(

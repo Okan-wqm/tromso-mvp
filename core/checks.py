@@ -167,6 +167,31 @@ def implied_reads(app_configs, **kwargs):
              'include no right of their own).', id='core.W003')]
 
 
+@register(Tags.database)
+def revision_triggers(app_configs, **kwargs):
+    """The revision triggers (core.rev) every tracked table must have, enabled: a missing or disabled one lets a change
+    pass unseen, and a stored figure built before it would be judged still valid. Named, never repaired here
+    (`manage.py core_rev_repair` does it). Run with `manage.py check --database default`; quiet until core/0014
+    has made the revision table."""
+    from django.db import DatabaseError, connection
+    from django.db.migrations.recorder import MigrationRecorder
+
+    from . import rev
+    try:
+        if ('core', '0014_rev') not in MigrationRecorder(connection).applied_migrations():
+            return []
+        missing = rev.missing()
+    except DatabaseError:
+        return []
+    if not missing:
+        return []
+    return [Warning(
+        f'{len(missing)} revision trigger(s) are missing or disabled: {", ".join(missing)}. A change to their tables '
+        f'moves no revision, so a stored figure could be judged valid after it.',
+        hint='Run `manage.py core_rev_repair`: it makes the missing triggers again as their migrations made them and '
+             'rebuilds every revision.', id='core.W005')]
+
+
 def conversion_applied():
     """Whether migration core/0011 (the conversion of the log's plain values) has run on this database."""
     from django.db import connection

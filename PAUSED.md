@@ -23,5 +23,5 @@ Not done:
   and a test holds that rule.
 
 Before landing:
-- `core/0014_access_event` clashes with `wip/core-rev`'s `core/0014_rev`. Whichever branch lands second renumbers.
+- `core/0015_access_event` follows main's `core/0014_rev` (renumbered when core-rev landed).
 - Remove this file.

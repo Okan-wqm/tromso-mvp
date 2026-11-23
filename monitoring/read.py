@@ -664,12 +664,14 @@ def state_of(card):
 def _ladder(card):
     """The one roll-up of a card, a ladder whose thresholds are the owners' and none invented here:
     1. critical: a water value judged critical, fresh or old (an old one says its age, and the card is marked old),
-       with a judged value the chemistry core refuses to work out said beside it;
+       or the oxygen of a unit that holds fish with no fresh value (owner decision of 2026-11-23, `_silent`), with a
+       judged value the chemistry core refuses to work out said beside it;
     2. warning: a value judged a warning (fresh or old, the same), a judged value the chemistry core refuses to work
        out ("cannot be evaluated", with its reason), the unit over its capacity, an estimate that says weigh now;
-    3. blind: a stocked unit whose temperature or oxygen is missing or older than its freshness (a fresh pH hides a
-       three-day-old oxygen in the water's own status: that status ranks OK above stale), with no middle point, or whose
-       live sensors could not be read; never OK, never red; not worked out when the water is hidden (the card says so);
+    3. blind: a stocked unit whose temperature is missing or older than its freshness (a fresh pH hides a three-day-old
+       temperature in the water's own status: that status ranks OK above stale), or whose oxygen is where its water
+       finds no fish that day, with no middle point, or whose live sensors could not be read; never OK, never red (but
+       an oxygen with fish: rung 1); not worked out when the water is hidden (the card says so);
     4. unjudged ("No limit"): a value of the stocked unit that no limit row judges for its fish (the owner has set
        none): what it means for the fish is not known, so it is never OK;
     5. note: a withdrawal in force (a chip, not an alarm: it lasts weeks), weigh soon, a ration that cannot be worked
@@ -690,8 +692,12 @@ def _ladder(card):
     unevaluated = [str(text) for text in (middle.why_unevaluated if middle is not None else ())]
     # A status the unit's own stale value keeps while its system's value stands in (read.last_own, F3-9): said beside it.
     unevaluated += [str(text) for text in (middle.why_last_own if middle is not None else ())]
-    if critical:
-        return State(CRITICAL, (*critical, *unevaluated), basis, tuple(text for text in old if text in critical))
+    # The oxygen of a unit with fish that has no fresh value (owner decision of 2026-11-23): critical, said as missing or
+    # old data, from the water's one judgement (farm.water.read.PointWater.silent_oxygen).
+    silent = _silent(middle)
+    if critical or silent:
+        return State(CRITICAL, (*critical, *silent, *unevaluated), basis,
+                     (*(text for text in old if text in critical), *silent))
     warning += unevaluated
     if card.stock.over_capacity:
         warning.append(_('Over capacity'))
@@ -733,6 +739,21 @@ def _ladder(card):
     if note:
         return State(NOTE, tuple(note), basis)
     return State(OK, (), basis)
+
+
+def _silent(middle):
+    """[Reason] of the middle point's oxygen that has no fresh value where the unit holds fish (PointWater.why_silent:
+    critical, owner decision of 2026-11-23), in short "O₂ (mg/L): no recent data" for the band's chip, so the units
+    it holds share one; none when an old critical oxygen value says it already (`_alerts`)."""
+    if middle is None or middle.silent_oxygen is None or any(
+            reading.code in OXYGEN_CODES and judged == Status.CRITICAL for reading, judged, _old in middle.alerts):
+        return []
+    short = str(parameters.get(parameters.OXYGEN_MG_L).short)
+    return [Reason(str(text), Brief(_('%(label)s: no recent data') % {'label': short}, critical=True, old=True))
+            for text in middle.why_silent]
+
+
+OXYGEN_CODES = (parameters.OXYGEN_MG_L, parameters.OXYGEN_PCT)
 
 
 def attention(cards_):

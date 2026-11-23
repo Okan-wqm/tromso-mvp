@@ -109,9 +109,11 @@ def tables(protocol_ids):
     return found
 
 
-def policy(units, batch_ids, first, now):
+def policy(units, batch_ids, first, now, read=()):
     """The ration.Policy of these units (Tank, by id) and batches from the day `first` to now: the assignment rows
-    in force over those days, their tables, the batches' species and the units' temperatures, read once."""
+    in force over those days, their tables, the batches' species and the units' temperatures, read once. `read`: the
+    (unit id, day) pairs whose temperature the walk may ask (its feeding days and the days asked): the sensors' values
+    at all their moments are read in one ask, not one per day."""
     rows = list(ProtocolAssignment.objects.filter(Q(unit_id__in=list(units)) | Q(batch_id__in=batch_ids))
                 .filter(Q(valid_until__isnull=True) | Q(valid_until__gte=first))
                 .select_related('unit', 'protocol__species'))
@@ -123,12 +125,24 @@ def policy(units, batch_ids, first, now):
     today = {unit_id: local_today(unit) for unit_id, unit in units.items()}
     found = {}
 
-    def temperature(unit_id, day):
+    def moment(unit_id, day):
         """Now for the unit's today, the end of the day for a day before it."""
+        return now if day >= today[unit_id] else end_of(day, units[unit_id])
+
+    def temperature(unit_id, day):
         if (unit_id, day) not in found:
-            unit = units[unit_id]
-            found[(unit_id, day)] = book.at(unit, now if day >= today[unit_id] else end_of(day, unit))
+            found[(unit_id, day)] = book.at(units[unit_id], moment(unit_id, day))
         return found[(unit_id, day)]
+
+    def may_ask(unit_id, day):
+        """Whether the walk can ask that day's temperature at all: `Policy.basis` reads it only for a share with a
+        protocol in force that day, and a row reaches a unit's day only as the unit's own or as a whole batch's (a batch
+        in this unit that day: not known before the walk, so every row of a batch counts). A day no row covers is never
+        asked, whatever the fish weigh; the days left may still not be (the band is the weight's), and an unread day is
+        simply asked on its own (`Series._live`), with the same answer."""
+        return any(row.unit_id in (unit_id, None) and row.covers(day) for row in rows)
+
+    book.prefetch(sorted({moment(unit_id, day) for unit_id, day in read if unit_id in units and may_ask(unit_id, day)}))
 
     # The fasts planned harvests and transports ask for, from `first` to the units' today (one query).
     fasts = fasting.fasts(list(units.values()), first, max(today.values(), default=first))
@@ -163,7 +177,8 @@ def project(unit_ids, days=(), now=None):
     units = Tank.all_objects.select_related('production_department__site').in_bulk(unit_ids)
     first = min([record.date for record in records] + [day for _unit, day in days],
                 default=timezone.localdate(now, zone_of(None)))
-    projector = Projector(policy(units, batch_ids, first, now), days)
+    read = {(record.unit_id, record.date) for record in records} | set(days)
+    projector = Projector(policy(units, batch_ids, first, now, read), days)
     return Projection(walk(ledger(batch_ids), records, days, projector=projector), projector)
 
 
@@ -323,7 +338,8 @@ def last_fed_of(asked, lines=None):
     the feedings of production fish in the units and days `fed_where` gives for each batch in the unit, on or before
     `day`; the latest of them decides (the least-fasted fish: they cannot be handled apart). A cleaner fish's feeding
     is not theirs. One ledger read (none when the caller holds the lines of these batches already: `lines`, a walk's),
-    indexed once (`Paths`), and one query of the feedings, for all the units asked."""
+    indexed once (`Paths`), and one query of the feedings, for all the units asked: each answer's record and moment
+    come from that one read, so a feeding voided or changed while it runs cannot break or split the answer."""
     asked = list(asked)
     found = {unit.pk: None for unit, _day, _ids, _since in asked}
     batch_ids = {batch_id for _unit, _day, ids, _since in asked for batch_id in ids}
@@ -334,20 +350,44 @@ def last_fed_of(asked, lines=None):
     every = [place for found_for in places.values() for place in found_for]
     if not every:
         return found
-    records = (FeedingRecord.objects.filter(unit_id__in={place.unit_id for place in every}, target=FeedTarget.PRODUCTION,
-                                            date__gte=min(place.first for place in every),
-                                            date__lte=max(place.last for place in every))
-               .select_related('unit__production_department__site'))
+    # ONE read of the candidates, every column of each (a wall's thousands of feedings are never built as records): each
+    # weighed by the one rule (`fed_moment`) on its unit's clock, and only the winners built as records, from the very
+    # rows read. So a feeding voided, deleted or changed meanwhile can neither be missing from the answer nor disagree
+    # with its own moment: the answer is of that one snapshot, as when the records were read whole. (The units are read
+    # beside it: no feeding names a unit that is not there, the database refuses a hard delete of one.)
+    unit_ids = {place.unit_id for place in every}
+    units = Tank.all_objects.select_related('production_department__site').in_bulk(unit_ids)
+    rows = FeedingRecord.objects.filter(unit_id__in=unit_ids, target=FeedTarget.PRODUCTION,
+                                        date__gte=min(place.first for place in every),
+                                        date__lte=max(place.last for place in every))
+    columns = [column.attname for column in FeedingRecord._meta.concrete_fields]
+    at = {name: columns.index(name) for name in ('id', 'unit_id', 'date', 'time', 'created_at')}
     by_unit = defaultdict(list)
-    for record in records:
-        by_unit[record.unit_id].append(record)
+    for row in rows.values_list(*columns):
+        weighed = _Fed(row[at['id']], row[at['date']], row[at['time']], row[at['created_at']],
+                       units[row[at['unit_id']]], row)
+        by_unit[row[at['unit_id']]].append((weighed, fed_moment(weighed)))
     for unit_id, where in places.items():
-        counted = {record.pk: record for place in where for record in by_unit.get(place.unit_id, ())
-                   if place.first <= record.date <= place.last}
+        counted = {each.pk: (each, moment) for place in where for each, moment in by_unit.get(place.unit_id, ())
+                   if place.first <= each.date <= place.last}
         if counted:
-            record = max(counted.values(), key=lambda each: (fed_moment(each), each.created_at))
-            found[unit_id] = LastFed(fed_moment(record), record)
+            winner, moment = max(counted.values(), key=lambda each: (each[1], each[0].created_at))
+            record = FeedingRecord.from_db(rows.db, columns, winner.row)
+            record.unit = winner.unit
+            found[unit_id] = LastFed(moment, record)
     return found
+
+
+@dataclass(frozen=True)
+class _Fed:
+    """A feeding as `last_fed_of` weighs it: what `fed_moment` reads, its entry time for a tie, its unit, and `row`, all
+    its columns as read, from which a winner is built."""
+    pk: object
+    date: date
+    time: time
+    created_at: datetime
+    unit: object
+    row: tuple
 
 
 def handled(unit, day):
@@ -606,10 +646,20 @@ def drift(today, measured_on):
 def meal_lines(unit_day, batches, today):
     """The line of each batch of a unit's day (projection.UnitDay, None: no day): its ShareDay, its batch (`batches`:
     by id), why it has no ration, whether its fish are cleaner fish (marked as such; without a feeding table of their
-    own they have no ration and no why, D-1), the drift of its estimate and the days since its measured point. The meal board and the monitoring
-    cards print these and nothing computed beside them."""
+    own they have no ration and no why, D-1), the drift of its estimate and the days since its measured point. The meal
+    board and the monitoring cards print these and nothing computed beside them.
+
+    The day names its batches; `batches` is what the caller has (the unit's stock now) and may lack one: the day is the
+    fold at the end of the unit's TODAY, the stock the fold of every line there is, so a line dated after today (a clock
+    set back before the ledger's newest lines, a site whose time zone was moved a day behind) leaves a batch in the day
+    that the stock no longer holds. Such a batch is read here, in one query for all of them, never a KeyError on a
+    page."""
+    shares = unit_day.shares if unit_day else []
+    missing = {share.batch_id for share in shares} - batches.keys()
+    if missing:
+        batches = {**batches, **Batch.all_objects.select_related('species').in_bulk(missing)}
     return [{'share': share, 'batch': batches[share.batch_id], 'why': share.end.why(batches[share.batch_id]),
              'cleaner': batches[share.batch_id].species.is_cleaner_fish,
              'drift': drift(today, share.measured_on),
              'estimate_days': (today - share.measured_on).days if share.measured_on else None}
-            for share in (unit_day.shares if unit_day else [])]
+            for share in shares]

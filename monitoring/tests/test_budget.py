@@ -6,6 +6,7 @@ from unittest import mock
 
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
+from django.urls import reverse
 
 from farm.feeding import read as feeding_read
 from farm.stock import read as stock_read
@@ -165,3 +166,34 @@ class RecordedCountsTests(Counting, MonitoringCase):
         self.assertEqual(self.count(units[:1], 'big') - self.savepoints, BIG_READS)
         self.assertEqual(savepoints, {mode: count + SENSOR_SAVEPOINTS for mode, count in
                                       {'simple': 4, 'detailed': 10, 'mixed': 10}.items()})   # chips; + treatments, lice, tasks
+
+
+class EndpointBudgetTests(MonitoringCase):
+    """What the three addresses a screen asks cost, end to end (the view, the reads, the render): the page, the cards'
+    fragment and the pane answer with the SAME number of queries for a farm of 8 stocked units and of 26, each unit
+    fed and with water of its own (the performance brief of 2026-11-21: a bounded count that does not grow with the units
+    or the cards)."""
+
+    def grow(self, count, prefix):
+        units = self.farm_of(count, prefix=prefix)
+        for unit in units:
+            for days_ago in (3, 2, 1):
+                self.record(kilos='2', days_ago=days_ago, unit=unit)
+        return units
+
+    def counts(self, focus):
+        found = {}
+        for name, url in (('page', reverse('monitoring:monitor')), ('cards', reverse('monitoring:cards')),
+                          ('pane', f'{reverse("monitoring:pane")}?focus={focus.pk}')):
+            self.client.get(url)                                       # warm what the first call loads once
+            with CaptureQueriesContext(connection) as log:
+                response = self.client.get(url)
+            self.assertEqual(response.status_code, 200, name)
+            found[name] = len(log)
+        return found
+
+    def test_the_page_the_fragment_and_the_pane_cost_the_same_at_8_and_26_units(self):
+        first = self.grow(6, 'A')
+        few = self.counts(first[0])
+        self.grow(18, 'B')
+        self.assertEqual(self.counts(first[0]), few)

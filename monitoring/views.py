@@ -186,8 +186,8 @@ def _pane(request, params, now=None):
             'pane_unit': unit, 'close_url': _address(params.canonical(focus=''))}
 
 
-def _pane_token(request, params):
-    return read.change_token(request.user, f'pane?{params.canonical()}', board=params.board)
+def _pane_token(request, params, revision=None):
+    return read.change_token(request.user, f'pane?{params.canonical()}', board=params.board, revision=revision)
 
 
 def _flip_urls(params, card):
@@ -206,10 +206,11 @@ def monitor(request):
     shows at the first poll."""
     params = read.Params.from_query(request.GET)
     _keep_alive(request, params)
-    token = read.change_token(request.user, params.canonical(), board=params.board)
+    revision = audit.revision()                  # once, before any data, for both tokens
+    token = read.change_token(request.user, params.canonical(), board=params.board, revision=revision)
     now = timezone.now()
     board = _board(params)
-    pane_token = _pane_token(request, params)
+    pane_token = _pane_token(request, params, revision)
     try:
         grid = _grid(request, params, board, now)
         pane = _pane(request, params, now)

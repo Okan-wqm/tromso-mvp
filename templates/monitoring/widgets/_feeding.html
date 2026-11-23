@@ -4,7 +4,7 @@
   {% with day=card.day %}
   <dl class="metrics">
     <div><dt>{% trans "Ration" %}</dt><dd>{{ day.ration_kg|feed_kg }}</dd></div>
-    <div><dt>{% trans "Fed today" %}</dt><dd>{{ day.fed_kg|feed_kg }}</dd><dd class="row-sub">{% blocktrans trimmed count meals=day.meals_done %}{{ meals }} meal{% plural %}{{ meals }} meals{% endblocktrans %}</dd></div>
+    <div><dt>{% trans "Fed today" %}</dt><dd>{{ day.fed_kg|feed_kg }}</dd>{% if day %}<dd class="row-sub">{% blocktrans trimmed count meals=day.meals_done %}{{ meals }} meal{% plural %}{{ meals }} meals{% endblocktrans %}</dd>{% endif %}</div>
     <div><dt>{% trans "Remaining" %}</dt><dd>{{ day.remaining_kg|feed_kg }}</dd></div>
     <div><dt>{% trans "Next meal" %}</dt><dd>{{ day.next_meal_kg|feed_kg }}</dd></div>
   </dl>

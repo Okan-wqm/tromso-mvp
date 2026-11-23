@@ -82,7 +82,7 @@ class SmallCase(StartedClock, MonitoringCase):
                 .state.reasons]
 
     def page(self, **query):
-        response = self.client.get(PAGE, {**SMALL, **query})
+        response = self.client.get(PAGE, {**SMALL, **query, 'full': '1'})
         self.assertEqual(response.status_code, 200)
         return response.content.decode()
 
@@ -90,7 +90,7 @@ class SmallCase(StartedClock, MonitoringCase):
 class ViewTests(SmallCase):
     def test_the_view_draws_every_card_small_whatever_the_rules_say(self):
         CardTemplateAssignment.objects.create(template_id=builtin.DETAILED, unit=self.t1)
-        plain = self.client.get(PAGE).content.decode()
+        plain = self.client.get(PAGE, {'full': '1'}).content.decode()
         self.assertEqual(card_of(plain, self.t1).attrs['data-template'], str(builtin.DETAILED))     # the unit's rule
         html = self.page()
         for unit in (self.t1, self.t2):
@@ -107,7 +107,7 @@ class ViewTests(SmallCase):
         board = MonitorBoard.objects.create(name='Hall A', default_template_id=builtin.DETAILED)
         for unit in (self.t1, self.t2):
             MonitorBoardUnit.objects.create(board=board, unit=unit, template_id=builtin.DETAILED)
-        own = self.client.get(PAGE, {'board': str(board.pk)}).content.decode()
+        own = self.client.get(PAGE, {'full': '1', 'board': str(board.pk)}).content.decode()
         self.assertEqual(card_of(own, self.t2).attrs['data-template'], str(builtin.DETAILED))
         small = self.page(board=str(board.pk))
         self.assertEqual(card_of(small, self.t2).attrs['data-template'], str(builtin.SMALL))
@@ -120,7 +120,7 @@ class ViewTests(SmallCase):
         self.assertEqual((text(link), link.attrs['id']), ('Detailed', f'flip-{self.t2.pk}'))
         self.assertEqual(link.attrs['href'], f'{PAGE}?flip={self.t2.pk}&mode=small')
         self.assertEqual(link.attrs['data-poll-url'], f'{CARDS}?flip={self.t2.pk}&mode=small')
-        flipped = self.client.get(link.attrs['href']).content.decode()
+        flipped = self.client.get(f"{link.attrs['href']}&full=1").content.decode()
         whole = card_of(flipped, self.t2)
         self.assertEqual(whole.attrs['data-template'], str(builtin.DETAILED))
         self.assertNotIn('is-fit', whole.classes)
@@ -131,10 +131,10 @@ class ViewTests(SmallCase):
     def test_the_toolbar_offers_small_and_the_old_cards_are_as_they_were(self):
         html = self.page()
         self.assertIn('<option value="small" selected>Small</option>', html)
-        plain = self.client.get(PAGE).content.decode()
+        plain = self.client.get(PAGE, {'full': '1'}).content.decode()
         self.assertIn('<option value="small">Small</option>', plain)
         self.assertNotIn('is-fit', plain)                                 # Simple flows, as it always did
-        self.assertNotIn('is-fit', self.client.get(PAGE, {'mode': 'detailed'}).content.decode())
+        self.assertNotIn('is-fit', self.client.get(PAGE, {'full': '1', 'mode': 'detailed'}).content.decode())
 
 
 class SmallCardTests(SmallCase):

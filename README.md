@@ -752,6 +752,28 @@ and shape, the withdrawal with its date, and a Deffeyes chart button that opens 
 is not read at all** (no query) and the card says so ("Water: not shown to you" and "State from: Fish"); one right for each
 section (`monitoring.read.sections_for`, the one place that spells a permission). Detailed never widens access.
 
+**Shell first** (live-arch stage 1, 2026-11-23). The page itself is drawn WITHOUT its cards: the toolbar, the grid's place
+holding "Loading the cards…" (`templates/monitoring/_loading.html`), the pane's frame when the address has a focus, the
+windows' place. It has no band, no tally, no card, no state word and no state colour, so a page whose cards have not come
+never reads as all is well, and it reads no card source (no stock, feeding or water read, no change token): it costs the same
+few queries whatever the farm. The grid is drawn with `data-poll-state="loading"` and its address carries no token, so
+`frontend/poll.ts` asks for the fragment at once and its first answer is always the cards (200), with the next address
+(`X-Poll-Next`), from which the polls go on as below; the fragment replaces the placeholder by key, and that first fill says
+nothing aloud (it is the first load); then the page goes to the card a `#card-<unit>` address names, as a page drawn
+whole does. A first answer that fails (the 503 of a source the cards need, a server error, no answer within 35 s, a 204,
+or a 200 with nothing keyed in it: an empty body, a proxy's page) shows "The cards cannot be read just now. The page tries
+again by itself." at once, in the look of the stale notice, and says it aloud once, in the POLITE live region
+(`frontend/announce.ts`; the stale and gone notices stay assertive); the page asks again, never more than 10 s apart while
+nothing is on the screen, and when the cards come it says "Updated again." politely. A first fill that succeeds says
+nothing. A 401, 403 or a redirect to sign-in is gone, as for any poll (the red notice, the placeholder hidden). The pane's
+body (`?focus=`) is filled the same way from its own fragment, and its "cannot be read" is said politely too. A
+WATCHDOG line in the grid's placeholder, "Still loading? Open the full page" (a link to `?full=1`), is hidden and shown
+by the sheet after 30 s (an animation's delay, CSS only): it is the way out when poll.js never loads or never runs, and
+it goes with the placeholder at the first fill. On a wall the placeholder's lines have the notices' size. `?full=1` is the page as it was before, the cards drawn by the server: the way in
+without script (the placeholder's `<noscript>` link) and what the old pages' tests read. The shell with its first answers put
+in place is byte for byte the full page (`monitoring/tests/test_shell.py` ParityTests; on the dev data, the parity of the
+branch against main). The fragment and the pane are unchanged.
+
 **The band** (`monitoring.read.band`, `templates/monitoring/_grid.html`; it replaced the head and the strip of one-line
 reasons, 2026-11-13) stands above the cards on the page and in every answer of the fragment, as ONE keyed child: when the
 cards were computed ("computed at 09:17", so a frozen screen is visibly old) and how many units are shown ("2 of 3 units
@@ -5212,7 +5234,13 @@ compiled by `npm run build` into `static/js/`, which is not committed:
   a minute, nothing is asked while the page is hidden, one shared listener serves every element and an
   element that left the page is let go. The element carries `data-poll-state` (`live`, `stale` after two
   failures in a row, `gone` after a 401, 403, 404 or a redirect to sign-in, with a bubbling `poll:gone`
-  event), so the page's CSS can say so in its own words (the script has no text); the event `poll:now`
+  event), so the page's CSS can say so in its own words (the script has no text). An element the server
+  draws with `data-poll-state="loading"` holds only a placeholder (the monitoring shell): it is asked for at
+  once (its request may take 35 s), it turns live when its first answer with something to show is in place (a
+  merged element's: an element with the key), and before that a failure, a 204 or a 200 with nothing to show makes
+  it `unread` at once (no last picture to keep; such an answer's next address is not followed), and it is asked
+  again within 10 s whatever its interval; after the first answer the page goes to the element its `#fragment`
+  names, when the answer brought it; the event `poll:now`
   asks at once (`detail.url`: the address from now on); `data-poll-merge="<attr>"` replaces a keyed child
   only when its markup differs, inserts a new key where the answer has it and drops a child the answer
   lacks (focus stays on the same id; an unkeyed child in the answer replaces everything);
@@ -5247,8 +5275,10 @@ compiled by `npm run build` into `static/js/`, which is not committed:
   inserted and removed); a card whose `data-state` got worse (ok, note, no recent data, warning, critical) is said in one of two
   live regions beside the grid (`#monitor-announce`, never inside the polled grid): a critical one assertively, the others
   politely, the first in full ("T-01 is now Critical.") and the rest as a count, at most one announcement per region in 5 s with
-  the latest held for after. A first load, a better state, a card coming into view or going say nothing. The sentences and
-  the state words are the page's (`data-announce-*`, `data-state-*`).
+  the latest held for after. A first load, a better state, a card coming into view or going say nothing; so does the
+  shell's first fill when it succeeds, while a failed first answer, the grid's or the pane's, says once, in the
+  polite region, that the cards cannot be read (the placeholder's own words), and the grid's cards that come after it
+  say "Updated again." there. The sentences and the state words are the page's (`data-announce-*`, `data-state-*`).
 - `designer.ts` the card designer of Reference data › Card templates (the Design tab, `templates/monitoring/widgets/_designer.html`):
   it edits the form's own layout textarea (without script the layout is edited as text); a palette (click or Enter adds), a
   canvas of the 12 columns under the card's fixed frame band (select; drag to move, the corner handle to resize, one history
@@ -5722,7 +5752,7 @@ runs the server:
 | `/monitoring-boards/` | Setup › Facility structure › Monitoring boards: the named wall screens, each with its Units tab |
 | `/card-templates/`, `/card-templates/<id>/copy/` (POST), `/card-templates/preview/` (POST JSON) | Setup › Reference data › Card templates: the designer, Copy, the designer's preview |
 | `/card-template-rules/` | Setup › Reference data › Card template rules |
-| `/operations/monitoring/` | Operations › Monitoring: a live card per unit, drawn with its card template (`?mode=simple|detailed` picks a built-in for a page without a board); `?wall=1`, `?site=`, `?department=`, `?system=`, `?kind=`, `?occupancy=stocked\|empty\|all`, `?mode=detailed`, `?flip=<id,id>`, `?units=<id,id>`, `?q=` |
+| `/operations/monitoring/` | Operations › Monitoring: a live card per unit, drawn with its card template (`?mode=simple|detailed` picks a built-in for a page without a board); `?wall=1`, `?site=`, `?department=`, `?system=`, `?kind=`, `?occupancy=stocked\|empty\|all`, `?mode=detailed`, `?flip=<id,id>`, `?units=<id,id>`, `?q=`. The page is the shell (its cards come with the grid's first poll); `?full=1` draws them in the page |
 | `/operations/monitoring/cards/` | The grid's children for the same address; `&after=<token>` answers 204 while nothing changed, `X-Poll-Next` is the next address |
 | `/operations/units/new-batch/` | A new batch (`?unit=<id>` chooses the unit) |
 | `/operations/units/<id>/<operation>/` | An operation on a unit's fish: `mortality`, `weighing`, `transfer`, `grading`, `cull`, `harvest` |
@@ -6138,7 +6168,8 @@ run it while working.
 test runner's), npm, cargo (`sensors-ingest` grouped, `chemcore` one pull request per crate, its pins exact: a libm move is a re-recorded golden), the GitHub actions and the Dockerfiles' images (`docker/`, `sensors-ingest/`); minor and patch releases
 grouped into one pull request per ecosystem, each major in a pull request of its own, at most 5 open per ecosystem. Django's
 feature releases (6.1 to 6.2) never come in the group, and a new Python or Rust (minor) is not proposed at all: they are
-planned moves. The TimescaleDB image is pinned by hand in `docker-compose.yml`, `scripts/test.sh`, the workflow and
+planned moves. Nor is a new major of `@types/node`: it follows the Node that runs the tests and CI (22, `NODE_VERSION`),
+and the two move together. The TimescaleDB image is pinned by hand in `docker-compose.yml`, `scripts/test.sh`, the workflow and
 `sensors-ingest/tests/run.sh`, and moves in all four together. Dependabot's security updates are a repository setting
 (Settings, Code security), to be switched on by the owner. Dependabot does not regenerate `docker/requirements.lock`: a
 pull request that moves a pin of `requirements.txt` fails the chemcore job (the lock must name the same pins) until the lock

@@ -423,7 +423,7 @@ What the platform keeps about a person beyond Django's account.
 - **how it works**: Today the profile holds the language only: chosen with the language switcher, or on the Users tab.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › profiles
 - **forms**: `UserForm`
-- **tests that mention it**: `core/test_languages.py`, `core/tests_account_mail.py`, `core/tests_matrix_notes.py` and 44 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_account_mail.py`, `core/tests_matrix_notes.py` and 45 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2987,7 +2987,7 @@ The cards of each monitoring board: a unit and, when it differs from the board, 
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Monitoring › monitor_board_units
 - **forms**: `MonitorBoardUnitForm`, `BoardUnitForm`
 - **constraints**: uq_monitor_board_units_unit (unique: board, unit); chk_monitor_board_units_mode (check)
-- **tests that mention it**: `monitoring/tests/test_band.py`, `monitoring/tests/test_boards.py`, `monitoring/tests/test_golden.py` and 3 more
+- **tests that mention it**: `monitoring/tests/test_band.py`, `monitoring/tests/test_boards.py`, `monitoring/tests/test_golden.py` and 4 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3012,7 +3012,7 @@ The named wall screens of Monitoring: a name, the template its cards are drawn w
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Monitoring › monitor_boards
 - **forms**: `MonitorBoardForm`
 - **constraints**: uq_monitor_boards_name_live (unique: name); chk_monitor_boards_name (check); chk_monitor_boards_mode (check); chk_monitor_boards_refresh (check); chk_monitor_boards_card_width (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `monitoring/tests/test_band.py`, `monitoring/tests/test_boards.py` and 4 more
+- **tests that mention it**: `core/tests_workspaces.py`, `monitoring/tests/test_band.py`, `monitoring/tests/test_boards.py` and 5 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

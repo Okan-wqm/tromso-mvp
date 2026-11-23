@@ -28,6 +28,10 @@ updates:
       npm-minor-and-patch:
         patterns: ["*"]
         update-types: ["minor", "patch"]
+    ignore:
+      # @types/node: major follows the Node version the tests and CI run (22); raise both together.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   # The MQTT ingest (sensors-ingest/Cargo.toml and Cargo.lock). A new crate must still pass cargo deny (licences).
   - package-ecosystem: cargo

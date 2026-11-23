@@ -47,11 +47,11 @@ Used to build and test the browser code on a developer's machine or in CI; never
 
 | Package | Licence | What it is used for |
 |---|---|---|
-| `typescript` | Apache-2.0 | Compiles and type-checks `frontend/` |
-| `@types/node` | MIT | Types of Node's test runner and assertions, for the TypeScript unit tests only (`tsconfig.test.json`) |
+| `typescript` (7.0.2) | Apache-2.0 | Compiles and type-checks `frontend/`; since 7.0 the compiler is native code in one prebuilt package per platform (`@typescript/typescript-<platform>`, Apache-2.0), of which npm installs the machine's |
+| `@types/node` (22.x) | MIT | Types of Node's test runner and assertions, for the TypeScript unit tests only (`tsconfig.test.json`); its major follows the Node that runs the tests (22, CI's `NODE_VERSION`), so the types offer no API that Node lacks |
 | `playwright-core` | Apache-2.0 | Drives the machine's own Chrome or Edge for the designer's browser test (`frontend/test/designer.browser.test.ts`); no browser is downloaded |
 | `axe-core` | MPL-2.0 | Accessibility rules run in that browser test on the designer (serious and critical violations fail it) |
-| `tailwindcss`, `@tailwindcss/cli` (4.3.3, pinned exactly) | MIT | Build `static/css/tw.css` from `frontend/tailwind.css` and the templates' `tw:` classes (`npm run build:css`, `scripts/tailwind.mjs`); only the built CSS is served, with Tailwind's MIT notice at its head. They pull in `lightningcss` (MPL-2.0, the CSS transformer, used unmodified), `@tailwindcss/oxide` and `@parcel/watcher` (MIT, native scanners, one prebuilt package per platform), `detect-libc` (Apache-2.0), `graceful-fs` and `picocolors` (ISC), `source-map-js` (BSD-3-Clause) and small MIT helpers (`enhanced-resolve`, `jiti`, `magic-string`, `micromatch`, `mri`, `tapable`, `@jridgewell/*`) |
+| `tailwindcss`, `@tailwindcss/cli` (4.3.5, pinned exactly) | MIT | Build `static/css/tw.css` from `frontend/tailwind.css` and the templates' `tw:` classes (`npm run build:css`, `scripts/tailwind.mjs`); only the built CSS is served, with Tailwind's MIT notice at its head. They pull in `lightningcss` (MPL-2.0, the CSS transformer, used unmodified), `@tailwindcss/oxide` and `@parcel/watcher` (MIT, native scanners, one prebuilt package per platform), `@tailwindcss/oxide-wasm32-wasi` (MIT, the scanner's WebAssembly fallback, installed on every platform since 4.3.4 but loaded only where no native scanner exists, so not on ours; it bundles MIT helpers and `tslib`, 0BSD), `detect-libc` (Apache-2.0), `graceful-fs` (BlueOak-1.0.0, a permissive licence, since 4.2.12), `picocolors` (ISC), `source-map-js` (BSD-3-Clause) and small MIT helpers (`enhanced-resolve`, `jiti`, `magic-string`, `picomatch`, `is-glob`, `mri`, `node-addon-api`, `tapable`, `@jridgewell/*`) |
 
 ## Test-only Python packages (`scripts/testrunner/requirements.txt`)
 
@@ -60,7 +60,7 @@ Installed only in the image the tests run in (`scripts/test.sh`); never on a ser
 | Package | Licence | What it is used for |
 |---|---|---|
 | `tblib` | BSD-2-Clause | Lets the parallel test runner send a failing test's traceback from its worker to the main process |
-| `ruff` (0.17.4, pinned exactly) | MIT | The Python linter of the project checks (`CHECKS=1 scripts/test.sh`, `ruff.toml`): errors only, pyflakes `F` and `E9`; reads the files, changes none |
+| `ruff` (0.17.6, pinned exactly) | MIT | The Python linter of the project checks (`CHECKS=1 scripts/test.sh`, `ruff.toml`): errors only, pyflakes `F` and `E9`; reads the files, changes none |
 
 ## CI-only tools (`.github/workflows/ci.yml`)
 

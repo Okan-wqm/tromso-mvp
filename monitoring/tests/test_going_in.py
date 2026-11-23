@@ -146,7 +146,7 @@ class PaneTests(SmallCase):
         self.assertFalse(nodes(card, 'monitor-flip'))               # (the pane is one card: no flip inside it)
 
     def test_a_full_height_wall_has_no_pane_and_its_switch_drops_the_focus(self):
-        html = self.client.get(PAGE, {'mode': 'big'}).content.decode()
+        html = self.client.get(PAGE, {'mode': 'big', 'full': '1'}).content.decode()
         self.assertNotIn(f'open-{self.t2.pk}', by_id(html))
         self.assertFalse([each for each in card_of(html, self.t2).walk() if 'data-dock' in each.attrs])
         ids = by_id(self.page(focus=str(self.t2.pk)))
@@ -154,7 +154,7 @@ class PaneTests(SmallCase):
         self.assertEqual(ids['mode-simple'].attrs['href'], f'{PAGE}?focus={self.t2.pk}')
 
     def test_the_old_cards_have_no_opener_and_lose_nothing(self):
-        html = self.client.get(PAGE).content.decode()
+        html = self.client.get(PAGE, {'full': '1'}).content.decode()
         self.assertFalse([name for name in by_id(html) if name.startswith('open-')])
         (link,) = [each for each in card_of(html, self.t2).walk() if each.tag == 'a' and each.parent.tag == 'h3']
         self.assertEqual(link.attrs['href'], f"{reverse('farm:production_units')}?unit={self.t2.pk}")
@@ -174,7 +174,7 @@ class BandTests(SmallCase):
         self.assertIn('data-page-worst', worst.attrs)
         self.assertEqual([ids[f'mode-{key}'].attrs.get('aria-current') for key in ('small', 'big', 'simple', 'detailed')],
                          ['page', None, None, None])
-        big = by_id(self.client.get(PAGE, {'mode': 'big'}).content.decode())
+        big = by_id(self.client.get(PAGE, {'mode': 'big', 'full': '1'}).content.decode())
         self.assertEqual((big['charts-close'].attrs.get('aria-current'), big['charts-full'].attrs.get('aria-current')),
                          ('true', None))
 
@@ -185,7 +185,7 @@ class BandTests(SmallCase):
         self.assertEqual((text(chip), chip.attrs['href'], chip.attrs['data-dock']),
                          ('T-02', f'{PAGE}?focus={self.t2.pk}&mode=small#card-{self.t2.pk}', str(self.t2.pk)))
         # on a wall of full-height cards a chip is the way to the card's page, and opens nothing
-        chip = by_id(self.client.get(PAGE, {'mode': 'big'}).content.decode())[f'chip-{self.t2.pk}']
+        chip = by_id(self.client.get(PAGE, {'mode': 'big', 'full': '1'}).content.decode())[f'chip-{self.t2.pk}']
         self.assertEqual((chip.attrs['href'], 'data-dock' in chip.attrs), (f'#card-{self.t2.pk}', False))
 
 

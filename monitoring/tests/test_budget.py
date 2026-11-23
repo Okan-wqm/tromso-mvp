@@ -169,10 +169,10 @@ class RecordedCountsTests(Counting, MonitoringCase):
 
 
 class EndpointBudgetTests(MonitoringCase):
-    """What the three addresses a screen asks cost, end to end (the view, the reads, the render): the page, the cards'
-    fragment and the pane answer with the SAME number of queries for a farm of 8 stocked units and of 26, each unit
-    fed and with water of its own (the performance brief of 2026-11-21: a bounded count that does not grow with the units
-    or the cards)."""
+    """What the addresses a screen asks cost, end to end (the view, the reads, the render): the page (the shell), the
+    full page (?full=1), the cards' fragment and the pane answer with the SAME number of queries for a farm of 8
+    stocked units and of 26, each unit fed and with water of its own (the performance brief of 2026-11-21: a bounded
+    count that does not grow with the units or the cards)."""
 
     def grow(self, count, prefix):
         units = self.farm_of(count, prefix=prefix)
@@ -183,7 +183,8 @@ class EndpointBudgetTests(MonitoringCase):
 
     def counts(self, focus):
         found = {}
-        for name, url in (('page', reverse('monitoring:monitor')), ('cards', reverse('monitoring:cards')),
+        for name, url in (('page', reverse('monitoring:monitor')), ('full', f'{reverse("monitoring:monitor")}?full=1'),
+                          ('cards', reverse('monitoring:cards')),
                           ('pane', f'{reverse("monitoring:pane")}?focus={focus.pk}')):
             self.client.get(url)                                       # warm what the first call loads once
             with CaptureQueriesContext(connection) as log:

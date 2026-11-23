@@ -18,7 +18,7 @@ from core import navigation
 from core.crud import render_page
 from core.dbgrid import PAGE_SIZE
 
-from . import read, services
+from . import floods, read, services
 from .rules import current as current_rules
 from .models import Alarm, AlarmShelve
 
@@ -39,7 +39,8 @@ def alarm_list(request):
     state = state if state in STATES else 'open'
     page = Paginator(read.listing(state), PAGE_SIZE).get_page(request.GET.get('page'))
     return render_page(request, 'alarms/alarm_list.html', _context(page=page, alarms=page.object_list, state=state,
-                                                                   pager_query=f'state={state}'))
+                                                                   pager_query=f'state={state}',
+                                                                   floods=floods.open_floods(current_rules())))
 
 
 @permission_required(READ, raise_exception=True)

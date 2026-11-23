@@ -38,7 +38,7 @@ def nobody_notified(alarm):
 def status(notification):
     """'sent' once a transport took it, 'failed' after its severity's delivery attempts failed, else 'queued'."""
     attempts = DeliveryAttempt.objects.filter(notification=notification)
-    if attempts.filter(outcome=Outcome.SENT).exists():
+    if attempts.filter(outcome__in=[Outcome.SENT, Outcome.GROUPED]).exists():
         return SENT
     failed = attempts.filter(outcome=Outcome.FAILED).count()
     return FAILED if failed >= current_rules().delivery_attempts(notification.alarm.severity) else QUEUED

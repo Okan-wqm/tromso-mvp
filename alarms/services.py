@@ -150,12 +150,15 @@ def escalate(alarm, level, now):
 
 
 # ---- delivery and acknowledgement --------------------------------------------------------------------------------------
-def attempt(notification, result, now):
-    """What a transport did with a notification (alarms.transports Sent or Failed), logged on the notification."""
+def attempt(notification, result, now, *, flood_key='', flood_size=None, grouped=False):
+    """What a transport did with a notification (alarms.transports Sent or Failed), or that a flood message covered it
+    (`grouped`), logged on the notification; `flood_key` its kind of alarm, `flood_size` the alarms of the flood message
+    it was part of."""
     from .transports import Sent
-    outcome = Outcome.SENT if isinstance(result, Sent) else Outcome.FAILED
+    outcome = Outcome.GROUPED if grouped else Outcome.SENT if isinstance(result, Sent) else Outcome.FAILED
     row = DeliveryAttempt.objects.create(notification=notification, attempted_at=now, outcome=outcome,
-                                         detail=_fit(DeliveryAttempt, 'detail', result.detail or ''))
+                                         detail=_fit(DeliveryAttempt, 'detail', result.detail or ''),
+                                         flood_key=_fit(DeliveryAttempt, 'flood_key', flood_key), flood_size=flood_size)
     with audit.source_language():
         audit.record(None, AuditLog.Action.UPDATE, notification,
                      {str(_('Delivery')): [None, f'{outcome}: {row.detail}' if row.detail else outcome]},

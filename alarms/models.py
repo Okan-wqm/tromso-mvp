@@ -57,6 +57,8 @@ class ClearCause(models.TextChoices):
 class Outcome(models.TextChoices):
     SENT = 'sent', _('Sent')
     FAILED = 'failed', _('Failed')
+    # Not sent on its own: a flood message to the same person, sent within the flood window, covered it (alarms/floods.py).
+    GROUPED = 'grouped', _('Covered by a flood message')
 
 
 class Alarm(models.Model):
@@ -275,7 +277,10 @@ class Notification(models.Model):
 
 
 class DeliveryAttempt(models.Model):
-    """A transport took a notification (sent) or failed to (failed, with what it said)."""
+    """A transport took a notification (sent) or failed to (failed, with what it said), or a flood message to the same
+    person covered it (grouped: alarms/floods.py). `flood_key` is the kind of alarm it is about (the same site, severity
+    and quantity, rule or alarm-system check), on every attempt; `flood_size`, on an attempt that was part of a flood
+    message, how many alarms that message covered."""
 
     id = models.BigAutoField(primary_key=True)
     notification = models.ForeignKey(Notification, on_delete=models.PROTECT, related_name='attempts',
@@ -283,6 +288,8 @@ class DeliveryAttempt(models.Model):
     attempted_at = models.DateTimeField(_('Attempted at'))
     outcome = models.CharField(_('Outcome'), max_length=10, choices=Outcome.choices)
     detail = models.CharField(_('Detail'), max_length=300, blank=True)
+    flood_key = models.CharField(_('Kind of alarm'), max_length=150, blank=True)
+    flood_size = models.PositiveIntegerField(_('Alarms in the flood message'), null=True, blank=True)
 
     class Meta:
         db_table = 'alarm_delivery_attempts'
@@ -291,8 +298,8 @@ class DeliveryAttempt(models.Model):
         verbose_name_plural = _('alarm delivery attempts')
         constraints = [
             models.CheckConstraint(condition=Q(outcome__in=Outcome.values), name='chk_alarm_delivery_attempts_outcome'),
-            # Sent once: a notification a transport took is never sent again.
-            models.UniqueConstraint(fields=['notification'], condition=Q(outcome=Outcome.SENT),
+            # Sent once: a notification a transport took, or a flood message covered, is never sent again.
+            models.UniqueConstraint(fields=['notification'], condition=Q(outcome__in=[Outcome.SENT, Outcome.GROUPED]),
                                     name='uq_alarm_delivery_attempts_sent_once'),
         ]
 
@@ -429,6 +436,9 @@ RETRY_BOUNDS = (1, 3600)
 # The longest snooze (minutes), per severity: a critical alarm nobody is told of for at most eight hours (twice the owner's
 # 4 h, Q5), a warning for at most a day.
 SHELVE_BOUNDS = {Severity.CRITICAL: (1, 480), Severity.WARNING: (1, 1440)}
+# A flood (alarms/floods.py): from 2 alarms of one kind to a thousand, within ten seconds to an hour.
+FLOOD_COUNT_BOUNDS = (2, 1000)
+FLOOD_WINDOW_BOUNDS = (10, 3600)
 # A device clock's limit (seconds), either way: at least a second (a limit of 0 would alarm on the network's own delay),
 # at most the ingest contract's hour (sensors_contract.future_skew_s is at most 3600: past it the ingest replaces a
 # device's time, and the read layer refuses a value further ahead, evaluate.MAX_AHEAD). Its deadband is below the limit.
@@ -476,6 +486,12 @@ class SeverityPolicy(AuditedModel):
     retry_seconds = models.PositiveIntegerField(
         _('Retry after (seconds)'), validators=[MinValueValidator(RETRY_BOUNDS[0]), MaxValueValidator(RETRY_BOUNDS[1])])
     shelve_max_minutes = models.PositiveIntegerField(_('Longest snooze (minutes)'))
+    flood_count = models.PositiveIntegerField(
+        _('A flood from (alarms)'),
+        validators=[MinValueValidator(FLOOD_COUNT_BOUNDS[0]), MaxValueValidator(FLOOD_COUNT_BOUNDS[1])])
+    flood_window_seconds = models.PositiveIntegerField(
+        _('Flood window (seconds)'),
+        validators=[MinValueValidator(FLOOD_WINDOW_BOUNDS[0]), MaxValueValidator(FLOOD_WINDOW_BOUNDS[1])])
     clock_skew_seconds = models.PositiveIntegerField(
         _('Device clock off by more than (seconds)'),
         validators=[MinValueValidator(CLOCK_SKEW_BOUNDS[0]), MaxValueValidator(CLOCK_SKEW_BOUNDS[1])])
@@ -506,6 +522,11 @@ class SeverityPolicy(AuditedModel):
                                    name='chk_alarm_severity_policies_retry'),
             models.CheckConstraint(condition=_per_severity('shelve_max_minutes', SHELVE_BOUNDS),
                                    name='chk_alarm_severity_policies_shelve'),
+            models.CheckConstraint(condition=Q(flood_count__gte=FLOOD_COUNT_BOUNDS[0],
+                                               flood_count__lte=FLOOD_COUNT_BOUNDS[1],
+                                               flood_window_seconds__gte=FLOOD_WINDOW_BOUNDS[0],
+                                               flood_window_seconds__lte=FLOOD_WINDOW_BOUNDS[1]),
+                                   name='chk_alarm_severity_policies_flood'),
             models.CheckConstraint(condition=Q(clock_skew_seconds__gte=CLOCK_SKEW_BOUNDS[0],
                                                clock_skew_seconds__lte=CLOCK_SKEW_BOUNDS[1],
                                                clock_skew_deadband_seconds__gte=0,

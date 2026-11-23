@@ -18,6 +18,15 @@ class Failed:
     detail: str = ''
 
 
+@dataclass(frozen=True)
+class Flood:
+    """A flood message (alarms/floods.py): `size` alarms of one kind for the person, the oldest opened at `since`, one
+    of them `example` (an alarm's summary). The notification handed with it is the first of them."""
+    size: int
+    since: object
+    example: str
+
+
 class Transport:
     """Takes one notification (its alarm, recipient, channel and level) to the person; returns Sent or Failed with a
     short detail, never raises for a delivery that did not happen. The outbox (alarms/outbox.py) calls it on a thread of
@@ -27,7 +36,8 @@ class Transport:
 
     channel = ''
 
-    def send(self, notification):
+    def send(self, notification, flood=None):
+        """`flood`: send one message for the whole flood instead of the notification's own (alarms/floods.py)."""
         raise NotImplementedError
 
 

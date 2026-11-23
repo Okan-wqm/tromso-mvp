@@ -12862,6 +12862,9 @@ msgstr "Saatin neden elle girildiğini belirtin."
 msgid "Say why when it is another reason, and only then."
 msgstr "Başka bir nedense nedenini yazın, yalnızca o zaman."
 
+msgid "Say why you export it."
+msgstr "Neden dışa aktardığınızı yazın."
+
 msgid "Say why: a tank that leaves, or is replaced, is registered with its reason."
 msgstr "Nedenini yazın: ayrılan veya değiştirilen bir tank gerekçesiyle kaydedilir."
 
@@ -17739,6 +17742,9 @@ msgid ""
 msgstr ""
 "Birimin neden bu durumda olduğu, örn. “ağ değişimi”. Durum değiştiğinde, olduğu gibi bırakılan "
 "neden silinir."
+
+msgid "Why you export it"
+msgstr "Neden dışa aktarıyorsunuz"
 
 msgid "Wider than the parameter’s whole range."
 msgstr "Parametrenin tüm aralığından daha geniş."

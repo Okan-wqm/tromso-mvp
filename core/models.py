@@ -458,6 +458,8 @@ class AccessEvent(models.Model):
     entity_id = models.CharField(_('Record'), max_length=64)
     part = models.CharField(_('Part'), max_length=8, blank=True)
     route = models.CharField(_('Page'), max_length=120, blank=True)
+    # Why, where the person had to say it (an export of the database viewer).
+    reason = models.CharField(_('Reason'), max_length=300, blank=True)
 
     class Meta:
         db_table = 'core_access_events'

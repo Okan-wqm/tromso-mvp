@@ -2825,6 +2825,17 @@
           "on_form": [],
           "how": "system",
           "why": "written by core.sealing.log_access when the record is read"
+        },
+        {
+          "name": "reason",
+          "field": "reason",
+          "type": "varchar(300)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.sealing.log_access when the record is read"
         }
       ],
       "constraints": [
@@ -2882,6 +2893,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_database.py",
         "core/tests_sealing.py",
         "experiments/tests/test_access.py",
         "experiments/tests/test_oversee.py"
@@ -10153,6 +10165,7 @@
         "farm/tests/test_size_mix_review.py",
         "farm/tests/test_withdrawal_gate.py",
         "reports/tests/test_compute.py",
+        "experiments/tests/test_access.py",
         "experiments/tests/test_confidential.py",
         "experiments/tests/test_oversee.py",
         "experiments/tests/world.py",
@@ -20899,6 +20912,7 @@
         "farm/tests/test_withdrawal_gate_coverage.py",
         "farm/tests/test_withdrawal_lots.py",
         "inventory/tests/test_services.py",
+        "experiments/tests/test_access.py",
         "experiments/tests/test_confidential.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_deviations.py",

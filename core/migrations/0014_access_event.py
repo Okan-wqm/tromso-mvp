@@ -38,6 +38,7 @@ class Migration(migrations.Migration):
                 ('entity_id', models.CharField(max_length=64, verbose_name='Record')),
                 ('part', models.CharField(blank=True, max_length=8, verbose_name='Part')),
                 ('route', models.CharField(blank=True, max_length=120, verbose_name='Page')),
+                ('reason', models.CharField(blank=True, max_length=300, verbose_name='Reason')),
             ],
             options={
                 'verbose_name': 'read of a confidential record',

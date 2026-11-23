@@ -344,7 +344,7 @@ Who read which confidential record, when and how: the one read log (the activity
 - **how it works**: The read log of confidential records; an experiment’s lead reads its rows on the Who looked tab.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › core_access_events
 - **constraints**: chk_access_events_kind (check)
-- **tests that mention it**: `core/tests_sealing.py`, `experiments/tests/test_access.py`, `experiments/tests/test_oversee.py`
+- **tests that mention it**: `core/test_database.py`, `core/tests_sealing.py`, `experiments/tests/test_access.py` and 1 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -357,6 +357,7 @@ Who read which confidential record, when and how: the one read log (the activity
 | entity_id | varchar(64) |  |  | system: written by core.sealing.log_access when the record is read |
 | part | varchar(8) |  |  | system: written by core.sealing.log_access when the record is read |
 | route | varchar(120) |  |  | system: written by core.sealing.log_access when the record is read |
+| reason | varchar(300) |  |  | system: written by core.sealing.log_access when the record is read |
 
 <a id="coreentrykey"></a>
 ### core.EntryKey (`entry_keys`)
@@ -1056,7 +1057,7 @@ Feed given to one unit on one day: the farm's feeding record.
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › feeding_records
 - **forms**: `FeedingForm`
 - **constraints**: chk_feeding_records_amount (check); chk_feeding_records_target (check); chk_feeding_records_meals (check); chk_feeding_records_void_reason (check)
-- **tests that mention it**: `core/tests_entry_key.py`, `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py` and 11 more
+- **tests that mention it**: `core/tests_entry_key.py`, `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py` and 12 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1899,7 +1900,7 @@ A unit fish are held in: a tank, a pond or a cage.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › tanks
 - **forms**: `TankForm`
 - **constraints**: uq_tanks_code_live (unique: code); uq_tanks_regulatory_unit_id_live (unique: production_department, regulatory_unit_id); chk_tanks_kind (check); chk_tanks_status (check); chk_tanks_water_type (check); chk_tanks_water_origin (check); chk_tanks_shape_by_kind (check); chk_tanks_material_by_kind (check); chk_tanks_pond_type_by_kind (check); chk_tanks_liner_type_by_kind (check); chk_tanks_water_source_by_kind (check); chk_tanks_cage_type_by_kind (check); chk_tanks_frame_type_by_kind (check); chk_tanks_net_material_by_kind (check); chk_tanks_tank_required (check); chk_tanks_pond_required (check); chk_tanks_cage_required (check); chk_tanks_diameter_by_shape (check); chk_tanks_length_by_shape (check); chk_tanks_stated_volume_m3_by_shape (check); chk_tanks_width_by_shape (check); chk_tanks_square_sides (check); chk_tanks_long_side_first (check); chk_tanks_water_depth (check); chk_tanks_max_depth (check); chk_tanks_liner_by_pond_type (check); chk_tanks_liner_thickness (check); chk_tanks_submersion (check); chk_tanks_diameter_range (check); chk_tanks_length_range (check); chk_tanks_width_range (check); chk_tanks_stated_volume_m3_range (check); chk_tanks_depth_range (check); chk_tanks_surface_area_m2_range (check); chk_tanks_max_depth_range (check); chk_tanks_mesh_size_mm_range (check); chk_tanks_max_submersion_depth_range (check); chk_tanks_max_density_kg_m3_range (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_sealing.py` and 52 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_sealing.py` and 53 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

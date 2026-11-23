@@ -507,7 +507,7 @@ def _carried(content, lazy):
 
 
 # ---- the read log -----------------------------------------------------------------------------------------------
-def log_access(kind, entity_type, entity_id, part='', route=''):
+def log_access(kind, entity_type, entity_id, part='', route='', reason=''):
     """One row of the read log (core.AccessEvent) for the viewer of the moment: a view, an export, a refusal, an
     `oversee` read of a cell's facts or a superuser's `support` read. Reading as the system logs nothing."""
     from .models import AccessEvent
@@ -515,4 +515,5 @@ def log_access(kind, entity_type, entity_id, part='', route=''):
     if current is None or current.user_id is None:
         return None
     return AccessEvent.objects.create(user_id=current.user_id, user_name=current.username, kind=kind,
-                                      entity_type=entity_type, entity_id=str(entity_id), part=part, route=route[:120])
+                                      entity_type=entity_type, entity_id=str(entity_id), part=part, route=route[:120],
+                                      reason=reason[:300])

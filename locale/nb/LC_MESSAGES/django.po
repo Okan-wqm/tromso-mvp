@@ -12837,6 +12837,9 @@ msgstr "Si hvorfor tiden ble lagt inn for hånd."
 msgid "Say why when it is another reason, and only then."
 msgstr "Si hvorfor når det er en annen grunn, og bare da."
 
+msgid "Say why you export it."
+msgstr "Si hvorfor du eksporterer."
+
 msgid "Say why: a tank that leaves, or is replaced, is registered with its reason."
 msgstr "Skriv hvorfor: et kar som går ut eller byttes ut, registreres med begrunnelsen."
 
@@ -17707,6 +17710,9 @@ msgid ""
 msgstr ""
 "Hvorfor enheten har nåværende status, f.eks. «notskifte». Når statusen endres, slettes en årsak "
 "som står uendret."
+
+msgid "Why you export it"
+msgstr "Hvorfor du eksporterer"
 
 msgid "Wider than the parameter’s whole range."
 msgstr "Bredere enn hele parameterens område."

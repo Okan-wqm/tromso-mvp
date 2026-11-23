@@ -71,12 +71,12 @@ class SilentOxygenCase(StoppedProbeCase):
         found = {}
         for name, query in (('small', {'mode': 'small'}), ('big', {'mode': 'big'}),
                             ('wall', {'mode': 'small', 'wall': '1'})):
-            found[name] = card_of(self.client.get(PAGE, {**query, 'units': str(unit.pk)}).content.decode(), unit)
+            found[name] = card_of(self.client.get(PAGE, {**query, 'units': str(unit.pk), 'full': '1'}).content.decode(), unit)
         found['pane'] = card_of(self.client.get(PANE, {'focus': str(unit.pk), 'mode': 'small'}).content.decode(), unit)
         return found
 
     def chips(self, unit):
-        html = self.client.get(PAGE, {'mode': 'small', 'units': str(unit.pk)}).content.decode()
+        html = self.client.get(PAGE, {'mode': 'small', 'units': str(unit.pk), 'full': '1'}).content.decode()
         strip = next(each for each in band_of(html).walk() if 'monitor-strip' in each.classes)
         return [text(each) for each in strip.children if not isinstance(each, str)]
 

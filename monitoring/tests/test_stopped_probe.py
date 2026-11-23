@@ -111,7 +111,7 @@ class CardTests(StoppedProbeCase):
         units = f'{self.t1.pk},{self.t2.pk}'
         for name, query in (('small', {'mode': 'small'}), ('big', {'mode': 'big'}),
                             ('wall', {'mode': 'small', 'wall': '1'})):
-            html = self.client.get(PAGE, {**query, 'units': units}).content.decode()
+            html = self.client.get(PAGE, {**query, 'units': units, 'full': '1'}).content.decode()
             for unit in (self.t1, self.t2):
                 with self.subTest(screen=name, unit=unit.code):
                     card = card_of(html, unit)

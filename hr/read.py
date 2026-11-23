@@ -733,14 +733,18 @@ def leave_impact(user, leave_request):
 LEAVE_DECIDER = 'hr.change_leaverequest'
 
 
-def pending_leave_badge(user):
-    """The number beside Production › Team › Leave requests: the pending requests of production people the viewer may decide
-    (Edit on leave, in their reach on the request's first day, never their own: hr.services.can_decide). Not polled."""
+def pending_leave(user, realm):
+    """How many pending requests of the realm's people the viewer may decide (Edit on leave, in their reach on the request's
+    first day, never their own: hr.services.can_decide)."""
     if not user.has_perm(LEAVE_DECIDER):
-        return Badge(0, '')
-    waiting = scope.by_day(user, LeaveRequest.objects.filter(status=LeaveStatus.PENDING), 'employee', 'first_day',
-                           PRODUCTION).exclude(employee__user=user)
-    return Badge(waiting.count(), '')
+        return 0
+    return scope.by_day(user, LeaveRequest.objects.filter(status=LeaveStatus.PENDING), 'employee', 'first_day',
+                        realm).exclude(employee__user=user).count()
+
+
+def pending_leave_badge(user):
+    """The number beside Production › Team › Leave requests (pending_leave of the production people). Not polled."""
+    return Badge(pending_leave(user, PRODUCTION), '')
 
 
 # ---- the rail's foot -----------------------------------------------------------------------------------------------

@@ -96,6 +96,10 @@ class HeartbeatRuleTests(AlarmsCase):
 SCANNED = ['alarms/*.py', 'farm/water/evaluate.py', 'farm/water/freshness.py', 'sensors/clock.py']
 NAMED = {
     ('alarms/engine.py', 'LOCK'): "the advisory lock's key: an identity, not a threshold",
+    ('alarms/worker.py', 'LOCK'): "the worker's session lock's key: an identity, not a threshold",
+    ('alarms/worker.py', 'MS'): 'milliseconds in a second: a unit, not a threshold',
+    ('alarms/worker.py', 'KEEPALIVE'): "shares of the worker's own stale_after (settings.ALARM_WORKER, the "
+                                       "deployment's): how fast a dead worker's lock is let go, not a farm rule",
     ('alarms/models.py', 'LEVEL_BOUNDS'): 'the escalation levels a rule may name (0 to 9): a schema limit of the rule '
                                           'rows, checked by the database, not a value in force',
     ('alarms/models.py', 'DELAY_BOUNDS'): "the refusal of nonsense of a clear delay (§7c), never the delay in force",

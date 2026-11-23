@@ -17,8 +17,8 @@
 //!
 //! Good samples of a partly bad message are kept; each distinct fault becomes one dead letter of the message.
 
-use crate::model::{ChannelMap, DeadReason, Format, Shape, TimeUnit, to_micros};
-use chrono::{DateTime, Utc};
+use crate::model::{ChannelMap, DeadReason, Format, Shape, TimeUnit};
+use crate::ts::Ts;
 use serde::Serialize;
 use serde_json::Value;
 use std::collections::BTreeSet;
@@ -32,7 +32,7 @@ pub struct RawSample {
     pub channel_no: i32,
     pub value: f64,
     /// None when the format has no time path: the receive time is used.
-    pub device_ts: Option<DateTime<Utc>>,
+    pub device_ts: Option<Ts>,
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize)]
@@ -102,7 +102,7 @@ fn as_name(v: &Value) -> Option<String> {
 }
 
 /// None: no time path (receive time). Some(Ok): the device time. Some(Err): missing or unreadable.
-type Time = Option<Result<DateTime<Utc>, DeadReason>>;
+type Time = Option<Result<Ts, DeadReason>>;
 
 fn read_time(format: &Format, scopes: &[&Value]) -> Time {
     if format.time_path.is_empty() {
@@ -111,23 +111,23 @@ fn read_time(format: &Format, scopes: &[&Value]) -> Time {
     let Some(v) = scopes.iter().find_map(|s| s.pointer(&format.time_path)) else {
         return Some(Err(DeadReason::MissingTime));
     };
-    Some(parse_time(format.time_unit, v).map(to_micros).ok_or(DeadReason::BadTime))
+    Some(parse_time(format.time_unit, v).map(Ts::trunc_micros).ok_or(DeadReason::BadTime))
 }
 
-fn parse_time(unit: TimeUnit, v: &Value) -> Option<DateTime<Utc>> {
+fn parse_time(unit: TimeUnit, v: &Value) -> Option<Ts> {
     match unit {
-        TimeUnit::Iso8601 => DateTime::parse_from_rfc3339(v.as_str()?.trim()).ok().map(|t| t.with_timezone(&Utc)),
+        TimeUnit::Iso8601 => Ts::parse_rfc3339(v.as_str()?.trim()),
         TimeUnit::EpochS | TimeUnit::EpochMs => {
             let scale = if unit == TimeUnit::EpochS { 1_000_000 } else { 1_000 };
             match v {
                 Value::Number(n) => match n.as_i64() {
-                    Some(i) => DateTime::<Utc>::from_timestamp_micros(i.checked_mul(scale)?),
+                    Some(i) => Ts::from_unix_micros(i.checked_mul(scale)?),
                     None => from_float_micros(n.as_f64()?, scale),
                 },
                 Value::String(s) => {
                     let s = s.trim();
                     match s.parse::<i64>() {
-                        Ok(i) => DateTime::<Utc>::from_timestamp_micros(i.checked_mul(scale)?),
+                        Ok(i) => Ts::from_unix_micros(i.checked_mul(scale)?),
                         Err(_) => from_float_micros(s.parse::<f64>().ok()?, scale),
                     }
                 }
@@ -137,7 +137,7 @@ fn parse_time(unit: TimeUnit, v: &Value) -> Option<DateTime<Utc>> {
     }
 }
 
-fn from_float_micros(x: f64, scale: i64) -> Option<DateTime<Utc>> {
+fn from_float_micros(x: f64, scale: i64) -> Option<Ts> {
     #[allow(clippy::cast_precision_loss)]
     let micros = (x * scale as f64).round();
     // i64 microseconds cover +-292k years; anything beyond is not a time.
@@ -145,7 +145,7 @@ fn from_float_micros(x: f64, scale: i64) -> Option<DateTime<Utc>> {
         return None;
     }
     #[allow(clippy::cast_possible_truncation)]
-    DateTime::<Utc>::from_timestamp_micros(micros as i64)
+    Ts::from_unix_micros(micros as i64)
 }
 
 fn as_value(v: &Value) -> Result<f64, DeadReason> {
@@ -207,7 +207,7 @@ mod tests {
     struct ExpectSample {
         channel_no: i32,
         value: f64,
-        device_ts: Option<DateTime<Utc>>,
+        device_ts: Option<Ts>,
     }
 
     fn vectors() -> Vec<Vector> {
@@ -315,7 +315,7 @@ mod tests {
                 let ch = [ChannelMap { channel_no: 7, value_path: "/v".into(), item_name: String::new() }];
                 let payload = serde_json::to_vec(&serde_json::json!({"t": ms, "v": 1})).unwrap();
                 let got = decode(&f, &ch, &payload);
-                prop_assert_eq!(got.samples[0].device_ts.map(|t| t.timestamp_millis()), Some(ms));
+                prop_assert_eq!(got.samples[0].device_ts.map(Ts::unix_millis), Some(ms));
             }
         }
     }

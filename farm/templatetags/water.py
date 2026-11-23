@@ -1,5 +1,7 @@
 """How water values read on the pages, in the person's language: each at its parameter's precision with
 the language's decimal sign, a limit row as a short sentence, and how old a value is."""
+from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_UP, Decimal
+
 from django import template
 from django.utils import timezone
 from django.utils.timesince import timesince
@@ -22,6 +24,70 @@ def water_value(value, code):
     if value in (None, ''):
         return DASH
     return number(value, parameters.get(code).decimals)
+
+
+# How many decimals more than its parameter keeps a worked-out value may be said with, to read on the side of a bound it
+# is on (`value_past`).
+EXTRA_DECIMALS = 3
+
+
+def _proof(reading, limit, below):
+    """(the value, its decimals) that read past `limit` for a worked-out value that is past it but whose shown value
+    would not, else None: the exact value with the fewest extra decimals that read past, at most `EXTRA_DECIMALS` and,
+    past them, cut toward the side it is on, so it is never rounded onto the bound."""
+    exact = reading.exact
+    if exact is None or not _past(exact, limit, below) or _past(reading.value, limit, below):
+        return None
+    decimals = parameters.get(reading.code).decimals
+    for places in range(decimals + 1, decimals + EXTRA_DECIMALS + 1):
+        rounded = exact.quantize(Decimal(1).scaleb(-places), rounding=ROUND_HALF_UP)
+        if _past(rounded, limit, below):
+            return rounded, places
+    return exact.quantize(Decimal(1).scaleb(-places), rounding=ROUND_FLOOR if below else ROUND_CEILING), places
+
+
+def _past(value, limit, below):
+    return value < limit if below else value > limit
+
+
+def value_past(reading, limit, below):
+    """The reading's value as a sentence says it beside `limit`, the bound its judgement named (evaluate.crossed: `below`
+    is whether it was past it from under). A worked-out value is judged unrounded (`Reading.exact`, the audit of
+    2026-11-19, F3) and shown at its parameter's decimals, so a true 59.988221 % past a limit of 60.0 is shown 60.0 and a
+    sentence that set it beside the bound read "60.0 < critical limit 60.0". Where the shown value reads past the bound,
+    it is said as `water_value` says it; where it reads on it (rounded onto it), the exact value with the fewest extra
+    decimals that read past ("59.99 < 60.0", `_proof`). Display only: nothing here judges, and a value the bound does
+    not name, or one judged as entered (`exact` None: it has no more decimals than are shown), is said as it always
+    was."""
+    proof = _proof(reading, limit, below)
+    return water_value(reading.value, reading.code) if proof is None else number(*proof)
+
+
+def proof_of(reading):
+    """(the value, its decimals) a worked-out reading is said with wherever its figure stands alone (a cell, a tile, an
+    alarm's summary), or None where its plain figure stands: when its own value was judged past a bound (the nearest of
+    them, read.past_bound) and rounds onto it, the decimals that read past it (owner decision of 2026-11-22: a value
+    judged past a bound shows the decimals that prove it everywhere it is shown). Measured values are judged as entered:
+    always None."""
+    if reading is None or reading.value is None or reading.exact is None:
+        return None
+    found = water_read.past_bound(reading)
+    return None if found is None else _proof(reading, found[1], found[0].endswith('low'))
+
+
+def figure_past(reading):
+    """The text of `proof_of` (the figure of a reading rounded onto the bound it is past), else None."""
+    proof = proof_of(reading)
+    return None if proof is None else number(*proof)
+
+
+@register.filter
+def reading_figure(reading):
+    """A reading's value as a figure on its own says it: at its parameter's decimals (`water_value`), and where it is
+    judged past a bound the shown value would read as on, with the decimals that read past it (`figure_past`)."""
+    if reading is None:
+        return DASH
+    return figure_past(reading) or water_value(reading.value, reading.code)
 
 
 @register.filter

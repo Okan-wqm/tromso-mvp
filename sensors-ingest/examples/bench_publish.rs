@@ -64,7 +64,7 @@ async fn main() {
         }
     });
     let start = Instant::now();
-    let base_ms = chrono::Utc::now().timestamp_millis() - 1000 * (seconds as i64 + 5);
+    let base_ms = sensors_ingest::ts::Ts::now().unix_millis() - 1000 * (seconds as i64 + 5);
     let step_ms = (devices as u64 * 1000 / rate).max(1) as i64;
     println!("base_ms={base_ms} step_ms={step_ms}");
     let mut seq = vec![0u64; devices];

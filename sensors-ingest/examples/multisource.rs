@@ -11,6 +11,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::indexing_slicing)]
 
 use rumqttc::{AsyncClient, Event, MqttOptions, Packet, QoS};
+use sensors_ingest::ts::Ts;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
@@ -28,12 +29,21 @@ struct Dev {
     outage: bool,
 }
 
+/// RFC 3339 with milliseconds at a whole-hour offset: `2026-11-04T13:00:00.000+01:00`, or `...Z` at offset 0.
+fn rfc3339_millis(t_ms: i64, offset_h: i8) -> String {
+    let t = time::OffsetDateTime::from_unix_timestamp_nanos(i128::from(t_ms) * 1_000_000)
+        .unwrap()
+        .to_offset(time::UtcOffset::from_hms(offset_h, 0, 0).unwrap());
+    let zone = if offset_h == 0 { "Z".to_string() } else { format!("{offset_h:+03}:00") };
+    let (h, m, s, ms) = (t.hour(), t.minute(), t.second(), t.millisecond());
+    format!("{:04}-{:02}-{:02}T{h:02}:{m:02}:{s:02}.{ms:03}{zone}", t.year(), u8::from(t.month()), t.day())
+}
+
 fn payload(d: &Dev, seq: u64, t_ms: i64, x: f64) -> Vec<u8> {
     let t_ms = if d.skew { t_ms + 600_000 } else { t_ms };
-    let iso = chrono::DateTime::<chrono::Utc>::from_timestamp_millis(t_ms).unwrap();
     let v = match d.format {
         0 => serde_json::json!({
-            "ts": iso.with_timezone(&chrono::FixedOffset::east_opt(3600).unwrap()).to_rfc3339_opts(chrono::SecondsFormat::Millis, false),
+            "ts": rfc3339_millis(t_ms, 1),
             "seq": seq,
             "tags": {"temp_inlet": {"value": 9.5 + x}, "o2_sump": {"value": 10.0 + x}, "ph_sump": {"value": 7.3 + x / 10.0}}
         }),
@@ -42,7 +52,7 @@ fn payload(d: &Dev, seq: u64, t_ms: i64, x: f64) -> Vec<u8> {
             "items": [{"n": "do", "v": 9.0 + x, "t": t_ms}, {"n": "temp", "v": 9.8 + x, "t": t_ms}, {"n": "sat", "v": 95.0 + 5.0 * x, "t": t_ms}]
         }),
         _ => {
-            serde_json::json!({"time": iso.to_rfc3339_opts(chrono::SecondsFormat::Millis, true), "sequence": seq, "flow_m3h": 40.0 + 3.0 * x})
+            serde_json::json!({"time": rfc3339_millis(t_ms, 0), "sequence": seq, "flow_m3h": 40.0 + 3.0 * x})
         }
     };
     serde_json::to_vec(&v).unwrap()
@@ -110,7 +120,7 @@ async fn device(
             }
         }
         seq += 1;
-        let t_ms = chrono::Utc::now().timestamp_millis();
+        let t_ms = Ts::now().unix_millis();
         let x = ((seq as f64) / 120.0 + d.index as f64).sin() * 0.3 + ((seq * 31 + d.index as u64) % 17) as f64 / 170.0;
         let p = payload(&d, seq, t_ms, x);
         sent.fetch_add(1, Ordering::Relaxed);
@@ -146,20 +156,20 @@ async fn poll_latency(db: String, seconds: u64, out: Arc<std::sync::Mutex<Vec<i6
         .iter()
         .map(|r| r.get(0))
         .collect();
-    let mut last: std::collections::HashMap<i32, chrono::DateTime<chrono::Utc>> = Default::default();
+    let mut last: std::collections::HashMap<i32, Ts> = Default::default();
     let start = Instant::now();
     while start.elapsed().as_secs() < seconds {
         let rows = client
             .query("SELECT channel_no, high_ts FROM sensors_channel_state WHERE channel_no = ANY($1)", &[&probes])
             .await
             .unwrap();
-        let now = chrono::Utc::now();
+        let now = Ts::now();
         for r in rows {
             let ch: i32 = r.get(0);
-            let Some(high): Option<chrono::DateTime<chrono::Utc>> = r.get(1) else { continue };
+            let Some(high): Option<Ts> = r.get(1) else { continue };
             if last.get(&ch) != Some(&high) {
                 if last.contains_key(&ch) {
-                    out.lock().unwrap().push((now - high).num_milliseconds());
+                    out.lock().unwrap().push((now - high).whole_milliseconds() as i64);
                 }
                 last.insert(ch, high);
             }

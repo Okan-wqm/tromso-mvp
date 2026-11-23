@@ -6,11 +6,11 @@
 
 mod common;
 
-use chrono::{DateTime, Duration, Utc};
 use common::*;
 use rumqttc::{AsyncClient, Event, MqttOptions, Packet, QoS};
 use sensors_ingest::service::Settings;
 use sensors_ingest::supervisor::{self, Options};
+use sensors_ingest::ts::{Duration, Ts};
 use std::sync::Mutex;
 use tokio::sync::watch;
 use uuid::Uuid;
@@ -119,8 +119,8 @@ async fn world(client_id: &str) -> Option<World> {
     Some(World { url, host, secrets: tempdir::Dir(dir), fx, ch })
 }
 
-fn plc(t: DateTime<Utc>, i: i64) -> (String, Vec<u8>) {
-    ("live/plc".into(), serde_json::to_vec(&serde_json::json!({"ts": t.to_rfc3339(), "seq": i, "a": i})).unwrap())
+fn plc(t: Ts, i: i64) -> (String, Vec<u8>) {
+    ("live/plc".into(), serde_json::to_vec(&serde_json::json!({"ts": t.to_string(), "seq": i, "a": i})).unwrap())
 }
 
 async fn rows_until(a: &tokio_postgres::Client, sql: &str, want: i64) -> i64 {
@@ -142,7 +142,7 @@ async fn a_qos1_stream_is_stored_once_and_acknowledged_so_a_restart_redelivers_n
     let a = admin(&w.url).await;
     let run = start(&w.url, &w.secrets.0);
     tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-    let t = Utc::now() - Duration::hours(1);
+    let t = Ts::now() - Duration::hours(1);
     let msgs: Vec<_> = (0..3000).map(|i| plc(t + Duration::milliseconds(i * 100), i)).collect();
     publish(&w.host, &msgs).await;
     let sql = format!("SELECT count(*) FROM sensors_reading WHERE channel_no = {}", w.ch);
@@ -170,7 +170,7 @@ async fn messages_published_while_the_ingest_is_down_arrive_after_it_comes_back(
     let run = start(&w.url, &w.secrets.0);
     tokio::time::sleep(std::time::Duration::from_secs(2)).await;
     run.stop().await;
-    let t = Utc::now() - Duration::hours(1);
+    let t = Ts::now() - Duration::hours(1);
     let msgs: Vec<_> = (0..500).map(|i| plc(t + Duration::seconds(i), i)).collect();
     publish(&w.host, &msgs).await;
     let run = start(&w.url, &w.secrets.0);
@@ -190,8 +190,8 @@ async fn a_new_device_is_subscribed_and_garbage_is_dead_lettered_without_a_resta
     device(&a, &w.fx, dev, "ZZ-LIVE-NEW", "live/+/probe", w.fx.format).await;
     let (_, ch2) = channel(&a, dev, "B", "/a", "", "all", 0.0, 60, None).await;
     tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-    let t = Utc::now() - Duration::minutes(5);
-    let body = serde_json::to_vec(&serde_json::json!({"ts": t.to_rfc3339(), "a": 7})).unwrap();
+    let t = Ts::now() - Duration::minutes(5);
+    let body = serde_json::to_vec(&serde_json::json!({"ts": t.to_string(), "a": 7})).unwrap();
     publish(&w.host, &[("live/hall/probe".into(), body), ("live/plc".into(), b"not json".to_vec())]).await;
     let sql = format!("SELECT count(*) FROM sensors_reading WHERE channel_no = {ch2}");
     assert_eq!(rows_until(&a, &sql, 1).await, 1);

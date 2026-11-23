@@ -15,7 +15,7 @@
 #   - a request body of 8 MB at most, 25 MB for the library (it takes a PDF of 20 MB, KNOWLEDGE_MAX_FILE_BYTES), which
 #     goes on to gunicorn unbuffered: the proxy never holds an upload in its memory
 #   - the client's address: behind Cloudflare Tunnel the proxy believes PROXY_REAL_IP_HEADER (CF-Connecting-IP) from
-#     PROXY_REAL_IP_FROM only (the edge network); otherwise the connection's own address
+#     PROXY_REAL_IP_FROM only (the front network, EDGE_SUBNET); otherwise the connection's own address
 
 server_tokens off;
 client_max_body_size 8m;

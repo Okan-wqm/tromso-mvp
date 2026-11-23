@@ -61,7 +61,8 @@ x-app: &app
   environment: *app-environment
   secrets: [django_secret_key, django_audit_digest_key, db_app_password, email_password]
   read_only: true
-  tmpfs: [/tmp]
+  # uploads larger than 2.5 MB are written here by Django before the form reads them (the library: 20 MB)
+  tmpfs: ["/tmp:size=512m"]
   security_opt: ["no-new-privileges:true"]
   cap_drop: [ALL]
   logging: *logging
@@ -213,6 +214,7 @@ services:
       PROXY_REAL_IP_FROM: ${PROXY_REAL_IP_FROM:-127.0.0.1/32}
       PROXY_REAL_IP_HEADER: ${PROXY_REAL_IP_HEADER:-X-Forwarded-For}
       PROXY_SIGNIN_PER_MINUTE: ${PROXY_SIGNIN_PER_MINUTE:-10}
+      PROXY_ADMIN_ALLOW: ${PROXY_ADMIN_ALLOW:-127.0.0.1/32}
       # only these are put into the templates: nginx's own $variables stay as they are
       NGINX_ENVSUBST_FILTER: "^(SITE_HOST|PROXY_)"
     ports:
@@ -223,7 +225,7 @@ services:
       - static:/srv/static:ro
       - ${SECRETS_DIR:-./secrets}/tls:/etc/nginx/tls:ro
     read_only: true
-    tmpfs: [/etc/nginx/conf.d, /var/cache/nginx, /var/run, /tmp]
+    tmpfs: [/etc/nginx/conf.d, "/var/cache/nginx:size=128m", /var/run, /tmp]
     security_opt: ["no-new-privileges:true"]
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8081/proxy-health"]

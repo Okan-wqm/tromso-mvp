@@ -11,6 +11,11 @@ The platform admin is a Django superuser: it opens everything and is the only on
 dc run --rm --no-deps web python manage.py createsuperuser
 ```
 
+**No second factor and no lockout:** the console's sign-in (and Django's admin at `/admin/`) asks for a password
+only. What slows a guesser is the proxy (submitted sign-in forms limited per client address, `PROXY_SIGNIN_PER_MINUTE`;
+`/admin/` refused outside `PROXY_ADMIN_ALLOW`) and the network in front: the VPN, or Cloudflare Access with its own
+second factor ([access.md](access.md)). Use long generated passwords.
+
 It asks for a username, an e-mail address and a password (at least the validators' length; use the password
 manager's generator). It runs as the app role, like the server itself. Make at most two (the owner and a deputy);
 everyone else gets a role.

@@ -6,21 +6,32 @@
 #   - only SITE_HOST is served; a TLS handshake for any other name is refused
 #   - /static/: the files `collectstatic` wrote under hashed names, kept by browsers for a year (immutable); a name
 #     without a hash is checked every time
-#   - sign-in and password reset: PROXY_SIGNIN_PER_MINUTE requests a minute per client (burst 5), then 429
-#   - the access log leaves out the one-time key of a password mail's link
-#   - a request body of 25 MB at most (the library takes a PDF of 20 MB, KNOWLEDGE_MAX_FILE_BYTES)
+#   - sign-in, password reset and Django's admin: PROXY_SIGNIN_PER_MINUTE submitted forms (POST) a minute per client
+#     (burst 5), then 429; reading the pages is not counted. There is no lockout and no second factor in the application
+#     (docs/ops/access.md): the limit and the network in front are what slow a password guesser
+#   - Django's admin (/admin/) only from PROXY_ADMIN_ALLOW (one address range, or `all`); 403 from anywhere else
+#   - the access log leaves out the one-time key of a password mail's link, and the error log of that path holds
+#     critical lines only (they would quote the request with its key)
+#   - a request body of 8 MB at most, 25 MB for the library (it takes a PDF of 20 MB, KNOWLEDGE_MAX_FILE_BYTES), which
+#     goes on to gunicorn unbuffered: the proxy never holds an upload in its memory
 #   - the client's address: behind Cloudflare Tunnel the proxy believes PROXY_REAL_IP_HEADER (CF-Connecting-IP) from
 #     PROXY_REAL_IP_FROM only (the edge network); otherwise the connection's own address
 
 server_tokens off;
-client_max_body_size 25m;
+client_max_body_size 8m;
+client_body_buffer_size 64k;
 charset utf-8;
 
 real_ip_header ${PROXY_REAL_IP_HEADER};
 set_real_ip_from ${PROXY_REAL_IP_FROM};
 real_ip_recursive on;
 
-limit_req_zone $binary_remote_addr zone=signin:10m rate=${PROXY_SIGNIN_PER_MINUTE}r/m;
+# Only a submitted form counts: an empty key is not limited.
+map $request_method $signin_key {
+    POST $binary_remote_addr;
+    default "";
+}
+limit_req_zone $signin_key zone=signin:10m rate=${PROXY_SIGNIN_PER_MINUTE}r/m;
 limit_req_status 429;
 limit_req_log_level warn;
 
@@ -96,6 +107,23 @@ server {
     }
     location /accounts/reset/ {
         limit_req zone=signin burst=5 nodelay;
+        error_log /dev/stderr crit;
+        include /etc/nginx/conf.d/farm-proxy.inc;
+    }
+
+    # Django's admin (restoring deleted records): only from the operators' range, and its sign-in limited like the
+    # console's.
+    location /admin/ {
+        allow ${PROXY_ADMIN_ALLOW};
+        deny all;
+        limit_req zone=signin burst=5 nodelay;
+        include /etc/nginx/conf.d/farm-proxy.inc;
+    }
+
+    # The library's uploads: up to 25 MB, streamed to gunicorn as they arrive.
+    location /knowledge/library/ {
+        client_max_body_size 25m;
+        proxy_request_buffering off;
         include /etc/nginx/conf.d/farm-proxy.inc;
     }
 

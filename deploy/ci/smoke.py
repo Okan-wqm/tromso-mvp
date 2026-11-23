@@ -8,7 +8,8 @@
 4. a TLS handshake for another host name is refused;
 5. the first admin signs in (CSRF over https, a Secure HttpOnly session cookie), and every page linked from the home
    page and from those pages answers without a server error;
-6. the sign-in and reset pages are rate limited per client (429).
+6. Django's admin is refused from outside its allowed range; submitting the sign-in and reset forms is rate limited
+   per client (429), reading them is not.
 Exit 1 on the first failure. Standard library only."""
 import argparse
 import http.client
@@ -135,9 +136,15 @@ def main():
     check(not errors, 'no page answered with a server error' + (f': {errors}' if errors else ''))
     check(statuses.get(200, 0) >= 20, f'at least 20 pages answered 200 ({statuses.get(200, 0)})')
 
-    print('== 6. the rate limit on password reset')
-    answers = [get(f'{base}/accounts/password_reset/')[0] for _ in range(25)]
-    check(429 in answers and 200 in answers, f'the reset page is limited per client: {answers}')
+    print("== 6. Django's admin and the rate limits")
+    status, _, _ = get(f'{base}/admin/')
+    check(status == 403, f'/admin/ is refused from outside PROXY_ADMIN_ALLOW ({status})')
+    reads = [get(f'{base}/accounts/password_reset/')[0] for _ in range(12)]
+    check(set(reads) == {200}, f'reading the reset page is not limited: {reads}')
+    # submitted forms are counted (without a CSRF token Django refuses them, 403, and sends no mail)
+    posts = [get(f'{base}/accounts/password_reset/', b'email=nobody%40farm.ci.invalid',
+                 {'Content-Type': 'application/x-www-form-urlencoded'})[0] for _ in range(25)]
+    check(429 in posts and 403 in posts, f'submitting the reset form is limited per client: {posts}')
 
     if failures:
         print(f'smoke: {len(failures)} check(s) failed')

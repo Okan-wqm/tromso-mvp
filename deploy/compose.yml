@@ -381,6 +381,7 @@ services:
       RESTIC_REPOSITORY: ${RESTIC_REPOSITORY:?set RESTIC_REPOSITORY in farm.env}
       RESTIC_PASSWORD_FILE: /run/secrets/restic_password
       BACKUP_HOST_TAG: ${RESTORE_FROM_HOST_TAG:-${COMPOSE_PROJECT_NAME:-farm}}
+      DB_MAX_CONNECTIONS: ${DB_MAX_CONNECTIONS:-100}
     secrets: [postgres_password, restic_password]
     volumes:
       - backups:/backups

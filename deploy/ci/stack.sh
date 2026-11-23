@@ -181,7 +181,7 @@ restore() {
   say "the dump restored as the superuser, then every table's row count compared with the backup's"
   "${RC[@]}" run --rm -T --no-deps restore restore-dump "$dump"
   "${RC[@]}" run --rm -T --no-deps restore verify-counts "$dump.counts"
-  say "the application on the restored database: every migration applied, the deploy check clean"
+  say "the application on the restored database: every migration applied (migrate --check)"
   "${RC[@]}" run --rm -T --no-deps web python manage.py migrate --check
 }
 

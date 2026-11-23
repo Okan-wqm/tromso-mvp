@@ -243,6 +243,9 @@ prepare_pitr() {
   touch "$pgdata/recovery.signal"
   {
     echo "restore_command = 'cp $waldir/%f %p'"
+    # Recovery refuses a server with fewer connections than the one the WAL came from: the farm's server sets it on
+    # its command line (DB_MAX_CONNECTIONS in farm.env, 100), which the base backup does not carry.
+    echo "max_connections = $(num DB_MAX_CONNECTIONS 100)"
     if [ -n "$target" ]; then echo "recovery_target_time = '$target'"; echo "recovery_target_action = 'promote'"; fi
   } >> "$pgdata/postgresql.auto.conf"
   log "data folder $pgdata ready: start the database image on it; it replays the WAL of $waldir${target:+ up to $target} and opens"

@@ -79,7 +79,8 @@ When the dump is too old (a fault an hour ago, a deletion this morning): the new
 plus the archived WAL up to it.
 
 1. Steps 1 to 3 above, with a snapshot taken **after** the moment (its WAL reaches past it).
-2. A data folder replaying to the moment (UTC), in a volume of its own:
+2. A data folder replaying to the moment (UTC), in a volume of its own (it also sets `max_connections` to the farm's
+   `DB_MAX_CONNECTIONS`: recovery refuses a server with fewer connections than the one the WAL came from):
    ```
    docker volume create farm-pitr
    dc --profile ops run --rm -u root -v farm-pitr:/pitr --entrypoint sh restore -c '

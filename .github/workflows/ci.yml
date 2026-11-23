@@ -10,6 +10,8 @@
 #   rust      sensors-ingest: rustfmt, clippy, the tests against the real schema and a broker, cargo deny, THIRD_PARTY
 #   chemcore  chemcore/scripts/test.sh in the chemcore-tools stage of docker/testrunner.Dockerfile
 #   security  pip-audit, the Python licence gate, npm audit
+#   go-live-stack  by hand only, with the input `stack`: the production stack of deploy/compose.yml
+#             (.github/workflows/go-live-stack.yml, which is also dispatched on its own once it is on main)
 # No secret is used: the database passwords are throwaway values that live only inside a job, and the layer cache is
 # GitHub's own (the job's token, nothing configured).
 name: CI
@@ -30,6 +32,11 @@ on:
         description: "Django test labels to run instead of the whole suite (letters, digits, _ . and spaces)"
         required: false
         default: ""
+      stack:
+        description: "Also prove the production stack (go-live-stack.yml): build, start, roles, HTTPS, MQTT, backup, restore"
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -363,3 +370,10 @@ jobs:
           cache: npm
       - name: npm audit (high and critical)
         run: npm audit --omit=dev --audit-level=high
+
+  # The go-live package's proof, by hand only (`gh workflow run ci.yml --ref <branch> -f stack=true`): a workflow
+  # dispatched on its own must be on the default branch first, so until go-live-stack.yml is there it runs through here.
+  go-live-stack:
+    name: Go-live stack
+    if: github.event_name == 'workflow_dispatch' && inputs.stack
+    uses: ./.github/workflows/go-live-stack.yml

@@ -7,19 +7,18 @@
 #   backup   dump, base backup, archived WAL, encrypted and shipped to the "off-server" repository (a runner folder)
 #   restore  a second installation restored from the repository, every table's row count equal, migrations applied
 #   pitr     a third server replayed from the base backup and the WAL: the row written after the base backup is there
-# By hand only (workflow_dispatch: gh workflow run go-live-stack.yml --ref <branch>); never on a pull request. No secret
-# of the repository is used: every password, key and certificate is made in the job and dies with the runner.
+# By hand only, never on a pull request: dispatched on its own once this file is on the default branch
+# (gh workflow run go-live-stack.yml --ref <branch>), and before that through ci.yml's `stack` input
+# (gh workflow run ci.yml --ref <branch> -f stack=true), which calls it. No secret of the repository is used: every
+# password, key and certificate is made in the job and dies with the runner.
 name: Go-live stack
 
 on:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
-
-concurrency:
-  group: go-live-stack-${{ github.ref }}
-  cancel-in-progress: true
 
 env:
   # as in ci.yml: no build record artifacts (the account's artifact storage)
@@ -30,6 +29,9 @@ jobs:
     name: Production stack (build, start, roles, HTTPS, MQTT TLS, backup, restore, PITR)
     runs-on: ubuntu-24.04
     timeout-minutes: 90
+    concurrency:
+      group: go-live-stack-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

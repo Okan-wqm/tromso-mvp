@@ -14,10 +14,16 @@ From an empty server to the sign-in page of one farm. Each farm gets its own ser
   data on a disk with room (`/var/lib/docker`).
 - **Firewall** (ufw or nftables), default deny inbound:
   - ssh (22) from the operators' addresses only, keys only, no password login, no root login;
-  - 51820/udp for WireGuard (the sensor VPN, [access.md](access.md));
-  - 443 and 80 only when the console is reached directly (not when it is reached through Cloudflare Tunnel, which
-    needs no inbound port at all);
+  - 51820/udp for WireGuard ([access.md](access.md));
   - nothing else: the database, the web server and the plain MQTT listener are published nowhere.
+- **Docker and the firewall:** a port Docker publishes is let in by Docker's own iptables rules, **before ufw sees
+  it**: a ufw rule cannot close it. Exposure is therefore chosen where the port is published, in `farm.env`:
+  `HTTPS_BIND`/`HTTP_BIND` (default `127.0.0.1`: nobody outside the server) and `MQTT_BIND_ADDRESS` (the WireGuard
+  address). Set `HTTPS_BIND` to the WireGuard address for VPN access, and to `0.0.0.0` only for public access
+  ([access.md](access.md), C). Rules that must hold whatever Docker does go in the `DOCKER-USER` chain.
+- **Check from outside** after the start (another machine, not on the VPN):
+  `nmap -Pn -p 22,80,443,1883,5432,8000,8080,8883 <public address>`: only 22 (from the operators' addresses) is
+  open, and 80/443 only when public access was chosen.
 - **Disk encryption** of the server's volumes where the hosting offers it (the database holds personal data).
 
 ## 2. The code

@@ -216,8 +216,8 @@ services:
       # only these are put into the templates: nginx's own $variables stay as they are
       NGINX_ENVSUBST_FILTER: "^(SITE_HOST|PROXY_)"
     ports:
-      - "${HTTPS_BIND:-0.0.0.0}:443:443"
-      - "${HTTP_BIND:-0.0.0.0}:80:80"
+      - "${HTTPS_BIND:-127.0.0.1}:443:443"
+      - "${HTTP_BIND:-127.0.0.1}:80:80"
     volumes:
       - ./proxy/templates:/etc/nginx/templates:ro
       - static:/srv/static:ro

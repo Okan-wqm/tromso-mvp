@@ -73,7 +73,8 @@ The plain listener (1883) is inside the compose network only, for the ingest.
 
 ## Checks
 
-- From the internet: `nmap -p 1883,8883,5432,8000 <public address>` shows them closed (and 443/80 too with A).
+- From the internet: `nmap -Pn -p 22,80,443,1883,5432,8000,8080,8883 <public address>` shows only 22 open (80 and
+  443 too only with C).
 - From a gateway on the VPN: `mosquitto_sub -h <vpn address> -p 8883 --cafile ca.crt --cert client.crt --key
   client.key -u <user> -P <password> -t '#' -W 3`: connected, but receives nothing (a device may not read).
 - Without the client certificate, or with a wrong password: refused (the stack workflow proves both).

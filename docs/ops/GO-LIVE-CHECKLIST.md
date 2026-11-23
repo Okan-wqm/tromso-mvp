@@ -22,8 +22,10 @@ Farm: ____________________  Server: ____________________  Release: ____________ 
 
 - [ ] Size as planned; OS supported and patched; unattended security upgrades on; clock synchronised.
 - [ ] ssh: keys only, no root, no password login, from the operators' addresses only; who has access recorded.
-- [ ] Firewall: only 22 (restricted), 51820/udp, and 443/80 only for direct access; checked from outside with nmap
-      (1883, 8883, 5432, 8000 closed to the internet).
+- [ ] Firewall: only 22 (restricted) and 51820/udp; `HTTPS_BIND`/`HTTP_BIND` are 127.0.0.1 or the VPN address
+      unless public access was chosen on purpose (Docker publishes past ufw).
+- [ ] Checked from outside with `nmap -Pn -p 22,80,443,1883,5432,8000,8080,8883 <public address>`: only 22, and
+      80/443 only for public access.
 - [ ] Disk encryption where the hosting offers it.
 - [ ] Docker Engine and compose versions as in [install.md](install.md).
 

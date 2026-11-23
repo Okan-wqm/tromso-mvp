@@ -1,0 +1,267 @@
+"""The form layer of the new pages (core/formpayload.py) against the old one, for the form of every tab.
+
+What a form says and posts is characterised from the old renderer itself: each bound field drawn by the project's one field
+template (registration/_field.html, through BoundField.as_field_group) is read back as its label, help, errors and every
+control it posts (name, value, whether it is ticked or chosen, required, switched off, and the server's bounds). The
+payload of the same bound field must say and post the same, control for control. Every tab's form is checked new and
+empty, and sent empty (so the server's own refusals are on it): a widget the payload does not know, a value it cannot
+carry, a control it would post differently or an error it would not show fails here."""
+from html.parser import HTMLParser
+from importlib import import_module
+
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.test import RequestFactory, TestCase
+
+from .crud import Resource
+from .formpayload import UnknownWidget, field_payload, form_payload, kind_of, unshown_visible_fields
+
+BOUNDS = ('min', 'max', 'step', 'maxlength', 'minlength')
+
+
+class Drawn(HTMLParser):
+    """What one field's old markup says (label, help, errors) and posts (its controls)."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.controls, self.stack, self.texts = [], [], {'label': [], 'legend': [], 'help': [], 'error': []}
+        self.select = None
+        self.option = None
+        self.textarea = None
+
+    def _where(self):
+        for tag, classes in reversed(self.stack):
+            if 'errorlist' in classes:
+                return 'error'
+            if 'help' in classes.split():
+                return 'help'
+            if tag in ('label', 'legend') and 'sr-only' not in classes:
+                return tag
+        return None
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        self.stack.append((tag, attrs.get('class') or ''))
+        if tag == 'input':
+            self.stack.pop()
+            kind = attrs.get('type', 'text')
+            ticks = kind in ('checkbox', 'radio')
+            self.controls.append({'name': attrs.get('name'), 'value': attrs.get('value', 'on' if ticks else ''),
+                                  'on': ('checked' in attrs) if ticks else True, 'type': kind,
+                                  'required': 'required' in attrs, 'disabled': 'disabled' in attrs,
+                                  'bounds': {name: attrs[name] for name in BOUNDS if name in attrs}})
+        elif tag == 'select':
+            self.select = {'name': attrs.get('name'), 'required': 'required' in attrs, 'disabled': 'disabled' in attrs,
+                           'multiple': 'multiple' in attrs, 'options': []}
+        elif tag == 'option' and self.select is not None:
+            self.option = {'value': attrs.get('value', ''), 'selected': 'selected' in attrs,
+                           'disabled': 'disabled' in attrs, 'label': ''}
+        elif tag == 'textarea':
+            self.textarea = {'name': attrs.get('name'), 'value': '', 'on': True, 'type': 'textarea',
+                             'required': 'required' in attrs, 'disabled': 'disabled' in attrs,
+                             'bounds': {name: attrs[name] for name in BOUNDS if name in attrs}}
+
+    def handle_startendtag(self, tag, attrs):
+        self.handle_starttag(tag, attrs)
+        if tag != 'input' and self.stack:
+            self.stack.pop()
+
+    def handle_endtag(self, tag):
+        if tag == 'option' and self.option is not None:
+            self.option['label'] = ' '.join(self.option['label'].split())
+            self.select['options'].append(self.option)
+            self.option = None
+        elif tag == 'select' and self.select is not None:
+            for option in self.select['options']:
+                self.controls.append({'name': self.select['name'], 'value': option['value'], 'on': option['selected'],
+                                      'type': 'option', 'label': option['label'], 'off': option['disabled'],
+                                      'required': self.select['required'], 'disabled': self.select['disabled'],
+                                      'bounds': {}})
+            self.select = None
+        elif tag == 'textarea' and self.textarea is not None:
+            self.textarea['value'] = self.textarea['value'].removeprefix('\n')
+            self.controls.append(self.textarea)
+            self.textarea = None
+        while self.stack:
+            if self.stack.pop()[0] == tag:
+                break
+
+    def handle_data(self, data):
+        if self.option is not None:
+            self.option['label'] += data
+        elif self.textarea is not None:
+            self.textarea['value'] += data
+        else:
+            where = self._where()
+            if where:
+                self.texts[where].append(data)
+
+    def said(self, where):
+        return ' '.join(''.join(self.texts[where]).split())
+
+
+def drawn(bound):
+    parser = Drawn()
+    parser.feed(str(bound.as_field_group()))
+    parser.close()
+    return parser
+
+
+def posted(field):
+    """The controls the island draws for a field payload, as the old markup's parser reads them."""
+    widget, kind = field['widget'], field['widget']['kind']
+    attrs = widget['attrs']
+    base = {'required': 'required' in attrs, 'disabled': 'disabled' in attrs,
+            'bounds': {name: str(attrs[name]) for name in BOUNDS if name in attrs}}
+    if kind in ('select', 'multiselect'):
+        return [{'name': widget['name'], 'value': option['value'], 'on': option['selected'], 'type': 'option',
+                 'label': ' '.join(str(option['label']).split()), 'off': bool(option['attrs'].get('disabled')),
+                 **base, 'bounds': {}}
+                for group in widget['groups'] for option in group['options']]
+    if kind in ('checks', 'radio'):
+        return [{'name': widget['name'], 'value': option['value'], 'on': option['selected'],
+                 'type': 'checkbox' if kind == 'checks' else 'radio', **base,
+                 'required': 'required' in option['attrs'], 'disabled': 'disabled' in option['attrs'], 'bounds': {}}
+                for group in widget['groups'] for option in group['options']]
+    if kind == 'matrix':
+        return [{'name': widget['name'], 'value': cell['option']['value'], 'on': cell['option']['selected'],
+                 'type': 'checkbox', **base, 'disabled': 'disabled' in cell['option']['attrs'], 'bounds': {}}
+                for section in widget['sections'] for area in section['areas'] for cell in area['cells']
+                if cell['option']]
+    if kind == 'links':
+        found = []
+        for row in widget['rows']:
+            found.append({'name': widget['name'], 'value': row['pk'], 'on': row['checked'], 'type': 'checkbox',
+                          'required': False, 'disabled': False, 'bounds': {}})
+            if widget['primary']:
+                found.append({'name': f"{widget['name']}-primary", 'value': row['pk'], 'on': row['primary'],
+                              'type': 'radio', 'required': False, 'disabled': False, 'bounds': {}})
+            for detail in row['details']:
+                found += posted(detail)
+        return found
+    if kind in ('checkbox', 'acknowledge'):
+        return [{'name': widget['name'], 'value': 'on' if widget['value'] is None else str(widget['value']),
+                 'on': 'checked' in attrs, 'type': 'checkbox', **base}]
+    if kind == 'textarea':
+        return [{'name': widget['name'], 'value': widget['value'] or '', 'on': True, 'type': 'textarea', **base}]
+    if kind == 'output':
+        return []
+    if kind == 'file':
+        found = [{'name': widget['name'], 'value': '', 'on': True, 'type': 'file', **base}]
+        if widget['current'] and not field['required'] and widget['current']['clearName']:
+            found.append({'name': widget['current']['clearName'], 'value': 'on', 'on': False, 'type': 'checkbox',
+                          'required': False, 'disabled': base['disabled'], 'bounds': {}})
+        return found
+    if kind == 'designer':
+        return [{'name': widget['name'], 'value': widget['value'] or '', 'on': True, 'type': 'textarea', **base}]
+    if kind == 'unshown':
+        return []
+    if kind == 'hidden':
+        values = widget['value'] if isinstance(widget['value'], list) else [widget['value']]
+        return [{'name': widget['name'], 'value': '' if value is None else str(value), 'on': True, 'type': 'hidden',
+                 **base} for value in values]
+    input_type = {'day': 'text', 'moment': 'text', 'time': 'text'}.get(kind, kind)
+    return [{'name': widget['name'], 'value': '' if widget['value'] is None else str(widget['value']), 'on': True,
+             'type': attrs.get('type', input_type), **base}]
+
+
+def normalised(controls):
+    """Controls compared on what is posted and how: a checkbox's value only counts when it is ticked."""
+    return sorted(
+        (c['name'] or '', c['value'],
+         bool(c['on']), c['type'] if c['type'] in ('option', 'checkbox', 'radio', 'file', 'hidden', 'textarea')
+         else 'input', c['required'], c['disabled'], tuple(sorted(c['bounds'].items())),
+         c.get('label', ''), bool(c.get('off')))
+        for c in controls)
+
+
+class FormPayloadTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        import_module(settings.ROOT_URLCONF)
+        cls.user = get_user_model().objects.create_superuser('payload', 'payload@example.com', 'x')
+
+    def request(self):
+        request = RequestFactory().get('/')
+        request.user = self.user
+        request.session = {}
+        return request
+
+    def forms(self):
+        """(tab name, form) for every tab with a form: new and empty, and sent empty."""
+        for resource in Resource.registry:
+            if resource.form_class is None or not resource.allows('add'):
+                continue
+            yield f'{resource.__name__} new', resource.form(self.request())
+            sent = resource.form(self.request(), {}, {})
+            sent.is_valid()
+            yield f'{resource.__name__} sent empty', sent
+
+    def test_every_tab_form_has_a_payload_that_says_and_posts_what_its_old_page_does(self):
+        checked = 0
+        for name, form in self.forms():
+            with self.subTest(form=name):
+                payload = form_payload(form, action='/here/')
+                fields = {field['name']: field for tab in payload['tabs'] for fieldset in tab['fieldsets']
+                          for field in fieldset['fields']}
+                for bound in form:
+                    if bound.is_hidden or bound.name in unshown_visible_fields(form):
+                        continue
+                    field = fields[bound.html_name]
+                    old = drawn(bound)
+                    self.assertEqual(normalised(posted(field)), normalised(old.controls), bound.html_name)
+                    label = old.said('legend') if bound.use_fieldset else old.said('label')
+                    self.assertIn(' '.join(str(field['label']).split()), label, bound.html_name)
+                    if field['help'] and 'text' in field['help']:
+                        self.assertEqual(' '.join(field['help']['text'].split()), old.said('help'), bound.html_name)
+                    self.assertEqual(' '.join(' '.join(field['errors']).split()), old.said('error'), bound.html_name)
+                    checked += 1
+                hidden = {each['name'] for each in payload['hidden']}
+                self.assertEqual(hidden, {bound.html_name for bound in form.hidden_fields()
+                                          if bound.html_name not in fields}, name)
+                self.assertEqual(payload['errors'], [str(error) for error in form.non_field_errors()], name)
+        self.assertGreater(checked, 300)
+
+    def test_a_form_sent_empty_carries_the_servers_refusals_on_the_fields_and_its_tabs(self):
+        for name, form in self.forms():
+            if not form.is_bound or form.is_valid():
+                continue
+            with self.subTest(form=name):
+                payload = form_payload(form, action='/here/')
+                said = {field['name']: field['errors'] for tab in payload['tabs'] for fieldset in tab['fieldsets']
+                        for field in fieldset['fields']}
+                for field_name, errors in form.errors.items():
+                    if field_name in form.fields and not form[field_name].is_hidden \
+                            and field_name not in unshown_visible_fields(form):
+                        self.assertEqual(said[form[field_name].html_name], [str(error) for error in errors])
+                for tab in payload['tabs']:
+                    with_errors = any(field['errors'] for fieldset in tab['fieldsets'] for field in fieldset['fields'])
+                    if with_errors:
+                        self.assertTrue(tab['hasErrors'], tab['key'])
+
+    def test_a_widget_without_a_kind_is_refused_not_guessed(self):
+        from django import forms
+
+        class Slider(forms.Widget):
+            pass
+
+        with self.assertRaises(UnknownWidget):
+            kind_of(Slider())
+
+    def test_a_value_the_payload_cannot_carry_is_refused(self):
+        from .formpayload import UnsafeValue, plain
+
+        with self.assertRaises(UnsafeValue):
+            plain({'when': object()})
+
+    def test_markup_built_by_code_is_carried_as_markup_and_plain_text_as_text(self):
+        from django import forms
+        from django.utils.html import format_html
+
+        class Helped(forms.Form):
+            plain = forms.CharField(help_text='<b>not markup</b>')
+            built = forms.CharField(help_text=format_html('<a href="{}">{}</a>', '/x/', 'see'))
+
+        form = Helped()
+        self.assertEqual(field_payload(form['plain'])['help'], {'text': '<b>not markup</b>'})
+        self.assertEqual(field_payload(form['built'])['help'], {'html': '<a href="/x/">see</a>'})

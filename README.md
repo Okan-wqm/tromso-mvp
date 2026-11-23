@@ -767,7 +767,26 @@ data share one, and those with a value no limit judges another. The server caps 
 silently. The short form of a reason is its `Brief` (`read.brief_of`): the water's own answer to "which value is past
 which bound" (`farm.water.read.crossed`, `evaluate.crossed`: the bound `judge` judged it by, the worse fresh value when
 that decided the status, the oxygen's other unit when a row on that unit judged it), never a second judgement; a reason
-that is not a value against a bound is said whole. On a wall each row of the band is one line; on the desk page they wrap.
+that is not a value against a bound is said whole. A value worked out (the oxygen in its other unit, the NH₃-N) is judged
+unrounded (`Reading.exact`) and shown at its parameter's decimals, so a true 59.988 % of saturation, critical against 60.0,
+is shown 60.0; a sentence that sets such a value beside its bound never reads as on it or inside it: where the shown value
+would, it says the exact value with the fewest extra decimals that read past ("O₂ (%) 59.99 < critical limit 60.0"; at
+most three more decimals, then cut toward the side it is on; `farm.templatetags.water.value_past`, the one rule). The
+judgement is never changed, only the words: the same rule says the value in the bar's name ("O₂ (%) 59.99, critical;
+limits: critical below 60.0, …"), in the note an oxygen judged through its other unit keeps ("Judged as 59.99 %.") and in
+the two notes the drawer prints right after a row's limits ("… reads 59.99 (…): the worst fresh value decides the
+status", "last own value 59.99 critical on …", which the alarm's summary carries too: `read.said_value`), and a chip of
+units past the same bound says the lowest (or highest) of their unrounded values. The figure on its own says it too
+(owner decision, 2026-11-22: "show as many decimals as it takes to show it is past"): a value judged past a bound that its
+shown value rounds onto is shown with the decimals that prove it everywhere it is shown, 59.99 and not 60.0: the cell of
+the water tables, the drawer and the overview (`farm/_water_value.html`, filter `reading_figure`), the cards' figure and
+the saturation beside a tile's label (`render.face`, `render.tile`) and the alarm's summary. One rule for all of them:
+`read.past_bound` (the nearest bound its own value was judged past, on the unrounded value) and
+`farm.templatetags.water.proof_of` (the fewest decimals that read past it). A value clearly past its bound, a value inside
+its bounds and a measured value (judged as entered) keep the parameter's decimals ("55.0", "60.0"). Known limits, left as
+they are: the calculator (judged in the Rust core on floats, printed without a bound), the position of the bar's marker
+(drawn at the rounded value) and `signed_amount` (a calculator margin of -0.003 reads 0.00). On a wall each row of the
+band is one line; on the desk page they wrap.
 
 **The Small card and the screen's view** (owner decisions 5 and 7, 2026-11-12: wide monitors; a small card for the
 overview). `mode=small` is a VIEW of the screen: EVERY card of it is drawn with the built-in Small template, on a board or
@@ -1856,7 +1875,9 @@ without values it shows its defaults.
   - *The NH₃-N is judged unrounded* (F3): the limits, the worst fresh value and the alarm's deadband test read the value
     as worked out (`Reading.exact`, `judged_value`), the page shows it at four decimals. A true 0.01034 mg/L read 0.0103
     and was OK against a limit of 0.0103; it is now a warning that reads 0.0103. The oxygen worked out in its other
-    unit is judged the same way.
+    unit is judged the same way. Where the number shown would read as on the limit it is past, a sentence that sets
+    the value beside its bound says the exact one instead ("0.01034 > 0.0103", never "0.0103 > 0.0103"; `value_past`,
+    Monitoring, the band above).
   - *Words* (F5 to F11): the sea-water basis says what it is (above); the activity-corrected NH₃ of a water with seawater
     constants says it rests on the application's own NBS conversion and reads up to about 16 % below the published
     references in cold sea water, information and not the better value (F6); a kit's nitrite is divided by 3.28 (F7);

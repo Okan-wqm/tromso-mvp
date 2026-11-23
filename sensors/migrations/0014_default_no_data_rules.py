@@ -10,8 +10,9 @@ Seeded as alarms 0002 seeds the severity rules, from here on the farm's row: cri
 and %), a warning for every other quantity (owner decision of 2026-11-20, quantities.default_severity). A quantity that
 has an active, live "No fresh value" rule of the same shape already (every channel of it, nothing past the freshness)
 gets that one marked as its default instead of a second (two alarms for one probe), keeping its own severity (the
-farm's setting is never overwritten), a row of the activity log (by 'system') saying so, as alarms 0008 says a changed
-row. The quantities and the critical ones are written here as they are when this migration is made
+farm's setting), but for the dissolved oxygen, raised to critical where it was a warning (the owner's decision of
+2026-11-20, applied on the review of 2026-11-23, F4), a row of the activity log (by 'system') saying so, as alarms
+0008 says a changed row. The quantities and the critical ones are written here as they are when this migration is made
 (quantities.JUDGED_CODES and DEFAULT_CRITICAL; a migration never reads live code: sensors/tests/test_fresh_rule.py
 holds them together, and a quantity added later seeds its own in its migration).
 
@@ -19,7 +20,7 @@ Going back removes the rules this made (every default rule but those it marked, 
 migration further back that narrows the quantities a rule may name (sensors 0011, 0012) finds none of them; except one
 with events (its alarms are history, append-only) or changed by a person since (a severity, a switch-off: the farm's
 setting), which stays as an ordinary "No fresh value" rule of its quantity, each said in the activity log. A rule it
-marked keeps its row (the mark goes with the column). Going forward again marks a kept rule the default once more (no
+marked keeps its row (the mark goes with the column) and gets back the severity it raised, said in the log too. Going forward again marks a kept rule the default once more (no
 second rule)."""
 from django.conf import settings
 from django.db import migrations, models
@@ -32,6 +33,10 @@ JUDGED = ['temperature_c', 'oxygen_mg_l', 'oxygen_saturation_pct', 'ph', 'alkali
 CRITICAL = ['oxygen_mg_l', 'oxygen_saturation_pct']   # seeded critical; every other a warning
 ENTITY = 'alarm rule'                   # the activity log's name of the record (AlarmRuleResource.entity_type)
 MARKED = 'sensors 0014: made the default "No fresh value" rule of its quantity (owner decision of 2026-11-20).'
+RAISED = ('sensors 0014: made the default "No fresh value" rule of its quantity, and critical as the default of the '
+          'dissolved oxygen is (owner decision of 2026-11-20).')
+LOWERED = 'sensors 0014 reversed: its severity as it was before sensors 0014 raised it.'
+SEVERITY = {'warning': 'Warning', 'critical': 'Critical'}         # as the log shows a severity (its choice's label)
 KEPT = 'sensors 0014 reversed: kept as an ordinary "No fresh value" rule, {why}.'
 
 KEEP = """
@@ -69,18 +74,29 @@ def seed(apps, schema_editor):
             Rule.objects.create(quantity=code, kind='no_data', for_s=0, hysteresis=0, is_active=True, is_default=True,
                                 severity='critical' if code in CRITICAL else 'warning')
             continue
-        Rule.objects.filter(pk=found.pk).update(is_default=True)
-        system_entry(schema_editor, ENTITY, found.pk, f'{code}: No fresh value',
-                     {'Default rule': ['No', 'Yes'], 'Note': [None, MARKED]})
+        changes = {'Default rule': ['No', 'Yes'], 'Note': [None, MARKED]}
+        if code in CRITICAL and found.severity != 'critical':
+            Rule.objects.filter(pk=found.pk).update(is_default=True, severity='critical')
+            changes = {'Default rule': ['No', 'Yes'], 'Severity': [SEVERITY[found.severity], 'Critical'],
+                       'Note': [None, RAISED]}
+        else:
+            Rule.objects.filter(pk=found.pk).update(is_default=True)
+        system_entry(schema_editor, ENTITY, found.pk, f'{code}: No fresh value', changes)
 
 
 def unseed(apps, schema_editor):
     Rule = apps.get_model('sensors', 'AlarmRule')
     Event = apps.get_model('sensors', 'AlarmEvent')
-    marked = {str(rule_id) for rule_id, who, _action, changes in entries(schema_editor, ENTITY)
-              if who == SYSTEM and (changes.get('Note') or [None, None])[1] == MARKED}
+    marked = {str(rule_id): changes for rule_id, who, _action, changes in entries(schema_editor, ENTITY)
+              if who == SYSTEM and (changes.get('Note') or [None, None])[1] in (MARKED, RAISED)}
+    labels = {label: value for value, label in SEVERITY.items()}
     for rule in Rule.objects.filter(is_default=True).order_by('quantity'):
         if str(rule.pk) in marked:
+            before = (marked[str(rule.pk)].get('Severity') or [None])[0]
+            if before in labels and rule.severity == 'critical':
+                Rule.objects.filter(pk=rule.pk).update(severity=labels[before])
+                system_entry(schema_editor, ENTITY, rule.pk, f'{rule.quantity}: No fresh value',
+                             {'Severity': ['Critical', before], 'Note': [None, LOWERED]})
             continue
         why = ('its alarms are history' if Event.objects.filter(rule=rule).exists()
                else 'changed by a person since' if rule.version > 1 else '')

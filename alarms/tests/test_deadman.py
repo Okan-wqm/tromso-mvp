@@ -133,7 +133,7 @@ class PingTests(DeadManCase):
         self.assertEqual(made.run_pass.call_count, 3)
 
     def test_off_without_an_address_and_only_https(self):
-        made, asked = self.worker(20, [engine.Summary()] * 5, sweep=1.0)
+        made, asked = self.worker(20, [engine.Summary()] * 25, sweep=1.0)
         made.timing = worker.Timing(**TIMING)
         made.run()
         self.assertEqual(asked, [])

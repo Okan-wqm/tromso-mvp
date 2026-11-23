@@ -38,20 +38,6 @@
   stroke-linejoin: round;
 }
 
-.icon-button {
-  display: inline-grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  flex: none;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: var(--radius-control);
-  background: transparent;
-  color: var(--text-2);
-  cursor: pointer;
-}
-.icon-button:hover { background: var(--surface-sunken); color: var(--text-1); }
 
 /* ---------- Shell ---------- */
 .shell { display: flex; min-height: 100vh; }
@@ -116,7 +102,7 @@
   position: absolute;
   left: -12px; top: 8px; bottom: 8px;
   width: 4px;
-  border-radius: 0 2px 2px 0;
+  border-radius: 0 var(--radius-chip) var(--radius-chip) 0;
   background: var(--brand);
 }
 .rail-link[aria-current="page"] .icon { opacity: 1; }
@@ -133,7 +119,7 @@
   border-radius: var(--radius-pill);
   background: var(--rail-badge);
   color: var(--on-rail-strong);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 700;
   line-height: var(--badge-h);
   text-align: center;
@@ -150,7 +136,7 @@
   padding-top: var(--space-3);
   border-top: 1px solid var(--rail-line);
   color: var(--on-rail-strong);
-  font-size: 13px;
+  font-size: var(--fs-small);
   font-weight: 700;
 }
 .rail-group {
@@ -158,7 +144,7 @@
   padding: 0 var(--space-3);
   color: var(--text-on-rail);
   opacity: .62;
-  font-size: 13px;
+  font-size: var(--fs-small);
   font-weight: 600;
 }
 .rail-section + .rail-group { margin-top: var(--space-2); }
@@ -170,7 +156,7 @@
   border-top: 1px solid var(--rail-rule);
   color: var(--text-on-rail);
   opacity: .7;
-  font-size: 13px;
+  font-size: var(--fs-small);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -208,7 +194,7 @@
 
 .topbar { flex-wrap: nowrap; }
 .ui-crumbs { flex: 1 1 auto; min-width: 0; }
-.ui-crumbs .eyebrow { margin: 0; overflow: hidden; color: var(--text-2); font-size: 13px; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
+.ui-crumbs .eyebrow { margin: 0; overflow: hidden; color: var(--text-2); font-size: var(--fs-small); font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
 .topbar-language { flex: none; margin-left: auto; }
 
 /* The EN / TR / NB segment (templates/_language_switcher.html) and the theme segment, as ui-lang. */
@@ -228,7 +214,7 @@
   background: none;
   color: var(--text-2);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--fs-small);
   font-weight: 700;
   letter-spacing: 0;
   cursor: pointer;
@@ -255,7 +241,7 @@
 }
 .user-trigger:hover { background: var(--surface-sunken); }
 .user-trigger .icon { width: 16px; height: 16px; color: var(--text-2); stroke-width: 2; }
-.initials { display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--radius-pill); background: var(--surface-sunken); color: var(--text-2); font-size: 12px; font-weight: 700; }
+.initials { display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--radius-pill); background: var(--surface-sunken); color: var(--text-2); font-size: var(--fs-caption); font-weight: 700; }
 
 .menu { position: relative; flex: none; }
 .menu-panel {
@@ -281,7 +267,7 @@
   padding: var(--space-2) var(--space-3) var(--space-3);
   border-bottom: 1px solid var(--line-hair);
 }
-.menu-head span { color: var(--text-3); font-size: 13px; overflow-wrap: anywhere; }
+.menu-head span { color: var(--text-3); font-size: var(--fs-small); overflow-wrap: anywhere; }
 .menu-item {
   display: block;
   width: 100%;
@@ -307,15 +293,62 @@
   padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--line-hair);
 }
-.menu-language > span { color: var(--text-2); font-size: 13px; font-weight: 600; }
+.menu-language > span { color: var(--text-2); font-size: var(--fs-small); font-weight: 600; }
 
 /* ---------- Content and page head ---------- */
-/* A word longer than the line (a content hash, a key) breaks rather than widening the page. */
+/* The width policy (docs/design/system/README.md, Width). The shell never caps the content: it reaches the window's right
+   edge at every width, and the page's measure (data-measure on <main>, a block of app_base.html) says how its content
+   uses the room. A word longer than the line (a content hash, a key) breaks rather than widening the page.
+     fluid  (the default) lists, tables, dashboards, monitoring: everything fills the width.
+     wall   the monitoring wall: no chrome, the whole screen (monitor.css).
+     form   a record's form: the fields flow into as many columns as they fill (auto-fit: an unused column folds away, so
+            the fields spread over the width), none wider than a field needs; from 1280 px its
+            sections (the tab list) stand beside it as an outline. Without sections the fields take the whole width.
+     prose  long text: each block keeps a reading measure (about 70 characters) and the blocks flow into as many columns
+            as fit, with the page's aside (.ui-aside) beside them from 1280 px: never one narrow column and a dead band. */
 .content {
   width: 100%;
-  max-width: 1520px;
   padding: var(--space-5);
   overflow-wrap: break-word;
+}
+.content[data-measure="form"] .tab-panel,
+.content[data-measure="form"] .form-actions { max-width: none; }
+.content[data-measure="form"] .form-grid:not(.form-grid-location) {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+}
+/* A wide field (a text area, a time zone) takes two columns, not the whole row: a row-wide field would hold every
+   column open, and an unused one would stay as an empty band at the right instead of folding away. On a phone it is
+   one column anyway (components.css). The form's buttons stand at the start of the form column, under the fields,
+   the others first and the one primary last, so they never drift to the window's far edge, away from the fields. */
+.content[data-measure="form"] .form-grid:not(.form-grid-location) > .field:is(:has(textarea), :has(#id_timezone), :has(#id_street), :has(#id_site_manager)) { grid-column: span 2; }
+.content[data-measure="form"] .form-actions { justify-content: flex-start; }
+.content[data-measure="prose"] .prose-flow {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 34rem), 1fr)); gap: var(--space-5) var(--space-6);
+  align-items: start;
+}
+.content[data-measure="prose"] .prose-flow > * { max-width: 70ch; margin: 0; }
+@media (min-width: 1280px) {
+  .content:is([data-measure="form"]:has(> .ui-tabs:not([hidden]), > .ui-aside), [data-measure="prose"]:has(> .ui-aside)) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(14rem, 18rem);
+    column-gap: var(--space-6);
+    align-content: start;
+  }
+  .content[data-measure="form"]:has(> .ui-tabs:not([hidden])) { grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr); }
+  .content:is([data-measure="form"], [data-measure="prose"]) > * { grid-column: 1 / -1; min-width: 0; }
+  .content[data-measure="form"]:has(> .ui-tabs:not([hidden])) > :not(.page-head, .flash-list, .ui-tabs) { grid-column: 2; }
+  .content[data-measure="form"]:has(> .ui-tabs:not([hidden])) > .ui-tabs {
+    grid-column: 1; grid-row: span 99; align-self: start;
+    position: sticky; top: calc(var(--topbar-h) + var(--space-4));
+    flex-direction: column; flex-wrap: nowrap; gap: 0;
+    margin: 0; padding: 0 0 0 var(--space-1); border-bottom: 0; border-left: 1px solid var(--line-hair);
+  }
+  .content[data-measure="form"]:has(> .ui-tabs:not([hidden])) > .ui-tabs .ui-tab { justify-content: flex-start; min-height: var(--control-h); white-space: normal; text-align: left; }
+  .content[data-measure="form"]:has(> .ui-tabs:not([hidden])) > .ui-tabs .ui-tab:is([aria-selected="true"], [aria-current="page"])::after {
+    left: calc(-1 * var(--space-1) - 1px); right: auto; top: var(--space-2); bottom: var(--space-2); width: 3px; height: auto; border-radius: 0 var(--radius-chip) var(--radius-chip) 0;
+  }
+  .content[data-measure="prose"]:has(> .ui-aside) > :not(.page-head, .flash-list, .ui-aside) { grid-column: 1; }
+  .content[data-measure="prose"]:has(> .ui-aside) > .ui-aside { grid-column: 2; grid-row: span 99; align-self: start; position: sticky; top: calc(var(--topbar-h) + var(--space-4)); }
 }
 .content:focus { outline: none; box-shadow: none; }
 .page-head h1 { overflow-wrap: anywhere; }
@@ -374,7 +407,7 @@
   [data-nav="collapsed"] .rail-nav { padding: var(--space-2) var(--space-3) var(--space-5); }
   [data-nav="collapsed"] .rail-link { justify-content: flex-start; padding: 0 var(--space-3); }
   [data-nav="collapsed"] .rail-label { position: static; width: auto; height: auto; clip: auto; }
-  [data-nav="collapsed"] .rail-badge { position: static; min-width: var(--badge-h); height: var(--badge-h); padding: 0 6px; font-size: 12px; line-height: var(--badge-h); }
+  [data-nav="collapsed"] .rail-badge { position: static; min-width: var(--badge-h); height: var(--badge-h); padding: 0 6px; font-size: var(--fs-caption); line-height: var(--badge-h); }
   [data-nav="collapsed"] .rail-section {
     height: auto;
     margin: var(--space-5) var(--space-3) var(--space-1);
@@ -421,7 +454,7 @@
     background: none;
     color: var(--text-2);
     font: inherit;
-    font-size: 12px;
+    font-size: var(--fs-caption);
     font-weight: 600;
     text-decoration: none;
     cursor: pointer;
@@ -435,7 +468,7 @@
     position: absolute;
     top: 0; left: 25%; right: 25%;
     height: 3px;
-    border-radius: 0 0 2px 2px;
+    border-radius: 0 0 var(--radius-chip) var(--radius-chip);
     background: var(--action);
   }
   .ui-bottombar-link .rail-badge { position: absolute; top: 2px; left: calc(50% + 6px); margin: 0; }
@@ -488,9 +521,19 @@
     background: var(--surface-rail);
     color: var(--on-rail-strong);
     box-shadow: var(--shadow-overlay);
-    font-size: 13px;
+    font-size: var(--fs-small);
     font-weight: 600;
     white-space: nowrap;
     pointer-events: none;
   }
 }
+
+/* A page's aside (data-measure prose or form): what helps to read the page, beside it from 1280 px, above it before. */
+.ui-aside { min-width: 0; margin: 0 0 var(--space-5); }
+.ui-aside .section-title { margin: 0 0 var(--space-2); font-size: var(--fs-label); }
+.aside-links { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); margin: 0; padding: 0; list-style: none; }
+@media (min-width: 1280px) { .aside-links { flex-direction: column; } }
+/* In a form, a field that spans the row (a time zone, a long choice) is still no wider than a field needs: no 1,300 px
+   select. A text area keeps a reading measure. */
+.content[data-measure="form"] .field :is(input:not([type="checkbox"], [type="radio"]), select) { max-width: 32rem; }
+.content[data-measure="form"] .field textarea { max-width: 75ch; }

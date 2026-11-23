@@ -66,7 +66,7 @@
   max-width: 22rem;
   margin: 0;
   color: var(--navy-900);
-  font-size: 1.125rem;
+  font-size: var(--fs-figure);
   font-weight: 500;
   line-height: 1.4;
 }
@@ -113,3 +113,6 @@
   .panel > .language-switch { top: 1rem; right: 1rem; }
   .panel h1 { font-size: 1.875rem; }
 }
+
+/* The sign-in pages' one action fills the panel's width (the button itself is ds.css's primary). */
+.panel-inner .button { display: flex; width: 100%; min-height: var(--control-h-coarse); margin-top: var(--space-2); }

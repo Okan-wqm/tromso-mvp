@@ -17,6 +17,9 @@ class LayoutPagesTests(SimpleTestCase):
         self.assertIn('class="wq-source"', pages['water.html'])
         self.assertIn('lang="nb"', pages['card-nb.html'])
         self.assertIn('class="form-actions"', pages['approve.html'])
+        # the Reports page's strip: twelve link tabs (all, five urgent kinds, six scheduled), the current one a scheduled kind
+        self.assertEqual(pages['report-tabs.html'].count('class="ui-tab"'), 12)
+        self.assertIn('href="/reports/?kind=smolt" aria-current="page">Smolt', pages['report-tabs.html'])
         for name in ('wall-small-en.html', 'wall-small-tr.html'):
             self.assertIn('data-key="band"', pages[name])
             self.assertEqual(pages[name].count('<article class="monitor-card '), 20)

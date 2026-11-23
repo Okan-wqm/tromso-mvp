@@ -363,8 +363,8 @@ class Tank(CodedMixin, AuditedModel):
     water_origin = models.CharField(
         _('Water origin'), max_length=12, choices=WaterOrigin.choices, blank=True, default='',
         help_text=_('Where the salt in its water comes from. Fresh water with salt added (NaCl, for smolt or against '
-                    'disease) is worked out without sea water’s ions; not said, a salinity of 1 to 5 ‰ is taken as '
-                    'diluted sea water.'))
+                    'disease) is worked out without sea water’s ions; fresh water with sea water or a sea-salt mix '
+                    'added is diluted sea water. Not said, a salinity of 1 to 5 ‰ is taken as diluted sea water.'))
     regulatory_unit_id = models.CharField(_('Regulatory unit ID'), max_length=50, blank=True)
 
     # Tanks and cages

@@ -806,7 +806,7 @@ class PageTests(StockTestCase):
         html = response.content.decode()
         for text in ('1,960', '125 g', '245 kg', '2.5 kg/m³', '5 %', '98.0 %', self.batch.code, 'Laks',
                      'Empty — ready to stock', 'Empty · Maintenance', '3 units · 245 kg',
-                     '<span class="view-count">1</span>'):
+                     '<span class="ui-count">1</span>'):
             self.assertIn(text, html)
         # No weighing since stocking: no FCR yet, and why; last fed is a dash until a feeding is recorded
         # (farm/tests/test_feeding.py has the figures).

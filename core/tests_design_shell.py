@@ -274,3 +274,84 @@ class DisplayWeightTests(SimpleTestCase):
         css = (ROOT / 'static' / 'css' / 'auth.css').read_text(encoding='utf-8')
         brand = re.search(r'\n\.brand \{([^}]*)\}', css).group(1)
         self.assertIn('var(--font-display)', brand)
+
+
+class AreaTests(TestCase):
+    """The area hue (docs/design/system/README.md, Colour): every menu line sits in one of the design system's areas
+    (core.navigation.AREAS), drawn on its rail icon and on its pages' head, never on data."""
+
+    def setUp(self):
+        self.admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
+        self.client.force_login(self.admin)
+
+    def test_every_menu_line_has_a_known_area(self):
+        from core import navigation
+        for workspace in navigation.workspaces():
+            for section in workspace.sections:
+                for group in section.groups:
+                    for entry in group.entries:
+                        with self.subTest(entry=entry.url_name):
+                            self.assertIn(navigation.area_of(workspace, section, group, entry), navigation.AREAS)
+
+    def test_an_unknown_area_is_refused(self):
+        from django.core.exceptions import ImproperlyConfigured
+
+        from core import navigation
+        entry = navigation.Entry('X', 'home', 'home', area='pink')
+        with self.assertRaises(ImproperlyConfigured):
+            navigation.area_of(navigation.Workspace('w', 'W'), navigation.Section(''), navigation.Group(''), entry)
+
+    def test_the_rail_and_the_page_head_carry_the_pages_area(self):
+        for url, area, icon in ((reverse('farm:water'), 'water', 'droplet'), (reverse('farm:meal_board'), 'feed', 'utensils'),
+                                (reverse('farm:production_units'), 'farm', 'layers'), (reverse('tasks:task_list'), 'neutral', 'list-checks')):
+            with self.subTest(url=url):
+                html = self.client.get(url).content.decode()
+                link = re.search(rf'<a class="rail-link" href="{re.escape(url)}"[^>]*>', html).group(0)
+                self.assertIn(f'data-area="{area}"', link)
+                head = html[html.index('<div class="page-head'):html.index('</h1>')]
+                self.assertIn(f'data-area="{area}"', head)
+                self.assertIn('<span class="ui-area" aria-hidden="true"><svg class="icon"', head)
+                drawing = (ROOT / 'templates' / 'icons' / f'{icon}.svg').read_text(encoding='utf-8').strip()
+                self.assertIn(drawing, head)
+
+
+class WidthPolicyTests(TestCase):
+    """The owner's width bug (the content stopped at 1520 px, leaving the right of a wide window empty): the shell never
+    caps the width, and each page says its measure on <main> (docs/design/system/README.md, Width)."""
+
+    def setUp(self):
+        self.admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
+        self.client.force_login(self.admin)
+
+    def measure(self, url):
+        return re.search(r'<main class="content"[^>]*data-measure="(\w+)"', self.client.get(url).content.decode()).group(1)
+
+    def test_no_stylesheet_caps_the_content_area(self):
+        css = re.sub(r'/\*.*?\*/', '', (ROOT / 'static' / 'css' / 'app.css').read_text(encoding='utf-8'), flags=re.S)
+        for selector, body in re.findall(r'([^{}]+)\{([^{}]*)\}', css):
+            if re.search(r'(^|[\s,])\.content\s*$', selector.strip().split(',')[-1]) or selector.strip() == '.content':
+                with self.subTest(selector=selector.strip()):
+                    self.assertNotIn('max-width', body)
+
+    def test_pages_declare_their_measure(self):
+        self.assertEqual(self.measure(reverse('farm:site_list')), 'fluid')
+        self.assertEqual(self.measure(reverse('farm:site_create')), 'form')
+        self.assertEqual(self.measure(reverse('monitoring:monitor')), 'fluid')
+        self.assertEqual(self.measure(reverse('monitoring:monitor') + '?wall=1'), 'wall')
+
+    def test_the_component_layer_comes_before_the_sheets_that_refine_it(self):
+        """ds.css holds each pattern's default; a rule of app.css, components.css or a page's own sheet for one element of a
+        pattern (the rail's .rail-toggle, a report's .report-print) wins by coming after it. Loaded after them, those rules
+        lost every tie to the pattern at equal specificity (review of 1a, findings 1 and 6). The standalone pages load it
+        too: without it the printed report had no table, button or card rules at all."""
+        for name in ('app_base.html', 'auth_base.html', 'farm/water_calculator_report.html', '500.html'):
+            with self.subTest(template=name):
+                order = re.findall(r"css/([\w-]+)\.css", (ROOT / 'templates' / name).read_text(encoding='utf-8'))
+                self.assertIn('ds', order)
+                self.assertLess(order.index('base'), order.index('ds'))
+                for refining in ('app', 'components', 'auth'):
+                    if refining in order:
+                        self.assertLess(order.index('ds'), order.index(refining), f'{refining}.css must come after ds.css')
+        app = (ROOT / 'templates' / 'app_base.html').read_text(encoding='utf-8')
+        self.assertLess(app.index("css/ds.css"), app.index("{% block page_styles %}"))
+        self.assertLess(app.index("{% block page_styles %}"), app.index("css/tw.css"))

@@ -30,6 +30,9 @@
 .tw\:-mb-px {
   margin-bottom: -1px;
 }
+.tw\:contents {
+  display: contents;
+}
 .tw\:flex {
   display: flex;
 }
@@ -365,6 +368,12 @@
   .tw\:hover\:bg-sunken:hover {
     background-color: var(--surface-sunken);
   }
+}
+.tw\:focus-visible\:\[box-shadow\:var\(--ring-focus\)\,var\(--edge-crit\)\]:focus-visible {
+  box-shadow: var(--ring-focus),var(--edge-crit);
+}
+.tw\:focus-visible\:\[box-shadow\:var\(--ring-focus\)\,var\(--edge-warn\)\]:focus-visible {
+  box-shadow: var(--ring-focus),var(--edge-warn);
 }
 @media (width >= 40rem) {
   .tw\:sm\:col-span-2 {

@@ -1,73 +1,7 @@
 /* Shared page components: buttons, list toolbar, cards, tables, inner tabs, form grids, check
    boxes, the permission matrix, contact rows, filters and the audit trail. */
 
-/* Buttons beyond the full-width primary in base.css */
-.button-inline {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: .5rem;
-  width: auto;
-  margin-top: 0;
-  padding: .6875rem 1.125rem;
-}
-.button-inline .icon { width: 18px; height: 18px; }
-
-.button-ghost {
-  display: inline-flex;
-  align-items: center;
-  gap: .5rem;
-  width: auto;
-  margin-top: 0;
-  padding: .6875rem 1.125rem;
-  border: 1px solid var(--line-hair);
-  background: transparent;
-  color: var(--text-1);
-}
-.button-ghost:hover { background: var(--surface-sunken); color: var(--text-1); }
-.button-ghost .icon { width: 18px; height: 18px; }
-
-.button-danger { background: var(--crit); color: var(--on-crit); }
-.button-danger:hover { background: var(--crit-text); }
-
-.icon-button-danger:hover { color: var(--crit-text); background: var(--crit-tint); }
-.icon-button .icon { width: 20px; height: 20px; }
-
-/* List toolbar */
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: .75rem;
-  margin-bottom: 1.5rem;
-}
-
-.search {
-  position: relative;
-  flex: 1 1 18rem;
-  max-width: 28rem;
-}
-.search .icon {
-  position: absolute;
-  left: .75rem;
-  top: 50%;
-  width: 18px;
-  height: 18px;
-  transform: translateY(-50%);
-  color: var(--text-3);
-  pointer-events: none;
-}
-.search input {
-  width: 100%;
-  padding: .6875rem .875rem .6875rem 2.5rem;
-  border: 1.5px solid var(--line-control);
-  border-radius: 6px;
-  background: var(--surface-sheet);
-  color: var(--text-1);
-  font: inherit;
-}
-.search input:focus { outline: none; border-color: var(--action); box-shadow: var(--ring-focus); }
+/* The buttons, the list toolbar and its search box are static/css/ds.css (Button, Filter bar). */
 
 /* Cards */
 .card-grid {
@@ -79,14 +13,6 @@
   list-style: none;
 }
 
-.card {
-  display: flex;
-  flex-direction: column;
-  padding: 1.25rem;
-  border: 1px solid var(--line-hair);
-  border-radius: 8px;
-  background: var(--surface-sheet);
-}
 
 .card-head {
   display: flex;
@@ -98,7 +24,7 @@
 .card-title { min-width: 0; }
 .card-title h2 {
   margin: 0;
-  font-size: 1.125rem;
+  font-size: var(--fs-figure);
   line-height: 1.25;
   overflow-wrap: anywhere;
 }
@@ -116,7 +42,7 @@
   display: grid;
   gap: .375rem;
   margin: 1rem 0;
-  font-size: .9375rem;
+  font-size: var(--fs-body);
 }
 .card-facts div { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: .5rem; }
 .card-facts dt { color: var(--text-2); }
@@ -131,38 +57,15 @@
   padding-top: .75rem;
   border-top: 1px solid var(--line-hair);
   color: var(--text-3);
-  font-size: .8125rem;
+  font-size: var(--fs-small);
 }
 .card-actions { display: flex; gap: .25rem; }
 
-/* Status badges: only problems get colour; a healthy site stays neutral */
-.badge {
-  flex: none;
-  padding: .1875rem .5rem;
-  border-radius: 4px;
-  font-size: .8125rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.badge-active, .badge-operational { background: var(--surface-sunken); color: var(--text-1); border: 1px solid var(--line-hair); }
-.badge-maintenance { background: var(--warn-tint); color: var(--warn-text); }
-.badge-inactive, .badge-construction { background: var(--surface-sunken); color: var(--text-3); }
-.badge-closed, .badge-offline, .badge-unsent { background: var(--crit-tint); color: var(--crit-text); }
 /* A person's invitation on the users tab (templates/core/_invitation.html): what became of it, then the button that
    sends it (again); a mail server's own words may be one long token. */
 td.invitation { min-width: 14rem; overflow-wrap: anywhere; }
 td.invitation form { margin-top: .375rem; }
-.badge-repair { background: var(--warn-tint); color: var(--warn-text); }
-.badge-standby, .badge-decommissioned, .badge-discontinued { background: var(--surface-sunken); color: var(--text-3); }
-.badge-out_of_service { background: var(--crit-tint); color: var(--crit-text); }
-/* A unit's status (tanks, ponds and cages): quarantine is the one that signals a problem */
-.badge-harvesting { background: var(--surface-sunken); color: var(--text-1); border: 1px solid var(--line-hair); }
-.badge-cleaning { background: var(--warn-tint); color: var(--warn-text); }
-.badge-preparing, .badge-fallow { background: var(--surface-sunken); color: var(--text-3); }
-.badge-quarantine { background: var(--crit-tint); color: var(--crit-text); }
-.badge-admin, .badge-experimental { background: var(--action-tint); color: var(--action); }
-.badge-suspended { background: var(--warn-tint); color: var(--warn-text); }
-.badge-blocked { background: var(--crit-tint); color: var(--crit-text); }
+/* Status badges (.badge-<status>) map onto the chip tones in static/css/ds.css (Badge). */
 
 /* Empty state */
 .empty {
@@ -173,61 +76,20 @@ td.invitation form { margin-top: .375rem; }
   max-width: 36rem;
   padding: 2rem;
   border: 1px dashed var(--line-hair);
-  border-radius: 8px;
+  border-radius: var(--radius-object);
 }
 .empty > .icon { width: 32px; height: 32px; color: var(--text-3); }
 .empty h2 { margin: .25rem 0 0; font-size: 1.25rem; }
 .empty p { margin: 0 0 .5rem; color: var(--text-3); }
 
-/* Inner tabs (enhanced by site-form.js; without JS every section shows) */
-.tabs {
-  display: flex;
-  gap: .25rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid var(--line-hair);
-  overflow-x: auto;
-}
-.tabs[hidden] { display: none; }
-
-.tab {
-  position: relative;
-  padding: .75rem 1rem;
-  border: 0;
-  background: transparent;
-  color: var(--text-2);
-  font: inherit;
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.tab:hover { color: var(--text-1); }
-.tab[aria-selected="true"] { color: var(--action); }
-.tab[aria-selected="true"]::after {
-  content: "";
-  position: absolute;
-  left: .5rem; right: .5rem; bottom: -1px;
-  height: 3px;
-  border-radius: 2px 2px 0 0;
-  background: var(--action);
-}
-.tab-error::before {
-  content: "";
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  margin-right: .5rem;
-  border-radius: 50%;
-  background: var(--crit);
-  vertical-align: middle;
-}
-
+/* Inner tabs: the tab bar is static/css/ds.css (Tabs); without script every section shows. */
 .tab-panel { max-width: 52rem; }
 .tab-panel + .tab-panel { margin-top: 2rem; }
 .tab-panel[hidden] { display: none; }
 .js-tabs .panel-title { display: none; }
-.panel-title { margin: 0 0 1rem; font-size: 1.125rem; }
+.panel-title { margin: 0 0 1rem; font-size: var(--fs-figure); }
 .js-tabs .contacts .panel-title { display: block; margin-top: .5rem; }
-.panel-help { margin: -.25rem 0 1rem; color: var(--text-3); font-size: .9375rem; }
+.panel-help { margin: -.25rem 0 1rem; color: var(--text-3); font-size: var(--fs-body); }
 
 .form-grid {
   display: grid;
@@ -250,7 +112,6 @@ td.invitation form { margin-top: .375rem; }
 .form-grid-location > .field:has(#id_longitude),
 .form-grid-location > .field:has(#id_altitude) { grid-column: span 2; }
 
-.field textarea { resize: vertical; }
 
 /* The buttons of a form or a dialog, on one row: the others first, the one primary last
    (core/tests_templates.py). A button there is as wide as its words, never the full width of base.css. */
@@ -262,7 +123,6 @@ td.invitation form { margin-top: .375rem; }
   max-width: 52rem;
   margin-top: .5rem;
 }
-.form-actions > .button { display: inline-flex; align-items: center; justify-content: center; width: auto; margin-top: 0; padding: .6875rem 1.125rem; }
 /* A tab saved on its own (a row list, the history) shows its own buttons only: the record form's go with its fields. */
 .record-form:has(> .tab-panel):not(:has(> .tab-panel:not([hidden]))) > .form-actions { display: none; }
 
@@ -280,7 +140,7 @@ td.invitation form { margin-top: .375rem; }
   margin: 0;
   padding: .75rem;
   border: 1px solid var(--line-hair);
-  border-radius: 8px;
+  border-radius: var(--radius-object);
   background: var(--surface-sheet);
 }
 .contact-row .field { margin: 0; }
@@ -293,13 +153,13 @@ td.invitation form { margin-top: .375rem; }
 
 /* A form's fields under a heading (core.crud.Fieldset), e.g. an equipment type's "Performance" */
 .form-fieldset { min-width: 0; margin: 0 0 1.25rem; padding: 0; border: 0; }
-.form-fieldset legend { margin-bottom: .625rem; padding: 0; font-size: .9375rem; font-weight: 700; color: var(--text-1); }
+.form-fieldset legend { margin-bottom: .625rem; padding: 0; font-size: var(--fs-body); font-weight: 700; color: var(--text-1); }
 
 /* A record's links with their details (core.links.LinkList), e.g. the systems a pump serves */
 .links { display: grid; gap: .375rem; }
 .link-head, .link-row { display: flex; flex-wrap: wrap; align-items: center; gap: .375rem .75rem; }
-.link-head { padding: 0 .75rem; color: var(--text-2); font-size: .8125rem; font-weight: 600; }
-.link-row { padding: .375rem .75rem; border: 1px solid var(--line-hair); border-radius: 6px; background: var(--surface-sheet); }
+.link-head { padding: 0 .75rem; color: var(--text-2); font-size: var(--fs-small); font-weight: 600; }
+.link-row { padding: .375rem .75rem; border: 1px solid var(--line-hair); border-radius: var(--radius-control); background: var(--surface-sheet); }
 .link-row[hidden] { display: none; }
 .link-name { flex: 1 1 14rem; min-height: 2.25rem; white-space: normal; }
 .link-primary { flex: 0 0 4.5rem; justify-content: center; min-height: 0; }
@@ -310,7 +170,7 @@ td.invitation form { margin-top: .375rem; }
 
 /* Rows on a tab of their own with a heading row (crud/_row_list.html), like the contacts; each list gives
    its heading and its rows the same columns through one class */
-.row-list-head { display: grid; gap: .625rem; padding: 0 .75rem .375rem; color: var(--text-2); font-size: .8125rem; font-weight: 600; }
+.row-list-head { display: grid; gap: .625rem; padding: 0 .75rem .375rem; color: var(--text-2); font-size: var(--fs-small); font-weight: 600; }
 .row-error { grid-column: 1 / -1; margin: 0; }
 .calibration-row {
   grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr) minmax(0, .9fr) minmax(0, .9fr) minmax(0, 1.4fr) 5.5rem;
@@ -328,25 +188,18 @@ td.invitation form { margin-top: .375rem; }
   align-items: center;
   gap: .375rem;
   min-height: 2.875rem;
-  font-size: .9375rem;
+  font-size: var(--fs-body);
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
 }
-.check input { width: 18px; height: 18px; accent-color: var(--action); }
+.check input { flex: none; width: 18px; height: 18px; margin: 0; accent-color: var(--action); }
 .check-remove { color: var(--text-3); }
 
 /* Check boxes in a form field: one box (.check) or a group in a fieldset (.field-set) */
-.field input[type="checkbox"] { flex: none; width: 18px; height: 18px; margin: 0; padding: 0; accent-color: var(--action); }
 .field .check { display: inline-flex; min-height: 0; margin-bottom: 0; }
 
 .field-set { min-width: 0; margin-inline: 0; padding: 0; border: 0; }
-.field-set legend {
-  margin-bottom: .375rem;
-  padding: 0;
-  font-weight: 600;
-  font-size: .9375rem;
-}
 
 div.choices { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; }
 div.choices label { display: inline-flex; align-items: center; gap: .375rem; font-weight: 500; cursor: pointer; }
@@ -354,18 +207,18 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
 /* Permission matrix (role form): a row per area, a column per action */
 .form-grid > .field-set { grid-column: 1 / -1; }
 
-.matrix { width: 100%; border-collapse: collapse; font-size: .9375rem; }
+.matrix { width: 100%; border-collapse: collapse; font-size: var(--fs-body); }
 .matrix th,
 .matrix td { padding: .625rem 1rem; border-bottom: 1px solid var(--line-hair); text-align: center; }
 .matrix .matrix-note td { padding-top: 0; text-align: left; }      /* the lines of the area shown only to some */
 .matrix th[scope="row"],
 .matrix thead th:first-child { text-align: left; font-weight: 500; }
-.matrix thead th { color: var(--text-2); font-size: .8125rem; font-weight: 600; }
+.matrix thead th { color: var(--text-2); font-size: var(--fs-small); font-weight: 600; }
 .matrix-group th {
   padding-block: .5rem;
   background: var(--surface-sunken);
   color: var(--text-2);
-  font-size: .8125rem;
+  font-size: var(--fs-small);
   font-weight: 600;
   text-align: left;
 }
@@ -379,7 +232,7 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
   max-width: 40rem;
   padding: 1.5rem;
   border: 1px solid var(--line-hair);
-  border-radius: 8px;
+  border-radius: var(--radius-object);
   background: var(--surface-sheet);
 }
 .confirm h2 { margin: 0 0 .5rem; font-size: 1.25rem; }
@@ -406,11 +259,9 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
   margin-bottom: 1.5rem;
   padding: 1rem 1.25rem 0;
   border: 1px solid var(--line-hair);
-  border-radius: 8px;
+  border-radius: var(--radius-object);
   background: var(--surface-sheet);
 }
-.filters .field input,
-.filters .field select { padding: .5625rem .75rem; }
 .filters-actions { display: flex; gap: .5rem; margin-bottom: 1.25rem; }
 
 /* Audit trail: one entry per change, field by field */
@@ -420,7 +271,7 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
   padding: .875rem 1rem;
   border: 1px solid var(--line-hair);
   border-left: 3px solid var(--line-hair);
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 var(--radius-object) var(--radius-object) 0;
   background: var(--surface-sheet);
 }
 .audit-create { border-left-color: var(--ok); }
@@ -433,13 +284,11 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
 .audit-void .audit-action { color: var(--warn-text); }
 /* An entry where someone went on past a handling warning (core.models.AuditSeverity): red edge and badge. */
 .audit-entry.is-critical { border-left-color: var(--crit); background: var(--crit-tint); }
-.badge-critical { background: var(--crit-tint); color: var(--crit-text); font-weight: 700; }
-.badge-note { background: var(--surface-sunken); color: var(--text-1); border: 1px solid var(--line-control); }
 .audit-record { font-weight: 500; }
 .audit-meta { color: var(--text-3); font-size: .875rem; }
 .audit-meta strong { color: var(--text-1); font-weight: 600; }
 
-.audit-changes { display: grid; gap: .25rem; margin: .625rem 0 0; font-size: .9375rem; }
+.audit-changes { display: grid; gap: .25rem; margin: .625rem 0 0; font-size: var(--fs-body); }
 .audit-changes div { display: grid; grid-template-columns: minmax(8rem, 14rem) minmax(0, 1fr); gap: .75rem; }
 .audit-changes dt { color: var(--text-2); }
 .audit-changes dd { margin: 0; overflow-wrap: anywhere; }
@@ -460,7 +309,7 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
   max-height: calc(100vh - 3rem);
   padding: 0;
   border: 1px solid var(--line-hair);
-  border-radius: 10px;
+  border-radius: var(--radius-object);
   background: var(--surface-canvas);
   color: var(--text-1);
   box-shadow: var(--shadow-overlay);
@@ -478,12 +327,12 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
   background: var(--surface-sheet);
 }
 .modal-head .eyebrow { margin: 0 0 .125rem; }
-.modal-title { margin: 0; font-size: 1.375rem; line-height: 1.2; }
+.modal-title { margin: 0; font-size: var(--fs-h2); line-height: 1.2; }
 
 .modal-body { padding: 1.25rem 1.5rem 1.5rem; overflow-y: auto; }
 .modal-body .tab-panel,
 .modal-body .form-actions { max-width: none; }
-.modal-body .tabs { margin-top: -.25rem; }
+.modal-body .ui-tabs { margin-top: -.25rem; }
 .modal .confirm { padding: 0; border: 0; background: none; }
 
 @media (max-width: 767px) {
@@ -492,18 +341,6 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
 }
 
 /* Filter next to the search box: it wraps and its fields never get wider than the page (a long option). */
-.toolbar-filter { max-width: 100%; }
-.toolbar-filter :is(select, input) { max-width: 100%; }
-.toolbar-filter select {
-  min-width: 12rem;
-  padding: .6875rem 2rem .6875rem .875rem;
-  border: 1.5px solid var(--line-control);
-  border-radius: 6px;
-  background: var(--surface-sheet);
-  color: var(--text-1);
-  font: inherit;
-}
-.toolbar > .button { margin-left: auto; }
 
 /* A notice above a list */
 .notice {
@@ -513,7 +350,7 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
   max-width: 60rem;
   margin: 0 0 1.25rem;
   padding: .75rem 1rem;
-  border-radius: 6px;
+  border-radius: var(--radius-control);
 }
 .notice .icon { width: 20px; height: 20px; }
 .notice:has(> ul, > ol) { flex-wrap: wrap; }
@@ -522,45 +359,8 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
 .notice-warning a { color: inherit; font-weight: 600; }
 .text-warning { color: var(--warn-text); font-style: italic; }
 
-/* Tables: every table of every page is in a .table-wrap (core/tests_templates.py). The frame scrolls a wide table
-   inside itself, so no table widens the page, and shows that more lies to a side: a shade at the edge the table goes
-   on past, none at an edge it ends at (the white covers move with the table, the shades stay with the frame). It is
-   the containing block of what is positioned in the table. */
-.table-wrap {
-  position: relative;
-  overflow-x: auto;
-  border: 1px solid var(--line-hair);
-  border-radius: 8px;
-  background:
-    linear-gradient(to right, var(--surface-sheet) 40%, transparent) left / 2.5rem 100% no-repeat local,
-    linear-gradient(to left, var(--surface-sheet) 40%, transparent) right / 2.5rem 100% no-repeat local,
-    radial-gradient(farthest-side at 0 50%, color-mix(in srgb, var(--scrim) 60%, transparent), transparent) left / 1rem 100% no-repeat scroll,
-    radial-gradient(farthest-side at 100% 50%, color-mix(in srgb, var(--scrim) 60%, transparent), transparent) right / 1rem 100% no-repeat scroll,
-    var(--surface-sheet);
-  scrollbar-color: var(--line-control) transparent;
-  scrollbar-width: thin;
-}
-.table-wrap-bare { border: 0; border-radius: 0; background: none; }   /* a small table in a card: the card is the frame */
-@media print { .table-wrap { overflow: visible; background: none; } }
-.data-table { width: 100%; border-collapse: collapse; font-size: .9375rem; }
-.data-table th {
-  padding: .75rem 1rem;
-  border-bottom: 1px solid var(--line-hair);
-  color: var(--text-2);
-  font-size: .8125rem;
-  font-weight: 600;
-  text-align: left;
-  white-space: nowrap;
-}
-.data-table td { padding: .75rem 1rem; border-bottom: 1px solid var(--line-hair); vertical-align: middle; }
-.data-table tbody th { color: var(--text-1); font-size: inherit; font-weight: 600; vertical-align: middle; }
-.data-table tbody th a { color: var(--text-1); text-decoration: none; }
-.data-table tbody th a:hover { color: var(--action); text-decoration: underline; }
-.data-table tbody th .badge { margin-left: .5rem; }
-.data-table tbody tr:last-child td { border-bottom: 0; }
-.data-table tbody tr:hover { background: var(--surface-canvas); }
-.data-table .num { text-align: right; font-variant-numeric: tabular-nums; }
-.data-table .nowrap { white-space: nowrap; }
+/* Tables: the frame (.table-wrap) and the table (.data-table) are static/css/ds.css (Table); every table is in a frame
+   (core/tests_templates.py). */
 /* A cell of words (a title over its lines) keeps a readable width: a table wider than its frame gives each column only
    its narrowest width, which for words is one word a line. */
 .data-table :is(td, th):not(.num):has(> .row-sub) { min-width: 10rem; }
@@ -570,7 +370,7 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
 }
 .row-title { display: block; color: var(--text-1); font-weight: 600; text-decoration: none; }
 a.row-title:hover { color: var(--action); text-decoration: underline; }
-.row-sub { display: block; color: var(--text-3); font-size: .8125rem; }
+.row-sub { display: block; color: var(--text-3); font-size: var(--fs-small); }
 .row-line { display: block; }
 .row-actions { width: 1%; text-align: right; white-space: nowrap; }
 .row-actions form { display: inline; }                  /* a POST action beside the links (a template's Copy) */
@@ -579,24 +379,24 @@ td.row-actions > * + * { margin-left: .75rem; }         /* the actions of a row 
 /* Delete confirmation: what else the delete touches (core.softdelete) */
 .notice-error { background: var(--crit-tint); color: var(--crit-text); }
 .notice ul { margin: .375rem 0 0; padding-left: 1.125rem; }
-.confirm-question { margin: 0 0 1rem; font-size: 1.125rem; font-weight: 600; color: var(--text-1); }
-.affected { margin: 0 0 1rem; padding: .75rem 1rem; border: 1px solid var(--line-hair); border-radius: 6px; background: var(--surface-sheet); }
-.affected h3 { margin: 0 0 .375rem; font-size: .9375rem; }
+.confirm-question { margin: 0 0 1rem; font-size: var(--fs-figure); font-weight: 600; color: var(--text-1); }
+.affected { margin: 0 0 1rem; padding: .75rem 1rem; border: 1px solid var(--line-hair); border-radius: var(--radius-control); background: var(--surface-sheet); }
+.affected h3 { margin: 0 0 .375rem; font-size: var(--fs-body); }
 .affected .affected-note { margin: 0 0 .375rem; font-size: .875rem; }
 .affected .count {
   margin-left: .375rem;
   padding: .0625rem .4375rem;
-  border-radius: 4px;
+  border-radius: var(--radius-chip);
   background: var(--surface-sunken);
   color: var(--text-3);
-  font-size: .8125rem;
+  font-size: var(--fs-small);
   font-weight: 600;
 }
 .affected ul { margin: 0; padding-left: 1.125rem; max-height: 9rem; overflow-y: auto; color: var(--text-3); }
 
 /* Where a water value came from and how old it is (farm/_water_source.html), under the value: it breaks between the
    origin and the age, and inside either only when that alone is wider than the cell. */
-.wq-source { display: block; color: var(--text-3); font-size: .75rem; font-style: normal; font-weight: 400; line-height: 1.35; }
+.wq-source { display: block; color: var(--text-3); font-size: var(--fs-caption); font-style: normal; font-weight: 400; line-height: 1.35; }
 .wq-origin, .wq-age { display: inline-block; }
 
 /* Water chemistry (templates/farm/water*.html, the unit drawer's Water section): a value's status is its
@@ -628,19 +428,13 @@ td.wq-was-warning, .wq-value.wq-was-warning { color: var(--warn-text); font-weig
 .data-table tbody tr.is-voided td { color: var(--text-3); }
 .data-table tbody tr.is-voided td.wq { text-decoration: line-through; }
 .water-table th.num { white-space: nowrap; }
-a.view-tab { text-decoration: none; }
-a.view-tab:not([aria-current]) { border-bottom-color: transparent; color: var(--text-2); }
-a.view-tab:not([aria-current]):hover { color: var(--text-1); }
-.water-filters { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; }
 .water-date { display: inline-flex; align-items: center; gap: .375rem; color: var(--text-2); font-size: .875rem; }
-.water-date input { min-height: 42px; padding: 0 .5rem; border: 1.5px solid var(--line-control); border-radius: 6px; font: inherit; }
-.water-point { margin: 0 0 .75rem; font-size: 1.125rem; }
+.water-point { margin: 0 0 .75rem; font-size: var(--fs-figure); }
 .round-scope { margin: 0 0 1.5rem; }
 .round-table td { padding: .375rem .5rem; }
 .round-table td.field { margin: 0; }
 .round-table input { width: 100%; min-width: 5.5rem; }
 .data-table tbody tr.group-row th { background: var(--surface-sunken); color: var(--text-1); }
-.button[disabled] { opacity: .5; cursor: not-allowed; }
 
 /* The calculator (templates/farm/water_calculator.html and farm/calculator/), laid out as the source's: where the
    values come from, the input bar with its tabs, the simulator, the three charts' row [two small | the Water
@@ -652,16 +446,16 @@ a.view-tab:not([aria-current]):hover { color: var(--text-1); }
    the dosing wedge, neutral 900 the cross, gray 400 the path, neutral 200 the grid). */
 .calc { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; min-width: 0; }
 .calc[aria-busy="true"] [data-live-part] { opacity: .65; transition: opacity .2s .15s; }
-.calc-card { min-width: 0; margin: 0; padding: 1rem; border: 1px solid var(--line-hair); border-radius: 8px; background: var(--surface-sheet); }
+.calc-card { margin: 0; }
 .calc-card-title { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .25rem .75rem;
   margin: 0 0 .5rem; font-size: 1rem; }
-.calc-card-help { margin: .5rem 0 0; color: var(--text-3); font-size: .8125rem; }
+.calc-card-help { margin: .5rem 0 0; color: var(--text-3); font-size: var(--fs-small); }
 .calc-note { margin: .5rem 0 0; color: var(--text-3); font-size: .875rem; }
-.calc-not-ready { margin: 0; padding: 2rem 1rem; border: 1px dashed var(--line-hair); border-radius: 8px; color: var(--text-3);
+.calc-not-ready { margin: 0; padding: 2rem 1rem; border: 1px dashed var(--line-hair); border-radius: var(--radius-object); color: var(--text-3);
   text-align: center; }
 
 .calc-source { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .75rem 1.5rem; padding: .75rem 1rem;
-  border: 1px solid var(--line-hair); border-radius: 8px; background: var(--surface-sunken); }
+  border: 1px solid var(--line-hair); border-radius: var(--radius-object); background: var(--surface-sunken); }
 .calc-source-pick { flex: 0 1 20rem; margin: 0; }
 .calc-source-pick select { padding: .5rem .75rem; }
 .calc-source-values { flex: 1 1 24rem; min-width: 0; font-size: .875rem; }
@@ -670,17 +464,16 @@ a.view-tab:not([aria-current]):hover { color: var(--text-1); }
 .calc-source-note { margin: .375rem 0 0; }
 .calc-offers { display: flex; flex-wrap: wrap; gap: .375rem; margin: 0; padding: 0; list-style: none; }
 .calc-offer { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: .125rem .375rem; padding: .25rem .5rem;
-  border: 1px solid var(--line-hair); border-radius: 6px; background: var(--surface-sheet); }
+  border: 1px solid var(--line-hair); border-radius: var(--radius-control); background: var(--surface-sheet); }
 .calc-offer-label { font-weight: 600; }
 .calc-offer-value { font-variant-numeric: tabular-nums; }
-.calc-offer-from { color: var(--text-3); font-size: .8125rem; }
+.calc-offer-from { color: var(--text-3); font-size: var(--fs-small); }
 .calc-offer.is-stale .calc-offer-from { color: var(--warn-text); font-style: italic; }
-.calc-offer-changed { color: var(--action); font-size: .8125rem; font-weight: 600; }
+.calc-offer-changed { color: var(--action); font-size: var(--fs-small); font-weight: 600; }
 .calc-offer.is-changed { border-color: var(--action); }
 
-.calc-bar { padding: .25rem 1rem .75rem; border: 1px solid var(--line-hair); border-radius: 8px; background: var(--surface-sheet); }
-.calc-bar .tabs { margin-bottom: .75rem; }
-.calc-bar .tab { padding: .625rem .75rem; font-size: .9375rem; }
+.calc-bar { padding: .25rem 1rem .75rem; border: 1px solid var(--line-hair); border-radius: var(--radius-object); background: var(--surface-sheet); }
+.calc-bar .ui-tabs { margin-bottom: .75rem; }
 .calc-panel.tab-panel { max-width: none; }
 .calc-panel + .calc-panel { margin-top: .75rem; }
 .js-tabs .calc-panel + .calc-panel { margin-top: 0; }
@@ -690,7 +483,7 @@ a.view-tab:not([aria-current]):hover { color: var(--text-1); }
 .calc-fields > .field-set { flex: 1 1 100%; }
 .calc-fields .field label { margin-bottom: .25rem; font-size: .875rem; }
 .calc-fields .field input:not([type="checkbox"]) { padding: .5rem .625rem; }
-.calc-fields .help { font-size: .75rem; }
+.calc-fields .help { font-size: var(--fs-caption); }
 .calc-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; margin-top: .75rem; }
 .calc-actions .button, .calc-report .button { display: inline-flex; align-items: center; gap: .375rem; }
 .calc-report:empty { display: none; }
@@ -714,15 +507,32 @@ a.view-tab:not([aria-current]):hover { color: var(--text-1); }
 .calc-layers { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 1rem; min-width: 0; margin: 0 0 .5rem;
   padding: 0 0 .5rem; border: 0; border-bottom: 1px solid var(--line-hair); }
 .calc-layers legend { width: 100%; margin-bottom: .25rem; padding: 0; font-size: .875rem; font-weight: 600; text-align: center; }
-.calc-layers .check { min-height: 2.25rem; font-size: .8125rem; }
+.calc-layers .check { min-height: 2.25rem; font-size: var(--fs-small); }
 .calc-deffeyes .deffeyes { padding: 0; border: 0; }
 
-.calc-plot-facts { margin: 0 0 .5rem; color: var(--text-3); font-size: .8125rem; font-variant-numeric: tabular-nums; }
-.ph-chart { display: block; width: 100%; height: auto; font-family: var(--font-text); }
+.calc-plot-facts { margin: 0 0 .5rem; color: var(--text-3); font-size: var(--fs-small); font-variant-numeric: tabular-nums; }
+/* A chart drawn in a viewBox scales its text with its width: 10 units of text were 7 px in a narrow column and 30 px
+   in a 5120 px window. So the chart takes one of a few widths (its card is a size container) and knows its scale
+   (--chart-scale = drawn width / viewBox width), and its text is the chart type scale divided by it: on screen the
+   tick is --fs-chart-tick, the label --fs-chart-label (12-15.6 px for a pH plot at every card width down to 200 px, and for the
+   Deffeyes chart from a 768 px window to 5120 px, see its steps below). The pH plots are 400 units wide; below the first
+   step a plot fills its card and takes the scale of the step under its width (0.9 to 0.5), the text it measured at
+   390 px being 12.2 px at the same overlaps and no cut label. */
+.calc-card:has(> .ph-chart, > * > .ph-chart) { container-type: inline-size; }
+.ph-chart { --chart-scale: 1; display: block; width: 100%; height: auto; margin: 0 auto; font-family: var(--font-text); font-variant-numeric: tabular-nums; }
+@container (max-width: 399px) { .ph-chart { --chart-scale: .9; } }
+@container (max-width: 359px) { .ph-chart { --chart-scale: .8; } }
+@container (max-width: 319px) { .ph-chart { --chart-scale: .7; } }
+@container (max-width: 279px) { .ph-chart { --chart-scale: .6; } }
+@container (max-width: 239px) { .ph-chart { --chart-scale: .5; } }
+@container (min-width: 400px) { .ph-chart { --chart-scale: 1; width: 400px; } }
+@container (min-width: 480px) { .ph-chart { --chart-scale: 1.2; width: 480px; } }
+@container (min-width: 640px) { .ph-chart { --chart-scale: 1.6; width: 640px; } }
+@container (min-width: 800px) { .ph-chart { --chart-scale: 2; width: 800px; } }
 .ph-grid line { stroke: var(--surface-sunken); stroke-dasharray: 3 3; }
 .ph-frame { fill: none; stroke: var(--line-control); }
-.ph-ticks text { font-size: 10px; fill: var(--text-3); }
-.ph-axis { font-size: 11px; fill: var(--text-2); }
+.ph-ticks text { font-size: calc(var(--fs-chart-tick) / var(--chart-scale)); fill: var(--chart-tick-ink); }
+.ph-axis { font-size: calc(var(--fs-chart-axis) / var(--chart-scale)); fill: var(--text-2); }
 .ph-band-safe { fill: color-mix(in srgb, var(--ok) 18%, transparent); }
 .ph-band-alert { fill: color-mix(in srgb, var(--warn) 20%, transparent); }
 .ph-band-danger { fill: color-mix(in srgb, var(--crit) 15%, transparent); }
@@ -737,16 +547,16 @@ a.view-tab:not([aria-current]):hover { color: var(--text-1); }
 .ph-level-limit { stroke: var(--chart-s3); }
 .ph-level-zero { stroke: var(--crit); stroke-dasharray: 3 3; }
 .ph-marker { stroke-width: 2; }
-.ph-marker-water { stroke: var(--chart-s1); stroke-dasharray: 5 5; }
+.ph-marker-water { stroke: var(--chart-water); stroke-dasharray: 5 5; }
 .ph-marker-border { stroke: var(--crit); }
-.ph-label { font-size: 10px; fill: var(--text-3); stroke: var(--surface-sheet); stroke-width: 3px; paint-order: stroke; }
-.ph-marker-label-water { fill: var(--action); }
+.ph-label { font-size: calc(var(--fs-chart-label) / var(--chart-scale)); fill: var(--text-2); stroke: var(--surface-sheet); stroke-width: calc(3px / var(--chart-scale)); paint-order: stroke; }
+.ph-marker-label-water { fill: var(--chart-water); }
 .ph-marker-label-border { fill: var(--crit-text); }
 .ph-dot { stroke: var(--surface-sheet); stroke-width: 2; }
-.ph-dot-water { fill: var(--chart-s1); }
+.ph-dot-water { fill: var(--chart-water); }
 .ph-dot-border { fill: var(--crit); }
 .ph-legend { display: flex; flex-wrap: wrap; gap: .25rem .875rem; margin: .5rem 0 0; padding: 0; list-style: none;
-  color: var(--text-3); font-size: .75rem; }
+  color: var(--text-3); font-size: var(--fs-chart-legend); }
 .ph-legend li { display: inline-flex; align-items: center; gap: .375rem; }
 .ph-swatch { display: inline-block; width: 14px; height: 0; border-top: 2.5px solid; }
 .ph-swatch.ph-series-nh3, .ph-swatch.ph-series-h2s { border-color: var(--crit); }
@@ -778,11 +588,11 @@ a.view-tab:not([aria-current]):hover { color: var(--text-1); }
 .calc-doses { margin: .125rem 0 0; padding: 0; list-style: none; }
 .calc-doses li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 .5rem; }
 .calc-dose-formula { color: var(--action); font-weight: 600; }
-.calc-dose-rate, .calc-dose-move { color: var(--text-3); font-size: .8125rem; }
+.calc-dose-rate, .calc-dose-move { color: var(--text-3); font-size: var(--fs-small); }
 .calc-simulator .table-wrap { margin-top: .5rem; }
 .calc-steps th[scope="row"] { white-space: nowrap; }
-.calc-change { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin: .5rem 0 0; color: var(--text-3); font-size: .8125rem; }
-.calculator-sources { margin: 1rem 0 0; font-size: .8125rem; }
+.calc-change { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin: .5rem 0 0; color: var(--text-3); font-size: var(--fs-small); }
+.calculator-sources { margin: 1rem 0 0; font-size: var(--fs-small); }
 
 /* The chart's dosing and simulator layers: a colour per reagent (the source's categorical palette, one each so
    two lines never read alike), the wedge between two of them, the path through the waypoint, the simulator's
@@ -834,7 +644,7 @@ polygon.deffeyes-arrow.deffeyes-reagent-hcl { fill: var(--chart-s3); }
 .report-date { margin: 0; color: var(--text-3); font-size: .875rem; }
 .report-print { display: inline-flex; align-items: center; gap: .375rem; }
 .report-tables { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 1rem; margin-bottom: 1rem; }
-.report-table { font-size: .8125rem; }
+.report-table { font-size: var(--fs-small); }
 .report-table caption { padding-bottom: .25rem; font-weight: 700; text-align: left; }
 .report-table th[scope="row"] { font-weight: 500; }
 .report-charts { margin-bottom: 1rem; }
@@ -854,16 +664,28 @@ polygon.deffeyes-arrow.deffeyes-reagent-hcl { fill: var(--chart-s3); }
    colours are the source's tokens (DeffeyesChart.tsx with shared-contracts' colors: error 500 NH₃, accent 500
    CO₂ and aragonite, error 700 H₂S, success 500/600 the safe zone, info 600 the star and calcite, neutral 900
    the cross, gray 400 the path, neutral 200 the grid). */
-.deffeyes { margin: 0; padding: 1rem; border: 1px solid var(--line-hair); border-radius: 8px; background: var(--surface-sheet); }
+.deffeyes { margin: 0; padding: 1rem; border: 1px solid var(--line-hair); border-radius: var(--radius-object); background: var(--surface-sheet); }
 .deffeyes-title { margin-bottom: .5rem; font-weight: 700; text-align: center; }
-.deffeyes-chart { display: block; width: 100%; max-width: 640px; height: auto; margin: 0 auto; font-family: var(--font-text); }
+/* The Deffeyes chart is 600 units wide; it takes 640, 800, 960 or 1200 px as its figure allows (the figure is a size
+   container), its text the chart type scale divided by that scale (see .ph-chart above): 12-13 px on screen wherever its
+   figure is 640 px wide or more (the calculator: a 768 px window up to 5120 px). Below the first step it fills its
+   figure and its text is that of a 640 px chart, so it shrinks with the window (10-11 px at 600 px, 6 px at 390 px; main
+   gave 5.9 px). That is NOT forced to 12 px: 12 px at 390 px needs the scale 0.54, and at 0.6 (10.8 px) the pairs of
+   overlapping labels went from 10 to 23 and one label was cut. A chart panned sideways in a frame of its own is a design call for the
+   calculator's rebuild (slice 2 of the frontend redesign), not for a stylesheet. */
+.deffeyes { container-type: inline-size; }
+.deffeyes-chart { --chart-scale: 1.0667; display: block; width: 100%; height: auto; margin: 0 auto; font-family: var(--font-text); font-variant-numeric: tabular-nums; }
+@container (min-width: 640px) { .deffeyes-chart { --chart-scale: 1.0667; width: 640px; } }
+@container (min-width: 800px) { .deffeyes-chart { --chart-scale: 1.3333; width: 800px; } }
+@container (min-width: 960px) { .deffeyes-chart { --chart-scale: 1.6; width: 960px; } }
+@container (min-width: 1200px) { .deffeyes-chart { --chart-scale: 2; width: 1200px; } }
 .deffeyes-grid line { stroke: var(--surface-sunken); stroke-dasharray: 3 3; }
 .deffeyes-frame { fill: none; stroke: var(--line-control); }
-.deffeyes-ticks text { font-size: 11px; fill: var(--text-3); }
-.deffeyes-axis { font-size: 12px; fill: var(--text-2); }
+.deffeyes-ticks text { font-size: calc(var(--fs-chart-tick) / var(--chart-scale)); fill: var(--chart-tick-ink); }
+.deffeyes-axis { font-size: calc(var(--fs-chart-axis) / var(--chart-scale)); fill: var(--text-2); }
 .deffeyes-isoline { fill: none; stroke-width: .5; stroke-opacity: .25; }
 .deffeyes-isoline.is-labelled { stroke-width: 1.5; stroke-opacity: .5; }
-.deffeyes-ph { font-size: 11px; font-weight: 700; text-anchor: middle; dominant-baseline: central; stroke: var(--surface-sheet);
+.deffeyes-ph { font-size: calc(var(--fs-chart-label) / var(--chart-scale)); font-weight: 700; text-anchor: middle; dominant-baseline: central; stroke: var(--surface-sheet);
   stroke-width: 3px; paint-order: stroke; }
 .deffeyes-zone { stroke: none; }
 .deffeyes-zone-nh3 { fill: color-mix(in srgb, var(--crit) 18%, transparent); }
@@ -879,9 +701,9 @@ polygon.deffeyes-arrow.deffeyes-reagent-hcl { fill: var(--chart-s3); }
 .deffeyes-omega-aragonite { stroke: var(--chart-s3); }
 .deffeyes-path { fill: none; stroke: var(--line-control); stroke-width: 1.5; stroke-dasharray: 6 4; }
 .deffeyes-target line { stroke: var(--text-1); stroke-width: 2.5; }
-.deffeyes-point { fill: var(--chart-s1); stroke: var(--action); stroke-width: 1; }
+.deffeyes-point { fill: var(--chart-water); stroke: var(--chart-ink); stroke-width: 1; }
 .deffeyes-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: .375rem 1rem; margin: .75rem 0 0; padding: 0;
-  list-style: none; color: var(--text-3); font-size: .8125rem; }
+  list-style: none; color: var(--text-3); font-size: var(--fs-chart-legend); }
 .deffeyes-legend li { display: inline-flex; align-items: center; gap: .375rem; }
 .deffeyes-key { width: 14px; height: 14px; }
 .deffeyes-swatch { width: 14px; height: 10px; border-radius: 2px; opacity: .7; }
@@ -892,7 +714,7 @@ polygon.deffeyes-arrow.deffeyes-reagent-hcl { fill: var(--chart-s3); }
 .deffeyes-swatch-safe { background: var(--ok); }
 .deffeyes-swatch-calcite, .deffeyes-swatch-aragonite { height: 0; border-top: 2px dashed var(--chart-s5); border-radius: 0; }
 .deffeyes-swatch-aragonite { border-top-color: var(--chart-s3); }
-.deffeyes-notes { margin: .5rem 0 0; padding-left: 1.125rem; color: var(--text-3); font-size: .8125rem; }
+.deffeyes-notes { margin: .5rem 0 0; padding-left: 1.125rem; color: var(--text-3); font-size: var(--fs-small); }
 
 /* A system nested under another is indented one step per level (up to five) */
 .data-table td.depth-1 { padding-left: 2rem; }
@@ -920,16 +742,6 @@ polygon.deffeyes-arrow.deffeyes-reagent-hcl { fill: var(--chart-s3); }
 .tab-panel .section-title { margin-top: 1.75rem; }
 .tab-panel > .section-title:first-of-type { margin-top: 1.25rem; }
 
-.data-table tbody th {
-  padding: .75rem 1rem;
-  border-bottom: 1px solid var(--line-hair);
-  color: var(--text-1);
-  font-size: inherit;
-  text-align: left;
-  vertical-align: middle;
-}
-.data-table tbody tr:last-child th { border-bottom: 0; }
-.data-table td.num { white-space: nowrap; }
 
 .grid-toolbar { justify-content: flex-start; }
 .grid-toolbar .search { flex: 0 1 22rem; }
@@ -946,7 +758,7 @@ polygon.deffeyes-arrow.deffeyes-reagent-hcl { fill: var(--chart-s3); }
   border-collapse: separate;
   border-spacing: 0;
   font-family: inherit;
-  font-size: .8125rem;
+  font-size: var(--fs-small);
   line-height: 1.35;
 }
 .data-grid th,
@@ -970,7 +782,7 @@ polygon.deffeyes-arrow.deffeyes-reagent-hcl { fill: var(--chart-s3); }
 .grid-name { display: block; color: var(--text-1); font-weight: 700; text-decoration: none; }
 a.grid-name:hover { color: var(--action); text-decoration: underline; }
 .grid-type { display: block; color: var(--text-3); font-size: .6875rem; font-weight: 400; }
-.grid-type abbr { padding: 0 .25rem; border-radius: 3px; background: var(--action-tint); color: var(--action); font-weight: 600; text-decoration: none; }
+.grid-type abbr { padding: 0 .25rem; border-radius: var(--radius-chip); background: var(--action-tint); color: var(--action); font-weight: 600; text-decoration: none; }
 .data-grid th[aria-sort] .grid-name::after {
   content: "";
   display: inline-block;
@@ -988,11 +800,11 @@ a.grid-name:hover { color: var(--action); text-decoration: underline; }
   min-width: 6rem;
   padding: .25rem .4375rem;
   border: 1px solid var(--line-control);
-  border-radius: 3px;
+  border-radius: var(--radius-chip);
   background: var(--surface-sheet);
   color: var(--text-1);
   font: inherit;
-  font-size: .75rem;
+  font-size: var(--fs-caption);
 }
 .grid-filter input::placeholder { color: var(--text-3); opacity: .55; }
 .grid-filter input:focus { outline: none; border-color: var(--action); box-shadow: var(--ring-focus); }
@@ -1020,7 +832,7 @@ a.grid-name:hover { color: var(--action); text-decoration: underline; }
   display: inline-block;
   padding: 0 .375rem;
   border: 1px solid var(--line-hair);
-  border-radius: 3px;
+  border-radius: var(--radius-chip);
   background: var(--surface-sunken);
   color: var(--text-3);
   font-size: .6875rem;
@@ -1053,7 +865,7 @@ a.grid-name:hover { color: var(--action); text-decoration: underline; }
   margin: .375rem 0 .25rem;
   padding: .5rem .625rem;
   overflow: auto;
-  border-radius: 4px;
+  border-radius: var(--radius-chip);
   background: var(--surface-sunken);
   color: var(--text-1);
   font: inherit;
@@ -1071,29 +883,17 @@ a.grid-name:hover { color: var(--action); text-decoration: underline; }
 .db-structure td:not(.mono) { white-space: nowrap; }
 .db-structure td.mono { white-space: pre-wrap; overflow-wrap: anywhere; }
 .db-relations { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 1.5rem; }
-.db-relations h5 { margin: 0 0 .5rem; font-size: .9375rem; }
+.db-relations h5 { margin: 0 0 .5rem; font-size: var(--fs-body); }
 .db-links { display: grid; gap: .375rem; margin: 0; padding: 0; list-style: none; }
 
 /* Overview pages: counts that link to their list, and a breakdown */
 .tiles { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0 0 1.5rem; padding: 0; list-style: none; }
-.tile {
-  display: flex;
-  flex-direction: column;
-  min-width: 11rem;
-  padding: 1rem 1.25rem;
-  border: 1px solid var(--line-hair);
-  border-radius: 8px;
-  background: var(--surface-sheet);
-  color: var(--text-1);
-  text-decoration: none;
-}
-.tile:hover { border-color: var(--action); }
 .tile-count { font-size: 2rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.tile-label { color: var(--text-2); font-size: .9375rem; }
-.tile-sub { color: var(--text-3); font-size: .8125rem; }
+.tile-label { color: var(--text-2); font-size: var(--fs-body); }
+.tile-sub { color: var(--text-3); font-size: var(--fs-small); }
 
 .overview-block { margin: 0 0 1.5rem; }
-.overview-block h2 { margin: 0 0 .5rem; font-size: 1.125rem; }
+.overview-block h2 { margin: 0 0 .5rem; font-size: var(--fs-figure); }
 .status-list { display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; margin: 0; padding: 0; list-style: none; }
 .status-list li { display: flex; align-items: center; gap: .5rem; }
 
@@ -1104,43 +904,19 @@ a.grid-name:hover { color: var(--action); text-decoration: underline; }
    accent tint with an accent bar, over capacity is amber with a rust capacity bar and an "Over" mark. */
 .units-main { min-width: 0; }
 
-.view-tabs { display: flex; flex-wrap: wrap; gap: .25rem 1.5rem; margin: 0 0 1rem; border-bottom: 1px solid var(--line-hair); }
-.view-tab {
-  display: inline-flex; align-items: center; gap: .5rem;
-  padding: .25rem 0 .625rem; margin-bottom: -1px;
-  border-bottom: 2px solid var(--action); color: var(--action);
-  font-size: 1.25rem; font-weight: 600;
-}
-.report-tabs { flex-wrap: wrap; gap: .25rem 1.25rem; }
-.report-tabs .view-tab { font-size: 1rem; }
-.view-tab-group { align-self: center; color: var(--text-2); font-size: .8125rem; }
 .report-lines { margin: 0 0 1rem; }
 .upcoming-reports { margin: 0 0 1.5rem; }
 .upcoming-reports ul { margin: 0; padding: 0; list-style: none; }
 .upcoming-reports li { display: flex; flex-wrap: wrap; gap: .25rem .75rem; padding: .375rem 0; border-bottom: 1px solid var(--line-hair); }
 .upcoming-reports .overdue { color: var(--crit-text); font-weight: 600; }
-.view-count {
-  padding: .0625rem .5rem; border-radius: 4px; background: var(--action-tint);
-  color: var(--action); font-size: .8125rem; font-weight: 600;
-}
 
 .units-toolbar { justify-content: flex-start; }
 .units-toolbar .search { flex: 1 1 14rem; max-width: 38.75rem; }
 .units-toolbar > .button { margin-left: 0; }
 
-.filter-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.5rem; margin: 0 0 .875rem; }
+.filter-bar { align-items: center; }
 .filter-group { display: flex; flex-wrap: wrap; gap: .375rem; }
-.filter-button {
-  display: inline-flex; align-items: center; min-height: 42px; padding: 0 .875rem;
-  border: 1.5px solid var(--line-control); border-radius: 6px; background: var(--surface-sheet);
-  color: var(--text-1); font-weight: 500; text-decoration: none;
-}
-.filter-button:hover { border-color: var(--text-3); }
-.filter-button[aria-pressed="true"] { border-color: var(--action); background: var(--action-tint); color: var(--action); }
-.filter-status select {
-  min-height: 42px; min-width: 12rem; padding: 0 2rem 0 .875rem;
-  border: 1.5px solid var(--line-control); border-radius: 6px; background: var(--surface-sheet); color: var(--text-1); font: inherit;
-}
+.filter-status select { min-width: 12rem; }
 .units-count { margin: 0 0 1rem; color: var(--text-3); font-size: .96875rem; }
 
 .units-table td { vertical-align: top; }
@@ -1160,8 +936,8 @@ a.grid-name:hover { color: var(--action); text-decoration: underline; }
 .capacity-bar-large { height: 14px; }
 .is-over .capacity-bar rect { fill: var(--crit); }
 .over-badge {
-  padding: 0 .375rem; border-radius: 4px; background: var(--crit-tint); color: var(--crit-text);
-  font-size: .75rem; font-weight: 700;
+  padding: 0 .375rem; border-radius: var(--radius-chip); background: var(--crit-tint); color: var(--crit-text);
+  font-size: var(--fs-caption); font-weight: 700;
 }
 .over-text { color: var(--crit-text); }
 
@@ -1175,9 +951,9 @@ a.grid-name:hover { color: var(--action); text-decoration: underline; }
   display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
   padding: 1rem 1.25rem; border-bottom: 1px solid var(--line-hair);
 }
-.drawer-title { margin: 0; font-size: 1.375rem; line-height: 1.2; }
+.drawer-title { margin: 0; font-size: var(--fs-h2); line-height: 1.2; }
 .drawer-sub { margin: .25rem 0 0; color: var(--text-3); font-size: .875rem; }
-.drawer-line { margin: .5rem 0 0; font-size: .9375rem; }
+.drawer-line { margin: .5rem 0 0; font-size: var(--fs-body); }
 /* One column as wide as the drawer: a wide part (the batches table) scrolls in its own frame instead of
    widening every other part. */
 .drawer-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; padding: 1rem 1.25rem 1.25rem; }
@@ -1187,9 +963,9 @@ a.grid-name:hover { color: var(--action); text-decoration: underline; }
   border: 1px solid var(--line-hair); background: var(--line-hair);
 }
 .metrics div { padding: .625rem .75rem; background: var(--surface-sheet); }
-.metrics dt { color: var(--text-2); font-size: .8125rem; }
-.metrics dd { margin: 0; font-size: 1.375rem; font-weight: 600; font-variant-numeric: tabular-nums; }
-.metrics dd.row-sub { font-size: .8125rem; font-weight: 400; }   /* a figure's line under it reads as a line, not a figure */
+.metrics dt { color: var(--text-2); font-size: var(--fs-small); }
+.metrics dd { margin: 0; font-size: var(--fs-h2); font-weight: 600; font-variant-numeric: tabular-nums; }
+.metrics dd.row-sub { font-size: var(--fs-small); font-weight: 400; }   /* a figure's line under it reads as a line, not a figure */
 .drawer-capacity { display: grid; gap: .375rem; }
 .capacity-note { margin: 0; color: var(--text-3); font-size: .875rem; }
 .drawer-table th, .drawer-table td { padding: .5rem .625rem; }
@@ -1200,15 +976,14 @@ a.grid-name:hover { color: var(--action); text-decoration: underline; }
 .facts dt { color: var(--text-2); }
 .facts dd { margin: 0; font-variant-numeric: tabular-nums; }
 .op-history { display: grid; gap: .5rem; margin: 0; padding: 0; list-style: none; }
-.op-entry { padding: .5rem .75rem; border-left: 3px solid var(--line-hair); background: var(--surface-sunken); border-radius: 0 6px 6px 0; }
+.op-entry { padding: .5rem .75rem; border-left: 3px solid var(--line-hair); background: var(--surface-sunken); border-radius: 0 var(--radius-control) var(--radius-control) 0; }
 .op-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .625rem; }
 .op-head time { color: var(--text-3); font-size: .875rem; }
 .op-void { margin-left: auto; color: var(--crit-text); font-size: .875rem; }
-.op-lines { margin: .25rem 0 0; padding-left: 1.125rem; font-size: .9375rem; }
-.op-meta { margin: .25rem 0 0; color: var(--text-3); font-size: .8125rem; }
+.op-lines { margin: .25rem 0 0; padding-left: 1.125rem; font-size: var(--fs-body); }
+.op-meta { margin: .25rem 0 0; color: var(--text-3); font-size: var(--fs-small); }
 .op-entry.is-voided { border-left-color: var(--warn); }
 .op-entry.is-voided .op-lines, .op-entry.is-voided strong { color: var(--text-3); text-decoration: line-through; }
-.badge-voided { background: var(--warn-tint); color: var(--warn-text); }
 .muted { color: var(--text-3); }
 .op-context { margin: 0 0 1rem; }
 .op-batch { margin: 0 0 1rem; font-weight: 600; }
@@ -1226,42 +1001,34 @@ a.grid-name:hover { color: var(--action); text-decoration: underline; }
 
 /* Operations › Feeding records (templates/farm/feeding_list.html) and the feeding part of a unit's drawer.
    A voided feeding is struck through, as a voided stock operation is in the drawer. */
-.feeding-filters { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; }
-.feeding-filters select { min-width: 10rem; }
-.date-filter { display: inline-flex; align-items: center; gap: .375rem; color: var(--text-2); font-size: .9375rem; }
-.date-filter input {
-  min-height: 42px; padding: 0 .625rem; border: 1.5px solid var(--line-control); border-radius: 6px;
-  background: var(--surface-sheet); color: var(--text-1); font: inherit;
-}
+.date-filter { display: inline-flex; align-items: center; gap: .375rem; color: var(--text-2); font-size: var(--fs-body); }
 .feeding-table td { vertical-align: top; }
 .data-table tbody tr.is-voided td { color: var(--text-3); }
 .data-table tbody tr.is-voided td:nth-child(-n+7) { text-decoration: line-through; }
 .unit-choice { display: grid; gap: .5rem; margin: 0 0 1rem; padding: 0; list-style: none; }
 .unit-choice a {
-  display: block; padding: .625rem .875rem; border: 1.5px solid var(--line-control); border-radius: 6px;
+  display: block; padding: .625rem .875rem; border: 1.5px solid var(--line-control); border-radius: var(--radius-control);
   color: var(--text-1); text-decoration: none;
 }
 .unit-choice a:hover, .unit-choice a:focus-visible { border-color: var(--action); background: var(--surface-canvas); }
-.feeding-window { margin: 0; padding-left: 1.125rem; font-size: .9375rem; }
+.feeding-window { margin: 0; padding-left: 1.125rem; font-size: var(--fs-body); }
 
 
 /* Operations › Feeding › Meal board, Records by unit and day, Protocols and Assignments. A value that needs the
    person's eye (a stale temperature, an estimate to weigh soon) is amber text; one to act on is rust (over-text).
    The feeding table is a grid of small inputs, a band a row and a temperature a column. */
 .warn-text { color: var(--warn-text); }
-.badge-draft { background: var(--surface-sunken); color: var(--text-3); }
-.badge-retired { background: var(--warn-tint); color: var(--warn-text); }
 .board-table th[scope="rowgroup"], .board-table td, .days-table td { vertical-align: top; }
 .board-unit + .board-unit { border-top: 2px solid var(--line-hair); }
-.notice-cell { color: var(--warn-text); font-size: .9375rem; }
+.notice-cell { color: var(--warn-text); font-size: var(--fs-body); }
 .correction-row td { padding-top: 0; color: var(--text-3); font-size: .875rem; }
 .correction { display: inline; }
 .ration-lines li + li { margin-top: .375rem; }
-.drawer-subhead { margin: .75rem 0 .375rem; font-size: .9375rem; }
+.drawer-subhead { margin: .75rem 0 .375rem; font-size: var(--fs-body); }
 .estimate-line { font-weight: 500; }
 .grid-table input, .grid-table select {
   width: 100%; min-width: 4.5rem; min-height: 38px; padding: 0 .5rem; border: 1.5px solid var(--line-control);
-  border-radius: 6px; background: var(--surface-sheet); color: var(--text-1); font: inherit;
+  border-radius: var(--radius-control); background: var(--surface-sheet); color: var(--text-1); font: inherit;
 }
 .grid-table select { min-width: 9rem; }
 .grid-table td { vertical-align: top; padding: .375rem .375rem; }
@@ -1273,23 +1040,21 @@ a.grid-name:hover { color: var(--action); text-decoration: underline; }
 
 /* Operations › Harvest (templates/farm/harvests.html, plan_item_list.html, production_plan_list.html) and the
    handling check of the harvest, transfer and grading dialogs (templates/farm/_handling_panel.html). */
-.handling-panel { margin: 0 0 1rem; padding: .75rem 1rem; border: 1px solid var(--line-hair); border-radius: 8px; }
-.handling-title { margin: 0 0 .5rem; font-size: .9375rem; font-weight: 700; color: var(--text-1); }
-.handling-notes { margin: 0 0 .5rem; padding-left: 1.125rem; color: var(--text-3); font-size: .9375rem; }
+.handling-panel { margin: 0 0 1rem; padding: .75rem 1rem; border: 1px solid var(--line-hair); border-radius: var(--radius-object); }
+.handling-title { margin: 0 0 .5rem; font-size: var(--fs-body); font-weight: 700; color: var(--text-1); }
+.handling-notes { margin: 0 0 .5rem; padding-left: 1.125rem; color: var(--text-3); font-size: var(--fs-body); }
 .handling-warnings ul, ul.handling-warnings { margin: 0 0 .5rem; padding-left: 1.125rem; }
 .handling-warnings .field { margin: .5rem 0 0; }
 .op-plan { margin: 0 0 1rem; color: var(--text-3); }
 .harvest-table td, .plan-table td { vertical-align: top; }
 .harvest-totals { display: grid; gap: 1.25rem; margin-top: 1.5rem; }
 .totals-table caption { margin-bottom: .5rem; text-align: left; font-weight: 700; color: var(--text-1); }
-.badge-plan-planned { background: var(--surface-sunken); color: var(--text-1); border: 1px solid var(--line-hair); }
-.badge-plan-overdue { background: var(--warn-tint); color: var(--warn-text); }
-.badge-plan-done { background: var(--surface-sunken); color: var(--text-3); }
-.badge-plan-cancelled { background: var(--surface-sunken); color: var(--text-3); text-decoration: line-through; }
 
 /* A read page (templates/crud/detail.html) and Company › Knowledge (templates/knowledge/): a document's reference,
    its file and text, a search's passages with the words found, a knowledge entry and its review. */
-.detail { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; max-width: 60rem; }
+/* A read page fills the width (data-measure fluid): its sections flow into as many columns of a readable width as fit. */
+.detail { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 32rem), 1fr)); gap: var(--space-5) var(--space-6); align-items: start; }
+.detail > .detail-actions { grid-column: 1 / -1; }
 .detail-section { min-width: 0; }
 .detail-actions { justify-content: flex-start; }
 .reference { margin: 0 0 .375rem; font-size: 1.0625rem; line-height: 1.5; overflow-wrap: anywhere; }
@@ -1299,16 +1064,15 @@ a.grid-name:hover { color: var(--action); text-decoration: underline; }
 .text-no_text, .text-failed { color: var(--warn-text); }
 .row-hit { display: block; margin-top: .25rem; color: var(--text-1); font-size: .875rem; }
 .hit-page { color: var(--text-3); font-weight: 600; white-space: nowrap; }
-mark { padding: 0 .125rem; border-radius: 3px; background: var(--warn-tint); color: inherit; }
+mark { padding: 0 .125rem; border-radius: var(--radius-chip); background: var(--warn-tint); color: inherit; }
 .hits { display: grid; gap: .5rem; margin: 0; padding-left: 1.25rem; }
 .page-text { margin: 0 0 1.5rem; max-width: 60rem; }
 .page-body { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.55; }
 .entry-list { display: grid; gap: .625rem; margin: 0 0 1rem; padding: 0; list-style: none; }
-.statement, .quote { margin: 0 0 1rem; padding: .75rem 1rem; border-left: 3px solid var(--line-hair); background: var(--surface-sunken); border-radius: 0 6px 6px 0; }
-.statement { font-size: 1.125rem; line-height: 1.5; }
+.statement, .quote { margin: 0 0 1rem; padding: .75rem 1rem; border-left: 3px solid var(--line-hair); background: var(--surface-sunken); border-radius: 0 var(--radius-control) var(--radius-control) 0; }
+.statement { font-size: var(--fs-figure); line-height: 1.5; }
 .quote { font-style: italic; }
 .review-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 .5rem; }
-.badge-reviewed { background: var(--surface-sunken); color: var(--text-1); border: 1px solid var(--line-hair); }
 
 /* Operations › Storage: its actions in a row under the tabs, the overview's warning lists, a delivery's line
    (feed, lot, expiry, location, kilos, cost, currency) and a location's reorder levels (feed, level, remove). */

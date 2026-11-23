@@ -79,6 +79,10 @@ class TemperatureBook:
         self.series = Series(points.values(), TEMPERATURE.code, since - READ_DAYS, until, live=True, carry=True,
                              systems=list(self.systems))
 
+    def prefetch(self, moments):
+        """Reads the sensors at every moment of `moments` at once (Series.prefetch): the moments `at` will be asked."""
+        self.series.prefetch(moments)
+
     def tiers(self, unit):
         """[[(key, owner, via)]]: the unit's own points, then its system (its loop, or its own sensors without one),
         then each parent system's loop, nearest first: the tiers `choose` reads."""

@@ -21,11 +21,14 @@ LEADERS = {'show_when': LEADS, 'show_note': _('only for a person who leads produ
 # how the people running production talk to each other: Messages.
 #
 # Where an entry sits here is also where the role matrix and the tab's page heading place it.
+#
+# `area` is the entry's area hue (docs/design/system/README.md, Colour: farm, water, feed, stock, else neutral), drawn on its
+# rail icon and on its pages' heads; the nearest one set wins: the entry's, its group's, its section's, its panel's.
 WORKSPACES = [
     Workspace('company', _('Company'), always=True, sections=[
         Section('', [
             Group('', [Entry(_('Overview'), 'home', 'home')]),
-            Group(_('Facility'), [
+            Group(_('Facility'), area='farm', entries=[
                 Entry(_('Sites'), 'farm:site_list', 'building', 'farm.view_site'),
                 # Where stock is kept on each site: feed stores, silos, cold rooms, medicine cabinets.
                 Entry(_('Storage locations'), 'inventory:storagelocation_list', 'warehouse',
@@ -83,7 +86,7 @@ WORKSPACES = [
             ]),
         ]),
     ]),
-    Workspace('production', _('Production'), sections=[
+    Workspace('production', _('Production'), area='farm', sections=[
         Section('', [Group('', [Entry(_('Overview'), 'production_home', 'home')])]),
         # The daily production records: the fish in each unit and what happens to them, the water they are in,
         # their feeding, their harvest and their health. Feeding has four pages: today's meals per unit, what was
@@ -94,27 +97,27 @@ WORKSPACES = [
                 Entry(_('Production units'), 'farm:production_units', 'layers', 'farm.view_stockoperation'),
                 # A live card per unit for the control room's wall, from the same records (the page needs the same right).
                 Entry(_('Monitoring'), 'monitoring:monitor', 'monitor', 'farm.view_stockoperation'),
-                Entry(_('Water chemistry'), 'farm:water', 'droplet', 'farm.view_watermeasurement'),
+                Entry(_('Water chemistry'), 'farm:water', 'droplet', 'farm.view_watermeasurement', area='water'),
                 # The store: what is on hand where, deliveries, moves, write-offs and counts; the feed fed is read
                 # from the feeding records.
-                Entry(_('Storage'), 'inventory:storage', 'package', 'inventory.view_inventoryoperation'),
+                Entry(_('Storage'), 'inventory:storage', 'package', 'inventory.view_inventoryoperation', area='feed'),
                 # The farm's jobs, each at one place for its people, and the recurring tasks that plan them.
-                Entry(_('Tasks'), 'tasks:task_list', 'list-checks', 'tasks.view_task'),
-                Entry(_('Recurring tasks'), 'tasks:taskseries_list', 'repeat', 'tasks.view_taskseries'),
+                Entry(_('Tasks'), 'tasks:task_list', 'list-checks', 'tasks.view_task', area='neutral'),
+                Entry(_('Recurring tasks'), 'tasks:taskseries_list', 'repeat', 'tasks.view_taskseries', area='neutral'),
             ]),
-            Group(_('Feeding'), [
+            Group(_('Feeding'), area='feed', entries=[
                 Entry(_('Meal board'), 'farm:meal_board', 'utensils', 'farm.view_feedingrecord'),
                 Entry(_('Records'), 'farm:feeding_records', 'clipboard-list', 'farm.view_feedingrecord'),
                 Entry(_('Protocols'), 'farm:feedingprotocol_list', 'table', 'farm.view_feedingprotocol'),
                 Entry(_('Assignments'), 'farm:protocolassignment_list', 'link', 'farm.view_protocolassignment'),
             ]),
-            Group(_('Harvest'), [
+            Group(_('Harvest'), area='stock', entries=[
                 Entry(pgettext_lazy('page', 'Harvested'), 'farm:harvests', 'package-check', 'farm.view_harvestrecord'),
                 Entry(_('Harvest plan'), 'farm:handlingplanitem_list', 'calendar', 'farm.view_handlingplanitem'),
                 Entry(_('Production plans'), 'farm:productionplan_list', 'target', 'farm.view_productionplan'),
             ]),
             # The fish's health: what was given them, what was seen and found, and the sea lice counted.
-            Group(_('Health'), [
+            Group(_('Health'), area='stock', entries=[
                 Entry(_('Treatments'), 'farm:treatments', 'syringe', 'farm.view_treatment'),
                 Entry(_('Health events'), 'farm:healthevent_list', 'stethoscope', 'farm.view_healthevent'),
                 Entry(_('Sea-lice counts'), 'farm:lice_counts', 'bug', 'farm.view_licecount'),
@@ -122,14 +125,14 @@ WORKSPACES = [
         ]),
         # Research: trials of one species on one site, with their design, their tanks and the days. It reads the farm
         # and nothing reads it (README, Experiments).
-        Section(_('Research'), [
+        Section(_('Research'), area='stock', groups=[
             Group('', [
                 Entry(_('Experiments'), 'experiments:experiment_list', 'flask', 'experiments.view_experiment'),
             ]),
         ]),
         # What the farm tells the authorities, computed from the records above and filed by people: neither structure
         # nor a daily record, so a heading of its own (docs/regulatory-reports.md, 5.6).
-        Section(_('Reports'), [
+        Section(_('Reports'), area='neutral', groups=[
             Group('', [
                 Entry(_('Regulatory reports'), 'reports:report_list', 'file-text', 'reports.view_report'),
                 Entry(_('Questions for the authority'), 'reports:openquestion_list', 'list-checks',
@@ -139,7 +142,7 @@ WORKSPACES = [
         # Messages between the people running production, direct and in channels; their AI assistants join the
         # same conversations later (README, Messages). Neither structure nor a production record: a heading of
         # its own. The number beside it is the person's unread messages.
-        Section(_('Communication'), [
+        Section(_('Communication'), area='neutral', groups=[
             Group('', [
                 Entry(_('Messages'), 'messaging:inbox', 'message-square', 'messaging.view_conversation',
                       badge='messaging.read.unread_badge'),
@@ -150,7 +153,7 @@ WORKSPACES = [
         # branches' sections above it stay where they are. Attendance is read with the same right as Today, so a Today
         # reader has it too. Team overview is shown to, and opened by, the people who lead production. The number beside
         # Leave requests is the pending requests the person may decide.
-        Section(_('Team'), [
+        Section(_('Team'), area='neutral', groups=[
             Group(_('Time & attendance'), [
                 Entry(_('Today & attendance'), 'hr:production_today', 'user-check', 'hr.view_attendancerecord'),
                 Entry(_('Shift schedule'), 'hr:production_shiftassignment_list', 'calendar', 'hr.view_shiftassignment'),
@@ -174,19 +177,19 @@ WORKSPACES = [
                 # The named wall screens of Operations › Monitoring: which units, how each card is drawn.
                 Entry(_('Monitoring boards'), 'monitoring:monitorboard_list', 'monitor', 'monitoring.view_monitorboard'),
                 # Where in the water a sample is taken: a place on a unit, a loop or a piece of equipment.
-                Entry(_('Sampling points'), 'farm:samplingpoint_list', 'droplet', 'farm.view_samplingpoint'),
+                Entry(_('Sampling points'), 'farm:samplingpoint_list', 'droplet', 'farm.view_samplingpoint', area='water'),
             ]),
             # The reference lists the production side picks from: species, feeds, the water limits per species,
             # the medicines with their withdrawal and the fast before fish are handled (harvest, transport,
             # grading, treatment), the monitoring cards' templates and their rules; chemicals as their tab arrives.
-            Group(_('Reference data'), [
-                Entry(_('Species'), 'farm:species_list', 'fish', 'farm.view_species'),
-                Entry(_('Feeds'), 'farm:feed_list', 'wheat', 'farm.view_feed'),
-                Entry(_('Water limits'), 'farm:waterlimit_list', 'gauge', 'farm.view_waterlimit'),
+            Group(_('Reference data'), area='neutral', entries=[
+                Entry(_('Species'), 'farm:species_list', 'fish', 'farm.view_species', area='stock'),
+                Entry(_('Feeds'), 'farm:feed_list', 'wheat', 'farm.view_feed', area='feed'),
+                Entry(_('Water limits'), 'farm:waterlimit_list', 'gauge', 'farm.view_waterlimit', area='water'),
                 # How long a water value counts as fresh, per parameter (the user's, alarm plan §7c).
-                Entry(_('Water freshness'), 'farm:waterfreshness_list', 'timer', 'farm.view_waterfreshness'),
-                Entry(_('Medicines'), 'farm:medicine_list', 'pill', 'farm.view_medicine'),
-                Entry(_('Handling rules'), 'farm:handlingrule_list', 'timer', 'farm.view_handlingrule'),
+                Entry(_('Water freshness'), 'farm:waterfreshness_list', 'timer', 'farm.view_waterfreshness', area='water'),
+                Entry(_('Medicines'), 'farm:medicine_list', 'pill', 'farm.view_medicine', area='stock'),
+                Entry(_('Handling rules'), 'farm:handlingrule_list', 'timer', 'farm.view_handlingrule', area='stock'),
                 # What a monitoring card holds and which unit's card gets which (monitoring/cards/).
                 Entry(_('Card templates'), 'monitoring:cardtemplate_list', 'layout-dashboard',
                       'monitoring.view_cardtemplate'),
@@ -198,12 +201,12 @@ WORKSPACES = [
             ]),
             # Harvest and logistics: the outside facilities harvested fish go to; wellboats join it when they get
             # records of their own.
-            Group(_('Harvest and logistics'), [
+            Group(_('Harvest and logistics'), area='stock', entries=[
                 Entry(_('Slaughter facilities'), 'farm:slaughterfacility_list', 'factory',
                       'farm.view_slaughterfacility'),
             ]),
             # Who the farm buys from: goods, live fish and services. Purchase orders join it later.
-            Group(_('Purchasing'), [
+            Group(_('Purchasing'), area='neutral', entries=[
                 Entry(_('Suppliers'), 'farm:supplier_list', 'truck', 'farm.view_supplier'),
             ]),
         ]),
@@ -211,7 +214,7 @@ WORKSPACES = [
     # The sensors: where live values come from (MQTT connections, the devices and their channels), how they are read
     # and kept, and where they are bound. A panel of its own, opened from the panel switcher like Production, offered to
     # people who can use something in it. Its Administration holds the broker credentials: a right of its own.
-    Workspace('sensors', _('Sensors'), sections=[
+    Workspace('sensors', _('Sensors'), area='water', sections=[
         Section('', [Group('', [Entry(_('Overview'), 'sensors:home', 'home')])]),
         # What the channels say: their values over time and now (the right to read sensor readings).
         Section(_('Operations'), [
@@ -225,7 +228,7 @@ WORKSPACES = [
                 Entry(_('Alarm events'), 'sensors:alarm_events', 'alert', 'sensors.view_alarmevent'),
             ]),
         ]),
-        Section(_('Administration'), [
+        Section(_('Administration'), area='neutral', groups=[
             Group('', [
                 Entry(_('Credentials'), 'sensors:credential_list', 'key-round', 'sensors.view_credential'),
             ]),

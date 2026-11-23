@@ -1,15 +1,21 @@
 #!/bin/sh
 # Proves the database roles of an installed farm server (deploy/db/sql/roles.sql, docs/ops/database-roles.md): every
 # statement below is run as the role named, from inside the database container to its network address `db` (so the
-# password is asked: the image trusts 127.0.0.1 inside the container), with that role's own password read there from its
-# secret file, never on a command line, and must be refused or allowed as stated. Every check is reported; exit 1 when
-# one failed. Changes nothing: every allowed write is rolled back.
+# password is asked: the image trusts 127.0.0.1 inside the container), with that role's own password, read from its file
+# in SECRETS_DIR (the environment, else farm.env) and handed over on stdin, never on a command line: so it holds right
+# after a password rotation too, without recreating the database container. Every statement must be refused or allowed
+# as stated; every check is reported; exit 1 when one failed. Changes nothing: every allowed write is rolled back.
 #
 #   cd deploy && sh scripts/check-roles.sh                 (uses farm.env; ENV_FILE=... for another)
 #   COMPOSE="docker compose -p x --env-file y" sh scripts/check-roles.sh
 set -eu
 cd "$(dirname "$0")/.."
-COMPOSE=${COMPOSE:-docker compose --env-file ${ENV_FILE:-farm.env}}
+ENV_FILE=${ENV_FILE:-farm.env}
+COMPOSE=${COMPOSE:-docker compose --env-file $ENV_FILE}
+if [ -z "${SECRETS_DIR:-}" ] && [ -f "$ENV_FILE" ]; then
+  SECRETS_DIR=$(sed -n 's/^SECRETS_DIR=//p' "$ENV_FILE" | tail -n 1)
+fi
+DIR=${SECRETS_DIR:-./secrets}
 failures=0
 
 as() {  # as ROLE SQL: runs SQL as ROLE; prints psql's output and errors
@@ -21,8 +27,9 @@ as() {  # as ROLE SQL: runs SQL as ROLE; prints psql's output and errors
     balik_backup) secret=db_backup_password ;;
     *) echo "unknown role $role" >&2; exit 2 ;;
   esac
-  $COMPOSE exec -T -e ROLE="$role" -e SECRET="$secret" -e SQL="$sql" db sh -c \
-    'PGPASSWORD=$(head -n 1 "/run/secrets/$SECRET") psql -X -h db -U "$ROLE" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -At -c "$SQL"' 2>&1
+  [ -r "$DIR/$secret" ] || { echo "$DIR/$secret cannot be read: is SECRETS_DIR right?" >&2; exit 2; }
+  head -n 1 "$DIR/$secret" | $COMPOSE exec -T -e ROLE="$role" -e SQL="$sql" db sh -c \
+    'read -r password; PGPASSWORD=$password psql -X -h db -U "$ROLE" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -At -c "$SQL"' 2>&1
 }
 
 refused() {  # refused ROLE SQL: must fail for want of a right

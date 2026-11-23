@@ -318,6 +318,8 @@ rotate() {
   done
   echo "web $(health farm-ci-web-1), jobs $(health farm-ci-jobs-1)"
   [ "$(health farm-ci-web-1)" = healthy ] || { echo "FAIL: web is not healthy with the new password"; exit 1; }
+  say "check-roles right after the rotation, with the database container as it was (no recreation)"
+  COMPOSE="${DC[*]}" sh deploy/scripts/check-roles.sh
 }
 
 logs() {

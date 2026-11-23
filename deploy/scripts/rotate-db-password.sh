@@ -10,11 +10,12 @@
 #      the plain password never reaches the database server, so no statement, log line or activity view holds it;
 #   4. the secret file is replaced in one step (no copy of the old password is kept), mode 0444 like the others;
 #   5. the services that sign in as the role are recreated, so they read the new file.
-# A failure at 3 removes the .new file and leaves the old password working everywhere.
+# The new password is never lost: it is written (.<name>.new) before any step that can fail and kept until it has
+# replaced the secret file; each failure says whether the database has it and what to do with that file.
 #
 # Roles: balik_app (web, jobs), balik_owner (the release step), sensors_ingest (ingest), balik_backup (backup),
 # postgres (the superuser: the restore service). The database container keeps the copies it was started with (it reads
-# them at its first start only, and check-roles.sh reads them there): recreate it in the next maintenance window.
+# them at its first start only); scripts/check-roles.sh reads the passwords from SECRETS_DIR, so it holds right after.
 set -eu
 cd "$(dirname "$0")/.."
 ENV_FILE=${ENV_FILE:-farm.env}
@@ -38,8 +39,21 @@ umask 077
 new=$(openssl rand -base64 64 | tr -d '\n+/=' | cut -c1-42)
 [ "${#new}" -ge 32 ] || { echo "openssl gave too little" >&2; exit 1; }
 pending=$DIR/.$secret.new
-printf '%s\n' "$new" > "$pending"
-trap 'rm -f "$pending"' EXIT
+[ ! -e "$pending" ] || { echo "$pending exists: a rotation before did not finish; read its message, or remove the file" >&2; exit 1; }
+printf '%s\n' "$new" > "$pending" && [ "$(head -n 1 "$pending")" = "$new" ] \
+  || { echo "the new password could not be written to $pending: nothing was changed" >&2; exit 1; }
+before() { echo "$1. The database was NOT changed: the old password still works; remove $pending." >&2; exit 1; }
+unsure() {
+  echo "$1. The database MAY have the new password, which is kept in $pending: sign in with it (psql -h db -U $role)." \
+       "If it works, finish by hand: chmod 0444 $pending && mv $pending $DIR/$secret, then recreate: $services." \
+       "If not, remove $pending." >&2
+  exit 1
+}
+after() {
+  echo "$1. The database HAS the new password, kept in $pending: finish by hand:" \
+       "chmod 0444 $pending && mv $pending $DIR/$secret, then recreate: $services." >&2
+  exit 1
+}
 
 verifier=$(printf '%s\n' "$new" | $COMPOSE run --rm -T --no-deps --entrypoint python web -c '
 import base64, hashlib, hmac, os, sys
@@ -49,8 +63,8 @@ salted = hashlib.pbkdf2_hmac("sha256", password, salt, rounds)
 client = hmac.new(salted, b"Client Key", "sha256").digest()
 server = hmac.new(salted, b"Server Key", "sha256").digest()
 b64 = lambda raw: base64.b64encode(raw).decode()
-print(f"SCRAM-SHA-256${rounds}:{b64(salt)}${b64(hashlib.sha256(client).digest())}:{b64(server)}")')
-case "$verifier" in 'SCRAM-SHA-256$4096:'*) ;; *) echo "no SCRAM verifier was made" >&2; exit 1 ;; esac
+print(f"SCRAM-SHA-256${rounds}:{b64(salt)}${b64(hashlib.sha256(client).digest())}:{b64(server)}")') || before "the web image could not make the verifier"
+case "$verifier" in 'SCRAM-SHA-256$4096:'*) ;; *) before "no SCRAM verifier was made" ;; esac
 
 printf '%s\n' "$verifier" | $COMPOSE exec -T -e ROLE="$role" db sh -c '
   set -eu
@@ -58,16 +72,15 @@ printf '%s\n' "$verifier" | $COMPOSE exec -T -e ROLE="$role" db sh -c '
   PGPASSWORD=$(head -n 1 /run/secrets/postgres_password) psql -X -q -v ON_ERROR_STOP=1 -h 127.0.0.1 -U postgres \
     -d "$POSTGRES_DB" -v role="$ROLE" -v verifier="$verifier" <<"SQL"
 ALTER ROLE :"role" PASSWORD :'"'"'verifier'"'"';
-SQL'
+SQL' || unsure "the database did not confirm the change"
 echo "the database has the new password of $role (as its verifier)"
 
-chmod 0444 "$pending"
-mv -f "$pending" "$DIR/$secret"
-trap - EXIT
+chmod 0444 "$pending" || after "the new file's mode could not be set"
+mv -f "$pending" "$DIR/$secret" || after "the secret file could not be replaced"
 echo "$DIR/$secret replaced"
 
 if [ -n "$services" ]; then
   # shellcheck disable=SC2086 # the services are words
   $COMPOSE up -d --no-deps --force-recreate $services
 fi
-echo "done. Recreate the database container in the next maintenance window: dc up -d --no-deps --force-recreate db"
+echo "done."

@@ -11,7 +11,7 @@ Rotate on a schedule (yearly), when a person who could read a secret leaves, and
 
 | Secret | File | Read by | How to rotate | What it costs |
 |---|---|---|---|---|
-| Database roles | `db_app_password`, `db_owner_password`, `db_ingest_password`, `db_backup_password`, `postgres_password` | web and jobs; release; ingest; backup; restore | `sh scripts/rotate-db-password.sh <role>` (below) | seconds: a new connection of an old container is refused until it is recreated |
+| Database roles | `db_app_password`, `db_owner_password`, `db_ingest_password`, `db_backup_password`, `postgres_password` | web and jobs; release; ingest; backup; restore | `sh scripts/rotate-db-password.sh <role>` (below) | seconds: a new connection of a container not yet recreated is refused |
 | Django's secret key | `django_secret_key` | web, jobs, release | new value (below), recreate web and jobs | everyone is signed out; links in invitations and reset mails already sent stop working (send again) |
 | The log's digest key | `django_audit_digest_key` | web, jobs, release | **only on suspicion** (below) | the private values logged before can no longer be compared with new ones |
 | SMTP password | `email_password` | web, jobs, release | change it at the mail provider, write the file, recreate web and jobs | mails between the two steps fail and show on the user's row |
@@ -35,11 +35,13 @@ It checks that the role's secret file exists and its folder is writable before a
 password beside it, gives the database only the password's SCRAM-SHA-256 verifier (made in the web image from the
 password on stdin: the plain password never reaches the database server, its logs or its activity view), replaces the
 secret file in one step (no copy of the old password is kept) and recreates the services that sign in as the role.
-If the database refuses, nothing else changes. The database container itself still holds the old copies of the files
-it was started with (it reads them at its first start only); `scripts/check-roles.sh` reads them there, so recreate
-it in the next maintenance window: `dc up -d --no-deps --force-recreate db` (a database restart: a minute). The go-live
-stack workflow rotates the app role's password this way and checks that the new one signs in, the old one is refused,
-no copy is left and the database's log never holds it.
+The new password is never lost: it is written beside the secret file (`.<name>.new`) before anything can fail and kept
+until it has replaced the file; a failure says whether the database has it and what to do with that file. The
+database container keeps the old copies of the files it was started with, but nothing reads them after its first
+start: `scripts/check-roles.sh` reads the passwords from `SECRETS_DIR`, so it holds right after a rotation, and the
+container needs no recreation. The go-live stack workflow rotates the app role's password this way and checks that the
+new one signs in, the old one is refused, no copy is left, the database's log never holds it and `check-roles.sh`
+passes at once.
 
 ## Django's secret key
 

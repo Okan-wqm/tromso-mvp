@@ -11,6 +11,7 @@
 # OFF THE SERVER, without it no backup can be read), the ingest's MQTT password and its broker line
 # (mqtt_passwd_extra, the hash Mosquitto keeps, made with the broker's own mosquitto_passwd in its image).
 # Left for a person to fill in: email_password (the SMTP account's, empty when the server takes no sign-in),
+# backup-ca.crt (the backup REST server's CA certificate, empty when its certificate is a public one),
 # backup.env (the repository's access keys, if any), cloudflared.env (the tunnel's token, Cloudflare only).
 # The TLS files are certs.sh's.
 #
@@ -73,6 +74,7 @@ template backup.env '# The backup repository'"'"'s access, read by the backup an
 # AWS_DEFAULT_REGION=
 # SFTP: an ssh key and known_hosts are mounted instead (docs/ops/backup-and-restore.md).
 '
+template backup-ca.crt ''
 template cloudflared.env '# Cloudflare Tunnel only (docs/ops/access.md): the token of the tunnel made in the Zero Trust dashboard.
 # TUNNEL_TOKEN=
 '

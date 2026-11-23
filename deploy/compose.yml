@@ -353,6 +353,8 @@ services:
       PGPASSWORD_FILE: /run/secrets/db_backup_password
       RESTIC_REPOSITORY: ${RESTIC_REPOSITORY:?set RESTIC_REPOSITORY (the off-server backup target) in farm.env}
       RESTIC_PASSWORD_FILE: /run/secrets/restic_password
+      # the REST server's own CA, when its certificate is not a public one (docs/ops/backup-and-restore.md)
+      RESTIC_CACERT: ${RESTIC_CACERT:-}
       BACKUP_HOST_TAG: ${COMPOSE_PROJECT_NAME:-farm}
       BACKUP_DUMP_HOURS: ${BACKUP_DUMP_HOURS:-24}
       BACKUP_BASE_DAYS: ${BACKUP_BASE_DAYS:-7}
@@ -363,7 +365,7 @@ services:
       BACKUP_KEEP_MONTHLY: ${BACKUP_KEEP_MONTHLY:-12}
       # 0: the repository is append-only for this server, the owner prunes (docs/ops/backup-and-restore.md)
       BACKUP_PRUNE_ON_FARM: ${BACKUP_PRUNE_ON_FARM:-0}
-    secrets: [db_backup_password, restic_password]
+    secrets: [db_backup_password, restic_password, backup_ca]
     volumes:
       - wal-archive:/wal-archive
       - backups:/backups
@@ -405,9 +407,11 @@ services:
       PGPASSWORD_FILE: /run/secrets/postgres_password
       RESTIC_REPOSITORY: ${RESTIC_REPOSITORY:?set RESTIC_REPOSITORY in farm.env}
       RESTIC_PASSWORD_FILE: /run/secrets/restic_password
+      # the REST server's own CA, when its certificate is not a public one (docs/ops/backup-and-restore.md)
+      RESTIC_CACERT: ${RESTIC_CACERT:-}
       BACKUP_HOST_TAG: ${RESTORE_FROM_HOST_TAG:-${COMPOSE_PROJECT_NAME:-farm}}
       DB_MAX_CONNECTIONS: ${DB_MAX_CONNECTIONS:-100}
-    secrets: [postgres_password, restic_password]
+    secrets: [postgres_password, restic_password, backup_ca]
     volumes:
       - backups:/backups
       - media:/srv/media
@@ -501,3 +505,5 @@ secrets:
     file: ${SECRETS_DIR:-./secrets}/mqtt/server.crt
   mqtt_server_key:
     file: ${SECRETS_DIR:-./secrets}/mqtt/server.key
+  backup_ca:
+    file: ${SECRETS_DIR:-./secrets}/backup-ca.crt

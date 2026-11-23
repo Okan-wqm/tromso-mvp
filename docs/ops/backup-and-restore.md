@@ -58,27 +58,61 @@ broker's queue (devices resend), the static files (in the image), the secrets (`
 **The farm's server can add backups, never delete them.** Whoever takes the server (or its root) takes its backup key
 too; if that key could delete, the attacker could destroy the backups with the data. So:
 
-- **The repository:** a restic REST server (`rest-server`, BSD-2-Clause) run by the owner on a machine elsewhere (another
-  provider or data centre, in the EU/EEA), started with `--append-only --private-repos`: each farm's user may add to
-  its own repository and remove its own lock files, nothing else. `RESTIC_REPOSITORY=rest:https://<host>:8000/<farm>/`,
-  the farm's user and password as `RESTIC_REST_USERNAME`/`RESTIC_REST_PASSWORD` in `SECRETS_DIR/backup.env`, TLS on the
-  REST server (its own certificate). MinIO is banned (AGPL).
+- **The repository:** a restic REST server (`rest-server`, BSD-2-Clause), run by the owner on a machine elsewhere (the
+  backup machine, below), started append-only with private repositories: each farm's user may add to its own
+  repositories and remove its own lock files, nothing else. MinIO is banned (AGPL).
 - **On the farm's server:** `BACKUP_PRUNE_ON_FARM=0` (the default): the agent backs up, ships and checks; it never runs
-  `forget`/`prune` (they would be refused anyway).
-- **The owner prunes, monthly**, from the backup machine itself (or another owner machine) with a key that may delete:
-  directly on the repository's folder there, never through the append-only server:
-  ```
-  export RESTIC_REPOSITORY=/srv/restic/<farm> RESTIC_PASSWORD_FILE=<the farm's restic_password, from the owner's safe>
-  restic forget --host <farm> --tag balik --keep-hourly 48 --keep-daily 14 --keep-weekly 8 --keep-monthly 12 --prune
-  restic check --read-data-subset=10%
-  restic snapshots --host <farm> --latest 3          # the newest is minutes old
-  ```
-  and writes the date in the farm's record. Until it runs, the repository only grows (plan its storage for it).
+  `forget`/`prune` (they would be refused anyway). Its daily `prunecheck` turns the backup's health, and with it the
+  heartbeat, red when the owner's prune is overdue: more snapshots older than `BACKUP_PRUNE_AGE_DAYS` (35) than the
+  retention keeps (`BACKUP_KEEP_WEEKLY` + `BACKUP_KEEP_MONTHLY` + 5).
+
+### The backup machine (the owner's)
+
+One small server for all farms, at another provider or data centre than any farm, in the EU/EEA, run by the owner.
+
+1. **Its disk:** a volume of its own for `/srv/restic` (encrypted at rest where the provider offers it), sized for every
+   farm's repository with a year's growth (a farm's repository: about its dumps and base backups of a month, plus the
+   WAL: measure after the first month), an alert at 80 %.
+2. **rest-server** (the release binary, its sha256 checked, as the backup image checks restic's), as a systemd service
+   of a user of its own:
+   ```
+   rest-server --path /srv/restic --listen :8000 --append-only --private-repos \
+     --htpasswd-file /srv/restic/.htpasswd --tls --tls-cert /etc/rest-server/server.crt \
+     --tls-key /etc/rest-server/server.key --max-size <bytes for all farms>
+   ```
+   `--private-repos`: the user `farm-a` reaches `/farm-a/...` only, so a farm's repository is
+   `RESTIC_REPOSITORY=rest:https://<backup host>:8000/farm-a/main/` (the path starts with the farm's user name, which is
+   the farm's `COMPOSE_PROJECT_NAME`). `--max-size` stops a runaway farm before it fills the disk.
+   Its firewall lets in 8000 from the farms' servers' addresses only (and ssh from the owner's).
+3. **TLS:** a public certificate (Let's Encrypt, then remove `RESTIC_CACERT` from the farms' `farm.env`), or one from the
+   owner's own CA (`sh scripts/certs.sh proxy-internal <backup host>` on the owner's machine makes both): its CA
+   certificate goes into each farm's `SECRETS_DIR/backup-ca.crt`, which compose hands to the backup and restore services
+   as `/run/secrets/backup_ca`, and `RESTIC_CACERT=/run/secrets/backup_ca` in `farm.env`.
+4. **A farm's user:** on the backup machine, `create_user farm-a` (rest-server's script: it asks for a password and
+   writes a bcrypt line into `.htpasswd`; `htpasswd -B /srv/restic/.htpasswd farm-a` does the same), then
+   `systemctl reload rest-server` (SIGHUP: the server reads `.htpasswd` again). The farm gets that user and password as
+   `RESTIC_REST_USERNAME`/`RESTIC_REST_PASSWORD` in its `backup.env`; then `dc run --rm backup init` on the farm.
+5. **Its own backup:** the repositories are encrypted (each farm's restic password, which the backup machine never holds
+   but the owner's safe), so they can be copied anywhere: weekly, `rclone sync /srv/restic <a second, cold location>`
+   (object storage with versioning), and its own monitoring (disk, the service, the certificate's expiry).
+6. **The owner prunes, monthly**, on the backup machine itself, directly on the repository's folder (never through the
+   append-only server), with the farm's repository password from the owner's safe:
+   ```
+   export RESTIC_REPOSITORY=/srv/restic/farm-a/main RESTIC_PASSWORD_FILE=<the farm's restic_password, from the safe>
+   restic forget --host farm-a --tag balik --keep-hourly 48 --keep-daily 14 --keep-weekly 8 --keep-monthly 12 --prune
+   restic check --read-data-subset=10%
+   restic snapshots --host farm-a --latest 3          # the newest is minutes old
+   ```
+   and writes the date in the farm's record. Until it runs the repository only grows; after 35 days the farm's
+   `prunecheck` turns its backup health red (the heartbeat alerts) until the prune has been done.
 - **Not used, not tested:** S3 object lock (immutable versions for a period). If a provider's object lock is chosen
   instead, it must be tested before go-live (a delete with the farm's key must fail).
 
-The go-live stack workflow runs the owner's `forget --prune` and `check` against the repository from a second machine
-stand-in (the restore project) and checks the latest snapshot is still there.
+The go-live stack workflow dates 30 snapshots two months back (a month without the owner's prune): the farm's
+`prunecheck` turns red; then it runs the owner's `forget --prune` and `check` from a second machine stand-in (the
+restore project), checks the latest snapshot is still there and the `prunecheck` green again. The REST server itself
+(append-only refusals, `--private-repos`, its TLS) is not part of the workflow: test it once on the backup machine with
+a farm's user (a `restic forget` with that user must be refused) and write the result in the owner's record.
 
 ## Restore a dump (the usual restore)
 

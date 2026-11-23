@@ -17,12 +17,14 @@
 #                                     a stolen server cannot remove its own backups; the owner prunes from another
 #                                     machine with a key of their own (docs/ops/backup-and-restore.md)
 #                               check   restic check with a 5 % sample of the data read back, once a week
+#                               prunecheck  once a day: red when the owner's monthly prune is overdue (too many
+#                                     snapshots older than BACKUP_PRUNE_AGE_DAYS, 35)
 #                             each success is written to /backups/state/<job>.ok, each failure to <job>.failed;
 #                             `health` (the container's health check) fails when a job is overdue or failed last
 #   agent.sh init             makes the restic repository (once, at installation; never automatic: a mistyped
 #                             address must not silently become a new, empty repository)
 #   agent.sh now              dump, base, ship, in that order, now (installation check, before an upgrade)
-#   agent.sh dump|base|ship|forget|check   one job now
+#   agent.sh dump|base|ship|forget|check|prunecheck   one job now
 #   agent.sh snapshots        the repository's snapshots of this installation
 #   agent.sh restic ARGS...   any restic command on the repository (key add, key list, check, ...)
 #   agent.sh fetch SNAPSHOT DIR             restores a snapshot (`latest` or an id) from the repository into DIR
@@ -79,6 +81,11 @@ KEEP_HOURLY=$(num BACKUP_KEEP_HOURLY 48)
 KEEP_DAILY=$(num BACKUP_KEEP_DAILY 14)
 KEEP_WEEKLY=$(num BACKUP_KEEP_WEEKLY 8)
 KEEP_MONTHLY=$(num BACKUP_KEEP_MONTHLY 12)
+
+# No CA of the REST server's own (a public certificate): restic must not be handed an empty one.
+if [ -z "${RESTIC_CACERT:-}" ] || [ ! -s "${RESTIC_CACERT:-}" ]; then unset RESTIC_CACERT; fi
+PRUNECHECK_EVERY=86400
+PRUNE_AGE_DAYS=$(num BACKUP_PRUNE_AGE_DAYS 35)
 
 if [ -n "${PGPASSWORD_FILE:-}" ]; then
   [ -r "$PGPASSWORD_FILE" ] || die "PGPASSWORD_FILE $PGPASSWORD_FILE cannot be read"
@@ -200,6 +207,20 @@ check() {
   restic check --retry-lock 10m --read-data-subset=5%
 }
 
+prunecheck() {
+  # The owner prunes the repository monthly from another machine (the farm's key may only add). Whether it happened is
+  # seen from here: a pruned repository keeps at most the weekly and monthly snapshots (and a few more) older than
+  # BACKUP_PRUNE_AGE_DAYS (35); an unpruned one keeps every ship's, about a hundred a day.
+  cutoff=$(date -u -d "@$(( $(now) - PRUNE_AGE_DAYS * 86400 ))" +%Y-%m-%dT%H:%M:%S)
+  limit=$(( KEEP_WEEKLY + KEEP_MONTHLY + 5 ))
+  old=$(restic snapshots --retry-lock 10m --host "$HOST_TAG" --tag balik --json \
+    | grep -o '"time":"[^"]*"' | cut -d'"' -f4 | cut -c1-19 | awk -v cutoff="$cutoff" '$0 < cutoff' | wc -l)
+  if [ "$old" -gt "$limit" ]; then
+    die "the owner's prune is overdue: $old snapshots older than $PRUNE_AGE_DAYS days (a pruned repository keeps $limit at most; docs/ops/backup-and-restore.md)"
+  fi
+  log "prune check: $old snapshot(s) older than $PRUNE_AGE_DAYS days, $limit allowed"
+}
+
 job() {  # job NAME: runs it in a shell of its own, so that its first failing command ends it (inside a condition a
          # function would run on past a failure: errexit is off there), and records the outcome
   if sh "$0" "_$1"; then mark "$1" ok; else mark "$1" failed; log "ERROR: $1 failed"; return 1; fi
@@ -214,7 +235,7 @@ health() {
   # Unhealthy when a job failed last (each is retried after 15 minutes), when one is overdue, or when the database's
   # WAL archiver is failing: a WAL segment that cannot be archived is a backup that silently stops.
   slack=3600
-  for job in forget check; do
+  for job in forget check prunecheck; do
     if [ -f "$STATE/$job.failed" ]; then echo "$job failed last"; exit 1; fi
   done
   if [ "$(( $(now) - $(last check) ))" -gt "$(( CHECK_EVERY + 86400 ))" ] && [ -f "$STATE/ship.ok" ]; then
@@ -295,14 +316,15 @@ case "${1:-run}" in
       if due base "$BASE_EVERY"; then job base || true; fi
       if due ship "$SHIP_EVERY"; then job ship || true; fi
       if [ "$PRUNE_ON_FARM" = 1 ] && due forget "$FORGET_EVERY"; then job forget || true; fi
+      if due prunecheck "$PRUNECHECK_EVERY"; then job prunecheck || true; fi
       if due check "$CHECK_EVERY"; then job check || true; fi
       sleep "$TICK" &
       wait $! || true
     done ;;
   init) restic init ;;
   now) job dump && job base && job ship ;;
-  dump|base|ship|forget|check) job "$1" ;;
-  _dump|_base|_ship|_forget|_check) "${1#_}" ;;
+  dump|base|ship|forget|check|prunecheck) job "$1" ;;
+  _dump|_base|_ship|_forget|_check|_prunecheck) "${1#_}" ;;
   health) health ;;
   snapshots) restic snapshots --host "$HOST_TAG" ;;
   restic) shift; exec restic "$@" ;;

@@ -262,12 +262,20 @@ restore() {
   "${RC[@]}" run --rm -T --no-deps restore verify-counts "$dump.counts"
   say "the application on the restored database: every migration applied (migrate --check)"
   "${RC[@]}" run --rm -T --no-deps web python manage.py migrate --check
+  say "a month without the owner's prune: 30 snapshots dated two months back; the farm's prune check turns red"
+  "${RC[@]}" run --rm -T --no-deps --entrypoint sh restore -c \
+    'unset RESTIC_CACERT; for minute in $(seq 10 39); do restic backup -q --host farm-ci --tag balik --time "2026-09-01 00:$minute:00" /etc/hostname; done'
+  if "${DC[@]}" exec -T backup sh /usr/local/lib/balik-backup/agent.sh prunecheck > "$T/prune.out" 2>&1; then
+    cat "$T/prune.out"; echo "FAIL: an overdue prune was not seen"; exit 1
+  fi
+  grep "prune is overdue" "$T/prune.out"
   say "the owner's maintenance from another machine: the retention applied (forget --prune), the repository checked"
   "${RC[@]}" run --rm -T --no-deps restore restic forget --host farm-ci --tag balik --keep-hourly 48 --keep-daily 14 \
     --keep-weekly 8 --keep-monthly 12 --prune
   "${RC[@]}" run --rm -T --no-deps restore restic check --read-data-subset=10%
   latest=$("${RC[@]}" run --rm -T --no-deps restore restic snapshots --host farm-ci --latest 1 --json)
   echo "$latest" | grep -q '"short_id"' || { echo "FAIL: no snapshot left after the owner's prune"; exit 1; }
+  "${DC[@]}" exec -T backup sh /usr/local/lib/balik-backup/agent.sh prunecheck
   "${DC[@]}" exec -T backup sh /usr/local/lib/balik-backup/agent.sh health
 }
 

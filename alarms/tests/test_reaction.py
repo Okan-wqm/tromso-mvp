@@ -167,6 +167,8 @@ class ReactionTests(TransactionTestCase):
 class TokenTests(TransactionTestCase):
     """Each statement its own transaction here, as the ingest's and the pages' are."""
 
+    serialized_rollback = True
+
     def test_nothing_written_the_token_stays(self):
         self.assertEqual(changes.token(), changes.token())
 

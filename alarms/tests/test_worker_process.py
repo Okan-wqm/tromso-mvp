@@ -42,6 +42,8 @@ def lock_free():
 
 
 class ProcessTests(TransactionTestCase):
+    serialized_rollback = True                         # as every TransactionTestCase here (config/test_runner.py)
+
     def start(self):
         log = tempfile.TemporaryFile()
         self.addCleanup(log.close)

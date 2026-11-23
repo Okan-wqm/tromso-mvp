@@ -9,21 +9,26 @@ back-dated feeding's own save, and case 10, are another change), the two real on
 follows the order the transfers happened in WITHIN a day (a unit emptied and refilled on one day, a move there and back,
 a grading day), and the ledger is indexed once for every unit asked."""
 import uuid
+from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, time as clock, timedelta
 from decimal import Decimal
 from types import SimpleNamespace
 from unittest import mock
 
+from django.db import connection
 from django.test import TestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
+from django.utils import timezone
 
 from core.models import AuditLog
 
 from ..feeding import read as feeding_read, services as feeding_services
 from ..handling import check
 from ..handling import fasting
-from ..models import Feed, HandlingAcknowledgement, HandlingPlanItem, Site, Tank
+from ..models import Feed, FeedingRecord, HandlingAcknowledgement, HandlingPlanItem, Site, Tank
+from ..models.feeding import FeedTarget
 from ..stock import read as stock_read, services
 from ..stock.fold import Line, Op
 from ..stock.dates import local_today, shown_date
@@ -404,3 +409,143 @@ class OneLedgerReadTests(FastTestCase):
                 self.assertEqual(ledger.call_count, 1)
                 self.assertEqual((figures[self.t2.pk].last_fed, figures[self.t2.pk].last_fed_in),
                                  (self.day(4), self.t1))
+
+
+def last_fed_of_as_main_read_it(asked, lines=None):
+    """`last_fed_of` as main (56b7ea0) wrote it, verbatim but for the module prefix: the records read whole in ONE query
+    (with their unit, department and site), the winner of each unit by the moment and the entry time. The oracle of
+    LastFedOneReadTests: the answer the one-read version must give, whatever else was written meanwhile."""
+    R = feeding_read
+    asked = list(asked)
+    found = {unit.pk: None for unit, _day, _ids, _since in asked}
+    batch_ids = {batch_id for _unit, _day, ids, _since in asked for batch_id in ids}
+    if not batch_ids:
+        return found
+    paths = R.Paths(R.ledger(batch_ids) if lines is None else lines)
+    places = {unit.pk: paths.where(unit.pk, ids, day, since) for unit, day, ids, since in asked}
+    every = [place for found_for in places.values() for place in found_for]
+    if not every:
+        return found
+    records = (FeedingRecord.objects.filter(unit_id__in={place.unit_id for place in every}, target=FeedTarget.PRODUCTION,
+                                            date__gte=min(place.first for place in every),
+                                            date__lte=max(place.last for place in every))
+               .select_related('unit__production_department__site'))
+    by_unit = defaultdict(list)
+    for record in records:
+        by_unit[record.unit_id].append(record)
+    for unit_id, where in places.items():
+        counted = {record.pk: record for place in where for record in by_unit.get(place.unit_id, ())
+                   if place.first <= record.date <= place.last}
+        if counted:
+            record = max(counted.values(), key=lambda each: (R.fed_moment(each), each.created_at))
+            found[unit_id] = R.LastFed(R.fed_moment(record), record)
+    return found
+
+
+def write(statement, params):
+    """A raw write past the services' guards: stands for another request's write, committed while this one reads (the
+    next query of this connection sees it, as under READ COMMITTED)."""
+    with connection.cursor() as cursor:
+        cursor.execute(statement, params)
+
+
+class LastFedOneReadTests(FastTestCase):
+    """`last_fed_of` builds each answer from ONE read of the feedings: a feeding voided, deleted or changed by another
+    request while the answer is built can neither crash it (it read the winners again by id, and a voided one was no
+    longer there: KeyError, found in review 2026-11-22) nor leave a moment that disagrees with its record, and the
+    answer is the one main gave (one query of whole records)."""
+
+    def asked(self, days_back=0, since=None):
+        day = self.today - timedelta(days=days_back)
+        return [(unit, day, feeding_read.handled(unit, day), since) for unit in (self.t1, self.t2, self.t3)]
+
+    @staticmethod
+    def shape(found, with_pk=True):
+        return {unit_id: None if each is None else (each.moment, each.record.created_at, each.record.unit.code,
+                                                    each.record.pk if with_pk else None)
+                for unit_id, each in found.items()}
+
+    def racing(self, statement, params):
+        """A fed_moment that, the first time the rows are being weighed (they are read already), lets `write` happen."""
+        real, done = feeding_read.fed_moment, []
+
+        def racing(row):
+            if not done:
+                done.append(True)
+                write(statement, params)
+            return real(row)
+        return mock.patch.object(feeding_read, 'fed_moment', racing)
+
+    def test_the_answer_is_mains_on_ties_voided_records_moves_and_every_day_asked(self):
+        self.fed(6, at=clock(9, 0))
+        self.fed(6, at=clock(9, 0))                                   # the same moment twice
+        self.move(4000, 5)
+        self.fed(4)                                                   # no time: the end of the day ...
+        midnight = self.fed(3, at=clock(0, 0))                        # ... the same moment as this one
+        self.record(kilos='3', days_ago=3, unit=self.t2, time=clock(0, 0))
+        gone = self.fed(2, at=clock(23, 0))
+        write("UPDATE feeding_records SET is_deleted = true, void_reason = 'probe' WHERE id = %s", [gone.pk])
+        self.record(kilos='3', days_ago=2, unit=self.t2, time=clock(7, 0))
+        self.record(kilos='3', days_ago=2, unit=self.t2, time=clock(7, 0))
+        compared = 0
+        for tie in ('entered apart', 'entered together'):
+            if tie == 'entered together':                             # a full tie: the same moment AND the same entry time
+                write('UPDATE feeding_records SET created_at = %s WHERE unit_id = %s', [midnight.created_at, self.t2.pk])
+            for days_back in range(8):
+                for since in (None, self.today - timedelta(days=4)):
+                    asked = self.asked(days_back, since)
+                    new = self.shape(feeding_read.last_fed_of(asked), with_pk=tie == 'entered apart')
+                    old = self.shape(last_fed_of_as_main_read_it(asked), with_pk=tie == 'entered apart')
+                    self.assertEqual(new, old, (tie, days_back, since))
+                    compared += sum(each is not None for each in new.values())
+        self.assertGreater(compared, 30)                              # the cases are not all empty answers
+
+    def test_a_feeding_voided_after_the_rows_are_read_does_not_break_the_answer_and_it_is_mains(self):
+        earlier = self.fed(3, at=clock(9, 0))
+        latest = self.fed(1, at=clock(18, 0))
+        asked = self.asked()
+        before = last_fed_of_as_main_read_it(asked)                   # main reads once: its snapshot has the latest
+        self.assertEqual(before[self.t1.pk].record.pk, latest.pk)
+        with self.racing("UPDATE feeding_records SET is_deleted = true, void_reason = 'probe', deleted_at = %s "
+                         "WHERE id = %s", [timezone.now(), latest.pk]):
+            found = feeding_read.last_fed_of(asked)
+        self.assertEqual(self.shape(found), self.shape(before))
+        self.assertTrue(FeedingRecord.all_objects.get(pk=latest.pk).is_deleted)     # it was voided meanwhile, for real
+        self.assertEqual(feeding_read.last_fed_of(asked)[self.t1.pk].record.pk, earlier.pk)   # the next read has it gone
+
+    def test_a_feeding_deleted_for_good_after_the_rows_are_read_does_not_break_the_answer(self):
+        self.fed(3, at=clock(9, 0))
+        latest = self.fed(1, at=clock(18, 0))
+        with self.racing('DELETE FROM feeding_records WHERE id = %s', [latest.pk]):
+            found = feeding_read.last_fed_of(self.asked())
+        self.assertEqual(found[self.t1.pk].record.pk, latest.pk)
+        self.assertEqual(found[self.t1.pk].moment, feeding_read.fed_moment(found[self.t1.pk].record))
+
+    def test_a_feeding_changed_after_the_rows_are_read_keeps_its_moment_and_its_record_together(self):
+        self.fed(3, at=clock(9, 0))
+        latest = self.fed(1, at=clock(18, 0))
+        with self.racing('UPDATE feeding_records SET time = %s WHERE id = %s', [clock(2, 0), latest.pk]):
+            found = feeding_read.last_fed_of(self.asked())
+        each = found[self.t1.pk]
+        self.assertEqual((each.record.pk, each.record.time), (latest.pk, clock(18, 0)))     # the row as it was read
+        self.assertEqual(each.moment, feeding_read.fed_moment(each.record))                 # never a moment of another time
+
+    def test_the_feedings_are_read_in_one_query_and_the_answer_holds_whole_records(self):
+        self.fed(3, at=clock(9, 0))
+        self.fed(1, at=clock(18, 0))
+        self.move(4000, 5)
+        self.record(kilos='3', days_ago=2, unit=self.t2, time=clock(7, 0))
+        asked = self.asked()
+        with CaptureQueriesContext(connection) as log:
+            found = feeding_read.last_fed_of(asked)
+        self.assertEqual(sum('FROM "feeding_records"' in query['sql'] for query in log.captured_queries), 1)
+        fields = ('id', 'unit_id', 'feed_id', 'target', 'date', 'time', 'amount_kg', 'meals', 'notes', 'version',
+                  'created_at', 'is_deleted', 'created_by_id')
+        for unit in (self.t1, self.t2):
+            record = found[unit.pk].record
+            stored = FeedingRecord.objects.get(pk=record.pk)
+            self.assertEqual({name: getattr(record, name) for name in fields},
+                             {name: getattr(stored, name) for name in fields})
+            self.assertEqual(record.unit, Tank.all_objects.get(pk=record.unit_id))
+            with self.assertNumQueries(0):                            # the unit, its department and site are there
+                self.assertEqual(record.unit.production_department.site.timezone, 'UTC')

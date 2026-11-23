@@ -741,6 +741,7 @@ answers for many units at once (the table is `monitoring/read.py`'s docstring):
 | open health events (every card), treatments and the latest sea-lice count (detailed) | `health.read.open_events`, `recent_treatments`, `latest_counts` |
 | open, overdue and due-today tasks (detailed) | `tasks.read.per_unit` |
 | the Deffeyes chart in its window | `water.calculation.chart_of` through `farm:water_unit_chart` (see Water chemistry) |
+| a unit's or a system's water history (Tank › Water, System › Water, behind `?ui=next`) | `farm:water_unit_chart` / `farm:water_system_chart` with `?view=history`: `sensors.read.water_history` (every parameter's `series` on one window, the NH₃-N worked out per sample, the limit bands `bands_of`), the events each for the person who may read them, the Deffeyes replay's address; a system's points side by side |
 | the calculated CO₂ and the pH window of a card that shows them (the Small card) | `water.calculation.charts_of`: every such unit's chart at once, from the water the card read already holds and one read of the fish's limits |
 
 **The page** has a toolbar (a GET form that works without script: site, department, system, kind, fish (stocked by default,
@@ -3782,7 +3783,9 @@ What works:
   a move ends one binding and starts the next, so a sensor's earlier values stay with the tank they were taken in; a
   whole device moves at once, between sites too, or is taken out of the water: see Portable sensors).
 - **Operations**: Charts (a place and a quantity over a preset or chosen time, drawn by the server; the CSV is exactly
-  the drawn buckets), Live values (every channel listened to, its last value at its quantity's decimals, the water parameter's
+  the drawn buckets; `sensors:chart_data` gives the same chart as data for the redesigned page behind `?ui=next`:
+  `sensors/chart.py` `data`, exactly what the SVG draws, each manual sample with its source, meter or lab, the fish's
+  limit bands for a person who may read the water, and the channel's newest value with its freshness), Live values (every channel listened to, its last value at its quantity's decimals, the water parameter's
   own, as the water pages say it: `sensors/templatetags/sensors.py` `measured`, also the alarm thresholds and peaks; its
   age, fresh or stale, where it is bound),
   Dead letters (what the ingest could not store, counted, the payload shown escaped as text and hex; resolved by a

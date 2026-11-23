@@ -4812,8 +4812,23 @@ landed while it read). A key without a row is unknown, never valid.
 - A migration that writes a tracked table and then alters it in the same transaction must run `SET CONSTRAINTS ALL
   IMMEDIATE` first (a table with pending deferred trigger events cannot be altered), as farm 0019 and 0021 already do.
 
-**What it costs a write** (measured on the test runner's throwaway server, triggers on against the same statements with
-the revision triggers disabled; the machine was shared and loaded): OVERHEAD_NUMBERS
+**What it costs a write** (measured 23.11.2026 on a GitHub runner, ubuntu-24.04, the test runner's throwaway server
+with fsync off, one worker: each case committed with every revision trigger made and again with them all dropped,
+alternating, the median; TimescaleDB refuses to disable a hypertable's triggers, so they are dropped and made again):
+
+| Write | Triggers on | Off | Added |
+|---|---|---|---|
+| a water sample through `farm.water.services.record` | 117.60 ms | 117.56 ms | +0.03 ms (lost in the service's own time) |
+| a water sample, one bare INSERT | 2.31 ms | 1.95 ms | +0.36 ms |
+| a limit edit (`save`) | 2.53 ms | 1.91 ms | +0.63 ms |
+| a 5,000-line operation (2,500 transfer pairs), 1 batch, 2 units | 436 ms | 294 ms | +142 ms |
+| the same over 50 batches and 50 units | 443 ms | 294 ms | +149 ms |
+| the void of a 5,000-line operation (one UPDATE, keys from its lines) | 19.1 ms | 1.3 ms | +17.8 ms |
+
+A ledger line costs about 30 µs: two note triggers (scopes `batch` and `unit_stock`) and two deferred apply events per
+row, whatever the number of keys; the apply itself writes one row per key. A sample or a reference row costs a fraction
+of a millisecond. The measurement is the temporary test `tests_rev_overhead.py` (kept in the notes, not in the
+repository).
 
 ## Local setup
 

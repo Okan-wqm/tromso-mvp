@@ -248,7 +248,7 @@ class Worker:
 
     def _lost(self, error):
         logger.error('The alarm worker %r lost the database (%s: %s); it tries again.', self.name,
-                     type(error).__name__, str(error)[:200])
+                     type(error).__name__, _fit('last_error', error))
         self.leading = False                 # the session and its lock are gone with the connection
         self.reset()
 

@@ -21,6 +21,7 @@
 #   agent.sh now              dump, base, ship, in that order, now (installation check, before an upgrade)
 #   agent.sh dump|base|ship|forget|check   one job now
 #   agent.sh snapshots        the repository's snapshots of this installation
+#   agent.sh restic ARGS...   any restic command on the repository (key add, key list, check, ...)
 #   agent.sh fetch SNAPSHOT DIR             restores a snapshot (`latest` or an id) from the repository into DIR
 #   agent.sh restore-dump FILE              pg_restore of a dump into PGDATABASE (an empty farm database made by the
 #                                           database image's first start): as the superuser, `restore` service
@@ -255,6 +256,7 @@ case "${1:-run}" in
   _dump|_base|_ship|_forget|_check) "${1#_}" ;;
   health) health ;;
   snapshots) restic snapshots --host "$HOST_TAG" ;;
+  restic) shift; exec restic "$@" ;;
   fetch) [ $# = 3 ] || die "usage: agent.sh fetch SNAPSHOT DIR"; restic restore "$2" --host "$HOST_TAG" --target "$3" ;;
   restore-dump) [ $# = 2 ] || die "usage: agent.sh restore-dump FILE"; restore_dump "$2" ;;
   counts) counts ;;

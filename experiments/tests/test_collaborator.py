@@ -2,7 +2,7 @@
 with the Research collaborator role (experiments.roles: Experiments: read, nothing else). The experiment's lead adds
 the person to its team, or shares a part of it with them, and they then read that experiment and its own pages and
 nothing else of the farm: no farm page, no other sealed experiment. Taken off the team, they read nothing of it at once.
-The lead may share with any active account."""
+The lead may share with any active account that has a role."""
 from datetime import timedelta
 from io import StringIO
 
@@ -79,19 +79,19 @@ class CollaboratorTests(TestCase):
         self.assertEqual(self.page(*detail).status_code, 404)
         self.assertNotContains(self.page('experiments:experiment_list'), 'XQZ')
 
-    def test_a_share_gives_them_its_parts_and_any_active_account_is_offered(self):
-        plain = get_user_model().objects.create_user('plain', 'plain@example.com', 'x')     # no role at all
+    def test_a_share_gives_them_its_parts_and_any_active_account_with_a_role_is_offered(self):
+        get_user_model().objects.create_user('plain', 'plain@example.com', 'x')               # no role at all
         get_user_model().objects.create_user('gone', 'gone@example.com', 'x', is_active=False)
         self.client.force_login(self.lead)
         url = reverse('experiments:experiment_sharing', args=[self.experiment.pk])
         offered = set(self.client.get(url).context['form'].fields['person'].queryset.values_list('username', flat=True))
-        self.assertTrue({'visitor', 'plain', 'hr', 'student'} <= offered)
-        self.assertNotIn('gone', offered)
+        self.assertTrue({'visitor', 'hr', 'student'} <= offered)
+        self.assertFalse({'plain', 'gone', 'root'} & offered)
         until = (self.today + timedelta(days=5)).isoformat()
         self.client.post(url, {'person': str(self.visitor.pk), 'parts': ['results'], 'until': until, 'reason': 'Review'})
-        self.client.post(url, {'person': str(plain.pk), 'parts': ['design'], 'until': until, 'reason': 'Review'})
+        self.client.post(url, {'person': str(self.hr.pk), 'parts': ['design'], 'until': until, 'reason': 'Review'})
         self.assertEqual(ExperimentShare.objects.count(), 2)
         self.assertContains(self.page('experiments:experiment_detail', self.experiment.pk, tab='overview'), 'XQZ group')
-        self.client.force_login(plain)                     # shared, but no role may read experiments: refused
+        self.client.force_login(self.hr)                   # shared, but no role of theirs reads experiments: refused
         self.assertEqual(self.client.get(reverse('experiments:experiment_detail', args=[self.experiment.pk])).status_code,
                          403)

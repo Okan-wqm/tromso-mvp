@@ -170,7 +170,13 @@ SYSTEM_CALLS = {
                                    'it is the right to read reports (owner amendment C1)',
     'reports/compute/common.py': 'the fingerprint of the rows a filed report read, as compute read them',
     'farm/health/withdrawal.py': 'the medicine withdrawal holds fish wherever they went, over every unit '
-                                 '(module_reads_as_system); a page shows only what it may of it',
+                                 '(reads_as_system on its reader and the loaders of its facts); what is printed is '
+                                 'read as the person',
+    'inventory/read.py': 'the store’s book: feed drawn per site and day is a stock figure, every feeding counts',
+    'inventory/views.py': 'the store’s feeding per site, feed and day, the same figure as the book',
+    'reports/due.py': 'the regulatory due list: a duty is owed whoever looks (a sealed tank’s notifiable disease too)',
+    'experiments/sealing.py': 'the alarms’ fallback: who keeps the fish of a sealed cell (its lead, the Oversee '
+                              'holders), asked by the alarm loop',
     'farm/stock/read.py': 'the stock fold: a fold over part of a batch’s lines is a wrong figure; what is shown of it is '
                           'narrowed where it is shown',
 }
@@ -204,7 +210,7 @@ class SystemCallSiteTests(SimpleTestCase):
             relative = path.relative_to(root).as_posix()
             if '/tests' in f'/{relative}' or relative.startswith(('node_modules', '.venv')) or '/migrations/' in relative:
                 continue
-            if re.search(r'\bsealing\.(system|module_reads_as_system)\(|^\s*with system\(', path.read_text(encoding='utf-8'), re.M):
+            if re.search(r'\bsealing\.(system|reads_as_system)\(|^\s*with system\(', path.read_text(encoding='utf-8'), re.M):
                 found.add(relative)
         found.add('core/sealing.py')
         self.assertEqual(sorted(found), sorted(SYSTEM_CALLS))

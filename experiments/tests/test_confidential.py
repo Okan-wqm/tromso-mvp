@@ -13,13 +13,16 @@ import uuid
 from dataclasses import dataclass
 from functools import cache
 from itertools import product
+from unittest import mock
 
 from django.test import Client, TestCase
 from django.urls import URLResolver, get_resolver
 from django.urls.converters import IntConverter, UUIDConverter
+from django.utils import timezone
 
 from core.crud import Resource
 from core.models import AuditLog
+from core.testing import CLOCK
 
 from . import world
 
@@ -61,10 +64,10 @@ SEARCH = world.CANARY.lower()
 CSRF = re.compile(rb'(csrfmiddlewaretoken" value="|csrftoken=|"csrfToken": ")[^"; ]+')
 # The Content-Security-Policy's nonce, new on every answer: in the page's script tags and in the header.
 NONCE = re.compile(rb'''(nonce="|'nonce-)[A-Za-z0-9+/=_-]+''')
-# What else is new on every answer or every minute: a form's sending key, the Expires header, the monitoring screen's
-# change token (the minute is in it) and a clock time shown on a page.
-FRESH = [re.compile(rb'(name="entry_key" value=")[^"]+'), re.compile(rb'(Expires: )[^\n]+'),
-         re.compile(rb'(after=)[0-9a-f]+'), re.compile(rb'()\b[0-2][0-9]:[0-5][0-9]\b')]
+# What else is new on every answer: a form's sending key and the Expires header. The clock stands still while two worlds
+# are compared (`still`), so a time shown on a page and the monitoring screen's change token are compared as they are:
+# the token moves only with what the person may read (review F9).
+FRESH = [re.compile(rb'(name="entry_key" value=")[^"]+'), re.compile(rb'(Expires: )[^\n]+')]
 
 
 @dataclass(frozen=True)
@@ -165,8 +168,17 @@ class WalkCase(TestCase):
         except Exception as error:    # a crash is a finding of its own: reported with the leaks
             return error
 
-    def walk(self, user):
-        """Every route as `user`: [finding]."""
+    # What the walk looks for and whether a sealed id must answer as an unknown one: an outsider meets neither X nor its
+    # canary; a person holding Oversee meets X's farm facts but never its science, a grantee of X's water its shell but
+    # never its design (they may open X: no comparison with an unknown id). Routes whose names start with `skip` are
+    # not looked into for the canary (the regulatory reports name every unit by law, owner amendment C1).
+    canary, compare, skip = world.CANARY, True, ()
+
+    def walk(self, user, language=''):
+        """Every route as `user`, in `language` (their saved one) when given: [finding]."""
+        if language:
+            from core.models import Profile
+            Profile.objects.update_or_create(user=user, defaults={'language': language})
         client = Client()
         client.force_login(user)
         findings = []
@@ -198,12 +210,12 @@ class WalkCase(TestCase):
         found = []
         data = content(response)
         # Looked for with the random tokens taken out: a CSRF token or a nonce can hold the three letters by chance.
-        if world.CANARY.encode() in normal(data):
+        if self.canary.encode() in normal(data) and not (self.skip and route.name.startswith(self.skip)):
             data = normal(data)
-            at = data.find(world.CANARY.encode())
+            at = data.find(self.canary.encode())
             found.append(f'{route.name} {method} {response.status_code}: canary in '
                          f'…{data[max(0, at - 80):at + 40].decode(errors="replace")}…')
-        if unknown is not None and not isinstance(unknown, Exception):
+        if self.compare and unknown is not None and not isinstance(unknown, Exception):
             same = (response.status_code == unknown.status_code
                     and normal(data, values) == normal(content(unknown), randoms))
             if not same:
@@ -211,8 +223,8 @@ class WalkCase(TestCase):
                              f'{unknown.status_code} (or another page)')
         return found
 
-    def assertWalkClean(self, user):
-        findings = self.walk(user)
+    def assertWalkClean(self, user, language=''):
+        findings = self.walk(user, language)
         self.assertFalse(findings, f'{len(findings)} findings as {user}:\n' + '\n'.join(findings[:150]))
 
 
@@ -228,6 +240,30 @@ class RouteWalkTests(WalkCase):
 
     def test_staff_who_read_every_farm_page(self):
         self.assertWalkClean(self.staff)
+
+    def test_an_unrelated_researcher_in_norwegian_and_in_turkish(self):
+        for language in ('nb', 'tr'):
+            with self.subTest(language=language):
+                self.assertWalkClean(self.researcher, language)
+
+    def test_a_reader_of_the_regulatory_reports(self):
+        reader = world.person('reports', *world.area_perms(actions=('view', 'add', 'change')))
+        self.skip = ('reports:',)
+        self.assertWalkClean(reader)
+
+    def test_a_person_holding_oversee_never_meets_the_science(self):
+        keeper = world.person('keeper', *world.area_perms(exclude_apps=('reports',)), 'experiments.oversee_experiment')
+        self.canary, self.compare = world.SCIENCE, False
+        self.assertWalkClean(keeper)
+
+    def test_a_grantee_of_the_water_never_meets_the_design(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from ..models import ExperimentShare
+        ExperimentShare.objects.create(experiment=self.experiment, user=self.researcher, part='water', reason='Audit',
+                                       valid_until=timezone.now() + timedelta(days=5))
+        self.canary, self.compare = world.DESIGN, False
+        self.assertWalkClean(self.researcher)
 
 
 def where(before, after):
@@ -261,6 +297,9 @@ class NonInterferenceTests(TestCase):
         return pages
 
     def test_every_list_reads_the_same_with_and_without_x(self):
+        still = mock.patch(CLOCK, return_value=timezone.now())
+        still.start()
+        self.addCleanup(still.stop)
         world.build_open(self)
         without = self.lists(self.researcher)
         world.build_sealed(self)

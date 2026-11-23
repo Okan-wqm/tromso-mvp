@@ -37,6 +37,10 @@ from ..models import (
 )
 
 CANARY = 'XQZ'
+# The science of X (its name, design, notes): a person holding Oversee reads X's farm facts but never meets this.
+SCIENCE = 'SQZ'
+# The design of X (its hypothesis, notes, factor, level, group): a grantee of its water alone never meets this.
+DESIGN = 'DQZ'
 # The trial began this many days ago and runs this many days.
 BEGAN, DURATION = 5, 56
 
@@ -127,12 +131,12 @@ def build_sealed(cls):
     for tank in cls.sealed_tanks:
         Tank.objects.filter(pk=tank.pk).update(name=f'XQZ tank {tank.code}')
     cls.experiment = Experiment.objects.create(
-        code=next_code(Experiment, f'E-{cls.today.year}-'), name='XQZ diet trial', site=cls.site, species=cls.salmon,
-        duration_days=DURATION, starts_on=began, hypothesis='XQZ more protein', primary_endpoint='bfcr',
-        notes='XQZ notes')
-    factor = Factor.objects.create(experiment=cls.experiment, name='XQZ temperature', kind='other', unit='C')
-    level = Level.objects.create(factor=factor, label='XQZ warm')
-    group = ExperimentGroup.objects.create(experiment=cls.experiment, name='XQZ group')
+        code=next_code(Experiment, f'E-{cls.today.year}-'), name='XQZ diet trial SQZ', site=cls.site, species=cls.salmon,
+        duration_days=DURATION, starts_on=began, hypothesis='XQZ more protein SQZ DQZ', primary_endpoint='bfcr',
+        notes='XQZ notes SQZ DQZ')
+    factor = Factor.objects.create(experiment=cls.experiment, name='XQZ temperature SQZ DQZ', kind='other', unit='C')
+    level = Level.objects.create(factor=factor, label='XQZ warm SQZ DQZ')
+    group = ExperimentGroup.objects.create(experiment=cls.experiment, name='XQZ group SQZ DQZ')
     GroupLevel.objects.create(experiment=cls.experiment, group=group, factor=factor, level=level)
     cls.replicates = [Replicate.objects.create(group=group, number=number) for number in (1, 2)]
     last = began + timedelta(days=DURATION)
@@ -148,7 +152,7 @@ def build_sealed(cls):
     ]
     # Started past the service, as the experiments' own tests do (a draft is built, then it runs).
     Experiment.objects.filter(pk=cls.experiment.pk).update(status='running', allocation_method='manual',
-                                                           allocation_note='XQZ by hand')
+                                                           allocation_note='XQZ by hand SQZ')
     cls.experiment.refresh_from_db()
     Member.objects.create(experiment=cls.experiment, user=cls.lead, role='lead')
     cls.factor, cls.level, cls.group = factor, level, group
@@ -180,6 +184,17 @@ def build_sealed(cls):
     from sensors.models import Binding
     cls.binding = Binding.objects.create(channel=cls.sealed_channel, point=cls.sealed_point,
                                          valid_from=timezone.now() - timedelta(days=BEGAN - 1))
+    # The rows that hang on X's records: a task's note, checklist and assignee; an alarm at its point and who was told.
+    from alarms.models import Alarm, Notification
+    from tasks.models import TaskAssignee, TaskChecklistItem, TaskNote
+    cls.task_note = TaskNote.objects.create(task=cls.task, author=cls.lead, body='XQZ note on the weighing')
+    cls.checklist = TaskChecklistItem.objects.create(task=cls.task, text='XQZ weigh twenty fish')
+    TaskAssignee.objects.create(task=cls.task, user=cls.lead)
+    cls.alarm = Alarm.objects.create(source='water_limit', point=cls.sealed_point, parameter='oxygen_mg_l',
+                                     severity='critical', site=cls.site, production_department=cls.hall,
+                                     opened_at=timezone.now() - timedelta(hours=1), summary='XQZ-1 oxygen 4.0 below 6.0')
+    cls.notification = Notification.objects.create(alarm=cls.alarm, recipient=cls.lead, channel='push', level=0,
+                                                   queued_at=timezone.now())
 
 
 def sealed_ids(cls):
@@ -187,7 +202,8 @@ def sealed_ids(cls):
     rows = [cls.experiment, cls.factor, cls.level, cls.group, *cls.replicates, *cls.placements, cls.booking,
             *cls.sealed_tanks,
             cls.sealed_system, cls.sealed_batch, cls.feeding, cls.sealed_point, cls.sample, cls.lice, cls.event,
-            cls.treatment, cls.task, cls.system_task, cls.sealed_channel, cls.binding,
+            cls.treatment, cls.task, cls.system_task, cls.sealed_channel, cls.binding, cls.task_note, cls.checklist,
+            cls.alarm, cls.notification,
             *cls.sealed_batch.movements.values_list('operation', flat=True).distinct()]
     found = {}
     from farm.models import StockOperation

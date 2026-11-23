@@ -6,3 +6,10 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO balik_app
 REVOKE TRUNCATE, REFERENCES, TRIGGER ON ALL TABLES IN SCHEMA public FROM balik_app;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO balik_app;
 REVOKE UPDATE ON ALL SEQUENCES IN SCHEMA public FROM balik_app;
+-- The append-only tables (a trigger refuses every UPDATE and DELETE: the activity log, the alarms' history, the
+-- withdrawal acknowledgements, the filed reports' snapshots) lose the rights too, so that the refusal is the
+-- database's rights before it is the trigger's (security review S3). `alarms` keeps UPDATE: the alarm service locks
+-- an alarm's row (SELECT ... FOR UPDATE), which needs it; its trigger still refuses every change.
+REVOKE UPDATE, DELETE ON audit_log, alarm_clearances, alarm_notifications, alarm_delivery_attempts, alarm_escalations,
+  alarm_acknowledgements, withdrawal_acknowledgements, regulatory_report_snapshots FROM balik_app;
+REVOKE DELETE ON alarms FROM balik_app;

@@ -59,6 +59,12 @@ refused balik_app "ALTER TABLE audit_log DISABLE TRIGGER ALL"
 refused balik_app "DROP TABLE django_session"
 refused balik_app "CREATE INDEX check_roles ON django_session (expire_date)"
 refused balik_app "CREATE ROLE check_roles"
+refused balik_app "UPDATE audit_log SET id = id WHERE false"
+refused balik_app "DELETE FROM audit_log WHERE false"
+refused balik_app "DELETE FROM alarms WHERE false"
+refused balik_app "UPDATE alarm_acknowledgements SET id = id WHERE false"
+refused balik_app "DELETE FROM withdrawal_acknowledgements WHERE false"
+refused balik_app "UPDATE regulatory_report_snapshots SET content = content WHERE false"
 equals balik_app "SELECT count(*) FROM information_schema.table_privileges WHERE grantee = 'balik_app' AND privilege_type IN ('TRUNCATE', 'REFERENCES', 'TRIGGER')" 0
 
 echo "== the ingest role (sensors_ingest): its contract and its rows, nothing else"

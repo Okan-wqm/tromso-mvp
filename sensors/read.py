@@ -392,6 +392,89 @@ def bound_quantities(target, start, end):
     return [code for code in quantities.CODES if code in found]
 
 
+# ---- a place's water history (Tank › Water, System › Water) ------------------------------------------------------
+BANDS = (('critical_low', max), ('warning_low', max), ('warning_high', min), ('critical_high', min))
+WORKED = (parameters.NH3_N.code,)       # worked out from each sample by the water read, never measured
+
+
+@dataclass(frozen=True)
+class Worked:
+    """A value worked out from one sample (its NH₃-N from its TAN, pH and temperature): the value with its status, or
+    None with the reason it could not be worked out (the water read's own words)."""
+    at: datetime
+    value: float | None
+    status: str
+    note: str
+
+
+@dataclass
+class History:
+    """The water of a place over a window: one Chart per parameter on ONE time axis (`series`: the sensors' buckets and
+    gaps, the manual samples, the moves and calibrations), the values worked out from the samples (`worked`, by code),
+    and the fish's limits today as bands (`bands`: {code: {bound: float}}, the strictest bound of the species' rows, as
+    a value is judged against every row; a code with no row has no band: "no limit", never an assumed one)."""
+    target: object
+    start: datetime
+    end: datetime
+    zone: object
+    charts: list
+    worked: dict
+    bands: dict
+
+
+def sampled_codes(target, start, end):
+    """The measured parameters with a live manual or lab sample at the target's points (`places`) in the window."""
+    points = [point for point in places(target)[1] if point is not None]
+    if not points:
+        return []
+    found = WaterMeasurement.objects.filter(point__in=points, measured_at__gte=start, measured_at__lt=end)
+    return [code for code in parameters.COLUMNS if found.filter(**{f'{code}__isnull': False}).exists()]
+
+
+def bands_of(limits):
+    """{code: {bound: float}} of the fish's limit rows ({code: [WaterLimit]}, farm.water.read.limits_now): per bound the
+    strictest of the rows that set it (the highest low, the lowest high); a bound no row sets is left out."""
+    found = {}
+    for code, rows in limits.items():
+        bounds = {}
+        for bound, pick in BANDS:
+            values = [getattr(row, bound) for row in rows if getattr(row, bound) is not None]
+            if values:
+                bounds[bound] = float(pick(values))
+        if bounds:
+            found[code] = bounds
+    return found
+
+
+def water_history(target, start, end, *, now=None, max_points=MAX_POINTS):
+    """The History of a unit's, a system's or a point's water between start and end: every quantity bound there in the
+    window and every parameter sampled there, in the catalogue's order, each the `series` of the same window (the
+    charts share one time axis); the NH₃-N worked out from each live sample with a TAN (farm.water.read.history: the
+    sample's own pH and temperature, judged as the history page judges it); the fish's limits as bands."""
+    from farm.water import read as water_read
+
+    if end <= start:
+        raise ValueError('The end comes after the start.')
+    now = now or timezone.now()
+    codes = set(bound_quantities(target, start, end)) | set(sampled_codes(target, start, end))
+    charts = [series(target, code, start, end, max_points=max_points, now=now)
+              for code in quantities.CODES if code in codes]
+    worked = {}
+    points = [point for point in places(target)[1] if point is not None]
+    if points and parameters.TAN in codes:
+        samples = [sample for sample in water_read.samples_of(points=points, since=start, before=end)
+                   if not sample.is_deleted and sample.tan_mg_l is not None]
+        for row in reversed(water_read.history(samples)):            # samples_of is newest first: oldest first here
+            for code in WORKED:
+                reading = row.readings.get(code)
+                if reading is not None:
+                    worked.setdefault(code, []).append(Worked(
+                        row.sample.measured_at, None if reading.value is None else float(reading.value),
+                        str(reading.status), str(reading.note or '')))
+    place = target.unit if isinstance(target, SamplingPoint) and target.unit_id else target
+    return History(target, start, end, zone_for(target), charts, worked, bands_of(water_read.limits_now(place)))
+
+
 # ---- devices ---------------------------------------------------------------------------------------------------
 @dataclass(frozen=True)
 class DeviceStatus:

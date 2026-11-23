@@ -68,11 +68,11 @@ def unlock_all():
         cursor.execute('SELECT pg_advisory_unlock_all()')
 
 
-def make(count, run_pass=None, cls=worker.Worker, on_wait=None, **timing):
+def make(count, run_pass=None, cls=worker.Worker, on_wait=None, changes=None, **timing):
     clock = Clock()
     made = cls('alarms', worker.Timing(**{**TIMING, **timing}), run_pass=run_pass or mock.Mock(
-        return_value=engine.Summary()), clock=clock, stop=Ticks(clock, count, on_wait), reset=mock.Mock(
-        side_effect=unlock_all), exit_now=mock.Mock())
+        return_value=engine.Summary()), changes=changes, clock=clock, stop=Ticks(clock, count, on_wait),
+        reset=mock.Mock(side_effect=unlock_all), exit_now=mock.Mock())
     return made
 
 

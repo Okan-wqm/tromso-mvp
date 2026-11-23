@@ -253,7 +253,9 @@ rotate() {
   COMPOSE="${DC[*]}" ENV_FILE="$ENV_FILE" sh deploy/scripts/rotate-db-password.sh balik_app
   new=$(cat "$SECRETS_DIR/db_app_password")
   [ "$old" != "$new" ] || { echo "FAIL: the secret file did not change"; exit 1; }
-  if ls -a "$SECRETS_DIR" | grep -E 'db_app_password\.(old|new)'; then echo "FAIL: a copy was left"; exit 1; fi
+  for leftover in "$SECRETS_DIR"/db_app_password.old "$SECRETS_DIR"/.db_app_password.new; do
+    if [ -e "$leftover" ]; then echo "FAIL: $leftover was left"; exit 1; fi
+  done
   signin() { printf '%s\n' "$1" | "${DC[@]}" exec -T db sh -c \
     'read -r p; PGPASSWORD=$p psql -X -h 127.0.0.1 -U balik_app -d "$POSTGRES_DB" -At -c "SELECT 1"' 2>&1; }
   [ "$(signin "$new")" = 1 ] || { echo "FAIL: the new password does not sign in"; exit 1; }

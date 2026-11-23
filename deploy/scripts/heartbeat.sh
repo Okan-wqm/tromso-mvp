@@ -14,7 +14,7 @@
 #   backup      the backup service healthy: its last dump, base backup and ship done and none overdue, its archiver ok
 #   sensors     a reading stored within HEARTBEAT_SILENCE_MINUTES (30); 0 turns it off (a farm without sensors yet)
 set -u
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 ENV_FILE=${ENV_FILE:-farm.env}
 COMPOSE=${COMPOSE:-docker compose --env-file $ENV_FILE}
 setting() {  # setting NAME DEFAULT: from the environment, else from farm.env, else the default

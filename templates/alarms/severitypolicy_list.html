@@ -9,7 +9,7 @@
 {% for line in notes %}<p class="notice">{{ line }}</p>{% endfor %}
 <div class="table-wrap">
   <table class="data-table">
-    <thead><tr><th scope="col">{% trans "Severity" %}</th><th scope="col" class="num">{% trans "Raise after (seconds)" %}</th><th scope="col" class="num">{% trans "Clear after (seconds)" %}</th><th scope="col" class="num">{% trans "Escalate after (minutes)" %}</th><th scope="col" class="num">{% trans "Delivery attempts" %}</th><th scope="col" class="num">{% trans "Device clock off by more than (seconds)" %}</th><th scope="col" class="num">{% trans "Device clock deadband (seconds)" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>
+    <thead><tr><th scope="col">{% trans "Severity" %}</th><th scope="col" class="num">{% trans "Raise after (seconds)" %}</th><th scope="col" class="num">{% trans "Clear after (seconds)" %}</th><th scope="col" class="num">{% trans "Escalate after (minutes)" %}</th><th scope="col" class="num">{% trans "Delivery attempts" %}</th><th scope="col" class="num">{% trans "Retry after (seconds)" %}</th><th scope="col" class="num">{% trans "Device clock off by more than (seconds)" %}</th><th scope="col" class="num">{% trans "Device clock deadband (seconds)" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>
     <tbody>
       {% for policy in objects %}
       <tr>
@@ -18,6 +18,7 @@
         <td class="num">{{ policy.off_delay_seconds }}</td>
         <td class="num">{{ policy.escalation_minutes }}</td>
         <td class="num">{{ policy.delivery_attempts }}</td>
+        <td class="num">{{ policy.retry_seconds }}</td>
         <td class="num">{{ policy.clock_skew_seconds }}</td>
         <td class="num">{{ policy.clock_skew_deadband_seconds }}</td>
         <td class="row-actions">{% if can_change %}<a class="icon-button" href="{% url 'alarms:severitypolicy_edit' policy.pk %}" data-modal title="{% trans "Edit" %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% trans "Edit" %}</span></a>{% endif %}</td>

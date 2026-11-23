@@ -9,9 +9,15 @@ checked, a pass of alarms/engine.py at a time, for as long as it runs.
   value the ingest committed, a record written through the platform), so a value's alarm is open within the tick plus
   two passes of its commit (the owner's 10 s); and at least every `sweep` seconds, for what time alone moves (a value
   going stale, the delays, escalation).
+- **The outbox on a thread of its own.** A pass only queues the notifications; the sender thread goes through the outbox
+  every tick (alarms/outbox.py: due ones handed to their transport, failed ones tried again, at least once, never
+  lost), on its own database connection, so a transport that is slow or down never delays a pass. Only the worker that
+  holds the lock sends. A round that fails (not a transport's refusal: the outbox itself unreadable) is the step
+  'send' of the next pass's supervision: a critical alarm of the alarm system until a round passes again.
 - **Its own row** (alarms.AlarmWorkerStatus, `alarm_worker_status`): running or stopped, when it last finished a pass and
-  a pass with no failed step, how long the pass took, what failed, and after how long without a pass the alarms count as
-  unchecked (`stale_after`). The pages and the health check read it (alarms/watch.py), on the database's clock.
+  a pass with no failed step, how long the pass took, what failed, after how long without a pass the alarms count as
+  unchecked (`stale_after`), and the outbox: how many notifications wait and since when. The pages and the health check
+  read it (alarms/watch.py), on the database's clock.
 - **What stops it, and what it survives.** The database unreachable: the connection is closed and tried again after
   the tick, doubled each time up to `backoff_max`; unreachable for `db_down_exit` seconds: the process exits with 1 and
   Docker starts it again (`restart: unless-stopped`). A pass that fails whole (a step's failure is the engine's: logged,
@@ -33,7 +39,7 @@ from django.db import InterfaceError, OperationalError, connection
 from django.db.models import F
 from django.db.models.functions import Now
 
-from . import changes as changes_, engine
+from . import changes as changes_, engine, outbox
 from .models import AlarmWorkerStatus, WorkerState
 
 logger = logging.getLogger(__name__)
@@ -65,6 +71,7 @@ class Timing:
     hang_exit: float
     statement_timeout: float
     lock_timeout: float
+    send_timeout: float
 
     def __post_init__(self):
         problems = []
@@ -80,6 +87,8 @@ class Timing:
             problems.append('db_down_exit must be above 0 and max_failures at least 1')
         if not self.hang_exit > self.statement_timeout > 0 or not self.lock_timeout > 0:
             problems.append('hang_exit must be longer than statement_timeout, both and lock_timeout above 0')
+        if not self.send_timeout > 0:
+            problems.append('send_timeout must be above 0')
         if problems:
             raise ImproperlyConfigured(f'settings.ALARM_WORKER: {"; ".join(problems)}.')
 
@@ -99,16 +108,18 @@ def _reset():
 
 
 class Worker:
-    """One alarm worker: `run()` until `stop` is set (0) or until it must be started again (1). The pass, the clock, the
-    reset of a broken connection and the process's end are given in for the tests; by default the engine's pass,
-    alarms.changes.token, the monotonic clock, connection.close and os._exit."""
+    """One alarm worker: `run()` until `stop` is set (0) or until it must be started again (1). The pass, the look, the
+    outbox's round, the clock, the reset of a broken connection and the process's end are given in for the tests; by
+    default the engine's pass, alarms.changes.token, alarms.outbox.send_due, the monotonic clock, connection.close and
+    os._exit. `send=False`: no sender thread."""
 
-    def __init__(self, name=DEFAULT_NAME, timing=None, *, run_pass=None, changes=None, clock=time.monotonic, stop=None,
-                 reset=_reset, exit_now=os._exit):
+    def __init__(self, name=DEFAULT_NAME, timing=None, *, run_pass=None, changes=None, send=None, clock=time.monotonic,
+                 stop=None, reset=_reset, exit_now=os._exit):
         self.name = name
         self.timing = timing or Timing.from_settings()
         self.run_pass = run_pass or engine.run_once
         self.changes = changes or changes_.token
+        self.send = (lambda stop: outbox.send_due(timeout=self.timing.send_timeout, stop=stop)) if send is None else send
         self.clock = clock
         self.stop = stop or threading.Event()
         self.reset = reset
@@ -116,18 +127,23 @@ class Worker:
         self.leading = False
         self._standby_said = False
         self._pass_started = None
-        self._done = threading.Event()         # the watchdog's own: set when run() ends
+        self._done = threading.Event()         # the watchdog's and the sender's: set when the loop ends
+        self._send_failing = False             # the sender's last round failed: the pass supervises it as 'send'
 
     # ---- the loop -------------------------------------------------------------------------------------------------------
     def run(self):
-        watchdog = threading.Thread(target=self._watch, name=f'alarm-worker-watchdog-{self.name}', daemon=True)
-        watchdog.start()
+        threads = [threading.Thread(target=self._watch, name=f'alarm-worker-watchdog-{self.name}', daemon=True)]
+        if self.send:
+            threads.append(threading.Thread(target=self._sender, name=f'alarm-worker-sender-{self.name}', daemon=True))
+        for thread in threads:
+            thread.start()
         try:
             return self._loop()
         finally:
+            self._done.set()                   # the sender ends its round at the next notification
+            for thread in threads:
+                thread.join()
             self._finish()
-            self._done.set()
-            watchdog.join()
 
     def _loop(self):
         last_pass, seen, down_since, tries, failures = None, None, None, 0, 0
@@ -169,7 +185,7 @@ class Worker:
     def _pass(self):
         self._pass_started = self.clock()
         try:
-            summary = self.run_pass()
+            summary = self.run_pass(outside={'send': self._send_failing}) if self.send else self.run_pass()
         finally:
             took = self.clock() - self._pass_started
             self._pass_started = None
@@ -248,6 +264,38 @@ class Worker:
             logger.warning('The alarm worker %r could not say it stopped.', self.name, exc_info=True)
         self.leading = False
         logger.info('The alarm worker %r stopped.', self.name)
+
+    # ---- the sender -----------------------------------------------------------------------------------------------------
+    def _sender(self):
+        """The outbox's thread: a round every tick while this worker holds the lock, on the thread's own connection
+        (closed when the worker ends). A round that fails is logged and the connection opened again for the next."""
+        ready = False
+        try:
+            while not self._done.wait(self.timing.tick):
+                if not self.leading:
+                    continue
+                try:
+                    if not ready:
+                        self._session()
+                        ready = True
+                    self.send_round()
+                    self._send_failing = False
+                except Exception:
+                    logger.exception('The alarm worker %r could not go through the outbox; it tries again.', self.name)
+                    self._send_failing = True
+                    ready = False
+                    _reset()
+        finally:
+            connection.close()
+
+    def send_round(self):
+        """One round through the outbox, its figures written on the worker's row."""
+        delivery = self.send(self._done.is_set)
+        self._status(last_send_at=Now(), outbox_waiting=max(0, delivery.backlog - delivery.sent),
+                     outbox_oldest_at=delivery.oldest)
+        if delivery.sent or delivery.failed:
+            logger.info('Outbox: %s', delivery)
+        return delivery
 
     # ---- the watchdog ---------------------------------------------------------------------------------------------------
     def _watch(self):

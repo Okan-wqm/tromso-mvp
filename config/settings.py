@@ -395,4 +395,6 @@ ALARM_WORKER = {
     # the worker's own statements: one that runs longer is cancelled, a lock not had in lock_timeout is given up
     'statement_timeout': float(os.environ.get('ALARM_WORKER_STATEMENT_TIMEOUT', '20')),
     'lock_timeout': float(os.environ.get('ALARM_WORKER_LOCK_TIMEOUT', '5')),
+    # how long a transport may take with one notification before the attempt is failed (alarms/outbox.py)
+    'send_timeout': float(os.environ.get('ALARM_WORKER_SEND_TIMEOUT', '10')),
 }

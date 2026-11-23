@@ -1,4 +1,4 @@
-"""The alarm loop (manage.py run_alarms): one pass at a moment, in order:
+"""One alarm pass at a moment (the alarm worker's, alarms/worker.py; manage.py run_alarms once), in order:
 
 1. the sensor rules are checked (sensors/alarms.py `evaluate`) and their events mirrored (alarms/sources.py);
 2. the water limits open and clear their alarms (alarms/sources.py);
@@ -6,12 +6,12 @@
 4. every open alarm nobody has acknowledged gets the notifications of its level (rules added since reach it too), and
    goes on to the next level with a rule that reaches it when its level was notified at least the platform owner's
    escalation time ago, or at once when nobody could be notified at its level;
-5. every queued notification whose channel has a transport is handed to it (alarms/transports.py). None is connected
-   today: nothing is sent, and the outbox waits;
-6. the alarm system supervises itself (alarms/sources.py supervise): a step that failed and its own configuration (a
+5. the alarm system supervises itself (alarms/sources.py supervise): a step that failed and its own configuration (a
    missing rule row) are critical alarms of their own.
-Each step runs in its own transaction under a transaction-level advisory lock, so two loops never queue, escalate or send
-twice, and a step that fails rolls back alone, is logged and counted, and the others still run (alarm plan, defect 5)."""
+Each step runs in its own transaction under a transaction-level advisory lock, so two passes never queue or escalate
+twice, and a step that fails rolls back alone, is logged and counted, and the others still run (alarm plan, defect 5).
+A pass only queues: handing the notifications to a transport is the outbox's (alarms/outbox.py), outside any pass,
+transaction or lock, so a transport never delays an alarm."""
 import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -23,9 +23,8 @@ from django.utils import timezone
 from farm.water import freshness
 from sensors import alarms as sensor_alarms
 
-from . import read, routing, rules as alarm_rules, services, sources
+from . import routing, rules as alarm_rules, services, sources
 from .models import Acknowledgement, Alarm, AlarmClearance, Escalation, Notification, Severity, Source
-from .transports import transport_for
 
 logger = logging.getLogger(__name__)
 LOCK = 4_261_607_201          # the alarm loop's advisory lock key (any constant no other code takes)
@@ -37,16 +36,10 @@ class Summary:
     cleared: int = 0
     queued: int = 0
     escalated: int = 0
-    sent: int = 0
-    failed: int = 0
-    waiting: int = 0          # queued notifications whose channel has no transport
     failed_steps: list = field(default_factory=list)
 
     def __str__(self):
-        text = (f'{self.opened} opened, {self.cleared} cleared, {self.queued} queued, {self.escalated} escalated, '
-                f'{self.sent} sent, {self.failed} failed')
-        if self.waiting:
-            text += f'; {self.waiting} waiting, nothing sent: no transport is connected for their channel'
+        text = f'{self.opened} opened, {self.cleared} cleared, {self.queued} queued, {self.escalated} escalated'
         if self.failed_steps:
             text += f'; {len(self.failed_steps)} step failed: {", ".join(self.failed_steps)}'
         return text
@@ -125,8 +118,10 @@ def _step(name, summary, work):
         summary.failed_steps.append(name)
 
 
-def run_once(now=None):
-    """One pass of the loop at `now`; returns its Summary."""
+def run_once(now=None, outside=None):
+    """One pass at `now`; returns its Summary. `outside`: {name: whether it failed} of the alarm system's steps that run
+    outside the pass (the worker's sender, 'send'): supervised with the pass's own, and a failed one is in the
+    Summary's failed steps."""
     now = now or timezone.now()
     summary = Summary()
     freshness.forget()          # the water's staleness rules as they are now (farm/water/freshness.py)
@@ -142,28 +137,17 @@ def run_once(now=None):
                        .order_by('opened_at', 'id'))
         _route(_unsuppressed(waiting), now, summary, rules)
 
-    def send():
-        for notification in read.pending(rules):
-            transport = transport_for(notification.channel)
-            if transport is None:
-                summary.waiting += 1
-                continue
-            row = services.attempt(notification, transport.send(notification), now)
-            if row.outcome == 'sent':
-                summary.sent += 1
-            else:
-                summary.failed += 1
-
     steps = [('sensor rules', lambda: sensor_alarms.evaluate(now)),
              ('sensor events', lambda: count(sources.sensor_events())),
              ('water', lambda: count(sources.water(now, rules))),
              ('device clocks', lambda: count(sources.device_clocks(now, rules))),
-             ('notify', notify),
-             ('send', send)]
+             ('notify', notify)]
     for name, work in steps:
         _step(name, summary, work)
     # Last, after the steps whose failure it alarms: a failed step's alarm is on the page at once, and notified on the
     # next pass (this pass's notify step has run).
-    _step('supervision', summary, lambda: count(sources.supervise(now, rules, [name for name, _work in steps],
-                                                                  list(summary.failed_steps))))
+    outside = outside or {}
+    summary.failed_steps += [name for name, failed in outside.items() if failed]
+    _step('supervision', summary, lambda: count(sources.supervise(now, rules, [name for name, _work in steps]
+                                                                  + list(outside), list(summary.failed_steps))))
     return summary

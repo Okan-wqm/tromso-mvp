@@ -179,6 +179,11 @@ class AlarmWorkerStatus(models.Model):
     consecutive_failures = models.PositiveIntegerField(_('Failures in a row'), default=0)
     last_error = models.CharField(_('Last error'), max_length=300, blank=True)
     stale_after_seconds = models.PositiveIntegerField(_('Unchecked after (seconds)'))
+    # The outbox as its sender last found it (alarms/outbox.py): when it last went through it, how many notifications
+    # are still to be sent (waiting for a transport, for a retry, or being sent) and since when the oldest of them waits.
+    last_send_at = models.DateTimeField(_('Outbox last gone through at'), null=True, blank=True)
+    outbox_waiting = models.PositiveIntegerField(_('Notifications waiting'), default=0)
+    outbox_oldest_at = models.DateTimeField(_('Oldest waiting since'), null=True, blank=True)
 
     class Meta:
         db_table = 'alarm_worker_status'
@@ -366,6 +371,8 @@ ON_DELAY_BOUNDS = {Severity.CRITICAL: (0, 10), Severity.WARNING: (0, 900)}
 # times the owner's 5 min, §7a Q7); a warning within a day.
 ESCALATION_BOUNDS = {Severity.CRITICAL: (1, 30), Severity.WARNING: (1, 1440)}
 ATTEMPTS_BOUNDS = (1, 20)
+# Retry after (seconds), both severities: from a second to an hour between two attempts of one notification.
+RETRY_BOUNDS = (1, 3600)
 # A device clock's limit (seconds), either way: at least a second (a limit of 0 would alarm on the network's own delay),
 # at most the ingest contract's hour (sensors_contract.future_skew_s is at most 3600: past it the ingest replaces a
 # device's time, and the read layer refuses a value further ahead, evaluate.MAX_AHEAD). Its deadband is below the limit.
@@ -401,7 +408,7 @@ class SeverityPolicy(AuditedModel):
     """How an alarm of a severity behaves, one row per severity (a person with the right edits them, every change logged):
     how long a condition must hold before the alarm is raised and how long it must be over before it clears (in data
     time, so a restart loses nothing), how long a level waits for an acknowledgement before the next level is notified,
-    and how many times a failing transport is tried with one notification."""
+    and how many times a failing transport is tried with one notification, and how long apart."""
 
     severity = models.CharField(_('Severity'), max_length=10, choices=Severity.choices, editable=False)
     on_delay_seconds = models.PositiveIntegerField(_('Raise after (seconds)'))
@@ -410,6 +417,8 @@ class SeverityPolicy(AuditedModel):
     escalation_minutes = models.PositiveIntegerField(_('Escalate after (minutes)'))
     delivery_attempts = models.PositiveIntegerField(
         _('Delivery attempts'), validators=[MinValueValidator(ATTEMPTS_BOUNDS[0]), MaxValueValidator(ATTEMPTS_BOUNDS[1])])
+    retry_seconds = models.PositiveIntegerField(
+        _('Retry after (seconds)'), validators=[MinValueValidator(RETRY_BOUNDS[0]), MaxValueValidator(RETRY_BOUNDS[1])])
     clock_skew_seconds = models.PositiveIntegerField(
         _('Device clock off by more than (seconds)'),
         validators=[MinValueValidator(CLOCK_SKEW_BOUNDS[0]), MaxValueValidator(CLOCK_SKEW_BOUNDS[1])])
@@ -436,6 +445,8 @@ class SeverityPolicy(AuditedModel):
             models.CheckConstraint(condition=Q(delivery_attempts__gte=ATTEMPTS_BOUNDS[0],
                                                delivery_attempts__lte=ATTEMPTS_BOUNDS[1]),
                                    name='chk_alarm_severity_policies_attempts'),
+            models.CheckConstraint(condition=Q(retry_seconds__gte=RETRY_BOUNDS[0], retry_seconds__lte=RETRY_BOUNDS[1]),
+                                   name='chk_alarm_severity_policies_retry'),
             models.CheckConstraint(condition=Q(clock_skew_seconds__gte=CLOCK_SKEW_BOUNDS[0],
                                                clock_skew_seconds__lte=CLOCK_SKEW_BOUNDS[1],
                                                clock_skew_deadband_seconds__gte=0,

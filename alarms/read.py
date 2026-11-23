@@ -3,7 +3,7 @@ notification's state, whether a transport is connected, who may acknowledge, and
 state is read from the append-only rows, never stored."""
 from dataclasses import dataclass
 
-from django.db.models import Count, Exists, Max, OuterRef, Q
+from django.db.models import Count, Exists, Max, OuterRef
 
 from .models import (Acknowledgement, Alarm, AlarmClearance, Channel, DeliveryAttempt, Escalation, Notification,
                      Outcome)
@@ -39,16 +39,6 @@ def status(notification):
         return SENT
     failed = attempts.filter(outcome=Outcome.FAILED).count()
     return FAILED if failed >= current_rules().delivery_attempts(notification.alarm.severity) else QUEUED
-
-
-def pending(rules):
-    """The notifications still to be sent: none sent, fewer failures than their severity's delivery attempts."""
-    waiting = (Notification.objects.annotate(sent=Exists(DeliveryAttempt.objects.filter(
-        notification=OuterRef('pk'), outcome=Outcome.SENT)), failures=Count('attempts', filter=Q(
-            attempts__outcome=Outcome.FAILED))).filter(sent=False)
-        .select_related('alarm', 'recipient').order_by('queued_at', 'id'))
-    return [notification for notification in waiting
-            if notification.failures < rules.delivery_attempts(notification.alarm.severity)]
 
 
 def transport_connected(channel):

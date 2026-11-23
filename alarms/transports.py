@@ -20,7 +20,10 @@ class Failed:
 
 class Transport:
     """Takes one notification (its alarm, recipient, channel and level) to the person; returns Sent or Failed with a
-    short detail, never raises for a delivery that did not happen."""
+    short detail, never raises for a delivery that did not happen. The outbox (alarms/outbox.py) calls it on a thread of
+    its own with a time limit, outside any transaction: it must not use the database. A notification can come twice (a
+    sender that died after the transport took it and before its attempt was written sends it again): its id
+    (`notification.pk`) is the key the push service collapses on, so the person sees it once."""
 
     channel = ''
 

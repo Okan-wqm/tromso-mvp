@@ -45,7 +45,8 @@ class RecipientRuleForm(TabbedForm):
             self.fields[name].empty_label = empty
 
 
-POLICY_TABS = [('rule', _('Rule'), ['on_delay_seconds', 'off_delay_seconds', 'escalation_minutes', 'delivery_attempts']),
+POLICY_TABS = [('rule', _('Rule'), ['on_delay_seconds', 'off_delay_seconds', 'escalation_minutes', 'delivery_attempts',
+                                     'retry_seconds']),
                ('clock', _('Device clock'), ['clock_skew_seconds', 'clock_skew_deadband_seconds',
                                              'clock_behind_window_seconds'])]
 DEADBAND_TABS = [('deadband', _('Deadband'), ['parameter', 'deadband'])]
@@ -67,6 +68,7 @@ class SeverityPolicyForm(TabbedForm):
             'escalation_minutes': _('How long the people notified at one level have to acknowledge before the next level '
                                     'is notified.'),
             'delivery_attempts': _('How many times a failing transport is tried with one notification.'),
+            'retry_seconds': _('How long after a failed attempt the notification is tried again. 1 to 3600.'),
             'clock_skew_seconds': _('A device whose clock is further ahead of or behind the platform’s than this, '
                                     'measured from its newest value against when it was received, raises this alarm. '
                                     '1 to 3600; the warning’s below the critical’s. Ahead: the ingest replaces a '

@@ -27,7 +27,7 @@ UNSAFE = re.compile(r'[\s\x00-\x1f\x7f]')
 
 def plain(value, what):
     """`value` as it may stand in a line of passwd or acl. Anything empty or holding whitespace or a control character
-    is refused, naming `what` (never the value): the database refuses them too (migration sensors/0014), and this holds
+    is refused, naming `what` (never the value): the database refuses them too (migration sensors/0015), and this holds
     the files even against a row written past the constraints."""
     if not value or UNSAFE.search(value):
         raise CommandError(f'{what} holds a space, a line break or a control character: nothing was written.')

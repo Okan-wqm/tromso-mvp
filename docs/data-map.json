@@ -22653,6 +22653,7 @@
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
         "reports/tests/test_lice.py",
+        "monitoring/tests/test_silent_oxygen.py",
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_migration_subjects.py"
@@ -35805,6 +35806,7 @@
       },
       "tests": [
         "core/tests_workspaces.py",
+        "monitoring/tests/test_silent_oxygen.py",
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_fresh_rule.py",
         "alarms/tests/test_alarms.py",

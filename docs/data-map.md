@@ -2051,7 +2051,7 @@ Where a water sample is taken: a named place on one unit, one system’s loop or
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › water_sampling_points
 - **forms**: `SamplingPointForm`
 - **constraints**: chk_water_sampling_points_one_owner (check); chk_water_sampling_points_kind (check); chk_water_sampling_points_name (check); chk_water_sampling_points_depth (check); chk_water_sampling_points_flow (check); chk_water_sampling_points_share (check); uq_water_sampling_points_unit_name (unique: unit, name); uq_water_sampling_points_unit_middle (unique: unit); uq_water_sampling_points_system_name (unique: system, name); uq_water_sampling_points_system_middle (unique: system); uq_water_sampling_points_equipment_name (unique: equipment, name); uq_water_sampling_points_equipment_middle (unique: equipment)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/helpers.py`, `farm/tests/test_calculator.py` and 15 more
+- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/helpers.py`, `farm/tests/test_calculator.py` and 16 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3314,7 +3314,7 @@ A time a rule held for a channel: when it opened and closed and the furthest val
 - **read**: sensors.views.alarm_events (`/sensors/alarm-events/`); sensors.views.home (`/sensors/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Sensors › sensors_alarm_event
 - **constraints**: uq_sensors_alarm_event_open (unique: rule, channel_no); chk_sensors_alarm_event_period (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_alarms.py`, `sensors/tests/test_fresh_rule.py` and 3 more
+- **tests that mention it**: `core/tests_workspaces.py`, `monitoring/tests/test_silent_oxygen.py`, `sensors/tests/test_alarms.py` and 4 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

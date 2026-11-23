@@ -963,9 +963,12 @@ says so; "No recent data" when the temperature or the oxygen is older than 24 ho
 (for the oxygen superseded on 2026-11-23, below).
 
 **A unit with fish whose oxygen has no fresh value is critical** (owner decisions of 2026-11-23; they replace, for the
-dissolved oxygen alone, the grey "no recent data … never red" of 2026-11-04). Where the unit holds fish on its own day
-(the batches present that day) and neither its oxygen in mg/L nor in % has a fresh value for the place (its own, else its
-system's: A9), never measured included, the water's one judgement (`farm.water.read.PointWater.silent_oxygen`, counted
+dissolved oxygen alone, the grey "no recent data … never red" of 2026-11-04). Where the unit holds fish NOW (after its
+day's operations, `SpeciesBook.holds`: a unit harvested or emptied earlier today holds none; review 2, R1) and neither
+its oxygen in mg/L nor in % has a fresh value for the place (its own, else its system's: A9), never measured included,
+and also a unit with fish and no point at all to read its water at (`read.pointless_water`, review 2 R2: it was grey,
+with the alarm system's "no active sampling point" warning, which no longer holds beside the critical), the water's
+one judgement (`farm.water.read.PointWater.silent_oxygen`, counted
 in `status` and `point_status`) makes it critical: the Small and Big cards, the wall, the pane and the band's chip say
 "Dissolved oxygen (mg/L O₂): no recent data, 3 hours old" (the chip "O₂ (mg/L): no recent data", one chip for every unit
 it holds), the water page's row, Production units and the production overview say "Critical, no recent data" with that
@@ -979,6 +982,18 @@ or empty unit stays grey "no recent data" and raises no alarm, and so do the sen
 (they hold only where their place's water concerns fish, `farm.water.read.with_fish`; a farm's own rule holds whatever
 the fish). The other parameters keep their rule: a silent probe of them is a warning (its default rule), and an old
 value of them changes no card's state (`monitoring/tests/test_silent_oxygen.py`).
+One alarm per problem (review 2 of the branch, the coordinator's calls): a silent oxygen probe beside a FRESH typed
+oxygen (or another probe) is a warning of the alarm system, "T-02: the oxygen probe PROBE-T › O2 is silent; the oxygen
+is measured otherwise (by hand or by another probe)" (subject `system:unit:<unit>:oxygen_probe_silent`), the card
+following the fresh value; its default rule stands aside while that value is fresh (`read.oxygen_known`) and says its
+critical once it is not, and the warning ends (R3 p3). An old typed oxygen past its limit keeps its levels of the water
+limits, which say it: the alarm system's oxygen alarm stands aside while such a level holds or is open on the unit's
+oxygen (R4 p5); that the critical level and the warning level of one value are two alarms is main's design (ISA-18.2 L
+and LL: the warning is not notified while the critical is open). Two probes of one unit silent together (mg/L and %, or
+a primary and a backup) are an alarm each, one per channel as every sensor rule is (R4 p6). A farm's own "No fresh
+value" rule keeps the severity the farm gave it, a warning too: the farm's explicit choice (R3 p2). The check
+`sensors.W001` and the Alarm rules page do not list an oxygen channel without a rule: a unit with fish whose oxygen has
+no fresh value is the alarm system's critical all the same (R5).
 
 Not built, on purpose: any figure recomputed in `monitoring`, a feed-due alarm (the protocols have meals per day, no clock), trend
 sparklines, a stored calculation, a server cache or a push channel (a measured miss first), a stored status, an "open in the

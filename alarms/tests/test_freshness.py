@@ -108,6 +108,9 @@ NAMED = {
     ('alarms/models.py', 'ESCALATION_BOUNDS'): 'the refusal of unsafe escalation times per severity (cross review F9), '
                                                'never the time in force',
     ('alarms/models.py', 'ATTEMPTS_BOUNDS'): 'the refusal of nonsense of delivery attempts (§7c)',
+    ('alarms/models.py', 'RETRY_BOUNDS'): 'the refusal of nonsense of a retry time (a second to an hour), never the '
+                                          'time in force',
+    ('alarms/outbox.py', 'CLAIM'): "the advisory lock class of a notification being sent: an identity, not a threshold",
     ('alarms/models.py', 'CLOCK_SKEW_BOUNDS'): "the refusal of nonsense of a device clock limit: at most the ingest "
                                                "contract's hour",
     ('alarms/models.py', 'CLOCK_WINDOW_BOUNDS'): 'the refusal of nonsense of a device clock window (none to an hour), '

@@ -26,7 +26,7 @@ from ..models import Alarm, AlarmWorkerStatus
 from . import AlarmsCase
 
 TIMING = dict(tick=1.0, sweep=15.0, stale_after=45, db_down_exit=60.0, backoff_max=10.0, max_failures=5,
-              hang_exit=120.0, statement_timeout=20.0, lock_timeout=5.0)
+              hang_exit=120.0, statement_timeout=20.0, lock_timeout=5.0, send_timeout=10.0)
 
 
 class Clock:
@@ -68,10 +68,10 @@ def unlock_all():
         cursor.execute('SELECT pg_advisory_unlock_all()')
 
 
-def make(count, run_pass=None, cls=worker.Worker, on_wait=None, changes=None, **timing):
+def make(count, run_pass=None, cls=worker.Worker, on_wait=None, changes=None, send=False, **timing):
     clock = Clock()
     made = cls('alarms', worker.Timing(**{**TIMING, **timing}), run_pass=run_pass or mock.Mock(
-        return_value=engine.Summary()), changes=changes, clock=clock, stop=Ticks(clock, count, on_wait),
+        return_value=engine.Summary()), changes=changes, send=send, clock=clock, stop=Ticks(clock, count, on_wait),
         reset=mock.Mock(side_effect=unlock_all), exit_now=mock.Mock())
     return made
 
@@ -250,7 +250,7 @@ class HangTests(WorkerCase):
 class TimingTests(TestCase):
     def test_nonsense_is_refused_at_start(self):
         for wrong in ({'tick': 0}, {'sweep': 0.5}, {'stale_after': 15}, {'backoff_max': 0.5}, {'max_failures': 0},
-                      {'db_down_exit': 0}, {'hang_exit': 10}, {'lock_timeout': 0}):
+                      {'db_down_exit': 0}, {'hang_exit': 10}, {'lock_timeout': 0}, {'send_timeout': 0}):
             with self.subTest(wrong=wrong), self.assertRaises(ImproperlyConfigured):
                 worker.Timing(**{**TIMING, **wrong})
 

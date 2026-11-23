@@ -2386,6 +2386,18 @@ temperature, held constant and shown) and grow by it ÷ the band's expected FCR;
 harvest or transport gives no growth; no protocol, a weight outside the bands or no temperature stops it with the
 reason, never a default, and so does two years without reaching it. Nothing is stored.
 
+The page reads its rows together, not one by one: the withdrawals in force of every unit shown in one ask of the
+registry (`check.holding_of`), every row's earliest suitable harvest date in one pass (`check.earliest_of`), the last
+feedings of the stock in one read (`feeding.read.last_fed_in`, what the units list says, without walking the
+feedings), and the forecast: one projection walk plus a per-batch walk of up to 730 days for a batch with a target.
+Nothing is kept between requests, so nothing can be stale. Measured on the development data (20 rows, warm median of
+5, on a loaded machine, 22.11.2026): 825 queries and about 10 s before, 131 queries and about 1.8 s after; the page
+is the same byte for byte with the clock pinned, and its query count does not grow with its rows. The tests
+(`farm/tests/test_production_plans_reads.py`) hold the set reads to main's one-at-a-time reads as they were before
+them (copied into the test as the oracle) and to fixed dates, at five frozen moments on three site clocks, and the
+page to at most 60 queries at 3 and at 9 units. What is left is mostly the forecast's walk of the feedings and the
+last feeding's read of every feeding since the fish came in.
+
 **Slaughter facilities** (Setup › Harvest and logistics): name, Mattilsynet's approval number (godkjenningsnummer, 1
 to 6 letters or digits, stored in capitals, unique among live facilities; the format is the source's and is not
 verified with Mattilsynet), the operator (a supplier of the new category **Slaughter and processing**, which
@@ -2539,7 +2551,12 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
   fast of a transport (the rule a delivery's fast is checked by) where a harvest has its purge: "Earliest suitable live
   delivery date: 17.11.2026. Medicine withdrawal decides: the fish may leave the farm from 17.11.2026." or "… The fast
   decides: feeding must stop by …" (`check.earliest(unit, batch, kind=transport)`). A transfer and a grading do not
-  say it.
+  say it. A page of many rows asks `check.earliest_of(pairs)`, which reads each input once for all the rows (the
+  withdrawals in force, `check.holding_of(units)`, or the caller's, which must name every unit asked; the rule of
+  each species; the units' last feedings; the water, `BatchWater.of_each`, read together only for batches whose
+  samples are read over the same moments, so each batch's water is the one it has alone, also when a system's loop
+  point is on a site of another clock) and gives each row exactly what `earliest` gives it alone (`earliest` is its
+  case of one pair; `farm/tests/test_production_plans_reads.py` holds both to main's reads before them).
 - *Production units*: a "Withdrawal" badge on a unit with a withdrawal in force today, and the drawer's
   **Harvest and handling** part: the check of a harvest today and the unit's open plans with their fasts.
 

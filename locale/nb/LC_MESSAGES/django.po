@@ -2794,6 +2794,9 @@ msgstr "En mal startes ikke: kopier den til et forsøk."
 msgid "A topic has at most one “+”."
 msgstr "Et emne har høyst én «+»."
 
+msgid "A topic has no spaces, tabs or line breaks."
+msgstr "Et emne har ingen mellomrom, tabulatorer eller linjeskift."
+
 msgid "A topic starting with “$” is the broker’s own."
 msgstr "Et emne som starter med «$», tilhører brokeren selv."
 

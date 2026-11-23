@@ -21,12 +21,24 @@ from django.core.management.base import BaseCommand, CommandError
 from sensors.models import Connection, Credential, Device
 
 LINE = re.compile(r'^[A-Za-z0-9_.@-]+:\$7\$[0-9]+\$[A-Za-z0-9+/=]+\$[A-Za-z0-9+/=]+$')
+# What may not stand in a line of the files: a line break would write a rule of its own, a space a name nobody uses.
+UNSAFE = re.compile(r'[\s\x00-\x1f\x7f]')
+
+
+def plain(value, what):
+    """`value` as it may stand in a line of passwd or acl. Anything empty or holding whitespace or a control character
+    is refused, naming `what` (never the value): the database refuses them too (migration sensors/0014), and this holds
+    the files even against a row written past the constraints."""
+    if not value or UNSAFE.search(value):
+        raise CommandError(f'{what} holds a space, a line break or a control character: nothing was written.')
+    return value
 
 
 def passwd_text(extra_lines):
     lines = list(extra_lines)
     for credential in Credential.objects.filter(is_enabled=True).exclude(password_hash='').order_by('username'):
-        lines.append(f'{credential.username}:{credential.password_hash}')
+        what = f'credential {credential.pk}'
+        lines.append(f'{plain(credential.username, what)}:{plain(credential.password_hash, what)}')
     return ''.join(f'{line}\n' for line in lines)
 
 
@@ -34,11 +46,13 @@ def acl_text():
     devices = Device.objects.filter(is_active=True, connection__is_active=True, connection__is_deleted=False)
     parts = ['# Written by manage.py sensor_broker_sync from the Sensors configuration. Do not edit.\n']
     for connection in Connection.objects.filter(is_active=True).exclude(username='').order_by('name'):
-        topics = sorted({device.topic for device in devices.filter(connection=connection)})
-        parts.append(f'\nuser {connection.username}\n' + ''.join(f'topic read {topic}\n' for topic in topics))
+        topics = sorted({plain(device.topic, f'device {device.pk}') for device in devices.filter(connection=connection)})
+        user = plain(connection.username, f'connection {connection.pk}')
+        parts.append(f'\nuser {user}\n' + ''.join(f'topic read {topic}\n' for topic in topics))
     for credential in Credential.objects.filter(is_enabled=True).exclude(password_hash='').order_by('username'):
-        topics = sorted({device.topic for device in devices.filter(credential=credential)})
-        parts.append(f'\nuser {credential.username}\n' + ''.join(f'topic write {topic}\n' for topic in topics))
+        topics = sorted({plain(device.topic, f'device {device.pk}') for device in devices.filter(credential=credential)})
+        user = plain(credential.username, f'credential {credential.pk}')
+        parts.append(f'\nuser {user}\n' + ''.join(f'topic write {topic}\n' for topic in topics))
     return ''.join(parts)
 
 

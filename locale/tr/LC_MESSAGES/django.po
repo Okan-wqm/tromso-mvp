@@ -2800,6 +2800,9 @@ msgstr "Şablon başlatılmaz: bir deney olarak kopyalayın."
 msgid "A topic has at most one “+”."
 msgstr "Bir konuda en fazla bir “+” bulunur."
 
+msgid "A topic has no spaces, tabs or line breaks."
+msgstr "Bir konuda boşluk, sekme veya satır sonu bulunmaz."
+
 msgid "A topic starting with “$” is the broker’s own."
 msgstr "“$” ile başlayan bir konu broker’ın kendisine aittir."
 

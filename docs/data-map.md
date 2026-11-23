@@ -3512,7 +3512,7 @@ An MQTT broker the ingest service listens to: where it is, how the service signs
 - **read**: connections tab (`/sensors/connections/`)
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Sensors › sensors_connection (never shown: secret_file)
 - **forms**: `ConnectionForm`
-- **constraints**: uq_sensors_connection_name_live (unique: name); uq_sensors_connection_client_live (unique: client_id); chk_sensors_connection_name (check); chk_sensors_connection_host (check); chk_sensors_connection_client_id (check); chk_sensors_connection_port (check); chk_sensors_connection_keepalive (check); chk_sensors_connection_secret_file (check); chk_sensors_connection_secret_dots (check)
+- **constraints**: uq_sensors_connection_name_live (unique: name); uq_sensors_connection_client_live (unique: client_id); chk_sensors_connection_name (check); chk_sensors_connection_host (check); chk_sensors_connection_client_id (check); chk_sensors_connection_port (check); chk_sensors_connection_keepalive (check); chk_sensors_connection_secret_file (check); chk_sensors_connection_secret_dots (check); chk_sensors_connection_username (check)
 - **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/__init__.py`, `sensors/tests/test_demo.py` and 2 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
@@ -3631,7 +3631,7 @@ A field device that publishes on one topic of a connection: a probe, a PLC, a ga
 - **how it works**: Its site is where it is placed: a move to a place of another site changes it (Move device), the form only while it is out of the water.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Sensors › sensors_device
 - **forms**: `DeviceForm`
-- **constraints**: uq_sensors_device_code_live (unique: connection, code); uq_sensors_device_topic_live (unique: connection, topic); chk_sensors_device_code (check); chk_sensors_device_name (check); chk_sensors_device_interval (check); chk_sensors_device_topic_given (check); chk_sensors_device_topic_hash (check); chk_sensors_device_topic_system (check); chk_sensors_device_topic_plus (check); chk_sensors_device_topic_level (check)
+- **constraints**: uq_sensors_device_code_live (unique: connection, code); uq_sensors_device_topic_live (unique: connection, topic); chk_sensors_device_code (check); chk_sensors_device_name (check); chk_sensors_device_interval (check); chk_sensors_device_topic_given (check); chk_sensors_device_topic_hash (check); chk_sensors_device_topic_system (check); chk_sensors_device_topic_plus (check); chk_sensors_device_topic_level (check); chk_sensors_device_topic_plain (check)
 - **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/__init__.py`, `sensors/tests/test_contract.py` and 7 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |

@@ -6,7 +6,8 @@ Per active rule and each channel it covers (its channel, or every active channel
 - no data: no fresh value for `for_s` seconds past the channel's freshness, counted as the page counts it (the older
   of the value's device time and its receipt, read.State.fresh_from); the default rule of each quantity the water
   limits judge (AlarmRule.is_default) holds at the freshness itself, so a probe that stops sending is warned of the
-  moment its place shows "no recent data", whatever its pH scale;
+  moment its place shows "no recent data", whatever its pH scale, and only where its place's water concerns fish
+  (owner decision of 2026-11-23: a fallow or empty unit raises no alarm; farm.water.read.with_fish);
 - device offline: the channel's device sent nothing for three of its intervals;
 - above / below: every clean value of the last `for_s` seconds (and the current one) past the threshold; the event
   closes when the value is back past the threshold by the hysteresis;
@@ -28,6 +29,7 @@ from datetime import timedelta
 from django.db import connection, transaction
 from django.utils import timezone
 
+from farm.water import read as water_read, sources as water_sources
 from farm.water.parameters import PH
 
 from . import quantities, read
@@ -109,6 +111,10 @@ def evaluate(now=None):
         channels = [channel for channel in covered if channel.pk in places]                # bound now only
         states = read.latest([channel.channel_no for channel in channels], now)
         online = read.device_status({channel.device for channel in channels}, now)
+        # A default rule holds only where its place's water concerns fish (owner decision of 2026-11-23): one ask for
+        # every place of the rule's channels; an open event of a place whose fish are gone closes.
+        fished = (water_read.with_fish({place_of(places[channel.pk]) for channel in channels}, now)
+                  if rule.is_default and channels else None)
         with transaction.atomic():
             open_events = {event.channel_no: event for event in AlarmEvent.objects.select_for_update(of=('self',))
                            .filter(rule=rule, closed_at__isnull=True).select_related('binding')}
@@ -127,6 +133,7 @@ def evaluate(now=None):
                 state = _there(states[channel.channel_no], binding)
                 holds, value = _holds(rule, channel, state, online[channel.device_id].online, now, event is not None,
                                       binding)
+                holds = holds and (fished is None or place_of(binding) in fished)
                 if holds and event is None:
                     AlarmEvent.objects.create(rule=rule, channel_no=channel.channel_no, binding=binding, opened_at=now,
                                               peak=value)
@@ -138,6 +145,30 @@ def evaluate(now=None):
                     close(event, now)
                     closed_count += 1
     return opened_count, closed_count
+
+
+def place_of(binding):
+    """The place a binding holds its channel at, as the water read names it (farm.water.read.with_fish)."""
+    if binding.point_id:
+        return (water_sources.POINT, binding.point_id)
+    if binding.system_id:
+        return (water_sources.SYSTEM, binding.system_id)
+    return (water_read.EQUIPMENT, binding.equipment_id)
+
+
+def watched(codes, now=None):
+    """The places (`place_of`) where an active channel of a quantity of `codes` on an active device is bound now and an
+    active "No fresh value" rule covers it (the channel's own or its quantity's): a probe there that stops sending is
+    the sensor rules' to say, so the alarm system raises no second alarm for the unit's water beside it
+    (alarms/sources.py, the oxygen of a unit with fish that has no fresh value). Three queries."""
+    now = now or timezone.now()
+    rules = AlarmRule.objects.filter(kind=AlarmKind.NO_DATA, is_active=True)
+    by_quantity = set(rules.filter(channel__isnull=True).values_list('quantity', flat=True))
+    by_channel = set(rules.filter(channel__isnull=False).values_list('channel_id', flat=True))
+    return {place_of(binding) for binding in Binding.objects.visible().at(now).filter(
+                channel__quantity__in=list(codes), channel__state=ChannelStatus.ACTIVE, channel__device__is_active=True)
+            .select_related('channel')
+            if binding.channel.quantity in by_quantity or binding.channel_id in by_channel}
 
 
 def close(event, at):

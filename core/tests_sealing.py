@@ -161,6 +161,29 @@ class AccessLogTests(TestCase):
 # booking check). Another use of `sealing.system(` fails here: say why in this list, or read as the viewer.
 SYSTEM_CALLS = {
     'core/sealing.py': 'the framework itself',
+    'core/softdelete.py': 'the delete plan reaches every record its links reach; what the person may not see is counted, '
+                          'never named, and a delete that reaches it is refused to them',
+    'experiments/read.py': 'the booking check: a booking holds its tank whoever may read it, and is said with its days '
+                           'only; the oversee card, which says only the trial, its lead, its approval and its days',
+    'farm/stock/read.py': 'the stock fold: a fold over part of a batch’s lines is a wrong figure; what is shown of it is '
+                          'narrowed where it is shown',
+}
+# The places that read with SQL of their own (a cursor, raw()), which the managers' seal does not reach, each with why it
+# reads nothing sealed or reads only what the seal already let through. Another one fails here.
+RAW_SQL = {
+    'alarms/engine.py': 'an advisory lock, no rows',
+    'alarms/services.py': 'writes an alarm subject’s state for an alarm the engine raises, as the system (run_alarms)',
+    'core/checks.py': 'the database server’s version',
+    'core/codes.py': 'the next number of a code sequence: a number, no record',
+    'core/database.py': 'the catalogue of a table (columns, constraints, indexes, the estimate of a hypertable’s rows); '
+                        'its rows are read through the seal (core.dbgrid)',
+    'core/erasure.py': 'the erasure of a person’s data by the platform admin’s command, as the system',
+    'inventory/services.py': 'an advisory lock, no rows',
+    'knowledge/search.py': 'the text search configuration’s stems of the typed words, no rows',
+    'sensors/alarms.py': 'the readings of a channel a sensor alarm rule watches, evaluated as the system (run_alarms)',
+    'sensors/provider.py': 'the readings of the bindings the sealed Binding manager returned, inside their windows',
+    'sensors/read.py': 'the readings and rollups of the channels the sealed managers returned (a channel number is '
+                       'never taken from a request without them)',
 }
 
 
@@ -178,3 +201,18 @@ class SystemCallSiteTests(SimpleTestCase):
                 found.add(relative)
         found.add('core/sealing.py')
         self.assertEqual(sorted(found), sorted(SYSTEM_CALLS))
+
+
+class RawSqlSiteTests(SimpleTestCase):
+    def test_only_the_named_places_read_with_sql_of_their_own(self):
+        import pathlib
+        import re
+        root = pathlib.Path(__file__).resolve().parent.parent
+        found = set()
+        for path in root.rglob('*.py'):
+            relative = path.relative_to(root).as_posix()
+            if '/tests' in f'/{relative}' or relative.startswith(('node_modules', '.venv')) or '/migrations/' in relative                     or '/management/' in relative or relative.split('/')[-1].startswith('test_'):
+                continue
+            if re.search(r'\.cursor\(\)|\.raw\(|RawSQL\(', path.read_text(encoding='utf-8')):
+                found.add(relative)
+        self.assertEqual(sorted(found), sorted(RAW_SQL))

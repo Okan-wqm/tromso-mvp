@@ -12,7 +12,7 @@
     <tbody>
       {% for rule in objects %}
       <tr>
-        <td><span class="row-title">{{ rule }}</span>{% if rule.is_default %} <span class="badge">{% trans "Default" %}</span>{% endif %}</td>
+        <td><span class="row-title">{{ rule }}</span>{% if rule.is_default %} <span class="ui-chip" data-status="neutral">{% trans "Default" %}</span>{% endif %}</td>
         <td class="num">{{ rule.threshold|measured:rule.quantity_code }}</td>
         <td class="num">{% if rule.is_default %}{% trans "at the channel’s freshness" %}{% else %}{{ rule.for_s }}{% endif %}</td>
         <td>{{ rule.get_severity_display }}</td>

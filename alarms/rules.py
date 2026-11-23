@@ -12,6 +12,7 @@ the row is back (alarms/sources.py supervise):
 - escalate after: the shortest of the rows there are, else the lowest bound;
 - delivery attempts: the most of the rows there are, else the highest bound;
 - retry after: the shortest of the rows there are, else the lowest bound;
+- longest snooze: the shortest of the rows there are, else the lowest bound;
 - device clock limit: the smallest of the rows there are, else the lowest bound; its deadband none."""
 import logging
 from dataclasses import dataclass, field
@@ -21,7 +22,7 @@ from decimal import Decimal
 from sensors.models.alarm import Severity
 
 from .models import (ATTEMPTS_BOUNDS, CLOCK_SKEW_BOUNDS, CLOCK_WINDOW_BOUNDS, DELAY_BOUNDS, ESCALATION_BOUNDS, ON_DELAY_BOUNDS,
-                     RETRY_BOUNDS, ParameterDeadband, SeverityPolicy)
+                     RETRY_BOUNDS, SHELVE_BOUNDS, ParameterDeadband, SeverityPolicy)
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +64,10 @@ class Rules:
     def retry_after(self, severity):
         """How long after a failed attempt a notification is tried again."""
         return timedelta(seconds=self._value(severity, 'retry_seconds', min, RETRY_BOUNDS[0]))
+
+    def shelve_max(self, severity):
+        """The longest an alarm of the severity may be snoozed."""
+        return timedelta(minutes=self._value(severity, 'shelve_max_minutes', min, SHELVE_BOUNDS[severity][0]))
 
     def clock_skew(self, severity):
         """How far a device's clock may be off, either way, before the level holds (missing row: the smallest of the rows

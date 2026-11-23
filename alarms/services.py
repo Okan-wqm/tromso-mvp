@@ -2,6 +2,8 @@
 audit; the loop writes as 'system'). A pass writes set-based: its alarms, clearances, notifications and escalations, and
 their log entries, each in one statement however many there are (alarm plan, defect 7). Nothing here decides whether a
 condition holds (alarms/sources.py), who is notified (alarms/routing.py) or when (alarms/engine.py)."""
+from datetime import timedelta
+
 from django.core.exceptions import ValidationError
 from django.db import connection, transaction
 from django.utils import timezone
@@ -11,7 +13,8 @@ from core import audit
 from core.models import AuditLog
 from sensors.models.alarm import Severity
 
-from .models import Acknowledgement, Alarm, AlarmClearance, DeliveryAttempt, Escalation, Notification, Outcome
+from .models import (Acknowledgement, Alarm, AlarmClearance, AlarmShelve, AlarmShelveEnd, DeliveryAttempt, Escalation,
+                     Notification, Outcome)
 
 
 def _fit(model, field, text):
@@ -177,3 +180,49 @@ def acknowledge(alarm, user, *, at=None, device='', app='console', notification=
             audit.record_create(user, ack, {str(_('Device')): device or None, str(_('App')): app,
                                             str(_('Delay')): str(ack.delay)}, label=alarm.summary)
         return ack
+
+
+# ---- snoozing ---------------------------------------------------------------------------------------------------------
+def shelve(alarm, user, minutes, reason, *, at=None):
+    """`user` snoozes an open alarm for `minutes` (1 to its severity's longest snooze, Alarm severity rules), saying why:
+    nobody is notified of it and it is not escalated until then (alarms/engine.py, alarms/outbox.py); it is still
+    raised, kept, shown and cleared. One at a time. Logged, critical for a critical alarm. Who may is asked by the caller
+    (read.SHELVE)."""
+    from .read import snoozes
+    from .rules import current
+    at = at or timezone.now()
+    reason = ' '.join(str(reason or '').split())
+    with transaction.atomic():
+        alarm = Alarm.objects.select_for_update().get(pk=alarm.pk)
+        if AlarmClearance.objects.filter(alarm=alarm).exists():
+            raise ValidationError(_('This alarm has cleared: there is nothing to snooze.'))
+        longest = current().shelve_max(alarm.severity)
+        if not isinstance(minutes, int) or minutes < 1 or timedelta(minutes=minutes) > longest:
+            raise ValidationError(_('A %(severity)s alarm is snoozed for 1 to %(minutes)d minutes.') % {
+                'severity': alarm.get_severity_display().lower(), 'minutes': longest // timedelta(minutes=1)})
+        if not reason:
+            raise ValidationError(_('Say why the alarm is snoozed.'))
+        if alarm.pk in snoozes([alarm.pk], at):
+            raise ValidationError(_('This alarm is snoozed already.'))
+        row = AlarmShelve.objects.create(alarm=alarm, user=user, shelved_at=at, until=at + timedelta(minutes=minutes),
+                                         reason=_fit(AlarmShelve, 'reason', reason))
+        with audit.source_language():
+            audit.record_create(user, row, {str(_('Snoozed until')): row.until.isoformat(), str(_('Why')): row.reason},
+                                label=alarm.summary, severity=_severity(alarm))
+        return row
+
+
+def unshelve(alarm, user, *, at=None):
+    """`user` ends the alarm's snooze before its time: notification and escalation go on from now. Logged."""
+    from .read import snoozes
+    at = at or timezone.now()
+    with transaction.atomic():
+        alarm = Alarm.objects.select_for_update().get(pk=alarm.pk)
+        row = snoozes([alarm.pk], at).get(alarm.pk)
+        if row is None:
+            raise ValidationError(_('This alarm is not snoozed.'))
+        end = AlarmShelveEnd.objects.create(shelve=row, user=user, ended_at=at)
+        with audit.source_language():
+            audit.record(user, AuditLog.Action.UPDATE, row, {str(_('Ended at')): [None, at.isoformat()]},
+                         label=alarm.summary)
+        return end

@@ -1,7 +1,7 @@
 """What the data map (core.datamap) cannot read from the code, for the alarms' tables."""
 from core.datamap import Screen, no, system
 
-from .views import alarm_acknowledge, alarm_detail, alarm_list
+from .views import alarm_acknowledge, alarm_detail, alarm_list, alarm_snooze, alarm_snooze_end, alarm_snoozes
 
 LOOP = 'written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)'
 APPEND_ONLY = 'append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin'
@@ -31,6 +31,12 @@ SCREENS = {
                               columns={'*': system('written by run_alarms from what the transport answered')}),
     'Escalation': Screen(create=no(LOOP), edit=no(APPEND_ONLY), delete=no(APPEND_ONLY), read=(alarm_list, alarm_detail),
                          columns={'*': system(LOOP)}),
+    'AlarmShelve': Screen(create=(alarm_snooze,), edit=no(APPEND_ONLY), delete=no(APPEND_ONLY),
+                          read=(alarm_snoozes, alarm_detail),
+                          columns={'*': system('the person, the moment, until when and why, as they snoozed it')}),
+    'AlarmShelveEnd': Screen(create=(alarm_snooze_end,), edit=no(APPEND_ONLY), delete=no(APPEND_ONLY),
+                             read=(alarm_snoozes, alarm_detail),
+                             columns={'*': system('the person and the moment they ended a snooze early')}),
     'Acknowledgement': Screen(create=(alarm_acknowledge, 'sensors:alarm_event_acknowledge'), edit=no(APPEND_ONLY),
                               delete=no(APPEND_ONLY), read=(alarm_list, alarm_detail),
                               columns={'*': system('the person, the moment and the app or device that said it')},

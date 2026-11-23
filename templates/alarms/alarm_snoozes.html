@@ -1,0 +1,33 @@
+{% extends base_template %}
+{% load dates i18n %}
+{% comment %} Company › Alarms › Alarm snoozes (alarms.views.alarm_snoozes): every snooze, newest first: the alarm, who snoozed
+   it, from when until when, why, and whether it is in force, ran out or was ended early (and by whom). A snooze is never
+   changed or deleted. {% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<p class="panel-help">{% trans "A snoozed alarm is still raised, kept and cleared; nobody is notified of it and it is not escalated until the snooze ends. Snooze an open alarm on its page." %}</p>
+{% if snoozes %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th scope="col">{% trans "Alarm" %}</th><th scope="col">{% trans "Snoozed by" %}</th><th scope="col">{% trans "Snoozed at" %}</th><th scope="col">{% trans "Snoozed until" %}</th><th scope="col">{% trans "Why" %}</th><th scope="col">{% trans "State" %}</th></tr></thead>
+    <tbody>
+      {% for snooze in snoozes %}
+      <tr>
+        <td><a href="{% url 'alarms:alarm_detail' snooze.alarm_id %}">{{ snooze.alarm.summary }}</a><span class="row-sub">{{ snooze.alarm.get_severity_display }}</span></td>
+        <td>{{ snooze.user.get_full_name|default:snooze.user.get_username }}</td>
+        <td>{{ snooze.shelved_at|site_clock:snooze.alarm.site|date:"DATETIME_FORMAT" }}</td>
+        <td>{{ snooze.until|site_clock:snooze.alarm.site|date:"DATETIME_FORMAT" }}</td>
+        <td>{{ snooze.reason }}</td>
+        <td>{% if snooze.pk in in_force %}<span class="badge badge-open">{% trans "In force" %}</span>{% elif snooze.end %}{% blocktrans trimmed with person=snooze.end.user.get_full_name|default:snooze.end.user.get_username at=snooze.end.ended_at|site_clock:snooze.alarm.site|date:"DATETIME_FORMAT" %}Ended early by {{ person }}, {{ at }}{% endblocktrans %}{% else %}{% trans "Ran out" %}{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if page.paginator.num_pages > 1 %}{% include "crud/_pager.html" %}{% endif %}
+{% else %}
+<p class="panel-help">{% trans "No alarm has been snoozed." %}</p>
+{% endif %}
+{% endblock %}

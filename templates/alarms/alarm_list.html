@@ -25,7 +25,7 @@
       {% for alarm in alarms %}
       <tr>
         <td>{% if alarm.severity == "critical" %}<span class="badge badge-critical">{{ alarm.get_severity_display }}</span>{% else %}<span class="badge badge-maintenance">{{ alarm.get_severity_display }}</span>{% endif %}</td>
-        <td><a href="{% url 'alarms:alarm_detail' alarm.pk %}">{{ alarm.summary }}</a><span class="row-sub">{{ alarm.get_source_display }}</span></td>
+        <td><a href="{% url 'alarms:alarm_detail' alarm.pk %}">{{ alarm.summary }}</a><span class="row-sub">{{ alarm.get_source_display }}</span>{% if alarm.snoozed_until %}<span class="row-sub">{% blocktrans trimmed with until=alarm.snoozed_until|site_clock:alarm.site|date:"DATETIME_FORMAT" %}Snoozed until {{ until }}{% endblocktrans %}</span>{% endif %}</td>
         <td>{{ alarm.production_department|default:alarm.site|default:"—" }}</td>
         <td>{{ alarm.opened_at|site_clock:alarm.site|date:"DATETIME_FORMAT" }}</td>
         <td>{% if alarm.is_cleared %}{{ alarm.clearance.cleared_at|site_clock:alarm.site|date:"DATETIME_FORMAT" }}{% else %}<span class="badge badge-open">{% trans "Open" %}</span>{% endif %}</td>

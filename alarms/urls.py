@@ -12,4 +12,7 @@ urlpatterns += [
     path('alarms/', views.alarm_list, name='alarm_list'),
     path('alarms/<int:pk>/', views.alarm_detail, name='alarm_detail'),
     path('alarms/<int:pk>/acknowledge/', views.alarm_acknowledge, name='alarm_acknowledge'),
+    path('alarms/<int:pk>/snooze/', views.alarm_snooze, name='alarm_snooze'),
+    path('alarms/<int:pk>/snooze/end/', views.alarm_snooze_end, name='alarm_snooze_end'),
+    path('alarms/snoozes/', views.alarm_snoozes, name='alarm_snoozes'),
 ]

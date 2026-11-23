@@ -3,9 +3,9 @@
 1. the sensor rules are checked (sensors/alarms.py `evaluate`) and their events mirrored (alarms/sources.py);
 2. the water limits open and clear their alarms (alarms/sources.py);
 3. each device's clock is judged against the platform's (alarms/clock.py);
-4. every open alarm nobody has acknowledged gets the notifications of its level (rules added since reach it too), and
-   goes on to the next level with a rule that reaches it when its level was notified at least the platform owner's
-   escalation time ago, or at once when nobody could be notified at its level;
+4. every open alarm nobody has acknowledged or snoozed gets the notifications of its level (rules added since reach it
+   too), and goes on to the next level with a rule that reaches it when its level was notified at least the platform
+   owner's escalation time ago (or since its snooze ended), or at once when nobody could be notified at its level;
 5. the alarm system supervises itself (alarms/sources.py supervise): a step that failed and its own configuration (a
    missing rule row) are critical alarms of their own.
 Each step runs in its own transaction under a transaction-level advisory lock, so two passes never queue or escalate
@@ -23,7 +23,7 @@ from django.utils import timezone
 from farm.water import freshness
 from sensors import alarms as sensor_alarms
 
-from . import routing, rules as alarm_rules, services, sources
+from . import read, routing, rules as alarm_rules, services, sources
 from .models import Acknowledgement, Alarm, AlarmClearance, Escalation, Notification, Severity, Source
 
 logger = logging.getLogger(__name__)
@@ -50,14 +50,16 @@ def _lock():
         cursor.execute('SELECT pg_advisory_xact_lock(%s)', [LOCK])
 
 
-def _route(alarms, now, summary, rules):
+def _route(alarms, now, summary, rules, resumed=None):
     """Step 3 for every open, unacknowledged, unsuppressed alarm, set-based (alarm plan, defect 7): its level and what its
     levels were sent are read in two queries, the rules once (routing.Router), and the new notifications and escalations
     are written in one statement each. An alarm gets the notifications of its level (rules added since reach it too),
     and goes on to the next level with a rule that reaches it once its level was first notified the severity's escalation
-    time ago, or at once when nobody could be notified at its level."""
+    time ago, or at once when nobody could be notified at its level. `resumed` ({alarm id: when its snooze ended}): the
+    escalation time is counted from then when that is later."""
     if not alarms:
         return
+    resumed = resumed or {}
     router = routing.Router(now)
     ids = [alarm.pk for alarm in alarms]
     levels = dict(Escalation.objects.filter(alarm__in=ids).values('alarm').annotate(top=Max('level'))
@@ -78,7 +80,8 @@ def _route(alarms, now, summary, rules):
                     first.setdefault(key, now)
                     queued.append(Notification(alarm=alarm, recipient=user, channel=rule.channel, level=level, rule=rule,
                                                queued_at=now))
-            if key in first and now - first[key] < rules.escalation_after(alarm.severity):
+            if key in first and now - max(first[key], resumed.get(alarm.pk, first[key])) < rules.escalation_after(
+                    alarm.severity):
                 break
             following = router.next_level(alarm, level)
             if following is None:
@@ -135,7 +138,10 @@ def run_once(now=None, outside=None):
         waiting = list(Alarm.objects.exclude(pk__in=AlarmClearance.objects.values('alarm'))
                        .exclude(pk__in=Acknowledgement.objects.values('alarm')).select_related('point')
                        .order_by('opened_at', 'id'))
-        _route(_unsuppressed(waiting), now, summary, rules)
+        ids = [alarm.pk for alarm in waiting]
+        snoozed = read.snoozes(ids, now)               # raised and kept, never notified nor escalated while snoozed
+        _route([alarm for alarm in _unsuppressed(waiting) if alarm.pk not in snoozed], now, summary, rules,
+               read.resumed(ids, now))
 
     steps = [('sensor rules', lambda: sensor_alarms.evaluate(now)),
              ('sensor events', lambda: count(sources.sensor_events())),

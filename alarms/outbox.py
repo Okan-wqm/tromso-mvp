@@ -8,6 +8,7 @@ manage.py run_alarms after its one pass.
   out in that order, all of it in the first round once the transport answers.
 - **Retries.** A failed attempt is tried again once its severity's "Retry after" has passed since it failed, until the
   attempts are used up; then the notification is failed, and the alarm's page says so (read.status).
+- **Snoozed.** A notification of an alarm that is snoozed waits, and goes out once the snooze ends.
 - **Never lost; at worst twice.** The outbox is rows: a restart, a crash or a database outage finds every notification
   that has no "sent" attempt and sends it. A process that dies after the transport took one and before its attempt was
   written sends it again when it runs again: at least once, never lost (the transport has the notification's id for the
@@ -28,7 +29,7 @@ from django.utils import timezone
 
 from sensors.models.alarm import Severity
 
-from . import rules as alarm_rules, services
+from . import read, rules as alarm_rules, services
 from .models import RANK, DeliveryAttempt, Notification, Outcome
 from .transports import Failed, transport_for
 
@@ -45,6 +46,7 @@ class Delivery:
     waiting: int = 0            # no transport is connected for their channel
     retrying: int = 0           # failed before, tried again once their retry time has passed
     busy: int = 0               # another sender was sending them
+    snoozed: int = 0            # their alarm is snoozed: they wait until the snooze ends
     backlog: int = 0            # all the notifications still to be sent when the round began
     oldest: datetime | None = field(default=None)
 
@@ -118,9 +120,13 @@ def send_due(now=None, timeout=None, stop=None):
     moment = (lambda: now) if now is not None else timezone.now
     queue = backlog(rules)
     delivery = Delivery(backlog=len(queue), oldest=min((row.queued_at for row in queue), default=None))
+    snoozed = read.snoozes({row.alarm_id for row in queue}, moment())
     for notification in queue:
         if stop is not None and stop():
             break
+        if notification.alarm_id in snoozed:
+            delivery.snoozed += 1
+            continue
         if not is_due(notification, rules, moment()):
             delivery.retrying += 1
             continue

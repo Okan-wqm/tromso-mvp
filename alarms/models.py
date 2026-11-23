@@ -358,6 +358,59 @@ class Acknowledgement(models.Model):
         return self.acknowledged_at - self.alarm.opened_at
 
 
+class AlarmShelve(models.Model):
+    """A person snoozed an open alarm (ISA-18.2 shelving; owner decision Q5): from `shelved_at` until `until`, for
+    `reason`. While it lasts the alarm is still raised, kept and shown, and clears as any other; nobody is notified of it,
+    what was queued for it waits, and it is not escalated. Once it ends (`until` passes, or someone ends it early:
+    AlarmShelveEnd) notification and escalation go on, the escalation time counted again from the end. At most the
+    severity's longest snooze (Alarm severity rules); one at a time; by who holds Alarm snoozes: Create
+    (alarms/services.py shelve)."""
+
+    id = models.BigAutoField(primary_key=True)
+    alarm = models.ForeignKey(Alarm, on_delete=models.PROTECT, related_name='shelves', verbose_name=_('Alarm'))
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='alarm_shelves',
+                             verbose_name=_('Snoozed by'))
+    shelved_at = models.DateTimeField(_('Snoozed at'))
+    until = models.DateTimeField(_('Snoozed until'))
+    reason = models.CharField(_('Why'), max_length=300)
+
+    class Meta:
+        db_table = 'alarm_shelves'
+        ordering = ['-shelved_at', '-id']
+        verbose_name = _('alarm snooze')
+        verbose_name_plural = _('alarm snoozes')
+        constraints = [
+            models.CheckConstraint(condition=Q(until__gt=models.F('shelved_at')), name='chk_alarm_shelves_until'),
+            models.CheckConstraint(condition=~Q(reason=''), name='chk_alarm_shelves_reason'),
+        ]
+
+    def __str__(self):
+        return f'{self.alarm} · {self.shelved_at:%Y-%m-%d %H:%M}'
+
+    def ends_at(self):
+        """When it ends or ended: when someone ended it, or its `until`."""
+        end = getattr(self, 'end', None)
+        return min(end.ended_at, self.until) if end is not None else self.until
+
+
+class AlarmShelveEnd(models.Model):
+    """A person ended a snooze before its time."""
+
+    shelve = models.OneToOneField(AlarmShelve, primary_key=True, on_delete=models.PROTECT, related_name='end',
+                                  verbose_name=_('Snooze'))
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='+',
+                             verbose_name=_('Ended by'))
+    ended_at = models.DateTimeField(_('Ended at'))
+
+    class Meta:
+        db_table = 'alarm_shelve_ends'
+        verbose_name = _('alarm snooze end')
+        verbose_name_plural = _('alarm snooze ends')
+
+    def __str__(self):
+        return f'{self.shelve} · {self.ended_at:%Y-%m-%d %H:%M}'
+
+
 # ---- the rules: the user's reference data (owner, alarm plan §7c) ---------------------------------------------------
 # What a row may hold, the model's and the database's refusal of unsafe values (cross review F9); the values themselves
 # are the user's (seeded by migration 0002 with the owner's defaults, alarm plan §7a).
@@ -373,6 +426,9 @@ ESCALATION_BOUNDS = {Severity.CRITICAL: (1, 30), Severity.WARNING: (1, 1440)}
 ATTEMPTS_BOUNDS = (1, 20)
 # Retry after (seconds), both severities: from a second to an hour between two attempts of one notification.
 RETRY_BOUNDS = (1, 3600)
+# The longest snooze (minutes), per severity: a critical alarm nobody is told of for at most eight hours (twice the owner's
+# 4 h, Q5), a warning for at most a day.
+SHELVE_BOUNDS = {Severity.CRITICAL: (1, 480), Severity.WARNING: (1, 1440)}
 # A device clock's limit (seconds), either way: at least a second (a limit of 0 would alarm on the network's own delay),
 # at most the ingest contract's hour (sensors_contract.future_skew_s is at most 3600: past it the ingest replaces a
 # device's time, and the read layer refuses a value further ahead, evaluate.MAX_AHEAD). Its deadband is below the limit.
@@ -419,6 +475,7 @@ class SeverityPolicy(AuditedModel):
         _('Delivery attempts'), validators=[MinValueValidator(ATTEMPTS_BOUNDS[0]), MaxValueValidator(ATTEMPTS_BOUNDS[1])])
     retry_seconds = models.PositiveIntegerField(
         _('Retry after (seconds)'), validators=[MinValueValidator(RETRY_BOUNDS[0]), MaxValueValidator(RETRY_BOUNDS[1])])
+    shelve_max_minutes = models.PositiveIntegerField(_('Longest snooze (minutes)'))
     clock_skew_seconds = models.PositiveIntegerField(
         _('Device clock off by more than (seconds)'),
         validators=[MinValueValidator(CLOCK_SKEW_BOUNDS[0]), MaxValueValidator(CLOCK_SKEW_BOUNDS[1])])
@@ -447,6 +504,8 @@ class SeverityPolicy(AuditedModel):
                                    name='chk_alarm_severity_policies_attempts'),
             models.CheckConstraint(condition=Q(retry_seconds__gte=RETRY_BOUNDS[0], retry_seconds__lte=RETRY_BOUNDS[1]),
                                    name='chk_alarm_severity_policies_retry'),
+            models.CheckConstraint(condition=_per_severity('shelve_max_minutes', SHELVE_BOUNDS),
+                                   name='chk_alarm_severity_policies_shelve'),
             models.CheckConstraint(condition=Q(clock_skew_seconds__gte=CLOCK_SKEW_BOUNDS[0],
                                                clock_skew_seconds__lte=CLOCK_SKEW_BOUNDS[1],
                                                clock_skew_deadband_seconds__gte=0,
@@ -467,7 +526,8 @@ class SeverityPolicy(AuditedModel):
         super().clean()
         errors = {}
         for field, bounds, unit in (('on_delay_seconds', ON_DELAY_BOUNDS, _('seconds')),
-                                    ('escalation_minutes', ESCALATION_BOUNDS, _('minutes'))):
+                                    ('escalation_minutes', ESCALATION_BOUNDS, _('minutes')),
+                                    ('shelve_max_minutes', SHELVE_BOUNDS, _('minutes'))):
             value, (low, high) = getattr(self, field), bounds.get(self.severity, (None, None))
             if value is not None and low is not None and not low <= value <= high:
                 errors[field] = _('For a %(severity)s alarm, from %(low)d to %(high)d %(unit)s.') % {
@@ -563,6 +623,6 @@ class ParameterDeadband(AuditedModel):
             'band': narrowest.normalize()}]
 
 
-# The tables a database trigger keeps append-only (migration 0001).
+# The tables a database trigger keeps append-only (migrations 0001 and 0017).
 APPEND_ONLY = ('alarms', 'alarm_clearances', 'alarm_notifications', 'alarm_delivery_attempts', 'alarm_escalations',
-               'alarm_acknowledgements')
+               'alarm_acknowledgements', 'alarm_shelves', 'alarm_shelve_ends')

@@ -46,7 +46,7 @@ class RecipientRuleForm(TabbedForm):
 
 
 POLICY_TABS = [('rule', _('Rule'), ['on_delay_seconds', 'off_delay_seconds', 'escalation_minutes', 'delivery_attempts',
-                                     'retry_seconds']),
+                                     'retry_seconds', 'shelve_max_minutes']),
                ('clock', _('Device clock'), ['clock_skew_seconds', 'clock_skew_deadband_seconds',
                                              'clock_behind_window_seconds'])]
 DEADBAND_TABS = [('deadband', _('Deadband'), ['parameter', 'deadband'])]
@@ -69,6 +69,8 @@ class SeverityPolicyForm(TabbedForm):
                                     'is notified.'),
             'delivery_attempts': _('How many times a failing transport is tried with one notification.'),
             'retry_seconds': _('How long after a failed attempt the notification is tried again. 1 to 3600.'),
+            'shelve_max_minutes': _('The longest an alarm of this severity may be snoozed: nobody is notified of it and '
+                                    'it is not escalated meanwhile. Critical 1 to 480, warning 1 to 1440.'),
             'clock_skew_seconds': _('A device whose clock is further ahead of or behind the platform’s than this, '
                                     'measured from its newest value against when it was received, raises this alarm. '
                                     '1 to 3600; the warning’s below the critical’s. Ahead: the ingest replaces a '

@@ -64,6 +64,9 @@ fi
 
 template email_password ''
 template backup.env '# The backup repository'"'"'s access, read by the backup and restore services (docs/ops/backup-and-restore.md).
+# A restic REST server in append-only mode (the recommended target): this farm's user there, which may add only.
+# RESTIC_REST_USERNAME=
+# RESTIC_REST_PASSWORD=
 # S3-compatible storage:
 # AWS_ACCESS_KEY_ID=
 # AWS_SECRET_ACCESS_KEY=

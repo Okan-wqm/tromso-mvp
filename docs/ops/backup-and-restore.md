@@ -13,8 +13,9 @@ every command); it runs in the `backup` service as the read-only role `balik_bac
 | Uploaded files | the `media` volume (the library's PDFs) | with every ship | (the volume itself) | by the retention |
 | Shipped | `restic backup` of all of the above to `RESTIC_REPOSITORY`: encrypted (AES-256, the repository's password), deduplicated | every `BACKUP_SHIP_MINUTES` (15) | | |
 
-**Retention off the server** (`restic forget --prune`, daily): 48 hourly, 14 daily, 8 weekly, 12 monthly snapshots
-(`BACKUP_KEEP_*`). **A weekly `restic check`** reads 5 % of the data back.
+**Retention off the server** (`restic forget --prune`): 48 hourly, 14 daily, 8 weekly, 12 monthly snapshots
+(`BACKUP_KEEP_*`), applied **by the owner, not by the farm's server** (below). **A weekly `restic check`** on the
+farm's server reads 5 % of the data back (reading only).
 
 **What can be lost (RPO):** a crash of the database alone loses nothing committed (the WAL on the server's disk). A
 server lost with its disks loses at most `DB_ARCHIVE_TIMEOUT` + `BACKUP_SHIP_MINUTES`: **30 minutes** by default
@@ -52,13 +53,32 @@ broker's queue (devices resend), the static files (in the image), the secrets (`
 - `dc logs backup`: one line per job; `ERROR:` lines say what failed. A failed job is tried again after 15 minutes.
 - The database's own side: `SELECT * FROM pg_stat_archiver` (`failed_count` stays 0, `last_archived_time` is recent).
 
-## The target (owner decision, placeholders in farm.env.example)
+## The target, and who may delete (one design)
 
-`RESTIC_REPOSITORY` is any restic backend: S3-compatible object storage (`s3:https://...`), SFTP to a second server
-(`sftp:user@host:/path`), a restic REST server (`rest:https://...`). Its access keys go in `SECRETS_DIR/backup.env`.
-Requirements: in another location (another provider or data centre) than the server, in the EU/EEA for personal
-data, and, where the storage offers it, object lock or an append-only key so that a stolen server cannot delete its
-own backups. MinIO is banned (AGPL); use the provider's own storage.
+**The farm's server can add backups, never delete them.** Whoever takes the server (or its root) takes its backup key
+too; if that key could delete, the attacker could destroy the backups with the data. So:
+
+- **The repository:** a restic REST server (`rest-server`, BSD-2-Clause) run by the owner on a machine elsewhere (another
+  provider or data centre, in the EU/EEA), started with `--append-only --private-repos`: each farm's user may add to
+  its own repository and remove its own lock files, nothing else. `RESTIC_REPOSITORY=rest:https://<host>:8000/<farm>/`,
+  the farm's user and password as `RESTIC_REST_USERNAME`/`RESTIC_REST_PASSWORD` in `SECRETS_DIR/backup.env`, TLS on the
+  REST server (its own certificate). MinIO is banned (AGPL).
+- **On the farm's server:** `BACKUP_PRUNE_ON_FARM=0` (the default): the agent backs up, ships and checks; it never runs
+  `forget`/`prune` (they would be refused anyway).
+- **The owner prunes, monthly**, from the backup machine itself (or another owner machine) with a key that may delete:
+  directly on the repository's folder there, never through the append-only server:
+  ```
+  export RESTIC_REPOSITORY=/srv/restic/<farm> RESTIC_PASSWORD_FILE=<the farm's restic_password, from the owner's safe>
+  restic forget --host <farm> --tag balik --keep-hourly 48 --keep-daily 14 --keep-weekly 8 --keep-monthly 12 --prune
+  restic check --read-data-subset=10%
+  restic snapshots --host <farm> --latest 3          # the newest is minutes old
+  ```
+  and writes the date in the farm's record. Until it runs, the repository only grows (plan its storage for it).
+- **Not used, not tested:** S3 object lock (immutable versions for a period). If a provider's object lock is chosen
+  instead, it must be tested before go-live (a delete with the farm's key must fail).
+
+The go-live stack workflow runs the owner's `forget --prune` and `check` against the repository from a second machine
+stand-in (the restore project) and checks the latest snapshot is still there.
 
 ## Restore a dump (the usual restore)
 

@@ -12,7 +12,10 @@
 #                               ship  restic backup of the dumps, the base backups, the archived WAL and the uploaded
 #                                     files (media) to RESTIC_REPOSITORY: encrypted (the repository's password,
 #                                     RESTIC_PASSWORD_FILE) and off the server, every BACKUP_SHIP_MINUTES (15)
-#                               forget  the retention below, then prune, once a day
+#                               forget  the retention below, then prune, once a day: only with BACKUP_PRUNE_ON_FARM=1.
+#                                     Off by default: the farm's key is append-only (it can add, never delete), so
+#                                     a stolen server cannot remove its own backups; the owner prunes from another
+#                                     machine with a key of their own (docs/ops/backup-and-restore.md)
 #                               check   restic check with a 5 % sample of the data read back, once a week
 #                             each success is written to /backups/state/<job>.ok, each failure to <job>.failed;
 #                             `health` (the container's health check) fails when a job is overdue or failed last
@@ -68,6 +71,7 @@ DUMP_EVERY=$(( DUMP_HOURS * 3600 ))
 BASE_EVERY=$(( BASE_DAYS * 86400 ))
 SHIP_EVERY=$(( SHIP_MINUTES * 60 ))
 FORGET_EVERY=86400
+PRUNE_ON_FARM=$(printenv BACKUP_PRUNE_ON_FARM || echo 0)
 CHECK_EVERY=604800
 LOCAL_DUMPS=$(num BACKUP_LOCAL_DUMPS 3)
 LOCAL_BASES=$(num BACKUP_LOCAL_BASES 1)
@@ -198,6 +202,9 @@ health() {
   for job in forget check; do
     if [ -f "$STATE/$job.failed" ]; then echo "$job failed last"; exit 1; fi
   done
+  if [ "$(( $(now) - $(last check) ))" -gt "$(( CHECK_EVERY + 86400 ))" ] && [ -f "$STATE/ship.ok" ]; then
+    echo "check overdue"; exit 1
+  fi
   for spec in "dump $DUMP_EVERY" "ship $SHIP_EVERY" "base $BASE_EVERY"; do
     set -- $spec
     if [ -f "$STATE/$1.failed" ]; then echo "$1 failed last"; exit 1; fi
@@ -272,7 +279,7 @@ case "${1:-run}" in
       if due dump "$DUMP_EVERY"; then job dump || true; fi
       if due base "$BASE_EVERY"; then job base || true; fi
       if due ship "$SHIP_EVERY"; then job ship || true; fi
-      if due forget "$FORGET_EVERY"; then job forget || true; fi
+      if [ "$PRUNE_ON_FARM" = 1 ] && due forget "$FORGET_EVERY"; then job forget || true; fi
       if due check "$CHECK_EVERY"; then job check || true; fi
       sleep "$TICK" &
       wait $! || true

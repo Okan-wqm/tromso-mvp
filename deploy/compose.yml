@@ -344,6 +344,8 @@ services:
       BACKUP_KEEP_DAILY: ${BACKUP_KEEP_DAILY:-14}
       BACKUP_KEEP_WEEKLY: ${BACKUP_KEEP_WEEKLY:-8}
       BACKUP_KEEP_MONTHLY: ${BACKUP_KEEP_MONTHLY:-12}
+      # 0: the repository is append-only for this server, the owner prunes (docs/ops/backup-and-restore.md)
+      BACKUP_PRUNE_ON_FARM: ${BACKUP_PRUNE_ON_FARM:-0}
     secrets: [db_backup_password, restic_password]
     volumes:
       - wal-archive:/wal-archive

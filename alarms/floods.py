@@ -14,6 +14,7 @@ whether or when an alarm opens.
   written "grouped", never sent on its own nor again. After the window the count starts again.
 - **The pages** show a flood of open alarms above the list (`open_floods`): at least the flood count of one kind, each
   opened within the flood window of the one before."""
+import hashlib
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
@@ -24,14 +25,18 @@ from .sources import STEP_FAILED, slot_of
 EACH, FLOOD, COVERED = 'each', 'flood', 'covered'
 
 
+def _digest(text):
+    return hashlib.sha256(text.encode('utf-8')).hexdigest()
+
+
 def key(alarm):
     """The kind of an alarm: site, severity and what it is about (a sensor rule's alarm needs its event loaded)."""
     if alarm.source == Source.WATER_LIMIT:
         about = f'water:{slot_of(alarm.parameter)}'
     elif alarm.source == Source.SENSOR_RULE:
         about = f'rule:{alarm.sensor_event.rule_id}'
-    elif alarm.parameter == STEP_FAILED:
-        about = f'system:{alarm.parameter}:{alarm.summary}'          # each failed step its own kind (its name says it)
+    elif alarm.parameter == STEP_FAILED:                              # each failed step its own kind (its name says it),
+        about = f'system:{alarm.parameter}:{_digest(alarm.summary)}'  # a digest, so the stored key is never cut (R6)
     else:
         about = f'system:{alarm.parameter}'
     return f'{alarm.site_id or "-"}|{alarm.severity}|{about}'

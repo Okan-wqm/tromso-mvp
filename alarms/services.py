@@ -13,6 +13,7 @@ from core import audit
 from core.models import AuditLog
 from sensors.models.alarm import Severity
 
+from .health import OWN_HEALTH
 from .models import (Acknowledgement, Alarm, AlarmClearance, AlarmShelve, AlarmShelveEnd, DeliveryAttempt, Escalation,
                      Notification, NotificationKind, Outcome, OutboxEntry, Source)
 
@@ -165,15 +166,17 @@ def attempt(notification, result, now, *, flood_key='', flood_size=None, grouped
     it was part of."""
     from .transports import Sent
     outcome = Outcome.GROUPED if grouped else Outcome.SENT if isinstance(result, Sent) else Outcome.FAILED
-    row = DeliveryAttempt.objects.create(notification=notification, attempted_at=now, outcome=outcome,
-                                         detail=_fit(DeliveryAttempt, 'detail', result.detail or ''),
-                                         flood_key=_fit(DeliveryAttempt, 'flood_key', flood_key), flood_size=flood_size)
-    if outcome != Outcome.FAILED:
-        OutboxEntry.objects.filter(notification=notification).delete()
-    with audit.source_language():
-        audit.record(None, AuditLog.Action.UPDATE, notification,
-                     {str(_('Delivery')): [None, f'{outcome}: {row.detail}' if row.detail else outcome]},
-                     label=f'{notification.alarm.summary} → {notification.recipient.get_username()}')
+    with transaction.atomic():                 # the attempt, the queue's entry and the log together, or none (R2)
+        row = DeliveryAttempt.objects.create(notification=notification, attempted_at=now, outcome=outcome,
+                                             detail=_fit(DeliveryAttempt, 'detail', result.detail or ''),
+                                             flood_key=_fit(DeliveryAttempt, 'flood_key', flood_key),
+                                             flood_size=flood_size)
+        if outcome != Outcome.FAILED:
+            OutboxEntry.objects.filter(notification=notification).delete()
+        with audit.source_language():
+            audit.record(None, AuditLog.Action.UPDATE, notification,
+                         {str(_('Delivery')): [None, f'{outcome}: {row.detail}' if row.detail else outcome]},
+                         label=f'{notification.alarm.summary} → {notification.recipient.get_username()}')
     return row
 
 
@@ -212,8 +215,8 @@ def shelve(alarm, user, minutes, reason, *, at=None):
         alarm = Alarm.objects.select_for_update().get(pk=alarm.pk)
         if AlarmClearance.objects.filter(alarm=alarm).exists():
             raise ValidationError(_('This alarm has cleared: there is nothing to snooze.'))
-        if alarm.source == Source.SYSTEM and alarm.severity == Severity.CRITICAL:
-            raise ValidationError(_('A critical alarm of the alarm system itself is never snoozed: it says the alarms '
+        if alarm.source == Source.SYSTEM and alarm.parameter in OWN_HEALTH:
+            raise ValidationError(_('An alarm about the alarm system\'s own health is never snoozed: it says the alarms '
                                     'are not working as they should.'))
         longest = current().shelve_max(alarm.severity)
         if not isinstance(minutes, int) or minutes < 1 or timedelta(minutes=minutes) > longest:

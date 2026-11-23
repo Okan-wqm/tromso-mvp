@@ -609,7 +609,7 @@ def supervise(now, rules, steps, failed_steps, unchecked=None):
         'The alarm rules are incomplete (no rule row for: %(severities)s): the safest values are used until the rows '
         'are restored.'), severities=missing or '-'), now)]
     from . import outbox
-    stuck = outbox.undeliverable(outbox.backlog(), rules, now)
+    stuck = outbox.stuck(rules, now)
     subjects.append(system_subject(UNDELIVERABLE, bool(stuck), Severity.CRITICAL, _text(_(
         '%(count)d critical notification(s) cannot be delivered, the oldest queued %(since)s: the people of those '
         'alarms are not reached, nor would the next level be. Look at the alarms and tell them another way.'),

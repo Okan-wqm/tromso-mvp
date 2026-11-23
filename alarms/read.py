@@ -7,7 +7,7 @@ from django.db.models import Count, Exists, Max, OuterRef, Q, Subquery
 from django.utils import timezone
 
 from .models import (Acknowledgement, Alarm, AlarmClearance, AlarmShelve, Channel, DeliveryAttempt, Escalation,
-                     Notification,
+                     Notification, OutboxEntry,
                      Outcome)
 from .rules import current as current_rules
 from .transports import transport_for
@@ -42,6 +42,8 @@ def status(notification):
     attempts = DeliveryAttempt.objects.filter(notification=notification)
     if attempts.filter(outcome__in=[Outcome.SENT, Outcome.GROUPED]).exists():
         return SENT
+    if not OutboxEntry.objects.filter(notification=notification).exists():
+        return FAILED                          # given up: its attempts used up, or its alarm cleared before the first
     failed = attempts.filter(outcome=Outcome.FAILED).count()
     alarm = notification.alarm
     persists = alarm.severity == 'critical' and is_open(alarm) and not acknowledged(alarm)
@@ -91,7 +93,8 @@ def resumed(alarm_ids, now):
 
 def may_snooze(user, alarm, now=None):
     """Whether `user` may snooze the alarm now (Alarm snoozes: Create; an open alarm with none in force)."""
-    return (user.has_perm(SHELVE) and is_open(alarm) and not (alarm.source == 'system' and alarm.severity == 'critical')
+    from .health import OWN_HEALTH
+    return (user.has_perm(SHELVE) and is_open(alarm) and not (alarm.source == 'system' and alarm.parameter in OWN_HEALTH)
             and alarm.pk not in snoozes([alarm.pk], now or timezone.now()))
 
 

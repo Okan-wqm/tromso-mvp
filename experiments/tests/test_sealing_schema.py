@@ -61,12 +61,15 @@ class ExperimentColumnTests(SchemaCase):
 
 
 class MemberTests(SchemaCase):
-    def test_a_member_has_a_window_and_a_guest_role(self):
+    def test_a_member_has_a_window(self):
         now = timezone.now()
-        member = Member.objects.create(experiment=self.trial, user=self.user, role='guest', valid_from=now,
+        member = Member.objects.create(experiment=self.trial, user=self.user, role='advisor', valid_from=now,
                                        valid_until=now + timedelta(days=3))
         member.refresh_from_db()
-        self.assertEqual((member.role, member.valid_from, member.valid_until), ('guest', now, now + timedelta(days=3)))
+        self.assertEqual((member.role, member.valid_from, member.valid_until), ('advisor', now, now + timedelta(days=3)))
+
+    def test_there_is_no_guest_role(self):
+        self.refuses(Member.objects.create, experiment=self.trial, user=self.user, role='guest')
 
     def test_the_window_ends_after_it_begins(self):
         now = timezone.now()

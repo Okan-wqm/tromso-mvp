@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load i18n %}
+{% load i18n dates %}
 {% comment %} The lead's Sharing page (experiments.resources.ExperimentSharingView): who outside the team holds which part of the
    experiment until when and why, revoked ones kept as history, and a new share. {% endcomment %}
 {% block title %}{% trans "Sharing" %}{% endblock %}
@@ -25,8 +25,8 @@
       {% for share in shares %}
       <tr>
         <td>{% if share.user %}{{ share.user.get_full_name|default:share.user.get_username }}{% else %}{{ share.group.name }}{% endif %}</td>
-        <td>{{ share.get_part_display }}</td><td class="nowrap">{{ share.valid_until|date:"DATE_FORMAT" }}</td><td>{{ share.reason }}</td>
-        <td>{% if share.revoked_at %}{% blocktrans trimmed with day=share.revoked_at|date:"DATE_FORMAT" %}Revoked {{ day }}{% endblocktrans %}{% elif share.valid_until < now %}{% trans "Ended" %}{% else %}{% trans "Live" %}{% endif %}</td>
+        <td>{{ share.get_part_display }}</td><td class="nowrap">{{ share.valid_until|site_clock:object.site|date:"DATE_FORMAT" }}</td><td>{{ share.reason }}</td>
+        <td>{% if share.revoked_at %}{% blocktrans trimmed with day=share.revoked_at|site_clock:object.site|date:"DATE_FORMAT" %}Revoked {{ day }}{% endblocktrans %}{% elif share.valid_until < now %}{% trans "Ended" %}{% else %}{% trans "Live" %}{% endif %}</td>
         <td class="row-actions">{% if not share.revoked_at and share.valid_until > now %}<form method="post" action="{% url "experiments:experiment_revoke" object.pk share.pk %}">{% csrf_token %}<button type="submit" class="ui-btn">{% trans "Revoke" %}</button></form>{% endif %}</td>
       </tr>
       {% empty %}<tr><td colspan="6" class="muted">{% trans "Nothing is shared." %}</td></tr>{% endfor %}

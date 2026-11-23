@@ -2194,6 +2194,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_workspaces.py",
         "alarms/tests/test_snooze.py"
       ]
     },

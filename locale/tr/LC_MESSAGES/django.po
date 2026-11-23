@@ -3294,6 +3294,9 @@ msgstr "Alarm ertelendi."
 msgid "Alarm snoozes"
 msgstr "Alarm ertelemeleri"
 
+msgid "Alarm snoozes, scrolls sideways"
+msgstr "Alarm ertelemeleri, yana kaydırılır"
+
 msgid "Alarms"
 msgstr "Alarmlar"
 

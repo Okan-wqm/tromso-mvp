@@ -3287,6 +3287,9 @@ msgstr "Alarmen er slumret."
 msgid "Alarm snoozes"
 msgstr "Slumrede alarmer"
 
+msgid "Alarm snoozes, scrolls sideways"
+msgstr "Slumrede alarmer, rulles sidelengs"
+
 msgid "Alarms"
 msgstr "Alarmer"
 

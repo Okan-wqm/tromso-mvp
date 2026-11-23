@@ -262,7 +262,7 @@ A person snoozed an open alarm (ISA-18.2 shelving; owner decision Q5): from `she
 - **read**: alarms.views.alarm_snoozes (`/alarms/snoozes/`); alarms.views.alarm_detail (`/alarms/<int:pk>/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarm_shelves
 - **constraints**: chk_alarm_shelves_until (check); chk_alarm_shelves_reason (check)
-- **tests that mention it**: `alarms/tests/test_snooze.py`
+- **tests that mention it**: `core/tests_workspaces.py`, `alarms/tests/test_snooze.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

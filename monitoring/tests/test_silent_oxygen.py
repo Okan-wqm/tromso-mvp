@@ -19,11 +19,13 @@ from django.utils import translation
 
 from alarms import engine
 from alarms.models import Alarm
-from farm.tests.helpers import point_of
+from farm.models import SamplingPoint, Tank
+from farm.stock import services as stock_services
+from farm.tests.helpers import point_of, stock_fish
 from farm.tests.test_stock import make_unit
-from farm.water import parameters, services as water_services
-from farm.models import Tank
+from farm.water import parameters, read as water_read, services as water_services
 from sensors import bindings
+from sensors.models import AlarmEvent
 from sensors.tests import make_channel, make_device
 
 from .. import read
@@ -36,6 +38,7 @@ from .test_stopped_probe import PAGE, PANE, OXYGEN, SALINITY, TEMPERATURE, Stopp
 
 SILENT = 'Dissolved oxygen (mg/L O₂): no recent data'
 NO_FRESH_OXYGEN = 'no_fresh_oxygen'
+PROBE_SILENT = 'oxygen_probe_silent'
 
 
 class SilentOxygenCase(StoppedProbeCase):
@@ -97,7 +100,7 @@ class SilentOxygenCase(StoppedProbeCase):
         found = []
         for alarm in Alarm.objects.filter(clearance__isnull=True).select_related('sensor_event__rule'):
             rule = alarm.sensor_event.rule if alarm.sensor_event_id else None
-            if alarm.parameter in (parameters.OXYGEN_MG_L, parameters.OXYGEN_PCT) or (
+            if alarm.parameter in (parameters.OXYGEN_MG_L, parameters.OXYGEN_PCT, PROBE_SILENT) or (
                     rule is not None and rule.quantity_code in (parameters.OXYGEN_MG_L, parameters.OXYGEN_PCT)):
                 found.append((alarm.source, alarm.severity, alarm.parameter, alarm.summary))
         return sorted(found)
@@ -191,3 +194,78 @@ class TypedOxygenTests(SilentOxygenCase):
             with self.subTest(language=language), translation.override(language):
                 label = str(parameters.get(parameters.OXYGEN_MG_L).label)
                 self.assertIn(f'{label}: {words}', self.card(self.t1).state.reasons)
+
+
+class ReviewTwoTests(SilentOxygenCase):
+    """Review 2 of the branch (2026-11-23), the coordinator's calls on the owner's intent."""
+
+    def test_a_unit_harvested_this_morning_is_not_red_and_raises_no_alarm(self):
+        """R1: "holds fish" is now, after the day's operations: T-02 emptied today, its probes off, is neither red nor
+        an alarm (it was, until midnight, as fish present that day)."""
+        self.typed(self.t1, 1, oxygen_mg_l='9.0', temperature_c='12.0')
+        self.sensors(self.t2, 'PROBE-T')
+        stock_services.record_mortality(self.user, unit=self.t2, batch=self.fish, day=self.today, count=12000,
+                                        cause='disease')
+        water = self.water_row(self.t2)['water']
+        self.assertEqual((water.holds_fish, water.silent_oxygen), (False, None))
+        self.assertNotEqual(water.status, 'critical')
+        self.assertEqual(self.alarms(), [])
+
+    def test_a_unit_with_fish_and_no_sampling_point_is_red_and_one_critical_alarm(self):
+        """R2: no point to read its water at, so its oxygen has no fresh value: critical on the card, the water page and
+        as the alarm system's critical, never beside the "no active sampling point" warning."""
+        self.typed(self.t1, 1, oxygen_mg_l='9.0', temperature_c='12.0')
+        self.typed(self.t2, 1, oxygen_mg_l='9.0', temperature_c='12.0')
+        bare = make_unit('N-01', self.hall)
+        stock_fish(self.user, bare, 500, '50', 10, species=self.salmon)
+        self.assertFalse(SamplingPoint.objects.filter(unit=bare).exists())
+        card = self.card(bare)
+        self.assertEqual((card.state.key, card.state.reasons), ('critical', (SILENT,)))
+        row = next(row for row in self.client.get(reverse('farm:water')).context['rows'] if row['owner'].pk == bare.pk)
+        self.assertEqual((row['point'], row['water'].status, row['water'].why_silent), (None, 'critical', [SILENT]))
+        self.assertEqual(self.alarms(), [('system', 'critical', parameters.OXYGEN_MG_L, f'N-01: {SILENT}')])
+        self.assertFalse(Alarm.objects.filter(parameter='no_water_point').exists())
+
+    def test_a_silent_probe_beside_a_fresh_typed_oxygen_is_a_warning_and_critical_again_once_that_is_old(self):
+        """R3 p3: the card follows the fresh typed value (not red); the probe's silence is a warning while that value is
+        fresh, the default rule's critical once it is not (and the warning ends)."""
+        self.typed(self.t1, 1, oxygen_mg_l='9.0', temperature_c='12.0')
+        made = self.sensors(self.t2, 'PROBE-T')
+        self.typed(self.t2, 1, oxygen_mg_l='8.5')
+        self.assertNotEqual(self.card(self.t2).state.key, 'critical')
+        found = self.alarms(self.now, self.now + timedelta(seconds=31))          # past the warning's on-delay
+        self.assertEqual([(source, severity, parameter) for source, severity, parameter, _summary in found],
+                         [('system', 'warning', PROBE_SILENT)])
+        self.assertEqual(found[0][3], 'T-02: the oxygen probe PROBE-T › O2 is silent; the oxygen is measured otherwise '
+                                      '(by hand or by another probe).')
+        later = self.now + timedelta(hours=25)                     # the typed oxygen is old: nothing else is fresh
+        found = [each for each in self.alarms(later, later + timedelta(minutes=10)) if 'T-01' not in each[3]]
+        self.assertEqual([(source, severity) for source, severity, _parameter, _summary in found],
+                         [('sensor_rule', 'critical')])
+        self.assertEqual(Alarm.objects.get(parameter=PROBE_SILENT).clearance.cause, 'restored')
+        self.assertTrue(AlarmEvent.objects.filter(channel_no=made['oxygen'].channel_no, closed_at__isnull=True).exists())
+
+    def test_an_old_oxygen_past_its_limit_is_its_levels_alone(self):
+        """R4 p5: a typed oxygen past its critical limit, grown old, keeps its levels of the water limits (the critical
+        and the warning, main's two levels of one value, the warning not notified while the critical is open); the
+        alarm system's oxygen alarm stands aside for them: one problem, not a third alarm."""
+        self.typed(self.t1, 30, oxygen_mg_l='5.0')
+        self.typed(self.t1, 1, temperature_c='12.0')
+        self.typed(self.t2, 1, oxygen_mg_l='9.0', temperature_c='12.0')
+        self.assertEqual(self.card(self.t1).state.key, 'critical')
+        found = self.alarms()
+        self.assertEqual([(source, severity) for source, severity, _parameter, _summary in found],
+                         [('water_limit', 'critical'), ('water_limit', 'warning')])
+
+    def test_the_drawer_and_the_water_at_a_past_moment_say_it(self):
+        """R6: Production units' drawer and the water read at a past moment (the replay's `latest(at=...)`)."""
+        self.typed(self.t1, 1, oxygen_mg_l='9.0', temperature_c='12.0')
+        self.sensors(self.t2, 'PROBE-T')
+        drawer = self.client.get(reverse('farm:production_units'), {'unit': self.t2.pk}).context
+        self.assertEqual(drawer['water_point'].status, 'critical')
+        self.assertTrue(drawer['water_point'].why_silent[0].startswith(f'{SILENT}, 1'))
+        point = point_of(self.t2)
+        silent = water_read.latest([point], at=self.now - timedelta(minutes=30))[point.pk]
+        self.assertEqual((silent.status, silent.silent_oxygen is not None), ('critical', True))
+        fresh = water_read.latest([point], at=self.then + timedelta(minutes=1))[point.pk]
+        self.assertIsNone(fresh.silent_oxygen)

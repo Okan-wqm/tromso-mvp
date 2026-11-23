@@ -352,6 +352,16 @@ class CoverageCheckTests(FreshRuleCase):
         AlarmRule.objects.create(channel=self.ph, kind='no_data', for_s=300)        # a rule of the channel's own
         self.assertEqual(alarms.uncovered(), [])
 
+    def test_an_oxygen_channel_is_never_listed(self):
+        """Review 2 of the branch, R5: where an oxygen probe without a rule stops, a unit with fish whose oxygen then has no
+        fresh value is a critical alarm of the alarm system all the same (alarms/sources.py), so the check does not
+        warn of it."""
+        oxygen = make_channel(self.device, 'oxygen_mg_l', code='O2')
+        bindings.move(self.user, oxygen, self.now - timedelta(hours=1), system=self.ras)
+        AlarmRule.objects.filter(pk=default('oxygen_mg_l').pk).update(is_active=False, off_reason='Probe out.')
+        self.assertEqual(alarms.uncovered(), [])
+        self.assertEqual([found for found in run_checks(databases=['default']) if found.id == 'sensors.W001'], [])
+
     def test_a_channel_in_maintenance_or_on_an_inactive_device_is_not_listed(self):
         self.switch_off()
         Channel.objects.filter(pk=self.ph.pk).update(state='maintenance')

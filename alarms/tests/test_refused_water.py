@@ -141,6 +141,8 @@ class ReadingTests(RefusedWaterCase):
         self.assertEqual((water.get(NH3).status, water.unevaluated), ('no_limit', []))
         self.run_pass()
         self.assertFalse(self.open_alarms().exists())
+        # none raised and cleared either: the only alarm of the pass is the unsampled T-01's oxygen (2026-11-23)
+        self.assertEqual(list(Alarm.objects.values_list('source', 'parameter')), [('system', 'oxygen_mg_l')])
 
     def test_the_history_row_says_it(self):
         for hours, (water, wanted) in enumerate(((LOW, 'unevaluated'), (WATER, 'critical')), start=1):

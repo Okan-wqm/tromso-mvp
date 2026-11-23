@@ -128,7 +128,9 @@ class LadderTests(SimpleTestCase):
                 self.assertEqual((state.key, state.reasons),
                                  (key, (f'{parameters.get("co2_mg_l").label}: {label}, no recent data',)))
 
-    def test_a_fresh_ph_does_not_hide_a_stale_oxygen(self):
+    def test_a_fresh_ph_does_not_hide_a_stale_oxygen_the_water_does_not_judge_silent(self):
+        """(Hand-made water without `silent_oxygen`: where the water finds the unit holding fish, the oxygen is critical,
+        test_an_oxygen_the_water_judges_silent_is_critical.)"""
         mixed = water(reading('ph', 7.2, hours=1), reading('temperature_c', 9),
                       reading('oxygen_mg_l', 9, hours=72, status=Status.STALE))
         self.assertEqual(mixed.status, Status.OK)                          # the water's own status ranks OK above stale
@@ -138,7 +140,7 @@ class LadderTests(SimpleTestCase):
         self.assertEqual(len(state.stale), 1)
         self.assertIn('Dissolved oxygen (mg/L O₂): no recent data, 3 days old', state.stale[0].replace('\xa0', ' '))
 
-    def test_blind_is_a_missing_or_old_temperature_or_oxygen_or_no_middle_point(self):
+    def test_blind_is_a_missing_or_old_temperature_or_an_oxygen_not_judged_silent_or_no_middle_point(self):
         for readings in ((reading('oxygen_mg_l', 9),), (reading('temperature_c', 9),),
                          (reading('temperature_c', 9, hours=25), reading('oxygen_mg_l', 9))):
             with self.subTest(readings=[each.code for each in readings]):
@@ -148,6 +150,21 @@ class LadderTests(SimpleTestCase):
                          ('Temperature (°C): no recent data', 'Dissolved oxygen (mg/L O₂): no recent data'))
         self.assertEqual(self.key(water=(water(reading('temperature_c', 9), reading('oxygen_mg_l', 9), kind='inlet'),)),
                          'blind')                                          # the first point is not the middle one
+
+    def test_an_oxygen_the_water_judges_silent_is_critical(self):
+        """Owner decision of 2026-11-23: the water's judgement (PointWater.silent_oxygen: fish now, no fresh oxygen),
+        of the middle point or of a unit with no point at all (read.pointless_water), makes the card critical, said as
+        missing or old data, the chip's short words "O₂ (mg/L): no recent data"."""
+        stale = reading('oxygen_mg_l', 9, hours=30, status=Status.STALE)
+        for found, said in ((water(reading('temperature_c', 9), stale), 'no recent data, 1'),
+                            (PointWater(None, for_unit=True), 'no recent data')):
+            with self.subTest(said=said):
+                found.silent_oxygen = water_read.Silence(found.get('oxygen_mg_l'), NOW)
+                state = card(water=(found,)).state
+                self.assertEqual(state.key, 'critical')
+                self.assertTrue(state.reasons[0].startswith(f'Dissolved oxygen (mg/L O₂): {said}'), state.reasons)
+                self.assertEqual(state.stale, state.reasons)
+                self.assertEqual(read.brief_of(state.reasons[0]).sentence, 'O₂ (mg/L): no recent data')
 
     def test_the_oxygen_may_be_the_saturation_and_a_day_is_the_limit(self):
         percent = water(reading('temperature_c', 9, hours=23), reading('oxygen_saturation_pct', 95, hours=23))

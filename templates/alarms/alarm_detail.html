@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load dates i18n %}
+{% load alarm_watch dates i18n %}
 {% comment %} One alarm (alarms.views.alarm_detail): what it is and where, and everything that happened to it in time order:
    opened, each notification queued (recipient, channel, level, state) and each delivery attempt, the escalations, the
    acknowledgements (who, when, from which device and app, how late) and when it cleared. Nothing here is ever edited. {% endcomment %}
@@ -7,6 +7,7 @@
 {% block eyebrow %}{{ eyebrow }} · {{ title }}{% endblock %}
 {% block heading %}{{ alarm.summary }}{% endblock %}
 {% block content %}
+{% alarm_watch %}
 {% include "alarms/_not_sent.html" %}
 <section class="detail-section">
   <dl class="facts">

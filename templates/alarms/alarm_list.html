@@ -1,11 +1,12 @@
 {% extends base_template %}
-{% load dates i18n %}
+{% load alarm_watch dates i18n %}
 {% comment %} Company › Alarms › Alarms (alarms.views.alarm_list): every alarm of the water limits and the sensor rules, open
    ones first, with whether anyone could be notified, its level and whether it was acknowledged. {% endcomment %}
 {% block title %}{{ title }}{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
+{% alarm_watch %}
 {% include "alarms/_not_sent.html" %}
 {% for flood in floods %}<p class="notice notice-warning">{% blocktrans trimmed with size=flood.size since=flood.since|site_clock:flood.alarms.0.site|date:"DATETIME_FORMAT" example=flood.alarms.0.summary severity=flood.alarms.0.get_severity_display %}Alarm flood: {{ size }} open {{ severity }} alarms of one kind since {{ since }}, the first: {{ example }}. Each is listed below; a person gets one message for them.{% endblocktrans %}</p>{% endfor %}
 <form method="get" class="filters">

@@ -14,6 +14,14 @@ checked, a pass of alarms/engine.py at a time, for as long as it runs.
   lost), on its own database connection, so a transport that is slow or down never delays a pass. Only the worker that
   holds the lock sends. A round that fails (not a transport's refusal: the outbox itself unreadable) is the step
   'send' of the next pass's supervision: a critical alarm of the alarm system until a round passes again.
+- **The gap said.** A worker that takes the lock after a stretch longer than `stale_after` with no pass (it was
+  stopped, killed, or the database was away) has its first pass raise a critical alarm of the alarm system naming the
+  stretch (alarms/sources.py supervise), so the people are told afterwards what nobody checked; while it lasts the
+  pages say it (alarms/watch.py).
+- **The dead man off the server** (go-live): with `deadman_url` set, after each pass with no failed step, at most every
+  `deadman_every` seconds, the worker asks that address on a thread of its own (`deadman_timeout`); a service on
+  another network calls the on-call phone when the asks stop (the server, its power or network, the database or the
+  worker gone). Off by default: the address is the deployment's.
 - **Its own row** (alarms.AlarmWorkerStatus, `alarm_worker_status`): running or stopped, when it last finished a pass and
   a pass with no failed step, how long the pass took, what failed, after how long without a pass the alarms count as
   unchecked (`stale_after`), and the outbox: how many notifications wait and since when. The pages and the health check
@@ -31,6 +39,7 @@ import os
 import socket
 import threading
 import time
+import urllib.request
 from dataclasses import dataclass
 
 from django.conf import settings
@@ -39,7 +48,7 @@ from django.db import InterfaceError, OperationalError, connection
 from django.db.models import F
 from django.db.models.functions import Now
 
-from . import changes as changes_, engine, outbox
+from . import changes as changes_, engine, outbox, watch
 from .models import AlarmWorkerStatus, WorkerState
 
 logger = logging.getLogger(__name__)
@@ -72,6 +81,9 @@ class Timing:
     statement_timeout: float
     lock_timeout: float
     send_timeout: float
+    deadman_url: str = ''
+    deadman_every: float = 0
+    deadman_timeout: float = 0
 
     def __post_init__(self):
         problems = []
@@ -89,6 +101,9 @@ class Timing:
             problems.append('hang_exit must be longer than statement_timeout, both and lock_timeout above 0')
         if not self.send_timeout > 0:
             problems.append('send_timeout must be above 0')
+        if self.deadman_url and not (self.deadman_url.startswith('https://') and self.deadman_every > 0
+                                     and self.deadman_timeout > 0):
+            problems.append('deadman_url must be https, deadman_every and deadman_timeout above 0')
         if problems:
             raise ImproperlyConfigured(f'settings.ALARM_WORKER: {"; ".join(problems)}.')
 
@@ -107,6 +122,15 @@ def _reset():
         connection.connection = None
 
 
+def _ping(url, timeout):
+    """The dead man's ask: a GET; a failure is logged, never raised (the service notices the silence)."""
+    try:
+        with urllib.request.urlopen(url, timeout=timeout) as answer:  # an https address from the settings
+            answer.read(1)
+    except Exception as error:
+        logger.warning('The alarm worker could not reach its dead man (%s).', type(error).__name__)
+
+
 class Worker:
     """One alarm worker: `run()` until `stop` is set (0) or until it must be started again (1). The pass, the look, the
     outbox's round, the clock, the reset of a broken connection and the process's end are given in for the tests; by
@@ -114,7 +138,7 @@ class Worker:
     os._exit. `send=False`: no sender thread."""
 
     def __init__(self, name=DEFAULT_NAME, timing=None, *, run_pass=None, changes=None, send=None, clock=time.monotonic,
-                 stop=None, reset=_reset, exit_now=os._exit):
+                 stop=None, reset=_reset, exit_now=os._exit, ping=None):
         self.name = name
         self.timing = timing or Timing.from_settings()
         self.run_pass = run_pass or engine.run_once
@@ -129,6 +153,11 @@ class Worker:
         self._pass_started = None
         self._done = threading.Event()         # the watchdog's and the sender's: set when the loop ends
         self._send_failing = False             # the sender's last round failed: the pass supervises it as 'send'
+        self._unchecked = None                 # (from, to) of the stretch with no pass before this worker took over
+        self.ping = ping or _ping
+        self._pinged = None                    # when the dead man was last asked (the monotonic clock)
+        self.spawn = lambda target, args: threading.Thread(target=target, args=args, daemon=True,
+                                                           name=f'alarm-worker-dead-man-{name}').start()
 
     # ---- the loop -------------------------------------------------------------------------------------------------------
     def run(self):
@@ -185,7 +214,11 @@ class Worker:
     def _pass(self):
         self._pass_started = self.clock()
         try:
-            summary = self.run_pass(outside={'send': self._send_failing}) if self.send else self.run_pass()
+            extra = {'outside': {'send': self._send_failing}} if self.send else {}
+            if self._unchecked is not None:
+                extra['unchecked'] = self._unchecked
+            summary = self.run_pass(**extra)
+            self._unchecked = None
         finally:
             took = self.clock() - self._pass_started
             self._pass_started = None
@@ -196,7 +229,17 @@ class Worker:
         self._status(**fields)
         if summary.opened or summary.cleared or summary.failed_steps:
             logger.info('Alarm pass: %s', summary)
+        if not summary.failed_steps:
+            self._dead_man()
         return summary
+
+    def _dead_man(self):
+        """Asks the off-server dead man's address, at most every `deadman_every` seconds, on a thread of its own."""
+        timing = self.timing
+        if not timing.deadman_url or (self._pinged is not None and self.clock() - self._pinged < timing.deadman_every):
+            return
+        self._pinged = self.clock()
+        self.spawn(self.ping, (timing.deadman_url, timing.deadman_timeout))
 
     # ---- the lock, the session and the row -----------------------------------------------------------------------------
     def _lead(self):
@@ -213,6 +256,11 @@ class Worker:
                 self._standby_said = True
             return False
         self._session()
+        before = watch.state(self.name)
+        if before.row is not None and before.age is not None and before.age.total_seconds() > self.timing.stale_after:
+            self._unchecked = (before.row.last_pass_at, before.row.db_now)
+            logger.warning('The alarm worker %r takes over after %.0f s with no alarm pass.', self.name,
+                           before.age.total_seconds())
         AlarmWorkerStatus.objects.update_or_create(name=self.name, defaults={
             'state': WorkerState.RUNNING, 'host': _fit('host', socket.gethostname()), 'pid': os.getpid(),
             'started_at': Now(), 'heartbeat_at': Now(), 'consecutive_failures': 0, 'last_error': '',

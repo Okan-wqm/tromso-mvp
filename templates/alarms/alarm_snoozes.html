@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load dates i18n %}
+{% load alarm_watch dates i18n %}
 {% comment %} Company › Alarms › Alarm snoozes (alarms.views.alarm_snoozes): every snooze, newest first: the alarm, who snoozed
    it, from when until when, why, and whether it is in force, ran out or was ended early (and by whom). A snooze is never
    changed or deleted. {% endcomment %}
@@ -7,6 +7,7 @@
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
+{% alarm_watch %}
 <p class="panel-help">{% trans "A snoozed alarm is still raised, kept and cleared; nobody is notified of it and it is not escalated until the snooze ends. Snooze an open alarm on its page." %}</p>
 {% if snoozes %}
 <div class="table-wrap">

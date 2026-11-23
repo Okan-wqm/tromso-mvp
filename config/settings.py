@@ -397,4 +397,10 @@ ALARM_WORKER = {
     'lock_timeout': float(os.environ.get('ALARM_WORKER_LOCK_TIMEOUT', '5')),
     # how long a transport may take with one notification before the attempt is failed (alarms/outbox.py)
     'send_timeout': float(os.environ.get('ALARM_WORKER_SEND_TIMEOUT', '10')),
+    # the off-server dead man (go-live): an https address the worker asks after each good pass, at most every
+    # deadman_every seconds, each ask given deadman_timeout; a service elsewhere calls on-call when the asks stop.
+    # Empty: off (no such service is chosen yet).
+    'deadman_url': os.environ.get('ALARM_DEADMAN_URL', ''),
+    'deadman_every': float(os.environ.get('ALARM_DEADMAN_EVERY', '30')),
+    'deadman_timeout': float(os.environ.get('ALARM_DEADMAN_TIMEOUT', '5')),
 }

@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load i18n assets cards %}
+{% load alarm_watch i18n assets cards %}
 {% comment %} Operations › Monitoring (monitoring.views.monitor): a live card per tank, pond or cage, simple or detailed, in one polled
    grid that doubles as a wall screen (?wall=1: frontend/wall.ts fits the cards of a fitted template to the screen and turns
    their pages), and a unit's Deffeyes chart in a movable window. The page's own sheets load BEFORE tw.css (page_styles),
@@ -14,6 +14,7 @@
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
+{% alarm_watch %}
 <form method="get" class="monitor-toolbar ui-toolbar" role="search">
   {% if wall %}<input type="hidden" name="wall" value="1">{% endif %}
   <div class="monitor-filters">

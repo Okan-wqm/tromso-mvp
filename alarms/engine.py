@@ -121,10 +121,11 @@ def _step(name, summary, work):
         summary.failed_steps.append(name)
 
 
-def run_once(now=None, outside=None):
+def run_once(now=None, outside=None, unchecked=None):
     """One pass at `now`; returns its Summary. `outside`: {name: whether it failed} of the alarm system's steps that run
     outside the pass (the worker's sender, 'send'): supervised with the pass's own, and a failed one is in the
-    Summary's failed steps."""
+    Summary's failed steps. `unchecked` (from, to): the worker's first pass after a stretch with none (sources.supervise
+    raises it)."""
     now = now or timezone.now()
     summary = Summary()
     freshness.forget()          # the water's staleness rules as they are now (farm/water/freshness.py)
@@ -155,5 +156,6 @@ def run_once(now=None, outside=None):
     outside = outside or {}
     summary.failed_steps += [name for name, failed in outside.items() if failed]
     _step('supervision', summary, lambda: count(sources.supervise(now, rules, [name for name, _work in steps]
-                                                                  + list(outside), list(summary.failed_steps))))
+                                                                  + list(outside), list(summary.failed_steps),
+                                                                  unchecked)))
     return summary

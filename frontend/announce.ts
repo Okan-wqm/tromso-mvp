@@ -7,7 +7,11 @@
 // (F-244). At most one announcement per region in a window: what comes meanwhile is held, the latest goes out when the
 // window has passed. The grid's merge (frontend/poll.ts) tells what it replaced with a `poll:merged` event; the state is
 // the article's data-state. The grid's own notices (data-poll-state: not updated, gone, live again) are said too, in the
-// assertive region (F-045).
+// assertive region (F-045). "Cannot be read" when the shell's first answer fails (unread: the words of its placeholder,
+// templates/monitoring/_loading.html), the grid's or the pane's, is said in the POLITE region (coordinator's decision,
+// 2026-11-23): there is no picture yet that could mislead, and the page says it on the screen; so is the grid's "Updated
+// again." when the cards come after it (review F3). The shell's first fill straight from loading says nothing: it is
+// the first load.
 
 /** The states in rising order (worst last) from the page's list (#monitor-announce data-states: monitoring/read.py
  *  STATES, worst first, the one list); empty is no state to rise from. */
@@ -80,16 +84,24 @@ export function sentences(found: Rise[], unitOf: (key: string) => string, words:
   };
 }
 
-/** What the grid says when its poll state changes: not updated (stale), gone, or live again after either; nothing on
- *  the first load or when nothing changed. */
+/** What the grid says when its poll state changes: not updated (stale), gone, cannot be read (unread: the shell's
+ *  first answer failed), or live again after stale, gone or unread; nothing on the first load (the shell's loading,
+ *  then live, included) or when nothing changed. */
 export function pollNotice(previous: string | undefined, now: string,
-                           texts: { stale: string; gone: string; live: string }): string {
+                           texts: { stale: string; gone: string; live: string; unread?: string }): string {
   if (previous === undefined || previous === now) {
     return '';
   }
   if (now === 'stale') return texts.stale;
   if (now === 'gone') return texts.gone;
-  return now === 'live' && (previous === 'stale' || previous === 'gone') ? texts.live : '';
+  if (now === 'unread') return texts.unread ?? '';
+  return now === 'live' && (previous === 'stale' || previous === 'gone' || previous === 'unread') ? texts.live : '';
+}
+
+/** The region a poll notice is said in: the polite one for the shell's "cannot be read" and for "updated again" after
+ *  it (nothing was on the screen to mislead), the assertive one for every other (F-045). */
+export function noticeRegion(previous: string | undefined, now: string): 'assertive' | 'polite' {
+  return now === 'unread' || (now === 'live' && previous === 'unread') ? 'polite' : 'assertive';
 }
 
 /** One announcement per window; what comes meanwhile is held (the latest wins) and goes out with the next take after
@@ -176,17 +188,35 @@ function start(): void {
       speak('polite', found.polite);
     }
   });
-  // The grid's own notices (poll.ts sets data-poll-state): said in the assertive region, in the page's words.
+  // The grid's own notices (poll.ts sets data-poll-state), in the page's words: not updated, gone and live again in the
+  // assertive region; the shell's "cannot be read" (unread) in the polite one.
   let pollState = grid.dataset.pollState;
   new MutationObserver(() => {
     const now = grid.dataset.pollState ?? '';
     const text = pollNotice(pollState, now, { stale: grid.dataset.staleText ?? '', gone: grid.dataset.goneText ?? '',
-                                             live: grid.dataset.updatedText ?? '' });
+                                             live: grid.dataset.updatedText ?? '',
+                                             unread: grid.querySelector('.monitor-loading > [data-unread]')?.textContent ?? '' });
+    const region = noticeRegion(pollState, now);
     pollState = now;
     if (text) {
-      speak('assertive', text);
+      speak(region, text);
     }
   }).observe(grid, { attributes: true, attributeFilter: ['data-poll-state'] });
+  // The pane's body (#monitor-dock, made and removed by frontend/windows.ts): its "cannot be read", politely.
+  const dock = document.getElementById('monitor-dock');
+  if (dock !== null) {
+    new MutationObserver((changes) => {
+      for (const change of changes) {
+        const body = change.target as HTMLElement;
+        if (!body.matches('.monitor-window-body')) continue;
+        const text = pollNotice(change.oldValue ?? undefined, body.dataset.pollState ?? '', { stale: '', gone: '', live: '',
+                                unread: body.querySelector('.monitor-loading > [data-unread]')?.textContent ?? '' });
+        if (text) {
+          speak('polite', text);
+        }
+      }
+    }).observe(dock, { attributes: true, attributeFilter: ['data-poll-state'], attributeOldValue: true, subtree: true });
+  }
 }
 
 if (typeof document !== 'undefined') {

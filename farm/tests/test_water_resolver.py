@@ -189,7 +189,7 @@ class WorstFreshDecidesTests(SourcesCase):
         self.sample(hours=20, oxygen_mg_l='9', temperature_c='10', salinity_ppt='0')
         self.on(self.ras, self.value('oxygen_mg_l', 3.0, seconds=30))
         from django.urls import reverse
-        card = self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all'}).content.decode()
+        card = self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all', 'full': '1'}).content.decode()
         self.assertTrue('system sensor #1 reads 3.00' in card, 'the card says the worse fresh value')
         page = self.client.get(reverse('farm:water')).content.decode()
         self.assertTrue('system sensor #1 reads 3.00' in page, 'the water page says the worse fresh value')
@@ -292,5 +292,5 @@ class JudgedThroughTheOtherUnitTests(SourcesCase):
         self.assertRegex(reading.note, r'Judged as \d+\.\d\d mg/L\. Worked out from 9\.0 °C, 0\.0 ‰ and 1\.000 atm')
         self.assertIn('Atlantic salmon: critical below 6.00', reading.note)
         from django.urls import reverse
-        card = self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all'}).content.decode()
+        card = self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all', 'full': '1'}).content.decode()
         self.assertTrue('Judged as ' in card, 'the card says how the % was judged')

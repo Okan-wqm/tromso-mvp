@@ -88,7 +88,7 @@ class NoMiddlePointTests(SourcesCase):
         water = read.unit_water([self.t1])[self.t1.pk]
         self.assertTrue(water.for_unit)
         self.assertEqual(water.status, Status.CRITICAL)
-        card = self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all'}).content.decode()
+        card = self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all', 'full': '1'}).content.decode()
         self.assertIn('data-state="critical"', card)                       # the outlet stands for the unit
         self.assertIn('Dissolved oxygen (mg/L O₂): Critical', card)
         from ..models import WaterMeasurement
@@ -116,7 +116,7 @@ class ClockAheadTests(SourcesCase):
         water = self.latest()
         self.assertEqual(water.get('oxygen_mg_l').value, D('9.00'))
         self.assertEqual([reading.code for reading in water.future], ['oxygen_mg_l'])
-        card = self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all'}).content.decode()
+        card = self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all', 'full': '1'}).content.decode()
         self.assertIn('Dissolved oxygen (mg/L O₂): timestamp in the future', card)
 
 

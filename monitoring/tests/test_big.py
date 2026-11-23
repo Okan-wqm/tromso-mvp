@@ -25,7 +25,7 @@ BIG_CARD_BYTES = 30500
 
 class BigCase(SmallCase):
     def page(self, url=PAGE, **query):
-        response = self.client.get(url, {**BIG, **query})
+        response = self.client.get(url, {**BIG, **query, **({'full': '1'} if url == PAGE else {})})
         self.assertEqual(response.status_code, 200)
         return response.content.decode()
 
@@ -121,7 +121,7 @@ class ViewTests(BigCase):
         self.assertEqual([each.attrs['href'] for each in switch.walk() if each.tag == 'a'],
                          [f'{PAGE}?mode=big', f'{PAGE}?chart=full&mode=big'])
         # a screen with no chart has no switch; a value that names nothing is dropped
-        self.assertFalse(nodes(band_of(self.client.get(PAGE).content.decode()), 'monitor-view'))
+        self.assertFalse(nodes(band_of(self.client.get(PAGE, {'full': '1'}).content.decode()), 'monitor-view'))
         params = read.Params.from_query(self.client.get(PAGE, {'chart': 'sideways', 'zoom': 'x,' + str(self.t2.pk)}).wsgi_request.GET)
         self.assertEqual((params.chart, params.zoom), ('', frozenset({str(self.t2.pk)})))
         self.assertEqual(read.Params(mode='big', chart='full', zoom=frozenset({'b', 'a'})).canonical(),

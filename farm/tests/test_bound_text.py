@@ -256,7 +256,7 @@ class FarmPages(WaterTestCase):
         self.client.force_login(self.reader)
         for name, query in (('simple', {}), ('small', {'mode': 'small'}), ('big', {'mode': 'big'}),
                             ('wall', {'wall': '1', 'mode': 'small'})):
-            found[name] = self.client.get(MONITOR, query).content.decode()
+            found[name] = self.client.get(MONITOR, {**query, 'full': '1'}).content.decode()    # the page with its cards
         self.client.force_login(self.user)
         return found
 

@@ -3300,6 +3300,7 @@
         "monitoring/tests/test_big.py",
         "monitoring/tests/test_designer.py",
         "monitoring/tests/test_pages.py",
+        "monitoring/tests/test_shell.py",
         "monitoring/tests/test_template_pages.py",
         "alarms/tests/test_refused_water.py",
         "alarms/tests/test_who_ends_a_level.py"
@@ -31437,6 +31438,7 @@
         "monitoring/tests/test_boards.py",
         "monitoring/tests/test_golden.py",
         "monitoring/tests/test_resolve.py",
+        "monitoring/tests/test_shell.py",
         "monitoring/tests/test_small.py",
         "monitoring/tests/test_templates_db.py"
       ]
@@ -31778,6 +31780,7 @@
         "monitoring/tests/test_boards.py",
         "monitoring/tests/test_golden.py",
         "monitoring/tests/test_resolve.py",
+        "monitoring/tests/test_shell.py",
         "monitoring/tests/test_small.py",
         "monitoring/tests/test_templates_db.py"
       ]

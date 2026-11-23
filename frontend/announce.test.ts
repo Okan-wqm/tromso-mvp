@@ -71,6 +71,17 @@ test('the grid says aloud when it can no longer be updated, when it is gone and 
   assert.equal(pollNotice(undefined, 'live', texts), '');               // the first load says nothing
 });
 
+test('the shell: its first fill says nothing, a failed first answer says the cards cannot be read', () => {
+  const texts = { stale: 'Not updated', gone: 'Signed out', live: 'Up to date again', unread: 'Cannot be read' };
+  assert.equal(pollNotice('loading', 'live', texts), '');               // the first fill is the first load
+  assert.equal(pollNotice('loading', 'unread', texts), 'Cannot be read');
+  assert.equal(pollNotice('unread', 'unread', texts), '');              // asked again, still failing: said once
+  assert.equal(pollNotice('unread', 'live', texts), '');                // the cards came: still the first load
+  assert.equal(pollNotice('loading', 'gone', texts), 'Signed out');
+  assert.equal(pollNotice('unread', 'gone', texts), 'Signed out');
+  assert.equal(pollNotice('loading', 'unread', { stale: 'a', gone: 'b', live: 'c' }), '');   // a page without the words
+});
+
 test('the order of the states is the one the page gives (the server list), worst last, without empty', () => {
   assert.deepEqual(ORDER, ['ok', 'note', 'unjudged', 'blind', 'warning', 'critical']);
   assert.deepEqual(order(''), []);

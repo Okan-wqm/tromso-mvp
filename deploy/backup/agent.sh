@@ -8,7 +8,7 @@
 #                                     with the row count of every table beside it, every BACKUP_DUMP_HOURS (24)
 #                               base  pg_basebackup (tar, gzip, the WAL it needs streamed in), every BACKUP_BASE_DAYS (7);
 #                                     with the WAL the server archives into /wal-archive (archive_command,
-#                                     archive_timeout 5 min) it restores the database to any moment since
+#                                     archive_timeout, 15 min) it restores the database to any moment since
 #                               ship  restic backup of the dumps, the base backups, the archived WAL and the uploaded
 #                                     files (media) to RESTIC_REPOSITORY: encrypted (the repository's password,
 #                                     RESTIC_PASSWORD_FILE) and off the server, every BACKUP_SHIP_MINUTES (15)
@@ -35,7 +35,9 @@
 # RESTIC_REPOSITORY, RESTIC_PASSWORD_FILE and the repository's own credentials (deploy/secrets/backup.env);
 # BACKUP_HOST_TAG (this installation's name in the repository); the intervals above; the retention
 # BACKUP_KEEP_HOURLY (48), BACKUP_KEEP_DAILY (14), BACKUP_KEEP_WEEKLY (8), BACKUP_KEEP_MONTHLY (12);
-# BACKUP_LOCAL_DUMPS (3) and BACKUP_LOCAL_BASES (2): how many stay on the server as well.
+# BACKUP_LOCAL_DUMPS (3) and BACKUP_LOCAL_BASES (1): how many stay on the server as well. The archived WAL stays on the
+# server from the oldest local base backup on, and only until it is shipped: every ship removes what it has shipped
+# and the base backups kept here no longer need (docs/ops/backup-and-restore.md, the disk budget).
 set -eu
 
 B=/backups
@@ -68,7 +70,7 @@ SHIP_EVERY=$(( SHIP_MINUTES * 60 ))
 FORGET_EVERY=86400
 CHECK_EVERY=604800
 LOCAL_DUMPS=$(num BACKUP_LOCAL_DUMPS 3)
-LOCAL_BASES=$(num BACKUP_LOCAL_BASES 2)
+LOCAL_BASES=$(num BACKUP_LOCAL_BASES 1)
 KEEP_HOURLY=$(num BACKUP_KEEP_HOURLY 48)
 KEEP_DAILY=$(num BACKUP_KEEP_DAILY 14)
 KEEP_WEEKLY=$(num BACKUP_KEEP_WEEKLY 8)
@@ -141,12 +143,12 @@ start_wal() {  # start_wal BASEDIR: the first WAL file a base backup needs (its 
   tar -xzOf "$1/base.tar.gz" backup_label | sed -n 's/^START WAL LOCATION: .*(file \([0-9A-F]*\))$/\1/p'
 }
 
-cleanup_wal() {
+cleanup_wal() {  # cleanup_wal [SHIPPED]: SHIPPED the time of a ship that just succeeded (default: the last recorded)
   # The archived WAL older than the oldest base backup kept here is no longer needed on the server, once it has been
   # shipped: never while the last ship is older than that base backup.
   oldest=$(ls -1d "$BASES"/balik-*Z 2>/dev/null | sort | head -n 1)
   [ -n "$oldest" ] || return 0
-  shipped=$(last ship)
+  shipped=${1:-$(last ship)}
   made=$(stat -c %Y "$oldest")
   if [ "$shipped" -le "$made" ]; then
     log "archived WAL kept: the last ship is older than the oldest base backup $oldest"
@@ -160,10 +162,12 @@ cleanup_wal() {
 
 ship() {
   mkdir -p "$DUMPS" "$BASES"
+  started=$(now)
   log "ship to the repository (host $HOST_TAG)"
   restic backup --retry-lock 10m --no-scan --host "$HOST_TAG" --tag balik --exclude '*.part' --exclude '*.tmp' \
     "$DUMPS" "$BASES" "$WAL" "$MEDIA"
   log "ship done"
+  cleanup_wal "$started"
 }
 
 forget() {

@@ -6,8 +6,8 @@ From an empty server to the sign-in page of one farm. Each farm gets its own ser
 
 ## 1. The server
 
-- **Size:** 4 vCPU, 8 GB RAM, 100 GB SSD is the starting point for one farm with two years of sensor readings
-  (README, Sensors: Storage). The database's memory and CPU limits are in `farm.env` (`DB_MEMORY`, `DB_CPUS`, ...).
+- **Size:** 4 vCPU, 8 GB RAM, **200 GB SSD** is the starting point for one farm with two years of sensor readings
+  (the disk budget: [backup-and-restore.md](backup-and-restore.md)). The database's memory and CPU limits are in `farm.env` (`DB_MEMORY`, `DB_CPUS`, ...).
 - **System:** Ubuntu 24.04 LTS or Debian 12, unattended security upgrades on, the clock synchronised (chrony or
   systemd-timesyncd: sensor times and alarm times depend on it).
 - **Docker:** Docker Engine 27 or later with the compose plugin 2.24 or later, from Docker's own repository. Docker's

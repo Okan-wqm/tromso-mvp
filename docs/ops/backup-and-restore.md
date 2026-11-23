@@ -8,16 +8,37 @@ every command); it runs in the `backup` service as the read-only role `balik_bac
 | What | How | When | Kept on the server | Kept off the server |
 |---|---|---|---|---|
 | The database, logically | `pg_dump` (custom format), checked by `pg_restore --list`, with every table's row count beside it (`.counts`) and a sha256 | every `BACKUP_DUMP_HOURS` (24) | the last 3 | by the retention below |
-| The database, physically | `pg_basebackup` (tar, gzip, the WAL it needs streamed in) | every `BACKUP_BASE_DAYS` (7) | the last 2 | by the retention |
-| Every change since | the WAL, archived by the database (`archive_command`, at most every 5 minutes: `archive_timeout`) | continuously | from the oldest base backup kept on the server | by the retention |
+| The database, physically | `pg_basebackup` (tar, gzip, the WAL it needs streamed in) | every `BACKUP_BASE_DAYS` (7) | the last one (`BACKUP_LOCAL_BASES`, 1) | by the retention |
+| Every change since | the WAL, archived by the database (`archive_command`, at most every `DB_ARCHIVE_TIMEOUT`, 15 minutes) | continuously | from the base backup kept on the server on; what is older is removed after the ship that took it | by the retention (every snapshot holds the WAL from its base backup on) |
 | Uploaded files | the `media` volume (the library's PDFs) | with every ship | (the volume itself) | by the retention |
 | Shipped | `restic backup` of all of the above to `RESTIC_REPOSITORY`: encrypted (AES-256, the repository's password), deduplicated | every `BACKUP_SHIP_MINUTES` (15) | | |
 
 **Retention off the server** (`restic forget --prune`, daily): 48 hourly, 14 daily, 8 weekly, 12 monthly snapshots
 (`BACKUP_KEEP_*`). **A weekly `restic check`** reads 5 % of the data back.
 
-**What can be lost:** at most the last 5 minutes on the server (the WAL not yet archived), at most ~20 minutes off the
-server (the last ship). A server lost with its disks loses no more than that.
+**What can be lost (RPO):** a crash of the database alone loses nothing committed (the WAL on the server's disk). A
+server lost with its disks loses at most `DB_ARCHIVE_TIMEOUT` + `BACKUP_SHIP_MINUTES`: **30 minutes** by default
+(the WAL not yet archived, plus the archive not yet shipped). Lower both for less (each halving of `DB_ARCHIVE_TIMEOUT`
+doubles the quiet database's WAL, below).
+
+## The disk budget
+
+What the server holds besides the database itself (D: the database's size on disk; its dumps and base backups are
+compressed to roughly a third to a half of D):
+
+| What | Size |
+|---|---|
+| The database | D (two years of readings, compressed after 14 days: README, Sensors) |
+| WAL in the database (`pg_wal`) | about 1 GB |
+| Archived WAL on the server | from the last base backup on: at most `BACKUP_BASE_DAYS` × (86400 / `DB_ARCHIVE_TIMEOUT` × 16 MB + the day's writes). A quiet database: 1.5 GB a day, **10.5 GB** a week; each GB the database writes a day adds 7 GB |
+| Dumps | 3 × about D / 3 |
+| Base backup | 1 × about D / 2 |
+| The restic cache | about 5 % of the repository |
+| Images, build cache, logs | about 15 GB (logs are rotated: 50 MB a service) |
+
+For one farm in its first two years (D up to about 40 GB): 40 + 1 + 20 + 40 + 20 + 3 + 15 ≈ 140 GB, so **200 GB** of
+SSD, with the heartbeat alerting at 80 % ([monitoring.md](monitoring.md)). Measure D and the WAL a day after the first
+month (`docker system df -v`, `du -sh` of the volumes) and write them in the farm's record.
 
 **Not backed up, on purpose:** the broker's users and topics (written again from the database every minute), the
 broker's queue (devices resend), the static files (in the image), the secrets (`SECRETS_DIR`: kept by the owner, see

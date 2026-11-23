@@ -34,7 +34,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(migrations.RunPython.noop, refuse_with_grouped),
         migrations.RemoveConstraint(
             model_name='deliveryattempt',
             name='chk_alarm_delivery_attempts_outcome',
@@ -94,4 +93,6 @@ class Migration(migrations.Migration):
                                                                  ('flood_window_seconds__lte', 3600)),
                                               name='chk_alarm_severity_policies_flood'),
         ),
+        # last, so going back it runs first, on the state that still has what it reads
+        migrations.RunPython(migrations.RunPython.noop, refuse_with_grouped),
     ]

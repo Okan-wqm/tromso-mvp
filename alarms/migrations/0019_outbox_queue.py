@@ -36,7 +36,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(migrations.RunPython.noop, refuse_with_snooze_words),
         migrations.CreateModel(
             name='OutboxEntry',
             fields=[
@@ -105,4 +104,6 @@ class Migration(migrations.Migration):
             constraint=models.CheckConstraint(condition=models.Q(('pk__in', []), models.Q(('flood_window_seconds__gte', 10), ('flood_window_seconds__lte', 300), ('severity', 'critical')), models.Q(('flood_window_seconds__gte', 10), ('flood_window_seconds__lte', 3600), ('severity', 'warning')), _connector='OR'), name='chk_alarm_severity_policies_flood_window'),
         ),
         migrations.RunSQL(FILL, migrations.RunSQL.noop),
+        # last, so going back it runs first, on the state that still has what it reads
+        migrations.RunPython(migrations.RunPython.noop, refuse_with_snooze_words),
     ]

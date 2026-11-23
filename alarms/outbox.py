@@ -193,6 +193,12 @@ def _count(delivery, rows):
             delivery.failed += 1
 
 
+def _person_kind(group):
+    """(recipient, channel, kind of alarm) of a round's group key (recipient, channel, kind, its own id or 0)."""
+    recipient, channel, kind, _apart = group
+    return recipient, channel, kind
+
+
 def _critical_since(moment):
     """Whether a critical notification was queued after `moment` (a round looks before each warning's group)."""
     return OutboxEntry.objects.filter(notification__queued_at__gt=moment,
@@ -233,7 +239,8 @@ def send_due(now=None, timeout=None, stop=None, round_seconds=None, clock=time.m
                 apart = notification.kind != NotificationKind.ALARM
                 groups[(notification.recipient_id, notification.channel, kind, notification.pk if apart else 0)].append(
                     notification)
-    found = floods.recent({group[:3]: members for group, members in groups.items() if not group[3]}, moment(), rules)
+    found = floods.recent({_person_kind(group): members for group, members in groups.items() if not group[-1]},
+                          moment(), rules)
     for index, (group, members) in enumerate(groups.items()):
         warning = members[0].alarm.severity != Severity.CRITICAL
         if ((stop is not None and stop()) or (round_seconds is not None and clock() - started >= round_seconds)
@@ -241,16 +248,17 @@ def send_due(now=None, timeout=None, stop=None, round_seconds=None, clock=time.m
             delivery.deferred += sum(len(rest) for rest in list(groups.values())[index:])
             break
         transport, kind = transports[group[1]], group[2]
-        how = floods.plan(members, found[group[:3]], moment(), rules) if not group[3] else floods.EACH
+        how = floods.plan(members, found[_person_kind(group)], moment(), rules) if not group[-1] else floods.EACH
         mine = [notification for notification in members if _sendable(notification)]
         delivery.busy += len(members) - len(mine)
         try:
             if how == floods.COVERED:
-                note = Failed(f'covered by the flood message sent at {found[group[:3]].last_flood_at:%H:%M:%S} UTC')
+                note = Failed(f'covered by the flood message sent at {found[_person_kind(group)].last_flood_at:%H:%M:%S} '
+                              'UTC')
                 _count(delivery, [services.attempt(notification, note, moment(), flood_key=kind, grouped=True)
                                   for notification in mine])
             elif how == floods.FLOOD and mine:
-                size = found[group[:3]].count + len(mine)
+                size = found[_person_kind(group)].count + len(mine)
                 flood = Flood(size, min(notification.alarm.opened_at for notification in mine), mine[0].alarm.summary)
                 result = _call(transport, mine[0], timeout, flood)
                 delivery.floods += 1

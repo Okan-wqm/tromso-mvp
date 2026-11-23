@@ -4,8 +4,8 @@
    behave. The user's reference data, never the code's (owner, alarm plan §7c). {% endcomment %}
 {% block search_placeholder %}{% trans "Search" %}{% endblock %}
 {% block empty_text %}{% trans "One rule per severity is made by the platform; it is changed, never added or deleted." %}{% endblock %}
+{% block above %}{% alarm_watch %}{% endblock %}
 {% block items %}
-{% alarm_watch %}
 {% for line in advice %}<p class="notice notice-warning">{{ line }}</p>{% endfor %}
 {% for line in notes %}<p class="notice">{{ line }}</p>{% endfor %}
 <div class="table-wrap">

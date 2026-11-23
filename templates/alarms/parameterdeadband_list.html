@@ -4,8 +4,8 @@
    must come back before an alarm on it clears. The user's reference data, never the code's (owner, alarm plan §7c). {% endcomment %}
 {% block search_placeholder %}{% trans "Search" %}{% endblock %}
 {% block empty_text %}{% trans "A parameter without a deadband clears its alarm as soon as a fresh value is back inside the limit." %}{% endblock %}
+{% block above %}{% alarm_watch %}{% endblock %}
 {% block items %}
-{% alarm_watch %}
 {% for line in advice %}<p class="notice notice-warning">{{ line }}</p>{% endfor %}
 <div class="table-wrap">
   <table class="data-table">

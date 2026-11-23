@@ -201,6 +201,20 @@ class PrivateTests(AccessCase):
         self.assertEqual(self.client.get(url).status_code, 404)
 
 
+class LegalFigureTests(AccessCase):
+    """A figure the law or the fish depend on counts every unit, whoever asks (core.sealing.system): the medicine
+    withdrawal holds the fish of a sealed tank for a person who may not see it as for the system."""
+
+    def test_a_withdrawal_holds_the_sealed_fish_whoever_asks(self):
+        from farm.health import withdrawal
+        with sealing.system('the test'):
+            expected = withdrawal.snapshot([self.sealed_batch.pk], self.today).held
+        with sealing.as_viewer(self.researcher):
+            seen = withdrawal.snapshot([self.sealed_batch.pk], self.today).held
+        self.assertTrue(expected)
+        self.assertEqual(seen, expected)
+
+
 class DeletePlanTests(AccessCase):
     def test_the_plan_counts_what_the_person_may_not_see_without_naming_it(self):
         from core.softdelete import plan_delete

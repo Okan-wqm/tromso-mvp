@@ -38,6 +38,12 @@ class GoldenFarm(MonitoringCase):
         clock = mock.patch('django.utils.timezone.now', return_value=pinned)
         clock.start()
         self.addCleanup(clock.stop)
+        # The recording characterises the cards before card templates, when a missing or old oxygen was grey "no recent
+        # data"; the owner's decision of 2026-11-23 (a unit with fish whose oxygen has no fresh value is critical) is
+        # held by monitoring/tests/test_silent_oxygen.py, and stood aside here so the recording stays the one it is.
+        silence = mock.patch('farm.water.read._silence', lambda point_water, *args: None)
+        silence.start()
+        self.addCleanup(silence.stop)
         super().setUp()
         self.limit('oxygen_mg_l', critical_low=6, warning_low=7)
         self.limit('ph', warning_low='6.5', warning_high='8.5')

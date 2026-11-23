@@ -276,10 +276,13 @@ class CardsTests(MonitoringCase):
     def test_the_states_of_a_small_farm_each_from_its_own_data(self):
         self.limit('oxygen_mg_l', critical_low=6, warning_low=7)
         self.sample(self.t1, hours=1, temperature_c='9', oxygen_mg_l='5', ph='7.2')           # critical oxygen
-        self.sample(self.t2, hours=1, ph='7.2')                                               # fresh pH, no temperature
+        self.sample(self.t2, hours=1, ph='7.2')                                               # fresh pH, no oxygen
         states = {card.unit.code: card.state for card in self.cards()}
         self.assertEqual(states['T-01'].key, 'critical')
-        self.assertEqual(states['T-02'].key, 'blind')
+        # T-02 holds fish and its oxygen has no fresh value: critical (owner decision of 2026-11-23; it was "no recent
+        # data", grey)
+        self.assertEqual(states['T-02'].key, 'critical')
+        self.assertEqual(states['T-02'].reasons, ('Dissolved oxygen (mg/L O₂): no recent data',))
 
     def test_a_stocked_unit_whose_fish_have_no_limit_is_not_ok_and_an_old_critical_value_stays_critical(self):
         """F-090 and F-244 on the database: no limit row for the fish is said on the card; a critical nitrite of eight

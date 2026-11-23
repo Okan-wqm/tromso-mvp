@@ -245,8 +245,9 @@ class DefaultRuleNeedsFishTests(FreshRuleCase):
         alarms.evaluate(self.now)
         [event] = self.open_events()
         from farm.models import StockOperation
-        StockOperation.objects.filter(movements__unit=self.tank).update(  # the fish gone: their stocking voided
-            is_deleted=True, void_reason='Entered on the wrong tank.')
+        from farm.stock import services as stock_services
+        stock_services.void(self.user, StockOperation.objects.get(movements__unit=self.tank),   # the fish gone
+                            'Entered on the wrong tank.')
         alarms.evaluate(self.now + timedelta(seconds=1))
         self.assertEqual(self.open_events(), [])
         self.assertEqual(AlarmEvent.objects.get(pk=event.pk).closed_at, self.now + timedelta(seconds=1))

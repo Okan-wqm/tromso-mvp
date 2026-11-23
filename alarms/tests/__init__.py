@@ -16,6 +16,7 @@ from .. import engine
 from ..models import Alarm, RecipientRule
 
 D = Decimal
+OXYGEN = D('9.00')
 
 
 class AlarmsCase(TestCase):
@@ -41,8 +42,10 @@ class AlarmsCase(TestCase):
         self.now = timezone.now().replace(microsecond=0)
 
     def sample(self, ph, hours=1, point=None):
+        """A pH sample, the oxygen measured with it: a unit with fish and no fresh oxygen is critical (owner decision of
+        2026-11-23, monitoring/tests/test_silent_oxygen.py), which these tests are not about."""
         return water.record(self.keeper, point=point or self.mid1, measured_at=self.now - timedelta(hours=hours),
-                            source='manual', values={'ph': D(str(ph))})
+                            source='manual', values={'ph': D(str(ph)), 'oxygen_mg_l': OXYGEN})
 
     def rule(self, level=0, **fields):
         values = {'site': self.bergen, 'min_severity': 'warning', 'level': level, 'channel': 'push', **fields}

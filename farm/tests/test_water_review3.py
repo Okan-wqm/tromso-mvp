@@ -50,7 +50,8 @@ class DerivedWorstFreshTests(SourcesCase):
         self.assertEqual(water.point_status, Status.CRITICAL)                # measured at the middle itself
 
     def test_a_loops_fresh_critical_nh3_decides_beside_the_units_own_ok(self):
-        self.sample(hours=1, tan_mg_l='0.100', ph='7.0', temperature_c='10', salinity_ppt='0')
+        # (the unit's oxygen measured with it: a unit with fish and no fresh oxygen is critical, 2026-11-23)
+        self.sample(hours=1, tan_mg_l='0.100', ph='7.0', temperature_c='10', salinity_ppt='0', oxygen_mg_l='9.0')
         self.sample(point=self.loop, hours=2, tan_mg_l='2.000', ph='8.0', temperature_c='15', salinity_ppt='0')
         water = self.latest()
         self.assertEqual(water.get('nh3_n_mg_l').status, Status.CRITICAL)

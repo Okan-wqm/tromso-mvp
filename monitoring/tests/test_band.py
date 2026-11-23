@@ -150,10 +150,11 @@ class BandPageTests(MonitoringCase):
         with override_settings(MONITOR_BAND_CHIPS=2):
             band = band_of(self.client.get(PAGE).content.decode())
         (more,) = [each for each in band.walk() if 'monitor-strip-more' in each.classes]
-        # (the two warning units are past the same bound: one chip; what is left over says its state)
-        self.assertEqual(text(more), '+2 more units: 2 No recent data')
+        # (the two warning units are past the same bound: one chip; what is left over says its state. T-01 and T-02 hold
+        # fish without a fresh oxygen: critical, one chip "O₂ (mg/L): no recent data", owner decision of 2026-11-23)
+        self.assertEqual(text(more), '+2 more units: 2 Warning')
         self.assertEqual(text(next(each for each in band.walk() if 'monitor-tally' in each.classes)),
-                         '1 Critical 2 Warning 2 No recent data')
+                         '3 Critical 2 Warning')
 
     def test_the_switch_of_the_screens_cards(self):
         def switch(**query):

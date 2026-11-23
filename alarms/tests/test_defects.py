@@ -231,6 +231,7 @@ class BulkTests(AlarmsCase):
             type(self.operator).objects.create_user(name, f'{name}@example.com', 'x').groups.add(self.operators)
         self.rule()
         self.rule(user=self.manager, on_shift_only=True)
+        self.sample(7.2)                        # T-01's water, its oxygen fresh: it raises nothing in the burst
 
     def queries_of_a_burst(self, units):
         for number in range(units):

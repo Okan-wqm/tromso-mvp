@@ -65,8 +65,12 @@ class SensorPhCase(SeaTestCase):
             self.provider.now_values.setdefault(key, {}).setdefault(item.code, []).append(item)
             self.provider.history.setdefault(key, {}).setdefault(item.code, []).append(item)
 
-    def probe(self, point, ph=7.95, scale=TOTAL, temperature=12.0, salinity=34.0, tan=1.0, **more):
+    def probe(self, point, ph=7.95, scale=TOTAL, temperature=12.0, salinity=34.0, tan=1.0, oxygen=9.0, **more):
+        """The probes of a point; the oxygen's fresh beside them (a unit with fish and no fresh oxygen is critical: owner
+        decision of 2026-11-23, which these tests are not about)."""
         found = [self.value('ph', ph, channel_no=1, ph_scale=scale, **more)]
+        if oxygen is not None:
+            found.append(self.value('oxygen_mg_l', oxygen, channel_no=5))
         if temperature is not None:
             found.append(self.value('temperature_c', temperature, channel_no=2))
         if salinity is not None:

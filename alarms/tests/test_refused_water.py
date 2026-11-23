@@ -30,7 +30,10 @@ from farm.water import read as water_read
 from .. import engine, read, rules as alarm_rules, sources
 from ..models import Alarm, Severity
 
-WATER = {'ph': '9.00', 'temperature_c': '12.0', 'salinity_ppt': '0.0', 'alkalinity_mg_l': '80', 'tan_mg_l': '5.000'}
+# Its oxygen with it: a unit with fish and no fresh oxygen is critical (owner decision of 2026-11-23), which these tests
+# are not about (monitoring/tests/test_silent_oxygen.py).
+WATER = {'ph': '9.00', 'temperature_c': '12.0', 'salinity_ppt': '0.0', 'alkalinity_mg_l': '80', 'tan_mg_l': '5.000',
+         'oxygen_mg_l': '9.00'}
 # The same water at pH 7.00 and TAN 0.5: inside the limits on its basis.
 LOW = {**WATER, 'ph': '7.00', 'tan_mg_l': '0.500'}
 WHY = 'ionic strength above 0.5: outside the range of the Davies equation'

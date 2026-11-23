@@ -95,14 +95,17 @@ keep_newest() {  # keep_newest DIR COUNT SUFFIX: removes all but the COUNT newes
 }
 
 counts() {
+  # Every table of the application (a hypertable counts the rows of all its chunks), then each hypertable's chunks.
+  # Not compared: what TimescaleDB's own jobs change on their schedule without changing a row (a chunk compressed, a
+  # continuous aggregate refreshed into its internal table), which a restored database's jobs may do at once.
   psql -X -v ON_ERROR_STOP=1 -At -F ' ' <<'SQL'
 SELECT format('SELECT %L, count(*) FROM %I.%I', c.relname, n.nspname, c.relname)
 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p')
 ORDER BY c.relname
 \gexec
-SELECT 'timescaledb:chunks', count(*) FROM timescaledb_information.chunks;
-SELECT 'timescaledb:compressed_chunks', count(*) FROM timescaledb_information.chunks WHERE is_compressed;
+SELECT 'chunks:' || hypertable_name, count(*) FROM timescaledb_information.chunks
+WHERE hypertable_schema = 'public' GROUP BY hypertable_name ORDER BY hypertable_name;
 SQL
 }
 

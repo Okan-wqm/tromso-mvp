@@ -59,7 +59,7 @@ RUN useradd --system --uid 10002 --user-group --no-create-home --home-dir /app -
  && mkdir -p /srv/static /srv/media /broker-auth \
  && chown balik:balik /srv/static /srv/media /broker-auth
 WORKDIR /app
-COPY manage.py ./
+COPY manage.py ./manage.py
 COPY config/ ./config/
 COPY core/ ./core/
 COPY farm/ ./farm/

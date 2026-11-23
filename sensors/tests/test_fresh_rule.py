@@ -24,7 +24,8 @@ from django.utils import timezone
 
 from core.models import AuditLog
 from farm.models import System
-from farm.tests.helpers import role
+from farm.tests.helpers import make_species, role, stock_fish
+from farm.tests.test_stock import make_unit
 from farm.water import parameters, read as water_read
 
 from sensors import alarms, bindings, quantities
@@ -44,6 +45,10 @@ class FreshRuleCase(SensorsCase):
     def setUpTestData(cls):
         super().setUpTestData()
         cls.ras = System.objects.create(name='RAS 1', code='R1', site=cls.site, production_department=cls.hall)
+        # Fish in a unit of the RAS: a default rule holds only where its place's water concerns fish (owner decision of
+        # 2026-11-23; DefaultRuleNeedsFishTests).
+        cls.tank = make_unit('T-01', cls.hall, system=cls.ras)
+        stock_fish(cls.user, cls.tank, 1000, '50', 10, species=make_species())
         cls.ph = make_channel(cls.device, 'ph', code='PH', heartbeat_s=60)              # fresh for 3 x 60 s
         cls.placed_at = timezone.now() - timedelta(days=1)
         bindings.move(cls.user, cls.ph, cls.placed_at, system=cls.ras)
@@ -228,6 +233,34 @@ class HoldsTests(FreshRuleCase):
         bindings.unbind(self.user, Channel.objects.get(pk=self.ph.pk), self.now - timedelta(hours=1))
         alarms.evaluate(self.now)
         self.assertEqual(self.open_events(), [])
+
+
+class DefaultRuleNeedsFishTests(FreshRuleCase):
+    """Owner decision of 2026-11-23: a default rule holds only where its place's water concerns fish on the units' own
+    day (farm.water.read.with_fish), so a fallow or empty unit with its probes off raises no alarm; the fish gone, an
+    open event closes. A farm's own "No fresh value" rule holds whatever the fish."""
+
+    def test_it_holds_while_the_system_holds_fish_and_ends_when_they_are_gone(self):
+        self.send(self.ph, 7.5, self.now - timedelta(hours=1))
+        alarms.evaluate(self.now)
+        [event] = self.open_events()
+        from farm.models import StockOperation
+        StockOperation.objects.filter(movements__unit=self.tank).update(  # the fish gone: their stocking voided
+            is_deleted=True, void_reason='Entered on the wrong tank.')
+        alarms.evaluate(self.now + timedelta(seconds=1))
+        self.assertEqual(self.open_events(), [])
+        self.assertEqual(AlarmEvent.objects.get(pk=event.pk).closed_at, self.now + timedelta(seconds=1))
+
+    def test_a_place_without_fish_raises_nothing_but_a_farms_own_rule_holds(self):
+        empty = System.objects.create(name='RAS 2', code='R2', site=self.site, production_department=self.hall)
+        oxygen = make_channel(self.device, 'oxygen_mg_l', code='O2')
+        bindings.move(self.user, oxygen, self.now - timedelta(hours=1), system=empty)
+        alarms.evaluate(self.now)
+        self.assertEqual(self.open_events(oxygen), [])
+        own = AlarmRule.objects.create(channel=oxygen, kind='no_data', for_s=0, severity='critical')
+        alarms.evaluate(self.now + timedelta(seconds=1))
+        self.assertEqual(list(AlarmEvent.objects.filter(closed_at__isnull=True, channel_no=oxygen.channel_no)
+                              .values_list('rule', flat=True)), [own.pk])
 
 
 class CoverageCheckTests(FreshRuleCase):

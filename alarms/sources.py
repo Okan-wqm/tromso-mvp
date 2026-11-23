@@ -99,10 +99,23 @@ def sensor_events():
         opened += 1
         cleared += event.closed_at is not None
     for alarm in (Alarm.objects.filter(source=Source.SENSOR_RULE, clearance__isnull=True,
-                                       sensor_event__closed_at__isnull=False).select_related('sensor_event')):
-        services.clear(alarm, alarm.sensor_event.closed_at, ClearCause.EVENT_CLOSED)
+                                       sensor_event__closed_at__isnull=False).select_related('sensor_event__rule')):
+        services.clear_many([(alarm, alarm.sensor_event.closed_at, ClearCause.EVENT_CLOSED,
+                              _rule_off(alarm.sensor_event.rule))])
         cleared += 1
     return opened, cleared
+
+
+def _rule_off(rule):
+    """{label: text} the clearance's log entry says of a rule switched off or deleted (its event closed because no pass
+    visits it any more: sensors/alarms.py `close_switched_off`), in English at rest; None for an active rule."""
+    if rule.is_active and not rule.is_deleted:
+        return None
+    with audit.source_language():
+        said = {str(_('Alarm rule')): f'{rule} · {_("Deleted") if rule.is_deleted else _("Inactive")}'}
+        if rule.off_reason:
+            said[str(_('Why it is switched off'))] = rule.off_reason
+        return said
 
 
 # ---- the water limits ------------------------------------------------------------------------------------------------

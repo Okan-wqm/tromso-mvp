@@ -100,12 +100,41 @@ def _further(rule, peak, value):
     return min(peak, value) if rule.kind == AlarmKind.LOW else max(peak, value)
 
 
+def _aside():
+    """(quantities, channel ids) where the default "No fresh value" rule stands aside: a farm's own active "No fresh
+    value" rule covers them, of the whole quantity or of the channel (the review of 2026-11-23, F4: one silent probe is
+    one alarm, the farm's own rule's)."""
+    own = AlarmRule.objects.filter(kind=AlarmKind.NO_DATA, is_active=True, is_default=False)
+    return (set(own.filter(channel__isnull=True).values_list('quantity', flat=True)),
+            set(own.filter(channel__isnull=False).values_list('channel_id', flat=True)))
+
+
+def close_switched_off(now):
+    """Closes at `now` the open events of a rule that is switched off or deleted (the review of 2026-11-23, F5): no pass
+    visits such a rule, so its alarm would stay open for ever, even after the probe sends again. Never an event of an
+    active rule. Their alarms clear with the rule's state said in the activity log (alarms/sources.py
+    `sensor_events`). Returns how many it closed."""
+    found = list(AlarmEvent.objects.select_for_update(of=('self',)).filter(closed_at__isnull=True)
+                 .exclude(rule__in=AlarmRule.objects.filter(is_active=True)))
+    for event in found:
+        close(event, now)
+    return len(found)
+
+
 def evaluate(now=None):
-    """Checks every active rule now; returns how many events opened and closed."""
+    """Checks every active rule now, after closing the events of the rules switched off (`close_switched_off`); returns
+    how many events opened and closed."""
     now = now or timezone.now()
-    opened_count = closed_count = 0
+    opened_count = 0
+    with transaction.atomic():
+        closed_count = close_switched_off(now)
+    aside_quantities, aside_channels = _aside()
     for rule in AlarmRule.objects.filter(is_active=True).select_related('channel__device'):
         covered = _channels(rule)
+        if rule.is_default:
+            # The farm's own rule speaks for these (F4); an open event of the default there closes below.
+            covered = [] if rule.quantity in aside_quantities else [
+                channel for channel in covered if channel.pk not in aside_channels]
         places = {binding.channel_id: binding for binding in Binding.objects.visible().at(now)
                   .filter(channel__in=[channel.pk for channel in covered])}
         channels = [channel for channel in covered if channel.pk in places]                # bound now only

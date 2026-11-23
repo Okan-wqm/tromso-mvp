@@ -282,7 +282,7 @@ class ShownTests(SourcesCase):
         self.stock()                                              # an empty unit's card shows no water
         page = text(self.client.get(reverse('farm:water')))
         self.assertRegex(page, r'unit sensor #\d+ · 12 s ago')
-        card = text(self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all'}))
+        card = text(self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all', 'full': '1'}))
         # A card says the age in bands (monitoring/cards/render.py age_text): 12 s is "10 s ago", 40 s "40 s ago".
         self.assertRegex(card, r'unit sensor #\d+ · 10 s ago')
         self.assertRegex(card, r'system sensor #\d+ · 40 s ago')
@@ -297,7 +297,7 @@ class ShownTests(SourcesCase):
         self.assertRegex(page, r'7\.41' + part.format(age=r'12 s ago'))
         chart = self.client.get(reverse('farm:water_unit_chart', args=[self.t1.pk])).content.decode()
         self.assertRegex(chart, part.format(age=r'12 s ago'))
-        card = self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all'}).content.decode()
+        card = self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all', 'full': '1'}).content.decode()
         self.assertRegex(card, r'<dd class="row-sub wq-said">' + part.format(age='10 s ago') + '</dd>')
 
 

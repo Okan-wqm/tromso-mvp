@@ -101,7 +101,7 @@ class GoldenFarm(MonitoringCase):
                                others=[(board.pk, '<board>')])
 
     def says(self, url, query=None):
-        response = self.client.get(url, query or {})
+        response = self.client.get(url, {**(query or {}), **({'full': '1'} if url == PAGE else {})})
         self.assertEqual(response.status_code, 200)
         return cards_say(response.content.decode(), self.norm)
 

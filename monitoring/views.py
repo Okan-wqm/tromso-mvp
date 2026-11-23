@@ -1,8 +1,9 @@
 """Operations › Monitoring: the wall. The page (`monitor`) is the toolbar and a grid of cards, one per tank, pond or cage,
 simple or detailed; the fragment (`cards`) is the grid's children, which the browser asks for again (frontend/poll.ts)
-and which the server answers without a body while nothing has changed. Both are composed by monitoring/read.py from the
-other modules' own reads; nothing is stored or written here, a poll included, except that a wall (`?wall=1`) keeps its
-session alive once a day.
+and which the server answers without a body while nothing has changed. The page is drawn first without its cards (the
+shell: "Loading the cards…") and the grid's first poll brings them; `?full=1` draws them in the page, as without
+script. The cards are composed by monitoring/read.py from the other modules' own reads; nothing is stored or written
+here, a poll included, except that a wall (`?wall=1`) keeps its session alive once a day.
 
 Who may read it: the right to read stock operations (the page's gate, as Production units); each section of a card needs
 its own right (monitoring/read.py `sections_for`) and the card says so for one the person may not read. The fragment has
@@ -200,12 +201,52 @@ def _flip_urls(params, card):
             'poll': f'{reverse(POLL)}?{changed}' if changed else reverse(POLL)}
 
 
+def _page(params, board, /, **extra):
+    """The context of the page around the grid, the same for the shell and the full page: the toolbar's lists, the
+    windows' place, the polls' interval and the page's own addresses. `extra`: what the caller adds (the grid's context,
+    the polls' addresses, the pane)."""
+    return _context(**{
+        'query': params.canonical(), 'board': board, 'params': params, 'big_measure': builtin.BIG_MEASURE,
+        'boards': MonitorBoard.objects.order_by('name'),
+        'poll_seconds': board.seconds if board else settings.MONITOR_POLL_SECONDS,
+        'wall': params.wall, 'windows_key': params.board or 'adhoc',
+        'wall_url': f'{reverse("monitoring:monitor")}?{params.canonical(wall=True)}',
+        'page_url': _address(params.canonical(wall=False)),
+        'sites': Site.objects.order_by('name'), 'departments': ProductionDepartment.objects.order_by('name'),
+        'systems': System.objects.order_by('name'), 'all_units': Tank.objects.order_by('code'),
+        'kinds': [(Tank.Kind.TANK, _('Tanks')), (Tank.Kind.POND, _('Ponds')), (Tank.Kind.CAGE, _('Cages'))],
+        'occupancies': [(read.STOCKED, pgettext('occupancy', 'Stocked')), (read.EMPTY, _('Empty')), (read.ALL, _('All'))],
+        **extra})
+
+
 @permission_required(VIEW, raise_exception=True)
 def monitor(request):
-    """The page: toolbar, grid, the windows' place. The token is read before the cards, so a change between the two
-    shows at the first poll."""
+    """The page. By default the SHELL (shell-first, live-arch stage 1): the toolbar, the grid's place and the windows'
+    place, with "Loading the cards…" where the cards go and no card, band, tally or state of any unit, so a page whose
+    cards have not come never reads as all is well. It reads no card source: its cost does not depend on the farm. The
+    grid's poll (frontend/poll.ts, data-poll-state="loading") asks for the fragment at once, at an address without a
+    token, so its first answer is always the cards (200), never "nothing changed" (204); a failure there says the cards
+    cannot be read (a 503) or that the person is signed out (401, 403). With a focus the pane's frame is drawn and its
+    body filled the same way. `?full=1` is the page as it was before, the cards drawn by the server: the way in without
+    script (the shell's <noscript> link)."""
     params = read.Params.from_query(request.GET)
     _keep_alive(request, params)
+    if request.GET.get('full') == '1':
+        return _full(request, params)
+    board = _board(params)
+    unit = Tank.objects.filter(pk=params.focus).first() if params.focus else None
+    # (the unit's card comes with the pane's first poll; a unit that is gone has no pane, as on the full page)
+    pane = {'pane_unit': unit, 'close_url': _address(params.canonical(focus=''))} if unit is not None else None
+    full = '&'.join(part for part in (params.canonical(), 'full=1') if part)
+    return render_page(request, 'monitoring/monitor.html', _page(
+        params, board, shell=True, pane=pane, pane_poll_url=_address(params.canonical(), PANE),
+        poll_url=_address(params.canonical(), POLL), full_url=f'{reverse("monitoring:monitor")}?{full}',
+        card_width=board.card_width if board is not None else CardWidth.AUTO))
+
+
+def _full(request, params):
+    """The full page (`?full=1`): toolbar, grid with the cards, the windows' place. The token is read before the cards,
+    so a change between the two shows at the first poll."""
     revision = audit.revision()                  # once, before any data, for both tokens
     token = read.change_token(request.user, params.canonical(), board=params.board, revision=revision)
     now = timezone.now()
@@ -216,21 +257,9 @@ def monitor(request):
         pane = _pane(request, params, now)
     except read.Unavailable:
         return _unavailable()
-    context = _context(**grid, token=token, query=params.canonical(), board=board,
-                       pane=pane, pane_poll_url=_poll_url(params.canonical(), pane_token, PANE),
-                       big_measure=builtin.BIG_MEASURE,
-                       boards=MonitorBoard.objects.order_by('name'),
-                       poll_url=_poll_url(params.canonical(), token),
-                       poll_seconds=board.seconds if board else settings.MONITOR_POLL_SECONDS,
-                       wall=params.wall, windows_key=params.board or 'adhoc',
-                       wall_url=f'{reverse("monitoring:monitor")}?{params.canonical(wall=True)}',
-                       page_url=reverse('monitoring:monitor') + (f'?{params.canonical(wall=False)}' if params.canonical(wall=False) else ''),
-                       sites=Site.objects.order_by('name'), departments=ProductionDepartment.objects.order_by('name'),
-                       systems=System.objects.order_by('name'), all_units=Tank.objects.order_by('code'),
-                       kinds=[(Tank.Kind.TANK, _('Tanks')), (Tank.Kind.POND, _('Ponds')), (Tank.Kind.CAGE, _('Cages'))],
-                       occupancies=[(read.STOCKED, pgettext('occupancy', 'Stocked')), (read.EMPTY, _('Empty')),
-                                    (read.ALL, _('All'))])
-    return render_page(request, 'monitoring/monitor.html', context)
+    return render_page(request, 'monitoring/monitor.html', _page(
+        params, board, **grid, token=token, pane=pane, pane_poll_url=_poll_url(params.canonical(), pane_token, PANE),
+        poll_url=_poll_url(params.canonical(), token)))
 
 
 @permission_required(VIEW, raise_exception=True)

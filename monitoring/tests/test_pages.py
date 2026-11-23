@@ -27,7 +27,7 @@ def keys(html):
 
 class PageTests(MonitoringCase):
     def test_the_page_has_a_card_for_each_stocked_unit_in_the_farms_order_and_a_polled_grid(self):
-        response = self.client.get(PAGE)
+        response = self.client.get(PAGE, {'full': '1'})
         self.assertEqual(response.status_code, 200)
         html = response.content.decode()
         self.assertEqual(keys(html), ['band', f'card:{self.t1.pk}', f'card:{self.t2.pk}'])
@@ -40,7 +40,7 @@ class PageTests(MonitoringCase):
             self.assertIn(text, html)                                    # focus can be restored by id after a refresh
 
     def test_filters_occupancy_and_the_units_chosen_narrow_what_is_shown(self):
-        shown = lambda **query: keys(self.client.get(PAGE, query).content.decode())[1:]
+        shown = lambda **query: keys(self.client.get(PAGE, {**query, 'full': '1'}).content.decode())[1:]
         self.assertEqual(shown(q='t-02'), [f'card:{self.t2.pk}'])
         self.assertEqual(shown(occupancy='empty'), [f'card:{self.p1.pk}'])
         self.assertEqual(len(shown(occupancy='all')), 3)
@@ -49,10 +49,10 @@ class PageTests(MonitoringCase):
         self.assertEqual(shown(site='not-a-site', kind='nonsense'), [f'card:{self.t1.pk}', f'card:{self.t2.pk}'])
 
     def test_simple_and_detailed_and_the_round_trip_of_the_toggle(self):
-        simple = self.client.get(PAGE).content.decode()
+        simple = self.client.get(PAGE, {'full': '1'}).content.decode()
         self.assertNotIn(DETAILED_CARD, simple)
         self.assertNotIn('w-tasks', simple)
-        detailed = self.client.get(PAGE, {'mode': 'detailed'}).content.decode()
+        detailed = self.client.get(PAGE, {'mode': 'detailed', 'full': '1'}).content.decode()
         self.assertEqual(detailed.count(DETAILED_CARD), 2)
         for text in ('w-tasks', 'w-health', 'Feed rate', 'Losses'):
             self.assertIn(text, detailed)
@@ -62,7 +62,7 @@ class PageTests(MonitoringCase):
         href, poll, word = (item.replace('&amp;', '&') for item in link.groups())
         self.assertEqual((href, word), (f'{PAGE}?flip={self.t1.pk}', 'Detailed'))
         self.assertEqual(poll, f'{CARDS}?flip={self.t1.pk}')
-        flipped = self.client.get(href).content.decode()
+        flipped = self.client.get(f'{href}&full=1').content.decode()
         self.assertEqual(flipped.count(DETAILED_CARD), 1)
         fragment = self.client.get(poll).content.decode()
         self.assertEqual(fragment.count(DETAILED_CARD), 1)
@@ -70,7 +70,7 @@ class PageTests(MonitoringCase):
 
     def test_a_card_shows_the_pages_figures_for_its_unit(self):
         self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='8.1', ph='7.2')
-        html = self.client.get(PAGE).content.decode()
+        html = self.client.get(PAGE, {'full': '1'}).content.decode()
         card = re.search(rf'<article[^>]*card:{self.t2.pk}.*?</article>', html, re.S).group(0)
         for text in ('12,000', '13.2', '8.10', '7.20', 'Deffeyes chart', 'State from'):
             self.assertIn(text, card)
@@ -84,11 +84,11 @@ class PageTests(MonitoringCase):
         # Values that no date on the page can spell: the oxygen was 8.1, printed "8.10", and the page says when the
         # fish were last weighed, 15 days back: "28.10.2026" on 12.11.2026, when this test failed for that alone.
         self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='8.47')
-        shown = self.client.get(PAGE, {'mode': 'detailed'}).content.decode()
+        shown = self.client.get(PAGE, {'mode': 'detailed', 'full': '1'}).content.decode()
         for text in ('13.2', '8.47'):
             self.assertIn(text, shown)                               # as the page prints them for who may see the water
         self.as_person('stock-only', 'view_stockoperation')
-        html = self.client.get(PAGE, {'mode': 'detailed'}).content.decode()
+        html = self.client.get(PAGE, {'mode': 'detailed', 'full': '1'}).content.decode()
         for text in ('Feeding: not shown to you', 'Water: not shown to you', 'Health: not shown to you',
                      'Tasks: not shown to you', 'State from: Fish'):
             self.assertIn(text, html)
@@ -151,7 +151,7 @@ class FragmentTests(MonitoringCase):
         self.assertNotIn('<svg', html.replace('<svg class="icon"', '').replace('<svg class="capacity-bar', ''))
 
     def test_the_fragment_is_the_pages_grid(self):
-        page = self.client.get(PAGE)
+        page = self.client.get(PAGE, {'full': '1'})
         token = read.change_token(self.reader, '')
         inner = re.search(r'<div class="monitor-grid"[^>]*>(.*)</div>\s*<div id="monitor-windows"', page.content.decode(), re.S)
         self.assertIsNotNone(inner)
@@ -172,7 +172,7 @@ class FragmentTests(MonitoringCase):
 
     def test_a_source_the_state_needs_that_fails_is_a_503_that_keeps_the_last_picture(self):
         with mock.patch.object(read.stock_read, 'stock_of', side_effect=RuntimeError('down')):
-            for url in (CARDS, PAGE):
+            for url in (CARDS, f'{PAGE}?full=1'):
                 response = self.client.get(url)
                 self.assertEqual((response.status_code, response['Cache-Control']), (503, 'no-store'), url)
                 self.assertNotIn(b'data-key="card:', response.content)

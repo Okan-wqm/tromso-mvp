@@ -4,7 +4,7 @@ its state, the first reason in short with how many more, the oxygen with its sat
 calculated CO₂ and the pH window; an old value is never silent; a chart that cannot be worked out says why; and what
 the old cards said is still reachable (every reason, the withdrawal, which template and why, the flip link)."""
 import re
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone as dt_timezone
 from pathlib import Path
 from unittest import mock
 
@@ -13,6 +13,7 @@ from django.test import SimpleTestCase
 from django.urls import reverse
 from django.utils import translation
 
+from core.testing import StartedClock
 from farm.handling.withdrawal import WithdrawalBlock
 from farm.stock.dates import local_today
 from farm.templatetags.water import water_value
@@ -50,7 +51,14 @@ def source(html, unit):
     return re.search(rf'<article[^>]*card:{unit.pk}.*?</article>', html, re.S).group(0)
 
 
-class SmallCase(MonitoringCase):
+class SmallCase(StartedClock, MonitoringCase):
+    """The Small and Big cards say when a value arrived as the clock time when it is today's, else with its day
+    (render.arrived): a sample of an hour ago read between 00:00 and 01:00 in Oslo is yesterday's, and the Big card's
+    row said "22.11 23:33 · 1 h" where the test asked for "23:33 · 1 h" (seen at 00:33 Oslo time on 23.11.2026). So the
+    clock starts at a fixed mid-day moment, an hour of every sample here from any midnight, and runs on, as the cards'
+    samples are told apart by when they were made (core.testing, README › Tests)."""
+    NOW = datetime(2026, 11, 18, 11, 0, tzinfo=dt_timezone.utc)      # 12:00 in Oslo, a Wednesday, far from a DST change
+
     def setUp(self):
         super().setUp()
         self.limit('oxygen_mg_l', critical_low=6, warning_low=7)

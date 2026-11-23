@@ -222,6 +222,18 @@ class RouteWalkTests(WalkCase):
         self.assertWalkClean(self.staff)
 
 
+def where(before, after):
+    """Where two answers first differ: the status, or the text around the first differing byte of each."""
+    if not (isinstance(before, tuple) and isinstance(after, tuple)):
+        return f'{before!r:.200} / {after!r:.200}'
+    if before[0] != after[0]:
+        return f'status {before[0]} / {after[0]}'
+    first, second = before[1], after[1]
+    at = next((index for index, (one, two) in enumerate(zip(first, second)) if one != two), min(len(first), len(second)))
+    return (f'…{first[max(0, at - 120):at + 120].decode(errors="replace")}… / '
+            f'…{second[max(0, at - 120):at + 120].decode(errors="replace")}…')
+
+
 class NonInterferenceTests(TestCase):
     """What an outsider reads on every list is the same before X exists and after."""
 
@@ -246,4 +258,4 @@ class NonInterferenceTests(TestCase):
         world.build_sealed(self)
         with_x = self.lists(self.researcher)
         differ = sorted(name for name in without if without[name] != with_x.get(name))
-        self.assertFalse(differ, '\n'.join(differ))
+        self.assertFalse(differ, '\n'.join(f'{name}: {where(without[name], with_x.get(name))}' for name in differ))

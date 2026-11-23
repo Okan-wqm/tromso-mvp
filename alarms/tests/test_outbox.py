@@ -130,7 +130,7 @@ class NeverLostTests(OutboxCase):
         (notification,) = self.queued()
         real = services.attempt
         with mock.patch.object(services, 'attempt', side_effect=OperationalError('the server went away')), \
-                self.assertRaises(OperationalError):
+                self.assertLogs('alarms.outbox', level='ERROR'):           # logged, the round goes on
             self.send()
         self.assertEqual(read.status(notification), 'queued')               # nothing written: still to be sent
         with mock.patch.object(services, 'attempt', side_effect=real):

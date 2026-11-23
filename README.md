@@ -3818,6 +3818,14 @@ What works:
   (its default switched off and none of its own) is said above the Alarm rules list and by the check `sensors.W001`
   (`manage.py check --database default`). Going back past sensors 0014 leaves the rules as ordinary ones (their
   alarms are history); going forward again marks them the default once more.
+  **One alarm per silent probe** (the review of 2026-11-23, F4, the coordinator's call): where the farm has its own
+  active "No fresh value" rule of the quantity, or of the channel, the default stands aside there (`sensors.alarms._aside`;
+  an open event of the default closes), so the farm's rule is the one alarm; switched off, the default comes back. An
+  existing rule that sensors 0014 adopts as the default keeps its severity, except the dissolved oxygen's, raised to
+  critical where it was a warning (the owner's decision), the activity log saying so (and going back gives it its own
+  severity again). **A rule switched off or deleted** (F5): the next pass closes its open events, which no pass visits
+  any more (`close_switched_off`; never an active rule's), and their alarms clear with the rule's state and the reason
+  it was switched off in the activity log, so no ghost alarm stays open after the probe sends again.
 - **Administration**: Credentials (a publisher's sign-in at the broker; the secret is made on the server, shown once
   when made or replaced, stored only as Mosquitto's `$7$` PBKDF2-SHA512 hash, masked in the database viewer and never in
   the activity log).

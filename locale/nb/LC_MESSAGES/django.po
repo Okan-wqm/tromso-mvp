@@ -8574,6 +8574,9 @@ msgstr "JSON"
 msgid "JSON for Mattilsynet’s reporting API"
 msgstr "JSON for Mattilsynets rapporterings-API"
 
+msgid "JavaScript is off: show the full page with the cards"
+msgstr "JavaScript er slått av: vis hele siden med kortene"
+
 msgid "Joined"
 msgstr "Begynte"
 
@@ -8924,6 +8927,9 @@ msgstr "Sanntidsverdier fra sensorene kunne ikke leses: bare prøver."
 
 msgid "Live values"
 msgstr "Sanntidsverdier"
+
+msgid "Loading the cards…"
+msgstr "Laster kortene …"
 
 msgid "Loading…"
 msgstr "Laster …"
@@ -13625,6 +13631,9 @@ msgstr "Stål"
 msgid "Step"
 msgstr "Trinn"
 
+msgid "Still loading? Open the full page"
+msgstr "Laster fortsatt? Åpne hele siden"
+
 msgid "Stock"
 msgstr "Beholdning"
 
@@ -14187,6 +14196,9 @@ msgstr ""
 
 msgid "The calculator's values"
 msgstr "Kalkulatorens verdier"
+
+msgid "The cards cannot be read just now. The page tries again by itself."
+msgstr "Kortene kan ikke leses akkurat nå. Siden prøver igjen av seg selv."
 
 msgid "The cards cannot be read just now. The screen keeps its last picture; try again shortly."
 msgstr "Kortene kan ikke leses akkurat nå. Skjermen beholder det siste bildet; prøv igjen om litt."

@@ -55,9 +55,11 @@ class LoadTests(MonitoringCase):
         self.limit('oxygen_mg_l', critical_low=6, warning_low=7, warning_high=12, critical_high=14)
         found = {}
         with mock.patch.object(read, 'TOKEN_BUCKET', 10 ** 9):
-            for name, url in (('page', reverse('monitoring:monitor')), ('fragment', reverse('monitoring:cards'))):
-                self.measure(url, {'wall': '1'})                                   # warm
-                response, queries, seconds, kb = self.measure(url, {'wall': '1'})
+            # (the page drawn with its cards: ?full=1; the page itself is the shell, its cards the fragment's)
+            for name, url, own in (('page', reverse('monitoring:monitor'), {'full': '1'}),
+                                   ('fragment', reverse('monitoring:cards'), {})):
+                self.measure(url, {'wall': '1', **own})                            # warm
+                response, queries, seconds, kb = self.measure(url, {'wall': '1', **own})
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(response.content.decode().count('data-key="card:'), 200)
                 found[name] = (queries, round(seconds, 2), round(kb))
@@ -85,9 +87,10 @@ class LoadTests(MonitoringCase):
         found = {}
         small = {'wall': '1', 'mode': 'small'}
         with mock.patch.object(read, 'TOKEN_BUCKET', 10 ** 9):
-            for name, url in (('page', reverse('monitoring:monitor')), ('fragment', reverse('monitoring:cards'))):
-                self.measure(url, small)                                           # warm
-                response, queries, seconds, kb = self.measure(url, small)
+            for name, url, own in (('page', reverse('monitoring:monitor'), {'full': '1'}),
+                                   ('fragment', reverse('monitoring:cards'), {})):
+                self.measure(url, {**small, **own})                                # warm
+                response, queries, seconds, kb = self.measure(url, {**small, **own})
                 self.assertEqual(response.status_code, 200)
                 html = response.content.decode()
                 self.assertEqual(html.count('data-key="card:'), 200)

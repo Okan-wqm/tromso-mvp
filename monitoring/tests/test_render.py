@@ -217,7 +217,7 @@ class PageTests(MonitoringCase):
             mine = CardTemplate.objects.create(name=f'P{CardTemplate.objects.count()}', layout=layout)
             CardTemplateAssignment.objects.filter(unit=None, system=None, system_type=None, species=None,
                                                   kind=None).update(template=mine)
-        return self.client.get(PAGE, query).content.decode()
+        return self.client.get(PAGE, {**query, 'full': '1'}).content.decode()
 
     def test_a_card_is_its_frame_and_a_grid_of_placed_widgets(self):
         html = self.page()
@@ -343,7 +343,7 @@ class AnnouncerTests(MonitoringCase):
     person's language; the page carries every word it says."""
 
     def test_the_state_is_on_the_article_and_the_regions_sit_outside_the_grid(self):
-        html = self.client.get(PAGE).content.decode()
+        html = self.client.get(PAGE, {'full': '1'}).content.decode()
         tree = Tree(html).root
         card = articles(html)[f'card:{self.t2.pk}']
         self.assertEqual(card.attrs['data-state'], card.attrs['class'].split('monitor-')[-1].split()[0])

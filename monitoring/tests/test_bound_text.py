@@ -215,14 +215,14 @@ class BoundTextPageTests(MonitoringCase):
         for query in ({}, {'mode': 'small'}, {'mode': 'big'}, {'mode': 'detailed'}, {'wall': '1'},
                       {'wall': '1', 'mode': 'small'}):
             with self.subTest(query=query):
-                html = self.client.get(PAGE, query).content.decode()
+                html = self.client.get(PAGE, {**query, 'full': '1'}).content.decode()
                 self.assertIn('O₂ (%) 59.99', html)
                 self.assertNotIn('60.0 < critical limit 60.0', html)
                 self.assertNotIn('O₂ (%) 60.0 · critical limit 60.0', html)
 
     def test_the_small_and_the_big_card_name_the_bound_beside_the_figure(self):
         for mode in ('small', 'big'):
-            reasons = nodes(card_of(self.client.get(PAGE, {'mode': mode}).content.decode(), self.t2), 'monitor-reasons')
+            reasons = nodes(card_of(self.client.get(PAGE, {'mode': mode, 'full': '1'}).content.decode(), self.t2), 'monitor-reasons')
             with self.subTest(mode=mode):
                 # (the Big card's markup leaves no space before the dot: "5.00· critical limit 6.00" in its golden file)
                 self.assertRegex(text(reasons[0]), r'^O₂ \(%\) 59\.99 ?· critical limit 60\.0')

@@ -19,6 +19,20 @@
 //                              server cannot be reached), gone when the person may no longer read it (401, 403,
 //                              404 or a redirect to sign-in); the page's CSS says so in its own words. A
 //                              `poll:gone` event (detail.status) bubbles from the element when it is gone.
+//   data-poll-state="loading"  set by the SERVER on an element whose content is only a placeholder (a page drawn
+//                              before its data: the shell of Operations › Monitoring). It is asked for at once, not
+//                              after its interval, and stays loading until its first answer with a body, which sets
+//                              live once it is in place. Before that, a failure (a server error such as a 503, no
+//                              answer, too slow) sets "unread" at once, not after two: there is no last picture to
+//                              keep, and the page says the data cannot be read; it is asked again after the usual
+//                              waits, never longer than 10 s while nothing is on the screen, and its request may
+//                              take 35 s (a wall of 200 cards). A 204 ("nothing changed") is no answer for it
+//                              either: unread, and its next address is not followed (the server answers an address
+//                              without a token with a body); nor is a 200 whose body holds nothing to show (empty,
+//                              or, for a merged element, no element with the key). Gone is gone, as above. Once the
+//                              first answer is in place, the page goes to the element the address's #fragment names
+//                              when it is in that answer (a link to a card), as the browser does on a page drawn
+//                              whole.
 //   `poll:now` event           asks at once; detail.url (optional) is the address to ask from now on
 //   `poll:merged` event        sent by a merged element after each merge: detail.replaced ({old, node}), inserted,
 //                              removed (what frontend/announce.ts reads a state's rise from)
@@ -37,7 +51,7 @@
 //                              A field with data-autosubmit sends the form instead (the page is drawn anew);
 //                              without the script the form is sent by its <noscript> button.
 //   data-live-delay="<ms>"     the pause after typing before asking (default 300)
-// An element that leaves the page stops being asked for; a request takes at most 20 seconds.
+// An element that leaves the page stops being asked for; a request takes at most 20 seconds (35 for a placeholder's).
 
 // How close to the end (px) a list must be to follow new rows.
 const NEAR_END = 48;
@@ -46,12 +60,32 @@ const GONE = new Set([401, 403, 404]);
 // How long (ms) a request may take, and the longest wait (ms) after failures.
 const TIMEOUT = 20000;
 const SLOWEST = 60000;
+// The same while a placeholder stands in the element (data-poll-state="loading"): the first answer is the whole of the
+// data (a wall of 200 cards takes up to monitoring/tests/test_load.py's 30 s), and nothing is on the screen meanwhile.
+const FIRST_TIMEOUT = 35000;
+const FIRST_SLOWEST = 10000;
 // A wait is its interval times 1 ± JITTER.
 const JITTER = 0.1;
 // Failures in a row after which the element says it is stale.
 const STALE_AFTER = 2;
 
-type PollState = 'live' | 'stale' | 'gone';
+type PollState = 'live' | 'stale' | 'gone' | 'unread';
+// The state the server gives an element whose content is a placeholder until its first answer.
+const LOADING = 'loading';
+
+/** After an element's first answer: the element the address's #fragment names, when the answer brought it (a link to a
+ *  card), is brought into view, as the browser does when the page is drawn whole. */
+function reach(element: HTMLElement): void {
+  const id = window.location.hash.slice(1);
+  if (!id) return;
+  let found: HTMLElement | null = null;
+  try {
+    found = document.getElementById(decodeURIComponent(id));
+  } catch {
+    return;   // a fragment that is not a valid escape names nothing
+  }
+  if (found && element.contains(found)) found.scrollIntoView();
+}
 
 function atEnd(list: HTMLElement): boolean {
   return list.scrollHeight - list.scrollTop - list.clientHeight < NEAR_END;
@@ -139,16 +173,19 @@ export function watch(element: HTMLElement): () => void {
   let timer = 0;
   let last = '';
   let stopped = false;
+  // Whether the element holds an answer yet: not while the server's placeholder stands in it.
+  let filled = element.dataset.pollState !== LOADING;
 
   const state = (value: PollState): void => { element.dataset.pollState = value; };
   const failed = (): void => {
     failures += 1;   // the next wait is longer
-    if (failures >= STALE_AFTER) state('stale');
+    if (!filled) state('unread');
+    else if (failures >= STALE_AFTER) state('stale');
   };
   const schedule = (): void => {
     window.clearTimeout(timer);
     if (stopped) return;
-    const interval = Math.min(seconds * 1000 * 2 ** failures, Math.max(SLOWEST, seconds * 1000));
+    const interval = Math.min(seconds * 1000 * 2 ** failures, filled ? Math.max(SLOWEST, seconds * 1000) : FIRST_SLOWEST);
     timer = window.setTimeout(() => { void refresh(); }, interval * (1 + JITTER * (Math.random() * 2 - 1)));
   };
   const stop = (): void => {
@@ -162,6 +199,14 @@ export function watch(element: HTMLElement): () => void {
     stop();
     state('gone');
     element.dispatchEvent(new CustomEvent('poll:gone', { bubbles: true, detail: { status } }));
+  };
+  /** Whether an answer holds something to show in the placeholder's place: for a merged element an element with the
+   *  key, else anything at all. */
+  const shows = (html: string): boolean => {
+    if (!mergeBy) return html.trim() !== '';
+    const template = document.createElement('template');
+    template.innerHTML = html;
+    return template.content.querySelector(`[${mergeBy}]`) !== null;
   };
   const apply = (html: string): void => {
     if (append) {
@@ -187,15 +232,30 @@ export function watch(element: HTMLElement): () => void {
     if (running || document.visibilityState !== 'visible') return;
     const request = new AbortController();
     running = request;
-    const timeout = window.setTimeout(() => request.abort(), TIMEOUT);
+    const timeout = window.setTimeout(() => request.abort(), filled ? TIMEOUT : FIRST_TIMEOUT);
     try {
       const response = await fetch(url, { credentials: 'same-origin', signal: request.signal });
       if (response.redirected || GONE.has(response.status)) {
         gone(response.status);
         return;
       }
-      if (!response.ok) {   // a server error: asked for again, after a longer wait
+      if (!response.ok || (!filled && response.status === 204)) {   // a server error: asked again, after a longer wait
         failed();
+        return;
+      }
+      if (!filled) {
+        const html = await response.text();
+        if (dropped.has(request)) return;
+        if (!shows(html)) {   // nothing to put in the placeholder's place: no answer
+          failed();
+          return;
+        }
+        url = response.headers.get('X-Poll-Next') ?? url;
+        failures = 0;
+        apply(html);
+        filled = true;     // the first answer is in place: live from now on (frontend/announce.ts says nothing of it)
+        state('live');
+        reach(element);
         return;
       }
       url = response.headers.get('X-Poll-Next') ?? url;
@@ -234,8 +294,12 @@ export function watch(element: HTMLElement): () => void {
     document.addEventListener('visibilitychange', shown);
     listening = true;
   }
-  state('live');
-  schedule();
+  if (filled) {
+    state('live');
+    schedule();
+  } else {
+    void refresh();   // a placeholder: its data at once (a hidden page asks when it is shown, `shown`)
+  }
   return stop;
 }
 

@@ -3289,6 +3289,48 @@ student Read, Create and Edit, a technician and an advisor Read. Rights per expe
 experiments they are in the team of) come with the permissions plan, which reads the team. The admin lists experiments,
 deleted ones too, and restores an experiment with the parts its delete took along.
 
+**Confidentiality** (`core/sealing.py`, `experiments/sealing.py`; plan and decisions in
+`F:\dev\balik-notes\plan\exp-access\`, owner amendments C1 to C4). An experiment's lead alone decides who reads it
+(**Sharing**, a button on its read page that only the lead sees):
+
+- **Sealed** (the default, and every experiment that existed before): its team, the people or roles its lead shares a
+  part with, and the platform admin for support. Each read by someone outside the team is in the read log
+  (`core_access_events`: a view, or `support` for the platform admin) and the lead reads it on the **Who looked** tab.
+- **Private**: its team and its shares only, not the platform admin either (amendment C4).
+- **Open**: everyone who reads experiments, as before.
+
+A **share** gives a person or a role one or more of five parts until a day (at most two years), with a reason; the
+results and the data bring the design and the systems with them, the water brings the systems. Revoked or ended shares
+stay as history; each share and revoke is one activity-log entry on the experiment. A member of the team has a window
+(from, until) and a role; a **guest** member reads the experiment's shell (code, name, lead, team) and no part.
+
+For anyone else a sealed or private experiment **does not exist**: its pages answer as an unknown id (404), and its
+cells (a tank or a system it books, for the days it books them: the view `experiment_cells`) and every record on them
+dated inside them are absent from every page, list, count, choice, export, chart, the activity log, the delete plan
+("N restricted records", never named, and a delete that reaches one is refused to them), alarms and their notifications
+(an alarm on a sealed cell reaches only who may see it), and the database viewer. A tank or system itself is hidden
+only while today is inside one of its cells, so a booking for next month hides nothing today. The rule is applied in one
+place: every manager of a sealed model narrows its rows for the person looking, with what they are granted read inside
+the same SQL statement (no query of its own). Every model that reaches a unit, a system or another sealed record
+declares its seal in its app's `sealing.py`; a new one that does not fails the system check (`core.E101`, `core.E102`).
+A few named reads see everything (`sealing.system(reason)`: the stock fold, the booking check, the delete plan, the
+oversee card, the preflight report) and every place that reads with SQL of its own is named with why
+(`core/tests_sealing.py`). Management commands but `runserver` read as the system; a read with nobody looking fails.
+
+**Oversee** (a column of the role matrix, offered by Experiments): the fish of every confidential experiment's tanks as
+farm facts (stock, mortality, feeding, water, health, lice, withdrawal, tasks, alarms), never its design, results or
+team; such a tank shows a card (**Research trial**, its lead, its approval and its days) instead of the experiment's
+chip, and each card read is logged as `oversee`. Migration 0005 gives it to every role that records stock, feeding,
+health, treatments or lice; the platform admin gives and takes it away, and the matrix says which duties it touches.
+The **approval** (FOTS reference and last day) is on the experiment's Approval tab, editable after the start.
+
+A booking held by an experiment the person may not read is said with its days only ("booked by another experiment
+from D to D"), never which one; the platform admin so still sees that a tank or system of a private experiment is
+booked and when. **Honest limits**, said on the Sharing page too: someone with direct access to the database or the
+server reads the stored rows; the sensor readings table is not in the database viewer and is reached only through a
+channel the seal let through. A database viewer export asks why, and the reason is in the read log.
+`manage.py experiments_sealing_preflight` says what the owner must know before it goes live.
+
 ## Regulatory reports (Production › Reports, `/reports/`)
 
 The reports the farm owes Mattilsynet and Fiskeridirektoratet, made from the records and filed by people. Its own app
@@ -4504,8 +4546,9 @@ The rules the platform owner (the customer the platform is given to) sets for th
 
 ## Roles and users
 
-There are no built-in roles. The platform admin (a Django superuser) can open everything and is the
-only one who manages roles and users; everyone else gets exactly what their roles allow.
+There are no built-in roles. The platform admin (a Django superuser) can open everything (but a private experiment,
+whose lead keeps it from them: Research › Experiments, Confidentiality) and is the only one who manages roles and
+users; everyone else gets exactly what their roles allow. The Oversee column (Experiments) is under that section too.
 
 - **Access areas** (`config/access.py`, read by `core/access.py`): the parts of the console a role
   can be given, one line each, with the actions each offers: Sites, Production departments,
@@ -4684,7 +4727,10 @@ is not in the access matrix, so no role can be given it.
   shown and marked, and can be hidden or shown alone. A header sorts, a filter box matches text
   inside a value (equals, for numbers, ids and booleans), the search box looks in every column, 100
   rows a page. **Export CSV** gives the current filter, streamed and capped at 50,000 rows; text a
-  spreadsheet would run as a formula (starting with `=`, `+`, `-`, `@`) gets a leading apostrophe.
+  spreadsheet would run as a formula (starting with `=`, `+`, `-`, `@`) gets a leading apostrophe. An export asks why
+  (owner decision C2.2); the reason, the table and who exported it are in the read log (`core_access_events`). The
+  rows, their counts and their links are read through the seal: a private experiment's records are not shown to the
+  platform admin either (Research › Experiments, Confidentiality).
 - **Structure**: columns (SQL type, nullable, default, key, the model's field), constraints, indexes
   and the relationships in both directions, read from the database and matched with the Django
   model. A generated column (a unit's volume) shows its expression where a default would be, and is

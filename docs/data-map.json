@@ -2715,6 +2715,113 @@
     },
     {
       "app": "core",
+      "model": "Rev",
+      "table": "core_rev",
+      "description": "The revision of one (scope, key): moved by the database whenever a tracked row changes (core.rev), read by a stored figure to prove it is still valid.",
+      "columns": [
+        {
+          "name": "scope",
+          "field": "scope",
+          "type": "varchar(40)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "moved by the revision triggers (core.operations.TrackRev)"
+        },
+        {
+          "name": "key",
+          "field": "key",
+          "type": "varchar(64)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "moved by the revision triggers (core.operations.TrackRev)"
+        },
+        {
+          "name": "rev",
+          "field": "rev",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "moved by the revision triggers (core.operations.TrackRev)"
+        },
+        {
+          "name": "dirty_epoch",
+          "field": "dirty_epoch",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "moved by the revision triggers (core.operations.TrackRev)"
+        },
+        {
+          "name": "dirty_from",
+          "field": "dirty_from",
+          "type": "date",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "moved by the revision triggers (core.operations.TrackRev)"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_core_rev_rev",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "written by the database: a trigger of each tracked table moves its revision at commit (core.rev)"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "written by the database; `manage.py core_rev_rebuild` moves every revision after a restore"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "derived data, safe to rebuild: a revision is never deleted"
+        },
+        "read": {
+          "status": "none",
+          "paths": [],
+          "why": "read by the code that proves a stored figure still valid; the database viewer shows the table"
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Administration",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": []
+    },
+    {
+      "app": "core",
       "model": "EntryKey",
       "table": "entry_keys",
       "description": "The key a new-record form carries (core.crud.ENTRY_KEY) and the record its first sending created, for every kind of record (F-232): the same form sent twice, by a double click, a retried request or two sendings at once, creates one record, and the second sending opens it.",
@@ -3092,6 +3199,7 @@
       },
       "tests": [
         "core/tests_platform.py",
+        "core/tests_rev.py",
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
         "farm/tests/test_harvest_inside_withdrawal.py",
@@ -6974,6 +7082,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_rev.py",
         "core/tests_workspaces.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_feeding.py",
@@ -7204,6 +7313,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_rev.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_suppliers.py",
         "farm/tests/test_water_points.py"
@@ -7356,6 +7466,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_rev.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_feeding.py",
         "farm/tests/test_suppliers.py",
@@ -13600,6 +13711,7 @@
         "core/tests_design_shell.py",
         "core/tests_entry_key.py",
         "core/tests_query_pages.py",
+        "core/tests_rev.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_fish.py",
@@ -15305,6 +15417,7 @@
         "core/tests_erasure.py",
         "core/tests_private_log.py",
         "core/tests_query_pages.py",
+        "core/tests_rev.py",
         "core/tests_schema.py",
         "core/tests_scope.py",
         "core/tests_template_clocks.py",
@@ -16455,6 +16568,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_rev.py",
         "core/tests_scope.py",
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
@@ -17021,6 +17135,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_rev.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_emptied_unit.py",
         "farm/tests/test_escape_delivery.py",
@@ -17561,6 +17676,7 @@
       },
       "tests": [
         "core/tests_entry_key.py",
+        "core/tests_rev.py",
         "core/tests_workspaces.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_cleaner_size_limit.py",
@@ -18868,6 +18984,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_rev.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_delete_plan.py",
@@ -19929,6 +20046,7 @@
       "tests": [
         "core/test_database.py",
         "core/test_languages.py",
+        "core/tests_rev.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_calculator_loaded_ph.py",
@@ -20921,6 +21039,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_rev.py",
         "core/tests_workspaces.py",
         "farm/tests/test_phosphate.py",
         "farm/tests/test_water_ionic_inputs.py",
@@ -21332,6 +21451,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_rev.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_fish.py",
@@ -22137,6 +22257,7 @@
       "tests": [
         "core/test_languages.py",
         "core/tests_entry_key.py",
+        "core/tests_rev.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_charts_of.py",
@@ -22618,6 +22739,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_rev.py",
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
         "farm/tests/test_calculator.py",
@@ -36604,6 +36726,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_rev.py",
         "core/tests_workspaces.py",
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
@@ -37550,6 +37673,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_rev.py",
         "core/tests_workspaces.py",
         "farm/tests/test_sensor_ph_scale.py",
         "sensors/tests/__init__.py",

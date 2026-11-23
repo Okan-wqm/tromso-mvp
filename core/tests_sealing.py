@@ -165,6 +165,7 @@ SYSTEM_CALLS = {
                           'never named, and a delete that reaches it is refused to them',
     'experiments/read.py': 'the booking check: a booking holds its tank whoever may read it, and is said with its days '
                            'only; the oversee card, which says only the trial, its lead, its approval and its days',
+    'experiments/preflight.py': 'the report before confidentiality goes live: counts and names every experiment',
     'farm/stock/read.py': 'the stock fold: a fold over part of a batch’s lines is a wrong figure; what is shown of it is '
                           'narrowed where it is shown',
 }

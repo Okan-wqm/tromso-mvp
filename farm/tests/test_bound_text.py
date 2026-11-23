@@ -327,7 +327,7 @@ def cell_of(html, label):
 
 
 class FigureTests(SimpleTestCase):
-    """The owner's decision of 2026-11-22 ("geçtiğini gösterecek kadar ondalık gösterilsin"): a value judged past a bound
+    """The owner's decision of 2026-11-22 ("show as many decimals as it takes to show it is past"): a value judged past a bound
     shows the decimals that prove it wherever it is shown, not only in a sentence (`reading_figure`, `proof_of`)."""
 
     def figure(self, code, exact, **bounds):

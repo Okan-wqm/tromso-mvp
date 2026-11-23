@@ -777,7 +777,7 @@ limits: critical below 60.0, …"), in the note an oxygen judged through its oth
 the two notes the drawer prints right after a row's limits ("… reads 59.99 (…): the worst fresh value decides the
 status", "last own value 59.99 critical on …", which the alarm's summary carries too: `read.said_value`), and a chip of
 units past the same bound says the lowest (or highest) of their unrounded values. The figure on its own says it too
-(owner decision, 2026-11-22: "geçtiğini gösterecek kadar ondalık gösterilsin"): a value judged past a bound that its
+(owner decision, 2026-11-22: "show as many decimals as it takes to show it is past"): a value judged past a bound that its
 shown value rounds onto is shown with the decimals that prove it everywhere it is shown, 59.99 and not 60.0: the cell of
 the water tables, the drawer and the overview (`farm/_water_value.html`, filter `reading_figure`), the cards' figure and
 the saturation beside a tile's label (`render.face`, `render.tile`) and the alarm's summary. One rule for all of them:

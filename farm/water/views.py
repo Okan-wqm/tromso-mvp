@@ -24,10 +24,10 @@ from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import NON_FIELD_ERRORS, BadRequest, ValidationError
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import formats, timezone
 from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 from django.utils.translation import gettext as _, ngettext
 
@@ -439,6 +439,142 @@ def _owner_chart(request, owner, here):
     })
 
 
+# ---- a unit's or a system's water history (Tank › Water, System › Water) ----------------------------------------
+HISTORY_RANGES = {'24h': timedelta(hours=24), '7d': timedelta(days=7), '30d': timedelta(days=30)}
+HISTORY_LONGEST = timedelta(days=731)          # a custom window: the sensors keep two years (README, Sensors)
+SENSOR_READ = 'sensors.view_reading'
+
+
+def history_window(request, owner, now):
+    """(key, start, end) of the window the address names: `range` one of HISTORY_RANGES ending now (24 h by default),
+    or `start` and `end` on the site's clock ('custom'); `around` a moment on the site's clock, the 12 hours each side of
+    it (an alarm's detail links here so). A time that is not one, an end before the start or a window longer than
+    HISTORY_LONGEST is refused (400), never read as another window."""
+    from sensors.forms import on_site_clock
+
+    zone = zone_of(site_of(owner))
+
+    def moment(name):
+        wall = read_moment(request.GET.get(name, ''))
+        if wall is None:
+            raise BadRequest(name)
+        try:
+            return on_site_clock(wall, zone)
+        except ValidationError:
+            raise BadRequest(name)
+
+    if request.GET.get('around'):
+        middle = moment('around')
+        return 'custom', middle - timedelta(hours=12), min(middle + timedelta(hours=12), now)
+    if request.GET.get('start') or request.GET.get('end'):
+        start, end = moment('start'), moment('end')
+        if end <= start or end - start > HISTORY_LONGEST:
+            raise BadRequest('end')
+        return 'custom', start, end
+    key = request.GET.get('range') if request.GET.get('range') in HISTORY_RANGES else '24h'
+    return key, now - HISTORY_RANGES[key], now
+
+
+def history_events(user, owner, start, end):
+    """[{at, until, kind, label, url}] of what happened to a unit's fish in the window, each from its own area's records
+    and only for a person who may read that area: the feedings (farm/feeding: a record's moment, `fed_moment`), the
+    treatments (farm/health: first to last day), the harvests (farm/stock: the operation's day) and the alarms opened
+    at its points (alarms: a water limit's at the point, a sensor rule's on a channel bound there; a system's own
+    channels too). A water exchange has no record in this product yet: none is shown (a gap the hand-back
+    names). A system's are its alarms only."""
+    from alarms.models import Alarm
+    from farm.feeding.read import fed_moment
+    from farm.models import FeedingRecord, StockOperation, Treatment
+    from farm.models.stock import MovementKind
+    from farm.stock.dates import end_of, start_of
+
+    found = []
+    zone = zone_of(site_of(owner))
+    first, last = start.astimezone(zone).date(), end.astimezone(zone).date()
+    if isinstance(owner, Tank):
+        if user.has_perm('farm.view_feedingrecord'):
+            for record in (FeedingRecord.objects.filter(unit=owner, date__gte=first, date__lte=last)
+                           .select_related('unit__production_department__site', 'feed')):
+                at = fed_moment(record)
+                if start <= at < end:
+                    found.append({'at': at, 'until': None, 'kind': 'feeding',
+                                  'label': _('Fed %(kg)s kg of %(feed)s') % {'kg': formats.localize(record.amount_kg),
+                                                                            'feed': record.feed},
+                                  'url': reverse('farm:feeding_records')})
+        if user.has_perm('farm.view_treatment'):
+            for treatment in Treatment.objects.filter(units=owner, start_date__lte=last).filter(
+                    Q(end_date__isnull=True) | Q(end_date__gte=first)):
+                found.append({'at': max(start_of(treatment.start_date, owner), start),
+                              'until': min(end_of(treatment.end_date, owner), end) if treatment.end_date else None,
+                              'kind': 'treatment', 'label': _('Treatment: %(method)s') % {
+                                  'method': treatment.get_method_display()},
+                              'url': reverse('farm:treatments')})
+        if user.has_perm('farm.view_stockoperation'):
+            for operation in StockOperation.objects.filter(movements__unit=owner, movements__kind=MovementKind.HARVEST,
+                                                           date__gte=first, date__lte=last).distinct():
+                found.append({'at': max(start_of(operation.date, owner), start), 'until': None, 'kind': 'harvest',
+                              'label': _('Harvest'), 'url': reverse('farm:harvests')})
+    if user.has_perm('alarms.view_alarm'):
+        points = calculation.points_for(owner)
+        here = Q(point__in=points) | Q(sensor_event__binding__point__in=points)    # a water limit's, a sensor rule's
+        if isinstance(owner, System):
+            here |= Q(sensor_event__binding__system=owner)
+        for alarm in Alarm.objects.filter(here, opened_at__gte=start, opened_at__lt=end).order_by('opened_at'):
+            found.append({'at': alarm.opened_at, 'until': None, 'kind': 'alarm', 'severity': alarm.severity,
+                          'label': alarm.summary, 'url': reverse('alarms:alarm_detail', args=[alarm.pk])})
+    found.sort(key=lambda event: event['at'])
+    return [{**event, 'at': int(event['at'].timestamp()),
+             'until': int(event['until'].timestamp()) if event['until'] else None, 'label': str(event['label'])}
+            for event in found]
+
+
+def _history_of(user, place, start, end, now, title):
+    """One place's water over the window, as data (sensors.read.water_history, sensors.chart.data): every parameter's
+    chart with its limit band, the NH₃-N worked out per sample. The sensors' values only for a person who may read
+    them (otherwise the samples alone, and the chart says why)."""
+    from sensors import chart as sensor_chart, read as sensor_read
+
+    found = sensor_read.water_history(place, start, end, now=now)
+    sensors = user.has_perm(SENSOR_READ)
+    charts = []
+    for each in found.charts:
+        drawn = sensor_chart.data(each, title, found.bands)
+        if not sensors:
+            drawn['buckets'] = {name: [] for name in drawn['buckets']}
+            drawn['gaps'], drawn['markers'] = [], []
+            drawn['notes'] = [str(_('Sensor values are not shown: they need the right to read sensor readings.'))]
+            drawn['empty'] = not drawn['samples']
+        charts.append(drawn)
+    worked = {code: {'label': str(parameters.get(code).short), 'decimals': parameters.get(code).decimals,
+                     'band': found.bands.get(code, {}),
+                     'values': [{'at': int(item.at.timestamp()), 'value': item.value, 'status': item.status,
+                                 'note': item.note} for item in items]}
+              for code, items in found.worked.items()}
+    return {'charts': charts, 'worked': worked}
+
+
+def _owner_history(request, owner):
+    """A unit's water history (Tank › Water) or a system's (System › Water: each of its points side by side) as JSON:
+    the window, the charts, the values worked out, the events and the address of the Deffeyes replay of the window."""
+    now = timezone.now()
+    key, start, end = history_window(request, owner, now)
+    user = request.user
+    if isinstance(owner, System):
+        places = [{'point': str(point), 'kind': point.kind, **_history_of(user, point, start, end, now, str(point))}
+                  for point in calculation.points_for(owner)]
+    else:
+        places = [{'point': str(owner), 'kind': 'unit', **_history_of(user, owner, start, end, now, str(owner))}]
+    query = urlencode({'target': f'{owner_type_of(owner)}:{owner.pk}',
+                       'start': timezone.localtime(start, zone_of(site_of(owner))).strftime('%Y-%m-%dT%H:%M'),
+                       'end': timezone.localtime(end, zone_of(site_of(owner))).strftime('%Y-%m-%dT%H:%M')})
+    return JsonResponse({
+        'range': key, 'start': int(start.timestamp()), 'end': int(end.timestamp()),
+        'zone': zone_of(site_of(owner)).key, 'places': places, 'events': history_events(user, owner, start, end),
+        'deffeyes': f'{reverse("sensors:deffeyes_frames")}?{query}' if user.has_perm(SENSOR_READ) else '',
+        'record': _dialog_url('farm:water_record', request, owner) if user.has_perm(RECORD) else '',
+        'samples': history_url(owner)})
+
+
 @permission_required(VIEW, raise_exception=True)
 def unit_chart(request, pk):
     """The Deffeyes chart of one unit's water, as the body of the monitoring cards' window (the fragment is polled):
@@ -446,8 +582,11 @@ def unit_chart(request, pk):
     fish, and the unit's points as links to the same fragment for another one. `?point=` is one of the unit's own active
     points (404 for any other); without it, the middle point. `?at=` draws the water as it was at a past moment (on the
     site's clock). A water that cannot be drawn is refused with what it lacks (farm/water/calculation.chart_of). Gated
-    by the right to read water samples alone: it shows nothing else of the unit's records."""
+    by the right to read water samples alone: it shows nothing else of the unit's records. `?view=history`: the unit's
+    water history as JSON instead (`_owner_history`: Tank › Water), each part of it for the person who may read it."""
     unit = get_object_or_404(Tank.objects.select_related('production_department__site'), pk=pk)
+    if request.GET.get('view') == HISTORY:
+        return _owner_history(request, unit)
     return _owner_chart(request, unit, reverse('farm:water_unit_chart', args=[unit.pk]))
 
 
@@ -455,6 +594,8 @@ def unit_chart(request, pk):
 def system_chart(request, pk):
     """A system's own Deffeyes chart (A4): its loop's water and the system's sensors, as a unit's (`unit_chart`)."""
     system = get_object_or_404(System.objects.select_related('site'), pk=pk)
+    if request.GET.get('view') == HISTORY:
+        return _owner_history(request, system)
     return _owner_chart(request, system, reverse('farm:water_system_chart', args=[system.pk]))
 
 

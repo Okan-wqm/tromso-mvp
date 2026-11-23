@@ -65,7 +65,7 @@ class Rules:
 
     def retry_after(self, severity):
         """How long after a failed attempt a notification is tried again."""
-        return timedelta(seconds=self._value(severity, 'retry_seconds', min, RETRY_BOUNDS[0]))
+        return timedelta(seconds=self._value(severity, 'retry_seconds', min, RETRY_BOUNDS[severity][0]))
 
     def shelve_max(self, severity):
         """The longest an alarm of the severity may be snoozed."""
@@ -77,7 +77,7 @@ class Rules:
 
     def flood_window(self, severity):
         """How long a flood's alarms are counted together, and how long a flood message covers the ones after it."""
-        return timedelta(seconds=self._value(severity, 'flood_window_seconds', min, FLOOD_WINDOW_BOUNDS[0]))
+        return timedelta(seconds=self._value(severity, 'flood_window_seconds', min, FLOOD_WINDOW_BOUNDS[severity][0]))
 
     def clock_skew(self, severity):
         """How far a device's clock may be off, either way, before the level holds (missing row: the smallest of the rows

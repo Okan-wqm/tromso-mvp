@@ -37,6 +37,7 @@ The timings are the deployment's (settings.ALARM_WORKER), refused at start when 
 import logging
 import os
 import socket
+import sys
 import threading
 import time
 import urllib.request
@@ -81,6 +82,7 @@ class Timing:
     statement_timeout: float
     lock_timeout: float
     send_timeout: float
+    send_round: float = 0
     deadman_url: str = ''
     deadman_every: float = 0
     deadman_timeout: float = 0
@@ -99,8 +101,8 @@ class Timing:
             problems.append('db_down_exit must be above 0 and max_failures at least 1')
         if not self.hang_exit > self.statement_timeout > 0 or not self.lock_timeout > 0:
             problems.append('hang_exit must be longer than statement_timeout, both and lock_timeout above 0')
-        if not self.send_timeout > 0:
-            problems.append('send_timeout must be above 0')
+        if not self.send_timeout > 0 or self.send_round < 0:
+            problems.append('send_timeout must be above 0, send_round not below 0')
         if self.deadman_url and not (self.deadman_url.startswith('https://') and self.deadman_every > 0
                                      and self.deadman_timeout > 0):
             problems.append('deadman_url must be https, deadman_every and deadman_timeout above 0')
@@ -143,7 +145,9 @@ class Worker:
         self.timing = timing or Timing.from_settings()
         self.run_pass = run_pass or engine.run_once
         self.changes = changes or changes_.token
-        self.send = (lambda stop: outbox.send_due(timeout=self.timing.send_timeout, stop=stop)) if send is None else send
+        self.send = ((lambda stop: outbox.send_due(timeout=self.timing.send_timeout, stop=stop,
+                                                   round_seconds=self.timing.send_round or None))
+                     if send is None else send)
         self.clock = clock
         self.stop = stop or threading.Event()
         self.reset = reset
@@ -151,6 +155,8 @@ class Worker:
         self.leading = False
         self._standby_said = False
         self._pass_started = None
+        self._looped_at = None                 # when the loop last came round (the watchdog's)
+        self._pid = None                       # the database backend that holds the lock
         self._done = threading.Event()         # the watchdog's and the sender's: set when the loop ends
         self._send_failing = False             # the sender's last round failed: the pass supervises it as 'send'
         self._unchecked = None                 # (from, to) of the stretch with no pass before this worker took over
@@ -169,15 +175,22 @@ class Worker:
         try:
             return self._loop()
         finally:
-            self._done.set()                   # the sender ends its round at the next notification
+            self._done.set()                   # the sender ends its round at the next group
             for thread in threads:
-                thread.join()
+                thread.join(self.timing.send_timeout + self.timing.tick)
+                if thread.is_alive():
+                    logger.error('The alarm worker %r leaves its thread %s behind as it stops.', self.name, thread.name)
             self._finish()
 
     def _loop(self):
         last_pass, seen, down_since, tries, failures = None, None, None, 0, 0
         while not self.stop.is_set():
+            self._looped_at = self.clock()
             try:
+                if self.leading and not self._holds():
+                    logger.warning('The alarm worker %r is on a new database session: it takes the lock again.',
+                                   self.name)
+                    self.leading = False
                 if not self._lead():
                     self.stop.wait(self.timing.tick)
                     continue
@@ -218,7 +231,8 @@ class Worker:
             if self._unchecked is not None:
                 extra['unchecked'] = self._unchecked
             summary = self.run_pass(**extra)
-            self._unchecked = None
+            if 'supervision' not in summary.failed_steps:
+                self._unchecked = None             # said: the supervision step that raises it passed
         finally:
             took = self.clock() - self._pass_started
             self._pass_started = None
@@ -233,10 +247,22 @@ class Worker:
             self._dead_man()
         return summary
 
+    def _alive(self):
+        """Whether everything the dead man vouches for holds: the alarms checked and sent (alarms/watch.py) and the
+        ingest alive where there is one (sensors.read.ingest_alive)."""
+        from django.utils import timezone
+
+        from sensors.read import ingest_alive
+        return watch.state(self.name).checked and ingest_alive(timezone.now()) is not False
+
     def _dead_man(self):
         """Asks the off-server dead man's address, at most every `deadman_every` seconds, on a thread of its own."""
         timing = self.timing
         if not timing.deadman_url or (self._pinged is not None and self.clock() - self._pinged < timing.deadman_every):
+            return
+        if not self._alive():
+            logger.warning('The alarm worker %r does not ask its dead man: something it vouches for does not hold.',
+                           self.name)
             return
         self._pinged = self.clock()
         self.spawn(self.ping, (timing.deadman_url, timing.deadman_timeout))
@@ -248,8 +274,8 @@ class Worker:
         if self.leading:
             return True
         with connection.cursor() as cursor:
-            cursor.execute('SELECT pg_try_advisory_lock(%s)', [LOCK])
-            got = cursor.fetchone()[0]
+            cursor.execute('SELECT pg_try_advisory_lock(%s), pg_backend_pid()', [LOCK])
+            got, pid = cursor.fetchone()
         if not got:
             if not self._standby_said:
                 logger.info('Another alarm worker holds the lock; %r stands by.', self.name)
@@ -265,9 +291,16 @@ class Worker:
             'state': WorkerState.RUNNING, 'host': _fit('host', socket.gethostname()), 'pid': os.getpid(),
             'started_at': Now(), 'heartbeat_at': Now(), 'consecutive_failures': 0, 'last_error': '',
             'stale_after_seconds': self.timing.stale_after})
-        self.leading, self._standby_said = True, False
+        self.leading, self._standby_said, self._pid = True, False, pid
         logger.info('The alarm worker %r checks the alarms (pid %d).', self.name, os.getpid())
         return True
+
+    def _holds(self):
+        """Whether the lock is still this worker's: the default connection is the session that took it (a connection
+        opened again after an error inside a pass is a new session, without the lock or the session's settings)."""
+        with connection.cursor() as cursor:
+            cursor.execute('SELECT pg_backend_pid()')
+            return cursor.fetchone()[0] == self._pid
 
     def _session(self):
         """The worker's own session: named, its statements and lock waits bounded, an idle transaction ended, and a dead
@@ -340,7 +373,8 @@ class Worker:
         """One round through the outbox, its figures written on the worker's row."""
         delivery = self.send(self._done.is_set)
         self._status(last_send_at=Now(), outbox_waiting=max(0, delivery.backlog - delivery.sent),
-                     outbox_oldest_at=delivery.oldest)
+                     outbox_oldest_at=delivery.oldest, undeliverable=delivery.undeliverable,
+                     undeliverable_since=delivery.undeliverable_since)
         if delivery.sent or delivery.failed:
             logger.info('Outbox: %s', delivery)
         return delivery
@@ -351,13 +385,18 @@ class Worker:
             self.check_hang()
 
     def check_hang(self):
-        """Ends the process (1) when a pass has run longer than `hang_exit`: whatever it waits for, Docker's restart is a
-        surer way out. Returns whether it did."""
-        started = self._pass_started
+        """Ends the process (1) when a pass has run, or the loop has not come round, for longer than `hang_exit`:
+        whatever it waits for, Docker's restart is a surer way out. Returns whether it did. The log is flushed, never
+        shut down (a handler's lock the hung thread holds would hang the exit too)."""
+        started = self._pass_started if self._pass_started is not None else self._looped_at
         if started is None or self.clock() - started < self.timing.hang_exit:
             return False
-        logger.critical('An alarm pass of the worker %r has run for %.0f s; the process exits to be started again.',
-                        self.name, self.clock() - started)
-        logging.shutdown()
+        logger.critical('The alarm worker %r has not come round for %.0f s (a pass or a wait that hangs); the process '
+                        'exits to be started again.', self.name, self.clock() - started)
+        for stream in (sys.stderr, sys.stdout):
+            try:
+                stream.flush()
+            except Exception:
+                pass
         self.exit_now(1)
         return True

@@ -12,11 +12,13 @@ WHY = {
     watch.STOPPED: 'the alarm worker stopped: no alarm is raised and nobody is told',
     watch.STALE: 'no alarm pass has finished for {age}: no alarm is raised and nobody is told',
     watch.FAILING: 'alarm passes finish, but these steps fail: {steps}',
+    watch.SENDER: 'the alarm notifications have not been gone through since {since}: nobody is told',
+    watch.UNDELIVERABLE: '{count} critical notification(s) cannot be delivered, the oldest queued {since}',
 }
 
 
 class Command(BaseCommand):
-    help = 'Exit 0 when the alarms are being checked, 1 (and why) when they are not.'
+    help = 'Exit 0 when the alarms are being checked and sent, 1 (and why) when they are not.'
 
     def add_arguments(self, parser):
         parser.add_argument('--name', default=DEFAULT_NAME)
@@ -27,5 +29,7 @@ class Command(BaseCommand):
             self.stdout.write(f'ok: the last alarm pass finished {found.age.total_seconds():.0f} s ago')
             return
         age = f'{found.age.total_seconds():.0f} s' if found.age is not None else 'ever'
-        self.stderr.write(WHY[found.reason].format(age=age, steps=found.failed_steps or '?'))
+        since = f'{found.since:%Y-%m-%d %H:%M:%S} UTC' if found.since else '?'
+        self.stderr.write(WHY[found.reason].format(age=age, steps=found.failed_steps or '?', since=since,
+                                                   count=found.row.undeliverable if found.row else 0))
         sys.exit(1)

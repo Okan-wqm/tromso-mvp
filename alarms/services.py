@@ -14,7 +14,7 @@ from core.models import AuditLog
 from sensors.models.alarm import Severity
 
 from .models import (Acknowledgement, Alarm, AlarmClearance, AlarmShelve, AlarmShelveEnd, DeliveryAttempt, Escalation,
-                     Notification, Outcome)
+                     Notification, NotificationKind, Outcome, OutboxEntry, Source)
 
 
 def _fit(model, field, text):
@@ -112,14 +112,23 @@ def clear(alarm, at, cause):
 
 # ---- notifications and escalations -------------------------------------------------------------------------------------
 def queue_many(notifications):
-    """Unsaved Notifications queued, each logged; two statements for all of them."""
+    """Unsaved Notifications queued (and put in the outbox's queue), each logged; three statements for all of them."""
     made = Notification.objects.bulk_create(notifications)
+    OutboxEntry.objects.bulk_create([OutboxEntry(notification=notification) for notification in made])
     with audit.source_language():
         _log([audit.created(None, notification, {
             str(_('Recipient')): notification.recipient.get_username(),
-            str(_('Channel')): audit.message(notification.get_channel_display()), str(_('Level')): str(notification.level)},
+            str(_('Channel')): audit.message(notification.get_channel_display()), str(_('Level')): str(notification.level),
+            **({str(_('Kind')): audit.message(notification.get_kind_display())}
+               if notification.kind != NotificationKind.ALARM else {})},
             label=f'{notification.alarm.summary} → {notification.recipient.get_username()}') for notification in made])
     return made
+
+
+def give_up(notifications):
+    """The notifications leave the outbox's queue unsent (their attempts are used up, or their critical alarm was
+    acknowledged or cleared and its attempts are used up): their attempts say why (read.status)."""
+    OutboxEntry.objects.filter(notification__in=notifications).delete()
 
 
 def enqueue(alarm, level, recipients, now):
@@ -159,6 +168,8 @@ def attempt(notification, result, now, *, flood_key='', flood_size=None, grouped
     row = DeliveryAttempt.objects.create(notification=notification, attempted_at=now, outcome=outcome,
                                          detail=_fit(DeliveryAttempt, 'detail', result.detail or ''),
                                          flood_key=_fit(DeliveryAttempt, 'flood_key', flood_key), flood_size=flood_size)
+    if outcome != Outcome.FAILED:
+        OutboxEntry.objects.filter(notification=notification).delete()
     with audit.source_language():
         audit.record(None, AuditLog.Action.UPDATE, notification,
                      {str(_('Delivery')): [None, f'{outcome}: {row.detail}' if row.detail else outcome]},
@@ -187,10 +198,12 @@ def acknowledge(alarm, user, *, at=None, device='', app='console', notification=
 
 # ---- snoozing ---------------------------------------------------------------------------------------------------------
 def shelve(alarm, user, minutes, reason, *, at=None):
-    """`user` snoozes an open alarm for `minutes` (1 to its severity's longest snooze, Alarm severity rules), saying why:
-    nobody is notified of it and it is not escalated until then (alarms/engine.py, alarms/outbox.py); it is still
-    raised, kept, shown and cleared. One at a time. Logged, critical for a critical alarm. Who may is asked by the caller
-    (read.SHELVE)."""
+    """`user` snoozes an open alarm for `minutes`, saying why: nobody is notified of it and it is not escalated until then
+    (alarms/engine.py, alarms/outbox.py); it is still raised, kept, shown and cleared. One at a time; all the snoozes of
+    one alarm together at most its severity's longest snooze (Alarm severity rules), so a snooze is never renewed past
+    it; never a critical alarm of the alarm system itself (it says the alarms are not working). The people notified of
+    the alarm (but the snoozer) are told who snoozed it, until when and why. Logged, critical for a critical alarm. Who
+    may is asked by the caller (read.SHELVE)."""
     from .read import snoozes
     from .rules import current
     at = at or timezone.now()
@@ -199,10 +212,20 @@ def shelve(alarm, user, minutes, reason, *, at=None):
         alarm = Alarm.objects.select_for_update().get(pk=alarm.pk)
         if AlarmClearance.objects.filter(alarm=alarm).exists():
             raise ValidationError(_('This alarm has cleared: there is nothing to snooze.'))
+        if alarm.source == Source.SYSTEM and alarm.severity == Severity.CRITICAL:
+            raise ValidationError(_('A critical alarm of the alarm system itself is never snoozed: it says the alarms '
+                                    'are not working as they should.'))
         longest = current().shelve_max(alarm.severity)
         if not isinstance(minutes, int) or minutes < 1 or timedelta(minutes=minutes) > longest:
             raise ValidationError(_('A %(severity)s alarm is snoozed for 1 to %(minutes)d minutes.') % {
                 'severity': alarm.get_severity_display().lower(), 'minutes': longest // timedelta(minutes=1)})
+        used = sum((min(row.ends_at(), at) - row.shelved_at for row in alarm.shelves.select_related('end')
+                    if row.shelved_at <= at), timedelta())
+        if used + timedelta(minutes=minutes) > longest:
+            raise ValidationError(_('This alarm has been snoozed for %(used)d of its %(minutes)d minutes already: at '
+                                    'most %(left)d more.') % {
+                'used': used // timedelta(minutes=1), 'minutes': longest // timedelta(minutes=1),
+                'left': max(0, (longest - used) // timedelta(minutes=1))})
         if not reason:
             raise ValidationError(_('Say why the alarm is snoozed.'))
         if alarm.pk in snoozes([alarm.pk], at):
@@ -212,6 +235,13 @@ def shelve(alarm, user, minutes, reason, *, at=None):
         with audit.source_language():
             audit.record_create(user, row, {str(_('Snoozed until')): row.until.isoformat(), str(_('Why')): row.reason},
                                 label=alarm.summary, severity=_severity(alarm))
+        told = {}
+        for notification in (alarm.notifications.filter(kind=NotificationKind.ALARM).exclude(recipient=user)
+                             .select_related('recipient', 'rule').order_by('level')):
+            told[(notification.recipient_id, notification.channel)] = notification
+        queue_many([Notification(alarm=alarm, recipient=notification.recipient, channel=notification.channel,
+                                 level=notification.level, rule=notification.rule, queued_at=at,
+                                 kind=NotificationKind.SNOOZED, shelve=row) for notification in told.values()])
         return row
 
 

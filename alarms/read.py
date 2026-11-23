@@ -36,12 +36,16 @@ def nobody_notified(alarm):
 
 
 def status(notification):
-    """'sent' once a transport took it, 'failed' after its severity's delivery attempts failed, else 'queued'."""
+    """'sent' once a transport took it (or a flood message covered it); 'failed' once its severity's delivery attempts
+    failed, for a critical alarm's only once the alarm is acknowledged or cleared (alarms/outbox.py: until then it is
+    tried again); else 'queued'."""
     attempts = DeliveryAttempt.objects.filter(notification=notification)
     if attempts.filter(outcome__in=[Outcome.SENT, Outcome.GROUPED]).exists():
         return SENT
     failed = attempts.filter(outcome=Outcome.FAILED).count()
-    return FAILED if failed >= current_rules().delivery_attempts(notification.alarm.severity) else QUEUED
+    alarm = notification.alarm
+    persists = alarm.severity == 'critical' and is_open(alarm) and not acknowledged(alarm)
+    return FAILED if failed >= current_rules().delivery_attempts(alarm.severity) and not persists else QUEUED
 
 
 def transport_connected(channel):
@@ -70,20 +74,24 @@ def snoozes(alarm_ids, now):
             .select_related('user')}
 
 
-def resumed(alarm_ids, now):
-    """{alarm id: when its last snooze ended}, for the alarms a snooze of which has ended by `now` (its time out, or
-    ended early): their escalation time is counted again from then."""
+def ended(alarm_ids, now):
+    """{alarm id: its last snooze that has ended by `now`} (its time out, or ended early)."""
     found = {}
     for row in AlarmShelve.objects.filter(alarm__in=alarm_ids, shelved_at__lte=now).select_related('end'):
-        end = row.ends_at()
-        if end <= now:
-            found[row.alarm_id] = max(end, found.get(row.alarm_id, end))
+        if row.ends_at() <= now and (row.alarm_id not in found or row.ends_at() > found[row.alarm_id].ends_at()):
+            found[row.alarm_id] = row
     return found
+
+
+def resumed(alarm_ids, now):
+    """{alarm id: when its last snooze ended}, for the alarms a snooze of which has ended by `now`: their escalation
+    time is counted again from then."""
+    return {alarm_id: row.ends_at() for alarm_id, row in ended(alarm_ids, now).items()}
 
 
 def may_snooze(user, alarm, now=None):
     """Whether `user` may snooze the alarm now (Alarm snoozes: Create; an open alarm with none in force)."""
-    return (user.has_perm(SHELVE) and is_open(alarm)
+    return (user.has_perm(SHELVE) and is_open(alarm) and not (alarm.source == 'system' and alarm.severity == 'critical')
             and alarm.pk not in snoozes([alarm.pk], now or timezone.now()))
 
 

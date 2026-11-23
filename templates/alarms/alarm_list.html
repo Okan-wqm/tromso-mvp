@@ -8,6 +8,18 @@
 {% block content %}
 {% alarm_watch %}
 {% include "alarms/_not_sent.html" %}
+{% if worker.row %}<details class="ui-explain">
+  <summary>{% trans "The alarm worker" %}</summary>
+  <dl class="facts">
+    <div><dt>{% trans "State" %}</dt><dd>{{ worker.row.get_state_display }}{% if worker.row.host %} · {{ worker.row.host }}{% endif %}</dd></div>
+    <div><dt>{% trans "Last pass at" %}</dt><dd>{{ worker.row.last_pass_at|site_clock|date:"DATETIME_FORMAT"|default:"—" }}{% if worker.row.last_pass_ms is not None %} · {% blocktrans trimmed with ms=worker.row.last_pass_ms %}{{ ms }} ms{% endblocktrans %}{% endif %}</dd></div>
+    <div><dt>{% trans "Outbox last gone through at" %}</dt><dd>{{ worker.row.last_send_at|site_clock|date:"DATETIME_FORMAT"|default:"—" }}</dd></div>
+    <div><dt>{% trans "Notifications waiting" %}</dt><dd>{{ worker.row.outbox_waiting }}{% if worker.row.outbox_oldest_at %} · {% blocktrans trimmed with since=worker.row.outbox_oldest_at|site_clock|date:"DATETIME_FORMAT" %}the oldest since {{ since }}{% endblocktrans %}{% endif %}</dd></div>
+    <div><dt>{% trans "Critical notifications undeliverable" %}</dt><dd>{{ worker.row.undeliverable }}</dd></div>
+    <div><dt>{% trans "Timings" %}</dt><dd>{% blocktrans trimmed with tick=timings.tick sweep=timings.sweep stale=worker.row.stale_after_seconds send=timings.send_timeout %}looks every {{ tick }} s, passes at least every {{ sweep }} s, unchecked after {{ stale }} s, a send given {{ send }} s{% endblocktrans %}</dd></div>
+  </dl>
+  <p class="panel-help">{% trans "The deployment's settings (the environment of the alarm worker's service), shown here, changed there." %}</p>
+</details>{% endif %}
 {% for flood in floods %}<p class="notice notice-warning">{% blocktrans trimmed with size=flood.size since=flood.since|site_clock:flood.alarms.0.site|date:"DATETIME_FORMAT" example=flood.alarms.0.summary severity=flood.alarms.0.get_severity_display %}Alarm flood: {{ size }} open {{ severity }} alarms of one kind since {{ since }}, the first: {{ example }}. Each is listed below; a person gets one message for them.{% endblocktrans %}</p>{% endfor %}
 <form method="get" class="filters">
   <div class="field">

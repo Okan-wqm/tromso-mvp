@@ -14,7 +14,7 @@
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
-{% alarm_watch %}
+{% alarm_watch sent_note=True live=True %}
 <form method="get" class="monitor-toolbar ui-toolbar" role="search">
   {% if wall %}<input type="hidden" name="wall" value="1">{% endif %}
   <div class="monitor-filters">

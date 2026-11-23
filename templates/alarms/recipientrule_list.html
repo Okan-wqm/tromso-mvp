@@ -1,11 +1,12 @@
 {% extends "crud/list.html" %}
-{% load i18n %}
+{% load alarm_watch i18n %}
 {% comment %} Company › Alarms › Alarm recipients (alarms.resources.RecipientRuleResource): who is notified of which alarms, at
    which level. {% endcomment %}
 {% block search_placeholder %}{% trans "Search" %}{% endblock %}
 {% block notice %}{% include "alarms/_not_sent.html" with connected=connected %}{% endblock %}
 {% block empty_text %}{% trans "Nobody is notified of an alarm until a rule says who: a role or a person, on a site or every site, from a severity, at a level." %}{% endblock %}
 {% block items %}
+{% alarm_watch %}
 <div class="table-wrap">
   <table class="data-table">
     <thead><tr><th scope="col" class="num">{% trans "Level" %}</th><th scope="col">{% trans "Who" %}</th><th scope="col">{% trans "Where" %}</th><th scope="col">{% trans "At least" %}</th><th scope="col">{% trans "Channel" %}</th><th scope="col">{% trans "State" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>

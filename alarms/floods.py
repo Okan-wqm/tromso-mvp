@@ -4,7 +4,7 @@ pass, kept, listed, acknowledged and escalated on its own, so grouping changes h
 whether or when an alarm opens.
 
 - **The kind of an alarm** (`key`): its site, its severity, and what it is about: a water quantity (the dissolved oxygen
-  in mg/L and in % one), a sensor alarm rule, or a check of the alarm system. 24 tanks of one site losing oxygen at
+  in mg/L and in % one), a sensor alarm rule, or a check of the alarm system (each failed step a check of its own). 24 tanks of one site losing oxygen at
   once are one kind; a pH alarm beside them is another.
 - **For one person, one channel** (`plan`), per kind in a round of the outbox: when its due notifications, with the ones
   of that kind already sent to that person within the severity's flood window, are at least the severity's flood count
@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from .models import Alarm, AlarmClearance, DeliveryAttempt, Outcome, Source
-from .sources import slot_of
+from .sources import STEP_FAILED, slot_of
 
 EACH, FLOOD, COVERED = 'each', 'flood', 'covered'
 
@@ -30,6 +30,8 @@ def key(alarm):
         about = f'water:{slot_of(alarm.parameter)}'
     elif alarm.source == Source.SENSOR_RULE:
         about = f'rule:{alarm.sensor_event.rule_id}'
+    elif alarm.parameter == STEP_FAILED:
+        about = f'system:{alarm.parameter}:{alarm.summary}'          # each failed step its own kind (its name says it)
     else:
         about = f'system:{alarm.parameter}'
     return f'{alarm.site_id or "-"}|{alarm.severity}|{about}'

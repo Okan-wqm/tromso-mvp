@@ -8,7 +8,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
-from django.shortcuts import get_object_or_404, redirect
+from django.conf import settings
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _
@@ -17,8 +18,10 @@ from django.views.decorators.http import require_POST
 from core import navigation
 from core.crud import render_page
 from core.dbgrid import PAGE_SIZE
+from farm.stock.views import VIEW as MONITORING          # the monitoring wall's right: its live notice
 
-from . import floods, read, services
+from . import floods, read, services, watch
+from .templatetags.alarm_watch import notice
 from .rules import current as current_rules
 from .models import Alarm, AlarmShelve
 
@@ -40,7 +43,8 @@ def alarm_list(request):
     page = Paginator(read.listing(state), PAGE_SIZE).get_page(request.GET.get('page'))
     return render_page(request, 'alarms/alarm_list.html', _context(page=page, alarms=page.object_list, state=state,
                                                                    pager_query=f'state={state}',
-                                                                   floods=floods.open_floods(current_rules())))
+                                                                   floods=floods.open_floods(current_rules()),
+                                                                   worker=watch.state(), timings=settings.ALARM_WORKER))
 
 
 @permission_required(READ, raise_exception=True)
@@ -118,3 +122,11 @@ def alarm_snoozes(request):
     return render_page(request, 'alarms/alarm_snoozes.html', {
         'title': place.entry.label, 'eyebrow': place.heading, 'page': page, 'snoozes': page.object_list,
         'in_force': {row.pk for row in in_force.values()}})
+
+
+@permission_required(MONITORING, raise_exception=True)
+def alarm_watch_notice(request):
+    """The notice of whether the alarms are checked and sent (alarms/_watch_notice.html), asked for again by the
+    monitoring wall (frontend/poll.ts), so a worker that stops is said there without a reload."""
+    return render(request, 'alarms/_watch_notice.html', notice(sent_note=request.GET.get('sent_note') == '1'))
+

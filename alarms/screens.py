@@ -1,7 +1,8 @@
 """What the data map (core.datamap) cannot read from the code, for the alarms' tables."""
 from core.datamap import Screen, no, system
 
-from .views import alarm_acknowledge, alarm_detail, alarm_list, alarm_snooze, alarm_snooze_end, alarm_snoozes
+from .views import (alarm_acknowledge, alarm_detail, alarm_list, alarm_snooze, alarm_snooze_end, alarm_snoozes,
+                    alarm_watch_notice)
 
 LOOP = 'written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)'
 APPEND_ONLY = 'append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin'
@@ -16,9 +17,16 @@ SCREENS = {
         create=no('the alarm worker writes its own row when it takes the lock (alarms/worker.py)'),
         edit=no('only the worker moves its row: each pass, each look, and when it stops'),
         delete=no("the worker's row is kept: the time of its last pass is what says the alarms went unchecked"),
-        read=(alarm_list, alarm_detail, alarm_snoozes, 'farm:water', 'monitoring:monitor', 'sensors:home'),
+        read=(alarm_list, alarm_detail, alarm_snoozes, alarm_watch_notice, 'farm:water', 'monitoring:monitor',
+              'sensors:home', 'alarms:recipientrule_list', 'alarms:severitypolicy_list',
+              'alarms:parameterdeadband_list', 'sensors:alarmrule_list', 'sensors:alarm_events'),
         columns={'*': system('the alarm worker, on the database clock')},
         note='Read through alarms/watch.py: {% alarm_watch %} on these pages, and manage.py alarm_worker_health.'),
+    'OutboxEntry': Screen(
+        create=no('written with each notification (alarms/services.py queue_many)'),
+        edit=no('a row is the notification itself, never changed'),
+        delete=no("removed by the outbox once the notification is sent, covered by a flood message or given up"),
+        read=no("the outbox's own queue (alarms/outbox.py); the notifications are on their alarm's page")),
     'SeverityPolicy': Screen(create=no('migration 0002 makes one row per severity'),
                              delete=no('there is always one row per severity')),
     'Alarm': Screen(create=no(LOOP), edit=no(APPEND_ONLY), delete=no(APPEND_ONLY), read=(alarm_list, alarm_detail),

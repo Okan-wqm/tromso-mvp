@@ -161,6 +161,12 @@ DATABASES = {
         # leave its own connection open until the database refuses clients. A kept connection is checked before reuse.
         'CONN_MAX_AGE': int(os.environ.get('DB_CONN_MAX_AGE', '0')),
         'CONN_HEALTH_CHECKS': True,
+        # A database that does not answer is given up after connect_timeout seconds, and a connection whose peer is gone
+        # is found by TCP keepalives within about a minute, rather than the kernel's two hours (the alarm worker's
+        # review, F8; the worker sets its own session's shorter ones, alarms/worker.py).
+        'OPTIONS': {'connect_timeout': int(os.environ.get('DB_CONNECT_TIMEOUT', '10')), 'keepalives': 1,
+                    'keepalives_idle': int(os.environ.get('DB_KEEPALIVES_IDLE', '30')), 'keepalives_interval': 10,
+                    'keepalives_count': 3},
         # Lets two checkouts run tests at the same time on separate test databases.
         'TEST': {'NAME': os.environ.get('DB_TEST_NAME') or None},
     }
@@ -397,6 +403,9 @@ ALARM_WORKER = {
     'lock_timeout': float(os.environ.get('ALARM_WORKER_LOCK_TIMEOUT', '5')),
     # how long a transport may take with one notification before the attempt is failed (alarms/outbox.py)
     'send_timeout': float(os.environ.get('ALARM_WORKER_SEND_TIMEOUT', '10')),
+    # a round through the outbox ends after this long (what is left goes in the next round, a tick later, criticals
+    # first): a critical never waits behind a long round of warnings
+    'send_round': float(os.environ.get('ALARM_WORKER_SEND_ROUND', '5')),
     # the off-server dead man (go-live): an https address the worker asks after each good pass, at most every
     # deadman_every seconds, each ask given deadman_timeout; a service elsewhere calls on-call when the asks stop.
     # Empty: off (no such service is chosen yet).

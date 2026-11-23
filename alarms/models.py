@@ -186,6 +186,10 @@ class AlarmWorkerStatus(models.Model):
     last_send_at = models.DateTimeField(_('Outbox last gone through at'), null=True, blank=True)
     outbox_waiting = models.PositiveIntegerField(_('Notifications waiting'), default=0)
     outbox_oldest_at = models.DateTimeField(_('Oldest waiting since'), null=True, blank=True)
+    # Critical notifications of open, unacknowledged alarms that have failed longer than the escalation time
+    # (alarms/outbox.py undeliverable), and since when the oldest of them waits.
+    undeliverable = models.PositiveIntegerField(_('Critical notifications undeliverable'), default=0)
+    undeliverable_since = models.DateTimeField(_('Undeliverable since'), null=True, blank=True)
 
     class Meta:
         db_table = 'alarm_worker_status'
@@ -246,9 +250,19 @@ class RecipientRule(AuditedModel):
             raise ValidationError({'production_department': _('This production department is not on the site.')})
 
 
+class NotificationKind(models.TextChoices):
+    ALARM = 'alarm', _('The alarm')
+    # Someone snoozed an alarm the person was notified of (alarms/services.py shelve).
+    SNOOZED = 'snoozed', _('The alarm was snoozed')
+    # A snooze ended with the alarm still open and nobody's acknowledgement: its level is told again (alarms/engine.py).
+    RESUMED = 'resumed', _('The snooze ended; the alarm is still open')
+
+
 class Notification(models.Model):
-    """The outbox: one alarm for one person through one channel at one level, queued by the alarm loop. It is sent when a
-    transport for its channel took it (a DeliveryAttempt `sent`); with no transport connected it waits here."""
+    """The outbox: one alarm for one person through one channel at one level, queued by the alarm pass. It is sent when a
+    transport for its channel took it (a DeliveryAttempt `sent`); with no transport connected it waits here. `kind`: the
+    alarm itself (once per alarm, person, channel and level), or a word about its snooze (`shelve`: once per snooze,
+    person, channel and kind). Each waits in alarms.OutboxEntry until it is sent or given up (alarms/outbox.py)."""
 
     id = models.BigAutoField(primary_key=True)
     alarm = models.ForeignKey(Alarm, on_delete=models.PROTECT, related_name='notifications', verbose_name=_('Alarm'))
@@ -259,6 +273,10 @@ class Notification(models.Model):
     rule = models.ForeignKey(RecipientRule, null=True, blank=True, on_delete=models.PROTECT,
                              related_name='notifications', verbose_name=_('Recipient rule'))
     queued_at = models.DateTimeField(_('Queued at'))
+    kind = models.CharField(_('Kind'), max_length=10, choices=NotificationKind.choices, default=NotificationKind.ALARM,
+                            db_default=NotificationKind.ALARM)
+    shelve = models.ForeignKey('AlarmShelve', null=True, blank=True, on_delete=models.PROTECT,
+                               related_name='notifications', verbose_name=_('Snooze'))
 
     class Meta:
         db_table = 'alarm_notifications'
@@ -267,13 +285,36 @@ class Notification(models.Model):
         verbose_name_plural = _('alarm notifications')
         constraints = [
             models.UniqueConstraint(fields=['alarm', 'recipient', 'channel', 'level'],
-                                    name='uq_alarm_notifications_once'),
+                                    condition=Q(kind=NotificationKind.ALARM), name='uq_alarm_notifications_once'),
+            models.UniqueConstraint(fields=['shelve', 'recipient', 'channel', 'kind'],
+                                    condition=Q(shelve__isnull=False), name='uq_alarm_notifications_snooze_once'),
+            models.CheckConstraint(condition=Q(kind=NotificationKind.ALARM, shelve__isnull=True)
+                                   | Q(kind__in=[NotificationKind.SNOOZED, NotificationKind.RESUMED],
+                                       shelve__isnull=False), name='chk_alarm_notifications_kind'),
             models.CheckConstraint(condition=Q(channel__in=Channel.values), name='chk_alarm_notifications_channel'),
             models.CheckConstraint(condition=Q(level__lte=MAX_LEVEL), name='chk_alarm_notifications_level'),
         ]
 
     def __str__(self):
         return f'{self.alarm} → {self.recipient} ({self.channel}, {self.level})'
+
+
+class OutboxEntry(models.Model):
+    """A notification still to be sent: the outbox's queue (alarms/outbox.py), written with the notification
+    (services.queue_many) and removed once it is sent, covered by a flood message, or given up, so a round reads only
+    what is waiting, however long the history. Mutable, like the subjects' timers: not history (the notifications and
+    their attempts are)."""
+
+    notification = models.OneToOneField(Notification, primary_key=True, on_delete=models.CASCADE,
+                                        related_name='outbox_entry', verbose_name=_('Notification'))
+
+    class Meta:
+        db_table = 'alarm_outbox'
+        verbose_name = _('alarm outbox entry')
+        verbose_name_plural = _('alarm outbox entries')
+
+    def __str__(self):
+        return str(self.notification_id)
 
 
 class DeliveryAttempt(models.Model):
@@ -431,14 +472,18 @@ ON_DELAY_BOUNDS = {Severity.CRITICAL: (0, 10), Severity.WARNING: (0, 900)}
 # times the owner's 5 min, §7a Q7); a warning within a day.
 ESCALATION_BOUNDS = {Severity.CRITICAL: (1, 30), Severity.WARNING: (1, 1440)}
 ATTEMPTS_BOUNDS = (1, 20)
-# Retry after (seconds), both severities: from a second to an hour between two attempts of one notification.
-RETRY_BOUNDS = (1, 3600)
+# Retry after (seconds), per severity: a second to five minutes between two attempts of a critical notification (it is
+# tried again, the wait doubling up to the severity's escalation time, until its alarm is acknowledged or cleared:
+# alarms/outbox.py), to an hour for a warning.
+RETRY_BOUNDS = {Severity.CRITICAL: (1, 300), Severity.WARNING: (1, 3600)}
 # The longest snooze (minutes), per severity: a critical alarm nobody is told of for at most eight hours (twice the owner's
 # 4 h, Q5), a warning for at most a day.
 SHELVE_BOUNDS = {Severity.CRITICAL: (1, 480), Severity.WARNING: (1, 1440)}
-# A flood (alarms/floods.py): from 2 alarms of one kind to a thousand, within ten seconds to an hour.
+# A flood (alarms/floods.py): from 2 alarms of one kind to a thousand, within ten seconds to five minutes for critical ones
+# (a flood message covers the next ones of its kind for its window: a critical is never covered longer), an hour for
+# warnings.
 FLOOD_COUNT_BOUNDS = (2, 1000)
-FLOOD_WINDOW_BOUNDS = (10, 3600)
+FLOOD_WINDOW_BOUNDS = {Severity.CRITICAL: (10, 300), Severity.WARNING: (10, 3600)}
 # A device clock's limit (seconds), either way: at least a second (a limit of 0 would alarm on the network's own delay),
 # at most the ingest contract's hour (sensors_contract.future_skew_s is at most 3600: past it the ingest replaces a
 # device's time, and the read layer refuses a value further ahead, evaluate.MAX_AHEAD). Its deadband is below the limit.
@@ -483,15 +528,12 @@ class SeverityPolicy(AuditedModel):
     escalation_minutes = models.PositiveIntegerField(_('Escalate after (minutes)'))
     delivery_attempts = models.PositiveIntegerField(
         _('Delivery attempts'), validators=[MinValueValidator(ATTEMPTS_BOUNDS[0]), MaxValueValidator(ATTEMPTS_BOUNDS[1])])
-    retry_seconds = models.PositiveIntegerField(
-        _('Retry after (seconds)'), validators=[MinValueValidator(RETRY_BOUNDS[0]), MaxValueValidator(RETRY_BOUNDS[1])])
+    retry_seconds = models.PositiveIntegerField(_('Retry after (seconds)'))
     shelve_max_minutes = models.PositiveIntegerField(_('Longest snooze (minutes)'))
     flood_count = models.PositiveIntegerField(
         _('A flood from (alarms)'),
         validators=[MinValueValidator(FLOOD_COUNT_BOUNDS[0]), MaxValueValidator(FLOOD_COUNT_BOUNDS[1])])
-    flood_window_seconds = models.PositiveIntegerField(
-        _('Flood window (seconds)'),
-        validators=[MinValueValidator(FLOOD_WINDOW_BOUNDS[0]), MaxValueValidator(FLOOD_WINDOW_BOUNDS[1])])
+    flood_window_seconds = models.PositiveIntegerField(_('Flood window (seconds)'))
     clock_skew_seconds = models.PositiveIntegerField(
         _('Device clock off by more than (seconds)'),
         validators=[MinValueValidator(CLOCK_SKEW_BOUNDS[0]), MaxValueValidator(CLOCK_SKEW_BOUNDS[1])])
@@ -518,15 +560,15 @@ class SeverityPolicy(AuditedModel):
             models.CheckConstraint(condition=Q(delivery_attempts__gte=ATTEMPTS_BOUNDS[0],
                                                delivery_attempts__lte=ATTEMPTS_BOUNDS[1]),
                                    name='chk_alarm_severity_policies_attempts'),
-            models.CheckConstraint(condition=Q(retry_seconds__gte=RETRY_BOUNDS[0], retry_seconds__lte=RETRY_BOUNDS[1]),
+            models.CheckConstraint(condition=_per_severity('retry_seconds', RETRY_BOUNDS),
                                    name='chk_alarm_severity_policies_retry'),
             models.CheckConstraint(condition=_per_severity('shelve_max_minutes', SHELVE_BOUNDS),
                                    name='chk_alarm_severity_policies_shelve'),
             models.CheckConstraint(condition=Q(flood_count__gte=FLOOD_COUNT_BOUNDS[0],
-                                               flood_count__lte=FLOOD_COUNT_BOUNDS[1],
-                                               flood_window_seconds__gte=FLOOD_WINDOW_BOUNDS[0],
-                                               flood_window_seconds__lte=FLOOD_WINDOW_BOUNDS[1]),
+                                               flood_count__lte=FLOOD_COUNT_BOUNDS[1]),
                                    name='chk_alarm_severity_policies_flood'),
+            models.CheckConstraint(condition=_per_severity('flood_window_seconds', FLOOD_WINDOW_BOUNDS),
+                                   name='chk_alarm_severity_policies_flood_window'),
             models.CheckConstraint(condition=Q(clock_skew_seconds__gte=CLOCK_SKEW_BOUNDS[0],
                                                clock_skew_seconds__lte=CLOCK_SKEW_BOUNDS[1],
                                                clock_skew_deadband_seconds__gte=0,
@@ -548,7 +590,9 @@ class SeverityPolicy(AuditedModel):
         errors = {}
         for field, bounds, unit in (('on_delay_seconds', ON_DELAY_BOUNDS, _('seconds')),
                                     ('escalation_minutes', ESCALATION_BOUNDS, _('minutes')),
-                                    ('shelve_max_minutes', SHELVE_BOUNDS, _('minutes'))):
+                                    ('shelve_max_minutes', SHELVE_BOUNDS, _('minutes')),
+                                    ('retry_seconds', RETRY_BOUNDS, _('seconds')),
+                                    ('flood_window_seconds', FLOOD_WINDOW_BOUNDS, _('seconds'))):
             value, (low, high) = getattr(self, field), bounds.get(self.severity, (None, None))
             if value is not None and low is not None and not low <= value <= high:
                 errors[field] = _('For a %(severity)s alarm, from %(low)d to %(high)d %(unit)s.') % {

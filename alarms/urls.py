@@ -15,4 +15,5 @@ urlpatterns += [
     path('alarms/<int:pk>/snooze/', views.alarm_snooze, name='alarm_snooze'),
     path('alarms/<int:pk>/snooze/end/', views.alarm_snooze_end, name='alarm_snooze_end'),
     path('alarms/snoozes/', views.alarm_snoozes, name='alarm_snoozes'),
+    path('alarms/watch/', views.alarm_watch_notice, name='alarm_watch_notice'),
 ]

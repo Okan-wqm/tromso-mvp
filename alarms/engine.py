@@ -24,7 +24,8 @@ from farm.water import freshness
 from sensors import alarms as sensor_alarms
 
 from . import read, routing, rules as alarm_rules, services, sources
-from .models import Acknowledgement, Alarm, AlarmClearance, Escalation, Notification, Severity, Source
+from .models import (Acknowledgement, Alarm, AlarmClearance, Escalation, Notification, NotificationKind, Severity,
+                     Source)
 
 logger = logging.getLogger(__name__)
 LOCK = 4_261_607_201          # the alarm loop's advisory lock key (any constant no other code takes)
@@ -65,8 +66,8 @@ def _route(alarms, now, summary, rules, resumed=None):
     levels = dict(Escalation.objects.filter(alarm__in=ids).values('alarm').annotate(top=Max('level'))
                   .values_list('alarm', 'top'))
     sent, first = defaultdict(set), {}
-    for alarm_id, level, recipient_id, channel, queued_at in Notification.objects.filter(alarm__in=ids).values_list(
-            'alarm', 'level', 'recipient', 'channel', 'queued_at'):
+    for alarm_id, level, recipient_id, channel, queued_at in Notification.objects.filter(
+            alarm__in=ids, kind=NotificationKind.ALARM).values_list('alarm', 'level', 'recipient', 'channel', 'queued_at'):
         sent[(alarm_id, level)].add((recipient_id, channel))
         first[(alarm_id, level)] = min(queued_at, first.get((alarm_id, level), queued_at))
     queued, escalated = [], []
@@ -90,6 +91,29 @@ def _route(alarms, now, summary, rules, resumed=None):
             level = following
     summary.queued += len(services.queue_many(queued))
     summary.escalated += len(services.escalate_many(escalated))
+
+
+def _remind(alarms, now, summary, ended):
+    """A snooze ended with its alarm still open and unacknowledged (`alarms`, not snoozed now; `ended`: {alarm id: its
+    last ended snooze}): the people of the alarm's level now are told again, once per snooze (the coordinator's call of
+    2026-11-23 on the review, F9)."""
+    alarms = [alarm for alarm in alarms if alarm.pk in ended]
+    if not alarms:
+        return
+    told = set(Notification.objects.filter(shelve__in=[ended[alarm.pk] for alarm in alarms],
+                                           kind=NotificationKind.RESUMED).values_list('shelve', 'recipient', 'channel'))
+    router = routing.Router(now)
+    levels = dict(Escalation.objects.filter(alarm__in=[alarm.pk for alarm in alarms]).values('alarm')
+                  .annotate(top=Max('level')).values_list('alarm', 'top'))
+    queued = []
+    for alarm in alarms:
+        shelve, level = ended[alarm.pk], levels.get(alarm.pk, 0)
+        for user, rule in router.recipients(alarm, level):
+            if (shelve.pk, user.pk, rule.channel) not in told:
+                told.add((shelve.pk, user.pk, rule.channel))
+                queued.append(Notification(alarm=alarm, recipient=user, channel=rule.channel, level=level, rule=rule,
+                                           queued_at=now, kind=NotificationKind.RESUMED, shelve=shelve))
+    summary.queued += len(services.queue_many(queued))
 
 
 def _unsuppressed(alarms):
@@ -141,8 +165,10 @@ def run_once(now=None, outside=None, unchecked=None):
                        .order_by('opened_at', 'id'))
         ids = [alarm.pk for alarm in waiting]
         snoozed = read.snoozes(ids, now)               # raised and kept, never notified nor escalated while snoozed
-        _route([alarm for alarm in _unsuppressed(waiting) if alarm.pk not in snoozed], now, summary, rules,
-               read.resumed(ids, now))
+        ended = read.ended(ids, now)
+        told = [alarm for alarm in _unsuppressed(waiting) if alarm.pk not in snoozed]
+        _route(told, now, summary, rules, {alarm_id: row.ends_at() for alarm_id, row in ended.items()})
+        _remind(told, now, summary, ended)
 
     steps = [('sensor rules', lambda: sensor_alarms.evaluate(now)),
              ('sensor events', lambda: count(sources.sensor_events())),

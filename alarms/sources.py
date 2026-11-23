@@ -331,6 +331,7 @@ ALARM_RULES = 'alarm_rules'
 UNIT_UNEVALUATED = 'unit_unevaluated'
 STEP_FAILED = 'step_failed'
 ALARMS_UNCHECKED = 'alarms_unchecked'
+UNDELIVERABLE = 'notifications_undeliverable'
 NO_WATER_POINT = 'no_water_point'
 VALUE_UNEVALUATED = 'value_unevaluated'
 # Every value the limits judge: each may come without a number for a stated reason (read.Reading.refused): a worked-out
@@ -607,6 +608,12 @@ def supervise(now, rules, steps, failed_steps, unchecked=None):
     subjects = [system_subject(ALARM_RULES, bool(rules.missing), Severity.CRITICAL, _text(_(
         'The alarm rules are incomplete (no rule row for: %(severities)s): the safest values are used until the rows '
         'are restored.'), severities=missing or '-'), now)]
+    from . import outbox
+    stuck = outbox.undeliverable(outbox.backlog(), rules, now)
+    subjects.append(system_subject(UNDELIVERABLE, bool(stuck), Severity.CRITICAL, _text(_(
+        '%(count)d critical notification(s) cannot be delivered, the oldest queued %(since)s: the people of those '
+        'alarms are not reached, nor would the next level be. Look at the alarms and tell them another way.'),
+        count=len(stuck), since=_clock(min((row.queued_at for row in stuck), default=now))), now))
     start, end = unchecked or (now, now)
     subjects.append(system_subject(ALARMS_UNCHECKED, unchecked is not None, Severity.CRITICAL, _text(_(
         'The alarms were not checked from %(start)s to %(end)s (the alarm worker was not running): no alarm was raised '

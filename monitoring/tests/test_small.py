@@ -14,6 +14,7 @@ from django.urls import reverse
 from django.utils import translation
 
 from farm.handling.withdrawal import WithdrawalBlock
+from farm.stock.dates import local_today
 from farm.templatetags.water import water_value
 from farm.water import calculation, read as water_read
 
@@ -371,13 +372,15 @@ class OwnerDecisionsOf16NovemberTests(SmallCase):
 
     def test_the_withdrawal_says_its_date_beside_the_word_whatever_the_first_reason(self):
         """Decision 16."""
-        from datetime import date
         self.good_water(oxygen_mg_l='5')                                 # the first reason is the oxygen, not the withdrawal
-        block = WithdrawalBlock(batch=self.fish, until=date(2026, 11, 23), approximate=False, reason='', source=None)
+        # A withdrawal is in force while its first free day is after the unit's today (farm.handling.check.in_force_of):
+        # the day is counted from that today, never written as a date, which became today on 23.11.2026 and failed.
+        until = local_today(self.t2) + timedelta(days=5)
+        block = WithdrawalBlock(batch=self.fish, until=until, approximate=False, reason='', source=None)
         with mock.patch('farm.handling.withdrawal._providers', [lambda units, day: {self.t2.pk: [block]}]):
             card = card_of(self.page(), self.t2)
         (badge,) = nodes(card, 'monitor-withdrawal')
-        self.assertEqual(text(badge), 'Withdrawal · harvest from 23.11')
+        self.assertEqual(text(badge), f'Withdrawal · harvest from {until:%d.%m}')    # day.month, as the card says it
         unknown = WithdrawalBlock(batch=self.fish, until=None, approximate=False, reason='', source=None)
         with mock.patch('farm.handling.withdrawal._providers', [lambda units, day: {self.t2.pk: [block, unknown]}]):
             (badge,) = nodes(card_of(self.page(), self.t2), 'monitor-withdrawal')

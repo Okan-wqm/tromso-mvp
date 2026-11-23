@@ -1854,6 +1854,10 @@ msgstr "7. januar"
 msgid "9-digit Norwegian organisation number"
 msgstr "Norsk organisasjonsnummer (9 siffer)"
 
+#, python-format
+msgid "A %(severity)s alarm is snoozed for 1 to %(minutes)d minutes."
+msgstr "En alarm med alvorlighet %(severity)s slumres i 1 til %(minutes)d minutter."
+
 msgid "A DOI starts with 10. and has no spaces, e.g. 10.1016/j.aquaculture.2019.01.001."
 msgstr "En DOI begynner med 10. og har ingen mellomrom, f.eks. 10.1016/j.aquaculture.2019.01.001."
 
@@ -2703,6 +2707,13 @@ msgstr ""
 "(lakselusforskriften § 8 og vedlegg 1). Den siste tellingen av hver enhet i uken gjelder."
 
 msgid ""
+"A snoozed alarm is still raised, kept and cleared; nobody is notified of it and it is not "
+"escalated until the snooze ends. Snooze an open alarm on its page."
+msgstr ""
+"En slumret alarm utløses, lagres og avsluttes fortsatt; ingen varsles om den, og den eskaleres "
+"ikke før slumringen er over. Slumre en åpen alarm på siden dens."
+
+msgid ""
 "A species the farm grows or stocks, such as Atlantic salmon or lumpfish: its names, its codes for"
 " the reports and the water it lives in."
 msgstr ""
@@ -3262,6 +3273,12 @@ msgstr "Alarmregler"
 
 msgid "Alarm severity rules"
 msgstr "Alarmregler per alvorlighet"
+
+msgid "Alarm snoozed."
+msgstr "Alarmen er slumret."
+
+msgid "Alarm snoozes"
+msgstr "Slumrede alarmer"
 
 msgid "Alarms"
 msgstr "Alarmer"
@@ -3978,6 +3995,14 @@ msgstr "Høyst %(decimals)d desimaler."
 #, python-format
 msgid "At most %(max)s."
 msgstr "Høyst %(max)s."
+
+#, python-format
+msgid ""
+"At most %(minutes)s minutes. While it is snoozed nobody is notified of this alarm and it is not "
+"escalated; it is still raised, kept and cleared."
+msgstr ""
+"Høyst %(minutes)s minutter. Mens den slumrer, varsles ingen om denne alarmen, og den eskaleres "
+"ikke; den utløses, lagres og avsluttes fortsatt."
 
 msgid "At most 720 hours (30 days)."
 msgstr "Høyst 720 timer (30 dager)."
@@ -6339,11 +6364,24 @@ msgstr "Koding"
 msgid "End"
 msgstr "Slutt"
 
+msgid "End snooze"
+msgstr "Avslutt slumring"
+
 msgid "End the leave earlier"
 msgstr "Avslutt permisjonen tidligere"
 
 msgid "Ended"
 msgstr "Avsluttet"
+
+msgid "Ended at"
+msgstr "Avsluttet"
+
+msgid "Ended by"
+msgstr "Avsluttet av"
+
+#, python-format
+msgid "Ended early by %(person)s, %(at)s"
+msgstr "Avsluttet tidlig av %(person)s, %(at)s"
 
 msgid "Ends at"
 msgstr "Slutter"
@@ -8217,6 +8255,9 @@ msgstr "Inn"
 msgid "In feed"
 msgstr "I fôr"
 
+msgid "In force"
+msgstr "Gjelder"
+
 msgid "In force today"
 msgstr "Gjelder i dag"
 
@@ -8963,6 +9004,9 @@ msgstr "Lokalitetsnummer"
 
 msgid "Long axis (m)"
 msgstr "Lang akse (m)"
+
+msgid "Longest snooze (minutes)"
+msgstr "Lengste slumring (minutter)"
 
 msgid "Longitude"
 msgstr "Lengdegrad"
@@ -9745,6 +9789,9 @@ msgstr "Ingen konto"
 
 msgid "No alarm events."
 msgstr "Ingen alarmhendelser."
+
+msgid "No alarm has been snoozed."
+msgstr "Ingen alarm er slumret."
 
 msgid "No alarm is open."
 msgstr "Ingen alarm er åpen."
@@ -11948,6 +11995,9 @@ msgstr "Regn og overvann"
 msgid "Raise after (seconds)"
 msgstr "Utløs etter (sekunder)"
 
+msgid "Ran out"
+msgstr "Utløpt"
+
 msgid "Randomise"
 msgstr "Randomiser"
 
@@ -12748,6 +12798,9 @@ msgstr "Oppgi hvorfor den er lukket."
 msgid "Say why it is voided."
 msgstr "Skriv hvorfor den annulleres."
 
+msgid "Say why the alarm is snoozed."
+msgstr "Oppgi hvorfor alarmen slumres."
+
 msgid ""
 "Say why the tanks are placed by hand: a placement that is not randomised is registered with its "
 "reason."
@@ -13406,6 +13459,44 @@ msgstr "Små fisk"
 
 msgid "Smolt"
 msgstr "Smolt"
+
+msgid "Snooze"
+msgstr "Slumre"
+
+#, python-format
+msgid "Snooze ended by %(person)s"
+msgstr "Slumring avsluttet av %(person)s"
+
+msgid "Snooze ended: the alarm is notified and escalated again."
+msgstr "Slumringen er avsluttet: alarmen varsles og eskaleres igjen."
+
+msgid "Snooze for (minutes)"
+msgstr "Slumre i (minutter)"
+
+msgid "Snoozed at"
+msgstr "Slumret"
+
+msgid "Snoozed by"
+msgstr "Slumret av"
+
+#, python-format
+msgid "Snoozed by %(person)s until %(until)s: %(reason)s"
+msgstr "Slumret av %(person)s til %(until)s: %(reason)s"
+
+#, python-format
+msgid ""
+"Snoozed by %(person)s until %(until)s: %(reason)s. Nobody is notified of it and it is not "
+"escalated until then; it is still raised and kept."
+msgstr ""
+"Slumret av %(person)s til %(until)s: %(reason)s. Ingen varsles om den, og den eskaleres ikke før "
+"da; den utløses og lagres fortsatt."
+
+msgid "Snoozed until"
+msgstr "Slumret til"
+
+#, python-format
+msgid "Snoozed until %(until)s"
+msgstr "Slumret til %(until)s"
 
 msgid "Sodium bicarbonate"
 msgstr "Natriumbikarbonat"
@@ -14892,6 +14983,13 @@ msgstr ""
 "Levende vekt som veid ved høsting, før bløgging og sløying. Beholdningen tar ut fisken med "
 "beholdningens vekt; differansen vises med høstingen."
 
+msgid ""
+"The longest an alarm of this severity may be snoozed: nobody is notified of it and it is not "
+"escalated meanwhile. Critical 1 to 480, warning 1 to 1440."
+msgstr ""
+"Det lengste en alarm med denne alvorligheten kan slumres: ingen varsles om den, og den eskaleres "
+"ikke imens. Kritisk 1 til 480, advarsel 1 til 1440."
+
 msgid "The longest distance across the ellipse."
 msgstr "Den lengste avstanden over ellipsen."
 
@@ -16163,6 +16261,15 @@ msgstr "Denne posten (%(name)s) kan ikke slettes ennå."
 
 msgid "This account already belongs to another employee."
 msgstr "Denne kontoen tilhører allerede en annen ansatt."
+
+msgid "This alarm has cleared: there is nothing to snooze."
+msgstr "Denne alarmen er avsluttet: det er ingenting å slumre."
+
+msgid "This alarm is not snoozed."
+msgstr "Denne alarmen slumrer ikke."
+
+msgid "This alarm is snoozed already."
+msgstr "Denne alarmen slumrer allerede."
 
 msgid "This assignment was deleted meanwhile."
 msgstr "Denne tildelingen ble slettet i mellomtiden."
@@ -17999,6 +18106,18 @@ msgstr "alarmregel"
 
 msgid "alarm severity rules"
 msgstr "alarmregler"
+
+msgid "alarm snooze"
+msgstr "alarmslumring"
+
+msgid "alarm snooze end"
+msgstr "slutt på alarmslumring"
+
+msgid "alarm snooze ends"
+msgstr "slutter på alarmslumring"
+
+msgid "alarm snoozes"
+msgstr "alarmslumringer"
 
 msgid "alarm subject state"
 msgstr "alarmtilstand"

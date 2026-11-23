@@ -876,7 +876,8 @@
       },
       "tests": [
         "alarms/tests/test_alarms.py",
-        "alarms/tests/test_defects.py"
+        "alarms/tests/test_defects.py",
+        "alarms/tests/test_snooze.py"
       ]
     },
     {
@@ -1053,7 +1054,8 @@
         "alarms/tests/test_clock.py",
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py",
-        "alarms/tests/test_outbox.py"
+        "alarms/tests/test_outbox.py",
+        "alarms/tests/test_snooze.py"
       ]
     },
     {
@@ -1439,7 +1441,8 @@
         "alarms/tests/__init__.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_outbox.py",
-        "alarms/tests/test_pages.py"
+        "alarms/tests/test_pages.py",
+        "alarms/tests/test_snooze.py"
       ]
     },
     {
@@ -1639,6 +1642,19 @@
           "why": ""
         },
         {
+          "name": "shelve_max_minutes",
+          "field": "shelve_max_minutes",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SeverityPolicyForm › Rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
           "name": "clock_skew_seconds",
           "field": "clock_skew_seconds",
           "type": "integer",
@@ -1724,6 +1740,12 @@
           "conditional": false
         },
         {
+          "name": "chk_alarm_severity_policies_shelve",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
           "name": "chk_alarm_severity_policies_clock",
           "kind": "check",
           "fields": [],
@@ -1797,6 +1819,7 @@
             "escalation_minutes": "Rule",
             "delivery_attempts": "Rule",
             "retry_seconds": "Rule",
+            "shelve_max_minutes": "Rule",
             "clock_skew_seconds": "Device clock",
             "clock_skew_deadband_seconds": "Device clock",
             "clock_behind_window_seconds": "Device clock",
@@ -1823,7 +1846,294 @@
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_outbox.py",
-        "alarms/tests/test_reference.py"
+        "alarms/tests/test_reference.py",
+        "alarms/tests/test_snooze.py"
+      ]
+    },
+    {
+      "app": "alarms",
+      "model": "AlarmShelveEnd",
+      "table": "alarm_shelve_ends",
+      "description": "A person ended a snooze before its time.",
+      "columns": [
+        {
+          "name": "shelve_id",
+          "field": "shelve",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "alarm_shelves",
+            "model": "alarms.AlarmShelve",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "user_id",
+          "field": "user",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the person and the moment they ended a snooze early"
+        },
+        {
+          "name": "ended_at",
+          "field": "ended_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the person and the moment they ended a snooze early"
+        }
+      ],
+      "constraints": [],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_snooze_end",
+              "url_names": [
+                "alarms:alarm_snooze_end"
+              ],
+              "routes": [
+                "/alarms/<int:pk>/snooze/end/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_snoozes",
+              "url_names": [
+                "alarms:alarm_snoozes"
+              ],
+              "routes": [
+                "/alarms/snoozes/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_detail",
+              "url_names": [
+                "alarms:alarm_detail"
+              ],
+              "routes": [
+                "/alarms/<int:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "alarms/tests/test_snooze.py"
+      ]
+    },
+    {
+      "app": "alarms",
+      "model": "AlarmShelve",
+      "table": "alarm_shelves",
+      "description": "A person snoozed an open alarm (ISA-18.2 shelving; owner decision Q5): from `shelved_at` until `until`, for `reason`.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "alarm_id",
+          "field": "alarm",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "alarms",
+            "model": "alarms.Alarm",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the person, the moment, until when and why, as they snoozed it"
+        },
+        {
+          "name": "user_id",
+          "field": "user",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the person, the moment, until when and why, as they snoozed it"
+        },
+        {
+          "name": "shelved_at",
+          "field": "shelved_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the person, the moment, until when and why, as they snoozed it"
+        },
+        {
+          "name": "until",
+          "field": "until",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the person, the moment, until when and why, as they snoozed it"
+        },
+        {
+          "name": "reason",
+          "field": "reason",
+          "type": "varchar(300)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the person, the moment, until when and why, as they snoozed it"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_alarm_shelves_until",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_shelves_reason",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_snooze",
+              "url_names": [
+                "alarms:alarm_snooze"
+              ],
+              "routes": [
+                "/alarms/<int:pk>/snooze/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_snoozes",
+              "url_names": [
+                "alarms:alarm_snoozes"
+              ],
+              "routes": [
+                "/alarms/snoozes/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_detail",
+              "url_names": [
+                "alarms:alarm_detail"
+              ],
+              "routes": [
+                "/alarms/<int:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "alarms/tests/test_snooze.py"
       ]
     },
     {
@@ -2442,6 +2752,7 @@
         "alarms/tests/test_reference.py",
         "alarms/tests/test_refused_sensor_ph.py",
         "alarms/tests/test_refused_water.py",
+        "alarms/tests/test_snooze.py",
         "alarms/tests/test_who_ends_a_level.py",
         "alarms/tests/test_worker.py"
       ]
@@ -2978,7 +3289,8 @@
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_pages.py",
-        "alarms/tests/test_reference.py"
+        "alarms/tests/test_reference.py",
+        "alarms/tests/test_snooze.py"
       ]
     },
     {
@@ -37146,7 +37458,8 @@
       "tests": [
         "sensors/tests/test_contract.py",
         "sensors/tests/test_pages.py",
-        "sensors/tests/test_schema.py"
+        "sensors/tests/test_schema.py",
+        "alarms/tests/test_snooze.py"
       ]
     },
     {

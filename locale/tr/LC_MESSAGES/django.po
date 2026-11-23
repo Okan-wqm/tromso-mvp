@@ -1863,6 +1863,10 @@ msgstr "7 Ocak"
 msgid "9-digit Norwegian organisation number"
 msgstr "9 haneli Norveç kuruluş numarası"
 
+#, python-format
+msgid "A %(severity)s alarm is snoozed for 1 to %(minutes)d minutes."
+msgstr "%(severity)s düzeyindeki bir alarm 1 ile %(minutes)d dakika arası ertelenebilir."
+
 msgid "A DOI starts with 10. and has no spaces, e.g. 10.1016/j.aquaculture.2019.01.001."
 msgstr "DOI 10. ile başlar ve boşluk içermez, örn. 10.1016/j.aquaculture.2019.01.001."
 
@@ -2711,6 +2715,13 @@ msgstr ""
 "0,2 (lakselusforskriften § 8 ve Vedlegg 1). Her birimin o haftaki son sayımı geçerlidir."
 
 msgid ""
+"A snoozed alarm is still raised, kept and cleared; nobody is notified of it and it is not "
+"escalated until the snooze ends. Snooze an open alarm on its page."
+msgstr ""
+"Ertelenmiş bir alarm yine açılır, saklanır ve kapanır; erteleme bitene kadar kimseye bildirilmez "
+"ve üst kademeye iletilmez. Açık bir alarmı kendi sayfasından erteleyin."
+
+msgid ""
 "A species the farm grows or stocks, such as Atlantic salmon or lumpfish: its names, its codes for"
 " the reports and the water it lives in."
 msgstr ""
@@ -3269,6 +3280,12 @@ msgstr "Alarm kuralları"
 
 msgid "Alarm severity rules"
 msgstr "Alarm önem kuralları"
+
+msgid "Alarm snoozed."
+msgstr "Alarm ertelendi."
+
+msgid "Alarm snoozes"
+msgstr "Alarm ertelemeleri"
 
 msgid "Alarms"
 msgstr "Alarmlar"
@@ -3983,6 +4000,14 @@ msgstr "En çok %(decimals)d ondalık."
 #, python-format
 msgid "At most %(max)s."
 msgstr "En fazla %(max)s."
+
+#, python-format
+msgid ""
+"At most %(minutes)s minutes. While it is snoozed nobody is notified of this alarm and it is not "
+"escalated; it is still raised, kept and cleared."
+msgstr ""
+"En çok %(minutes)s dakika. Ertelendiği sürece bu alarm kimseye bildirilmez ve üst kademeye "
+"iletilmez; yine açılır, saklanır ve kapanır."
 
 msgid "At most 720 hours (30 days)."
 msgstr "En fazla 720 saat (30 gün)."
@@ -6352,11 +6377,24 @@ msgstr "Kodlama"
 msgid "End"
 msgstr "Bitiş"
 
+msgid "End snooze"
+msgstr "Ertelemeyi bitir"
+
 msgid "End the leave earlier"
 msgstr "İzni erken bitir"
 
 msgid "Ended"
 msgstr "Sona erdi"
+
+msgid "Ended at"
+msgstr "Bitiş zamanı"
+
+msgid "Ended by"
+msgstr "Bitiren"
+
+#, python-format
+msgid "Ended early by %(person)s, %(at)s"
+msgstr "%(person)s tarafından erken bitirildi, %(at)s"
 
 msgid "Ends at"
 msgstr "Bitiş"
@@ -8244,6 +8282,9 @@ msgstr "Giriş"
 msgid "In feed"
 msgstr "Yemle"
 
+msgid "In force"
+msgstr "Geçerli"
+
 msgid "In force today"
 msgstr "Bugün yürürlükte"
 
@@ -8992,6 +9033,9 @@ msgstr "Lokalitetsnummer"
 
 msgid "Long axis (m)"
 msgstr "Uzun eksen (m)"
+
+msgid "Longest snooze (minutes)"
+msgstr "En uzun erteleme (dakika)"
 
 msgid "Longitude"
 msgstr "Boylam"
@@ -9773,6 +9817,9 @@ msgstr "Hesap yok"
 
 msgid "No alarm events."
 msgstr "Alarm olayı yok."
+
+msgid "No alarm has been snoozed."
+msgstr "Hiçbir alarm ertelenmedi."
 
 msgid "No alarm is open."
 msgstr "Açık alarm yok."
@@ -11973,6 +12020,9 @@ msgstr "Yağmur ve yüzey akışı"
 msgid "Raise after (seconds)"
 msgstr "Şu süreden sonra başlat (saniye)"
 
+msgid "Ran out"
+msgstr "Süresi doldu"
+
 msgid "Randomise"
 msgstr "Rastgele dağıt"
 
@@ -12775,6 +12825,9 @@ msgstr "Neden kapatıldığını yazın."
 msgid "Say why it is voided."
 msgstr "Neden iptal edildiğini yazın."
 
+msgid "Say why the alarm is snoozed."
+msgstr "Alarmın neden ertelendiğini yazın."
+
 msgid ""
 "Say why the tanks are placed by hand: a placement that is not randomised is registered with its "
 "reason."
@@ -13433,6 +13486,44 @@ msgstr "Küçük boy"
 
 msgid "Smolt"
 msgstr "Smolt"
+
+msgid "Snooze"
+msgstr "Ertele"
+
+#, python-format
+msgid "Snooze ended by %(person)s"
+msgstr "Erteleme %(person)s tarafından bitirildi"
+
+msgid "Snooze ended: the alarm is notified and escalated again."
+msgstr "Erteleme bitti: alarm yeniden bildirilir ve üst kademeye iletilir."
+
+msgid "Snooze for (minutes)"
+msgstr "Erteleme süresi (dakika)"
+
+msgid "Snoozed at"
+msgstr "Erteleme zamanı"
+
+msgid "Snoozed by"
+msgstr "Erteleyen"
+
+#, python-format
+msgid "Snoozed by %(person)s until %(until)s: %(reason)s"
+msgstr "%(person)s tarafından %(until)s saatine kadar ertelendi: %(reason)s"
+
+#, python-format
+msgid ""
+"Snoozed by %(person)s until %(until)s: %(reason)s. Nobody is notified of it and it is not "
+"escalated until then; it is still raised and kept."
+msgstr ""
+"%(person)s tarafından %(until)s saatine kadar ertelendi: %(reason)s. O zamana kadar kimseye "
+"bildirilmez ve üst kademeye iletilmez; yine açılır ve saklanır."
+
+msgid "Snoozed until"
+msgstr "Şu zamana kadar ertelendi"
+
+#, python-format
+msgid "Snoozed until %(until)s"
+msgstr "%(until)s saatine kadar ertelendi"
 
 msgid "Sodium bicarbonate"
 msgstr "Sodyum bikarbonat"
@@ -14920,6 +15011,13 @@ msgstr ""
 "Hasatta, kanatma ve iç temizliğinden önce tartılan canlı ağırlık. Stok balıkları kayıttaki "
 "ağırlıklarıyla düşer; fark hasatla birlikte gösterilir."
 
+msgid ""
+"The longest an alarm of this severity may be snoozed: nobody is notified of it and it is not "
+"escalated meanwhile. Critical 1 to 480, warning 1 to 1440."
+msgstr ""
+"Bu önem düzeyindeki bir alarmın ertelenebileceği en uzun süre: bu sırada kimseye bildirilmez ve "
+"üst kademeye iletilmez. Kritik 1 ile 480, uyarı 1 ile 1440 arası."
+
 msgid "The longest distance across the ellipse."
 msgstr "Elipsin en uzun çapı."
 
@@ -16204,6 +16302,15 @@ msgstr "Bu kayıt (%(name)s) henüz silinemez."
 
 msgid "This account already belongs to another employee."
 msgstr "Bu hesap zaten başka bir çalışana ait."
+
+msgid "This alarm has cleared: there is nothing to snooze."
+msgstr "Bu alarm kapandı: ertelenecek bir şey yok."
+
+msgid "This alarm is not snoozed."
+msgstr "Bu alarm ertelenmiş değil."
+
+msgid "This alarm is snoozed already."
+msgstr "Bu alarm zaten ertelenmiş."
 
 msgid "This assignment was deleted meanwhile."
 msgstr "Bu atama bu sırada silindi."
@@ -18035,6 +18142,18 @@ msgstr "alarm önem kuralı"
 
 msgid "alarm severity rules"
 msgstr "alarm önem kuralları"
+
+msgid "alarm snooze"
+msgstr "alarm ertelemesi"
+
+msgid "alarm snooze end"
+msgstr "alarm ertelemesi bitişi"
+
+msgid "alarm snooze ends"
+msgstr "alarm ertelemesi bitişleri"
+
+msgid "alarm snoozes"
+msgstr "alarm ertelemeleri"
 
 msgid "alarm subject state"
 msgstr "alarm konusu durumu"

@@ -5,10 +5,18 @@ role's active members or its person, if active; with `on_shift_only`, only those
 reached by several rules is notified once, by the first.
 
 A pass reads the rules, the roles' members and who is on shift once (`Router`), whatever the number of alarms it routes
-(alarm plan, defect 7)."""
+(alarm plan, defect 7).
+
+An alarm on a sealed experiment's cell (core.sealing) reaches only the people who may see it (its team, a grantee of
+its water, a person holding Oversee, the platform admin unless the experiment is private): its text names the unit and
+the value, which do not exist for anyone else. Which alarms lie on a sealed cell is read once per pass (`prepare`);
+only for those is each person checked."""
 from collections import defaultdict
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
+
+from core import sealing
 
 from hr import read as hr_read
 
@@ -29,6 +37,25 @@ class Router:
                            .select_related('user').order_by('user__username')):
             self.members[membership.group_id].append(membership.user)
         self._on_shift = None
+        self.sealed = set()
+        self._sees = {}
+
+    def prepare(self, alarms):
+        """Reads which of `alarms` lie on a sealed cell: those someone outside every team may not see (one query)."""
+        from .models import Alarm
+        ids = [alarm.pk for alarm in alarms]
+        with sealing.as_viewer(AnonymousUser()):
+            open_to_all = set(Alarm.objects.filter(pk__in=ids).values_list('pk', flat=True))
+        self.sealed = set(ids) - open_to_all
+
+    def sees(self, person, alarm):
+        """Whether `person` may see `alarm` (asked only for an alarm on a sealed cell)."""
+        from .models import Alarm
+        key = (person.pk, alarm.pk)
+        if key not in self._sees:
+            with sealing.as_viewer(person):
+                self._sees[key] = Alarm.objects.filter(pk=alarm.pk).exists()
+        return self._sees[key]
 
     def on_shift(self):
         if self._on_shift is None:
@@ -58,7 +85,7 @@ class Router:
                 on_shift = self.on_shift()
                 people = [person for person in people if person.pk in on_shift]
             for person in people:
-                if person.is_active and person.pk not in found:
+                if person.is_active and person.pk not in found                         and (alarm.pk not in self.sealed or self.sees(person, alarm)):
                     found[person.pk] = (person, rule)
         return sorted(found.values(), key=lambda pair: pair[0].get_username())
 
@@ -69,7 +96,9 @@ class Router:
 
 def recipients(alarm, level, now):
     """[(user, rule)] notified of the alarm at `level` (`Router`)."""
-    return Router(now).recipients(alarm, level)
+    router = Router(now)
+    router.prepare([alarm])
+    return router.recipients(alarm, level)
 
 
 def next_level(alarm, level, now=None):

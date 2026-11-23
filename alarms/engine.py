@@ -66,6 +66,7 @@ def _route(alarms, now, summary, rules):
     if not alarms:
         return
     router = routing.Router(now)
+    router.prepare(alarms)
     ids = [alarm.pk for alarm in alarms]
     levels = dict(Escalation.objects.filter(alarm__in=ids).values('alarm').annotate(top=Max('level'))
                   .values_list('alarm', 'top'))

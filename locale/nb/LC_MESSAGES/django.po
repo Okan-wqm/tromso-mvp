@@ -525,12 +525,6 @@ msgstr[0] "%(count)s produksjonsavdeling tilhører ingen lokalitet."
 msgstr[1] "%(count)s produksjonsavdelinger tilhører ingen lokalitet."
 
 #, python-format
-msgid "%(count)s restricted record is affected too."
-msgid_plural "%(count)s restricted records are affected too."
-msgstr[0] "%(count)s begrenset post berøres også."
-msgstr[1] "%(count)s begrensede poster berøres også."
-
-#, python-format
 msgid "%(count)s sampling point"
 msgid_plural "%(count)s sampling points"
 msgstr[0] "%(count)s prøvepunkt"
@@ -3820,10 +3814,10 @@ msgid "Anyone"
 msgstr "Alle"
 
 msgid ""
-"Anyone with an account. Someone whose roles do not include Experiments: read opens it once the "
-"platform admin gives them such a role (Research collaborator)."
+"Anyone with an account and a role. Someone whose roles do not include Experiments: read opens it "
+"once the platform admin gives them such a role (Research collaborator)."
 msgstr ""
-"Alle som har en konto. Den som ikke har Forsøk: les i rollene sine, kan åpne det når "
+"Alle som har en konto og en rolle. Den som ikke har Forsøk: les i rollene sine, kan åpne det når "
 "plattformadministratoren gir dem en slik rolle (Forskningssamarbeidspartner)."
 
 msgid "App"
@@ -8518,11 +8512,8 @@ msgid_plural "It operates %(count)d slaughter facilities: keep “%(category)s�
 msgstr[0] "Den driver %(count)d slakteri: la «%(category)s» stå avkrysset."
 msgstr[1] "Den driver %(count)d slakterier: la «%(category)s» stå avkrysset."
 
-#, python-format
-msgid "It reaches %(count)d record you may not see: someone who may see it deletes it."
-msgid_plural "It reaches %(count)d records you may not see: someone who may see them deletes it."
-msgstr[0] "Den når %(count)d post du ikke kan se: noen som kan se den, må slette."
-msgstr[1] "Den når %(count)d poster du ikke kan se: noen som kan se dem, må slette."
+msgid "It reaches records you may not see: ask the experiment’s lead, who may see them."
+msgstr "Den når poster du ikke kan se: spør forsøkets leder, som kan se dem."
 
 msgid ""
 "It stops counting and stays in the history with its reason. An event that was right but is over "
@@ -10780,6 +10771,9 @@ msgstr "Etter klokken på stedets lokalitet. Tilknytningen til nå slutter da."
 msgid "On the clock of the place’s site; a task not done by then is overdue."
 msgstr "Etter klokken på stedets lokalitet; en oppgave som ikke er utført innen da, er forfalt."
 
+msgid "On-call phone"
+msgstr "Vakttelefon"
+
 msgid ""
 "One author per line, in the order of the document, family name first: “Olsen, Bjørn Erik”. An "
 "organisation as it is named: “Mattilsynet”."
@@ -10801,6 +10795,19 @@ msgstr "Ett kort per enhet."
 
 msgid "One county names 1 March of the next year, by e-mail (Møre og Romsdal, 2027)"
 msgstr "Ett fylke oppgir 1. mars året etter, på e-post (Møre og Romsdal, 2027)"
+
+msgid ""
+"One exception, whatever you choose, private too: the people whose role holds Oversee (given by "
+"the platform admin to those who care for the fish) see the farm facts of this experiment's tanks,"
+" their water, feeding, health, mortality and stock, because the fish's welfare comes first, and a"
+" card naming a research trial, its lead, its approval and its days. They never see its design, "
+"results, documents, hypothesis or team."
+msgstr ""
+"Ett unntak, uansett hva du velger, også privat: de som har Tilsyn i rollen sin (gitt av "
+"plattformadministratoren til dem som har ansvar for fisken) ser driftsfaktaene for karene i dette"
+" forsøket, vann, fôring, helse, dødelighet og beholdning, fordi fiskens velferd kommer først, og "
+"et kort som viser et forskningsforsøk, lederen, godkjenningen og dagene. De ser aldri designet, "
+"resultatene, dokumentene, hypotesen eller teamet."
 
 msgid "One object per message: a JSON pointer to this channel’s value, e.g. /tags/o2/value."
 msgstr "Ett objekt per melding: en JSON pointer til denne kanalens verdi, f.eks. /tags/o2/value."
@@ -11090,6 +11097,13 @@ msgstr ""
 
 msgid "Optional. Above it the overview warns; nothing is refused. Feed is counted in kg."
 msgstr "Valgfritt. Over den varsler oversikten; ingenting avvises. Fôr telles i kg."
+
+msgid ""
+"Optional: a number someone who looks after its tanks may call at any hour. Shown only on their "
+"card of the trial."
+msgstr ""
+"Valgfritt: et nummer den som har tilsyn med karene kan ringe når som helst. Vises bare på deres "
+"kort for forsøket."
 
 msgid "Optional: from this time on the due day a task is overdue."
 msgstr "Valgfritt: fra dette klokkeslettet på fristdagen er en oppgave forfalt."
@@ -12862,6 +12876,9 @@ msgstr "Si hvorfor det deles."
 msgid "Say why it is voided."
 msgstr "Skriv hvorfor den annulleres."
 
+msgid "Say why the experiment is taken over."
+msgstr "Si hvorfor forsøket overtas."
+
 msgid ""
 "Say why the tanks are placed by hand: a placement that is not randomised is registered with its "
 "reason."
@@ -13553,6 +13570,9 @@ msgstr "Natriumhydroksid"
 
 msgid "Solar"
 msgstr "Sol"
+
+msgid "Some records you may not see are affected too."
+msgstr "Noen poster du ikke kan se, berøres også."
 
 msgid "Some values are not right; the results show again once they are:"
 msgstr "Noen verdier er ikke riktige; resultatene vises igjen når de er det:"
@@ -14660,6 +14680,9 @@ msgstr[1] "Estimatet er ufullstendig: %(days)s fôringsdager uten forventet FCR.
 msgid "The expected harvest comes after the stocking date."
 msgstr "Forventet høsting kommer etter utsettsdatoen."
 
+msgid "The experiment has a lead: only the lead changes its team."
+msgstr "Forsøket har en leder: bare lederen endrer teamet."
+
 msgid ""
 "The experiment has started, so its design is fixed: it was registered before the first day and "
 "what is judged is what was planned. To change it, copy the experiment and change the copy."
@@ -15511,8 +15534,12 @@ msgstr ""
 "Resultatet av en følsomhetsundersøkelse i uken (lakselusforskriften § 10 d): når, laboratoriet, "
 "virkestoffet og resultatet. Lagres atskilt fra rapporten."
 
-msgid "The results and the data bring the design and the systems with them; the water brings the systems."
-msgstr "Resultatene og dataene tar med designet og systemene; vannet tar med systemene."
+msgid ""
+"The results bring the data, the design and the systems with them; the data the design and the "
+"systems; the water the systems."
+msgstr ""
+"Resultatene tar med dataene, designet og systemene; dataene designet og systemene; vannet "
+"systemene."
 
 msgid ""
 "The right end. Choose the two ends so that the pH the water is kept at and the pH at which CO₂ "
@@ -18118,6 +18145,12 @@ msgstr ""
 "en pH på %(scale)s tas bare for sjøvann på 5 ‰ eller mer (ikke ferskvann tilsatt salt); sett "
 "kanalens pH-skala til NBS hvis sonden er kalibrert med NBS/NIST-buffere"
 
+msgid "a restricted batch"
+msgstr "en begrenset fiskegruppe"
+
+msgid "a restricted unit"
+msgstr "en begrenset enhet"
+
 msgid "a sea site with salmonids"
 msgstr "en sjølokalitet med laksefisk"
 
@@ -19448,6 +19481,10 @@ msgstr "kontoravdelinger"
 
 msgid "old"
 msgstr "gammel"
+
+#, python-format
+msgid "on call %(phone)s"
+msgstr "vakt %(phone)s"
 
 msgid "only a sea site of food fish or broodstock has a driftsplan"
 msgstr "bare en sjølokalitet med matfisk eller stamfisk har driftsplan"

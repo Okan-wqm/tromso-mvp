@@ -27,7 +27,7 @@ from .models import (
 
 # The animal-research approval the experiment runs under (FOTS): shown on the card a person overseeing its tanks sees,
 # and changed after the start too (migration 0004). A copy does not take it.
-APPROVAL_FIELDS = ['approval_ref', 'approval_valid_until']
+APPROVAL_FIELDS = ['approval_ref', 'approval_valid_until', 'on_call_phone']
 DETAILS_TABS = [('details', _('Details'), DETAIL_FIELDS), ('approval', _('Approval'), APPROVAL_FIELDS)]
 # What a started experiment fixes (the database refuses a change too: migration 0002).
 FIXED_WHEN_STARTED = ('hypothesis', 'primary_endpoint', 'starts_on', 'duration_days')
@@ -58,6 +58,8 @@ class ExperimentForm(TabbedForm):
             'approval_ref': _('The reference of the animal-research approval (FOTS) it runs under. A person who looks '
                               'after its tanks sees it with the lead’s name and phone.'),
             'approval_valid_until': _('The last day the approval holds.'),
+            'on_call_phone': _('Optional: a number someone who looks after its tanks may call at any hour. Shown only '
+                               'on their card of the trial.'),
             'species': _('One species per experiment: a unit holds one.'),
             'site': _('One site per experiment: its clock gives the days.'),
             'hypothesis': _('What the trial tests, before it starts. Needed to start it.'),

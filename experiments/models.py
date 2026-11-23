@@ -119,6 +119,8 @@ class Experiment(AuditedModel):
     # The animal-research approval it runs under (FOTS), shown on the card a person overseeing its tanks sees.
     approval_ref = models.CharField(_('Approval reference'), max_length=60, blank=True, default='', db_default='')
     approval_valid_until = models.DateField(_('Approval valid until'), null=True, blank=True)
+    # A number the lead types for whoever keeps the fish at night (the Oversee card only); HR keeps no contact detail.
+    on_call_phone = models.CharField(_('On-call phone'), max_length=30, blank=True, default='', db_default='')
 
     kept_note = _('They stay as they are.')
 

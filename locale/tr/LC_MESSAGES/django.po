@@ -524,12 +524,6 @@ msgstr[0] "%(count)s üretim departmanı hiçbir sahada değil."
 msgstr[1] "%(count)s üretim departmanı hiçbir sahada değil."
 
 #, python-format
-msgid "%(count)s restricted record is affected too."
-msgid_plural "%(count)s restricted records are affected too."
-msgstr[0] "%(count)s kısıtlı kayıt da etkilenir."
-msgstr[1] "%(count)s kısıtlı kayıt da etkilenir."
-
-#, python-format
 msgid "%(count)s sampling point"
 msgid_plural "%(count)s sampling points"
 msgstr[0] "%(count)s numune noktası"
@@ -3825,11 +3819,11 @@ msgid "Anyone"
 msgstr "Herkes"
 
 msgid ""
-"Anyone with an account. Someone whose roles do not include Experiments: read opens it once the "
-"platform admin gives them such a role (Research collaborator)."
+"Anyone with an account and a role. Someone whose roles do not include Experiments: read opens it "
+"once the platform admin gives them such a role (Research collaborator)."
 msgstr ""
-"Hesabı olan herkes. Rollerinde Deneyler: görüntüle olmayan kişi, platform yöneticisi ona böyle "
-"bir rol (Araştırma ortağı) verdiğinde açabilir."
+"Hesabı ve rolü olan herkes. Rollerinde Deneyler: görüntüle olmayan kişi, platform yöneticisi ona "
+"böyle bir rol (Araştırma ortağı) verdiğinde açabilir."
 
 msgid "App"
 msgstr "Uygulama"
@@ -8545,11 +8539,8 @@ msgid_plural "It operates %(count)d slaughter facilities: keep “%(category)s�
 msgstr[0] "%(count)d kesimhaneyi işletiyor: “%(category)s” işaretli kalsın."
 msgstr[1] "%(count)d kesimhaneyi işletiyor: “%(category)s” işaretli kalsın."
 
-#, python-format
-msgid "It reaches %(count)d record you may not see: someone who may see it deletes it."
-msgid_plural "It reaches %(count)d records you may not see: someone who may see them deletes it."
-msgstr[0] "Görmediğiniz %(count)d kayda ulaşıyor: onu görebilen biri silmeli."
-msgstr[1] "Görmediğiniz %(count)d kayda ulaşıyor: onları görebilen biri silmeli."
+msgid "It reaches records you may not see: ask the experiment’s lead, who may see them."
+msgstr "Göremediğiniz kayıtlara ulaşıyor: onları görebilen deney yürütücüsüne sorun."
 
 msgid ""
 "It stops counting and stays in the history with its reason. An event that was right but is over "
@@ -10801,6 +10792,9 @@ msgstr "Yerin sahasının saatine göre. Şu ana kadarki ataması o zaman sona e
 msgid "On the clock of the place’s site; a task not done by then is overdue."
 msgstr "Yerin bulunduğu sahanın saatine göre; o zamana kadar yapılmayan görev gecikmiş olur."
 
+msgid "On-call phone"
+msgstr "Nöbet telefonu"
+
 msgid ""
 "One author per line, in the order of the document, family name first: “Olsen, Bjørn Erik”. An "
 "organisation as it is named: “Mattilsynet”."
@@ -10822,6 +10816,19 @@ msgstr "Birim başına bir kart."
 
 msgid "One county names 1 March of the next year, by e-mail (Møre og Romsdal, 2027)"
 msgstr "Bir ilçe, ertesi yılın 1 Mart’ını e-postayla belirtiyor (Møre og Romsdal, 2027)"
+
+msgid ""
+"One exception, whatever you choose, private too: the people whose role holds Oversee (given by "
+"the platform admin to those who care for the fish) see the farm facts of this experiment's tanks,"
+" their water, feeding, health, mortality and stock, because the fish's welfare comes first, and a"
+" card naming a research trial, its lead, its approval and its days. They never see its design, "
+"results, documents, hypothesis or team."
+msgstr ""
+"Ne seçerseniz seçin, gizli de olsa tek bir istisna var: rolünde Gözetim bulunan kişiler (platform"
+" yöneticisi bunu balıklara bakanlara verir) bu deneyin tanklarının çiftlik bilgilerini, yani "
+"suyunu, yemlemesini, sağlığını, ölümlerini ve stokunu görür, çünkü balıkların refahı önce gelir; "
+"ayrıca bir araştırma denemesini, yürütücüsünü, onayını ve günlerini gösteren bir kart görür. "
+"Tasarımını, sonuçlarını, belgelerini, hipotezini ya da ekibini asla görmezler."
 
 msgid "One object per message: a JSON pointer to this channel’s value, e.g. /tags/o2/value."
 msgstr "Mesaj başına bir nesne: bu kanalın değerini gösteren bir JSON pointer, örn. /tags/o2/value."
@@ -11113,6 +11120,13 @@ msgstr ""
 
 msgid "Optional. Above it the overview warns; nothing is refused. Feed is counted in kg."
 msgstr "İsteğe bağlı. Üstüne çıkılınca genel bakış uyarır; hiçbir şey reddedilmez. Yem kg ile sayılır."
+
+msgid ""
+"Optional: a number someone who looks after its tanks may call at any hour. Shown only on their "
+"card of the trial."
+msgstr ""
+"İsteğe bağlı: tanklarına bakan kişinin her saatte arayabileceği bir numara. Yalnızca onların "
+"deneme kartında gösterilir."
 
 msgid "Optional: from this time on the due day a task is overdue."
 msgstr "İsteğe bağlı: son tarihte bu saatten itibaren görev gecikmiş olur."
@@ -12887,6 +12901,9 @@ msgstr "Neden paylaşıldığını yazın."
 msgid "Say why it is voided."
 msgstr "Neden iptal edildiğini yazın."
 
+msgid "Say why the experiment is taken over."
+msgstr "Deneyin neden devralındığını yazın."
+
 msgid ""
 "Say why the tanks are placed by hand: a placement that is not randomised is registered with its "
 "reason."
@@ -13578,6 +13595,9 @@ msgstr "Sodyum hidroksit"
 
 msgid "Solar"
 msgstr "Güneş"
+
+msgid "Some records you may not see are affected too."
+msgstr "Göremediğiniz bazı kayıtlar da etkilenir."
 
 msgid "Some values are not right; the results show again once they are:"
 msgstr "Bazı değerler doğru değil; düzeltildiklerinde sonuçlar yeniden görünür:"
@@ -14689,6 +14709,9 @@ msgstr[1] "Tahmin eksik: beklenen FCR’si olmayan %(days)s yemleme günü var."
 msgid "The expected harvest comes after the stocking date."
 msgstr "Beklenen hasat stoklama tarihinden sonra gelir."
 
+msgid "The experiment has a lead: only the lead changes its team."
+msgstr "Deneyin bir yürütücüsü var: ekibini yalnızca o değiştirir."
+
 msgid ""
 "The experiment has started, so its design is fixed: it was registered before the first day and "
 "what is judged is what was planned. To change it, copy the experiment and change the copy."
@@ -15541,8 +15564,12 @@ msgstr ""
 "Haftadaki bir duyarlılık testinin sonucu (lakselusforskriften § 10 d): ne zaman, laboratuvar, "
 "etken madde ve sonuç. Rapordan ayrı kaydedilir."
 
-msgid "The results and the data bring the design and the systems with them; the water brings the systems."
-msgstr "Sonuçlar ve veriler tasarımı ve sistemleri de getirir; su sistemleri getirir."
+msgid ""
+"The results bring the data, the design and the systems with them; the data the design and the "
+"systems; the water the systems."
+msgstr ""
+"Sonuçlar verileri, tasarımı ve sistemleri de getirir; veriler tasarımı ve sistemleri; su "
+"sistemleri."
 
 msgid ""
 "The right end. Choose the two ends so that the pH the water is kept at and the pH at which CO₂ "
@@ -18153,6 +18180,12 @@ msgstr ""
 "%(scale)s ölçülen bir pH yalnızca 5 ‰ ve üzeri deniz suyu için alınır (tuz eklenmiş tatlı su için"
 " değil); prob NBS/NIST tamponlarıyla kalibre edildiyse kanalın pH ölçeğini NBS yapın"
 
+msgid "a restricted batch"
+msgstr "kısıtlı bir parti"
+
+msgid "a restricted unit"
+msgstr "kısıtlı bir birim"
+
 msgid "a sea site with salmonids"
 msgstr "salmonid bulunan bir deniz lokasyonu"
 
@@ -19485,6 +19518,10 @@ msgstr "ofis departmanları"
 
 msgid "old"
 msgstr "eski"
+
+#, python-format
+msgid "on call %(phone)s"
+msgstr "nöbet %(phone)s"
 
 msgid "only a sea site of food fish or broodstock has a driftsplan"
 msgstr "yalnızca besi balığı veya damızlık deniz lokasyonunun driftsplan’ı vardır"

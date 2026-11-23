@@ -23,7 +23,7 @@ from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _, gettext_lazy, ngettext
 
-from core import navigation
+from core import navigation, sealing
 from core.crud import DRAFT, done, render_page
 from core.dates import read_day
 from farm.forms.stock import VoidForm
@@ -190,6 +190,7 @@ def _voidable(operation):
     return all(operation.date >= site_earliest(site) for site in sites)
 
 
+@sealing.reads_as_system('the store')    # feed drawn from the store is a stock figure: every feeding counts (review F5)
 def _feeding_days(params):
     """The feeding of each site, feed and day, read from the records: what the store's book draws."""
     rows = FeedingRecord.objects.filter(unit__production_department__site__isnull=False)

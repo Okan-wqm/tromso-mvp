@@ -17,6 +17,7 @@ from decimal import Decimal
 
 from django.db.models import Sum
 
+from core import sealing
 from farm.models import Feed, FeedingRecord, Site
 from farm.stock.dates import site_earliest, site_today
 
@@ -56,6 +57,7 @@ def _lines(items=None, exclude_op=None):
     return found
 
 
+@sealing.reads_as_system('the store')    # feed drawn from the store is a stock figure: every feeding counts (review F5)
 def _feeding(feed_ids):
     """{feed id: {(site id, day): kg}} of the live feeding records, by the site of the unit's department."""
     found = defaultdict(dict)
@@ -80,6 +82,7 @@ def folds(items=None):
             for item in items}
 
 
+@sealing.reads_as_system('the store')    # feed drawn from the store is a stock figure: every feeding counts (review F5)
 def undelivered():
     """{feed: fold.Folded} of the feeds that were fed (a live feeding record on a site) and have no item in the store:
     an item is made at a feed's first delivery or reorder level (services.item_for), so a feed never delivered had no
@@ -275,9 +278,10 @@ def overview():
     for (site_id, _item_id), record in per.items():
         if record.item.feed_id:
             today = site_today(record.site)
-            record.fed_week = FeedingRecord.objects.filter(
-                feed_id=record.item.feed_id, unit__production_department__site_id=site_id,
-                date__range=(today - timedelta(days=WEEK - 1), today)).aggregate(kg=Sum('amount_kg'))['kg'] or ZERO
+            with sealing.system('the store'):                   # a stock figure: every feeding counts
+                record.fed_week = FeedingRecord.objects.filter(
+                    feed_id=record.item.feed_id, unit__production_department__site_id=site_id,
+                    date__range=(today - timedelta(days=WEEK - 1), today)).aggregate(kg=Sum('amount_kg'))['kg'] or ZERO
     found.site_items = sorted(per.values(), key=lambda record: (record.site.name, str(record.item)))
     held = defaultdict(lambda: ZERO)
     for row in rows:

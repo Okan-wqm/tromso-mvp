@@ -13,6 +13,7 @@
     {% if audience_form.non_field_errors %}<div class="form-error" role="alert">{{ audience_form.non_field_errors }}</div>{% endif %}
     {% with field=audience_form.audience %}{% include "registration/_field.html" %}{% endwith %}
     <p class="muted">{% trans "You alone decide who sees this experiment. Someone with direct access to the database or the server can still read its stored rows. The platform admin still sees that a tank or system is booked, and for which days, since booking conflicts must stay visible." %}</p>
+    <p class="muted">{% trans "One exception, whatever you choose, private too: the people whose role holds Oversee (given by the platform admin to those who care for the fish) see the farm facts of this experiment's tanks, their water, feeding, health, mortality and stock, because the fish's welfare comes first, and a card naming a research trial, its lead, its approval and its days. They never see its design, results, documents, hypothesis or team." %}</p>
     <div class="form-actions"><button type="submit" class="ui-btn" data-variant="primary">{% trans "Save" %}</button></div>
   </form>
 </section>

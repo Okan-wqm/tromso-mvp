@@ -181,8 +181,9 @@ def _latest(site):
         units = units.filter(production_department__site=site)
     units = list(units.order_by('production_department__site__name', 'production_department__name', 'code'))
     since = timezone.now() - read.WINDOW
-    recent = (SamplingPoint.objects.filter(is_active=True, samples__is_deleted=False, samples__measured_at__gte=since)
-              .with_owners().distinct())
+    # Through the samples the person may see (core.sealing), never a join that reaches a sealed one (review F9).
+    seen = WaterMeasurement.objects.filter(is_deleted=False, measured_at__gte=since).values('point')
+    recent = SamplingPoint.objects.filter(is_active=True, pk__in=seen).with_owners()
     if site is not None:
         recent = recent.filter(Q(unit__production_department__site=site) | Q(system__site=site)
                                | Q(equipment__production_department__site=site))

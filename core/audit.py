@@ -55,14 +55,11 @@ def entity_types(model):
 
 
 def sealed_out(entries):
-    """`entries` without those about a record the viewer of the moment may not see."""
-    current = sealing.who()
-    if current is None:
-        return entries
+    """`entries` without those about a record whoever is looking may not see (read when the query runs, core.sealing)."""
     for seal in sealing.registry():
         if not seal.filters:
             continue
-        condition = sealing.hidden(seal, current)
+        condition = sealing.hidden(seal)
         if condition is None:
             continue
         ids = seal.model._base_manager.filter(condition).annotate(log_id=Cast('pk', models.CharField())).values('log_id')
@@ -192,10 +189,13 @@ def revision():
     reading them. The count catches an entry committed late with a stamp earlier than the newest one (the stamp is
     taken when the row is made, the row appears when its transaction commits). Read it BEFORE the data it stands
     for: a change that lands between the two reads then makes the next read differ, never the other way round."""
-    newest = AuditLog.objects.aggregate(newest=Max('created_at'))['newest']
+    # Only the entries whoever is looking may read (core.sealing): a change to a record they may not see never moves
+    # their token, so its timing tells them nothing (review F8).
+    entries = sealed_out(AuditLog.objects.all())
+    newest = entries.aggregate(newest=Max('created_at'))['newest']
     if newest is None:
         return '0'
-    recent = AuditLog.objects.filter(created_at__gte=newest - LATE_COMMIT, created_at__lte=newest).count()
+    recent = entries.filter(created_at__gte=newest - LATE_COMMIT, created_at__lte=newest).count()
     return f'{newest.isoformat()}/{recent}'
 
 

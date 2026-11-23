@@ -1028,3 +1028,32 @@ def set_audience(user, experiment, audience):
             audit.record(user, AuditLog.Action.UPDATE, locked,
                          {str(AUDIENCE): [audit.message(before), audit.message(locked.get_audience_display())]})
     return locked
+
+
+def take_lead(user, experiment, reason):
+    """The platform admin makes `user` the lead of an experiment that has no live lead (its lead left, or their window
+    ended): the one way past the lead's own rule (review F3), for a superuser only, with a reason, logged on the
+    experiment as a change of its team. The admin then shares or hands the lead on as any lead."""
+    from .sealing import live
+    reason = (reason or '').strip()
+    if not user.is_superuser:
+        raise PermissionDenied
+    if not reason:
+        raise _refused(_('Say why the experiment is taken over.'))
+    with transaction.atomic():
+        locked = Experiment.all_objects.select_for_update().get(pk=experiment.pk)
+        if Member._base_manager.filter(live(), experiment=locked, role=Member.Role.LEAD).exists():
+            raise _refused(_('The experiment has a lead: only the lead changes its team.'))
+        before = '; '.join(f'{row.user.get_username()} ({row.role})'
+                           for row in Member._base_manager.filter(experiment=locked).select_related('user'))
+        Member._base_manager.filter(experiment=locked, role=Member.Role.LEAD).delete()     # a lead whose window ended
+        Member._base_manager.filter(experiment=locked, user=user).delete()
+        Member._base_manager.create(experiment=locked, user=user, role=Member.Role.LEAD, created_by=user)
+        locked.version += 1
+        locked.updated_by = user
+        locked.save(update_fields=['version', 'updated_by', 'updated_at'])
+        with audit.source_language():
+            audit.record(user, AuditLog.Action.UPDATE, locked,
+                         {'Team': [before or None, f'{user.get_username()} (lead), taken over: {reason}']})
+    return locked
+

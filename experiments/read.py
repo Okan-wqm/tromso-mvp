@@ -542,7 +542,10 @@ def cards(unit_ids, day):
             parts.append(_('Approval %(ref)s') % {'ref': experiment.approval_ref} + (
                 ' ' + _('valid until %(day)s') % {'day': date_format(experiment.approval_valid_until)}
                 if experiment.approval_valid_until else ''))
+        if experiment.on_call_phone:
+            parts.append(_('on call %(phone)s') % {'phone': experiment.on_call_phone})
         parts.append(_('%(first)s to %(last)s') % {'first': date_format(first), 'last': date_format(last)})
         found[unit_id] = farm_placements.Placement(label=_('Research trial'), title=' · '.join(parts), url='')
-        sealing.log_access('oversee', 'unit', unit_id, part='systems', route='experiments.read.cards')
+        # Logged against the experiment, so its lead reads it on Who looked (review F8).
+        sealing.log_access('oversee', 'experiment', experiment.pk, part='systems', route='experiments.read.cards')
     return found

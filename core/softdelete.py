@@ -60,7 +60,8 @@ class DeletePlan:
 
     @property
     def restricted(self):
-        """How many records the delete reaches that the person may not see: counted, never named."""
+        """How many records the delete reaches that the person may not see: never named, and never said as a count
+        (the page says only that there are some)."""
         return len(self.hidden)
 
     def shown(self, record):
@@ -149,10 +150,8 @@ def _hide(plan):
         plan.hidden.update((model, pk) for pk in pks if pk not in seen)
     changed = {(type(record), record.pk) for record in [*plan.cascade, *(record for record, _link in plan.detach)]}
     if changed & plan.hidden:
-        plan.blockers.append(ngettext(
-            'It reaches %(count)d record you may not see: someone who may see it deletes it.',
-            'It reaches %(count)d records you may not see: someone who may see them deletes it.',
-            len(changed & plan.hidden)) % {'count': len(changed & plan.hidden)})
+        # Never how many (review F8): a count would say how much of a confidential experiment lies there.
+        plan.blockers.append(_('It reaches records you may not see: ask the experiment’s lead, who may see them.'))
 
 
 def _cascade(children, plan, seen, link, parent):

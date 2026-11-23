@@ -24,9 +24,9 @@ from dataclasses import dataclass, field
 from django.core import checks
 from django.db import models
 from django.db.models import Exists, ExpressionWrapper, OuterRef, Q, Value
-from django.db.models.functions import Coalesce, TruncDate
+from django.db.models.functions import Coalesce, Now, TruncDate
 
-from .dates import company_today, company_zone
+from .dates import company_zone
 
 # The parts of a confidential piece of work a grant can open (experiments: the owner's five).
 PARTS = ('design', 'results', 'systems', 'data', 'water')
@@ -34,7 +34,7 @@ PARTS = ('design', 'results', 'systems', 'data', 'water')
 # and the results; only the team and the grantees).
 FACT, SCIENCE = 'fact', 'science'
 # A seal's mode: `row` filters the model's rows; `exempt` leaves them, with a written reason.
-ROW, EXEMPT = 'row', 'exempt'
+ROW, EXEMPT, ABOUT = 'row', 'exempt', 'about'
 # The records a cell reaches. A model with a link to one of these, directly or through other models, must declare its seal.
 KEYED = ('farm.Tank', 'farm.System', 'farm.Batch', 'farm.SamplingPoint', 'farm.Equipment', 'farm.StockOperation',
          'farm.HealthEvent', 'sensors.Binding', 'sensors.Channel', 'tasks.Task', 'reports.Report',
@@ -158,11 +158,11 @@ def system(reason):
         _current.reset(token)
 
 
-def module_reads_as_system(namespace, reason):
-    """Makes every function and method defined in a module (its `globals()`) read as the system for `reason`: for a
-    rule whose every figure must count every unit whoever asks (the medicine withdrawal, which holds fish whatever
-    experiment their unit is in). Called once at the end of the module; the module is named among the system's
-    readers (core/tests_sealing.py)."""
+def reads_as_system(reason):
+    """A decorator: the function, or every method of the class, reads as the system for `reason`. For the computation
+    of a fact that must count every unit whoever asks (the medicine withdrawal's reader: fish held by a course in a
+    sealed tank are held wherever they went), never for what is printed: what a page shows of the fact is read as its
+    person. Each use is named among the system's readers (core/tests_sealing.py)."""
     import functools
     import inspect
 
@@ -173,19 +173,19 @@ def module_reads_as_system(namespace, reason):
                 return function(*args, **kwargs)
         return inner
 
-    module = namespace['__name__']
-    for name, value in list(namespace.items()):
-        if inspect.isfunction(value) and value.__module__ == module:
-            namespace[name] = wrapped(value)
-        elif inspect.isclass(value) and value.__module__ == module:
-            for attribute, member in list(vars(value).items()):
-                if inspect.isfunction(member):
-                    setattr(value, attribute, wrapped(member))
-                elif isinstance(member, (staticmethod, classmethod)):
-                    setattr(value, attribute, type(member)(wrapped(member.__func__)))
-                elif isinstance(member, property):
-                    setattr(value, attribute, property(*(wrapped(part) if part else None
-                                                        for part in (member.fget, member.fset, member.fdel))))
+    def decorate(target):
+        if inspect.isfunction(target):
+            return wrapped(target)
+        for attribute, member in list(vars(target).items()):
+            if inspect.isfunction(member):
+                setattr(target, attribute, wrapped(member))
+            elif isinstance(member, (staticmethod, classmethod)):
+                setattr(target, attribute, type(member)(wrapped(member.__func__)))
+            elif isinstance(member, property):
+                setattr(target, attribute, property(*(wrapped(part) if part else None
+                                                    for part in (member.fget, member.fset, member.fdel))))
+        return target
+    return decorate
 
 
 @contextmanager
@@ -237,6 +237,32 @@ def who():
     raise NoViewer('A sealed model was read outside a request, `as_viewer` or `system(...)`.')
 
 
+class Viewing(models.Expression):
+    """Who is looking, read when the SQL is compiled, never when the queryset is built (review F1): a queryset made at
+    import or at class level (a form's choices) carries the seal, and each evaluation reads its own request's person.
+    `looking`: someone is looking (false for the system); `super`: the platform admin; `user`: the person's id (NULL for
+    an anonymous visitor). With nobody looking, compiling raises NoViewer: the read fails, it never shows everything."""
+
+    contains_aggregate = False
+
+    def __init__(self, what):
+        super().__init__(output_field=models.IntegerField() if what == 'user' else models.BooleanField())
+        self.what = what
+
+    def __repr__(self):
+        return f'Viewing({self.what!r})'
+
+    def get_group_by_cols(self):
+        return []
+
+    def as_sql(self, compiler, connection):
+        current = who()
+        if self.what == 'user':
+            return '%s', [None if current is None else current.user_id]
+        flag = current is not None if self.what == 'looking' else (current is not None and current.is_super)
+        return ('TRUE' if flag else 'FALSE'), []
+
+
 def system_reason():
     """Why the system is reading now ('' when someone is looking)."""
     current = _current.get()
@@ -253,15 +279,32 @@ _provider = None
 
 def register_provider(provider):
     """The app that knows what a cell is (experiments) gives: `load(user) -> Viewer` (for Python's decisions),
-    `cells()` (a queryset of the sealed cells: unit, system, from_on, until_on, work id), `hidden_work(who, part)` (a
-    queryset of the ids of the work `who` may not read for that part, evaluated inside the reading statement) and
-    `oversees(who)` (a queryset that has a row when `who` holds the Oversee right)."""
+    `cells()` (a queryset of the sealed cells: unit, system, from_on, until_on, work id), `hidden_work(part)` (a
+    queryset of the ids of the work whoever is looking may not read for that part, built with Viewing so it is read
+    when the statement runs) and `oversees()` (a queryset that has a row when whoever is looking holds Oversee)."""
     global _provider
     _provider = provider
 
 
 def provider():
     return _provider
+
+
+def work_ids(queryset):
+    """The ids of the confidential work the rows of `queryset` belong to (a model sealed with `work`: the experiments
+    and their own records), or [] for any other model."""
+    seal = seal_of(queryset.model)
+    if seal is None or seal.work is None:
+        return []
+    path = f'{seal.work}__pk' if seal.work else 'pk'
+    return list(queryset.order_by().values_list(path, flat=True).distinct())
+
+
+def note_reads(ids, route, part=''):
+    """The read log of confidential work the person looking has just been shown (the provider's note_reads), from a
+    place that knows only record ids: the activity log, the database viewer."""
+    if _provider is not None and hasattr(_provider, 'note_reads'):
+        _provider.note_reads(ids, route, part)
 
 
 def load(user):
@@ -290,7 +333,9 @@ class Seal:
       one of its movements is), and hidden when it has children and none is shown;
     - `hidden_with`: (model label, link) of child rows: the row is hidden while one of its children is (a sensor channel
       with a binding on a sealed cell: the conservative rule, its readings are one series);
-    - `mode`: ROW filters the rows; EXEMPT does not, and `reason` says why."""
+    - `mode`: ROW filters the rows; EXEMPT does not, and `reason` says why; ABOUT is a row that names another record by
+      its entity type and id (the activity log, the read log, the form keys): it is hidden when the record it names is,
+      by `rows(queryset)` (core.audit.sealed_out), wherever it is read through narrow (the database viewer)."""
     model: type
     part: str = 'data'
     cls: str = FACT
@@ -303,6 +348,7 @@ class Seal:
     hidden_with: tuple = ()
     mode: str = ROW
     reason: str = ''
+    rows: object = None
 
     @property
     def filters(self):
@@ -318,6 +364,8 @@ def declare(model, **options):
     if seal.mode == ROW and not (seal.unit or seal.system or seal.work is not None or seal.via or seal.any_of
                                  or seal.hidden_with):
         raise ValueError(f'{model._meta.label}: a filtering seal names a unit, a system, a work, a parent or children.')
+    if seal.mode == ABOUT and seal.rows is None:
+        raise ValueError(f'{model._meta.label}: a row about other records says how it is narrowed.')
     if seal.mode == EXEMPT and not seal.reason:
         raise ValueError(f'{model._meta.label}: an exempt model says why.')
     _registry[model._meta.label] = seal
@@ -407,7 +455,7 @@ def _correlated(model, path, target):
 def _day_filter(model, day):
     """The conditions on a cell's days for the outer row's `day`."""
     if day is None:
-        today = company_today()
+        today = _today()
         return Q(from_on__lte=today, until_on__gte=today)
     if isinstance(day, tuple):
         # A row that spans days (a binding, a treatment, a recurring task) meets a cell when the two overlap; an empty
@@ -417,8 +465,13 @@ def _day_filter(model, day):
         last_day = Coalesce(_day_ref(model, last), Value(date.max), output_field=models.DateField())
         return Q(until_on__gte=first_day, from_on__lte=last_day)
     # A row without its day (a task with no due date) lies on the cell while the cell is current.
-    ref = Coalesce(_day_ref(model, day), Value(company_today()), output_field=models.DateField())
+    ref = Coalesce(_day_ref(model, day), _today(), output_field=models.DateField())
     return Q(from_on__lte=ref, until_on__gte=ref)
+
+
+def _today():
+    """Today on the company's clock, read by the database when the query runs (never the day the queryset was built)."""
+    return TruncDate(Now(), tzinfo=company_zone())
 
 
 def _day_ref(model, path):
@@ -435,15 +488,14 @@ def _paths(value):
     return (value,) if isinstance(value, str) and value else tuple(value or ())
 
 
-def hidden(seal, current, part=None):
-    """The condition (a Q) that is true for the rows of `seal.model` hidden from `current` (a Who, or a Viewer); None
-    when none are. What `current` is granted is read in the same statement (the provider's subqueries)."""
-    if current is None:
-        return None
+def hidden(seal, part=None):
+    """The condition (a Q) that is true for the rows of `seal.model` hidden from whoever is looking when the query runs;
+    None when the seal hides nothing. Nothing here knows the person: who is looking and what they are granted are
+    read inside the statement when it is compiled (Viewing, the provider's subqueries)."""
     part = part or seal.part
     conditions = []
     if _provider is not None and (seal.work is not None or seal.unit or seal.system):
-        hidden_work = _provider.hidden_work(current, part)
+        hidden_work = _provider.hidden_work(part)
         if seal.work is not None:
             lookup = f'{seal.work}__pk__in' if seal.work else 'pk__in'
             conditions.append(Q(**{lookup: hidden_work}))
@@ -465,7 +517,7 @@ def hidden(seal, current, part=None):
         conditions.append(Q(Exists(children)) & ~Q(Exists(shown)))
     if seal.hidden_with:
         child, link = _child(seal.hidden_with)
-        child_hidden = hidden(seal_of(child), current, part)
+        child_hidden = hidden(seal_of(child), part)
         if child_hidden is not None:
             conditions.append(Q(Exists(child._base_manager.filter(child_hidden, **{link: OuterRef('pk')}))))
     if not conditions:
@@ -473,10 +525,11 @@ def hidden(seal, current, part=None):
     result = conditions[0]
     for condition in conditions[1:]:
         result |= condition
-    if seal.cls == FACT and seal.work is None and _provider is not None and not current.is_super:
+    if seal.cls == FACT and seal.work is None and _provider is not None:
         # A farm fact is shown to a person who holds Oversee (the role matrix): read in the same statement.
-        result &= ~Q(Exists(_provider.oversees(current)))
-    return result
+        result &= ~Q(Exists(_provider.oversees()))
+    # The system (a command, a named system read) hides nothing.
+    return Q(Viewing('looking')) & result
 
 
 def _child(spec):
@@ -488,9 +541,11 @@ def _child(spec):
 def narrow(queryset, part=None):
     """`queryset` without the rows hidden from the viewer of the moment."""
     seal = seal_of(queryset.model)
+    if seal is not None and seal.mode == ABOUT:
+        return seal.rows(queryset)
     if seal is None or not seal.filters:
         return queryset
-    condition = hidden(seal, who(), part)
+    condition = hidden(seal, part)
     return queryset if condition is None else queryset.exclude(condition)
 
 

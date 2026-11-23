@@ -76,6 +76,13 @@ class TeamList(RowList):
         """e.g. "Kari Nord (Lead)", in English like every log row."""
         return f'{person_name(row.user)} ({row.get_role_display()})'
 
+    @classmethod
+    def allowed(cls, request, experiment):
+        """Who is in the team, and who leads it, is the lead's to say (review F3): another member, whatever their role
+        may edit, never adds, removes or hands the lead to anyone. An experiment with no live lead is taken over by the
+        platform admin through `manage.py experiments_take_lead`, logged."""
+        return services.is_lead(request.user, experiment)
+
     @staticmethod
     def lead(user):
         """The row that makes `user` the lead, with no window (from now, until removed)."""
@@ -93,11 +100,21 @@ class ExperimentResource(Resource):
     detail_template = 'experiments/experiment_detail.html'
     icon = 'flask'
     row_lists = (TeamList,)
+    private_fields = ('on_call_phone',)    # a number someone typed: the log says that it changed, not what to
     page_size = 50
 
     @classmethod
     def queryset(cls):
         return super().queryset().select_related('site', 'species')
+
+    @classmethod
+    def search(cls, objects, query):
+        """The number and the name of every experiment listed, and the hypothesis only of those whose design the person
+        may read (core.sealing, review F8): a search by a design's words must not find an experiment whose design is not
+        theirs to read."""
+        design_hidden = core_sealing.provider().hidden_work('design')
+        return objects.filter(Q(code__icontains=query) | Q(name__icontains=query)
+                              | (Q(hypothesis__icontains=query) & ~Q(pk__in=design_hidden)))
 
     @classmethod
     def allowed(cls, request, experiment, action):
@@ -109,13 +126,7 @@ class ExperimentResource(Resource):
     def log_read(cls, request, experiment, part=''):
         """A read of a sealed or private experiment by someone outside its team goes to the read log: the platform
         admin's as support, a grantee's as a view; the lead sees them on Who looked."""
-        current = core_sealing.viewer()
-        if current is None or experiment.audience == Experiment.Audience.OPEN or experiment.pk in current.team:
-            return
-        kind = AccessEvent.Kind.SUPPORT if current.is_super and experiment.pk not in current.everything() \
-            else AccessEvent.Kind.VIEW
-        core_sealing.log_access(kind, cls.entity_type(), experiment.pk, part=part,
-                                route=getattr(request.resolver_match, 'view_name', ''))
+        sealing.note_reads([experiment.pk], getattr(request.resolver_match, 'view_name', ''), part)
 
     @classmethod
     def after_save(cls, request, experiment, created):
@@ -142,6 +153,8 @@ class ExperimentResource(Resource):
             group_count=Count('groups', filter=live, distinct=True),
             replicate_count=Count('groups__replicates', filter=live & Q(groups__replicates__is_deleted=False),
                                   distinct=True))
+        # The list shows the experiments it finds: a sealed one outside the person's team is a read (review F8).
+        sealing.note_reads(list(objects.values_list('pk', flat=True)[:cls.page_size]), 'experiments:experiment_list')
         return objects, {'view': view, 'views': [(EXPERIMENTS, _('Experiments')), (MINE, _('Mine')),
                                                   (TEMPLATES, _('Templates'))],
                          'sites': sites, 'chosen_site': chosen_site, 'species_list': species,
@@ -500,23 +513,24 @@ class ShareForm(forms.Form):
 
     person = forms.ModelChoiceField(
         label=_('Person'), queryset=None, required=False,
-        help_text=_('Anyone with an account. Someone whose roles do not include Experiments: read opens it once the '
-                    'platform admin gives them such a role (Research collaborator).'))
+        help_text=_('Anyone with an account and a role. Someone whose roles do not include Experiments: read opens it '
+                    'once the platform admin gives them such a role (Research collaborator).'))
     role = forms.ModelChoiceField(label=_('Role'), queryset=Group.objects.order_by('name'), required=False)
     parts = forms.MultipleChoiceField(label=_('Parts'), choices=SharePart.choices, widget=forms.CheckboxSelectMultiple,
-                                      help_text=_('The results and the data bring the design and the systems with them; '
-                                                  'the water brings the systems.'))
+                                      help_text=_('The results bring the data, the design and the systems with them; '
+                                                  'the data the design and the systems; the water the systems.'))
     until = forms.DateField(label=_('Until'), widget=DayInput(),
                             help_text=_('At most two years; renew it when it ends.'))
     reason = forms.CharField(label=_('Reason'), max_length=300)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Any active account: an outside researcher is an ordinary account the platform admin made (no guest accounts,
-        # owner decision of 23.11.2026); they open the experiment once their roles include Experiments: read (the
-        # Research collaborator role, experiments.roles).
-        self.fields['person'].queryset = get_user_model().objects.filter(is_active=True).order_by(
-            'first_name', 'last_name', 'username')
+        # Any active account with a role: an outside researcher is an ordinary account the platform admin made (no guest
+        # accounts, owner decision of 23.11.2026); they open the experiment once their roles include Experiments: read
+        # (the Research collaborator role, experiments.roles). An account with no role (the platform admin's own) is
+        # not offered (review F9).
+        accounts = get_user_model().objects.filter(is_active=True, groups__isnull=False).distinct()
+        self.fields['person'].queryset = accounts.order_by('first_name', 'last_name', 'username')
         self.fields['person'].label_from_instance = person_name
 
     def clean(self):

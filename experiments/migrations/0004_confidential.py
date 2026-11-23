@@ -3,10 +3,11 @@
 on the card a person overseeing its tanks sees), the whole-system bookings with their tagged placements, and the sealed
 cells as a view. Existing experiments become sealed, their rows stay valid (every new column has a default or is empty).
 
-The database holds: a started experiment still changes its audience and approval (the frozen trigger of 0002
-widened, nothing else); a booking's placements are tanks of its system, in its replicate, on its days; a booking is not
-shortened past them and follows the placements' frozen rule; no tank joins or leaves a system booked from today on, and no
-booked system is moved under another; the view `experiment_cells` is the one definition of who is in which cell when."""
+The database holds: a started experiment still changes its audience, approval and on-call phone (the frozen trigger of
+0002 widened, nothing else); a booking's placements are tanks of its system, in its replicate, on its days; a booking is
+not shortened past them and follows the placements' frozen rule; no tank joins or leaves a system booked from today on,
+and no booked system is moved under another; the view `experiment_cells` is the one definition of who is in which cell
+when."""
 from importlib import import_module
 
 import core.ranges
@@ -55,9 +56,9 @@ BEGIN
         RETURN NEW;
     END IF;
     IF (to_jsonb(NEW) - 'status' - 'name' - 'notes' - 'audience' - 'approval_ref' - 'approval_valid_until'
-        - 'version' - 'updated_at' - {USER_COLUMNS})
+        - 'on_call_phone' - 'version' - 'updated_at' - {USER_COLUMNS})
        IS DISTINCT FROM (to_jsonb(OLD) - 'status' - 'name' - 'notes' - 'audience' - 'approval_ref'
-        - 'approval_valid_until' - 'version' - 'updated_at' - {USER_COLUMNS}) THEN
+        - 'approval_valid_until' - 'on_call_phone' - 'version' - 'updated_at' - {USER_COLUMNS}) THEN
         RAISE EXCEPTION 'experiment % has started: its design cannot change', OLD.code USING ERRCODE = 'check_violation';
     END IF;
     RETURN NEW;
@@ -278,6 +279,11 @@ class Migration(migrations.Migration):
             model_name='experiment',
             name='approval_ref',
             field=models.CharField(blank=True, db_default='', default='', max_length=60, verbose_name='Approval reference'),
+        ),
+        migrations.AddField(
+            model_name='experiment',
+            name='on_call_phone',
+            field=models.CharField(blank=True, db_default='', default='', max_length=30, verbose_name='On-call phone'),
         ),
         migrations.AddField(
             model_name='experiment',

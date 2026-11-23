@@ -16,6 +16,7 @@ from datetime import date, timedelta
 
 from django.db.models import Exists, OuterRef, Prefetch, Q
 
+from core import sealing
 from core.platform import correction_window_days
 
 from farm.health import diseases, notices
@@ -137,6 +138,8 @@ def _category(batch):
             PRODUCTION: not species.is_cleaner_fish, ANY: True}
 
 
+@sealing.reads_as_system('the regulatory due list')   # a duty is owed whoever looks (review F6): a sealed tank's
+# notifiable disease is owed too; a row names its kind, its site and the event's diagnosis and day, as the filing does
 def due(today=None):
     """The DueList as of `today` (in Oslo)."""
     today = today or periods.oslo_today()
@@ -393,6 +396,7 @@ def _unexplained(today, existing, rows):
             rows.append(row)
 
 
+@sealing.reads_as_system('the regulatory due list')
 def no_longer_match(today=None):
     """The filed reports, not replaced by a correction, whose records have changed since they were filed. Only the rows a
     report reads are compared (compute.scope), never its figures; a report of a period that closed before the

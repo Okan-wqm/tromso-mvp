@@ -126,8 +126,11 @@ def spans():
     ledger in ONE grouped query. What `in_units`, `between` and `reach` are asked of, so that a reader of the medicine
     withdrawal finds the fish a hold can have reached without a query per unit or per batch, and without loading the
     ledger of a batch no hold can have reached."""
-    rows = (StockMovement.objects.filter(operation__is_deleted=False).order_by().values('unit_id', 'batch_id')
-            .annotate(first=Min('operation__date'), last=Max('operation__date'), fish=Sum('count_delta')))
+    # Who was where, for every unit, as the system: a reader of the withdrawal that missed a stay in a sealed tank
+    # would miss fish a hold reached (core.sealing). It is the reader's, never printed.
+    with sealing.system('the stock fold'):
+        rows = list(StockMovement.objects.filter(operation__is_deleted=False).order_by().values('unit_id', 'batch_id')
+                    .annotate(first=Min('operation__date'), last=Max('operation__date'), fish=Sum('count_delta')))
     return {(row['unit_id'], row['batch_id']): (row['first'], None if row['fish'] > 0 else row['last'])
             for row in rows}
 

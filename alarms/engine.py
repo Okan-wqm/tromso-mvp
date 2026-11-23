@@ -24,7 +24,7 @@ from farm.water import freshness
 from sensors import alarms as sensor_alarms
 
 from . import read, routing, rules as alarm_rules, services, sources
-from .models import Acknowledgement, Alarm, AlarmClearance, Escalation, Notification, Severity, Source
+from .models import Acknowledgement, Alarm, AlarmClearance, Channel, Escalation, Notification, Severity, Source
 from .transports import transport_for
 
 logger = logging.getLogger(__name__)
@@ -81,10 +81,11 @@ def _route(alarms, now, summary, rules):
         while True:
             key = (alarm.pk, level)
             for user, rule in router.recipients(alarm, level):
-                if (user.pk, rule.channel) not in sent[key]:
-                    sent[key].add((user.pk, rule.channel))
+                channel = rule.channel if rule is not None else Channel.PUSH     # a keeper of a sealed cell's fish
+                if (user.pk, channel) not in sent[key]:
+                    sent[key].add((user.pk, channel))
                     first.setdefault(key, now)
-                    queued.append(Notification(alarm=alarm, recipient=user, channel=rule.channel, level=level, rule=rule,
+                    queued.append(Notification(alarm=alarm, recipient=user, channel=channel, level=level, rule=rule,
                                                queued_at=now))
             if key in first and now - first[key] < rules.escalation_after(alarm.severity):
                 break

@@ -74,20 +74,39 @@ class Router:
             return severe
         return found
 
+    def people(self, rule):
+        """The active people a rule names now (its person, or its role's members; on shift only, when it says so)."""
+        people = [rule.user] if rule.user_id else self.members[rule.role_id]
+        if rule.on_shift_only:
+            on_shift = self.on_shift()
+            people = [person for person in people if person.pk in on_shift]
+        return [person for person in people if person.is_active]
+
     def recipients(self, alarm, level):
-        """[(user, rule)] notified of the alarm at `level`, each person once, by username."""
+        """[(user, rule)] notified of the alarm at `level`, each person once, by username. An alarm on a sealed cell
+        goes to the people of the rules who may see it; when no rule names anyone who may, it goes at its first level
+        to whoever keeps those fish: the experiment's lead and the people holding Oversee (review F8; `rule` None)."""
         found = {}
-        for rule in self.reaching(alarm):
+        reaching = self.reaching(alarm)
+        for rule in reaching:
             if rule.level != level:
                 continue
-            people = [rule.user] if rule.user_id else self.members[rule.role_id]
-            if rule.on_shift_only:
-                on_shift = self.on_shift()
-                people = [person for person in people if person.pk in on_shift]
-            for person in people:
-                if person.is_active and person.pk not in found                         and (alarm.pk not in self.sealed or self.sees(person, alarm)):
+            for person in self.people(rule):
+                if person.pk not in found and (alarm.pk not in self.sealed or self.sees(person, alarm)):
                     found[person.pk] = (person, rule)
+        if alarm.pk in self.sealed and not found and level == min((rule.level for rule in reaching), default=0)                 and not any(self.sees(person, alarm) for rule in reaching for person in self.people(rule)):
+            for person in self.keepers(alarm):
+                found.setdefault(person.pk, (person, None))
         return sorted(found.values(), key=lambda pair: pair[0].get_username())
+
+    def keepers(self, alarm):
+        """Who keeps the fish of a sealed alarm's cell: its experiment's live lead and the active Oversee holders, among
+        those who may see the alarm."""
+        provider = sealing.provider()
+        if provider is None or alarm.point_id is None:
+            return []
+        point = alarm.point
+        return [person for person in provider.keepers(point.unit_id, point.system_id) if self.sees(person, alarm)]
 
     def next_level(self, alarm, level):
         """The first level above `level` with a rule that reaches the alarm, or None."""

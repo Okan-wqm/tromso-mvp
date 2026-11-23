@@ -40,6 +40,7 @@ def overview(request):
 def browse(request, name):
     table = shown_table(name)
     structure = table.structure()
+    sealing.note_reads(sealing.work_ids(sealing.narrow(table.model._base_manager.all())), 'core:database_table')
     return render(request, 'core/database/table.html', {
         'table': table, 'counts': table.counts(), 'structure': structure,
         'grid': Grid(table, structure, request.GET),
@@ -71,6 +72,7 @@ def export(request, name):
         query = urlencode([(key, value) for key, value in request.GET.items() if key != 'reason'])
         return redirect(reverse('core:database_table', args=[name]) + (f'?{query}' if query else ''))
     sealing.log_access(AccessEvent.Kind.EXPORT, 'table', table.name, route='core:database_export', reason=reason)
+    sealing.note_reads(sealing.work_ids(sealing.narrow(table.model._base_manager.all())), 'core:database_export')
     response = StreamingHttpResponse(csv_lines(Grid(table, table.structure(), request.GET).export()),
                                      content_type='text/csv; charset=utf-8')
     response['Content-Disposition'] = f'attachment; filename="{table.name}.csv"'

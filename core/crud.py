@@ -362,6 +362,12 @@ class RowList:
         return True
 
     @classmethod
+    def allowed(cls, request, obj):
+        """Whether the person may save this list of the record, beyond editing the record (an experiment's team: its
+        lead alone). The default allows it."""
+        return True
+
+    @classmethod
     def describe(cls, row):
         """One row as the activity log shows it."""
         return str(row)
@@ -962,6 +968,8 @@ class RowListView(ResourceView):
         obj = self.get_object(pk)
         if not rows.applies_to(obj):
             raise Http404
+        if not rows.allowed(request, obj):
+            raise PermissionDenied
         formset = rows.formset(request.POST, instance=obj, prefix=rows.key)
         if not formset.is_valid():
             page = UpdateView.as_page(r, request)

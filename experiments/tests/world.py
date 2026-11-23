@@ -1,12 +1,13 @@
 """World A and world B for the confidentiality tests (experiments/tests/test_confidential.py).
 
-World B is an ordinary farm: a site, a hall, an open tank with fish, its feeding, water, health, lice and a task, an open
-system, a sensor channel. World A is world B plus a sealed experiment X: a running trial whose replicates hold a whole
-system (two tanks) and one more tank, with everything on them. Every text of X and of what lies on its cells carries the
-canary `XQZ`: its name, hypothesis and notes, its factor, level and group, the tanks' and the system's names and codes,
-the batch stocked into them, the notes of their mortality, feeding, water sample, health event, treatment and lice count,
-a task's title, a channel's name. Whoever may not see X must never meet the canary anywhere: in a page, a header, a
-redirect, an export, a chart's data, a choice of a form or the activity log.
+World B is an ordinary farm: a site, a hall, an open tank with fish, its feeding, water, health, lice and a task, an
+open system, a sensor channel. World A is world B plus a sealed experiment X: a running trial whose replicates hold a
+whole system (two tanks, booked whole: experiments.ReplicateSystem) and one more tank, with everything on them. Every
+text of X and of what lies on its cells carries the canary `XQZ`: its name, hypothesis and notes, its factor, level and
+group, the tanks' and the system's names and codes, the batch stocked into them, the notes of their mortality, feeding,
+water sample, health event, treatment and lice count, a task's title, a channel's name. Whoever may not see X must never
+meet the canary anywhere: in a page, a header, a redirect, an export, a chart's data, a choice of a form or the activity
+log.
 
 `build_open(cls)` makes world B and `build_sealed(cls)` adds X; a test that compares the two worlds renders between the
 two calls. The rows are made straight in the database (the pages and services have their own tests), except the stock,
@@ -31,7 +32,9 @@ from farm.tests.test_stock import make_unit
 from sensors.tests import make_channel, make_connection, make_device, make_format
 from tasks.models import Task
 
-from ..models import Experiment, ExperimentGroup, Factor, GroupLevel, Level, Member, Replicate, ReplicateUnit
+from ..models import (
+    Experiment, ExperimentGroup, Factor, GroupLevel, Level, Member, Replicate, ReplicateSystem, ReplicateUnit,
+)
 
 CANARY = 'XQZ'
 # The trial began this many days ago and runs this many days.
@@ -133,9 +136,14 @@ def build_sealed(cls):
     GroupLevel.objects.create(experiment=cls.experiment, group=group, factor=factor, level=level)
     cls.replicates = [Replicate.objects.create(group=group, number=number) for number in (1, 2)]
     last = began + timedelta(days=DURATION)
+    # The whole system booked for the first replicate, its two tanks placed and tagged with the booking.
+    cls.booking = ReplicateSystem.objects.create(replicate=cls.replicates[0], system=cls.sealed_system, from_on=began,
+                                                 until_on=last)
     cls.placements = [
-        ReplicateUnit.objects.create(replicate=cls.replicates[0], unit=cls.sealed_tanks[0], from_on=began, until_on=last),
-        ReplicateUnit.objects.create(replicate=cls.replicates[0], unit=cls.sealed_tanks[1], from_on=began, until_on=last),
+        ReplicateUnit.objects.create(replicate=cls.replicates[0], unit=cls.sealed_tanks[0], from_on=began, until_on=last,
+                                     booking=cls.booking),
+        ReplicateUnit.objects.create(replicate=cls.replicates[0], unit=cls.sealed_tanks[1], from_on=began, until_on=last,
+                                     booking=cls.booking),
         ReplicateUnit.objects.create(replicate=cls.replicates[1], unit=cls.sealed_tanks[2], from_on=began, until_on=last),
     ]
     # Started past the service, as the experiments' own tests do (a draft is built, then it runs).
@@ -176,7 +184,8 @@ def build_sealed(cls):
 
 def sealed_ids(cls):
     """{model label: [pk]} of every record of X and on its cells: what a route is tried with in place of its argument."""
-    rows = [cls.experiment, cls.factor, cls.level, cls.group, *cls.replicates, *cls.placements, *cls.sealed_tanks,
+    rows = [cls.experiment, cls.factor, cls.level, cls.group, *cls.replicates, *cls.placements, cls.booking,
+            *cls.sealed_tanks,
             cls.sealed_system, cls.sealed_batch, cls.feeding, cls.sealed_point, cls.sample, cls.lice, cls.event,
             cls.treatment, cls.task, cls.system_task, cls.sealed_channel, cls.binding,
             *cls.sealed_batch.movements.values_list('operation', flat=True).distinct()]

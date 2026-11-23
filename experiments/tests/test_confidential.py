@@ -202,7 +202,7 @@ class WalkCase(TestCase):
 
     def assertWalkClean(self, user):
         findings = self.walk(user)
-        self.assertEqual(findings[:60], [], f'{len(findings)} findings as {user}')
+        self.assertFalse(findings, f'{len(findings)} findings as {user}:\n' + '\n'.join(findings[:150]))
 
 
 class RouteWalkTests(WalkCase):
@@ -243,4 +243,4 @@ class NonInterferenceTests(TestCase):
         world.build_sealed(self)
         with_x = self.lists(self.researcher)
         differ = sorted(name for name in without if without[name] != with_x.get(name))
-        self.assertEqual(differ, [])
+        self.assertFalse(differ, '\n'.join(differ))

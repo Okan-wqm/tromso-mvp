@@ -195,6 +195,7 @@ class ReadTests(PageTestCase):
     def test_the_list_and_the_read_page_show_the_experiment_to_a_reader(self):
         self.create()
         trial = Experiment.objects.get()
+        Experiment.objects.filter(pk=trial.pk).update(audience='open')      # its lead opened it: a reader reads it
         reader = person('reader', *READER)
         self.client.force_login(reader)
         listing = self.client.get(reverse('experiments:experiment_list'))

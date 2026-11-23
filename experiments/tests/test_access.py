@@ -221,4 +221,9 @@ class DeletePlanTests(AccessCase):
         with sealing.as_viewer(self.staff):
             plan = plan_delete(self.hall)
         self.assertGreater(plan.restricted, 0)
-        self.assertNotIn('XQZ', ' '.join(str(record) for record in plan.cascade + [r for r, _l in plan.detach]))
+        shown = [record for group in plan.deleted_groups() + plan.detached_groups() + plan.unlinked_groups()
+                 for record in group['records']]
+        shown += [label for group in plan.kept_groups() for label in (group['label'], group['count'])]
+        self.assertTrue(shown)
+        self.assertNotIn('XQZ', ' '.join(str(record) for record in shown))
+        self.assertFalse(plan.can_delete)                    # it reaches what they may not see: someone who may does it

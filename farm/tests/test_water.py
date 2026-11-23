@@ -503,10 +503,10 @@ class PointsWaterTests(WaterTestCase):
             count(self.units, narrow(self.units))
             one = count(self.units[:1], narrow(self.units[:1]))
             self.assertEqual(count(self.units[:2], narrow(self.units[:2])), one)
-            # T-03 has no point: one query more, whether its units hold fish now, for every such unit at once
+            # T-03 has no point: two queries more, the clocks and the fish now of every such unit at once
             # (read.pointless_water: a unit with fish and no point is critical, review 2 of fresh-rule, R2)
-            self.assertEqual(count(self.units, narrow(self.units)), one + 1)
-            self.assertEqual(count([*self.units, self.t4], narrow([*self.units, self.t4])), one + 1)
+            self.assertEqual(count(self.units, narrow(self.units)), one + 2)
+            self.assertEqual(count([*self.units, self.t4], narrow([*self.units, self.t4])), one + 2)
 
     def test_the_assumed_salinity_is_one_rule_for_the_calculation_and_the_ammonia(self):
         fresh, sea = Tank.WaterType.FRESHWATER, Tank.WaterType.SALTWATER

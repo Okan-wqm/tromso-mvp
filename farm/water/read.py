@@ -842,6 +842,11 @@ class PointWater:
 
 
 # ---- the fish in a unit on a day ----------------------------------------------------------------------------
+def holds(presence, unit_id, day):
+    """Whether the unit holds fish after the operations of `day` (farm.stock.read.Presence): SpeciesBook.holds."""
+    return any(presence.count_at_end(unit_id, batch_id, day) > 0 for batch_id in presence.batches.get(unit_id, ()))
+
+
 class SpeciesBook:
     """Which species were in which unit on which day, from the live stock lines: the species of the batches
     present that day (farm.stock.read.Presence: fish stocked or harvested that day count)."""
@@ -861,8 +866,7 @@ class SpeciesBook:
         THE rule of "a unit with fish" for its oxygen (owner decision of 2026-11-23; review 2 of the branch, R1): the
         card's and the water pages' judgement (`_silence`), the alarm system's oxygen alarm and the sensors' default
         rules (`with_fish`). The limits judge a day's values for every fish of that day (`on`), harvested ones too."""
-        return any(self.presence.count_at_end(unit_id, batch_id, day) > 0
-                   for batch_id in self.presence.batches.get(unit_id, ()))
+        return holds(self.presence, unit_id, day)
 
 
 # ---- everything a set of points needs, read once ----------------------------------------------------------
@@ -1841,17 +1845,17 @@ def owner_water(owners, now=None):
 def pointless_water(units, now=None):
     """{unit id: PointWater without a point} of units with no point to read their own water at: one that holds fish
     now has no fresh oxygen, so it is critical as any unit with fish whose oxygen has none (`_silence`; review 2 of the
-    branch, R2: it was a grey "no recent data" and only a warning of the alarm system). One query, none without such a
-    unit."""
-    units = list(units)
-    if not units:
+    branch, R2: it was a grey "no recent data" and only a warning of the alarm system). Two queries for all of them,
+    none without such a unit."""
+    ids = [unit.pk for unit in units]
+    if not ids:
         return {}
     moment = now or timezone.now()
-    book = SpeciesBook([unit.pk for unit in units])
+    presence = Presence.of_units(ids)
     found = {}
-    for unit in units:
+    for unit in Tank.objects.filter(pk__in=ids).select_related('production_department__site'):    # their clocks
         found[unit.pk] = water = PointWater(None, for_unit=True)
-        _silence(water, book.holds(unit.pk, local_time(moment, unit).date()), moment)
+        _silence(water, holds(presence, unit.pk, local_time(moment, unit).date()), moment)
     return found
 
 

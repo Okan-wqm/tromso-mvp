@@ -423,3 +423,23 @@ class EntryKey(models.Model):
         entity_id = (cls.objects.filter(key=key, entity_type=model._meta.label_lower)
                      .values_list('entity_id', flat=True).first())
         return None if entity_id is None else model._base_manager.filter(pk=entity_id).first()
+
+
+class Rev(models.Model):
+    """The revision of one (scope, key): moved by the database whenever a tracked row changes (core.rev), read by a
+    stored figure to prove it is still valid. Derived, written by the system, safe to rebuild (`manage.py
+    core_rev_rebuild`)."""
+
+    pk = models.CompositePrimaryKey('scope', 'key')
+    scope = models.CharField(max_length=40)
+    key = models.CharField(max_length=64, db_default='0')
+    rev = models.BigIntegerField(db_default=0)
+    dirty_epoch = models.BigIntegerField(db_default=0)
+    dirty_from = models.DateField(null=True)
+
+    class Meta:
+        db_table = 'core_rev'
+        constraints = [models.CheckConstraint(condition=models.Q(rev__gte=0), name='chk_core_rev_rev')]
+
+    def __str__(self):
+        return f'{self.scope}:{self.key}:{self.rev}'

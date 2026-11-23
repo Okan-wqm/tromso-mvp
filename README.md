@@ -5471,6 +5471,13 @@ What one tab needed and the next ones will too lives in `core/`:
   kind (tampering, a broken client) is refused with a reason on the form, never a server error (F7c).
 - `Output` (`core/widgets.py`): a value the form shows but nobody types (a unit's volume), on a
   disabled field so a posted value is never read.
+- `core/formpayload.py`: a form as the JSON a new page's island draws (`?ui=next`). It is what Django's own renderer is
+  handed for the old page (the bound field's label, help, required, errors; the widget's formatted value, attributes with
+  the server's bounds, options), projected to JSON, so the server stays the only validator and the island posts the same
+  names to the same address. Every widget of the project has a `kind` the island draws; another widget class, or a value
+  that is not plain JSON, is refused, never guessed. Help text built with `format_html` travels as markup, any other as
+  text. `core/tests_formpayload.py` builds every tab's form, new and sent empty, draws each field with the old field
+  template and holds the payload to it: the same controls posted with the same values, the same label, help and errors.
 - `core/query.py`: the numbers and years a page reads from its address (`?page=`, `?before=`, `?year=`), one rule for
   every page (F-006, F-176, F-120): a number in ASCII digits within its bounds, a year of the calendar `core.dates`
   reads; anything else is taken as not given and the page shows its default, as for a stale link, never a server error.

@@ -127,7 +127,7 @@ class BurstTests(FloodCase):
         self.assertEqual({first.recipient for first, _flood in RecordingTransport.floods}, {self.operator, self.manager})
 
     def test_a_snoozed_alarm_waits_outside_its_flood(self):
-        made = self.alarms(3)
+        made = self.alarms(3, severity='warning')            # (the alarm system's own critical is never snoozed)
         snoozer = get_user_model().objects.create_user('snoozer', 'snoozer@example.com', 'x')
         services.shelve(made[0].alarm, snoozer, 30, 'probe cleaned', at=self.now)
         found = self.send(1)

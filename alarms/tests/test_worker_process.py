@@ -112,7 +112,7 @@ class ProcessTests(TransactionTestCase):
         with connection.cursor() as cursor:
             cursor.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE application_name = "
                            "'alarm-worker' AND datname = current_database()")
-            self.assertEqual(cursor.rowcount, 1)
+            self.assertGreaterEqual(cursor.rowcount, 1)                # the loop's session and the sender's
         cut = AlarmWorkerStatus.objects.get().last_pass_at
         until(lambda: AlarmWorkerStatus.objects.get().last_pass_at > cut and self.checked(process.pid), 20,
               'a pass after the session was cut')

@@ -1,7 +1,7 @@
 """The default "No fresh value" rule (owner decision of 2026-11-20; the second review of the water-chemistry audit,
 question 3): a probe of a quantity the water limits judge that stops sending is warned of, whatever its pH scale.
 
-- Seeded by sensors 0014 for every quantity a limit can be set on (quantities.JUDGED_CODES, derived from
+- Seeded by sensors 0015 for every quantity a limit can be set on (quantities.JUDGED_CODES, derived from
   farm/water/parameters.py LIMITED), one per quantity, on every channel of it: a channel made later, by any door, is
   covered from its first pass.
 - It holds exactly when the place's value is no longer fresh, at the channel's own freshness (heartbeat times fresh
@@ -93,7 +93,7 @@ class SeededTests(FreshRuleCase):
     def test_the_migration_seeds_the_quantities_as_the_code_lists_them(self):
         """A migration never reads live code; this holds its list to the code's, so a quantity a limit can judge that
         is added later fails here until its migration seeds its rule."""
-        migration = importlib.import_module('sensors.migrations.0014_default_no_data_rules')
+        migration = importlib.import_module('sensors.migrations.0015_default_no_data_rules')
         self.assertEqual(migration.JUDGED, quantities.JUDGED_CODES)
         self.assertEqual(migration.CRITICAL, list(quantities.DEFAULT_CRITICAL))
 
@@ -450,7 +450,7 @@ class PageTests(FreshRuleCase):
 
 
 class MigrationTests(TransactionTestCase):
-    """sensors 0014 forward, back and forward again: going back removes the rules it made, so a migration further back
+    """sensors 0015 forward, back and forward again: going back removes the rules it made, so a migration further back
     that narrows the quantities a rule may name finds none (alarms/tests/test_migration_reverse.py goes back to sensors
     0007), keeps one with events or changed by a person (logged), and going forward again marks a kept one the default."""
     serialized_rollback = True
@@ -468,7 +468,7 @@ class MigrationTests(TransactionTestCase):
         AlarmEvent.objects.create(rule_id=ph, channel_no=1, opened_at=timezone.now())
         AlarmRule.objects.filter(pk=default('tan_mg_l').pk).update(severity='critical', version=2)
         AlarmRule.objects.filter(pk=default('oxygen_mg_l').pk).update(severity='warning', version=2)   # the farm's
-        self.migrate(('sensors', '0013_channel_ph_scale'))
+        self.migrate(('sensors', '0014_rev_triggers'))
         with connection.cursor() as cursor:
             cursor.execute('SELECT id, quantity, severity FROM sensors_alarm_rule ORDER BY quantity')
             kept = cursor.fetchall()
@@ -476,9 +476,9 @@ class MigrationTests(TransactionTestCase):
                          [('oxygen_mg_l', 'warning'), ('ph', 'warning'), ('tan_mg_l', 'critical')])
         notes = AuditLog.objects.filter(entity_type='alarm rule', user_name='system').values_list('changes', flat=True)
         self.assertEqual(sorted(note['Note'][1] for note in notes),
-                         ['sensors 0014 reversed: kept as an ordinary "No fresh value" rule, changed by a person since.',
-                          'sensors 0014 reversed: kept as an ordinary "No fresh value" rule, changed by a person since.',
-                          'sensors 0014 reversed: kept as an ordinary "No fresh value" rule, its alarms are history.'])
+                         ['sensors 0015 reversed: kept as an ordinary "No fresh value" rule, changed by a person since.',
+                          'sensors 0015 reversed: kept as an ordinary "No fresh value" rule, changed by a person since.',
+                          'sensors 0015 reversed: kept as an ordinary "No fresh value" rule, its alarms are history.'])
         self.migrate(None)
         self.assertEqual(sorted(rule.quantity for rule in AlarmRule.objects.filter(is_default=True)),
                          sorted(quantities.JUDGED_CODES))
@@ -494,7 +494,7 @@ class MigrationTests(TransactionTestCase):
         self.assertEqual((raised.changes['Severity'], raised.changes['Default rule']), (['Warning', 'Critical'], ['No', 'Yes']))
         self.assertEqual(AlarmRule.objects.count(), len(quantities.JUDGED_CODES))
         # Back again: the rule it raised gets its own severity back, said in the log.
-        self.migrate(('sensors', '0013_channel_ph_scale'))
+        self.migrate(('sensors', '0014_rev_triggers'))
         with connection.cursor() as cursor:
             cursor.execute("SELECT severity FROM sensors_alarm_rule WHERE quantity = 'oxygen_mg_l'")
             self.assertEqual(cursor.fetchall(), [('warning',)])

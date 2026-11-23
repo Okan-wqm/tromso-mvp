@@ -65,7 +65,7 @@ class RefusedSensorPhCase(SeaTestCase):
     def opened(self):
         """The open alarms of the water limits and the alarm system. The sensor rules' are left out: a channel of the
         fixture that never sends (the temperature here) raises its default "No fresh value" warning (owner decision of
-        2026-11-20, sensors 0014), which StoppedProbeTests and sensors/tests/test_fresh_rule.py hold."""
+        2026-11-20, sensors 0015), which StoppedProbeTests and sensors/tests/test_fresh_rule.py hold."""
         return sorted((alarm.source, alarm.severity, alarm.parameter)
                       for alarm in self.open().exclude(source=SENSOR_RULE))
 

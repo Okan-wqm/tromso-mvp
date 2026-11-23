@@ -95,7 +95,7 @@ class BandPageTests(MonitoringCase):
         self.limit('temperature_c', warning_high=15, critical_high=18)
 
     def test_the_band_is_one_keyed_child_before_the_cards_on_the_page_and_in_the_fragment(self):
-        for url in (PAGE, CARDS):
+        for url in (f'{PAGE}?full=1', CARDS):
             html = self.client.get(url).content.decode()
             self.assertEqual(re.findall(r'data-key="([^"]+)"', html)[:1], ['band'])
             self.assertEqual(html.count('data-key="band"'), 1)
@@ -237,7 +237,7 @@ class BandReviewTests(MonitoringCase):
         (link,) = [each for each in more.walk() if each.tag == 'a']
         wanted = '%2C'.join(sorted(str(unit.pk) for unit in units[3:]))
         self.assertEqual(link.attrs['href'], f'{PAGE}?units={wanted}')
-        self.assertEqual(self.client.get(link.attrs['href']).content.decode().count('data-key="card:'), 2)
+        self.assertEqual(self.client.get(f"{link.attrs['href']}&full=1").content.decode().count('data-key="card:'), 2)
 
     def test_no_chip_and_no_reason_with_a_bound_can_be_cut(self):
         self.sample(self.t2, hours=30, oxygen_mg_l='5')                # critical and old: the longest chip there is

@@ -111,7 +111,7 @@ class ViewTests(SmallCase):
         self.assertEqual((text(link), link.attrs['id']), ('Detailed', f'flip-{self.t2.pk}'))
         self.assertEqual(link.attrs['href'], f'{PAGE}?flip={self.t2.pk}&mode=small')
         self.assertEqual(link.attrs['data-poll-url'], f'{CARDS}?flip={self.t2.pk}&mode=small')
-        flipped = self.client.get(link.attrs['href']).content.decode()
+        flipped = self.client.get(f"{link.attrs['href']}&full=1").content.decode()
         whole = card_of(flipped, self.t2)
         self.assertEqual(whole.attrs['data-template'], str(builtin.DETAILED))
         self.assertNotIn('is-fit', whole.classes)

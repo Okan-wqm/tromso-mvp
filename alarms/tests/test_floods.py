@@ -159,10 +159,10 @@ class PageTests(FloodCase):
         desk.groups.add(role('Alarm desk', 'view_alarm'))
         self.client.force_login(desk)
         made = self.alarms(4)
-        self.alarms(2, seconds=600)                                            # far apart: not the same flood
-        self.assertContains(self.client.get(reverse('alarms:alarm_list')), 'Alarm flood: 4 open Critical alarms')
         with override_settings(ALARM_TRANSPORTS=RECORDING):
             self.send()
+        self.alarms(2, seconds=600)                                            # far apart: not the same flood
+        self.assertContains(self.client.get(reverse('alarms:alarm_list')), 'Alarm flood: 4 open Critical alarms')
         self.assertContains(self.client.get(reverse('alarms:alarm_detail', args=[made[1].alarm_id])),
                             'in a flood message of 4 alarms')
         self.assertEqual([flood.size for flood in floods.open_floods(alarm_rules.current())], [4])

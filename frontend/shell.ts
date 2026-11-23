@@ -81,7 +81,8 @@ for (const menu of menus) {
   menu.toggle.addEventListener('click', (event) => {
     event.stopPropagation();
     closeMenus(menu);
-    setMenuOpen(menu, menu.panel.hidden);
+    // `hidden` reads as boolean | "until-found" (TypeScript 7's DOM types); either hidden form opens the menu.
+    setMenuOpen(menu, menu.panel.hidden !== false);
   });
 }
 document.addEventListener('click', (event) => {

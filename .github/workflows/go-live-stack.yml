@@ -90,6 +90,8 @@ jobs:
         run: bash deploy/ci/stack.sh up
       - name: Database roles
         run: bash deploy/ci/stack.sh roles
+      - name: Network reach between the services
+        run: bash deploy/ci/stack.sh network
       - name: Synthetic data
         run: bash deploy/ci/stack.sh data
       - name: HTTPS smoke test and crawl

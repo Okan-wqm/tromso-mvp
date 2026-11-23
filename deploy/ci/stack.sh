@@ -105,6 +105,42 @@ roles() {
   COMPOSE="${DC[*]}" sh deploy/scripts/check-roles.sh
 }
 
+network() {
+  say "who reaches whom: a probe in each service's own network namespace (a throwaway container sharing it)"
+  local failures=0
+  probe() {  # probe SERVICE HOST PORT open|closed
+    local got
+    got=$(docker run --rm --network "container:farm-ci-$1-1" --entrypoint python balik-web:ci -c '
+import socket, sys
+try:
+    socket.create_connection((sys.argv[1], int(sys.argv[2])), timeout=5).close()
+    print("open")
+except OSError as error:
+    print("closed", type(error).__name__)' "$2" "$3" 2>&1)
+    if [ "${got%% *}" = "$4" ]; then echo "ok    $1 -> $2:$3 $got"; else echo "FAIL  $1 -> $2:$3 $got (expected $4)"; failures=$((failures + 1)); fi
+  }
+  probe web db 5432 open
+  probe web ingest 8080 closed
+  probe web mosquitto 1883 closed
+  probe jobs db 5432 open
+  probe jobs ingest 8080 closed
+  probe jobs 1.1.1.1 443 closed
+  probe proxy web 8000 open
+  probe proxy db 5432 closed
+  probe proxy ingest 8080 closed
+  probe proxy mosquitto 1883 closed
+  probe mosquitto db 5432 closed
+  probe mosquitto web 8000 closed
+  probe ingest mosquitto 1883 open
+  probe ingest db 5432 open
+  probe ingest web 8000 closed
+  probe ingest 1.1.1.1 443 closed
+  probe backup db 5432 open
+  probe backup mosquitto 1883 closed
+  [ "$failures" = 0 ] || { echo "network: $failures probe(s) failed"; exit 1; }
+  echo "network: every probe as expected"
+}
+
 data() {
   say "the first admin (createsuperuser, as the app role)"
   "${DC[@]}" run --rm -T --no-deps -e DJANGO_SUPERUSER_PASSWORD="$(cat "$ADMIN_PASSWORD_FILE")" web \

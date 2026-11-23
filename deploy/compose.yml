@@ -110,6 +110,9 @@ services:
       - wal-archive:/wal-archive
     shm_size: 512m
     security_opt: ["no-new-privileges:true"]
+    # the entrypoint makes the data folder the server's and drops to its user; the server needs nothing more
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETGID, SETUID]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d \"$${POSTGRES_DB}\" -h 127.0.0.1"]
       interval: 10s
@@ -298,7 +301,8 @@ services:
           memory: 1g
           cpus: "1"
     logging: *logging
-    networks: [broker]
+    # broker: to the ingest only (internal); mqtt-edge: where its TLS port is published from
+    networks: [broker, mqtt-edge]
 
   ingest:
     image: ${INGEST_IMAGE:-balik-ingest:local}
@@ -307,6 +311,8 @@ services:
     restart: unless-stopped
     environment:
       INGEST_DB: host=db port=5432 dbname=${DB_NAME:-balik} user=sensors_ingest
+      # /healthz and /decode on the loopback only: nothing in the stack calls them but the container's own health check
+      INGEST_HTTP: 127.0.0.1:8080
       RUST_LOG: ${INGEST_LOG:-info}
     secrets:
       - source: db_ingest_password
@@ -315,7 +321,6 @@ services:
     read_only: true
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
-    expose: ["8080"]
     depends_on:
       release:
         condition: service_completed_successfully
@@ -407,6 +412,10 @@ services:
       - backups:/backups
       - media:/srv/media
     restart: "no"
+    # run as postgres; as root (-u root) it may only hand restored files to their owners
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER]
     depends_on:
       db:
         condition: service_healthy
@@ -424,6 +433,7 @@ services:
       - ${SECRETS_DIR:-./secrets}/cloudflared.env
     read_only: true
     security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
     depends_on:
       proxy:
         condition: service_healthy
@@ -445,8 +455,11 @@ networks:
     ipam:
       config:
         - subnet: ${EDGE_SUBNET:-172.31.250.0/24}
-  # The broker and the ingest: the broker's port is published from it.
-  broker: {}
+  # The broker and the ingest, and nothing else: no way out.
+  broker:
+    internal: true
+  # The broker's TLS port for the field devices is published from this network (an internal one cannot publish).
+  mqtt-edge: {}
   # Out to the backup repository (and, when it lands, the alarm worker's notifications).
   egress: {}
 

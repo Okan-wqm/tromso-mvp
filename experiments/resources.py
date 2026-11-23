@@ -130,8 +130,9 @@ class ExperimentResource(Resource):
         objects = objects.filter(is_template=view == TEMPLATES)
         if view == MINE:
             objects = objects.filter(members__user=request.user)       # one row a person: no duplicates
-        sites = Site.objects.filter(experiments__is_deleted=False).distinct().order_by('name')
-        species = Species.objects.filter(experiments__is_deleted=False).distinct().order_by('common_name')
+        # The choices are read through the experiments the person may see (core.sealing), never through a join.
+        sites = Site.objects.filter(pk__in=Experiment.objects.values('site')).order_by('name')
+        species = Species.objects.filter(pk__in=Experiment.objects.values('species')).order_by('common_name')
         objects, chosen_site = filter_by(request, objects, 'site', sites, 'site_id')
         objects, chosen_species = filter_by(request, objects, 'species', species, 'species_id')
         objects, chosen_status = filter_by(request, objects, 'status', Status.choices, 'status')

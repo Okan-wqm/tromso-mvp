@@ -52,7 +52,7 @@ class HealthEventResource(Resource):
 
     @classmethod
     def filter_list(cls, request, objects):
-        sites = Site.objects.filter(health_events__isnull=False).distinct().order_by('name')
+        sites = Site.objects.filter(pk__in=HealthEvent.objects.values('site')).order_by('name')   # seen (core.sealing)
         objects, chosen_site = filter_by(request, objects, 'site', sites, 'site_id')
         objects, chosen_kind = filter_by(request, objects, 'kind', HealthEvent.Kind.choices, 'kind')
         states = [(OPEN, _('Open')), (CLOSED, _('Closed')), (NOTIFIABLE, _('Notifiable diagnosis'))]

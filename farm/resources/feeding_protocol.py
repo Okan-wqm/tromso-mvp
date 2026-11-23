@@ -193,11 +193,12 @@ class ProtocolAssignmentResource(Resource):
     @classmethod
     def filter_list(cls, request, objects):
         today = local_today()
-        sites = Site.objects.filter(production_departments__tanks__protocol_assignments__is_deleted=False).distinct()
+        live = ProtocolAssignment.objects.filter(is_deleted=False)      # those the person may see (core.sealing)
+        sites = Site.objects.filter(pk__in=live.values('unit__production_department__site'))
         objects, chosen_site = filter_by(request, objects, 'site', sites, 'unit__production_department__site')
-        units = Tank.all_objects.filter(protocol_assignments__is_deleted=False).distinct().order_by('code')
+        units = Tank.all_objects.filter(pk__in=live.values('unit')).order_by('code')
         objects, chosen_unit = filter_by(request, objects, 'unit', units, 'unit_id')
-        batches = Batch.all_objects.filter(protocol_assignments__is_deleted=False).distinct().order_by('-code')
+        batches = Batch.all_objects.filter(pk__in=live.values('batch')).order_by('-code')
         objects, chosen_batch = filter_by(request, objects, 'batch', batches, 'batch_id')
         protocol_list = FeedingProtocol.objects.filter(assignments__is_deleted=False).distinct().order_by('name')
         objects, chosen_protocol = filter_by(request, objects, 'protocol', protocol_list, 'protocol_id')

@@ -79,9 +79,11 @@ def _filtered(params, request):
         params['voided'] = ''
         records = records.filter(is_deleted=False)
     choices = {
-        'site': Site.objects.filter(production_departments__tanks__feedings__isnull=False).distinct().order_by('name'),
-        'unit': Tank.all_objects.filter(feedings__isnull=False).distinct().order_by('code'),
-        'feed': Feed.all_objects.filter(feedings__isnull=False).distinct().order_by('name'),
+        # Through the feedings the person may see (core.sealing), never a join that reaches a sealed one.
+        'site': Site.objects.filter(pk__in=FeedingRecord.objects.values('unit__production_department__site'))
+        .order_by('name'),
+        'unit': Tank.all_objects.filter(pk__in=FeedingRecord.objects.values('unit')).order_by('code'),
+        'feed': Feed.all_objects.filter(pk__in=FeedingRecord.objects.values('feed')).order_by('name'),
         'batch': Batch.objects.order_by('-input_date', '-code'),
     }
     for key, lookup in (('site', 'unit__production_department__site'), ('unit', 'unit'), ('feed', 'feed')):

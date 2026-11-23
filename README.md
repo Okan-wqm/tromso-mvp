@@ -4352,7 +4352,7 @@ production people in Production, with the same permission.
   number of queries for few and many people) on the Team list, Departments, the week, the overview, the chart, the board and the leave
   list; and the migrations back to nothing and forward again.
 
-## Alarms (Company › Alarms: Alarms `/alarms/`, Alarm recipients `/alarms/recipients/`, Alarm severity rules `/alarms/severity-rules/`, Alarm deadbands `/alarms/deadbands/`)
+## Alarms (Company › Alarms: Alarms `/alarms/`, Alarm snoozes `/alarms/snoozes/`, Alarm recipients `/alarms/recipients/`, Alarm severity rules `/alarms/severity-rules/`, Alarm deadbands `/alarms/deadbands/`)
 
 The owner's answer (2026-11-06, F-091): alarms reach everyone's phone as push notifications through the coming mobile app
 (not e-mail: it gets too little attention), and every alarm, every notification and every acknowledgement (who, when,
@@ -4381,7 +4381,9 @@ from which device, how late) is logged. The server side is built; the push trans
   statement, so a subject never has two open alarms (defect 6). A warning is not notified while its critical is open.
 - **The rules are the user's reference data** (owner, alarm plan §7c): per severity the on-delay, the off-delay, the
   escalation time and the delivery attempts (Alarm severity rules, one row each: critical 0 s, 30 s, 5 min, 5; warning 30 s,
-  30 s, 30 min, 5), per parameter the deadband (Alarm deadbands: dissolved oxygen 0.2 mg/L and 2 %, temperature 0.3 °C, pH
+  30 s, 30 min, 5), the time between two attempts (critical 30 s, warning 120 s; `alarms` 0016), the longest snooze
+  (critical 240 min, warning 720 min, owner decision Q5; `alarms` 0017; bounded at 480 and 1440) and a flood (3 alarms of
+  one kind within 120 s, both severities; `alarms` 0018), per parameter the deadband (Alarm deadbands: dissolved oxygen 0.2 mg/L and 2 %, temperature 0.3 °C, pH
   0.05, CO₂ 1 mg/L, TAN 0.05, NH₃-N 0.002, NO₂-N 0.05 mg/L, salinity 0.5 ‰). These are the owner's defaults (§7a),
   seeded once by `alarms` 0002; from then on they are rows edited on their tabs by the alarm admin's rights, bounded by
   database checks, logged, read once per pass (`alarms/rules.py`): a change takes effect on the next pass. The bounds are
@@ -4459,8 +4461,28 @@ from which device, how late) is logged. The server side is built; the push trans
   never escalated.
 - **The outbox**: one notification per alarm, person, channel and level (push only; channels are pluggable). A transport
   per channel is named in `settings.ALARM_TRANSPORTS` (`alarms/transports.py`, an interface with a test double); none is
-  connected, so nothing is sent anywhere, every notification waits, and the pages say so. A failing transport is tried
-  again up to its severity's delivery attempts.
+  connected, so nothing is sent anywhere, every notification waits, and the pages say so. A pass only queues; the
+  worker's sender thread goes through the outbox every tick (`alarms/outbox.py`), outside any pass, transaction or
+  lock, so a transport that is slow or down never delays an alarm: critical first, then the oldest; a failed attempt is
+  tried again after its severity's retry time, up to its delivery attempts, then the notification is failed and its
+  alarm's page says so; each send gets `send_timeout` seconds (no answer or a raise is a failed attempt). Never lost: the
+  outbox is rows, so a restart sends what was not sent; a sender that died after the transport took one and before its
+  attempt was written sends it again (at least once; the notification's id is the push service's collapse key), and a
+  notification is never written sent twice (a unique constraint). Two senders never send one at once (a claim lock, then
+  a second look). A round that fails (the outbox itself unreadable) is the alarm system's step "send": a critical alarm.
+- **Snooze** (ISA-18.2 shelving; owner decision Q5): who holds Alarm snoozes: Create snoozes an open alarm from its page
+  for 1 to its severity's longest snooze, saying why; one at a time, ended early from the same page. While it lasts the
+  alarm is still raised, kept, listed and cleared; nobody new is notified, what was queued waits, and it is not
+  escalated. Once it ends (its time out, also while the worker was down, or ended early) notification goes on and the
+  escalation time counts again from the end. Snoozes are append-only (`alarm_shelves`, `alarm_shelve_ends`), logged
+  (critical for a critical alarm) and listed on Alarm snoozes; the Alarms list says "Snoozed until".
+- **Alarm floods** (ISA-18.2; the owner's burst requirement; `alarms/floods.py`): the kind of an alarm is its site, its
+  severity and what it is about (a water quantity, the oxygen in mg/L and % one; a sensor rule; a check of the alarm
+  system). In a round of the outbox, the due notifications of one person, channel and kind go out as one flood message
+  when, with the ones of that kind sent to them within the severity's flood window, they reach its flood count; the
+  ones within the window after a flood message are covered by it (outcome "grouped", never sent on their own). Grouping
+  is the outbox's only: every alarm is raised in its own pass, kept, acknowledged and escalated on its own. The Alarms
+  page names a flood of open alarms above the list; an alarm's history says "in a flood message of N alarms".
 - **Acknowledgement**: who, when, from which device and app ('console' from these pages, the app's name later), the
   notification answered; once per person; the delay is computed from the alarm's opening. Who holds Alarms: Edit may
   acknowledge, and so may anyone the alarm was sent to. The sensors' Alarm events page acknowledges through the same
@@ -4468,12 +4490,50 @@ from which device, how late) is logged. The server side is built; the push trans
 - **Append-only**: alarms, clearances, notifications, delivery attempts, escalations and acknowledgements are never changed
   or deleted (a database trigger, as for the activity log), and each is written with its activity-log entry (critical for
   a critical alarm). The Alarms page lists them, open first; an alarm's page shows its whole history in time order.
-- **The loop**: `manage.py run_alarms [--loop SECONDS]` (`alarms/engine.py`) checks the sensor rules and the water limits,
-  queues, escalates and hands what is queued to the connected transports. Each step (sensor rules, sensor events, water,
-  device clocks, notify, send, and the supervision last) runs in its own transaction under one advisory lock, so two loops never queue or send twice and a failing
-  step rolls back alone, logged and said in the pass's summary; a failed pass is logged and the loop goes on (defect 5).
-  The writes are set-based and the routing is read once per pass (`alarms/routing.py` `Router`): a burst of alarms costs
-  the queries one costs (defect 7). Deployment runs it instead of `check_sensors` (the sensors' check alone).
+- **The pass** (`alarms/engine.py`) checks the sensor rules and the water limits, queues and escalates. Each step
+  (sensor rules, sensor events, water, device clocks, notify, and the supervision last) runs in its own transaction under
+  one advisory lock, so two passes never queue twice and a failing step rolls back alone, logged and said in the pass's
+  summary (defect 5). The writes are set-based and the routing is read once per pass (`alarms/routing.py` `Router`): a
+  burst of alarms costs the queries one costs (defect 7). `manage.py run_alarms` runs one pass and one round through the
+  outbox, for an operator.
+- **The alarm worker** (`manage.py run_alarm_worker`, `alarms/worker.py`; the compose service `alarms`, profile `alarms`:
+  `docker compose --profile alarms up -d`) keeps the alarms checked, a pass at a time, for as long as it runs:
+  - **within 10 s of a value's commit**: every tick (`ALARM_WORKER_TICK`, 1 s) it looks at what an alarm reads
+    (`alarms/changes.py`: the channel states' transaction ids, which every ingest commit moves, and the activity log's
+    revision, which every record written through the platform moves) and passes at once when it moved; at least every
+    sweep (`ALARM_WORKER_SWEEP`, 15 s) for what time alone moves (a value going stale, the delays, escalation). No
+    LISTEN/NOTIFY: a stalled listener makes the ingest's commits fail (live-arch ROUND2-F), and a look costs a few
+    milliseconds. The alarms never read a precomputed water store (live-arch stage 3);
+  - **one active per database**: a session advisory lock; a second worker waits as a hot standby and takes over within a
+    tick of the first one's session ending (its session's TCP keepalives end a dead worker's session within two thirds
+    of `stale_after`); only the active one sends;
+  - **its row** (`alarm_worker_status`, `alarms` 0015): running or stopped, its last pass and last good pass on the
+    database's clock, how long the pass took, the failed steps, the outbox's waiting notifications and the oldest;
+  - **what it survives and when it ends itself**: the database away, tried again after the tick doubled up to
+    `ALARM_WORKER_BACKOFF_MAX`, and exit 1 after `ALARM_WORKER_DB_DOWN_EXIT` (60 s); passes failing whole, exit 1 after
+    `ALARM_WORKER_MAX_FAILURES` (5); a pass running longer than `ALARM_WORKER_HANG_EXIT` (120 s), its watchdog exits 1; its
+    statements bounded (`statement_timeout`, `lock_timeout`). Docker starts it again (`restart: unless-stopped`); Docker
+    does not restart an unhealthy container, which is why the worker ends itself. SIGTERM: the pass under way finishes,
+    the row says stopped, exit 0. Its intervals are counted on the monotonic clock: a server clock that jumps neither
+    stops nor hurries them;
+  - its timings are the deployment's (`settings.ALARM_WORKER`, each from the environment, refused at start when they
+    make no sense), not the farm's rules.
+- **The dead man: the farm is told when the worker stops** (owner decision of 2026-11-15, item H; `alarms/watch.py`, one
+  query). The Alarms pages, the water page, the monitoring wall and the Sensors overview say "The alarms are NOT being
+  checked since hh:mm" (no worker has ever run, it stopped, no pass for longer than its `stale_after` of 45 s, or its
+  steps fail), and nothing while they are; the water page says when they were last checked. `manage.py
+  alarm_worker_health` (the compose healthcheck) says the same with its exit code. A worker taking over after such a
+  stretch raises a critical alarm of the alarm system naming it ("The alarms were not checked from … to …"), notified
+  like any other and cleared after its off-delay. Off the server (go-live): with `ALARM_DEADMAN_URL` (https) the worker
+  asks that address after each good pass, at most every `ALARM_DEADMAN_EVERY` seconds, on a thread a hang cannot hold;
+  a heartbeat service on another network calls the on-call phone when the asks stop (owner decision Q6: a commercial
+  one; none is chosen yet, so it is off).
+- **The server is not a safety layer** (alarm plan §5). The platform's alarms tell people; they do not keep fish alive.
+  A server, a network link, a database or a phone can fail silently and at the worst moment, and push delivery has no
+  guaranteed delay. Every tank or system with live fish must have a local, hard-wired low-oxygen alarm (a DO controller
+  or PLC with its own setpoint, a siren or light on site, a relay that starts the oxygen backup) that works with the
+  server, the network and the IT power all down. The 10 s is from a value's commit to an open alarm on the server; it
+  says nothing about when a person is reached.
 
 ## Platform settings (Company › Administration, `/administration/platform-settings/`)
 
@@ -4523,7 +4583,7 @@ only one who manages roles and users; everyone else gets exactly what their role
   (read the page, a report and its exports; create = start a report, a notice or a correction; edit = fill in a draft and
   record it as filed; delete = discard a draft), Messages (read =
   use Messages, create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit
-  also reviews an entry), Employees (read, create, edit, All production and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule (and Crew), Attendance (read = Today & attendance and the Attendance page, create = enter presence by hand, edit = correct, delete = void), Leave requests (read, create, edit = also approves, rejects and cancels), Leave types, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit), Alarms (read, edit = acknowledge), Alarm recipients (read, create, edit, delete), Alarm severity rules (read, edit), Alarm deadbands (read, create, edit, delete),
+  also reviews an entry), Employees (read, create, edit, All production and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule (and Crew), Attendance (read = Today & attendance and the Attendance page, create = enter presence by hand, edit = correct, delete = void), Leave requests (read, create, edit = also approves, rejects and cancels), Leave types, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit), Alarms (read, edit = acknowledge), Alarm snoozes (read, create = snooze an alarm and end a snooze), Alarm recipients (read, create, edit, delete), Alarm severity rules (read, edit), Alarm deadbands (read, create, edit, delete),
   Platform settings (read, edit: the platform owner's right), Opening balances (read; registering one is the platform owner's
   right) and Activity log (read).
   A new tab appears in the matrix by
@@ -5770,7 +5830,7 @@ runs the server:
 | `core/codes.py` | The next generated code of a kind of record (a batch's, an experiment's), under an advisory lock |
 | `core/schema.py` | Fields described by a schema (a type's specifications): the form fields and the check of stored values |
 | `farm/equipment_types.py` | The equipment type catalogue, written into the database by migrations |
-| `alarms/` | Alarms: the append-only rows (`models.py`), what raises them (`sources.py`), who is notified (`routing.py`), the write path (`services.py`), the loop (`engine.py`, `manage.py run_alarms`), the transports (`transports.py`), the pages (`views.py`) |
+| `alarms/` | Alarms: the append-only rows (`models.py`), what raises them (`sources.py`), who is notified (`routing.py`), the write path (`services.py`), the pass (`engine.py`), the worker (`worker.py`, `manage.py run_alarm_worker`) with its look at what changed (`changes.py`), the outbox's delivery (`outbox.py`) and floods (`floods.py`), whether the alarms are checked (`watch.py`, `{% alarm_watch %}`), the transports (`transports.py`), the pages (`views.py`) |
 | `core/platform.py` | The platform owner's settings as the code reads them: the correction window and second approval |
 | `farm/models/stock.py`, `farm/stock/` | The stock ledger: batches, operations and their lines; the fold (`fold.py`), reading it (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_stock`), the Production units page and dialogs (`views.py`, `farm/forms/stock.py`, `farm/templatetags/stock.py`) |
 | `farm/models/feeding.py`, `farm/feeding/` | The feeding records: the walk of the feed along the stock's timeline (`fold.py`), reading it for the pages, FCR and the feed rate (`read.py`), the one write path (`services.py`), the Meal board, Records and the dialogs (`views.py`, `farm/forms/feeding.py`, `farm/templatetags/feeding.py`); the farm's dates shared with the stock (`farm/stock/dates.py`) |

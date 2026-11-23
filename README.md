@@ -824,6 +824,11 @@ worked out with its reason, an open health event); ok; empty. Word, shape and re
 (`Reading.judged` beside `status`, farm/water/read.py): an old critical nitrite keeps the card critical ("Nitrite: Critical, no
 recent data, 8 days old") and marks the article `data-stale`, so the announcer says it ("T-01 is now Critical, no recent data"; it takes the order of the states from the page, `data-states`,
 never from a list of its own);
+the same for a probe that stopped, whatever its pH scale (owner decision of 2026-11-20): a TRIS probe's last pH is put on
+the NBS scale at its own moment and says "pH (NBS scale): Critical, no recent data" on the Small and Big cards, the wall,
+the pane and the band's chip (one chip with an NBS probe's tank past the same bound), never "cannot be evaluated"; its
+silence itself is the alarm of its quantity's default "No fresh value" rule (Sensors; critical for the oxygen), which is
+on Company › Alarms, not on the card (monitoring/tests/test_stopped_probe.py);
 a card that falls to no recent data from any state is said too, and the grid's own notices (not updated, signed out, updated
 again) are said in the assertive region. Reference data › Water limits lists **Fish with no limit**: per species and water type
 kept today, the parameters no row judges (`water.read.missing_limits`). The value-against-limits bar draws each stretch as

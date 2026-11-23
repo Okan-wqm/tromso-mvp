@@ -7,7 +7,9 @@
 // (F-244). At most one announcement per region in a window: what comes meanwhile is held, the latest goes out when the
 // window has passed. The grid's merge (frontend/poll.ts) tells what it replaced with a `poll:merged` event; the state is
 // the article's data-state. The grid's own notices (data-poll-state: not updated, gone, live again) are said too, in the
-// assertive region (F-045).
+// assertive region (F-045), and so is "cannot be read" when the shell's first answer fails (unread: the words of its
+// placeholder, templates/monitoring/_loading.html). The shell's first fill (loading or unread, then live) says nothing:
+// it is the first load.
 
 /** The states in rising order (worst last) from the page's list (#monitor-announce data-states: monitoring/read.py
  *  STATES, worst first, the one list); empty is no state to rise from. */
@@ -80,15 +82,17 @@ export function sentences(found: Rise[], unitOf: (key: string) => string, words:
   };
 }
 
-/** What the grid says when its poll state changes: not updated (stale), gone, or live again after either; nothing on
- *  the first load or when nothing changed. */
+/** What the grid says when its poll state changes: not updated (stale), gone, cannot be read (unread: the shell's
+ *  first answer failed), or live again after stale or gone; nothing on the first load (the shell's loading or unread,
+ *  then live, included) or when nothing changed. */
 export function pollNotice(previous: string | undefined, now: string,
-                           texts: { stale: string; gone: string; live: string }): string {
+                           texts: { stale: string; gone: string; live: string; unread?: string }): string {
   if (previous === undefined || previous === now) {
     return '';
   }
   if (now === 'stale') return texts.stale;
   if (now === 'gone') return texts.gone;
+  if (now === 'unread') return texts.unread ?? '';
   return now === 'live' && (previous === 'stale' || previous === 'gone') ? texts.live : '';
 }
 
@@ -181,7 +185,8 @@ function start(): void {
   new MutationObserver(() => {
     const now = grid.dataset.pollState ?? '';
     const text = pollNotice(pollState, now, { stale: grid.dataset.staleText ?? '', gone: grid.dataset.goneText ?? '',
-                                             live: grid.dataset.updatedText ?? '' });
+                                             live: grid.dataset.updatedText ?? '',
+                                             unread: grid.querySelector('.monitor-loading > [data-unread]')?.textContent ?? '' });
     pollState = now;
     if (text) {
       speak('assertive', text);

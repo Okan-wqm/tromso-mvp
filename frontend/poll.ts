@@ -19,6 +19,15 @@
 //                              server cannot be reached), gone when the person may no longer read it (401, 403,
 //                              404 or a redirect to sign-in); the page's CSS says so in its own words. A
 //                              `poll:gone` event (detail.status) bubbles from the element when it is gone.
+//   data-poll-state="loading"  set by the SERVER on an element whose content is only a placeholder (a page drawn
+//                              before its data: the shell of Operations › Monitoring). It is asked for at once, not
+//                              after its interval, and stays loading until its first answer with a body, which sets
+//                              live once it is in place. Before that, a failure (a server error such as a 503, no
+//                              answer, too slow) sets "unread" at once, not after two: there is no last picture to
+//                              keep, and the page says the data cannot be read; it is asked again after the usual
+//                              longer waits. A 204 ("nothing changed") is no answer for it either: unread, and its
+//                              next address is not followed (the server answers an address without a token with a
+//                              body). Gone is gone, as above.
 //   `poll:now` event           asks at once; detail.url (optional) is the address to ask from now on
 //   `poll:merged` event        sent by a merged element after each merge: detail.replaced ({old, node}), inserted,
 //                              removed (what frontend/announce.ts reads a state's rise from)
@@ -51,7 +60,9 @@ const JITTER = 0.1;
 // Failures in a row after which the element says it is stale.
 const STALE_AFTER = 2;
 
-type PollState = 'live' | 'stale' | 'gone';
+type PollState = 'live' | 'stale' | 'gone' | 'unread';
+// The state the server gives an element whose content is a placeholder until its first answer.
+const LOADING = 'loading';
 
 function atEnd(list: HTMLElement): boolean {
   return list.scrollHeight - list.scrollTop - list.clientHeight < NEAR_END;
@@ -139,11 +150,14 @@ export function watch(element: HTMLElement): () => void {
   let timer = 0;
   let last = '';
   let stopped = false;
+  // Whether the element holds an answer yet: not while the server's placeholder stands in it.
+  let filled = element.dataset.pollState !== LOADING;
 
   const state = (value: PollState): void => { element.dataset.pollState = value; };
   const failed = (): void => {
     failures += 1;   // the next wait is longer
-    if (failures >= STALE_AFTER) state('stale');
+    if (!filled) state('unread');
+    else if (failures >= STALE_AFTER) state('stale');
   };
   const schedule = (): void => {
     window.clearTimeout(timer);
@@ -194,16 +208,21 @@ export function watch(element: HTMLElement): () => void {
         gone(response.status);
         return;
       }
-      if (!response.ok) {   // a server error: asked for again, after a longer wait
+      if (!response.ok || (!filled && response.status === 204)) {   // a server error: asked again, after a longer wait
         failed();
         return;
       }
       url = response.headers.get('X-Poll-Next') ?? url;
       failures = 0;
-      state('live');
+      if (filled) state('live');
       if (response.status === 204) return;
       const html = await response.text();
-      if (!dropped.has(request)) apply(html);
+      if (dropped.has(request)) return;
+      apply(html);
+      if (!filled) {   // the first answer is in place: live from now on (said by nobody, frontend/announce.ts)
+        filled = true;
+        state('live');
+      }
     } catch {
       if (!dropped.has(request)) failed();   // offline, or too slow
     } finally {
@@ -234,8 +253,12 @@ export function watch(element: HTMLElement): () => void {
     document.addEventListener('visibilitychange', shown);
     listening = true;
   }
-  state('live');
-  schedule();
+  if (filled) {
+    state('live');
+    schedule();
+  } else {
+    void refresh();   // a placeholder: its data at once (a hidden page asks when it is shown, `shown`)
+  }
   return stop;
 }
 

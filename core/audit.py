@@ -56,8 +56,8 @@ def entity_types(model):
 
 def sealed_out(entries):
     """`entries` without those about a record the viewer of the moment may not see."""
-    current = sealing.viewer()
-    if current is None or current.is_super:
+    current = sealing.who()
+    if current is None:
         return entries
     for seal in sealing.registry():
         if not seal.filters:

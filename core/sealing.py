@@ -74,6 +74,23 @@ class Viewer:
 NOBODY = Viewer()
 
 
+@dataclass(frozen=True)
+class Who:
+    """Who is looking, known without a query: what the seal's predicate needs (the person's id and whether they are the
+    platform admin). What they are granted is read inside the same SQL statement as the rows (the provider's
+    subqueries), so narrowing a read costs no query of its own; the full Viewer is loaded only where Python decides
+    (an experiment's own pages, the read log)."""
+    user_id: int | None = None
+    username: str = ''
+    is_super: bool = False
+
+
+def who_of(user):
+    if user is None or not user.is_authenticated:
+        return Who()
+    return Who(user_id=user.pk, username=user.get_username(), is_super=user.is_superuser)
+
+
 class _System:
     """Reading as the system: every row, for a named reason."""
 
@@ -82,16 +99,25 @@ class _System:
 
 
 class _Lazy:
-    """A request's viewer, loaded on its first sealed read (one query) and kept for the rest of the request."""
+    """A request's viewer: who it is (no query), and what they are granted, loaded when Python first asks (`viewer()`)
+    and kept for the rest of the request. `read` says that a sealed model was read for them."""
 
     def __init__(self, user):
         self.user = user
         self.loaded = None
+        self.light = None
+        self.read = False
 
     def get(self):
         if self.loaded is None:
             self.loaded = load(self.user)
         return self.loaded
+
+    def who(self):
+        if self.light is None:
+            self.light = who_of(self.user)
+        self.read = True
+        return self.light
 
 
 _current = contextvars.ContextVar('sealing_current', default=None)
@@ -166,6 +192,19 @@ def viewer():
     raise NoViewer('A sealed model was read outside a request, `as_viewer` or `system(...)`.')
 
 
+def who():
+    """Who is looking, for the seal's predicate (no query); None when reading as the system. Raises NoViewer when nobody
+    is looking."""
+    current = _current.get()
+    if isinstance(current, _Lazy):
+        return current.who()
+    if isinstance(current, _System):
+        return None
+    if _process_reason is not None:
+        return None
+    raise NoViewer('A sealed model was read outside a request, `as_viewer` or `system(...)`.')
+
+
 def system_reason():
     """Why the system is reading now ('' when someone is looking)."""
     current = _current.get()
@@ -181,9 +220,10 @@ _provider = None
 
 
 def register_provider(provider):
-    """The app that knows what a cell is (experiments) gives: `load(user) -> Viewer`, `cells()` (a queryset of the
-    sealed cells: unit, system, from_on, until_on, work id) and `hidden_work(viewer, part)` (a queryset of the ids of
-    the sealed work the viewer may not read for that part)."""
+    """The app that knows what a cell is (experiments) gives: `load(user) -> Viewer` (for Python's decisions),
+    `cells()` (a queryset of the sealed cells: unit, system, from_on, until_on, work id), `hidden_work(who, part)` (a
+    queryset of the ids of the work `who` may not read for that part, evaluated inside the reading statement) and
+    `oversees(who)` (a queryset that has a row when `who` holds the Oversee right)."""
     global _provider
     _provider = provider
 
@@ -358,27 +398,24 @@ def _paths(value):
 
 
 def hidden(seal, current, part=None):
-    """The condition (a Q) that is true for the rows of `seal.model` hidden from `current`; None when none are."""
-    if current is None or (current.is_super and not current.barred):
-        return None
-    if seal.cls == FACT and current.oversee and seal.work is None:
+    """The condition (a Q) that is true for the rows of `seal.model` hidden from `current` (a Who, or a Viewer); None
+    when none are. What `current` is granted is read in the same statement (the provider's subqueries)."""
+    if current is None:
         return None
     part = part or seal.part
     conditions = []
-    if seal.work is not None and _provider is not None:
-        lookup = f'{seal.work}__pk__in' if seal.work else 'pk__in'
-        conditions.append(Q(**{lookup: _provider.hidden_work(current, part)}))
-    if (seal.unit or seal.system) and _provider is not None:
-        seen = list(current.sees(part))
-        if current.is_super:
-            cells = _provider.cells().filter(work__in=list(current.barred.difference(seen)))
-        else:
-            cells = _provider.cells().exclude(work__in=seen) if seen else _provider.cells()
-        days = _day_filter(seal.model, seal.day)
-        for target, paths in (('unit', _paths(seal.unit)), ('system', _paths(seal.system))):
-            for path in paths:
-                lookup, ref = _correlated(seal.model, path, target)
-                conditions.append(Q(Exists(cells.filter(days, **{lookup: ref}))))
+    if _provider is not None and (seal.work is not None or seal.unit or seal.system):
+        hidden_work = _provider.hidden_work(current, part)
+        if seal.work is not None:
+            lookup = f'{seal.work}__pk__in' if seal.work else 'pk__in'
+            conditions.append(Q(**{lookup: hidden_work}))
+        if seal.unit or seal.system:
+            cells = _provider.cells().filter(work__in=hidden_work)
+            days = _day_filter(seal.model, seal.day)
+            for target, paths in (('unit', _paths(seal.unit)), ('system', _paths(seal.system))):
+                for path in paths:
+                    lookup, ref = _correlated(seal.model, path, target)
+                    conditions.append(Q(Exists(cells.filter(days, **{lookup: ref}))))
     for link in seal.via:
         parent = seal.model._meta.get_field(link).related_model
         shown = parent._default_manager.filter(pk=OuterRef(link))
@@ -398,6 +435,9 @@ def hidden(seal, current, part=None):
     result = conditions[0]
     for condition in conditions[1:]:
         result |= condition
+    if seal.cls == FACT and seal.work is None and _provider is not None and not current.is_super:
+        # A farm fact is shown to a person who holds Oversee (the role matrix): read in the same statement.
+        result &= ~Q(Exists(_provider.oversees(current)))
     return result
 
 
@@ -412,7 +452,7 @@ def narrow(queryset, part=None):
     seal = seal_of(queryset.model)
     if seal is None or not seal.filters:
         return queryset
-    condition = hidden(seal, viewer(), part)
+    condition = hidden(seal, who(), part)
     return queryset if condition is None else queryset.exclude(condition)
 
 
@@ -430,8 +470,8 @@ def sealed(manager_class):
 
 # ---- reading as someone, the request ----------------------------------------------------------------------------
 class SealingMiddleware:
-    """Gives each request its viewer (the signed-in person, loaded on the first sealed read) and keeps it for a streamed
-    answer's generator. An answer to someone who reads confidential work is never cached."""
+    """Gives each request its viewer (the signed-in person; what they are granted is read with the rows) and keeps it
+    for a streamed answer's generator. An answer made from sealed records for a signed-in person is never cached."""
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -445,7 +485,8 @@ class SealingMiddleware:
             _current.reset(token)
         if response.streaming:
             response.streaming_content = _carried(response.streaming_content, lazy)
-        if lazy.loaded is not None and lazy.loaded.any_grant:
+        if lazy.read and lazy.light is not None and lazy.light.user_id is not None                 and 'Cache-Control' not in response:
+            # A page made from sealed records for a signed-in person: never kept by a browser or a proxy.
             response['Cache-Control'] = 'no-store'
         return response
 

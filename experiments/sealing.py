@@ -1,9 +1,11 @@
 """Experiment confidentiality, the provider of core.sealing: what a sealed cell is (the view `experiment_cells`), who is
 granted what (the team and the shares), and the seals of the experiments' own records.
 
-A viewer is loaded in one query per request: the experiments whose team the person is in now (every part), and per part
-those a live share gives the person or one of their roles. The closure of the parts is read here, once: the results and
-the data come with the design and the systems; the water with the systems."""
+Who is granted what is defined once, by two querysets (`_members`, `_shares`) and the closure of the parts: the results
+and the data come with the design and the systems; the water with the systems. The seal's predicate reads them as
+subqueries inside the statement that reads the rows (`hidden_work`), so narrowing costs no query of its own; Python's
+decisions on an experiment's own pages load them once per request (`load`)."""
+from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.utils import timezone
 
@@ -15,6 +17,7 @@ from .models import Experiment, ExperimentShare, Member, SealedCell
 CLOSURE = {'results': ('design', 'systems'), 'data': ('design', 'systems'), 'water': ('systems',)}
 # The part an experiment's own page asks for its shell (the code, the name, the lead): any live grant gives it.
 SHELL = 'shell'
+OVERSEE = ('experiments', 'oversee_experiment')
 
 
 def closure(parts):
@@ -25,36 +28,80 @@ def closure(parts):
     return found
 
 
+def granting(part):
+    """The parts whose share gives `part` (the closure read backwards)."""
+    return sorted(each for each in sealing.PARTS if part in closure([each]))
+
+
 def live(at=None):
     """The condition on a member or a share of being live at `at` (now)."""
     at = at or timezone.now()
     return (Q(valid_from__isnull=True) | Q(valid_from__lte=at)) & (Q(valid_until__isnull=True) | Q(valid_until__gt=at))
 
 
+def _members(user_id, at):
+    """The person's live team places."""
+    return Member._base_manager.filter(live(at), user_id=user_id)
+
+
+def _shares(user_id, at):
+    """The live shares the person holds, given to them or to one of their roles."""
+    return ExperimentShare._base_manager.filter(live(at), Q(user_id=user_id) | Q(group__user=user_id),
+                                                revoked_at__isnull=True)
+
+
+def _seen(user_id, part):
+    """The condition on an experiment that the person reads its `part` (for the shell: any part, or a guest's place):
+    its team (but a guest), or a live share of a part that gives it."""
+    at = timezone.now()
+    members, shares = _members(user_id, at), _shares(user_id, at)
+    if part != SHELL:
+        members = members.exclude(role=Member.Role.GUEST)
+        shares = shares.filter(part__in=granting(part))
+    return Q(pk__in=members.values('experiment_id')) | Q(pk__in=shares.values('experiment_id'))
+
+
+def hidden_work(who, part):
+    """The ids of the experiments whose `part` `who` may not read (a subquery): those that are not open and are not
+    theirs to read; for the platform admin only the private ones (owner amendment C4)."""
+    rows = Experiment._base_manager.filter(audience=Experiment.Audience.PRIVATE) if who.is_super         else Experiment._base_manager.exclude(audience=Experiment.Audience.OPEN)
+    if who.user_id is not None:
+        rows = rows.exclude(_seen(who.user_id, part))
+    return rows.values('pk')
+
+
+def oversees(who):
+    """A subquery with a row when `who` holds Oversee (the role matrix), as Django's own permission check reads it:
+    an active person, the right given to them or to one of their roles."""
+    app, codename = OVERSEE
+    right = {'content_type__app_label': app, 'codename': codename}
+    people = get_user_model()._base_manager.filter(pk=who.user_id, is_active=True)
+    return people.filter(Q(**{f'user_permissions__{key}': value for key, value in right.items()})
+                         | Q(**{f'groups__permissions__{key}': value for key, value in right.items()})).values('pk')
+
+
 def load(user):
-    """The viewer for a signed-in `user`: their live teams and live shares (their own and their roles'), with the parts'
-    closure; `oversee` from the role matrix."""
+    """The viewer for a signed-in `user`, for Python's decisions (the experiment's pages, the read log): their live
+    teams, guest places and shares, with the parts' closure; `oversee` from the role matrix; for the platform admin the
+    private experiments they are not in (`barred`)."""
     now = timezone.now()
-    members = Member._base_manager.filter(live(now), user=user).values_list('experiment_id', 'role')
+    members = list(_members(user.pk, now).values_list('experiment_id', 'role'))
     # A guest of the team is present and observes: they read the experiment's shell (its code, name, lead and team),
     # no part of it (plan 2.2).
     team = frozenset(experiment for experiment, role in members if role != Member.Role.GUEST)
     guest_of = {experiment for experiment, role in members if role == Member.Role.GUEST}
-    shares = ExperimentShare._base_manager.filter(live(now), Q(user=user) | Q(group__in=user.groups.all()),
-                                            revoked_at__isnull=True).values_list('experiment_id', 'part')
     granted = {SHELL: guest_of} if guest_of else {}
-    for experiment_id, part in shares:
+    for experiment_id, part in _shares(user.pk, now).values_list('experiment_id', 'part').distinct():
         for each in closure([part]):
             granted.setdefault(each, set()).add(experiment_id)
     granted = {part: frozenset(ids) for part, ids in granted.items()}
     barred = frozenset()
     if user.is_superuser:
-        # What the platform admin may not read: the private experiments they are not in (owner amendment C4).
         reached = team.union(*granted.values())
         barred = frozenset(Experiment._base_manager.filter(audience=Experiment.Audience.PRIVATE)
                            .exclude(pk__in=list(reached)).values_list('pk', flat=True))
     return sealing.Viewer(user_id=user.pk, username=user.get_username(), is_super=user.is_superuser,
-                          oversee=user.has_perm('experiments.oversee_experiment') and not user.is_superuser,
+                          oversee=user.has_perm('.'.join(OVERSEE)) and not user.is_superuser,
                           team=team, granted=granted, barred=barred)
 
 
@@ -83,19 +130,11 @@ def cells():
     return SealedCell.objects.all()
 
 
-def hidden_work(viewer, part):
-    """The ids of the experiments that are not open whose `part` the viewer may not read (for the shell: any part); for
-    the platform admin, the private ones they are not granted."""
-    seen = viewer.everything() if part == SHELL else viewer.sees(part)
-    if viewer.is_super:
-        return Experiment._base_manager.filter(pk__in=list(viewer.barred.difference(seen))).values('pk')
-    return Experiment._base_manager.exclude(audience=Experiment.Audience.OPEN).exclude(pk__in=list(seen)).values('pk')
-
-
 class Provider:
     load = staticmethod(load)
     cells = staticmethod(cells)
     hidden_work = staticmethod(hidden_work)
+    oversees = staticmethod(oversees)
 
 
 def register():

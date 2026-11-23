@@ -88,9 +88,9 @@ class RetryTests(OutboxCase):
         self.assertEqual(read.status(notification), 'queued')
 
     @override_settings(ALARM_TRANSPORTS=FAILING)
-    def test_after_its_attempts_a_notification_is_failed_and_left(self):
-        SeverityPolicy.objects.filter(severity='critical').update(delivery_attempts=2, retry_seconds=5)
-        (notification,) = self.queued()
+    def test_after_its_attempts_a_warning_is_failed_and_left(self):
+        SeverityPolicy.objects.filter(severity='warning').update(delivery_attempts=2, retry_seconds=5)
+        (notification,) = self.queued('warning')
         for second in range(0, 60, 5):
             self.send(second)
         self.assertEqual(DeliveryAttempt.objects.count(), 2)

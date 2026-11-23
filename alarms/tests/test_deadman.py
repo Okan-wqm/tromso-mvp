@@ -33,7 +33,7 @@ class DeadManCase(AlarmsCase):
         ok = at if ok_seconds_ago == 'same' else (now - timedelta(seconds=ok_seconds_ago) if ok_seconds_ago else None)
         AlarmWorkerStatus.objects.update_or_create(name='alarms', defaults=dict(
             state=state, started_at=now - timedelta(hours=2), heartbeat_at=at, last_pass_at=at, last_ok_pass_at=ok,
-            failed_steps=steps, stale_after_seconds=45))
+            failed_steps=steps, stale_after_seconds=45, last_send_at=now))
 
 
 class PageTests(DeadManCase):

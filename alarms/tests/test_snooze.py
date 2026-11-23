@@ -102,7 +102,7 @@ class BehaviourTests(SnoozeCase):
         self.assertFalse(Notification.objects.filter(recipient=third).exists())
         self.assertTrue(read.is_open(self.alarm))
         self.loop(minutes=61)                                          # it ran out at 61
-        self.assertEqual(Notification.objects.get(recipient=third).queued_at, self.at(61))
+        self.assertEqual(Notification.objects.get(recipient=third, kind='alarm').queued_at, self.at(61))
         self.loop(minutes=70)
         self.assertFalse(Escalation.objects.exists())                  # the escalation time counts from the end
         self.loop(minutes=71)
@@ -129,7 +129,8 @@ class BehaviourTests(SnoozeCase):
         self.addCleanup(RecordingTransport.sent.clear)
         self.snooze(60)
         found = outbox.send_due(self.at(2))
-        self.assertEqual((found.snoozed, found.sent, RecordingTransport.sent), (1, 0, []))
+        self.assertEqual((found.snoozed, found.sent, [(sent.recipient, sent.kind) for sent in RecordingTransport.sent]),
+                         (1, 1, [(self.operator, 'snoozed')]))      # the word that it was snoozed goes at once
         self.assertEqual(outbox.send_due(self.at(62)).sent, 1)
 
     def test_its_raises_and_clears_go_on_while_snoozed(self):

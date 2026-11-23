@@ -273,7 +273,7 @@ class HealthTests(WorkerCase):
         ok = at if ok_seconds_ago == 'same' else (now - timedelta(seconds=ok_seconds_ago) if ok_seconds_ago else None)
         AlarmWorkerStatus.objects.update_or_create(name='alarms', defaults=dict(
             state=state, started_at=now - timedelta(hours=1), heartbeat_at=now, last_pass_at=at, last_ok_pass_at=ok,
-            failed_steps=steps, stale_after_seconds=45))
+            failed_steps=steps, stale_after_seconds=45, last_send_at=now))
 
     def test_it_says_whether_the_alarms_are_being_checked(self):
         cases = [

@@ -2166,6 +2166,7 @@
       "tests": [
         "core/tests_matrix_notes.py",
         "core/tests_workspaces.py",
+        "monitoring/tests/test_silent_oxygen.py",
         "monitoring/tests/test_stopped_probe.py",
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_fresh_rule.py",
@@ -17597,6 +17598,7 @@
         "reports/tests/test_notices.py",
         "reports/tests/test_tabs.py",
         "monitoring/tests/test_pages.py",
+        "sensors/tests/test_fresh_rule.py",
         "alarms/tests/test_cross_review.py"
       ]
     },
@@ -19984,6 +19986,7 @@
         "monitoring/tests/__init__.py",
         "monitoring/tests/test_boards.py",
         "monitoring/tests/test_golden.py",
+        "monitoring/tests/test_silent_oxygen.py",
         "monitoring/tests/test_stopped_probe.py",
         "monitoring/tests/test_token.py",
         "sensors/tests/test_pages.py",

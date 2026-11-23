@@ -826,10 +826,11 @@ window cannot be drawn: no value of Salinity (‰, g/kg).").
 
 **The state** is one ladder (`state_of`, the thresholds are the owners', none invented here): critical (a water reading judged
 critical, an old one too: "CO₂: Critical, no recent data", the water page's rule through
-`PointWater.alerts`); warning (a warning reading, an old one too, over capacity, an estimate that says weigh now); **no recent data** (a stocked unit whose
-temperature or oxygen is missing or older than its 24 hours, or with no middle point, or whose live sensors could not be read:
-the water's own status ranks OK above stale, so a fresh pH would hide a three-day-old oxygen; never OK, never red, the age is
-printed; not worked out when the water is hidden); **no limit** (a value of the stocked unit that no water limit row judges for
+`PointWater.alerts`; and **the oxygen of a unit that holds fish with no fresh value**, see below); warning (a warning
+reading, an old one too, over capacity, an estimate that says weigh now); **no recent data** (a stocked unit whose
+temperature is missing or older than its freshness, or with no middle point, or whose live sensors could not be read:
+the water's own status ranks OK above stale, so a fresh pH would hide a three-day-old temperature; never OK, never red, the
+age is printed; not worked out when the water is hidden); **no limit** (a value of the stocked unit that no water limit row judges for
 every species of its fish, "pH (NBS scale): no limit for these fish": a row for the salmon does not judge it for the lumpfish
 beside them (`Limits.uncovered`); what it means for the fish is not known, so it is never OK. The dissolved oxygen is one
 quantity (owner, 2026-11-07): a % with no row of its own is worked out to mg/L with the solubility (its own observation's
@@ -958,7 +959,26 @@ Production units, which keeps the page title and eyebrow); the fragment has the 
 Decisions of the owner (2026-11-04): a wall page extends its session once a day; Production units stops printing bFCR and last fed
 to roles without feeding rights; the chart's temperature is the unit's own point's (superseded by A9 on 2026-11-07: the loop's fresh value stands in
 when the unit has none of its own); the chart refused and
-says so; "No recent data" when the temperature or the oxygen is older than 24 hours or missing, whatever the unit's kind.
+says so; "No recent data" when the temperature or the oxygen is older than 24 hours or missing, whatever the unit's kind
+(for the oxygen superseded on 2026-11-23, below).
+
+**A unit with fish whose oxygen has no fresh value is critical** (owner decisions of 2026-11-23; they replace, for the
+dissolved oxygen alone, the grey "no recent data … never red" of 2026-11-04). Where the unit holds fish on its own day
+(the batches present that day) and neither its oxygen in mg/L nor in % has a fresh value for the place (its own, else its
+system's: A9), never measured included, the water's one judgement (`farm.water.read.PointWater.silent_oxygen`, counted
+in `status` and `point_status`) makes it critical: the Small and Big cards, the wall, the pane and the band's chip say
+"Dissolved oxygen (mg/L O₂): no recent data, 3 hours old" (the chip "O₂ (mg/L): no recent data", one chip for every unit
+it holds), the water page's row, Production units and the production overview say "Critical, no recent data" with that
+sentence. The alarms say it too, once per unit: a silent oxygen probe is its default "No fresh value" rule's critical
+alarm (Sensors); a typed oxygen sample grown old, or a unit with no oxygen probe watched by a "No fresh value" rule, is a
+critical alarm of the alarm system, "T-01: Dissolved oxygen (mg/L O₂): no recent data, 1 day old" (`alarms/sources.py`
+`_silent_subjects`, subject `system:unit:<unit>:no_fresh_oxygen`), never a second one beside the probe's
+(`sensors.alarms.watched`); it ends once the oxygen is fresh again, or "no fish in the unit any more". **Fish present
+guard** (the coordinator's call of 2026-11-23, against false alarms): all of it only where the unit holds fish; a fallow
+or empty unit stays grey "no recent data" and raises no alarm, and so do the sensors' default "No fresh value" rules
+(they hold only where their place's water concerns fish, `farm.water.read.with_fish`; a farm's own rule holds whatever
+the fish). The other parameters keep their rule: a silent probe of them is a warning (its default rule), and an old
+value of them changes no card's state (`monitoring/tests/test_silent_oxygen.py`).
 
 Not built, on purpose: any figure recomputed in `monitoring`, a feed-due alarm (the protocols have meals per day, no clock), trend
 sparklines, a stored calculation, a server cache or a push channel (a measured miss first), a stored status, an "open in the
@@ -3781,8 +3801,10 @@ What works:
   fresh value" rule**, seeded by sensors 0014 on every channel of the quantity, so the channels there are and every
   channel made later, by any door, are covered by the rule's scope (no row per channel) and take its severity:
   **critical for the dissolved oxygen** (mg/L and %), a warning for every other quantity (owner decision of
-  2026-11-20, `quantities.default_severity`; an existing rule a migration marks the default keeps its own). It holds exactly
-  when the place's value is no longer fresh, at the channel's own freshness (its heartbeat times its fresh heartbeats,
+  2026-11-20, `quantities.default_severity`; an existing rule a migration marks the default keeps its own). It holds only
+  where its place's water concerns fish on the units' own day (owner decision of 2026-11-23: a fallow or empty unit
+  with its probes off raises no alarm, and an open event closes when the fish are gone; `farm.water.read.with_fish`),
+  and there exactly when the place's value is no longer fresh, at the channel's own freshness (its heartbeat times its fresh heartbeats,
   tuned per channel), counted as the page counts it (the older of the value's device time and its receipt: a backlog
   replayed at a reconnect keeps it open, as the page keeps saying "no recent data"): the page and the alarm agree to
   the second, a restart or a change of a pH channel's scale opens or closes nothing, and the alarm closes with the

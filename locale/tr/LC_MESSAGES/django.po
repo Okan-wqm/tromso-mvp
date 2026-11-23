@@ -4830,6 +4830,9 @@ msgstr "E-postanızı kontrol edin"
 msgid "Checked at %(clock)s."
 msgstr "Saat %(clock)s itibarıyla denetlendi."
 
+msgid "Checking the alarms"
+msgstr "Alarmları denetliyor"
+
 msgid "Checklist"
 msgstr "Kontrol listesi"
 
@@ -6705,6 +6708,12 @@ msgstr "Faktörler"
 
 msgid "Failed"
 msgstr "Başarısız"
+
+msgid "Failed steps of the last pass"
+msgstr "Son turda başarısız olan adımlar"
+
+msgid "Failures in a row"
+msgstr "Art arda hata"
 
 msgid "Fallow"
 msgstr "Dinlendirmede"
@@ -8717,6 +8726,9 @@ msgstr "Son gün"
 msgid "Last day in the experiment"
 msgstr "Denemedeki son gün"
 
+msgid "Last error"
+msgstr "Son hata"
+
 msgid "Last fed"
 msgstr "Son yemleme"
 
@@ -8749,6 +8761,15 @@ msgstr "Son hareket"
 
 msgid "Last name"
 msgstr "Soyad"
+
+msgid "Last pass at"
+msgstr "Son tur zamanı"
+
+msgid "Last pass took (ms)"
+msgstr "Son tur süresi (ms)"
+
+msgid "Last pass without a failed step at"
+msgstr "Başarısız adımsız son tur zamanı"
 
 msgid "Last read"
 msgstr "Son okunan"
@@ -11755,6 +11776,9 @@ msgstr "Öncelik"
 msgid "Private text"
 msgstr "Özel metin"
 
+msgid "Process"
+msgstr "Süreç"
+
 msgid "Processing"
 msgstr "İşleme"
 
@@ -13710,6 +13734,9 @@ msgstr "Stoklama"
 
 msgid "Stocking date"
 msgstr "Stoklama tarihi"
+
+msgid "Stopped"
+msgstr "Durdu"
 
 msgid "Storage"
 msgstr "Depo"
@@ -16692,6 +16719,9 @@ msgstr "Açıklanamayan"
 msgid "Unaccounted loss"
 msgstr "Açıklanamayan kayıp"
 
+msgid "Unchecked after (seconds)"
+msgstr "Şu kadar sonra denetlenmiyor sayılır (saniye)"
+
 msgid "Under maintenance"
 msgstr "Bakımda"
 
@@ -17996,6 +18026,12 @@ msgstr "alarm konusu durumu"
 
 msgid "alarm subject states"
 msgstr "alarm konusu durumları"
+
+msgid "alarm worker status"
+msgstr "alarm servisi durumu"
+
+msgid "alarm worker statuses"
+msgstr "alarm servisi durumları"
 
 msgid "alarms"
 msgstr "alarmlar"

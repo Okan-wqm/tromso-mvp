@@ -4820,6 +4820,9 @@ msgstr "Sjekk e-posten din"
 msgid "Checked at %(clock)s."
 msgstr "Sjekket kl. %(clock)s."
 
+msgid "Checking the alarms"
+msgstr "Sjekker alarmene"
+
 msgid "Checklist"
 msgstr "Sjekkliste"
 
@@ -6688,6 +6691,12 @@ msgstr "Faktorer"
 
 msgid "Failed"
 msgstr "Mislyktes"
+
+msgid "Failed steps of the last pass"
+msgstr "Mislykkede trinn i siste gjennomgang"
+
+msgid "Failures in a row"
+msgstr "Feil på rad"
 
 msgid "Fallow"
 msgstr "Brakklagt"
@@ -8688,6 +8697,9 @@ msgstr "Siste dag"
 msgid "Last day in the experiment"
 msgstr "Siste dag i forsøket"
 
+msgid "Last error"
+msgstr "Siste feil"
+
 msgid "Last fed"
 msgstr "Sist fôret"
 
@@ -8720,6 +8732,15 @@ msgstr "Siste bevegelse"
 
 msgid "Last name"
 msgstr "Etternavn"
+
+msgid "Last pass at"
+msgstr "Siste gjennomgang"
+
+msgid "Last pass took (ms)"
+msgstr "Siste gjennomgang tok (ms)"
+
+msgid "Last pass without a failed step at"
+msgstr "Siste gjennomgang uten mislykket trinn"
 
 msgid "Last read"
 msgstr "Sist lest"
@@ -11728,6 +11749,9 @@ msgstr "Prioritet"
 msgid "Private text"
 msgstr "Privat tekst"
 
+msgid "Process"
+msgstr "Prosess"
+
 msgid "Processing"
 msgstr "Bearbeiding"
 
@@ -13681,6 +13705,9 @@ msgstr "Utsett"
 
 msgid "Stocking date"
 msgstr "Utsettsdato"
+
+msgid "Stopped"
+msgstr "Stoppet"
 
 msgid "Storage"
 msgstr "Lager"
@@ -16655,6 +16682,9 @@ msgstr "Ukjent"
 msgid "Unaccounted loss"
 msgstr "Uforklart svinn"
 
+msgid "Unchecked after (seconds)"
+msgstr "Usjekket etter (sekunder)"
+
 msgid "Under maintenance"
 msgstr "Under vedlikehold"
 
@@ -17960,6 +17990,12 @@ msgstr "alarmtilstand"
 
 msgid "alarm subject states"
 msgstr "alarmtilstander"
+
+msgid "alarm worker status"
+msgstr "status for alarmtjenesten"
+
+msgid "alarm worker statuses"
+msgstr "statuser for alarmtjenesten"
 
 msgid "alarms"
 msgstr "alarmer"

@@ -61,6 +61,10 @@ SEARCH = world.CANARY.lower()
 CSRF = re.compile(rb'(csrfmiddlewaretoken" value="|csrftoken=|"csrfToken": ")[^"; ]+')
 # The Content-Security-Policy's nonce, new on every answer: in the page's script tags and in the header.
 NONCE = re.compile(rb'''(nonce="|'nonce-)[A-Za-z0-9+/=_-]+''')
+# What else is new on every answer or every minute: a form's sending key, the Expires header, the monitoring screen's
+# change token (the minute is in it) and a clock time shown on a page.
+FRESH = [re.compile(rb'(name="entry_key" value=")[^"]+'), re.compile(rb'(Expires: )[^\n]+'),
+         re.compile(rb'(after=)[0-9a-f]+'), re.compile(rb'()\b[0-2][0-9]:[0-5][0-9]\b')]
 
 
 @dataclass(frozen=True)
@@ -118,8 +122,10 @@ def content(response):
 
 def normal(data, ids=()):
     """An answer with what differs between two renders of the same page taken out: the CSRF tokens, the
-    Content-Security-Policy's nonce, and the ids tried."""
+    Content-Security-Policy's nonce, what is new every answer or minute (FRESH), and the ids tried."""
     data = NONCE.sub(rb'\1-', CSRF.sub(rb'\1-', data))
+    for fresh in FRESH:
+        data = fresh.sub(rb'\1-', data)
     for value in ids:
         data = data.replace(str(value).encode(), b'<id>')
     return data

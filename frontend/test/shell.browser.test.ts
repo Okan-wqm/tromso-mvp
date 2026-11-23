@@ -161,7 +161,10 @@ test('the first fill comes at once, replaces the placeholder and says nothing', 
 test('a 503 first says the cards cannot be read at once, then "Updated again." when they come',
      { skip: skipWithout(BROWSERS) }, async () => {
   const stub: Stub = { answers: [{ status: 503, body: 'The cards cannot be read just now.' },
-                                 { status: 200, body: cards(['warning']), next: '/cards?after=2' },
+                                 // the good answer is held back 8 s, longer than the announcer's 5 s limiter: with
+                                 // a quick one the limiter could go straight to "Updated again." and never say the
+                                 // failure, which made this test fail now and then on a loaded runner
+                                 { status: 200, body: cards(['warning']), next: '/cards?after=2', delay: 8000 },
                                  { status: 204, next: '/cards?after=2' }], asked: [] };
   await run(stub, { every: 1 }, async (tab) => {
     await until(tab, 'unread');                                                // the first failure, not the second
@@ -170,7 +173,7 @@ test('a 503 first says the cards cannot be read at once, then "Updated again." w
     assert.equal(await shown(tab, '[data-loading]'), false);
     await politely(tab, UNREAD);                                               // politely: the screen says it too
     assert.deepEqual(await said(tab), ['', UNREAD]);
-    await until(tab, 'live', 10000);                                           // asked again after the longer wait
+    await until(tab, 'live', 25000);                                           // asked again after the longer wait
     assert.equal(await tab.locator('[data-key="loading"]').count(), 0);
     assert.equal(await tab.locator('[data-key="card:0"]').count(), 1);
     assert.equal(stub.asked[1], '/cards');                                     // the same address: no token yet

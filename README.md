@@ -5853,6 +5853,7 @@ under the wrong kind, fails.
 | `check_inventory` | inventory | product | Every rule of the store from scratch; changes nothing | An operator |
 | `check_reports` | reports | product | Every report against its frozen content and its key; changes nothing | An operator |
 | `check_experiments` | experiments | product | Every started experiment against the rules the database cannot hold; changes nothing | An operator |
+| `experiments_sealing_preflight` | experiments | product | Before confidentiality goes live: the audiences, experiments without a lead, whole systems held without a booking, ended approvals, shares to inactive accounts, bookings without a tank; `--announcement` prints the text for the people; changes nothing | The owner |
 | `check_hr` | hr | product | What disagrees in the HR records; changes nothing | An operator |
 | `compile_catalogs` | core | build | Builds the `.mo` files from the `.po` files (Babel) | Landing, CI, the tests |
 | `update_catalogs` | core | build | Updates `locale/*/django.po` from the code and the templates | A developer after changing text; CI checks it changed nothing |

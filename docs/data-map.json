@@ -4917,6 +4917,7 @@
         "experiments/tests/test_constraints.py",
         "experiments/tests/test_deviations.py",
         "experiments/tests/test_pages.py",
+        "experiments/tests/test_preflight.py",
         "experiments/tests/test_sealing_schema.py",
         "experiments/tests/test_start.py",
         "experiments/tests/world.py"
@@ -5192,8 +5193,8 @@
       "delete_kind": "soft delete through the delete plan",
       "soft_delete": true,
       "restore": {
-        "status": "gap",
-        "why": "deleted rows are not in the admin, so nothing brings them back"
+        "status": "none",
+        "why": "listed read-only in the admin: a voided record is entered again on its page, where the checks run"
       },
       "viewer": {
         "section": "Research",
@@ -5201,6 +5202,7 @@
         "left_out": false
       },
       "tests": [
+        "experiments/tests/test_pages.py",
         "experiments/tests/test_places.py",
         "experiments/tests/test_sealing_schema.py"
       ]
@@ -6126,6 +6128,7 @@
       },
       "tests": [
         "experiments/tests/test_access.py",
+        "experiments/tests/test_preflight.py",
         "experiments/tests/test_sealing_schema.py"
       ]
     },
@@ -6683,6 +6686,7 @@
         "experiments/tests/test_overview.py",
         "experiments/tests/test_pages.py",
         "experiments/tests/test_places.py",
+        "experiments/tests/test_preflight.py",
         "experiments/tests/test_sealing_schema.py",
         "experiments/tests/test_start.py",
         "experiments/tests/test_triggers.py",
@@ -19833,6 +19837,7 @@
         "experiments/tests/test_confidential.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_places.py",
+        "experiments/tests/test_preflight.py",
         "experiments/tests/test_sealing_schema.py",
         "experiments/tests/world.py",
         "monitoring/tests/test_resolve.py",
@@ -20918,6 +20923,7 @@
         "experiments/tests/test_deviations.py",
         "experiments/tests/test_oversee.py",
         "experiments/tests/test_places.py",
+        "experiments/tests/test_preflight.py",
         "experiments/tests/test_sealing_schema.py",
         "experiments/tests/test_start.py",
         "experiments/tests/world.py",
@@ -43470,12 +43476,6 @@
       "table": "experiments.ReplicateSystem",
       "what": "column left_reason",
       "why": "a booking keeps its days when one of its tanks is released; ending a booking early with its own reason has no dialog yet",
-      "weight": 1
-    },
-    {
-      "table": "experiments.ReplicateSystem",
-      "what": "restore",
-      "why": "deleted rows are not in the admin, so nothing brings them back",
       "weight": 1
     },
     {

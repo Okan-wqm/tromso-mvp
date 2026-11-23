@@ -498,15 +498,23 @@ class WaterInputTests(Gate, TestCase):
                          values={'temperature_c': D('13.0')})
             raise RuntimeError('rolled back')
 
-    def test_the_tables_the_ingest_writes_have_no_revision_trigger(self):
+    def test_the_tables_the_ingest_may_write_are_never_tracked_and_have_no_revision_trigger(self):
+        # Held by the ingest's database role itself, not by a list: whatever table it is granted a write on is in
+        # NEVER_TRACKED, has no revision trigger and is none of TRACKED's.
         with connection.cursor() as cursor:
-            cursor.execute("SELECT c.relname, t.tgname FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid "
-                           "WHERE c.relname = ANY(%s) AND NOT t.tgisinternal", [list(rev.NEVER_TRACKED)])
-            found = cursor.fetchall()
-        self.assertEqual([found_ for found_ in found if found_[1].startswith('core_rev')], [])
-        self.assertFalse(set(rev.NEVER_TRACKED) & {table for table, _scope in rev.TRACKED})
-        tables = {model._meta.db_table for model in apps.get_models()}
-        self.assertTrue(set(rev.NEVER_TRACKED) <= tables)
+            cursor.execute(
+                "SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace "
+                "WHERE n.nspname = current_schema() AND c.relkind IN ('r', 'p') AND ("
+                "has_table_privilege('sensors_ingest', c.oid, 'INSERT') OR has_table_privilege('sensors_ingest', c.oid, "
+                "'UPDATE') OR has_table_privilege('sensors_ingest', c.oid, 'DELETE') OR "
+                "has_table_privilege('sensors_ingest', c.oid, 'TRUNCATE'))")
+            writes = {name for (name,) in cursor.fetchall()}
+            cursor.execute("SELECT c.relname FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid "
+                           "WHERE c.relname = ANY(%s) AND t.tgname LIKE 'core\\_rev\\_%%'", [sorted(writes)])
+            triggered = cursor.fetchall()
+        self.assertEqual(writes, set(rev.NEVER_TRACKED))
+        self.assertEqual(triggered, [])
+        self.assertFalse(writes & {table for table, _scope in rev.TRACKED})
 
 
 class PresenceTests(TestCase):
@@ -541,6 +549,103 @@ class PresenceTests(TestCase):
             cursor.execute("SELECT tgname FROM pg_trigger WHERE tgname LIKE 'core\\_rev\\_%%' AND NOT tgisinternal")
             made = {name for (name,) in cursor.fetchall()}
         self.assertEqual(made, {name for track in rev.TRACKED for name in rev.trigger_names(*track)})
+
+    def test_the_declared_set_is_the_migrations_operations(self):
+        self.assertEqual(sorted((operation.table, operation.scope) for operation in rev.operations()),
+                         sorted(rev.TRACKED))
+
+
+class EnsureTests(Gate, Farm, TestCase):
+    """A key with no row is never valid: ensure() gives keys a row, and the migrations gave one to every key there was."""
+
+    def test_ensure_gives_a_missing_key_a_row_above_the_floor_and_leaves_one_that_has_it(self):
+        sql("SELECT core_rev_note('t', '1', '2026-03-05')")
+        rev.settle()
+        self.assertEqual(rev.ensure([('t', 1), ('t', 2), ('u', 'x'), ('t', 2)]), 2)
+        self.assertEqual((row('t', 1), row('t', 2), row('u', 'x')),
+                         ((1, 0, date(2026, 3, 5)), (1, 0, rev.EVERYTHING), (1, 0, rev.EVERYTHING)))
+        self.assertEqual(rev.ensure([]), 0)
+        target = rev.rebuild()
+        rev.ensure([('t', 3)])
+        self.assertEqual(row('t', 3), (target + 1, 0, rev.EVERYTHING))    # above the floor: never an old stamp
+        sql("SELECT core_rev_note('t', '3', NULL)")
+        rev.settle()
+        self.assertEqual(row('t', 3)[0], target + 2)                         # a change moves an ensured key
+
+    def test_the_migrations_backfill_gives_every_point_unit_batch_and_table_a_row(self):
+        import importlib
+        self.make_farm()
+        batch = stock_fish(self.user, self.t1, 100, '50', 5, species=self.salmon)
+        point = point_of(self.t1)
+        rev.settle()
+        sql('DELETE FROM core_rev')                     # as on a database the triggers have just been added to
+        for module in rev.MIGRATIONS:
+            for operation in importlib.import_module(module).Migration.operations:
+                if str(getattr(operation, 'sql', '')).startswith('SELECT core_rev_ensure('):
+                    with connection.cursor() as cursor:
+                        cursor.execute(operation.sql)
+        keys = set(rev_keys())
+        wanted = {('water_point', str(point.pk)), ('unit_stock', str(self.t1.pk)), ('unit_stock', str(self.t2.pk)),
+                  ('batch', str(batch.pk)), *((table, '0') for table in rev.WATER_TABLES)}
+        self.assertEqual(wanted - keys, set())
+
+
+class RepairTests(Gate, TestCase):
+    """manage.py core_rev_repair makes a dropped, disabled or replica-only trigger again, on a table or a chunk, as its
+    migration made it, and rebuilds every revision."""
+
+    def test_the_command_makes_missing_triggers_again_and_rebuilds(self):
+        user = get_user_model().objects.create_user('rev', 'rev@example.com', 'x')
+        site = Site.objects.create(name='Bergen', code='BG')
+        hall = ProductionDepartment.objects.create(site=site, name='Hall A', code='HA')
+        unit = make_unit('T-01', hall)
+        point = point_of(unit)
+        water.record(user, point=point, measured_at=timezone.now() - timedelta(hours=1), source='manual',
+                     values={'temperature_c': D('12.0')})
+        rev.settle()
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT i.inhrelid::regclass::text FROM pg_inherits i "
+                           "WHERE i.inhparent = 'water_measurements'::regclass LIMIT 1")
+            chunk = cursor.fetchone()[0]
+        sql('DROP TRIGGER core_rev_tanks_tanks_note ON tanks')
+        sql('ALTER TABLE sites DISABLE TRIGGER core_rev_sites_sites_apply')
+        sql('ALTER TABLE systems ENABLE REPLICA TRIGGER core_rev_systems_systems_note')
+        sql(f'DROP TRIGGER core_rev_water_measurements_water_point_apply ON {chunk}')
+        self.assertEqual(len(rev.missing()), 4)
+        [warning] = revision_triggers(None)
+        self.assertIn('manage.py core_rev_repair', warning.hint)
+        before = max(value for _scope, _key, value in revs_now())
+        out = StringIO()
+        call_command('core_rev_repair', stdout=out, stderr=StringIO())
+        self.assertEqual(rev.missing(), [])
+        self.assertEqual(revision_triggers(None), [])
+        self.assertIn('water_measurements (water_point)', out.getvalue())
+        for table in ('tanks', 'systems', 'sites'):
+            self.assertIn(f'{table} ({table})', out.getvalue())
+        values = {value for _scope, _key, value in revs_now()}
+        self.assertEqual(len(values), 1)                                 # rebuilt: every key at one value
+        self.assertGreater(values.pop(), before)
+        target = rev.rev('tanks')
+        Tank.objects.filter(pk=unit.pk).update(name='Unit one')        # the triggers made again work
+        water.record(user, point=point, measured_at=timezone.now() - timedelta(minutes=30), source='manual',
+                     values={'temperature_c': D('12.5')})
+        rev.settle()
+        self.assertEqual((rev.rev('tanks'), rev.rev('water_point', point.pk)), (target + 1, target + 1))
+        out = StringIO()
+        call_command('core_rev_repair', stdout=out)
+        self.assertIn('nothing was changed', out.getvalue())
+
+
+def rev_keys():
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT scope, key FROM core_rev')
+        return cursor.fetchall()
+
+
+def revs_now():
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT scope, key, rev FROM core_rev')
+        return cursor.fetchall()
 
 
 class TrackRevOperationTests(TestCase):
@@ -690,12 +795,10 @@ class ConcurrencyTests(Gate, Farm, TransactionTestCase):
 
     def test_a_chunk_made_before_the_triggers_gets_them_and_moves_its_point(self):
         # On a database with samples, farm 0050 adds the triggers to a hypertable that already has chunks.
-        import importlib
         point = point_of(self.t1)
         moment = timezone.now() - timedelta(hours=2)
         water.record(self.user, point=point, measured_at=moment, source='manual', values={'temperature_c': D('12.0')})
-        [operation] = [each for each in importlib.import_module('farm.migrations.0050_rev_triggers').Migration.operations
-                       if each.table == 'water_measurements']
+        [operation] = [each for each in rev.operations() if each.table == 'water_measurements']
         with connection.schema_editor() as editor:
             operation.database_backwards('farm', editor, None, None)
         self.assertIn('core_rev_water_measurements_water_point_note', rev.missing())
@@ -746,6 +849,109 @@ class ConcurrencyTests(Gate, Farm, TransactionTestCase):
             first.commit()
         self.assertEqual(rev.rev('batch', self.b1.pk), 3)                       # the stocking, then two commits
         self.assertEqual(rev.rev('unit_stock', self.t1.pk), 3)
+
+    def waiting(self, pid):
+        """Until the backend `pid` waits for a lock (10 s at most)."""
+        import time
+        for _ in range(200):
+            with connection.cursor() as cursor:
+                cursor.execute('SELECT wait_event_type FROM pg_stat_activity WHERE pid = %s', [pid])
+                found = cursor.fetchone()
+            if found and found[0] == 'Lock':
+                return
+            time.sleep(0.05)
+        self.fail(f'backend {pid} never waited for a lock')
+
+    def held(self, conn, scope, key):
+        """Whether another transaction holds the row lock of (scope, key): a NOWAIT lock of it is refused."""
+        try:
+            conn.execute('SELECT 1 FROM core_rev WHERE scope = %s AND key = %s FOR UPDATE NOWAIT', [scope, str(key)])
+        except psycopg.errors.LockNotAvailable:
+            conn.rollback()
+            return True
+        conn.rollback()
+        return False
+
+    def test_a_commit_takes_its_keys_in_sorted_order_whatever_order_it_wrote_them_in(self):
+        # Deterministic, where the two-writer test is a matter of chance: a commit's apply blocked on one key must
+        # already hold every key sorted before it, and none sorted after it, whichever order its rows were written in.
+        low, high = sorted((str(self.b1.pk), str(self.b2.pk)))
+        first = self.b1 if str(self.b1.pk) == high else self.b2          # written first: the key sorted last
+        second = self.b2 if first is self.b1 else self.b1
+        units = {self.b1: self.t1, self.b2: self.t2}
+        for blocked, before, after in ((high, low, None), (low, None, high)):
+            with self.subTest(blocked=blocked), self.connect() as writer, self.connect() as blocker, \
+                    self.connect() as probe:
+                pid = writer.execute('SELECT pg_backend_pid()').fetchone()[0]
+                writer.execute(*self.weighing_sql(self.ops[0], first, units[first]))
+                writer.execute(*self.weighing_sql(self.ops[0], second, units[second]))
+                blocker.execute('SELECT 1 FROM core_rev WHERE scope = %s AND key = %s FOR UPDATE', ['batch', blocked])
+                failures = []
+
+                def commit():
+                    try:
+                        writer.commit()
+                    except psycopg.Error as error:
+                        failures.append(error)
+                thread = threading.Thread(target=commit)
+                thread.start()
+                try:
+                    self.waiting(pid)
+                    if before:
+                        self.assertTrue(self.held(probe, 'batch', before), 'a key sorted first is taken first')
+                    if after:
+                        self.assertFalse(self.held(probe, 'batch', after), 'a key sorted last is not taken yet')
+                finally:
+                    blocker.rollback()
+                    thread.join()
+                self.assertEqual(failures, [])
+                writer.execute('DELETE FROM stock_movements WHERE operation_id = %s', [self.ops[0].pk])
+                writer.commit()
+
+    def test_a_rebuild_waits_for_a_committing_writer_and_never_sets_it_back(self):
+        # A writer holds one revision row (its commit has applied that key and not ended) and will take another; a
+        # rebuild starting then must take no row before the writer ends: it locks the table first and reads the largest
+        # revision only after, so the writer neither deadlocks with it nor has its revision set back. The rows are
+        # chosen by their place in the table: a rebuild that updated rows in that order would hold the first one.
+        with connection.cursor() as cursor:
+            cursor.execute('SELECT scope, key FROM core_rev ORDER BY ctid')
+            rows = cursor.fetchall()
+        self.assertGreaterEqual(len(rows), 2)
+        (first_scope, first_key), (last_scope, last_key) = rows[0], rows[-1]
+        failures, done = [], {}
+        with self.connect() as writer:
+            writer.execute("SET lock_timeout = '10s'")
+            writer.execute('UPDATE core_rev SET rev = rev + 100 WHERE scope = %s AND key = %s', [last_scope, last_key])
+            pid = {}
+
+            def rebuild():
+                from django.db import connections
+                try:
+                    with connection.cursor() as cursor:
+                        cursor.execute('SELECT pg_backend_pid()')
+                        pid['rebuild'] = cursor.fetchone()[0]
+                    done['target'] = rev.rebuild()
+                except Exception as error:                    # noqa: BLE001 - reported below
+                    failures.append(error)
+                finally:
+                    connections.close_all()
+            thread = threading.Thread(target=rebuild)
+            thread.start()
+            try:
+                for _ in range(200):
+                    if 'rebuild' in pid or failures:
+                        break
+                    threading.Event().wait(0.05)
+                self.waiting(pid['rebuild'])
+                writer.execute('UPDATE core_rev SET rev = rev + 100 WHERE scope = %s AND key = %s',
+                               [first_scope, first_key])         # a deadlock if the rebuild held this row
+                writer.commit()
+            finally:
+                thread.join()
+            committed = writer.execute('SELECT max(rev) FROM core_rev WHERE scope <> %s', ['*']).fetchone()[0]
+        self.assertEqual(failures, [])
+        self.assertGreater(done['target'], 100)
+        self.assertEqual(committed, done['target'])                      # every key at the target, none set back
 
     def test_two_writers_in_opposite_order_never_deadlock(self):
         failures, rounds = [], 15

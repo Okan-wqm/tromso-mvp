@@ -172,10 +172,12 @@ function initDependents(root: ParentNode): void {
     const fitRows = (): void => {
       const rows = [...dependent.querySelectorAll<HTMLElement>('[data-group]')];
       for (const row of rows) {
-        row.hidden = !fits(row);
+        // The value set, not read back: `hidden` reads as boolean | "until-found" in the DOM types (TypeScript 7).
+        const hidden = !fits(row);
+        row.hidden = hidden;
         row.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input, select').forEach((input) => {
-          input.disabled = row.hidden;
-          if (row.hidden && input instanceof HTMLInputElement) input.checked = false;
+          input.disabled = hidden;
+          if (hidden && input instanceof HTMLInputElement) input.checked = false;
         });
       }
       const none = dependent.querySelector<HTMLElement>('[data-none]');

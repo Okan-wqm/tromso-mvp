@@ -236,8 +236,9 @@ class ReviewTwoTests(SilentOxygenCase):
         found = self.alarms(self.now, self.now + timedelta(seconds=31))          # past the warning's on-delay
         self.assertEqual([(source, severity, parameter) for source, severity, parameter, _summary in found],
                          [('system', 'warning', PROBE_SILENT)])
-        self.assertEqual(found[0][3], 'T-02: the oxygen probe PROBE-T › O2 is silent; the oxygen is measured otherwise '
-                                      '(by hand or by another probe).')
+        self.assertTrue(found[0][3].startswith('PROBE-T › O2: T-02 › '), found[0][3])
+        self.assertTrue(found[0][3].endswith(': the oxygen probe is silent; the oxygen is measured otherwise (by hand or '
+                                             'by another probe).'), found[0][3])
         later = self.now + timedelta(hours=25)                     # the typed oxygen is old: nothing else is fresh
         found = [each for each in self.alarms(later, later + timedelta(minutes=10)) if 'T-01' not in each[3]]
         self.assertEqual([(source, severity) for source, severity, _parameter, _summary in found],
@@ -269,3 +270,34 @@ class ReviewTwoTests(SilentOxygenCase):
         self.assertEqual((silent.status, silent.silent_oxygen is not None), ('critical', True))
         fresh = water_read.latest([point], at=self.then + timedelta(minutes=1))[point.pk]
         self.assertIsNone(fresh.silent_oxygen)
+
+
+class ReviewThreeTests(SilentOxygenCase):
+    """Review 3 of the branch (2026-11-23)."""
+
+    def test_an_old_oxygen_past_its_warning_limit_only_is_a_warning_level_beside_the_critical(self):
+        """N1: a typed oxygen of 6.5 mg/L (critical below 6, warning below 7), 30 hours old: its warning level of the water
+        limits, and the alarm system's critical that the oxygen has no fresh value: a critical card is never only a
+        warning alarm. (Past its critical limit the critical level says it alone: ReviewTwoTests.)"""
+        self.typed(self.t1, 30, oxygen_mg_l='6.5')
+        self.typed(self.t1, 1, temperature_c='12.0')
+        self.typed(self.t2, 1, oxygen_mg_l='9.0', temperature_c='12.0')
+        self.assertEqual(self.card(self.t1).state.key, 'critical')
+        found = self.alarms(self.now, self.now + timedelta(seconds=31))       # past the warning's on-delay
+        self.assertEqual([(source, severity) for source, severity, _parameter, _summary in found],
+                         [('system', 'critical'), ('water_limit', 'warning')])
+
+    def test_a_silent_probe_at_an_inlet_is_a_warning_while_the_units_typed_oxygen_is_fresh(self):
+        """N2: an oxygen probe at T-02's inlet (no unit reads that point's water as its own), silent, while T-02's typed
+        oxygen is fresh: its default rule leaves it to the alarm system's warning, which says the probe and its place."""
+        self.typed(self.t1, 1, oxygen_mg_l='9.0', temperature_c='12.0')
+        self.typed(self.t2, 1, oxygen_mg_l='9.0', temperature_c='12.0')
+        device = make_device(self.connection, self.format, self.bergen, code='PROBE-I')
+        probe = make_channel(device, 'oxygen_mg_l', code='O2')
+        bindings.move(self.user, probe, point=point_of(self.t2, 'inlet'), at=self.now - timedelta(hours=2))
+        self.send(probe, OXYGEN, self.then)
+        found = self.alarms(self.now, self.now + timedelta(seconds=31))
+        self.assertEqual([(source, severity, parameter) for source, severity, parameter, _summary in found],
+                         [('system', 'warning', PROBE_SILENT)])
+        self.assertTrue(found[0][3].startswith('PROBE-I › O2: T-02 › '), found[0][3])
+        self.assertFalse(AlarmEvent.objects.filter(channel_no=probe.channel_no, closed_at__isnull=True).exists())

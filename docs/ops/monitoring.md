@@ -9,7 +9,7 @@ therefore reports to a monitor **outside** the server, which alerts a person. `d
 | What | Seen by | Turns red when |
 |---|---|---|
 | Every service of the stack | its health check (`deploy/compose.yml`) | a service stops, restarts in a loop, or answers wrong (web: the sign-in page; jobs: a job's last run failed, or the loop hung; backup: below; ingest: no database write for 60 s or a broker connection down) |
-| Backups | `agent.sh health` (the backup service's health check) | a dump, base backup or ship failed last or is overdue; the weekly check or the retention failed; **the database's WAL archiver is failing** (`pg_stat_archiver`) |
+| Backups | `agent.sh health` (the backup service's health check) | a dump, base backup or ship failed last or is overdue; the weekly check or the retention failed; **the database's WAL archiver is failing** (`pg_stat_archiver`); a ship found a WAL segment shorter than 16 MiB; **the owner's monthly prune is overdue** (`prunecheck`) |
 | The disk | `scripts/heartbeat.sh` | the disk Docker keeps the volumes on is over `HEARTBEAT_DISK_PERCENT` (80 %): the database and the WAL archive stop when it is full |
 | Certificates | `scripts/heartbeat.sh` | the console's or the broker's certificate ends within `HEARTBEAT_CERT_DAYS` (21) days |
 | Sensors | `scripts/heartbeat.sh` | no reading stored for `HEARTBEAT_SILENCE_MINUTES` (30; `0` before the farm has sensors) |

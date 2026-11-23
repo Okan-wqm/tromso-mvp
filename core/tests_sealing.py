@@ -166,6 +166,11 @@ SYSTEM_CALLS = {
     'experiments/read.py': 'the booking check: a booking holds its tank whoever may read it, and is said with its days '
                            'only; the oversee card, which says only the trial, its lead, its approval and its days',
     'experiments/preflight.py': 'the report before confidentiality goes live: counts and names every experiment',
+    'reports/compute/__init__.py': 'a regulatory report counts every unit (a legal figure is never partial); who opens '
+                                   'it is the right to read reports (owner amendment C1)',
+    'reports/compute/common.py': 'the fingerprint of the rows a filed report read, as compute read them',
+    'farm/health/withdrawal.py': 'the medicine withdrawal holds fish wherever they went, over every unit '
+                                 '(module_reads_as_system); a page shows only what it may of it',
     'farm/stock/read.py': 'the stock fold: a fold over part of a batch’s lines is a wrong figure; what is shown of it is '
                           'narrowed where it is shown',
 }
@@ -198,7 +203,7 @@ class SystemCallSiteTests(SimpleTestCase):
             relative = path.relative_to(root).as_posix()
             if '/tests' in f'/{relative}' or relative.startswith(('node_modules', '.venv')) or '/migrations/' in relative:
                 continue
-            if re.search(r'\bsealing\.system\(|^\s*with system\(', path.read_text(encoding='utf-8'), re.M):
+            if re.search(r'\bsealing\.(system|module_reads_as_system)\(|^\s*with system\(', path.read_text(encoding='utf-8'), re.M):
                 found.add(relative)
         found.add('core/sealing.py')
         self.assertEqual(sorted(found), sorted(SYSTEM_CALLS))

@@ -156,6 +156,36 @@ def system(reason):
         _current.reset(token)
 
 
+def module_reads_as_system(namespace, reason):
+    """Makes every function and method defined in a module (its `globals()`) read as the system for `reason`: for a
+    rule whose every figure must count every unit whoever asks (the medicine withdrawal, which holds fish whatever
+    experiment their unit is in). Called once at the end of the module; the module is named among the system's
+    readers (core/tests_sealing.py)."""
+    import functools
+    import inspect
+
+    def wrapped(function):
+        @functools.wraps(function)
+        def inner(*args, **kwargs):
+            with system(reason):
+                return function(*args, **kwargs)
+        return inner
+
+    module = namespace['__name__']
+    for name, value in list(namespace.items()):
+        if inspect.isfunction(value) and value.__module__ == module:
+            namespace[name] = wrapped(value)
+        elif inspect.isclass(value) and value.__module__ == module:
+            for attribute, member in list(vars(value).items()):
+                if inspect.isfunction(member):
+                    setattr(value, attribute, wrapped(member))
+                elif isinstance(member, (staticmethod, classmethod)):
+                    setattr(value, attribute, type(member)(wrapped(member.__func__)))
+                elif isinstance(member, property):
+                    setattr(value, attribute, property(*(wrapped(part) if part else None
+                                                        for part in (member.fget, member.fset, member.fdel))))
+
+
 @contextmanager
 def as_viewer(user):
     """Reads inside this block are narrowed for `user` (a request does this in SealingMiddleware)."""

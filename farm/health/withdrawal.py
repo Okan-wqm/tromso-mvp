@@ -83,7 +83,7 @@ from django.db.models import Q
 from django.utils import formats
 from django.utils.translation import gettext as _, ngettext
 
-from core import audit
+from core import audit, sealing
 from core.platform import correction_window_days, unknown_withdrawal_days
 from core.models import AuditLog
 from farm import withdrawal_gate as gate
@@ -1660,3 +1660,9 @@ def guarded_units(user, unit_ids, first, write, seen=None):
     if first is None and batch_ids:
         first = min(began for (_unit, batch_id), (began, _ended) in stock_read.spans().items() if batch_id in batch_ids)
     return guarded(user, batch_ids, today, write, seen=seen, back=first)
+
+
+# Every withdrawal is worked out over every unit, whoever asks (core.sealing): fish held by a course given in a sealed
+# experiment's tank are held wherever they went, and a harvest of them is warned of, whoever may see that tank. What a
+# page shows of it is narrowed where it is shown.
+sealing.module_reads_as_system(globals(), 'the medicine withdrawal')

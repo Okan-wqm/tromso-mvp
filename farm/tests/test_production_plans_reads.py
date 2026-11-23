@@ -316,7 +316,7 @@ class BudgetTests(Fixtures, FeedingTestCase):
     and with a target, so each row reads every part (the withdrawal, the purge in degree-days, the last feeding, the
     forecast)."""
 
-    CEILING = 90          # held since 2026-11-22 (equal at 3 and 9 units, asserted); never raised without a review
+    CEILING = 60          # measured 55 at 3 and at 9 units (2026-11-22), a small margin; never raised without a review
 
     def setUp(self):
         super().setUp()
@@ -349,7 +349,8 @@ class BudgetTests(Fixtures, FeedingTestCase):
         large, more = self.count()
         self.assertEqual(more - rows, 6)
         self.assertEqual(small, large)
-        self.assertLessEqual(large, self.CEILING, f'the page costs {large} queries')
+        for queries in (small, large):
+            self.assertLessEqual(queries, self.CEILING, f'the page costs {queries} queries')
         # Every row of the units made is held (its earliest date read the withdrawal, its last feeding and the water).
         made = {unit.pk for unit in self.made}
         decides = {row['earliest'].decides for row in self.client.get(reverse('farm:productionplan_list'))

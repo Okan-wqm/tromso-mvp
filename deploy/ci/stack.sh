@@ -35,7 +35,7 @@ ADMIN_PASSWORD_FILE=$T/admin_password
 say() { echo "== $*"; }
 psql_as() {  # psql_as ROLE SECRET SQL: in the database container, as ROLE with its own password
   "${DC[@]}" exec -T -e ROLE="$1" -e SECRET="$2" -e SQL="$3" db sh -c \
-    'PGPASSWORD=$(head -n 1 "/run/secrets/$SECRET") psql -X -h 127.0.0.1 -U "$ROLE" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -At -c "$SQL"'
+    'PGPASSWORD=$(head -n 1 "/run/secrets/$SECRET") psql -X -h db -U "$ROLE" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -At -c "$SQL"'
 }
 health() { docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$1" 2>/dev/null || echo missing; }
 
@@ -256,8 +256,10 @@ rotate() {
   for leftover in "$SECRETS_DIR"/db_app_password.old "$SECRETS_DIR"/.db_app_password.new; do
     if [ -e "$leftover" ]; then echo "FAIL: $leftover was left"; exit 1; fi
   done
-  signin() { printf '%s\n' "$1" | "${DC[@]}" exec -T db sh -c \
-    'read -r p; PGPASSWORD=$p psql -X -h 127.0.0.1 -U balik_app -d "$POSTGRES_DB" -At -c "SELECT 1"' 2>&1; }
+  # over the network, from the backup container (inside the database container 127.0.0.1 is trusted by the image's
+  # pg_hba, so a password is never asked there)
+  signin() { printf '%s\n' "$1" | "${DC[@]}" exec -T backup sh -c \
+    'read -r p; PGPASSWORD=$p psql -X -h db -U balik_app -d "$PGDATABASE" -At -c "SELECT 1"' 2>&1; }
   [ "$(signin "$new")" = 1 ] || { echo "FAIL: the new password does not sign in"; exit 1; }
   if [ "$(signin "$old")" = 1 ]; then echo "FAIL: the old password still signs in"; exit 1; fi
   echo "the new password signs in, the old one is refused"

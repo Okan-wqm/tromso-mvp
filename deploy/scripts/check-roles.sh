@@ -1,8 +1,9 @@
 #!/bin/sh
 # Proves the database roles of an installed farm server (deploy/db/sql/roles.sql, docs/ops/database-roles.md): every
-# statement below is run as the role named, inside the database container, with that role's own password (read there
-# from its secret file, never on a command line), and must be refused or allowed as stated. Exit 1 on the first that
-# is not. Changes nothing: every allowed write is rolled back.
+# statement below is run as the role named, from inside the database container to its network address `db` (so the
+# password is asked: the image trusts 127.0.0.1 inside the container), with that role's own password read there from its
+# secret file, never on a command line, and must be refused or allowed as stated. Every check is reported; exit 1 when
+# one failed. Changes nothing: every allowed write is rolled back.
 #
 #   cd deploy && sh scripts/check-roles.sh                 (uses farm.env; ENV_FILE=... for another)
 #   COMPOSE="docker compose -p x --env-file y" sh scripts/check-roles.sh
@@ -21,7 +22,7 @@ as() {  # as ROLE SQL: runs SQL as ROLE; prints psql's output and errors
     *) echo "unknown role $role" >&2; exit 2 ;;
   esac
   $COMPOSE exec -T -e ROLE="$role" -e SECRET="$secret" -e SQL="$sql" db sh -c \
-    'PGPASSWORD=$(head -n 1 "/run/secrets/$SECRET") psql -X -h 127.0.0.1 -U "$ROLE" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -At -c "$SQL"' 2>&1
+    'PGPASSWORD=$(head -n 1 "/run/secrets/$SECRET") psql -X -h db -U "$ROLE" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -At -c "$SQL"' 2>&1
 }
 
 refused() {  # refused ROLE SQL: must fail for want of a right

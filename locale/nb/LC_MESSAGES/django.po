@@ -162,6 +162,10 @@ msgid "%(code)s has no tank."
 msgstr "%(code)s har ikke noe kar."
 
 #, python-format
+msgid "%(code)s is booked by another experiment from %(first)s to %(last)s."
+msgstr "%(code)s er booket av et annet forsøk fra %(first)s til %(last)s."
+
+#, python-format
 msgid "%(code)s · %(name)s (loop)"
 msgstr "%(code)s · %(name)s (kretsløp)"
 
@@ -519,6 +523,12 @@ msgid "%(count)s production department is not on any site."
 msgid_plural "%(count)s production departments are not on any site."
 msgstr[0] "%(count)s produksjonsavdeling tilhører ingen lokalitet."
 msgstr[1] "%(count)s produksjonsavdelinger tilhører ingen lokalitet."
+
+#, python-format
+msgid "%(count)s restricted record is affected too."
+msgid_plural "%(count)s restricted records are affected too."
+msgstr[0] "%(count)s begrenset post berøres også."
+msgstr[1] "%(count)s begrensede poster berøres også."
 
 #, python-format
 msgid "%(count)s sampling point"
@@ -1423,10 +1433,6 @@ msgid "%(tank)s holds no fish of %(species)s on day 0."
 msgstr "%(tank)s har ingen fisk av %(species)s på dag 0."
 
 #, python-format
-msgid "%(tank)s is booked to %(experiment)s on some of these days."
-msgstr "%(tank)s er booket til %(experiment)s noen av disse dagene."
-
-#, python-format
 msgid "%(tank)s is in %(replicate)s from %(first)s to %(last)s."
 msgstr "%(tank)s står i %(replicate)s fra %(first)s til %(last)s."
 
@@ -1467,10 +1473,6 @@ msgstr ""
 #, python-format
 msgid "%(tank)s was replaced in “%(experiment)s”."
 msgstr "%(tank)s ble byttet ut i «%(experiment)s»."
-
-#, python-format
-msgid "%(tank)s would be booked to %(experiment)s on those days."
-msgstr "%(tank)s ville vært booket til %(experiment)s de dagene."
 
 #, python-format
 msgid "%(target)s already has a %(role)s %(quantity)s channel then: %(channel)s."
@@ -2450,6 +2452,11 @@ msgstr "En person kan ikke plasseres før vedkommende begynte."
 msgid "A person cannot leave before they joined."
 msgstr "En person kan ikke slutte før vedkommende begynte."
 
+msgid "A person or a role outside the team reads only the parts shared with them, until the day given."
+msgstr ""
+"En person eller en rolle utenfor teamet leser bare delene som er delt med dem, til og med dagen "
+"som er oppgitt."
+
 msgid "A person who has left cannot be placed after their last day."
 msgstr "En person som har sluttet kan ikke plasseres etter siste dag."
 
@@ -2668,6 +2675,18 @@ msgstr ""
 "En alarmregel for en alvorlighetsgrad endres, slettes aldri: alarmene med den alvorlighetsgraden "
 "trenger den."
 
+msgid "A share ends after it begins."
+msgstr "En deling slutter etter at den begynner."
+
+msgid "A share is for one person or one role."
+msgstr "En deling gjelder én person eller én rolle."
+
+msgid "A share lasts at most two years and ends after it begins."
+msgstr "En deling varer høyst to år og slutter etter at den begynner."
+
+msgid "A share lasts at most two years: renew it when it ends."
+msgstr "En deling varer høyst to år: forny den når den slutter."
+
 msgid "A share of the outflow, from 0 to 100 %, can be stated for an outlet only."
 msgstr "En andel av utstrømmen, fra 0 til 100 %, kan bare oppgis for et utløp."
 
@@ -2753,8 +2772,10 @@ msgstr "Et system blir værende på lokaliteten det ble opprettet på."
 msgid "A table has at most %(count)d temperature columns."
 msgstr "En tabell har høyst %(count)d temperaturkolonner."
 
-msgid "A tank was booked to another experiment meanwhile: look at the places and try again."
-msgstr "Et kar ble booket til et annet forsøk i mellomtiden: se på plasseringene og prøv igjen."
+msgid "A tank or a system was booked by another experiment meanwhile: look at the places and try again."
+msgstr ""
+"Et kar eller et system ble booket av et annet forsøk i mellomtiden: se på plasseringene og prøv "
+"igjen."
 
 msgid "A tank, a pond or a cage; it cannot be changed later."
 msgstr "Kar, dam eller merd; kan ikke endres senere."
@@ -3523,6 +3544,9 @@ msgstr "En mengde trenger sin enhet, og en enhet sin mengde."
 msgid "An answered question has its answer and the day it came; an open one has no answer day."
 msgstr "Et besvart spørsmål har svaret og dagen det kom; et åpent har ingen svardag."
 
+msgid "An approval's validity needs its reference."
+msgstr "En godkjennings gyldighet krever referansen."
+
 msgid "An approved or rejected request has the time it was decided."
 msgstr "En godkjent eller avslått søknad har tidspunktet den ble avgjort."
 
@@ -3807,12 +3831,21 @@ msgstr "Bruk"
 msgid "Apply to the selected days"
 msgstr "Bruk på de valgte dagene"
 
+msgid "Approval"
+msgstr "Godkjenning"
+
 msgid "Approval number"
 msgstr "Godkjenningsnummer"
 
 #, python-format
 msgid "Approval number %(number)s"
 msgstr "Godkjenningsnummer %(number)s"
+
+msgid "Approval reference"
+msgstr "Godkjenningsreferanse"
+
+msgid "Approval valid until"
+msgstr "Godkjenning gyldig til"
 
 msgid "Approve"
 msgstr "Godkjenn"
@@ -3981,6 +4014,9 @@ msgstr "Høyst %(max)s."
 
 msgid "At most 720 hours (30 days)."
 msgstr "Høyst 720 timer (30 dager)."
+
+msgid "At most two years; renew it when it ends."
+msgstr "Høyst to år; forny den når den slutter."
 
 msgid "At sea-level pressure: the site has no altitude."
 msgstr "Ved trykket ved havnivå: lokaliteten har ingen høyde over havet."
@@ -4315,6 +4351,9 @@ msgstr "Paneler"
 
 msgid "Book"
 msgstr "Beholdning"
+
+msgid "Book a whole system"
+msgstr "Book et helt system"
 
 #, python-format
 msgid "Border %(ph)s"
@@ -4949,6 +4988,9 @@ msgstr ""
 "spesifikke regelen vinner: enhetens egen, så systemets, systemtypens, artens, typens; et korts "
 "valg på et panel kommer før reglene og panelets standard etter."
 
+msgid "Choose one person or one role."
+msgstr "Velg én person eller én rolle."
+
 msgid "Choose one place: a whole site, a production department, a system, a unit or equipment."
 msgstr "Velg ett sted: en hel lokalitet, en produksjonsavdeling, et system, en enhet eller utstyr."
 
@@ -4996,6 +5038,9 @@ msgstr "Velg enheter"
 
 msgid "Choose units, a batch, or a batch and units."
 msgstr "Velg enheter, en fiskegruppe, eller en fiskegruppe og enheter."
+
+msgid "Choose who may read it."
+msgstr "Velg hvem som kan lese det."
 
 msgid "Chosen by the people who administer HR."
 msgstr "Velges av de som administrerer HR."
@@ -6321,11 +6366,17 @@ msgstr "Tom – klar for utsett"
 msgid "Empty: every department of the site. A department must be on the site."
 msgstr "Tom: alle avdelinger på lokaliteten. En avdeling må ligge på lokaliteten."
 
+msgid "Empty: from now."
+msgstr "Tom: fra nå."
+
 msgid "Empty: the alarms of every site."
 msgstr "Tom: alarmene på alle lokaliteter."
 
 msgid "Empty: the rule for every species. A species’ own rule wins over it."
 msgstr "Tom: regelen for alle arter. En arts egen regel går foran."
+
+msgid "Empty: until removed from the team."
+msgstr "Tom: til personen fjernes fra teamet."
 
 msgid "Enabled"
 msgstr "Aktivert"
@@ -6580,6 +6631,9 @@ msgstr "Alle i samtalen ser at en melding ble slettet, ikke hva den sa."
 msgid "Everyone who can use Messages is a member already."
 msgstr "Alle som kan bruke Meldinger, er allerede medlem."
 
+msgid "Everyone who reads experiments"
+msgstr "Alle som leser forsøk"
+
 msgid "Everything supplied"
 msgstr "Alt som leveres"
 
@@ -6644,6 +6698,9 @@ msgstr "Utløpsdato"
 
 msgid "Export CSV"
 msgstr "Eksporter CSV"
+
+msgid "Exported"
+msgstr "Eksportert"
 
 #, python-format
 msgid "FCR %(fcr)s"
@@ -7732,6 +7789,9 @@ msgstr "Vekst"
 msgid "Growth stage"
 msgstr "Vekststadium"
 
+msgid "Guest"
+msgstr "Gjest"
+
 msgid "Gutted weight"
 msgstr "Sløyd vekt"
 
@@ -8450,6 +8510,12 @@ msgid_plural "It operates %(count)d slaughter facilities: keep “%(category)s�
 msgstr[0] "Den driver %(count)d slakteri: la «%(category)s» stå avkrysset."
 msgstr[1] "Den driver %(count)d slakterier: la «%(category)s» stå avkrysset."
 
+#, python-format
+msgid "It reaches %(count)d record you may not see: someone who may see it deletes it."
+msgid_plural "It reaches %(count)d records you may not see: someone who may see them deletes it."
+msgstr[0] "Den når %(count)d post du ikke kan se: noen som kan se den, må slette."
+msgstr[1] "Den når %(count)d poster du ikke kan se: noen som kan se dem, må slette."
+
 msgid ""
 "It stops counting and stays in the history with its reason. An event that was right but is over "
 "is closed on its form instead."
@@ -8900,6 +8966,9 @@ msgstr "Lenke sendt til"
 
 msgid "List what was delivered."
 msgstr "List opp det som ble levert."
+
+msgid "Live"
+msgstr "Gjeldende"
 
 msgid "Live delivery inside a withdrawal"
 msgstr "Levende levering innenfor en tilbakeholdelsestid"
@@ -9996,6 +10065,9 @@ msgstr "Ingen i teamet ennå."
 msgid "No one in the team yet. Use “Add person” to add a row."
 msgstr "Ingen i teamet ennå. Bruk «Legg til person» for å legge til en rad."
 
+msgid "No one outside the team has read it."
+msgstr "Ingen utenfor teamet har lest det."
+
 msgid "No open tasks"
 msgstr "Ingen åpne oppgaver"
 
@@ -10534,6 +10606,9 @@ msgid ""
 msgstr ""
 "Ingenting sendes ennå: push-transporten er ikke koblet til (mobilappen kommer senere). Hvert "
 "varsel venter i utboksen nedenfor, med mottaker og nivå, og sendes når den er det."
+
+msgid "Nothing is shared."
+msgstr "Ingenting er delt."
 
 msgid "Nothing needs attention"
 msgstr "Ingenting trenger oppfølging"
@@ -11212,6 +11287,9 @@ msgstr "Forfalt"
 msgid "Overdue tasks"
 msgstr "Forfalte oppgaver"
 
+msgid "Oversaw"
+msgstr "Fulgte opp"
+
 msgid "Overview"
 msgstr "Oversikt"
 
@@ -11326,6 +11404,9 @@ msgstr "Overordnet utstyr"
 msgid "Parent system"
 msgstr "Overordnet system"
 
+msgid "Part"
+msgstr "Del"
+
 msgid "Parts"
 msgstr "Deler"
 
@@ -11432,6 +11513,12 @@ msgstr "Tillatelser gitt direkte til én bruker i stedet for gjennom en rolle."
 
 msgid "Person"
 msgstr "Person"
+
+msgid "Person id"
+msgstr "Person-id"
+
+msgid "Person or role"
+msgstr "Person eller rolle"
 
 msgid "Petrol"
 msgstr "Bensin"
@@ -12180,6 +12267,9 @@ msgstr "Oppdater hvert (sekund)"
 msgid "Refrigerant"
 msgstr "Kjølemedium"
 
+msgid "Refused"
+msgstr "Avvist"
+
 msgid "Region"
 msgstr "Region"
 
@@ -12392,6 +12482,9 @@ msgstr "Gjenopprettet"
 msgid "Result"
 msgstr "Resultat"
 
+msgid "Results"
+msgstr "Resultater"
+
 msgid "Retired"
 msgstr "Utfaset"
 
@@ -12425,6 +12518,19 @@ msgid ""
 msgstr ""
 "Å gjennomgå betyr at utsagnet og kilden er riktige: det registreres i ditt navn, nå. Endrer du "
 "utsagnet, emnene, artene eller kilden til en gjennomgått oppføring, blir den et utkast igjen."
+
+msgid "Revoke"
+msgstr "Trekk tilbake"
+
+#, python-format
+msgid "Revoked %(day)s"
+msgstr "Trukket tilbake %(day)s"
+
+msgid "Revoked at"
+msgstr "Trukket tilbake"
+
+msgid "Revoked by"
+msgstr "Trukket tilbake av"
 
 msgid "River or stream"
 msgstr "Elv eller bekk"
@@ -12656,6 +12762,9 @@ msgstr "Lagre enheter"
 msgid "Save withdrawal"
 msgstr "Lagre tilbakeholdelsestid"
 
+msgid "Saved."
+msgstr "Lagret."
+
 msgid "Say after how many hours an open clock-in counts as a forgotten clock-out."
 msgstr "Oppgi etter hvor mange timer en åpen innstempling regnes som en glemt utstempling."
 
@@ -12697,6 +12806,9 @@ msgstr "Si hvilket virkestoff når det er et annet, og bare da."
 msgid "Say who received the fish."
 msgstr "Si hvem som mottok fisken."
 
+msgid "Say who, which parts, until when and why."
+msgstr "Si hvem, hvilke deler, til når og hvorfor."
+
 msgid "Say whom the feed is for: the production fish or the cleaner fish."
 msgstr "Oppgi hvem fôret er til: produksjonsfisken eller rensefisken."
 
@@ -12705,6 +12817,9 @@ msgstr "Skriv hvorfor den avlyses."
 
 msgid "Say why it is closed."
 msgstr "Oppgi hvorfor den er lukket."
+
+msgid "Say why it is shared."
+msgstr "Si hvorfor det deles."
 
 msgid "Say why it is voided."
 msgstr "Skriv hvorfor den annulleres."
@@ -13148,6 +13263,12 @@ msgstr "Alvorlighet"
 msgid "Shape"
 msgstr "Form"
 
+msgid "Share"
+msgstr "Del"
+
+msgid "Share a part"
+msgstr "Del en del"
+
 msgid ""
 "Share of the fish of the first day that were not lost since: dead, culled or lost fish counted "
 "from the first day of the tank to its last day or today"
@@ -13162,8 +13283,20 @@ msgstr "Andel av utstrømmen (%%)"
 msgid "Share of the outflow (%)"
 msgstr "Andel av utstrømmen (%)"
 
+msgid "Shared with"
+msgstr "Delt med"
+
+msgid "Shared."
+msgstr "Delt."
+
+msgid "Shares"
+msgstr "Delinger"
+
 msgid "Shares of the total sulfide; give the total sulfide for the H₂S and its border."
 msgstr "Andeler av totalt sulfid; oppgi totalt sulfid for H₂S og grensen."
+
+msgid "Sharing"
+msgstr "Deling"
 
 msgid "Shift"
 msgstr "Skift"
@@ -13789,6 +13922,9 @@ msgstr "Leverandørens dokumentnummer"
 msgid "Supplies"
 msgstr "Leveranser"
 
+msgid "Support read"
+msgstr "Lest for brukerstøtte"
+
 msgid "Surface area (m²)"
 msgstr "Overflateareal (m²)"
 
@@ -13831,6 +13967,9 @@ msgstr ""
 msgid "System (its loop)"
 msgstr "System (kretsløpet)"
 
+msgid "System booking"
+msgstr "Systembooking"
+
 msgid "System type"
 msgstr "Systemtype"
 
@@ -13842,6 +13981,9 @@ msgstr "Systemer"
 
 msgid "Systems (loop)"
 msgstr "Systemer (kretsløp)"
+
+msgid "Systems and tanks"
+msgstr "Systemer og kar"
 
 msgid "Systems by status"
 msgstr "Systemer etter status"
@@ -13922,6 +14064,12 @@ msgstr "Oppgaver med frist i dag"
 
 msgid "Team"
 msgstr "Team"
+
+msgid "Team and shares only, not the platform admin"
+msgstr "Bare teamet og de det er delt med, ikke plattformadministratoren"
+
+msgid "Team and shares, and the platform admin for support"
+msgstr "Teamet og de det er delt med, og plattformadministratoren for brukerstøtte"
 
 msgid "Team list"
 msgstr "Teamliste"
@@ -14790,6 +14938,9 @@ msgstr "Siste dag i behandlingen, planlagt inntil 28 dager frem. Tilbakeholdelse
 msgid "The last day of the treatment is now %(date)s."
 msgstr "Siste dag i behandlingen er nå %(date)s."
 
+msgid "The last day the approval holds."
+msgstr "Den siste dagen godkjenningen gjelder."
+
 #, python-format
 msgid "The latest changes to this %(name)s."
 msgstr "De siste endringene i denne posten (%(name)s)."
@@ -15278,6 +15429,13 @@ msgstr "Registreringene gir ikke lenger det som ble sendt inn: en korrigering tr
 msgid "The records still give what was filed."
 msgstr "Registreringene gir fortsatt det som ble sendt inn."
 
+msgid ""
+"The reference of the animal-research approval (FOTS) it runs under. A person who looks after its "
+"tanks sees it with the lead’s name and phone."
+msgstr ""
+"Referansen til dyreforsøksgodkjenningen (FOTS) forsøket kjøres under. En som har tilsyn med "
+"karene ser den sammen med lederens navn og telefon."
+
 msgid "The report is computed in a newer way than when it was filed."
 msgstr "Rapporten beregnes på en nyere måte enn da den ble sendt inn."
 
@@ -15305,6 +15463,9 @@ msgid ""
 msgstr ""
 "Resultatet av en følsomhetsundersøkelse i uken (lakselusforskriften § 10 d): når, laboratoriet, "
 "virkestoffet og resultatet. Lagres atskilt fra rapporten."
+
+msgid "The results and the data bring the design and the systems with them; the water brings the systems."
+msgstr "Resultatene og dataene tar med designet og systemene; vannet tar med systemene."
 
 msgid ""
 "The right end. Choose the two ends so that the pH the water is kept at and the pH at which CO₂ "
@@ -15412,6 +15573,9 @@ msgstr "Sensorregelen slår ikke lenger til"
 #, python-format
 msgid "The sensors at %(place)s: those there now first, then those there before."
 msgstr "Sensorene ved %(place)s: først de som er der nå, så de som var der før."
+
+msgid "The share was revoked."
+msgstr "Delingen ble trukket tilbake."
 
 #, python-format
 msgid ""
@@ -15892,6 +16056,9 @@ msgstr "Veiingen %(date)s i %(unit)s ville ikke funnet fisk av %(batch)s. Annull
 msgid "The width cannot be more than the length."
 msgstr "Bredden kan ikke være større enn lengden."
 
+msgid "The window ends after it begins."
+msgstr "Perioden slutter etter at den begynner."
+
 #, python-format
 msgid ""
 "The withdrawal after the last treatment day, as the SPC states it: degree-days (døgngrader) and "
@@ -16231,6 +16398,9 @@ msgstr "Denne personen har allerede en permisjonssøknad for noen av disse dagen
 msgid "This person already has a plan for this day."
 msgstr "Denne personen har allerede en plan for denne dagen."
 
+msgid "This person already holds this part."
+msgstr "Denne personen har allerede denne delen."
+
 msgid "This person is already clocked in for some of this time."
 msgstr "Denne personen er allerede stemplet inn for deler av denne tiden."
 
@@ -16280,6 +16450,9 @@ msgstr "Denne rapporten er allerede startet for denne perioden: åpne den fra li
 msgid "This report is closed already."
 msgstr "Denne rapporten er allerede lukket."
 
+msgid "This role already holds this part."
+msgstr "Denne rollen har allerede denne delen."
+
 msgid "This sample is already voided."
 msgstr "Denne prøven er allerede annullert."
 
@@ -16304,6 +16477,9 @@ msgstr "Denne lokaliteten har allerede et system med denne koden."
 
 msgid "This species already has limits for this parameter and water type."
 msgstr "Denne arten har allerede grenser for denne parameteren og vanntypen."
+
+msgid "This system is booked on some of these days."
+msgstr "Dette systemet er booket noen av disse dagene."
 
 msgid "This system is deleted."
 msgstr "Dette systemet er slettet."
@@ -16881,6 +17057,9 @@ msgstr "Veterinær- eller fiskehelsebesøk"
 
 msgid "Veterinary and fish health"
 msgstr "Veterinær og fiskehelse"
+
+msgid "Viewed"
+msgstr "Lest"
 
 msgid "Viral haemorrhagic septicaemia (VHS)"
 msgstr "Viral hemoragisk septikemi (VHS)"
@@ -17477,6 +17656,12 @@ msgstr "Hvem det går tilbake til."
 msgid "Who it was bought from: a supplier of equipment and spare parts (Purchasing › Suppliers)."
 msgstr "Hvem det ble kjøpt fra: en leverandør av utstyr og reservedeler (Innkjøp › Leverandører)."
 
+msgid "Who looked"
+msgstr "Hvem som har sett"
+
+msgid "Who may read it"
+msgstr "Hvem som kan lese det"
+
 msgid "Who received them: the customer or the receiving site."
 msgstr "Hvem som mottok dem: kunden eller mottakslokaliteten."
 
@@ -17732,6 +17917,15 @@ msgstr "I går på det tidligste; karet er booket til forsøket fram til da."
 
 msgid "You"
 msgstr "Du"
+
+msgid ""
+"You alone decide who sees this experiment. Someone with direct access to the database or the "
+"server can still read its stored rows. The platform admin still sees that a tank or system is "
+"booked, and for which days, since booking conflicts must stay visible."
+msgstr ""
+"Du alene bestemmer hvem som ser dette forsøket. Den som har direkte tilgang til databasen eller "
+"serveren, kan likevel lese de lagrede radene. Plattformadministratoren ser fortsatt at et kar "
+"eller system er booket, og for hvilke dager, siden bookingkonflikter må være synlige."
 
 msgid "You are already clocked in."
 msgstr "Du er allerede stemplet inn."
@@ -18072,6 +18266,10 @@ msgstr[1] "biomasse som veid for %(days)s dager siden"
 #, python-format
 msgid "book %(book)s · %(difference)s (%(percent)s)"
 msgstr "beholdning %(book)s · %(difference)s (%(percent)s)"
+
+#, python-format
+msgid "booked %(first)s to %(last)s"
+msgstr "booket %(first)s til %(last)s"
 
 #, python-format
 msgid "border pH %(ph)s, margin %(margin)s"
@@ -18643,6 +18841,12 @@ msgstr "forsøksplassering"
 
 msgid "experiment placements"
 msgstr "forsøksplasseringer"
+
+msgid "experiment share"
+msgstr "forsøksdeling"
+
+msgid "experiment shares"
+msgstr "forsøksdelinger"
 
 msgid "experiments"
 msgstr "forsøk"
@@ -19393,6 +19597,12 @@ msgstr "kvalitetsflagg"
 msgid "read it"
 msgstr "les den"
 
+msgid "read of a confidential record"
+msgstr "lesing av en konfidensiell post"
+
+msgid "reads of confidential records"
+msgstr "lesinger av konfidensielle poster"
+
 msgid "recurring"
 msgstr "gjentakende"
 
@@ -19468,6 +19678,12 @@ msgstr "lusetelling"
 
 msgid "sea-lice counts"
 msgstr "lusetellinger"
+
+msgid "sealed cell"
+msgstr "forseglet celle"
+
+msgid "sealed cells"
+msgstr "forseglede celler"
 
 msgid "seawater scale (SWS)"
 msgstr "sjøvannsskalaen (SWS)"
@@ -19581,6 +19797,12 @@ msgstr "leverandører"
 
 msgid "system"
 msgstr "system"
+
+msgid "system booking"
+msgstr "systembooking"
+
+msgid "system bookings"
+msgstr "systembookinger"
 
 msgid "system link"
 msgstr "systemkobling"

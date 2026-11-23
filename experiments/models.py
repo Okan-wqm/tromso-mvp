@@ -58,10 +58,15 @@ TRANSITIONS = {
 
 
 class Audience(models.TextChoices):
-    """Who may read an experiment: its team and the people its lead shares a part with (sealed, the default), or
-    everyone who may read experiments (open). Changed by the lead only, logged."""
-    SEALED = 'sealed', _('Team and shares only')
+    """Who may read an experiment (owner amendment C4: its lead alone decides). Open: everyone who may read experiments.
+    Sealed (the default): its team and the people its lead shares a part with, and the platform admin for support, each
+    such read logged and shown to the lead. Private: its team and shares only, not the platform admin either. A sealed or
+    private experiment, its cells and everything on them do not exist for anyone else; what the platform admin still sees
+    of a private one is that a tank or system is booked, and for which days (booking conflicts must stay visible).
+    Changed by the lead only, logged."""
     OPEN = 'open', _('Everyone who reads experiments')
+    SEALED = 'sealed', _('Team and shares, and the platform admin for support')
+    PRIVATE = 'private', _('Team and shares only, not the platform admin')
 
 
 class AllocationMethod(models.TextChoices):
@@ -106,15 +111,14 @@ class Experiment(AuditedModel):
     copied_from = models.ForeignKey('self', null=True, blank=True, on_delete=models.DO_NOTHING,
                                     related_name='copies', verbose_name=_('Copied from'))
     notes = models.CharField(_('Notes'), max_length=2000, blank=True)
-    # Who may read it (core.sealing; sealed whatever writes the row, the database default too): a sealed experiment, its cells and everything on them do not exist for anyone
-    # outside its team and its shares. Editable after the start, like the name (migration 0004).
-    audience = models.CharField(_('Who may read it'), max_length=6, choices=Audience.choices, default=Audience.SEALED,
+    # Who may read it (core.sealing; sealed whatever writes the row, the database default too): a sealed or private
+    # experiment, its cells and everything on them do not exist for anyone outside its team and its shares (and, for a
+    # sealed one, the platform admin). Editable after the start, like the name (migration 0004).
+    audience = models.CharField(_('Who may read it'), max_length=7, choices=Audience.choices, default=Audience.SEALED,
                                 db_default=Audience.SEALED)
     # The animal-research approval it runs under (FOTS), shown on the card a person overseeing its tanks sees.
     approval_ref = models.CharField(_('Approval reference'), max_length=60, blank=True, default='', db_default='')
     approval_valid_until = models.DateField(_('Approval valid until'), null=True, blank=True)
-    # Whom a night technician calls about a tank of it (the lead's phone): on the same card.
-    contact_phone = models.CharField(_('Contact phone'), max_length=30, blank=True, default='', db_default='')
 
     kept_note = _('They stay as they are.')
 
@@ -330,6 +334,8 @@ class GroupLevel(models.Model):
                                verbose_name=_('Factor'))
     level = models.ForeignKey(Level, on_delete=models.CASCADE, related_name='group_levels',
                               verbose_name=_('Level'))
+
+    objects = SealedManager()
 
     class Meta:
         db_table = 'experiment_group_levels'

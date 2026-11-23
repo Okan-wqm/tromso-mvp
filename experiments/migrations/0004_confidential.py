@@ -1,10 +1,10 @@
 """Experiment confidentiality and whole-system booking (core.sealing, experiments.sealing): who may read an experiment
 (its audience, sealed by default; its team's windows and the guest role; the shares given by its lead), the approval it runs
-under and whom to call (the card a person overseeing its tanks sees), the whole-system bookings with their tagged
+under (the card a person overseeing its tanks sees, with the lead's phone from their employee record), the whole-system bookings with their tagged
 placements, and the sealed cells as a view. Existing experiments become sealed, their rows stay valid (every new column has
 a default or is empty).
 
-The database holds: a started experiment still changes its audience, approval and contact (the frozen trigger of 0002
+The database holds: a started experiment still changes its audience and approval (the frozen trigger of 0002
 widened, nothing else); a booking's placements are tanks of its system, in its replicate, on its days; a booking is not
 shortened past them and follows the placements' frozen rule; no tank joins or leaves a system booked from today on, and no
 booked system is moved under another; the view `experiment_cells` is the one definition of who is in which cell when."""
@@ -56,9 +56,9 @@ BEGIN
         RETURN NEW;
     END IF;
     IF (to_jsonb(NEW) - 'status' - 'name' - 'notes' - 'audience' - 'approval_ref' - 'approval_valid_until'
-        - 'contact_phone' - 'version' - 'updated_at' - {USER_COLUMNS})
+        - 'version' - 'updated_at' - {USER_COLUMNS})
        IS DISTINCT FROM (to_jsonb(OLD) - 'status' - 'name' - 'notes' - 'audience' - 'approval_ref'
-        - 'approval_valid_until' - 'contact_phone' - 'version' - 'updated_at' - {USER_COLUMNS}) THEN
+        - 'approval_valid_until' - 'version' - 'updated_at' - {USER_COLUMNS}) THEN
         RAISE EXCEPTION 'experiment % has started: its design cannot change', OLD.code USING ERRCODE = 'check_violation';
     END IF;
     RETURN NEW;
@@ -165,20 +165,20 @@ CREATE TRIGGER trg_systems_parent_booked
     FOR EACH ROW EXECUTE FUNCTION system_parent_booked();
 
 -- The sealed cells: who is in which tank or system on which days, for the seal (core.sealing). Live rows of live
--- experiments whose audience is sealed, drafts included (a draft reserves); a template has no placements.
+-- experiments that are not open (sealed or private), drafts included (a draft reserves); a template has no placements.
 CREATE VIEW experiment_cells AS
     SELECT u.id, u.unit_id, NULL::uuid AS system_id, u.from_on, u.until_on, g.experiment_id
     FROM experiment_replicate_units u
         JOIN experiment_replicates r ON r.id = u.replicate_id AND NOT r.is_deleted
         JOIN experiment_groups g ON g.id = r.group_id AND NOT g.is_deleted
-        JOIN experiments e ON e.id = g.experiment_id AND NOT e.is_deleted AND e.audience = 'sealed'
+        JOIN experiments e ON e.id = g.experiment_id AND NOT e.is_deleted AND e.audience <> 'open'
     WHERE NOT u.is_deleted
     UNION ALL
     SELECT b.id, NULL::uuid, b.system_id, b.from_on, b.until_on, g.experiment_id
     FROM experiment_replicate_systems b
         JOIN experiment_replicates r ON r.id = b.replicate_id AND NOT r.is_deleted
         JOIN experiment_groups g ON g.id = r.group_id AND NOT g.is_deleted
-        JOIN experiments e ON e.id = g.experiment_id AND NOT e.is_deleted AND e.audience = 'sealed'
+        JOIN experiments e ON e.id = g.experiment_id AND NOT e.is_deleted AND e.audience <> 'open'
     WHERE NOT b.is_deleted;
 """
 
@@ -288,12 +288,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='experiment',
             name='audience',
-            field=models.CharField(choices=[('sealed', 'Team and shares only'), ('open', 'Everyone who reads experiments')], db_default='sealed', default='sealed', max_length=6, verbose_name='Who may read it'),
-        ),
-        migrations.AddField(
-            model_name='experiment',
-            name='contact_phone',
-            field=models.CharField(blank=True, db_default='', default='', max_length=30, verbose_name='Contact phone'),
+            field=models.CharField(choices=[('open', 'Everyone who reads experiments'), ('sealed', 'Team and shares, and the platform admin for support'), ('private', 'Team and shares only, not the platform admin')], db_default='sealed', default='sealed', max_length=7, verbose_name='Who may read it'),
         ),
         migrations.AddField(
             model_name='member',
@@ -312,7 +307,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='experiment',
-            constraint=models.CheckConstraint(condition=models.Q(('audience__in', ['sealed', 'open'])), name='chk_experiments_audience'),
+            constraint=models.CheckConstraint(condition=models.Q(('audience__in', ['open', 'sealed', 'private'])), name='chk_experiments_audience'),
         ),
         migrations.AddConstraint(
             model_name='experiment',

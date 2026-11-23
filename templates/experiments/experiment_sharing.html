@@ -7,7 +7,18 @@
 {% block heading %}{% trans "Sharing" %}{% endblock %}
 {% block content %}
 <section class="detail-section">
-  <p>{% blocktrans trimmed with audience=object.get_audience_display %}Who may read it: {{ audience }}. A person or a role outside the team reads only the parts shared with them, until the day given.{% endblocktrans %}</p>
+  <h2 class="section-title">{% trans "Who may read it" %}</h2>
+  <form method="post" action="{{ request.path }}" novalidate>
+    {% csrf_token %}
+    {% if audience_form.non_field_errors %}<div class="form-error" role="alert">{{ audience_form.non_field_errors }}</div>{% endif %}
+    {% with field=audience_form.audience %}{% include "registration/_field.html" %}{% endwith %}
+    <p class="muted">{% trans "You alone decide who sees this experiment. Someone with direct access to the database or the server can still read its stored rows. The platform admin still sees that a tank or system is booked, and for which days, since booking conflicts must stay visible." %}</p>
+    <div class="form-actions"><button type="submit" class="button button-inline">{% trans "Save" %}</button></div>
+  </form>
+</section>
+<section class="detail-section">
+  <h2 class="section-title">{% trans "Shared with" %}</h2>
+  <p>{% trans "A person or a role outside the team reads only the parts shared with them, until the day given." %}</p>
   <div class="table-wrap"><table class="data-table">
     <thead><tr><th scope="col">{% trans "Person or role" %}</th><th scope="col">{% trans "Part" %}</th><th scope="col">{% trans "Until" %}</th><th scope="col">{% trans "Reason" %}</th><th scope="col">{% trans "Status" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>
     <tbody>

@@ -19,6 +19,15 @@ SCREENS = {
         note="A record's own rows are also shown on the History tab of its edit page.",
         columns={'*': system('written by core.audit when the change is saved')},
     ),
+    'AccessEvent': Screen(
+        create=no('written by the code: a read of a sealed experiment by someone outside its team (core.sealing.'
+                  'log_access)'),
+        edit=no('append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin'),
+        delete=no('append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin'),
+        read=('experiments:experiment_detail',),
+        note='The read log of confidential records; an experiment’s lead reads its rows on the Who looked tab.',
+        columns={'*': system('written by core.sealing.log_access when the record is read')},
+    ),
     'EntryKey': Screen(
         create=no('written by the code: a new record a form creates stores the form\'s key with it (core.crud, '
                   'F-232)'),

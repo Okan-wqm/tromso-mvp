@@ -35,37 +35,47 @@ def load(user):
     """The viewer for a signed-in `user`: their live teams and live shares (their own and their roles'), with the parts'
     closure; `oversee` from the role matrix."""
     now = timezone.now()
-    team = frozenset(Member._base_manager.filter(live(now), user=user).values_list('experiment_id', flat=True))
+    members = Member._base_manager.filter(live(now), user=user).values_list('experiment_id', 'role')
+    # A guest of the team is present and observes: they read the experiment's shell (its code, name, lead and team),
+    # no part of it (plan 2.2).
+    team = frozenset(experiment for experiment, role in members if role != Member.Role.GUEST)
+    guest_of = {experiment for experiment, role in members if role == Member.Role.GUEST}
     shares = ExperimentShare._base_manager.filter(live(now), Q(user=user) | Q(group__in=user.groups.all()),
                                             revoked_at__isnull=True).values_list('experiment_id', 'part')
-    granted = {}
+    granted = {SHELL: guest_of} if guest_of else {}
     for experiment_id, part in shares:
         for each in closure([part]):
             granted.setdefault(each, set()).add(experiment_id)
+    granted = {part: frozenset(ids) for part, ids in granted.items()}
+    barred = frozenset()
+    if user.is_superuser:
+        # What the platform admin may not read: the private experiments they are not in (owner amendment C4).
+        reached = team.union(*granted.values())
+        barred = frozenset(Experiment._base_manager.filter(audience=Experiment.Audience.PRIVATE)
+                           .exclude(pk__in=list(reached)).values_list('pk', flat=True))
     return sealing.Viewer(user_id=user.pk, username=user.get_username(), is_super=user.is_superuser,
                           oversee=user.has_perm('experiments.oversee_experiment') and not user.is_superuser,
-                          team=team, granted={part: frozenset(ids) for part, ids in granted.items()})
+                          team=team, granted=granted, barred=barred)
 
 
 ALL = frozenset(sealing.PARTS)
 
 
 def parts_of(experiment, current=None):
-    """The parts of `experiment` the viewer of the moment reads: all of them for its team, a superuser, the system and
-    an open experiment; for a grantee those of their live shares, with what they bring."""
+    """The parts of `experiment` the viewer of the moment reads: all of them for whoever works on it (in_team); for a
+    grantee those of their live shares, with what they bring."""
     current = sealing.viewer() if current is None else current
-    if current is None or current.is_super or experiment.audience == Experiment.Audience.OPEN \
-            or experiment.pk in current.team:
+    if in_team(experiment, current):
         return ALL
     return frozenset(part for part in sealing.PARTS if experiment.pk in current.granted.get(part, ()))
 
 
 def in_team(experiment, current=None):
-    """Whether the viewer works on the experiment (its team now, a superuser, the system, or an open experiment): who may
-    change it, if their role may."""
+    """Whether the viewer works on the experiment: its team now, the system, anyone on an open experiment, the platform
+    admin on one that is not private (owner amendment C4). Who may change it, if their role may."""
     current = sealing.viewer() if current is None else current
-    return (current is None or current.is_super or experiment.audience == Experiment.Audience.OPEN
-            or experiment.pk in current.team)
+    return (current is None or experiment.audience == Experiment.Audience.OPEN or experiment.pk in current.team
+            or (current.is_super and experiment.audience != Experiment.Audience.PRIVATE))
 
 
 def cells():
@@ -74,9 +84,12 @@ def cells():
 
 
 def hidden_work(viewer, part):
-    """The ids of the sealed experiments whose `part` the viewer may not read (for the shell: any part)."""
+    """The ids of the experiments that are not open whose `part` the viewer may not read (for the shell: any part); for
+    the platform admin, the private ones they are not granted."""
     seen = viewer.everything() if part == SHELL else viewer.sees(part)
-    return Experiment._base_manager.filter(audience=Experiment.Audience.SEALED).exclude(pk__in=list(seen)).values('pk')
+    if viewer.is_super:
+        return Experiment._base_manager.filter(pk__in=list(viewer.barred.difference(seen))).values('pk')
+    return Experiment._base_manager.exclude(audience=Experiment.Audience.OPEN).exclude(pk__in=list(seen)).values('pk')
 
 
 class Provider:

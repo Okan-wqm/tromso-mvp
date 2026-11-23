@@ -20,6 +20,7 @@ from core import sealing as core_sealing
 from core.crud import DRAFT, Resource, ResourceView, RowList, UpdateView, done, filter_by, render_page
 from core.models import AccessEvent
 from core.people import person_name, who_can
+from core.widgets import DayInput
 from farm.models import Site, Species, System, Tank
 from farm.stock.dates import site_today
 
@@ -99,10 +100,10 @@ class ExperimentResource(Resource):
 
     @classmethod
     def log_read(cls, request, experiment, part=''):
-        """A read of a sealed experiment by someone outside its team goes to the read log: a superuser's as support,
-        a grantee's as a view; the lead sees them on Who looked."""
+        """A read of a sealed or private experiment by someone outside its team goes to the read log: the platform
+        admin's as support, a grantee's as a view; the lead sees them on Who looked."""
         current = core_sealing.viewer()
-        if current is None or experiment.audience != Experiment.Audience.SEALED or experiment.pk in current.team:
+        if current is None or experiment.audience == Experiment.Audience.OPEN or experiment.pk in current.team:
             return
         kind = AccessEvent.Kind.SUPPORT if current.is_super and experiment.pk not in current.everything() \
             else AccessEvent.Kind.VIEW
@@ -145,7 +146,7 @@ class ExperimentResource(Resource):
         the farm's records), the Data
         (per tank its days and links to the farm's own lists with the tank and the days chosen) and the Team."""
         parts = sealing.parts_of(experiment)
-        lead = core_sealing.viewer() is None or request.user.is_superuser or services.is_lead(request.user, experiment)
+        lead = core_sealing.viewer() is None or services.is_lead(request.user, experiment)
         offered = [key for key in READ_TABS
                    if (key != 'looked' or lead) and (key not in TAB_PARTS or TAB_PARTS[key] in parts)]
         tab = request.GET.get('tab', '')
@@ -479,6 +480,13 @@ class ExperimentReplaceView(ExperimentAmendView):
         services.replace_unit(user, row, data['new_unit'], data['from_day'], data['reason'], data['version'])
 
 
+class AudienceForm(forms.Form):
+    """Who may read the experiment, set by its lead."""
+
+    audience = forms.ChoiceField(label=_('Who may read it'), choices=Experiment.Audience.choices,
+                                 widget=forms.RadioSelect)
+
+
 class ShareForm(forms.Form):
     """A share the lead gives: a person or a role, the parts, the last day and why."""
 
@@ -487,7 +495,7 @@ class ShareForm(forms.Form):
     parts = forms.MultipleChoiceField(label=_('Parts'), choices=SharePart.choices, widget=forms.CheckboxSelectMultiple,
                                       help_text=_('The results and the data bring the design and the systems with them; '
                                                   'the water brings the systems.'))
-    until = forms.DateField(label=_('Until'), widget=forms.DateInput(attrs={'type': 'date'}),
+    until = forms.DateField(label=_('Until'), widget=DayInput(),
                             help_text=_('At most two years; renew it when it ends.'))
     reason = forms.CharField(label=_('Reason'), max_length=300)
 
@@ -504,22 +512,24 @@ class ShareForm(forms.Form):
 
 
 class ExperimentSharingView(ResourceView):
-    """The lead's Sharing page (and the platform admin's): who holds which part until when and why, a new share and a
-    revoke. Nobody else opens it."""
+    """The lead's Sharing page: who may read the experiment (its audience), who outside the team holds which part until
+    when and why, a new share and a revoke. Nobody else opens it, not the platform admin either (owner amendment C4:
+    the experiment's owner alone decides who sees it)."""
 
     action = 'view'
     template = 'experiments/experiment_sharing.html'
 
     def get_object(self, pk):
         experiment = super().get_object(pk)
-        if not (self.request.user.is_superuser or services.is_lead(self.request.user, experiment)):
+        if not services.is_lead(self.request.user, experiment):
             raise PermissionDenied
         return experiment
 
-    def page(self, form, experiment, status=200):
+    def page(self, form, experiment, status=200, audience_form=None):
         shares = ExperimentShare.objects.filter(experiment=experiment).select_related('user', 'group', 'revoked_by')
+        audience_form = audience_form or AudienceForm(initial={'audience': experiment.audience})
         response = render_page(self.request, self.template, self.context(
-            form=form, object=experiment, shares=shares, now=timezone.now(),
+            form=form, audience_form=audience_form, object=experiment, shares=shares, now=timezone.now(),
             back_url=reverse(self.resource.url_name('detail'), args=[experiment.pk])))
         response.status_code = status
         return response
@@ -529,6 +539,8 @@ class ExperimentSharingView(ResourceView):
 
     def post(self, request, pk):
         experiment = self.get_object(pk)
+        if 'audience' in request.POST:
+            return self.post_audience(request, experiment)
         form = ShareForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
@@ -543,6 +555,15 @@ class ExperimentSharingView(ResourceView):
                 messages.success(request, gettext('Shared.'))
                 return done(request, reverse('experiments:experiment_sharing', args=[pk]))
         return self.page(form, experiment, status=422)
+
+
+    def post_audience(self, request, experiment):
+        form = AudienceForm(request.POST)
+        if form.is_valid():
+            services.set_audience(request.user, experiment, form.cleaned_data['audience'])
+            messages.success(request, gettext('Saved.'))
+            return done(request, reverse('experiments:experiment_sharing', args=[experiment.pk]))
+        return self.page(ShareForm(), experiment, status=422, audience_form=form)
 
 
 class ExperimentRevokeView(ExperimentSharingView):

@@ -4,13 +4,15 @@ the experiment services, each logged on the experiment: the Design tab saves the
 replicates as one design; the Places tab saves the placements; Start, Release and Replace change the experiment and its
 placements while it runs. None of those rows is a tab of its own, and a started design is never edited (the database
 refuses it: migration 0002), so what is absent is said as absent on purpose."""
-from core.datamap import Screen, computed, system
+from core.datamap import Screen, computed, gap, no, system
 
 from .forms import FactorRowForm, GroupRowForm, PlaceRowForm
+from .resources import AudienceForm, ShareForm
 
 DESIGN = 'experiments:experiment_design'
 PLACES = 'experiments:experiment_places'
 DETAIL = 'experiments:experiment_detail'
+SHARING = 'experiments:experiment_sharing'
 DESIGN_NOTE = ('Saved with the experiment\'s design on the Design tab (services.save_design), logged as one "Design" entry '
                'of the experiment; a row the design no longer has is deleted with the delete plan, and a started design '
                'cannot change.')
@@ -26,7 +28,9 @@ SCREENS = {
                  'allocation_seed': system('the seed of a randomised deal, written by the Places tab'),
                  'allocation_note': system('the reason a placement by hand was made, written by the Places tab'),
                  'copied_from': system('the experiment a copy was made from, written by the Copy dialog')},
-        note='A started experiment keeps every column but its status, name and notes (trg_experiments_frozen).',
+        forms=(AudienceForm,),
+        note='A started experiment keeps every column but its status, name, notes, audience and approval '
+             '(trg_experiments_frozen). Who may read it is set by its lead on the Sharing page.',
     ),
     'Factor': Screen(
         create=(DESIGN,), edit=(DESIGN,), delete=(DESIGN,), read=(DETAIL, DESIGN), forms=(FactorRowForm,),
@@ -58,7 +62,31 @@ SCREENS = {
         delete=(PLACES,), read=(DETAIL, 'experiments:experiment_detail'), forms=(PlaceRowForm,),
         columns={name: computed('written by the Places tab from the tanks and days of the replicate\'s row')
                  for name in ('unit', 'from_on', 'until_on')} | {
-                 'left_reason': system('typed in the Release or Replace dialog')},
+                 'left_reason': system('typed in the Release or Replace dialog'),
+                 'booking': computed('the whole-system booking the Places tab tags the placement with')},
         note='A draft\'s placements are saved on the Places tab (services.save_places, randomise); a running one only gets '
              'shorter (Release) or a replacement (Replace), and is never deleted.'),
+    'ReplicateSystem': Screen(
+        create=(PLACES,), edit=(PLACES,), delete=(PLACES,), read=(DETAIL,),
+        columns={name: computed('written by the Places tab from a system chosen in the replicate’s row and its days')
+                 for name in ('replicate', 'system', 'from_on', 'until_on')} | {
+                 'left_reason': gap('a booking keeps its days when one of its tanks is released; ending a booking '
+                                    'early with its own reason has no dialog yet')},
+        note='A whole system booked for a replicate, each nested system its own row, its tanks placed and tagged with '
+             'it (services.save_places); no other experiment books the system or one of its tanks on those days.'),
+    'Member': Screen(
+        note='The team list on the Team tab; a member is live inside their window (from, until), read at each request.'),
+    'ExperimentShare': Screen(
+        create=(SHARING,),
+        edit=no('a share is never changed: a new one for the same part replaces it, a revoke ends it'),
+        delete=no('never deleted: a revoked or ended share is kept as the history of who could read what'),
+        read=(SHARING,),
+        forms=(ShareForm,),
+        fills={'person': 'user', 'role': 'group', 'parts': 'part', 'until': 'valid_until'},
+        columns={'experiment': system('the experiment of the Sharing page'),
+                 'valid_from': system('the moment the share is given'),
+                 'revoked_at': system('the moment the lead revokes it (Revoke on the Sharing page)'),
+                 'revoked_by': system('the lead who revoked it')},
+        note='The lead gives a person or a role one or more parts until a day, with a reason (services.share); each '
+             'part a row; logged on the experiment as "Shares".'),
 }

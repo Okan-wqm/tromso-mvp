@@ -47,13 +47,15 @@ class NoViewer(RuntimeError):
 class Viewer:
     """Who is looking and what they are granted: the ids of the pieces of work they are in the team of (every part) and,
     per part, those they hold a live grant of. `oversee`: they see the farm facts of every cell (the role matrix's
-    Oversee). A superuser sees everything (each such read of science is logged, `support`)."""
+    Oversee). A superuser (the platform admin) sees everything but `barred`: the work whose owner keeps it from the
+    platform admin too (owner amendment C4); each read of science they are not granted is logged, `support`."""
     user_id: int | None = None
     username: str = ''
     is_super: bool = False
     oversee: bool = False
     team: frozenset = frozenset()
     granted: dict = field(default_factory=dict)
+    barred: frozenset = frozenset()
 
     def sees(self, part):
         """The ids of the pieces of work whose `part` this viewer may read."""
@@ -357,7 +359,7 @@ def _paths(value):
 
 def hidden(seal, current, part=None):
     """The condition (a Q) that is true for the rows of `seal.model` hidden from `current`; None when none are."""
-    if current is None or current.is_super:
+    if current is None or (current.is_super and not current.barred):
         return None
     if seal.cls == FACT and current.oversee and seal.work is None:
         return None
@@ -368,7 +370,10 @@ def hidden(seal, current, part=None):
         conditions.append(Q(**{lookup: _provider.hidden_work(current, part)}))
     if (seal.unit or seal.system) and _provider is not None:
         seen = list(current.sees(part))
-        cells = _provider.cells().exclude(work__in=seen) if seen else _provider.cells()
+        if current.is_super:
+            cells = _provider.cells().filter(work__in=list(current.barred.difference(seen)))
+        else:
+            cells = _provider.cells().exclude(work__in=seen) if seen else _provider.cells()
         days = _day_filter(seal.model, seal.day)
         for target, paths in (('unit', _paths(seal.unit)), ('system', _paths(seal.system))):
             for path in paths:

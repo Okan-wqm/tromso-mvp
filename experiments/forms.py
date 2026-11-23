@@ -17,7 +17,7 @@ from farm.models import FeedingProtocol, Site, Species, System, Tank
 from farm.models.feeding_protocol import ProtocolStatus
 from farm.stock.dates import site_today
 from farm.stock.services import STOCKABLE_SPECIES
-from core.widgets import DayInput
+from core.widgets import DayInput, MomentInput
 
 from . import read, services
 from .design import load
@@ -25,7 +25,10 @@ from .models import (
     DETAIL_FIELDS, Experiment, FactorKind, GroupRole, Level, Member, Replicate, ReplicateSystem, Status,
 )
 
-DETAILS_TABS = [('details', _('Details'), DETAIL_FIELDS)]
+# The animal-research approval the experiment runs under (FOTS): shown on the card a person overseeing its tanks sees,
+# and changed after the start too (migration 0004). A copy does not take it.
+APPROVAL_FIELDS = ['approval_ref', 'approval_valid_until']
+DETAILS_TABS = [('details', _('Details'), DETAIL_FIELDS), ('approval', _('Approval'), APPROVAL_FIELDS)]
 # What a started experiment fixes (the database refuses a change too: migration 0002).
 FIXED_WHEN_STARTED = ('hypothesis', 'primary_endpoint', 'starts_on', 'duration_days')
 # A trial uses a species the farm grows or tries out (STOCKABLE_SPECIES: the batch's own rule).
@@ -49,8 +52,12 @@ class ExperimentForm(TabbedForm):
             'starts_on': DATE,
             'duration_days': forms.NumberInput(attrs={'min': 1, 'inputmode': 'numeric'}),
             'notes': forms.Textarea(attrs={'rows': 3}),
+            'approval_valid_until': DATE,
         }
         help_texts = {
+            'approval_ref': _('The reference of the animal-research approval (FOTS) it runs under. A person who looks '
+                              'after its tanks sees it with the lead’s name and phone.'),
+            'approval_valid_until': _('The last day the approval holds.'),
             'species': _('One species per experiment: a unit holds one.'),
             'site': _('One site per experiment: its clock gives the days.'),
             'hypothesis': _('What the trial tests, before it starts. Needed to start it.'),
@@ -113,7 +120,9 @@ class MemberForm(forms.ModelForm):
 
     class Meta:
         model = Member
-        fields = ['user', 'role']
+        fields = ['user', 'role', 'valid_from', 'valid_until']
+        widgets = {'valid_from': MomentInput(), 'valid_until': MomentInput()}
+        help_texts = {'valid_from': _('Empty: from now.'), 'valid_until': _('Empty: until removed from the team.')}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

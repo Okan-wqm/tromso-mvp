@@ -165,6 +165,10 @@ msgid "%(code)s has no tank."
 msgstr "%(code)s için tank yok."
 
 #, python-format
+msgid "%(code)s is booked by another experiment from %(first)s to %(last)s."
+msgstr "%(code)s, %(first)s ile %(last)s arasında başka bir deney için ayrılmış."
+
+#, python-format
 msgid "%(code)s · %(name)s (loop)"
 msgstr "%(code)s · %(name)s (döngü)"
 
@@ -518,6 +522,12 @@ msgid "%(count)s production department is not on any site."
 msgid_plural "%(count)s production departments are not on any site."
 msgstr[0] "%(count)s üretim departmanı hiçbir sahada değil."
 msgstr[1] "%(count)s üretim departmanı hiçbir sahada değil."
+
+#, python-format
+msgid "%(count)s restricted record is affected too."
+msgid_plural "%(count)s restricted records are affected too."
+msgstr[0] "%(count)s kısıtlı kayıt da etkilenir."
+msgstr[1] "%(count)s kısıtlı kayıt da etkilenir."
 
 #, python-format
 msgid "%(count)s sampling point"
@@ -1429,10 +1439,6 @@ msgid "%(tank)s holds no fish of %(species)s on day 0."
 msgstr "%(tank)s, 0. günde %(species)s türünden balık tutmuyor."
 
 #, python-format
-msgid "%(tank)s is booked to %(experiment)s on some of these days."
-msgstr "%(tank)s bu günlerin bazılarında %(experiment)s denemesine ayrılmış."
-
-#, python-format
 msgid "%(tank)s is in %(replicate)s from %(first)s to %(last)s."
 msgstr "%(tank)s, %(first)s ile %(last)s arasında %(replicate)s içinde."
 
@@ -1473,10 +1479,6 @@ msgstr ""
 #, python-format
 msgid "%(tank)s was replaced in “%(experiment)s”."
 msgstr "“%(experiment)s” denemesinde %(tank)s değiştirildi."
-
-#, python-format
-msgid "%(tank)s would be booked to %(experiment)s on those days."
-msgstr "%(tank)s bu günlerde %(experiment)s denemesine ayrılmış olurdu."
 
 #, python-format
 msgid "%(target)s already has a %(role)s %(quantity)s channel then: %(channel)s."
@@ -2459,6 +2461,11 @@ msgstr "Bir kişi işe girmeden önceki bir güne yerleştirilemez."
 msgid "A person cannot leave before they joined."
 msgstr "Bir kişi işe girmeden önce ayrılamaz."
 
+msgid "A person or a role outside the team reads only the parts shared with them, until the day given."
+msgstr ""
+"Ekip dışındaki bir kişi ya da rol yalnızca kendisiyle paylaşılan bölümleri, verilen güne kadar "
+"okur."
+
 msgid "A person who has left cannot be placed after their last day."
 msgstr "İşten ayrılan bir kişi son gününden sonra yerleştirilemez."
 
@@ -2674,6 +2681,18 @@ msgstr ""
 "Bir önem derecesinin alarm kuralı değiştirilir, asla silinmez: o önem derecesindeki alarmlar ona "
 "ihtiyaç duyar."
 
+msgid "A share ends after it begins."
+msgstr "Bir paylaşım başladıktan sonra biter."
+
+msgid "A share is for one person or one role."
+msgstr "Bir paylaşım bir kişi ya da bir rol içindir."
+
+msgid "A share lasts at most two years and ends after it begins."
+msgstr "Bir paylaşım en çok iki yıl sürer ve başladıktan sonra biter."
+
+msgid "A share lasts at most two years: renew it when it ends."
+msgstr "Bir paylaşım en çok iki yıl sürer: bitince yenileyin."
+
 msgid "A share of the outflow, from 0 to 100 %, can be stated for an outlet only."
 msgstr "Çıkış payı, 0 ile 100 % arasında, yalnızca bir çıkış için belirtilebilir."
 
@@ -2759,8 +2778,8 @@ msgstr "Sistem, oluşturulduğu sahada kalır."
 msgid "A table has at most %(count)d temperature columns."
 msgstr "Bir tabloda en fazla %(count)d sıcaklık sütunu olabilir."
 
-msgid "A tank was booked to another experiment meanwhile: look at the places and try again."
-msgstr "Bir tank bu arada başka bir denemeye ayrıldı: yerleşimlere bakın ve yeniden deneyin."
+msgid "A tank or a system was booked by another experiment meanwhile: look at the places and try again."
+msgstr "Bu arada başka bir deney bir tank ya da sistem ayırdı: yerlere bakıp yeniden deneyin."
 
 msgid "A tank, a pond or a cage; it cannot be changed later."
 msgstr "Tank, havuz veya kafes; sonradan değiştirilemez."
@@ -3530,6 +3549,9 @@ msgstr "Miktar birimiyle, birim de miktarıyla girilir."
 msgid "An answered question has its answer and the day it came; an open one has no answer day."
 msgstr "Yanıtlanmış bir sorunun yanıtı ve geldiği gün vardır; açık bir sorunun yanıt günü yoktur."
 
+msgid "An approval's validity needs its reference."
+msgstr "Bir onayın geçerliliği için referansı gerekir."
+
 msgid "An approved or rejected request has the time it was decided."
 msgstr "Onaylanan ya da reddedilen talebin karar zamanı vardır."
 
@@ -3814,12 +3836,21 @@ msgstr "Uygula"
 msgid "Apply to the selected days"
 msgstr "Seçili günlere uygula"
 
+msgid "Approval"
+msgstr "Onay"
+
 msgid "Approval number"
 msgstr "Onay numarası"
 
 #, python-format
 msgid "Approval number %(number)s"
 msgstr "Onay numarası %(number)s"
+
+msgid "Approval reference"
+msgstr "Onay referansı"
+
+msgid "Approval valid until"
+msgstr "Onay geçerlilik sonu"
 
 msgid "Approve"
 msgstr "Onayla"
@@ -3986,6 +4017,9 @@ msgstr "En fazla %(max)s."
 
 msgid "At most 720 hours (30 days)."
 msgstr "En fazla 720 saat (30 gün)."
+
+msgid "At most two years; renew it when it ends."
+msgstr "En çok iki yıl; bitince yenileyin."
 
 msgid "At sea-level pressure: the site has no altitude."
 msgstr "Deniz seviyesi basıncında: sahanın rakımı yok."
@@ -4320,6 +4354,9 @@ msgstr "Panolar"
 
 msgid "Book"
 msgstr "Kayıtta"
+
+msgid "Book a whole system"
+msgstr "Bütün bir sistemi ayır"
 
 #, python-format
 msgid "Border %(ph)s"
@@ -4959,6 +4996,9 @@ msgstr ""
 " seçmeyin. En özgül kural kazanır: önce birimin kendi kuralı, sonra sisteminin, sistem türünün, "
 "türünün, birim çeşidinin; bir panonun kartı kurallardan önce, varsayılanı sonra gelir."
 
+msgid "Choose one person or one role."
+msgstr "Bir kişi ya da bir rol seçin."
+
 msgid "Choose one place: a whole site, a production department, a system, a unit or equipment."
 msgstr "Tek bir yer seçin: bütün bir saha, bir üretim departmanı, bir sistem, bir birim veya ekipman."
 
@@ -5006,6 +5046,9 @@ msgstr "Birim seç"
 
 msgid "Choose units, a batch, or a batch and units."
 msgstr "Birimler, bir parti ya da bir parti ve birimler seçin."
+
+msgid "Choose who may read it."
+msgstr "Kimin okuyabileceğini seçin."
 
 msgid "Chosen by the people who administer HR."
 msgstr "İK’yı yönetenler tarafından seçilir."
@@ -6334,11 +6377,17 @@ msgstr "Boş — stoklamaya hazır"
 msgid "Empty: every department of the site. A department must be on the site."
 msgstr "Boş: sahanın her departmanı. Departman sahada olmalıdır."
 
+msgid "Empty: from now."
+msgstr "Boş: şimdiden itibaren."
+
 msgid "Empty: the alarms of every site."
 msgstr "Boş: her sahanın alarmları."
 
 msgid "Empty: the rule for every species. A species’ own rule wins over it."
 msgstr "Boş: her balık türü için kural. Bir türün kendi kuralı ondan önce gelir."
+
+msgid "Empty: until removed from the team."
+msgstr "Boş: ekipten çıkarılana kadar."
 
 msgid "Enabled"
 msgstr "Etkin"
@@ -6596,6 +6645,9 @@ msgstr "Konuşmadaki herkes bir mesajın silindiğini görür, içeriğini görm
 msgid "Everyone who can use Messages is a member already."
 msgstr "Mesajlar'ı kullanabilen herkes zaten üye."
 
+msgid "Everyone who reads experiments"
+msgstr "Deneyleri okuyan herkes"
+
 msgid "Everything supplied"
 msgstr "Tedarik edilen her şey"
 
@@ -6660,6 +6712,9 @@ msgstr "Son kullanma tarihi"
 
 msgid "Export CSV"
 msgstr "CSV dışa aktar"
+
+msgid "Exported"
+msgstr "Dışa aktarıldı"
 
 #, python-format
 msgid "FCR %(fcr)s"
@@ -7754,6 +7809,9 @@ msgstr "Büyüme"
 msgid "Growth stage"
 msgstr "Büyüme evresi"
 
+msgid "Guest"
+msgstr "Misafir"
+
 msgid "Gutted weight"
 msgstr "Işkembesiz ağırlık"
 
@@ -8479,6 +8537,12 @@ msgid_plural "It operates %(count)d slaughter facilities: keep “%(category)s�
 msgstr[0] "%(count)d kesimhaneyi işletiyor: “%(category)s” işaretli kalsın."
 msgstr[1] "%(count)d kesimhaneyi işletiyor: “%(category)s” işaretli kalsın."
 
+#, python-format
+msgid "It reaches %(count)d record you may not see: someone who may see it deletes it."
+msgid_plural "It reaches %(count)d records you may not see: someone who may see them deletes it."
+msgstr[0] "Görmediğiniz %(count)d kayda ulaşıyor: onu görebilen biri silmeli."
+msgstr[1] "Görmediğiniz %(count)d kayda ulaşıyor: onları görebilen biri silmeli."
+
 msgid ""
 "It stops counting and stays in the history with its reason. An event that was right but is over "
 "is closed on its form instead."
@@ -8929,6 +8993,9 @@ msgstr "Bağlantının gönderildiği adres"
 
 msgid "List what was delivered."
 msgstr "Teslim edileni listeleyin."
+
+msgid "Live"
+msgstr "Geçerli"
 
 msgid "Live delivery inside a withdrawal"
 msgstr "Arınma süresi içinde canlı teslimat"
@@ -10018,6 +10085,9 @@ msgstr "Ekipte henüz kimse yok."
 msgid "No one in the team yet. Use “Add person” to add a row."
 msgstr "Ekipte henüz kimse yok. Satır eklemek için “Kişi ekle”yi kullanın."
 
+msgid "No one outside the team has read it."
+msgstr "Ekip dışından kimse okumadı."
+
 msgid "No open tasks"
 msgstr "Açık görev yok"
 
@@ -10557,6 +10627,9 @@ msgstr ""
 "Henüz hiçbir şey gönderilmiyor: anlık bildirim aktarımı bağlı değil (mobil uygulama daha sonra "
 "gelecek). Her bildirim, alıcısı ve seviyesiyle aşağıdaki giden kutusunda bekler ve aktarım "
 "bağlandığında gönderilir."
+
+msgid "Nothing is shared."
+msgstr "Hiçbir şey paylaşılmadı."
 
 msgid "Nothing needs attention"
 msgstr "Dikkat gerektiren bir şey yok"
@@ -11237,6 +11310,9 @@ msgstr "Gecikmiş"
 msgid "Overdue tasks"
 msgstr "Gecikmiş görevler"
 
+msgid "Oversaw"
+msgstr "Gözetti"
+
 msgid "Overview"
 msgstr "Genel bakış"
 
@@ -11351,6 +11427,9 @@ msgstr "Üst ekipman"
 msgid "Parent system"
 msgstr "Üst sistem"
 
+msgid "Part"
+msgstr "Bölüm"
+
 msgid "Parts"
 msgstr "Parçalar"
 
@@ -11459,6 +11538,12 @@ msgstr "Bir role değil, doğrudan tek bir kullanıcıya verilen izinler."
 
 msgid "Person"
 msgstr "Kişi"
+
+msgid "Person id"
+msgstr "Kişi kimliği"
+
+msgid "Person or role"
+msgstr "Kişi ya da rol"
 
 msgid "Petrol"
 msgstr "Benzin"
@@ -12206,6 +12291,9 @@ msgstr "Yenileme aralığı (saniye)"
 msgid "Refrigerant"
 msgstr "Soğutucu akışkan"
 
+msgid "Refused"
+msgstr "Reddedildi"
+
 msgid "Region"
 msgstr "Bölge"
 
@@ -12418,6 +12506,9 @@ msgstr "Geri yüklendi"
 msgid "Result"
 msgstr "Sonuç"
 
+msgid "Results"
+msgstr "Sonuçlar"
+
 msgid "Retired"
 msgstr "Kullanımdan kaldırıldı"
 
@@ -12452,6 +12543,19 @@ msgstr ""
 "İncelemek, ifadenin ve kaynağının doğru olduğunu söylemektir: sizin adınıza, şu an kaydedilir. "
 "İncelenmiş bir kaydın ifadesini, konularını, balık türlerini ya da kaynağını düzenlemek onu "
 "yeniden taslak yapar."
+
+msgid "Revoke"
+msgstr "Geri al"
+
+#, python-format
+msgid "Revoked %(day)s"
+msgstr "%(day)s tarihinde geri alındı"
+
+msgid "Revoked at"
+msgstr "Geri alınma zamanı"
+
+msgid "Revoked by"
+msgstr "Geri alan"
 
 msgid "River or stream"
 msgstr "Nehir veya dere"
@@ -12683,6 +12787,9 @@ msgstr "Birimleri kaydet"
 msgid "Save withdrawal"
 msgstr "Bekleme süresini kaydet"
 
+msgid "Saved."
+msgstr "Kaydedildi."
+
 msgid "Say after how many hours an open clock-in counts as a forgotten clock-out."
 msgstr "Açık bir girişin kaç saat sonra unutulmuş çıkış sayılacağını girin."
 
@@ -12724,6 +12831,9 @@ msgstr "Başka bir etken maddeyse hangisi olduğunu yazın, yalnızca o zaman."
 msgid "Say who received the fish."
 msgstr "Balığı kimin teslim aldığını yazın."
 
+msgid "Say who, which parts, until when and why."
+msgstr "Kimin, hangi bölümleri, ne zamana kadar ve neden olduğunu yazın."
+
 msgid "Say whom the feed is for: the production fish or the cleaner fish."
 msgstr "Yemin kime verildiğini belirtin: üretim balığı mı temizleyici balık mı."
 
@@ -12732,6 +12842,9 @@ msgstr "Neden iptal edildiğini yazın."
 
 msgid "Say why it is closed."
 msgstr "Neden kapatıldığını yazın."
+
+msgid "Say why it is shared."
+msgstr "Neden paylaşıldığını yazın."
 
 msgid "Say why it is voided."
 msgstr "Neden iptal edildiğini yazın."
@@ -13175,6 +13288,12 @@ msgstr "Önem"
 msgid "Shape"
 msgstr "Şekil"
 
+msgid "Share"
+msgstr "Paylaş"
+
+msgid "Share a part"
+msgstr "Bir bölüm paylaş"
+
 msgid ""
 "Share of the fish of the first day that were not lost since: dead, culled or lost fish counted "
 "from the first day of the tank to its last day or today"
@@ -13189,8 +13308,20 @@ msgstr "Çıkış payı (%%)"
 msgid "Share of the outflow (%)"
 msgstr "Çıkış payı (%)"
 
+msgid "Shared with"
+msgstr "Paylaşılanlar"
+
+msgid "Shared."
+msgstr "Paylaşıldı."
+
+msgid "Shares"
+msgstr "Paylaşımlar"
+
 msgid "Shares of the total sulfide; give the total sulfide for the H₂S and its border."
 msgstr "Toplam sülfürün payları; H₂S ve sınırı için toplam sülfürü girin."
+
+msgid "Sharing"
+msgstr "Paylaşım"
 
 msgid "Shift"
 msgstr "Vardiya"
@@ -13818,6 +13949,9 @@ msgstr "Tedarikçinin belge numarası"
 msgid "Supplies"
 msgstr "Tedarik ettikleri"
 
+msgid "Support read"
+msgstr "Destek için okundu"
+
 msgid "Surface area (m²)"
 msgstr "Yüzey alanı (m²)"
 
@@ -13860,6 +13994,9 @@ msgstr ""
 msgid "System (its loop)"
 msgstr "Sistem (döngüsü)"
 
+msgid "System booking"
+msgstr "Sistem ayırma"
+
 msgid "System type"
 msgstr "Sistem türü"
 
@@ -13871,6 +14008,9 @@ msgstr "Sistemler"
 
 msgid "Systems (loop)"
 msgstr "Sistemler (döngü)"
+
+msgid "Systems and tanks"
+msgstr "Sistemler ve tanklar"
 
 msgid "Systems by status"
 msgstr "Duruma göre sistemler"
@@ -13951,6 +14091,12 @@ msgstr "Bugün süresi dolan görevler"
 
 msgid "Team"
 msgstr "Ekip"
+
+msgid "Team and shares only, not the platform admin"
+msgstr "Yalnızca ekip ve paylaşılanlar, platform yöneticisi değil"
+
+msgid "Team and shares, and the platform admin for support"
+msgstr "Ekip ve paylaşılanlar, destek için platform yöneticisi"
 
 msgid "Team list"
 msgstr "Ekip listesi"
@@ -14818,6 +14964,9 @@ msgstr "Kürün son günü, en fazla 28 gün ileriye planlanabilir. Bekleme sür
 msgid "The last day of the treatment is now %(date)s."
 msgstr "Tedavinin son günü artık %(date)s."
 
+msgid "The last day the approval holds."
+msgstr "Onayın geçerli olduğu son gün."
+
 #, python-format
 msgid "The latest changes to this %(name)s."
 msgstr "Bu kaydın (%(name)s) son değişiklikleri."
@@ -15310,6 +15459,13 @@ msgstr "Kayıtlar artık sunulanı vermiyor: bir düzeltme gerekli."
 msgid "The records still give what was filed."
 msgstr "Kayıtlar hâlâ sunulanı veriyor."
 
+msgid ""
+"The reference of the animal-research approval (FOTS) it runs under. A person who looks after its "
+"tanks sees it with the lead’s name and phone."
+msgstr ""
+"Deneyin dayandığı hayvan deneyi onayının (FOTS) referansı. Tanklarına bakan kişi bunu yürütücünün"
+" adı ve telefonuyla birlikte görür."
+
 msgid "The report is computed in a newer way than when it was filed."
 msgstr "Rapor, sunulduğundan daha yeni bir yöntemle hesaplanıyor."
 
@@ -15337,6 +15493,9 @@ msgid ""
 msgstr ""
 "Haftadaki bir duyarlılık testinin sonucu (lakselusforskriften § 10 d): ne zaman, laboratuvar, "
 "etken madde ve sonuç. Rapordan ayrı kaydedilir."
+
+msgid "The results and the data bring the design and the systems with them; the water brings the systems."
+msgstr "Sonuçlar ve veriler tasarımı ve sistemleri de getirir; su sistemleri getirir."
 
 msgid ""
 "The right end. Choose the two ends so that the pH the water is kept at and the pH at which CO₂ "
@@ -15441,6 +15600,9 @@ msgstr "Sensör kuralı artık geçerli değil"
 #, python-format
 msgid "The sensors at %(place)s: those there now first, then those there before."
 msgstr "%(place)s yerindeki sensörler: önce şu an orada olanlar, sonra daha önce orada olanlar."
+
+msgid "The share was revoked."
+msgstr "Paylaşım geri alındı."
 
 #, python-format
 msgid ""
@@ -15927,6 +16089,9 @@ msgstr "%(unit)s içindeki %(date)s tarihli tartım %(batch)s balığı bulamazd
 msgid "The width cannot be more than the length."
 msgstr "Genişlik uzunluktan fazla olamaz."
 
+msgid "The window ends after it begins."
+msgstr "Dönem başladıktan sonra biter."
+
 #, python-format
 msgid ""
 "The withdrawal after the last treatment day, as the SPC states it: degree-days (døgngrader) and "
@@ -16271,6 +16436,9 @@ msgstr "Bu kişinin bu günlerin bir kısmı için zaten bir izin talebi var."
 msgid "This person already has a plan for this day."
 msgstr "Bu kişinin bu gün için zaten bir planı var."
 
+msgid "This person already holds this part."
+msgstr "Bu kişi bu bölüme zaten sahip."
+
 msgid "This person is already clocked in for some of this time."
 msgstr "Bu kişi, bu sürenin bir kısmında zaten giriş yapmış."
 
@@ -16320,6 +16488,9 @@ msgstr "Bu rapor bu dönem için zaten başlatılmış: listeden açın."
 msgid "This report is closed already."
 msgstr "Bu rapor zaten kapatıldı."
 
+msgid "This role already holds this part."
+msgstr "Bu rol bu bölüme zaten sahip."
+
 msgid "This sample is already voided."
 msgstr "Bu numune zaten iptal edildi."
 
@@ -16343,6 +16514,9 @@ msgstr "Bu sahada bu kodlu bir sistem zaten var."
 
 msgid "This species already has limits for this parameter and water type."
 msgstr "Bu balık türünün bu parametre ve su tipi için zaten sınırları var."
+
+msgid "This system is booked on some of these days."
+msgstr "Bu sistem bu günlerin bazılarında ayrılmış."
 
 msgid "This system is deleted."
 msgstr "Bu sistem silinmiş."
@@ -16918,6 +17092,9 @@ msgstr "Veteriner veya balık sağlığı ziyareti"
 
 msgid "Veterinary and fish health"
 msgstr "Veteriner ve balık sağlığı"
+
+msgid "Viewed"
+msgstr "Görüntülendi"
 
 msgid "Viral haemorrhagic septicaemia (VHS)"
 msgstr "Viral hemorajik septisemi (VHS)"
@@ -17511,6 +17688,12 @@ msgstr "Kime geri gittiği."
 msgid "Who it was bought from: a supplier of equipment and spare parts (Purchasing › Suppliers)."
 msgstr "Kimden satın alındığı: bir ekipman ve yedek parça tedarikçisi (Satın alma › Tedarikçiler)."
 
+msgid "Who looked"
+msgstr "Kimler baktı"
+
+msgid "Who may read it"
+msgstr "Kimler okuyabilir"
+
 msgid "Who received them: the customer or the receiving site."
 msgstr "Kimin teslim aldığı: müşteri veya alıcı saha."
 
@@ -17770,6 +17953,16 @@ msgstr "En erken dün; tank o güne kadar denemeye ayrılmıştır."
 
 msgid "You"
 msgstr "Siz"
+
+msgid ""
+"You alone decide who sees this experiment. Someone with direct access to the database or the "
+"server can still read its stored rows. The platform admin still sees that a tank or system is "
+"booked, and for which days, since booking conflicts must stay visible."
+msgstr ""
+"Bu deneyi kimin göreceğine yalnızca siz karar verirsiniz. Veritabanına ya da sunucuya doğrudan "
+"erişimi olan biri kayıtlı satırları yine de okuyabilir. Rezervasyon çakışmaları görünür kalmalı "
+"olduğundan platform yöneticisi bir tankın ya da sistemin hangi günler için ayrıldığını yine "
+"görür."
 
 msgid "You are already clocked in."
 msgstr "Zaten giriş yaptınız."
@@ -18108,6 +18301,10 @@ msgstr[1] "%(days)s gün önce tartılan biyokütle"
 #, python-format
 msgid "book %(book)s · %(difference)s (%(percent)s)"
 msgstr "kayıtta %(book)s · %(difference)s (%(percent)s)"
+
+#, python-format
+msgid "booked %(first)s to %(last)s"
+msgstr "%(first)s – %(last)s ayrılmış"
 
 #, python-format
 msgid "border pH %(ph)s, margin %(margin)s"
@@ -18679,6 +18876,12 @@ msgstr "deney yerleşimi"
 
 msgid "experiment placements"
 msgstr "deney yerleşimleri"
+
+msgid "experiment share"
+msgstr "deney paylaşımı"
+
+msgid "experiment shares"
+msgstr "deney paylaşımları"
 
 msgid "experiments"
 msgstr "deneyler"
@@ -19431,6 +19634,12 @@ msgstr "kalite bayrakları"
 msgid "read it"
 msgstr "oku"
 
+msgid "read of a confidential record"
+msgstr "gizli bir kaydın okunması"
+
+msgid "reads of confidential records"
+msgstr "gizli kayıtların okunmaları"
+
 msgid "recurring"
 msgstr "yinelenen"
 
@@ -19506,6 +19715,12 @@ msgstr "deniz biti sayımı"
 
 msgid "sea-lice counts"
 msgstr "deniz biti sayımları"
+
+msgid "sealed cell"
+msgstr "mühürlü hücre"
+
+msgid "sealed cells"
+msgstr "mühürlü hücreler"
 
 msgid "seawater scale (SWS)"
 msgstr "deniz suyu ölçeğinde (SWS)"
@@ -19619,6 +19834,12 @@ msgstr "tedarikçiler"
 
 msgid "system"
 msgstr "sistem"
+
+msgid "system booking"
+msgstr "sistem ayırma"
+
+msgid "system bookings"
+msgstr "sistem ayırmaları"
 
 msgid "system link"
 msgstr "sistem bağlantısı"

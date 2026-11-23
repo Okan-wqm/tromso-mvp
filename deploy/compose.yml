@@ -84,7 +84,8 @@ services:
     # The WAL is archived every DB_ARCHIVE_TIMEOUT seconds at the latest (900: a quiet database still fills one 16 MB
     # segment each time, 1.5 GB a day; docs/ops/backup-and-restore.md, the disk budget), for the backup agent to ship; a failing
     # archive_command keeps the WAL on the server and retries, it never loses it. A segment is copied under a temporary
-    # name and renamed, so a copy cut short (a full disk, a crash) is never taken for the segment; a segment already
+    # name, flushed to disk (sync), renamed and the folder flushed, so a copy cut short (a full disk, a crash, a power cut)
+    # is never taken for the segment; a segment already
     # there counts as archived only when it is the same file (the archive is retried after a crash).
     command:
       - postgres
@@ -95,7 +96,7 @@ services:
       - -c
       - archive_mode=on
       - -c
-      - archive_command=if [ -f /wal-archive/%f ]; then cmp -s %p /wal-archive/%f; else cp %p /wal-archive/%f.tmp && mv /wal-archive/%f.tmp /wal-archive/%f; fi
+      - archive_command=if [ -f /wal-archive/%f ]; then cmp -s %p /wal-archive/%f; else cp %p /wal-archive/%f.tmp && sync /wal-archive/%f.tmp && mv /wal-archive/%f.tmp /wal-archive/%f && sync /wal-archive; fi
       - -c
       - archive_timeout=${DB_ARCHIVE_TIMEOUT:-900}
       - -c

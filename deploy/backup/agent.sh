@@ -164,9 +164,24 @@ cleanup_wal() {  # cleanup_wal [SHIPPED]: SHIPPED the time of a ship that just s
   log "archived WAL before $first removed from the server"
 }
 
+wal_whole() {
+  # Every archived WAL segment is a whole one (16 MiB): a shorter file is a copy cut short, and shipped it would end a
+  # point-in-time restore there. The history and backup-label files (.history, .backup) and the copies under way
+  # (.tmp) are other files.
+  short=""
+  for segment in "$WAL"/*; do
+    name=$(basename "$segment")
+    case "$name" in *.history|*.backup|*.tmp|'*') continue ;; esac
+    size=$(stat -c %s "$segment")
+    if [ "$size" != 16777216 ]; then short="$short $name ($size bytes)"; fi
+  done
+  if [ -n "$short" ]; then die "archived WAL segment(s) not 16 MiB, nothing shipped:$short"; fi
+}
+
 ship() {
   mkdir -p "$DUMPS" "$BASES"
   started=$(now)
+  wal_whole
   log "ship to the repository (host $HOST_TAG)"
   restic backup --retry-lock 10m --no-scan --host "$HOST_TAG" --tag balik --exclude '*.part' --exclude '*.tmp' \
     "$DUMPS" "$BASES" "$WAL" "$MEDIA"

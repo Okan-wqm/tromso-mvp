@@ -184,6 +184,18 @@ mqtt() {
 }
 
 backup() {
+  say "the archive_command flushes each segment and its folder (sync) before the database counts it archived"
+  "${DC[@]}" exec -T db sh -c 'PGPASSWORD=$(head -n 1 /run/secrets/postgres_password) psql -X -h 127.0.0.1 -U postgres -d "$POSTGRES_DB" -At -c "SHOW archive_command"' \
+    | tee "$T/archive_command"
+  grep -q 'sync /wal-archive/%f.tmp && mv' "$T/archive_command" && grep -q '&& sync /wal-archive;' "$T/archive_command" \
+    || { echo "FAIL: the archive_command does not flush"; exit 1; }
+  say "a WAL segment shorter than 16 MiB in the archive: the ship refuses it and ships nothing"
+  "${DC[@]}" exec -T -u root db sh -c 'head -c 1000 /dev/zero > /wal-archive/0000000100000000000000FE && chown postgres /wal-archive/0000000100000000000000FE'
+  if "${DC[@]}" exec -T backup sh /usr/local/lib/balik-backup/agent.sh ship > "$T/short.out" 2>&1; then
+    cat "$T/short.out"; echo "FAIL: a short segment was shipped"; exit 1
+  fi
+  grep 'not 16 MiB' "$T/short.out"
+  "${DC[@]}" exec -T -u root db rm -f /wal-archive/0000000100000000000000FE
   say "dump, base backup and ship now"
   "${DC[@]}" exec -T backup sh /usr/local/lib/balik-backup/agent.sh now
   say "a marker row after the base backup, its WAL archived, shipped (the point-in-time step looks for it)"

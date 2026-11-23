@@ -767,7 +767,8 @@
       "tests": [
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_floods.py",
-        "alarms/tests/test_outbox.py"
+        "alarms/tests/test_outbox.py",
+        "alarms/tests/test_review_fixes.py"
       ]
     },
     {
@@ -908,7 +909,7 @@
       "app": "alarms",
       "model": "Notification",
       "table": "alarm_notifications",
-      "description": "The outbox: one alarm for one person through one channel at one level, queued by the alarm loop.",
+      "description": "The outbox: one alarm for one person through one channel at one level, queued by the alarm pass.",
       "columns": [
         {
           "name": "id",
@@ -1000,6 +1001,36 @@
           "on_form": [],
           "how": "system",
           "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
+        },
+        {
+          "name": "kind",
+          "field": "kind",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "alarm",
+            "snoozed",
+            "resumed"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
+        },
+        {
+          "name": "shelve_id",
+          "field": "shelve",
+          "type": "bigint",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "alarm_shelves",
+            "model": "alarms.AlarmShelve",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         }
       ],
       "constraints": [
@@ -1012,6 +1043,23 @@
             "channel",
             "level"
           ],
+          "conditional": true
+        },
+        {
+          "name": "uq_alarm_notifications_snooze_once",
+          "kind": "unique",
+          "fields": [
+            "shelve",
+            "recipient",
+            "channel",
+            "kind"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "chk_alarm_notifications_kind",
+          "kind": "check",
+          "fields": [],
           "conditional": false
         },
         {
@@ -1081,7 +1129,70 @@
         "alarms/tests/test_defects.py",
         "alarms/tests/test_floods.py",
         "alarms/tests/test_outbox.py",
+        "alarms/tests/test_review_fixes.py",
         "alarms/tests/test_snooze.py"
+      ]
+    },
+    {
+      "app": "alarms",
+      "model": "OutboxEntry",
+      "table": "alarm_outbox",
+      "description": "A notification still to be sent: the outbox's queue (alarms/outbox.py), written with the notification (services.queue_many) and removed once it is sent, covered by a flood message, or given up, so a round reads only what is waiting, however long the history.",
+      "columns": [
+        {
+          "name": "notification_id",
+          "field": "notification",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "alarm_notifications",
+            "model": "alarms.Notification",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        }
+      ],
+      "constraints": [],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "written with each notification (alarms/services.py queue_many)"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "a row is the notification itself, never changed"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "removed by the outbox once the notification is sent, covered by a flood message or given up"
+        },
+        "read": {
+          "status": "none",
+          "paths": [],
+          "why": "the outbox's own queue (alarms/outbox.py); the notifications are on their alarm's page"
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "alarms/tests/test_review_fixes.py"
       ]
     },
     {
@@ -1804,6 +1915,12 @@
           "conditional": false
         },
         {
+          "name": "chk_alarm_severity_policies_flood_window",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
           "name": "chk_alarm_severity_policies_clock",
           "kind": "check",
           "fields": [],
@@ -1908,6 +2025,7 @@
         "alarms/tests/test_floods.py",
         "alarms/tests/test_outbox.py",
         "alarms/tests/test_reference.py",
+        "alarms/tests/test_review_fixes.py",
         "alarms/tests/test_snooze.py"
       ]
     },
@@ -2512,6 +2630,28 @@
           "on_form": [],
           "how": "system",
           "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "undeliverable",
+          "field": "undeliverable",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "undeliverable_since",
+          "field": "undeliverable_since",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
         }
       ],
       "constraints": [
@@ -2579,6 +2719,16 @@
             },
             {
               "how": "view",
+              "label": "alarms.views.alarm_watch_notice",
+              "url_names": [
+                "alarms:alarm_watch_notice"
+              ],
+              "routes": [
+                "/alarms/watch/"
+              ]
+            },
+            {
+              "how": "view",
               "label": "farm:water",
               "url_names": [
                 "farm:water"
@@ -2606,6 +2756,56 @@
               "routes": [
                 "/sensors/"
               ]
+            },
+            {
+              "how": "view",
+              "label": "alarms:recipientrule_list",
+              "url_names": [
+                "alarms:recipientrule_list"
+              ],
+              "routes": [
+                "/alarms/recipients/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms:severitypolicy_list",
+              "url_names": [
+                "alarms:severitypolicy_list"
+              ],
+              "routes": [
+                "/alarms/severity-rules/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms:parameterdeadband_list",
+              "url_names": [
+                "alarms:parameterdeadband_list"
+              ],
+              "routes": [
+                "/alarms/deadbands/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "sensors:alarmrule_list",
+              "url_names": [
+                "sensors:alarmrule_list"
+              ],
+              "routes": [
+                "/sensors/alarm-rules/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "sensors:alarm_events",
+              "url_names": [
+                "sensors:alarm_events"
+              ],
+              "routes": [
+                "/sensors/alarm-events/"
+              ]
             }
           ],
           "why": ""
@@ -2627,6 +2827,7 @@
       "tests": [
         "alarms/tests/test_deadman.py",
         "alarms/tests/test_outbox.py",
+        "alarms/tests/test_review_fixes.py",
         "alarms/tests/test_worker.py",
         "alarms/tests/test_worker_process.py"
       ]
@@ -2878,6 +3079,7 @@
         "alarms/tests/test_reference.py",
         "alarms/tests/test_refused_sensor_ph.py",
         "alarms/tests/test_refused_water.py",
+        "alarms/tests/test_review_fixes.py",
         "alarms/tests/test_snooze.py",
         "alarms/tests/test_who_ends_a_level.py",
         "alarms/tests/test_worker.py"
@@ -38904,7 +39106,8 @@
         "sensors/tests/__init__.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_pages.py",
-        "sensors/tests/test_schema.py"
+        "sensors/tests/test_schema.py",
+        "alarms/tests/test_review_fixes.py"
       ]
     },
     {
@@ -40419,7 +40622,8 @@
       "tests": [
         "sensors/tests/test_contract.py",
         "sensors/tests/test_operations.py",
-        "alarms/tests/test_clock.py"
+        "alarms/tests/test_clock.py",
+        "alarms/tests/test_review_fixes.py"
       ]
     },
     {

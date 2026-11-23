@@ -4463,22 +4463,35 @@ from which device, how late) is logged. The server side is built; the push trans
   per channel is named in `settings.ALARM_TRANSPORTS` (`alarms/transports.py`, an interface with a test double); none is
   connected, so nothing is sent anywhere, every notification waits, and the pages say so. A pass only queues; the
   worker's sender thread goes through the outbox every tick (`alarms/outbox.py`), outside any pass, transaction or
-  lock, so a transport that is slow or down never delays an alarm: critical first, then the oldest; a failed attempt is
-  tried again after its severity's retry time, up to its delivery attempts, then the notification is failed and its
-  alarm's page says so; each send gets `send_timeout` seconds (no answer or a raise is a failed attempt). Never lost: the
-  outbox is rows, so a restart sends what was not sent; a sender that died after the transport took one and before its
-  attempt was written sends it again (at least once; the notification's id is the push service's collapse key), and a
-  notification is never written sent twice (a unique constraint). Two senders never send one at once (a claim lock, then
-  a second look). A round that fails (the outbox itself unreadable) is the alarm system's step "send": a critical alarm.
+  lock, so a transport that is slow or down never delays an alarm: critical first, then the oldest. A round reads the
+  outbox's queue (`alarm_outbox`, `alarms` 0019: the notifications still to be sent, removed once sent, covered or given
+  up), never the whole history. **A critical is never given up while it matters** (the review, F1): a critical alarm's
+  notification is tried again until it is sent or its alarm is acknowledged or cleared, the wait doubling from the
+  severity's retry time up to its escalation time; once its alarm is acknowledged or cleared it has its delivery attempts
+  like a warning's, which are tried their retry time apart and then failed (its alarm's page says so). A critical
+  notification of an open, unacknowledged alarm that has failed for longer than the escalation time cannot be
+  delivered: a critical alarm of the alarm system says so ("notifications_undeliverable"), and the pages' notice and the
+  health check too. **A critical is never behind a round of warnings** (F5): a round ends at `ALARM_WORKER_SEND_ROUND`
+  (5 s), and before a warning's group when a critical was queued since it began; the next round, a tick later, starts
+  with it. Each send gets `send_timeout` seconds (no answer or a raise is a failed attempt). Never lost: a restart sends
+  what was not sent; a sender that died after the transport took one and before its attempt was written sends it again
+  (at least once; the notification's id is the push service's collapse key), and a notification is never written sent
+  twice (a unique constraint). Two senders never send one at once (a claim lock, then a second look). A round that fails
+  (the outbox itself unreadable) is the alarm system's step "send": a critical alarm. A second channel (e-mail, SMS: an
+  owner decision) joins as a `Channel` value and a transport in `ALARM_TRANSPORTS`; its notifications are queued,
+  retried, grouped and given up by the same rules.
 - **Snooze** (ISA-18.2 shelving; owner decision Q5): who holds Alarm snoozes: Create snoozes an open alarm from its page
-  for 1 to its severity's longest snooze, saying why; one at a time, ended early from the same page. While it lasts the
-  alarm is still raised, kept, listed and cleared; nobody new is notified, what was queued waits, and it is not
-  escalated. Once it ends (its time out, also while the worker was down, or ended early) notification goes on and the
-  escalation time counts again from the end. Snoozes are append-only (`alarm_shelves`, `alarm_shelve_ends`), logged
+  for 1 to its severity's longest snooze, saying why; one at a time, all the snoozes of one alarm together at most that
+  longest (so a snooze is never renewed past it), never a critical alarm of the alarm system itself; ended early from the
+  same page. The people notified of the alarm are told who snoozed it, until when and why. While it lasts the alarm is
+  still raised, kept, listed and cleared; nobody new is notified, what was queued waits, and it is not escalated. Once
+  it ends (its time out, also while the worker was down, or ended early) notification goes on, the escalation time
+  counts again from the end, and, the alarm still open and unacknowledged, the people of its level are told again (once
+  per snooze; the coordinator's call on the review, F9). Snoozes are append-only (`alarm_shelves`, `alarm_shelve_ends`), logged
   (critical for a critical alarm) and listed on Alarm snoozes; the Alarms list says "Snoozed until".
 - **Alarm floods** (ISA-18.2; the owner's burst requirement; `alarms/floods.py`): the kind of an alarm is its site, its
   severity and what it is about (a water quantity, the oxygen in mg/L and % one; a sensor rule; a check of the alarm
-  system). In a round of the outbox, the due notifications of one person, channel and kind go out as one flood message
+  system, each failed step its own). In a round of the outbox, the due notifications of one person, channel and kind go out as one flood message
   when, with the ones of that kind sent to them within the severity's flood window, they reach its flood count; the
   ones within the window after a flood message are covered by it (outcome "grouped", never sent on their own). Grouping
   is the outbox's only: every alarm is raised in its own pass, kept, acknowledged and escalated on its own. The Alarms
@@ -4506,26 +4519,44 @@ from which device, how late) is logged. The server side is built; the push trans
     milliseconds. The alarms never read a precomputed water store (live-arch stage 3);
   - **one active per database**: a session advisory lock; a second worker waits as a hot standby and takes over within a
     tick of the first one's session ending (its session's TCP keepalives end a dead worker's session within two thirds
-    of `stale_after`); only the active one sends;
+    of `stale_after`); only the active one sends. Each tick it checks that its connection is still the session that
+    holds the lock (`pg_backend_pid()`): a connection opened again after an error inside a pass is a new session, and
+    the lock is taken again on it with the session's settings (F4). A holder that is wedged (its process alive, its
+    session idle and never ending) is evicted by hand: `SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE
+    application_name = 'alarm-worker' AND datname = current_database();` (the standby takes over within a tick);
   - **its row** (`alarm_worker_status`, `alarms` 0015): running or stopped, its last pass and last good pass on the
     database's clock, how long the pass took, the failed steps, the outbox's waiting notifications and the oldest;
   - **what it survives and when it ends itself**: the database away, tried again after the tick doubled up to
     `ALARM_WORKER_BACKOFF_MAX`, and exit 1 after `ALARM_WORKER_DB_DOWN_EXIT` (60 s); passes failing whole, exit 1 after
-    `ALARM_WORKER_MAX_FAILURES` (5); a pass running longer than `ALARM_WORKER_HANG_EXIT` (120 s), its watchdog exits 1; its
-    statements bounded (`statement_timeout`, `lock_timeout`). Docker starts it again (`restart: unless-stopped`); Docker
+    `ALARM_WORKER_MAX_FAILURES` (5); a pass running, or its loop not coming round, for longer than
+    `ALARM_WORKER_HANG_EXIT` (120 s), its watchdog exits 1 (the log flushed, never shut down); its statements bounded
+    (`statement_timeout`, `lock_timeout`); every connection of the platform gives up a connect after `DB_CONNECT_TIMEOUT`
+    (10 s) and finds a dead peer by TCP keepalives (`DB_KEEPALIVES_IDLE`, 30 s); its threads are waited for at most a
+    send's time when it stops. Docker starts it again (`restart: unless-stopped`); Docker
     does not restart an unhealthy container, which is why the worker ends itself. SIGTERM: the pass under way finishes,
     the row says stopped, exit 0. Its intervals are counted on the monotonic clock: a server clock that jumps neither
     stops nor hurries them;
   - its timings are the deployment's (`settings.ALARM_WORKER`, each from the environment, refused at start when they
-    make no sense), not the farm's rules.
+    make no sense), not the farm's rules; the Alarms page shows them read-only beside the worker's figures (state, last
+    pass and how long it took, last round through the outbox, notifications waiting and the oldest, criticals that
+    cannot be delivered; the coordinator's call on the review: no page edits them);
+  - **landing**: the worker is a compose service of its own, started with `docker compose --profile alarms up -d` (a
+    plain `docker compose up -d` starts only the database); without it the pages say the alarms are NOT being checked.
 - **The dead man: the farm is told when the worker stops** (owner decision of 2026-11-15, item H; `alarms/watch.py`, one
-  query). The Alarms pages, the water page, the monitoring wall and the Sensors overview say "The alarms are NOT being
-  checked since hh:mm" (no worker has ever run, it stopped, no pass for longer than its `stale_after` of 45 s, or its
-  steps fail), and nothing while they are; the water page says when they were last checked. `manage.py
+  query). Every Alarms page (the alarms, snoozes, recipients, severity rules, deadbands, the sensors' alarm rules and
+  events), the water page, the monitoring wall and the Sensors overview say "The alarms are NOT being checked since
+  hh:mm" (no worker has ever run, it stopped, no pass for longer than its `stale_after` of 45 s, or its steps fail), "The
+  alarm notifications are NOT being sent" (its sender silent that long) or "N critical notifications cannot be
+  delivered", and nothing while all is well; the water page says when they were last checked; the wall and the Sensors
+  overview also say that nothing is sent while no transport is connected. On the wall, left open for hours, the notice
+  is asked for again every 15 s (`alarms:alarm_watch_notice`, `frontend/poll.ts`), so a worker that stops is said there
+  without a reload. `manage.py
   alarm_worker_health` (the compose healthcheck) says the same with its exit code. A worker taking over after such a
   stretch raises a critical alarm of the alarm system naming it ("The alarms were not checked from … to …"), notified
-  like any other and cleared after its off-delay. Off the server (go-live): with `ALARM_DEADMAN_URL` (https) the worker
-  asks that address after each good pass, at most every `ALARM_DEADMAN_EVERY` seconds, on a thread a hang cannot hold;
+  like any other and cleared after its off-delay; it is kept for the next pass until a supervision step passes (F7). Off the server (go-live): with `ALARM_DEADMAN_URL` (https) the worker
+  asks that address after each good pass, at most every `ALARM_DEADMAN_EVERY` seconds, on a thread a hang cannot hold,
+  and only while all it vouches for holds: the alarms checked and sent, no critical undeliverable, and the ingest alive
+  where there is one (F3, F11);
   a heartbeat service on another network calls the on-call phone when the asks stop (owner decision Q6: a commercial
   one; none is chosen yet, so it is off).
 - **The server is not a safety layer** (alarm plan §5). The platform's alarms tell people; they do not keep fish alive.

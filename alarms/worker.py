@@ -5,8 +5,10 @@ checked, a pass of alarms/engine.py at a time, for as long as it runs.
   hot standby and takes over within a tick of the first one's session ending (stopped, killed, its connection lost).
   The database ends a dead client's session by TCP keepalives the worker sets on its own session (`_session`), so a
   worker cut off from the network does not keep the lock for the kernel's two hours.
-- **When it passes.** At once when it starts, then at least every `sweep` seconds (what time alone moves: a value going
-  stale, the delays, escalation).
+- **When it passes.** At once when it starts; within a tick of anything an alarm reads changing (alarms/changes.py: a
+  value the ingest committed, a record written through the platform), so a value's alarm is open within the tick plus
+  two passes of its commit (the owner's 10 s); and at least every `sweep` seconds, for what time alone moves (a value
+  going stale, the delays, escalation).
 - **Its own row** (alarms.AlarmWorkerStatus, `alarm_worker_status`): running or stopped, when it last finished a pass and
   a pass with no failed step, how long the pass took, what failed, and after how long without a pass the alarms count as
   unchecked (`stale_after`). The pages and the health check read it (alarms/watch.py), on the database's clock.
@@ -31,7 +33,7 @@ from django.db import InterfaceError, OperationalError, connection
 from django.db.models import F
 from django.db.models.functions import Now
 
-from . import engine
+from . import changes as changes_, engine
 from .models import AlarmWorkerStatus, WorkerState
 
 logger = logging.getLogger(__name__)
@@ -98,14 +100,15 @@ def _reset():
 
 class Worker:
     """One alarm worker: `run()` until `stop` is set (0) or until it must be started again (1). The pass, the clock, the
-    reset of a broken connection and the process's end are given in for the tests; by default the engine's pass, the
-    monotonic clock, connection.close and os._exit."""
+    reset of a broken connection and the process's end are given in for the tests; by default the engine's pass,
+    alarms.changes.token, the monotonic clock, connection.close and os._exit."""
 
-    def __init__(self, name=DEFAULT_NAME, timing=None, *, run_pass=None, clock=time.monotonic, stop=None, reset=_reset,
-                 exit_now=os._exit):
+    def __init__(self, name=DEFAULT_NAME, timing=None, *, run_pass=None, changes=None, clock=time.monotonic, stop=None,
+                 reset=_reset, exit_now=os._exit):
         self.name = name
         self.timing = timing or Timing.from_settings()
         self.run_pass = run_pass or engine.run_once
+        self.changes = changes or changes_.token
         self.clock = clock
         self.stop = stop or threading.Event()
         self.reset = reset
@@ -127,14 +130,15 @@ class Worker:
             watchdog.join()
 
     def _loop(self):
-        last_pass, down_since, tries, failures = None, None, 0, 0
+        last_pass, seen, down_since, tries, failures = None, None, None, 0, 0
         while not self.stop.is_set():
             try:
                 if not self._lead():
                     self.stop.wait(self.timing.tick)
                     continue
-                if last_pass is None or self.clock() - last_pass >= self.timing.sweep:
-                    last_pass = self.clock()
+                token = self.changes()                # read before the pass it stands for (alarms/changes.py)
+                if last_pass is None or token != seen or self.clock() - last_pass >= self.timing.sweep:
+                    last_pass, seen = self.clock(), token
                     self._pass()
                     failures = 0
                 else:

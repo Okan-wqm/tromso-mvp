@@ -1,0 +1,7 @@
+{% load i18n %}{% comment %} What stands where the cards go before they have come (the shell, monitoring.views.monitor): the grid's (`grid`) or
+   the pane's. Keyed, so the first answer of the poll (frontend/poll.ts, data-poll-state="loading" on the polled
+   element) replaces it. No state, no colour, no figure: a page whose cards have not come never reads as all is well.
+   static/css/monitor.css shows one of its lines by the polled element's state: "Loading" while it is loading, "cannot
+   be read" when the first answer failed ("unread": a 503, a server error, no answer), none when the person is signed
+   out or may no longer read it ("gone": the page's own notice says so). Without script the grid's says where the full
+   page is. {% endcomment %}<div class="monitor-loading" data-key="loading"><p data-loading>{% if grid %}{% trans "Loading the cards…" %}{% else %}{% trans "Loading…" %}{% endif %}</p><p data-unread>{% trans "The cards cannot be read just now. The page tries again by itself." %}</p>{% if grid %}<noscript><p><a href="{{ full_url }}">{% trans "JavaScript is off: show the full page with the cards" %}</a></p></noscript>{% endif %}</div>

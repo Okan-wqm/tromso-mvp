@@ -177,6 +177,10 @@ msgstr[0] "%(count)d %(name)s tilhører den fortsatt."
 msgstr[1] "%(count)d %(plural)s tilhører den fortsatt."
 
 #, python-format
+msgid "%(count)d %(severity)s alarms of one kind since %(since)s. For example: %(summary)s"
+msgstr "%(count)d alarmer (%(severity)s) av samme slag siden %(since)s. For eksempel: %(summary)s"
+
+#, python-format
 msgid "%(count)d assignment created."
 msgid_plural "%(count)d assignments created."
 msgstr[0] "%(count)d tildeling opprettet."
@@ -217,6 +221,14 @@ msgid "%(count)d count"
 msgid_plural "%(count)d counts"
 msgstr[0] "%(count)d telling"
 msgstr[1] "%(count)d tellinger"
+
+#, python-format
+msgid ""
+"%(count)d critical alarms, all now cleared: first opened %(opened)s, last cleared %(cleared)s. "
+"For example: %(summary)s"
+msgstr ""
+"%(count)d kritiske alarmer, alle nå avsluttet: den første åpnet %(opened)s, den siste avsluttet "
+"%(cleared)s. For eksempel: %(summary)s"
 
 #, python-format
 msgid ""

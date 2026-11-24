@@ -4502,7 +4502,10 @@ from which device, how late) is logged. The server side is built; the push trans
   one message saying it was critical and has cleared, when it opened and when it cleared, through the same grouping and
   flood rules (cleared criticals of one kind go as one flood message). A warning, or a word about a snooze, whose alarm
   cleared before it was ever tried is given up, its attempt saying so, so a backlog of cleared warnings never goes out
-  when a transport is first connected (20,000 of them given up in one round, a few statements); a channel without a transport is left out of a round in the database. One notification that cannot be
+  when a transport is first connected. They are given up after the round's sending, never before it, a chunk of 400 a
+  round (`outbox.GIVE_UP_CHUNK`, each chunk one transaction): 20,000 of them never delay a critical, and drain over a
+  few dozen rounds. A flood of cleared criticals says so too: how many, all cleared, the first opening and the last
+  clearing; a channel without a transport is left out of a round in the database. One notification that cannot be
   handled is logged and left for the next round, never stopping the others. The attempt, the queue's entry and the log
   are written in one transaction, and a round drops an entry that already went. Never lost: a restart sends
   what was not sent; a sender that died after the transport took one and before its attempt was written sends it again

@@ -180,6 +180,10 @@ msgstr[0] "%(count)d %(name)s hâlâ ona bağlı."
 msgstr[1] "%(count)d %(name)s hâlâ ona bağlı."
 
 #, python-format
+msgid "%(count)d %(severity)s alarms of one kind since %(since)s. For example: %(summary)s"
+msgstr "%(since)s itibarıyla aynı türden %(count)d alarm (%(severity)s). Örneğin: %(summary)s"
+
+#, python-format
 msgid "%(count)d assignment created."
 msgid_plural "%(count)d assignments created."
 msgstr[0] "%(count)d atama oluşturuldu."
@@ -220,6 +224,14 @@ msgid "%(count)d count"
 msgid_plural "%(count)d counts"
 msgstr[0] "%(count)d sayım"
 msgstr[1] "%(count)d sayım"
+
+#, python-format
+msgid ""
+"%(count)d critical alarms, all now cleared: first opened %(opened)s, last cleared %(cleared)s. "
+"For example: %(summary)s"
+msgstr ""
+"%(count)d kritik alarm, hepsi kapandı: ilki %(opened)s açıldı, sonuncusu %(cleared)s kapandı. "
+"Örneğin: %(summary)s"
 
 #, python-format
 msgid ""

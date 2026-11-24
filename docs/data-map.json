@@ -15396,6 +15396,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "farm/tests/test_assignments.py",
         "farm/tests/test_cleaner_ration.py",
@@ -31097,6 +31098,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "knowledge/tests/test_documents.py",
         "knowledge/tests/test_entries.py",

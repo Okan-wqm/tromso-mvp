@@ -1529,7 +1529,7 @@ A protocol in force for a unit, a whole batch or a batch in one unit, from a day
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › protocol_assignments
 - **forms**: `AssignmentForm`, `NewAssignmentForm`
 - **constraints**: chk_protocol_assignments_target (check); chk_protocol_assignments_period (check); excl_protocol_assignments_unit (exclusion: unit, valid_from, valid_until); excl_protocol_assignments_batch (exclusion: batch, valid_from, valid_until); excl_protocol_assignments_batch_in_unit (exclusion: unit, batch, valid_from, valid_until)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_assignments.py`, `farm/tests/test_cleaner_ration.py` and 6 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `farm/tests/test_assignments.py` and 7 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1588,7 +1588,7 @@ A physical facility (locality).
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › sites
 - **forms**: `SiteForm`
 - **constraints**: uq_sites_code_live (unique: code); uq_sites_name_live (unique: name); uq_sites_lokalitetsnummer_live (unique: lokalitetsnummer); chk_sites_lokalitetsnummer_range (check); chk_sites_organisation_number (check); chk_sites_production_form (check); chk_sites_latitude_range (check); chk_sites_longitude_range (check); chk_sites_altitude_range (check); chk_sites_coordinates_paired (check); chk_sites_sea_cage_location (check); chk_sites_timezone_given (check); chk_sites_lice_area (check)
-- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 87 more
+- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 88 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2834,7 +2834,7 @@ A piece of knowledge in a person's own words, with its source: "In Atlantic salm
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Knowledge › knowledge_entries
 - **forms**: `KnowledgeEntryForm`
 - **constraints**: chk_knowledge_entries_statement (check); chk_knowledge_entries_topics (check); chk_knowledge_entries_topics_not_empty (check); chk_knowledge_entries_source_kind (check); chk_knowledge_entries_document_source (check); chk_knowledge_entries_external_source (check); chk_knowledge_entries_expert_source (check); chk_knowledge_entries_quote (check); chk_knowledge_entries_url (check); chk_knowledge_entries_review (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `knowledge/tests/test_documents.py`, `knowledge/tests/test_entries.py` and 2 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `knowledge/tests/test_documents.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

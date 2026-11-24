@@ -233,11 +233,11 @@ def states_world(admin, client):
     salmon, feed = Species.objects.get(code='SAL'), Feed.objects.get(code='TFE')
     # an assigned protocol: its table saved through its address, then given to the stocked tank
     protocol = FeedingProtocol.objects.create(name='Test assigned protocol', species=salmon, expected_fcr=D('1.10'))
-    table = {'version': str(FeedingProtocol.objects.get(pk=protocol.pk).version), 'temperatures': '10',
+    table = {'version': str(FeedingProtocol.objects.get(pk=protocol.pk).version), 'temperatures': '8 12',
              'bands-TOTAL_FORMS': '1', 'bands-INITIAL_FORMS': '0', 'bands-MIN_NUM_FORMS': '0',
              'bands-MAX_NUM_FORMS': '1000', 'bands-0-min_weight_g': '0', 'bands-0-max_weight_g': '',
              'bands-0-feed': str(feed.pk), 'bands-0-meals_per_day': '3', 'bands-0-expected_fcr': '1.05',
-             'bands-0-sfr_100': '1.2'}
+             'bands-0-sfr_80': '1.0', 'bands-0-sfr_120': '1.2'}
     response = client.post(reverse('farm:feedingprotocol_table', args=[protocol.pk]), table)
     made.append(f'table of {protocol}: {response.status_code}')
     ProtocolAssignment.objects.create(protocol=protocol, unit=Tank.objects.get(code='TT-01'),

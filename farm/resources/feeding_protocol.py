@@ -77,7 +77,7 @@ class FeedingProtocolResource(Resource):
                 formpanels.help_text(_('The feeding table can be filled in once the protocol is created.'))])]
         table_form, bands = extra['table_form'], extra['bands']
         if extra.get('frozen'):
-            columns = list(protocol.columns)
+            columns = protocol.columns()
             blocks = [formpanels.notice(_(
                 'The protocol is assigned, so its table is fixed: the rations of the days it fed are read from it. To '
                 'change it, duplicate the protocol, change the copy and assign it from a date.')),
